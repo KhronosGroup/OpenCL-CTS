@@ -38,7 +38,7 @@
 #include "datagen.h"
 #include "run_services.h"
 #include "run_build_test.h"
-
+#include <CL/cl.h>
 //
 // Task
 //
@@ -366,15 +366,33 @@ bool TestRunner::runBuildTest(cl_device_id device, const char *folder,
     create_context_and_queue(device, &context, &queue);
     clProgramWrapper clprog = create_program_from_cl(context, cl_file_path);
     clProgramWrapper bcprog = create_program_from_bc(context, bc_file);
+    std::string bcoptions = "-x spir -spir-std=1.2 -cl-kernel-arg-info";
+    std::string cloptions = "-cl-kernel-arg-info";
+
+    cl_device_fp_config gFloatCapabilities = 0;
+    cl_int err;
+    if ((err = clGetDeviceInfo(device, CL_DEVICE_SINGLE_FP_CONFIG, sizeof(gFloatCapabilities), &gFloatCapabilities, NULL)))
+    {
+      log_info("Unable to get device CL_DEVICE_SINGLE_FP_CONFIG. (%d)\n", err);
+    }
+
+    if (strstr(test_name, "div_cr") || strstr(test_name, "sqrt_cr")) {
+      if ((gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT) == 0)
+        return;
+      else {
+        bcoptions += " -cl-fp32-correctly-rounded-divide-sqrt";
+        cloptions += " -cl-fp32-correctly-rounded-divide-sqrt";
+      }
+    }
 
     // Building the programs.
-    BuildTask clBuild(clprog, device, "-cl-kernel-arg-info");
+    BuildTask clBuild(clprog, device, cloptions.c_str());
     if (!clBuild.execute()) {
         std::cerr << clBuild.getErrorLog() << std::endl;
         return false;
     }
 
-    SpirBuildTask bcBuild(bcprog, device, "-x spir -spir-std=1.2 -cl-kernel-arg-info");
+    SpirBuildTask bcBuild(bcprog, device, bcoptions.c_str());
     if (!bcBuild.execute()) {
         std::cerr << bcBuild.getErrorLog() << std::endl;
         return false;
