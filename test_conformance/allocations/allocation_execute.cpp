@@ -18,12 +18,12 @@
 
 
 const char *buffer_kernel_pattern = {
-    "__kernel void sample_test(%s __global uint *result, __global uint *array_sizes, uint per_item)\n"
+    "__kernel void sample_test(%s __global uint *result, __global %s *array_sizes, uint per_item)\n"
     "{\n"
     "\tint tid = get_global_id(0);\n"
     "\tuint r = 0;\n"
-    "\tuint i;\n"
-    "\tfor(i=tid*per_item; i<(1+tid)*per_item; i++) {\n"
+    "\t%s i;\n"
+    "\tfor(i=(%s)tid*(%s)per_item; i<(%s)(1+tid)*(%s)per_item; i++) {\n"
     "%s"
     "\t}\n"
     "\tresult[tid] = r;\n"
@@ -161,13 +161,31 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
     for (i=0; i<NUM_OF_WORK_ITEMS; i++)
         returned_results[i] = 0;
 
+    // detect if device supports ulong/int64
+    //detect whether profile of the device is embedded
+    bool support64 = true;
+    char profile[1024] = "";
+    error = clGetDeviceInfo(device_id, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL);
+    test_error(error, "clGetDeviceInfo for CL_DEVICE_PROFILE failed\n" );
+    if ((NULL != strstr(profile, "EMBEDDED_PROFILE")) &&
+        (!is_extension_available(device_id, "cles_khr_int64"))) {
+            support64 = false;
+    }
+
     // Build the kernel source
     if (test == BUFFER || test == BUFFER_NON_BLOCKING) {
         for(i=0; i<number_of_mems_used; i++) {
             sprintf(argument_string + strlen(argument_string), " __global uint *buffer%d, ", i);
             sprintf(access_string + strlen( access_string), "\t\tif (i<array_sizes[%d]) r += buffer%d[i];\n", i, i);
         }
-        sprintf(kernel_string, buffer_kernel_pattern, argument_string, access_string);
+        char type[10];
+        if (support64) {
+            sprintf(type, "ulong");
+        }
+        else {
+            sprintf(type, "uint");
+        }
+        sprintf(kernel_string, buffer_kernel_pattern, argument_string, type, type, type, type, type, type, access_string);
     }
     else if (test == IMAGE_READ || test == IMAGE_READ_NON_BLOCKING) {
         for(i=0; i<number_of_mems_used; i++) {
@@ -217,19 +235,36 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
     global_dims[0] = NUM_OF_WORK_ITEMS; global_dims[1] = 1; global_dims[2] = 1;
 
     // We have extra arguments for the buffer kernel because we need to pass in the buffer sizes
-    cl_uint *sizes = (cl_uint*)malloc(sizeof(cl_uint)*number_of_mems_used);
-    cl_uint max_size = 0;
+    cl_ulong *ulSizes = NULL;
+    cl_uint  *uiSizes = NULL;
+    if (support64) {
+        ulSizes = (cl_ulong*)malloc(sizeof(cl_ulong)*number_of_mems_used);
+    }
+    else {
+        uiSizes = (cl_uint*)malloc(sizeof(cl_uint)*number_of_mems_used);
+    }
+    cl_ulong max_size = 0;
     clMemWrapper buffer_sizes;
     if (test == BUFFER || test == BUFFER_NON_BLOCKING) {
         for (i=0; i<number_of_mems_used; i++) {
             size_t size;
             error = clGetMemObjectInfo(mems[i], CL_MEM_SIZE, sizeof(size), &size, NULL);
             test_error_abort(error, "clGetMemObjectInfo failed for CL_MEM_SIZE.");
-            sizes[i] = (cl_uint)(size/sizeof(cl_uint));
+            if (support64) {
+                ulSizes[i] = size/sizeof(cl_uint);
+            }
+            else {
+                uiSizes[i] = (cl_uint)size/sizeof(cl_uint);
+            }
             if (size/sizeof(cl_uint) > max_size)
-                max_size = (cl_uint)(size/sizeof(cl_uint));
+                max_size = size/sizeof(cl_uint);
         }
-        buffer_sizes = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeof(cl_uint)*number_of_mems_used, sizes, &error);
+        if (support64) {
+            buffer_sizes = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeof(cl_ulong)*number_of_mems_used, ulSizes, &error);
+        }
+        else {
+            buffer_sizes = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeof(cl_uint)*number_of_mems_used, uiSizes, &error);
+        }
         test_error_abort(error, "clCreateBuffer failed");
         error = clSetKernelArg(kernel, number_of_mems_used+1, sizeof(cl_mem), &buffer_sizes);
         test_error(error, "clSetKernelArg failed");
@@ -239,7 +274,12 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
         per_item_uint = (cl_uint)per_item;
         error = clSetKernelArg(kernel, number_of_mems_used+2, sizeof(per_item_uint), &per_item_uint);
         test_error(error, "clSetKernelArg failed");
-        free(sizes);
+    }
+    if (ulSizes) {
+        free(ulSizes);
+    }
+    if (uiSizes) {
+        free(uiSizes);
     }
 
     size_t local_dims[3] = {1,1,1};
