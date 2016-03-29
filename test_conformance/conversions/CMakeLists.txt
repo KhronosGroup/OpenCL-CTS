@@ -19,6 +19,7 @@ set (${MODULE_NAME}_SOURCES
       ../../test_common/harness/errorHelpers.c
       ../../test_common/harness/parseParameters.cpp
       ../../test_common/harness/kernelHelpers.c
+      ../../test_common/harness/testHarness.c
 )
 
 if(ANDROID)
