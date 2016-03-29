@@ -16,6 +16,7 @@
 #include "../../test_common/harness/compat.h"
 #include "../../test_common/harness/rounding_mode.h"
 #include "../../test_common/harness/ThreadPool.h"
+#include "../../test_common/harness/testHarness.h"
 #include "../../test_common/harness/kernelHelpers.h"
 #include "../../test_common/harness/parseParameters.h"
 #if !defined(_WIN32) && !defined(__ANDROID__)
@@ -105,14 +106,13 @@ int             gMultithread = 1;
 int             gIsRTZ = 0;
 uint32_t        gSimdSize = 1;
 int             gHasDouble = 0;
-int                   gIsEmbedded = 0;
-int             gHasLong = 1;
 int             gTestDouble = 1;
 cl_uint         choosen_device_index = 0;
 const char *    sizeNames[] = { "", "", "2", "3", "4", "8", "16" };
 const int       vectorSizes[] = { 1, 1, 2, 3, 4, 8, 16 };
 int             gMinVectorSize = 0;
 int             gMaxVectorSize = sizeof(vectorSizes) / sizeof( vectorSizes[0] );
+static MTdata   gMTdata;
 
 #pragma mark -
 #pragma mark Declarations
@@ -156,16 +156,145 @@ static inline void Force64BitFPUPrecision(void)
 #endif
 }
 
+int test_conversions( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    int error, i, testNumber = -1;
+    int startMinVectorSize = gMinVectorSize;
+    Type inType, outType;
+    RoundingMode round;
+    SaturationMode sat;
+
+    if( argCount )
+    {
+        for( i = 0; i < argCount; i++ )
+        {
+            if( GetTestCase( argList[i], &outType, &inType, &sat, &round ) )
+            {
+                vlog_error( "\n\t\t**** ERROR:  Unable to parse function name %s.  Skipping....  *****\n\n", argList[i] );
+                continue;
+            }
+
+            // skip double if we don't have it
+            if( !gTestDouble && (inType == kdouble || outType == kdouble ) )
+            {
+                if( gHasDouble )
+                {
+                    vlog_error( "\t *** convert_%sn%s%s( %sn ) FAILED ** \n", gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
+                    vlog( "\t\tcl_khr_fp64 enabled, but double testing turned off.\n" );
+                }
+
+                continue;
+            }
+
+            // skip longs on embedded
+            if( !gHasLong && (inType == klong || outType == klong || inType == kulong || outType == kulong) )
+            {
+                continue;
+            }
+
+            // Skip the implicit converts if the rounding mode is not default or test is saturated
+            if( 0 == startMinVectorSize )
+            {
+                if( sat || round != kDefaultRoundingMode )
+                    gMinVectorSize = 1;
+                else
+                    gMinVectorSize = 0;
+            }
+
+            if( ( error = DoTest( outType, inType, sat, round, gMTdata ) ) )
+            {
+                vlog_error( "\t *** convert_%sn%s%s( %sn ) FAILED ** \n", gTypeNames[outType], gSaturationNames[sat], gRoundingModeNames[round], gTypeNames[inType] );
+            }
+        }
+    }
+    else
+    {
+        for( outType = (Type)0; outType < kTypeCount; outType = (Type)(outType+1) )
+        {
+            for( inType = (Type)0; inType < kTypeCount; inType = (Type)(inType+1) )
+            {
+                // skip longs on embedded
+                if( !gHasLong && (inType == klong || outType == klong || inType == kulong || outType == kulong) )
+                {
+                    continue;
+                }
+
+                for( sat = (SaturationMode)0; sat < kSaturationModeCount; sat = (SaturationMode)(sat+1) )
+                {
+                    //skip illegal saturated conversions to float type
+                    if( kSaturated == sat && ( outType == kfloat || outType == kdouble ) )
+                    {
+                        continue;
+                    }
+
+                    for( round = (RoundingMode)0; round < kRoundingModeCount; round = (RoundingMode)(round+1) )
+                    {
+                        if( ++testNumber < gStartTestNumber )
+                        {
+                            //     vlog( "%d) skipping convert_%sn%s%s( %sn )\n", testNumber, gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
+                            continue;
+                        }
+                        else
+                        {
+                            if( gEndTestNumber > 0 && testNumber >= gEndTestNumber  )
+                            {
+                                goto exit;
+                            }
+                        }
+
+                        vlog( "%d) Testing convert_%sn%s%s( %sn ):\n", testNumber, gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
+
+                        // skip double if we don't have it
+                        if( ! gTestDouble && (inType == kdouble || outType == kdouble ) )
+                        {
+                            if( gHasDouble )
+                            {
+                                vlog_error( "\t *** %d) convert_%sn%s%s( %sn ) FAILED ** \n", testNumber, gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
+                                vlog( "\t\tcl_khr_fp64 enabled, but double testing turned off.\n" );
+                            }
+                            continue;
+                        }
+
+                        // Skip the implicit converts if the rounding mode is not default or test is saturated
+                        if( 0 == startMinVectorSize )
+                        {
+                            if( sat || round != kDefaultRoundingMode )
+                                gMinVectorSize = 1;
+                            else
+                                gMinVectorSize = 0;
+                        }
+
+                        if( ( error = DoTest( outType, inType, sat, round, gMTdata ) ) )
+                        {
+                            vlog_error( "\t *** %d) convert_%sn%s%s( %sn ) FAILED ** \n", testNumber, gTypeNames[outType], gSaturationNames[sat], gRoundingModeNames[round], gTypeNames[inType] );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+exit:
+    return gFailCount;
+}
+
+basefn basefn_list[] = {
+    test_conversions,
+};
+
+const char *basefn_names[] = {
+    "test_conversions",
+};
+
+ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
+
+int	num_fns = sizeof(basefn_names) / sizeof(char *);
 
 #pragma mark -
 
 int main (int argc, const char **argv )
 {
-    int error, i, testNumber = -1;
-    Type inType, outType;
-    RoundingMode round;
-    SaturationMode sat;
-    MTdata  d = NULL;
+    int error;
     cl_uint seed = (cl_uint) time( NULL );
 
     test_start();
@@ -173,7 +302,7 @@ int main (int argc, const char **argv )
     if (argc == -1)
     {
         test_finish();
-        return -1;
+        return 1;
     }
 
     if( (error = ParseArgs( argc, argv )) )
@@ -202,135 +331,33 @@ int main (int argc, const char **argv )
 
     vlog( "===========================================================\n" );
     vlog( "Random seed: %u\n", seed );
-    d = init_genrand( seed );
-    int startMinVectorSize = gMinVectorSize;
-    if( argCount )
-    {
-        for( i = 0; i < argCount; i++ )
-        {
-            if( GetTestCase( argList[i], &outType, &inType, &sat, &round ) )
-            {
-                vlog_error( "\n\t\t**** ERROR:  Unable to parse function name %s.  Skipping....  *****\n\n", argList[i] );
-                continue;
-            }
+    gMTdata = init_genrand( seed );
 
-            // skip double if we don't have it
-            if( !gTestDouble && (inType == kdouble || outType == kdouble ) )
-            {
-                if( gHasDouble )
-                {
-                    vlog_error( "\t *** convert_%sn%s%s( %sn ) FAILED ** \n", gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
-                    vlog( "\t\tcl_khr_fp64 enabled, but double testing turned off.\n" );
-                }
+    int ret = parseAndCallCommandLineTests( 1, NULL, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
 
-                continue;
-            }
-
-            // skip longs on embedded
-            if( ! gHasLong &&
-               (inType == klong || outType == klong || inType == kulong || outType == kulong))
-                continue;
-
-            // Skip the implicit converts if the rounding mode is not default or test is saturated
-            if( 0 == startMinVectorSize )
-            {
-                if( sat || round != kDefaultRoundingMode )
-                    gMinVectorSize = 1;
-                else
-                    gMinVectorSize = 0;
-            }
-
-            if( (error = DoTest( outType, inType, sat, round, d )) )
-                vlog_error( "\t *** convert_%sn%s%s( %sn ) FAILED ** \n", gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
-        }
-    }
-    else
-    {
-
-        for( outType = (Type)0; outType < kTypeCount; outType = (Type)(outType+1) )
-        {
-            for( inType = (Type)0; inType < kTypeCount; inType = (Type)(inType+1) )
-            {
-                // skip longs on embedded
-                if( ! gHasLong &&
-                   (inType == klong || outType == klong || inType == kulong || outType == kulong))
-                    continue;
-
-                for( sat = (SaturationMode)0; sat < kSaturationModeCount; sat = (SaturationMode)(sat+1) )
-                {
-                    //skip illegal saturated conversions to float type
-                    if( kSaturated == sat && ( outType == kfloat || outType == kdouble ) )
-                        continue;
-
-                    for( round = (RoundingMode)0; round < kRoundingModeCount; round = (RoundingMode)(round+1) )
-                    {
-                        if( ++testNumber < gStartTestNumber )
-                        {
-                            //     vlog( "%d) skipping convert_%sn%s%s( %sn )\n", testNumber, gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
-                            continue;
-                        }
-                        else
-                            if( gEndTestNumber > 0 && testNumber >= gEndTestNumber  )
-                                goto exit;
-
-                        vlog( "%d) Testing convert_%sn%s%s( %sn ):\n", testNumber, gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
-
-                        // skip double if we don't have it
-                        if( ! gTestDouble && (inType == kdouble || outType == kdouble ) )
-                        {
-                            if( gHasDouble )
-                            {
-                                vlog_error( "\t *** %d) convert_%sn%s%s( %sn ) FAILED ** \n", testNumber, gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
-                                vlog( "\t\tcl_khr_fp64 enabled, but double testing turned off.\n" );
-                            }
-                            continue;
-                        }
-
-                        // Skip the implicit converts if the rounding mode is not default or test is saturated
-                        if( 0 == startMinVectorSize )
-                        {
-                            if( sat || round != kDefaultRoundingMode )
-                                gMinVectorSize = 1;
-                            else
-                                gMinVectorSize = 0;
-                        }
-
-                        if( (error = DoTest( outType, inType, sat, round, d) ) )
-                            vlog_error( "\t *** %d) convert_%sn%s%s( %sn ) FAILED ** \n", testNumber, gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
-                    }
-                }
-            }
-        }
-    }
-
-exit:
-    free_mtdata(d);
-    vlog( "\n\n" );
-    vlog( "Tests completed: %d\n", gTestCount );
+    free_mtdata( gMTdata );
 
     error = clFinish(gQueue);
     if (error)
         vlog_error("clFinish failed: %d\n", error);
 
     if (gFailCount == 0 && gTestCount >= 0) {
-        vlog("PASSED %d of %d tests.\n", gTestCount, gTestCount);
+        vlog("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
     } else if (gFailCount > 0) {
-        vlog_error("FAILED %d of %d tests.\n", gFailCount, gTestCount);
+        vlog_error("FAILED %d of %d sub-tests.\n", gFailCount, gTestCount);
     }
 
     clReleaseMemObject(gInBuffer);
 
-    for( i = 0; i < kCallStyleCount; i++ ) {
+    for( int i = 0; i < kCallStyleCount; i++ ) {
         clReleaseMemObject(gOutBuffers[i]);
     }
     clReleaseCommandQueue(gQueue);
     clReleaseContext(gContext);
 
     test_finish();
-    if (gFailCount > 0)
-        return -1;
 
-    return 0;
+    return ret;
 }
 
 #pragma mark -
@@ -683,11 +710,6 @@ static int GetTestCase( const char *name, Type *outType, Type *inType, Saturatio
 #pragma mark -
 #pragma mark OpenCL
 
-static void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
-{
-    vlog( "%s\n", errinfo );
-}
-
 static int InitCL( void )
 {
     int error, i;
@@ -923,24 +945,7 @@ static int RunKernel( cl_kernel kernel, void *inBuf, void *outBuf, size_t blockC
 }
 
 #if ! defined( __APPLE__ )
-static void memset_pattern4(void *dest, const void *src_pattern, size_t bytes );
-static void memset_pattern4(void *dest, const void *src_pattern, size_t bytes )
-{
-    uint32_t pat = ((uint32_t*) src_pattern)[0];
-    size_t count = bytes / 4;
-    size_t i;
-    uint32_t *d = (uint32_t *)dest;
-
-    for( i = 0; i < count; i++ )
-        d[i] = pat;
-
-    d += i;
-
-    bytes &= 3;
-    if( bytes )
-        memcpy( d, src_pattern, bytes );
-}
-
+void memset_pattern4(void *dest, const void *src_pattern, size_t bytes );
 #endif
 
 #if defined( __APPLE__ )
@@ -1865,4 +1870,3 @@ static cl_program   MakeProgram( Type outType, Type inType, SaturationMode sat, 
 
     return program;
 }
-
