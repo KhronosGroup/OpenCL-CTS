@@ -785,7 +785,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                 {
                     double test = ((double*) q)[j];
                     long double correct = f->dfunc.f_fff( s[j], s2[j], s3[j] );
-                    float err = Ulp_Error_Double( test, correct );
+                    float err = Bruteforce_Ulp_Error_Double( test, correct );
                     int fail = ! (fabsf(err) <= f->double_ulps);
 
                     if( fail && ftz )
@@ -803,8 +803,8 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                         { // look at me,
                             long double correct2 = f->dfunc.f_fff( 0.0, s2[j], s3[j] );
                             long double correct3 = f->dfunc.f_fff( -0.0, s2[j], s3[j] );
-                            float err2 = Ulp_Error_Double( test, correct2  );
-                            float err3 = Ulp_Error_Double( test, correct3  );
+                            float err2 = Bruteforce_Ulp_Error_Double( test, correct2  );
+                            float err3 = Bruteforce_Ulp_Error_Double( test, correct3  );
                             fail =  fail && ((!(fabsf(err2) <= f->double_ulps)) && (!(fabsf(err3) <= f->double_ulps)));
                             if( fabsf( err2 ) < fabsf(err ) )
                                 err = err2;
@@ -826,10 +826,10 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                                 correct3 = f->dfunc.f_fff( -0.0, 0.0, s3[j] );
                                 long double correct4 = f->dfunc.f_fff( 0.0, -0.0, s3[j] );
                                 long double correct5 = f->dfunc.f_fff( -0.0, -0.0, s3[j] );
-                                err2 = Ulp_Error_Double( test, correct2  );
-                                err3 = Ulp_Error_Double( test, correct3  );
-                                float err4 = Ulp_Error_Double( test, correct4  );
-                                float err5 = Ulp_Error_Double( test, correct5  );
+                                err2 = Bruteforce_Ulp_Error_Double( test, correct2  );
+                                err3 = Bruteforce_Ulp_Error_Double( test, correct3  );
+                                float err4 = Bruteforce_Ulp_Error_Double( test, correct4  );
+                                float err5 = Bruteforce_Ulp_Error_Double( test, correct5  );
                                 fail =  fail && ((!(fabsf(err2) <= f->double_ulps)) && (!(fabsf(err3) <= f->double_ulps)) &&
                                                  (!(fabsf(err4) <= f->double_ulps)) && (!(fabsf(err5) <= f->double_ulps)));
                                 if( fabsf( err2 ) < fabsf(err ) )
@@ -860,14 +860,14 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                                     long double correct7 = f->dfunc.f_fff( -0.0, 0.0, -0.0f );
                                     long double correct8 = f->dfunc.f_fff( 0.0, -0.0, -0.0f );
                                     long double correct9 = f->dfunc.f_fff( -0.0, -0.0, -0.0f );
-                                    err2 = Ulp_Error_Double( test, correct2  );
-                                    err3 = Ulp_Error_Double( test, correct3  );
-                                    err4 = Ulp_Error_Double( test, correct4  );
-                                    err5 = Ulp_Error_Double( test, correct5  );
-                                    float err6 = Ulp_Error_Double( test, correct6  );
-                                    float err7 = Ulp_Error_Double( test, correct7  );
-                                    float err8 = Ulp_Error_Double( test, correct8  );
-                                    float err9 = Ulp_Error_Double( test, correct9  );
+                                    err2 = Bruteforce_Ulp_Error_Double( test, correct2  );
+                                    err3 = Bruteforce_Ulp_Error_Double( test, correct3  );
+                                    err4 = Bruteforce_Ulp_Error_Double( test, correct4  );
+                                    err5 = Bruteforce_Ulp_Error_Double( test, correct5  );
+                                    float err6 = Bruteforce_Ulp_Error_Double( test, correct6  );
+                                    float err7 = Bruteforce_Ulp_Error_Double( test, correct7  );
+                                    float err8 = Bruteforce_Ulp_Error_Double( test, correct8  );
+                                    float err9 = Bruteforce_Ulp_Error_Double( test, correct9  );
                                     fail =  fail && ((!(fabsf(err2) <= f->double_ulps)) && (!(fabsf(err3) <= f->double_ulps)) &&
                                                      (!(fabsf(err4) <= f->double_ulps)) && (!(fabsf(err5) <= f->double_ulps)) &&
                                                      (!(fabsf(err5) <= f->double_ulps)) && (!(fabsf(err6) <= f->double_ulps)) &&
@@ -907,10 +907,10 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                                 correct3 = f->dfunc.f_fff( -0.0, s2[j], 0.0 );
                                 long double correct4 = f->dfunc.f_fff( 0.0,  s2[j], -0.0 );
                                 long double correct5 = f->dfunc.f_fff( -0.0, s2[j], -0.0 );
-                                err2 = Ulp_Error_Double( test, correct2  );
-                                err3 = Ulp_Error_Double( test, correct3  );
-                                float err4 = Ulp_Error_Double( test, correct4  );
-                                float err5 = Ulp_Error_Double( test, correct5  );
+                                err2 = Bruteforce_Ulp_Error_Double( test, correct2  );
+                                err3 = Bruteforce_Ulp_Error_Double( test, correct3  );
+                                float err4 = Bruteforce_Ulp_Error_Double( test, correct4  );
+                                float err5 = Bruteforce_Ulp_Error_Double( test, correct5  );
                                 fail =  fail && ((!(fabsf(err2) <= f->double_ulps)) && (!(fabsf(err3) <= f->double_ulps)) &&
                                                  (!(fabsf(err4) <= f->double_ulps)) && (!(fabsf(err5) <= f->double_ulps)));
                                 if( fabsf( err2 ) < fabsf(err ) )
@@ -936,8 +936,8 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                         {
                             long double correct2 = f->dfunc.f_fff( s[j], 0.0, s3[j] );
                             long double correct3 = f->dfunc.f_fff( s[j], -0.0, s3[j] );
-                            float err2 = Ulp_Error_Double( test, correct2  );
-                            float err3 = Ulp_Error_Double( test, correct3  );
+                            float err2 = Bruteforce_Ulp_Error_Double( test, correct2  );
+                            float err3 = Bruteforce_Ulp_Error_Double( test, correct3  );
                             fail =  fail && ((!(fabsf(err2) <= f->double_ulps)) && (!(fabsf(err3) <= f->double_ulps)));
                             if( fabsf( err2 ) < fabsf(err ) )
                                 err = err2;
@@ -959,10 +959,10 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                                 correct3 = f->dfunc.f_fff( s[j], -0.0, 0.0 );
                                 long double correct4 = f->dfunc.f_fff( s[j], 0.0, -0.0 );
                                 long double correct5 = f->dfunc.f_fff( s[j], -0.0, -0.0 );
-                                err2 = Ulp_Error_Double( test, correct2  );
-                                err3 = Ulp_Error_Double( test, correct3  );
-                                float err4 = Ulp_Error_Double( test, correct4  );
-                                float err5 = Ulp_Error_Double( test, correct5  );
+                                err2 = Bruteforce_Ulp_Error_Double( test, correct2  );
+                                err3 = Bruteforce_Ulp_Error_Double( test, correct3  );
+                                float err4 = Bruteforce_Ulp_Error_Double( test, correct4  );
+                                float err5 = Bruteforce_Ulp_Error_Double( test, correct5  );
                                 fail =  fail && ((!(fabsf(err2) <= f->double_ulps)) && (!(fabsf(err3) <= f->double_ulps)) &&
                                                  (!(fabsf(err4) <= f->double_ulps)) && (!(fabsf(err5) <= f->double_ulps)));
                                 if( fabsf( err2 ) < fabsf(err ) )
@@ -988,8 +988,8 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                         {
                             long double correct2 = f->dfunc.f_fff( s[j], s2[j], 0.0 );
                             long double correct3 = f->dfunc.f_fff( s[j], s2[j], -0.0 );
-                            float err2 = Ulp_Error_Double( test, correct2  );
-                            float err3 = Ulp_Error_Double( test, correct3  );
+                            float err2 = Bruteforce_Ulp_Error_Double( test, correct2  );
+                            float err3 = Bruteforce_Ulp_Error_Double( test, correct3  );
                             fail =  fail && ((!(fabsf(err2) <= f->double_ulps)) && (!(fabsf(err3) <= f->double_ulps)));
                             if( fabsf( err2 ) < fabsf(err ) )
                                 err = err2;
