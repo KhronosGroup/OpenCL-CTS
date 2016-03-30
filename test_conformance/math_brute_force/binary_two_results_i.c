@@ -871,7 +871,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                     double test = ((double*) q)[j];
                     int correct2 = INT_MIN;
                     long double correct = f->dfunc.f_ffpI( s[j], s2[j], &correct2 );
-                    float err = Ulp_Error_Double( test, correct );
+                    float err = Bruteforce_Ulp_Error_Double( test, correct );
                     int64_t iErr;
 
                     // in case of remquo, we only care about the sign and last seven bits of
@@ -907,8 +907,8 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                             int correct3i, correct4i;
                             long double correct3 = f->dfunc.f_ffpI( 0.0, s2[j], &correct3i );
                             long double correct4 = f->dfunc.f_ffpI( -0.0, s2[j], &correct4i );
-                            float err2 = Ulp_Error_Double( test, correct3  );
-                            float err3 = Ulp_Error_Double( test, correct4  );
+                            float err2 = Bruteforce_Ulp_Error_Double( test, correct3  );
+                            float err3 = Bruteforce_Ulp_Error_Double( test, correct4  );
                             int64_t iErr3 = (long long) q2[j] - (long long) correct3i;
                             int64_t iErr4 = (long long) q2[j] - (long long) correct4i;
                             fail =  fail && ((!(fabsf(err2) <= f->double_ulps && iErr3 == 0)) && (!(fabsf(err3) <= f->double_ulps && iErr4 == 0)));
@@ -937,10 +937,10 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                                 correct4 = f->dfunc.f_ffpI( -0.0, 0.0, &correct4i );
                                 long double correct7 = f->dfunc.f_ffpI( 0.0, -0.0, &correct7i );
                                 long double correct8 = f->dfunc.f_ffpI( -0.0, -0.0, &correct8i );
-                                err2 = Ulp_Error_Double( test, correct3  );
-                                err3 = Ulp_Error_Double( test, correct4  );
-                                float err4 = Ulp_Error_Double( test, correct7  );
-                                float err5 = Ulp_Error_Double( test, correct8  );
+                                err2 = Bruteforce_Ulp_Error_Double( test, correct3  );
+                                err3 = Bruteforce_Ulp_Error_Double( test, correct4  );
+                                float err4 = Bruteforce_Ulp_Error_Double( test, correct7  );
+                                float err5 = Bruteforce_Ulp_Error_Double( test, correct8  );
                                 iErr3 = (long long) q2[j] - (long long) correct3i;
                                 iErr4 = (long long) q2[j] - (long long) correct4i;
                                 int64_t iErr7 = (long long) q2[j] - (long long) correct7i;
@@ -979,8 +979,8 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                             int correct3i, correct4i;
                             long double correct3 = f->dfunc.f_ffpI( s[j], 0.0, &correct3i );
                             long double correct4 = f->dfunc.f_ffpI( s[j], -0.0, &correct4i );
-                            float err2 = Ulp_Error_Double( test, correct3  );
-                            float err3 = Ulp_Error_Double( test, correct4  );
+                            float err2 = Bruteforce_Ulp_Error_Double( test, correct3  );
+                            float err3 = Bruteforce_Ulp_Error_Double( test, correct4  );
                             int64_t iErr3 = (long long) q2[j] - (long long) correct3i;
                             int64_t iErr4 = (long long) q2[j] - (long long) correct4i;
                             fail =  fail && ((!(fabsf(err2) <= f->double_ulps && iErr3 == 0)) && (!(fabsf(err3) <= f->double_ulps && iErr4 == 0)));

@@ -22,8 +22,6 @@
 #include <time.h>
 #include "FunctionList.h"
 #include "Sleep.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
 #include "../../test_common/harness/parseParameters.h"
 
 #if defined( __APPLE__ )
@@ -54,10 +52,11 @@ cl_context      gContext = NULL;
 cl_command_queue gQueue = NULL;
 int             gTestCount = 0;
 int             gFailCount = 0;
-int32_t         gStartTestNumber = -1;
-int32_t         gEndTestNumber = -1;
+static int32_t  gStartTestNumber;
+static int32_t  gEndTestNumber;
 int             gSkipCorrectnessTesting = 0;
 int             gStopOnError = 0;
+static bool     gSkipRestOfTests;
 #if defined( __APPLE__ )
 int             gMeasureTimes = 1;
 #else
@@ -81,8 +80,6 @@ int             gDeviceILogb0 = 1;
 int             gDeviceILogbNaN = 1;
 int             gCheckTininessBeforeRounding = 1;
 int             gIsInRTZMode = 0;
-int             gInfNanSupport = 1;
-int             gIsEmbedded = 0;
 uint32_t        gMaxVectorSizeIndex = VECTOR_SIZE_COUNT;
 uint32_t        gMinVectorSizeIndex = 0;
 const char      *method[] = { "Best", "Average" };
@@ -103,7 +100,7 @@ uint32_t        gSimdSize = 1;
 uint32_t        gDeviceFrequency = 0;
 cl_uint         chosen_device_index = 0;
 cl_uint         chosen_platform_index = 0;
-cl_uint         gRandomSeed = 0;
+static MTdata   gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
 cl_device_fp_config gDoubleCapabilities = 0;
 int             gWimpyReductionFactor = 32;
@@ -139,11 +136,786 @@ static int IsTininessDetectedBeforeRounding( void );
 static int IsInRTZMode( void );         //expensive. Please check gIsInRTZMode global instead.
 static void TestFinishAtExit(void);
 
+
+int doTest( const char* name )
+{
+    if( gSkipRestOfTests )
+    {
+        vlog( "Skipping function because of an earlier error.\n" );
+        return 1;
+    }
+
+    int error = 0;
+    const Func* func_data = NULL;
+
+    for( size_t i = 0; i < functionListCount; i++ )
+    {
+        const Func* const temp_func = functionList + i;
+        if( strcmp( temp_func->name, name ) == 0 )
+        {
+            if( i < gStartTestNumber || i > gEndTestNumber )
+            {
+                vlog( "Skipping function #%d\n", i );
+                return 0;
+            }
+
+            func_data = temp_func;
+            break;
+        }
+    }
+
+    if( func_data == NULL )
+    {
+        vlog( "Function '%s' doesn't exist!\n", name );
+        exit( EXIT_FAILURE );
+    }
+
+    if( func_data->func.p == NULL )
+    {
+        vlog( "'%s' is missing implementation, skipping function.\n", func_data->name );
+        return 0;
+    }
+
+    // if correctly rounded divide & sqrt are supported by the implementation
+    // then test it; otherwise skip the test
+    if( strcmp( func_data->name, "sqrt_cr" ) == 0 || strcmp( func_data->name, "divide_cr" ) == 0 )
+    {
+        if( ( gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT ) == 0 )
+        {
+            vlog( "Correctly rounded divide and sqrt are not supported, skipping function.\n" );
+            return 0;
+        }
+    }
+
+    {
+        extern int my_ilogb(double);
+        if( 0 == strcmp( "ilogb", func_data->name ) )
+        {
+            InitILogbConstants();
+        }
+
+        if ( gTestFastRelaxed )
+        {
+            if( func_data->relaxed )
+            {
+                gTestCount++;
+                vlog( "%3d: ", gTestCount );
+                if( func_data->vtbl_ptr->TestFunc( func_data, gMTdata )  )
+                {
+                    gFailCount++;
+                    error++;
+                    if( gStopOnError )
+                    {
+                        gSkipRestOfTests = true;
+                        return error;
+                    }
+                }
+            }
+        }
+
+        if( gTestFloat )
+        {
+            int testFastRelaxedTmp = gTestFastRelaxed;
+            gTestFastRelaxed = 0;
+
+            gTestCount++;
+            vlog( "%3d: ", gTestCount );
+            if( func_data->vtbl_ptr->TestFunc( func_data, gMTdata )  )
+            {
+                gFailCount++;
+                error++;
+                if( gStopOnError )
+                {
+                    gTestFastRelaxed = testFastRelaxedTmp;
+                    gSkipRestOfTests = true;
+                    return error;
+                }
+            }
+            gTestFastRelaxed = testFastRelaxedTmp;
+        }
+
+        if( gHasDouble && NULL != func_data->vtbl_ptr->DoubleTestFunc && NULL != func_data->dfunc.p )
+        {
+            //Disable fast-relaxed-math for double precision floating-point
+            int testFastRelaxedTmp = gTestFastRelaxed;
+            gTestFastRelaxed = 0;
+
+            gTestCount++;
+            vlog( "%3d: ", gTestCount );
+            if( func_data->vtbl_ptr->DoubleTestFunc( func_data, gMTdata )  )
+            {
+                gFailCount++;
+                error++;
+                if( gStopOnError )
+                {
+                    gTestFastRelaxed = testFastRelaxedTmp;
+                    gSkipRestOfTests = true;
+                    return error;
+                }
+            }
+
+            //Re-enable testing fast-relaxed-math mode
+            gTestFastRelaxed = testFastRelaxedTmp;
+        }
+
+#if defined( __APPLE__ )
+        {
+            if( gHasBasicDouble && NULL != func_data->vtbl_ptr->DoubleTestFunc && NULL != func_data->dfunc.p)
+            {
+                //Disable fast-relaxed-math for double precision floating-point
+                int testFastRelaxedTmp = gTestFastRelaxed;
+                gTestFastRelaxed = 0;
+
+                int isBasicTest = 0;
+                for( j = 0; j < gNumBasicDoubleFuncs; j++ ) {
+                    if( 0 == strcmp(gBasicDoubleFuncs[j], func_data->name ) ) {
+                        isBasicTest = 1;
+                        break;
+                    }
+                }
+                if (isBasicTest) {
+                    gTestCount++;
+                    if( gTestFloat )
+                        vlog( "    " );
+                    if( func_data->vtbl->DoubleTestFunc( func_data, gMTdata )  )
+                    {
+                        gFailCount++;
+                        error++;
+                        if( gStopOnError )
+                        {
+                            gTestFastRelaxed = testFastRelaxedTmp;
+                            gSkipRestOfTests = true;
+                            return error;
+                        }
+                    }
+                }
+
+                //Re-enable testing fast-relaxed-math mode
+                gTestFastRelaxed = testFastRelaxedTmp;
+            }
+        }
+#endif
+    }
+
+    return error;
+}
+
+int test_acos( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "acos" );
+}
+int test_acosh( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "acosh" );
+}
+int test_acospi( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "acospi" );
+}
+int test_asin( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "asin" );
+}
+int test_asinh( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "asinh" );
+}
+int test_asinpi( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "asinpi" );
+}
+int test_atan( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "atan" );
+}
+int test_atanh( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "atanh" );
+}
+int test_atanpi( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "atanpi" );
+}
+int test_atan2( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "atan2" );
+}
+int test_atan2pi( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "atan2pi" );
+}
+int test_cbrt( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "cbrt" );
+}
+int test_ceil( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "ceil" );
+}
+int test_copysign( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "copysign" );
+}
+int test_cos( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "cos" );
+}
+int test_cosh( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "cosh" );
+}
+int test_cospi( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "cospi" );
+}
+int test_exp( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "exp" );
+}
+int test_exp2( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "exp2" );
+}
+int test_exp10( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "exp10" );
+}
+int test_expm1( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "expm1" );
+}
+int test_fabs( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "fabs" );
+}
+int test_fdim( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "fdim" );
+}
+int test_floor( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "floor" );
+}
+int test_fma( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "fma" );
+}
+int test_fmax( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "fmax" );
+}
+int test_fmin( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "fmin" );
+}
+int test_fmod( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "fmod" );
+}
+int test_fract( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "fract" );
+}
+int test_frexp( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "frexp" );
+}
+int test_hypot( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "hypot" );
+}
+int test_ilogb( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "ilogb" );
+}
+int test_isequal( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "isequal" );
+}
+int test_isfinite( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "isfinite" );
+}
+int test_isgreater( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "isgreater" );
+}
+int test_isgreaterequal( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "isgreaterequal" );
+}
+int test_isinf( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "isinf" );
+}
+int test_isless( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "isless" );
+}
+int test_islessequal( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "islessequal" );
+}
+int test_islessgreater( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "islessgreater" );
+}
+int test_isnan( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "isnan" );
+}
+int test_isnormal( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "isnormal" );
+}
+int test_isnotequal( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "isnotequal" );
+}
+int test_isordered( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "isordered" );
+}
+int test_isunordered( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "isunordered" );
+}
+int test_ldexp( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "ldexp" );
+}
+int test_lgamma( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "lgamma" );
+}
+int test_lgamma_r( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "lgamma_r" );
+}
+int test_log( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "log" );
+}
+int test_log2( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "log2" );
+}
+int test_log10( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "log10" );
+}
+int test_log1p( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "log1p" );
+}
+int test_logb( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "logb" );
+}
+int test_mad( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "mad" );
+}
+int test_maxmag( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "maxmag" );
+}
+int test_minmag( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "minmag" );
+}
+int test_modf( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "modf" );
+}
+int test_nan( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "nan" );
+}
+int test_nextafter( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "nextafter" );
+}
+int test_pow( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "pow" );
+}
+int test_pown( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "pown" );
+}
+int test_powr( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "powr" );
+}
+int test_remainder( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "remainder" );
+}
+int test_remquo( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "remquo" );
+}
+int test_rint( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "rint" );
+}
+int test_rootn( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "rootn" );
+}
+int test_round( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "round" );
+}
+int test_rsqrt( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "rsqrt" );
+}
+int test_signbit( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "signbit" );
+}
+int test_sin( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "sin" );
+}
+int test_sincos( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "sincos" );
+}
+int test_sinh( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "sinh" );
+}
+int test_sinpi( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "sinpi" );
+}
+int test_sqrt( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "sqrt" );
+}
+int test_sqrt_cr( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "sqrt_cr" );
+}
+int test_tan( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "tan" );
+}
+int test_tanh( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "tanh" );
+}
+int test_tanpi( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "tanpi" );
+}
+int test_trunc( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "trunc" );
+}
+int test_half_cos( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_cos" );
+}
+int test_half_divide( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_divide" );
+}
+int test_half_exp( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_exp" );
+}
+int test_half_exp2( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_exp2" );
+}
+int test_half_exp10( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_exp10" );
+}
+int test_half_log( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_log" );
+}
+int test_half_log2( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_log2" );
+}
+int test_half_log10( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_log10" );
+}
+int test_half_powr( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_powr" );
+}
+int test_half_recip( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_recip" );
+}
+int test_half_rsqrt( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_rsqrt" );
+}
+int test_half_sin( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_sin" );
+}
+int test_half_sqrt( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_sqrt" );
+}
+int test_half_tan( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "half_tan" );
+}
+int test_add( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "add" );
+}
+int test_subtract( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "subtract" );
+}
+int test_divide( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "divide" );
+}
+int test_divide_cr( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "divide_cr" );
+}
+int test_multiply( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "multiply" );
+}
+int test_assignment( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "assignment" );
+}
+int test_not( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "not" );
+}
+
+basefn basefn_list[] = {
+    test_acos,
+    test_acosh,
+    test_acospi,
+    test_asin,
+    test_asinh,
+    test_asinpi,
+    test_atan,
+    test_atanh,
+    test_atanpi,
+    test_atan2,
+    test_atan2pi,
+    test_cbrt,
+    test_ceil,
+    test_copysign,
+    test_cos,
+    test_cosh,
+    test_cospi,
+    test_exp,
+    test_exp2,
+    test_exp10,
+    test_expm1,
+    test_fabs,
+    test_fdim,
+    test_floor,
+    test_fma,
+    test_fmax,
+    test_fmin,
+    test_fmod,
+    test_fract,
+    test_frexp,
+    test_hypot,
+    test_ilogb,
+    test_isequal,
+    test_isfinite,
+    test_isgreater,
+    test_isgreaterequal,
+    test_isinf,
+    test_isless,
+    test_islessequal,
+    test_islessgreater,
+    test_isnan,
+    test_isnormal,
+    test_isnotequal,
+    test_isordered,
+    test_isunordered,
+    test_ldexp,
+    test_lgamma,
+    test_lgamma_r,
+    test_log,
+    test_log2,
+    test_log10,
+    test_log1p,
+    test_logb,
+    test_mad,
+    test_maxmag,
+    test_minmag,
+    test_modf,
+    test_nan,
+    test_nextafter,
+    test_pow,
+    test_pown,
+    test_powr,
+    test_remainder,
+    test_remquo,
+    test_rint,
+    test_rootn,
+    test_round,
+    test_rsqrt,
+    test_signbit,
+    test_sin,
+    test_sincos,
+    test_sinh,
+    test_sinpi,
+    test_sqrt,
+    test_sqrt_cr,
+    test_tan,
+    test_tanh,
+    test_tanpi,
+    test_trunc,
+    test_half_cos,
+    test_half_divide,
+    test_half_exp,
+    test_half_exp2,
+    test_half_exp10,
+    test_half_log,
+    test_half_log2,
+    test_half_log10,
+    test_half_powr,
+    test_half_recip,
+    test_half_rsqrt,
+    test_half_sin,
+    test_half_sqrt,
+    test_half_tan,
+    test_add,
+    test_subtract,
+    test_divide,
+    test_divide_cr,
+    test_multiply,
+    test_assignment,
+    test_not,
+};
+
+const char *basefn_names[] = {
+    "acos",
+    "acosh",
+    "acospi",
+    "asin",
+    "asinh",
+    "asinpi",
+    "atan",
+    "atanh",
+    "atanpi",
+    "atan2",
+    "atan2pi",
+    "cbrt",
+    "ceil",
+    "copysign",
+    "cos",
+    "cosh",
+    "cospi",
+    "exp",
+    "exp2",
+    "exp10",
+    "expm1",
+    "fabs",
+    "fdim",
+    "floor",
+    "fma",
+    "fmax",
+    "fmin",
+    "fmod",
+    "fract",
+    "frexp",
+    "hypot",
+    "ilogb",
+    "isequal",
+    "isfinite",
+    "isgreater",
+    "isgreaterequal",
+    "isinf",
+    "isless",
+    "islessequal",
+    "islessgreater",
+    "isnan",
+    "isnormal",
+    "isnotequal",
+    "isordered",
+    "isunordered",
+    "ldexp",
+    "lgamma",
+    "lgamma_r",
+    "log",
+    "log2",
+    "log10",
+    "log1p",
+    "logb",
+    "mad",
+    "maxmag",
+    "minmag",
+    "modf",
+    "nan",
+    "nextafter",
+    "pow",
+    "pown",
+    "powr",
+    "remainder",
+    "remquo",
+    "rint",
+    "rootn",
+    "round",
+    "rsqrt",
+    "signbit",
+    "sin",
+    "sincos",
+    "sinh",
+    "sinpi",
+    "sqrt",
+    "sqrt_cr",
+    "tan",
+    "tanh",
+    "tanpi",
+    "trunc",
+    "half_cos",
+    "half_divide",
+    "half_exp",
+    "half_exp2",
+    "half_exp10",
+    "half_log",
+    "half_log2",
+    "half_log10",
+    "half_powr",
+    "half_recip",
+    "half_rsqrt",
+    "half_sin",
+    "half_sqrt",
+    "half_tan",
+    "add",
+    "subtract",
+    "divide",
+    "divide_cr",
+    "multiply",
+    "assignment",
+    "not",
+};
+
+ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
+
+const int num_fns = sizeof(basefn_names) / sizeof(char *);
+
 #pragma mark -
 
 int main (int argc, const char * argv[])
 {
-    unsigned int i, j, error = 0;
+    int error;
 
     test_start();
     argc = parseCustomParam(argc, argv);
@@ -187,7 +959,7 @@ int main (int argc, const char * argv[])
             vlog( "   \t                                        ");
         if( gWimpyMode )
             vlog( "   " );
-        for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
+        for( int i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
             vlog( "\t  float%s", sizeNames[i] );
     }
     else
@@ -201,147 +973,21 @@ int main (int argc, const char * argv[])
 
     vlog( "\n-----------------------------------------------------------------------------------------------------------\n" );
 
-    uint32_t start = 0;
-    if( gStartTestNumber > (int) start )
+    gMTdata = init_genrand( gRandomSeed );
+    if( gEndTestNumber == 0 )
     {
-        vlog( "Skipping to test %d...\n", gStartTestNumber );
-        start = gStartTestNumber;
+        gEndTestNumber = functionListCount;
     }
-
-    uint32_t stop = (uint32_t) functionListCount;
-    MTdata d = init_genrand( gRandomSeed );
-    if( gStartTestNumber <= gEndTestNumber && -1 != gEndTestNumber && (int) functionListCount > gEndTestNumber + 1)
-        stop = gEndTestNumber + 1;
 
     FPU_mode_type oldMode;
     DisableFTZ( &oldMode );
 
-    for( i = start; i < stop; i++ )
-    {
-        const Func *f = functionList + i;
-
-        // If the user passed a list of functions to run, make sure we are in that list
-        if( gTestNameCount )
-        {
-            for( j = 0; j < gTestNameCount; j++ )
-                if( 0 == strcmp(gTestNames[j], f->name ) )
-                    break;
-
-            // If this function doesn't match any on the list skip to the next function
-            if( j == gTestNameCount )
-                continue;
-        }
-
-        // if correctly rounded divide & sqrt are supported by the implementation
-        // then test it; otherwise skip the test
-        if (!strcmp(f->name, "sqrt_cr") || !strcmp(f->name, "divide_cr"))
-        {
-            if(( gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT ) == 0 )
-                continue;
-
-        }
-
-
-        {
-            extern int my_ilogb(double);
-            if( 0 == strcmp( "ilogb", f->name) )
-                InitILogbConstants();
-
-            if ( gTestFastRelaxed )
-            {
-                if( f->relaxed )
-                {
-                    gTestCount++;
-                    vlog( "%3d: ", gTestCount );
-                    if( f->vtbl->TestFunc( f, d )  )
-                    {
-                        gFailCount++;
-                        error++;
-                        if( gStopOnError )
-                            break;
-                    }
-                }
-                }
-
-            if( gTestFloat )
-            {
-                int testFastRelaxedTmp = gTestFastRelaxed;
-                gTestFastRelaxed = 0;
-                gTestCount++;
-                vlog( "%3d: ", gTestCount );
-                if( f->vtbl->TestFunc( f, d )  )
-                {
-                    gFailCount++;
-                    error++;
-                    if( gStopOnError )
-                    {
-                        gTestFastRelaxed = testFastRelaxedTmp;
-                        break;
-                    }
-                }
-                gTestFastRelaxed = testFastRelaxedTmp;
-            }
-
-            if( gHasDouble && NULL != f->vtbl->DoubleTestFunc && NULL != f->dfunc.p )
-            {
-                //Disable fast-relaxed-math for double precision floating-point
-                int testFastRelaxedTmp = gTestFastRelaxed;
-                gTestFastRelaxed = 0;
-
-                gTestCount++;
-                vlog( "%3d: ", gTestCount );
-                if( f->vtbl->DoubleTestFunc( f, d )  )
-                {
-                    gFailCount++;
-                    error++;
-                    if( gStopOnError )
-                        break;
-                }
-
-                //Re-enable testing fast-relaxed-math mode
-                gTestFastRelaxed = testFastRelaxedTmp;
-            }
-
-#if defined( __APPLE__ )
-            {
-                if( gHasBasicDouble && NULL != f->vtbl->DoubleTestFunc && NULL != f->dfunc.p)
-                {
-                    //Disable fast-relaxed-math for double precision floating-point
-                    int testFastRelaxedTmp = gTestFastRelaxed;
-                    gTestFastRelaxed = 0;
-
-                    int isBasicTest = 0;
-                    for( j = 0; j < gNumBasicDoubleFuncs; j++ ) {
-                        if( 0 == strcmp(gBasicDoubleFuncs[j], f->name ) ) {
-                            isBasicTest = 1;
-                            break;
-                        }
-                    }
-                    if (isBasicTest) {
-                        gTestCount++;
-                        if( gTestFloat )
-                            vlog( "    " );
-                        if( f->vtbl->DoubleTestFunc( f, d )  )
-                        {
-                            gFailCount++;
-                            error++;
-                            if( gStopOnError )
-                                break;
-                        }
-                    }
-
-                    //Re-enable testing fast-relaxed-math mode
-                    gTestFastRelaxed = testFastRelaxedTmp;
-                }
-            }
-#endif
-        }
-    }
+    int ret = parseAndCallCommandLineTests( gTestNameCount, gTestNames, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
 
     RestoreFPState( &oldMode );
 
-    free_mtdata(d); d = NULL;
-    vlog( "\ndone.\n" );
+    free_mtdata(gMTdata);
+    free(gTestNames);
 
     int error_code = clFinish(gQueue);
     if (error_code)
@@ -350,16 +996,16 @@ int main (int argc, const char * argv[])
     if (gFailCount == 0)
     {
         if (gTestCount > 1)
-            vlog("PASSED %d of %d tests.\n", gTestCount, gTestCount);
+            vlog("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
         else
-            vlog("PASSED test.\n");
+            vlog("PASSED sub-test.\n");
     }
     else if (gFailCount > 0)
     {
         if (gTestCount > 1)
-            vlog_error("FAILED %d of %d tests.\n", gFailCount, gTestCount);
+            vlog_error("FAILED %d of %d sub-tests.\n", gFailCount, gTestCount);
         else
-            vlog_error("FAILED test.\n");
+            vlog_error("FAILED sub-test.\n");
     }
 
     ReleaseCL();
@@ -372,22 +1018,21 @@ int main (int argc, const char * argv[])
     vlog( "time: %f s\n", time );
 #endif
 
-
-    if (gFailCount > 0)
-        return -1;
-    return error;
+    return ret;
 }
 
 static int ParseArgs( int argc, const char **argv )
 {
     int i;
     gTestNames = (const char**) calloc( argc - 1, sizeof( char*) );
-    gTestNameCount = 0;
+    if( NULL == gTestNames )
+    {
+        vlog( "Failed to allocate memory for gTestNames array.\n" );
+        return 1;
+    }
+    gTestNames[0] = argv[0];
+    gTestNameCount = 1;
     int singleThreaded = 0;
-
-    // Parse arg list
-    if( NULL == gTestNames && argc > 1 )
-        return -1;
 
     { // Extract the app name
         strncpy( appName, argv[0], MAXPATHLEN );
@@ -565,7 +1210,7 @@ static int ParseArgs( int argc, const char **argv )
             long number = strtol( arg, &t, 0 );
             if( t != arg )
             {
-                if( -1 == gStartTestNumber )
+                if( 0 == gStartTestNumber )
                     gStartTestNumber = (int32_t) number;
                 else
                     gEndTestNumber = gStartTestNumber + (int32_t) number;
@@ -588,19 +1233,18 @@ static int ParseArgs( int argc, const char **argv )
                 if (k >= functionListCount)
                 {
                     //It may be a device type or rundomize parameter
-                  if( 0 == strcmp(arg, "CL_DEVICE_TYPE_CPU")) {
+                    if( 0 == strcmp(arg, "CL_DEVICE_TYPE_CPU")) {
                         gDeviceType = CL_DEVICE_TYPE_CPU;
-                } else if( 0 == strcmp(arg, "CL_DEVICE_TYPE_GPU")) {
+                    } else if( 0 == strcmp(arg, "CL_DEVICE_TYPE_GPU")) {
                         gDeviceType = CL_DEVICE_TYPE_GPU;
-                } else if( 0 == strcmp(arg, "CL_DEVICE_TYPE_ACCELERATOR")) {
+                    } else if( 0 == strcmp(arg, "CL_DEVICE_TYPE_ACCELERATOR")) {
                         gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-                } else if( 0 == strcmp(arg, "randomize")) {
+                    } else if( 0 == strcmp(arg, "randomize")) {
                         gRandomSeed = (cl_uint) time( NULL );
                         vlog( "\nRandom seed: %u.\n", gRandomSeed );
-                } else {
-                        vlog_error("\nInvalid function name: %s\n", arg);
-                              test_finish();
-                              exit(-1);
+                    } else {
+                        gTestNames[gTestNameCount] = arg;
+                        gTestNameCount++;
                     }
                 }
             }
@@ -764,10 +1408,46 @@ static void PrintUsage( void )
     vlog( "\n" );
 }
 
-static void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
+static void CL_CALLBACK bruteforce_notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
 {
     vlog( "%s  (%p, %zd, %p)\n", errinfo, private_info, cb, user_data );
 }
+
+static void * align_malloc(size_t size, size_t alignment)
+{
+#if defined(_WIN32) && defined(_MSC_VER)
+    return _aligned_malloc(size, alignment);
+#elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
+    void * ptr = NULL;
+#if defined(__ANDROID__)
+    ptr = memalign(alignment, size);
+    if( ptr )
+        return ptr;
+#else
+    if (0 == posix_memalign(&ptr, alignment, size))
+        return ptr;
+#endif
+    return NULL;
+#elif defined(__MINGW32__)
+    return __mingw_aligned_malloc(size, alignment);
+#else
+#error "Please add support OS for aligned malloc"
+#endif
+}
+
+void   align_free(void * ptr)
+{
+#if defined(_WIN32) && defined(_MSC_VER)
+    _aligned_free(ptr);
+#elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
+    return  free(ptr);
+#elif defined(__MINGW32__)
+    return __mingw_aligned_free(ptr);
+#else
+    #error "Please add support OS for aligned free"
+#endif
+}
+
 
 static int InitCL( void )
 {
@@ -937,7 +1617,7 @@ static int InitCL( void )
     else
         isEmbedded = NULL != strstr(profile, "EMBEDDED_PROFILE"); // we will verify this with a kernel below
 
-    gContext = clCreateContext( NULL, 1, &gDevice, notify_callback, NULL, &error );
+    gContext = clCreateContext( NULL, 1, &gDevice, bruteforce_notify_callback, NULL, &error );
     if( NULL == gContext || error )
     {
         vlog_error( "clCreateContext failed. (%d) \n", error );
@@ -1095,7 +1775,7 @@ static int InitCL( void )
         vlog( "\t\t         All double results that do not match the reference result have their reported\n" );
         vlog( "\t\t         error inflated by 0.5 ulps to account for the fact that this system\n" );
         vlog( "\t\t         can not accurately represent the right result to an accuracy closer\n" );
-        vlog( "\t\t         than half an ulp. See comments in Ulp_Error_Double() for more details.\n\n" );
+        vlog( "\t\t         than half an ulp. See comments in Bruteforce_Ulp_Error_Double() for more details.\n\n" );
     }
 #if defined( __APPLE__ )
     vlog( "\tTesting basic double precision? %s\n", no_yes[0 != gHasBasicDouble] );
@@ -1175,12 +1855,19 @@ int InitILogbConstants( void )
     "   out[1] = FP_ILOGBNAN;\n"
     "}\n";
 
-    cl_program query;
-    error = create_single_kernel_helper(gContext, &query, NULL, 1, &kernel, NULL);
-    if (error != CL_SUCCESS)
+    cl_program query = clCreateProgramWithSource(gContext, 1, &kernel, NULL, &error);
+    if( NULL == query || error)
     {
-        log_error("Error: Unable to build program to get FP_ILOGB0 and FP_ILOGBNAN for the device.\n");
-        return -1;
+        vlog_error( "Error: Unable to create program to get FP_ILOGB0 and FP_ILOGBNAN for the device. (%d)", error );
+        return error;
+    }
+    if(( error = clBuildProgram( query, 1, &gDevice, NULL, NULL, NULL ) ))
+    {
+        vlog_error( "Error: Unable to build program to get FP_ILOGB0 and FP_ILOGBNAN for the device. Err = %d\n", error );
+        char log_msg[2048] = "";
+        clGetProgramBuildInfo(query, gDevice, CL_PROGRAM_BUILD_LOG, sizeof( log_msg), log_msg, NULL);
+        vlog_error( "Log:\n%s\n", log_msg );
+        return error;
     }
 
     cl_kernel k = clCreateKernel( query, "GetILogBConstants", &error );
@@ -1230,13 +1917,19 @@ int IsTininessDetectedBeforeRounding( void )
     "   out[0] = a * b;\n"
     "}\n";
 
-    cl_program query;
-
-    error = create_single_kernel_helper(gContext, &query, NULL, 1, &kernel, NULL);
-    if (error != CL_SUCCESS)
+    cl_program query = clCreateProgramWithSource(gContext, 1, &kernel, NULL, &error);
+    if( NULL == query || error)
     {
-        log_error("Error: Unable to build program to detect how tininess is detected  for the device.\n");
-        return -1;
+        vlog_error( "Error: Unable to create program to detect how tininess is detected for the device. (%d)", error );
+        return error;
+    }
+    if(( error = clBuildProgram( query, 1, &gDevice, NULL, NULL, NULL ) ))
+    {
+        vlog_error( "Error: Unable to build program to detect how tininess is detected  for the device. Err = %d\n", error );
+        char log_msg[2048] = "";
+        clGetProgramBuildInfo(query, gDevice, CL_PROGRAM_BUILD_LOG, sizeof( log_msg), log_msg, NULL);
+        vlog_error( "Log:\n%s\n", log_msg );
+        return error;
     }
 
     cl_kernel k = clCreateKernel( query, "IsTininessDetectedBeforeRounding", &error );
@@ -1292,11 +1985,25 @@ int MakeKernel( const char **c, cl_uint count, const char *name, cl_kernel *k, c
       strcat(options, " -cl-fast-relaxed-math");
     }
 
-    error = create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
-    if (error != CL_SUCCESS)
+    *p = clCreateProgramWithSource( gContext, count, c, NULL, &error );
+    if( NULL == *p || error )
     {
-        log_error("create_single_kernel_helper failed\n");
+        vlog_error( "\t\tFAILED -- Failed to create program. (%d)\n", error );
         return -1;
+    }
+
+    // build it
+    if( (error = clBuildProgram( *p, 1, &gDevice, options, NULL, NULL )) )
+    {
+        char    buffer[2048] = "";
+
+        vlog_error("\t\tFAILED -- clBuildProgram() failed: (%d)\n", error);
+        clGetProgramBuildInfo(*p, gDevice, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
+        vlog_error("Log: %s\n", buffer);
+
+        clReleaseProgram( *p );
+        *p = NULL;
+        return error;
     }
 
     *k = clCreateKernel( *p, name, &error );
@@ -1337,11 +2044,25 @@ int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel
       strcat(options, " -cl-fast-relaxed-math");
     }
 
-    error = create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
-    if (error != CL_SUCCESS)
+    *p = clCreateProgramWithSource( gContext, count, c, NULL, &error );
+    if( NULL == *p || error )
     {
-        log_error("create_single_kernel_helper failed\n");
+        vlog_error( "\t\tFAILED -- Failed to create program. (%d)\n", error );
         return -1;
+    }
+
+    // build it
+    if( (error = clBuildProgram( *p, 1, &gDevice, options, NULL, NULL )) )
+    {
+        char    buffer[2048] = "";
+
+        vlog_error("\t\tFAILED -- clBuildProgram() failed: (%d)\n", error);
+        clGetProgramBuildInfo(*p, gDevice, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
+        vlog_error("Log: %s\n", buffer);
+
+        clReleaseProgram( *p );
+        *p = NULL;
+        return error;
     }
 
     memset( k, 0, kernel_count * sizeof( *k) );
@@ -1375,13 +2096,19 @@ static int IsInRTZMode( void )
     "   out[0] = (a + 0x1.fffffep-1f == a) && (b - 0x1.fffffep-1f == b);\n"
     "}\n";
 
-    cl_program query;
-
-    error = create_single_kernel_helper(gContext, &query, NULL, 1, &kernel, NULL);
-    if (error != CL_SUCCESS)
+    cl_program query = clCreateProgramWithSource(gContext, 1, &kernel, NULL, &error);
+    if( NULL == query || error)
     {
-        log_error("Error: Unable to build program to detect RTZ mode for the device.\n");
-        return -1;
+        vlog_error( "Error: Unable to create program to detect RTZ mode for the device. (%d)", error );
+        return error;
+    }
+    if(( error = clBuildProgram( query, 1, &gDevice, NULL, NULL, NULL ) ))
+    {
+        vlog_error( "Error: Unable to build program to detect RTZ mode for the device. Err = %d\n", error );
+        char log_msg[2048] = "";
+        clGetProgramBuildInfo(query, gDevice, CL_PROGRAM_BUILD_LOG, sizeof( log_msg), log_msg, NULL);
+        vlog_error( "Log:\n%s\n", log_msg );
+        return error;
     }
 
     cl_kernel k = clCreateKernel( query, "GetRoundingMode", &error );
@@ -1421,6 +2148,104 @@ static int IsInRTZMode( void )
 
 const char *sizeNames[ VECTOR_SIZE_COUNT] = { "", "2", "3", "4", "8", "16" };
 const int  sizeValues[ VECTOR_SIZE_COUNT] = { 1, 2, 3, 4, 8, 16 };
+
+// TODO: There is another version of Ulp_Error_Double defined in test_common/harness/errorHelpers.c
+float Bruteforce_Ulp_Error_Double( double test, long double reference )
+{
+//Check for Non-power-of-two and NaN
+
+  // Note: This function presumes that someone has already tested whether the result is correctly,
+  // rounded before calling this function.  That test:
+  //
+  //    if( (float) reference == test )
+  //        return 0.0f;
+  //
+  // would ensure that cases like fabs(reference) > FLT_MAX are weeded out before we get here.
+  // Otherwise, we'll return inf ulp error here, for what are otherwise correctly rounded
+  // results.
+
+  // Deal with long double = double
+  // On most systems long double is a higher precision type than double. They provide either
+  // a 80-bit or greater floating point type, or they provide a head-tail double double format.
+  // That is sufficient to represent the accuracy of a floating point result to many more bits
+  // than double and we can calculate sub-ulp errors. This is the standard system for which this
+  // test suite is designed.
+  //
+  // On some systems double and long double are the same thing. Then we run into a problem,
+  // because our representation of the infinitely precise result (passed in as reference above)
+  // can be off by as much as a half double precision ulp itself.  In this case, we inflate the
+  // reported error by half an ulp to take this into account.  A more correct and permanent fix
+  // would be to undertake refactoring the reference code to return results in this format:
+  //
+  //    typedef struct DoubleReference
+  //    { // true value = correctlyRoundedResult + ulps * ulp(correctlyRoundedResult)        (infinitely precise)
+  //        double  correctlyRoundedResult;     // as best we can
+  //        double  ulps;                       // plus a fractional amount to account for the difference
+  //    }DoubleReference;                       //     between infinitely precise result and correctlyRoundedResult, in units of ulps.
+  //
+  // This would provide a useful higher-than-double precision format for everyone that we can use,
+  // and would solve a few problems with representing absolute errors below DBL_MIN and over DBL_MAX for systems
+  // that use a head to tail double double for long double.
+
+    int x;
+    long double testVal = test;
+
+    // First, handle special reference values
+    if (isinf(reference))
+    {
+    if (reference == testVal)
+        return 0.0f;
+
+    return INFINITY;
+    }
+
+    if (isnan(reference))
+    {
+    if (isnan(testVal))
+        return 0.0f;
+
+    return INFINITY;
+    }
+
+    if ( 0.0L != reference && 0.5L != frexpl(reference, &x) )
+    { // Non-zero and Non-power of two
+
+       // allow correctly rounded results to pass through unmolested. (We might add error to it below.)
+       // There is something of a performance optimization here.
+        if( testVal == reference )
+            return 0.0f;
+
+        // The unbiased exponent of the ulp unit place
+        int ulp_exp = DBL_MANT_DIG - 1 - MAX( ilogbl( reference), DBL_MIN_EXP-1 );
+
+        // Scale the exponent of the error
+        float result = (float) scalbnl( testVal - reference, ulp_exp );
+
+        // account for rounding error in reference result on systems that do not have a higher precision floating point type (see above)
+        if( sizeof(long double) == sizeof( double ) )
+            result += copysignf( 0.5f, result);
+
+        return result;
+    }
+
+    // reference is a normal power of two or a zero
+    // The unbiased exponent of the ulp unit place
+    int ulp_exp =  DBL_MANT_DIG - 1 - MAX( ilogbl( reference) - 1, DBL_MIN_EXP-1 );
+
+   // allow correctly rounded results to pass through unmolested. (We might add error to it below.)
+   // There is something of a performance optimization here too.
+    if( testVal == reference )
+        return 0.0f;
+
+    // Scale the exponent of the error
+    float result = (float) scalbnl( testVal - reference, ulp_exp );
+
+    // account for rounding error in reference result on systems that do not have a higher precision floating point type (see above)
+    if( sizeof(long double) == sizeof( double ) )
+        result += copysignf( 0.5f, result);
+
+    return result;
+}
 
 float Abs_Error( float test, double reference )
 {
@@ -1530,25 +2355,6 @@ cl_uint RoundUpToNextPowerOfTwo( cl_uint x )
 
     return x+x;
 }
-
-#if !defined( __APPLE__ )
-void memset_pattern4(void *dest, const void *src_pattern, size_t bytes )
-{
-  uint32_t pat = ((uint32_t*) src_pattern)[0];
-  size_t count = bytes / 4;
-  size_t i;
-  uint32_t *d = (uint32_t*)dest;
-
-  for( i = 0; i < count; i++ )
-    d[i] = pat;
-
-  d += i;
-
-  bytes &= 3;
-  if( bytes )
-    memcpy( d, src_pattern, bytes );
-}
-#endif
 
 void TestFinishAtExit(void) {
   test_finish();

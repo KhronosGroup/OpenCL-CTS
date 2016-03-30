@@ -567,7 +567,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d)
                 {
                     double test = ((double*) q)[j];
                     long double correct = f->dfunc.f_u( s[j] );
-                    float err = Ulp_Error_Double(test, correct);
+                    float err = Bruteforce_Ulp_Error_Double(test, correct);
                     int fail = ! (fabsf(err) <= f->double_ulps);
 
                     // half_sin/cos/tan are only valid between +-2**16, Inf, NaN
