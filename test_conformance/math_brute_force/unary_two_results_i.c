@@ -633,7 +633,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
                     double test = ((double*) q)[j];
                     int correct2 = INT_MIN;
                     long double correct = f->dfunc.f_fpI( s[j], &correct2 );
-                    float err = Ulp_Error_Double( test, correct );
+                    float err = Bruteforce_Ulp_Error_Double( test, correct );
                     cl_long iErr = (long long) q2[j] - (long long) correct2;
                     int fail = ! (fabsf(err) <= f->double_ulps && abs_cl_long( iErr ) <= maxiError );
                     if( ftz )
@@ -652,8 +652,8 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
                             int correct5, correct6;
                             long double correct3 = f->dfunc.f_fpI( 0.0, &correct5 );
                             long double correct4 = f->dfunc.f_fpI( -0.0, &correct6 );
-                            float err2 = Ulp_Error_Double( test, correct3  );
-                            float err3 = Ulp_Error_Double( test, correct4  );
+                            float err2 = Bruteforce_Ulp_Error_Double( test, correct3  );
+                            float err3 = Bruteforce_Ulp_Error_Double( test, correct4  );
                             cl_long iErr2 = (long long) q2[j] - (long long) correct5;
                             cl_long iErr3 = (long long) q2[j] - (long long) correct6;
 
