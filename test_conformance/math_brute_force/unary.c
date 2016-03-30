@@ -903,7 +903,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
             {
                 cl_double test = ((cl_double*) q)[j];
                 long double correct = func.f_f( s[j] );
-                float err = Ulp_Error_Double( test, correct );
+                float err = Bruteforce_Ulp_Error_Double( test, correct );
                 int fail = ! (fabsf(err) <= ulps);
 
                 if( fail )
@@ -923,8 +923,8 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
                         {
                             long double correct2 = func.f_f( 0.0L );
                             long double correct3 = func.f_f( -0.0L );
-                            float err2 = Ulp_Error_Double( test, correct2  );
-                            float err3 = Ulp_Error_Double( test, correct3  );
+                            float err2 = Bruteforce_Ulp_Error_Double( test, correct2  );
+                            float err3 = Bruteforce_Ulp_Error_Double( test, correct3  );
                             fail =  fail && ((!(fabsf(err2) <= ulps)) && (!(fabsf(err3) <= ulps)));
                             if( fabsf( err2 ) < fabsf(err ) )
                                 err = err2;
