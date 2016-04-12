@@ -24,48 +24,27 @@
 #include <unistd.h>
 #endif
 
+test_definition test_list[] = {
+    ADD_TEST( atomic_add ),
+    ADD_TEST( atomic_sub ),
+    ADD_TEST( atomic_xchg ),
+    ADD_TEST( atomic_min ),
+    ADD_TEST( atomic_max ),
+    ADD_TEST( atomic_inc ),
+    ADD_TEST( atomic_dec ),
+    ADD_TEST( atomic_cmpxchg ),
+    ADD_TEST( atomic_and ),
+    ADD_TEST( atomic_or ),
+    ADD_TEST( atomic_xor ),
 
-basefn    basefn_list[] = {
-            test_atomic_add,
-            test_atomic_sub,
-            test_atomic_xchg,
-            test_atomic_min,
-            test_atomic_max,
-            test_atomic_inc,
-            test_atomic_dec,
-            test_atomic_cmpxchg,
-            test_atomic_and,
-            test_atomic_or,
-            test_atomic_xor,
-
-            test_atomic_add_index,
-            test_atomic_add_index_bin
+    ADD_TEST( atomic_add_index ),
+    ADD_TEST( atomic_add_index_bin ),
 };
 
-const char    *basefn_names[] = {
-            "atomic_add",
-            "atomic_sub",
-            "atomic_xchg",
-            "atomic_min",
-            "atomic_max",
-            "atomic_inc",
-            "atomic_dec",
-            "atomic_cmpxchg",
-            "atomic_and",
-            "atomic_or",
-            "atomic_xor",
-
-            "atomic_add_index",
-            "atomic_add_index_bin",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, false, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
-
 

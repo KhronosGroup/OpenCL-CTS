@@ -379,7 +379,7 @@ static int basicFilter( int w, int h, int nChannels, uchar *inptr, uchar *outptr
 }    // end of basicFilter()
 
 
-int execute( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_execute( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     uchar    *inptr;
     uchar    *outptr[2];

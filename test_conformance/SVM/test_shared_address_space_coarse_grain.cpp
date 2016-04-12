@@ -271,12 +271,12 @@ int shared_address_space_coarse_grain(cl_device_id deviceID, cl_context context2
   return 0;
 }
 
-int test_shared_address_space_coarse_grain_old_api(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+int test_svm_shared_address_space_coarse_grain_old_api(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
 {
   return shared_address_space_coarse_grain(deviceID, context2, queue, num_elements, CL_FALSE);
 }
 
-int test_shared_address_space_coarse_grain_new_api(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+int test_svm_shared_address_space_coarse_grain_new_api(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
 {
   return shared_address_space_coarse_grain(deviceID, context2, queue, num_elements, CL_TRUE);
 }

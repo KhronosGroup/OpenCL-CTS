@@ -398,7 +398,7 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
 
 
 
-int test_multiple_contexts_same_device(cl_device_id deviceID, size_t maxCount, size_t minCount )
+int test_context_multiple_contexts_same_device(cl_device_id deviceID, size_t maxCount, size_t minCount )
 {
     size_t i, j;
     cl_int err = CL_SUCCESS;
@@ -507,23 +507,23 @@ exit:
 //  sane limit, currently 200), attempting to use each along the way. We keep track of how many we could make before
 //  a failure occurred.   We then free everything and attempt to go do it again a few times.  If you are able to make
 //  that many contexts 5 times over, then you pass.
-int test_multiple_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_context_multiple_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_multiple_contexts_same_device( deviceID, 200, 1 );
+    return test_context_multiple_contexts_same_device( deviceID, 200, 1 );
 }
 
-int test_two_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_context_two_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_multiple_contexts_same_device( deviceID, 2, 2 );
+    return test_context_multiple_contexts_same_device( deviceID, 2, 2 );
 }
 
-int test_three_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_context_three_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_multiple_contexts_same_device( deviceID, 3, 3 );
+    return test_context_multiple_contexts_same_device( deviceID, 3, 3 );
 }
 
-int test_four_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_context_four_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_multiple_contexts_same_device( deviceID, 4, 4 );
+    return test_context_multiple_contexts_same_device( deviceID, 4, 4 );
 }
 

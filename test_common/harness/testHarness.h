@@ -25,6 +25,18 @@
 extern "C" {
 #endif
 
+#define ADD_TEST(fn) {test_##fn, #fn}
+#define NOT_IMPLEMENTED_TEST(fn) {NULL, #fn}
+
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+typedef struct test_definition
+{
+    basefn func;
+    const char* name;
+} test_definition;
+
+
 typedef enum test_status
 {
     TEST_PASS = 0,
@@ -37,39 +49,36 @@ extern cl_uint gRandomSeed;
 
 // Supply a list of functions to test here. This will allocate a CL device, create a context, all that
 // setup work, and then call each function in turn as dictatated by the passed arguments.
-extern int runTestHarness( int argc, const char *argv[], unsigned int num_fns,
-                            basefn fnList[], const char *fnNames[],
-                            int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps );
+extern int runTestHarness( int argc, const char *argv[], int testNum, test_definition testList[],
+                           int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps );
 
 // Device checking function. See runTestHarnessWithCheck. If this function returns anything other than TEST_PASS, the harness exits.
 typedef test_status (*DeviceCheckFn)( cl_device_id device );
 
 // Same as runTestHarness, but also supplies a function that checks the created device for required functionality.
-extern int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
-                              basefn fnList[], const char *fnNames[],
-                              int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps, DeviceCheckFn deviceCheckFn );
+extern int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_definition testList[],
+                                    int imageSupportRequired, int forceNoContextCreation,
+                                    cl_command_queue_properties queueProps, DeviceCheckFn deviceCheckFn );
 
 // The command line parser used by runTestHarness to break up parameters into calls to callTestFunctions
-extern int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id device, unsigned int num_fns,
-                                        basefn *fnList, const char *fnNames[],
-                                        int forceNoContextCreation, cl_command_queue_properties queueProps, int num_elements );
+extern int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id device, int testNum,
+                                         test_definition testList[], int forceNoContextCreation,
+                                         cl_command_queue_properties queueProps, int num_elements );
 
 // Call this function if you need to do all the setup work yourself, and just need the function list called/
 // managed.
-//    functionList is the actual array of functions
-//    functionNames is an array of strings representing the name of each function
-//    functionsToCall is an array of integers (treated as bools) which tell which function is to be called,
-//       each element at index i, corresponds to the element in functionList at index i
-//    numFunctions is the number of elements in the arrays
+//    testList is the data structure that contains test functions and its names
+//    selectedTestList is an array of integers (treated as bools) which tell which function is to be called,
+//       each element at index i, corresponds to the element in testList at index i
+//    testNum is the number of tests in testList and selectedTestList
 //    contextProps are used to create a testing context for each test
 //    deviceToUse and numElementsToUse are all just passed to each test function
-extern int callTestFunctions( basefn functionList[], const char *functionNames[], unsigned char functionsToCall[],
-                              int numFunctions, cl_device_id deviceToUse, int forceNoContextCreation,
+extern int callTestFunctions( test_definition testList[], unsigned char selectedTestList[],
+                              int testNum, cl_device_id deviceToUse, int forceNoContextCreation,
                               int numElementsToUse, cl_command_queue_properties queueProps );
 
 // This function is called by callTestFunctions, once per function, to do setup, call, logging and cleanup
-extern int callSingleTestFunction( basefn functionToCall, const char *functionName,
-                                   cl_device_id deviceToUse, int forceNoContextCreation,
+extern int callSingleTestFunction( test_definition test, cl_device_id deviceToUse, int forceNoContextCreation,
                                    int numElementsToUse, cl_command_queue_properties queueProps );
 
 ///// Miscellaneous steps

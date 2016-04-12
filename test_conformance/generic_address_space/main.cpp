@@ -18,8 +18,8 @@
 #include <iostream>
 
 // basic tests
-extern int test_function_params_get_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_function_params_to_address_space(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_function_get_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_function_to_address_space(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_variable_get_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_variable_to_address_space(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_casting(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
@@ -40,59 +40,32 @@ extern int test_generic_advanced_casting(cl_device_id deviceID, cl_context conte
 extern int test_generic_ptr_to_host_mem(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_max_number_of_params(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-basefn basefn_list[] = {
+test_definition test_list[] = {
     // basic tests
-    test_function_params_get_fence,
-    test_function_params_to_address_space,
-    test_variable_get_fence,
-    test_variable_to_address_space,
-    test_casting,
-    test_conditional_casting,
-    test_chain_casting,
-    test_ternary_operator_casting,
-    test_language_struct,
-    test_language_union,
-    test_multiple_calls_same_function,
-    test_compare_pointers,
+    ADD_TEST( function_get_fence ),
+    ADD_TEST( function_to_address_space ),
+    ADD_TEST( variable_get_fence ),
+    ADD_TEST( variable_to_address_space ),
+    ADD_TEST( casting ),
+    ADD_TEST( conditional_casting ),
+    ADD_TEST( chain_casting ),
+    ADD_TEST( ternary_operator_casting ),
+    ADD_TEST( language_struct ),
+    ADD_TEST( language_union ),
+    ADD_TEST( multiple_calls_same_function ),
+    ADD_TEST( compare_pointers ),
     // advanced tests
-    test_library_function,
-    test_generic_variable_volatile,
-    test_generic_variable_const,
-    test_generic_variable_gentype,
-    test_builtin_functions,
-    test_generic_advanced_casting,
-    test_generic_ptr_to_host_mem,
-    test_max_number_of_params,
+    ADD_TEST( library_function ),
+    ADD_TEST( generic_variable_volatile ),
+    ADD_TEST( generic_variable_const ),
+    ADD_TEST( generic_variable_gentype ),
+    ADD_TEST( builtin_functions ),
+    ADD_TEST( generic_advanced_casting ),
+    ADD_TEST( generic_ptr_to_host_mem ),
+    ADD_TEST( max_number_of_params ),
 };
 
-const char *basefn_names[] = {
-    //basic tests
-    "function_get_fence",
-    "function_to_address_space",
-    "variable_get_fence",
-    "variable_to_address_space",
-    "casting",
-    "conditional_casting",
-    "chain_casting",
-    "ternary_operator_casting",
-    "language_struct",
-    "language_union",
-    "multiple_calls_same_function",
-    "compare_pointers",
-    // advanced tests
-    "library_function",
-    "generic_variable_volatile",
-    "generic_variable_const",
-    "generic_variable_gentype",
-    "builtin_functions",
-    "generic_advanced_casting",
-    "generic_ptr_to_host_mem",
-    "max_number_of_params",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 /*
     Generic Address Space
@@ -102,5 +75,5 @@ int num_fns = sizeof(basefn_names) / sizeof(char *);
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness(argc, argv, num_fns, basefn_list, basefn_names, false, false, NULL);
+    return runTestHarness(argc, argv, test_num, test_list, false, false, NULL);
 }

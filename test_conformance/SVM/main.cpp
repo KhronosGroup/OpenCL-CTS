@@ -269,49 +269,27 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
   return 0;
 }
 
-basefn    basefn_list[] = {
-  test_byte_granularity,
-  test_set_kernel_exec_info_svm_ptrs,
-  test_fine_grain_memory_consistency,
-  test_fine_grain_sync_buffers,
-  test_shared_address_space_fine_grain,
-  test_shared_sub_buffers,
-  test_shared_address_space_fine_grain_buffers,
-  test_allocate_shared_buffer,
-  test_shared_address_space_coarse_grain_old_api,
-  test_shared_address_space_coarse_grain_new_api,
-  test_cross_buffer_pointers_coarse_grain,
-  test_svm_pointer_passing,
-  test_enqueue_api,
-  test_migrate,
+test_definition test_list[] = {
+    ADD_TEST( svm_byte_granularity ),
+    ADD_TEST( svm_set_kernel_exec_info_svm_ptrs ),
+    ADD_TEST( svm_fine_grain_memory_consistency ),
+    ADD_TEST( svm_fine_grain_sync_buffers ),
+    ADD_TEST( svm_shared_address_space_fine_grain ),
+    ADD_TEST( svm_shared_sub_buffers ),
+    ADD_TEST( svm_shared_address_space_fine_grain_buffers ),
+    ADD_TEST( svm_allocate_shared_buffer ),
+    ADD_TEST( svm_shared_address_space_coarse_grain_old_api ),
+    ADD_TEST( svm_shared_address_space_coarse_grain_new_api ),
+    ADD_TEST( svm_cross_buffer_pointers_coarse_grain ),
+    ADD_TEST( svm_pointer_passing ),
+    ADD_TEST( svm_enqueue_api ),
+    ADD_TEST( svm_migrate ),
 };
 
-const char    *basefn_names[] = {
-  "svm_byte_granularity",
-  "svm_set_kernel_exec_info_svm_ptrs",
-  "svm_fine_grain_memory_consistency",
-  "svm_fine_grain_sync_buffers",
-  "svm_shared_address_space_fine_grain",
-  "svm_shared_sub_buffers",
-  "svm_shared_address_space_fine_grain_buffers",
-  "svm_allocate_shared_buffer",
-  "svm_shared_address_space_coarse_grain_old_api",
-  "svm_shared_address_space_coarse_grain_new_api",
-  "svm_cross_buffer_pointers_coarse_grain",
-  "svm_pointer_passing",
-  "svm_enqueue_api",
-  "svm_migrate_mem",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
-
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-  return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, true, 0 );
+  return runTestHarness( argc, argv, test_num, test_list, false, true, 0 );
 }
-
-
 

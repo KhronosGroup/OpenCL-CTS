@@ -178,7 +178,7 @@ int test_mem_read_write_flags( cl_device_id deviceID, cl_context context, cl_com
 }   // end test_mem_read_write()
 
 
-int test_mem_write_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_mem_write_only_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     cl_mem      buffers[1];
     int         *inptr, *outptr;
@@ -288,7 +288,7 @@ int test_mem_write_flags( cl_device_id deviceID, cl_context context, cl_command_
 }   // end test_mem_write()
 
 
-int test_mem_read_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_mem_read_only_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     cl_mem      buffers[2];
     int         *inptr, *outptr;

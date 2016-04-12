@@ -23,86 +23,45 @@
 #include <unistd.h>
 #endif
 
-basefn    basefn_list[] = {
-            test_event_get_execute_status,
-            test_event_get_write_array_status,
-            test_event_get_read_array_status,
-            test_event_get_info,
-            test_event_wait_for_execute,
-            test_event_wait_for_array,
-            test_event_flush,
-            test_event_finish_execute,
-            test_event_finish_array,
-            test_event_release_before_done,
-            test_event_enqueue_marker,
-    #ifdef CL_VERSION_1_2
-            test_event_enqueue_marker_with_list,
-            test_event_enqueue_barrier_with_list,
-    #endif
-
-
-      test_event_waitlist_single_queue,
-      test_event_waitlist_multi_queue,
-      test_event_waitlist_multi_queue_multi_device,
-      test_event_enqueue_wait_for_events_single_queue,
-            test_event_enqueue_wait_for_events_multi_queue,
-            test_event_enqueue_wait_for_events_multi_queue_multi_device,
-      test_event_enqueue_marker_single_queue,
-      test_event_enqueue_marker_multi_queue,
-      test_event_enqueue_marker_multi_queue_multi_device,
-          test_event_enqueue_barrier_single_queue,
-
-            test_waitlists,
-            test_userevents,
-            test_callbacks,
-            test_callbacks_simultaneous,
-            test_userevents_multithreaded,
-};
-
-const char    *basefn_names[] = {
-            "event_get_execute_status",
-            "event_get_write_array_status",
-            "event_get_read_array_status",
-            "event_get_info",
-            "event_wait_for_execute",
-            "event_wait_for_array",
-            "event_flush",
-            "event_finish_execute",
-            "event_finish_array",
-            "event_release_before_done",
-            "event_enqueue_marker",
+test_definition test_list[] = {
+    ADD_TEST( event_get_execute_status ),
+    ADD_TEST( event_get_write_array_status ),
+    ADD_TEST( event_get_read_array_status ),
+    ADD_TEST( event_get_info ),
+    ADD_TEST( event_wait_for_execute ),
+    ADD_TEST( event_wait_for_array ),
+    ADD_TEST( event_flush ),
+    ADD_TEST( event_finish_execute ),
+    ADD_TEST( event_finish_array ),
+    ADD_TEST( event_release_before_done ),
+    ADD_TEST( event_enqueue_marker ),
 #ifdef CL_VERSION_1_2
-    "event_enqueue_marker_with_event_list",
-    "event_enqueue_barrier_with_event_list",
+    ADD_TEST( event_enqueue_marker_with_event_list ),
+    ADD_TEST( event_enqueue_barrier_with_event_list ),
 #endif
 
-      "out_of_order_event_waitlist_single_queue",
-      "out_of_order_event_waitlist_multi_queue",
-      "out_of_order_event_waitlist_multi_queue_multi_device",
-      "out_of_order_event_enqueue_wait_for_events_single_queue",
-      "out_of_order_event_enqueue_wait_for_events_multi_queue",
-      "out_of_order_event_enqueue_wait_for_events_multi_queue_multi_device",
-      "out_of_order_event_enqueue_marker_single_queue",
-      "out_of_order_event_enqueue_marker_multi_queue",
-      "out_of_order_event_enqueue_marker_multi_queue_multi_device",
-      "out_of_order_event_enqueue_barrier_single_queue",
+    ADD_TEST( out_of_order_event_waitlist_single_queue ),
+    ADD_TEST( out_of_order_event_waitlist_multi_queue ),
+    ADD_TEST( out_of_order_event_waitlist_multi_queue_multi_device ),
+    ADD_TEST( out_of_order_event_enqueue_wait_for_events_single_queue ),
+    ADD_TEST( out_of_order_event_enqueue_wait_for_events_multi_queue ),
+    ADD_TEST( out_of_order_event_enqueue_wait_for_events_multi_queue_multi_device ),
+    ADD_TEST( out_of_order_event_enqueue_marker_single_queue ),
+    ADD_TEST( out_of_order_event_enqueue_marker_multi_queue ),
+    ADD_TEST( out_of_order_event_enqueue_marker_multi_queue_multi_device ),
+    ADD_TEST( out_of_order_event_enqueue_barrier_single_queue ),
 
-            "waitlists",
-            "test_userevents",
-
-            "callbacks",
-            "callbacks_simultaneous",
-
-            "userevents_multithreaded",
+    ADD_TEST( waitlists ),
+    ADD_TEST( userevents ),
+    ADD_TEST( callbacks ),
+    ADD_TEST( callbacks_simultaneous ),
+    ADD_TEST( userevents_multithreaded ),
 };
 
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, false, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
-
 

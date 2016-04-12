@@ -25,36 +25,21 @@
 #include <unistd.h>
 #endif
 
-basefn    basefn_list[] = {
-            test_partition_equally,
-            test_partition_by_counts,
-            test_partition_by_affinity_domain_numa,
-            test_partition_by_affinity_domain_l4_cache,
-            test_partition_by_affinity_domain_l3_cache,
-            test_partition_by_affinity_domain_l2_cache,
-            test_partition_by_affinity_domain_l1_cache,
-            test_partition_by_affinity_domain_next_partitionable,
-            test_partition
+test_definition test_list[] = {
+    ADD_TEST( partition_equally ),
+    ADD_TEST( partition_by_counts ),
+    ADD_TEST( partition_by_affinity_domain_numa ),
+    ADD_TEST( partition_by_affinity_domain_l4_cache ),
+    ADD_TEST( partition_by_affinity_domain_l3_cache ),
+    ADD_TEST( partition_by_affinity_domain_l2_cache ),
+    ADD_TEST( partition_by_affinity_domain_l1_cache ),
+    ADD_TEST( partition_by_affinity_domain_next_partitionable ),
+    ADD_TEST( partition_all ),
 };
 
-
-const char    *basefn_names[] = {
-            "device_partition_equally",
-            "device_partition_by_counts",
-            "device_partition_by_affinity_domain_numa",
-            "device_partition_by_affinity_domain_l4_cache",
-            "device_partition_by_affinity_domain_l3_cache",
-            "device_partition_by_affinity_domain_l2_cache",
-            "device_partition_by_affinity_domain_l1_cache",
-            "device_partition_by_affinity_domain_next_partitionable",
-            "device_partition_all",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, true, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, true, 0 );
 }

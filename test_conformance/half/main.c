@@ -55,41 +55,23 @@ int g_arrVecSizes[kVectorSizeCount+kStrangeVectorSizeCount];
 int g_arrVecAligns[kLargestVectorSize+1];
 static int arrStrangeVecSizes[kStrangeVectorSizeCount] = {3};
 
-basefn basefn_list[] = {
-    Test_vload_half,
-    Test_vloada_half,
-    Test_vstore_half,
-    Test_vstorea_half,
-    Test_vstore_half_rte,
-    Test_vstorea_half_rte,
-    Test_vstore_half_rtz,
-    Test_vstorea_half_rtz,
-    Test_vstore_half_rtp,
-    Test_vstorea_half_rtp,
-    Test_vstore_half_rtn,
-    Test_vstorea_half_rtn,
-    Test_roundTrip,
+test_definition test_list[] = {
+    ADD_TEST( vload_half ),
+    ADD_TEST( vloada_half ),
+    ADD_TEST( vstore_half ),
+    ADD_TEST( vstorea_half ),
+    ADD_TEST( vstore_half_rte ),
+    ADD_TEST( vstorea_half_rte ),
+    ADD_TEST( vstore_half_rtz ),
+    ADD_TEST( vstorea_half_rtz ),
+    ADD_TEST( vstore_half_rtp ),
+    ADD_TEST( vstorea_half_rtp ),
+    ADD_TEST( vstore_half_rtn ),
+    ADD_TEST( vstorea_half_rtn ),
+    ADD_TEST( roundTrip ),
 };
 
-const char *basefn_names[] = {
-    "vload_half",
-    "vloada_half",
-    "vstore_half",
-    "vstorea_half",
-    "vstore_half_rte",
-    "vstorea_half_rte",
-    "vstore_half_rtz",
-    "vstorea_half_rtz",
-    "vstore_half_rtp",
-    "vstorea_half_rtp",
-    "vstore_half_rtn",
-    "vstorea_half_rtn",
-    "roundTrip",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main (int argc, const char **argv )
 {
@@ -102,14 +84,14 @@ int main (int argc, const char **argv )
     }
     for(i = 0; i < kStrangeVectorSizeCount; ++i) {
       g_arrVecSizes[i+kVectorSizeCount] =
-    arrStrangeVecSizes[i];
+      arrStrangeVecSizes[i];
     }
 
     for(i = 0, alignbound=1; i <= kLargestVectorSize; ++i) {
-    while(alignbound < i) {
-        alignbound = alignbound<<1;
-    }
-    g_arrVecAligns[i] = alignbound;
+        while(alignbound < i) {
+            alignbound = alignbound<<1;
+        }
+        g_arrVecAligns[i] = alignbound;
     }
 
     test_start();
@@ -135,7 +117,7 @@ int main (int argc, const char **argv )
     }
 
     fflush( stdout );
-    error = parseAndCallCommandLineTests( argCount, argList, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
+    error = parseAndCallCommandLineTests( argCount, argList, NULL, test_num, test_list, true, 0, 0 );
 
 exit:
     if(gQueue)
@@ -343,9 +325,9 @@ static void PrintUsage( void )
     vlog( "\t\t-w\tRun in wimpy mode\n" );
     vlog( "\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", gWimpyReductionFactor);
     vlog( "\t\t-h\tHelp\n" );
-    for( int i = 0; i < num_fns; i++ )
+    for( int i = 0; i < test_num; i++ )
     {
-        vlog("\t\t%s\n", basefn_names[i] );
+        vlog("\t\t%s\n", test_list[i].name );
     }
 }
 

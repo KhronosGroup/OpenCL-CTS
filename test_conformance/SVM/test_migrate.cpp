@@ -73,8 +73,7 @@ wait_and_release(const char* s, cl_event* evs, int n)
     return 0;
 }
 
-int
-test_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
+int test_svm_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
 {
     cl_uint amem[GLOBAL_SIZE];
     cl_uint bmem[GLOBAL_SIZE];

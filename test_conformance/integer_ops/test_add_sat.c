@@ -181,7 +181,7 @@ static const int vector_sizes[] = {1, 2, 3, 4, 8, 16};
 static const char *vector_size_names[] = { "", "2", "3", "4", "8", "16" };
 static const size_t  kSizes[8] = { 1, 1, 2, 2, 4, 4, 8, 8 };
 
-int test_add_sat(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+int test_integer_add_sat(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
 {
     cl_int *input_ptr[2], *output_ptr, *p;
     int err;
