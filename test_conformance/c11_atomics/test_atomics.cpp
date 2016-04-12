@@ -108,7 +108,7 @@ int test_atomic_store(cl_device_id deviceID, cl_context context, cl_command_queu
   return test_atomic_store_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_store_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_store(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_store_generic(deviceID, context, queue, num_elements, true);
 }
@@ -187,7 +187,7 @@ int test_atomic_init(cl_device_id deviceID, cl_context context, cl_command_queue
   return test_atomic_init_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_init_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_init(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_init_generic(deviceID, context, queue, num_elements, true);
 }
@@ -293,7 +293,7 @@ int test_atomic_load(cl_device_id deviceID, cl_context context, cl_command_queue
   return test_atomic_load_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_load_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_load(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_load_generic(deviceID, context, queue, num_elements, true);
 }
@@ -421,7 +421,7 @@ int test_atomic_exchange(cl_device_id deviceID, cl_context context, cl_command_q
   return test_atomic_exchange_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_exchange_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_exchange(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_exchange_generic(deviceID, context, queue, num_elements, true);
 }
@@ -593,7 +593,7 @@ int test_atomic_compare_exchange_strong(cl_device_id deviceID, cl_context contex
   return test_atomic_compare_exchange_strong_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_compare_exchange_strong_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_compare_exchange_strong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_compare_exchange_strong_generic(deviceID, context, queue, num_elements, true);
 }
@@ -677,7 +677,7 @@ int test_atomic_compare_exchange_weak(cl_device_id deviceID, cl_context context,
   return test_atomic_compare_exchange_weak_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_compare_exchange_weak_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_compare_exchange_weak(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_compare_exchange_weak_generic(deviceID, context, queue, num_elements, true);
 }
@@ -760,7 +760,7 @@ int test_atomic_fetch_add(cl_device_id deviceID, cl_context context, cl_command_
   return test_atomic_fetch_add_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_fetch_add_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_fetch_add(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_fetch_add_generic(deviceID, context, queue, num_elements, true);
 }
@@ -837,7 +837,7 @@ int test_atomic_fetch_sub(cl_device_id deviceID, cl_context context, cl_command_
   return test_atomic_fetch_sub_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_fetch_sub_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_fetch_sub(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_fetch_sub_generic(deviceID, context, queue, num_elements, true);
 }
@@ -937,7 +937,7 @@ int test_atomic_fetch_or(cl_device_id deviceID, cl_context context, cl_command_q
   return test_atomic_fetch_or_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_fetch_or_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_fetch_or(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_fetch_or_generic(deviceID, context, queue, num_elements, true);
 }
@@ -1025,7 +1025,7 @@ int test_atomic_fetch_xor(cl_device_id deviceID, cl_context context, cl_command_
   return test_atomic_fetch_xor_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_fetch_xor_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_fetch_xor(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_fetch_xor_generic(deviceID, context, queue, num_elements, true);
 }
@@ -1125,7 +1125,7 @@ int test_atomic_fetch_and(cl_device_id deviceID, cl_context context, cl_command_
   return test_atomic_fetch_and_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_fetch_and_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_fetch_and(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_fetch_and_generic(deviceID, context, queue, num_elements, true);
 }
@@ -1247,7 +1247,7 @@ int test_atomic_fetch_orand(cl_device_id deviceID, cl_context context, cl_comman
   return test_atomic_fetch_orand_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_fetch_orand_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_fetch_orand(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_fetch_orand_generic(deviceID, context, queue, num_elements, true);
 }
@@ -1369,7 +1369,7 @@ int test_atomic_fetch_xor2(cl_device_id deviceID, cl_context context, cl_command
   return test_atomic_fetch_xor2_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_fetch_xor2_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_fetch_xor2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_fetch_xor2_generic(deviceID, context, queue, num_elements, true);
 }
@@ -1460,7 +1460,7 @@ int test_atomic_fetch_min(cl_device_id deviceID, cl_context context, cl_command_
   return test_atomic_fetch_min_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_fetch_min_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_fetch_min(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_fetch_min_generic(deviceID, context, queue, num_elements, true);
 }
@@ -1551,7 +1551,7 @@ int test_atomic_fetch_max(cl_device_id deviceID, cl_context context, cl_command_
   return test_atomic_fetch_max_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_fetch_max_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_fetch_max(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_fetch_max_generic(deviceID, context, queue, num_elements, true);
 }
@@ -1720,7 +1720,7 @@ int test_atomic_flag(cl_device_id deviceID, cl_context context, cl_command_queue
   return test_atomic_flag_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_flag_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_flag(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_flag_generic(deviceID, context, queue, num_elements, true);
 }
@@ -2137,7 +2137,7 @@ int test_atomic_fence(cl_device_id deviceID, cl_context context, cl_command_queu
   return test_atomic_fence_generic(deviceID, context, queue, num_elements, false);
 }
 
-int test_atomic_fence_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_svm_atomic_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_atomic_fence_generic(deviceID, context, queue, num_elements, true);
 }

@@ -18,7 +18,7 @@
 #include "../../test_common/harness/typeWrappers.h"
 #include "../../test_common/harness/mt19937.h"
 
-extern int      test_partition(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_partition_all(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_partition_equally(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_partition_by_counts(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_partition_by_affinity_domain_numa(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

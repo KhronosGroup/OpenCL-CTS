@@ -41,7 +41,7 @@ const char* flag_set_names[] = {
 };
 
 
-int test_allocate_shared_buffer(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+int test_svm_allocate_shared_buffer(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
 {
   clContextWrapper    context = NULL;
   clProgramWrapper    program = NULL;

@@ -33,177 +33,108 @@
 static cl_context        sCurrentContext = NULL;
 
 
-#define TEST_FN_REDIRECT( fn )    redirect_##fn
+#define TEST_FN_REDIRECT( fn ) ADD_TEST( redirect_##fn )
 #define TEST_FN_REDIRECTOR( fn ) \
-int redirect_##fn(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )    \
+int test_redirect_##fn(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )    \
 { \
     int error; \
     clCommandQueueWrapper realQueue = clCreateCommandQueueWithProperties( sCurrentContext, device, 0, &error ); \
     test_error( error, "Unable to create command queue" );    \
-    return fn( device, sCurrentContext, realQueue, numElements ); \
+    return test_##fn( device, sCurrentContext, realQueue, numElements ); \
 }
 
 // buffers:
-TEST_FN_REDIRECTOR( test_buffers )
-TEST_FN_REDIRECTOR( test_buffers_getinfo )
+TEST_FN_REDIRECTOR( buffers )
+TEST_FN_REDIRECTOR( buffers_getinfo )
 
 // 1D images:
-TEST_FN_REDIRECTOR( test_images_read_1D )
-TEST_FN_REDIRECTOR( test_images_write_1D )
-TEST_FN_REDIRECTOR( test_images_1D_getinfo )
+TEST_FN_REDIRECTOR( images_read_1D )
+TEST_FN_REDIRECTOR( images_write_1D )
+TEST_FN_REDIRECTOR( images_1D_getinfo )
 
 // 1D image arrays:
-TEST_FN_REDIRECTOR( test_images_read_1Darray )
-TEST_FN_REDIRECTOR( test_images_write_1Darray )
-TEST_FN_REDIRECTOR( test_images_1Darray_getinfo )
+TEST_FN_REDIRECTOR( images_read_1Darray )
+TEST_FN_REDIRECTOR( images_write_1Darray )
+TEST_FN_REDIRECTOR( images_1Darray_getinfo )
 
 // 2D images:
-TEST_FN_REDIRECTOR( test_images_read_2D )
-TEST_FN_REDIRECTOR( test_images_read_cube )
-TEST_FN_REDIRECTOR( test_images_write )
-TEST_FN_REDIRECTOR( test_images_write_cube )
-TEST_FN_REDIRECTOR( test_images_2D_getinfo )
-TEST_FN_REDIRECTOR( test_images_cube_getinfo )
+TEST_FN_REDIRECTOR( images_read_2D )
+TEST_FN_REDIRECTOR( images_read_cube )
+TEST_FN_REDIRECTOR( images_write )
+TEST_FN_REDIRECTOR( images_write_cube )
+TEST_FN_REDIRECTOR( images_2D_getinfo )
+TEST_FN_REDIRECTOR( images_cube_getinfo )
 
 // 2D image arrays:
-TEST_FN_REDIRECTOR( test_images_read_2Darray )
-TEST_FN_REDIRECTOR( test_images_write_2Darray )
-TEST_FN_REDIRECTOR( test_images_2Darray_getinfo )
+TEST_FN_REDIRECTOR( images_read_2Darray )
+TEST_FN_REDIRECTOR( images_write_2Darray )
+TEST_FN_REDIRECTOR( images_2Darray_getinfo )
 
 // 3D images:
-TEST_FN_REDIRECTOR( test_images_read_3D )
-TEST_FN_REDIRECTOR( test_images_write_3D )
-TEST_FN_REDIRECTOR( test_images_3D_getinfo )
+TEST_FN_REDIRECTOR( images_read_3D )
+TEST_FN_REDIRECTOR( images_write_3D )
+TEST_FN_REDIRECTOR( images_3D_getinfo )
 
 #ifdef GL_VERSION_3_2
 
-TEST_FN_REDIRECTOR( test_images_read_texturebuffer )
-TEST_FN_REDIRECTOR( test_images_write_texturebuffer )
-TEST_FN_REDIRECTOR( test_images_texturebuffer_getinfo )
+TEST_FN_REDIRECTOR( images_read_texturebuffer )
+TEST_FN_REDIRECTOR( images_write_texturebuffer )
+TEST_FN_REDIRECTOR( images_texturebuffer_getinfo )
 
 // depth textures
-TEST_FN_REDIRECTOR( test_images_read_2D_depth )
-TEST_FN_REDIRECTOR( test_images_write_2D_depth )
-TEST_FN_REDIRECTOR( test_images_read_2Darray_depth )
-TEST_FN_REDIRECTOR( test_images_write_2Darray_depth )
+TEST_FN_REDIRECTOR( images_read_2D_depth )
+TEST_FN_REDIRECTOR( images_write_2D_depth )
+TEST_FN_REDIRECTOR( images_read_2Darray_depth )
+TEST_FN_REDIRECTOR( images_write_2Darray_depth )
 
-TEST_FN_REDIRECTOR( test_images_read_2D_multisample )
-TEST_FN_REDIRECTOR( test_images_read_2Darray_multisample )
-TEST_FN_REDIRECTOR( test_image_methods_depth );
-TEST_FN_REDIRECTOR( test_image_methods_multisample );
+TEST_FN_REDIRECTOR( images_read_2D_multisample )
+TEST_FN_REDIRECTOR( images_read_2Darray_multisample )
+TEST_FN_REDIRECTOR( image_methods_depth )
+TEST_FN_REDIRECTOR( image_methods_multisample )
 #endif
 
 // Renderbuffer-backed images:
-TEST_FN_REDIRECTOR( test_renderbuffer_read )
-TEST_FN_REDIRECTOR( test_renderbuffer_write )
-TEST_FN_REDIRECTOR( test_renderbuffer_getinfo )
+TEST_FN_REDIRECTOR( renderbuffer_read )
+TEST_FN_REDIRECTOR( renderbuffer_write )
+TEST_FN_REDIRECTOR( renderbuffer_getinfo )
 
 TEST_FN_REDIRECTOR( test_fence_sync )
 
-basefn    basefn_list[] = {
-    TEST_FN_REDIRECT( test_buffers ),
-  TEST_FN_REDIRECT( test_buffers_getinfo ),
+test_definition test_list[] = {
+    TEST_FN_REDIRECT( buffers ),
+    TEST_FN_REDIRECT( buffers_getinfo ),
 
-  TEST_FN_REDIRECT( test_images_read_1D ),
-  TEST_FN_REDIRECT( test_images_write_1D ),
-  TEST_FN_REDIRECT( test_images_1D_getinfo ),
+    TEST_FN_REDIRECT( images_read_1D ),
+    TEST_FN_REDIRECT( images_write_1D ),
+    TEST_FN_REDIRECT( images_1D_getinfo ),
 
-  TEST_FN_REDIRECT( test_images_read_1Darray ),
-  TEST_FN_REDIRECT( test_images_write_1Darray ),
-  TEST_FN_REDIRECT( test_images_1Darray_getinfo ),
+    TEST_FN_REDIRECT( images_read_1Darray ),
+    TEST_FN_REDIRECT( images_write_1Darray ),
+    TEST_FN_REDIRECT( images_1Darray_getinfo ),
 
-    TEST_FN_REDIRECT( test_images_read_2D ),
-  TEST_FN_REDIRECT( test_images_write ),
-  TEST_FN_REDIRECT( test_images_2D_getinfo ),
+    TEST_FN_REDIRECT( images_read_2D ),
+    TEST_FN_REDIRECT( images_write ),
+    TEST_FN_REDIRECT( images_2D_getinfo ),
 
-    TEST_FN_REDIRECT( test_images_read_cube ),
-  TEST_FN_REDIRECT( test_images_write_cube ),
-  TEST_FN_REDIRECT( test_images_cube_getinfo ),
+    TEST_FN_REDIRECT( images_read_cube ),
+    TEST_FN_REDIRECT( images_write_cube ),
+    TEST_FN_REDIRECT( images_cube_getinfo ),
 
-  TEST_FN_REDIRECT( test_images_read_2Darray ),
-  TEST_FN_REDIRECT( test_images_write_2Darray),
-  TEST_FN_REDIRECT( test_images_2Darray_getinfo ),
+    TEST_FN_REDIRECT( images_read_2Darray ),
+    TEST_FN_REDIRECT( images_write_2Darray),
+    TEST_FN_REDIRECT( images_2Darray_getinfo ),
 
-    TEST_FN_REDIRECT( test_images_read_3D ),
-  TEST_FN_REDIRECT( test_images_write_3D ),
-  TEST_FN_REDIRECT( test_images_3D_getinfo ),
+    TEST_FN_REDIRECT( images_read_3D ),
+    TEST_FN_REDIRECT( images_write_3D ),
+    TEST_FN_REDIRECT( images_3D_getinfo ),
 
-    TEST_FN_REDIRECT( test_renderbuffer_read ),
-     TEST_FN_REDIRECT( test_renderbuffer_write ),
-  TEST_FN_REDIRECT( test_renderbuffer_getinfo )
+    TEST_FN_REDIRECT( renderbuffer_read ),
+    TEST_FN_REDIRECT( renderbuffer_write ),
+    TEST_FN_REDIRECT( renderbuffer_getinfo )
 };
 
-basefn    basefn_list32[] = {
-  TEST_FN_REDIRECT( test_images_read_texturebuffer ),
-  TEST_FN_REDIRECT( test_images_write_texturebuffer ),
-  TEST_FN_REDIRECT( test_images_texturebuffer_getinfo ),
-
-  TEST_FN_REDIRECT( test_fence_sync ),
-  TEST_FN_REDIRECT( test_images_read_2D_depth ),
-  TEST_FN_REDIRECT( test_images_write_2D_depth ),
-  TEST_FN_REDIRECT( test_images_read_2Darray_depth ),
-  TEST_FN_REDIRECT( test_images_write_2Darray_depth ),
-  TEST_FN_REDIRECT( test_images_read_2D_multisample ),
-  TEST_FN_REDIRECT( test_images_read_2Darray_multisample ),
-  TEST_FN_REDIRECT( test_image_methods_depth ),
-  TEST_FN_REDIRECT( test_image_methods_multisample)
-};
-
-const char    *basefn_names[] = {
-    "buffers",
-  "buffers_getinfo",
-
-  "images_read_1D",
-  "images_write_1D",
-  "images_1D_getinfo",
-
-  "images_read_1Darray",
-  "images_write_1Darray",
-  "images_1Darray_getinfo",
-
-    "images_read", /* 2D */
-  "images_write",
-  "images_2D_getinfo",
-
-     "images_read_cube",
-  "images_write_cube",
-  "images_cube_getinfo",
-
-  "images_read_2Darray",
-  "images_write_2Darray",
-  "images_2Darray_getinfo",
-
-    "images_read_3D",
-  "images_write_3D",
-  "images_3D_getinfo",
-
-    "renderbuffer_read",
-    "renderbuffer_write",
-  "renderbuffer_getinfo",
-};
-
-const char    *basefn_names32[] = {
-  "images_read_texturebuffer",
-  "images_write_texturebuffer",
-  "images_texturebuffer_getinfo",
-
-    "fence_sync",
-  "images_read_2D_depth",
-  "images_write_2D_depth",
-  "images_read_2D_array_depth",
-  "images_write_2D_array_depth",
-
-  "images_read_2D_multisample",
-  "images_read_2D_array_multisample",
-  "image_methods_depth",
-  "image_methods_multisample",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-ct_assert((sizeof(basefn_names32) / sizeof(basefn_names32[0])) == (sizeof(basefn_list32) / sizeof(basefn_list32[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
-int num_fns32 = sizeof(basefn_names32) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
+const int test_num32 = ARRAY_SIZE( test_list32 );
 
 cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 bool gTestRounding = true;
@@ -246,12 +177,12 @@ int main(int argc, const char *argv[])
     if( argc > 1 && strcmp( argv[ 1 ], "-list" ) == 0 )
     {
         log_info( "Available 2.x tests:\n" );
-        for( int i = 0; i < num_fns; i++ )
-            log_info( "\t%s\n", basefn_names[ i ] );
+        for( int i = 0; i < test_num; i++ )
+            log_info( "\t%s\n", test_list[i].name );
 
         log_info( "Available 3.2 tests:\n" );
-        for( int i = 0; i < num_fns32; i++ )
-            log_info( "\t%s\n", basefn_names32[ i ] );
+        for( int i = 0; i < test_num32; i++ )
+            log_info( "\t%s\n", test_list32[i].name );
 
     log_info( "Note: Any 3.2 test names must follow 2.1 test names on the command line.\n" );
     log_info( "Use environment variables to specify desired device.\n" );
@@ -264,8 +195,8 @@ int main(int argc, const char *argv[])
   unsigned first_32_testname = 0;
 
   for (int j=1; (j<argc) && (!first_32_testname); ++j)
-    for (int i=0;i<num_fns32;++i)
-      if (strcmp(basefn_names32[i],argv[j])==0) {
+    for (int i = 0; i < test_num32; ++i)
+      if (strcmp(test_list32[i].name, argv[j]) == 0) {
         first_32_testname = j;
         break;
       }
@@ -352,7 +283,7 @@ int main(int argc, const char *argv[])
         }
 
         // Note: don't use the entire harness, because we have a different way of obtaining the device (via the context)
-        error = parseAndCallCommandLineTests( argc_, argv, deviceIDs[ i ], num_fns, basefn_list, basefn_names, true, 0, 1024 );
+        error = parseAndCallCommandLineTests( argc_, argv, deviceIDs[i], test_num, test_list, true, 0, 1024 );
         if( error != 0 )
           break;
     }
@@ -425,7 +356,7 @@ int main(int argc, const char *argv[])
         }
 
         // Note: don't use the entire harness, because we have a different way of obtaining the device (via the context)
-        error = parseAndCallCommandLineTests( argc_, argv_, deviceIDs[ i ], num_fns32, basefn_list32, basefn_names32, true, 0, 1024 );
+        error = parseAndCallCommandLineTests( argc_, argv_, deviceIDs[i], test_num32, test_list32, true, 0, 1024 );
         if( error != 0 )
           break;
     }
@@ -442,5 +373,4 @@ int main(int argc, const char *argv[])
   //All done.
   return numErrors;
 }
-
 

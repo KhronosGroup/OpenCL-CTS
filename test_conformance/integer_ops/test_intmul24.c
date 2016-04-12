@@ -171,8 +171,7 @@ static inline int random_int24( MTdata d )
 
 static const char *test_str_names[] = { "int", "int2", "int3", "int4", "int8", "int16", "uint", "uint2", "uint3", "uint4", "uint8", "uint16" };
 
-int
-test_intmul24(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+int test_integer_mul24(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
 {
     cl_mem streams[3];
     cl_int *input_ptr[2], *output_ptr, *p;

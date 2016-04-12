@@ -18,7 +18,7 @@
 #include "tests.h"
 #include "../../test_common/harness/testHarness.h"
 
-int Test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     int vectorSize, error;
     uint64_t i, j;

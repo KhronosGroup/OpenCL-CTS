@@ -92,7 +92,7 @@ verify_multireadimage(void *image[], int num_images, float *outptr, int w, int h
 }
 
 
-int test_multireadimageonefmt(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+int test_mri_one(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
     cl_mem streams[8];
     cl_image_format    img_format;

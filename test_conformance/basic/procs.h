@@ -48,8 +48,8 @@ extern int      test_readimage_fp32(cl_device_id deviceID, cl_context context, c
 extern int      test_writeimage(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_writeimage_int16(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_writeimage_fp32(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_multireadimageonefmt(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_multireadimagemultifmt(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_mri_one(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_mri_multiple(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_image_r8(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_simplebarrier(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_barrier(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
@@ -126,7 +126,7 @@ extern int    test_kernel_preprocessor_macros(cl_device_id deviceID, cl_context 
 
 extern int      test_kernel_call_kernel_function(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int      test_basic_parameter_types(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_parameter_types(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_vector_creation(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_vec_type_hint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 

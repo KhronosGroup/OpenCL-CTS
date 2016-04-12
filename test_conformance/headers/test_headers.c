@@ -636,39 +636,24 @@ int test_double( cl_device_id deviceID, cl_context context, cl_command_queue que
     return 0;
 }
 
-basefn basefn_list[] = {
-    test_char,
-    test_uchar,
-    test_short,
-    test_ushort,
-    test_int,
-    test_uint,
-    test_long,
-    test_ulong,
-    test_float,
-    test_double,
+test_definition test_list[] = {
+    ADD_TEST( char ),
+    ADD_TEST( uchar ),
+    ADD_TEST( short ),
+    ADD_TEST( ushort ),
+    ADD_TEST( int ),
+    ADD_TEST( uint ),
+    ADD_TEST( long ),
+    ADD_TEST( ulong ),
+    ADD_TEST( float ),
+    ADD_TEST( double ),
 };
 
-const char *basefn_names[] = {
-    "char",
-    "uchar",
-    "short",
-    "ushort",
-    "int",
-    "uint",
-    "long",
-    "ulong",
-    "float",
-    "double",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char** argv)
 {
     log_info( "\nChecking operations on cl_types.\nNumbers, where presented, should walk upward from 0, with step of 1:\n" );
 
-    return parseAndCallCommandLineTests( argc, argv, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
+    return parseAndCallCommandLineTests( argc, argv, NULL, test_num, test_list, true, 0, 0 );
 }

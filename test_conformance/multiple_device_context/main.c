@@ -25,38 +25,22 @@
 #include <unistd.h>
 #endif
 
-basefn    basefn_list[] = {
-          test_multiple_contexts_same_device,
-            test_two_contexts_same_device,
-            test_three_contexts_same_device,
-            test_four_contexts_same_device,
+test_definition test_list[] = {
+    ADD_TEST( context_multiple_contexts_same_device ),
+    ADD_TEST( context_two_contexts_same_device ),
+    ADD_TEST( context_three_contexts_same_device ),
+    ADD_TEST( context_four_contexts_same_device ),
 
-            test_two_devices,
-            test_max_devices,
+    ADD_TEST( two_devices ),
+    ADD_TEST( max_devices ),
 
-            test_hundred_queues
+    ADD_TEST( hundred_queues ),
 };
 
-
-const char    *basefn_names[] = {
-          "context_multiple_contexts_same_device",
-            "context_two_contexts_same_device",
-            "context_three_contexts_same_device",
-            "context_four_contexts_same_device",
-
-            "two_devices",
-            "max_devices",
-
-            "hundred_queues",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, true, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, true, 0 );
 }
-
 

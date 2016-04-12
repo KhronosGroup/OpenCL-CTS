@@ -847,17 +847,11 @@ int test_computeinfo( cl_device_id deviceID, cl_context context, cl_command_queu
     return total_errors;
 }
 
-basefn basefn_list[] = {
-    test_computeinfo,
+test_definition test_list[] = {
+    ADD_TEST( computeinfo ),
 };
 
-const char *basefn_names[] = {
-    "computeinfo",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char** argv)
 {
@@ -884,6 +878,6 @@ int main(int argc, const char** argv)
         }
     }
 
-    return runTestHarness( argCount, argList, num_fns, basefn_list, basefn_names, false, true, 0 );
+    return runTestHarness( argCount, argList, test_num, test_list, false, true, 0 );
 }
 

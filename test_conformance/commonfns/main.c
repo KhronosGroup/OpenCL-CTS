@@ -25,63 +25,39 @@ int g_arrStrangeVectorSizes[kStrangeVectorSizeCount] = {3};
 static void initVecSizes() {
     int i;
     for(i = 0; i < kVectorSizeCount; ++i) {
-    g_arrVecSizes[i] = (1<<i);
+        g_arrVecSizes[i] = (1<<i);
     }
     for(; i < kVectorSizeCount + kStrangeVectorSizeCount; ++i) {
-    g_arrVecSizes[i] = g_arrStrangeVectorSizes[i-kVectorSizeCount];
+        g_arrVecSizes[i] = g_arrStrangeVectorSizes[i-kVectorSizeCount];
     }
 }
 
 
-basefn    commonfn_list[] = {
-                test_clamp,
-                test_degrees,
-                test_fmax,
-                test_fmaxf,
-                test_fmin,
-                test_fminf,
-                test_max,
-                test_maxf,
-                test_min,
-                test_minf,
-                test_mix,
-                test_radians,
-                test_step,
-                test_stepf,
-                test_smoothstep,
-                test_smoothstepf,
-                test_sign,
+test_definition test_list[] = {
+    ADD_TEST( clamp ),
+    ADD_TEST( degrees ),
+    ADD_TEST( fmax ),
+    ADD_TEST( fmaxf ),
+    ADD_TEST( fmin ),
+    ADD_TEST( fminf ),
+    ADD_TEST( max ),
+    ADD_TEST( maxf ),
+    ADD_TEST( min ),
+    ADD_TEST( minf ),
+    ADD_TEST( mix ),
+    ADD_TEST( radians ),
+    ADD_TEST( step ),
+    ADD_TEST( stepf ),
+    ADD_TEST( smoothstep ),
+    ADD_TEST( smoothstepf ),
+    ADD_TEST( sign ),
 };
 
-const char *commonfn_names[] = {
-    "clamp",
-    "degrees",
-    "fmax",
-    "fmaxf",
-    "fmin",
-    "fminf",
-    "max",
-    "maxf",
-    "min",
-    "minf",
-    "mix",
-    "radians",
-    "step",
-    "stepf",
-    "smoothstep",
-    "smoothstepf",
-    "sign",
-};
+const int test_num = ARRAY_SIZE( test_list );
 
-ct_assert((sizeof(commonfn_names) / sizeof(commonfn_names[0])) == (sizeof(commonfn_list) / sizeof(commonfn_list[0])));
-
-int    num_commonfns = sizeof(commonfn_names) / sizeof(char *);
-
-int
-main(int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
     initVecSizes();
-    return runTestHarness( argc, argv, num_commonfns, commonfn_list, commonfn_names, false, false, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
-
 

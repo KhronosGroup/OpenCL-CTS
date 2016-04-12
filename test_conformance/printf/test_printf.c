@@ -902,145 +902,75 @@ int test_address_space_4(cl_device_id deviceID, cl_context context, cl_command_q
     return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 4, gDevice);
 }
 
-basefn basefn_list[] = {
-    test_int_0,
-    test_int_1,
-    test_int_2,
-    test_int_3,
-    test_int_4,
-    test_int_5,
-    test_int_6,
-    test_int_7,
-    test_int_8,
+test_definition test_list[] = {
+    ADD_TEST( int_0 ),
+    ADD_TEST( int_1 ),
+    ADD_TEST( int_2 ),
+    ADD_TEST( int_3 ),
+    ADD_TEST( int_4 ),
+    ADD_TEST( int_5 ),
+    ADD_TEST( int_6 ),
+    ADD_TEST( int_7 ),
+    ADD_TEST( int_8 ),
 
-    test_float_0,
-    test_float_1,
-    test_float_2,
-    test_float_3,
-    test_float_4,
-    test_float_5,
-    test_float_6,
-    test_float_7,
-    test_float_8,
-    test_float_9,
-    test_float_10,
-    test_float_11,
-    test_float_12,
-    test_float_13,
-    test_float_14,
-    test_float_15,
-    test_float_16,
-    test_float_17,
-    test_float_18,
-    test_float_19,
-    test_float_20,
+    ADD_TEST( float_0 ),
+    ADD_TEST( float_1 ),
+    ADD_TEST( float_2 ),
+    ADD_TEST( float_3 ),
+    ADD_TEST( float_4 ),
+    ADD_TEST( float_5 ),
+    ADD_TEST( float_6 ),
+    ADD_TEST( float_7 ),
+    ADD_TEST( float_8 ),
+    ADD_TEST( float_9 ),
+    ADD_TEST( float_10 ),
+    ADD_TEST( float_11 ),
+    ADD_TEST( float_12 ),
+    ADD_TEST( float_13 ),
+    ADD_TEST( float_14 ),
+    ADD_TEST( float_15 ),
+    ADD_TEST( float_16 ),
+    ADD_TEST( float_17 ),
+    ADD_TEST( float_18 ),
+    ADD_TEST( float_19 ),
+    ADD_TEST( float_20 ),
 
-    test_octal_0,
-    test_octal_1,
-    test_octal_2,
-    test_octal_3,
+    ADD_TEST( octal_0 ),
+    ADD_TEST( octal_1 ),
+    ADD_TEST( octal_2 ),
+    ADD_TEST( octal_3 ),
 
-    test_unsigned_0,
-    test_unsigned_1,
+    ADD_TEST( unsigned_0 ),
+    ADD_TEST( unsigned_1 ),
 
-    test_hexadecimal_0,
-    test_hexadecimal_1,
-    test_hexadecimal_2,
-    test_hexadecimal_3,
-    test_hexadecimal_4,
+    ADD_TEST( hexadecimal_0 ),
+    ADD_TEST( hexadecimal_1 ),
+    ADD_TEST( hexadecimal_2 ),
+    ADD_TEST( hexadecimal_3 ),
+    ADD_TEST( hexadecimal_4 ),
 
-    test_char_0,
-    test_char_1,
-    test_char_2,
+    ADD_TEST( char_0 ),
+    ADD_TEST( char_1 ),
+    ADD_TEST( char_2 ),
 
-    test_string_0,
-    test_string_1,
-    test_string_2,
+    ADD_TEST( string_0 ),
+    ADD_TEST( string_1 ),
+    ADD_TEST( string_2 ),
 
-    test_vector_0,
-    test_vector_1,
-    test_vector_2,
-    test_vector_3,
-    test_vector_4,
+    ADD_TEST( vector_0 ),
+    ADD_TEST( vector_1 ),
+    ADD_TEST( vector_2 ),
+    ADD_TEST( vector_3 ),
+    ADD_TEST( vector_4 ),
 
-    test_address_space_0,
-    test_address_space_1,
-    test_address_space_2,
-    test_address_space_3,
-    test_address_space_4,
+    ADD_TEST( address_space_0 ),
+    ADD_TEST( address_space_1 ),
+    ADD_TEST( address_space_2 ),
+    ADD_TEST( address_space_3 ),
+    ADD_TEST( address_space_4 ),
 };
 
-const char *basefn_names[] = {
-    "int_0",
-    "int_1",
-    "int_2",
-    "int_3",
-    "int_4",
-    "int_5",
-    "int_6",
-    "int_7",
-    "int_8",
-
-    "float_0",
-    "float_1",
-    "float_2",
-    "float_3",
-    "float_4",
-    "float_5",
-    "float_6",
-    "float_7",
-    "float_8",
-    "float_9",
-    "float_10",
-    "float_11",
-    "float_12",
-    "float_13",
-    "float_14",
-    "float_15",
-    "float_16",
-    "float_17",
-    "float_18",
-    "float_19",
-    "float_20",
-
-    "octal_0",
-    "octal_1",
-    "octal_2",
-    "octal_3",
-
-    "unsigned_0",
-    "unsigned_1",
-
-    "hexadecimal_0",
-    "hexadecimal_1",
-    "hexadecimal_2",
-    "hexadecimal_3",
-    "hexadecimal_4",
-
-    "char_0",
-    "char_1",
-    "char_2",
-
-    "string_0",
-    "string_1",
-    "string_2",
-
-    "vector_0",
-    "vector_1",
-    "vector_2",
-    "vector_3",
-    "vector_4",
-
-    "address_space_0",
-    "address_space_1",
-    "address_space_2",
-    "address_space_3",
-    "address_space_4",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 //-----------------------------------------
 // main
@@ -1182,7 +1112,7 @@ int main(int argc, char* argv[]) {
 
     releaseOutputStream(gFd);
 
-    err = parseAndCallCommandLineTests( argCount, argList, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
+    err = parseAndCallCommandLineTests( argCount, argList, NULL, test_num, test_list, true, 0, 0 );
 
     if(gQueue)
     {
@@ -1214,8 +1144,8 @@ static void printUsage( void )
     log_info("test_printf: <optional: testnames> \n");
     log_info("\tdefault is to run the full test on the default device\n");
     log_info("\n");
-    for( int i = 0; i < num_fns; i++ )
+    for( int i = 0; i < test_num; i++ )
     {
-        log_info( "\t%s\n", basefn_names[i] );
+        log_info( "\t%s\n", test_list[i].name );
     }
 }

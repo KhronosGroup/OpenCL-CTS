@@ -47,22 +47,20 @@ int     gHasLong = 1;
 
 #define DEFAULT_NUM_ELEMENTS        0x4000
 
-int runTestHarness( int argc, const char *argv[], unsigned int num_fns,
-                   basefn fnList[], const char *fnNames[],
-                   int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps )
+int runTestHarness( int argc, const char *argv[], int testNum, test_definition testList[],
+                    int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps )
 {
-    return runTestHarnessWithCheck( argc, argv, num_fns, fnList, fnNames, imageSupportRequired, forceNoContextCreation, queueProps,
+    return runTestHarnessWithCheck( argc, argv, testNum, testList, imageSupportRequired, forceNoContextCreation, queueProps,
                           ( imageSupportRequired ) ? verifyImageSupport : NULL );
 }
 
-int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
-                 basefn fnList[], const char *fnNames[],
-                int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps,
-                DeviceCheckFn deviceCheckFn )
+int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_definition testList[],
+                             int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps,
+                             DeviceCheckFn deviceCheckFn )
 {
     test_start();
 
-    cl_device_type    device_type = CL_DEVICE_TYPE_DEFAULT;
+    cl_device_type     device_type = CL_DEVICE_TYPE_DEFAULT;
     cl_uint            num_platforms = 0;
     cl_platform_id     *platforms;
     cl_device_id       device;
@@ -74,7 +72,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
 
     int            err, ret;
     char *endPtr;
-    unsigned int            i;
     int based_on_env_var = 0;
 
 
@@ -129,15 +126,15 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
     /* Special case: just list the tests */
     if( ( argc > 1 ) && (!strcmp( argv[ 1 ], "-list" ) || !strcmp( argv[ 1 ], "-h" ) || !strcmp( argv[ 1 ], "--help" )))
     {
-        log_info( "Usage: %s [<function name>*] [pid<num>] [id<num>] [<device type>]\n", argv[0] );
+        log_info( "Usage: %s [<test name>*] [pid<num>] [id<num>] [<device type>]\n", argv[0] );
         log_info( "\t<function name>\tOne or more of: (wildcard character '*') (default *)\n");
         log_info( "\tpid<num>\t\tIndicates platform at index <num> should be used (default 0).\n" );
         log_info( "\tid<num>\t\tIndicates device at index <num> should be used (default 0).\n" );
         log_info( "\t<device_type>\tcpu|gpu|accelerator|<CL_DEVICE_TYPE_*> (default CL_DEVICE_TYPE_DEFAULT)\n" );
 
-        for( i = 0; i < num_fns; i++ )
+        for( int i = 0; i < testNum; i++ )
         {
-            log_info( "\t\t%s\n", fnNames[ i ] );
+            log_info( "\t\t%s\n", testList[i].name );
         }
         test_finish();
         return 0;
@@ -460,7 +457,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
         DisableFTZ( &oldMode );
 #endif
 
-    int error = parseAndCallCommandLineTests( argc, argv, device, num_fns, fnList, fnNames, forceNoContextCreation, queueProps, num_elements );
+    int error = parseAndCallCommandLineTests( argc, argv, device, testNum, testList, forceNoContextCreation, queueProps, num_elements );
 
  #if defined(__APPLE__) && defined(__arm__)
      // Restore the old FP mode before leaving.
@@ -470,23 +467,23 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
     return error;
 }
 
-static int find_wildcard_matching_functions( const char *fnNames[], unsigned char fnsToCall[], unsigned int num_fns,
+static int find_wildcard_matching_functions( test_definition testList[], unsigned char selectedTestList[], int testNum,
                                              const char *wildcard )
 {
     int found_tests = 0;
     size_t wildcard_length = strlen( wildcard ) - 1; /* -1 for the asterisk */
 
-    for( unsigned int fnIndex = 0; fnIndex < num_fns; fnIndex++ )
+    for( int fnIndex = 0; fnIndex < testNum; fnIndex++ )
     {
-        if( strncmp( fnNames[ fnIndex ], wildcard, wildcard_length ) == 0 )
+        if( strncmp( testList[ fnIndex ].name, wildcard, wildcard_length ) == 0 )
         {
-            if( fnsToCall[ fnIndex ] )
+            if( selectedTestList[ fnIndex ] )
             {
-                log_error( "ERROR: Test '%s' has already been selected.\n", fnNames[ fnIndex ] );
+                log_error( "ERROR: Test '%s' has already been selected.\n", testList[ fnIndex ].name );
                 return EXIT_FAILURE;
             }
 
-            fnsToCall[ fnIndex ] = 1;
+            selectedTestList[ fnIndex ] = 1;
             found_tests = 1;
         }
     }
@@ -500,29 +497,29 @@ static int find_wildcard_matching_functions( const char *fnNames[], unsigned cha
     return EXIT_SUCCESS;
 }
 
-static int find_argument_matching_function( const char *fnNames[], unsigned char *fnsToCall, unsigned int num_fns,
+static int find_argument_matching_function( test_definition testList[], unsigned char selectedTestList[], int testNum,
                                             const char *argument )
 {
-    unsigned int fnIndex;
+    int fnIndex;
 
-    for( fnIndex = 0; fnIndex < num_fns; fnIndex++ )
+    for( fnIndex = 0; fnIndex < testNum; fnIndex++ )
     {
-        if( strcmp( argument, fnNames[ fnIndex ] ) == 0 )
+        if( strcmp( argument, testList[fnIndex].name ) == 0 )
         {
-            if( fnsToCall[ fnIndex ] )
+            if( selectedTestList[ fnIndex ] )
             {
-                log_error( "ERROR: Test '%s' has already been selected.\n", fnNames[ fnIndex ] );
+                log_error( "ERROR: Test '%s' has already been selected.\n", testList[fnIndex].name );
                 return EXIT_FAILURE;
             }
             else
             {
-                fnsToCall[ fnIndex ] = 1;
+                selectedTestList[ fnIndex ] = 1;
                 break;
             }
         }
     }
 
-    if( fnIndex == num_fns )
+    if( fnIndex == testNum )
     {
         log_error( "ERROR: The argument '%s' did not match any test names.\n", argument );
         return EXIT_FAILURE;
@@ -531,18 +528,18 @@ static int find_argument_matching_function( const char *fnNames[], unsigned char
     return EXIT_SUCCESS;
 }
 
-int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id device, unsigned int num_fns,
-                                  basefn fnList[], const char *fnNames[], int forceNoContextCreation,
+int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id device, int testNum,
+                                  test_definition testList[], int forceNoContextCreation,
                                   cl_command_queue_properties queueProps, int num_elements )
 {
     int ret = EXIT_SUCCESS;
 
-    unsigned char *fnsToCall = ( unsigned char* ) calloc( num_fns, 1 );
+    unsigned char *selectedTestList = ( unsigned char* ) calloc( testNum, 1 );
 
     if( argc == 1 )
     {
         /* No actual arguments, all tests will be run. */
-        memset( fnsToCall, 1, num_fns );
+        memset( selectedTestList, 1, testNum );
     }
     else
     {
@@ -550,18 +547,18 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
         {
             if( strchr( argv[ argIndex ], '*' ) != NULL )
             {
-                ret = find_wildcard_matching_functions( fnNames, fnsToCall, num_fns, argv[ argIndex ] );
+                ret = find_wildcard_matching_functions( testList, selectedTestList, testNum, argv[ argIndex ] );
             }
             else
             {
                 if( strcmp( argv[ argIndex ], "all" ) == 0 )
                 {
-                    memset( fnsToCall, 1, num_fns );
+                    memset( selectedTestList, 1, testNum );
                     break;
                 }
                 else
                 {
-                    ret = find_argument_matching_function( fnNames, fnsToCall, num_fns, argv[ argIndex ] );
+                    ret = find_argument_matching_function( testList, selectedTestList, testNum, argv[ argIndex ] );
                 }
             }
 
@@ -574,7 +571,7 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
 
     if( ret == EXIT_SUCCESS )
     {
-        ret = callTestFunctions( fnList, fnNames, fnsToCall, num_fns, device, forceNoContextCreation, num_elements, queueProps );
+        ret = callTestFunctions( testList, selectedTestList, testNum, device, forceNoContextCreation, num_elements, queueProps );
 
         if( gTestsFailed == 0 )
         {
@@ -602,30 +599,30 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
 
     test_finish();
 
-    free( fnsToCall );
+    free(  selectedTestList );
 
     return ret;
 }
 
-int callTestFunctions( basefn functionList[], const char *functionNames[], unsigned char functionsToCall[],
-                       int numFunctions, cl_device_id deviceToUse, int forceNoContextCreation,
+int callTestFunctions( test_definition testList[], unsigned char selectedTestList[],
+                       int testNum, cl_device_id deviceToUse, int forceNoContextCreation,
                        int numElementsToUse, cl_command_queue_properties queueProps )
 {
     int numErrors = 0;
 
-    for( int i = 0; i < numFunctions; ++i )
+    for( int i = 0; i < testNum; ++i )
     {
-        if( functionsToCall[ i ] )
+        if( selectedTestList[i] )
         {
             /* Skip any unimplemented tests. */
-            if( functionList[ i ] != NULL )
+            if( testList[i].func != NULL )
             {
-                numErrors += callSingleTestFunction( functionList[ i ], functionNames[ i ], deviceToUse,
-                                                     forceNoContextCreation, numElementsToUse, queueProps );
+                numErrors += callSingleTestFunction( testList[i], deviceToUse, forceNoContextCreation,
+                                                     numElementsToUse, queueProps );
             }
             else
             {
-                log_info( "%s test currently not implemented\n", functionNames[ i ] );
+                log_info( "%s test currently not implemented\n", testList[i].name );
             }
         }
     }
@@ -639,9 +636,8 @@ void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, 
 }
 
 // Actual function execution
-int callSingleTestFunction( basefn functionToCall, const char *functionName,
-                           cl_device_id deviceToUse, int forceNoContextCreation,
-                           int numElementsToUse, const cl_queue_properties queueProps )
+int callSingleTestFunction( test_definition test, cl_device_id deviceToUse, int forceNoContextCreation,
+                            int numElementsToUse, const cl_queue_properties queueProps )
 {
     int numErrors = 0, ret;
     cl_int error;
@@ -669,29 +665,29 @@ int callSingleTestFunction( basefn functionToCall, const char *functionName,
     }
 
     /* Run the test and print the result */
-    log_info( "%s...\n", functionName );
+    log_info( "%s...\n", test.name );
     fflush( stdout );
 
-    error = check_opencl_version_with_testname(functionName, deviceToUse);
-    test_missing_feature(error, functionName);
+    error = check_opencl_version_with_testname(test.name, deviceToUse);
+    test_missing_feature(error, test.name);
 
-    ret = functionToCall( deviceToUse, context, queue, numElementsToUse);        //test_threaded_function( ptr_basefn_list[i], group, context, num_elements);
+    ret = test.func(deviceToUse, context, queue, numElementsToUse);        //test_threaded_function( ptr_basefn_list[i], group, context, num_elements);
     if( ret == TEST_NOT_IMPLEMENTED )
     {
         /* Tests can also let us know they're not implemented yet */
-        log_info("%s test currently not implemented\n\n", functionName);
+        log_info("%s test currently not implemented\n\n", test.name);
     }
     else
     {
         /* Print result */
         if( ret == 0 ) {
-            log_info( "%s passed\n", functionName );
+            log_info( "%s passed\n", test.name );
             gTestsPassed++;
         }
         else
         {
             numErrors++;
-            log_error( "%s FAILED\n", functionName );
+            log_error( "%s FAILED\n", test.name );
             gTestsFailed++;
         }
     }

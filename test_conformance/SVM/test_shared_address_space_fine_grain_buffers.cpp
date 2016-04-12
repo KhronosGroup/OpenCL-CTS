@@ -61,7 +61,7 @@ cl_int verify_linked_lists_on_device_no_map(int vi, cl_command_queue cmdq,cl_int
 // This is done by creating a linked list on a device and then verifying the correctness of the list
 // on another device or the host.  This basic test is performed for all combinations of devices and the host that exist within
 // the platform.  The test passes only if every combination passes.
-int test_shared_address_space_fine_grain_buffers(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+int test_svm_shared_address_space_fine_grain_buffers(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
 {
   clContextWrapper    context = NULL;
   clProgramWrapper    program = NULL;

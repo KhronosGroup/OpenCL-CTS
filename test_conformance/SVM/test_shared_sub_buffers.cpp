@@ -125,7 +125,7 @@ cl_int verify_linked_lists_on_host_sb(int ci, cl_command_queue cmdq, cl_mem node
 // on another device or the host.
 // The linked list nodes are allocated from two different buffers this is done to ensure that cross buffer pointers work correctly.
 // This basic test is performed for all combinations of devices and the host.
-int test_shared_sub_buffers(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+int test_svm_shared_sub_buffers(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
 {
   clContextWrapper    context = NULL;
   clProgramWrapper    program = NULL;
