@@ -62,26 +62,24 @@ std::vector<unsigned char> readSPIRV(const char *file_name)
     return readBinary(full_name_str.c_str());
 }
 
-const char **spirvTestsRegistry::getTestNames()
+test_definition *spirvTestsRegistry::getTestDefinitions()
 {
-    return &testNames[0];
-}
-
-basefn *spirvTestsRegistry::getTests()
-{
-    return &tests[0];
+    return &testDefinitions[0];
 }
 
 size_t spirvTestsRegistry::getNumTests()
 {
-    return tests.size();
+    return testDefinitions.size();
 }
 
 void spirvTestsRegistry::addTestClass(baseTestClass *test, const char *testName)
 {
-    testNames.push_back(testName);
+
     testClasses.push_back(test);
-    tests.push_back(test->getFunction());
+    test_definition testDef;
+    testDef.func = test->getFunction();
+    testDef.name = testName;
+    testDefinitions.push_back(testDef);
 }
 
 spirvTestsRegistry& spirvTestsRegistry::getInstance()
@@ -166,8 +164,7 @@ int main(int argc, const char *argv[])
 {
     gReSeed = 1;
     return runTestHarness(argc, argv,
-                          spirvTestsRegistry::getInstance().getNumTests(),
-                          spirvTestsRegistry::getInstance().getTests(),
-                          spirvTestsRegistry::getInstance().getTestNames(),
+                          spirvTestsRegistry::getInstance().getNumTests() + 1,
+                          spirvTestsRegistry::getInstance().getTestDefinitions(),
                           false, false, 0);
 }

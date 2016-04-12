@@ -42,7 +42,7 @@ const char *set_kernel_exec_info_svm_ptrs_kernel[] = {
 
 // Test that clSetKernelExecInfo works correctly with CL_KERNEL_EXEC_INFO_SVM_PTRS flag.
 //
-int test_set_kernel_exec_info_svm_ptrs(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+int test_svm_set_kernel_exec_info_svm_ptrs(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
 {
   clContextWrapper    c = NULL;
   clProgramWrapper    program = NULL;

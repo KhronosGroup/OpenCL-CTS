@@ -278,17 +278,11 @@ exit:
     return gFailCount;
 }
 
-basefn basefn_list[] = {
-    test_conversions,
+test_definition test_list[] = {
+    ADD_TEST( conversions ),
 };
 
-const char *basefn_names[] = {
-    "test_conversions",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int	num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 #pragma mark -
 
@@ -333,7 +327,7 @@ int main (int argc, const char **argv )
     vlog( "Random seed: %u\n", seed );
     gMTdata = init_genrand( seed );
 
-    int ret = parseAndCallCommandLineTests( 1, NULL, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
+    int ret = parseAndCallCommandLineTests( 1, NULL, NULL, test_num, test_list, true, 0, 0 );
 
     free_mtdata( gMTdata );
 

@@ -18,55 +18,31 @@
 #include "../../test_common/harness/testHarness.h"
 #include "TestNonUniformWorkGroup.h"
 
-basefn    basefn_list[] = {
-  test_non_uniform_1d_basic,
-  test_non_uniform_1d_atomics,
-  test_non_uniform_1d_barriers,
+test_definition test_list[] = {
+    ADD_TEST( non_uniform_1d_basic ),
+    ADD_TEST( non_uniform_1d_atomics ),
+    ADD_TEST( non_uniform_1d_barriers ),
 
-  test_non_uniform_2d_basic,
-  test_non_uniform_2d_atomics,
-  test_non_uniform_2d_barriers,
+    ADD_TEST( non_uniform_2d_basic ),
+    ADD_TEST( non_uniform_2d_atomics ),
+    ADD_TEST( non_uniform_2d_barriers ),
 
-  test_non_uniform_3d_basic,
-  test_non_uniform_3d_atomics,
-  test_non_uniform_3d_barriers,
+    ADD_TEST( non_uniform_3d_basic ),
+    ADD_TEST( non_uniform_3d_atomics ),
+    ADD_TEST( non_uniform_3d_barriers ),
 
-  test_non_uniform_other_basic,
-  test_non_uniform_other_atomics,
-  test_non_uniform_other_barriers
+    ADD_TEST( non_uniform_other_basic ),
+    ADD_TEST( non_uniform_other_atomics ),
+    ADD_TEST( non_uniform_other_barriers ),
 };
 
-const char    *basefn_names[] = {
-  "non_uniform_1d_basic",
-  "non_uniform_1d_atomics",
-  "non_uniform_1d_barriers",
-
-  "non_uniform_2d_basic",
-  "non_uniform_2d_atomics",
-  "non_uniform_2d_barriers",
-
-  "non_uniform_3d_basic",
-  "non_uniform_3d_atomics",
-  "non_uniform_3d_barriers",
-
-  "non_uniform_other_basic",
-  "non_uniform_other_atomics",
-  "non_uniform_other_barriers",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
   typedef std::vector<const char *> ArgsVector;
   ArgsVector programArgs;
   programArgs.assign(argv, argv+argc);
-
-  int numFns = num_fns;
-  basefn *baseFnList = basefn_list;
-  const char **baseFnNames = basefn_names;
 
   for (ArgsVector::iterator it = programArgs.begin(); it!=programArgs.end();) {
 
@@ -80,9 +56,6 @@ int main(int argc, const char *argv[])
 
   PrimeNumbers::generatePrimeNumbers(100000);
 
-  return runTestHarness(static_cast<int>(programArgs.size()), &programArgs.front(), numFns, baseFnList, baseFnNames, false /* image support required */, false /* force no context creation */, 0 );
+  return runTestHarness(static_cast<int>(programArgs.size()), &programArgs.front(), test_num, test_list, false, false, 0 );
 }
-
-
-
 

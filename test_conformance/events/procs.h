@@ -34,23 +34,23 @@ extern int        test_event_finish_array(cl_device_id deviceID, cl_context cont
 extern int        test_event_release_before_done(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_event_enqueue_marker(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 #ifdef CL_VERSION_1_2
-extern int        test_event_enqueue_marker_with_list(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_event_enqueue_barrier_with_list(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_event_enqueue_marker_with_event_list(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_event_enqueue_barrier_with_event_list(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 #endif
 
-extern int        test_event_waitlist_single_queue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_event_waitlist_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_event_waitlist_multi_queue_multi_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_out_of_order_event_waitlist_single_queue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_out_of_order_event_waitlist_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_out_of_order_event_waitlist_multi_queue_multi_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int        test_event_enqueue_wait_for_events_single_queue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_event_enqueue_wait_for_events_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_event_enqueue_wait_for_events_multi_queue_multi_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_out_of_order_event_enqueue_wait_for_events_single_queue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_out_of_order_event_enqueue_wait_for_events_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_out_of_order_event_enqueue_wait_for_events_multi_queue_multi_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int        test_event_enqueue_barrier_single_queue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_out_of_order_event_enqueue_barrier_single_queue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int        test_event_enqueue_marker_single_queue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_event_enqueue_marker_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_event_enqueue_marker_multi_queue_multi_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_out_of_order_event_enqueue_marker_single_queue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_out_of_order_event_enqueue_marker_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_out_of_order_event_enqueue_marker_multi_queue_multi_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int        test_waitlists( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 extern int        test_userevents( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );

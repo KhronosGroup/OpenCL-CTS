@@ -70,7 +70,7 @@ void CL_CALLBACK callback_svm_free(cl_command_queue queue, cl_uint num_svm_point
   data->status.store(1, std::memory_order_release);
 }
 
-int test_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
+int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
 {
   clContextWrapper context = NULL;
   clCommandQueueWrapper queues[MAXQ];

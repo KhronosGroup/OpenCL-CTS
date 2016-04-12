@@ -25,20 +25,15 @@
 
 #include "procs.h"
 
-basefn basefn_list[] = {
-    test_timer_resolution_queries,
-    test_device_and_host_timers
+test_definition test_list[] = {
+    ADD_TEST( timer_resolution_queries ),
+    ADD_TEST( device_and_host_timers ),
 };
 
-const char *basefn_names[] = {
-    "test_timer_resolution_queries",
-    "test_device_and_host_timers"
-};
-
-size_t num_fns = sizeof(basefn_names)/sizeof(basefn_names[0]);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, false, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
 
