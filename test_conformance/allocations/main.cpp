@@ -24,10 +24,6 @@
 
 typedef long long unsigned llu;
 
-cl_device_id g_device_id;
-cl_device_type g_device_type = CL_DEVICE_TYPE_DEFAULT;
-clContextWrapper g_context;
-clCommandQueueWrapper g_queue;
 int g_repetition_count = 1;
 int g_reduction_percentage = 100;
 int g_write_allocations = 1;
@@ -44,28 +40,69 @@ cl_uint checksum;
 
 static void printUsage( const char *execName );
 
-int init_cl() {
-    cl_platform_id platform;
+test_status init_cl( cl_device_id device ) {
     int error;
 
-    error = clGetPlatformIDs(1, &platform, NULL);
-    test_error(error, "clGetPlatformIDs failed");
+    error = clGetDeviceInfo( device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(g_max_individual_allocation_size), &g_max_individual_allocation_size, NULL );
+    if ( error ) {
+        print_error( error, "clGetDeviceInfo failed for CL_DEVICE_MAX_MEM_ALLOC_SIZE");
+        return TEST_FAIL;
+    }
+    error = clGetDeviceInfo( device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(g_global_mem_size), &g_global_mem_size, NULL );
+    if ( error ) {
+        print_error( error, "clGetDeviceInfo failed for CL_DEVICE_GLOBAL_MEM_SIZE");
+        return TEST_FAIL;
+    }
 
-    error = clGetDeviceIDs(platform, g_device_type, 1, &g_device_id, NULL);
-    test_error(error, "clGetDeviceIDs failed");
+    log_info("Device reports CL_DEVICE_MAX_MEM_ALLOC_SIZE=%llu bytes (%gMB), CL_DEVICE_GLOBAL_MEM_SIZE=%llu bytes (%gMB).\n",
+             llu( g_max_individual_allocation_size ), toMB( g_max_individual_allocation_size ),
+             llu( g_global_mem_size ), toMB( g_global_mem_size ) );
 
-    /* Create a context */
-    g_context = clCreateContext( NULL, 1, &g_device_id, notify_callback, NULL, &error );
-    test_error(error, "clCreateContext failed");
+    if( g_global_mem_size > (cl_ulong)SIZE_MAX )
+    {
+        g_global_mem_size = (cl_ulong)SIZE_MAX;
+    }
 
-    /* Create command queue */
-    g_queue = clCreateCommandQueueWithProperties( g_context, g_device_id, 0, &error );
-    test_error(error, "clCreateCommandQueue failed");
+    if( g_max_individual_allocation_size > g_global_mem_size )
+    {
+        log_error( "FAILURE:  CL_DEVICE_MAX_MEM_ALLOC_SIZE (%llu) is greater than the CL_DEVICE_GLOBAL_MEM_SIZE (%llu)\n",
+                   llu( g_max_individual_allocation_size ), llu( g_global_mem_size ) );
+        return TEST_FAIL;
+    }
 
-    return error;
+    // We may need to back off the global_mem_size on unified memory devices to leave room for application and operating system code
+    // and associated data in the working set, so we dont start pathologically paging.
+    // Check to see if we are a unified memory device
+    cl_bool hasUnifiedMemory = CL_FALSE;
+    if( ( error = clGetDeviceInfo( device, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof( hasUnifiedMemory ), &hasUnifiedMemory, NULL ) ) )
+    {
+        print_error( error, "clGetDeviceInfo failed for CL_DEVICE_HOST_UNIFIED_MEMORY");
+        return TEST_FAIL;
+    }
+    // we share unified memory so back off to 1/2 the global memory size.
+    if( CL_TRUE == hasUnifiedMemory )
+    {
+        g_global_mem_size -= g_global_mem_size /2;
+        log_info( "Device shares memory with the host, so backing off the maximum combined allocation size to be %gMB to avoid rampant paging.\n",
+                  toMB( g_global_mem_size ) );
+    }
+    else
+    {
+        // Lets just use 60% of total available memory as framework/driver may not allow using all of it
+        // e.g. vram on GPU is used by window server and even for this test, we need some space for context,
+        // queue, kernel code on GPU.
+        g_global_mem_size *= 0.60;
+    }
+
+    if( gReSeed )
+    {
+        g_seed = RandomSeed( gRandomSeed );
+    }
+
+    return TEST_PASS;
 }
 
-int doTest( AllocType alloc_type )
+int doTest( cl_device_id device, cl_context context, cl_command_queue queue, AllocType alloc_type )
 {
     int error;
     int failure_counts = 0;
@@ -86,7 +123,7 @@ int doTest( AllocType alloc_type )
     };
 
     // Skip image tests if we don't support images on the device
-    if( alloc_type > BUFFER && checkForImageSupport( g_device_id ) )
+    if( alloc_type > BUFFER && checkForImageSupport( device ) )
     {
         log_info( "Can not test image allocation because device does not support images.\n" );
         return 0;
@@ -99,10 +136,10 @@ int doTest( AllocType alloc_type )
     {
         size_t max_width, max_height;
 
-        error = clGetDeviceInfo( g_device_id, CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof( max_width ), &max_width, NULL );
+        error = clGetDeviceInfo( device, CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof( max_width ), &max_width, NULL );
         test_error_abort( error, "clGetDeviceInfo failed for CL_DEVICE_IMAGE2D_MAX_WIDTH" );
 
-        error = clGetDeviceInfo( g_device_id, CL_DEVICE_IMAGE2D_MAX_HEIGHT, sizeof( max_height ), &max_height, NULL );
+        error = clGetDeviceInfo( device, CL_DEVICE_IMAGE2D_MAX_HEIGHT, sizeof( max_height ), &max_height, NULL );
         test_error_abort( error, "clGetDeviceInfo failed for CL_DEVICE_IMAGE2D_MAX_HEIGHT" );
 
         cl_ulong max_image2d_size = (cl_ulong)max_height * max_width * 4 * sizeof(cl_uint);
@@ -141,14 +178,14 @@ int doTest( AllocType alloc_type )
             checksum = 0;
 
             // Do the allocation
-            error = allocate_size( g_context, &g_queue, g_device_id, g_multiple_allocations, current_test_size, alloc_type,
+            error = allocate_size( context, &queue, device, g_multiple_allocations, current_test_size, alloc_type,
                                    mems, &number_of_mems_used, &final_size, g_write_allocations, g_seed );
 
             // If we succeeded and we're supposed to execute a kernel, do so.
             if( error == SUCCEEDED && g_execute_kernel )
             {
                 log_info( "\tExecuting kernel with memory objects.\n" );
-                error = execute_kernel( g_context, &g_queue, g_device_id, alloc_type, mems, number_of_mems_used,
+                error = execute_kernel( context, &queue, device, alloc_type, mems, number_of_mems_used,
                                         g_write_allocations );
             }
 
@@ -196,29 +233,29 @@ int doTest( AllocType alloc_type )
     return failure_counts;
 }
 
-int test_buffer(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_buffer(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest( BUFFER );
+    return doTest( device, context, queue, BUFFER );
 }
-int test_image2d_read(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_image2d_read(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest( IMAGE_READ );
+    return doTest( device, context, queue, IMAGE_READ );
 }
-int test_image2d_write(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_image2d_write(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest( IMAGE_WRITE );
+    return doTest( device, context, queue, IMAGE_WRITE );
 }
-int test_buffer_non_blocking(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_buffer_non_blocking(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest( BUFFER_NON_BLOCKING );
+    return doTest( device, context, queue, BUFFER_NON_BLOCKING );
 }
-int test_image2d_read_non_blocking(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_image2d_read_non_blocking(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest( IMAGE_READ_NON_BLOCKING );
+    return doTest( device, context, queue, IMAGE_READ_NON_BLOCKING );
 }
-int test_image2d_write_non_blocking(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_image2d_write_non_blocking(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest( IMAGE_WRITE_NON_BLOCKING );
+    return doTest( device, context, queue, IMAGE_WRITE_NON_BLOCKING );
 }
 
 test_definition test_list[] = {
@@ -234,12 +271,8 @@ const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    int error;
     char *endPtr;
     int r;
-    int randomize = 0;
-
-    test_start();
 
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
@@ -260,22 +293,10 @@ int main(int argc, const char *argv[])
     size_t argCount = 1;
 
     // Parse arguments
-    checkDeviceTypeOverride( &g_device_type );
     for( int i = 1; i < argc; i++ )
     {
-        if( strcmp( argv[i], "cpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_CPU" ) == 0 )
-            g_device_type = CL_DEVICE_TYPE_CPU;
-        else if( strcmp( argv[i], "gpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_GPU" ) == 0 )
-            g_device_type = CL_DEVICE_TYPE_GPU;
-        else if( strcmp( argv[i], "accelerator" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
-            g_device_type = CL_DEVICE_TYPE_ACCELERATOR;
-        else if( strcmp( argv[i], "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
-            g_device_type = CL_DEVICE_TYPE_DEFAULT;
-
-        else if( strcmp( argv[i], "multiple" ) == 0 )
+        if( strcmp( argv[i], "multiple" ) == 0 )
             g_multiple_allocations = 1;
-        else if( strcmp( argv[i], "randomize" ) == 0 )
-            randomize = 1;
         else if( strcmp( argv[i], "single" ) == 0 )
             g_multiple_allocations = 0;
 
@@ -314,87 +335,9 @@ int main(int argc, const char *argv[])
         }
     }
 
-    if( randomize )
-    {
-        gRandomSeed = (cl_uint) time( NULL );
-        log_info( "Random seed: %u.\n", gRandomSeed );
-        gReSeed = 1;
-        g_seed = RandomSeed( gRandomSeed );
-    }
-
-    // All ready to go, so set up an environment
-    error = init_cl();
-    if (error) {
-        test_finish();
-        return -1;
-    }
-
-    if( printDeviceHeader( g_device_id ) != CL_SUCCESS )
-    {
-        test_finish();
-        return -1;
-    }
-
-
-    error = clGetDeviceInfo(g_device_id, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(g_max_individual_allocation_size), &g_max_individual_allocation_size, NULL);
-    if ( error ) {
-        print_error( error, "clGetDeviceInfo failed for CL_DEVICE_MAX_MEM_ALLOC_SIZE");
-        test_finish();
-        return -1;
-    }
-    error = clGetDeviceInfo(g_device_id, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(g_global_mem_size), &g_global_mem_size, NULL);
-    if ( error ) {
-        print_error( error, "clGetDeviceInfo failed for CL_DEVICE_GLOBAL_MEM_SIZE");
-        test_finish();
-        return -1;
-    }
-
-    log_info("Device reports CL_DEVICE_MAX_MEM_ALLOC_SIZE=%llu bytes (%gMB), CL_DEVICE_GLOBAL_MEM_SIZE=%llu bytes (%gMB).\n",
-             llu( g_max_individual_allocation_size ), toMB( g_max_individual_allocation_size ),
-             llu( g_global_mem_size ), toMB( g_global_mem_size ) );
-
-    if( g_global_mem_size > (cl_ulong)SIZE_MAX )
-    {
-        g_global_mem_size = (cl_ulong)SIZE_MAX;
-    }
-
-    if( g_max_individual_allocation_size > g_global_mem_size )
-    {
-        log_error( "FAILURE:  CL_DEVICE_MAX_MEM_ALLOC_SIZE (%llu) is greater than the CL_DEVICE_GLOBAL_MEM_SIZE (%llu)\n",
-                   llu( g_max_individual_allocation_size ), llu( g_global_mem_size ) );
-        test_finish();
-        return -1;
-    }
-
-    // We may need to back off the global_mem_size on unified memory devices to leave room for application and operating system code
-    // and associated data in the working set, so we dont start pathologically paging.
-    // Check to see if we are a unified memory device
-    cl_bool hasUnifiedMemory = CL_FALSE;
-    if( ( error = clGetDeviceInfo( g_device_id, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof( hasUnifiedMemory ), &hasUnifiedMemory, NULL )))
-    {
-        print_error( error, "clGetDeviceInfo failed for CL_DEVICE_HOST_UNIFIED_MEMORY");
-        test_finish();
-        return -1;
-    }
-    // we share unified memory so back off to 1/2 the global memory size.
-    if( CL_TRUE == hasUnifiedMemory )
-    {
-        g_global_mem_size -= g_global_mem_size /2;
-        log_info( "Device shares memory with the host, so backing off the maximum combined allocation size to be %gMB to avoid rampant paging.\n", toMB( g_global_mem_size ) );
-    }
-    else
-    {
-        // Lets just use 60% of total available memory as framework/driver may not allow using all of it
-        // e.g. vram on GPU is used by window server and even for this test, we need some space for context,
-        // queue, kernel code on GPU.
-        g_global_mem_size *= 0.60;
-    }
-
-    int ret = parseAndCallCommandLineTests( argCount, argList, NULL, test_num, test_list, true, 0, 0 );
+    int ret = runTestHarnessWithCheck( argCount, argList, test_num, test_list, false, false, 0, init_cl );
 
     free(argList);
-
-    test_finish();
     return ret;
 }
 
