@@ -67,12 +67,13 @@ extern int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device
 //    testList is the data structure that contains test functions and its names
 //    selectedTestList is an array of integers (treated as bools) which tell which function is to be called,
 //       each element at index i, corresponds to the element in testList at index i
-//    testNum is the number of tests in testList and selectedTestList
+//    resultTestList is an array of integers which contains the result of each selected test
+//    testNum is the number of tests in testList, selectedTestList and resultTestList
 //    contextProps are used to create a testing context for each test
 //    deviceToUse and numElementsToUse are all just passed to each test function
-extern int callTestFunctions( test_definition testList[], unsigned char selectedTestList[],
-                              int testNum, cl_device_id deviceToUse, int forceNoContextCreation,
-                              int numElementsToUse, cl_command_queue_properties queueProps );
+extern int callTestFunctions( test_definition testList[], unsigned char selectedTestList[], int resultTestList[],
+                              int testNum, cl_device_id deviceToUse, int forceNoContextCreation, int numElementsToUse,
+                              cl_command_queue_properties queueProps );
 
 // This function is called by callTestFunctions, once per function, to do setup, call, logging and cleanup
 extern int callSingleTestFunction( test_definition test, cl_device_id deviceToUse, int forceNoContextCreation,
