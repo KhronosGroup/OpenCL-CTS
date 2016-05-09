@@ -483,59 +483,40 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     return error;
 }
 
-static int find_wildcard_matching_functions( test_definition testList[], unsigned char selectedTestList[], int testNum,
-                                             const char *wildcard )
+static int find_matching_tests( test_definition testList[], unsigned char selectedTestList[], int testNum,
+                                const char *argument, bool isWildcard )
 {
     int found_tests = 0;
-    size_t wildcard_length = strlen( wildcard ) - 1; /* -1 for the asterisk */
+    size_t wildcard_length = strlen( argument ) - 1; /* -1 for the asterisk */
 
-    for( int fnIndex = 0; fnIndex < testNum; fnIndex++ )
+    for( int i = 0; i < testNum; i++ )
     {
-        if( strncmp( testList[ fnIndex ].name, wildcard, wildcard_length ) == 0 )
+        if( ( !isWildcard && strcmp( testList[i].name, argument ) == 0 ) ||
+            ( isWildcard && strncmp( testList[i].name, argument, wildcard_length ) == 0 ) )
         {
-            if( selectedTestList[ fnIndex ] )
+            if( selectedTestList[i] )
             {
-                log_error( "ERROR: Test '%s' has already been selected.\n", testList[ fnIndex ].name );
+                log_error( "ERROR: Test '%s' has already been selected.\n", testList[i].name );
                 return EXIT_FAILURE;
             }
-
-            selectedTestList[ fnIndex ] = 1;
-            found_tests = 1;
-        }
-    }
-
-    if( !found_tests )
-    {
-        log_error( "ERROR: The wildcard '%s' did not match any test names.\n", wildcard );
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
-}
-
-static int find_argument_matching_function( test_definition testList[], unsigned char selectedTestList[], int testNum,
-                                            const char *argument )
-{
-    int fnIndex;
-
-    for( fnIndex = 0; fnIndex < testNum; fnIndex++ )
-    {
-        if( strcmp( argument, testList[fnIndex].name ) == 0 )
-        {
-            if( selectedTestList[ fnIndex ] )
+            else if( testList[i].func == NULL )
             {
-                log_error( "ERROR: Test '%s' has already been selected.\n", testList[fnIndex].name );
+                log_error( "ERROR: Test '%s' is missing implementation.\n", testList[i].name );
                 return EXIT_FAILURE;
             }
             else
             {
-                selectedTestList[ fnIndex ] = 1;
-                break;
+                selectedTestList[i] = 1;
+                found_tests = 1;
+                if( !isWildcard )
+                {
+                    break;
+                }
             }
         }
     }
 
-    if( fnIndex == testNum )
+    if( !found_tests )
     {
         log_error( "ERROR: The argument '%s' did not match any test names.\n", argument );
         return EXIT_FAILURE;
@@ -599,22 +580,22 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
     }
     else
     {
-        for( int argIndex = 1; argIndex < argc; argIndex++ )
+        for( int i = 1; i < argc; i++ )
         {
-            if( strchr( argv[ argIndex ], '*' ) != NULL )
+            if( strchr( argv[i], '*' ) != NULL )
             {
-                ret = find_wildcard_matching_functions( testList, selectedTestList, testNum, argv[ argIndex ] );
+                ret = find_matching_tests( testList, selectedTestList, testNum, argv[i], true );
             }
             else
             {
-                if( strcmp( argv[ argIndex ], "all" ) == 0 )
+                if( strcmp( argv[i], "all" ) == 0 )
                 {
                     memset( selectedTestList, 1, testNum );
                     break;
                 }
                 else
                 {
-                    ret = find_argument_matching_function( testList, selectedTestList, testNum, argv[ argIndex ] );
+                    ret = find_matching_tests( testList, selectedTestList, testNum, argv[i], false );
                 }
             }
 
@@ -679,7 +660,7 @@ int callTestFunctions( test_definition testList[], unsigned char selectedTestLis
     {
         if( selectedTestList[i] )
         {
-            /* Skip any unimplemented tests. */
+            // Skip unimplemented test (can happen when you select all of the tests)
             if( testList[i].func != NULL )
             {
                 int errors = callSingleTestFunction( testList[i], deviceToUse, forceNoContextCreation,
@@ -689,7 +670,7 @@ int callTestFunctions( test_definition testList[], unsigned char selectedTestLis
             }
             else
             {
-                log_info( "%s test currently not implemented\n", testList[i].name );
+                log_info( "Skipping %s. Test currently not implemented.\n", testList[i].name );
             }
         }
     }
