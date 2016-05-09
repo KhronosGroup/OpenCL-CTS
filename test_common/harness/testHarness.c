@@ -126,15 +126,23 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     /* Special case: just list the tests */
     if( ( argc > 1 ) && (!strcmp( argv[ 1 ], "-list" ) || !strcmp( argv[ 1 ], "-h" ) || !strcmp( argv[ 1 ], "--help" )))
     {
+        char *fileName = getenv("CL_CONFORMANCE_RESULTS_FILENAME");
+
         log_info( "Usage: %s [<test name>*] [pid<num>] [id<num>] [<device type>]\n", argv[0] );
-        log_info( "\t<function name>\tOne or more of: (wildcard character '*') (default *)\n");
-        log_info( "\tpid<num>\t\tIndicates platform at index <num> should be used (default 0).\n" );
+        log_info( "\t<test name>\tOne or more of: (wildcard character '*') (default *)\n");
+        log_info( "\tpid<num>\tIndicates platform at index <num> should be used (default 0).\n" );
         log_info( "\tid<num>\t\tIndicates device at index <num> should be used (default 0).\n" );
         log_info( "\t<device_type>\tcpu|gpu|accelerator|<CL_DEVICE_TYPE_*> (default CL_DEVICE_TYPE_DEFAULT)\n" );
+        log_info( "\n" );
+        log_info( "\tNOTE: You may pass environment variable CL_CONFORMANCE_RESULTS_FILENAME (currently '%s')\n",
+                  fileName != NULL ? fileName : "<undefined>" );
+        log_info( "\t      to save results to JSON file.\n" );
 
+        log_info( "\n" );
+        log_info( "Test names:\n" );
         for( int i = 0; i < testNum; i++ )
         {
-            log_info( "\t\t%s\n", testList[i].name );
+            log_info( "\t%s\n", testList[i].name );
         }
         test_finish();
         return 0;
@@ -528,6 +536,45 @@ static int find_argument_matching_function( test_definition testList[], unsigned
     return EXIT_SUCCESS;
 }
 
+static int saveResultsToJson( const char *fileName, const char *suiteName, test_definition testList[],
+                              unsigned char selectedTestList[], int resultTestList[], int testNum )
+{
+    FILE *file = fopen( fileName, "w" );
+    if( NULL == file )
+    {
+        log_error( "ERROR: Failed to open '%s' for writing results.\n", fileName );
+        return EXIT_FAILURE;
+    }
+
+    const char *save_map[] = { "success", "failure" };
+    const char *result_map[] = { "pass", "fail" };
+    const char *linebreak[] = { "", ",\n" };
+    int add_linebreak = 0;
+
+    fprintf( file, "{\n" );
+    fprintf( file, "\t\"cmd\": \"%s\",\n", suiteName );
+    fprintf( file, "\t\"results\": {\n" );
+
+    for( int i = 0; i < testNum; ++i )
+    {
+        if( selectedTestList[i] )
+        {
+            fprintf( file, "%s\t\t\"%s\": \"%s\"", linebreak[add_linebreak], testList[i].name, result_map[(bool)resultTestList[i]] );
+            add_linebreak = 1;
+        }
+    }
+    fprintf( file, "\n");
+
+    fprintf( file, "\t}\n" );
+    fprintf( file, "}\n" );
+
+    int ret = fclose( file ) ? 1 : 0;
+
+    log_info( "Saving results to %s: %s!\n", fileName, save_map[ret] );
+
+    return ret;
+}
+
 int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id device, int testNum,
                                   test_definition testList[], int forceNoContextCreation,
                                   cl_command_queue_properties queueProps, int num_elements )
@@ -535,6 +582,7 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
     int ret = EXIT_SUCCESS;
 
     unsigned char *selectedTestList = ( unsigned char* ) calloc( testNum, 1 );
+    int *resultTestList = NULL;
 
     if( argc == 1 )
     {
@@ -571,7 +619,9 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
 
     if( ret == EXIT_SUCCESS )
     {
-        ret = callTestFunctions( testList, selectedTestList, testNum, device, forceNoContextCreation, num_elements, queueProps );
+        resultTestList = ( int* ) calloc( testNum, sizeof(int) );
+
+        ret = callTestFunctions( testList, selectedTestList, resultTestList, testNum, device, forceNoContextCreation, num_elements, queueProps );
 
         if( gTestsFailed == 0 )
         {
@@ -595,20 +645,27 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
                 log_error("FAILED test.\n");
             }
         }
+
+        char *filename = getenv( "CL_CONFORMANCE_RESULTS_FILENAME" );
+        if( filename != NULL )
+        {
+            ret += saveResultsToJson( filename, argv[0], testList, selectedTestList, resultTestList, testNum );
+        }
     }
 
     test_finish();
 
-    free(  selectedTestList );
+    free( selectedTestList );
+    free( resultTestList );
 
     return ret;
 }
 
-int callTestFunctions( test_definition testList[], unsigned char selectedTestList[],
-                       int testNum, cl_device_id deviceToUse, int forceNoContextCreation,
-                       int numElementsToUse, cl_command_queue_properties queueProps )
+int callTestFunctions( test_definition testList[], unsigned char selectedTestList[], int resultTestList[],
+                       int testNum, cl_device_id deviceToUse, int forceNoContextCreation, int numElementsToUse,
+                       cl_command_queue_properties queueProps )
 {
-    int numErrors = 0;
+    int totalErrors = 0;
 
     for( int i = 0; i < testNum; ++i )
     {
@@ -617,8 +674,10 @@ int callTestFunctions( test_definition testList[], unsigned char selectedTestLis
             /* Skip any unimplemented tests. */
             if( testList[i].func != NULL )
             {
-                numErrors += callSingleTestFunction( testList[i], deviceToUse, forceNoContextCreation,
+                int errors = callSingleTestFunction( testList[i], deviceToUse, forceNoContextCreation,
                                                      numElementsToUse, queueProps );
+                resultTestList[i] = errors;
+                totalErrors += errors;
             }
             else
             {
@@ -627,7 +686,7 @@ int callTestFunctions( test_definition testList[], unsigned char selectedTestLis
         }
     }
 
-    return numErrors;
+    return totalErrors;
 }
 
 void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
