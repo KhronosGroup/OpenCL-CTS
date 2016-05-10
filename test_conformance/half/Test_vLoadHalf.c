@@ -61,9 +61,7 @@ static inline float half2float( cl_ushort us )
     return uu.f;
 }
 
-int Test_vLoadHalf_private( bool aligned );
-
-int Test_vLoadHalf_private( bool aligned )
+int Test_vLoadHalf_private( cl_device_id device, bool aligned )
 {
     cl_int error;
     int vectorSize;
@@ -303,7 +301,7 @@ int Test_vLoadHalf_private( bool aligned )
 
 
         if(g_arrVecSizes[vectorSize] != 3) {
-            programs[vectorSize][0] = MakeProgram( source, sizeof( source) / sizeof( source[0])  );
+            programs[vectorSize][0] = MakeProgram( device, source, sizeof( source) / sizeof( source[0])  );
             if( NULL == programs[ vectorSize ][0] ) {
                 gFailCount++;
                 vlog_error( "\t\tFAILED -- Failed to create program.\n" );
@@ -313,7 +311,7 @@ int Test_vLoadHalf_private( bool aligned )
             } else {
             }
         } else if(aligned) {
-            programs[vectorSize][0] = MakeProgram( sourceV3aligned, sizeof( sourceV3aligned) / sizeof( sourceV3aligned[0])  );
+            programs[vectorSize][0] = MakeProgram( device, sourceV3aligned, sizeof( sourceV3aligned) / sizeof( sourceV3aligned[0])  );
             if( NULL == programs[ vectorSize ][0] ) {
                 gFailCount++;
                 vlog_error( "\t\tFAILED -- Failed to create program.\n" );
@@ -323,7 +321,7 @@ int Test_vLoadHalf_private( bool aligned )
             } else {
             }
         } else {
-            programs[vectorSize][0] = MakeProgram( sourceV3, sizeof( sourceV3) / sizeof( sourceV3[0])  );
+            programs[vectorSize][0] = MakeProgram( device, sourceV3, sizeof( sourceV3) / sizeof( sourceV3[0])  );
             if( NULL == programs[ vectorSize ][0] ) {
                 gFailCount++;
                 vlog_error( "\t\tFAILED -- Failed to create program.\n" );
@@ -358,7 +356,7 @@ int Test_vLoadHalf_private( bool aligned )
             source_ptr = source_private2;
             source_size = sizeof( source_private2) / sizeof( source_private2[0]);
         }
-        programs[vectorSize][1] = MakeProgram( source_ptr, source_size );
+        programs[vectorSize][1] = MakeProgram( device, source_ptr, source_size );
         if( NULL == programs[ vectorSize ][1] )
         {
             gFailCount++;
@@ -391,7 +389,7 @@ int Test_vLoadHalf_private( bool aligned )
             source_ptr = source_local2;
             source_size = sizeof( source_local2) / sizeof( source_local2[0]);
         }
-        programs[vectorSize][2] = MakeProgram( source_ptr, source_size );
+        programs[vectorSize][2] = MakeProgram( device, source_ptr, source_size );
         if( NULL == programs[ vectorSize ][2] )
         {
             gFailCount++;
@@ -411,7 +409,7 @@ int Test_vLoadHalf_private( bool aligned )
 
         if(g_arrVecSizes[vectorSize] == 3) {
             if(aligned) {
-                programs[vectorSize][3] = MakeProgram( source_constantV3aligned, sizeof(source_constantV3aligned) / sizeof( source_constantV3aligned[0])  );
+                programs[vectorSize][3] = MakeProgram( device, source_constantV3aligned, sizeof(source_constantV3aligned) / sizeof( source_constantV3aligned[0])  );
                 if( NULL == programs[ vectorSize ][3] )
                 {
                     gFailCount++;
@@ -421,7 +419,7 @@ int Test_vLoadHalf_private( bool aligned )
                     return -1;
                 }
             } else {
-                programs[vectorSize][3] = MakeProgram( source_constantV3, sizeof(source_constantV3) / sizeof( source_constantV3[0])  );
+                programs[vectorSize][3] = MakeProgram( device, source_constantV3, sizeof(source_constantV3) / sizeof( source_constantV3[0])  );
                 if( NULL == programs[ vectorSize ][3] )
                 {
                     gFailCount++;
@@ -432,7 +430,7 @@ int Test_vLoadHalf_private( bool aligned )
                 }
             }
         } else {
-            programs[vectorSize][3] = MakeProgram( source_constant, sizeof(source_constant) / sizeof( source_constant[0])  );
+            programs[vectorSize][3] = MakeProgram( device, source_constant, sizeof(source_constant) / sizeof( source_constant[0])  );
             if( NULL == programs[ vectorSize ][3] )
             {
                 gFailCount++;
@@ -454,7 +452,7 @@ int Test_vLoadHalf_private( bool aligned )
 
     // Figure out how many elements are in a work block
     size_t elementSize = MAX( sizeof(cl_half), sizeof(cl_float));
-    size_t blockCount = gBufferSize / elementSize; // elementSize is power of 2
+    size_t blockCount = getBufferSize(device) / elementSize; // elementSize is power of 2
     uint64_t lastCase = 1ULL << (8*sizeof(cl_half)); // number of things of size cl_half
 
     // we handle 64-bit types a bit differently.
@@ -504,7 +502,7 @@ int Test_vLoadHalf_private( bool aligned )
                  continue;
                  }
                  */
-                memset_pattern4( gOut_single, &pattern, gBufferSize);
+                memset_pattern4( gOut_single, &pattern, getBufferSize(device));
                 if( (error = clEnqueueWriteBuffer(gQueue, gOutBuffer_single, CL_TRUE, 0, count * sizeof( float ), gOut_single, 0, NULL, NULL)) )
                 {
                     vlog_error( "Failure in clWriteArray\n" );
@@ -518,7 +516,7 @@ int Test_vLoadHalf_private( bool aligned )
                 }
 
                 // okay, here is where we have to be careful
-                if( (error = RunKernel( kernels[vectorSize][addressSpace], gInBuffer_half, gOutBuffer_single, numVecs(count, vectorSize, aligned) ,
+                if( (error = RunKernel(device, kernels[vectorSize][addressSpace], gInBuffer_half, gOutBuffer_single, numVecs(count, vectorSize, aligned) ,
                                        runsOverBy(count, vectorSize, aligned) ) ) )
                 {
                     gFailCount++;
@@ -562,7 +560,7 @@ int Test_vLoadHalf_private( bool aligned )
                     {
                         uint64_t startTime = ReadTime();
                         error =
-                        RunKernel( kernels[vectorSize][addressSpace], gInBuffer_half, gOutBuffer_single, numVecs(count, vectorSize, aligned) ,
+                        RunKernel(device, kernels[vectorSize][addressSpace], gInBuffer_half, gOutBuffer_single, numVecs(count, vectorSize, aligned) ,
                                   runsOverBy(count, vectorSize, aligned));
                         if(error)
                         {
@@ -617,13 +615,13 @@ exit:
     return error;
 }
 
-int test_vload_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_vload_half( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-    return Test_vLoadHalf_private( false );
+    return Test_vLoadHalf_private( device, false );
 }
 
-int test_vloada_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_vloada_half( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-    return Test_vLoadHalf_private( true );
+    return Test_vLoadHalf_private( device, true );
 }
 
