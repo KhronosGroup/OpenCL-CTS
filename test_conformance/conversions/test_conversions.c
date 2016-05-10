@@ -75,8 +75,6 @@
 
 const char **   argList = NULL;
 int             argCount = 0;
-cl_device_type  gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-cl_device_id    gDevice = NULL;
 cl_context      gContext = NULL;
 cl_command_queue      gQueue = NULL;
 char            appName[64] = "ctest";
@@ -107,7 +105,6 @@ int             gIsRTZ = 0;
 uint32_t        gSimdSize = 1;
 int             gHasDouble = 0;
 int             gTestDouble = 1;
-cl_uint         choosen_device_index = 0;
 const char *    sizeNames[] = { "", "", "2", "3", "4", "8", "16" };
 const int       vectorSizes[] = { 1, 1, 2, 3, 4, 8, 16 };
 int             gMinVectorSize = 0;
@@ -120,10 +117,10 @@ static MTdata   gMTdata;
 static int ParseArgs( int argc, const char **argv );
 static void PrintUsage( void );
 static void PrintArch(void);
-static int InitCL( void );
+test_status InitCL( cl_device_id device );
 static int GetTestCase( const char *name, Type *outType, Type *inType, SaturationMode *sat, RoundingMode *round );
-static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode round, MTdata d );
-static cl_program   MakeProgram( Type outType, Type inType, SaturationMode sat, RoundingMode round, int vectorSize, cl_kernel *outKernel );
+static int DoTest( cl_device_id device, Type outType, Type inType, SaturationMode sat, RoundingMode round, MTdata d );
+static cl_program MakeProgram( cl_device_id device, Type outType, Type inType, SaturationMode sat, RoundingMode round, int vectorSize, cl_kernel *outKernel );
 static int RunKernel( cl_kernel kernel, void *inBuf, void *outBuf, size_t blockCount );
 
 void *FlushToZero( void );
@@ -156,7 +153,7 @@ static inline void Force64BitFPUPrecision(void)
 #endif
 }
 
-int test_conversions( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_conversions( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     int error, i, testNumber = -1;
     int startMinVectorSize = gMinVectorSize;
@@ -201,7 +198,7 @@ int test_conversions( cl_device_id deviceID, cl_context context, cl_command_queu
                     gMinVectorSize = 0;
             }
 
-            if( ( error = DoTest( outType, inType, sat, round, gMTdata ) ) )
+            if( ( error = DoTest( device, outType, inType, sat, round, gMTdata ) ) )
             {
                 vlog_error( "\t *** convert_%sn%s%s( %sn ) FAILED ** \n", gTypeNames[outType], gSaturationNames[sat], gRoundingModeNames[round], gTypeNames[inType] );
             }
@@ -264,7 +261,7 @@ int test_conversions( cl_device_id deviceID, cl_context context, cl_command_queu
                                 gMinVectorSize = 0;
                         }
 
-                        if( ( error = DoTest( outType, inType, sat, round, gMTdata ) ) )
+                        if( ( error = DoTest( device, outType, inType, sat, round, gMTdata ) ) )
                         {
                             vlog_error( "\t *** %d) convert_%sn%s%s( %sn ) FAILED ** \n", testNumber, gTypeNames[outType], gSaturationNames[sat], gRoundingModeNames[round], gTypeNames[inType] );
                         }
@@ -291,18 +288,12 @@ int main (int argc, const char **argv )
     int error;
     cl_uint seed = (cl_uint) time( NULL );
 
-    test_start();
-
     if( (error = ParseArgs( argc, argv )) )
         return error;
 
     //Turn off sleep so our tests run to completion
     PreventSleep();
     atexit( ResumeSleep );
-
-    // Init CL data structures
-    if( (error = InitCL()) )
-        return error;
 
     if(!gMultithread)
         SetThreadCount(1);
@@ -321,7 +312,8 @@ int main (int argc, const char **argv )
     vlog( "Random seed: %u\n", seed );
     gMTdata = init_genrand( seed );
 
-    int ret = parseAndCallCommandLineTests( 1, NULL, NULL, test_num, test_list, true, 0, 0 );
+    const char* arg[] = {argv[0]};
+    int ret = runTestHarnessWithCheck( 1, arg, test_num, test_list, false, true, 0, InitCL );
 
     free_mtdata( gMTdata );
 
@@ -342,8 +334,6 @@ int main (int argc, const char **argv )
     }
     clReleaseCommandQueue(gQueue);
     clReleaseContext(gContext);
-
-    test_finish();
 
     return ret;
 }
@@ -385,27 +375,6 @@ static int ParseArgs( int argc, const char **argv )
         }
     }
 #endif
-
-    /* Check for environment variable to set device type */
-    char *env_mode = getenv( "CL_DEVICE_TYPE" );
-    if( env_mode != NULL )
-    {
-        vlog( "CL_DEVICE_TYPE: %s\n", env_mode );
-        if( strcmp( env_mode, "gpu" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_GPU" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_GPU;
-        else if( strcmp( env_mode, "cpu" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_CPU" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_CPU;
-        else if( strcmp( env_mode, "accelerator" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-        else if( strcmp( env_mode, "default" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-        else
-        {
-            vlog_error( "Unknown CL_DEVICE_TYPE env variable setting: %s.\nAborting...\n", env_mode );
-            abort();
-        }
-    }
-
 
     vlog( "\n%s", appName );
     for( i = 1; i < argc; i++ )
@@ -488,11 +457,6 @@ static int ParseArgs( int argc, const char **argv )
                 arg++;
             }
         }
-        // Check if a particular device id was requested
-        else if (strlen(argv[i]) >= 3 && argv[i][0] == 'i' && argv[i][1] =='d')
-        {
-            choosen_device_index = atoi(&(argv[i][2]));
-        }
         else
         {
             char *t = NULL;
@@ -504,14 +468,6 @@ static int ParseArgs( int argc, const char **argv )
                 else
                     gStartTestNumber = (int) number;
             }
-            else if( 0 == strcmp( arg, "CL_DEVICE_TYPE_CPU"))
-                gDeviceType = CL_DEVICE_TYPE_CPU;
-            else if( 0 == strcmp( arg, "CL_DEVICE_TYPE_GPU"))
-                gDeviceType = CL_DEVICE_TYPE_GPU;
-            else if( 0 == strcmp( arg, "CL_DEVICE_TYPE_ACCELERATOR"))
-                gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-            else if( 0 == strcmp( arg, "CL_DEVICE_TYPE_DEFAULT"))
-                gDeviceType = CL_DEVICE_TYPE_DEFAULT;
             else
             {
                 argList[ argCount ] = arg;
@@ -698,55 +654,20 @@ static int GetTestCase( const char *name, Type *outType, Type *inType, Saturatio
 #pragma mark -
 #pragma mark OpenCL
 
-static int InitCL( void )
+test_status InitCL( cl_device_id device )
 {
     int error, i;
     size_t configSize = sizeof( gComputeDevices );
 
-    cl_platform_id     platform = NULL;
-    cl_uint            num_devices = 0;
-    cl_device_id       *devices = NULL;
-
-    /* Get the platform */
-    error = clGetPlatformIDs(1, &platform, NULL);
-    if (error) {
-        vlog_error( "clGetPlatformIDs failed: %d\n", error );
-        return error;
-    }
-
-    /* Get the number of requested devices */
-    error = clGetDeviceIDs(platform,  gDeviceType, 0, NULL, &num_devices );
-    if (error) {
-        vlog_error( "clGetDeviceIDs failed: %d\n", error );
-        return error;
-    }
-
-    devices = (cl_device_id *) malloc( num_devices * sizeof( cl_device_id ) );
-    if (!devices || choosen_device_index >= num_devices) {
-        vlog_error( "device index out of range -- choosen_device_index (%d) >= num_devices (%d)\n", choosen_device_index, num_devices );
-        return -1;
-    }
-
-    /* Get the requested device */
-    error = clGetDeviceIDs(platform,  gDeviceType, num_devices, devices, NULL );
-    if (error) {
-        vlog_error( "clGetDeviceIDs failed: %d\n", error );
-        return error;
-    }
-
-    gDevice = devices[choosen_device_index];
-    free(devices);
-    devices = NULL;
-
-    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_COMPUTE_UNITS, configSize, &gComputeDevices, NULL )) )
+    if( (error = clGetDeviceInfo( device, CL_DEVICE_MAX_COMPUTE_UNITS, configSize, &gComputeDevices, NULL )) )
         gComputeDevices = 1;
 
     configSize = sizeof( gDeviceFrequency );
-    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY, configSize, &gDeviceFrequency, NULL )) )
+    if( (error = clGetDeviceInfo( device, CL_DEVICE_MAX_CLOCK_FREQUENCY, configSize, &gDeviceFrequency, NULL )) )
         gDeviceFrequency = 0;
 
     cl_device_fp_config floatCapabilities = 0;
-    if( (error = clGetDeviceInfo(gDevice, CL_DEVICE_SINGLE_FP_CONFIG, sizeof(floatCapabilities), &floatCapabilities,  NULL)))
+    if( (error = clGetDeviceInfo(device, CL_DEVICE_SINGLE_FP_CONFIG, sizeof(floatCapabilities), &floatCapabilities,  NULL)))
         floatCapabilities = 0;
     if(0 == (CL_FP_DENORM & floatCapabilities) )
         gForceFTZ ^= 1;
@@ -755,32 +676,32 @@ static int InitCL( void )
     {
         char profileStr[128] = "";
         // Verify that we are an embedded profile device
-        if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_PROFILE, sizeof( profileStr ), profileStr, NULL ) ) )
+        if( (error = clGetDeviceInfo( device, CL_DEVICE_PROFILE, sizeof( profileStr ), profileStr, NULL ) ) )
         {
             vlog_error( "FAILURE: Could not get device profile: error %d\n", error );
-            return -1;
+            return TEST_FAIL;
         }
 
         if( strcmp( profileStr, "EMBEDDED_PROFILE" ) )
         {
             vlog_error( "FAILURE: non-embedded profile device does not support CL_FP_ROUND_TO_NEAREST\n" );
-            return -1;
+            return TEST_FAIL;
         }
 
         if( 0 == (floatCapabilities & CL_FP_ROUND_TO_ZERO ) )
         {
             vlog_error( "FAILURE: embedded profile device supports neither CL_FP_ROUND_TO_NEAREST or CL_FP_ROUND_TO_ZERO\n" );
-            return -1;
+            return TEST_FAIL;
         }
 
         gIsRTZ = 1;
     }
 
     char extensions[2048] = "";
-    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, sizeof( extensions ), extensions,  NULL ) ) )
+    if( (error = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, sizeof( extensions ), extensions,  NULL ) ) )
     {
         vlog_error( "FAILURE: unable to get device info for CL_DEVICE_EXTENSIONS!" );
-        return -1;
+        return TEST_FAIL;
     }
     else if( strstr( extensions, "cl_khr_fp64" ) )
     {
@@ -788,29 +709,19 @@ static int InitCL( void )
     }
     gTestDouble &= gHasDouble;
 
-    //detect whether profile of the device is embedded
-    char profile[1024] = "";
-    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL ) ) ){}
-    else if( strstr(profile, "EMBEDDED_PROFILE" ) )
-    {
-        gIsEmbedded = 1;
-        if( !strstr( extensions, "cles_khr_int64" ) )
-            gHasLong = 0;
-    }
 
-
-    gContext = clCreateContext( NULL, 1, &gDevice, notify_callback, NULL, &error );
-    if( NULL == gDevice || error )
+    gContext = clCreateContext( NULL, 1, &device, notify_callback, NULL, &error );
+    if( NULL == gContext || error )
     {
         vlog_error( "clCreateContext failed. (%d)\n", error );
-        return error;
+        return TEST_FAIL;
     }
 
-    gQueue = clCreateCommandQueueWithProperties(gContext, gDevice, 0, &error);
+    gQueue = clCreateCommandQueueWithProperties(gContext, device, 0, &error);
     if( NULL == gQueue || error )
     {
         vlog_error( "clCreateCommandQueue failed. (%d)\n", error );
-        return error;
+        return TEST_FAIL;
     }
 
     //Allocate buffers
@@ -822,7 +733,7 @@ static int InitCL( void )
     {
         gOut[i] = malloc( BUFFER_SIZE + 2 * kPageSize );
         if( NULL == gOut[i] )
-            return -3;
+            return TEST_FAIL;
     }
 
     // setup input buffers
@@ -830,7 +741,7 @@ static int InitCL( void )
     if( gInBuffer == NULL || error)
     {
         vlog_error( "clCreateBuffer failed for input (%d)\n", error );
-        return error;
+        return TEST_FAIL;
     }
 
     // setup output buffers
@@ -840,7 +751,7 @@ static int InitCL( void )
         if( gOutBuffers[i] == NULL || error )
         {
             vlog_error( "clCreateArray failed for output (%d)\n", error );
-            return error;
+            return TEST_FAIL;
         }
     }
 
@@ -869,7 +780,7 @@ static int InitCL( void )
             else
             {
                 vlog_error( "Error: Unknown CL_MAX_SSE setting: %s\n", env );
-                return -2;
+                return TEST_FAIL;
             }
 
             vlog( "*** Environment: CL_MAX_SSE = %s ***\n", env );
@@ -879,19 +790,21 @@ static int InitCL( void )
 #endif
 #endif
 
+    gMTdata = init_genrand( gRandomSeed );
+
 
     char c[1024];
     static const char *no_yes[] = { "NO", "YES" };
     vlog( "\nCompute Device info:\n" );
-    clGetDeviceInfo(gDevice, CL_DEVICE_NAME, sizeof(c), c, NULL);
+    clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(c), c, NULL);
     vlog( "\tDevice Name: %s\n", c );
-    clGetDeviceInfo(gDevice, CL_DEVICE_VENDOR, sizeof(c), c, NULL);
+    clGetDeviceInfo(device, CL_DEVICE_VENDOR, sizeof(c), c, NULL);
     vlog( "\tVendor: %s\n", c );
-    clGetDeviceInfo(gDevice, CL_DEVICE_VERSION, sizeof(c), c, NULL);
+    clGetDeviceInfo(device, CL_DEVICE_VERSION, sizeof(c), c, NULL);
     vlog( "\tDevice Version: %s\n", c );
-    clGetDeviceInfo(gDevice, CL_DEVICE_OPENCL_C_VERSION, sizeof(c), &c, NULL);
+    clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, sizeof(c), &c, NULL);
     vlog( "\tCL C Version: %s\n", c );
-    clGetDeviceInfo(gDevice, CL_DRIVER_VERSION, sizeof(c), c, NULL);
+    clGetDeviceInfo(device, CL_DRIVER_VERSION, sizeof(c), c, NULL);
     vlog( "\tDriver Version: %s\n", c );
     vlog( "\tProcessing with %ld devices\n", gComputeDevices );
     vlog( "\tDevice Frequency: %d MHz\n", gDeviceFrequency );
@@ -906,7 +819,7 @@ static int InitCL( void )
     for( i = gMinVectorSize; i < gMaxVectorSize; i++ )
         vlog("\t%d", vectorSizes[i]);
     vlog( "\n" );
-    return 0;
+    return TEST_PASS;
 }
 
 static int RunKernel( cl_kernel kernel, void *inBuf, void *outBuf, size_t blockCount )
@@ -1167,7 +1080,7 @@ cl_int PrepareReference( cl_uint job_id, cl_uint thread_id, void *p )
     return CL_SUCCESS;
 }
 
-static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode round, MTdata d )
+static int DoTest( cl_device_id device, Type outType, Type inType, SaturationMode sat, RoundingMode round, MTdata d )
 {
 #ifdef __APPLE__
     cl_ulong wall_start = mach_absolute_time();
@@ -1208,7 +1121,7 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
 
     for( vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
     {
-        writeInputBufferInfo.calcInfo[vectorSize].program = MakeProgram( outType, inType, sat, round, vectorSize,
+        writeInputBufferInfo.calcInfo[vectorSize].program = MakeProgram( device, outType, inType, sat, round, vectorSize,
                                                                         &writeInputBufferInfo.calcInfo[vectorSize].kernel );
         if( NULL == writeInputBufferInfo.calcInfo[vectorSize].program )
         {
@@ -1852,7 +1765,7 @@ static cl_program CreateStandardProgram( Type outType, Type inType, SaturationMo
 }
 
 
-static cl_program   MakeProgram( Type outType, Type inType, SaturationMode sat, RoundingMode round, int vectorSize, cl_kernel *outKernel )
+static cl_program MakeProgram( cl_device_id device, Type outType, Type inType, SaturationMode sat, RoundingMode round, int vectorSize, cl_kernel *outKernel )
 {
     cl_program program;
     char testName[256];
@@ -1870,12 +1783,12 @@ static cl_program   MakeProgram( Type outType, Type inType, SaturationMode sat, 
         flags = "-cl-denorms-are-zero";
 
     // build it
-    if( (error = clBuildProgram( program, 1, &gDevice, flags, NULL, NULL )))
+    if( (error = clBuildProgram( program, 1, &device, flags, NULL, NULL )))
     {
         char    buffer[2048] = "";
 
         vlog_error("\t\tFAILED -- clBuildProgramExecutable() failed: %d\n", error);
-        clGetProgramBuildInfo(program, gDevice, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
+        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
         vlog_error("Log: %s\n", buffer);
 
         clReleaseProgram( program );
@@ -1888,7 +1801,7 @@ static cl_program   MakeProgram( Type outType, Type inType, SaturationMode sat, 
         char    buffer[2048] = "";
 
         vlog_error("\t\tFAILED -- clCreateKernel() failed (%d):\n", error);
-        clGetProgramBuildInfo(program, gDevice, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
+        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
         vlog_error("Log: %s\n", buffer);
         clReleaseProgram( program );
         return NULL;
