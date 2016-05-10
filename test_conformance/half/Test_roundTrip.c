@@ -18,7 +18,7 @@
 #include "tests.h"
 #include "../../test_common/harness/testHarness.h"
 
-int test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     int vectorSize, error;
     uint64_t i, j;
@@ -107,7 +107,7 @@ int test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue 
 */
 
         if(g_arrVecSizes[vectorSize] == 3) {
-            programs[vectorSize] = MakeProgram( sourceV3, sizeof( sourceV3) / sizeof( sourceV3[0])  );
+            programs[vectorSize] = MakeProgram( device, sourceV3, sizeof( sourceV3) / sizeof( sourceV3[0])  );
             if( NULL == programs[ vectorSize ] )
             {
                 gFailCount++;
@@ -115,7 +115,7 @@ int test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue 
                 return -1;
             }
         } else {
-            programs[vectorSize] = MakeProgram( source, sizeof( source) / sizeof( source[0])  );
+            programs[vectorSize] = MakeProgram( device, source, sizeof( source) / sizeof( source[0])  );
             if( NULL == programs[ vectorSize ] )
             {
                 gFailCount++;
@@ -134,14 +134,14 @@ int test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue 
         if( gTestDouble )
         {
             if(g_arrVecSizes[vectorSize] == 3) {
-                doublePrograms[vectorSize] = MakeProgram( doubleSourceV3, sizeof( doubleSourceV3) / sizeof( doubleSourceV3[0])  );
+                doublePrograms[vectorSize] = MakeProgram( device, doubleSourceV3, sizeof( doubleSourceV3) / sizeof( doubleSourceV3[0])  );
                 if( NULL == doublePrograms[ vectorSize ] )
                 {
                     gFailCount++;
                     return -1;
                 }
             } else {
-                doublePrograms[vectorSize] = MakeProgram( doubleSource, sizeof( doubleSource) / sizeof( doubleSource[0])  );
+                doublePrograms[vectorSize] = MakeProgram( device, doubleSource, sizeof( doubleSource) / sizeof( doubleSource[0])  );
                 if( NULL == doublePrograms[ vectorSize ] )
                 {
                     gFailCount++;
@@ -161,7 +161,7 @@ int test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue 
 
     // Figure out how many elements are in a work block
     size_t elementSize = MAX( sizeof(cl_half), sizeof(cl_float));
-    size_t blockCount = (size_t)gBufferSize / elementSize; //elementSize is a power of two
+    size_t blockCount = (size_t)getBufferSize(device) / elementSize; //elementSize is a power of two
     uint64_t lastCase = 1ULL << (8*sizeof(cl_half)); // number of cl_half
     size_t stride = blockCount;
 
@@ -201,7 +201,7 @@ int test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue 
 
 
             // here is where "3" starts to cause problems.
-            error = RunKernel( kernels[vectorSize], gInBuffer_half, gOutBuffer_half, numVecs(count, vectorSize, false) ,
+            error = RunKernel(device, kernels[vectorSize], gInBuffer_half, gOutBuffer_half, numVecs(count, vectorSize, false) ,
                               runsOverBy(count, vectorSize, false) );
             if(error)
             {
@@ -252,7 +252,7 @@ int test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue 
                 }
 
 
-                if( (error = RunKernel( doubleKernels[vectorSize], gInBuffer_half, gOutBuffer_half, numVecs(count, vectorSize, false) ,
+                if( (error = RunKernel(device, doubleKernels[vectorSize], gInBuffer_half, gOutBuffer_half, numVecs(count, vectorSize, false) ,
                                        runsOverBy(count, vectorSize, false) ) ) )
                 {
                     gFailCount++;
@@ -313,7 +313,7 @@ int test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue 
             for( j = 0; j < loopCount; j++ )
             {
                 uint64_t startTime = ReadTime();
-                if( (error = RunKernel( kernels[vectorSize], gInBuffer_half, gOutBuffer_half,numVecs(count, vectorSize, false) ,
+                if( (error = RunKernel(device, kernels[vectorSize], gInBuffer_half, gOutBuffer_half,numVecs(count, vectorSize, false) ,
                                        runsOverBy(count, vectorSize, false)) ) )
                 {
                     gFailCount++;
@@ -340,7 +340,7 @@ int test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue 
                 for( j = 0; j < loopCount; j++ )
                 {
                     uint64_t startTime = ReadTime();
-                    if( (error = RunKernel( doubleKernels[vectorSize], gInBuffer_half, gOutBuffer_half, numVecs(count, vectorSize, false) ,
+                    if( (error = RunKernel(device, doubleKernels[vectorSize], gInBuffer_half, gOutBuffer_half, numVecs(count, vectorSize, false) ,
                                            runsOverBy(count, vectorSize, false)) ) )
                     {
                         gFailCount++;
