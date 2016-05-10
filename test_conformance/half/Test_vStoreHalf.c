@@ -614,73 +614,73 @@ double2half_rtn( double f )
 
 int test_vstore_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    switch (get_default_rounding_mode(gDevice))
+    switch (get_default_rounding_mode(deviceID))
     {
         case CL_FP_ROUND_TO_ZERO:
-            return Test_vStoreHalf_private(float2half_rtz, double2half_rte, "");
+            return Test_vStoreHalf_private(deviceID, float2half_rtz, double2half_rte, "");
         case 0:
             return -1;
         default:
-            return Test_vStoreHalf_private(float2half_rte, double2half_rte, "");
+            return Test_vStoreHalf_private(deviceID, float2half_rte, double2half_rte, "");
     }
 }
 
 int test_vstore_half_rte( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    return Test_vStoreHalf_private(float2half_rte, double2half_rte, "_rte");
+    return Test_vStoreHalf_private(deviceID, float2half_rte, double2half_rte, "_rte");
 }
 
 int test_vstore_half_rtz( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    return Test_vStoreHalf_private(float2half_rtz, double2half_rtz, "_rtz");
+    return Test_vStoreHalf_private(deviceID, float2half_rtz, double2half_rtz, "_rtz");
 }
 
 int test_vstore_half_rtp( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    return Test_vStoreHalf_private(float2half_rtp, double2half_rtp, "_rtp");
+    return Test_vStoreHalf_private(deviceID, float2half_rtp, double2half_rtp, "_rtp");
 }
 
 int test_vstore_half_rtn( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    return Test_vStoreHalf_private(float2half_rtn, double2half_rtn, "_rtn");
+    return Test_vStoreHalf_private(deviceID, float2half_rtn, double2half_rtn, "_rtn");
 }
 
 int test_vstorea_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    switch (get_default_rounding_mode(gDevice))
+    switch (get_default_rounding_mode(deviceID))
     {
         case CL_FP_ROUND_TO_ZERO:
-            return Test_vStoreaHalf_private(float2half_rtz, double2half_rte, "");
+            return Test_vStoreaHalf_private(deviceID,float2half_rtz, double2half_rte, "");
         case 0:
             return -1;
         default:
-            return Test_vStoreaHalf_private(float2half_rte, double2half_rte, "");
+            return Test_vStoreaHalf_private(deviceID, float2half_rte, double2half_rte, "");
     }
 }
 
 int test_vstorea_half_rte( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    return Test_vStoreaHalf_private(float2half_rte, double2half_rte, "_rte");
+    return Test_vStoreaHalf_private(deviceID, float2half_rte, double2half_rte, "_rte");
 }
 
 int test_vstorea_half_rtz( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    return Test_vStoreaHalf_private(float2half_rtz, double2half_rtz, "_rtz");
+    return Test_vStoreaHalf_private(deviceID, float2half_rtz, double2half_rtz, "_rtz");
 }
 
 int test_vstorea_half_rtp( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    return Test_vStoreaHalf_private(float2half_rtp, double2half_rtp, "_rtp");
+    return Test_vStoreaHalf_private(deviceID, float2half_rtp, double2half_rtp, "_rtp");
 }
 
 int test_vstorea_half_rtn( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    return Test_vStoreaHalf_private(float2half_rtn, double2half_rtn, "_rtn");
+    return Test_vStoreaHalf_private(deviceID, float2half_rtn, double2half_rtn, "_rtn");
 }
 
 #pragma mark -
 
-int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const char *roundName )
+int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleReferenceFunc, const char *roundName )
 {
     int vectorSize, error;
     cl_program  programs[kVectorSizeCount+kStrangeVectorSizeCount][3];
@@ -906,9 +906,9 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
 
 
         if(g_arrVecSizes[vectorSize] == 3) {
-            programs[vectorSize][0] = MakeProgram( source_v3, sizeof(source_v3) / sizeof( source_v3[0]) );
+            programs[vectorSize][0] = MakeProgram( device, source_v3, sizeof(source_v3) / sizeof( source_v3[0]) );
         } else {
-            programs[vectorSize][0] = MakeProgram( source, sizeof(source) / sizeof( source[0]) );
+            programs[vectorSize][0] = MakeProgram( device, source, sizeof(source) / sizeof( source[0]) );
         }
         if( NULL == programs[ vectorSize ][0] )
         {
@@ -925,9 +925,9 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
         }
 
         if(g_arrVecSizes[vectorSize] == 3) {
-            programs[vectorSize][1] = MakeProgram( source_private_store_v3, sizeof(source_private_store_v3) / sizeof( source_private_store_v3[0]) );
+            programs[vectorSize][1] = MakeProgram( device, source_private_store_v3, sizeof(source_private_store_v3) / sizeof( source_private_store_v3[0]) );
         } else {
-            programs[vectorSize][1] = MakeProgram( source_private_store, sizeof(source_private_store) / sizeof( source_private_store[0]) );
+            programs[vectorSize][1] = MakeProgram( device, source_private_store, sizeof(source_private_store) / sizeof( source_private_store[0]) );
         }
         if( NULL == programs[ vectorSize ][1] )
         {
@@ -944,7 +944,7 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
         }
 
         if(g_arrVecSizes[vectorSize] == 3) {
-            programs[vectorSize][2] = MakeProgram( source_local_store_v3, sizeof(source_local_store_v3) / sizeof( source_local_store_v3[0]) );
+            programs[vectorSize][2] = MakeProgram( device, source_local_store_v3, sizeof(source_local_store_v3) / sizeof( source_local_store_v3[0]) );
             if(  NULL == programs[ vectorSize ][2] )
             {
                 unsigned q;
@@ -956,7 +956,7 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
 
             }
         } else {
-            programs[vectorSize][2] = MakeProgram( source_local_store, sizeof(source_local_store) / sizeof( source_local_store[0]) );
+            programs[vectorSize][2] = MakeProgram( device, source_local_store, sizeof(source_local_store) / sizeof( source_local_store[0]) );
             if( NULL == programs[ vectorSize ][2] )
             {
                 unsigned q;
@@ -980,9 +980,9 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
         if( gTestDouble )
         {
             if(g_arrVecSizes[vectorSize] == 3) {
-                doublePrograms[vectorSize][0] = MakeProgram( double_source_v3, sizeof(double_source_v3) / sizeof( double_source_v3[0]) );
+                doublePrograms[vectorSize][0] = MakeProgram( device, double_source_v3, sizeof(double_source_v3) / sizeof( double_source_v3[0]) );
             } else {
-                doublePrograms[vectorSize][0] = MakeProgram( double_source, sizeof(double_source) / sizeof( double_source[0]) );
+                doublePrograms[vectorSize][0] = MakeProgram( device, double_source, sizeof(double_source) / sizeof( double_source[0]) );
             }
             if( NULL == doublePrograms[ vectorSize ][0] )
             {
@@ -999,9 +999,9 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
             }
 
             if(g_arrVecSizes[vectorSize] == 3)
-                doublePrograms[vectorSize][1] = MakeProgram( double_source_private_store_v3, sizeof(double_source_private_store_v3) / sizeof( double_source_private_store_v3[0]) );
+                doublePrograms[vectorSize][1] = MakeProgram( device, double_source_private_store_v3, sizeof(double_source_private_store_v3) / sizeof( double_source_private_store_v3[0]) );
             else
-                doublePrograms[vectorSize][1] = MakeProgram( double_source_private_store, sizeof(double_source_private_store) / sizeof( double_source_private_store[0]) );
+                doublePrograms[vectorSize][1] = MakeProgram( device, double_source_private_store, sizeof(double_source_private_store) / sizeof( double_source_private_store[0]) );
 
             if( NULL == doublePrograms[ vectorSize ][1] )
             {
@@ -1018,9 +1018,9 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
             }
 
             if(g_arrVecSizes[vectorSize] == 3) {
-                doublePrograms[vectorSize][2] = MakeProgram( double_source_local_store_v3, sizeof(double_source_local_store_v3) / sizeof( double_source_local_store_v3[0]) );
+                doublePrograms[vectorSize][2] = MakeProgram( device, double_source_local_store_v3, sizeof(double_source_local_store_v3) / sizeof( double_source_local_store_v3[0]) );
             } else {
-                doublePrograms[vectorSize][2] = MakeProgram( double_source_local_store, sizeof(double_source_local_store) / sizeof( double_source_local_store[0]) );
+                doublePrograms[vectorSize][2] = MakeProgram( device, double_source_local_store, sizeof(double_source_local_store) / sizeof( double_source_local_store[0]) );
             }
             if( NULL == doublePrograms[ vectorSize ][2] )
             {
@@ -1136,7 +1136,7 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
                     goto exit;
                 }
 
-                error = RunKernel(kernels[vectorSize][addressSpace], gInBuffer_single, gOutBuffer_half,
+                error = RunKernel(device, kernels[vectorSize][addressSpace], gInBuffer_single, gOutBuffer_half,
                                        numVecs(count, vectorSize, aligned) ,
                                   runsOverBy(count, vectorSize, aligned));
                 if (error) {
@@ -1167,7 +1167,7 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
                         goto exit;
                     }
 
-                    error = RunKernel(doubleKernels[vectorSize][addressSpace], gInBuffer_double, gOutBuffer_half,
+                    error = RunKernel(device, doubleKernels[vectorSize][addressSpace], gInBuffer_double, gOutBuffer_half,
                                       numVecs(count, vectorSize, aligned),
                                       runsOverBy(count, vectorSize, aligned));
                     if (error) {
@@ -1237,7 +1237,7 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
                 uint64_t startTime = ReadTime();
 
 
-                if( (error = RunKernel( kernels[vectorSize][0], gInBuffer_single, gOutBuffer_half, numVecs(count, vectorSize, aligned) ,
+                if( (error = RunKernel(device, kernels[vectorSize][0], gInBuffer_single, gOutBuffer_half, numVecs(count, vectorSize, aligned) ,
                                        runsOverBy(count, vectorSize, aligned)) ) )
                 {
                     gFailCount++;
@@ -1264,7 +1264,7 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
                 for( j = 0; j < loopCount; j++ )
                 {
                     uint64_t startTime = ReadTime();
-                    if( (error = RunKernel( doubleKernels[vectorSize][0], gInBuffer_double, gOutBuffer_half, numVecs(count, vectorSize, aligned) ,
+                    if( (error = RunKernel(device, doubleKernels[vectorSize][0], gInBuffer_double, gOutBuffer_half, numVecs(count, vectorSize, aligned) ,
                                            runsOverBy(count, vectorSize, aligned)) ) )
                     {
                         gFailCount++;
@@ -1341,7 +1341,7 @@ exit:
     return error;
 }
 
-int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const char *roundName )
+int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleReferenceFunc, const char *roundName )
 {
     int vectorSize, error;
     cl_program  programs[kVectorSizeCount+kStrangeVectorSizeCount][3];
@@ -1500,14 +1500,14 @@ int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const 
         };
 
         if(g_arrVecSizes[vectorSize] == 3) {
-            programs[vectorSize][0] = MakeProgram( source_v3, sizeof(source_v3) / sizeof( source_v3[0]) );
+            programs[vectorSize][0] = MakeProgram( device, source_v3, sizeof(source_v3) / sizeof( source_v3[0]) );
             if( NULL == programs[ vectorSize ][0] )
             {
                 gFailCount++;
                 return -1;
             }
         } else {
-            programs[vectorSize][0] = MakeProgram( source, sizeof(source) / sizeof( source[0]) );
+            programs[vectorSize][0] = MakeProgram( device, source, sizeof(source) / sizeof( source[0]) );
             if( NULL == programs[ vectorSize ][0] )
             {
                 gFailCount++;
@@ -1524,14 +1524,14 @@ int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const 
         }
 
         if(g_arrVecSizes[vectorSize] == 3) {
-            programs[vectorSize][1] = MakeProgram( source_private_v3, sizeof(source_private_v3) / sizeof( source_private_v3[0]) );
+            programs[vectorSize][1] = MakeProgram( device, source_private_v3, sizeof(source_private_v3) / sizeof( source_private_v3[0]) );
             if( NULL == programs[ vectorSize ][1] )
             {
                 gFailCount++;
                 return -1;
             }
         } else {
-            programs[vectorSize][1] = MakeProgram( source_private, sizeof(source_private) / sizeof( source_private[0]) );
+            programs[vectorSize][1] = MakeProgram( device, source_private, sizeof(source_private) / sizeof( source_private[0]) );
             if( NULL == programs[ vectorSize ][1] )
             {
                 gFailCount++;
@@ -1548,14 +1548,14 @@ int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const 
         }
 
         if(g_arrVecSizes[vectorSize] == 3) {
-            programs[vectorSize][2] = MakeProgram( source_local_v3, sizeof(source_local_v3) / sizeof( source_local_v3[0]) );
+            programs[vectorSize][2] = MakeProgram( device, source_local_v3, sizeof(source_local_v3) / sizeof( source_local_v3[0]) );
             if( NULL == programs[ vectorSize ][2] )
             {
                 gFailCount++;
                 return -1;
             }
         } else {
-            programs[vectorSize][2] = MakeProgram( source_local, sizeof(source_local) / sizeof( source_local[0]) );
+            programs[vectorSize][2] = MakeProgram( device, source_local, sizeof(source_local) / sizeof( source_local[0]) );
             if( NULL == programs[ vectorSize ][2] )
             {
                 gFailCount++;
@@ -1574,14 +1574,14 @@ int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const 
         if( gTestDouble )
         {
             if(g_arrVecSizes[vectorSize] == 3) {
-                doublePrograms[vectorSize][0] = MakeProgram( double_source_v3, sizeof(double_source_v3) / sizeof( double_source_v3[0]) );
+                doublePrograms[vectorSize][0] = MakeProgram( device, double_source_v3, sizeof(double_source_v3) / sizeof( double_source_v3[0]) );
                 if( NULL == doublePrograms[ vectorSize ][0] )
                 {
                     gFailCount++;
                     return -1;
                 }
             } else {
-                doublePrograms[vectorSize][0] = MakeProgram( double_source, sizeof(double_source) / sizeof( double_source[0]) );
+                doublePrograms[vectorSize][0] = MakeProgram( device, double_source, sizeof(double_source) / sizeof( double_source[0]) );
                 if( NULL == doublePrograms[ vectorSize ][0] )
                 {
                     gFailCount++;
@@ -1598,14 +1598,14 @@ int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const 
             }
 
             if(g_arrVecSizes[vectorSize] == 3) {
-                doublePrograms[vectorSize][1] = MakeProgram( double_source_private_v3, sizeof(double_source_private_v3) / sizeof( double_source_private_v3[0]) );
+                doublePrograms[vectorSize][1] = MakeProgram( device, double_source_private_v3, sizeof(double_source_private_v3) / sizeof( double_source_private_v3[0]) );
                 if( NULL == doublePrograms[ vectorSize ][1] )
                 {
                     gFailCount++;
                     return -1;
                 }
             } else {
-                doublePrograms[vectorSize][1] = MakeProgram( double_source_private, sizeof(double_source_private) / sizeof( double_source_private[0]) );
+                doublePrograms[vectorSize][1] = MakeProgram( device, double_source_private, sizeof(double_source_private) / sizeof( double_source_private[0]) );
                 if( NULL == doublePrograms[ vectorSize ][1] )
                 {
                     gFailCount++;
@@ -1622,14 +1622,14 @@ int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const 
             }
 
             if(g_arrVecSizes[vectorSize] == 3) {
-                doublePrograms[vectorSize][2] = MakeProgram( double_source_local_v3, sizeof(double_source_local_v3) / sizeof( double_source_local_v3[0]) );
+                doublePrograms[vectorSize][2] = MakeProgram( device, double_source_local_v3, sizeof(double_source_local_v3) / sizeof( double_source_local_v3[0]) );
                 if( NULL == doublePrograms[ vectorSize ][2] )
                 {
                     gFailCount++;
                     return -1;
                 }
             } else {
-                doublePrograms[vectorSize][2] = MakeProgram( double_source_local, sizeof(double_source_local) / sizeof( double_source_local[0]) );
+                doublePrograms[vectorSize][2] = MakeProgram( device, double_source_local, sizeof(double_source_local) / sizeof( double_source_local[0]) );
                 if( NULL == doublePrograms[ vectorSize ][2] )
                 {
                     gFailCount++;
@@ -1744,7 +1744,7 @@ int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const 
                     goto exit;
                 }
 
-                error = RunKernel(kernels[vectorSize][addressSpace], gInBuffer_single, gOutBuffer_half,
+                error = RunKernel(device, kernels[vectorSize][addressSpace], gInBuffer_single, gOutBuffer_half,
                                   numVecs(count, vectorSize, aligned),
                                   runsOverBy(count, vectorSize, aligned));
                 if (error) {
@@ -1775,7 +1775,7 @@ int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const 
                         goto exit;
                     }
 
-                    error = RunKernel(doubleKernels[vectorSize][addressSpace], gInBuffer_double, gOutBuffer_half,
+                    error = RunKernel(device, doubleKernels[vectorSize][addressSpace], gInBuffer_double, gOutBuffer_half,
                                       numVecs(count, vectorSize, aligned),
                                       runsOverBy(count, vectorSize, aligned));
                     if (error) {
@@ -1842,7 +1842,7 @@ int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const 
             for( j = 0; j < loopCount; j++ )
             {
                 uint64_t startTime = ReadTime();
-                if( (error = RunKernel( kernels[vectorSize][0], gInBuffer_single, gOutBuffer_half, numVecs(count, vectorSize, aligned) ,
+                if( (error = RunKernel(device, kernels[vectorSize][0], gInBuffer_single, gOutBuffer_half, numVecs(count, vectorSize, aligned) ,
                                        runsOverBy(count, vectorSize, aligned)) ) )
                 {
                     gFailCount++;
@@ -1869,7 +1869,7 @@ int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const 
                 for( j = 0; j < loopCount; j++ )
                 {
                     uint64_t startTime = ReadTime();
-                    if( (error = RunKernel( doubleKernels[vectorSize][0], gInBuffer_double, gOutBuffer_half, numVecs(count, vectorSize, aligned) ,
+                    if( (error = RunKernel(device, doubleKernels[vectorSize][0], gInBuffer_double, gOutBuffer_half, numVecs(count, vectorSize, aligned) ,
                                            runsOverBy(count, vectorSize, aligned)) ) )
                     {
                         gFailCount++;

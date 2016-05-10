@@ -52,8 +52,6 @@ cl_mem          gOutBuffer_single = NULL;
 cl_mem          gInBuffer_double = NULL;
 // cl_mem          gOutBuffer_double = NULL;
 
-cl_device_type  gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-cl_device_id    gDevice = NULL;
 cl_context       gContext = NULL;
 cl_command_queue gQueue = NULL;
 uint32_t        gDeviceFrequency = 0;
@@ -64,8 +62,6 @@ int             gFailCount = 0;
 bool            gWimpyMode = false;
 int             gWimpyReductionFactor = 512;
 int             gTestDouble = 0;
-uint32_t        gDeviceIndex = 0;
-size_t          gBufferSize = 0;
 
 #if defined( __APPLE__ )
 int             gReportTimes = 1;
@@ -75,43 +71,18 @@ int             gReportTimes = 0;
 
 #pragma mark -
 
-int InitCL( void )
+test_status InitCL( cl_device_id device )
 {
-    cl_platform_id platform = NULL;
     size_t configSize = sizeof( gComputeDevices );
     int error;
 
-    if( (error = clGetPlatformIDs(1, &platform, NULL) ) )
-        return error;
-
-    // gDeviceType & gDeviceIndex are globals set in ParseArgs
-
-    cl_uint ndevices;
-    if ( (error = clGetDeviceIDs(platform, gDeviceType, 0, NULL, &ndevices)) )
-        return error;
-
-    cl_device_id *gDeviceList = (cl_device_id *)malloc(ndevices*sizeof( cl_device_id ));
-    if ( gDeviceList == 0 )
-    {
-        log_error("Unable to allocate memory for devices\n");
-        return -1;
-    }
-    if( (error = clGetDeviceIDs(platform,  gDeviceType, ndevices, gDeviceList, NULL )) )
-    {
-        free( gDeviceList );
-        return error;
-    }
-
-    gDevice = gDeviceList[gDeviceIndex];
-    free( gDeviceList );
-
 #if MULTITHREAD
-    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_COMPUTE_UNITS,  configSize, &gComputeDevices, NULL )) )
+    if( (error = clGetDeviceInfo( device, CL_DEVICE_MAX_COMPUTE_UNITS,  configSize, &gComputeDevices, NULL )) )
 #endif
     gComputeDevices = 1;
 
     configSize = sizeof( gMaxThreadGroupSize );
-    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_WORK_GROUP_SIZE, configSize, &gMaxThreadGroupSize,  NULL )) )
+    if( (error = clGetDeviceInfo( device, CL_DEVICE_MAX_WORK_GROUP_SIZE, configSize, &gMaxThreadGroupSize,  NULL )) )
         gMaxThreadGroupSize = 1;
 
     // Use only one-eighth the work group size
@@ -121,13 +92,13 @@ int InitCL( void )
         gWorkGroupSize = gMaxThreadGroupSize;
 
     configSize = sizeof( gDeviceFrequency );
-    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY, configSize, &gDeviceFrequency,  NULL )) )
+    if( (error = clGetDeviceInfo( device, CL_DEVICE_MAX_CLOCK_FREQUENCY, configSize, &gDeviceFrequency,  NULL )) )
         gDeviceFrequency = 1;
 
     // Check extensions
     size_t extSize = 0;
     int hasDouble = 0;
-    if((error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, 0, NULL, &extSize)))
+    if((error = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, 0, NULL, &extSize)))
     {   vlog_error( "Unable to get device extension string to see if double present. (%d) \n", error ); }
     else
     {
@@ -136,7 +107,7 @@ int InitCL( void )
         { vlog_error( "malloc failed at %s:%d\nUnable to determine if double present.\n", __FILE__, __LINE__ ); }
         else
         {
-            if((error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, extSize, ext, NULL)))
+            if((error = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, extSize, ext, NULL)))
             {    vlog_error( "Unable to get device extension string to see if double present. (%d) \n", error ); }
             else
             {
@@ -152,7 +123,7 @@ int InitCL( void )
 
     //detect whether profile of the device is embedded
     char profile[64] = "";
-    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL ) ) )
+    if( (error = clGetDeviceInfo( device, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL ) ) )
     {
         vlog_error( "Unable to get device CL DEVICE PROFILE string. (%d) \n", error );
     }
@@ -164,36 +135,34 @@ int InitCL( void )
     vlog( "%d compute devices at %f GHz\n", gComputeDevices, (double) gDeviceFrequency / 1000. );
     vlog( "Max thread group size is %lld.\n", (uint64_t) gMaxThreadGroupSize );
 
-    gContext = clCreateContext( NULL, 1, &gDevice, notify_callback, NULL, &error );
+    gContext = clCreateContext( NULL, 1, &device, notify_callback, NULL, &error );
     if( NULL == gContext )
     {
         vlog_error( "clCreateDeviceGroup failed. (%d)\n", error );
-        return -1;
+        return TEST_FAIL;
     }
 
-    gQueue = clCreateCommandQueueWithProperties(gContext, gDevice, 0, &error);
+    gQueue = clCreateCommandQueueWithProperties(gContext, device, 0, &error);
     if( NULL == gQueue )
     {
         vlog_error( "clCreateContext failed. (%d)\n", error );
-        return -2;
+        return TEST_FAIL;
     }
 
 #if defined( __APPLE__ )
     // FIXME: use clProtectedArray
 #endif
-    gBufferSize = getBufferSize(gDevice);
-
     //Allocate buffers
-    gIn_half   = malloc( gBufferSize/2  );
+    gIn_half   = malloc( getBufferSize(device)/2  );
     gOut_half = malloc( BUFFER_SIZE/2  );
     gOut_half_reference = malloc( BUFFER_SIZE/2  );
     gOut_half_reference_double = malloc( BUFFER_SIZE/2  );
     gIn_single   = malloc( BUFFER_SIZE );
-    gOut_single = malloc( gBufferSize  );
-    gOut_single_reference = malloc( gBufferSize  );
+    gOut_single = malloc( getBufferSize(device)  );
+    gOut_single_reference = malloc( getBufferSize(device)  );
     gIn_double   = malloc( 2*BUFFER_SIZE  );
-    // gOut_double = malloc( (2*gBufferSize)  );
-    // gOut_double_reference = malloc( (2*gBufferSize)  );
+    // gOut_double = malloc( (2*getBufferSize(device))  );
+    // gOut_double_reference = malloc( (2*getBufferSize(device))  );
 
     if ( NULL == gIn_half ||
      NULL == gOut_half ||
@@ -204,73 +173,73 @@ int InitCL( void )
      NULL == gOut_single_reference ||
          NULL == gIn_double // || NULL == gOut_double || NULL == gOut_double_reference
          )
-        return -3;
+        return TEST_FAIL;
 
-    gInBuffer_half = clCreateBuffer(gContext, CL_MEM_READ_ONLY, gBufferSize / 2, NULL, &error);
+    gInBuffer_half = clCreateBuffer(gContext, CL_MEM_READ_ONLY, getBufferSize(device) / 2, NULL, &error);
     if( gInBuffer_half == NULL )
     {
         vlog_error( "clCreateArray failed for input (%d)\n", error );
-        return -4;
+        return TEST_FAIL;
     }
 
     gInBuffer_single = clCreateBuffer(gContext, CL_MEM_READ_ONLY, BUFFER_SIZE, NULL, &error );
     if( gInBuffer_single == NULL )
     {
         vlog_error( "clCreateArray failed for input (%d)\n", error );
-        return -4;
+        return TEST_FAIL;
     }
 
     gInBuffer_double = clCreateBuffer(gContext, CL_MEM_READ_ONLY, BUFFER_SIZE*2, NULL, &error );
     if( gInBuffer_double == NULL )
     {
         vlog_error( "clCreateArray failed for input (%d)\n", error );
-        return -4;
+        return TEST_FAIL;
     }
 
     gOutBuffer_half = clCreateBuffer(gContext, CL_MEM_WRITE_ONLY, BUFFER_SIZE/2, NULL, &error );
     if( gOutBuffer_half == NULL )
     {
         vlog_error( "clCreateArray failed for output (%d)\n", error );
-        return -5;
+        return TEST_FAIL;
     }
 
-    gOutBuffer_single = clCreateBuffer(gContext, CL_MEM_WRITE_ONLY, gBufferSize, NULL, &error );
+    gOutBuffer_single = clCreateBuffer(gContext, CL_MEM_WRITE_ONLY, getBufferSize(device), NULL, &error );
     if( gOutBuffer_single == NULL )
     {
         vlog_error( "clCreateArray failed for output (%d)\n", error );
-        return -5;
+        return TEST_FAIL;
     }
 
 #if 0
-    gOutBuffer_double = clCreateBuffer(gContext, CL_MEM_WRITE_ONLY, (size_t)(2*gBufferSize), NULL, &error );
+    gOutBuffer_double = clCreateBuffer(gContext, CL_MEM_WRITE_ONLY, (size_t)(2*getBufferSize(device)), NULL, &error );
     if( gOutBuffer_double == NULL )
     {
         vlog_error( "clCreateArray failed for output (%d)\n", error );
-        return -5;
+        return TEST_FAIL;
     }
 #endif
 
     char string[16384];
     vlog( "\nCompute Device info:\n" );
-    error = clGetDeviceInfo(gDevice, CL_DEVICE_NAME, sizeof(string), string, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(string), string, NULL);
     vlog( "\tDevice Name: %s\n", string );
-    error = clGetDeviceInfo(gDevice, CL_DEVICE_VENDOR, sizeof(string), string, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_VENDOR, sizeof(string), string, NULL);
     vlog( "\tVendor: %s\n", string );
-    error = clGetDeviceInfo(gDevice, CL_DEVICE_VERSION, sizeof(string), string, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_VERSION, sizeof(string), string, NULL);
     vlog( "\tDevice Version: %s\n", string );
-    error = clGetDeviceInfo(gDevice, CL_DEVICE_OPENCL_C_VERSION, sizeof(string), string, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, sizeof(string), string, NULL);
     vlog( "\tOpenCL C Version: %s\n", string );
-    error = clGetDeviceInfo(gDevice, CL_DRIVER_VERSION, sizeof(string), string, NULL);
+    error = clGetDeviceInfo(device, CL_DRIVER_VERSION, sizeof(string), string, NULL);
     vlog( "\tDriver Version: %s\n", string );
     vlog( "\tProcessing with %d devices\n", gComputeDevices );
     vlog( "\tDevice Frequency: %d MHz\n", gDeviceFrequency );
     vlog( "\tHas double? %s\n", hasDouble ? "YES" : "NO" );
     vlog( "\tTest double? %s\n", gTestDouble ? "YES" : "NO" );
 
-    return 0;
+    return TEST_PASS;
 }
 
-cl_program   MakeProgram( const char *source[], int count )
+cl_program MakeProgram( cl_device_id device, const char *source[], int count )
 {
     int error;
     int i;
@@ -285,13 +254,13 @@ cl_program   MakeProgram( const char *source[], int count )
     }
 
     // build it
-    if( (error = clBuildProgram( program, 1, &gDevice, NULL, NULL, NULL )) )
+    if( (error = clBuildProgram( program, 1, &device, NULL, NULL, NULL )) )
     {
         size_t  len;
         char    buffer[16384];
 
         vlog_error("\t\tFAILED -- clBuildProgramExecutable() failed:\n");
-        clGetProgramBuildInfo(program, gDevice, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
         vlog_error("Log: %s\n", buffer);
         vlog_error("Source :\n");
         for(i = 0; i < count; ++i) {
@@ -347,7 +316,7 @@ void printSource(const char * src[], int len) {
     }
 }
 
-int RunKernel( cl_kernel kernel, void *inBuf, void *outBuf, uint32_t blockCount , int extraArg)
+int RunKernel( cl_device_id device, cl_kernel kernel, void *inBuf, void *outBuf, uint32_t blockCount , int extraArg)
 {
     size_t localCount = blockCount;
     size_t wg_size;
@@ -366,7 +335,7 @@ int RunKernel( cl_kernel kernel, void *inBuf, void *outBuf, uint32_t blockCount 
         return -3;
     }
 
-    error = clGetKernelWorkGroupInfo(kernel, gDevice, CL_KERNEL_WORK_GROUP_SIZE, sizeof( wg_size ), &wg_size, NULL);
+    error = clGetKernelWorkGroupInfo(kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof( wg_size ), &wg_size, NULL);
     if (error)
     {
         vlog_error( "FAILED -- could not get kernel work group info\n" );
