@@ -21,14 +21,12 @@
 extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gEnablePitch, gTestRounding, gTestMipmaps;
 extern cl_filter_mode    gFilterModeToUse;
 extern cl_addressing_mode    gAddressModeToUse;
-extern cl_command_queue queue;
-extern cl_context context;
 
 // Defined in test_copy_generic.cpp
-extern int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
+extern int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
                                    const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d );
 
-int test_copy_image_3D( cl_device_id device, image_descriptor *imageInfo, MTdata d )
+int test_copy_image_3D( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d )
 {
     size_t origin[] = { 0, 0, 0, 0};
     size_t region[] = { imageInfo->width, imageInfo->height, imageInfo->depth };
@@ -42,10 +40,10 @@ int test_copy_image_3D( cl_device_id device, image_descriptor *imageInfo, MTdata
         region[ 2 ] = ( imageInfo->depth >> lod ) ? ( imageInfo->depth >> lod ) : 1;
     }
 
-    return test_copy_image_generic( device, imageInfo, imageInfo, origin, origin, region, d );
+    return test_copy_image_generic( context, queue, imageInfo, imageInfo, origin, origin, region, d );
 }
 
-int test_copy_image_set_3D( cl_device_id device, cl_image_format *format )
+int test_copy_image_set_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format )
 {
     size_t maxWidth, maxHeight, maxDepth;
     cl_ulong maxAllocSize, memSize;
@@ -95,7 +93,7 @@ int test_copy_image_set_3D( cl_device_id device, cl_image_format *format )
                 {
                     if( gDebugTrace )
                         log_info( "   at size %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth );
-                    int ret = test_copy_image_3D( device, &imageInfo, seed );
+                    int ret = test_copy_image_3D( context, queue, &imageInfo, seed );
                     if( ret )
                         return -1;
                 }
@@ -134,7 +132,7 @@ int test_copy_image_set_3D( cl_device_id device, cl_image_format *format )
             log_info( "Testing %d x %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
             if( gDebugTrace )
                 log_info( "   at max size %d,%d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
-            if( test_copy_image_3D( device, &imageInfo, seed ) )
+            if( test_copy_image_3D( context, queue, &imageInfo, seed ) )
                 return -1;
         }
     }
@@ -182,7 +180,7 @@ int test_copy_image_set_3D( cl_device_id device, cl_image_format *format )
 
             if( gDebugTrace )
                 log_info( "   at size %d,%d,%d (pitch %d,%d) out of %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth, (int)imageInfo.rowPitch, (int)imageInfo.slicePitch, (int)maxWidth, (int)maxHeight, (int)maxDepth );
-            int ret = test_copy_image_3D( device, &imageInfo,seed );
+            int ret = test_copy_image_3D( context, queue, &imageInfo,seed );
             if( ret )
                 return -1;
         }
