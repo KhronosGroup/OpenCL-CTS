@@ -43,7 +43,6 @@ extern int gWimpyReductionFactor;
 extern const char *sizeNames[VECTOR_SIZE_COUNT];
 extern const int   sizeValues[VECTOR_SIZE_COUNT];
 
-extern cl_device_type   gDeviceType;
 extern cl_device_id     gDevice;
 extern cl_context       gContext;
 extern cl_command_queue gQueue;

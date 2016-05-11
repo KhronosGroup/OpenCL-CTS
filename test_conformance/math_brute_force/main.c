@@ -48,7 +48,6 @@
 const char      **gTestNames = NULL;
 unsigned int    gTestNameCount = 0;
 char            appName[ MAXPATHLEN ] = "";
-cl_device_type  gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 cl_device_id    gDevice = NULL;
 cl_context      gContext = NULL;
 cl_command_queue gQueue = NULL;
@@ -100,8 +99,6 @@ cl_mem          gOutBuffer2[VECTOR_SIZE_COUNT]= {NULL, NULL, NULL, NULL, NULL, N
 uint32_t        gComputeDevices = 0;
 uint32_t        gSimdSize = 1;
 uint32_t        gDeviceFrequency = 0;
-cl_uint         chosen_device_index = 0;
-cl_uint         chosen_platform_index = 0;
 static MTdata   gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
 cl_device_fp_config gDoubleCapabilities = 0;
@@ -131,7 +128,7 @@ static int ParseArgs( int argc, const char **argv );
 static void PrintArch( void );
 static void PrintUsage( void );
 static void PrintFunctions( void );
-static int InitCL( void );
+test_status InitCL( cl_device_id device );
 static void ReleaseCL( void );
 static int InitILogbConstants( void );
 static int IsTininessDetectedBeforeRounding( void );
@@ -814,7 +811,6 @@ int main (int argc, const char * argv[])
 {
     int error;
 
-    test_start();
     atexit(TestFinishAtExit);
 
 #if defined( __APPLE__ )
@@ -823,11 +819,6 @@ int main (int argc, const char * argv[])
 #endif
 
     error = ParseArgs( argc, argv );
-    if( error )
-        return error;
-
-    // Init OpenCL
-    error = InitCL();
     if( error )
         return error;
 
@@ -873,7 +864,7 @@ int main (int argc, const char * argv[])
     FPU_mode_type oldMode;
     DisableFTZ( &oldMode );
 
-    int ret = parseAndCallCommandLineTests( gTestNameCount, gTestNames, NULL, test_num, test_list, true, 0, 0 );
+    int ret = runTestHarnessWithCheck( gTestNameCount, gTestNames, test_num, test_list, false, true, 0, InitCL );
 
     RestoreFPState( &oldMode );
 
@@ -940,26 +931,6 @@ static int ParseArgs( int argc, const char **argv )
         }
 #endif
     }
-
-    /* Check for environment variable to set device type */
-    char *env_mode = getenv( "CL_DEVICE_TYPE" );
-    if( env_mode != NULL )
-    {
-      if( strcmp( env_mode, "gpu" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_GPU" ) == 0 )
-        gDeviceType = CL_DEVICE_TYPE_GPU;
-      else if( strcmp( env_mode, "cpu" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_CPU" ) == 0 )
-        gDeviceType = CL_DEVICE_TYPE_CPU;
-      else if( strcmp( env_mode, "accelerator" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
-        gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-      else if( strcmp( env_mode, "default" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
-        gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-      else
-      {
-         vlog_error( "Unknown CL_DEVICE_TYPE env variable setting: %s.\nAborting...\n", env_mode );
-         abort();
-      }
-    }
-
 
     vlog( "\n%s\t", appName );
     for( i = 1; i < argc; i++ )
@@ -1081,20 +1052,6 @@ static int ParseArgs( int argc, const char **argv )
             }
         }
 
-        // Check if a particular device id was requested
-        if (strlen(argv[i]) >= 3 && argv[i][0] == 'i' && argv[i][1] =='d')
-        {
-          chosen_device_index = atoi(&(argv[i][2]));
-          optionFound = 1;
-        }
-
-        // Check if a particular platform was requested
-        if (strlen(argv[i]) >= 3 && argv[i][0] == 'p' && argv[i][1] =='l')
-        {
-          chosen_platform_index = atoi(&(argv[i][2]));
-          optionFound = 1;
-        }
-
         if( ! optionFound )
         {
             char *t = NULL;
@@ -1123,20 +1080,8 @@ static int ParseArgs( int argc, const char **argv )
                 // If we didn't find it in the list of test names
                 if (k >= functionListCount)
                 {
-                    //It may be a device type or rundomize parameter
-                    if( 0 == strcmp(arg, "CL_DEVICE_TYPE_CPU")) {
-                        gDeviceType = CL_DEVICE_TYPE_CPU;
-                    } else if( 0 == strcmp(arg, "CL_DEVICE_TYPE_GPU")) {
-                        gDeviceType = CL_DEVICE_TYPE_GPU;
-                    } else if( 0 == strcmp(arg, "CL_DEVICE_TYPE_ACCELERATOR")) {
-                        gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-                    } else if( 0 == strcmp(arg, "randomize")) {
-                        gRandomSeed = (cl_uint) time( NULL );
-                        vlog( "\nRandom seed: %u.\n", gRandomSeed );
-                    } else {
-                        gTestNames[gTestNameCount] = arg;
-                        gTestNameCount++;
-                    }
+                    gTestNames[gTestNameCount] = arg;
+                    gTestNameCount++;
                 }
             }
         }
@@ -1340,60 +1285,22 @@ void   align_free(void * ptr)
 }
 
 
-static int InitCL( void )
+test_status InitCL( cl_device_id device )
 {
     int error;
     uint32_t i;
-    int isEmbedded = 0;
     size_t configSize = sizeof( gComputeDevices );
+    cl_device_type device_type;
 
-    cl_uint            num_devices = 0;
-    cl_platform_id     platform = NULL;
-    cl_device_id       *devices = NULL;
-
-    /* Get the platform */
-    cl_uint num_entries = 0;
-    error = clGetPlatformIDs(0, NULL, &num_entries);
-    if (error) {
-      vlog_error( "clGetPlatformIDs failed: %d\n", error );
-      return error;
+    error = clGetDeviceInfo( device, CL_DEVICE_TYPE, sizeof(device_type), &device_type, NULL );
+    if( error )
+    {
+        print_error( error, "Unable to get device type" );
+        return TEST_FAIL;
     }
 
-    cl_platform_id* pPlatforms = (cl_platform_id*) alloca(num_entries * sizeof(cl_platform_id));
+    gDevice = device;
 
-    /* Get the platform */
-    error = clGetPlatformIDs(num_entries, pPlatforms, NULL);
-    if (error) {
-      vlog_error( "clGetPlatformIDs failed: %d\n", error );
-      return error;
-    }
-
-    //Choose platform
-    platform = pPlatforms[chosen_platform_index];
-
-    /* Get the number of requested devices */
-    error = clGetDeviceIDs(platform,  gDeviceType, 0, NULL, &num_devices );
-    if (error) {
-      vlog_error( "clGetDeviceIDs failed: %d\n", error );
-      return error;
-    }
-
-    devices = (cl_device_id *) malloc( num_devices * sizeof( cl_device_id ) );
-    if (!devices || chosen_device_index >= num_devices) {
-      vlog_error( "device index out of range -- chosen_device_index (%d) >= num_devices (%d)\n", chosen_device_index, num_devices );
-      return -1;
-    }
-
-    /* Get the requested device */
-    error = clGetDeviceIDs(platform,  gDeviceType, num_devices, devices, NULL );
-    if (error) {
-      vlog_error( "clGetDeviceIDs failed: %d\n", error );
-      return error;
-    }
-
-    gDevice = devices[chosen_device_index];
-    free(devices);
-    devices = NULL;
 
     if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_COMPUTE_UNITS, configSize, &gComputeDevices, NULL )) )
         gComputeDevices = 1;
@@ -1421,7 +1328,7 @@ static int InitCL( void )
                     if( (error = clGetDeviceInfo(gDevice, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof(gDoubleCapabilities), &gDoubleCapabilities, NULL)))
                     {
                         vlog_error( "ERROR: Unable to get device CL_DEVICE_DOUBLE_FP_CONFIG. (%d)\n", error );
-                        return -1;
+                        return TEST_FAIL;
                     }
 
                     if( DOUBLE_REQUIRED_FEATURES != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES) )
@@ -1442,11 +1349,11 @@ static int InitCL( void )
                         vlog_error( "ERROR: required double features are missing: %s\n", list );
 
                         free(ext);
-                        return -1;
+                        return TEST_FAIL;
                     }
 #else
                     vlog_error( "FAIL: device says it supports cl_khr_fp64 but CL_DEVICE_DOUBLE_FP_CONFIG is not in the headers!\n" );
-                    return -1;
+                    return TEST_FAIL;
 #endif
                 }
 #if defined( __APPLE__ )
@@ -1458,7 +1365,7 @@ static int InitCL( void )
                     if( (error = clGetDeviceInfo(gDevice, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof(gDoubleCapabilities), &gDoubleCapabilities, NULL)))
                     {
                         vlog_error( "ERROR: Unable to get device CL_DEVICE_DOUBLE_FP_CONFIG. (%d)\n", error );
-                        return -1;
+                        return TEST_FAIL;
                     }
 
                     if( DOUBLE_REQUIRED_FEATURES != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES) )
@@ -1479,11 +1386,11 @@ static int InitCL( void )
                         vlog_error( "ERROR: required double features are missing: %s\n", list );
 
                         free(ext);
-                        return -1;
+                        return TEST_FAIL;
                     }
 #else
                     vlog_error( "FAIL: device says it supports cl_khr_fp64 but CL_DEVICE_DOUBLE_FP_CONFIG is not in the headers!\n" );
-                    return -1;
+                    return TEST_FAIL;
 #endif
                 }
 #endif /* __APPLE__ */
@@ -1499,27 +1406,21 @@ static int InitCL( void )
     if( (error = clGetDeviceInfo(gDevice, CL_DEVICE_SINGLE_FP_CONFIG, sizeof(gFloatCapabilities), &gFloatCapabilities, NULL)))
     {
         vlog_error( "ERROR: Unable to get device CL_DEVICE_SINGLE_FP_CONFIG. (%d)\n", error );
-        return -1;
+        return TEST_FAIL;
     }
-
-    char profile[1024] = "";
-    if( (error = clGetDeviceInfo(gDevice,  CL_DEVICE_PROFILE, sizeof( profile), profile, NULL)))
-    {   vlog_error( "FAILED -- Unable to read device profile\n" ); abort(); }
-    else
-        isEmbedded = NULL != strstr(profile, "EMBEDDED_PROFILE"); // we will verify this with a kernel below
 
     gContext = clCreateContext( NULL, 1, &gDevice, bruteforce_notify_callback, NULL, &error );
     if( NULL == gContext || error )
     {
         vlog_error( "clCreateContext failed. (%d) \n", error );
-        return -1;
+        return TEST_FAIL;
     }
 
     gQueue = clCreateCommandQueueWithProperties(gContext, gDevice, 0, &error);
     if( NULL == gQueue || error )
     {
         vlog_error( "clCreateCommandQueue failed. (%d)\n", error );
-        return -2;
+        return TEST_FAIL;
     }
 
 #if defined( __APPLE__ )
@@ -1531,39 +1432,39 @@ static int InitCL( void )
     if (CL_SUCCESS != error)
     {
         vlog_error( "clGetDeviceInfo failed. (%d)\n", error );
-        return -2;
+        return TEST_FAIL;
     }
     min_alignment >>= 3;    // convert bits to bytes
 
     gIn   = align_malloc( BUFFER_SIZE, min_alignment );
     if( NULL == gIn )
-        return -3;
+        return TEST_FAIL;
     gIn2   = align_malloc( BUFFER_SIZE, min_alignment );
     if( NULL == gIn2 )
-        return -3;
+        return TEST_FAIL;
     gIn3   = align_malloc( BUFFER_SIZE, min_alignment );
     if( NULL == gIn3 )
-        return -3;
+        return TEST_FAIL;
     gOut_Ref   = align_malloc( BUFFER_SIZE, min_alignment );
     if( NULL == gOut_Ref )
-        return -3;
+        return TEST_FAIL;
     gOut_Ref2   = align_malloc( BUFFER_SIZE, min_alignment );
     if( NULL == gOut_Ref2 )
-        return -3;
+        return TEST_FAIL;
 
     for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
     {
         gOut[i] = align_malloc( BUFFER_SIZE, min_alignment );
         if( NULL == gOut[i] )
-            return -7 + i;
+            return TEST_FAIL;
         gOut2[i] = align_malloc( BUFFER_SIZE, min_alignment );
         if( NULL == gOut2[i] )
-            return -7 + i;
+            return TEST_FAIL;
     }
 
     cl_mem_flags device_flags = CL_MEM_READ_ONLY;
     // save a copy on the host device to make this go faster
-    if( CL_DEVICE_TYPE_CPU == gDeviceType )
+    if( CL_DEVICE_TYPE_CPU == device_type )
         device_flags |= CL_MEM_USE_HOST_PTR;
       else
           device_flags |= CL_MEM_COPY_HOST_PTR;
@@ -1573,28 +1474,28 @@ static int InitCL( void )
     if( gInBuffer == NULL || error )
     {
         vlog_error( "clCreateBuffer1 failed for input (%d)\n", error );
-        return -4;
+        return TEST_FAIL;
     }
 
     gInBuffer2 = clCreateBuffer( gContext, device_flags, BUFFER_SIZE, gIn2, &error );
     if( gInBuffer2 == NULL || error )
     {
         vlog_error( "clCreateArray2 failed for input (%d)\n" , error );
-        return -4;
+        return TEST_FAIL;
     }
 
     gInBuffer3 = clCreateBuffer( gContext, device_flags, BUFFER_SIZE, gIn3, &error );
     if( gInBuffer3 == NULL  || error)
     {
         vlog_error( "clCreateArray3 failed for input (%d)\n", error );
-        return -4;
+        return TEST_FAIL;
     }
 
 
     // setup output buffers
     device_flags = CL_MEM_READ_WRITE;
     // save a copy on the host device to make this go faster
-    if( CL_DEVICE_TYPE_CPU == gDeviceType )
+    if( CL_DEVICE_TYPE_CPU == device_type )
         device_flags |= CL_MEM_USE_HOST_PTR;
       else
           device_flags |= CL_MEM_COPY_HOST_PTR;
@@ -1604,30 +1505,32 @@ static int InitCL( void )
         if( gOutBuffer[i] == NULL || error )
         {
             vlog_error( "clCreateArray failed for output (%d)\n", error  );
-            return -5;
+            return TEST_FAIL;
         }
         gOutBuffer2[i] = clCreateBuffer( gContext, device_flags, BUFFER_SIZE, gOut2[i], &error );
         if( gOutBuffer2[i] == NULL || error)
         {
             vlog_error( "clCreateArray2 failed for output (%d)\n", error );
-            return -5;
+            return TEST_FAIL;
         }
     }
 
     // we are embedded, check current rounding mode
-    if( isEmbedded )
+    if( gIsEmbedded )
     {
         gIsInRTZMode = IsInRTZMode();
-        if (0 == (gFloatCapabilities & CL_FP_INF_NAN) )
-             gInfNanSupport = 0;
-
-        // ensures embedded single precision ulp values are used
-        gIsEmbedded = 1;
     }
 
     //Check tininess detection
     IsTininessDetectedBeforeRounding();
 
+    cl_platform_id platform;
+    int err = clGetPlatformIDs(1, &platform, NULL);
+    if( err )
+    {
+        print_error(err, "clGetPlatformIDs failed");
+        return TEST_FAIL;
+    }
 
     char c[1024];
     static const char *no_yes[] = { "NO", "YES" };
@@ -1672,8 +1575,8 @@ static int InitCL( void )
     vlog( "\tTesting basic double precision? %s\n", no_yes[0 != gHasBasicDouble] );
 #endif
 
-    vlog( "\tIs Embedded? %s\n", no_yes[0 != isEmbedded] );
-    if( isEmbedded )
+    vlog( "\tIs Embedded? %s\n", no_yes[0 != gIsEmbedded] );
+    if( gIsEmbedded )
         vlog( "\tRunning in RTZ mode? %s\n", no_yes[0 != gIsInRTZMode] );
     vlog( "\tTininess is detected before rounding? %s\n", no_yes[0 != gCheckTininessBeforeRounding] );
     vlog( "\tWorker threads: %d\n", GetThreadCount() );
@@ -1696,7 +1599,7 @@ static int InitCL( void )
       }
     }
 
-    return 0;
+    return TEST_PASS;
 }
 
 static void ReleaseCL( void )
