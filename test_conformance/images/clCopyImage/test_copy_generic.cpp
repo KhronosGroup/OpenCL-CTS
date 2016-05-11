@@ -22,8 +22,6 @@ extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxI
 extern cl_filter_mode    gFilterModeToUse;
 extern cl_addressing_mode    gAddressModeToUse;
 extern uint64_t gRoundingStartValue;
-extern cl_command_queue queue;
-extern cl_context context;
 
 size_t random_in_ranges( size_t minimum, size_t rangeA, size_t rangeB, MTdata d )
 {
@@ -39,7 +37,7 @@ static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *buf )
     free( buf );
 }
 
-cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_descriptor *imageInfo, int *error )
+cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr<char>& data, image_descriptor *imageInfo, int *error )
 {
     cl_mem img;
     cl_image_desc imageDesc;
@@ -292,7 +290,7 @@ BufferOwningPtr<char> dstData;
 BufferOwningPtr<char> srcHost;
 BufferOwningPtr<char> dstHost;
 
-int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
+int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
                             const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d )
 {
     int error;
@@ -350,7 +348,7 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
     if( gDebugTrace )
         log_info( " - Writing source image...\n" );
 
-    srcImage = create_image( context, srcData, srcImageInfo, &error );
+    srcImage = create_image( context, queue, srcData, srcImageInfo, &error );
     if( srcImage == NULL )
         return error;
 
@@ -406,7 +404,7 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
     if( gDebugTrace )
         log_info( " - Writing destination image...\n" );
 
-    dstImage = create_image( context, dstData, dstImageInfo, &error );
+    dstImage = create_image( context, queue, dstData, dstImageInfo, &error );
     if( dstImage == NULL )
         return error;
 
@@ -654,7 +652,7 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
     return 0;
 }
 
-int test_copy_image_size_generic( cl_device_id device, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo, MTdata d )
+int test_copy_image_size_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo, MTdata d )
 {
     size_t sourcePos[ 3 ], destPos[ 3 ], regionSize[ 3 ];
     int ret = 0, retCode;
@@ -751,7 +749,7 @@ int test_copy_image_size_generic( cl_device_id device, image_descriptor *srcImag
         }
 
         // Go for it!
-        retCode = test_copy_image_generic( device, srcImageInfo, dstImageInfo, sourcePos, destPos, regionSize, d );
+        retCode = test_copy_image_generic( context, queue, srcImageInfo, dstImageInfo, sourcePos, destPos, regionSize, d );
         if( retCode < 0 )
             return retCode;
         else
