@@ -24,11 +24,11 @@ extern cl_channel_type      gChannelTypeToUse;
 
 extern bool gDebugTrace;
 
-extern int test_get_image_info_1D( cl_device_id device, cl_image_format *format );
-extern int test_get_image_info_2D( cl_device_id device, cl_image_format *format );
-extern int test_get_image_info_3D( cl_device_id device, cl_image_format *format );
-extern int test_get_image_info_1D_array( cl_device_id device, cl_image_format *format );
-extern int test_get_image_info_2D_array( cl_device_id device, cl_image_format *format );
+extern int test_get_image_info_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
+extern int test_get_image_info_2D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
+extern int test_get_image_info_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
+extern int test_get_image_info_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
+extern int test_get_image_info_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
 
 static const char *str_1d_image = "1D";
 static const char *str_2d_image = "2D";
@@ -110,9 +110,8 @@ int filter_formats( cl_image_format *formatList, bool *filterFlags, unsigned int
     return numSupported;
 }
 
-int get_format_list( cl_device_id device, cl_mem_object_type imageType, cl_image_format * &outFormatList, unsigned int &outFormatCount, cl_mem_flags flags )
+int get_format_list( cl_context context, cl_mem_object_type imageType, cl_image_format * &outFormatList, unsigned int &outFormatCount, cl_mem_flags flags )
 {
-    extern clContextWrapper context;
     int error = clGetSupportedImageFormats( context, (cl_mem_flags)flags,
                                        imageType, 0, NULL, &outFormatCount );
     test_error( error, "Unable to get count of supported image formats" );
@@ -125,7 +124,7 @@ int get_format_list( cl_device_id device, cl_mem_object_type imageType, cl_image
 }
 
 
-int test_image_type( cl_device_id device, cl_mem_object_type imageType, cl_mem_flags flags )
+int test_image_type( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type imageType, cl_mem_flags flags )
 {
     log_info( "Running %s %s-only tests...\n", convert_image_type_to_string(imageType), flags == CL_MEM_READ_ONLY ? "read" : "write" );
 
@@ -136,7 +135,7 @@ int test_image_type( cl_device_id device, cl_mem_object_type imageType, cl_mem_f
     bool *filterFlags;
     unsigned int numFormats;
 
-    if( get_format_list( device, imageType, formatList, numFormats, flags ) )
+    if( get_format_list( context, imageType, formatList, numFormats, flags ) )
         return -1;
 
     filterFlags = new bool[ numFormats ];
@@ -165,19 +164,19 @@ int test_image_type( cl_device_id device, cl_mem_object_type imageType, cl_mem_f
 
         switch (imageType) {
             case CL_MEM_OBJECT_IMAGE1D:
-                test_return = test_get_image_info_1D( device, &formatList[ i ] );
+                test_return = test_get_image_info_1D( device, context, queue, &formatList[ i ] );
                 break;
             case CL_MEM_OBJECT_IMAGE2D:
-                test_return = test_get_image_info_2D( device, &formatList[ i ] );
+                test_return = test_get_image_info_2D( device, context, queue, &formatList[ i ] );
                 break;
             case CL_MEM_OBJECT_IMAGE3D:
-                test_return = test_get_image_info_3D( device, &formatList[ i ] );
+                test_return = test_get_image_info_3D( device, context, queue, &formatList[ i ] );
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                test_return = test_get_image_info_1D_array( device, &formatList[ i ] );
+                test_return = test_get_image_info_1D_array( device, context, queue, &formatList[ i ] );
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                test_return = test_get_image_info_2D_array( device, &formatList[ i ] );
+                test_return = test_get_image_info_2D_array( device, context, queue, &formatList[ i ] );
                 break;
         }
 
@@ -197,7 +196,7 @@ int test_image_type( cl_device_id device, cl_mem_object_type imageType, cl_mem_f
     return ret;
 }
 
-int test_image_set( cl_device_id device, cl_mem_object_type imageType )
+int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type imageType )
 {
     int version_check;
   if ((version_check = check_opencl_version(device,1,2))) {
@@ -212,8 +211,8 @@ int test_image_set( cl_device_id device, cl_mem_object_type imageType )
   }
 
   int ret = 0;
-    ret += test_image_type( device, imageType, CL_MEM_READ_ONLY );
-    ret += test_image_type( device, imageType, CL_MEM_WRITE_ONLY );
+    ret += test_image_type( device, context, queue, imageType, CL_MEM_READ_ONLY );
+    ret += test_image_type( device, context, queue, imageType, CL_MEM_WRITE_ONLY );
 
     return ret;
 }

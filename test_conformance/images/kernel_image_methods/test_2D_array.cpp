@@ -20,9 +20,6 @@
 
 extern bool            gDebugTrace, gTestSmallImages, gTestMaxImages;
 
-extern clCommandQueueWrapper queue;
-extern clContextWrapper context;
-
 typedef struct image_kernel_data
 {
     cl_int width;
@@ -56,7 +53,7 @@ static const char *methodTestKernelPattern =
 "   outData->expectedChannelOrder = %s;\n"
 "}";
 
-int test_get_2Dimage_array_info_single( cl_device_id device, image_descriptor *imageInfo, MTdata d )
+int test_get_2Dimage_array_info_single( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d )
 {
     int error = 0;
 
@@ -164,7 +161,7 @@ int test_get_2Dimage_array_info_single( cl_device_id device, image_descriptor *i
     return error;
 }
 
-int test_get_image_info_2D_array( cl_device_id device, cl_image_format *format )
+int test_get_image_info_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format )
 {
     size_t maxWidth, maxHeight, maxArraySize;
     cl_ulong maxAllocSize, memSize;
@@ -200,7 +197,7 @@ int test_get_image_info_2D_array( cl_device_id device, cl_image_format *format )
                 {
                     if( gDebugTrace )
                         log_info( "   at size %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize );
-                    int ret = test_get_2Dimage_array_info_single( device, &imageInfo, seed );
+                    int ret = test_get_2Dimage_array_info_single( context, queue, &imageInfo, seed );
                     if( ret )
                         return -1;
                 }
@@ -226,7 +223,7 @@ int test_get_image_info_2D_array( cl_device_id device, cl_image_format *format )
             log_info( "Testing %d x %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
             if( gDebugTrace )
                 log_info( "   at max size %d,%d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
-            if( test_get_2Dimage_array_info_single( device, &imageInfo, seed ) )
+            if( test_get_2Dimage_array_info_single( context, queue, &imageInfo, seed ) )
                 return -1;
         }
     }
@@ -262,7 +259,7 @@ int test_get_image_info_2D_array( cl_device_id device, cl_image_format *format )
 
             if( gDebugTrace )
                 log_info( "   at size %d,%d,%d (pitch %d,%d) out of %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize, (int)imageInfo.rowPitch, (int)imageInfo.slicePitch, (int)maxWidth, (int)maxHeight, (int)maxArraySize );
-            int ret = test_get_2Dimage_array_info_single( device, &imageInfo, seed );
+            int ret = test_get_2Dimage_array_info_single( context, queue, &imageInfo, seed );
             if( ret )
                 return -1;
         }
