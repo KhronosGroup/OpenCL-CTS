@@ -22,15 +22,13 @@ extern int                gTypesToTest;
 extern int                gNormalizedModeToUse;
 extern cl_channel_type    gChannelTypeToUse;
 extern cl_channel_order   gChannelOrderToUse;
-extern cl_command_queue   queue;
-extern cl_context         context;
 
 
-extern int test_fill_image_set_1D( cl_device_id device, cl_image_format *format, ExplicitType outputType );
-extern int test_fill_image_set_2D( cl_device_id device, cl_image_format *format, ExplicitType outputType );
-extern int test_fill_image_set_3D( cl_device_id device, cl_image_format *format, ExplicitType outputType );
-extern int test_fill_image_set_1D_array( cl_device_id device, cl_image_format *format, ExplicitType outputType );
-extern int test_fill_image_set_2D_array( cl_device_id device, cl_image_format *format, ExplicitType outputType );
+extern int test_fill_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType outputType );
+extern int test_fill_image_set_2D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType outputType );
+extern int test_fill_image_set_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType outputType );
+extern int test_fill_image_set_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType outputType );
+extern int test_fill_image_set_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType outputType );
 
 
 int filter_formats( cl_image_format *formatList, bool *filterFlags, unsigned int formatCount, cl_channel_type *channelDataTypesToFilter )
@@ -92,7 +90,7 @@ int filter_formats( cl_image_format *formatList, bool *filterFlags, unsigned int
 }
 
 
-int get_format_list( cl_device_id device, cl_mem_object_type image_type, cl_image_format * &outFormatList,
+int get_format_list( cl_context context, cl_mem_object_type image_type, cl_image_format * &outFormatList,
                     unsigned int &outFormatCount, cl_mem_flags flags )
 {
     int error;
@@ -110,7 +108,7 @@ int get_format_list( cl_device_id device, cl_mem_object_type image_type, cl_imag
 }
 
 
-int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags flags )
+int test_image_type( cl_device_id device, cl_context context, cl_command_queue queue, MethodsToTest testMethod, cl_mem_flags flags )
 {
     const char *name;
     cl_mem_object_type imageType;
@@ -150,7 +148,7 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
     bool *filterFlags;
     unsigned int numFormats;
 
-    if ( get_format_list( device, imageType, formatList, numFormats, flags ) )
+    if ( get_format_list( context, imageType, formatList, numFormats, flags ) )
         return -1;
 
     filterFlags = new bool[ numFormats ];
@@ -194,15 +192,15 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
                 gTestCount++;
 
                 if ( testMethod == k1D )
-                    test_return = test_fill_image_set_1D( device, &formatList[ i ], kFloat );
+                    test_return = test_fill_image_set_1D( device, context, queue, &formatList[ i ], kFloat );
                 else if ( testMethod == k2D )
-                    test_return = test_fill_image_set_2D( device, &formatList[ i ], kFloat );
+                    test_return = test_fill_image_set_2D( device, context, queue, &formatList[ i ], kFloat );
                 else if ( testMethod == k1DArray )
-                    test_return = test_fill_image_set_1D_array( device, &formatList[ i ], kFloat );
+                    test_return = test_fill_image_set_1D_array( device, context, queue, &formatList[ i ], kFloat );
                 else if ( testMethod == k2DArray )
-                    test_return = test_fill_image_set_2D_array( device, &formatList[ i ], kFloat );
+                    test_return = test_fill_image_set_2D_array( device, context, queue, &formatList[ i ], kFloat );
                 else if ( testMethod == k3D )
-                    test_return = test_fill_image_set_3D( device, &formatList[ i ], kFloat );
+                    test_return = test_fill_image_set_3D( device, context, queue, &formatList[ i ], kFloat );
 
                 if (test_return)
                 {
@@ -241,15 +239,15 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
                 gTestCount++;
 
                 if ( testMethod == k1D )
-                    test_return = test_fill_image_set_1D( device, &formatList[ i ], kInt );
+                    test_return = test_fill_image_set_1D( device, context, queue, &formatList[ i ], kInt );
                 else if ( testMethod == k2D )
-                    test_return = test_fill_image_set_2D( device, &formatList[ i ], kInt );
+                    test_return = test_fill_image_set_2D( device, context, queue, &formatList[ i ], kInt );
                 else if ( testMethod == k1DArray )
-                    test_return = test_fill_image_set_1D_array( device, &formatList[ i ], kInt );
+                    test_return = test_fill_image_set_1D_array( device, context, queue, &formatList[ i ], kInt );
                 else if ( testMethod == k2DArray )
-                    test_return = test_fill_image_set_2D_array( device, &formatList[ i ], kInt );
+                    test_return = test_fill_image_set_2D_array( device, context, queue, &formatList[ i ], kInt );
                 else if ( testMethod == k3D )
-                    test_return = test_fill_image_set_3D( device, &formatList[ i ], kInt );
+                    test_return = test_fill_image_set_3D( device, context, queue, &formatList[ i ], kInt );
 
                 if (test_return) {
                     gTestFailure++;
@@ -288,15 +286,15 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
                 gTestCount++;
 
                 if ( testMethod == k1D )
-                    test_return = test_fill_image_set_1D( device, &formatList[ i ], kUInt );
+                    test_return = test_fill_image_set_1D( device, context, queue, &formatList[ i ], kUInt );
                 else if ( testMethod == k2D )
-                    test_return = test_fill_image_set_2D( device, &formatList[ i ], kUInt );
+                    test_return = test_fill_image_set_2D( device, context, queue, &formatList[ i ], kUInt );
                 else if ( testMethod == k1DArray )
-                    test_return = test_fill_image_set_1D_array( device, &formatList[ i ], kUInt );
+                    test_return = test_fill_image_set_1D_array( device, context, queue, &formatList[ i ], kUInt );
                 else if ( testMethod == k2DArray )
-                    test_return = test_fill_image_set_2D_array( device, &formatList[ i ], kUInt );
+                    test_return = test_fill_image_set_2D_array( device, context, queue, &formatList[ i ], kUInt );
                 else if ( testMethod == k3D )
-                    test_return = test_fill_image_set_3D( device, &formatList[ i ], kUInt );
+                    test_return = test_fill_image_set_3D( device, context, queue, &formatList[ i ], kUInt );
 
                 if (test_return) {
                     gTestFailure++;
@@ -317,11 +315,11 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
 }
 
 
-int test_image_set( cl_device_id device, MethodsToTest testMethod )
+int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, MethodsToTest testMethod )
 {
     int ret = 0;
 
-    ret += test_image_type( device, testMethod, CL_MEM_READ_ONLY );
+    ret += test_image_type( device, context, queue, testMethod, CL_MEM_READ_ONLY );
 
     return ret;
 }
