@@ -819,7 +819,7 @@ void memset_pattern4(void *dest, const void *src_pattern, size_t bytes )
 }
 #endif
 
-extern cl_device_type GetDeviceType( cl_device_id d )
+cl_device_type GetDeviceType( cl_device_id d )
 {
     cl_device_type result = -1;
     cl_int err = clGetDeviceInfo( d, CL_DEVICE_TYPE, sizeof( result ), &result, NULL );
