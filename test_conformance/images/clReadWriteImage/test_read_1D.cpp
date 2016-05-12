@@ -22,11 +22,9 @@ extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gEnablePi
 extern cl_filter_mode    gFilterModeToUse;
 extern cl_addressing_mode    gAddressModeToUse;
 extern uint64_t gRoundingStartValue;
-extern cl_command_queue queue;
-extern cl_context context;
 
 
-int test_read_image_1D( cl_device_id device, image_descriptor *imageInfo, MTdata d )
+int test_read_image_1D( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d )
 {
     int error;
 
@@ -169,7 +167,7 @@ int test_read_image_1D( cl_device_id device, image_descriptor *imageInfo, MTdata
     return 0;
 }
 
-int test_read_image_set_1D( cl_device_id device, cl_image_format *format )
+int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format )
 {
     size_t maxWidth;
     cl_ulong maxAllocSize, memSize;
@@ -203,7 +201,7 @@ int test_read_image_set_1D( cl_device_id device, cl_image_format *format )
             if( gDebugTrace )
                 log_info( "   at size %d\n", (int)imageInfo.width );
 
-            int ret = test_read_image_1D( device, &imageInfo, seed );
+            int ret = test_read_image_1D( context, queue, &imageInfo, seed );
             if( ret )
                 return -1;
         }
@@ -227,7 +225,7 @@ int test_read_image_set_1D( cl_device_id device, cl_image_format *format )
             log_info("Testing %d\n", (int)imageInfo.width);
             if( gDebugTrace )
                 log_info( "   at max size %d\n", (int)maxWidth );
-            if( test_read_image_1D( device, &imageInfo, seed ) )
+            if( test_read_image_1D( context, queue, &imageInfo, seed ) )
                 return -1;
         }
     }
@@ -263,7 +261,7 @@ int test_read_image_set_1D( cl_device_id device, cl_image_format *format )
 
             if( gDebugTrace )
                 log_info( "   at size %d (row pitch %d) out of %d\n", (int)imageInfo.width, (int)imageInfo.rowPitch, (int)maxWidth );
-            int ret = test_read_image_1D( device, &imageInfo, seed );
+            int ret = test_read_image_1D( context, queue, &imageInfo, seed );
             if( ret )
                 return -1;
         }
