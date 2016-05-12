@@ -35,7 +35,14 @@
 __thread fpu_control_t fpu_control = 0;
 #endif
 
-bool            gDebugTrace = false, gExtraValidateInfo = false, gDisableOffsets = false, gTestSmallImages = false, gTestMaxImages = false, gTestRounding = false, gTestImage2DFromBuffer = 0, gTestMipmaps = false;
+bool gDebugTrace;
+bool gExtraValidateInfo;
+bool gDisableOffsets;
+bool gTestSmallImages;
+bool gTestMaxImages;
+bool gTestRounding;
+bool gTestImage2DFromBuffer;
+bool gTestMipmaps;
 cl_filter_mode    gFilterModeToUse = (cl_filter_mode)-1;
 // Default is CL_MEM_USE_HOST_PTR for the test
 cl_mem_flags    gMemFlagsToUse = CL_MEM_USE_HOST_PTR;
@@ -50,15 +57,12 @@ cl_device_type    gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
 int             gtestTypesToRun = 0;
 static int testTypesToRun;
-cl_command_queue queue;
-cl_context context;
-static cl_device_id device;
 
 #define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
 static void printUsage( const char *execName );
 
-extern int test_image_set( cl_device_id device, test_format_set_fn formatTestFn, cl_mem_object_type imageType );
+extern int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, test_format_set_fn formatTestFn, cl_mem_object_type imageType );
 
 /** read_write images only support sampler-less read buildt-ins which require special settings
   * for some global parameters. This pair of functions temporarily overwrite those global parameters
@@ -105,7 +109,7 @@ static void recover_global_params_from_read_write_test(bool            tTestMipm
     gFilterModeToUse        = tFilterModeToUse;
 }
 
-static int doTest( cl_mem_object_type imageType )
+static int doTest( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type imageType )
 {
     int ret = 0;
     bool is_2d_image = imageType == CL_MEM_OBJECT_IMAGE2D;
@@ -117,7 +121,7 @@ static int doTest( cl_mem_object_type imageType )
     if( testTypesToRun & kReadTests )
     {
         gtestTypesToRun = kReadTests;
-        ret += test_image_set( device, test_read_image_formats, imageType );
+        ret += test_image_set( device, context, queue, test_read_image_formats, imageType );
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -132,7 +136,7 @@ static int doTest( cl_mem_object_type imageType )
                 // disable CL_MEM_USE_HOST_PTR for 1.2 extension but enable this for 2.0
                 gMemFlagsToUse = CL_MEM_COPY_HOST_PTR;
 
-                ret += test_image_set( device, test_read_image_formats, imageType );
+                ret += test_image_set( device, context, queue, test_read_image_formats, imageType );
 
                 gTestImage2DFromBuffer = false;
                 gMemFlagsToUse = saved_gMemFlagsToUse;
@@ -143,7 +147,7 @@ static int doTest( cl_mem_object_type imageType )
     if( testTypesToRun & kWriteTests )
     {
         gtestTypesToRun = kWriteTests;
-        ret += test_image_set( device, test_write_image_formats, imageType );
+        ret += test_image_set( device, context, queue, test_write_image_formats, imageType );
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -160,7 +164,7 @@ static int doTest( cl_mem_object_type imageType )
                 gMemFlagsToUse = CL_MEM_COPY_HOST_PTR;
                 gTestImage2DFromBuffer = true;
 
-                ret += test_image_set( device, test_write_image_formats, imageType );
+                ret += test_image_set( device, context, queue, test_write_image_formats, imageType );
 
                 gTestImage2DFromBuffer = false;
                 gMemFlagsToUse = saved_gMemFlagsToUse;
@@ -173,7 +177,7 @@ static int doTest( cl_mem_object_type imageType )
     {
         gtestTypesToRun = kReadWriteTests;
         overwrite_global_params_for_read_write_test(&tTestMipMaps, &tDisableOffsets, &tNormalizedModeToUse, &tFilterModeToUse);
-        ret += test_image_set( device, test_read_image_formats, imageType );
+        ret += test_image_set( device, context, queue, test_read_image_formats, imageType );
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -188,14 +192,14 @@ static int doTest( cl_mem_object_type imageType )
                 // disable CL_MEM_USE_HOST_PTR for 1.2 extension but enable this for 2.0
                 gMemFlagsToUse = CL_MEM_COPY_HOST_PTR;
 
-                ret += test_image_set( device, test_read_image_formats, imageType );
+                ret += test_image_set( device, context, queue, test_read_image_formats, imageType );
 
                 gTestImage2DFromBuffer = false;
                 gMemFlagsToUse = saved_gMemFlagsToUse;
             }
         }
 
-        ret += test_image_set( device, test_write_image_formats, imageType );
+        ret += test_image_set( device, context, queue, test_write_image_formats, imageType );
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -212,7 +216,7 @@ static int doTest( cl_mem_object_type imageType )
                 gMemFlagsToUse = CL_MEM_COPY_HOST_PTR;
                 gTestImage2DFromBuffer = true;
 
-                ret += test_image_set( device, test_write_image_formats, imageType );
+                ret += test_image_set( device, context, queue, test_write_image_formats, imageType );
 
                 gTestImage2DFromBuffer = false;
                 gMemFlagsToUse = saved_gMemFlagsToUse;
@@ -226,25 +230,25 @@ static int doTest( cl_mem_object_type imageType )
     return ret;
 }
 
-int test_1D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_1D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest( CL_MEM_OBJECT_IMAGE1D );
+    return doTest( device, context, queue, CL_MEM_OBJECT_IMAGE1D );
 }
-int test_2D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_2D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest( CL_MEM_OBJECT_IMAGE2D );
+    return doTest( device, context, queue, CL_MEM_OBJECT_IMAGE2D );
 }
-int test_3D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_3D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest( CL_MEM_OBJECT_IMAGE3D );
+    return doTest( device, context, queue, CL_MEM_OBJECT_IMAGE3D );
 }
-int test_1Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_1Darray(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest( CL_MEM_OBJECT_IMAGE1D_ARRAY );
+    return doTest( device, context, queue, CL_MEM_OBJECT_IMAGE1D_ARRAY );
 }
-int test_2Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_2Darray(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest( CL_MEM_OBJECT_IMAGE2D_ARRAY );
+    return doTest( device, context, queue, CL_MEM_OBJECT_IMAGE2D_ARRAY );
 }
 
 test_definition test_list[] = {
@@ -259,12 +263,8 @@ const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    cl_platform_id  platform;
     cl_channel_type chanType;
     cl_channel_order chanOrder;
-    bool            randomize = false;
-
-    test_start();
 
     //Check CL_DEVICE_TYPE environment variable
     checkDeviceTypeOverride( &gDeviceType );
@@ -355,9 +355,6 @@ int main(int argc, const char *argv[])
         else if( strcmp( argv[i], "float" ) == 0 )
             gTypesToTest |= kTestFloat;
 
-        else if( strcmp( argv[i], "randomize" ) == 0 )
-            randomize = true;
-
         else if( strcmp( argv[i], "CL_MEM_COPY_HOST_PTR" ) == 0 || strcmp( argv[i], "COPY_HOST_PTR" ) == 0 )
             gMemFlagsToUse = CL_MEM_COPY_HOST_PTR;
         else if( strcmp( argv[i], "CL_MEM_USE_HOST_PTR" ) == 0 || strcmp( argv[i], "USE_HOST_PTR" ) == 0 )
@@ -419,93 +416,6 @@ int main(int argc, const char *argv[])
 #endif
 #endif
 
-    // Seed the random # generators
-    if( randomize )
-    {
-        gRandomSeed = (cl_uint) time( NULL );
-        gReSeed = 1;
-        log_info( "Random seed: %u\n", gRandomSeed );
-    }
-
-    int error;
-    // Get our platform
-    error = clGetPlatformIDs(1, &platform, NULL);
-    if( error )
-    {
-        print_error( error, "Unable to get platform" );
-        test_finish();
-        return -1;
-    }
-
-    // Get our device
-    cl_uint num_devices = 0;
-    error = clGetDeviceIDs(platform, gDeviceType, 0, NULL, &num_devices );
-    if( error )
-    {
-        print_error( error, "Unable to get the number of devices" );
-        test_finish();
-        return -1;
-    }
-
-    std::vector<cl_device_id> devices(num_devices);
-    error = clGetDeviceIDs(platform, gDeviceType, num_devices, &devices[0], NULL );
-    if( error )
-    {
-        print_error( error, "Unable to get specified device type" );
-        test_finish();
-        return -1;
-    }
-
-    int device_index = 0;
-    char* device_index_str = getenv("CL_DEVICE_INDEX");
-    if (device_index_str && ((device_index = atoi(device_index_str))) >= num_devices) {
-        log_error("CL_DEVICE_INDEX=%d is greater than the number of devices %d\n",device_index,num_devices);
-        test_finish();
-        return -1;
-    }
-
-    device = devices[device_index];
-
-    // Get the device type so we know if it is a GPU even if default is passed in.
-    error = clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(gDeviceType), &gDeviceType, NULL);
-    if( error )
-    {
-        print_error( error, "Unable to get device type" );
-        test_finish();
-        return -1;
-    }
-
-      if( printDeviceHeader( device ) != CL_SUCCESS )
-    {
-        test_finish();
-        return -1;
-    }
-
-    // Check for image support
-    if(checkForImageSupport( device ) == CL_IMAGE_FORMAT_NOT_SUPPORTED) {
-        log_info("Device does not support images. Skipping test.\n");
-        test_finish();
-        return 0;
-    }
-
-    // Create a context to test with
-    context = clCreateContext( NULL, 1, &device, notify_callback, NULL, &error );
-    if( error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to create testing context" );
-        test_finish();
-        return -1;
-    }
-
-    // Create a queue against the context
-    queue = clCreateCommandQueueWithProperties( context, device, 0, &error );
-    if( error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to create testing command queue" );
-        test_finish();
-        return -1;
-    }
-
     if( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
 
@@ -520,17 +430,10 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = parseAndCallCommandLineTests( argCount, argList, NULL, test_num, test_list, true, 0, 0 );
+    int ret = runTestHarness( argCount, argList, test_num, test_list, true, false, 0 );
 
     // Restore FP state before leaving
     RestoreFPState(&oldMode);
-
-    error = clFinish(queue);
-    if (error)
-        print_error(error, "clFinish failed.");
-
-    clReleaseContext(context);
-    clReleaseCommandQueue(queue);
 
     if (gTestFailure == 0) {
         if (gTestCount > 1)
@@ -544,10 +447,7 @@ int main(int argc, const char *argv[])
             log_error("FAILED sub-test.\n");
     }
 
-    // Clean up
     free(argList);
-    test_finish();
-
     return ret;
 }
 

@@ -19,8 +19,6 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern cl_command_queue queue;
-extern cl_context context;
 extern bool            gDebugTrace, gExtraValidateInfo, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding, gTestMipmaps;
 extern cl_device_type    gDeviceType;
 extern bool            gUseKernelSamplers;
@@ -317,7 +315,7 @@ static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *im
 #define MAX(_a, _b)             ((_a) > (_b) ? (_a) : (_b))
 #endif
 
-int test_read_image_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel,
+int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel kernel,
                        image_descriptor *imageInfo, image_sampler_data *imageSampler,
                        bool useFloatCoords, ExplicitType outputType, MTdata d )
 {
@@ -1132,7 +1130,7 @@ int test_read_image_3D( cl_device_id device, cl_context context, cl_command_queu
     return numTries != MAX_TRIES || numClamped != MAX_CLAMPED;
 }
 
-int test_read_image_set_3D( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler,
+int test_read_image_set_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler,
                            bool floatCoords, ExplicitType outputType )
 {
     char programSrc[10240];
@@ -1223,7 +1221,7 @@ int test_read_image_set_3D( cl_device_id device, cl_image_format *format, image_
 
                     if( gDebugTrace )
                         log_info( "   at size %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth );
-                    int retCode = test_read_image_3D( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+                    int retCode = test_read_image_3D( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
                     if( retCode )
                         return retCode;
                 }
@@ -1250,7 +1248,7 @@ int test_read_image_set_3D( cl_device_id device, cl_image_format *format, image_
             log_info("Testing %d x %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ]);
             if( gDebugTrace )
                 log_info( "   at max size %d,%d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
-            int retCode = test_read_image_3D( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+            int retCode = test_read_image_3D( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
             if( retCode )
                 return retCode;
         }
@@ -1264,7 +1262,7 @@ int test_read_image_set_3D( cl_device_id device, cl_image_format *format, image_
 
         imageInfo.rowPitch = imageInfo.width * get_pixel_size( imageInfo.format );
         imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
-        int retCode = test_read_image_3D( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+        int retCode = test_read_image_3D( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
         if( retCode )
             return retCode;
     }
@@ -1314,7 +1312,7 @@ int test_read_image_set_3D( cl_device_id device, cl_image_format *format, image_
                 if ( gTestMipmaps )
                     log_info( "   and number of mip levels :%d\n", (int)imageInfo.num_mip_levels );
             }
-            int retCode = test_read_image_3D( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+            int retCode = test_read_image_3D( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
             if( retCode )
                 return retCode;
         }
