@@ -21,8 +21,6 @@
 
 #define MAX_ERR 0.005f
 
-extern cl_command_queue queue;
-extern cl_context context;
 extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding, gTestMipmaps;
 extern cl_filter_mode    gFilterModeToSkip;
 extern cl_mem_flags gMemFlagsToUse;
@@ -79,13 +77,7 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
 
 #if defined( __APPLE__ )
         // Require Apple's CPU implementation to be correctly rounded, not just within 0.6
-        cl_device_type type = 0;
-        if( (error = clGetDeviceInfo( device, CL_DEVICE_TYPE, sizeof( type), &type, NULL )))
-        {
-            log_error("Error: Could not get device type for Apple device! (%d) \n", error );
-            return 1;
-        }
-        if( type == CL_DEVICE_TYPE_CPU )
+        if( GetDeviceType(device) == CL_DEVICE_TYPE_CPU )
             forceCorrectlyRoundedWrites = 1;
 #endif
 
@@ -542,7 +534,7 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
 }
 
 
-int test_write_image_1D_set( cl_device_id device, cl_image_format *format, ExplicitType inputType, MTdata d )
+int test_write_image_1D_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d )
 {
     char programSrc[10240];
     const char *ptr;
