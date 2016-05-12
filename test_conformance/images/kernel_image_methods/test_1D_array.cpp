@@ -20,9 +20,6 @@
 
 extern bool            gDebugTrace, gTestSmallImages, gTestMaxImages;
 
-extern clCommandQueueWrapper queue;
-extern clContextWrapper context;
-
 typedef struct image_kernel_data
 {
     cl_int width;
@@ -53,7 +50,7 @@ static const char *methodTestKernelPattern =
 "   outData->expectedChannelOrder = %s;\n"
 "}";
 
-int test_get_1Dimage_array_info_single( cl_device_id device, image_descriptor *imageInfo, MTdata d )
+int test_get_1Dimage_array_info_single( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d )
 {
     int error = 0;
 
@@ -155,7 +152,7 @@ int test_get_1Dimage_array_info_single( cl_device_id device, image_descriptor *i
     return error;
 }
 
-int test_get_image_info_1D_array( cl_device_id device, cl_image_format *format )
+int test_get_image_info_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format )
 {
     size_t maxWidth, maxArraySize;
     cl_ulong maxAllocSize, memSize;
@@ -189,7 +186,7 @@ int test_get_image_info_1D_array( cl_device_id device, cl_image_format *format )
                 if( gDebugTrace )
                     log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.arraySize );
 
-                int ret = test_get_1Dimage_array_info_single( device, &imageInfo, seed );
+                int ret = test_get_1Dimage_array_info_single( context, queue, &imageInfo, seed );
                 if( ret )
                     return -1;
             }
@@ -213,7 +210,7 @@ int test_get_image_info_1D_array( cl_device_id device, cl_image_format *format )
             log_info( "Testing %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 2 ]);
             if( gDebugTrace )
                 log_info( "   at max size %d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 2 ] );
-            if( test_get_1Dimage_array_info_single( device, &imageInfo, seed ) )
+            if( test_get_1Dimage_array_info_single( context, queue, &imageInfo, seed ) )
                 return -1;
         }
     }
@@ -245,7 +242,7 @@ int test_get_image_info_1D_array( cl_device_id device, cl_image_format *format )
 
             if( gDebugTrace )
                 log_info( "   at size %d,%d (row pitch %d) out of %d,%d\n", (int)imageInfo.width, (int)imageInfo.arraySize, (int)imageInfo.rowPitch, (int)maxWidth, (int)maxArraySize );
-            int ret = test_get_1Dimage_array_info_single( device, &imageInfo, seed );
+            int ret = test_get_1Dimage_array_info_single( context, queue, &imageInfo, seed );
             if( ret )
                 return -1;
         }
