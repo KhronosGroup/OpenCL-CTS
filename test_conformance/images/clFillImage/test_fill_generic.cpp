@@ -22,8 +22,6 @@ extern bool               gDebugTrace, gDisableOffsets, gTestSmallImages, gTestM
 extern cl_filter_mode     gFilterModeToUse;
 extern cl_addressing_mode gAddressModeToUse;
 extern uint64_t           gRoundingStartValue;
-extern cl_command_queue   queue;
-extern cl_context         context;
 
 extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo, int x, int y, int z, float *outData );
 
@@ -34,7 +32,7 @@ static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *buf )
 }
 
 
-cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_descriptor *imageInfo, int *error )
+cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr<char>& data, image_descriptor *imageInfo, int *error )
 {
     cl_mem img;
     cl_image_desc imageDesc;
@@ -252,7 +250,7 @@ static void fill_region_with_value( image_descriptor *imageInfo, void *imageValu
     free(fillColor);
 }
 
-int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
+int test_fill_image_generic( cl_context context, cl_command_queue queue, image_descriptor *imageInfo,
                              const size_t origin[], const size_t region[], ExplicitType outputType, MTdata d )
 {
     BufferOwningPtr<char> imgData;
@@ -309,7 +307,7 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
     if ( gDebugTrace )
         log_info( " - Creating image...\n" );
 
-    image = create_image( context, imgData, imageInfo, &error );
+    image = create_image( context, queue, imgData, imageInfo, &error );
     if ( image == NULL )
         return error;
 

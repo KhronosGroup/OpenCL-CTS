@@ -26,39 +26,40 @@
 #include "../testBase.h"
 #include "../../../test_common/harness/testHarness.h"
 
-bool             gDebugTrace = false, gTestSmallImages = false, gTestMaxImages = false, gTestRounding = false, gEnablePitch = false;
-int              gTypesToTest = 0;
+bool gDebugTrace;
+bool gTestSmallImages;
+bool gTestMaxImages;
+bool gTestRounding;
+bool gEnablePitch;
+int  gTypesToTest;
 cl_channel_type  gChannelTypeToUse = (cl_channel_type)-1;
 cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
 cl_device_type   gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-cl_context       context;
-cl_command_queue queue;
-static cl_device_id device;
 
-extern int test_image_set( cl_device_id device, MethodsToTest testMethod );
+extern int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, MethodsToTest testMethod );
 static void printUsage( const char *execName );
 
 #define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
-int test_1D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_1D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_image_set(device, k1D);
+    return test_image_set(device, context, queue, k1D);
 }
-int test_2D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_2D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_image_set(device, k2D);
+    return test_image_set(device, context, queue, k2D);
 }
-int test_1Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_1Darray(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_image_set(device, k1DArray);
+    return test_image_set(device, context, queue, k1DArray);
 }
-int test_2Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_2Darray(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_image_set(device, k2DArray);
+    return test_image_set(device, context, queue, k2DArray);
 }
-int test_3D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_3D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_image_set(device, k3D);
+    return test_image_set(device, context, queue, k3D);
 }
 
 test_definition test_list[] = {
@@ -73,12 +74,8 @@ const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    cl_platform_id   platform;
     cl_channel_type  chanType;
     cl_channel_order chanOrder;
-    bool             randomize = false;
-
-    test_start();
 
     checkDeviceTypeOverride( &gDeviceType );
 
@@ -116,9 +113,6 @@ int main(int argc, const char *argv[])
         else if ( strcmp( argv[i], "use_pitches" ) == 0 )
             gEnablePitch = true;
 
-        else if ( strcmp( argv[i], "randomize" ) == 0 )
-            randomize = true;
-
         else if( strcmp( argv[i], "int" ) == 0 )
             gTypesToTest |= kTestInt;
         else if( strcmp( argv[i], "uint" ) == 0 )
@@ -147,78 +141,10 @@ int main(int argc, const char *argv[])
     if ( gTypesToTest == 0 )
         gTypesToTest = kTestAllTypes;
 
-    // Seed the random # generators
-    if ( randomize )
-    {
-        gRandomSeed = (cl_uint) time( NULL );
-        log_info( "Random seed: %u.\n", gRandomSeed );
-        gReSeed = 1;
-    }
-
-    int error;
-    // Get our platform
-    error = clGetPlatformIDs(1, &platform, NULL);
-    if ( error )
-    {
-        print_error( error, "Unable to get platform" );
-        test_finish();
-        return -1;
-    }
-
-    // Get our device
-    error = clGetDeviceIDs(platform,  gDeviceType, 1, &device, NULL );
-    if ( error )
-    {
-        print_error( error, "Unable to get specified device" );
-        test_finish();
-        return -1;
-    }
-
-    char deviceName[ 128 ], deviceVendor[ 128 ], deviceVersion[ 128 ];
-    error = clGetDeviceInfo( device, CL_DEVICE_NAME, sizeof( deviceName ), deviceName, NULL );
-    error |= clGetDeviceInfo( device, CL_DEVICE_VENDOR, sizeof( deviceVendor ), deviceVendor, NULL );
-    error |= clGetDeviceInfo( device, CL_DEVICE_VERSION, sizeof( deviceVersion ), deviceVersion, NULL );
-    if ( error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to get device information" );
-        test_finish();
-        return -1;
-    }
-    log_info("Using compute device: Name = %s, Vendor = %s, Version = %s\n", deviceName, deviceVendor, deviceVersion );
-
-    // Check for image support
-    if (checkForImageSupport( device ) == CL_IMAGE_FORMAT_NOT_SUPPORTED) {
-        log_info("Device does not support images. Skipping test.\n");
-        test_finish();
-        return 0;
-    }
-
-    // Create a context to test with
-    context = clCreateContext( NULL, 1, &device, notify_callback, NULL, &error );
-    if ( error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to create testing context" );
-        test_finish();
-        return -1;
-    }
-
-    // Create a queue against the context
-    queue = clCreateCommandQueueWithProperties( context, device, 0, &error );
-    if ( error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to create testing command queue" );
-        test_finish();
-        return -1;
-    }
-
     if ( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
 
-    int ret = parseAndCallCommandLineTests( argCount, argList, NULL, test_num, test_list, true, 0, 0 );
-
-    error = clFinish(queue);
-    if (error)
-        print_error(error, "clFinish failed.");
+    int ret = runTestHarness( argCount, argList, test_num, test_list, true, false, 0 );
 
     if (gTestFailure == 0) {
         if (gTestCount > 1)
@@ -233,12 +159,7 @@ int main(int argc, const char *argv[])
             log_error("FAILED sub-test.\n");
     }
 
-    // Clean up
-    clReleaseCommandQueue(queue);
-    clReleaseContext(context);
     free(argList);
-    test_finish();
-
     return ret;
 }
 
