@@ -15,7 +15,6 @@
 //
 #include "../testBase.h"
 
-extern cl_context           context;
 extern int                  gTypesToTest;
 extern cl_channel_type      gChannelTypeToUse;
 extern cl_channel_order     gChannelOrderToUse;
@@ -24,12 +23,12 @@ extern bool                 gDebugTrace;
 
 extern bool                 gTestReadWrite;
 
-extern int test_read_image_set_1D( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
-extern int test_read_image_set_1D_buffer( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
-extern int test_read_image_set_2D( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
-extern int test_read_image_set_3D( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
-extern int test_read_image_set_1D_array( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
-extern int test_read_image_set_2D_array( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
+extern int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
+extern int test_read_image_set_1D_buffer( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
+extern int test_read_image_set_2D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
+extern int test_read_image_set_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
+extern int test_read_image_set_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
+extern int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
 
 static const char *str_1d_image = "1D";
 static const char *str_2d_image = "2D";
@@ -121,7 +120,7 @@ int filter_formats( cl_image_format *formatList, bool *filterFlags, unsigned int
     return numSupported;
 }
 
-int get_format_list( cl_device_id device, cl_mem_object_type imageType, cl_image_format * &outFormatList, unsigned int &outFormatCount, cl_mem_flags flags )
+int get_format_list( cl_context context, cl_mem_object_type imageType, cl_image_format * &outFormatList, unsigned int &outFormatCount, cl_mem_flags flags )
 {
     int error;
 
@@ -138,7 +137,7 @@ int get_format_list( cl_device_id device, cl_mem_object_type imageType, cl_image
     return 0;
 }
 
-int test_read_image_type( cl_device_id device, cl_image_format *format,
+int test_read_image_type( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format,
                           image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType )
 {
     int ret = 0;
@@ -151,22 +150,22 @@ int test_read_image_type( cl_device_id device, cl_image_format *format,
     switch (imageType)
     {
         case CL_MEM_OBJECT_IMAGE1D:
-            ret = test_read_image_set_1D( device, format, imageSampler, outputType );
+            ret = test_read_image_set_1D( device, context, queue, format, imageSampler, outputType );
             break;
         case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-            ret += test_read_image_set_1D_buffer( device, format, imageSampler, outputType );
+            ret += test_read_image_set_1D_buffer( device, context, queue, format, imageSampler, outputType );
             break;
         case CL_MEM_OBJECT_IMAGE2D:
-            ret = test_read_image_set_2D( device, format, imageSampler, outputType );
+            ret = test_read_image_set_2D( device, context, queue, format, imageSampler, outputType );
             break;
         case CL_MEM_OBJECT_IMAGE3D:
-            ret = test_read_image_set_3D( device, format, imageSampler, outputType );
+            ret = test_read_image_set_3D( device, context, queue, format, imageSampler, outputType );
             break;
         case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-            ret = test_read_image_set_1D_array( device, format, imageSampler, outputType );
+            ret = test_read_image_set_1D_array( device, context, queue, format, imageSampler, outputType );
             break;
         case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-            ret = test_read_image_set_2D_array( device, format, imageSampler, outputType );
+            ret = test_read_image_set_2D_array( device, context, queue, format, imageSampler, outputType );
             break;
     }
 
@@ -180,7 +179,7 @@ int test_read_image_type( cl_device_id device, cl_image_format *format,
     return ret;
 }
 
-int test_read_image_formats( cl_device_id device, cl_image_format *formatList, bool *filterFlags, unsigned int numFormats,
+int test_read_image_formats( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *formatList, bool *filterFlags, unsigned int numFormats,
                              image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType )
 {
     int ret = 0;
@@ -195,13 +194,13 @@ int test_read_image_formats( cl_device_id device, cl_image_format *formatList, b
 
         cl_image_format &imageFormat = formatList[ i ];
 
-        ret |= test_read_image_type( device, &imageFormat, imageSampler, outputType, imageType );
+        ret |= test_read_image_type( device, context, queue, &imageFormat, imageSampler, outputType, imageType );
     }
     return ret;
 }
 
 
-int test_image_set( cl_device_id device, cl_mem_object_type imageType )
+int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type imageType )
 {
     int ret = 0;
     static int printedFormatList = -1;
@@ -215,7 +214,7 @@ int test_image_set( cl_device_id device, cl_mem_object_type imageType )
     // The flag for creating image will be set explicitly in test functions
     cl_mem_flags flags = (gTestReadWrite)? CL_MEM_KERNEL_READ_AND_WRITE : CL_MEM_READ_ONLY;
 
-    if ( get_format_list( device, imageType, formatList, numFormats, flags ) )
+    if ( get_format_list( context, imageType, formatList, numFormats, flags ) )
         return -1;
 
     filterFlags = new bool[ numFormats ];
@@ -260,7 +259,7 @@ int test_image_set( cl_device_id device, cl_mem_object_type imageType )
         else
         {
             imageSampler.filter_mode = CL_FILTER_NEAREST;
-            ret += test_read_image_formats( device, formatList, filterFlags, numFormats, &imageSampler, kFloat, imageType );
+            ret += test_read_image_formats( device, context, queue, formatList, filterFlags, numFormats, &imageSampler, kFloat, imageType );
         }
     }
 
@@ -276,7 +275,7 @@ int test_image_set( cl_device_id device, cl_mem_object_type imageType )
         {
             // Only filter mode we support on int is nearest
             imageSampler.filter_mode = CL_FILTER_NEAREST;
-            ret += test_read_image_formats( device, formatList, filterFlags, numFormats, &imageSampler, kInt, imageType );
+            ret += test_read_image_formats( device, context, queue, formatList, filterFlags, numFormats, &imageSampler, kInt, imageType );
         }
     }
 
@@ -293,7 +292,7 @@ int test_image_set( cl_device_id device, cl_mem_object_type imageType )
         {
             // Only filter mode we support on uint is nearest
             imageSampler.filter_mode = CL_FILTER_NEAREST;
-            ret += test_read_image_formats( device, formatList, filterFlags, numFormats, &imageSampler, kUInt, imageType );
+            ret += test_read_image_formats( device, context, queue, formatList, filterFlags, numFormats, &imageSampler, kUInt, imageType );
         }
     }
 

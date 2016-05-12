@@ -25,8 +25,6 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern cl_command_queue     queue;
-extern cl_context           context;
 extern bool                 gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding;
 extern cl_device_type       gDeviceType;
 extern bool                 gTestReadWrite;
@@ -62,7 +60,7 @@ const char *read_write1DKernelSourcePattern =
 "      results[offset] = 0;\n"
 "}";
 
-int test_read_image_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel,
+int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel kernel,
                         image_descriptor *imageInfo, image_sampler_data *imageSampler,
                         ExplicitType outputType, MTdata d )
 {
@@ -192,7 +190,7 @@ int test_read_image_1D( cl_device_id device, cl_context context, cl_command_queu
     return 0;
 }
 
-int test_read_image_set_1D( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler,
+int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler,
                             ExplicitType outputType )
 {
     char programSrc[10240];
@@ -273,7 +271,7 @@ int test_read_image_set_1D( cl_device_id device, cl_image_format *format, image_
                 if ( gDebugTrace )
                     log_info( "   at size %d\n", (int)imageInfo.width );
 
-                int retCode = test_read_image_1D( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
+                int retCode = test_read_image_1D( context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
                 if ( retCode )
                     return retCode;
             }
@@ -294,7 +292,7 @@ int test_read_image_set_1D( cl_device_id device, cl_image_format *format, image_
             log_info("Testing %d\n", (int)sizes[ idx ][ 0 ]);
             if ( gDebugTrace )
                 log_info( "   at max size %d\n", (int)sizes[ idx ][ 0 ] );
-            int retCode = test_read_image_1D( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
+            int retCode = test_read_image_1D( context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
             if ( retCode )
                 return retCode;
         }
@@ -322,7 +320,7 @@ int test_read_image_set_1D( cl_device_id device, cl_image_format *format, image_
 
             if ( gDebugTrace )
                 log_info( "   at size %d (row pitch %d) out of %d\n", (int)imageInfo.width, (int)imageInfo.rowPitch, (int)maxWidth );
-            int retCode = test_read_image_1D( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
+            int retCode = test_read_image_1D( context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
             if ( retCode )
                 return retCode;
         }
