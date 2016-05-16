@@ -8,6 +8,7 @@ set(${MODULE_NAME}_SOURCES
     test_read_2D_array.cpp
     test_loops.cpp
     test_read_3D.cpp
+    ../common.cpp
 )
 
 include(../../CMakeCommon.txt)

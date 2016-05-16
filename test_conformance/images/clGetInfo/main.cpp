@@ -30,6 +30,7 @@ bool gTestSmallImages;
 bool gTestMaxImages;
 int  gTypesToTest;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
+cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
 
 extern int test_image_set( cl_device_id device, cl_context context, cl_mem_object_type image_type );
 static void printUsage( const char *execName );
