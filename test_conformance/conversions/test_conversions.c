@@ -78,8 +78,6 @@ int             argCount = 0;
 cl_context      gContext = NULL;
 cl_command_queue      gQueue = NULL;
 char            appName[64] = "ctest";
-int             gTestCount = 0;
-int             gFailCount = 0;
 int             gStartTestNumber = -1;
 int             gEndTestNumber = 0;
 #if defined( __APPLE__ )
@@ -326,12 +324,6 @@ int main (int argc, const char **argv )
     error = clFinish(gQueue);
     if (error)
         vlog_error("clFinish failed: %d\n", error);
-
-    if (gFailCount == 0 && gTestCount >= 0) {
-        vlog("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-    } else if (gFailCount > 0) {
-        vlog_error("FAILED %d of %d sub-tests.\n", gFailCount, gTestCount);
-    }
 
     clReleaseMemObject(gInBuffer);
 

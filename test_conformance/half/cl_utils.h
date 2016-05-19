@@ -66,7 +66,6 @@ extern uint32_t        gDeviceFrequency;
 extern uint32_t        gComputeDevices;
 extern size_t          gMaxThreadGroupSize;
 extern size_t          gWorkGroupSize;
-extern int             gFailCount;
 extern int             gTestDouble;
 extern int             gReportTimes;
 

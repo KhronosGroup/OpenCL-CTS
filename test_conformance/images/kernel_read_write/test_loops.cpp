@@ -226,7 +226,7 @@ int test_read_image_type( cl_device_id device, cl_context context, cl_command_qu
         }
         if( retCode != 0 )
         {
-            gTestFailure++;
+            gFailCount++;
             log_error( "FAILED: " );
             print_read_header( format, imageSampler, true );
             log_info( "\n" );
@@ -296,7 +296,7 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
 
     if ( ( 0 == is_extension_available( device, "cl_khr_3d_image_writes" )) && (imageType == CL_MEM_OBJECT_IMAGE3D) && (formatTestFn == test_write_image_formats) )
     {
-        gTestFailure++;
+        gFailCount++;
         log_error( "-----------------------------------------------------\n" );
         log_error( "FAILED: test writing CL_MEM_OBJECT_IMAGE3D images\n" );
         log_error( "This device does not support the mandated extension cl_khr_3d_image_writes.\n");

@@ -54,8 +54,6 @@ char            appName[ MAXPATHLEN ] = "";
 cl_device_id    gDevice = NULL;
 cl_context      gContext = NULL;
 cl_command_queue gQueue = NULL;
-int             gTestCount = 0;
-int             gFailCount = 0;
 static int32_t  gStartTestNumber;
 static int32_t  gEndTestNumber;
 int             gSkipCorrectnessTesting = 0;
@@ -882,21 +880,6 @@ int main (int argc, const char * argv[])
     int error_code = clFinish(gQueue);
     if (error_code)
         vlog_error("clFinish failed:%d\n", error_code);
-
-    if (gFailCount == 0)
-    {
-        if (gTestCount > 1)
-            vlog("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-        else
-            vlog("PASSED sub-test.\n");
-    }
-    else if (gFailCount > 0)
-    {
-        if (gTestCount > 1)
-            vlog_error("FAILED %d of %d sub-tests.\n", gFailCount, gTestCount);
-        else
-            vlog_error("FAILED sub-test.\n");
-    }
 
     ReleaseCL();
 
