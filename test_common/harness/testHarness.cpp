@@ -474,10 +474,10 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     return (error == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-static int find_matching_tests( test_definition testList[], unsigned char selectedTestList[], int testNum,
+static int find_matching_tests( test_definition testList[], int testNum,
                                 const char *argument, bool isWildcard )
 {
-    int found_tests = 0;
+    bool found_tests = false;
     size_t wildcard_length = strlen( argument ) - 1; /* -1 for the asterisk */
 
     for( int i = 0; i < testNum; i++ )
@@ -485,7 +485,7 @@ static int find_matching_tests( test_definition testList[], unsigned char select
         if( ( !isWildcard && strcmp( testList[i].name, argument ) == 0 ) ||
             ( isWildcard && strncmp( testList[i].name, argument, wildcard_length ) == 0 ) )
         {
-            if( selectedTestList[i] )
+            if( testList[i].selected )
             {
                 log_error( "ERROR: Test '%s' has already been selected.\n", testList[i].name );
                 return EXIT_FAILURE;
@@ -497,8 +497,8 @@ static int find_matching_tests( test_definition testList[], unsigned char select
             }
             else
             {
-                selectedTestList[i] = 1;
-                found_tests = 1;
+                testList[i].selected = true;
+                found_tests = true;
                 if( !isWildcard )
                 {
                     break;
@@ -516,8 +516,7 @@ static int find_matching_tests( test_definition testList[], unsigned char select
     return EXIT_SUCCESS;
 }
 
-static int saveResultsToJson( const char *fileName, const char *suiteName, test_definition testList[],
-                              unsigned char selectedTestList[], test_status resultTestList[], int testNum )
+static int saveResultsToJson( const char *fileName, const char *suiteName, test_definition testList[], int testNum )
 {
     FILE *file = fopen( fileName, "w" );
     if( NULL == file )
@@ -537,9 +536,9 @@ static int saveResultsToJson( const char *fileName, const char *suiteName, test_
 
     for( int i = 0; i < testNum; ++i )
     {
-        if( selectedTestList[i] )
+        if( testList[i].selected )
         {
-            fprintf( file, "%s\t\t\"%s\": \"%s\"", linebreak[add_linebreak], testList[i].name, result_map[(int)resultTestList[i]] );
+            fprintf( file, "%s\t\t\"%s\": \"%s\"", linebreak[add_linebreak], testList[i].name, result_map[(bool)testList[i].result] );
             add_linebreak = 1;
         }
     }
@@ -553,6 +552,17 @@ static int saveResultsToJson( const char *fileName, const char *suiteName, test_
     log_info( "Saving results to %s: %s!\n", fileName, save_map[ret] );
 
     return ret;
+}
+
+static void select_all_tests( test_definition testList[], int testNum )
+{
+    for( int i = 0; i < testNum; i++ )
+    {
+        if( testList[i].func != NULL )
+        {
+            testList[i].selected = true;
+        }
+    }
 }
 
 static void print_results( int failed, int count, const char* name )
@@ -592,13 +602,10 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
 {
     int ret = EXIT_SUCCESS;
 
-    unsigned char *selectedTestList = ( unsigned char* ) calloc( testNum, 1 );
-    test_status *resultTestList = NULL;
-
     if( argc == 1 )
     {
         /* No actual arguments, all tests will be run. */
-        memset( selectedTestList, 1, testNum );
+        select_all_tests( testList, testNum );
     }
     else
     {
@@ -606,18 +613,18 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
         {
             if( strchr( argv[i], '*' ) != NULL )
             {
-                ret = find_matching_tests( testList, selectedTestList, testNum, argv[i], true );
+                ret = find_matching_tests( testList, testNum, argv[i], true );
             }
             else
             {
                 if( strcmp( argv[i], "all" ) == 0 )
                 {
-                    memset( selectedTestList, 1, testNum );
+                    select_all_tests( testList, testNum );
                     break;
                 }
                 else
                 {
-                    ret = find_matching_tests( testList, selectedTestList, testNum, argv[i], false );
+                    ret = find_matching_tests( testList, testNum, argv[i], false );
                 }
             }
 
@@ -630,10 +637,7 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
 
     if( ret == EXIT_SUCCESS )
     {
-        resultTestList = ( test_status* ) calloc( testNum, sizeof(*resultTestList) );
-
-        callTestFunctions( testList, selectedTestList, resultTestList, testNum, device,
-                           forceNoContextCreation, num_elements, queueProps );
+        callTestFunctions( testList, testNum, device, forceNoContextCreation, num_elements, queueProps );
 
         print_results( gFailCount, gTestCount, "sub-test" );
         print_results( gTestsFailed, gTestsFailed + gTestsPassed, "test" );
@@ -641,26 +645,22 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
         char *filename = getenv( "CL_CONFORMANCE_RESULTS_FILENAME" );
         if( filename != NULL )
         {
-            ret = saveResultsToJson( filename, argv[0], testList, selectedTestList, resultTestList, testNum );
+            ret = saveResultsToJson( filename, argv[0], testList, testNum );
         }
     }
-
-    free( selectedTestList );
-    free( resultTestList );
 
     return ret;
 }
 
-void callTestFunctions( test_definition testList[], unsigned char selectedTestList[], test_status resultTestList[],
-                        int testNum, cl_device_id deviceToUse, int forceNoContextCreation, int numElementsToUse,
-                        cl_command_queue_properties queueProps )
+void callTestFunctions( test_definition testList[], int testNum, cl_device_id deviceToUse, int forceNoContextCreation,
+                        int numElementsToUse, cl_command_queue_properties queueProps )
 {
     for( int i = 0; i < testNum; ++i )
     {
-        if( selectedTestList[i] )
+        if( testList[i].selected )
         {
-            resultTestList[i] = callSingleTestFunction( testList[i], deviceToUse, forceNoContextCreation,
-                                                        numElementsToUse, queueProps );
+            testList[i].result = callSingleTestFunction( testList[i], deviceToUse, forceNoContextCreation,
+                                                         numElementsToUse, queueProps );
         }
     }
 }

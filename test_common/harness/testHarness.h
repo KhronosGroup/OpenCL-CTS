@@ -56,20 +56,21 @@ private:
     int m_minor;
 };
 
-typedef struct test_definition
-{
-    basefn func;
-    const char* name;
-    Version min_version;
-} test_definition;
-
-
 typedef enum test_status
 {
     TEST_PASS = 0,
     TEST_FAIL = 1,
     TEST_SKIP = 2,
 } test_status;
+
+typedef struct test_definition
+{
+    basefn func;
+    const char* name;
+    Version min_version;
+    test_status result;
+    bool selected;
+} test_definition;
 
 extern int gFailCount;
 extern int gTestCount;
@@ -101,15 +102,11 @@ extern int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device
 // Call this function if you need to do all the setup work yourself, and just need the function list called/
 // managed.
 //    testList is the data structure that contains test functions and its names
-//    selectedTestList is an array of integers (treated as bools) which tell which function is to be called,
-//       each element at index i, corresponds to the element in testList at index i
-//    resultTestList is an array of statuses which contain the result of each selected test
-//    testNum is the number of tests in testList, selectedTestList and resultTestList
+//    testNum is the number of tests in testList
 //    contextProps are used to create a testing context for each test
 //    deviceToUse and numElementsToUse are all just passed to each test function
-extern void callTestFunctions( test_definition testList[], unsigned char selectedTestList[], test_status resultTestList[],
-                               int testNum, cl_device_id deviceToUse, int forceNoContextCreation, int numElementsToUse,
-                               cl_command_queue_properties queueProps );
+extern void callTestFunctions( test_definition testList[], int testNum, cl_device_id deviceToUse, int forceNoContextCreation,
+                               int numElementsToUse, cl_command_queue_properties queueProps );
 
 // This function is called by callTestFunctions, once per function, to do setup, call, logging and cleanup
 extern test_status callSingleTestFunction( test_definition test, cl_device_id deviceToUse, int forceNoContextCreation,
