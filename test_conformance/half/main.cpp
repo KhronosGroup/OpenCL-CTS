@@ -110,7 +110,7 @@ int main (int argc, const char **argv )
     }
 
     fflush( stdout );
-    error = runTestHarnessWithCheck( argCount, argList, test_num, test_list, false, true, 0, InitCL );
+    error = runTestHarnessWithCheck( argCount, argList, test_num, test_list, true, 0, InitCL );
 
 exit:
     if(gQueue)

@@ -869,7 +869,7 @@ int main (int argc, const char * argv[])
     FPU_mode_type oldMode;
     DisableFTZ( &oldMode );
 
-    int ret = runTestHarnessWithCheck( gTestNameCount, gTestNames, test_num, test_list, false, true, 0, InitCL );
+    int ret = runTestHarnessWithCheck( gTestNameCount, gTestNames, test_num, test_list, true, 0, InitCL );
 
     RestoreFPState( &oldMode );
 

@@ -96,5 +96,5 @@ int main(int argc, const char *argv[])
       }
     }
 
-    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, false, 0, InitCL);
+    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0, InitCL);
 }
