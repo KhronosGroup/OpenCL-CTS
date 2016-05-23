@@ -364,7 +364,6 @@ int test_integer_sub_sat(cl_device_id device, cl_context context, cl_command_que
         log_info("Failed on %d types\n", fail_count);
         return -1;
     }
-    log_info("SUB_SAT test passed\n");
 
     free(input_ptr[0]);
     free(input_ptr[1]);

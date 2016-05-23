@@ -366,8 +366,6 @@ int test_integer_add_sat(cl_device_id device, cl_context context, cl_command_que
         return -1;
     }
 
-    log_info("ADD_SAT test passed\n");
-
     free(input_ptr[0]);
     free(input_ptr[1]);
     free(output_ptr);
