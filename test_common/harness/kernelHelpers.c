@@ -968,6 +968,46 @@ int get_max_allowed_work_group_size( cl_context context, cl_kernel kernel, size_
 }
 
 
+extern int get_max_allowed_1d_work_group_size_on_device( cl_device_id device, cl_kernel kernel, size_t *outSize )
+{
+    cl_uint      maxDim;
+    size_t       maxWgSize;
+    size_t       *maxWgSizePerDim;
+    int          error;
+
+    error = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof( size_t ), &maxWgSize, NULL );
+    test_error( error, "clGetKernelWorkGroupInfo CL_KERNEL_WORK_GROUP_SIZE failed" );
+
+    error = clGetDeviceInfo( device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof( cl_uint ), &maxDim, NULL );
+    test_error( error, "clGetDeviceInfo CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS failed" );
+    maxWgSizePerDim = (size_t*)malloc( maxDim * sizeof( size_t ) );
+    if( !maxWgSizePerDim )
+    {
+        log_error( "Unable to allocate maxWgSizePerDim\n" );
+        return -1;
+    }
+
+    error = clGetDeviceInfo( device, CL_DEVICE_MAX_WORK_ITEM_SIZES, maxDim * sizeof( size_t ), maxWgSizePerDim, NULL );
+    if( error != CL_SUCCESS)
+    {
+        log_error( "clGetDeviceInfo CL_DEVICE_MAX_WORK_ITEM_SIZES failed\n" );
+        free( maxWgSizePerDim );
+        return error;
+    }
+
+    // "maxWgSize" is limited to that of the first dimension.
+    if( maxWgSize > maxWgSizePerDim[0] )
+    {
+        maxWgSize = maxWgSizePerDim[0];
+    }
+
+    free( maxWgSizePerDim );
+
+    *outSize = maxWgSize;
+    return 0;
+}
+
+
 int get_max_common_work_group_size( cl_context context, cl_kernel kernel,
                                    size_t globalThreadSize, size_t *outMaxSize )
 {
