@@ -179,9 +179,9 @@ test_work_group_scan_inclusive_max_int(cl_device_id device, cl_context context, 
     if (err)
         return -1;
 
-    err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
-    if (err)
-        return -1;
+    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
+    err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
+    test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
 
     num_elements = n_elems;
 
@@ -280,9 +280,9 @@ test_work_group_scan_inclusive_max_uint(cl_device_id device, cl_context context,
     if (err)
         return -1;
 
-    err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
-    if (err)
-        return -1;
+    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
+    err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
+    test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
 
     num_elements = n_elems;
 
@@ -380,9 +380,9 @@ test_work_group_scan_inclusive_max_long(cl_device_id device, cl_context context,
     if (err)
         return -1;
 
-    err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
-    if (err)
-        return -1;
+    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
+    err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
+    test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
 
     num_elements = n_elems;
 
@@ -481,9 +481,9 @@ test_work_group_scan_inclusive_max_ulong(cl_device_id device, cl_context context
     if (err)
         return -1;
 
-    err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
-    if (err)
-        return -1;
+    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
+    err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
+    test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
 
     num_elements = n_elems;
 
