@@ -453,7 +453,9 @@ size_t getBufferSize(cl_device_id device_id)
             s_result = 64*1024;
             goto exit;
         }
-        log_info("Const buffer size is %llx (%llu)\n", result, result);
+        if (result > BUFFER_SIZE)
+            result = BUFFER_SIZE;
+        log_info("Using const buffer size 0x%lx (%ld)\n", (unsigned long)result, (unsigned long)result);
         err = clGetDeviceInfo (device_id,
                                CL_DEVICE_GLOBAL_MEM_SIZE,
                                sizeof(maxGlobalSize), (void *)&maxGlobalSize,
