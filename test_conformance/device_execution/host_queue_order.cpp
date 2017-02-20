@@ -37,7 +37,7 @@ static const char* enqueue_block_first_kernel[] =
     NL, "    for(int i = 1 ; i < tid ; i++)"
     NL, "    {"
     NL, "      for(int j = 0 ; j < num ; j++)"
-    NL, "        atomic_add(res+tid, (int)sqrt((float)i*i) / i);"
+    NL, "        atomic_add(res+tid, convert_int_rte(sqrt((float)i*i) / i));"
     NL, "    }"
     NL, "}"
     NL, ""
