@@ -34,7 +34,7 @@ const char *test_kernels[] = {
 };
 
 #define TEST_SIZE    512
-#define MAX_DEVICES 8
+#define MAX_DEVICES 32
 #define MAX_QUEUES 1000
 
 int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices, int num_elements)
