@@ -1,0 +1,18 @@
+project
+    : requirements
+      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_events
+    : main.c
+      test_event_dependencies.cpp
+      test_events.cpp
+      test_waitlists.cpp
+    ;
+
+install dist
+    : test_events
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/events
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/events
+    ;

@@ -1,0 +1,7 @@
+#
+# OpenCL Conformance Test for DirectX interop
+#
+
+DX9 media sharing,media_sharing\test_media_surface_sharing
+D3D10,d3d10\test_d3d10
+D3D11,d3d11\test_d3d11

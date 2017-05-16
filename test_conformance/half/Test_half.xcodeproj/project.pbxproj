@@ -1,0 +1,292 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 44;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3B1B765F0DE342BC00837A59 /* Test_vStoreHalf.c in Sources */ = {isa = PBXBuildFile; fileRef = 3B1B765E0DE342BC00837A59 /* Test_vStoreHalf.c */; };
+		3B6173C40DE2B14800384A2C /* Test_roundTrip.c in Sources */ = {isa = PBXBuildFile; fileRef = 3B6173C30DE2B14800384A2C /* Test_roundTrip.c */; };
+		3BA6BFB80DE21DB9008685CF /* Test_vLoadHalf.c in Sources */ = {isa = PBXBuildFile; fileRef = 3BA6BFB70DE21DB9008685CF /* Test_vLoadHalf.c */; };
+		3BA6BFBB0DE21EFA008685CF /* cl_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 3BA6BFBA0DE21EFA008685CF /* cl_utils.c */; };
+		3BA6BFF30DE229C5008685CF /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3BA6BFF20DE229C5008685CF /* OpenCL.framework */; };
+		8DD76FAC0486AB0100D96B5E /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 08FB7796FE84155DC02AAC07 /* main.c */; settings = {ATTRIBUTES = (); }; };
+		8DD76FB00486AB0100D96B5E /* Test_half.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = C6A0FF2C0290799A04C91782 /* Test_half.1 */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8DD76FAF0486AB0100D96B5E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 8;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				8DD76FB00486AB0100D96B5E /* Test_half.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		08FB7796FE84155DC02AAC07 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		3B1B765E0DE342BC00837A59 /* Test_vStoreHalf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Test_vStoreHalf.c; sourceTree = "<group>"; };
+		3B1B77910DE3896E00837A59 /* builtins.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = builtins.cl; path = ../../../compute/OpenCL/cl_headers/private/builtins.cl; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		3B6173C30DE2B14800384A2C /* Test_roundTrip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Test_roundTrip.c; sourceTree = "<group>"; };
+		3BA6BFB70DE21DB9008685CF /* Test_vLoadHalf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Test_vLoadHalf.c; sourceTree = "<group>"; };
+		3BA6BFB90DE21EFA008685CF /* cl_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cl_utils.h; sourceTree = "<group>"; };
+		3BA6BFBA0DE21EFA008685CF /* cl_utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cl_utils.c; sourceTree = "<group>"; };
+		3BA6BFF20DE229C5008685CF /* OpenCL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenCL.framework; path = /System/Library/Frameworks/OpenCL.framework; sourceTree = "<absolute>"; };
+		3BA6C00A0DE22A95008685CF /* test_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = test_config.h; sourceTree = "<group>"; };
+		3BA6C0770DE24F41008685CF /* tests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tests.h; sourceTree = "<group>"; };
+		8DD76FB20486AB0100D96B5E /* Test_half */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Test_half; sourceTree = BUILT_PRODUCTS_DIR; };
+		C6A0FF2C0290799A04C91782 /* Test_half.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = Test_half.1; sourceTree = "<group>"; };
+		FFB9F1420E5E155400F45584 /* ATF.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ATF.framework; path = /Library/Frameworks/ATF.framework; sourceTree = "<absolute>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8DD76FAD0486AB0100D96B5E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3BA6BFF30DE229C5008685CF /* OpenCL.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		08FB7794FE84155DC02AAC07 /* Test_half */ = {
+			isa = PBXGroup;
+			children = (
+				3BA6C00A0DE22A95008685CF /* test_config.h */,
+				3BA6C0770DE24F41008685CF /* tests.h */,
+				08FB7796FE84155DC02AAC07 /* main.c */,
+				08FB7795FE84155DC02AAC07 /* Source */,
+				3BA6BFF80DE229CC008685CF /* Resources */,
+				3B1B77910DE3896E00837A59 /* builtins.cl */,
+				C6A0FF2B0290797F04C91782 /* Documentation */,
+				1AB674ADFE9D54B511CA2CBB /* Products */,
+				FFB9F1420E5E155400F45584 /* ATF.framework */,
+			);
+			name = Test_half;
+			sourceTree = "<group>";
+		};
+		08FB7795FE84155DC02AAC07 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				3BA6BFB90DE21EFA008685CF /* cl_utils.h */,
+				3BA6BFBA0DE21EFA008685CF /* cl_utils.c */,
+				3BA6BFB70DE21DB9008685CF /* Test_vLoadHalf.c */,
+				3B6173C30DE2B14800384A2C /* Test_roundTrip.c */,
+				3B1B765E0DE342BC00837A59 /* Test_vStoreHalf.c */,
+			);
+			name = Source;
+			sourceTree = "<group>";
+		};
+		1AB674ADFE9D54B511CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8DD76FB20486AB0100D96B5E /* Test_half */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3BA6BFF80DE229CC008685CF /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				3BA6BFF20DE229C5008685CF /* OpenCL.framework */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		C6A0FF2B0290797F04C91782 /* Documentation */ = {
+			isa = PBXGroup;
+			children = (
+				C6A0FF2C0290799A04C91782 /* Test_half.1 */,
+			);
+			name = Documentation;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8DD76FA90486AB0100D96B5E /* Test_half */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB928508733DD80010E9CD /* Build configuration list for PBXNativeTarget "Test_half" */;
+			buildPhases = (
+				8DD76FAB0486AB0100D96B5E /* Sources */,
+				8DD76FAD0486AB0100D96B5E /* Frameworks */,
+				8DD76FAF0486AB0100D96B5E /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Test_half;
+			productInstallPath = "$(HOME)/bin";
+			productName = Test_half;
+			productReference = 8DD76FB20486AB0100D96B5E /* Test_half */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		08FB7793FE84155DC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 1DEB928908733DD80010E9CD /* Build configuration list for PBXProject "Test_half" */;
+			compatibilityVersion = "Xcode 3.0";
+			hasScannedForEncodings = 1;
+			mainGroup = 08FB7794FE84155DC02AAC07 /* Test_half */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8DD76FA90486AB0100D96B5E /* Test_half */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8DD76FAB0486AB0100D96B5E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8DD76FAC0486AB0100D96B5E /* main.c in Sources */,
+				3BA6BFB80DE21DB9008685CF /* Test_vLoadHalf.c in Sources */,
+				3BA6BFBB0DE21EFA008685CF /* cl_utils.c in Sources */,
+				3B6173C40DE2B14800384A2C /* Test_roundTrip.c in Sources */,
+				3B1B765F0DE342BC00837A59 /* Test_vStoreHalf.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB928608733DD80010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = Test_half;
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		1DEB928708733DD80010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = Test_half;
+			};
+			name = Release;
+		};
+		1DEB928A08733DD80010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1 = "x86_64 i386 ppc";
+				ATF_Config_Comment = "Set ATF_DEFAULT to non-empty to link to ATF iff the BUILD_WITH_ATF env var is set";
+				ATF_DEFAULT = SKIPPING;
+				ATF_DEFINES = "$(ATF_DEFINES_$(SKIPPING_ATF))";
+				ATF_DEFINES_ = "USE_ATF=1";
+				ATF_LINK = "$(ATF_LINK_$(SKIPPING_ATF))";
+				ATF_LINK_ = "-framework ATF";
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = _DEBUG;
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
+				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
+				GCC_WARN_MISSING_PARENTHESES = NO;
+				GCC_WARN_PEDANTIC = YES;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_SIGN_COMPARE = YES;
+				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_LABEL = YES;
+				GCC_WARN_UNUSED_PARAMETER = YES;
+				GCC_WARN_UNUSED_VALUE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+				SKIPPING_ATF = SKIPPING;
+				VALID_ARCHS = "i386 x86_64";
+			};
+			name = Debug;
+		};
+		1DEB928B08733DD80010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					ppc,
+					i386,
+				);
+				ATF_Config_Comment = "Set ATF_DEFAULT to non-empty to link to ATF iff the BUILD_WITH_ATF env var is set";
+				ATF_DEFAULT = SKIPPING;
+				ATF_DEFINES = "$(ATF_DEFINES_$(SKIPPING_ATF))";
+				ATF_DEFINES_ = "USE_ATF=1";
+				ATF_LINK = "$(ATF_LINK_$(SKIPPING_ATF))";
+				ATF_LINK_ = "-framework ATF";
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
+				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
+				GCC_WARN_MISSING_PARENTHESES = NO;
+				GCC_WARN_PEDANTIC = NO;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_SIGN_COMPARE = YES;
+				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_LABEL = YES;
+				GCC_WARN_UNUSED_PARAMETER = YES;
+				GCC_WARN_UNUSED_VALUE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+				SKIPPING_ATF = SKIPPING;
+				VALID_ARCHS = "i386 x86_64";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB928508733DD80010E9CD /* Build configuration list for PBXNativeTarget "Test_half" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB928608733DD80010E9CD /* Debug */,
+				1DEB928708733DD80010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB928908733DD80010E9CD /* Build configuration list for PBXProject "Test_half" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB928A08733DD80010E9CD /* Debug */,
+				1DEB928B08733DD80010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 08FB7793FE84155DC02AAC07 /* Project object */;
+}

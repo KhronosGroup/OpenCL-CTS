@@ -1,0 +1,24 @@
+project
+    : requirements
+      <library>/harness//harness
+      <warnings>off
+    ;
+
+use-project /harness : ../test_common/harness ;
+
+proj_lst = allocations api atomics basic buffers commonfns compiler
+           computeinfo contractions conversions events geometrics gl
+           half images integer_ops math_brute_force multiple_device_context
+           profiling relationals select thread_dimensions ;
+
+for proj in $(proj_lst)
+{
+   build-project $(proj) ;
+}
+
+install data
+    : [ glob *.csv ] [ glob *.py ]
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance
+      <variant>release:<location>$(DIST)/release/tests/test_conformance
+    ;
+
