@@ -1,0 +1,75 @@
+project
+    : requirements
+      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_basic
+    : main.c
+      test_arraycopy.c
+      test_arrayimagecopy3d.c
+      test_arrayimagecopy.c
+      test_arrayreadwrite.c
+      test_astype.cpp
+      test_async_copy.cpp
+      test_barrier.c
+      test_basic_parameter_types.c
+      test_constant.c
+      test_createkernelsinprogram.c
+      test_enqueue_map.cpp
+      test_explicit_s2v.cpp
+      test_float2int.c
+      test_fpmath_float2.c
+      test_fpmath_float4.c
+      test_fpmath_float.c
+      test_hiloeo.c
+      test_hostptr.c
+      test_if.c
+      test_imagearraycopy3d.c
+      test_imagearraycopy.c
+      test_imagecopy3d.c
+      test_imagecopy.c
+      test_imagedim.c
+      test_image_multipass.c
+      test_imagenpot.c
+      test_image_param.c
+      test_image_r8.c
+      test_imagerandomcopy.c
+      test_imagereadwrite3d.c
+      test_imagereadwrite.c
+      test_int2float.c
+      test_intmath_int2.c
+      test_intmath_int4.c
+      test_intmath_int.c
+      test_intmath_long2.c
+      test_intmath_long4.c
+      test_intmath_long.c
+      test_local.c
+      test_loop.c
+      test_multireadimagemultifmt.c
+      test_multireadimageonefmt.c
+      test_pointercast.c
+      test_readimage3d.c
+      test_readimage3d_fp32.c
+      test_readimage3d_int16.c
+      test_readimage.c
+      test_readimage_fp32.c
+      test_readimage_int16.c
+      test_sizeof.c
+      test_vec_type_hint.c
+      test_vector_creation.cpp
+      test_vloadstore.c
+      test_work_item_functions.cpp
+      test_writeimage.c
+      test_writeimage_fp32.c
+      test_writeimage_int16.c
+      test_numeric_constants.cpp
+      test_kernel_call_kernel_function.cpp
+    ;
+    
+install dist
+    : test_basic
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/basic
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/basic
+    ;
+ 

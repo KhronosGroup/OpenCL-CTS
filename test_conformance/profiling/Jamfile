@@ -1,0 +1,22 @@
+project
+    : requirements
+      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_profiling
+    : copy.c
+      execute.c
+      execute_multipass.c
+      main.c
+      readArray.c
+      readImage.c
+      writeArray.c
+      writeImage.c
+    ;
+
+install dist
+    : test_profiling
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/profiling
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/profiling
+    ;

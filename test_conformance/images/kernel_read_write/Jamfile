@@ -1,0 +1,19 @@
+project
+    : requirements
+#      <toolset>gcc:<cflags>-xc++
+#      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_image_streams
+    : main.cpp
+      test_iterations.cpp
+      test_loops.cpp
+      test_read_3D.cpp
+      test_write_image.cpp
+    ;
+
+install dist
+    : test_image_streams
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/images/kernel_read_write
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/images/kernel_read_write
+    ;

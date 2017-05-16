@@ -1,0 +1,4 @@
+# build directories
+build/
+build_lnx/
+build_win/

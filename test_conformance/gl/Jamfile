@@ -1,0 +1,28 @@
+project
+    : requirements
+#      <toolset>gcc:<cflags>-xc++
+#      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_gl
+    : helpers.cpp
+      main.cpp
+      test_buffers.cpp
+      test_images_2D.cpp
+      test_images_2D_info.cpp
+      test_images_3D.cpp
+      test_images_3D_info.cpp
+      test_renderbuffer.cpp
+      test_renderbuffer_info.cpp
+    : <target-os>darwin:<source>setup_osx.cpp
+      <target-os>linux:<source>setup_x11.cpp
+      <target-os>windows:<source>setup_win32.cpp
+      <library>../..//glut
+      <library>../..//glew
+    ;
+
+install dist
+    : test_gl
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/gl
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/gl
+    ;

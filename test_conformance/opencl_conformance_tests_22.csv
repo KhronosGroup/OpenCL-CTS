@@ -1,0 +1,45 @@
+#
+# OpenCL Conformance Test Suite (2.2 version)
+#
+
+# #########################################
+# New API features
+# #########################################
+API (ctors and dtors of global scope vars) , clcpp/api/test_cpp_api "test_global_scope*"
+API (specialization constants)             , clcpp/api/test_cpp_api "test_spec_consts*"
+
+# #########################################
+# New representation of types
+# #########################################
+Images and samplers                        , clcpp/images/test_cpp_images
+Pipes and reservations                     , clcpp/pipes/test_cpp_pipes "test_pipes_pipe"
+Device enqueue and events                  , clcpp/device_queue/test_cpp_device_queue
+Address spaces                             , clcpp/address_spaces/test_cpp_address_spaces
+
+# #########################################
+# New representation of functions
+# #########################################
+Conversions (convert_cast)                 , clcpp/convert/test_cpp_convert
+Reinterpreting (as_type)                   , clcpp/reinterpret/test_cpp_reinterpret
+Atomics                                    , clcpp/atomics/test_cpp_atomics
+Work-item functions                        , clcpp/workitems/test_cpp_workitems
+Work-group functions                       , clcpp/workgroups/test_cpp_workgroups
+Sub-group functions                        , clcpp/subgroups/test_cpp_subgroups
+Synchronization functions                  , clcpp/synchronization/test_cpp_synchronization "test_work_group_barrier*" "test_sub_group_barrier*"
+Math functions                             , clcpp/math_funcs/test_cpp_math_funcs
+Integer functions                          , clcpp/integer_funcs/test_cpp_integer_funcs
+Common functions                           , clcpp/common_funcs/test_cpp_common_funcs
+Geometric functions                        , clcpp/geometric_funcs/test_cpp_geometric_funcs
+Relational functions                       , clcpp/relational_funcs/test_cpp_relational_funcs
+vload and vstore functions                 , clcpp/vload_vstore/test_cpp_vload_vstore_funcs
+
+# #########################################
+# New in OpenCL C++
+# #########################################
+Specialization constants                   , clcpp/spec_constants/test_cpp_spec_constants
+Named barriers (KHR extension)             , clcpp/synchronization/test_cpp_synchronization "test_work_group_named_barrier*"
+required_num_sub_groups attribute          , clcpp/attributes/test_cpp_attributes "test_required_num_sub_groups*"
+ivdep attribute                            , clcpp/attributes/test_cpp_attributes "test_ivdep*"
+max_size attribute                         , clcpp/attributes/test_cpp_attributes "test_max_size*"
+Ctors and dtors of global scope objects    , clcpp/program_scope_ctors_dtors/test_cpp_program_scope_ctors_dtors
+Pipe storages                              , clcpp/pipes/test_cpp_pipes "test_pipes_pipe_storage"

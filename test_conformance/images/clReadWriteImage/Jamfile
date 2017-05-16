@@ -1,0 +1,18 @@
+project
+    : requirements
+#      <toolset>gcc:<cflags>-xc++
+#      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_cl_read_write_images
+    : main.cpp
+      test_read_2D.cpp
+      test_read_3D.cpp
+      test_loops.cpp
+    ;
+
+install dist
+    : test_cl_read_write_images
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/images/clReadWriteImage
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/images/clReadWriteImage
+    ;
