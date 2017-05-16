@@ -1,0 +1,16 @@
+#!/usr/bin/csh
+#
+# This runs the conversions in 32- and 64-bit modes, split into 9 processes for better throughput.
+# It is intended to allow for quicker debugging turnaround for code development purposes
+#
+
+/usr/bin/arch -i386 ./test_conversions CL_DEVICE_TYPE_CPU   0 100 > 0_32.txt; /usr/bin/arch -x86_64 ./test_conversions CL_DEVICE_TYPE_CPU   0 100 > 0_64.txt &
+/usr/bin/arch -i386 ./test_conversions CL_DEVICE_TYPE_CPU 100 100 > 1_32.txt; /usr/bin/arch -x86_64 ./test_conversions CL_DEVICE_TYPE_CPU 100 100 > 1_64.txt &
+/usr/bin/arch -i386 ./test_conversions CL_DEVICE_TYPE_CPU 200 100 > 2_32.txt; /usr/bin/arch -x86_64 ./test_conversions CL_DEVICE_TYPE_CPU 200 100 > 2_64.txt &
+/usr/bin/arch -i386 ./test_conversions CL_DEVICE_TYPE_CPU 300 100 > 3_32.txt; /usr/bin/arch -x86_64 ./test_conversions CL_DEVICE_TYPE_CPU 300 100 > 3_64.txt &
+/usr/bin/arch -i386 ./test_conversions CL_DEVICE_TYPE_CPU 400 100 > 4_32.txt; /usr/bin/arch -x86_64 ./test_conversions CL_DEVICE_TYPE_CPU 400 100 > 4_64.txt &
+/usr/bin/arch -i386 ./test_conversions CL_DEVICE_TYPE_CPU 500 100 > 5_32.txt; /usr/bin/arch -x86_64 ./test_conversions CL_DEVICE_TYPE_CPU 500 100 > 5_64.txt &
+/usr/bin/arch -i386 ./test_conversions CL_DEVICE_TYPE_CPU 600 100 > 6_32.txt; /usr/bin/arch -x86_64 ./test_conversions CL_DEVICE_TYPE_CPU 600 100 > 6_64.txt &
+/usr/bin/arch -i386 ./test_conversions CL_DEVICE_TYPE_CPU 700 100 > 7_32.txt; /usr/bin/arch -x86_64 ./test_conversions CL_DEVICE_TYPE_CPU 700 100 > 7_64.txt &
+/usr/bin/arch -i386 ./test_conversions CL_DEVICE_TYPE_CPU 800 100 > 8_32.txt; /usr/bin/arch -x86_64 ./test_conversions CL_DEVICE_TYPE_CPU 800 100 > 8_64.txt &
+

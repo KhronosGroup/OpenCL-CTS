@@ -1,0 +1,27 @@
+project
+    : requirements
+      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+
+exe test_api
+    : main.c
+      test_api_min_max.c
+      test_binary.cpp
+      test_create_kernels.c
+      test_create_context_from_type.cpp
+      test_kernel_arg_changes.cpp
+      test_kernel_arg_multi_setup.cpp
+      test_kernels.c
+      test_native_kernel.cpp
+      test_queries.cpp
+      test_retain_program.c
+      test_platform.cpp 
+    ;
+
+install dist
+    : test_api #test.lst
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/api
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/api
+    ;

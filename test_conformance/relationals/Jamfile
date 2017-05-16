@@ -1,0 +1,19 @@
+project
+    : requirements
+      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_relationals
+    : main.c
+      test_comparisons_double.cpp
+      test_comparisons_float.cpp
+      test_relationals.cpp
+      test_shuffles.cpp
+    ;
+
+install dist
+    : test_relationals
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/relationals
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/relationals
+    ;

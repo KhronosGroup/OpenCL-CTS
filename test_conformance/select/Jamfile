@@ -1,0 +1,21 @@
+project
+    : requirements
+      -<library>/harness//harness <use>/harness//harness
+#      <toolset>gcc:<cflags>-xc
+      <toolset>msvc:<cflags>"/TP" 
+    ;
+
+exe test_select
+    : test_select.c
+      util_select.c
+      /harness//mt19937.c
+      /harness//kernelHelpers.c
+      /harness//errorHelpers.c
+    : <target-os>windows:<source>/harness//msvc9.c
+    ;
+
+install dist
+    : test_select
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/select
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/select
+    ;

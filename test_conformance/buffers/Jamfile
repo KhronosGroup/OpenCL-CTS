@@ -1,0 +1,24 @@
+project
+    : requirements
+      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_buffers
+    : array_info.c
+      main.c
+      test_buffer_copy.c
+      test_buffer_map.c
+      test_buffer_mem.c
+      test_buffer_read.c
+      test_buffer_write.c
+      test_buffer_fill.c
+    : <library>../..//glew
+    ;
+
+install dist
+    : test_buffers
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/buffers
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/buffers
+    ;
+

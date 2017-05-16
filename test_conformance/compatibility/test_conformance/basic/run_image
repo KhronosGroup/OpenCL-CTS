@@ -1,0 +1,17 @@
+#!/bin/sh
+cd `dirname $0`
+./test_basic  \
+imagecopy imagerandomcopy \
+imagearraycopy imagearraycopy3d \
+image_r8 \
+readimage readimage_int16 readimage_fp32 \
+writeimage writeimage_int16 writeimage_fp32 \
+imagenpot \
+image_param \
+image_multipass_integer_coord \
+readimage3d \
+readimage3d_int16 \
+readimage3d_fp32 \
+imagereadwrite3d \
+imagereadwrite \
+$@

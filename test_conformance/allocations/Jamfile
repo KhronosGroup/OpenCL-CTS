@@ -1,0 +1,19 @@
+project
+    : requirements
+#      <toolset>gcc:<cflags>-xc++
+#      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_allocations
+    : allocation_execute.cpp
+      allocation_fill.cpp
+      allocation_functions.cpp
+      allocation_utils.cpp
+      main.cpp
+    ;
+
+install dist
+    : test_allocations
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/allocations
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/allocations
+    ;
