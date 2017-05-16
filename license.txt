@@ -1,0 +1,4 @@
+The code inside this directory and its subdirectories is 
+"Open GL (including Open CL) Automated Test System - Common Code" 
+and is subject to the license agreement between Apple and the licensee.
+

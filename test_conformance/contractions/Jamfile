@@ -1,0 +1,13 @@
+project
+    : requirements
+#      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe contractions : contractions.c ;
+
+install dist
+    : contractions
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/contractions
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/contractions
+    ;

@@ -1,0 +1,13 @@
+project
+    : requirements
+#      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe computeinfo : main.c ;
+
+install dist
+    : computeinfo
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/computeinfo
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/computeinfo
+    ;

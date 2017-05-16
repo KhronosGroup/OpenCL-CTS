@@ -1,0 +1,33 @@
+project
+    : requirements
+      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_commonfns
+    : main.c
+      test_binary_fn.c
+      test_clamp.c
+      test_degrees.c
+      test_fmax.c
+      test_fmaxf.c
+      test_fmin.c
+      test_fminf.c
+      test_max.c
+      test_maxf.c
+      test_min.c
+      test_minf.c
+      test_mix.c
+      test_radians.c
+      test_sign.c
+      test_smoothstep.c
+      test_smoothstepf.c
+      test_step.c
+      test_stepf.c
+    ;
+
+install dist
+    : test_commonfns
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/commonfns
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/commonfns
+    ;

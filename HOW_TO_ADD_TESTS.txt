@@ -1,0 +1,95 @@
+2008-09-04 - created by David Black-Schaffer
+2008-09-31 - updated for reorganization
+
+==============================================================
+***    Where to put tests:
+==============================================================
+
+test_apps - complete applications used for testing
+test_common - frameworks used across multiple tests
+test_conformance - conformance tests
+test_development - tests used for development or being developed
+test_internal - tests for private functionality
+test_performance - performance tests
+
+Tests placed in other locations will be moved without warning.
+
+==============================================================
+***    How to setup tests:
+==============================================================
+To create a new test to run through OATS, you need to:
+	1) write the test
+  2) use ATF to report errors, info, and performance numbers
+  3) make a Makefile that correctly builds with ATF for OATS and builds fat
+  4) add the test to the local Makefile (e.g., test_conformance/Makefile)
+  5) add the test to OATS
+  6) add the test to the appropriate test suite on OATS
+  7) and then add the test to the run_tests_local.py script so it can be run locally.
+  8) If you want the tests distributed, add them to the zip_tests_for_drops.py script appropriately.
+
+      ---------------------------------------------------------
+       Use ATF (OATS's Automated Test Framework) 
+      ---------------------------------------------------------
+	ATF is the only way to report errors to OATS. If you don't use this OATS will have no way of knowing if a test failed or passed. You must use ATF for all output information and you should not use any printfs.
+
+	1) Make sure your Makefile for the test builds correctly with ATF. You need to include the ATF framework whenever the BUILD_WITH_ATF environment variable is set. This can be done as:
+
+	ifdef BUILD_WITH_ATF
+	ATF = -framework ATF
+	USE_ATF = -DUSE_ATF
+	endif
+	...
+	CFLAGS = $(COMPILERFLAGS) ${RC_CFLAGS} ${USE_ATF} $(DEFINES:%=-D%)
+
+	2) Make sure you use ATF for logging. This means no printf() output. All errors should be output with log_error and info with log_info. This can be done with:
+
+	#if USE_ATF
+	#include <ATF/ATF.h>
+	#define test_start() ATFTestStart()
+	#define log_perf(_number, _higherBetter, _numType, _format, ...) ATFLogPerformanceNumber(_number, _higherBetter, _numType, _format,##__VA_ARGS__)
+	#define log_info ATFLogInfo
+	#define log_error ATFLogError
+	#define test_finish() ATFTestFinish()
+	#else
+	#define test_start()
+	#define log_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType, _higherBetter?"higher is better":"lower is better" , _number)
+	#define log_info printf
+	#define log_error printf
+	#define test_finish()
+	#endif
+
+	3) All performance information should be output with log_perf(). You need to specify the value, whether bigger is better, the units, and a name.
+
+	4) You need to call test_start() and test_finish() exactly once each in each test. That is, if you have a test that may bail on a failure condition you need to be sure to call test_finish() at each of those points.
+
+      ---------------------------------------------------------
+       Building 32- and 64-bit 
+      ---------------------------------------------------------
+	1) Make sure your Makefile passes RC_CFLAGS into the compiler. E.g.,:
+	CFLAGS = $(COMPILERFLAGS) ${RC_CFLAGS} ${USE_ATF} $(DEFINES:%=-D%)
+
+	2) If you are using C++ code with g++ you also need to set:
+	CXXFLAGS = $(COMPILERFLAGS) ${RC_CFLAGS} ${USE_ATF} $(DEFINES:%=-D%)
+
+	and you may need to pass in RC_CFLAGS to the linker:
+	$(TARGET): $(OBJECTS)
+        	$(CC) $(RC_CFLAGS) $(OBJECTS) -o $@ $(LIBPATH) $(LIBRARIES)
+
+	3) Verify that this works by building fat (make RC_CFLAGS="-arch i386 -arch x86_64") and then running file on the output binary. You should see:
+	blackschaffer:test_basic dbs$ file test_basic 
+	test_basic: Mach-O universal binary with 2 architectures
+	test_basic (for architecture i386):	Mach-O executable i386
+	test_basic (for architecture x86_64):	Mach-O 64-bit executable x86_64
+
+      ---------------------------------------------------------
+       Setting up the test for OATS and adding it 
+      ---------------------------------------------------------
+ 	1) Make one or more run_subtest scripts in the directory that run the particular tests. Try to group the sub-tests together in logical units to make it easier to see them in OATS. (e.g., "run_step" runs step, stepf, smoothstep, and smoothstepf.) Note that these tests can only call one executable because OATS can only accept one tests_start()/test_end() per test.
+	2) Add the test to OATS in the Test Admin page. Name the test "CL Test - subtest" and put in the path to the tests. (E.g., "CL Common Functions - step" points to "OpenCL_Tests/test_conformance/commonfns/run_step".)
+	3) Add the test to the test suite (e.g., either OpenCL Tests or OpenCL Long Tests). Set the test run order such that basic functionality tests have a lower value (run first) and performance/application tests have a higher value (run last).
+	4) Add the test directory to the appropriate Makefile, and verify that it builds. This file is used when the tests are built for OATS. You should just need to add the test directory to the list of directories at the top.
+
+      ---------------------------------------------------------
+       Setting up the test for running it locally 
+      ---------------------------------------------------------
+	1) Add the test run script to the list of tests in run_tests_local.py if the test is a short test.

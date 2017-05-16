@@ -1,0 +1,17 @@
+project
+    : requirements
+#      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_conversions
+    : basic_test_conversions.c
+      Sleep.c
+      test_conversions.c
+    ;
+
+install dist
+    : test_conversions
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/conversions
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/conversions
+    ;

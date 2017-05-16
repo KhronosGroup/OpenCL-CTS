@@ -1,0 +1,20 @@
+project
+    : requirements
+#      <toolset>gcc:<cflags>-xc++
+#      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_samplerless_reads
+    : main.cpp
+      test_iterations.cpp
+      test_loops.cpp
+      test_read_3D.cpp
+      /images//image_helpers
+    ;
+
+install dist
+    : test_samplerless_reads
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/images/samplerlessReads
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/images/samplerlessReads
+    ;
+

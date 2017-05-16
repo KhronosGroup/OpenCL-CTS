@@ -1,0 +1,17 @@
+project
+    : requirements
+      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+ 
+exe test_atomics
+    : main.c
+      test_atomics.c
+      test_indexed_cases.c
+    ;
+
+install dist
+    : test_atomics 
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/atomics
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/atomics
+    ;

@@ -1,0 +1,19 @@
+project
+    : requirements
+#      <toolset>gcc:<cflags>-xc++
+#      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_kernel_image_methods
+    : main.cpp
+      test_2D.cpp
+      test_3D.cpp
+      test_loops.cpp
+      /images//image_helpers
+    ;
+
+install dist
+    : test_kernel_image_methods
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/images/kernel_image_methods
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/images/kernel_image_methods
+    ;

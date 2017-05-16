@@ -1,0 +1,22 @@
+project
+    : requirements
+      -<library>/harness//harness <use>/harness//harness
+#      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe Test_half
+    : cl_utils.c
+      main.c
+      Test_roundTrip.c
+      Test_vLoadHalf.c
+      Test_vStoreHalf.c
+      /harness//errorHelpers.c
+    : <target-os>windows:<source>/harness//msvc9.c
+    ;
+
+install dist
+    : Test_half
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/half
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/half
+    ;

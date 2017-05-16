@@ -1,0 +1,32 @@
+project
+    : requirements
+      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_device_partition
+    : main.c
+      test_device_partition.cpp
+      ../../test_common/harness/errorHelpers.c
+      ../../test_common/harness/threadTesting.c
+      ../../test_common/harness/testHarness.c
+      ../../test_common/harness/kernelHelpers.c
+      ../../test_common/harness/genericThread.cpp
+      ../../test_common/harness/mt19937.c
+      ../../test_common/harness/conversions.c
+      ../../test_common/harness/typeWrappers.cpp
+    : <target-os>windows:<source>../../test_common/harness/msvc9.c
+    ;
+
+install dist
+    : test_device_partition
+    : <variant>debug:<location>$(DIST)/debug/tests/conformance/1.2/x86/device_partition
+      <variant>release:<location>$(DIST)/release/tests/conformance/1.2/x86/device_partition
+    ;
+
+install dist
+    : test_device_partition
+    : <variant>debug:<location>$(DIST)/debug/tests/conformance/1.2/x86_64/device_partition
+      <variant>release:<location>$(DIST)/release/tests/conformance/1.2/x86_64/device_partition
+      <address-model>64
+    ;

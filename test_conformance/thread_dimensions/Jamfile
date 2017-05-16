@@ -1,0 +1,16 @@
+project
+    : requirements
+#      <toolset>gcc:<cflags>-xc++
+      <toolset>msvc:<cflags>"/TP"
+    ;
+
+exe test_thread_dimensions
+    : main.c
+      test_thread_dimensions.c
+    ;
+
+install dist
+    : test_thread_dimensions
+    : <variant>debug:<location>$(DIST)/debug/tests/test_conformance/thread_dimensions
+      <variant>release:<location>$(DIST)/release/tests/test_conformance/thread_dimensions
+    ;
