@@ -40,6 +40,13 @@ int context_create(cl_device_id deviceID, cl_context context, cl_command_queue q
 
   while (deviceWrapper->AdapterNext())
   {
+    cl_int error;
+    //check if the test can be run on the adapter
+    if (CL_SUCCESS != (error = deviceExistForCLTest(gPlatformIDdetected, adapterType, deviceWrapper->Device(), result, sharedHandle)))
+    {
+      return result.Result();
+    }
+
     if (surfaceFormat != SURFACE_FORMAT_NV12 && !SurfaceFormatCheck(adapterType, *deviceWrapper, surfaceFormat))
     {
       std::string sharedHandleStr = (sharedHandle == SHARED_HANDLE_ENABLED)? "yes": "no";
@@ -68,7 +75,6 @@ int context_create(cl_device_id deviceID, cl_context context, cl_command_queue q
       0,
     };
 
-    cl_int error;
     clContextWrapper ctx;
     switch(functionCreate)
     {
@@ -230,13 +236,20 @@ int context_create(cl_device_id deviceID, cl_context context, cl_command_queue q
     }
   }
 
-  if (!deviceWrapper->Status())
+  if (deviceWrapper->Status() != DEVICE_PASS)
   {
     std::string adapterName;
     AdapterToString(adapterType, adapterName);
+    if (deviceWrapper->Status() == DEVICE_FAIL)
+    {
     log_error("%s init failed\n", adapterName.c_str());
     result.ResultSub(CResult::TEST_FAIL);
-    return result.Result();
+    }
+    else
+    {
+      log_error("%s init incomplete due to unsupported device\n", adapterName.c_str());
+      result.ResultSub(CResult::TEST_NOTSUPPORTED);
+    }
   }
 
   return result.Result();

@@ -18,9 +18,36 @@
 
 #if defined(_WIN32)
 #include <d3d9.h>
+#if defined (__MINGW32__)
+#include <rpcsal.h>
+typedef unsigned char UINT8;
+#define __out
+#define __in
+#define __inout
+#define __out_bcount(size)
+#define __out_bcount_opt(size)
+#define __in_opt
+#define __in_ecount(size)
+#define __in_ecount_opt(size)
+#define __out_opt
+#define __out_ecount(size)
+#define __out_ecount_opt(size)
+#define __in_bcount_opt(size)
+#define __inout_opt
+#define __inout_bcount(size)
+#define __in_bcount(size)
+#define __deref_out
+#endif
 #include <dxvahd.h>
 #include <tchar.h>
 #endif
+
+enum TDeviceStatus
+{
+  DEVICE_NOTSUPPORTED,
+  DEVICE_PASS,
+  DEVICE_FAIL,
+};
 
 class CDeviceWrapper {
 public:
@@ -36,7 +63,7 @@ public:
   virtual bool AdapterNext() = 0;
   virtual unsigned int AdapterIdx() const = 0;
   virtual void *Device() const = 0;
-  virtual bool Status() const = 0;
+  virtual TDeviceStatus Status() const = 0;
   virtual void *D3D() const = 0;
 
 #if defined(_WIN32)
@@ -81,7 +108,7 @@ public:
   virtual bool AdapterNext();
   virtual unsigned int AdapterIdx() const;
   virtual void *Device() const;
-  virtual bool Status() const;
+  virtual TDeviceStatus Status() const;
   virtual void *D3D() const;
 
 private:
@@ -89,13 +116,13 @@ private:
   LPDIRECT3DDEVICE9 _d3dDevice;
   D3DDISPLAYMODE _d3ddm;
   D3DADAPTER_IDENTIFIER9 _adapter;
-  bool _status;
+  TDeviceStatus _status;
   unsigned int _adapterIdx;
   bool _adapterFound;
 
   D3DFORMAT Format();
   D3DADAPTER_IDENTIFIER9 Adapter();
-  bool Init();
+  int Init();
   void Destroy();
 };
 
@@ -107,7 +134,7 @@ public:
   virtual bool AdapterNext();
   virtual unsigned int AdapterIdx() const;
   virtual void *Device() const;
-  virtual bool Status() const;
+  virtual TDeviceStatus Status() const;
   virtual void *D3D() const;
 
 private:
@@ -115,13 +142,13 @@ private:
   LPDIRECT3DDEVICE9EX _d3dDeviceEx;
   D3DDISPLAYMODEEX _d3ddmEx;
   D3DADAPTER_IDENTIFIER9 _adapter;
-  bool _status;
+  TDeviceStatus _status;
   unsigned int _adapterIdx;
   bool _adapterFound;
 
   D3DFORMAT Format();
   D3DADAPTER_IDENTIFIER9 Adapter();
-  bool Init();
+  int Init();
   void Destroy();
 };
 
@@ -133,21 +160,21 @@ public:
   virtual bool AdapterNext();
   virtual unsigned int AdapterIdx() const;
   virtual void *Device() const;
-  virtual bool Status() const;
+  virtual TDeviceStatus Status() const;
   virtual void *D3D() const;
   const CD3D9ExWrapper &D3D9() const;
 
 private:
   CD3D9ExWrapper _d3d9;
   IDXVAHD_Device *_dxvaDevice;
-  bool _status;
+  TDeviceStatus _status;
   bool _adapterFound;
 
   static const D3DFORMAT RENDER_TARGET_FORMAT;
   static const D3DFORMAT VIDEO_FORMAT;
   static const unsigned int VIDEO_FPS;
 
-  bool DXVAHDInit();
+  TDeviceStatus DXVAHDInit();
   void DXVAHDDestroy();
 };
 
