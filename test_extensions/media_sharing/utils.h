@@ -16,15 +16,18 @@
 #ifndef __UTILS_KHR_MEDIA_H
 #define __UTILS_KHR_MEDIA_H
 
+#include <string>
+#include <iostream>
+#include <memory>
+#include <vector>
 #include "wrappers.h"
 #include "CL/cl_dx9_media_sharing.h"
 
 #include "../../test_common/harness/typeWrappers.h"
 
-#include <iostream>
-#include <string>
-#include <memory>
-#include <vector>
+
+
+
 
 extern clGetDeviceIDsFromDX9MediaAdapterKHR_fn clGetDeviceIDsFromDX9MediaAdapterKHR;
 extern clCreateFromDX9MediaSurfaceKHR_fn clCreateFromDX9MediaSurfaceKHR;
@@ -168,4 +171,5 @@ cl_ushort convert_float_to_half( float f );
 float convert_half_to_float( unsigned short halfValue );
 int DetectFloatToHalfRoundingMode( cl_command_queue );
 
+cl_int deviceExistForCLTest(cl_platform_id platform,cl_dx9_media_adapter_type_khr media_adapters_type,void *media_adapters,CResult &result,TSharedHandleType sharedHandle=SHARED_HANDLE_DISABLED);
 #endif  // __UTILS_KHR_MEDIA_H
