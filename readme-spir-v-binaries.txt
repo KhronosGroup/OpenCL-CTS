@@ -1,14 +1,17 @@
-To run the 2.2 conformance tests test suite for the C++ features you need need 
+To run the 2.2 conformance tests test suite for the C++ features you need
 SPIR-V binaries.
 
 If you are using a conformance package then the binaries are included in the 
-package. If you are using conformance tests from gitlab repositories then the
-binaries need to be picked up from Khronos SVN URL mentioned below:
+package. If you are using conformance tests from git repositories then the
+binaries need to be picked up using LFS:
 
-https://cvs.khronos.org/svn/repos/OpenCL/trunk/Khronos/spirv/spirv10_2015.11.25.zip
+1. Setup LFS by following instructions at https://git-lfs.github.com/
 
+2. The SPIR-V binaries can then be picked up from test_conformance/clcpp/spirv*.7z
 
-Alternatively you can check out and build all of the below repositories.
+Alternatively you can check out and build all of the below repositories
+manually or use https://github.com/KhronosGroup/OpenCL-CTS-Framework which will
+do it for you.
 
 1. SPIRV-LLVM
 LLVM with support for SPIR-V (required by clang compiler)
