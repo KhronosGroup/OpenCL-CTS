@@ -21,8 +21,6 @@
 #include "cl_utils.h"
 #include "tests.h"
 
-extern const char *addressSpaceNames[];
-
 typedef struct ComputeReferenceInfoF_
 {
     float *x;

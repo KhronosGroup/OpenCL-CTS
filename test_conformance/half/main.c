@@ -39,7 +39,7 @@
 const char **   argList = NULL;
 size_t          argCount = 0;
 char            appName[64] = "ctest";
-const char *addressSpaceNames[] = {"global", "private", "local", "constant"};
+const char *addressSpaceNames[AS_NumAddressSpaces] = {"global", "private", "local", "constant"};
 
 #pragma mark -
 #pragma mark Declarations

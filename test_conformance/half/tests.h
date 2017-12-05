@@ -16,6 +16,17 @@
 #ifndef TESTS_H
 #define TESTS_H
 
+typedef enum
+{
+	AS_Global,
+	AS_Private,
+	AS_Local,
+	AS_Constant,
+	AS_NumAddressSpaces
+} AddressSpaceEnum;
+
+extern const char *addressSpaceNames[AS_NumAddressSpaces];
+
 
 int test_vload_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 int test_vloada_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
