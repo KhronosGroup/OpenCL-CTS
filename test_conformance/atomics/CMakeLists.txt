@@ -26,3 +26,6 @@ set_source_files_properties(
 
 TARGET_LINK_LIBRARIES(conformance_test_atomics
         ${CLConform_LIBRARIES})
+
+install(TARGETS conformance_test_atomics
+    DESTINATION "${CLConf_OUT_DIR}")

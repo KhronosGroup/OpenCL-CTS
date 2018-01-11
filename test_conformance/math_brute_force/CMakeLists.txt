@@ -1,4 +1,4 @@
-add_executable(conformance_bruteforce
+add_executable(conformance_test_bruteforce
     FunctionList.c
     Sleep.c
     binary.c
@@ -6,7 +6,7 @@ add_executable(conformance_bruteforce
     Utility.c
     binary_i.c 	binary_two_results_i.c 	i_unary.c
     macro_binary.c 	macro_unary.c 	mad.c
-    main.c 	reference_math_fma.c  reference_math.c 
+    main.c 	reference_math.c 
     ternary.c 	unary.c 	unary_two_results.c
     unary_two_results_i.c unary_u.c
     
@@ -16,7 +16,7 @@ add_executable(conformance_bruteforce
     ../../test_common/harness/msvc9.c
 )
 
-
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND NOT MSVC)
 set_source_files_properties(
     FunctionList.c
     Sleep.c
@@ -29,6 +29,7 @@ set_source_files_properties(
     ternary.c 	unary.c 	unary_two_results.c
     unary_two_results_i.c unary_u.c
     COMPILE_FLAGS -msse2)
+endif()
 
 if (MSVC)
 set_source_files_properties(
@@ -36,7 +37,7 @@ set_source_files_properties(
     Sleep.c
     binary.c
     binaryOperator.c
-    Utility.c reference_math_fma.c
+    Utility.c
     binary_i.c 	binary_two_results_i.c 	i_unary.c
     macro_binary.c 	macro_unary.c 	mad.c
     main.c 	reference_math.c
@@ -49,12 +50,13 @@ set_source_files_properties(
 endif(MSVC)
 
 if (NOT CMAKE_CL_64 AND NOT MSVC)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)" AND NOT MSVC)
 set_source_files_properties(
     FunctionList.c
     Sleep.c
     binary.c
     binaryOperator.c
-    Utility.c reference_math_fma.c
+    Utility.c
     binary_i.c 	binary_two_results_i.c 	i_unary.c
     macro_binary.c 	macro_unary.c 	mad.c
     main.c 	reference_math.c
@@ -64,13 +66,11 @@ set_source_files_properties(
     ../../test_common/harness/ThreadPool.c
     ../../test_common/harness/msvc9.c
 	COMPILE_FLAGS -march=i686)
+endif()
 endif(NOT CMAKE_CL_64 AND NOT MSVC)
 
-if(CMAKE_COMPILER_IS_GNUCC)
-set_source_files_properties(
-        reference_math_fma.c
-        COMPILE_FLAGS -O0)
-endif(CMAKE_COMPILER_IS_GNUCC)
-
-TARGET_LINK_LIBRARIES(conformance_bruteforce
+TARGET_LINK_LIBRARIES(conformance_test_bruteforce
     ${CLConform_LIBRARIES})
+
+install(TARGETS conformance_test_bruteforce
+    DESTINATION "${CLConf_OUT_DIR}")

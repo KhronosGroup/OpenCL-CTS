@@ -11,9 +11,10 @@ add_executable(conformance_test_profiling
     ../../test_common/harness/msvc9.c
 )
 
-
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND NOT MSVC)
 set_source_files_properties(
         COMPILE_FLAGS -msse2)
+endif()
 
 set_source_files_properties(
         main.c readArray.c writeArray.c readImage.c writeImage.c copy.c
@@ -27,3 +28,6 @@ set_source_files_properties(
 
 TARGET_LINK_LIBRARIES(conformance_test_profiling
         ${CLConform_LIBRARIES})
+
+install(TARGETS conformance_test_profiling
+    DESTINATION "${CLConf_OUT_DIR}")

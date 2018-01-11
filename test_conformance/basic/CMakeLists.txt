@@ -119,3 +119,6 @@ set_source_files_properties(
 
 TARGET_LINK_LIBRARIES(conformance_test_basic
         ${CLConform_LIBRARIES})
+
+install(TARGETS conformance_test_basic
+    DESTINATION "${CLConf_OUT_DIR}")

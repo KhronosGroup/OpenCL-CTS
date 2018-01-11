@@ -18,8 +18,28 @@ add_executable(conformance_test_opencl_h
     test_opencl.h.c
 )
 
-set(CMAKE_C_FLAGS "" )
-set(CMAKE_CXX_FLAGS "" )
+add_executable(conformance_test_cl_h_c99
+    test_cl.h.c
+)
+
+add_executable(conformance_test_cl_platform_h_c99
+    test_cl_platform.h.c
+)
+
+add_executable(conformance_test_cl_gl_h_c99
+    test_cl_gl.h.c
+)
+
+add_executable(conformance_test_opencl_h_c99
+    test_opencl.h.c
+)
+
+set_target_properties(conformance_test_cl_h_c99
+    conformance_test_cl_platform_h_c99
+    conformance_test_cl_gl_h_c99
+    conformance_test_opencl_h_c99
+    PROPERTIES COMPILE_FLAGS "-std=c99"
+)
 
 TARGET_LINK_LIBRARIES(conformance_test_headers
         ${CLConform_LIBRARIES})
@@ -35,3 +55,22 @@ TARGET_LINK_LIBRARIES(conformance_test_cl_gl_h
 
 TARGET_LINK_LIBRARIES(conformance_test_opencl_h
         ${CLConform_LIBRARIES})
+
+TARGET_LINK_LIBRARIES(conformance_test_cl_h_c99
+        ${CLConform_LIBRARIES})
+
+TARGET_LINK_LIBRARIES(conformance_test_cl_platform_h_c99
+        ${CLConform_LIBRARIES})
+
+TARGET_LINK_LIBRARIES(conformance_test_cl_gl_h_c99
+        ${CLConform_LIBRARIES})
+
+TARGET_LINK_LIBRARIES(conformance_test_opencl_h_c99
+        ${CLConform_LIBRARIES})
+
+install(TARGETS conformance_test_headers conformance_test_cl_h
+    conformance_test_cl_platform_h conformance_test_cl_gl_h
+    conformance_test_opencl_h conformance_test_cl_h_c99
+    conformance_test_cl_platform_h_c99 conformance_test_cl_gl_h_c99
+    conformance_test_opencl_h_c99
+    DESTINATION "${CLConf_OUT_DIR}")

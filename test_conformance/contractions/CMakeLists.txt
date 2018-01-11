@@ -1,4 +1,6 @@
-add_executable(conformance_contractions
+include_directories(../../test_common/harness)
+
+add_executable(conformance_test_contractions
         contractions.c
         ../../test_common/harness/mt19937.c
         ../../test_common/harness/msvc9.c
@@ -7,9 +9,13 @@ add_executable(conformance_contractions
         ../../test_common/harness/rounding_mode.c
         ../../test_common/harness/kernelHelpers.c
 )
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND NOT MSVC)
 set_source_files_properties(
         contractions.c
         COMPILE_FLAGS -msse)
+endif()
+
 if(WIN32)
 set_source_files_properties(
         contractions.c    
@@ -21,5 +27,8 @@ set_source_files_properties(
         PROPERTIES LANGUAGE CXX)
 endif(WIN32)
 
-TARGET_LINK_LIBRARIES(conformance_contractions
+TARGET_LINK_LIBRARIES(conformance_test_contractions
         ${CLConform_LIBRARIES})
+
+install(TARGETS conformance_test_contractions
+    DESTINATION "${CLConf_OUT_DIR}")
