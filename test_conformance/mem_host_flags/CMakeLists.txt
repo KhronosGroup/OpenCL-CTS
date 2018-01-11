@@ -1,12 +1,7 @@
-add_executable(conformance_test_events
-	main.c
-	test_events.cpp
-	test_event_dependencies.cpp
-	test_userevents.cpp
-	test_waitlists.cpp
-	test_callbacks.cpp
-	action_classes.cpp
-	test_userevents_multithreaded.cpp
+add_executable(conformance_test_mem_host_flags
+	main.cpp
+	mem_host_buffer.cpp
+	mem_host_image.cpp
 	../../test_common/harness/errorHelpers.c
 	../../test_common/harness/threadTesting.c
 	../../test_common/harness/testHarness.c
@@ -20,14 +15,9 @@ add_executable(conformance_test_events
 )
 
 set_source_files_properties(
-	main.c
-	test_events.cpp
-	test_event_dependencies.cpp
-	test_userevents.cpp
-	test_waitlists.cpp
-	test_callbacks.cpp
-	action_classes.cpp
-	test_userevents_multithreaded.cpp
+	main.cpp
+	mem_host_buffer.cpp
+	mem_host_image.cpp
 	../../test_common/harness/errorHelpers.c
 	../../test_common/harness/threadTesting.c
 	../../test_common/harness/testHarness.c
@@ -40,8 +30,8 @@ set_source_files_properties(
 	../../test_common/harness/ThreadPool.c
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_events
+target_link_libraries(conformance_test_mem_host_flags
         ${CLConform_LIBRARIES})
 
-install(TARGETS conformance_test_events
+install(TARGETS conformance_test_mem_host_flags
     DESTINATION "${CLConf_OUT_DIR}")

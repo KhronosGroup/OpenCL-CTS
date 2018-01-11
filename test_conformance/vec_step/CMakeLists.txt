@@ -11,9 +11,10 @@ add_executable(conformance_test_vecstep
         ../../test_common/harness/errorHelpers.c
 )
 
-
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND NOT MSVC)
 set_source_files_properties(
         COMPILE_FLAGS -msse2)
+endif()
 
 set_source_files_properties(
 	globals.c
@@ -29,3 +30,6 @@ set_source_files_properties(
 
 TARGET_LINK_LIBRARIES(conformance_test_vecstep
         ${CLConform_LIBRARIES})
+
+install(TARGETS conformance_test_vecstep
+    DESTINATION "${CLConf_OUT_DIR}")

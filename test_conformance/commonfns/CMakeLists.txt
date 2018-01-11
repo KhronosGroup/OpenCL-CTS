@@ -30,3 +30,6 @@ set_source_files_properties(
 
 TARGET_LINK_LIBRARIES(conformance_test_commonfns
         ${CLConform_LIBRARIES})
+
+install(TARGETS conformance_test_commonfns
+    DESTINATION "${CLConf_OUT_DIR}")
