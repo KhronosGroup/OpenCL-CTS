@@ -31,5 +31,7 @@ set_source_files_properties(
 TARGET_LINK_LIBRARIES(conformance_test_vecstep
         ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_vecstep)
 install(TARGETS conformance_test_vecstep
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)

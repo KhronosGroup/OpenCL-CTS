@@ -72,5 +72,7 @@ endif(NOT CMAKE_CL_64 AND NOT MSVC)
 TARGET_LINK_LIBRARIES(conformance_test_bruteforce
     ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_bruteforce)
 install(TARGETS conformance_test_bruteforce
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)

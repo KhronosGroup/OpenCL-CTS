@@ -1,5 +1,6 @@
 function (install_spir_artifacts suite_name)
-  install(FILES "${suite_name}.zip" DESTINATION "${CLConf_OUT_DIR}")
+  install(FILES "${suite_name}.zip" DESTINATION "${CLConf_OUT_DIR}"
+          COMPONENT OpenCLCTS)
 endfunction()
 
 add_executable(
@@ -60,8 +61,10 @@ add_custom_command(TARGET conformance_test_spir POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/vec_step.zip" "$<TARGET_FILE_DIR:conformance_test_spir>/vec_step.zip"
 	COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/binary_type.zip" "$<TARGET_FILE_DIR:conformance_test_spir>/binary_type.zip")
 
+add_dependencies(OpenCLCTS conformance_test_spir)
 install(TARGETS conformance_test_spir
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)
 
 install_spir_artifacts(api)
 install_spir_artifacts(atomics)
@@ -86,6 +89,6 @@ install_spir_artifacts(sampler_enumeration)
 install_spir_artifacts(vec_align)
 install_spir_artifacts(vec_step)
 install_spir_artifacts(binary_type)
-install(FILES "khr.csv" DESTINATION "${CLConf_OUT_DIR}")
+install(FILES "khr.csv" DESTINATION "${CLConf_OUT_DIR}" COMPONENT OpenCLCTS)
 #Add any other runtime directories you need here.
 # end of file #

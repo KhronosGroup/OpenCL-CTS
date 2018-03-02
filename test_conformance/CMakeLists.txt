@@ -26,6 +26,8 @@ else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CTS_EXTRA_FLAGS}")
 endif()
 
+add_custom_target(OpenCLCTS)
+
 add_subdirectory(allocations)
 add_subdirectory(api)
 add_subdirectory(atomics)

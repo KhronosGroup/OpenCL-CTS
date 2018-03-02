@@ -43,4 +43,9 @@ set_source_files_properties(
 TARGET_LINK_LIBRARIES(conformance_test_d3d10
     ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_d3d10)
+install(TARGETS conformance_test_d3d10
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)
+
 endif(WIN32)

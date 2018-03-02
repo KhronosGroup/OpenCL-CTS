@@ -29,5 +29,7 @@ set_source_files_properties(
 target_link_libraries(conformance_test_device_partition
         ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_device_partition)
 install(TARGETS conformance_test_device_partition
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)

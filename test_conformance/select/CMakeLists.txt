@@ -25,5 +25,7 @@ endif(WIN32)
 TARGET_LINK_LIBRARIES(conformance_test_select
         ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_select)
 install(TARGETS conformance_test_select
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)

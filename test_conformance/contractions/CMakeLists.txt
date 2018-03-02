@@ -30,5 +30,7 @@ endif(WIN32)
 TARGET_LINK_LIBRARIES(conformance_test_contractions
         ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_contractions)
 install(TARGETS conformance_test_contractions
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)

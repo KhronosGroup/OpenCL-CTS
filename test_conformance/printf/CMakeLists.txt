@@ -19,5 +19,7 @@ set_source_files_properties(
 target_link_libraries(conformance_test_printf
         ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_printf)
 install(TARGETS conformance_test_printf
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)
