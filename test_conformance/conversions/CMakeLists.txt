@@ -64,5 +64,7 @@ endif()
 TARGET_LINK_LIBRARIES(conformance_test_conversions
         ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_conversions)
 install(TARGETS conformance_test_conversions
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)

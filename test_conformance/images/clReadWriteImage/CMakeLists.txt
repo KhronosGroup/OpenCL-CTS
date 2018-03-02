@@ -41,5 +41,7 @@ set_source_files_properties(
 TARGET_LINK_LIBRARIES(conformance_test_cl_read_write_images
         ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_cl_read_write_images)
 install(TARGETS conformance_test_cl_read_write_images
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)

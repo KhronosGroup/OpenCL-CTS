@@ -33,5 +33,7 @@ set_source_files_properties(
 target_link_libraries(conformance_test_mem_host_flags
         ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_mem_host_flags)
 install(TARGETS conformance_test_mem_host_flags
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)

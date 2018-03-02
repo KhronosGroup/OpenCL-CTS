@@ -48,11 +48,15 @@ add_custom_command(TARGET conformance_test_compiler POST_BUILD
 		"${CMAKE_CURRENT_SOURCE_DIR}/secondIncludeTestDirectory"
 		"$<TARGET_FILE_DIR:conformance_test_compiler>/secondIncludeTestDirectory")
 
+add_dependencies(OpenCLCTS conformance_test_compiler)
 install(TARGETS conformance_test_compiler
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/includeTestDirectory
-		DESTINATION "${CLConf_OUT_DIR}")
+		DESTINATION "${CLConf_OUT_DIR}"
+		COMPONENT OpenCLCTS)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/secondIncludeTestDirectory
-		DESTINATION "${CLConf_OUT_DIR}")
+		DESTINATION "${CLConf_OUT_DIR}"
+		COMPONENT OpenCLCTS)

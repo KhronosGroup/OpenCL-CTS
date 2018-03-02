@@ -65,3 +65,8 @@ set_source_files_properties(
         
 TARGET_LINK_LIBRARIES(conformance_test_gl
         ${CLConform_LIBRARIES})
+
+add_dependencies(OpenCLCTS conformance_test_gl)
+install(TARGETS conformance_test_gl
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)

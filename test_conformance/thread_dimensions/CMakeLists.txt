@@ -30,5 +30,7 @@ set_source_files_properties(
 TARGET_LINK_LIBRARIES(conformance_test_thread_dimensions
         ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_thread_dimensions)
 install(TARGETS conformance_test_thread_dimensions
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)

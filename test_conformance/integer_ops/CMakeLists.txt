@@ -67,5 +67,7 @@ endif (NOT CMAKE_CL_64 AND NOT MSVC)
 TARGET_LINK_LIBRARIES(conformance_test_integer_ops
         ${CLConform_LIBRARIES})
 
+add_dependencies(OpenCLCTS conformance_test_integer_ops)
 install(TARGETS conformance_test_integer_ops
-    DESTINATION "${CLConf_OUT_DIR}")
+    DESTINATION "${CLConf_OUT_DIR}"
+    COMPONENT OpenCLCTS)
