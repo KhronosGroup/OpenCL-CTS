@@ -7,8 +7,17 @@ endif(WIN32)
 set (GL_SOURCES
     main.cpp
     test_buffers.cpp
+    test_image_methods.cpp
+    test_images_1D.cpp
+    test_images_1Darray.cpp
     test_images_2D.cpp
+    test_images_2Darray.cpp
     test_images_3D.cpp
+    test_images_depth.cpp
+    test_images_getinfo_common.cpp
+    test_images_multisample.cpp
+    test_images_read_common.cpp
+    test_images_write_common.cpp
     test_renderbuffer.cpp
     test_renderbuffer_info.cpp
     test_fence_sync.cpp
