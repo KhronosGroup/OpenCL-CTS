@@ -29,6 +29,7 @@ set (GL_SOURCES
     ../../test_common/harness/mt19937.c
     ../../test_common/harness/testHarness.c
     ../../test_common/harness/threadTesting.c 
+    ../../test_common/harness/imageHelpers.cpp
     )
 
 if (WIN32)
@@ -63,6 +64,12 @@ set_source_files_properties(
         ${GL_SOURCES}
         PROPERTIES LANGUAGE CXX)
         
+# Add the current folder to the include path, so that
+# test_common/gl/setup_x11.cpp can find testBase.h which is located in this
+# folder.
+target_include_directories(conformance_test_gl
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
 TARGET_LINK_LIBRARIES(conformance_test_gl
         ${CLConform_LIBRARIES})
 
