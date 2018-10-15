@@ -1,0 +1,28 @@
+language: cpp
+
+os:
+  - linux
+
+script:
+  - export TOP=$(pwd)
+  - git clone https://github.com/KhronosGroup/OpenCL-Headers.git
+  - cd OpenCL-Headers
+  - ln -s CL OpenCL # For OSX builds
+  - cd ..
+  - git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+  - cd ${TOP}/OpenCL-ICD-Loader
+  - mkdir build
+  - cd build
+  - cmake -DOPENCL_INCLUDE_DIRS=${TOP}/OpenCL-Headers/ ..
+  - make
+  - cd ${TOP}
+  - ls -l
+  - mkdir build
+  - cd build
+  - cmake -DCLConf_OUT_DIR=.
+          -DCLConform_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build/lib
+          -DCLConform_LIBRARIES="-lm -lpthread -lOpenCL"
+          -DCLConform_HEADERS=${TOP}/OpenCL-Headers
+          -DCMAKE_CL_64=ON
+          ../test_conformance/
+  - make -j2
