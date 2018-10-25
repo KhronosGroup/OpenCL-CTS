@@ -385,6 +385,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         programs[vecsize] = makeSelectProgram(&kernels[vecsize], context, stype, cmptype, element_count[vecsize] );
         if (!programs[vecsize] || !kernels[vecsize]) {
             ++s_test_fail;
+            ++s_test_cnt;
             return -1;
         }
     }
