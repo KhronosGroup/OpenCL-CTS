@@ -249,7 +249,7 @@ int test(cl_device_id device, cl_context context, cl_command_queue queue, test_o
         error = clGetDeviceInfo(device, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(device_local_mem_size), &device_local_mem_size, NULL);
         RETURN_ON_CL_ERROR(error, "clGetDeviceInfo")
 
-        max_work_group_size = (std::min)(max_work_group_size, (device_local_mem_size - kernel_local_mem_size) / sizeof(cl_long));
+        max_work_group_size = (std::min<cl_ulong>)(max_work_group_size, (device_local_mem_size - kernel_local_mem_size) / sizeof(cl_long));
     }
 
     std::random_device rd;
