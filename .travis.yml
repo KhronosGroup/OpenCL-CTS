@@ -3,6 +3,7 @@ language: cpp
 os:
   - linux
   - osx
+  - windows
 
 script:
   - export TOP=$(pwd)
