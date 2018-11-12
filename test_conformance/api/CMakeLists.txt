@@ -14,7 +14,6 @@ add_executable(conformance_test_api
    test_platform.cpp
    test_retain.cpp
    test_device_min_data_type_align_size_alignment.cpp
-   test_queue_properties.cpp
    test_mem_objects.cpp
    test_bool.c
    test_null_buffer_arg.c

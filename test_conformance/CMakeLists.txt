@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.0)
+
 if(MSVC)
   # The CTS will not link on MSVC 32-bit builds. To workaround this, add the
   # /LARGEADDRESSAWARE option as a linker flag. This is automatically set for
@@ -25,6 +27,11 @@ else()
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CTS_EXTRA_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CTS_EXTRA_FLAGS}")
 endif()
+
+include_directories(BEFORE SYSTEM ${CLConform_HEADERS})
+link_directories(${CLConform_LIB_DIR})
+
+add_definitions(-DCL_TARGET_OPENCL_VERSION=120)
 
 add_custom_target(OpenCLCTS)
 
@@ -58,6 +65,3 @@ add_subdirectory(select)
 add_subdirectory(thread_dimensions)
 add_subdirectory(vec_align)
 add_subdirectory(vec_step)
-
-# Add any extension folders
-add_subdirectory(spir)
