@@ -39,15 +39,18 @@ HarnessD3D10_ExtensionCheck()
     bool extensionPresent = false;
     cl_int result = CL_SUCCESS;
     cl_platform_id platform = NULL;
-    char extensions[1024];
+    size_t set_size;
 
     HarnessD3D10_TestBegin("Extension query");
 
     result = clGetPlatformIDs(1, &platform, NULL);
-        NonTestRequire(result == CL_SUCCESS, "Failed to get any platforms.");
-    result = clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, sizeof(extensions), extensions, NULL);
-        NonTestRequire(result == CL_SUCCESS, "Failed to list extensions.");
-    extensionPresent = strstr(extensions, "cl_khr_d3d10_sharing") ? true : false;
+    NonTestRequire(result == CL_SUCCESS, "Failed to get any platforms.");
+    result = clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, 0, NULL, &set_size);
+    NonTestRequire(result == CL_SUCCESS, "Failed to get size of extensions string.");
+    std::vector<char> extensions(set_size);
+    result = clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, extensions.size(), extensions.data(), NULL);
+    NonTestRequire(result == CL_SUCCESS, "Failed to list extensions.");
+    extensionPresent = strstr(extensions.data(), "cl_khr_d3d10_sharing") ? true : false;
 
     if (!extensionPresent) {
       // platform is required to report the extension only if all devices support it
@@ -59,11 +62,10 @@ HarnessD3D10_ExtensionCheck()
       NonTestRequire(result == CL_SUCCESS, "Failed to get devices count.");
 
       for (cl_uint i = 0; i < devicesCount; i++) {
-        clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(extensions), extensions, NULL);
-        NonTestRequire(result == CL_SUCCESS, "Failed to list extensions.");
-        extensionPresent = strstr(extensions, "cl_khr_d3d10_sharing") ? true : false;
-        if (extensionPresent)
+        if (is_extension_available(devices[i], "cl_khr_d3d10_sharing")) {
+          extensionPresent = true;
           break;
+        }
       }
     }
 
