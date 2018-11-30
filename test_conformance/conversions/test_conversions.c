@@ -46,6 +46,7 @@
 #include <sys/mman.h>
 #endif
 #include <time.h>
+#include <vector>
 
 #include "Sleep.h"
 #include "basic_test_conversions.h"
@@ -806,13 +807,20 @@ static int InitCL( void )
         gIsRTZ = 1;
     }
 
-    char extensions[2048] = "";
-    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, sizeof( extensions ), extensions,  NULL ) ) )
+    size_t set_size;
+    if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_EXTENSIONS, 0, NULL, &set_size)))
+    {
+        vlog_error("FAILURE: unable to get device info for CL_DEVICE_EXTENSIONS!");
+        return -1;
+    }
+
+    std::vector<char> extensions(set_size);
+    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, extensions.size(), extensions.data(),  NULL ) ) )
     {
         vlog_error( "FAILURE: unable to get device info for CL_DEVICE_EXTENSIONS!" );
         return -1;
     }
-    else if( strstr( extensions, "cl_khr_fp64" ) )
+    else if( strstr( extensions.data(), "cl_khr_fp64" ) )
     {
         gHasDouble = 1;
     }
@@ -824,7 +832,7 @@ static int InitCL( void )
     else if( strstr(profile, "EMBEDDED_PROFILE" ) )
     {
         gIsEmbedded = 1;
-        if( !strstr( extensions, "cles_khr_int64" ) )
+        if( !strstr( extensions.data(), "cles_khr_int64" ) )
             gHasLong = 0;
     }
 
