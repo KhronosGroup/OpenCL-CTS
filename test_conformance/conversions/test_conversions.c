@@ -697,17 +697,34 @@ test_status InitCL( cl_device_id device )
         gIsRTZ = 1;
     }
 
-    char extensions[2048] = "";
-    if( (error = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, sizeof( extensions ), extensions,  NULL ) ) )
+    size_t set_size;
+    if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_EXTENSIONS, 0, NULL, &set_size)))
     {
-        vlog_error( "FAILURE: unable to get device info for CL_DEVICE_EXTENSIONS!" );
+        vlog_error("FAILURE: unable to get device info for CL_DEVICE_EXTENSIONS!");
         return TEST_FAIL;
     }
-    else if( strstr( extensions, "cl_khr_fp64" ) )
+
+    std::vector<char> extensions(set_size);
+    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, extensions.size(), extensions.data(),  NULL ) ) )
+    {
+        vlog_error( "FAILURE: unable to get device info for CL_DEVICE_EXTENSIONS!" );
+        return -1;
+    }
+    else if( strstr( extensions.data(), "cl_khr_fp64" ) )
     {
         gHasDouble = 1;
     }
     gTestDouble &= gHasDouble;
+
+    //detect whether profile of the device is embedded
+    char profile[1024] = "";
+    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL ) ) ){}
+    else if( strstr(profile, "EMBEDDED_PROFILE" ) )
+    {
+        gIsEmbedded = 1;
+        if( !strstr( extensions.data(), "cles_khr_int64" ) )
+            gHasLong = 0;
+    }
 
 
     gContext = clCreateContext( NULL, 1, &device, notify_callback, NULL, &error );
