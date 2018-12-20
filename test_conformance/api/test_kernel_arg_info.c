@@ -1884,16 +1884,16 @@ const char * required_arg_info[][72] = {
     },
     {
         "const_scalar_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char", "constchard",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar", "constuchard",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar", "constunsignedchard",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short", "constshortd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort", "constushortd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort", "constunsignedshortd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int", "constintd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint", "constuintd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint", "constunsignedintd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float", "constfloatd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char", "constchard",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar", "constuchard",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar", "constunsignedchard",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short", "constshortd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort", "constushortd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort", "constunsignedshortd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int", "constintd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint", "constuintd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint", "constunsignedintd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float", "constfloatd",
         NULL
     },
     {
@@ -1912,16 +1912,16 @@ const char * required_arg_info[][72] = {
     },
     {
         "private_const_scalar_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char", "privateconstchard",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar", "privateconstuchard",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar", "privateconstunsignedchard",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short", "privateconstshortd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort", "privateconstushortd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort", "privateconstunsignedshortd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int", "privateconstintd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint", "privateconstuintd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint", "privateconstunsignedintd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float", "privateconstfloatd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char", "privateconstchard",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar", "privateconstuchard",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar", "privateconstunsignedchard",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short", "privateconstshortd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort", "privateconstushortd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort", "privateconstunsignedshortd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int", "privateconstintd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint", "privateconstuintd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint", "privateconstunsignedintd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float", "privateconstfloatd",
         NULL
     },
     {
@@ -2151,13 +2151,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "const_vector2_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char2", "constchar2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar2", "constuchar2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short2", "constshort2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort2", "constushort2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int2", "constint2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint2", "constuint2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float2", "constfloat2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char2", "constchar2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar2", "constuchar2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short2", "constshort2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort2", "constushort2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int2", "constint2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint2", "constuint2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float2", "constfloat2d",
         NULL
     },
     {
@@ -2173,13 +2173,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "private_const_vector2_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char2", "privateconstchar2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar2", "privateconstuchar2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short2", "privateconstshort2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort2", "privateconstushort2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int2", "privateconstint2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint2", "privateconstuint2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float2", "privateconstfloat2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char2", "privateconstchar2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar2", "privateconstuchar2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short2", "privateconstshort2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort2", "privateconstushort2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int2", "privateconstint2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint2", "privateconstuint2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float2", "privateconstfloat2d",
         NULL
     },
     {
@@ -2409,13 +2409,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "const_vector3_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char3", "constchar3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar3", "constuchar3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short3", "constshort3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort3", "constushort3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int3", "constint3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint3", "constuint3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float3", "constfloat3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char3", "constchar3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar3", "constuchar3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short3", "constshort3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort3", "constushort3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int3", "constint3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint3", "constuint3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float3", "constfloat3d",
         NULL
     },
     {
@@ -2431,13 +2431,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "private_const_vector3_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char3", "privateconstchar3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar3", "privateconstuchar3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short3", "privateconstshort3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort3", "privateconstushort3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int3", "privateconstint3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint3", "privateconstuint3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float3", "privateconstfloat3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char3", "privateconstchar3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar3", "privateconstuchar3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short3", "privateconstshort3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort3", "privateconstushort3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int3", "privateconstint3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint3", "privateconstuint3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float3", "privateconstfloat3d",
         NULL
     },
     {
@@ -2667,13 +2667,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "const_vector4_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char4", "constchar4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar4", "constuchar4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short4", "constshort4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort4", "constushort4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int4", "constint4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint4", "constuint4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float4", "constfloat4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char4", "constchar4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar4", "constuchar4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short4", "constshort4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort4", "constushort4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int4", "constint4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint4", "constuint4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float4", "constfloat4d",
         NULL
     },
     {
@@ -2689,13 +2689,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "private_const_vector4_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char4", "privateconstchar4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar4", "privateconstuchar4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short4", "privateconstshort4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort4", "privateconstushort4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int4", "privateconstint4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint4", "privateconstuint4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float4", "privateconstfloat4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char4", "privateconstchar4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar4", "privateconstuchar4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short4", "privateconstshort4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort4", "privateconstushort4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int4", "privateconstint4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint4", "privateconstuint4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float4", "privateconstfloat4d",
         NULL
     },
     {
@@ -2925,13 +2925,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "const_vector8_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char8", "constchar8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar8", "constuchar8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short8", "constshort8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort8", "constushort8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int8", "constint8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint8", "constuint8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float8", "constfloat8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char8", "constchar8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar8", "constuchar8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short8", "constshort8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort8", "constushort8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int8", "constint8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint8", "constuint8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float8", "constfloat8d",
         NULL
     },
     {
@@ -2947,13 +2947,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "private_const_vector8_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char8", "privateconstchar8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar8", "privateconstuchar8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short8", "privateconstshort8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort8", "privateconstushort8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int8", "privateconstint8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint8", "privateconstuint8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float8", "privateconstfloat8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char8", "privateconstchar8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar8", "privateconstuchar8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short8", "privateconstshort8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort8", "privateconstushort8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int8", "privateconstint8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint8", "privateconstuint8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float8", "privateconstfloat8d",
         NULL
     },
     {
@@ -3183,13 +3183,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "const_vector16_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char16", "constchar16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar16", "constuchar16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short16", "constshort16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort16", "constushort16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int16", "constint16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint16", "constuint16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float16", "constfloat16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char16", "constchar16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar16", "constuchar16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short16", "constshort16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort16", "constushort16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int16", "constint16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint16", "constuint16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float16", "constfloat16d",
         NULL
     },
     {
@@ -3205,13 +3205,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "private_const_vector16_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "char16", "privateconstchar16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uchar16", "privateconstuchar16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "short16", "privateconstshort16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ushort16", "privateconstushort16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "int16", "privateconstint16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "uint16", "privateconstuint16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "float16", "privateconstfloat16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "char16", "privateconstchar16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uchar16", "privateconstuchar16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "short16", "privateconstshort16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ushort16", "privateconstushort16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "int16", "privateconstint16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "uint16", "privateconstuint16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "float16", "privateconstfloat16d",
         NULL
     },
     {
@@ -3433,13 +3433,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "const_derived_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "typedef_type", "consttypedef_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "struct struct_type", "conststructstruct_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "typedef_struct_type", "consttypedef_struct_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "union union_type", "constunionunion_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "typedef_union_type", "consttypedef_union_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "enum enum_type", "constenumenum_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "typedef_enum_type", "consttypedef_enum_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "typedef_type", "consttypedef_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "struct struct_type", "conststructstruct_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "typedef_struct_type", "consttypedef_struct_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "union union_type", "constunionunion_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "typedef_union_type", "consttypedef_union_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "enum enum_type", "constenumenum_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "typedef_enum_type", "consttypedef_enum_typed",
         NULL
     },
     {
@@ -3455,13 +3455,13 @@ const char * required_arg_info[][72] = {
     },
     {
         "private_const_derived_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "typedef_type", "privateconsttypedef_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "struct struct_type", "privateconststructstruct_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "typedef_struct_type", "privateconsttypedef_struct_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "union union_type", "privateconstunionunion_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "typedef_union_type", "privateconsttypedef_union_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "enum enum_type", "privateconstenumenum_typed",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "typedef_enum_type", "privateconsttypedef_enum_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "typedef_type", "privateconsttypedef_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "struct struct_type", "privateconststructstruct_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "typedef_struct_type", "privateconsttypedef_struct_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "union union_type", "privateconstunionunion_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "typedef_union_type", "privateconsttypedef_union_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "enum enum_type", "privateconstenumenum_typed",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "typedef_enum_type", "privateconsttypedef_enum_typed",
         NULL
     },
 };
@@ -3726,9 +3726,9 @@ const char * double_arg_info[][77] = {
     {
         "double_scalar_d",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double", "doubled",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double", "constdoubled",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double", "constdoubled",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double", "privatedoubled",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double", "privateconstdoubled",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double", "privateconstdoubled",
         NULL
     },
     {
@@ -3760,9 +3760,9 @@ const char * double_arg_info[][77] = {
     {
         "double_vector2_d",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double2", "double2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double2", "constdouble2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double2", "constdouble2d",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double2", "privatedouble2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double2", "privateconstdouble2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double2", "privateconstdouble2d",
         NULL
     },
     {
@@ -3794,9 +3794,9 @@ const char * double_arg_info[][77] = {
     {
         "double_vector3_d",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double3", "double3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double3", "constdouble3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double3", "constdouble3d",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double3", "privatedouble3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double3", "privateconstdouble3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double3", "privateconstdouble3d",
         NULL
     },
     {
@@ -3828,9 +3828,9 @@ const char * double_arg_info[][77] = {
     {
         "double_vector4_d",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double4", "double4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double4", "constdouble4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double4", "constdouble4d",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double4", "privatedouble4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double4", "privateconstdouble4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double4", "privateconstdouble4d",
         NULL
     },
     {
@@ -3862,9 +3862,9 @@ const char * double_arg_info[][77] = {
     {
         "double_vector8_d",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double8", "double8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double8", "constdouble8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double8", "constdouble8d",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double8", "privatedouble8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double8", "privateconstdouble8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double8", "privateconstdouble8d",
         NULL
     },
     {
@@ -3896,9 +3896,9 @@ const char * double_arg_info[][77] = {
     {
         "double_vector16_d",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double16", "double16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double16", "constdouble16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double16", "constdouble16d",
         (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double16", "privatedouble16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "double16", "privateconstdouble16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double16", "privateconstdouble16d",
         NULL
     },
 };
@@ -4901,9 +4901,9 @@ const char * long_arg_info[][72] = {
     },
     {
         "const_scalar_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long", "constlongd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong", "constulongd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong", "constunsignedlongd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long", "constlongd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong", "constulongd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong", "constunsignedlongd",
         NULL
     },
     {
@@ -4915,9 +4915,9 @@ const char * long_arg_info[][72] = {
     },
     {
         "private_const_scalar_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long", "privateconstlongd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong", "privateconstulongd",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong", "privateconstunsignedlongd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long", "privateconstlongd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong", "privateconstulongd",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong", "privateconstunsignedlongd",
         NULL
     },
     {
@@ -5036,8 +5036,8 @@ const char * long_arg_info[][72] = {
     },
     {
         "const_vector2_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long2", "constlong2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong2", "constulong2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long2", "constlong2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong2", "constulong2d",
         NULL
     },
     {
@@ -5048,8 +5048,8 @@ const char * long_arg_info[][72] = {
     },
     {
         "private_const_vector2_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long2", "privateconstlong2d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong2", "privateconstulong2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long2", "privateconstlong2d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong2", "privateconstulong2d",
         NULL
     },
     {
@@ -5168,8 +5168,8 @@ const char * long_arg_info[][72] = {
     },
     {
         "const_vector3_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long3", "constlong3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong3", "constulong3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long3", "constlong3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong3", "constulong3d",
         NULL
     },
     {
@@ -5180,8 +5180,8 @@ const char * long_arg_info[][72] = {
     },
     {
         "private_const_vector3_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long3", "privateconstlong3d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong3", "privateconstulong3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long3", "privateconstlong3d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong3", "privateconstulong3d",
         NULL
     },
     {
@@ -5300,8 +5300,8 @@ const char * long_arg_info[][72] = {
     },
     {
         "const_vector4_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long4", "constlong4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong4", "constulong4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long4", "constlong4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong4", "constulong4d",
         NULL
     },
     {
@@ -5312,8 +5312,8 @@ const char * long_arg_info[][72] = {
     },
     {
         "private_const_vector4_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long4", "privateconstlong4d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong4", "privateconstulong4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long4", "privateconstlong4d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong4", "privateconstulong4d",
         NULL
     },
     {
@@ -5432,8 +5432,8 @@ const char * long_arg_info[][72] = {
     },
     {
         "const_vector8_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long8", "constlong8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong8", "constulong8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long8", "constlong8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong8", "constulong8d",
         NULL
     },
     {
@@ -5444,8 +5444,8 @@ const char * long_arg_info[][72] = {
     },
     {
         "private_const_vector8_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long8", "privateconstlong8d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong8", "privateconstulong8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long8", "privateconstlong8d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong8", "privateconstulong8d",
         NULL
     },
     {
@@ -5564,8 +5564,8 @@ const char * long_arg_info[][72] = {
     },
     {
         "const_vector16_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long16", "constlong16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong16", "constulong16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long16", "constlong16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong16", "constulong16d",
         NULL
     },
     {
@@ -5576,8 +5576,8 @@ const char * long_arg_info[][72] = {
     },
     {
         "private_const_vector16_d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "long16", "privateconstlong16d",
-        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "ulong16", "privateconstulong16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "long16", "privateconstlong16d",
+        (const char *)CL_KERNEL_ARG_ADDRESS_PRIVATE, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "ulong16", "privateconstulong16d",
         NULL
     },
 };
