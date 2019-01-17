@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -54,7 +54,7 @@ static const char* enqueue_flags_wait_kernel_simple[] =
     NL, ""
     NL, "  if((index + 1) == BITS_DEPTH)"
     NL, "  {"
-    NL, "    barrier(CLK_LOCAL_MEM_FENCE);"
+    NL, "    barrier(CLK_GLOBAL_MEM_FENCE);"
     NL, ""
     NL, "    if(lid == 0)"
     NL, "    {"
@@ -126,7 +126,7 @@ static const char* enqueue_flags_wait_kernel_event[] =
     NL, ""
     NL, "  if((index + 1) == BITS_DEPTH)"
     NL, "  {"
-    NL, "    barrier(CLK_LOCAL_MEM_FENCE);"
+    NL, "    barrier(CLK_GLOBAL_MEM_FENCE);"
     NL, ""
     NL, "    if(lid == 0)"
     NL, "    {"
@@ -208,7 +208,7 @@ static const char* enqueue_flags_wait_kernel_local[] =
     NL, ""
     NL, "  if((index + 1) == BITS_DEPTH)"
     NL, "  {"
-    NL, "    barrier(CLK_LOCAL_MEM_FENCE);"
+    NL, "    barrier(CLK_GLOBAL_MEM_FENCE);"
     NL, ""
     NL, "    if(lid == 0)"
     NL, "    {"
@@ -289,7 +289,7 @@ static const char* enqueue_flags_wait_kernel_event_local[] =
     NL, ""
     NL, "  if((index + 1) == BITS_DEPTH)"
     NL, "  {"
-    NL, "    barrier(CLK_LOCAL_MEM_FENCE);"
+    NL, "    barrier(CLK_GLOBAL_MEM_FENCE);"
     NL, ""
     NL, "    if(lid == 0)"
     NL, "    {"
@@ -345,6 +345,7 @@ static const char* enqueue_flags_wait_work_group_simple[] =
     NL, "  size_t lid = get_local_id(0);"
     NL, "  size_t gs = get_global_size(0);"
     NL, "  size_t gid = get_group_id(0);"
+    NL, "  size_t ng = get_num_groups(0);"
     NL, "  "
     NL, "  if(gid == group_id)"
     NL, "  {"
@@ -361,20 +362,23 @@ static const char* enqueue_flags_wait_work_group_simple[] =
     NL, ""
     NL, "  if((index + 1) == BITS_DEPTH)"
     NL, "  {"
-    NL, "    barrier(CLK_LOCAL_MEM_FENCE);"
+    NL, "    barrier(CLK_GLOBAL_MEM_FENCE);"
     NL, ""
     NL, "    if(lid == 0)"
     NL, "    {"
-    NL, "      res[gid] = 1;"
+    NL, "      res[ng * group_id + gid] = 1;"
     NL, ""
-    NL, "      for(int j = 0; j < BITS_DEPTH; j++)"
+    NL, "      if(gid == group_id)"
     NL, "      {"
-    NL, "        for(int i = 0; i < ls; i++)"
+    NL, "        for(int j = 0; j < BITS_DEPTH; j++)"
     NL, "        {"
-    NL, "          if(array[j * gs + ls * gid + i] != ((ls * gid + i) + j))"
+    NL, "          for(int i = 0; i < ls; i++)"
     NL, "          {"
-    NL, "            res[gid] = 2;"
-    NL, "            break;"
+    NL, "            if(array[j * gs + ls * gid + i] != ((ls * gid + i) + j))"
+    NL, "            {"
+    NL, "              res[ng * group_id + gid] = 2;"
+    NL, "              break;"
+    NL, "            }"
     NL, "          }"
     NL, "        }"
     NL, "      }"
@@ -414,6 +418,7 @@ static const char* enqueue_flags_wait_work_group_event[] =
     NL, "  size_t lid = get_local_id(0);"
     NL, "  size_t gs = get_global_size(0);"
     NL, "  size_t gid = get_group_id(0);"
+    NL, "  size_t ng = get_num_groups(0);"
     NL, "  "
     NL, "  if(gid == group_id)"
     NL, "  {"
@@ -436,20 +441,23 @@ static const char* enqueue_flags_wait_work_group_event[] =
     NL, ""
     NL, "  if((index + 1) == BITS_DEPTH)"
     NL, "  {"
-    NL, "    barrier(CLK_LOCAL_MEM_FENCE);"
+    NL, "    barrier(CLK_GLOBAL_MEM_FENCE);"
     NL, ""
     NL, "    if(lid == 0)"
     NL, "    {"
-    NL, "      res[gid] = 1;"
+    NL, "      res[ng * group_id + gid] = 1;"
     NL, ""
-    NL, "      for(int j = 0; j < BITS_DEPTH; j++)"
+    NL, "      if(gid == group_id)"
     NL, "      {"
-    NL, "        for(int i = 0; i < ls; i++)"
+    NL, "        for(int j = 0; j < BITS_DEPTH; j++)"
     NL, "        {"
-    NL, "          if(array[j * gs + ls * gid + i] != ((ls * gid + i) + j))"
+    NL, "          for(int i = 0; i < ls; i++)"
     NL, "          {"
-    NL, "            res[gid] = 2;"
-    NL, "            break;"
+    NL, "            if(array[j * gs + ls * gid + i] != ((ls * gid + i) + j))"
+    NL, "            {"
+    NL, "              res[ng * group_id + gid] = 2;"
+    NL, "              break;"
+    NL, "            }"
     NL, "          }"
     NL, "        }"
     NL, "      }"
@@ -495,6 +503,7 @@ static const char* enqueue_flags_wait_work_group_local[] =
     NL, "  size_t lid = get_local_id(0);"
     NL, "  size_t tid = get_global_id(0);"
     NL, "  size_t gs = get_global_size(0);"
+    NL, "  size_t ng = get_num_groups(0);"
     NL, ""
     NL, "  sub_array[lid] = array[(index - 1) * gs + tid];"
     NL, "  barrier(CLK_LOCAL_MEM_FENCE);"
@@ -522,20 +531,23 @@ static const char* enqueue_flags_wait_work_group_local[] =
     NL, ""
     NL, "  if((index + 1) == BITS_DEPTH)"
     NL, "  {"
-    NL, "    barrier(CLK_LOCAL_MEM_FENCE);"
+    NL, "    barrier(CLK_GLOBAL_MEM_FENCE);"
     NL, ""
     NL, "    if(lid == 0)"
     NL, "    {"
-    NL, "      res[gid] = 1;"
+    NL, "      res[ng * group_id + gid] = 1;"
     NL, ""
-    NL, "      for(int j = 0; j < BITS_DEPTH; j++)"
+    NL, "      if(gid == group_id)"
     NL, "      {"
-    NL, "        for(int i = 0; i < ls; i++)"
+    NL, "        for(int j = 0; j < BITS_DEPTH; j++)"
     NL, "        {"
-    NL, "          if(array[j * gs + ls * gid + i] != ((ls * gid + i) + j))"
+    NL, "          for(int i = 0; i < ls; i++)"
     NL, "          {"
-    NL, "            res[gid] = 2;"
-    NL, "            break;"
+    NL, "            if(array[j * gs + ls * gid + i] != ((ls * gid + i) + j))"
+    NL, "            {"
+    NL, "              res[ng * group_id + gid] = 2;"
+    NL, "              break;"
+    NL, "            }"
     NL, "          }"
     NL, "        }"
     NL, "      }"
@@ -576,6 +588,7 @@ static const char* enqueue_flags_wait_work_group_event_local[] =
     NL, "  size_t lid = get_local_id(0);"
     NL, "  size_t tid = get_global_id(0);"
     NL, "  size_t gs = get_global_size(0);"
+    NL, "  size_t ng = get_num_groups(0);"
     NL, ""
     NL, "  sub_array[lid] = array[(index - 1) * gs + tid];"
     NL, "  barrier(CLK_LOCAL_MEM_FENCE);"
@@ -607,20 +620,23 @@ static const char* enqueue_flags_wait_work_group_event_local[] =
     NL, ""
     NL, "  if((index + 1) == BITS_DEPTH)"
     NL, "  {"
-    NL, "    barrier(CLK_LOCAL_MEM_FENCE);"
+    NL, "    barrier(CLK_GLOBAL_MEM_FENCE);"
     NL, ""
     NL, "    if(lid == 0)"
     NL, "    {"
-    NL, "      res[gid] = 1;"
+    NL, "      res[ng * group_id + gid] = 1;"
     NL, ""
-    NL, "      for(int j = 0; j < BITS_DEPTH; j++)"
+    NL, "      if(gid == group_id)"
     NL, "      {"
-    NL, "        for(int i = 0; i < ls; i++)"
+    NL, "        for(int j = 0; j < BITS_DEPTH; j++)"
     NL, "        {"
-    NL, "          if(array[j * gs + ls * gid + i] != ((ls * gid + i) + j))"
+    NL, "          for(int i = 0; i < ls; i++)"
     NL, "          {"
-    NL, "            res[gid] = 2;"
-    NL, "            break;"
+    NL, "            if(array[j * gs + ls * gid + i] != ((ls * gid + i) + j))"
+    NL, "            {"
+    NL, "              res[ng * group_id + gid] = 2;"
+    NL, "              break;"
+    NL, "            }"
     NL, "          }"
     NL, "        }"
     NL, "      }"
@@ -674,7 +690,7 @@ int test_enqueue_flags(cl_device_id device, cl_context context, cl_command_queue
     cl_uint i;
     cl_int err_ret, res = 0;
     clCommandQueueWrapper dev_queue;
-    cl_int kernel_results[MAX_GWS] = { -1 };
+    cl_int kernel_results[MAX_GWS * MAX_GWS] = { -1 };
     int buff[MAX_GWS * BITS_DEPTH] = { 0 };
 
     size_t ret_len;
@@ -724,15 +740,16 @@ int test_enqueue_flags(cl_device_id device, cl_context context, cl_command_queue
         if(check_error(err_ret, "'%s' kernel execution failed", sources_enqueue_block_flags[i].kernel_name)) { ++failCnt; res = -1; }
         else
         {
+            int threshold = i < 4 ? global_size / local_size : (global_size * global_size) / (local_size * local_size);
             int r = 0;
-            for (int j=0; j<global_size; j++)
+            for (int j=0; j<global_size*global_size; j++)
             {
-                if (kernel_results[j] != 1 && j < (global_size / local_size) && check_error(-1, "'%s' kernel result[idx: %d] validation failed (test) %d != (expected) 1", sources_enqueue_block_flags[i].kernel_name, j, kernel_results[j]))
+                if (kernel_results[j] != 1 && j < threshold && check_error(-1, "'%s' kernel result[idx: %d] validation failed (test) %d != (expected) 1", sources_enqueue_block_flags[i].kernel_name, j, kernel_results[j]))
                 {
                     r = -1;
                     break;
                 }
-                else if (kernel_results[j] != 0 && j >= (global_size / local_size) && check_error(-1, "'%s' kernel result[idx: %d] validation failed (test) %d != (expected) 0", sources_enqueue_block_flags[i].kernel_name, j, kernel_results[j]))
+                else if (kernel_results[j] != 0 && j >= threshold && check_error(-1, "'%s' kernel result[idx: %d] validation failed (test) %d != (expected) 0", sources_enqueue_block_flags[i].kernel_name, j, kernel_results[j]))
                 {
                     r = -1;
                     break;
