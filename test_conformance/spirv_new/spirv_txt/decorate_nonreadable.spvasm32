@@ -1,0 +1,61 @@
+      OpCapability Addresses
+      OpCapability Linkage
+      OpCapability Kernel
+      OpCapability ImageBasic
+ %1 = OpExtInstImport "OpenCL.std"
+      OpMemoryModel Physical32 OpenCL
+      OpEntryPoint Kernel %12 "decorate_nonreadable"
+      OpSource OpenCL_C 100000
+      OpName %5 "__spirv_BuiltInGlobalInvocationId"
+      OpName %6 "__spirv_BuiltInGlobalSize"
+      OpName %13 "dst"
+      OpName %14 "src"
+      OpName %15 "entry"
+      OpName %17 "call"
+      OpName %19 "call1"
+      OpName %21 "call2"
+      OpName %22 "mul"
+      OpName %23 "add"
+      OpName %26 "vecinit"
+      OpName %27 "vecinit3"
+      OpName %28 "arrayidx"
+      OpDecorate %13 NonReadable
+      OpDecorate %30 Constant
+%30 = OpDecorationGroup
+      OpDecorate %5 BuiltIn GlobalInvocationId
+      OpDecorate %6 BuiltIn GlobalSize
+      OpDecorate %14 FuncParamAttr NoCapture
+      OpDecorate %6 LinkageAttributes "__spirv_BuiltInGlobalSize" Import
+      OpDecorate %5 LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+      OpGroupDecorate %30 %5 %6
+ %2 = OpTypeInt 32 0
+ %3 = OpTypeVector %2 3
+ %4 = OpTypePointer UniformConstant %3
+ %7 = OpTypeVoid
+ %8 = OpTypeImage %7 2D 0 0 0 0 Unknown WriteOnly
+ %9 = OpTypeVector %2 4
+%10 = OpTypePointer CrossWorkgroup %9
+%11 = OpTypeFunction %7 %8 %10
+%24 = OpTypeVector %2 2
+ %5 = OpVariable %4 UniformConstant
+ %6 = OpVariable %4 UniformConstant
+%12 = OpFunction %7 None %11
+%13 = OpFunctionParameter %8
+%14 = OpFunctionParameter %10
+%15 = OpLabel
+%25 = OpUndef %24
+%16 = OpLoad %3 %5 Aligned 0
+%17 = OpCompositeExtract %2 %16 0
+%18 = OpLoad %3 %5 Aligned 0
+%19 = OpCompositeExtract %2 %18 1
+%20 = OpLoad %3 %6 Aligned 0
+%21 = OpCompositeExtract %2 %20 0
+%22 = OpIMul %2 %21 %19
+%23 = OpIAdd %2 %22 %17
+%26 = OpCompositeInsert %24 %19 %25 0
+%27 = OpCompositeInsert %24 %17 %26 1
+%28 = OpInBoundsPtrAccessChain %10 %14 %23
+%29 = OpLoad %9 %28 Aligned 16
+      OpImageWrite %13 %27 %29
+      OpReturn
+      OpFunctionEnd
