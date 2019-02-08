@@ -89,3 +89,8 @@ Select,select/test_select
 Contractions,contractions/contractions
 Integer Ops,integer_ops/test_integer_ops
 Half Ops,half/Test_half
+
+# #########################################
+# Extensions
+# #########################################
+SPIRV new,spirv_new/test_spirv_new -ILPath spirv_bin
