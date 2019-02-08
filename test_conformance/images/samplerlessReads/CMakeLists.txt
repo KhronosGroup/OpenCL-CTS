@@ -17,6 +17,7 @@ add_executable(conformance_test_samplerless_reads
 	../../../test_common/harness/mt19937.c
 	../../../test_common/harness/msvc9.c
 	../../../test_common/harness/typeWrappers.cpp
+  ../../../test_common/harness/crc32.c
 )
 
 set_source_files_properties(

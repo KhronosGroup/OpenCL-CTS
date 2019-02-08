@@ -15,6 +15,7 @@ add_executable(conformance_test_compiler
 	../../test_common/harness/mt19937.c
 	../../test_common/harness/msvc9.c
 	../../test_common/harness/conversions.c
+  ../../test_common/harness/crc32.c
 )
 
 set_source_files_properties(

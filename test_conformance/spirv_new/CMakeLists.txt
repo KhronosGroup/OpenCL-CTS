@@ -17,6 +17,7 @@ set(CMAKE_CXX_STANDARD 11)
 file(GLOB SPIRV_NEW_SOURCES "*.cpp")
 
 set(TEST_HARNESS_SOURCES
+  ../../test_common/harness/crc32.c
   ../../test_common/harness/errorHelpers.c
   ../../test_common/harness/threadTesting.c
   ../../test_common/harness/testHarness.c
@@ -30,7 +31,7 @@ set(TEST_HARNESS_SOURCES
   ../../test_common/harness/parseParameters.cpp
   ../../test_conformance/math_brute_force/reference_math.c
   ../../test_conformance/math_brute_force/Utility.c
-  )
+)
 
 set(${MODULE_NAME}_SOURCES ${SPIRV_NEW_SOURCES} ${TEST_HARNESS_SOURCES})
 

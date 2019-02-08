@@ -17,6 +17,7 @@ add_executable(conformance_test_events
 	../../test_common/harness/msvc9.c
 	../../test_common/harness/conversions.c
 	../../test_common/harness/ThreadPool.c
+  ../../test_common/harness/crc32.c
 )
 
 set_source_files_properties(

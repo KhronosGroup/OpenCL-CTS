@@ -10,6 +10,7 @@ add_executable(conformance_test_vecalign
         ../../test_common/harness/kernelHelpers.c
         ../../test_common/harness/errorHelpers.c
         ../../test_common/harness/conversions.c
+        ../../test_common/harness/crc32.c
 )
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND NOT MSVC)

@@ -18,6 +18,7 @@ add_executable(conformance_test_conversions
         ../../test_common/harness/mingw_compat.c
         ../../test_common/harness/errorHelpers.c
         ../../test_common/harness/parseParameters.cpp
+        ../../test_common/harness/crc32.c
 )
 
 set_source_files_properties(

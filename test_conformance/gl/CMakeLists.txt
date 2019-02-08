@@ -29,6 +29,7 @@ set (GL_SOURCES
     ../../test_common/harness/mt19937.c
     ../../test_common/harness/testHarness.c
     ../../test_common/harness/threadTesting.c 
+    ../../test_common/harness/crc32.c
     )
 
 if (WIN32)

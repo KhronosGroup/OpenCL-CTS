@@ -13,13 +13,472 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "crc32.h"
 #include "kernelHelpers.h"
 #include "errorHelpers.h"
 #include "imageHelpers.h"
+#include "parseParameters.h"
+
+#include <vector>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
 
 #if defined(__MINGW32__)
 #include "mingw_compat.h"
 #endif
+
+#if defined(_WIN32)
+std::string slash = "\\";
+#else
+std::string slash = "/";
+#endif
+
+std::string get_file_name(const std::string &baseName, int index, const std::string &extension)
+{
+    std::ostringstream fileName;
+    fileName << baseName << "." << index << extension;
+    return fileName.str();
+}
+
+long get_file_size(const std::string &fileName)
+{
+    std::ifstream ifs(fileName.c_str(), std::ios::binary);
+    if (!ifs.good())
+        return 0;
+    // get length of file:
+    ifs.seekg(0, std::ios::end);
+    std::ios::pos_type length = ifs.tellg();
+    return static_cast<long>(length);
+}
+
+std::vector<char> get_file_content(const std::string &fileName)
+{
+    std::ifstream ifs(fileName.c_str(), std::ios::binary);
+    if (!ifs.good())
+        return std::vector<char>(0);
+    // get length of file:
+    ifs.seekg(0, std::ios::end);
+    std::ios::pos_type length = ifs.tellg();
+    ifs.seekg(0, std::ios::beg);
+
+    // allocate memory:
+    std::vector<char> content(static_cast<size_t>(length));
+
+    // read data as a block:
+    ifs.read(&content[0], length);
+    return content;
+}
+
+std::string get_kernel_name(const std::string &source)
+{
+    // Count CRC
+    cl_uint crc = crc32(source.data(), source.size());
+
+    // Create list of kernel names
+    std::string kernelsList;
+    size_t kPos = source.find("kernel");
+    while (kPos != std::string::npos)
+    {
+        // check for '__kernel'
+        size_t pos = kPos;
+        if (pos >= 2 && source[pos - 1] == '_' && source[pos - 2] == '_')
+            pos -= 2;
+
+        //check character before 'kernel' (white space expected)
+        size_t wsPos = source.find_last_of(" \t\r\n", pos);
+        if (wsPos == std::string::npos || wsPos + 1 == pos)
+        {
+            //check character after 'kernel' (white space expected)
+            size_t akPos = kPos + sizeof("kernel") - 1;
+            wsPos = source.find_first_of(" \t\r\n", akPos);
+            if (!(wsPos == akPos))
+            {
+                kPos = source.find("kernel", kPos + 1);
+                continue;
+            }
+
+            bool attributeFound;
+            do
+            {
+                attributeFound = false;
+                // find '(' after kernel name name
+                size_t pPos = source.find("(", akPos);
+                if (!(pPos != std::string::npos))
+                    continue;
+
+                // check for not empty kernel name before '('
+                pos = source.find_last_not_of(" \t\r\n", pPos - 1);
+                if (!(pos != std::string::npos && pos > akPos))
+                    continue;
+
+                //find character before kernel name
+                wsPos = source.find_last_of(" \t\r\n", pos);
+                if (!(wsPos != std::string::npos && wsPos >= akPos))
+                    continue;
+
+                std::string name = source.substr(wsPos + 1, pos + 1 - (wsPos + 1));
+                //check for kernel attribute
+                if (name == "__attribute__")
+                {
+                    attributeFound = true;
+                    int pCount = 1;
+                    akPos = pPos + 1;
+                    while (pCount > 0 && akPos != std::string::npos)
+                    {
+                        akPos = source.find_first_of("()", akPos + 1);
+                        if (akPos != std::string::npos)
+                        {
+                            if (source[akPos] == '(')
+                                pCount++;
+                            else
+                                pCount--;
+                        }
+                    }
+                }
+                else
+                {
+                    kernelsList += name + ".";
+                }
+            } while (attributeFound);
+        }
+        kPos = source.find("kernel", kPos + 1);
+    }
+    std::ostringstream oss;
+    if (MAX_LEN_FOR_KERNEL_LIST > 0)
+    {
+        if (kernelsList.size() > MAX_LEN_FOR_KERNEL_LIST + 1)
+        {
+            kernelsList = kernelsList.substr(0, MAX_LEN_FOR_KERNEL_LIST + 1);
+            kernelsList[kernelsList.size() - 1] = '.';
+            kernelsList[kernelsList.size() - 1] = '.';
+        }
+        oss << kernelsList;
+    }
+    oss << std::hex << std::setfill('0') << std::setw(8) << crc;
+    return oss.str();
+}
+
+std::string add_build_options(const std::string &baseName, const char *options)
+{
+    if (options == 0 || options[0] == 0)
+        return get_file_name(baseName, 0, "");
+
+    bool equal = false;
+    int i = 0;
+
+    do
+    {
+        i++;
+        std::string fileName = gSpirVPath + slash + get_file_name(baseName, i, ".options");
+        long fileSize = get_file_size(fileName);
+        if (fileSize == 0)
+            break;
+        //if(fileSize == strlen(options))
+        {
+            std::vector<char> options2 = get_file_content(fileName);
+            options2.push_back(0); //terminate string
+            equal = strcmp(options, &options2[0]) == 0;
+        }
+    } while (!equal);
+    if (equal)
+        return get_file_name(baseName, i, "");
+    std::string fileName = gSpirVPath + slash + get_file_name(baseName, i, ".options");
+    std::ofstream ofs(fileName.c_str(), std::ios::binary);
+    if (!ofs.good())
+    {
+        log_info("OfflineCompiler: can't create options: %s\n", fileName.c_str());
+        return "";
+    }
+    // write data as a block:
+    ofs.write(options, strlen(options));
+    log_info("OfflineCompiler: options added: %s\n", fileName.c_str());
+    return get_file_name(baseName, i, "");
+}
+
+int create_single_kernel_helper_create_program(cl_context context, cl_program *outProgram, unsigned int numKernelLines, const char **kernelProgram, const char *buildOptions)
+{
+    int error = CL_SUCCESS;
+    std::string modifiedKernelStr;
+    const char* modifiedKernelCode;
+
+    if (gOfflineCompiler)
+    {
+        std::string kernel;
+
+        for (size_t i = 0; i < numKernelLines; ++i)
+        {
+            std::string chunk(kernelProgram[i], 0, std::string::npos);
+            kernel += chunk;
+        }
+
+        std::string kernelName = get_kernel_name(kernel);
+
+        // set build options
+        std::string bOptions;
+        bOptions += buildOptions ? std::string(buildOptions) : "";
+
+        kernelName = add_build_options(kernelName, buildOptions);
+
+        std::string gOfflineCompilerInput = gSpirVPath + slash + kernelName + ".cl";
+        std::string gOfflineCompilerOutput = gSpirVPath + slash + kernelName;
+
+        std::string size_t_width_str;
+
+        if (gOfflineCompilerOutputType == kSpir_v)
+        {
+            cl_device_id device;
+            cl_uint numDevices = 0;
+            cl_int error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDevices, 0);
+            if (error != CL_SUCCESS)
+            {
+                print_error(error, "clGetContextInfo failed");
+                return error;
+            }
+
+            std::vector<cl_device_id> devices(numDevices, 0);
+            error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], 0);
+            if (error != CL_SUCCESS)
+            {
+                print_error(error, "clGetContextInfo failed");
+                return error;
+            }
+
+            error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], NULL);
+            if (error != CL_SUCCESS)
+            {
+                print_error(error, "clGetContextInfo failed");
+                return error;
+            }
+
+            cl_uint size_t_width = 0;
+            if ((0 == size_t_width) && ((error = clGetDeviceInfo(devices[0], CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &size_t_width, NULL))))
+            {
+                print_error(error, "Unable to obtain device address bits");
+                return -1;
+            }
+
+            if (size_t_width == 32)
+            {
+                gOfflineCompilerOutput += ".spv32";
+                size_t_width_str = "32";
+            }
+            else if (size_t_width == 64)
+            {
+                gOfflineCompilerOutput += ".spv64";
+                size_t_width_str = "64";
+            }
+        }
+
+        // try to read cached output file when test is run with gForceSpirVGenerate = false
+        std::ifstream ifs(gOfflineCompilerOutput.c_str(), std::ios::binary);
+        if (!ifs.good() || gForceSpirVGenerate)
+        {
+            if (gForceSpirVCache)
+            {
+                log_info("OfflineCompiler: can't open cached SpirV file: %s\n", gOfflineCompilerOutput.c_str());
+                return -1;
+            }
+
+            ifs.close();
+
+            if (!gForceSpirVGenerate)
+                log_info("OfflineCompiler: can't find cached SpirV file: %s\n", gOfflineCompilerOutput.c_str());
+
+            std::ofstream ofs(gOfflineCompilerInput.c_str(), std::ios::binary);
+            if (!ofs.good())
+            {
+                log_info("OfflineCompiler: can't create source file: %s\n", gOfflineCompilerInput.c_str());
+                return -1;
+            }
+
+            // write source to input file
+            ofs.write(kernel.c_str(), kernel.size());
+            ofs.close();
+
+            // set output type and default script
+            std::string outputTypeStr;
+            std::string defaultScript;
+            if (gOfflineCompilerOutputType == kBinary)
+            {
+                outputTypeStr = "binary";
+                #if defined(_WIN32)
+                defaultScript = "..\\build_script_binary.py ";
+                #else
+                defaultScript = "../build_script_binary.py ";
+                #endif
+            }
+            else if (gOfflineCompilerOutputType == kSource)
+            {
+                outputTypeStr = "source";
+                #if defined(_WIN32)
+                defaultScript = "..\\build_script_source.py ";
+                #else
+                defaultScript = "../build_script_source.py ";
+                #endif
+            }
+            else if (gOfflineCompilerOutputType == kSpir_v)
+            {
+                outputTypeStr = "spir_v";
+                #if defined(_WIN32)
+                defaultScript = "..\\build_script_spirv.py ";
+                #else
+                defaultScript = "../build_script_spirv.py ";
+                #endif
+            }
+
+            // set script arguments
+            std::string scriptArgs = gOfflineCompilerInput + " " + gOfflineCompilerOutput + " " + size_t_width_str + " " + outputTypeStr;
+
+            if (!bOptions.empty())
+            {
+                //search for 2.0 build options
+                std::string oclVersion;
+                std::string buildOptions20 = "-cl-std=CL2.0";
+                std::size_t found = bOptions.find(buildOptions20);
+
+                if (found != std::string::npos)
+                    oclVersion = "20";
+                else
+                    oclVersion = "12";
+
+                std::string bOptionsWRemovedStd20 = bOptions;
+
+                std::string::size_type i = bOptions.find(buildOptions20);
+
+                if (i != std::string::npos)
+                    bOptionsWRemovedStd20.erase(i, buildOptions20.length());
+
+                //remove space before -cl-std=CL2.0 if it was first build option
+                size_t spacePos = bOptionsWRemovedStd20.find_last_of(" \t\r\n", i);
+                if (spacePos != std::string::npos && i == 0)
+                    bOptionsWRemovedStd20.erase(spacePos, sizeof(char));
+
+                //remove space after -cl-std=CL2.0
+                spacePos = bOptionsWRemovedStd20.find_first_of(" \t\r\n", i - 1);
+                if (spacePos != std::string::npos)
+                    bOptionsWRemovedStd20.erase(spacePos, sizeof(char));
+
+                if (!bOptionsWRemovedStd20.empty())
+                    scriptArgs += " " + oclVersion + " \"" + bOptionsWRemovedStd20 + "\"";
+                else
+                    scriptArgs += " " + oclVersion;
+            }
+            else
+                scriptArgs += " 12";
+
+            // set script command line
+            std::string scriptToRunString = defaultScript + scriptArgs;
+
+            // execute script
+            log_info("Executing command: %s\n", scriptToRunString.c_str());
+            fflush(stdout);
+            int returnCode = system(scriptToRunString.c_str());
+            if (returnCode != 0)
+            {
+                log_error("Command finished with error: 0x%x\n", returnCode);
+                return CL_COMPILE_PROGRAM_FAILURE;
+            }
+            // read output file
+            ifs.open(gOfflineCompilerOutput.c_str(), std::ios::binary);
+            if (!ifs.good())
+            {
+                log_info("OfflineCompiler: can't read output file: %s\n", gOfflineCompilerOutput.c_str());
+                return -1;
+            }
+        }
+
+        ifs.seekg(0, ifs.end);
+        int length = ifs.tellg();
+        ifs.seekg(0, ifs.beg);
+
+        //treat modifiedProgram as input for clCreateProgramWithSource
+        if (gOfflineCompilerOutputType == kSource)
+        {
+            // read source from file:
+            std::vector<char> modifiedKernelBuf(length);
+
+            ifs.read(&modifiedKernelBuf[0], length);
+            ifs.close();
+
+            for (int i = 0; i < length; i++)
+                modifiedKernelStr.push_back(modifiedKernelBuf[i]);
+
+            modifiedKernelCode = &modifiedKernelStr[0];
+
+            /* Create the program object from source - to be removed in the future as we will use offline compiler here */
+            *outProgram = clCreateProgramWithSource(context, numKernelLines, &modifiedKernelCode, NULL, &error);
+            if (*outProgram == NULL || error != CL_SUCCESS)
+            {
+                print_error(error, "clCreateProgramWithSource failed");
+                return error;
+            }
+        }
+        //treat modifiedProgram as input for clCreateProgramWithBinary
+        else if (gOfflineCompilerOutputType == kBinary)
+        {
+            // read binary from file:
+            std::vector<unsigned char> modifiedKernelBuf(length);
+
+            ifs.read((char *)&modifiedKernelBuf[0], length);
+            ifs.close();
+
+            cl_uint numDevices = 0;
+            cl_int error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDevices, 0);
+            test_error(error, "clGetContextInfo failed");
+
+            std::vector<cl_device_id> devices(numDevices, 0);
+            error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], 0);
+            test_error(error, "clGetContextInfo failed");
+
+            size_t lengths = modifiedKernelBuf.size();
+            const unsigned char *binaries = { &modifiedKernelBuf[0] };
+            log_info("offlineCompiler: clCreateProgramWithSource replaced with clCreateProgramWithBinary\n");
+            *outProgram = clCreateProgramWithBinary(context, 1, &devices[0], &lengths, &binaries, NULL, &error);
+            if (*outProgram == NULL || error != CL_SUCCESS)
+            {
+                print_error(error, "clCreateProgramWithBinary failed");
+                return error;
+            }
+        }
+        //treat modifiedProgram as input for clCreateProgramWithIL
+        else if (gOfflineCompilerOutputType == kSpir_v)
+        {
+            // read spir-v from file:
+            std::vector<unsigned char> modifiedKernelBuf(length);
+
+            ifs.read((char *)&modifiedKernelBuf[0], length);
+            ifs.close();
+
+            cl_platform_id platform;
+            error = clGetContextInfo(context, CL_CONTEXT_PLATFORM, sizeof(cl_platform_id), &platform, NULL);
+
+            clCreateProgramWithILKHR_fn clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)clGetExtensionFunctionAddressForPlatform(platform, "clCreateProgramWithILKHR");
+
+            size_t length = modifiedKernelBuf.size();
+            log_info("offlineCompiler: clCreateProgramWithSource replaced with clCreateProgramWithIL\n");
+
+            *outProgram = clCreateProgramWithILKHR(context, &modifiedKernelBuf[0], length, &error);
+            if (*outProgram == NULL || error != CL_SUCCESS)
+            {
+                print_error(error, "clCreateProgramWithIL failed");
+                return error;
+            }
+        }
+    }
+    else
+    {
+        /* Create the program object from source */
+        *outProgram = clCreateProgramWithSource(context, numKernelLines, kernelProgram, NULL, &error);
+        if (*outProgram == NULL || error != CL_SUCCESS)
+        {
+            print_error(error, "clCreateProgramWithSource failed");
+            return error;
+        }
+    }
+    return 0;
+}
 
 int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_kernel *outKernel, unsigned int numKernelLines, const char **kernelProgram, const char *kernelName )
 {

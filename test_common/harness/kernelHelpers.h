@@ -60,8 +60,13 @@ extern "C" {
     #define STRINGIFY(_x)                           #_x
 #endif
 
+const int MAX_LEN_FOR_KERNEL_LIST = 20;
+
 /* Helper that creates a single program and kernel from a single-kernel program source */
 extern int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_kernel *outKernel, unsigned int numKernelLines, const char **kernelProgram, const char *kernelName );
+extern int create_single_kernel_helper_with_build_options( cl_context context, cl_program *outProgram, cl_kernel *outKernel, unsigned int numKernelLines,
+                                                          const char **kernelProgram, const char *kernelName, const char *buildOptions );
+extern int create_single_kernel_helper_create_program( cl_context context, cl_program *outProgram, unsigned int numKernelLines, const char **kernelProgram, const char *buildOptions );
 
 /* Helper to obtain the biggest fit work group size for all the devices in a given group and for the given global thread size */
 extern int get_max_common_work_group_size( cl_context context, cl_kernel kernel, size_t globalThreadSize, size_t *outSize );
@@ -119,6 +124,13 @@ cl_device_fp_config get_default_rounding_mode( cl_device_id device );
     {    \
         log_info( "\n\tNote: device does not support 3D images. Skipping test...\n" );    \
         return 0;    \
+    }
+
+#define PASSIVE_REQUIRE_FP16_SUPPORT(device)                            \
+    if (!is_extension_available(device, "cl_khr_fp16"))                 \
+    {                                                                   \
+        log_info("\n\tNote: device does not support fp16. Skipping test...\n"); \
+        return 0;                                                       \
     }
 
 /* Prints out the standard device header for all tests given the device to print for */

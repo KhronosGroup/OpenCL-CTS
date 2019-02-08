@@ -19,6 +19,22 @@
 #include "compat.h"
 #include <string>
 
+extern bool gOfflineCompiler;
+extern bool gForceSpirVCache;
+extern bool gForceSpirVGenerate;
+extern std::string gSpirVPath;
+
+enum OfflineCompilerOutputType
+{
+    kBinary = 0,
+    kSource,
+    kSpir_v
+};
+
+extern OfflineCompilerOutputType gOfflineCompilerOutputType;
+
+extern int parseCustomParam (int argc, const char *argv[], const char *ignore = 0 );
+
 extern void parseWimpyReductionFactor(const char *&arg, int &wimpyReductionFactor);
 
 #endif // _parseParameters_h

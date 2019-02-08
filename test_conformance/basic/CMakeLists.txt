@@ -58,6 +58,7 @@ add_executable(conformance_test_basic
 	../../test_common/harness/conversions.c
   	../../test_common/harness/rounding_mode.c
     	../../test_common/harness/msvc9.c
+  ../../test_common/harness/crc32.c
 )
 
 set_source_files_properties(
