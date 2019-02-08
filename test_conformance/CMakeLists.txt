@@ -68,3 +68,4 @@ add_subdirectory(vec_step)
 
 # Add any extension folders
 add_subdirectory(spir)
+add_subdirectory(spirv_new)

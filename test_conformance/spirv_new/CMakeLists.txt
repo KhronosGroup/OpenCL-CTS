@@ -27,8 +27,8 @@ add_executable(conformance_test_spirv_new
   ../../test_common/harness/msvc9.c
   ../../test_common/harness/rounding_mode.c
   ../../test_common/harness/os_helpers.cpp
-  ../../test_common/harness/parseParameters.cpp
   ../../test_common/harness/crc32.c
+  ../../test_common/harness/parseParameters.cpp
   ../../test_conformance/math_brute_force/reference_math.c
   ../../test_conformance/math_brute_force/Utility.c
   ${SPIRV_NEW_SOURCES})

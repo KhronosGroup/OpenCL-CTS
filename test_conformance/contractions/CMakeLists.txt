@@ -9,6 +9,7 @@ add_executable(conformance_test_contractions
         ../../test_common/harness/rounding_mode.c
         ../../test_common/harness/kernelHelpers.c
         ../../test_common/harness/crc32.c
+        ../../test_common/harness/parseParameters.cpp
 )
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND NOT MSVC)
@@ -17,7 +18,6 @@ set_source_files_properties(
         COMPILE_FLAGS -msse)
 endif()
 
-if(WIN32)
 set_source_files_properties(
         contractions.c    
         ../../test_common/harness/msvc9.c        
@@ -26,7 +26,6 @@ set_source_files_properties(
         ../../test_common/harness/rounding_mode.c
         ../../test_common/harness/kernelHelpers.c
         PROPERTIES LANGUAGE CXX)
-endif(WIN32)
 
 TARGET_LINK_LIBRARIES(conformance_test_contractions
         ${CLConform_LIBRARIES})
