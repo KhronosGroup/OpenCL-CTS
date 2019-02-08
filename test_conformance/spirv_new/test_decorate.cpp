@@ -35,7 +35,7 @@ static int verify_results(cl_device_id deviceID,
                           cl_context context,
                           cl_command_queue queue,
                           const char *kname,
-                          const clProgramWrapper &prog)
+                          clProgramWrapper &prog)
 {
     const int num = 1 << 20;
     std::vector<cl_int> h_lhs(num);
@@ -182,7 +182,7 @@ int verify_saturated_results(cl_device_id deviceID,
                              cl_context context,
                              cl_command_queue queue,
                              const char *kname,
-                             const clProgramWrapper &prog)
+                             clProgramWrapper &prog)
 {
     if(std::string(kname).find("double") != std::string::npos) {
         if(!is_extension_available(deviceID, "cl_khr_fp64")) {
@@ -339,7 +339,7 @@ int test_image_decorate(cl_device_id deviceID,
     desc.image_slice_pitch = 0; // Not needed for 2D
     desc.num_mip_levels = 0;
     desc.num_samples = 0;
-    desc.mem_object = NULL;
+    desc.buffer = NULL;
 
     cl_int err = CL_SUCCESS;
 
@@ -432,7 +432,7 @@ TEST_SPIRV_FUNC(decorate_nonreadable)
     desc.image_slice_pitch = 0; // Not needed for 2D
     desc.num_mip_levels = 0;
     desc.num_samples = 0;
-    desc.mem_object = NULL;
+    desc.buffer = NULL;
 
 
     clMemWrapper dstImage = clCreateImage(context, CL_MEM_WRITE_ONLY,

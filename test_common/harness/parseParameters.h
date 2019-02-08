@@ -33,7 +33,7 @@ enum OfflineCompilerOutputType
 
 extern OfflineCompilerOutputType gOfflineCompilerOutputType;
 
-extern int parseCustomParam (int argc, const char *argv[], const char *ignore = 0 );
+extern "C" int parseCustomParam (int argc, const char *argv[], const char *ignore = 0 );
 
 extern void parseWimpyReductionFactor(const char *&arg, int &wimpyReductionFactor);
 

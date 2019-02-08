@@ -45,7 +45,7 @@ void helpInfo ()
   log_info("\n");
 }
 
-int parseCustomParam (int argc, const char *argv[], const char *ignore)
+extern "C" int parseCustomParam (int argc, const char *argv[], const char *ignore)
 {
   int delArg = 0;
 

@@ -28,7 +28,16 @@ TEST_SPIRV_FUNC(op_type_opaque_simple)
     }
     unsigned char *buffer = &buffer_vec[0];
 
-    clProgramWrapper prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
+    cl_platform_id platform;
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(cl_platform_id), &platform, NULL);
+    test_error(err, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
+
+    clCreateProgramWithILKHR_fn clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)clGetExtensionFunctionAddressForPlatform(platform, "clCreateProgramWithILKHR");
+    if (clCreateProgramWithILKHR == NULL) {
+        log_error("ERROR: clGetExtensionFunctionAddressForPlatform failed\n");
+    }
+
+    clProgramWrapper prog = clCreateProgramWithILKHR(context, buffer, file_bytes, &err);
     SPIRV_CHECK_ERROR(err, "Failed to create program with clCreateProgramWithIL");
 
     err = clCompileProgram(prog, 1, &deviceID,

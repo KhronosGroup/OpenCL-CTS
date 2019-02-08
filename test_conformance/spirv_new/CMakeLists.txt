@@ -16,8 +16,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 file(GLOB SPIRV_NEW_SOURCES "*.cpp")
 
-set(TEST_HARNESS_SOURCES
-  ../../test_common/harness/crc32.c
+add_executable(conformance_test_spirv_new
   ../../test_common/harness/errorHelpers.c
   ../../test_common/harness/threadTesting.c
   ../../test_common/harness/testHarness.c
@@ -29,10 +28,36 @@ set(TEST_HARNESS_SOURCES
   ../../test_common/harness/rounding_mode.c
   ../../test_common/harness/os_helpers.cpp
   ../../test_common/harness/parseParameters.cpp
+  ../../test_common/harness/crc32.c
   ../../test_conformance/math_brute_force/reference_math.c
   ../../test_conformance/math_brute_force/Utility.c
-)
+  ${SPIRV_NEW_SOURCES})
 
-set(${MODULE_NAME}_SOURCES ${SPIRV_NEW_SOURCES} ${TEST_HARNESS_SOURCES})
+set_source_files_properties(
+  ../../test_common/harness/kernelHelpers.c
+  ../../test_common/harness/testHarness.c
+  ../../test_common/harness/conversions.c
+  ../../test_conformance/math_brute_force/reference_math.c
+  ../../test_conformance/math_brute_force/Utility.c
+  PROPERTIES LANGUAGE CXX)
 
-include(../CMakeCommon.txt)
+target_include_directories(conformance_test_spirv_new PRIVATE)
+
+target_compile_definitions(conformance_test_spirv_new PRIVATE)
+
+target_compile_options(conformance_test_spirv_new PRIVATE
+  $<$<BOOL:${MSVC}>:/GR /EHs /EHc>)
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND NOT MSVC)
+  target_compile_options(conformance_test_spirv_new PRIVATE -msse2)
+endif()
+
+target_link_libraries(conformance_test_spirv_new PRIVATE
+  ${CLConform_LIBRARIES})
+
+add_dependencies(OpenCLCTS conformance_test_spirv_new)
+
+install(TARGETS conformance_test_spirv_new
+  DESTINATION "${CLConf_OUT_DIR}" COMPONENT OpenCLCTS)
+
+# TODO: Install SPIR-V files?

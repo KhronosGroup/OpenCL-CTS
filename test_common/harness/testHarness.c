@@ -133,6 +133,13 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
 
     /* Process the command line arguments */
 
+    argc = parseCustomParam(argc, argv, 0);
+    if (argc == -1)
+    {
+        test_finish();
+        return 0;
+    }
+
     /* Special case: just list the tests */
     if( ( argc > 1 ) && (!strcmp( argv[ 1 ], "-list" ) || !strcmp( argv[ 1 ], "-h" ) || !strcmp( argv[ 1 ], "--help" )))
     {
