@@ -157,6 +157,7 @@ int test_fmath(cl_device_id deviceID,
 #define TEST_FMATH_FUNC(TYPE, FUNC, MODE)           \
     TEST_SPIRV_FUNC(op_##FUNC##_##TYPE##_##MODE)    \
     {                                               \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID); \
         if (sizeof(cl_##TYPE) == 2) {               \
             PASSIVE_REQUIRE_FP16_SUPPORT(deviceID); \
         }                                           \

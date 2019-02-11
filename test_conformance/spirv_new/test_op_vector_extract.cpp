@@ -79,6 +79,7 @@ int test_extract(cl_device_id deviceID, cl_context context,
 #define TEST_VECTOR_EXTRACT(TYPE, N)                        \
     TEST_SPIRV_FUNC(op_vector_##TYPE##N##_extract)          \
     {                                                       \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);       \
         typedef cl_##TYPE##N Tv;                            \
         typedef cl_##TYPE Ts;                               \
         const int num = 1 << 20;                            \

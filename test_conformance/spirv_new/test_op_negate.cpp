@@ -77,6 +77,7 @@ int test_negation(cl_device_id deviceID,
 #define TEST_NEGATION(TYPE, Tv, OP, FUNC)       \
     TEST_SPIRV_FUNC(OP##_##TYPE)                \
     {                                           \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID); \
         int num = 1 << 20;                      \
         std::vector<Tv> in(num);                \
         RandomSeed seed(gRandomSeed);           \

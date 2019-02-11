@@ -61,18 +61,21 @@ static int test_linkage_compile(cl_device_id deviceID,
 
 TEST_SPIRV_FUNC(linkage_export_function_compile)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     clProgramWrapper prog;
     return test_linkage_compile(deviceID, context, queue, "linkage_export", prog);
 }
 
 TEST_SPIRV_FUNC(linkage_import_function_compile)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     clProgramWrapper prog;
     return test_linkage_compile(deviceID, context, queue, "linkage_import", prog);
 }
 
 TEST_SPIRV_FUNC(linkage_import_function_link)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     int err = 0;
 
     clProgramWrapper prog_export;

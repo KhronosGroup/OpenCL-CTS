@@ -83,6 +83,7 @@ int test_branch_conditional(cl_device_id deviceID,
 #define TEST_BRANCH_CONDITIONAL(name)                                   \
     TEST_SPIRV_FUNC(op_##name)                                          \
     {                                                                   \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);                   \
         const int num = 1 << 10;                                        \
         RandomSeed seed(gRandomSeed);                                   \
                                                                         \

@@ -155,6 +155,7 @@ int test_vector_times_scalar(cl_device_id deviceID,
 #define TEST_VECTOR_TIMES_SCALAR(TYPE, N)                       \
     TEST_SPIRV_FUNC(op_vector_times_scalar_##TYPE)              \
     {                                                           \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);           \
         if (sizeof(cl_##TYPE) == 2) {                           \
             PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);             \
         }                                                       \

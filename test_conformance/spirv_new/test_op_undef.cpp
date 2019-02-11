@@ -57,6 +57,7 @@ int test_undef(cl_device_id deviceID, cl_context context,
 #define TEST_UNDEF(NAME, TYPE)                              \
     TEST_SPIRV_FUNC(op_undef_##NAME##_simple)               \
     {                                                       \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);       \
         return test_undef<TYPE>(deviceID, context, queue,   \
                                 "undef_" #NAME "_simple");  \
     }                                                       \
@@ -91,18 +92,21 @@ TEST_UNDEF(int3  , cl_int3)
 
 TEST_SPIRV_FUNC(op_undef_struct_int_float_simple)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     typedef AbstractStruct2<cl_int, cl_float> CustomType;
     return test_undef<CustomType>(deviceID, context, queue, "undef_struct_int_float_simple");
 }
 
 TEST_SPIRV_FUNC(op_undef_struct_int_char_simple)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     typedef AbstractStruct2<cl_int, cl_char> CustomType;
     return test_undef<CustomType>(deviceID, context, queue, "undef_struct_int_char_simple");
 }
 
 TEST_SPIRV_FUNC(op_undef_struct_struct_simple)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     typedef AbstractStruct2<cl_int, cl_char> CustomType1;
     typedef AbstractStruct2<cl_int2, CustomType1> CustomType2;
     return test_undef<CustomType2>(deviceID, context, queue, "undef_struct_struct_simple");
@@ -110,6 +114,7 @@ TEST_SPIRV_FUNC(op_undef_struct_struct_simple)
 
 TEST_SPIRV_FUNC(op_undef_half_simple)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);
     return test_undef<cl_float>(deviceID, context, queue,
                                 "undef_half_simple");

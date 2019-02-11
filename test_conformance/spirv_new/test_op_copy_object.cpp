@@ -64,6 +64,7 @@ int test_copy(cl_device_id deviceID, cl_context context,
 #define TEST_COPY(NAME, type, value)                    \
     TEST_SPIRV_FUNC(op_copy_##NAME##_simple)            \
     {                                                   \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);   \
         std::vector<type> results(1024, (type)value);   \
         return test_copy(deviceID, context, queue,      \
                          "copy_" #NAME "_simple",       \
@@ -93,6 +94,7 @@ TEST_COPY(double  , cl_double , 3.141592653589793)
 
 TEST_SPIRV_FUNC(op_copy_int4_simple)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     cl_int4 value = {123, 122, 121, 119};
     std::vector<cl_int4> results(256, value);
     return test_copy(deviceID, context, queue, "copy_int4_simple", results);
@@ -100,6 +102,7 @@ TEST_SPIRV_FUNC(op_copy_int4_simple)
 
 TEST_SPIRV_FUNC(op_copy_int3_simple)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     cl_int3 value = {123, 122, 121, 0};
     std::vector<cl_int3> results(256, value);
     return test_copy(deviceID, context, queue, "copy_int3_simple",
@@ -108,6 +111,7 @@ TEST_SPIRV_FUNC(op_copy_int3_simple)
 
 TEST_SPIRV_FUNC(op_copy_struct_int_float_simple)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     AbstractStruct2<int, float> value = {1024, 3.1415};
     std::vector<AbstractStruct2<int, float> > results(256, value);
     return test_copy(deviceID, context, queue, "copy_struct_int_float_simple", results);
@@ -115,6 +119,7 @@ TEST_SPIRV_FUNC(op_copy_struct_int_float_simple)
 
 TEST_SPIRV_FUNC(op_copy_struct_int_char_simple)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     AbstractStruct2<int, char> value = {2100483600, (char)128};
     std::vector<AbstractStruct2<int, char> > results(256, value);
     return test_copy(deviceID, context, queue, "copy_struct_int_char_simple", results);
@@ -122,6 +127,7 @@ TEST_SPIRV_FUNC(op_copy_struct_int_char_simple)
 
 TEST_SPIRV_FUNC(op_copy_struct_struct_simple)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     typedef AbstractStruct2<int, char> CustomType1;
     typedef AbstractStruct2<cl_int2, CustomType1> CustomType2;
 
@@ -135,6 +141,7 @@ TEST_SPIRV_FUNC(op_copy_struct_struct_simple)
 
 TEST_SPIRV_FUNC(op_copy_half_simple)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);
     std::vector<cl_float> results(1024, 3.25);
     return test_copy(deviceID, context, queue,

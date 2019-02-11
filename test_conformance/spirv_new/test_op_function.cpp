@@ -68,6 +68,7 @@ int test_function(cl_device_id deviceID,
 #define TEST_FUNCTION(TYPE)                     \
     TEST_SPIRV_FUNC(function_##TYPE)            \
     {                                           \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID); \
         int num = 1 << 20;                      \
         std::vector<cl_float> in(num);          \
         RandomSeed seed(gRandomSeed);           \

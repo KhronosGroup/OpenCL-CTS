@@ -83,6 +83,7 @@ int test_selection_merge(cl_device_id deviceID,
 #define TEST_SELECT_IF(control)                                         \
     TEST_SPIRV_FUNC(op_selection_merge_if_##control)                    \
     {                                                                   \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);                   \
         const int num = 1 << 10;                                        \
         RandomSeed seed(gRandomSeed);                                   \
                                                                         \
@@ -109,6 +110,7 @@ TEST_SELECT_IF(dont_flatten)
 #define TEST_SELECT_SWITCH(control)                             \
     TEST_SPIRV_FUNC(op_selection_merge_swith_##control)         \
     {                                                           \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);           \
         const int num = 1 << 10;                                \
         RandomSeed seed(gRandomSeed);                           \
                                                                 \

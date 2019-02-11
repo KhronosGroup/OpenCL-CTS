@@ -16,6 +16,7 @@ or Khronos Conformance Test Source License Agreement as executed between Khronos
 
 TEST_SPIRV_FUNC(op_type_opaque_simple)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     const char *name = "opaque";
     int num = (int)(1 << 10);
     cl_int err = CL_SUCCESS;

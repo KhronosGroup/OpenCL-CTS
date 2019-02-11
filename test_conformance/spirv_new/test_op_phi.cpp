@@ -82,6 +82,7 @@ int test_phi(cl_device_id deviceID,
 
 TEST_SPIRV_FUNC(op_phi_2_blocks)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     const int num = 1 << 10;
     RandomSeed seed(gRandomSeed);
 
@@ -100,6 +101,7 @@ TEST_SPIRV_FUNC(op_phi_2_blocks)
 
 TEST_SPIRV_FUNC(op_phi_3_blocks)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     const int num = 1 << 10;
     RandomSeed seed(gRandomSeed);
 
@@ -122,6 +124,7 @@ TEST_SPIRV_FUNC(op_phi_3_blocks)
 
 TEST_SPIRV_FUNC(op_phi_4_blocks)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     const int num = 1 << 10;
     RandomSeed seed(gRandomSeed);
 

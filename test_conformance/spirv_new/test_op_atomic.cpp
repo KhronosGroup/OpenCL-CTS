@@ -86,6 +86,7 @@ int test_atomic(cl_device_id deviceID, cl_context context,
 
 TEST_SPIRV_FUNC(op_atomic_inc_global)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     int num = 1 << 16;
     return test_atomic<cl_int>(deviceID, context, queue,
                                "atomic_inc_global", num, true);
@@ -93,6 +94,7 @@ TEST_SPIRV_FUNC(op_atomic_inc_global)
 
 TEST_SPIRV_FUNC(op_atomic_dec_global)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     int num = 1 << 16;
     return test_atomic<cl_int>(deviceID, context, queue,
                                "atomic_dec_global", num, false);

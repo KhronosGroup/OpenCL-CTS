@@ -65,6 +65,7 @@ int test_branch_simple(cl_device_id deviceID, cl_context context,
 #define TEST_BRANCH_SIMPLE(NAME)                            \
     TEST_SPIRV_FUNC(op_##NAME##_simple)                     \
     {                                                       \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);       \
         RandomSeed seed(gRandomSeed);                       \
         int num = 1 << 10;                                  \
         std::vector<cl_int> results(num);                   \

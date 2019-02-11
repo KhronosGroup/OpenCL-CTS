@@ -55,6 +55,7 @@ int test_composite_construct(cl_device_id deviceID, cl_context context,
 
 TEST_SPIRV_FUNC(op_composite_construct_int4)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     cl_int4 value = {123, 122, 121, 119};
     std::vector<cl_int4> results(256, value);
     return test_composite_construct(deviceID, context, queue, "composite_construct_int4", results);
@@ -62,6 +63,7 @@ TEST_SPIRV_FUNC(op_composite_construct_int4)
 
 TEST_SPIRV_FUNC(op_composite_construct_struct)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     typedef AbstractStruct2<int, char> CustomType1;
     typedef AbstractStruct2<cl_int2, CustomType1> CustomType2;
 

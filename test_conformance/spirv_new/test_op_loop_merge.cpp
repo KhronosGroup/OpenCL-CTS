@@ -81,6 +81,7 @@ int test_selection_merge(cl_device_id deviceID,
 #define TEST_LOOP_BRANCH(control)                                   \
     TEST_SPIRV_FUNC(op_loop_merge_branch_##control)                 \
     {                                                               \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);               \
         const int num = 1 << 10;                                    \
         RandomSeed seed(gRandomSeed);                               \
                                                                     \

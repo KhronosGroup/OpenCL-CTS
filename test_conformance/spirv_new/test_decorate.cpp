@@ -110,16 +110,19 @@ int test_decorate_full(cl_device_id deviceID,
 
 TEST_SPIRV_FUNC(decorate_restrict)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     return test_decorate_full(deviceID, context, queue, "decorate_restrict");
 }
 
 TEST_SPIRV_FUNC(decorate_aliased)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     return test_decorate_full(deviceID, context, queue, "decorate_aliased");
 }
 
 TEST_SPIRV_FUNC(decorate_alignment)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     //TODO: Check for results ? How to ensure buffers are aligned
     clProgramWrapper prog;
     return get_program_with_il(prog, deviceID, context, "decorate_alignment");
@@ -127,11 +130,13 @@ TEST_SPIRV_FUNC(decorate_alignment)
 
 TEST_SPIRV_FUNC(decorate_constant)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     return test_decorate_full(deviceID, context, queue, "decorate_constant");
 }
 
 TEST_SPIRV_FUNC(decorate_cpacked)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     PACKED(
         struct packed_struct_t {
             cl_int ival;
@@ -294,6 +299,7 @@ int test_saturate_full(cl_device_id deviceID,
 #define TEST_SATURATED_CONVERSION(Ti, Tl, To)           \
     TEST_SPIRV_FUNC(decorate_saturated_conversion_##To) \
     {                                                   \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);   \
         typedef cl_##Ti cl_Ti;                          \
         typedef cl_##Tl cl_Tl;                          \
         typedef cl_##To cl_To;                          \
@@ -389,6 +395,7 @@ int test_image_decorate(cl_device_id deviceID,
 #define TEST_SPIRV_IMAGE_DECORATE(type)                         \
     TEST_SPIRV_FUNC(decorate_##type)                            \
     {                                                           \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);           \
         return test_image_decorate(deviceID, context, queue,    \
                                    "decorate_" #type);          \
     }                                                           \
@@ -399,6 +406,7 @@ TEST_SPIRV_IMAGE_DECORATE(nonwritable)
 
 TEST_SPIRV_FUNC(decorate_nonreadable)
 {
+    PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);
     const char *name = "decorate_nonreadable";
     const int width = 4096;
     const int height = 4096;
@@ -575,6 +583,7 @@ inline To round_to_neginf(Ti in)
 #define TEST_SPIRV_FP_ROUNDING_DECORATE(name, func, Ti, To)             \
     TEST_SPIRV_FUNC(decorate_fp_rounding_mode_##name##_##Ti##_##To)     \
     {                                                                   \
+        PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID);                   \
         typedef cl_##Ti clTi;                                           \
         typedef cl_##To clTo;                                           \
         const int num = 1 << 16;                                        \
