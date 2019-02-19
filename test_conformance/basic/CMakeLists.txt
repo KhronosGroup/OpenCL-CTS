@@ -51,6 +51,7 @@ add_executable(conformance_test_basic
 	../../test_common/harness/errorHelpers.c
 	../../test_common/harness/threadTesting.c
 	../../test_common/harness/testHarness.c
+	../../test_common/harness/os_helpers.cpp
 	../../test_common/harness/kernelHelpers.c
 	../../test_common/harness/typeWrappers.cpp
 	../../test_common/harness/imageHelpers.cpp

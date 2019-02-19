@@ -17,6 +17,7 @@
 
 #include "errorHelpers.h"
 #include "testHarness.h"
+#include "os_helpers.h"
 #include "ThreadPool.h"
 
 #include <iostream>
@@ -30,7 +31,7 @@ using namespace std;
 bool             gOfflineCompiler = false;
 bool             gForceSpirVCache = false;
 bool             gForceSpirVGenerate = false;
-std::string      gSpirVPath = ".";
+std::string      gSpirVPath = exe_dir() + "/spirv_bin/";
 OfflineCompilerOutputType gOfflineCompilerOutputType;
 
 void helpInfo ()

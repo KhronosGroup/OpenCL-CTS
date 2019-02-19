@@ -5,6 +5,7 @@ add_executable(conformance_test_vecalign
         test_vec_align.c
         type_replacer.c
         ../../test_common/harness/testHarness.c
+	../../test_common/harness/os_helpers.cpp
         ../../test_common/harness/mt19937.c
         ../../test_common/harness/msvc9.c
         ../../test_common/harness/kernelHelpers.c

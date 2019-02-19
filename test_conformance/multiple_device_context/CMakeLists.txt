@@ -5,6 +5,7 @@ add_executable(conformance_test_multiples
 	../../test_common/harness/errorHelpers.c
 	../../test_common/harness/threadTesting.c
 	../../test_common/harness/testHarness.c
+	../../test_common/harness/os_helpers.cpp
 	../../test_common/harness/kernelHelpers.c
 	../../test_common/harness/genericThread.cpp
 	../../test_common/harness/typeWrappers.cpp

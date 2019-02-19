@@ -6,6 +6,7 @@ add_executable(conformance_test_buffers
 	../../test_common/harness/errorHelpers.c
 	../../test_common/harness/threadTesting.c
 	../../test_common/harness/testHarness.c
+	../../test_common/harness/os_helpers.cpp
 	../../test_common/harness/kernelHelpers.c
 	../../test_common/harness/conversions.c
         ../../test_common/harness/parseParameters.cpp

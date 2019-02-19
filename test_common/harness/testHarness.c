@@ -23,10 +23,11 @@
 
 #include <math.h>
 #include <string.h>
-#include "threadTesting.h"
 #include "errorHelpers.h"
-#include "kernelHelpers.h"
 #include "fpcontrol.h"
+#include "kernelHelpers.h"
+#include "parseParameters.h"
+#include "threadTesting.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>

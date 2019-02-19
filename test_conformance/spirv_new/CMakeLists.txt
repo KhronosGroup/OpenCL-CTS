@@ -55,9 +55,15 @@ endif()
 target_link_libraries(conformance_test_spirv_new PRIVATE
   ${CLConform_LIBRARIES})
 
+add_custom_command(TARGET conformance_test_spirv_new POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+  "${CMAKE_CURRENT_SOURCE_DIR}/spirv_bin"
+  "$<TARGET_FILE_DIR:conformance_test_spirv_new>/spirv_bin")
+
 add_dependencies(OpenCLCTS conformance_test_spirv_new)
 
 install(TARGETS conformance_test_spirv_new
   DESTINATION "${CLConf_OUT_DIR}" COMPONENT OpenCLCTS)
 
-# TODO: Install SPIR-V files?
+install(DIRECTORY spirv_bin
+  DESTINATION "${CLConf_OUT_DIR}" COMPONENT OpenCLCTS)

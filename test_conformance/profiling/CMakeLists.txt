@@ -2,6 +2,7 @@ add_executable(conformance_test_profiling
         main.c readArray.c writeArray.c readImage.c writeImage.c copy.c
         execute.c execute_multipass.c
         ../../test_common/harness/testHarness.c
+	../../test_common/harness/os_helpers.cpp
 	../../test_common/harness/errorHelpers.c
 	../../test_common/harness/typeWrappers.cpp
 	../../test_common/harness/imageHelpers.cpp

@@ -12,6 +12,7 @@ add_executable(conformance_test_cl_get_info
 	../../../test_common/harness/imageHelpers.cpp
 	../../../test_common/harness/conversions.c
 	../../../test_common/harness/testHarness.c
+	../../../test_common/harness/os_helpers.cpp
         ../../../test_common/harness/parseParameters.cpp
 	../../../test_common/harness/mt19937.c
 	../../../test_common/harness/msvc9.c

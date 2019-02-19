@@ -9,6 +9,7 @@ add_executable(conformance_test_printf
 	../../test_common/harness/msvc9.c
   ../../test_common/harness/crc32.c
         ../../test_common/harness/parseParameters.cpp
+	../../test_common/harness/os_helpers.cpp
 )
 
 set_source_files_properties(

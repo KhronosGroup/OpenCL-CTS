@@ -28,6 +28,7 @@ endif()
 
 set_source_files_properties(
     ../../test_common/harness/kernelHelpers.c
+    ../../test_common/harness/testHarness.c
     PROPERTIES LANGUAGE CXX)
 
 
