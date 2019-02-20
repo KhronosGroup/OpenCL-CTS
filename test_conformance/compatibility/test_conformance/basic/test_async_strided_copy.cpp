@@ -202,10 +202,10 @@ int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queu
             log_error( "ERROR: Results of copy did not validate!\n" );
             sprintf(values + strlen( values), "%d -> [", i);
             for (int j=0; j<(int)elementSize; j++)
-                sprintf(values + strlen( values), "%2x ", inchar[i*elementSize+j]);
+                sprintf(values + strlen( values), "%2x ", inchar[j]);
             sprintf(values + strlen(values), "] != [");
             for (int j=0; j<(int)elementSize; j++)
-                sprintf(values + strlen( values), "%2x ", outchar[i*elementSize+j]);
+                sprintf(values + strlen( values), "%2x ", outchar[j]);
             sprintf(values + strlen(values), "]");
             log_error("%s\n", values);
 

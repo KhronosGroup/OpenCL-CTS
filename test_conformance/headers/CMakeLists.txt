@@ -19,6 +19,8 @@ set(CL_H_SOURCES
     test_cl.h.c
 )
 
+set_source_files_properties(${CL_H_SOURCES} PROPERTIES LANGUAGE CXX)
+
 set(CL_H_OUT ${CONFORMANCE_PREFIX}cl_h${CONFORMANCE_SUFFIX})
 
 add_executable(
@@ -35,6 +37,8 @@ TARGET_LINK_LIBRARIES(${CL_H_OUT} ${CLConform_LIBRARIES})
 set(CL_PLATFORM_H_SOURCES
     test_cl_platform.h.c
 )
+
+set_source_files_properties(${CL_PLATFORM_H_SOURCES} PROPERTIES LANGUAGE CXX)
 
 set(CL_PLATFORM_H_OUT ${CONFORMANCE_PREFIX}cl_platform_h${CONFORMANCE_SUFFIX})
 
@@ -53,6 +57,8 @@ set(CL_GL_H_SOURCES
     test_cl_gl.h.c
 )
 
+set_source_files_properties(${CL_GL_H_SOURCES} PROPERTIES LANGUAGE CXX)
+
 set(CL_GL_H_OUT ${CONFORMANCE_PREFIX}cl_gl_h${CONFORMANCE_SUFFIX})
 
 add_executable(
@@ -70,6 +76,8 @@ set(OPENCL_H_SOURCES
     test_opencl.h.c
 )
 
+set_source_files_properties(${OPENCL_H_SOURCES} PROPERTIES LANGUAGE CXX)
+
 set(OPENCL_H_OUT ${CONFORMANCE_PREFIX}opencl_h${CONFORMANCE_SUFFIX})
 
 add_executable(
@@ -82,6 +90,5 @@ set_property(TARGET ${OPENCL_H_OUT} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SU
 TARGET_LINK_LIBRARIES(${OPENCL_H_OUT} ${CLConform_LIBRARIES})
 
 ########################################################################################
-
 
 # end of file #

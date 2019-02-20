@@ -172,7 +172,8 @@ int test_load_two_kernel_source(cl_device_id deviceID, cl_context context, cl_co
     /* Should probably check binary here to verify the same results... */
 
     /* All done! */
-    clReleaseProgram( program );
+    error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
 
     return 0;
 }
@@ -198,7 +199,8 @@ int test_load_null_terminated_source(cl_device_id deviceID, cl_context context, 
     /* Should probably check binary here to verify the same results... */
 
     /* All done! */
-    clReleaseProgram( program );
+    error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
 
     return 0;
 }
@@ -224,7 +226,8 @@ int test_load_null_terminated_multi_line_source(cl_device_id deviceID, cl_contex
     /* Should probably check binary here to verify the same results... */
 
     /* All done! */
-    clReleaseProgram( program );
+    error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
 
     return 0;
 }
@@ -262,7 +265,8 @@ int test_load_discreet_length_source(cl_device_id deviceID, cl_context context, 
     /* Should probably check binary here to verify the same results... */
 
     /* All done! */
-    clReleaseProgram( program );
+    error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
 
     return 0;
 }
@@ -297,7 +301,8 @@ int test_load_null_terminated_partial_multi_line_source(cl_device_id deviceID, c
     /* Should probably check binary here to verify the same results... */
 
     /* All done! */
-    clReleaseProgram( program );
+    error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
 
     return 0;
 }
@@ -393,7 +398,9 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
         return -1;
     }
 
-    clReleaseProgram( program );
+    /* All done! */
+    error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
 
     return 0;
 }
@@ -445,8 +452,10 @@ int test_get_program_source(cl_device_id deviceID, cl_context context, cl_comman
         return -1;
     }
 
-    /* if we got here, everything passed */
-    clReleaseProgram( program );
+    /* All done! */
+    error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
+
     return 0;
 }
 
@@ -493,26 +502,25 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
     error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_LOG, 0, NULL, &length );
     test_error( error, "Unable to get program build log length" );
 
-  log_info("Build log is %ld long.\n", length);
+    log_info("Build log is %ld long.\n", length);
 
-  buffer = (char*)malloc(length);
+    buffer = (char*)malloc(length);
 
     /* Try normal source */
     error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_LOG, length, buffer, NULL );
     test_error( error, "Unable to get program build log" );
 
-  if( buffer[length-1] != '\0' )
-  {
+    if( buffer[length-1] != '\0' )
+    {
         log_error( "clGetProgramBuildInfo overwrote allocated space for build log! '%c'\n", buffer[length-1]  );
         return -1;
-  }
+    }
 
     /* Try both at once */
     error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_LOG, length, buffer, &newLength );
     test_error( error, "Unable to get program build log" );
 
-  free(buffer);
-
+    free(buffer);
 
     /***** Build options *****/
     error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_OPTIONS, 0, NULL, &length );
@@ -530,8 +538,10 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
 
     free(buffer);
 
-  /* Try with a valid option */
-  clReleaseProgram( program );
+    /* Try with a valid option */
+    error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
+
     program = clCreateProgramWithSource( context, 1, sample_kernel_code_single_line, NULL, &error );
     if( program == NULL )
     {
@@ -546,10 +556,10 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
         return -1;
     }
 
-  error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_OPTIONS, NULL, NULL, &length );
+    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_OPTIONS, NULL, NULL, &length );
     test_error( error, "Unable to get program build options" );
 
-  buffer = (char*)malloc(length);
+    buffer = (char*)malloc(length);
 
     error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_OPTIONS, length, buffer, NULL );
     test_error( error, "Unable to get program build options" );
@@ -559,13 +569,11 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
         return -1;
     }
 
-  free(buffer);
+    /* All done */
+    free( buffer );
 
-    /* if we got here, everything passed */
-    clReleaseProgram( program );
+    error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
+
     return 0;
 }
-
-
-
-

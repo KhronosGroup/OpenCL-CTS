@@ -89,7 +89,13 @@ int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue
             log_info("CL_DEVICE_IMAGE_SUPPORT not set, __IMAGE_SUPPORT__ macro not set \n");
     }
 
-    clReleaseProgram( program );
+    status = clReleaseProgram( program );
+    if( status )
+    {
+        log_error ("Unable to release program object, [%d] \n", status );
+        return status;
+    }
+
     return status;
 }
 

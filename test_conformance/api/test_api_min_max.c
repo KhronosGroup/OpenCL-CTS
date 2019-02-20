@@ -1307,7 +1307,6 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
     int error;
     clProgramWrapper program;
     clKernelWrapper kernel;
-    clMemWrapper            streams[3];
     size_t    threads[1], localThreads[1];
     cl_int *constantData, *resultData;
     cl_ulong maxSize, stepSize, currentSize;
@@ -1349,6 +1348,7 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
         for(i=0; i<(int)(numberOfInts); i++)
             constantData[i] = (int)genrand_int32(d);
 
+        clMemWrapper streams[3];
         streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeToAllocate, constantData, &error);
         test_error( error, "Creating test array failed" );
         streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeToAllocate, NULL, &error);

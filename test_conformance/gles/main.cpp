@@ -386,17 +386,17 @@ int main(int argc, const char *argv[])
 // Intentional falling through
 cleanup:
 
-    // Cleanup EGL
-    glEnv->terminate_egl_display();
-
     // Always make sure that OpenCL context is released properly when the test exit
     if(sCurrentContext)
     {
         clReleaseContext( sCurrentContext );
         sCurrentContext = NULL;
     }
-    delete glEnv;
 
+    // Cleanup EGL
+    glEnv->terminate_egl_display();
+
+    delete glEnv;
 
     return error;
 }

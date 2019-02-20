@@ -227,6 +227,10 @@ config_info config_infos[] =
     CONFIG_INFO( 2, 0, CL_DEVICE_PREFERRED_LOCAL_ATOMIC_ALIGNMENT , cl_uint),
 
     CONFIG_INFO( 2, 0, CL_DEVICE_SVM_CAPABILITIES, cl_device_svm_capabilities),
+
+    CONFIG_INFO( 2, 1, CL_DEVICE_IL_VERSION, string),
+    CONFIG_INFO( 2, 1, CL_DEVICE_MAX_NUM_SUB_GROUPS, cl_uint),
+    CONFIG_INFO( 2, 1, CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS, cl_uint),
 };
 
 #define ENTRY(T) { T, #T }

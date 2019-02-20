@@ -98,6 +98,7 @@ cl_mem          gOutBuffers[ kCallStyleCount ];
 size_t          gComputeDevices = 0;
 uint32_t        gDeviceFrequency = 0;
 int             gWimpyMode = 0;
+int             gWimpyReductionFactor = 128;
 int             gSkipTesting = 0;
 int             gForceFTZ = 0;
 int             gMultithread = 1;
@@ -418,6 +419,27 @@ static int ParseArgs( int argc, const char **argv )
                     case 'w':
                         gWimpyMode ^= 1;
                         break;
+                    case '[':
+                        // wimpy reduction factor can be set with the option -[2^n]
+                        // Default factor is 128, and n practically can be from 1 to 12
+                        {
+                            const char *arg_temp = strchr(&arg[1], ']');
+                            if (arg_temp != 0)
+                            {
+                                int new_factor = atoi(&arg[1]);
+                                arg = arg_temp; // Advance until ']'
+                                if (new_factor && !(new_factor & (new_factor - 1)))
+                                {
+                                    vlog(" WimpyReduction factor changed from %d to %d \n", gWimpyReductionFactor, new_factor);
+                                    gWimpyReductionFactor = new_factor;
+                                }
+                                else
+                                {
+                                    vlog(" Error in WimpyReduction factor, must be power of 2 \n");
+                                }
+                            }
+                        }
+                        break;
                     case 'z':
                         gForceFTZ ^= 1;
                         break;
@@ -520,6 +542,7 @@ static int ParseArgs( int argc, const char **argv )
         vlog( "*** WARNING: Testing in Wimpy mode!                     ***\n" );
         vlog( "*** Wimpy mode is not sufficient to verify correctness. ***\n" );
         vlog( "*** It gives warm fuzzy feelings and then nevers calls. ***\n\n" );
+        vlog("*** Wimpy Reduction Factor: %-27u ***\n\n", gWimpyReductionFactor);
     }
 
     return 0;
@@ -546,6 +569,7 @@ static void PrintUsage( void )
     vlog( "\t\t-l\tToggle link check mode. When on, testing is skipped, and we just check to see that the kernels build. (Off by default.)\n" );
     vlog( "\t\t-m\tToggle Multithreading. (On by default.)\n" );
     vlog( "\t\t-w\tToggle wimpy mode. When wimpy mode is on, we run a very small subset of the tests for each fn. NOT A VALID TEST! (Off by default.)\n" );
+    vlog(" \t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", gWimpyReductionFactor);
     vlog( "\t\t-z\tToggle flush to zero mode  (Default: per device)\n" );
     vlog( "\t\t-#\tTest just vector size given by #, where # is an element of the set {1,2,3,4,8,16}\n" );
     vlog( "\n" );
@@ -1245,15 +1269,12 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
     if ( !gWimpyMode && gIsEmbedded )
       step = blockCount * EMBEDDED_REDUCTION_FACTOR;
 
+    if ( gWimpyMode )
+        step = (size_t)blockCount * (size_t)gWimpyReductionFactor;
     vlog( "Testing... " );
     fflush(stdout);
     for( i = 0; i < (uint64_t)lastCase; i += step )
     {
-        if (gWimpyMode) {
-            uint64_t blockIndex = (i / blockCount) & 0xFF;
-            if (blockIndex != 0 && blockIndex != 0xFF)
-                continue;
-        }
 
         if( 0 == ( i & ((lastCase >> 3) -1))) {
             vlog(".");

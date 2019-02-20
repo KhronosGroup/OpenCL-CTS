@@ -55,6 +55,8 @@ const char *known_extensions[] = {
     "cl_khr_egl_event",
     "cl_khr_throttle_hints",
     "cl_khr_priority_hints",
+    "cl_khr_create_command_queue",
+    "cl_khr_il_program",
 };
 
 size_t num_known_extensions = sizeof(known_extensions)/sizeof(char*);
@@ -413,6 +415,10 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
       free(extensions_supported[i]);
     }
     free(extensions);
+    if( defines ) {
+        error = clReleaseMemObject( defines );
+        test_error( error, "Unable to release memory object" );
+    }
 
     if (total_errors)
         return -1;

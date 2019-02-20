@@ -34,7 +34,8 @@ typedef struct image_kernel_data
   cl_int numSamples;
 };
 
-static const char *methodTestKernelPattern =
+static const char *methodTestKernelPattern = 
+"%s"
 "typedef struct {\n"
 "    int width;\n"
 "    int height;\n"
@@ -75,6 +76,8 @@ static const char *channelOrderConstLine =
 "   outData->expectedChannelOrder = CLK_%s;\n";
 static const char *numSamplesKernelLine =
 "   outData->numSamples = get_image_num_samples( input );\n";
+static const char *enableMSAAKernelLine =
+"#pragma OPENCL EXTENSION cl_khr_gl_msaa_sharing : enable\n";
 
 static int verify(cl_int input, cl_int kernelOutput, const char * description)
 {
@@ -185,6 +188,7 @@ int test_image_format_methods( cl_device_id device, cl_context context, cl_comma
   bool doImageChannelOrder = false;
   bool doImageDim = false;
   bool doNumSamples = false;
+  bool doMSAA = false;
   switch(target) {
     case GL_TEXTURE_2D:
       imageType = "image2d_depth_t";
@@ -206,6 +210,7 @@ int test_image_format_methods( cl_device_id device, cl_context context, cl_comma
       break;
     case GL_TEXTURE_2D_MULTISAMPLE:
       doNumSamples = true;
+      doMSAA = true;
       if(format.formattype == GL_DEPTH_COMPONENT) {
         doImageWidth = true;
         imageType = "image2d_msaa_depth_t";
@@ -214,6 +219,7 @@ int test_image_format_methods( cl_device_id device, cl_context context, cl_comma
       }
       break;
     case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+      doMSAA = true;
       if(format.formattype == GL_DEPTH_COMPONENT) {
         doImageWidth = true;
         imageType = "image2d_msaa_array_depth_t";
@@ -244,9 +250,11 @@ int test_image_format_methods( cl_device_id device, cl_context context, cl_comma
     }
   }
 
-    // Create a program to run against
-    sprintf( programSrc, methodTestKernelPattern,
-            imageType,
+	// Create a program to run against
+	sprintf(programSrc, 
+          methodTestKernelPattern, 
+          ( doMSAA ) ? enableMSAAKernelLine : "",
+	        imageType,
           ( doArraySize ) ? arraySizeKernelLine : "",
           ( doImageWidth ) ? imageWidthKernelLine : "",
           ( doImageHeight ) ? imageHeightKernelLine : "",

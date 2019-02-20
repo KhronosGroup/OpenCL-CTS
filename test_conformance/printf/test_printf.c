@@ -17,6 +17,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <memory>
 
 #if ! defined( _WIN32)
 #if ! defined( __ANDROID__ )
@@ -304,9 +305,6 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
 //-----------------------------------------
 static bool isLongSupported(cl_device_id device_id)
 {
-    //profile type && device extention for long support checking
-    char *profileType = NULL,*devExt = NULL;
-
     size_t tempSize = 0;
     cl_int status;
     bool extSupport = true;
@@ -325,7 +323,7 @@ static bool isLongSupported(cl_device_id device_id)
         return false;
     }
 
-    profileType = new char[tempSize];
+    std::unique_ptr<char[]> profileType(new char[tempSize]);
     if(profileType == NULL)
     {
         log_error("Failed to allocate memory(profileType)");
@@ -336,11 +334,11 @@ static bool isLongSupported(cl_device_id device_id)
         device_id,
         CL_DEVICE_PROFILE,
         sizeof(char) * tempSize,
-        profileType,
+        profileType.get(),
         NULL);
 
 
-    if(!strcmp("EMBEDDED_PROFILE",profileType))
+    if(!strcmp("EMBEDDED_PROFILE",profileType.get()))
     {
         // Device extention
         status = clGetDeviceInfo(
@@ -356,7 +354,7 @@ static bool isLongSupported(cl_device_id device_id)
             return false;
         }
 
-        devExt = new char[tempSize];
+        std::unique_ptr<char[]> devExt(new char[tempSize]);
         if(devExt == NULL)
         {
             log_error("Failed to allocate memory(devExt)");
@@ -367,13 +365,10 @@ static bool isLongSupported(cl_device_id device_id)
             device_id,
             CL_DEVICE_EXTENSIONS,
             sizeof(char) * tempSize,
-            devExt,
+            devExt.get(),
             NULL);
 
-        extSupport  = (strstr(devExt,"cles_khr_int64") != NULL);
-
-        delete devExt;
-        delete profileType;
+        extSupport  = (strstr(devExt.get(),"cles_khr_int64") != NULL);
     }
     return extSupport;
 }
@@ -460,10 +455,12 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
         }
     }
 
+    int fd = acquireOutputStream();
     globalWorkSize[0] = 1;
     cl_event ndrEvt;
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, globalWorkSize, NULL, 0, NULL,&ndrEvt);
     if (err != CL_SUCCESS) {
+        releaseOutputStream(fd);
         log_error("\n clEnqueueNDRangeKernel failed errcode:%d\n", err);
         ++s_test_fail;
         goto exit;
@@ -473,12 +470,15 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
     err = clFlush(queue);
     if(err != CL_SUCCESS)
     {
+        releaseOutputStream(fd);
         log_error("clFlush failed\n");
         goto exit;
     }
     //Wait until kernel finishes its execution and (thus) the output printed from the kernel
     //is immidatly printed
     err = waitForEvent(&ndrEvt);
+
+    releaseOutputStream(fd);
 
     if(err != CL_SUCCESS)
     {
@@ -553,6 +553,8 @@ static void printArch( void )
     log_info( "ARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     log_info( "ARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    log_info( "ARCH:\taarch64\n" );
 #else
 #error unknown arch
 #endif
@@ -669,7 +671,6 @@ int main(int argc, const char* argv[]) {
 
 
     int err;
-    int fd = acquireOutputStream();
 
     // Get platform
     err = clGetPlatformIDs(1, &platform_id, NULL);
@@ -695,8 +696,6 @@ int main(int argc, const char* argv[]) {
     if((err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_CLOCK_FREQUENCY, config_size, &device_frequency, NULL )))
         device_frequency = 1;
 
-    releaseOutputStream(fd);
-
     log_info( "\nCompute Device info:\n" );
     log_info( "\tProcessing with %d devices\n", compute_devices );
     log_info( "\tDevice Frequency: %d MHz\n", device_frequency );
@@ -716,8 +715,6 @@ int main(int argc, const char* argv[]) {
 
     log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
 
-    fd = acquireOutputStream();
-
     cl_context context = clCreateContext(NULL, 1, &device_id, notify_callback, NULL, NULL);
     checkNull(context, "clCreateContext");
 
@@ -727,17 +724,13 @@ int main(int argc, const char* argv[]) {
     // Forall types
     for (int testId = 0; testId < TYPE_COUNT; ++testId) {
         if (test_filter_num && (testId != test_filter_num)) {
-            releaseOutputStream(fd);
             log_info("\n*** Skipping printf  for %s ***\n",strType[testId]);
-            fd = acquireOutputStream();
         }
         else {
-            releaseOutputStream(fd);
             log_info("\n*** Testing printf for %s ***\n",strType[testId]);
-            fd = acquireOutputStream();
+
             //For all formats
             for(unsigned int testNum = 0;testNum < allTestCase[testId]->_testNum;++testNum){
-                releaseOutputStream(fd);
                 if(allTestCase[testId]->_type == TYPE_VECTOR)
                     log_info("%d)testing printf(\"%sv%s%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,allTestCase[testId]->_genParameters[testNum].vectorSize,
                     allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
@@ -752,7 +745,6 @@ int main(int argc, const char* argv[]) {
                 }
                 else
                     log_info("%d)testing printf(\"%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
-                fd = acquireOutputStream();
 
                 // Long support for varible type
                 if(allTestCase[testId]->_type == TYPE_VECTOR && !strcmp(allTestCase[testId]->_genParameters[testNum].dataType,"long") && !isLongSupported(device_id))
@@ -766,15 +758,11 @@ int main(int argc, const char* argv[]) {
                 // Perform the test
                 if (doTest(queue, context,testId,testNum,device_id,isLongSupport) != 0)
                 {
-                    releaseOutputStream(fd);
                     log_error("*** FAILED ***\n\n");
-                    fd = acquireOutputStream();
                 }
                 else
                 {
-                    releaseOutputStream(fd);
                     log_info("Passed\n");
-                    fd = acquireOutputStream();
                 }
             }
         }
@@ -789,8 +777,6 @@ int main(int argc, const char* argv[]) {
         log_error("clReleaseCommandQueue\n");
     if(clReleaseContext(context)!= CL_SUCCESS)
         log_error("clReleaseContext\n");
-
-    releaseOutputStream(fd);
 
 
     if (s_test_fail == 0) {

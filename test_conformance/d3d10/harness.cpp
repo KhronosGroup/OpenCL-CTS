@@ -200,7 +200,7 @@ cl_int HarnessD3D10_CreateDevice(IDXGIAdapter* pAdapter, ID3D10Device **ppDevice
         pAdapter,
         D3D10_DRIVER_TYPE_HARDWARE,
         NULL,
-        D3D10_CREATE_DEVICE_DEBUG,
+        0,
         D3D10_SDK_VERSION,
         &sd,
         &HarnessD3D10_pSwapChain,

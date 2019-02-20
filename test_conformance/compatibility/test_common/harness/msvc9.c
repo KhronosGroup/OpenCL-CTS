@@ -13,15 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#if defined(_WIN32) && defined (_MSC_VER)
-
 #include "compat.h"
-#include <math.h>
-#include <float.h>
-#include <assert.h>
-#include <CL/cl_platform.h>
 
+#if defined ( _MSC_VER )
 
+#include <limits.h>
+#include <stdlib.h>
+
+#include <CL/cl.h>
+
+#include <windows.h>
+
+#if ! defined( __INTEL_COMPILER )
 
 ///////////////////////////////////////////////////////////////////
 //
@@ -387,86 +390,6 @@ long double log2l(long double x)
     return 1.44269504088896340735992468100189214L * log(x);
 }
 
-///////////////////////////////////////////////////////////////////
-//
-//                  misc functions
-//
-///////////////////////////////////////////////////////////////////
-
-/*
-// This function is commented out because the Windows implementation should never call munmap.
-// If it is calling it, we have a bug. Please file a bugzilla.
-int munmap(void *addr, size_t len)
-{
-// FIXME: this is not correct.  munmap is like free()    http://www.opengroup.org/onlinepubs/7990989775/xsh/munmap.html
-
-    return (int)VirtualAlloc( (LPVOID)addr, len,
-                  MEM_COMMIT|MEM_RESERVE, PAGE_NOACCESS );
-}
-*/
-
-uint64_t ReadTime( void )
-{
-    LARGE_INTEGER current;
-    QueryPerformanceCounter(&current);
-    return (uint64_t)current.QuadPart;
-}
-
-double SubtractTime( uint64_t endTime, uint64_t startTime )
-{
-    static double PerformanceFrequency = 0.0;
-
-    if (PerformanceFrequency == 0.0) {
-        LARGE_INTEGER frequency;
-        QueryPerformanceFrequency(&frequency);
-        PerformanceFrequency = (double) frequency.QuadPart;
-    }
-
-    return (double)(endTime - startTime) / PerformanceFrequency * 1e9;
-}
-
-float make_nan()
-{
-/* This is the IEEE 754 single-precision format:
-    unsigned int mantissa:  22;
-    unsigned int quiet_nan:  1;
-    unsigned int exponent:   8;
-    unsigned int negative:   1;
-*/
-     //const static unsigned
-     static const int32_t _nan = 0x7fc00000;
-     return *(const float*)(&_nan);
-}
-
-float nanf( const char* str)
-{
-    cl_uint u = atoi( str );
-    u |= 0x7fc00000U;
-    return *( float*)(&u);
-}
-
-
-double nan( const char* str)
-{
-    cl_ulong u = atoi( str );
-    u |= 0x7ff8000000000000ULL;
-    return *( double*)(&u);
-}
-
-// double check this implementatation
-long double nanl( const char* str)
-{
-    union
-    {
-        long double f;
-        struct { cl_ulong m; cl_ushort sexp; }u;
-    }u;
-    u.u.sexp = 0x7fff;
-    u.u.m = 0x8000000000000000ULL | atoi( str );
-
-    return u.f;
-}
-
 double trunc(double x)
 {
     double absx = fabs(x);
@@ -589,31 +512,6 @@ long double roundl(long double x)
     return x;
 }
 
-// Added in _MSC_VER == 1800 (Visual Studio 2013)
-#if _MSC_VER < 1800
-int signbit(double x)
-{
-    union
-    {
-        double f;
-        cl_ulong u;
-    }u;
-    u.f = x;
-    return u.u >> 63;
-}
-#endif
-
-int signbitf(float x)
-{
-    union
-    {
-        float f;
-        cl_uint u;
-    }u;
-    u.f = x;
-    return u.u >> 31;
-}
-
 float cbrtf( float x )
 {
     float z = pow( fabs((double) x), 1.0 / 3.0 );
@@ -623,6 +521,175 @@ float cbrtf( float x )
 double cbrt( double x )
 {
     return copysign( pow( fabs( x ), 1.0 / 3.0 ), x );
+}
+
+long int lrint (double x)
+{
+    double absx = fabs(x);
+
+    if( x >= (double) LONG_MAX )
+        return LONG_MAX;
+
+    if( absx < 4503599627370496.0 /* 0x1.0p52 */ )
+    {
+        double magic = copysign( 4503599627370496.0 /* 0x1.0p52 */, x );
+        double rounded = x + magic;
+        rounded -= magic;
+        return (long int) rounded;
+    }
+
+    return (long int) x;
+}
+
+long int lrintf (float x)
+{
+    float absx = fabsf(x);
+
+    if( x >= (float) LONG_MAX )
+        return LONG_MAX;
+
+    if( absx < 8388608.0f /* 0x1.0p23f */ )
+    {
+        float magic = copysignf( 8388608.0f /* 0x1.0p23f */, x );
+        float rounded = x + magic;
+        rounded -= magic;
+        return (long int) rounded;
+    }
+
+    return (long int) x;
+}
+
+
+///////////////////////////////////////////////////////////////////
+//
+//                  fenv functions
+//
+///////////////////////////////////////////////////////////////////
+
+int fetestexcept(int excepts)
+{
+    unsigned int status = _statusfp();
+    return excepts & (
+        ((status & _SW_INEXACT) ? FE_INEXACT : 0)      |
+        ((status & _SW_UNDERFLOW) ? FE_UNDERFLOW : 0)  |
+        ((status & _SW_OVERFLOW) ? FE_OVERFLOW : 0)    |
+        ((status & _SW_ZERODIVIDE) ? FE_DIVBYZERO : 0) |
+        ((status & _SW_INVALID) ? FE_INVALID : 0)
+    );
+}
+
+int feclearexcept(int excepts)
+{
+    _clearfp();
+    return 0;
+}
+
+#endif // __INTEL_COMPILER
+
+#if ! defined( __INTEL_COMPILER ) || __INTEL_COMPILER < 1300
+
+float make_nan()
+{
+/* This is the IEEE 754 single-precision format:
+    unsigned int mantissa:  22;
+    unsigned int quiet_nan:  1;
+    unsigned int exponent:   8;
+    unsigned int negative:   1;
+*/
+     //const static unsigned
+     static const int32_t _nan = 0x7fc00000;
+     return *(const float*)(&_nan);
+}
+
+float nanf( const char* str)
+{
+    cl_uint u = atoi( str );
+    u |= 0x7fc00000U;
+    return *( float*)(&u);
+}
+
+
+double nan( const char* str)
+{
+    cl_ulong u = atoi( str );
+    u |= 0x7ff8000000000000ULL;
+    return *( double*)(&u);
+}
+
+// double check this implementatation
+long double nanl( const char* str)
+{
+    union
+    {
+        long double f;
+        struct { cl_ulong m; cl_ushort sexp; }u;
+    }u;
+    u.u.sexp = 0x7fff;
+    u.u.m = 0x8000000000000000ULL | atoi( str );
+
+    return u.f;
+}
+
+#endif
+
+///////////////////////////////////////////////////////////////////
+//
+//                  misc functions
+//
+///////////////////////////////////////////////////////////////////
+
+/*
+// This function is commented out because the Windows implementation should never call munmap.
+// If it is calling it, we have a bug. Please file a bugzilla.
+int munmap(void *addr, size_t len)
+{
+// FIXME: this is not correct.  munmap is like free()    http://www.opengroup.org/onlinepubs/7990989775/xsh/munmap.html
+
+    return (int)VirtualAlloc( (LPVOID)addr, len,
+                  MEM_COMMIT|MEM_RESERVE, PAGE_NOACCESS );
+}
+*/
+
+uint64_t ReadTime( void )
+{
+    LARGE_INTEGER current;
+    QueryPerformanceCounter(&current);
+    return (uint64_t)current.QuadPart;
+}
+
+double SubtractTime( uint64_t endTime, uint64_t startTime )
+{
+    static double PerformanceFrequency = 0.0;
+
+    if (PerformanceFrequency == 0.0) {
+        LARGE_INTEGER frequency;
+        QueryPerformanceFrequency(&frequency);
+        PerformanceFrequency = (double) frequency.QuadPart;
+    }
+
+    return (double)(endTime - startTime) / PerformanceFrequency * 1e9;
+}
+
+int cf_signbit(double x)
+{
+    union
+    {
+        double f;
+        cl_ulong u;
+    }u;
+    u.f = x;
+    return u.u >> 63;
+}
+
+int cf_signbitf(float x)
+{
+    union
+    {
+        float f;
+        cl_uint u;
+    }u;
+    u.f = x;
+    return u.u >> 31;
 }
 
 float int2float (int32_t ix)
@@ -645,7 +712,7 @@ int32_t float2int (float   fx)
     return u.i;
 }
 
-#if defined(_MSC_VER) && !defined(_WIN64)
+#if !defined(_WIN64)
 /** Returns the number of leading 0-bits in x,
     starting at the most significant bit position.
     If x is 0, the result is undefined.
@@ -685,45 +752,10 @@ int __builtin_clz(unsigned int pattern)
    return count;
 }
 
-#endif //defined(_MSC_VER) && !defined(_WIN64)
+#endif // !defined(_WIN64)
 
 #include <intrin.h>
 #include <emmintrin.h>
-long int lrint (double x)
-{
-    double absx = fabs(x);
-
-    if( x >= (double) LONG_MAX )
-        return LONG_MAX;
-
-    if( absx < 4503599627370496.0 /* 0x1.0p52 */ )
-    {
-        double magic = copysign( 4503599627370496.0 /* 0x1.0p52 */, x );
-        double rounded = x + magic;
-        rounded -= magic;
-        return (long int) rounded;
-    }
-
-    return (long int) x;
-}
-
-long int lrintf (float x)
-{
-    float absx = fabsf(x);
-
-    if( x >= (float) LONG_MAX )
-        return LONG_MAX;
-
-    if( absx < 8388608.0f /* 0x1.0p23f */ )
-    {
-        float magic = copysignf( 8388608.0f /* 0x1.0p23f */, x );
-        float rounded = x + magic;
-        rounded -= magic;
-        return (long int) rounded;
-    }
-
-    return (long int) x;
-}
 
 int usleep(int usec)
 {
@@ -731,24 +763,10 @@ int usleep(int usec)
     return 0;
 }
 
-#if _MSC_VER < 1900
-int fetestexcept(int excepts)
+unsigned int sleep( unsigned int sec )
 {
-    unsigned int status = _statusfp();
-    return excepts & (
-        ((status & _SW_INEXACT) ? FE_INEXACT : 0)      |
-        ((status & _SW_UNDERFLOW) ? FE_UNDERFLOW : 0)  |
-        ((status & _SW_OVERFLOW) ? FE_OVERFLOW : 0)    |
-        ((status & _SW_ZERODIVIDE) ? FE_DIVBYZERO : 0) |
-        ((status & _SW_INVALID) ? FE_INVALID : 0)
-    );
-}
-
-int feclearexcept(int excepts)
-{
-    _clearfp();
+    Sleep( sec * 1000 );
     return 0;
 }
-#endif
 
-#endif //defined(_WIN32)
+#endif // defined( _MSC_VER )

@@ -558,6 +558,9 @@ int test_large_multiple_embedded_headers(cl_context context, cl_device_id device
     free( simple_kernels );
     free( headers );
 
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
     error = clReleaseProgram( my_newly_minted_library );
     test_error( error, "Unable to release program object" );
 
@@ -728,6 +731,9 @@ int test_large_multiple_libraries(cl_context context, cl_device_id deviceID, cl_
     }
     free( simple_kernels );
 
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
     error = clReleaseProgram( my_newly_linked_program );
     test_error( error, "Unable to release program object" );
 
@@ -895,6 +901,9 @@ int test_large_multiple_files_multiple_libraries(cl_context context, cl_device_i
     }
     free( simple_kernels );
 
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
     error = clReleaseProgram( my_newly_linked_program );
     test_error( error, "Unable to release program object" );
 
@@ -1031,6 +1040,9 @@ int test_large_multiple_files(cl_context context, cl_device_id deviceID, cl_comm
         free( (void*)lines[i] );
     }
     free( lines );
+
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
 
     error = clReleaseProgram( my_newly_linked_program );
     test_error( error, "Unable to release program object" );
@@ -1311,6 +1323,9 @@ int test_simple_embedded_header_compile(cl_device_id deviceID, cl_context contex
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
+    error = clReleaseProgram( header );
+    test_error( error, "Unable to release program object" );
+
     return 0;
 }
 
@@ -1517,6 +1532,9 @@ int test_simple_embedded_header_link(cl_device_id deviceID, cl_context context, 
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
+    error = clReleaseProgram( header );
+    test_error( error, "Unable to release program object" );
+
     error = clReleaseProgram( simple_program );
     test_error( error, "Unable to release program object" );
 
@@ -1571,7 +1589,7 @@ int test_simple_link_with_callback(cl_device_id deviceID, cl_context context, cl
 
     simple_user_data simple_link_user_data = {when_i_pondered_weak_and_weary, link_program_completion_event};
 
-    clLinkProgram(context, 1, &deviceID, NULL, 1, &program, simple_link_callback, (void*)&simple_link_user_data, &error);
+    cl_program my_linked_library = clLinkProgram(context, 1, &deviceID, NULL, 1, &program, simple_link_callback, (void*)&simple_link_user_data, &error);
     test_error( error, "Unable to link a simple program" );
 
     error = clWaitForEvents(1, &link_program_completion_event);
@@ -1582,6 +1600,9 @@ int test_simple_link_with_callback(cl_device_id deviceID, cl_context context, cl
     test_error( error, "Unable to release event object" );
 
     error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
+
+    error = clReleaseProgram( my_linked_library );
     test_error( error, "Unable to release program object" );
 
     return 0;
@@ -1738,6 +1759,9 @@ int test_execute_after_simple_compile_and_link(cl_device_id deviceID, cl_context
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
@@ -1774,6 +1798,9 @@ int test_execute_after_simple_compile_and_link_no_device_info(cl_device_id devic
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
@@ -1810,6 +1837,9 @@ int test_execute_after_simple_compile_and_link_with_defines(cl_device_id deviceI
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
@@ -1887,6 +1917,9 @@ int test_execute_after_serialize_reload_object(cl_device_id deviceID, cl_context
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
@@ -1991,6 +2024,12 @@ int test_execute_after_serialize_reload_library(cl_device_id deviceID, cl_contex
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
+    error = clReleaseKernel( another_kernel );
+    test_error( error, "Unable to release another kernel object" );
+
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
@@ -2065,7 +2104,8 @@ int test_execute_after_simple_compile_and_link_with_callbacks(cl_device_id devic
     error = clWaitForEvents(1, &compile_program_completion_event);
     test_error( error, "clWaitForEvents failed when waiting on compile_program_completion_event");
 
-    clReleaseEvent(compile_program_completion_event);
+    error = clReleaseEvent(compile_program_completion_event);
+    test_error( error, "Unable to release event object" );
 
     link_program_completion_event = clCreateUserEvent(context, &error);
     test_error( error, "Unable to create a user event");
@@ -2077,7 +2117,8 @@ int test_execute_after_simple_compile_and_link_with_callbacks(cl_device_id devic
     error = clWaitForEvents(1, &link_program_completion_event);
     test_error( error, "clWaitForEvents failed when waiting on link_program_completion_event");
 
-    clReleaseEvent(link_program_completion_event);
+    error = clReleaseEvent(link_program_completion_event);
+    test_error( error, "Unable to release event object" );
 
     cl_kernel kernel = clCreateKernel(my_newly_linked_program, "CopyBuffer", &error);
     test_error( error, "Unable to create a simple kernel" );
@@ -2087,6 +2128,9 @@ int test_execute_after_simple_compile_and_link_with_callbacks(cl_device_id devic
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
@@ -2264,6 +2308,12 @@ int test_execute_after_simple_library_with_link(cl_device_id deviceID, cl_contex
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
+    error = clReleaseKernel( another_kernel );
+    test_error( error, "Unable to release another kernel object" );
+
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
@@ -2368,6 +2418,12 @@ int test_execute_after_two_file_link(cl_device_id deviceID, cl_context context, 
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
+    error = clReleaseKernel( another_kernel );
+    test_error( error, "Unable to release another kernel object" );
+
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
@@ -2433,7 +2489,16 @@ int test_execute_after_embedded_header_link(cl_device_id deviceID, cl_context co
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
+    error = clReleaseKernel( another_kernel );
+    test_error( error, "Unable to release another kernel object" );
+
     error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
+
+    error = clReleaseProgram( header );
     test_error( error, "Unable to release program object" );
 
     error = clReleaseProgram( simple_program );
@@ -2563,6 +2628,12 @@ int test_execute_after_included_header_link(cl_device_id deviceID, cl_context co
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
+    error = clReleaseKernel( another_kernel );
+    test_error( error, "Unable to release another kernel object" );
+
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
@@ -2803,6 +2874,12 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context, cl_comma
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
+    error = clReleaseKernel( another_kernel );
+    test_error( error, "Unable to release another kernel object" );
+
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
@@ -3107,6 +3184,9 @@ int test_large_compile_and_link_status_options_log(cl_context context, cl_device
         return error;
 
     /* All done! */
+    error = clReleaseKernel( kernel );
+    test_error( error, "Unable to release kernel object" );
+
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 

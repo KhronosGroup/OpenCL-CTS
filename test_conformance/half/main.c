@@ -236,7 +236,27 @@ static int ParseArgs( int argc, const char **argv )
                     case 'w':  // Wimpy mode
                         gWimpyMode = true;
                         break;
-
+                    case '[':
+                        // wimpy reduction factor can be set with the option -[2^n]
+                        // Default factor is 512, and n practically can be from 1 to 12
+                        {
+                            const char *arg_temp = strchr(&arg[1], ']');
+                            if (arg_temp != 0)
+                            {
+                                int new_factor = atoi(&arg[1]);
+                                arg = arg_temp; // Advance until ']'
+                                if (new_factor && !(new_factor & (new_factor - 1)))
+                                {
+                                    vlog(" WimpyReduction factor changed from %d to %d \n", gWimpyReductionFactor, new_factor);
+                                    gWimpyReductionFactor = new_factor;
+                                }
+                               else
+                                {
+                                   vlog(" Error in WimpyReduction factor, must be power of 2 \n");
+                                }
+                            }
+                        }
+                        break;
                     default:
                         vlog_error( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
                         PrintUsage();
@@ -278,6 +298,7 @@ static int ParseArgs( int argc, const char **argv )
         vlog( "*** WARNING: Testing in Wimpy mode!                     ***\n" );
         vlog( "*** Wimpy mode is not sufficient to verify correctness. ***\n" );
         vlog( "*** It gives warm fuzzy feelings and then nevers calls. ***\n\n" );
+        vlog( "*** Wimpy Reduction Factor: %-27u ***\n\n", gWimpyReductionFactor);
     }
     return 0;
 }
@@ -288,6 +309,7 @@ static void PrintUsage( void )
     vlog( "\t\t-d\tToggle double precision testing (default: on if double supported)\n" );
     vlog( "\t\t-t\tToggle reporting performance data.\n" );
     vlog( "\t\t-w\tRun in wimpy mode\n" );
+    vlog( "\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", gWimpyReductionFactor);
     vlog( "\t\t-h\tHelp\n" );
     vlog( "\n" );
 }
@@ -307,6 +329,8 @@ static void PrintArch( void )
     vlog( "ARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     vlog( "ARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    vlog( "\tARCH:\taarch64\n" );
 #else
 #error unknown arch
 #endif

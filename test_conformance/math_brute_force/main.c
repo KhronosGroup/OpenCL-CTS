@@ -699,6 +699,8 @@ static void PrintArch( void )
         vlog( "\tARCH:\tx86_64\n" );
     #elif defined( __arm__ )
         vlog( "\tARCH:\tarm\n" );
+    #elif defined( __aarch64__ )
+        vlog( "\tARCH:\taarch64\n" );
     #else
         vlog( "\tARCH:\tunknown\n" );
     #endif
