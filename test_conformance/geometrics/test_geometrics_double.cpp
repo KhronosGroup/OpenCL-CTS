@@ -203,7 +203,7 @@ int test_geom_cross_double(cl_device_id deviceID, cl_context context, cl_command
             return -1;
 
         /* Generate some streams. Note: deliberately do some random data in w to verify that it gets ignored */
-        for( i = 0; i < TEST_SIZE * vecsize; i++ )
+        for( i = 0; i < size * vecsize; i++ )
         {
             inDataA[ i ] = get_random_double( -512.f, 512.f, d );
             inDataB[ i ] = get_random_double( -512.f, 512.f, d );
@@ -237,7 +237,7 @@ int test_geom_cross_double(cl_device_id deviceID, cl_context context, cl_command
         }
 
         /* Run the kernel */
-        threads[0] = TEST_SIZE;
+        threads[0] = size;
 
         error = get_max_common_work_group_size( context, kernel, threads[0], &localThreads[0] );
         test_error( error, "Unable to get work group size to use" );

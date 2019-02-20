@@ -207,7 +207,10 @@ long double roundl(long double x);
         int cf_signbit(double x);
         int cf_signbitf(float x);
 
+// Added in _MSC_VER == 1800 (Visual Studio 2013)
+#if _MSC_VER < 1800
         static int signbit(double x) { return  cf_signbit(x); }
+#endif
         static int signbitf(float x) { return cf_signbitf(x); }
 
 long int lrint (double flt);
@@ -241,8 +244,11 @@ int32_t float2int (float   fx);
 // stdio.h
 //
 
-#if defined( _MSC_VER )
-    #define snprintf   sprintf_s
+#if defined(_MSC_VER)
+	// snprintf added in _MSC_VER == 1900 (Visual Studio 2015)
+	#if _MSC_VER < 1900
+		#define snprintf   sprintf_s
+	#endif
 #endif
 
 

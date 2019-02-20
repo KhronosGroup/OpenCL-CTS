@@ -136,8 +136,6 @@ extern void copy_image_data( image_descriptor *srcImageInfo, image_descriptor *d
 
 int has_alpha(cl_image_format *format);
 
-extern bool alpha_is_x(cl_image_format *format);
-
 extern bool is_sRGBA_order(cl_channel_order image_channel_order);
 
 inline float calculate_array_index( float coord, float extent );
@@ -594,7 +592,6 @@ extern char *create_random_image_data( ExplicitType dataType, image_descriptor *
 extern void get_sampler_kernel_code( image_sampler_data *imageSampler, char *outLine );
 extern float get_max_absolute_error( cl_image_format *format, image_sampler_data *sampler);
 extern float get_max_relative_error( cl_image_format *format, image_sampler_data *sampler, int is3D, int isLinearFilter );
-extern int issubnormal(float);
 
 
 #define errMax( _x , _y )       ( (_x) != (_x) ? (_x) : (_x) > (_y) ? (_x) : (_y) )

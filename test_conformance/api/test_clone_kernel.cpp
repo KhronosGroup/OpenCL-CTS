@@ -18,6 +18,7 @@
 #include "../../test_common/harness/conversions.h"
 #include <sstream>
 #include <string>
+#include <cmath>
 
 using namespace std;
 

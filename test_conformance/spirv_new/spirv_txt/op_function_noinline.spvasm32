@@ -1,0 +1,36 @@
+                OpCapability Addresses
+                OpCapability Linkage
+                OpCapability Kernel
+                OpMemoryModel Physical32 OpenCL
+                OpEntryPoint Kernel %func "op_function_noinline"
+                OpName %inptr "in"
+                OpDecorate %global_id BuiltIn GlobalInvocationId
+                OpDecorate %global_id Constant
+                OpDecorate %inptr FuncParamAttr NoCapture
+                OpDecorate %global_id LinkageAttributes "__spirv_GlobalInvocationId" Import
+%idx_t        = OpTypeInt 32 0
+%idx3_t       = OpTypeVector %idx_t 3
+%idx3_ptr_t   = OpTypePointer UniformConstant %idx3_t
+%void_t       = OpTypeVoid
+%float_t      = OpTypeFloat 32
+%float_ptr_t  = OpTypePointer CrossWorkgroup %float_t
+%func_t       = OpTypeFunction %void_t %float_ptr_t
+%local_func_t = OpTypeFunction %float_t %float_t
+%global_id    = OpVariable %idx3_ptr_t UniformConstant
+%local_func   = OpFunction %float_t DontInline %local_func_t
+%local_in     = OpFunctionParameter %float_t
+%local_label  = OpLabel
+%local_out    = OpFNegate %float_t %local_in
+                OpReturnValue %local_out
+                OpFunctionEnd
+%func         = OpFunction %void_t None %func_t
+%inptr        = OpFunctionParameter %float_ptr_t
+%entry        = OpLabel
+%idx3         = OpLoad %idx3_t %global_id Aligned 0
+%idx          = OpCompositeExtract %idx_t %idx3 0
+%current      = OpInBoundsPtrAccessChain %float_ptr_t %inptr %idx
+%in_val       = OpLoad %float_t %current
+%out_val      = OpFunctionCall %float_t %local_func %in_val
+                OpStore %current %out_val
+                OpReturn
+                OpFunctionEnd

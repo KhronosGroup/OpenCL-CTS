@@ -1044,7 +1044,7 @@ int Test_vStoreHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const c
     size_t stride = blockCount;
 
     if (gWimpyMode)
-        stride = 0x10000000U;
+        stride = (uint64_t)blockCount * (uint64_t)gWimpyReductionFactor;
 
     // we handle 64-bit types a bit differently.
     if( lastCase == 0 )
@@ -1654,7 +1654,7 @@ int Test_vStoreaHalf_private( f2h referenceFunc, d2h doubleReferenceFunc, const 
     size_t stride = blockCount;
 
     if (gWimpyMode)
-        stride = 0x10000000U;
+        stride = (uint64_t)blockCount * (uint64_t)gWimpyReductionFactor;
 
     // we handle 64-bit types a bit differently.
     if( lastCase == 0 )

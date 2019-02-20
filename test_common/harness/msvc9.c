@@ -566,6 +566,7 @@ long int lrintf (float x)
 //
 ///////////////////////////////////////////////////////////////////
 
+#if _MSC_VER < 1900
 int fetestexcept(int excepts)
 {
     unsigned int status = _statusfp();
@@ -583,6 +584,7 @@ int feclearexcept(int excepts)
     _clearfp();
     return 0;
 }
+#endif
 
 #endif // __INTEL_COMPILER
 

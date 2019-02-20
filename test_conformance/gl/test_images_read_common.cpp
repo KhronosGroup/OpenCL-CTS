@@ -107,6 +107,7 @@ static const char *kernelpattern_image_read_2darray_depth =
 "}\n";
 
 static const char *kernelpattern_image_multisample_read_2d =
+"#pragma OPENCL EXTENSION cl_khr_gl_msaa_sharing : enable\n"
 "__kernel void sample_test( read_only image2d_msaa_t source, sampler_t sampler, __global %s4 *results )\n"
 "{\n"
 "    int  tidX = get_global_id(0);\n"
@@ -121,6 +122,7 @@ static const char *kernelpattern_image_multisample_read_2d =
 "}\n";
 
 static const char *kernelpattern_image_multisample_read_2d_depth =
+  "#pragma OPENCL EXTENSION cl_khr_gl_msaa_sharing : enable\n"
   "__kernel void sample_test( read_only image2d_msaa_depth_t source, sampler_t sampler, __global %s *results )\n"
 "{\n"
 "    int  tidX = get_global_id(0);\n"
@@ -135,6 +137,7 @@ static const char *kernelpattern_image_multisample_read_2d_depth =
 "}\n";
 
 static const char *kernelpattern_image_multisample_read_2darray =
+"#pragma OPENCL EXTENSION cl_khr_gl_msaa_sharing : enable\n"
 "__kernel void sample_test( read_only image2d_array_msaa_t source, sampler_t sampler, __global %s4 *results )\n"
 "{\n"
 "    int  tidX = get_global_id(0);\n"
@@ -151,6 +154,7 @@ static const char *kernelpattern_image_multisample_read_2darray =
 "}\n";
 
 static const char *kernelpattern_image_multisample_read_2darray_depth =
+  "#pragma OPENCL EXTENSION cl_khr_gl_msaa_sharing : enable\n"
   "__kernel void sample_test( read_only image2d_array_msaa_depth_t source, sampler_t sampler, __global %s *results )\n"
 "{\n"
 "    int  tidX = get_global_id(0);\n"

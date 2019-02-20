@@ -439,10 +439,18 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
 
 
     /* If we have a device checking function, run it */
-    if( ( deviceCheckFn != NULL ) && deviceCheckFn( device ) != CL_SUCCESS )
+    if( ( deviceCheckFn != NULL ) )
     {
-        test_finish();
-        return -1;
+        test_status status = deviceCheckFn( device );
+        switch (status)
+        {
+            case TEST_PASS:
+                break;
+            case TEST_FAIL:
+                return 1;
+            case TEST_SKIP:
+                return 0;
+        }
     }
 
     if (num_elements <= 0)

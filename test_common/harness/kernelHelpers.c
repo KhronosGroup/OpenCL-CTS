@@ -968,14 +968,14 @@ size_t get_pixel_bytes( const cl_image_format *fmt )
     return 0;
 }
 
-int verifyImageSupport( cl_device_id device )
+test_status verifyImageSupport( cl_device_id device )
 {
     if( checkForImageSupport( device ) )
     {
         log_error( "ERROR: Device does not supported images as required by this test!\n" );
-        return CL_IMAGE_FORMAT_NOT_SUPPORTED;
+        return TEST_FAIL;
     }
-    return 0;
+    return TEST_PASS;
 }
 
 int checkForImageSupport( cl_device_id device )
