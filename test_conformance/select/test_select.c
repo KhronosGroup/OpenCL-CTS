@@ -72,6 +72,7 @@ static int doTest(cl_command_queue queue, cl_context context,
 // range.  Otherwise, we test a subset of the range
 // [-min_short, min_short]
 static bool  s_wimpy_mode = false;
+static int s_wimpy_reduction_factor = 256;
 
 // Tests are broken into the major test which is based on the
 // src and cmp type and their corresponding vector types and
@@ -304,7 +305,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
 
     cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
     size_t block_elements = BUFFER_SIZE / type_size[stype];
-    size_t step = s_wimpy_mode ? 256 : 1;
+    size_t step = s_wimpy_mode ? s_wimpy_reduction_factor : 1;
     cl_ulong cmp_stride = block_elements * step;
 
     // It is more efficient to create the tests all at once since we
@@ -471,6 +472,7 @@ static void printUsage( void )
     log_info("test_select:  [-cghw] [test_name|start_test_num] \n");
     log_info("  default is to run the full test on the default device\n");
     log_info("  -w run in wimpy mode (smoke test)\n");
+    log_info("  -[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", s_wimpy_reduction_factor);
     log_info("  test_name will run only one test of that name\n");
     log_info("  start_test_num will start running from that num\n");
 }
@@ -491,6 +493,8 @@ static void printArch( void )
     log_info( "ARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     log_info( "ARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    log_info( "ARCH:\taarch64\n" );
 #else
 #error unknown arch
 #endif
@@ -582,6 +586,9 @@ int main(int argc, const char* argv[]) {
                     case 'w':  // Wimpy mode
                         s_wimpy_mode = true;
                         break;
+                    case '[':
+                        parseWimpyReductionFactor(arg, s_wimpy_reduction_factor);
+                        break;
                     default:
                         log_error( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
                         printUsage();
@@ -659,6 +666,7 @@ int main(int argc, const char* argv[]) {
         log_info("*** WARNING: Testing in Wimpy mode!                     ***\n");
         log_info("*** Wimpy mode is not sufficient to verify correctness. ***\n");
         log_info("*** It gives warm fuzzy feelings and then nevers calls. ***\n\n");
+        log_info("*** Wimpy Reduction Factor: %-27u ***\n\n", s_wimpy_reduction_factor);
     }
 
     cl_context context = clCreateContext(NULL, 1, &device_id, notify_callback, NULL, NULL);

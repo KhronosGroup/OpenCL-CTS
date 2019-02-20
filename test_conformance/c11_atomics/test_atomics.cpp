@@ -1566,6 +1566,7 @@ public:
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrder;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryScopeStr;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrderScopeStr;
+  using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::UseSVM;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
   CBasicTestFlag(TExplicitAtomicType dataType, bool useSVM) : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType, useSVM)
   {
@@ -1606,7 +1607,7 @@ public:
       program += "    atomic_work_item_fence(" +
                  std::string(LocalMemory() ? "CLK_LOCAL_MEM_FENCE, " : "CLK_GLOBAL_MEM_FENCE, ") +
                  "memory_order_acquire," +
-                 std::string(LocalMemory() ? "memory_scope_work_group" : "memory_scope_device") +
+                 std::string(LocalMemory() ? "memory_scope_work_group" : (UseSVM() ? "memory_scope_all_svm_devices" : "memory_scope_device") ) +
                  ");\n";
 
     program +=
@@ -1632,7 +1633,7 @@ public:
       program += "      atomic_work_item_fence(" +
                  std::string(LocalMemory() ? "CLK_LOCAL_MEM_FENCE, " : "CLK_GLOBAL_MEM_FENCE, ") +
                  "memory_order_release," +
-                 std::string(LocalMemory() ? "memory_scope_work_group" : "memory_scope_device") +
+                 std::string(LocalMemory() ? "memory_scope_work_group" : (UseSVM() ? "memory_scope_all_svm_devices" : "memory_scope_device") ) +
                  ");\n";
 
     program +=

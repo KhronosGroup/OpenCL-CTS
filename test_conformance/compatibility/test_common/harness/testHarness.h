@@ -23,6 +23,13 @@
 extern "C" {
 #endif
 
+typedef enum test_status
+{
+    TEST_PASS = 0,
+    TEST_FAIL = 1,
+    TEST_SKIP = 2,
+} test_status;
+
 extern cl_uint gReSeed;
 extern cl_uint gRandomSeed;
 
@@ -32,8 +39,8 @@ extern int runTestHarness( int argc, const char *argv[], unsigned int num_fns,
                             basefn fnList[], const char *fnNames[],
                             int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps );
 
-// Device checking function. See runTestHarnessWithCheck. If this function returns anything other than CL_SUCCESS (0), the harness exits.
-typedef int (*DeviceCheckFn)( cl_device_id device );
+// Device checking function. See runTestHarnessWithCheck. If this function returns anything other than TEST_PASS, the harness exits.
+typedef test_status (*DeviceCheckFn)( cl_device_id device );
 
 // Same as runTestHarness, but also supplies a function that checks the created device for required functionality.
 extern int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,

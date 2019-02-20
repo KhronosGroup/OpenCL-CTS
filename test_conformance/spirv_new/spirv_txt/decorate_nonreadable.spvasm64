@@ -1,0 +1,74 @@
+      OpCapability Addresses
+      OpCapability Linkage
+      OpCapability Kernel
+      OpCapability Int64
+      OpCapability ImageBasic
+ %1 = OpExtInstImport "OpenCL.std"
+      OpMemoryModel Physical64 OpenCL
+      OpEntryPoint Kernel %13 "decorate_nonreadable"
+      OpSource OpenCL_C 100000
+      OpName %5 "__spirv_BuiltInGlobalInvocationId"
+      OpName %6 "__spirv_BuiltInGlobalSize"
+      OpName %14 "dst"
+      OpName %15 "src"
+      OpName %16 "entry"
+      OpName %18 "call"
+      OpName %19 "conv"
+      OpName %21 "call1"
+      OpName %22 "conv2"
+      OpName %23 "conv3"
+      OpName %25 "call4"
+      OpName %26 "mul"
+      OpName %27 "add"
+      OpName %30 "vecinit"
+      OpName %31 "vecinit7"
+      OpName %33 "sext"
+      OpName %34 "idxprom"
+      OpName %35 "arrayidx"
+      OpDecorate %14 NonReadable
+      OpDecorate %37 Constant
+%37 = OpDecorationGroup
+      OpDecorate %5 BuiltIn GlobalInvocationId
+      OpDecorate %6 BuiltIn GlobalSize
+      OpDecorate %15 FuncParamAttr NoCapture
+      OpDecorate %6 LinkageAttributes "__spirv_BuiltInGlobalSize" Import
+      OpDecorate %5 LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+      OpGroupDecorate %37 %5 %6
+ %2 = OpTypeInt 64 0
+ %9 = OpTypeInt 32 0
+%32 = OpConstant %2 32
+ %3 = OpTypeVector %2 3
+ %4 = OpTypePointer UniformConstant %3
+ %7 = OpTypeVoid
+ %8 = OpTypeImage %7 2D 0 0 0 0 Unknown
+%10 = OpTypeVector %9 4
+%11 = OpTypePointer CrossWorkgroup %10
+%12 = OpTypeFunction %7 %8 %11
+%28 = OpTypeVector %9 2
+ %5 = OpVariable %4 UniformConstant
+ %6 = OpVariable %4 UniformConstant
+%13 = OpFunction %7 None %12
+%14 = OpFunctionParameter %8
+%15 = OpFunctionParameter %11
+%16 = OpLabel
+%29 = OpUndef %28
+%17 = OpLoad %3 %5 Aligned 0
+%18 = OpCompositeExtract %2 %17 0
+%19 = OpUConvert %9 %18
+%20 = OpLoad %3 %5 Aligned 0
+%21 = OpCompositeExtract %2 %20 1
+%22 = OpUConvert %9 %21
+%23 = OpSConvert %2 %22
+%24 = OpLoad %3 %6 Aligned 0
+%25 = OpCompositeExtract %2 %24 0
+%26 = OpIMul %2 %23 %25
+%27 = OpIAdd %2 %26 %18
+%30 = OpCompositeInsert %28 %22 %29 0
+%31 = OpCompositeInsert %28 %19 %30 1
+%33 = OpShiftLeftLogical %2 %27 %32
+%34 = OpShiftRightArithmetic %2 %33 %32
+%35 = OpInBoundsPtrAccessChain %11 %15 %34
+%36 = OpLoad %10 %35 Aligned 16
+      OpImageWrite %14 %31 %36
+      OpReturn
+      OpFunctionEnd

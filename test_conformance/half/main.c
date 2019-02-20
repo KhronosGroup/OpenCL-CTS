@@ -236,7 +236,9 @@ static int ParseArgs( int argc, const char **argv )
                     case 'w':  // Wimpy mode
                         gWimpyMode = true;
                         break;
-
+                    case '[':
+                        parseWimpyReductionFactor( arg, gWimpyReductionFactor);
+                        break;
                     default:
                         vlog_error( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
                         PrintUsage();
@@ -278,6 +280,7 @@ static int ParseArgs( int argc, const char **argv )
         vlog( "*** WARNING: Testing in Wimpy mode!                     ***\n" );
         vlog( "*** Wimpy mode is not sufficient to verify correctness. ***\n" );
         vlog( "*** It gives warm fuzzy feelings and then nevers calls. ***\n\n" );
+        vlog( "*** Wimpy Reduction Factor: %-27u ***\n\n", gWimpyReductionFactor);
     }
     return 0;
 }
@@ -288,6 +291,7 @@ static void PrintUsage( void )
     vlog( "\t\t-d\tToggle double precision testing (default: on if double supported)\n" );
     vlog( "\t\t-t\tToggle reporting performance data.\n" );
     vlog( "\t\t-w\tRun in wimpy mode\n" );
+    vlog( "\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", gWimpyReductionFactor);
     vlog( "\t\t-h\tHelp\n" );
     vlog( "\n" );
 }
@@ -307,6 +311,8 @@ static void PrintArch( void )
     vlog( "ARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     vlog( "ARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    vlog( "\tARCH:\taarch64\n" );
 #else
 #error unknown arch
 #endif

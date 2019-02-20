@@ -1,0 +1,73 @@
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %func "loop_merge_branch_unroll"
+               OpName %out_ptr "res"
+               OpName %in_ptr "in"
+               OpName %rep_val "rep"
+               OpName %num_val "num"
+               OpDecorate %dec FuncParamAttr NoCapture
+%dec         = OpDecorationGroup
+               OpDecorate %global_id BuiltIn GlobalInvocationId
+               OpDecorate %global_id Constant
+               OpDecorate %global_id LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpGroupDecorate %dec %out_ptr %in_ptr
+%idx_t       = OpTypeInt 64 0
+%idx3_t      = OpTypeVector %idx_t 3
+%idx3_ptr_t  = OpTypePointer UniformConstant %idx3_t
+%shift_val   = OpConstant %idx_t 32
+%bool_t      = OpTypeBool
+%void_t      = OpTypeVoid
+%int_t       = OpTypeInt 32 0
+%int_zero    = OpConstant %int_t 0
+%int_one     = OpConstant %int_t 1
+%int_ptr_t   = OpTypePointer CrossWorkgroup %int_t
+%tmp_ptr_t   = OpTypePointer Function %int_t
+%func_t      = OpTypeFunction %void_t %int_ptr_t %int_ptr_t %int_t %int_t
+%global_id   = OpVariable %idx3_ptr_t UniformConstant
+%func        = OpFunction %void_t None %func_t
+%out_ptr     = OpFunctionParameter %int_ptr_t
+%in_ptr      = OpFunctionParameter %int_ptr_t
+%rep_val     = OpFunctionParameter %int_t
+%num_val     = OpFunctionParameter %int_t
+%entry       = OpLabel
+%idx3        = OpLoad %idx3_t %global_id Aligned 0
+%idx_tmp     = OpCompositeExtract %idx_t %idx3 0
+%idx_shift   = OpShiftLeftLogical %idx_t %idx_tmp %shift_val
+%idx         = OpShiftRightArithmetic %idx_t %idx_shift %shift_val
+%idx_int     = OpSConvert %int_t %idx
+%tmp_val_ptr = OpVariable %tmp_ptr_t Function
+%tmp_idx_ptr = OpVariable %tmp_ptr_t Function
+               OpStore %tmp_val_ptr %int_zero Aligned 4
+               OpStore %tmp_idx_ptr %int_zero Aligned 4
+               OpBranch %block_loop
+%block_loop =  OpLabel
+               OpLoopMerge %block_end %block_cont Unroll
+               OpBranch %block_check
+%block_check = OpLabel
+%tmp_idx     = OpLoad %int_t %tmp_idx_ptr
+%compare     = OpSLessThan %bool_t %tmp_idx %rep_val
+               OpBranchConditional %compare %block_calc %block_end
+%block_calc  = OpLabel
+%calc_idx    = OpLoad %int_t %tmp_idx_ptr
+%calc_off    = OpIMul %int_t %calc_idx %num_val
+%in_idx      = OpIAdd %int_t %idx_int %calc_off
+%in_loc      = OpInBoundsPtrAccessChain %int_ptr_t %in_ptr %in_idx
+%in_val      = OpLoad %int_t %in_loc
+%tmp_val     = OpLoad %int_t %tmp_val_ptr
+%res_val     = OpIAdd %int_t %tmp_val %in_val
+               OpStore %tmp_val_ptr %res_val Aligned 4
+               OpBranch %block_cont
+%block_cont  = OpLabel
+%tmp_idx_c   = OpLoad %int_t %tmp_idx_ptr
+%tmp_idx_inc = OpIAdd %int_t %tmp_idx_c %int_one
+               OpStore %tmp_idx_ptr %tmp_idx_inc
+               OpBranch %block_loop
+%block_end   = OpLabel
+%out_val     = OpLoad %int_t %tmp_val_ptr
+%out_loc     = OpInBoundsPtrAccessChain %int_ptr_t %out_ptr %idx
+               OpStore %out_loc %out_val Aligned 4
+               OpReturn
+               OpFunctionEnd

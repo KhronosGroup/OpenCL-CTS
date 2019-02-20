@@ -73,11 +73,13 @@ extern int             gFailCount;
 extern int             gTestDouble;
 extern int             gReportTimes;
 extern int             gIsEmbedded;
+extern size_t          gBufferSize;
 
 // gWimpyMode indicates if we run the test in wimpy mode where we limit the
 // size of 32 bit ranges to a much smaller set.  This is meant to be used
 // as a smoke test
 extern bool            gWimpyMode;
+extern int             gWimpyReductionFactor;
 
 uint64_t ReadTime( void );
 double SubtractTime( uint64_t endTime, uint64_t startTime );

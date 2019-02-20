@@ -107,6 +107,12 @@ Pipes,pipes/test_pipes
 SVM,SVM/test_SVM
 Workgroups,workgroups/test_workgroups
 
+#####################################
+# OpenCL 2.1 tests
+#####################################
+Device timer,device_timer/test_device_timer
+SPIRV new,spirv_new/test_spirv_new -ILPath spirv_bin
+
 #########################################
 # Extensions
 #########################################

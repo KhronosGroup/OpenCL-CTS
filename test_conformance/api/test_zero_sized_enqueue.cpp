@@ -190,7 +190,7 @@ int test_zero_sized_enqueue(cl_device_id deviceID, cl_context context, cl_comman
     cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_PROPERTIES, sizeof(cl_command_queue_properties), &props, NULL);
     test_error( error, "clGetDeviceInfo failed.");
 
-    if (props | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
+    if (props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
     {
         // test out of order queue
         cl_queue_properties queue_prop_def[] =

@@ -200,6 +200,7 @@ typedef struct TestInfo
     cl_kernel   *k[VECTOR_SIZE_COUNT ];             // arrays of thread-specific kernels for each worker thread:  k[vector_size][thread_id]
     ThreadInfo  *tinfo;                             // An array of thread specific information for each worker thread
     cl_uint     threadCount;                        // Number of worker threads
+    cl_uint     jobCount;                           // Number of jobs
     cl_uint     step;                               // step between each chunk and the next.
     cl_uint     scale;                              // stride between individual test values
     float       ulps;                               // max_allowed ulps
@@ -234,6 +235,16 @@ int TestFunc_Float_Float(const Func *f, MTdata d)
         test_info.scale =  (cl_uint) sizeof(cl_float) * 2 * gWimpyReductionFactor;
     }
     test_info.step = (cl_uint) test_info.subBufferSize * test_info.scale;
+    if (test_info.step / test_info.subBufferSize != test_info.scale)
+    {
+        //there was overflow
+        test_info.jobCount = 1;
+    }
+    else
+    {
+        test_info.jobCount = (cl_uint)((1ULL << 32) / test_info.step);
+    }
+
     test_info.f = f;
     test_info.ulps = gIsEmbedded ? f->float_embedded_ulps : f->float_ulps;
     test_info.ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
@@ -309,7 +320,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d)
 
     if( !gSkipCorrectnessTesting || skipTestingRelaxed)
     {
-        error = ThreadPool_Do( TestFloat, (cl_uint) ((1ULL<<32) / test_info.step), &test_info );
+        error = ThreadPool_Do( TestFloat, test_info.jobCount, &test_info );
 
         // Accumulate the arithmetic errors
         for( i = 0; i < test_info.threadCount; i++ )
@@ -997,7 +1008,16 @@ int TestFunc_Double_Double(const Func *f, MTdata d)
         test_info.subBufferSize = gWimpyBufferSize / (sizeof( cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
         test_info.scale =  (cl_uint) sizeof(cl_double) * 2 * gWimpyReductionFactor;
     }
-   test_info.step = (cl_uint) test_info.subBufferSize * test_info.scale;
+    test_info.step = (cl_uint) test_info.subBufferSize * test_info.scale;
+    if (test_info.step / test_info.subBufferSize != test_info.scale)
+    {
+        //there was overflow
+        test_info.jobCount = 1;
+    }
+    else
+    {
+        test_info.jobCount = (cl_uint)((1ULL << 32) / test_info.step);
+    }
 
     test_info.f = f;
     test_info.ulps = f->double_ulps;
@@ -1062,7 +1082,7 @@ int TestFunc_Double_Double(const Func *f, MTdata d)
 
     if( !gSkipCorrectnessTesting )
     {
-        error = ThreadPool_Do( TestDouble, (cl_uint) ((1ULL<<32) / test_info.step), &test_info );
+        error = ThreadPool_Do( TestDouble, test_info.jobCount, &test_info );
 
         // Accumulate the arithmetic errors
         for( i = 0; i < test_info.threadCount; i++ )

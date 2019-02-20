@@ -17,6 +17,7 @@
 #define _kernelHelpers_h
 
 #include "compat.h"
+#include "testHarness.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -89,8 +90,8 @@ extern int is_image_format_supported( cl_context context, cl_mem_flags flags, cl
 /* Helper to get pixel size for a pixel format */
 size_t get_pixel_bytes( const cl_image_format *fmt );
 
-/* Verify the given device supports images. 0 means you're good to go, otherwise an error */
-extern int verifyImageSupport( cl_device_id device );
+/* Verify the given device supports images. */
+extern test_status verifyImageSupport( cl_device_id device );
 
 /* Checks that the given device supports images. Same as verify, but doesn't print an error */
 extern int checkForImageSupport( cl_device_id device );
@@ -121,6 +122,13 @@ cl_device_fp_config get_default_rounding_mode( cl_device_id device );
     {    \
         log_info( "\n\tNote: device does not support 3D images. Skipping test...\n" );    \
         return 0;    \
+    }
+
+#define PASSIVE_REQUIRE_FP16_SUPPORT(device)                            \
+    if (!is_extension_available(device, "cl_khr_fp16"))                 \
+    {                                                                   \
+        log_info("\n\tNote: device does not support fp16. Skipping test...\n"); \
+        return 0;                                                       \
     }
 
 /* Prints out the standard device header for all tests given the device to print for */

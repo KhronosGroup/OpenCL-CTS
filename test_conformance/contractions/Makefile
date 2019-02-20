@@ -9,11 +9,11 @@ LIBRARIES = -framework OpenCL -framework ApplicationServices -framework IOKit -I
 
 release:
 	echo "Build Release"
-	$(CC) *.c ../../test_common/harness/rounding_mode.c ../../test_common/harness/kernelHelpers.c ../../test_common/harness/errorHelpers.c ../../test_common/harness/mt19937.c -Os $(CFLAGS) -o contractions $(LIBRARIES)
+	$(CC) *.c ../../test_common/harness/testHarness.c ../../test_common/harness/rounding_mode.c ../../test_common/harness/kernelHelpers.c ../../test_common/harness/errorHelpers.c ../../test_common/harness/mt19937.c -Os $(CFLAGS) -o contractions $(LIBRARIES)
 
 debug:
 	echo "Build Debug"
-	$(CC) *.c ../../test_common/harness/rounding_mode.c ../../test_common/harness/kernelHelpers.c ../../test_common/harness/errorHelpers.c ../../test_common/harness/mt19937.c -O0 $(CFLAGS) -D_DEBUG=1 -o contractions_debug  $(LIBRARIES)
+	$(CC) *.c ../../test_common/harness/testHarness.c ../../test_common/harness/rounding_mode.c ../../test_common/harness/kernelHelpers.c ../../test_common/harness/errorHelpers.c ../../test_common/harness/mt19937.c -O0 $(CFLAGS) -D_DEBUG=1 -o contractions_debug  $(LIBRARIES)
 
 test:	release
 	arch -i386 ./contractions -c > cpu.log;	

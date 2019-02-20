@@ -1,0 +1,63 @@
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %func "select_switch_flatten"
+               OpName %out_ptr "res"
+               OpName %lhs_ptr "lhs"
+               OpName %rhs_ptr "rhs"
+               OpDecorate %dec FuncParamAttr NoCapture
+%dec         = OpDecorationGroup
+               OpDecorate %global_id BuiltIn GlobalInvocationId
+               OpDecorate %global_id Constant
+               OpDecorate %global_id LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpGroupDecorate %dec %out_ptr %lhs_ptr %rhs_ptr
+%idx_t       = OpTypeInt 32 0
+%idx3_t      = OpTypeVector %idx_t 3
+%idx3_ptr_t  = OpTypePointer UniformConstant %idx3_t
+%bool_t      = OpTypeBool
+%void_t      = OpTypeVoid
+%int_t       = OpTypeInt 32 0
+%int_zero    = OpConstant %int_t 0
+%int_one     = OpConstant %int_t 1
+%int_two     = OpConstant %int_t 2
+%int_three   = OpConstant %int_t 3
+%int_four    = OpConstant %int_t 4
+%int_ptr_t   = OpTypePointer CrossWorkgroup %int_t
+%tmp_ptr_t   = OpTypePointer Function %int_t
+%func_t      = OpTypeFunction %void_t %int_ptr_t %int_ptr_t %int_ptr_t
+%global_id   = OpVariable %idx3_ptr_t UniformConstant
+%func        = OpFunction %void_t None %func_t
+%out_ptr     = OpFunctionParameter %int_ptr_t
+%lhs_ptr     = OpFunctionParameter %int_ptr_t
+%rhs_ptr     = OpFunctionParameter %int_ptr_t
+%entry       = OpLabel
+%idx3        = OpLoad %idx3_t %global_id Aligned 0
+%idx         = OpCompositeExtract %idx_t %idx3 0
+%lhs_loc     = OpInBoundsPtrAccessChain %int_ptr_t %lhs_ptr %idx
+%lhs_val     = OpLoad %int_t %lhs_loc Aligned 4
+%rhs_loc     = OpInBoundsPtrAccessChain %int_ptr_t %rhs_ptr %idx
+%rhs_val     = OpLoad %int_t %rhs_loc Aligned 4
+%tmp         = OpVariable %tmp_ptr_t Function
+%add_val     = OpIAdd %int_t %lhs_val %rhs_val
+%selector    = OpUMod %int_t %add_val %int_four
+               OpSelectionMerge %final_block Flatten
+               OpSwitch %selector %default 1 %block1 2 %block2 3 %block3
+%block1      = OpLabel
+               OpStore %tmp %int_one
+               OpBranch %final_block
+%block2      = OpLabel
+               OpStore %tmp %int_two
+               OpBranch %final_block
+%block3      = OpLabel
+               OpStore %tmp %int_three
+               OpBranch %final_block
+%default     = OpLabel
+               OpStore %tmp %int_zero
+               OpBranch %final_block
+%final_block = OpLabel
+%out_val     = OpLoad %int_t %tmp
+%out_loc     = OpInBoundsPtrAccessChain %int_ptr_t %out_ptr %idx
+               OpStore %out_loc %out_val Aligned 4
+               OpReturn
+               OpFunctionEnd

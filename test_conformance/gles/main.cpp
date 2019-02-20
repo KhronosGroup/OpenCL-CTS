@@ -101,16 +101,14 @@ const char    *basefn_names[] = {
     "images_write_cube",
     "renderbuffer_read",
     "renderbuffer_write",
-  "renderbuffer_getinfo",
-    "all"
+  "renderbuffer_getinfo"
 };
 
 const char    *basefn_names32[] = {
-    "fence_sync",
-  "all"
+    "fence_sync"
 };
 
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0]) - 1) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
+ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
 
 int    num_fns = sizeof(basefn_names) / sizeof(char *);
 int num_fns32 = sizeof(basefn_names32) / sizeof(char *);
@@ -386,17 +384,17 @@ int main(int argc, const char *argv[])
 // Intentional falling through
 cleanup:
 
-    // Cleanup EGL
-    glEnv->terminate_egl_display();
-
     // Always make sure that OpenCL context is released properly when the test exit
     if(sCurrentContext)
     {
         clReleaseContext( sCurrentContext );
         sCurrentContext = NULL;
     }
-    delete glEnv;
 
+    // Cleanup EGL
+    glEnv->terminate_egl_display();
+
+    delete glEnv;
 
     return error;
 }

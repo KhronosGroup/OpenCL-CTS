@@ -35,6 +35,7 @@
 #include "../../test_common/harness/kernelHelpers.h"
 #include "../../test_common/harness/rounding_mode.h"
 #include "../../test_common/harness/fpcontrol.h"
+#include "../../test_common/harness/testHarness.h"
 #include "../../test_common/harness/parseParameters.h"
 #if defined( __APPLE__ )
 #include <sys/sysctl.h>
@@ -92,6 +93,9 @@ int                     *skipTest[8];
 
 double              *buf3_double, *buf4_double, *buf5_double, *buf6_double;
 double              *correct_double[8];
+
+static const char   **gArgList;
+static size_t       gArgCount;
 
 #define BUFFER_SIZE         (1024*1024)
 
@@ -217,11 +221,130 @@ float ppc_mul(float a, float b)
 }
 #endif
 
+int test_contractions_float_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest(0);
+}
+
+int test_contractions_float_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest(1);
+}
+
+int test_contractions_float_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest(2);
+}
+
+int test_contractions_float_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest(3);
+}
+
+int test_contractions_float_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest(4);
+}
+
+int test_contractions_float_5(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest(5);
+}
+
+int test_contractions_float_6(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest(6);
+}
+
+int test_contractions_float_7(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest(7);
+}
+
+int test_contractions_double_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest_Double(0);
+}
+
+int test_contractions_double_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest_Double(1);
+}
+
+int test_contractions_double_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest_Double(2);
+}
+
+int test_contractions_double_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest_Double(3);
+}
+
+int test_contractions_double_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest_Double(4);
+}
+
+int test_contractions_double_5(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest_Double(5);
+}
+
+int test_contractions_double_6(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest_Double(6);
+}
+
+int test_contractions_double_7(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return RunTest_Double(7);
+}
+
+basefn basefn_list[] = {
+    test_contractions_float_0,
+    test_contractions_float_1,
+    test_contractions_float_2,
+    test_contractions_float_3,
+    test_contractions_float_4,
+    test_contractions_float_5,
+    test_contractions_float_6,
+    test_contractions_float_7,
+    test_contractions_double_0,
+    test_contractions_double_1,
+    test_contractions_double_2,
+    test_contractions_double_3,
+    test_contractions_double_4,
+    test_contractions_double_5,
+    test_contractions_double_6,
+    test_contractions_double_7,
+};
+
+const char *basefn_names[] = {
+    "contractions_float_0",
+    "contractions_float_1",
+    "contractions_float_2",
+    "contractions_float_3",
+    "contractions_float_4",
+    "contractions_float_5",
+    "contractions_float_6",
+    "contractions_float_7",
+    "contractions_double_0",
+    "contractions_double_1",
+    "contractions_double_2",
+    "contractions_double_3",
+    "contractions_double_4",
+    "contractions_double_5",
+    "contractions_double_6",
+    "contractions_double_7",
+};
+
+ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
+
+int num_fns = sizeof(basefn_names) / sizeof(char *);
+
 int main( int argc, const char **argv )
 {
-    int error  = 0;
-    int i;
-
     test_start();
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
@@ -230,39 +353,29 @@ int main( int argc, const char **argv )
         return -1;
     }
 
-    error = ParseArgs( argc, argv );
+    int error = ParseArgs( argc, argv );
     if( error )
-        return error;
+        goto exit;
 
     // Init OpenCL
     error = InitCL();
     if( error )
-        return error;
+        goto exit;
 
-    // run the tests
-    log_info( "Testing floats...\n" );
-    for( i = 0; i < 8; i++ )
-        error |= RunTest( i );
+    error = parseAndCallCommandLineTests( gArgCount, gArgList, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
 
-    if( gHasDouble )
+exit:
+    if( gQueue )
     {
-        log_info( "Testing doubles...\n" );
-        for( i = 0; i < 8; i++ )
-            error |= RunTest_Double( i );
+        int flush_error = clFinish( gQueue );
+        if( flush_error )
+            log_error( "clFinish failed: %d\n", flush_error );
     }
-
-
-    int flush_error = clFinish(gQueue);
-    if (flush_error)
-        log_error("clFinish failed: %d\n", flush_error);
-
-    if( error )
-        vlog_error( "Contractions test FAILED.\n" );
-    else
-        vlog( "Contractions test PASSED.\n" );
 
     ReleaseCL();
     test_finish();
+
+    free( gArgList );
 
     return error;
 }
@@ -271,6 +384,17 @@ int main( int argc, const char **argv )
 
 static int ParseArgs( int argc, const char **argv )
 {
+    gArgList = (const char **)calloc( argc, sizeof( char*) );
+
+    if( NULL == gArgList )
+    {
+        vlog_error( "Failed to allocate memory for argList\n" );
+        return 1;
+    }
+
+    gArgList[0] = argv[0];
+    gArgCount = 1;
+
     int i;
     int length_of_seed = 0;
 
@@ -354,9 +478,6 @@ static int ParseArgs( int argc, const char **argv )
                         gForceFTZ ^= 1;
                         break;
 
-                    case ' ':
-                        break;
-
                     default:
                         vlog( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
                         PrintUsage();
@@ -374,8 +495,8 @@ static int ParseArgs( int argc, const char **argv )
             gDeviceType = CL_DEVICE_TYPE_DEFAULT;
         else
         {
-            vlog( "ERROR -- unknown argument: %s\n", arg );
-            abort();
+            gArgList[gArgCount] = arg;
+            gArgCount++;
         }
     }
     vlog( "\n\nTest binary built %s %s\n", __DATE__, __TIME__ );
@@ -401,6 +522,8 @@ static void PrintArch( void )
     vlog( "\tARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     vlog( "\tARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    vlog( "\tARCH:\taarch64\n" );
 #else
     vlog( "\tARCH:\tunknown\n" );
 #endif
@@ -443,19 +566,19 @@ static void PrintArch( void )
 static void PrintUsage( void )
 {
     vlog( "%s [-z]: <optional: math function names>\n", appName );
-    vlog( "\toptions:\n" );
+    vlog( "\tOptions:\n" );
     vlog( "\t\t-z\tToggle FTZ mode (Section 6.5.3) for all functions. (Set by device capabilities by default.)\n" );
     vlog( "\t\t-sNUMBER set random seed.\n");
     vlog( "\n" );
+    vlog( "\tTest names:\n" );
+    for( int i = 0; i < num_fns; i++ )
+    {
+        vlog( "\t\t%s\n", basefn_names[i] );
+    }
 }
 
 const char *sizeNames[] = { "float", "float2", "float4", "float8", "float16" };
 const char *sizeNames_double[] = { "double", "double2", "double4", "double8", "double16" };
-
-static void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
-{
-    vlog( "%s\n", errinfo );
-}
 
 static int InitCL( void )
 {
@@ -619,7 +742,7 @@ static int InitCL( void )
         for( j = 2; j < strCount; j += 2 )
             kernels[j] = sizeNames[i];
 
-        error = create_single_kernel_helper_create_program(gContext, &gProgram[i], strCount, kernels);
+        gProgram[i] = clCreateProgramWithSource(gContext, strCount, kernels, NULL, &error);
         if( NULL == gProgram[i] )
         {
             vlog_error( "clCreateProgramWithSource failed\n" );
@@ -647,7 +770,7 @@ static int InitCL( void )
             for( j = 2; j < strCount; j += 2 )
                 kernels[j] = sizeNames_double[i];
 
-            error = create_single_kernel_helper_create_program(gContext, &gProgram_double[i], strCount, kernels);
+            gProgram_double[i] = clCreateProgramWithSource(gContext, strCount, kernels, NULL, &error);
             if( NULL == gProgram_double[i] )
             {
                 vlog_error( "clCreateProgramWithSource failed\n" );
@@ -1108,6 +1231,12 @@ static int RunTest( int testNumber )
 
 static int RunTest_Double( int testNumber )
 {
+    if( !gHasDouble )
+    {
+        vlog("Double is not supported, test not run.\n");
+        return 0;
+    }
+
     size_t i;
     int error = 0;
     cl_mem args[4];

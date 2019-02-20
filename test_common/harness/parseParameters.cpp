@@ -35,12 +35,13 @@ OfflineCompilerOutputType gOfflineCompilerOutputType;
 
 void helpInfo ()
 {
+  log_info("  '-ILPath path_to_spirv_bin.\n");
   log_info("  '-offlineCompiler <output_type:binary|source|spir_v>': use offline compiler\n");
   log_info("  '                  output_type binary - \"../build_script_binary.py\" is invoked\n");
   log_info("  '                  output_type source - \"../build_script_source.py\"  is invoked\n");
-  log_info("  '                  output_type spir_v <mode:generate|cache> - \"../cl_build_script_spir_v.py\" is invoked\n, optional modes: generate, cache");
-  log_info("  '                                     mode generate <path> - force binary generation");
-  log_info("  '                                     mode cache <path> - force reading binary files from cache");
+  log_info("  '                  output_type spir_v <mode:generate|cache> - \"../cl_build_script_spir_v.py\" is invoked. optional modes: generate, cache\n");
+  log_info("  '                                     mode generate <path> - force binary generation\n");
+  log_info("  '                                     mode cache <path> - force reading binary files from cache\n");
   log_info("\n");
 }
 
@@ -61,10 +62,17 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
         continue;
     }
     if (i < 0) i = 0;
-	  delArg = 0;
-	  if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
-	  	  helpInfo ();	  
+    delArg = 0;
 
+    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+    {
+        helpInfo ();
+    }
+    else if (!strcmp(argv[i], "-ILPath"))
+    {
+        gSpirVPath = argv[i + 1];
+        delArg = 2;
+    }
     else if (!strcmp(argv[i], "-offlineCompiler"))
     {
         log_info(" Offline Compiler enabled\n");
@@ -128,3 +136,26 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
   return argc;
 }
 
+bool is_power_of_two(int number)
+{
+    return number && !(number & (number - 1));
+}
+
+extern void parseWimpyReductionFactor(const char *&arg, int &wimpyReductionFactor)
+{
+    const char *arg_temp = strchr(&arg[1], ']');
+    if (arg_temp != 0)
+    {
+        int new_factor = atoi(&arg[1]);
+        arg = arg_temp; // Advance until ']'
+        if (is_power_of_two(new_factor))
+        {
+            log_info("\n Wimpy reduction factor changed from %d to %d \n", wimpyReductionFactor, new_factor);
+            wimpyReductionFactor = new_factor;
+        }
+        else
+        {
+            log_info("\n WARNING: Incorrect wimpy reduction factor %d, must be power of 2. The default value will be used.\n", new_factor);
+        }
+    }
+}

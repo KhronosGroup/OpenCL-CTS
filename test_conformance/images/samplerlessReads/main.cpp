@@ -45,51 +45,61 @@ cl_device_type      gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
 cl_command_queue    queue;
 cl_context          context;
+static cl_device_id device;
 
 #define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
-void printUsage( const char *execName )
-{
-    const char *p = strrchr( execName, '/' );
-    if ( p != NULL )
-        execName = p + 1;
-
-    log_info( "Usage: %s [options]\n", execName );
-    log_info( "Where:\n" );
-    log_info( "\n" );
-    log_info( "\tThe following flags specify the types to test. They can be combined; if none are specified, all are tested:\n" );
-    log_info( "\t\tint - Test integer I/O (read_imagei)\n" );
-    log_info( "\t\tuint - Test unsigned integer I/O (read_imageui)\n" );
-    log_info( "\t\tfloat - Test float I/O (read_imagef)\n" );
-    log_info( "\n" );
-    log_info( "You may also use appropriate CL_ channel type and ordering constants.\n" );
-    log_info( "\n" );
-    log_info( "\t1D - Only test 1D images\n" );
-    log_info( "\t2D - Only test 2D images\n" );
-    log_info( "\t3D - Only test 3D images\n" );
-    log_info( "\t1Darray - Only test 1D image arrays\n" );
-    log_info( "\t2Darray - Only test 2D image arrays\n" );
-    log_info( "\n" );
-    log_info( "\tThe following modify the types of images tested:\n" );
-    log_info( "\t\read_write - Runs the tests with read_write images which allow a kernel do both read and write to the same image \n" );
-    log_info( "\t\tsmall_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes\n" );
-    log_info( "\t\tmax_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128\n" );
-    log_info( "\n" );
-    log_info( "\tdebug_trace - Enables additional debug info logging\n" );
-    log_info( "\tuse_pitches - Enables row and slice pitches\n" );
-}
-
+static void printUsage( const char *execName );
 
 extern int test_image_set( cl_device_id device, cl_mem_object_type imageType );
+
+int test_1D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, CL_MEM_OBJECT_IMAGE1D ) +
+           test_image_set( device, CL_MEM_OBJECT_IMAGE1D_BUFFER );
+}
+int test_2D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, CL_MEM_OBJECT_IMAGE2D );
+}
+int test_3D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, CL_MEM_OBJECT_IMAGE3D );
+}
+int test_1Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, CL_MEM_OBJECT_IMAGE1D_ARRAY );
+}
+int test_2Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, CL_MEM_OBJECT_IMAGE2D_ARRAY );
+}
+
+basefn basefn_list[] = {
+    test_1D,
+    test_2D,
+    test_3D,
+    test_1Darray,
+    test_2Darray,
+};
+
+const char *basefn_names[] = {
+    "1D",
+    "2D",
+    "3D",
+    "1Darray",
+    "2Darray",
+};
+
+ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
+
+int num_fns = sizeof(basefn_names) / sizeof(char *);
 
 int main(int argc, const char *argv[])
 {
     cl_platform_id  platform;
-    cl_device_id    device;
     cl_channel_type chanType;
     cl_channel_order chanOrder;
-    char            str[ 128 ];
-    int             testMethods = 0;
     bool            randomize = false;
 
     test_start();
@@ -104,72 +114,68 @@ int main(int argc, const char *argv[])
     //Check CL_DEVICE_TYPE environment variable
     checkDeviceTypeOverride( &gDeviceType );
 
+    const char ** argList = (const char **)calloc( argc, sizeof( char*) );
+
+    if( NULL == argList )
+    {
+        log_error( "Failed to allocate memory for argList array.\n" );
+        return 1;
+    }
+
+    argList[0] = argv[0];
+    size_t argCount = 1;
+
     // Parse arguments
     for ( int i = 1; i < argc; i++ )
     {
-        strncpy( str, argv[ i ], sizeof( str ) - 1 );
-
-        if ( strcmp( str, "cpu" ) == 0 || strcmp( str, "CL_DEVICE_TYPE_CPU" ) == 0 )
+        if ( strcmp( argv[i], "cpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_CPU" ) == 0 )
             gDeviceType = CL_DEVICE_TYPE_CPU;
-        else if ( strcmp( str, "gpu" ) == 0 || strcmp( str, "CL_DEVICE_TYPE_GPU" ) == 0 )
+        else if ( strcmp( argv[i], "gpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_GPU" ) == 0 )
             gDeviceType = CL_DEVICE_TYPE_GPU;
-        else if ( strcmp( str, "accelerator" ) == 0 || strcmp( str, "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
+        else if ( strcmp( argv[i], "accelerator" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
             gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-        else if ( strcmp( str, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
+        else if ( strcmp( argv[i], "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
             gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
-        else if ( strcmp( str, "debug_trace" ) == 0 )
+        else if ( strcmp( argv[i], "debug_trace" ) == 0 )
             gDebugTrace = true;
-        else if ( strcmp( str, "read_write" ) == 0 )
+        else if ( strcmp( argv[i], "read_write" ) == 0 )
             gTestReadWrite = true;
-        else if ( strcmp( str, "small_images" ) == 0 )
+        else if ( strcmp( argv[i], "small_images" ) == 0 )
             gTestSmallImages = true;
-        else if ( strcmp( str, "max_images" ) == 0 )
+        else if ( strcmp( argv[i], "max_images" ) == 0 )
             gTestMaxImages = true;
-        else if ( strcmp( str, "use_pitches" ) == 0 )
+        else if ( strcmp( argv[i], "use_pitches" ) == 0 )
             gEnablePitch = true;
 
-        else if ( strcmp( str, "int" ) == 0 )
+        else if ( strcmp( argv[i], "int" ) == 0 )
             gTypesToTest |= kTestInt;
-        else if ( strcmp( str, "uint" ) == 0 )
+        else if ( strcmp( argv[i], "uint" ) == 0 )
             gTypesToTest |= kTestUInt;
-        else if ( strcmp( str, "float" ) == 0 )
+        else if ( strcmp( argv[i], "float" ) == 0 )
             gTypesToTest |= kTestFloat;
 
-        else if ( strcmp( str, "randomize" ) == 0 )
+        else if ( strcmp( argv[i], "randomize" ) == 0 )
             randomize = true;
 
-        else if ( strcmp( str, "1D" ) == 0 )
-            testMethods |= k1D;
-        else if( strcmp( str, "2D" ) == 0 )
-            testMethods |= k2D;
-        else if( strcmp( str, "3D" ) == 0 )
-            testMethods |= k3D;
-        else if( strcmp( str, "1Darray" ) == 0 )
-            testMethods |= k1DArray;
-        else if( strcmp( str, "2Darray" ) == 0 )
-            testMethods |= k2DArray;
-
-        else if ( strcmp( str, "help" ) == 0 || strcmp( str, "?" ) == 0 )
+        else if ( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 )
         {
             printUsage( argv[ 0 ] );
             return -1;
         }
 
-        else if ( ( chanType = get_channel_type_from_name( str ) ) != (cl_channel_type)-1 )
+        else if ( ( chanType = get_channel_type_from_name( argv[i] ) ) != (cl_channel_type)-1 )
             gChannelTypeToUse = chanType;
 
-        else if ( ( chanOrder = get_channel_order_from_name( str ) ) != (cl_channel_order)-1 )
+        else if ( ( chanOrder = get_channel_order_from_name( argv[i] ) ) != (cl_channel_order)-1 )
             gChannelOrderToUse = chanOrder;
         else
         {
-            log_error( "ERROR: Unknown argument %d: %s.  Exiting....\n", i, str );
-            return -1;
+            argList[argCount] = argv[i];
+            argCount++;
         }
     }
 
-    if (testMethods == 0)
-        testMethods = k1D | k2D | k3D | k1DArray | k2DArray;
     if ( gTypesToTest == 0 )
         gTypesToTest = kTestAllTypes;
 
@@ -255,20 +261,7 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    // Run the test now
-    int ret = 0;
-    if (testMethods & k1D) {
-        ret += test_image_set( device, CL_MEM_OBJECT_IMAGE1D );
-        ret += test_image_set( device, CL_MEM_OBJECT_IMAGE1D_BUFFER );
-    }
-    if (testMethods & k2D)
-        ret += test_image_set( device, CL_MEM_OBJECT_IMAGE2D );
-    if (testMethods & k3D)
-        ret += test_image_set( device, CL_MEM_OBJECT_IMAGE3D );
-    if (testMethods & k1DArray)
-        ret += test_image_set( device, CL_MEM_OBJECT_IMAGE1D_ARRAY );
-    if (testMethods & k2DArray)
-        ret += test_image_set( device, CL_MEM_OBJECT_IMAGE2D_ARRAY );
+    int ret = parseAndCallCommandLineTests( argCount, argList, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
 
     // Restore FP state before leaving
     RestoreFPState(&oldMode);
@@ -282,22 +275,51 @@ int main(int argc, const char *argv[])
 
     if (gTestFailure == 0) {
         if (gTestCount > 1)
-            log_info("PASSED %d of %d tests.\n", gTestCount, gTestCount);
+            log_info("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
         else
-            log_info("PASSED test.\n");
+            log_info("PASSED sub-test.\n");
     }
     else if (gTestFailure > 0) {
         if (gTestCount > 1)
-            log_error("FAILED %d of %d tests.\n", gTestFailure, gTestCount);
+            log_error("FAILED %d of %d sub-tests.\n", gTestFailure, gTestCount);
         else
-            log_error("FAILED test.\n");
+            log_error("FAILED sub-test.\n");
     }
 
     // Clean up
+    free(argList);
     test_finish();
 
-    if (gTestFailure > 0)
-        return gTestFailure;
-
     return ret;
+}
+
+static void printUsage( const char *execName )
+{
+    const char *p = strrchr( execName, '/' );
+    if ( p != NULL )
+        execName = p + 1;
+
+    log_info( "Usage: %s [options] [test_names]\n", execName );
+    log_info( "Options:\n" );
+    log_info( "\n" );
+    log_info( "\tThe following flags specify the types to test. They can be combined; if none are specified, all are tested:\n" );
+    log_info( "\t\tint - Test integer I/O (read_imagei)\n" );
+    log_info( "\t\tuint - Test unsigned integer I/O (read_imageui)\n" );
+    log_info( "\t\tfloat - Test float I/O (read_imagef)\n" );
+    log_info( "\n" );
+    log_info( "You may also use appropriate CL_ channel type and ordering constants.\n" );
+    log_info( "\n" );
+    log_info( "\tThe following modify the types of images tested:\n" );
+    log_info( "\t\read_write - Runs the tests with read_write images which allow a kernel do both read and write to the same image \n" );
+    log_info( "\t\tsmall_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes\n" );
+    log_info( "\t\tmax_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128\n" );
+    log_info( "\n" );
+    log_info( "\tdebug_trace - Enables additional debug info logging\n" );
+    log_info( "\tuse_pitches - Enables row and slice pitches\n" );
+    log_info( "\n" );
+    log_info( "Test names:\n" );
+    for( int i = 0; i < num_fns; i++ )
+    {
+        log_info( "\t%s\n", basefn_names[i] );
+    }
 }

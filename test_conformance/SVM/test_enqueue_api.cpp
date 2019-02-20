@@ -17,10 +17,15 @@
 #include "../../test_common/harness/mt19937.h"
 
 #include <vector>
+#include <atomic>
+
+#if !defined(_WIN32)
+#include <unistd.h>
+#endif 
 
 typedef struct
 {
-  cl_uint status;
+  std::atomic<cl_uint> status;
   cl_uint num_svm_pointers;
   std::vector<void *> svm_pointers;
 } CallbackData;
@@ -62,7 +67,7 @@ void CL_CALLBACK callback_svm_free(cl_command_queue queue, cl_uint num_svm_point
     clSVMFree(context, svm_pointers[i]);
   }
 
-  data->status = 1;
+  data->status.store(1, std::memory_order_release);
 }
 
 int test_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
@@ -231,7 +236,9 @@ int test_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue queue
   test_error(error, "clFinish failed");
 
   //wait for the callback
-  while(data.status == 0) { }
+  while(data.status.load(std::memory_order_acquire) == 0) { 
+    usleep(1);
+  }
 
   //check if number of SVM pointers returned in the callback matches with expected
   if (data.num_svm_pointers != buffers.size())
