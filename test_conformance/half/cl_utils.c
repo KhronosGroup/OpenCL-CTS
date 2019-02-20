@@ -24,6 +24,8 @@
 #include "string.h"
 #include "../../test_common/harness/kernelHelpers.h"
 
+#include "../../test_common/harness/testHarness.h"
+
 #define HALF_MIN 1.0p-14
 
 
@@ -58,13 +60,11 @@ uint32_t        gDeviceFrequency = 0;
 uint32_t        gComputeDevices = 0;
 size_t          gMaxThreadGroupSize = 0;
 size_t          gWorkGroupSize = 0;
-int             gTestCount = 0;
 int             gFailCount = 0;
 bool            gWimpyMode = false;
 int             gWimpyReductionFactor = 512;
 int             gTestDouble = 0;
 uint32_t        gDeviceIndex = 0;
-int             gIsEmbedded = 0;
 size_t          gBufferSize = 0;
 
 #if defined( __APPLE__ )
@@ -74,11 +74,6 @@ int             gReportTimes = 0;
 #endif
 
 #pragma mark -
-
-static void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
-{
-    vlog( "%s\n", errinfo );
-}
 
 int InitCL( void )
 {
@@ -437,25 +432,6 @@ double SubtractTime( uint64_t endTime, uint64_t startTime )
     return INFINITY;
 }
 
-#endif
-
-#if !defined( __APPLE__ )
-void memset_pattern4(void *dest, const void *src_pattern, size_t bytes )
-{
-    uint32_t pat = ((uint32_t*) src_pattern)[0];
-    size_t count = bytes / 4;
-    size_t i;
-    uint32_t *d = (uint32_t*)dest;
-
-    for( i = 0; i < count; i++ )
-        d[i] = pat;
-
-    d += i;
-
-    bytes &= 3;
-    if( bytes )
-        memcpy( d, src_pattern, bytes );
-}
 #endif
 
 size_t getBufferSize(cl_device_id device_id)

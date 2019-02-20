@@ -15,6 +15,7 @@
 //
 #include "../../test_common/harness/compat.h"
 #include "../../test_common/harness/kernelHelpers.h"
+#include "../../test_common/harness/testHarness.h"
 
 #include <string.h>
 #include "cl_utils.h"
@@ -611,7 +612,7 @@ double2half_rtn( double f )
     return (u.u >> (53-11)) | sign;
 }
 
-int Test_vstore_half( void )
+int Test_vstore_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     switch (get_default_rounding_mode(gDevice))
     {
@@ -624,27 +625,27 @@ int Test_vstore_half( void )
     }
 }
 
-int Test_vstore_half_rte( void )
+int Test_vstore_half_rte( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vStoreHalf_private(float2half_rte, double2half_rte, "_rte");
 }
 
-int Test_vstore_half_rtz( void )
+int Test_vstore_half_rtz( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vStoreHalf_private(float2half_rtz, double2half_rtz, "_rtz");
 }
 
-int Test_vstore_half_rtp( void )
+int Test_vstore_half_rtp( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vStoreHalf_private(float2half_rtp, double2half_rtp, "_rtp");
 }
 
-int Test_vstore_half_rtn( void )
+int Test_vstore_half_rtn( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vStoreHalf_private(float2half_rtn, double2half_rtn, "_rtn");
 }
 
-int Test_vstorea_half( void )
+int Test_vstorea_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     switch (get_default_rounding_mode(gDevice))
     {
@@ -657,22 +658,22 @@ int Test_vstorea_half( void )
     }
 }
 
-int Test_vstorea_half_rte( void )
+int Test_vstorea_half_rte( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vStoreaHalf_private(float2half_rte, double2half_rte, "_rte");
 }
 
-int Test_vstorea_half_rtz( void )
+int Test_vstorea_half_rtz( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vStoreaHalf_private(float2half_rtz, double2half_rtz, "_rtz");
 }
 
-int Test_vstorea_half_rtp( void )
+int Test_vstorea_half_rtp( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vStoreaHalf_private(float2half_rtp, double2half_rtp, "_rtp");
 }
 
-int Test_vstorea_half_rtn( void )
+int Test_vstorea_half_rtn( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vStoreaHalf_private(float2half_rtn, double2half_rtn, "_rtn");
 }
@@ -1337,7 +1338,6 @@ exit:
         }
     }
 
-    gTestCount++;
     return error;
 }
 
@@ -1941,7 +1941,6 @@ exit:
         }
     }
 
-    gTestCount++;
     return error;
 }
 

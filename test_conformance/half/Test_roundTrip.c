@@ -16,10 +16,9 @@
 #include <string.h>
 #include "cl_utils.h"
 #include "tests.h"
+#include "../../test_common/harness/testHarness.h"
 
-
-
-int Test_roundTrip( void )
+int Test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     int vectorSize, error;
     uint64_t i, j;
@@ -236,6 +235,7 @@ int Test_roundTrip( void )
 
                         vlog_error( "%lld) (of %lld)  Failure at 0x%4.4x:  0x%4.4x   vector_size = %d \n", j, (uint64_t)count, u2[j], u1[j], (g_arrVecSizes[vectorSize]) );
                         gFailCount++;
+                        error = -1;
                         goto exit;
                     }
                 }
@@ -285,6 +285,7 @@ int Test_roundTrip( void )
 
                             vlog_error( "%lld) Failure at 0x%4.4x:  0x%4.4x   vector_size = %d (double precsion)\n", j, u2[j], u1[j], (g_arrVecSizes[vectorSize]) );
                             gFailCount++;
+                            error = -1;
                             goto exit;
                         }
                     }
@@ -391,7 +392,6 @@ exit:
         }
     }
 
-    gTestCount++;
     return error;
 }
 

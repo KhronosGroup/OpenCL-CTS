@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "../../test_common/harness/compat.h"
+#include "../../test_common/harness/testHarness.h"
 
 #include <string.h>
 #include "cl_utils.h"
@@ -548,6 +549,7 @@ int Test_vLoadHalf_private( bool aligned )
                                        vector_size_names[vectorSize], addressSpaceNames[addressSpace],
                                        (aligned?"aligned":"unaligned"));
                             gFailCount++;
+                            error = -1;
                             break; // goto exit;
                         }
                     }
@@ -612,16 +614,15 @@ exit:
         }
     }
 
-    gTestCount++;
     return error;
 }
 
-int Test_vload_half( void )
+int Test_vload_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vLoadHalf_private( false );
 }
 
-int Test_vloada_half( void )
+int Test_vloada_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vLoadHalf_private( true );
 }
