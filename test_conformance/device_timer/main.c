@@ -32,8 +32,7 @@ basefn basefn_list[] = {
 
 const char *basefn_names[] = {
     "test_timer_resolution_queries",
-    "test_device_and_host_timers",
-    "all"
+    "test_device_and_host_timers"
 };
 
 size_t num_fns = sizeof(basefn_names)/sizeof(basefn_names[0]);

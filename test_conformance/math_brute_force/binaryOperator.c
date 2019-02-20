@@ -207,6 +207,7 @@ typedef struct TestInfo
     cl_kernel   *k[VECTOR_SIZE_COUNT ];             // arrays of thread-specific kernels for each worker thread:  k[vector_size][thread_id]
     ThreadInfo  *tinfo;                             // An array of thread specific information for each worker thread
     cl_uint     threadCount;                        // Number of worker threads
+    cl_uint     jobCount;                           // Number of jobs
     cl_uint     step;                               // step between each chunk and the next.
     cl_uint     scale;                              // stride between individual test values
     float       ulps;                               // max_allowed ulps
@@ -260,6 +261,16 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d)
     }
 
     test_info.step = test_info.subBufferSize * test_info.scale;
+    if (test_info.step / test_info.subBufferSize != test_info.scale)
+    {
+        //there was overflow
+        test_info.jobCount = 1;
+    }
+    else
+    {
+        test_info.jobCount = (cl_uint)((1ULL << 32) / test_info.step);
+    }
+
     test_info.f = f;
     test_info.ulps = gIsEmbedded ? f->float_embedded_ulps : f->float_ulps;
     test_info.ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
@@ -329,7 +340,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d)
 
     if( !gSkipCorrectnessTesting )
     {
-        error = ThreadPool_Do( TestFloat, (cl_uint) ((1ULL<<32) / test_info.step), &test_info );
+        error = ThreadPool_Do( TestFloat, test_info.jobCount, &test_info );
 
         // Accumulate the arithmetic errors
         for( i = 0; i < test_info.threadCount; i++ )
@@ -501,63 +512,51 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
     int totalSpecialValueCount = specialValuesFloatCount * specialValuesFloatCount;
     int indx = (totalSpecialValueCount - 1) / buffer_elements;
 
-    if( job_id <= (cl_uint)indx )
-    { // test edge cases
-        float *fp = (float *)p;
-        float *fp2 = (float *)p2;
+
+    if( job_id <= (cl_uint)indx ) {
+        // Insert special values
         uint32_t x, y;
 
-    x = (job_id * buffer_elements) % specialValuesFloatCount;
-    y = (job_id * buffer_elements) / specialValuesFloatCount;
+        x = (job_id * buffer_elements) % specialValuesFloatCount;
+        y = (job_id * buffer_elements) / specialValuesFloatCount;
 
-        for( ; j < buffer_elements; j++ )
-        {
-            fp[j] = specialValuesFloat[x];
-            fp2[j] = specialValuesFloat[y];
-            if( ++x >= specialValuesFloatCount )
-            {
+        for( ; j < buffer_elements; j++ ) {
+            p[j] = ((cl_uint *)specialValuesFloat)[x];
+            p2[j] = ((cl_uint *)specialValuesFloat)[y];
+            ++x;
+            if (x >= specialValuesFloatCount) {
                 x = 0;
                 y++;
-                if( y >= specialValuesFloatCount )
+                if (y >= specialValuesFloatCount)
                     break;
             }
-            if(gTestFastRelaxed && strcmp(name,"divide") == 0 )
-            {
-              float fpj = *(float*)&fp[j];
-              float fpj2 = *(float*)&fp2[j];
-              if(fabs(fpj) > 0x5E800000 ) //[2^-62,2^62]
-              {
-                fp[j] = NAN;
-              }
-              if( fabs(fpj2) > 0x5E800000 ) //[2^-62,2^62]
-              {
-                fp2[j] = NAN;
-              }
+            if (gTestFastRelaxed && strcmp(name,"divide") == 0) {
+                cl_uint pj = p[j] & 0x7fffffff;
+                cl_uint p2j = p2[j] & 0x7fffffff;
+                // Replace values outside [2^-62, 2^62] with QNaN
+                if (pj < 0x20800000 || pj > 0x5e800000)
+                    p[j] = 0x7fc00000;
+                if (p2j < 0x20800000 || p2j > 0x5e800000)
+                    p2[j] = 0x7fc00000;
+            }
         }
     }
-    }
 
-    //Init any remaining values.
+    // Init any remaining values.
     for( ; j < buffer_elements; j++ )
     {
         p[j] = genrand_int32(d);
         p2[j] = genrand_int32(d);
 
-        if(gTestFastRelaxed)
-        {
-          if( strcmp(name,"divide")==0){
-            float pj = *(float*)&p[j];
-            float pj2 = *(float*)&p2[j];
-            if(fabs(pj) > 0x5E800000 ) //[2^-62,2^62]
-            {
-              p[j] = NAN;
-            }
-            if( fabs(pj2) > 0x5E800000 ) //[2^-62,2^62]
-            {
-              p2[j] = NAN;
-            }
-          }
-    }
+        if (gTestFastRelaxed && strcmp(name,"divide") == 0) {
+            cl_uint pj = p[j] & 0x7fffffff;
+            cl_uint p2j = p2[j] & 0x7fffffff;
+            // Replace values outside [2^-62, 2^62] with QNaN
+            if (pj < 0x20800000 || pj > 0x5e800000)
+                p[j] = 0x7fc00000;
+            if (p2j < 0x20800000 || p2j > 0x5e800000)
+                p2[j] = 0x7fc00000;
+        }
     }
 
     if( (error = clEnqueueWriteBuffer( tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0, buffer_size, p, 0, NULL, NULL) ))
@@ -950,6 +949,16 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d)
     }
 
     test_info.step = (cl_uint) test_info.subBufferSize * test_info.scale;
+    if (test_info.step / test_info.subBufferSize != test_info.scale)
+    {
+        //there was overflow
+        test_info.jobCount = 1;
+    }
+    else
+    {
+        test_info.jobCount = (cl_uint)((1ULL << 32) / test_info.step);
+    }
+
     test_info.f = f;
     test_info.ulps = f->double_ulps;
     test_info.ftz = f->ftz || gForceFTZ;
@@ -1020,7 +1029,7 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d)
 
     if( !gSkipCorrectnessTesting )
     {
-        error = ThreadPool_Do( TestDouble, (cl_uint) ((1ULL<<32) / test_info.step), &test_info );
+        error = ThreadPool_Do( TestDouble, test_info.jobCount, &test_info );
 
         // Accumulate the arithmetic errors
         for( i = 0; i < test_info.threadCount; i++ )

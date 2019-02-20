@@ -20,6 +20,7 @@ set(${MODULE_NAME}_SOURCES
          test_mem_object_info.cpp
          test_null_buffer_arg.c
          test_kernel_arg_info.c
+         test_queue_properties.cpp
          ../../test_common/harness/errorHelpers.c
          ../../test_common/harness/threadTesting.c
          ../../test_common/harness/testHarness.c

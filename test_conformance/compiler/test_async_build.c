@@ -86,9 +86,8 @@ int test_async_build_pieces(cl_device_id deviceID, cl_context context, cl_comman
         return -1;
     }
 
-    clReleaseProgram( program );
+    error = clReleaseProgram( program );
+    test_error( error, "Unable to release program object" );
 
     return 0;
 }
-
-

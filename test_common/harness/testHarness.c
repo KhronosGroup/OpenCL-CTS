@@ -143,7 +143,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
         log_info( "\tid<num>\t\tIndicates device at index <num> should be used (default 0).\n" );
         log_info( "\t<device_type>\tcpu|gpu|accelerator|<CL_DEVICE_TYPE_*> (default CL_DEVICE_TYPE_DEFAULT)\n" );
 
-        for( i = 0; i < num_fns - 1; i++ )
+        for( i = 0; i < num_fns; i++ )
         {
             log_info( "\t\t%s\n", fnNames[ i ] );
         }
@@ -439,10 +439,18 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
 
 
     /* If we have a device checking function, run it */
-    if( ( deviceCheckFn != NULL ) && deviceCheckFn( device ) != CL_SUCCESS )
+    if( ( deviceCheckFn != NULL ) )
     {
-        test_finish();
-        return -1;
+        test_status status = deviceCheckFn( device );
+        switch (status)
+        {
+            case TEST_PASS:
+                break;
+            case TEST_FAIL:
+                return 1;
+            case TEST_SKIP:
+                return 0;
+        }
     }
 
     if (num_elements <= 0)

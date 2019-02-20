@@ -840,7 +840,6 @@ bool test_basic (cl_device_id device, cl_uint size_t_width, const char *folder)
         "test_sizeof.sizeof_uintptr_t",
         "test_sizeof.sizeof_image2d_t",
         "test_sizeof.sizeof_image3d_t",
-        "test_sizeof.sizeof_sampler_t",
         "test_sizeof.sizeof_double",
         "test_sizeof.sizeof_double2",
         "test_sizeof.sizeof_double4",

@@ -116,6 +116,7 @@ private:
   void verifyData (DataContainerAttrib * reference, DataContainerAttrib * results, short regionNumber);
   void calculateExpectedValues ();
   void showTestInfo ();
+  size_t adjustLocalArraySize(size_t localArraySize);
 };
 
 // Class responsible for running subtest scenarios in test function
