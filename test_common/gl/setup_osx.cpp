@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,25 +19,25 @@
 
 class OSXGLEnvironment : public GLEnvironment
 {
-	public:
-		OSXGLEnvironment()
-		{
+    public:
+        OSXGLEnvironment()
+        {
       mCGLContext = NULL;
-		}
-		
+        }
+
   virtual int Init( int *argc, char **argv, int use_opengl_32 )
-		{
+        {
       if (!use_opengl_32) {
-        
+
         // Create a GLUT window to render into
         glutInit( argc, argv );
         glutInitWindowSize( 512, 512 );
         glutInitDisplayMode( GLUT_RGB | GLUT_DOUBLE );
         glutCreateWindow( "OpenCL <-> OpenGL Test" );
       }
-      
+
       else {
-        
+
         CGLPixelFormatAttribute attribs[] = {
           kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core,
           kCGLPFAAllowOfflineRenderers,
@@ -46,7 +46,7 @@ class OSXGLEnvironment : public GLEnvironment
           kCGLPFADoubleBuffer,
           (CGLPixelFormatAttribute)0
         };
-	      
+
         CGLError err;
         CGLPixelFormatObj pix;
         GLint npix;
@@ -61,20 +61,20 @@ class OSXGLEnvironment : public GLEnvironment
           {
             log_error("Failed to create GL context\n");
             return -1;
-          }	       
+          }
         CGLSetCurrentContext(mCGLContext);
       }
-			
-			return 0;
-		}
 
-		virtual cl_context CreateCLContext( void )
+            return 0;
+        }
+
+        virtual cl_context CreateCLContext( void )
     {
       int error;
 
       if( mCGLContext == NULL )
         mCGLContext = CGLGetCurrentContext();
-      
+
       CGLShareGroupObj share_group = CGLGetShareGroup(mCGLContext);
       cl_context_properties properties[] = { CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)share_group, 0 };
       cl_context context = clCreateContext(properties, 0, 0, 0, 0, &error);
@@ -82,7 +82,7 @@ class OSXGLEnvironment : public GLEnvironment
         print_error(error, "clCreateContext failed");
         return NULL;
       }
-      
+
       // Verify that all devices in the context support the required extension
       cl_device_id devices[64];
       size_t size_out;
@@ -91,7 +91,7 @@ class OSXGLEnvironment : public GLEnvironment
         print_error(error, "clGetContextInfo failed");
         return NULL;
       }
-      
+
       char extensions[8192];
       for (int i=0; i<(int)(size_out/sizeof(cl_device_id)); i++) {
         error = clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(extensions), extensions, NULL);
@@ -99,7 +99,7 @@ class OSXGLEnvironment : public GLEnvironment
           print_error(error, "clGetDeviceInfo failed");
           return NULL;
         }
-        
+
         if (strstr(extensions, "cl_APPLE_gl_sharing") == NULL) {
           log_error("Device %d does not supporte required extension cl_APPLE_gl_sharing.\n", i);
           return NULL;
@@ -107,7 +107,7 @@ class OSXGLEnvironment : public GLEnvironment
       }
       return context;
     }
-  
+
     virtual int SupportsCLGLInterop( cl_device_type device_type )
     {
       int found_valid_device = 0;
@@ -119,7 +119,7 @@ class OSXGLEnvironment : public GLEnvironment
         print_error(error, "clGetDeviceIDs failed");
         return -1;
       }
-      
+
       char extensions[8192];
       for (int i=0; i<(int)num_of_devices; i++) {
         error = clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(extensions), extensions, NULL);
@@ -127,7 +127,7 @@ class OSXGLEnvironment : public GLEnvironment
           print_error(error, "clGetDeviceInfo failed");
           return -1;
         }
-        
+
         if (strstr(extensions, "cl_APPLE_gl_sharing") == NULL) {
           log_info("Device %d of %d does not support required extension cl_APPLE_gl_sharing.\n", i, num_of_devices);
         } else {
@@ -135,22 +135,22 @@ class OSXGLEnvironment : public GLEnvironment
           found_valid_device = 1;
         }
       }
-			return found_valid_device;
+            return found_valid_device;
     }
 
-		virtual ~OSXGLEnvironment()
-		{
-			CGLDestroyContext( mCGLContext );
-		}
-		
-		CGLContextObj mCGLContext;
-		
+        virtual ~OSXGLEnvironment()
+        {
+            CGLDestroyContext( mCGLContext );
+        }
+
+        CGLContextObj mCGLContext;
+
 };
 
 GLEnvironment * GLEnvironment::Instance( void )
 {
-	static OSXGLEnvironment * env = NULL;
-	if( env == NULL )
-		env = new OSXGLEnvironment();
-	return env;
+    static OSXGLEnvironment * env = NULL;
+    if( env == NULL )
+        env = new OSXGLEnvironment();
+    return env;
 }

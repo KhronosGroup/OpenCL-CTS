@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -36,8 +36,8 @@ typedef union fptr
     double  (*f_f)(double);
     double  (*f_u)(cl_uint);
     int     (*i_f)(double);
-	int     (*i_f_f)(float);
-	float   (*f_ff_f)(float, float);
+    int     (*i_f_f)(float);
+    float   (*f_ff_f)(float, float);
     double  (*f_ff)(double, double);
     int     (*i_ff)(double, double);
     double  (*f_fi)(double, int);
@@ -45,7 +45,7 @@ typedef union fptr
     double  (*f_fpI)(double, int*);
     double  (*f_ffpI)(double, double, int*);
     double  (*f_fff)(double, double, double );
-    float   (*f_fma)(float, float, float, int);   
+    float   (*f_fma)(float, float, float, int);
 }fptr;
 
 typedef union dptr
@@ -72,7 +72,7 @@ typedef struct vtbl
     int         (*DoubleTestFunc)( const struct Func *, MTdata);        // may be NULL if function is single precision only
 }vtbl;
 
-typedef struct Func 
+typedef struct Func
 {
     const char      *name;              // common name, to be used as an argument in the shell
     const char      *nameInCode;        // name as it appears in the __kernel, usually the same as name, but different for multiplication
@@ -80,14 +80,14 @@ typedef struct Func
     dptr            dfunc;
     float           float_ulps;
     float           double_ulps;
-	float           float_embedded_ulps;
+    float           float_embedded_ulps;
     int             ftz;
     const vtbl      *vtbl;
 }Func;
 
 
 extern const Func  functionList[];
-                                
+
 extern const size_t functionListCount;
 
 

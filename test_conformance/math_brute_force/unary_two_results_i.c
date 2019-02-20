@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,7 +29,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata);
 int TestFunc_DoubleI_Double(const Func *f, MTdata);
 
 #if defined(__cplusplus)
-	extern "C" 
+    extern "C"
 #endif
 const vtbl _unary_two_results_i = { "unary_two_results_i", TestFunc_FloatI_Float, TestFunc_DoubleI_Double };
 
@@ -86,31 +86,31 @@ static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_progr
                         };
     const char **kern = c;
     size_t kernSize = sizeof(c)/sizeof(c[0]);
-    
+
     if( sizeValues[vectorSize] == 3 )
     {
         kern = c3;
         kernSize = sizeof(c3)/sizeof(c3[0]);
     }
-        
+
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
 
     return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);
-    
+
 }
 
 static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl_program *p )
 {
     const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-	                    "__kernel void math_kernel", sizeNames[vectorSize], "( __global double", sizeNames[vectorSize], "* out, __global int", sizeNames[vectorSize], "* out2, __global double", sizeNames[vectorSize], "* in)\n"
+                        "__kernel void math_kernel", sizeNames[vectorSize], "( __global double", sizeNames[vectorSize], "* out, __global int", sizeNames[vectorSize], "* out2, __global double", sizeNames[vectorSize], "* in)\n"
                             "{\n"
                             "   int i = get_global_id(0);\n"
                             "   out[i] = ", name, "( in[i], out2 + i );\n"
                             "}\n"
                         };
     const char *c3[] = {    "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-	                    "__kernel void math_kernel", sizeNames[vectorSize], "( __global double* out, __global int* out2, __global double* in)\n"
+                        "__kernel void math_kernel", sizeNames[vectorSize], "( __global double* out, __global int* out2, __global double* in)\n"
                         "{\n"
                         "   size_t i = get_global_id(0);\n"
                         "   if( i + 1 < get_global_size(0) )\n"
@@ -152,7 +152,7 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl
                     };
     const char **kern = c;
     size_t kernSize = sizeof(c)/sizeof(c[0]);
-    
+
     if( sizeValues[vectorSize] == 3 )
     {
         kern = c3;
@@ -163,7 +163,7 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
 
     return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);
-    
+
 }
 
 typedef struct BuildKernelInfo
@@ -210,19 +210,19 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
     float maxErrorVal = 0.0f;
     float maxErrorVal2 = 0.0f;
-	float float_ulps;
+    float float_ulps;
     uint64_t step = BUFFER_SIZE / sizeof( float );
     int scale = (int)((1ULL<<32) / (16 * BUFFER_SIZE / sizeof( float )) + 1);
     cl_ulong  maxiError;
     if( gWimpyMode )
         step = (1ULL<<32) / 16;
 
-	if( gIsEmbedded )
-		float_ulps = f->float_embedded_ulps;
-	else
-		float_ulps = f->float_ulps;
+    if( gIsEmbedded )
+        float_ulps = f->float_embedded_ulps;
+    else
+        float_ulps = f->float_ulps;
 
-	maxiError = float_ulps == INFINITY ? CL_ULONG_MAX : 0;
+    maxiError = float_ulps == INFINITY ? CL_ULONG_MAX : 0;
 
     // Init the kernels
     BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs, f->nameInCode };
@@ -253,7 +253,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
             vlog_error( "\n*** Error %d in clEnqueueWriteBuffer ***\n", error );
             return error;
         }
-    
+
         // write garbage into output arrays
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -272,7 +272,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
                 goto exit;
             }
         }
-        
+
         // Run the kernels
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -292,14 +292,14 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
         // Get that moving
         if( (error = clFlush(gQueue) ))
             vlog( "clFlush failed\n" );
-        
+
         //Calculate the correctly rounded reference result
         float *r = (float *)gOut_Ref;
         int *r2 = (int *)gOut_Ref2;
         float *s = (float *)gIn;
         for( j = 0; j < BUFFER_SIZE / sizeof( float ); j++ )
             r[j] = (float) f->func.f_fpI( s[j], r2+j );
-                        
+
         // Read the data back
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -317,7 +317,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
 
         if( gSkipCorrectnessTesting )
             break;
-        
+
         //Verify data
         uint32_t *t = (uint32_t *)gOut_Ref;
         int32_t *t2 = (int32_t *)gOut_Ref2;
@@ -327,7 +327,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
             {
                 uint32_t *q = (uint32_t *)(gOut[k]);
                 int32_t *q2 = (int32_t *)(gOut2[k]);
-                
+
                 // If we aren't getting the correctly rounded result
                 if( t[j] != q[j] || t2[j] != q2[j] )
                 {
@@ -346,7 +346,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
                             if( ! fail )
                                 err = 0.0f;
                         }
-        
+
                         // retry per section 6.5.3.3
                         if( IsFloatSubnormal( s[j] ) )
                         {
@@ -357,7 +357,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
                             float err3 = Ulp_Error( test, correct4  );
                             cl_long iErr2 = (long long) q2[j] - (long long) correct5;
                             cl_long iErr3 = (long long) q2[j] - (long long) correct6;
-                            
+
                             // Did +0 work?
                             if( fabsf(err2) <= float_ulps && abs_cl_long( iErr2 ) <= maxiError )
                             {
@@ -372,7 +372,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
                                 iErr = iErr3;
                                 fail = 0;
                             }
-                            
+
                             // retry per section 6.5.3.4
                             if( fail && (IsFloatResultSubnormal(correct2, float_ulps ) || IsFloatResultSubnormal(correct3, float_ulps )) )
                             {
@@ -388,7 +388,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
                     if( fabsf(err ) > maxError )
                     {
                         maxError = fabsf(err);
-                        maxErrorVal = s[j]; 
+                        maxErrorVal = s[j];
                     }
                     if( llabs(iErr) > maxError2 )
                     {
@@ -412,7 +412,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
             fflush(stdout);
         }
     }
-    
+
     if( ! gSkipCorrectnessTesting )
     {
         if( gWimpyMode )
@@ -460,7 +460,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
                     vlog_error( "Error %d at clFinish\n", error );
                     goto exit;
                 }
-            
+
                 uint64_t endTime = GetTime();
                 double time = SubtractTime( endTime, startTime );
                 sum += time;
@@ -480,7 +480,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d)
     vlog( "\n" );
 
 exit:
-    // Release 
+    // Release
     for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
     {
         clReleaseKernel(kernels[k]);
@@ -513,8 +513,8 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
 
     // Init the kernels
     BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs, f->nameInCode };
-    if( (error = ThreadPool_Do( BuildKernel_DoubleFn, 
-                                gMaxVectorSizeIndex - gMinVectorSizeIndex, 
+    if( (error = ThreadPool_Do( BuildKernel_DoubleFn,
+                                gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                 &build_info ) ))
     {
         return error;
@@ -544,7 +544,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
             vlog_error( "\n*** Error %d in clEnqueueWriteBuffer ***\n", error );
             return error;
         }
-    
+
         // write garbage into output arrays
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -563,7 +563,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
                 goto exit;
             }
         }
-        
+
         // Run the kernels
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -583,14 +583,14 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
         // Get that moving
         if( (error = clFlush(gQueue) ))
             vlog( "clFlush failed\n" );
-        
+
         //Calculate the correctly rounded reference result
         double *r = (double *)gOut_Ref;
         int *r2 = (int *)gOut_Ref2;
         double *s = (double *)gIn;
         for( j = 0; j < BUFFER_SIZE / sizeof( double ); j++ )
             r[j] = (double) f->dfunc.f_fpI( s[j], r2+j );
-                        
+
         // Read the data back
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -608,7 +608,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
 
         if( gSkipCorrectnessTesting )
             break;
-        
+
         //Verify data
         uint64_t *t = (uint64_t *)gOut_Ref;
         int32_t *t2 = (int32_t *)gOut_Ref2;
@@ -618,7 +618,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
             {
                 uint64_t *q = (uint64_t *)(gOut[k]);
                 int32_t *q2 = (int32_t *)(gOut2[k]);
-                
+
                 // If we aren't getting the correctly rounded result
                 if( t[j] != q[j] || t2[j] != q2[j] )
                 {
@@ -637,7 +637,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
                             if( ! fail )
                                 err = 0.0f;
                         }
-        
+
                         // retry per section 6.5.3.3
                         if( IsDoubleSubnormal( s[j] ) )
                         {
@@ -648,7 +648,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
                             float err3 = Ulp_Error_Double( test, correct4  );
                             cl_long iErr2 = (long long) q2[j] - (long long) correct5;
                             cl_long iErr3 = (long long) q2[j] - (long long) correct6;
-                            
+
                             // Did +0 work?
                             if( fabsf(err2) <= f->double_ulps && abs_cl_long( iErr2 ) <= maxiError )
                             {
@@ -663,7 +663,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
                                 iErr = iErr3;
                                 fail = 0;
                             }
-                            
+
                             // retry per section 6.5.3.4
                             if( fail && (IsDoubleResultSubnormal( correct2, f->double_ulps ) || IsDoubleResultSubnormal( correct3, f->double_ulps )) )
                             {
@@ -679,7 +679,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
                     if( fabsf(err ) > maxError )
                     {
                         maxError = fabsf(err);
-                        maxErrorVal = s[j]; 
+                        maxErrorVal = s[j];
                     }
                     if( llabs(iErr) > maxError2 )
                     {
@@ -703,7 +703,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
             fflush(stdout);
         }
     }
-    
+
     if( ! gSkipCorrectnessTesting )
     {
         if( gWimpyMode )
@@ -715,7 +715,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
     if( gMeasureTimes )
     {
         //Init input array
-        double *p = (double *)gIn; 
+        double *p = (double *)gIn;
 
         for( j = 0; j < BUFFER_SIZE / sizeof( double ); j++ )
             p[j] = DoubleFromUInt32(genrand_int32(d));
@@ -752,7 +752,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
                     vlog_error( "Error %d at clFinish\n", error );
                     goto exit;
                 }
-            
+
                 uint64_t endTime = GetTime();
                 double time = SubtractTime( endTime, startTime );
                 sum += time;
@@ -774,7 +774,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d)
     vlog( "\n" );
 
 exit:
-    // Release 
+    // Release
     for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
     {
         clReleaseKernel(kernels[k]);

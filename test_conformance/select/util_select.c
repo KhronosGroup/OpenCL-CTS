@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -36,23 +36,23 @@ const char *type_name[kTypeCount] = {
     "uint",   "int",
     "float",  "ulong", "long", "double" };
 
-const size_t type_size[kTypeCount] = { 
+const size_t type_size[kTypeCount] = {
     sizeof(cl_uchar), sizeof(cl_char),
     sizeof(cl_ushort), sizeof(cl_short),
     sizeof(cl_uint), sizeof(cl_int),
     sizeof(cl_float), sizeof(cl_ulong), sizeof(cl_long), sizeof( cl_double ) };
 
 const Type ctype[kTypeCount][2] = {
-    { kuchar,  kchar },	 // uchar
-    { kuchar,  kchar },	 // char
-    { kushort, kshort},	 // ushort
-    { kushort, kshort},	 // short
-    { kuint,   kint  },	 // uint
-    { kuint,   kint  },	 // int
-    { kuint,   kint  },	 // float
-    { kulong,  klong },	 // ulong
-    { kulong,  klong },	 // long
-    { kulong,  klong }	 // double
+    { kuchar,  kchar },     // uchar
+    { kuchar,  kchar },     // char
+    { kushort, kshort},     // ushort
+    { kushort, kshort},     // short
+    { kuint,   kint  },     // uint
+    { kuint,   kint  },     // int
+    { kuint,   kint  },     // float
+    { kulong,  klong },     // ulong
+    { kulong,  klong },     // long
+    { kulong,  klong }     // double
 };
 
 
@@ -92,7 +92,7 @@ void refselect_1i16(void *dest, void *src1, void *src2, void *cmp, size_t count)
     x = (cl_short*) src1;
     y = (cl_short*) src2;
     m = (cl_short*) cmp;
-    
+
     for (i=0; i < count; ++i)
         d[i] = m[i] ? y[i] : x[i];
 }
@@ -123,7 +123,7 @@ void refselect_1i32(void *dest, void *src1, void *src2, void *cmp, size_t count)
 void refselect_1u32(void *dest, void *src1, void *src2, void *cmp, size_t count){
     size_t i;
     cl_uint *d, *x, *y;
-    cl_int *m;  
+    cl_int *m;
     d = (cl_uint*)dest;
     x = (cl_uint*)src1;
     y = (cl_uint*)src2;
@@ -143,7 +143,7 @@ void refselect_1i64(void *dest, void *src1, void *src2, void *cmp, size_t count)
         d[i] = m[i] ? y[i] : x[i];
 }
 
-void refselect_1u64(void *dest, void *src1, void *src2, void *cmp, size_t count) { 
+void refselect_1u64(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_ulong *d, *x, *y;
     cl_long *m;
@@ -155,10 +155,10 @@ void refselect_1u64(void *dest, void *src1, void *src2, void *cmp, size_t count)
         d[i] = m[i] ? y[i] : x[i];
 }
 
-void refselect_1i8u(void *dest, void *src1, void *src2, void *cmp, size_t count) { 
+void refselect_1i8u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_char *d, *x, *y;
-    cl_uchar *m; 
+    cl_uchar *m;
     d = (cl_char*) dest;
     x = (cl_char*) src1;
     y = (cl_char*) src2;
@@ -169,7 +169,7 @@ void refselect_1i8u(void *dest, void *src1, void *src2, void *cmp, size_t count)
 
 void refselect_1u8u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
-    cl_uchar *d, *x, *y, *m; 
+    cl_uchar *d, *x, *y, *m;
     d = (cl_uchar*) dest;
     x = (cl_uchar*) src1;
     y = (cl_uchar*) src2;
@@ -190,7 +190,7 @@ void refselect_1i16u(void *dest, void *src1, void *src2, void *cmp, size_t count
         d[i] = m[i] ? y[i] : x[i];
 }
 
-void refselect_1u16u(void *dest, void *src1, void *src2, void *cmp, size_t count) { 
+void refselect_1u16u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_ushort *d, *x, *y, *m;
     d = (cl_ushort*) dest;
@@ -204,7 +204,7 @@ void refselect_1u16u(void *dest, void *src1, void *src2, void *cmp, size_t count
 void refselect_1i32u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_int *d, *x, *y;
-    cl_uint *m; 
+    cl_uint *m;
     d = (cl_int*) dest;
     x = (cl_int*) src1;
     y = (cl_int*) src2;
@@ -224,7 +224,7 @@ void refselect_1u32u(void *dest, void *src1, void *src2, void *cmp, size_t count
         d[i] = m[i] ? y[i] : x[i];
 }
 
-void refselect_1i64u(void *dest, void *src1, void *src2, void *cmp, size_t count) { 
+void refselect_1i64u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_long *d, *x, *y;
     cl_ulong *m;
@@ -236,9 +236,9 @@ void refselect_1i64u(void *dest, void *src1, void *src2, void *cmp, size_t count
         d[i] = m[i] ? y[i] : x[i];
 }
 
-void refselect_1u64u(void *dest, void *src1, void *src2, void *cmp, size_t count) { 
+void refselect_1u64u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
-    cl_ulong *d, *x, *y, *m; 
+    cl_ulong *d, *x, *y, *m;
     d = (cl_ulong*) dest;
     x = (cl_ulong*) src1;
     y = (cl_ulong*) src2;
@@ -262,7 +262,7 @@ void refselect_ffi(void *dest, void *src1, void *src2, void *cmp, size_t count) 
 void refselect_ffu(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_uint *d, *x, *y;
-    cl_uint *m; 
+    cl_uint *m;
     d = (cl_uint*) dest;
     x = (cl_uint*) src1;
     y = (cl_uint*) src2;
@@ -286,7 +286,7 @@ void refselect_ddi(void *dest, void *src1, void *src2, void *cmp, size_t count) 
 void refselect_ddu(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_long *d, *x, *y;
-    cl_ulong *m; 
+    cl_ulong *m;
     d = (cl_long*) dest;
     x = (cl_long*) src1;
     y = (cl_long*) src2;
@@ -325,7 +325,7 @@ void vrefselect_1i16(void *dest, void *src1, void *src2, void *cmp, size_t count
     x = (cl_short*) src1;
     y = (cl_short*) src2;
     m = (cl_short*) cmp;
-    
+
     for (i=0; i < count; ++i)
         d[i] = (m[i] & 0x8000) ? y[i] : x[i];
 }
@@ -361,7 +361,7 @@ void vrefselect_1u32(void *dest, void *src1, void *src2, void *cmp, size_t count
     x = (cl_uint*) src1;
     y = (cl_uint*) src2;
     m = (cl_int*) cmp;
-    
+
     for (i=0; i < count; ++i)
         d[i] = (m[i] & 0x80000000) ? y[i] : x[i];
 }
@@ -377,7 +377,7 @@ void vrefselect_1i64(void *dest, void *src1, void *src2, void *cmp, size_t count
         d[i] = (m[i] & 0x8000000000000000LL) ? y[i] : x[i];
 }
 
-void vrefselect_1u64(void *dest, void *src1, void *src2, void *cmp, size_t count) { 
+void vrefselect_1u64(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_ulong *d, *x, *y;
     cl_long *m;
@@ -389,10 +389,10 @@ void vrefselect_1u64(void *dest, void *src1, void *src2, void *cmp, size_t count
         d[i] = (m[i] & 0x8000000000000000LL) ? y[i] : x[i];
 }
 
-void vrefselect_1i8u(void *dest, void *src1, void *src2, void *cmp, size_t count) { 
+void vrefselect_1i8u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_char *d, *x, *y;
-    cl_uchar *m; 
+    cl_uchar *m;
     d = (cl_char*) dest;
     x = (cl_char*) src1;
     y = (cl_char*) src2;
@@ -403,7 +403,7 @@ void vrefselect_1i8u(void *dest, void *src1, void *src2, void *cmp, size_t count
 
 void vrefselect_1u8u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
-    cl_uchar *d, *x, *y, *m; 
+    cl_uchar *d, *x, *y, *m;
     d = (cl_uchar*) dest;
     x = (cl_uchar*) src1;
     y = (cl_uchar*) src2;
@@ -424,7 +424,7 @@ void vrefselect_1i16u(void *dest, void *src1, void *src2, void *cmp, size_t coun
         d[i] = (m[i] & 0x8000U) ? y[i] : x[i];
 }
 
-void vrefselect_1u16u(void *dest, void *src1, void *src2, void *cmp, size_t count) { 
+void vrefselect_1u16u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_ushort *d, *x, *y, *m;
     d = (cl_ushort*) dest;
@@ -438,7 +438,7 @@ void vrefselect_1u16u(void *dest, void *src1, void *src2, void *cmp, size_t coun
 void vrefselect_1i32u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_int *d, *x, *y;
-    cl_uint *m; 
+    cl_uint *m;
     d = (cl_int*) dest;
     x = (cl_int*) src1;
     y = (cl_int*) src2;
@@ -458,7 +458,7 @@ void vrefselect_1u32u(void *dest, void *src1, void *src2, void *cmp, size_t coun
         d[i] = (m[i] & 0x80000000U) ? y[i] : x[i];
 }
 
-void vrefselect_1i64u(void *dest, void *src1, void *src2, void *cmp, size_t count) { 
+void vrefselect_1i64u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_long *d, *x, *y;
     cl_ulong *m;
@@ -470,9 +470,9 @@ void vrefselect_1i64u(void *dest, void *src1, void *src2, void *cmp, size_t coun
         d[i] = (m[i] & 0x8000000000000000ULL) ? y[i] : x[i];
 }
 
-void vrefselect_1u64u(void *dest, void *src1, void *src2, void *cmp, size_t count) { 
+void vrefselect_1u64u(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
-    cl_ulong *d, *x, *y, *m; 
+    cl_ulong *d, *x, *y, *m;
     d = (cl_ulong*) dest;
     x = (cl_ulong*) src1;
     y = (cl_ulong*) src2;
@@ -496,7 +496,7 @@ void vrefselect_ffi(void *dest, void *src1, void *src2, void *cmp, size_t count)
 void vrefselect_ffu(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_uint *d, *x, *y;
-    cl_uint *m; 
+    cl_uint *m;
     d = (cl_uint*) dest;
     x = (cl_uint*) src1;
     y = (cl_uint*) src2;
@@ -520,7 +520,7 @@ void vrefselect_ddi(void *dest, void *src1, void *src2, void *cmp, size_t count)
 void vrefselect_ddu(void *dest, void *src1, void *src2, void *cmp, size_t count) {
     size_t i;
     cl_ulong *d, *x, *y;
-    cl_ulong *m; 
+    cl_ulong *m;
     d = (cl_ulong*) dest;
     x = (cl_ulong*) src1;
     y = (cl_ulong*) src2;
@@ -554,7 +554,7 @@ Select vrefSelects[kTypeCount][2] =  {
     { vrefselect_ffu,   vrefselect_ffi  }, // float
     { vrefselect_1u64u, vrefselect_1u64 }, // ulong
     { vrefselect_1i64u, vrefselect_1i64 }, // long
-    { vrefselect_ddu,   vrefselect_ddi  }	 // double
+    { vrefselect_ddu,   vrefselect_ddi  }     // double
 };
 
 
@@ -562,94 +562,94 @@ Select vrefSelects[kTypeCount][2] =  {
 // Check functions
 //-----------------------------------------
 size_t check_uchar(void *test, void *correct, size_t count, size_t vector_size) {
-    const cl_uchar *t = (const cl_uchar *) test; 
-    const cl_uchar *c = (const cl_uchar *) correct; 
+    const cl_uchar *t = (const cl_uchar *) test;
+    const cl_uchar *c = (const cl_uchar *) correct;
     size_t i;
-    
+
     for(i = 0; i < count; i++)
         if (t[i] != c[i]) {
             log_error("\n(check_uchar) Error for vector size %ld found at 0x%8.8lx (of 0x%8.8lx):  "
                       "*0x%2.2x vs 0x%2.2x\n", vector_size, i, count, c[i], t[i]);
             return i + 1;
         }
-    
+
     return 0;
 }
 
 size_t check_char(void *test, void *correct, size_t count, size_t vector_size) {
-    const cl_char *t = (const cl_char *) test; 
-    const cl_char *c = (const cl_char *) correct; 
+    const cl_char *t = (const cl_char *) test;
+    const cl_char *c = (const cl_char *) correct;
     size_t i;
-    
-    
+
+
     for( i = 0; i < count; i++ )
         if( t[i] != c[i] ) {
             log_error("\n(check_char) Error for vector size %ld found at 0x%8.8lx (of 0x%8.8lx):  "
                       "*0x%2.2x vs 0x%2.2x\n", vector_size, i, count, c[i], t[i] );
             return i + 1;
         }
-    
+
     return 0;
 }
 
 size_t check_ushort(void *test, void *correct, size_t count, size_t vector_size) {
-    const cl_ushort *t = (const cl_ushort *) test; 
-    const cl_ushort *c = (const cl_ushort *) correct; 
+    const cl_ushort *t = (const cl_ushort *) test;
+    const cl_ushort *c = (const cl_ushort *) correct;
     size_t i;
-    
-    
+
+
     for( i = 0; i < count; i++ )
         if(t[i] != c[i]) {
             log_error("\n(check_ushort) Error for vector size %ld found at 0x%8.8lx (of 0x%8.8lx):  "
                       "*0x%4.4x vs 0x%4.4x\n", vector_size, i, count, c[i], t[i] );
             return i + 1;
         }
-    
+
     return 0;
 }
 
 size_t check_short(void *test, void *correct, size_t count, size_t vector_size) {
-    const cl_short *t = (const cl_short *) test; 
-    const cl_short *c = (const cl_short *) correct; 
+    const cl_short *t = (const cl_short *) test;
+    const cl_short *c = (const cl_short *) correct;
     size_t i;
-    
-    
+
+
     for (i = 0; i < count; i++)
         if(t[i] != c[i]) {
             log_error("\n(check_short) Error for vector size %ld found at 0x%8.8lx (of 0x%8.8lx):  "
                       "*0x%8.8x vs 0x%8.8x\n", vector_size, i, count, c[i], t[i] );
             return i + 1;
         }
-    
+
     return 0;
 }
 
 size_t check_uint(void *test, void *correct, size_t count, size_t vector_size) {
-    const cl_uint *t = (const cl_uint *) test; 
-    const cl_uint *c = (const cl_uint *) correct; 
+    const cl_uint *t = (const cl_uint *) test;
+    const cl_uint *c = (const cl_uint *) correct;
     size_t i;
-    
-    
-    
+
+
+
     for (i = 0; i < count; i++)
         if(t[i] != c[i]) {
             log_error("\n(check_uint) Error for vector size %ld found at 0x%8.8lx (of 0x%8.8lx):  "
                       "*0x%8.8x vs 0x%8.8x\n", vector_size, i, count, c[i], t[i] );
             return i + 1;
         }
-    
+
     return 0;
 }
 
 size_t check_int(void *test, void *correct, size_t count, size_t vector_size) {
-    const cl_int *t = (const cl_int *) test; 
-    const cl_int *c = (const cl_int *) correct; 
+    const cl_int *t = (const cl_int *) test;
+    const cl_int *c = (const cl_int *) correct;
     size_t i;
-    
-    
+
+
     for(i = 0; i < count; i++)
         if( t[i] != c[i] ) {
-            
+
             log_error("\n(check_int) Error for vector size %ld found at 0x%8.8lx (of 0x%8.8lx):  "
                       "*0x%8.8x vs 0x%8.8x\n", vector_size, i, count, c[i], t[i]);
             log_error("\n(check_int) Error for vector size %ld found at 0x%8.8lx (of 0x%8.8lx):  "
@@ -661,51 +661,51 @@ size_t check_int(void *test, void *correct, size_t count, size_t vector_size) {
             if(i) {
                 log_error("\n(check_int) Error for vector size %ld found just after 0x%8.8lx:  "
                           "*0x%8.8x vs 0x%8.8x\n", vector_size, i-1, c[i-1], t[i-1]);
-            }		
+            }
             return i + 1;
         }
-    
+
     return 0;
 }
 
 size_t check_ulong(void *test, void *correct, size_t count, size_t vector_size) {
-    const cl_ulong *t = (const cl_ulong *) test; 
-    const cl_ulong *c = (const cl_ulong *) correct; 
+    const cl_ulong *t = (const cl_ulong *) test;
+    const cl_ulong *c = (const cl_ulong *) correct;
     size_t i;
-    
-    
+
+
     for( i = 0; i < count; i++ )
         if( t[i] != c[i] ) {
             log_error("\n(check_ulong) Error for vector size %ld found at 0x%8.8lx (of 0x%8.8lx):  "
                       "*0x%16.16llx vs 0x%16.16llx\n", vector_size, i, count, c[i], t[i] );
             return i + 1;
         }
-    
+
     return 0;
 }
 
 size_t check_long(void *test, void *correct, size_t count, size_t vector_size) {
-    const cl_long *t = (const cl_long *) test; 
-    const cl_long *c = (const cl_long *) correct; 
+    const cl_long *t = (const cl_long *) test;
+    const cl_long *c = (const cl_long *) correct;
     size_t i;
-    
-    
+
+
     for(i = 0; i < count; i++ )
         if(t[i] != c[i]) {
             log_error("\n(check_long) Error for vector size %ld found at 0x%8.8lx (of 0x%8.8lx):  "
                       "*0x%16.16llx vs 0x%16.16llx\n", vector_size, i, count, c[i], t[i] );
             return i + 1;
         }
-    
+
     return 0;
 }
 
 size_t check_float( void *test, void *correct, size_t count, size_t vector_size ) {
-    const cl_uint *t = (const cl_uint *) test; 
-    const cl_uint *c = (const cl_uint *) correct; 
+    const cl_uint *t = (const cl_uint *) test;
+    const cl_uint *c = (const cl_uint *) correct;
     size_t i;
-    
-    
+
+
     for( i = 0; i < count; i++ )
         /* Allow nans to be binary different */
         if ((t[i] != c[i]) && !(isnan(((float *)correct)[i]) && isnan(((float *)test)[i]))) {
@@ -713,17 +713,17 @@ size_t check_float( void *test, void *correct, size_t count, size_t vector_size 
                       "*0x%8.8x vs 0x%8.8x\n", vector_size, i, count, c[i], t[i] );
             return i + 1;
         }
-    
+
     return 0;
 }
 
 size_t check_double( void *test, void *correct, size_t count, size_t vector_size ) {
-    const cl_ulong *t = (const cl_ulong *) test; 
-    const cl_ulong *c = (const cl_ulong *) correct; 
+    const cl_ulong *t = (const cl_ulong *) test;
+    const cl_ulong *c = (const cl_ulong *) correct;
     size_t i;
-    
-    
-    
+
+
+
     for( i = 0; i < count; i++ )
         /* Allow nans to be binary different */
         if ((t[i] != c[i]) && !(isnan(((double *)correct)[i]) && isnan(((double *)test)[i]))) {
@@ -731,7 +731,7 @@ size_t check_double( void *test, void *correct, size_t count, size_t vector_size
                       "*0x%16.16llx vs 0x%16.16llx\n", vector_size, i, count, c[i], t[i] );
             return i + 1;
         }
-    
+
     return 0;
 }
 

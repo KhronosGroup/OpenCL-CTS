@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,7 +29,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata);
 int TestFunc_Double_Double_Int(const Func *f, MTdata);
 
 #if defined( __cplusplus)
-	extern "C" 
+    extern "C"
 #endif
 const vtbl _binary_i = { "binary_i", TestFunc_Float_Float_Int, TestFunc_Double_Double_Int };
 
@@ -44,7 +44,7 @@ static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, 
                             "   out[i] = ", name, "( in1[i], in2[i] );\n"
                             "}\n"
                         };
-        
+
     const char *c3[] = {    "__kernel void math_kernel", sizeNames[vectorSize], "( __global float* out, __global float* in, __global int* in2)\n"
                             "{\n"
                             "   size_t i = get_global_id(0);\n"
@@ -87,31 +87,31 @@ static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, 
 
     const char **kern = c;
     size_t kernSize = sizeof(c)/sizeof(c[0]);
-    
+
     if( sizeValues[vectorSize] == 3 )
     {
         kern = c3;
         kernSize = sizeof(c3)/sizeof(c3[0]);
     }
-        
+
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
-   
-    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);     
+
+    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);
 }
 
 static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p )
 {
     const char *c[] = {     "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-	                        "__kernel void math_kernel", sizeNames[vectorSize], "( __global double", sizeNames[vectorSize], "* out, __global double", sizeNames[vectorSize], "* in1, __global int", sizeNames[vectorSize], "* in2 )\n"
+                            "__kernel void math_kernel", sizeNames[vectorSize], "( __global double", sizeNames[vectorSize], "* out, __global double", sizeNames[vectorSize], "* in1, __global int", sizeNames[vectorSize], "* in2 )\n"
                             "{\n"
                             "   int i = get_global_id(0);\n"
                             "   out[i] = ", name, "( in1[i], in2[i] );\n"
                             "}\n"
                         };
-        
+
     const char *c3[] = {    "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-	                        "__kernel void math_kernel", sizeNames[vectorSize], "( __global double* out, __global double* in, __global int* in2)\n"
+                            "__kernel void math_kernel", sizeNames[vectorSize], "( __global double* out, __global double* in, __global int* in2)\n"
                             "{\n"
                             "   size_t i = get_global_id(0);\n"
                             "   if( i + 1 < get_global_size(0) )\n"
@@ -153,17 +153,17 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_c
 
     const char **kern = c;
     size_t kernSize = sizeof(c)/sizeof(c[0]);
-    
+
     if( sizeValues[vectorSize] == 3 )
     {
         kern = c3;
         kernSize = sizeof(c3)/sizeof(c3[0]);
     }
-        
+
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
-   
-    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);     
+
+    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);
 }
 
 typedef struct BuildKernelInfo
@@ -193,25 +193,25 @@ static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, vo
 
 
 // A table of more difficult cases to get right
-static const float specialValuesFloat[] = { 
-    -NAN, -INFINITY, -FLT_MAX, MAKE_HEX_FLOAT(-0x1.000002p64f, -0x1000002L, 40), MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64), MAKE_HEX_FLOAT(-0x1.fffffep63f, -0x1fffffeL, 39),  MAKE_HEX_FLOAT(-0x1.000002p63f, -0x1000002L, 39), MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63), MAKE_HEX_FLOAT(-0x1.fffffep62f, -0x1fffffeL, 38),  
-    MAKE_HEX_FLOAT(-0x1.000002p32f, -0x1000002L, 8), MAKE_HEX_FLOAT(-0x1.0p32f, -0x1L, 32), MAKE_HEX_FLOAT(-0x1.fffffep31f, -0x1fffffeL, 7), MAKE_HEX_FLOAT(-0x1.000002p31f, -0x1000002L, 7), MAKE_HEX_FLOAT(-0x1.0p31f, -0x1L, 31), MAKE_HEX_FLOAT(-0x1.fffffep30f, -0x1fffffeL, 6), -1000.f, -100.f,  -4.0f, -3.5f, 
-    -3.0f, MAKE_HEX_FLOAT(-0x1.800002p1f, -0x1800002L, -23), -2.5f, MAKE_HEX_FLOAT(-0x1.7ffffep1f, -0x17ffffeL, -23), -2.0f, MAKE_HEX_FLOAT(-0x1.800002p0f, -0x1800002L, -24), -1.5f, MAKE_HEX_FLOAT(-0x1.7ffffep0f, -0x17ffffeL, -24),MAKE_HEX_FLOAT(-0x1.000002p0f, -0x1000002L, -24), -1.0f, MAKE_HEX_FLOAT(-0x1.fffffep-1f, -0x1fffffeL, -25), 
-    MAKE_HEX_FLOAT(-0x1.000002p-1f, -0x1000002L, -25), -0.5f, MAKE_HEX_FLOAT(-0x1.fffffep-2f, -0x1fffffeL, -26),  MAKE_HEX_FLOAT(-0x1.000002p-2f, -0x1000002L, -26), -0.25f, MAKE_HEX_FLOAT(-0x1.fffffep-3f, -0x1fffffeL, -27), 
-    MAKE_HEX_FLOAT(-0x1.000002p-126f, -0x1000002L, -150), -FLT_MIN, MAKE_HEX_FLOAT(-0x0.fffffep-126f, -0x0fffffeL, -150), MAKE_HEX_FLOAT(-0x0.000ffep-126f, -0x0000ffeL, -150), MAKE_HEX_FLOAT(-0x0.0000fep-126f, -0x00000feL, -150), MAKE_HEX_FLOAT(-0x0.00000ep-126f, -0x000000eL, -150), MAKE_HEX_FLOAT(-0x0.00000cp-126f, -0x000000cL, -150), MAKE_HEX_FLOAT(-0x0.00000ap-126f, -0x000000aL, -150), 
+static const float specialValuesFloat[] = {
+    -NAN, -INFINITY, -FLT_MAX, MAKE_HEX_FLOAT(-0x1.000002p64f, -0x1000002L, 40), MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64), MAKE_HEX_FLOAT(-0x1.fffffep63f, -0x1fffffeL, 39),  MAKE_HEX_FLOAT(-0x1.000002p63f, -0x1000002L, 39), MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63), MAKE_HEX_FLOAT(-0x1.fffffep62f, -0x1fffffeL, 38),
+    MAKE_HEX_FLOAT(-0x1.000002p32f, -0x1000002L, 8), MAKE_HEX_FLOAT(-0x1.0p32f, -0x1L, 32), MAKE_HEX_FLOAT(-0x1.fffffep31f, -0x1fffffeL, 7), MAKE_HEX_FLOAT(-0x1.000002p31f, -0x1000002L, 7), MAKE_HEX_FLOAT(-0x1.0p31f, -0x1L, 31), MAKE_HEX_FLOAT(-0x1.fffffep30f, -0x1fffffeL, 6), -1000.f, -100.f,  -4.0f, -3.5f,
+    -3.0f, MAKE_HEX_FLOAT(-0x1.800002p1f, -0x1800002L, -23), -2.5f, MAKE_HEX_FLOAT(-0x1.7ffffep1f, -0x17ffffeL, -23), -2.0f, MAKE_HEX_FLOAT(-0x1.800002p0f, -0x1800002L, -24), -1.5f, MAKE_HEX_FLOAT(-0x1.7ffffep0f, -0x17ffffeL, -24),MAKE_HEX_FLOAT(-0x1.000002p0f, -0x1000002L, -24), -1.0f, MAKE_HEX_FLOAT(-0x1.fffffep-1f, -0x1fffffeL, -25),
+    MAKE_HEX_FLOAT(-0x1.000002p-1f, -0x1000002L, -25), -0.5f, MAKE_HEX_FLOAT(-0x1.fffffep-2f, -0x1fffffeL, -26),  MAKE_HEX_FLOAT(-0x1.000002p-2f, -0x1000002L, -26), -0.25f, MAKE_HEX_FLOAT(-0x1.fffffep-3f, -0x1fffffeL, -27),
+    MAKE_HEX_FLOAT(-0x1.000002p-126f, -0x1000002L, -150), -FLT_MIN, MAKE_HEX_FLOAT(-0x0.fffffep-126f, -0x0fffffeL, -150), MAKE_HEX_FLOAT(-0x0.000ffep-126f, -0x0000ffeL, -150), MAKE_HEX_FLOAT(-0x0.0000fep-126f, -0x00000feL, -150), MAKE_HEX_FLOAT(-0x0.00000ep-126f, -0x000000eL, -150), MAKE_HEX_FLOAT(-0x0.00000cp-126f, -0x000000cL, -150), MAKE_HEX_FLOAT(-0x0.00000ap-126f, -0x000000aL, -150),
     MAKE_HEX_FLOAT(-0x0.000008p-126f, -0x0000008L, -150), MAKE_HEX_FLOAT(-0x0.000006p-126f, -0x0000006L, -150), MAKE_HEX_FLOAT(-0x0.000004p-126f, -0x0000004L, -150), MAKE_HEX_FLOAT(-0x0.000002p-126f, -0x0000002L, -150), -0.0f,
-    
-    +NAN, +INFINITY, +FLT_MAX, MAKE_HEX_FLOAT(+0x1.000002p64f, +0x1000002L, 40), MAKE_HEX_FLOAT(+0x1.0p64f, +0x1L, 64), MAKE_HEX_FLOAT(+0x1.fffffep63f, +0x1fffffeL, 39), MAKE_HEX_FLOAT(+0x1.000002p63f, +0x1000002L, 39), MAKE_HEX_FLOAT(+0x1.0p63f, +0x1L, 63), MAKE_HEX_FLOAT(+0x1.fffffep62f, +0x1fffffeL, 38),  
-    MAKE_HEX_FLOAT(+0x1.000002p32f, +0x1000002L, 8), MAKE_HEX_FLOAT(+0x1.0p32f, +0x1L, 32), MAKE_HEX_FLOAT(+0x1.fffffep31f, +0x1fffffeL, 7), MAKE_HEX_FLOAT(+0x1.000002p31f, +0x1000002L, 7), MAKE_HEX_FLOAT(+0x1.0p31f, +0x1L, 31), MAKE_HEX_FLOAT(+0x1.fffffep30f, +0x1fffffeL, 6), +1000.f, +100.f, +4.0f, +3.5f, 
-    +3.0f, MAKE_HEX_FLOAT(+0x1.800002p1f, +0x1800002L, -23), 2.5f, MAKE_HEX_FLOAT(+0x1.7ffffep1f, +0x17ffffeL, -23),+2.0f, MAKE_HEX_FLOAT(+0x1.800002p0f, +0x1800002L, -24), 1.5f, MAKE_HEX_FLOAT(+0x1.7ffffep0f, +0x17ffffeL, -24), MAKE_HEX_FLOAT(+0x1.000002p0f, +0x1000002L, -24), +1.0f, MAKE_HEX_FLOAT(+0x1.fffffep-1f, +0x1fffffeL, -25), 
-    MAKE_HEX_FLOAT(+0x1.000002p-1f, +0x1000002L, -25), +0.5f, MAKE_HEX_FLOAT(+0x1.fffffep-2f, +0x1fffffeL, -26), MAKE_HEX_FLOAT(+0x1.000002p-2f, +0x1000002L, -26), +0.25f, MAKE_HEX_FLOAT(+0x1.fffffep-3f, +0x1fffffeL, -27), 
-    MAKE_HEX_FLOAT(0x1.000002p-126f, 0x1000002L, -150), +FLT_MIN, MAKE_HEX_FLOAT(+0x0.fffffep-126f, +0x0fffffeL, -150), MAKE_HEX_FLOAT(+0x0.000ffep-126f, +0x0000ffeL, -150), MAKE_HEX_FLOAT(+0x0.0000fep-126f, +0x00000feL, -150), MAKE_HEX_FLOAT(+0x0.00000ep-126f, +0x000000eL, -150), MAKE_HEX_FLOAT(+0x0.00000cp-126f, +0x000000cL, -150), MAKE_HEX_FLOAT(+0x0.00000ap-126f, +0x000000aL, -150), 
-    MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150), MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150), MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150), MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150), +0.0f 
+
+    +NAN, +INFINITY, +FLT_MAX, MAKE_HEX_FLOAT(+0x1.000002p64f, +0x1000002L, 40), MAKE_HEX_FLOAT(+0x1.0p64f, +0x1L, 64), MAKE_HEX_FLOAT(+0x1.fffffep63f, +0x1fffffeL, 39), MAKE_HEX_FLOAT(+0x1.000002p63f, +0x1000002L, 39), MAKE_HEX_FLOAT(+0x1.0p63f, +0x1L, 63), MAKE_HEX_FLOAT(+0x1.fffffep62f, +0x1fffffeL, 38),
+    MAKE_HEX_FLOAT(+0x1.000002p32f, +0x1000002L, 8), MAKE_HEX_FLOAT(+0x1.0p32f, +0x1L, 32), MAKE_HEX_FLOAT(+0x1.fffffep31f, +0x1fffffeL, 7), MAKE_HEX_FLOAT(+0x1.000002p31f, +0x1000002L, 7), MAKE_HEX_FLOAT(+0x1.0p31f, +0x1L, 31), MAKE_HEX_FLOAT(+0x1.fffffep30f, +0x1fffffeL, 6), +1000.f, +100.f, +4.0f, +3.5f,
+    +3.0f, MAKE_HEX_FLOAT(+0x1.800002p1f, +0x1800002L, -23), 2.5f, MAKE_HEX_FLOAT(+0x1.7ffffep1f, +0x17ffffeL, -23),+2.0f, MAKE_HEX_FLOAT(+0x1.800002p0f, +0x1800002L, -24), 1.5f, MAKE_HEX_FLOAT(+0x1.7ffffep0f, +0x17ffffeL, -24), MAKE_HEX_FLOAT(+0x1.000002p0f, +0x1000002L, -24), +1.0f, MAKE_HEX_FLOAT(+0x1.fffffep-1f, +0x1fffffeL, -25),
+    MAKE_HEX_FLOAT(+0x1.000002p-1f, +0x1000002L, -25), +0.5f, MAKE_HEX_FLOAT(+0x1.fffffep-2f, +0x1fffffeL, -26), MAKE_HEX_FLOAT(+0x1.000002p-2f, +0x1000002L, -26), +0.25f, MAKE_HEX_FLOAT(+0x1.fffffep-3f, +0x1fffffeL, -27),
+    MAKE_HEX_FLOAT(0x1.000002p-126f, 0x1000002L, -150), +FLT_MIN, MAKE_HEX_FLOAT(+0x0.fffffep-126f, +0x0fffffeL, -150), MAKE_HEX_FLOAT(+0x0.000ffep-126f, +0x0000ffeL, -150), MAKE_HEX_FLOAT(+0x0.0000fep-126f, +0x00000feL, -150), MAKE_HEX_FLOAT(+0x0.00000ep-126f, +0x000000eL, -150), MAKE_HEX_FLOAT(+0x0.00000cp-126f, +0x000000cL, -150), MAKE_HEX_FLOAT(+0x0.00000ap-126f, +0x000000aL, -150),
+    MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150), MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150), MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150), MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150), +0.0f
 };
 static size_t specialValuesFloatCount = sizeof( specialValuesFloat ) / sizeof( specialValuesFloat[0] );
 
 
-static const int specialValuesInt[] = { 0, 1, 2, 3, 126, 127, 128, 0x02000001, 0x04000001, 1465264071, 1488522147, 
+static const int specialValuesInt[] = { 0, 1, 2, 3, 126, 127, 128, 0x02000001, 0x04000001, 1465264071, 1488522147,
                                             -1, -2, -3, -126, -127, -128, -0x02000001, -0x04000001, -1465264071, -1488522147 };
 static size_t specialValuesIntCount = sizeof( specialValuesInt ) / sizeof( specialValuesInt[0] );
 
@@ -327,11 +327,11 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d)
     BuildKernelInfo build_info = { gMinVectorSizeIndex, test_info.threadCount, test_info.k, test_info.programs, f->nameInCode };
     if( (error = ThreadPool_Do( BuildKernel_FloatFn, gMaxVectorSizeIndex - gMinVectorSizeIndex, &build_info ) ))
         goto exit;
-    
+
     // Run the kernels
     error = ThreadPool_Do( TestFloat, (cl_uint) ((1ULL<<32) / test_info.step), &test_info );
 
-    
+
     // Accumulate the arithmetic errors
     for( i = 0; i < test_info.threadCount; i++ )
     {
@@ -342,7 +342,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d)
             maxErrorVal2 = test_info.tinfo[i].maxErrorValue2;
         }
     }
-    
+
     if( error )
         goto exit;
 
@@ -353,7 +353,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d)
         else
             vlog( "passed." );
     }
-    
+
 
     if( gMeasureTimes )
     {
@@ -404,7 +404,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d)
                     vlog_error( "Error %d at clFinish\n", error );
                     goto exit;
                 }
-            
+
                 uint64_t endTime = GetTime();
                 double time = SubtractTime( endTime, startTime );
                 sum += time;
@@ -418,7 +418,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d)
             vlog_perf( clocksPerOp, LOWER_IS_BETTER, "clocks / element", "%sf%s", f->name, sizeNames[j] );
         }
     }
-    
+
     if( ! gSkipCorrectnessTesting )
         vlog( "\t%8.2f @ {%a, %d}", maxError, maxErrorVal, maxErrorVal2 );
     vlog( "\n" );
@@ -447,7 +447,7 @@ exit:
                 clReleaseMemObject(test_info.tinfo[i].outBuf[j]);
             clReleaseCommandQueue(test_info.tinfo[i].tQueue);
         }
-        
+
         free( test_info.tinfo );
     }
 
@@ -480,13 +480,13 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
         {
             vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
             return error;
-        }        
+        }
     }
 
     // Get that moving
     if( (error = clFlush(tinfo->tQueue) ))
         vlog( "clFlush failed\n" );
-            
+
     //Init input array
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
     cl_uint *p2 = (cl_uint *)gIn2 + thread_id * buffer_elements;
@@ -499,8 +499,8 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
         cl_int *ip2 = (cl_int *)p2;
         uint32_t x, y;
 
-	x = (job_id * buffer_elements) % specialValuesFloatCount;
-	y = (job_id * buffer_elements) / specialValuesFloatCount;
+    x = (job_id * buffer_elements) % specialValuesFloatCount;
+    y = (job_id * buffer_elements) / specialValuesFloatCount;
 
         for( ; j < buffer_elements; j++ )
         {
@@ -522,7 +522,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
       p[j] = genrand_int32(d);
       p2[j] = genrand_int32(d);
     }
-        
+
     if( (error = clEnqueueWriteBuffer( tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0, buffer_size, p, 0, NULL, NULL) ))
     {
         vlog_error( "Error: clEnqueueWriteBuffer failed! err: %d\n", error );
@@ -540,15 +540,15 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
         //Wait for the map to finish
         if( (error = clWaitForEvents(1, e + j) ))
         {
-            vlog_error( "Error: clWaitForEvents failed! err: %d\n", error ); 
+            vlog_error( "Error: clWaitForEvents failed! err: %d\n", error );
             goto exit;
         }
         if( (error = clReleaseEvent( e[j] ) ))
         {
-            vlog_error( "Error: clReleaseEvent failed! err: %d\n", error ); 
+            vlog_error( "Error: clReleaseEvent failed! err: %d\n", error );
             goto exit;
         }
-    
+
         // Fill the result buffer with garbage, so that old results don't carry over
         uint32_t pattern = 0xffffdead;
         memset_pattern4(out[j], &pattern, buffer_size);
@@ -562,7 +562,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
         size_t vectorCount = (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id];  //each worker thread has its own copy of the cl_kernel
         cl_program program = job->programs[j];
-        
+
         if( ( error = clSetKernelArg( kernel, 0, sizeof( tinfo->outBuf[j] ), &tinfo->outBuf[j] ))){ LogBuildError(program); return error; }
         if( ( error = clSetKernelArg( kernel, 1, sizeof( tinfo->inBuf ), &tinfo->inBuf ) )) { LogBuildError(program); return error; }
         if( ( error = clSetKernelArg( kernel, 2, sizeof( tinfo->inBuf2 ), &tinfo->inBuf2 ) )) { LogBuildError(program); return error; }
@@ -596,7 +596,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
         {
             vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
             goto exit;
-        }        
+        }
     }
 
     // Wait for the last buffer
@@ -605,7 +605,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
     {
         vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
         goto exit;
-    }        
+    }
 
     //Verify data
     cl_uint *t = (cl_uint *)r;
@@ -614,7 +614,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
         for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
         {
             cl_uint *q = out[k];
-            
+
             // If we aren't getting the correctly rounded result
             if( t[j] != q[j] )
             {
@@ -622,7 +622,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
                 double correct = func.f_fi( s[j], s2[j] );
                 float err = Ulp_Error( test, correct );
                 int fail = ! (fabsf(err) <= ulps);
-                
+
                 if( fail && ftz )
                 {
                     // retry per section 6.5.3.2
@@ -647,7 +647,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
                             err = err2;
                         if( fabsf( err3 ) < fabsf(err ) )
                             err = err3;
-                        
+
                         // retry per section 6.5.3.4
                         if( IsFloatResultSubnormal( correct2, ulps ) || IsFloatResultSubnormal( correct3, ulps ) )
                         {
@@ -657,12 +657,12 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
                         }
                     }
                 }
-                
+
                 if( fabsf(err ) > tinfo->maxError )
                 {
                     tinfo->maxError = fabsf(err);
-                    tinfo->maxErrorValue = s[j]; 
-                    tinfo->maxErrorValue2 = s2[j]; 
+                    tinfo->maxErrorValue = s[j];
+                    tinfo->maxErrorValue2 = s2[j];
                 }
                 if( fail )
                 {
@@ -680,9 +680,9 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
         {
             vlog_error( "Error: clEnqueueUnmapMemObject %d failed 2! err: %d\n", j, error );
             return error;
-        }        
+        }
     }
-   
+
     if( (error = clFlush(tinfo->tQueue) ))
         vlog( "clFlush 3 failed\n" );
 
@@ -695,32 +695,32 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
 
 exit:
     return error;
-    
+
 }
 
 
 
 // A table of more difficult cases to get right
-static const double specialValuesDouble[] = { 
-    -NAN, -INFINITY, -DBL_MAX, MAKE_HEX_DOUBLE(-0x1.0000000000001p64, -0x10000000000001LL, 12), MAKE_HEX_DOUBLE(-0x1.0p64, -0x1LL, 64), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp63, -0x1fffffffffffffLL, 11),  MAKE_HEX_DOUBLE(-0x1.0000000000001p63, -0x10000000000001LL, 11), MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp62, -0x1fffffffffffffLL, 10),  
-    MAKE_HEX_DOUBLE(-0x1.000002p32, -0x1000002LL, 8), MAKE_HEX_DOUBLE(-0x1.0p32, -0x1LL, 32), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp31, -0x1fffffffffffffLL, -21), MAKE_HEX_DOUBLE(-0x1.0000000000001p31, -0x10000000000001LL, -21), MAKE_HEX_DOUBLE(-0x1.0p31, -0x1LL, 31), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp30, -0x1fffffffffffffLL, -22), -1000., -100.,  -4.0, -3.5, 
-    -3.0, MAKE_HEX_DOUBLE(-0x1.8000000000001p1, -0x18000000000001LL, -51), -2.5, MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp1, -0x17ffffffffffffLL, -51), -2.0, MAKE_HEX_DOUBLE(-0x1.8000000000001p0, -0x18000000000001LL, -52), -1.5, MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp0, -0x17ffffffffffffLL, -52),MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52), -1.0, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-1, -0x1fffffffffffffLL, -53), 
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p-1, -0x10000000000001LL, -53), -0.5, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-2, -0x1fffffffffffffLL, -54),  MAKE_HEX_DOUBLE(-0x1.0000000000001p-2, -0x10000000000001LL, -54), -0.25, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-3, -0x1fffffffffffffLL, -55), 
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p-1022, -0x10000000000001LL, -1074), -DBL_MIN, MAKE_HEX_DOUBLE(-0x0.fffffffffffffp-1022, -0x0fffffffffffffLL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000fffp-1022, -0x00000000000fffLL, -1074), MAKE_HEX_DOUBLE(-0x0.00000000000fep-1022, -0x000000000000feLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000ep-1022, -0x0000000000000eLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000cp-1022, -0x0000000000000cLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000ap-1022, -0x0000000000000aLL, -1074), 
-    MAKE_HEX_DOUBLE(-0x0.0000000000008p-1022, -0x00000000000008LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000007p-1022, -0x00000000000007LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000006p-1022, -0x00000000000006LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000005p-1022, -0x00000000000005LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000004p-1022, -0x00000000000004LL, -1074), 
+static const double specialValuesDouble[] = {
+    -NAN, -INFINITY, -DBL_MAX, MAKE_HEX_DOUBLE(-0x1.0000000000001p64, -0x10000000000001LL, 12), MAKE_HEX_DOUBLE(-0x1.0p64, -0x1LL, 64), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp63, -0x1fffffffffffffLL, 11),  MAKE_HEX_DOUBLE(-0x1.0000000000001p63, -0x10000000000001LL, 11), MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp62, -0x1fffffffffffffLL, 10),
+    MAKE_HEX_DOUBLE(-0x1.000002p32, -0x1000002LL, 8), MAKE_HEX_DOUBLE(-0x1.0p32, -0x1LL, 32), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp31, -0x1fffffffffffffLL, -21), MAKE_HEX_DOUBLE(-0x1.0000000000001p31, -0x10000000000001LL, -21), MAKE_HEX_DOUBLE(-0x1.0p31, -0x1LL, 31), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp30, -0x1fffffffffffffLL, -22), -1000., -100.,  -4.0, -3.5,
+    -3.0, MAKE_HEX_DOUBLE(-0x1.8000000000001p1, -0x18000000000001LL, -51), -2.5, MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp1, -0x17ffffffffffffLL, -51), -2.0, MAKE_HEX_DOUBLE(-0x1.8000000000001p0, -0x18000000000001LL, -52), -1.5, MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp0, -0x17ffffffffffffLL, -52),MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52), -1.0, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-1, -0x1fffffffffffffLL, -53),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p-1, -0x10000000000001LL, -53), -0.5, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-2, -0x1fffffffffffffLL, -54),  MAKE_HEX_DOUBLE(-0x1.0000000000001p-2, -0x10000000000001LL, -54), -0.25, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-3, -0x1fffffffffffffLL, -55),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p-1022, -0x10000000000001LL, -1074), -DBL_MIN, MAKE_HEX_DOUBLE(-0x0.fffffffffffffp-1022, -0x0fffffffffffffLL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000fffp-1022, -0x00000000000fffLL, -1074), MAKE_HEX_DOUBLE(-0x0.00000000000fep-1022, -0x000000000000feLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000ep-1022, -0x0000000000000eLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000cp-1022, -0x0000000000000cLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000ap-1022, -0x0000000000000aLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000008p-1022, -0x00000000000008LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000007p-1022, -0x00000000000007LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000006p-1022, -0x00000000000006LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000005p-1022, -0x00000000000005LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000004p-1022, -0x00000000000004LL, -1074),
     MAKE_HEX_DOUBLE(-0x0.0000000000003p-1022, -0x00000000000003LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000002p-1022, -0x00000000000002LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000001p-1022, -0x00000000000001LL, -1074), -0.0,
-    
-    +NAN, +INFINITY, +DBL_MAX, MAKE_HEX_DOUBLE(+0x1.0000000000001p64, +0x10000000000001LL, 12), MAKE_HEX_DOUBLE(+0x1.0p64, +0x1LL, 64), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp63, +0x1fffffffffffffLL, 11),  MAKE_HEX_DOUBLE(+0x1.0000000000001p63, +0x10000000000001LL, 11), MAKE_HEX_DOUBLE(+0x1.0p63, +0x1LL, 63), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp62, +0x1fffffffffffffLL, 10),  
-    MAKE_HEX_DOUBLE(+0x1.000002p32, +0x1000002LL, 8), MAKE_HEX_DOUBLE(+0x1.0p32, +0x1LL, 32), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp31, +0x1fffffffffffffLL, -21), MAKE_HEX_DOUBLE(+0x1.0000000000001p31, +0x10000000000001LL, -21), MAKE_HEX_DOUBLE(+0x1.0p31, +0x1LL, 31), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp30, +0x1fffffffffffffLL, -22), +1000., +100.,  +4.0, +3.5, 
-    +3.0, MAKE_HEX_DOUBLE(+0x1.8000000000001p1, +0x18000000000001LL, -51), +2.5, MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp1, +0x17ffffffffffffLL, -51), +2.0, MAKE_HEX_DOUBLE(+0x1.8000000000001p0, +0x18000000000001LL, -52), +1.5, MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp0, +0x17ffffffffffffLL, -52),MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52), +1.0, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-1, +0x1fffffffffffffLL, -53), 
-    MAKE_HEX_DOUBLE(+0x1.0000000000001p-1, +0x10000000000001LL, -53), +0.5, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-2, +0x1fffffffffffffLL, -54),  MAKE_HEX_DOUBLE(+0x1.0000000000001p-2, +0x10000000000001LL, -54), +0.25, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-3, +0x1fffffffffffffLL, -55), 
-    MAKE_HEX_DOUBLE(+0x1.0000000000001p-1022, +0x10000000000001LL, -1074), +DBL_MIN, MAKE_HEX_DOUBLE(+0x0.fffffffffffffp-1022, +0x0fffffffffffffLL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000fffp-1022, +0x00000000000fffLL, -1074), MAKE_HEX_DOUBLE(+0x0.00000000000fep-1022, +0x000000000000feLL, -1074), MAKE_HEX_DOUBLE(+0x0.000000000000ep-1022, +0x0000000000000eLL, -1074), MAKE_HEX_DOUBLE(+0x0.000000000000cp-1022, +0x0000000000000cLL, -1074), MAKE_HEX_DOUBLE(+0x0.000000000000ap-1022, +0x0000000000000aLL, -1074), 
-    MAKE_HEX_DOUBLE(+0x0.0000000000008p-1022, +0x00000000000008LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000007p-1022, +0x00000000000007LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000006p-1022, +0x00000000000006LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000005p-1022, +0x00000000000005LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000004p-1022, +0x00000000000004LL, -1074), 
+
+    +NAN, +INFINITY, +DBL_MAX, MAKE_HEX_DOUBLE(+0x1.0000000000001p64, +0x10000000000001LL, 12), MAKE_HEX_DOUBLE(+0x1.0p64, +0x1LL, 64), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp63, +0x1fffffffffffffLL, 11),  MAKE_HEX_DOUBLE(+0x1.0000000000001p63, +0x10000000000001LL, 11), MAKE_HEX_DOUBLE(+0x1.0p63, +0x1LL, 63), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp62, +0x1fffffffffffffLL, 10),
+    MAKE_HEX_DOUBLE(+0x1.000002p32, +0x1000002LL, 8), MAKE_HEX_DOUBLE(+0x1.0p32, +0x1LL, 32), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp31, +0x1fffffffffffffLL, -21), MAKE_HEX_DOUBLE(+0x1.0000000000001p31, +0x10000000000001LL, -21), MAKE_HEX_DOUBLE(+0x1.0p31, +0x1LL, 31), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp30, +0x1fffffffffffffLL, -22), +1000., +100.,  +4.0, +3.5,
+    +3.0, MAKE_HEX_DOUBLE(+0x1.8000000000001p1, +0x18000000000001LL, -51), +2.5, MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp1, +0x17ffffffffffffLL, -51), +2.0, MAKE_HEX_DOUBLE(+0x1.8000000000001p0, +0x18000000000001LL, -52), +1.5, MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp0, +0x17ffffffffffffLL, -52),MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52), +1.0, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-1, +0x1fffffffffffffLL, -53),
+    MAKE_HEX_DOUBLE(+0x1.0000000000001p-1, +0x10000000000001LL, -53), +0.5, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-2, +0x1fffffffffffffLL, -54),  MAKE_HEX_DOUBLE(+0x1.0000000000001p-2, +0x10000000000001LL, -54), +0.25, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-3, +0x1fffffffffffffLL, -55),
+    MAKE_HEX_DOUBLE(+0x1.0000000000001p-1022, +0x10000000000001LL, -1074), +DBL_MIN, MAKE_HEX_DOUBLE(+0x0.fffffffffffffp-1022, +0x0fffffffffffffLL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000fffp-1022, +0x00000000000fffLL, -1074), MAKE_HEX_DOUBLE(+0x0.00000000000fep-1022, +0x000000000000feLL, -1074), MAKE_HEX_DOUBLE(+0x0.000000000000ep-1022, +0x0000000000000eLL, -1074), MAKE_HEX_DOUBLE(+0x0.000000000000cp-1022, +0x0000000000000cLL, -1074), MAKE_HEX_DOUBLE(+0x0.000000000000ap-1022, +0x0000000000000aLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000008p-1022, +0x00000000000008LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000007p-1022, +0x00000000000007LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000006p-1022, +0x00000000000006LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000005p-1022, +0x00000000000005LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000004p-1022, +0x00000000000004LL, -1074),
     MAKE_HEX_DOUBLE(+0x0.0000000000003p-1022, +0x00000000000003LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000002p-1022, +0x00000000000002LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074), +0.0,
 };
 static size_t specialValuesDoubleCount = sizeof( specialValuesDouble ) / sizeof( specialValuesDouble[0] );
 
-static const int specialValuesInt2[] = { 0, 1, 2, 3, 1022, 1023, 1024, INT_MIN, INT_MAX, 
+static const int specialValuesInt2[] = { 0, 1, 2, 3, 1022, 1023, 1024, INT_MIN, INT_MAX,
                                             -1, -2, -3, -1022, -1023, -11024, -INT_MAX };
 static size_t specialValuesInt2Count = sizeof( specialValuesInt ) / sizeof( specialValuesInt[0] );
 
@@ -746,7 +746,7 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d)
     test_info.f = f;
     test_info.ulps = f->double_ulps;
     test_info.ftz = f->ftz || gForceFTZ;
-    
+
     // cl_kernels aren't thread safe, so we make one for each vector size for every thread
     for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
     {
@@ -809,12 +809,12 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d)
     BuildKernelInfo build_info = { gMinVectorSizeIndex, test_info.threadCount, test_info.k, test_info.programs, f->nameInCode };
     if( (error = ThreadPool_Do( BuildKernel_DoubleFn, gMaxVectorSizeIndex - gMinVectorSizeIndex, &build_info ) ))
         goto exit;
-    
+
     // Run the kernels
     if( !gSkipCorrectnessTesting )
         error = ThreadPool_Do( TestDouble, (cl_uint) ((1ULL<<32) / test_info.step), &test_info );
 
-    
+
     // Accumulate the arithmetic errors
     for( i = 0; i < test_info.threadCount; i++ )
     {
@@ -825,7 +825,7 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d)
             maxErrorVal2 = test_info.tinfo[i].maxErrorValue2;
         }
     }
-    
+
     if( error )
         goto exit;
 
@@ -836,7 +836,7 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d)
         else
             vlog( "passed." );
     }
-    
+
     if( gMeasureTimes )
     {
         //Init input arrays
@@ -886,7 +886,7 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d)
                     vlog_error( "Error %d at clFinish\n", error );
                     goto exit;
                 }
-            
+
                 uint64_t endTime = GetTime();
                 double time = SubtractTime( endTime, startTime );
                 sum += time;
@@ -902,14 +902,14 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d)
         for( ; j < gMaxVectorSizeIndex; j++ )
             vlog( "\t     -- " );
     }
-    
+
     if( ! gSkipCorrectnessTesting )
         vlog( "\t%8.2f @ {%a, %d}", maxError, maxErrorVal, maxErrorVal2 );
     vlog( "\n" );
 
 
 exit:
-    // Release 
+    // Release
     for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
     {
         clReleaseProgram(test_info.programs[i]);
@@ -932,7 +932,7 @@ exit:
                 clReleaseMemObject(test_info.tinfo[i].outBuf[j]);
             clReleaseCommandQueue(test_info.tinfo[i].tQueue);
         }
-        
+
         free( test_info.tinfo );
     }
 
@@ -966,13 +966,13 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         {
             vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
             return error;
-        }        
+        }
     }
 
     // Get that moving
     if( (error = clFlush(tinfo->tQueue) ))
         vlog( "clFlush failed\n" );
-            
+
     //Init input array
     cl_ulong *p = (cl_ulong *)gIn + thread_id * buffer_elements;
     cl_int *p2 = (cl_int *)gIn2 + thread_id * buffer_elements;
@@ -985,8 +985,8 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         cl_int *ip2 = (cl_int *)p2;
         uint32_t x, y;
 
-	x = (job_id * buffer_elements) % specialValuesDoubleCount;
-	y = (job_id * buffer_elements) / specialValuesDoubleCount;
+    x = (job_id * buffer_elements) % specialValuesDoubleCount;
+    y = (job_id * buffer_elements) / specialValuesDoubleCount;
 
         for( ; j < buffer_elements; j++ )
         {
@@ -1008,7 +1008,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         p[j] = DoubleFromUInt32(genrand_int32(d));
         p2[j] = genrand_int32(d);
     }
-        
+
     if( (error = clEnqueueWriteBuffer( tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0, buffer_size, p, 0, NULL, NULL) ))
     {
         vlog_error( "Error: clEnqueueWriteBuffer failed! err: %d\n", error );
@@ -1026,15 +1026,15 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         //Wait for the map to finish
         if( (error = clWaitForEvents(1, e + j) ))
         {
-            vlog_error( "Error: clWaitForEvents failed! err: %d\n", error ); 
+            vlog_error( "Error: clWaitForEvents failed! err: %d\n", error );
             goto exit;
         }
         if( (error = clReleaseEvent( e[j] ) ))
         {
-            vlog_error( "Error: clReleaseEvent failed! err: %d\n", error ); 
+            vlog_error( "Error: clReleaseEvent failed! err: %d\n", error );
             goto exit;
         }
-    
+
         // Fill the result buffer with garbage, so that old results don't carry over
         uint32_t pattern = 0xffffdead;
         memset_pattern4(out[j], &pattern, buffer_size);
@@ -1048,7 +1048,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         size_t vectorCount = (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id];  //each worker thread has its own copy of the cl_kernel
         cl_program program = job->programs[j];
-        
+
         if( ( error = clSetKernelArg( kernel, 0, sizeof( tinfo->outBuf[j] ), &tinfo->outBuf[j] ))){ LogBuildError(program); return error; }
         if( ( error = clSetKernelArg( kernel, 1, sizeof( tinfo->inBuf ), &tinfo->inBuf ) )) { LogBuildError(program); return error; }
         if( ( error = clSetKernelArg( kernel, 2, sizeof( tinfo->inBuf2 ), &tinfo->inBuf2 ) )) { LogBuildError(program); return error; }
@@ -1066,14 +1066,14 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
 
     if( gSkipCorrectnessTesting )
         return CL_SUCCESS;
-    
+
     //Calculate the correctly rounded reference result
     cl_double *r = (cl_double *)gOut_Ref  + thread_id * buffer_elements;
     cl_double *s = (cl_double *)gIn  + thread_id * buffer_elements;
     cl_int *s2 = (cl_int *)gIn2  + thread_id * buffer_elements;
     for( j = 0; j < buffer_elements; j++ )
         r[j] = (cl_double) func.f_fi( s[j], s2[j] );
-                        
+
     // Read the data back -- no need to wait for the first N-1 buffers. This is an in order queue.
     for( j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++ )
     {
@@ -1082,7 +1082,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         {
             vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
             goto exit;
-        }        
+        }
     }
 
     // Wait for the last buffer
@@ -1091,7 +1091,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
     {
         vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
         goto exit;
-    }        
+    }
 
     //Verify data
     cl_ulong *t = (cl_ulong *)r;
@@ -1100,7 +1100,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
         {
             cl_ulong *q = out[k];
-            
+
             // If we aren't getting the correctly rounded result
             if( t[j] != q[j] )
             {
@@ -1108,7 +1108,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
                 long double correct = func.f_fi( s[j], s2[j] );
                 float err = Ulp_Error_Double( test, correct );
                 int fail = ! (fabsf(err) <= ulps);
-                
+
                 if( fail && ftz )
                 {
                     // retry per section 6.5.3.2
@@ -1131,7 +1131,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
                             err = err2;
                         if( fabsf( err3 ) < fabsf(err ) )
                             err = err3;
-                        
+
                         // retry per section 6.5.3.4
                         if( IsDoubleResultSubnormal( correct2, ulps ) || IsDoubleResultSubnormal( correct3, ulps ) )
                         {
@@ -1141,12 +1141,12 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
                         }
                     }
                 }
-                
+
                 if( fabsf(err ) > tinfo->maxError )
                 {
                     tinfo->maxError = fabsf(err);
-                    tinfo->maxErrorValue = s[j]; 
-                    tinfo->maxErrorValue2 = s2[j]; 
+                    tinfo->maxErrorValue = s[j];
+                    tinfo->maxErrorValue2 = s2[j];
                 }
                 if( fail )
                 {
@@ -1157,16 +1157,16 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
             }
         }
     }
-    
+
     for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
     {
         if( (error = clEnqueueUnmapMemObject( tinfo->tQueue, tinfo->outBuf[j], out[j], 0, NULL, NULL)) )
         {
             vlog_error( "Error: clEnqueueUnmapMemObject %d failed 2! err: %d\n", j, error );
             return error;
-        }        
+        }
     }
-   
+
     if( (error = clFlush(tinfo->tQueue) ))
         vlog( "clFlush 3 failed\n" );
 
@@ -1179,7 +1179,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
 
 exit:
     return error;
-    
+
 }
 
 

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -54,21 +54,21 @@ int     gHasLong = 1;
 
 #define DEFAULT_NUM_ELEMENTS        0x4000
 
-int runTestHarness( int argc, const char *argv[], unsigned int num_fns, 
-                   basefn fnList[], const char *fnNames[], 
+int runTestHarness( int argc, const char *argv[], unsigned int num_fns,
+                   basefn fnList[], const char *fnNames[],
                    int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps )
 {
-	return runTestHarnessWithCheck( argc, argv, num_fns, fnList, fnNames, imageSupportRequired, forceNoContextCreation, queueProps, 
-						  ( imageSupportRequired ) ? verifyImageSupport : NULL );
+    return runTestHarnessWithCheck( argc, argv, num_fns, fnList, fnNames, imageSupportRequired, forceNoContextCreation, queueProps,
+                          ( imageSupportRequired ) ? verifyImageSupport : NULL );
 }
 
-int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns, 
-				 basefn fnList[], const char *fnNames[], 
-				int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps,
-				DeviceCheckFn deviceCheckFn )
+int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
+                 basefn fnList[], const char *fnNames[],
+                int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps,
+                DeviceCheckFn deviceCheckFn )
 {
     test_start();
-    
+
     cl_device_type    device_type = CL_DEVICE_TYPE_DEFAULT;
     cl_uint            num_platforms = 0;
     cl_platform_id     *platforms;
@@ -78,13 +78,13 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
     cl_device_id       *devices = NULL;
     cl_uint            choosen_device_index = 0;
     cl_uint            choosen_platform_index = 0;
-    
+
     int            err, ret;
     char *endPtr;
     unsigned int            i;
     int based_on_env_var = 0;
-    
-    
+
+
     /* Check for environment variable to set device type */
     char *env_mode = getenv( "CL_DEVICE_TYPE" );
     if( env_mode != NULL )
@@ -98,41 +98,41 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
             device_type = CL_DEVICE_TYPE_ACCELERATOR;
         else if( strcmp( env_mode, "default" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
             device_type = CL_DEVICE_TYPE_DEFAULT;
-        else 
-        { 
+        else
+        {
             log_error( "Unknown CL_DEVICE_TYPE env variable setting: %s.\nAborting...\n", env_mode );
             abort();
         }
     }
-    
+
 #if defined( __APPLE__ )
     {
         // report on any unusual library search path indirection
         char *libSearchPath = getenv( "DYLD_LIBRARY_PATH");
         if( libSearchPath )
             log_info( "*** DYLD_LIBRARY_PATH = \"%s\"\n", libSearchPath );
-        
+
         // report on any unusual framework search path indirection
         char *frameworkSearchPath = getenv( "DYLD_FRAMEWORK_PATH");
         if( libSearchPath )
             log_info( "*** DYLD_FRAMEWORK_PATH = \"%s\"\n", frameworkSearchPath );
     }
 #endif
-    
+
     env_mode = getenv( "CL_DEVICE_INDEX" );
     if( env_mode != NULL )
     {
         choosen_device_index = atoi(env_mode);
     }
-    
+
     env_mode = getenv( "CL_PLATFORM_INDEX" );
     if( env_mode != NULL )
     {
         choosen_platform_index = atoi(env_mode);
     }
-    
+
     /* Process the command line arguments */
-    
+
     /* Special case: just list the tests */
     if( ( argc > 1 ) && (!strcmp( argv[ 1 ], "-list" ) || !strcmp( argv[ 1 ], "-h" ) || !strcmp( argv[ 1 ], "--help" )))
     {
@@ -141,7 +141,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
         log_info( "\tpid<num>\t\tIndicates platform at index <num> should be used (default 0).\n" );
         log_info( "\tid<num>\t\tIndicates device at index <num> should be used (default 0).\n" );
         log_info( "\t<device_type>\tcpu|gpu|accelerator|<CL_DEVICE_TYPE_*> (default CL_DEVICE_TYPE_DEFAULT)\n" );
-        
+
         for( i = 0; i < num_fns - 1; i++ )
         {
             log_info( "\t\t%s\n", fnNames[ i ] );
@@ -149,7 +149,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
         test_finish();
         return 0;
     }
-    
+
     /* How are we supposed to seed the random # generators? */
     if( argc > 1 && strcmp( argv[ argc - 1 ], "randomize" ) == 0 )
     {
@@ -162,7 +162,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
     {
         log_info(" Initializing random seed to 0.\n");
     }
-    
+
     /* Do we have an integer to specify the number of elements to pass to tests? */
     if( argc > 1 )
     {
@@ -176,7 +176,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
             argc--;
         }
     }
-    
+
     /* Do we have a CPU/GPU specification? */
     if( argc > 1 )
     {
@@ -201,7 +201,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
             argc--;
         }
     }
-    
+
     /* Did we choose a specific device index? */
     if( argc > 1 )
     {
@@ -211,7 +211,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
             argc--;
         }
     }
-    
+
     /* Did we choose a specific platform index? */
     if( argc > 1 )
     {
@@ -221,7 +221,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
             argc--;
         }
     }
-    
+
     switch( device_type )
     {
         case CL_DEVICE_TYPE_GPU:            log_info( "Requesting GPU device " ); break;
@@ -232,8 +232,8 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
     }
     log_info( based_on_env_var ? "based on environment variable " : "based on command line " );
     log_info( "for platform index %d and device index %d\n", choosen_platform_index, choosen_device_index);
-    
-#if defined( __APPLE__ )    
+
+#if defined( __APPLE__ )
 #if defined( __i386__ ) || defined( __x86_64__ )
 #define    kHasSSE3                0x00000008
 #define kHasSupplementalSSE3    0x00000100
@@ -259,14 +259,14 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
                 log_error( "Error: Unknown CL_MAX_SSE setting: %s\n", env );
                 return -2;
             }
-            
+
             log_info( "*** Environment: CL_MAX_SSE = %s ***\n", env );
             _cpu_capabilities &= ~mask;
         }
     }
 #endif
 #endif
-    
+
     /* Get the platform */
     err = clGetPlatformIDs(0, NULL, &num_platforms);
     if (err) {
@@ -274,21 +274,21 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
         test_finish();
         return -1;
     }
-    
+
     platforms = (cl_platform_id *) malloc( num_platforms * sizeof( cl_platform_id ) );
     if (!platforms || choosen_platform_index >= num_platforms) {
         log_error( "platform index out of range -- choosen_platform_index (%d) >= num_platforms (%d)\n", choosen_platform_index, num_platforms );
         test_finish();
         return -1;
     }
-    
+
     err = clGetPlatformIDs(num_platforms, platforms, NULL);
     if (err) {
         print_error(err, "clGetPlatformIDs failed");
         test_finish();
         return -1;
     }
-    
+
     /* Get the number of requested devices */
     err = clGetDeviceIDs(platforms[choosen_platform_index],  device_type, 0, NULL, &num_devices );
     if (err) {
@@ -296,14 +296,14 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
         test_finish();
         return -1;
     }
-    
+
     devices = (cl_device_id *) malloc( num_devices * sizeof( cl_device_id ) );
     if (!devices || choosen_device_index >= num_devices) {
         log_error( "device index out of range -- choosen_device_index (%d) >= num_devices (%d)\n", choosen_device_index, num_devices );
         test_finish();
         return -1;
     }
-    
+
     /* Get the requested device */
     err = clGetDeviceIDs(platforms[choosen_platform_index],  device_type, num_devices, devices, NULL );
     if (err) {
@@ -311,42 +311,42 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
         test_finish();
         return -1;
     }
-    
+
     device = devices[choosen_device_index];
     free(devices);
     devices = NULL;
     free(platforms);
     platforms = NULL;
-    
+
     if( printDeviceHeader( device ) != CL_SUCCESS )
     {
         test_finish();
         return -1;
-    }  
-    
+    }
+
     cl_device_fp_config fpconfig = 0;
     err = clGetDeviceInfo( device, CL_DEVICE_SINGLE_FP_CONFIG, sizeof( fpconfig ), &fpconfig, NULL );
     if (err) {
         print_error(err, "clGetDeviceInfo for CL_DEVICE_SINGLE_FP_CONFIG failed");
         test_finish();
         return -1;
-    }  
-    
+    }
+
     gFlushDenormsToZero = ( 0 == (fpconfig & CL_FP_DENORM));
     log_info( "Supports single precision denormals: %s\n", gFlushDenormsToZero ? "NO" : "YES" );
     log_info( "sizeof( void*) = %d  (host)\n", (int) sizeof( void* ) );
-    
+
     //detect whether profile of the device is embedded
     char profile[1024] = "";
     err = clGetDeviceInfo(device, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL);
     if (err)
-    {   
-        print_error(err, "clGetDeviceInfo for CL_DEVICE_PROFILE failed\n" );  
+    {
+        print_error(err, "clGetDeviceInfo for CL_DEVICE_PROFILE failed\n" );
         test_finish();
         return -1;
     }
     gIsEmbedded = NULL != strstr(profile, "EMBEDDED_PROFILE");
-    
+
     //detect the floating point capabilities
     cl_device_fp_config floatCapabilities = 0;
     err = clGetDeviceInfo(device, CL_DEVICE_SINGLE_FP_CONFIG, sizeof(floatCapabilities), &floatCapabilities, NULL);
@@ -356,12 +356,12 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
         test_finish();
         return -1;
     }
-    
+
     // Check for problems that only embedded will have
-    if( gIsEmbedded ) 
+    if( gIsEmbedded )
     {
-        //If the device is embedded, we need to detect if the device supports Infinity and NaN 
-        if ((floatCapabilities & CL_FP_INF_NAN) == 0) 
+        //If the device is embedded, we need to detect if the device supports Infinity and NaN
+        if ((floatCapabilities & CL_FP_INF_NAN) == 0)
             gInfNanSupport = 0;
 
         // check the extensions list to see if ulong and long are supported
@@ -386,42 +386,42 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
             test_finish();
             return -1;
         }
-        
+
         if( extensions_string[extensionsStringSize-1] != '\0' )
         {
             log_error( "FAILURE: extensions string for embedded device is not NUL terminated" );
             test_finish();
             return -1;
         }
-        
+
         if( NULL == strstr( extensions_string, "cles_khr_int64" ))
             gHasLong = 0;
-            
+
         free(extensions_string);
     }
-    
+
     if( getenv( "OPENCL_1_0_DEVICE" ) )
     {
         char c_version[1024];
         gIsOpenCL_1_0_Device = 1;
         memset( c_version, 0, sizeof( c_version ) );
-        
+
         if( (err = clGetDeviceInfo( device, CL_DEVICE_OPENCL_C_VERSION, sizeof(c_version), c_version, NULL )) )
         {
             log_error( "FAILURE: unable to get CL_DEVICE_OPENCL_C_VERSION on 1.0 device. (%d)\n", err );
             test_finish();
             return -1;
         }
-        
+
         if( 0 == strncmp( c_version, "OpenCL C 1.0 ", strlen( "OpenCL C 1.0 " ) ) )
         {
             gIsOpenCL_C_1_0_Device = 1;
             log_info( "Device is a OpenCL C 1.0 device\n" );
         }
         else
-            log_info( "Device is a OpenCL 1.0 device, but supports OpenCL C 1.1\n" );        
+            log_info( "Device is a OpenCL 1.0 device, but supports OpenCL C 1.1\n" );
     }
-    
+
     cl_uint device_address_bits = 0;
     if( (err = clGetDeviceInfo( device, CL_DEVICE_ADDRESS_BITS, sizeof( device_address_bits ), &device_address_bits, NULL ) ))
     {
@@ -437,41 +437,41 @@ int runTestHarnessWithCheck( int argc, const char *argv[], unsigned int num_fns,
         test_finish();
         return -1;
     }
-    
-    
+
+
     /* If we have a device checking function, run it */
     if( ( deviceCheckFn != NULL ) && deviceCheckFn( device ) != CL_SUCCESS )
     {
         test_finish();
         return -1;
     }
-    
+
     if (num_elements <= 0)
         num_elements = DEFAULT_NUM_ELEMENTS;
-    
-        // On most platforms which support denorm, default is FTZ off. However, 
+
+        // On most platforms which support denorm, default is FTZ off. However,
         // on some hardware where the reference is computed, default might be flush denorms to zero e.g. arm.
-    	// This creates issues in result verification. Since spec allows the implementation to either flush or 
-    	// not flush denorms to zero, an implementation may choose not be flush i.e. return denorm result whereas
-    	// reference result may be zero (flushed denorm). Hence we need to disable denorm flushing on host side
-    	// where reference is being computed to make sure we get non-flushed reference result. If implementation 
-    	// returns flushed result, we correctly take care of that in verification code. 
-#if defined(__APPLE__) && defined(__arm__)    	
-	    FPU_mode_type oldMode;
-		DisableFTZ( &oldMode );
-#endif		
+        // This creates issues in result verification. Since spec allows the implementation to either flush or
+        // not flush denorms to zero, an implementation may choose not be flush i.e. return denorm result whereas
+        // reference result may be zero (flushed denorm). Hence we need to disable denorm flushing on host side
+        // where reference is being computed to make sure we get non-flushed reference result. If implementation
+        // returns flushed result, we correctly take care of that in verification code.
+#if defined(__APPLE__) && defined(__arm__)
+        FPU_mode_type oldMode;
+        DisableFTZ( &oldMode );
+#endif
 
     int error = parseAndCallCommandLineTests( argc, argv, device, num_fns, fnList, fnNames, forceNoContextCreation, queueProps, num_elements );
- 
- #if defined(__APPLE__) && defined(__arm__)    	
- 	// Restore the old FP mode before leaving.
+
+ #if defined(__APPLE__) && defined(__arm__)
+     // Restore the old FP mode before leaving.
     RestoreFPState( &oldMode );
-#endif    
-    
+#endif
+
     return error;
 }
 
-int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id device, unsigned int num_fns, 
+int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id device, unsigned int num_fns,
                                  basefn *fnList, const char *fnNames[],
                                  int forceNoContextCreation, cl_command_queue_properties queueProps, int num_elements )
 {
@@ -480,13 +480,13 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
     int            fn_to_test = -1;    // initialized to test all.
                                        //    unsigned int threadSize;
     char        partial[512] = { 0 };
-    
-    
+
+
     /* Now that we have an environment, go through our arguments and run tests that match each argument */
     if( argc == 1 )
     {
         /* No actual arguments, so just run all tests */
-        ret = callTestFunctions( fnList, num_fns - 1, fnNames, 
+        ret = callTestFunctions( fnList, num_fns - 1, fnNames,
                                 device, forceNoContextCreation, num_elements, -1, NULL, queueProps );
     }
     else
@@ -525,28 +525,28 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
                     fn_to_test = -1;
                 }
             }
-            
+
             /* Execute this particular test loop  (remember to remove 1 from the function count for the lack of "all" at the end!) */
-            ret += callTestFunctions( fnList, num_fns - 1, fnNames, 
+            ret += callTestFunctions( fnList, num_fns - 1, fnNames,
                                      device, forceNoContextCreation, num_elements,
                                      fn_to_test, partial, queueProps );
         }
     }
-    
+
     if (gTestsFailed == 0) {
-        if (gTestsPassed > 1) 
+        if (gTestsPassed > 1)
             log_info("PASSED %d of %d tests.\n", gTestsPassed, gTestsPassed);
         else if (gTestsPassed > 0)
             log_info("PASSED test.\n");
     } else if (gTestsFailed > 0) {
         if (gTestsFailed+gTestsPassed > 1)
             log_error("FAILED %d of %d tests.\n", gTestsFailed, gTestsFailed+gTestsPassed);
-        else 
+        else
             log_error("FAILED test.\n");
     }
-    
+
     test_finish();
-    
+
     return ret;
 }
 
@@ -556,15 +556,15 @@ int callTestFunctions( basefn functionList[], int numFunctions,
                       cl_device_id deviceToUse, int forceNoContextCreation,
                       int numElementsToUse,
                       int functionIndexToCall, const char *partialName, cl_command_queue_properties queueProps )
-{    
+{
     int numErrors = 0, found = 0, i;
-    
+
     if( functionIndexToCall >= numFunctions )
     {
         log_error( "ERROR: Invalid function index to test!\n" );
         return 1;
     }
-    
+
     if (functionIndexToCall == -1)
     {
         for (i=0; i<numFunctions; i++)
@@ -572,17 +572,17 @@ int callTestFunctions( basefn functionList[], int numFunctions,
             /* If we're matching partial names, skip any that don't match */
             if( partialName != NULL && strncmp( functionNames[i], partialName, strlen( partialName ) ) != 0 )
                 continue;
-            
+
             /* Skip any unimplemented tests */
             if (functionList[i] == 0)
             {
                 log_info("%s test currently not implemented\n", functionNames[i]);
                 continue;
             }
-            
+
             found = 1;
             numErrors += callSingleTestFunction( functionList[i], functionNames[i], deviceToUse, forceNoContextCreation, numElementsToUse, queueProps );
-        }    
+        }
         if( found == 0 && partialName != NULL )
         {
             log_error( "ERROR: Wildcard test name does not match any tests: %s\n", partialName );
@@ -612,12 +612,12 @@ void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, 
 int callSingleTestFunction( basefn functionToCall, const char *functionName,
                            cl_device_id deviceToUse, int forceNoContextCreation,
                            int numElementsToUse, cl_command_queue_properties queueProps )
-{    
+{
     int numErrors = 0, ret;
     cl_int error;
     cl_context context = NULL;
     cl_command_queue queue = NULL;
-    
+
     /* Create a context to work with, unless we're told not to */
     if( !forceNoContextCreation )
     {
@@ -627,19 +627,19 @@ int callSingleTestFunction( basefn functionToCall, const char *functionName,
             print_error( error, "Unable to create testing context" );
             return 1;
         }
-        
+
         queue = clCreateCommandQueue( context, deviceToUse, queueProps, &error );
         if( queue == NULL )
         {
             print_error( error, "Unable to create testing command queue" );
             return 1;
-        }        
+        }
     }
-    
+
     /* Run the test and print the result */
     log_info( "%s...\n", functionName );
     fflush( stdout );
-    
+
     ret = functionToCall( deviceToUse, context, queue, numElementsToUse);        //test_threaded_function( ptr_basefn_list[i], group, context, num_elements);
     if( ret == TEST_NOT_IMPLEMENTED )
     {
@@ -660,7 +660,7 @@ int callSingleTestFunction( basefn functionToCall, const char *functionName,
             gTestsFailed++;
         }
     }
-    
+
     /* Release the context */
     if( !forceNoContextCreation )
     {
@@ -672,7 +672,7 @@ int callSingleTestFunction( basefn functionToCall, const char *functionName,
         clReleaseCommandQueue( queue );
         clReleaseContext( context );
     }
-    
+
     return numErrors;
 }
 
@@ -691,7 +691,7 @@ void checkDeviceTypeOverride( cl_device_type *inOutType )
         else if( strcmp( force_cpu, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
             *inOutType = CL_DEVICE_TYPE_DEFAULT;
     }
-    
+
     switch( *inOutType )
     {
         case CL_DEVICE_TYPE_GPU:            log_info( "Requesting GPU device " ); break;
@@ -701,21 +701,21 @@ void checkDeviceTypeOverride( cl_device_type *inOutType )
         default: break;
     }
     log_info( force_cpu != NULL ? "based on environment variable\n" : "based on command line\n" );
-    
+
 #if defined( __APPLE__ )
     {
         // report on any unusual library search path indirection
         char *libSearchPath = getenv( "DYLD_LIBRARY_PATH");
         if( libSearchPath )
             log_info( "*** DYLD_LIBRARY_PATH = \"%s\"\n", libSearchPath );
-        
+
         // report on any unusual framework search path indirection
         char *frameworkSearchPath = getenv( "DYLD_FRAMEWORK_PATH");
         if( libSearchPath )
             log_info( "*** DYLD_FRAMEWORK_PATH = \"%s\"\n", frameworkSearchPath );
     }
 #endif
-    
+
 }
 
 #if ! defined( __APPLE__ )
@@ -725,12 +725,12 @@ void memset_pattern4(void *dest, const void *src_pattern, size_t bytes )
     size_t count = bytes / 4;
     size_t i;
     uint32_t *d = (uint32_t*)dest;
-    
+
     for( i = 0; i < count; i++ )
         d[i] = pat;
-    
+
     d += i;
-    
+
     bytes &= 3;
     if( bytes )
         memcpy( d, src_pattern, bytes );
@@ -753,15 +753,15 @@ cl_device_id GetOpposingDevice( cl_device_id device )
     cl_device_id *otherDevices;
     cl_uint actualCount;
     cl_platform_id plat;
-    
+
     // Get the platform of the device to use for getting a list of devices
     error = clGetDeviceInfo( device, CL_DEVICE_PLATFORM, sizeof( plat ), &plat, NULL );
-    if( error != CL_SUCCESS ) 
+    if( error != CL_SUCCESS )
     {
         print_error( error, "Unable to get device's platform" );
         return NULL;
     }
-    
+
     // Get a list of all devices
     error = clGetDeviceIDs( plat, CL_DEVICE_TYPE_ALL, 0, NULL, &actualCount );
     if( error != CL_SUCCESS )
@@ -771,19 +771,19 @@ cl_device_id GetOpposingDevice( cl_device_id device )
     }
     otherDevices = (cl_device_id *)malloc(actualCount*sizeof(cl_device_id));
     error = clGetDeviceIDs( plat, CL_DEVICE_TYPE_ALL, actualCount, otherDevices, NULL );
-    if( error != CL_SUCCESS ) 
+    if( error != CL_SUCCESS )
     {
         print_error( error, "Unable to get list of devices" );
         free(otherDevices);
         return NULL;
     }
-    
+
     if( actualCount == 1 )
     {
         free(otherDevices);
         return device;    // NULL means error, returning self means we couldn't find another one
     }
-    
+
     // Loop and just find one that isn't the one we were given
     cl_uint i;
     for( i = 0; i < actualCount; i++ )
@@ -792,7 +792,7 @@ cl_device_id GetOpposingDevice( cl_device_id device )
         {
             cl_device_type newType;
             error = clGetDeviceInfo( otherDevices[ i ], CL_DEVICE_TYPE, sizeof( newType ), &newType, NULL );
-            if( error != CL_SUCCESS ) 
+            if( error != CL_SUCCESS )
             {
                 print_error( error, "Unable to get device type for other device" );
                 free(otherDevices);
@@ -803,7 +803,7 @@ cl_device_id GetOpposingDevice( cl_device_id device )
             return result;
         }
     }
-    
+
     // Should never get here
     free(otherDevices);
     return NULL;

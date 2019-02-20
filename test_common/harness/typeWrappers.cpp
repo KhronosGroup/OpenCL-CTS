@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,21 +32,21 @@
 
 clProtectedImage::clProtectedImage( cl_context context, cl_mem_flags mem_flags, const cl_image_format *fmt, size_t width, cl_int *errcode_ret )
 {
-	cl_int err = Create( context, mem_flags, fmt, width );
-	if( errcode_ret != NULL )
-		*errcode_ret = err;
+    cl_int err = Create( context, mem_flags, fmt, width );
+    if( errcode_ret != NULL )
+        *errcode_ret = err;
 }
 
 cl_int clProtectedImage::Create( cl_context context, cl_mem_flags mem_flags, const cl_image_format *fmt, size_t width )
 {
-	cl_int error;
+    cl_int error;
 #if defined( __APPLE__ )
     int protect_pages = 1;
     cl_device_id devices[16];
     size_t number_of_devices;
     error = clGetContextInfo(context, CL_CONTEXT_DEVICES, sizeof(devices), devices, &number_of_devices);
     test_error(error, "clGetContextInfo for CL_CONTEXT_DEVICES failed");
-    
+
     number_of_devices /= sizeof(cl_device_id);
     for (int i=0; i<(int)number_of_devices; i++) {
         cl_device_type type;
@@ -57,16 +57,16 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_flags mem_flags, con
             break;
         }
     }
-    
+
     if (protect_pages) {
         size_t pixelBytes = get_pixel_bytes(fmt);
         size_t rowBytes = ROUND_SIZE_UP( width * pixelBytes, kPageSize );
         size_t rowStride = rowBytes + kPageSize;
-        
+
         // create backing store
         backingStoreSize = rowStride + 8 * rowStride;
         backingStore = mmap(0, backingStoreSize, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, 0, 0);
-        
+
         // add guard pages
         size_t row;
         char *p = (char*) backingStore;
@@ -82,7 +82,7 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_flags mem_flags, con
         {
             mprotect( p, rowStride, PROT_NONE );    p += rowStride;
         }
-        
+
         if(  getenv( "CL_ALIGN_RIGHT" ) )
         {
             static int spewEnv = 1;
@@ -93,40 +93,40 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_flags mem_flags, con
             }
             imagePtr += rowBytes - pixelBytes * width;
         }
-        
-        image = create_image_1d( context, mem_flags | CL_MEM_USE_HOST_PTR, fmt, width, rowStride, imagePtr, NULL, &error );    
+
+        image = create_image_1d( context, mem_flags | CL_MEM_USE_HOST_PTR, fmt, width, rowStride, imagePtr, NULL, &error );
     } else {
         backingStore = NULL;
         image = create_image_1d( context, mem_flags, fmt, width, 0, NULL, NULL, &error );
-        
+
     }
 #else
-    
+
     backingStore = NULL;
     image = create_image_1d( context, mem_flags, fmt, width, 0, NULL, NULL, &error );
-    
+
 #endif
-	return error;
+    return error;
 }
 
 
 clProtectedImage::clProtectedImage( cl_context context, cl_mem_flags mem_flags, const cl_image_format *fmt, size_t width, size_t height, cl_int *errcode_ret )
 {
-	cl_int err = Create( context, mem_flags, fmt, width, height );
-	if( errcode_ret != NULL )
-		*errcode_ret = err;
+    cl_int err = Create( context, mem_flags, fmt, width, height );
+    if( errcode_ret != NULL )
+        *errcode_ret = err;
 }
 
 cl_int clProtectedImage::Create( cl_context context, cl_mem_flags mem_flags, const cl_image_format *fmt, size_t width, size_t height )
 {
-	cl_int error;
+    cl_int error;
 #if defined( __APPLE__ )
   int protect_pages = 1;
   cl_device_id devices[16];
   size_t number_of_devices;
   error = clGetContextInfo(context, CL_CONTEXT_DEVICES, sizeof(devices), devices, &number_of_devices);
   test_error(error, "clGetContextInfo for CL_CONTEXT_DEVICES failed");
-  
+
   number_of_devices /= sizeof(cl_device_id);
   for (int i=0; i<(int)number_of_devices; i++) {
     cl_device_type type;
@@ -137,16 +137,16 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_flags mem_flags, con
       break;
     }
   }
-  
+
   if (protect_pages) {
     size_t pixelBytes = get_pixel_bytes(fmt);
     size_t rowBytes = ROUND_SIZE_UP( width * pixelBytes, kPageSize );
     size_t rowStride = rowBytes + kPageSize;
-    
+
     // create backing store
     backingStoreSize = height * rowStride + 8 * rowStride;
     backingStore = mmap(0, backingStoreSize, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, 0, 0);
-    
+
     // add guard pages
     size_t row;
     char *p = (char*) backingStore;
@@ -165,7 +165,7 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_flags mem_flags, con
     {
         mprotect( p, rowStride, PROT_NONE );    p += rowStride;
     }
-    
+
     if(  getenv( "CL_ALIGN_RIGHT" ) )
     {
       static int spewEnv = 1;
@@ -176,40 +176,40 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_flags mem_flags, con
       }
       imagePtr += rowBytes - pixelBytes * width;
     }
-    
-      image = create_image_2d( context, mem_flags | CL_MEM_USE_HOST_PTR, fmt, width, height, rowStride, imagePtr, &error );    
+
+      image = create_image_2d( context, mem_flags | CL_MEM_USE_HOST_PTR, fmt, width, height, rowStride, imagePtr, &error );
   } else {
     backingStore = NULL;
       image = create_image_2d( context, mem_flags, fmt, width, height, 0, NULL, &error );
 
   }
 #else
-  
+
   backingStore = NULL;
   image = create_image_2d( context, mem_flags, fmt, width, height, 0, NULL, &error );
-  
+
 #endif
-	return error;
+    return error;
 }
 
 clProtectedImage::clProtectedImage( cl_context context, cl_mem_flags mem_flags, const cl_image_format *fmt, size_t width, size_t height, size_t depth, cl_int *errcode_ret )
 {
-	cl_int err = Create( context, mem_flags, fmt, width, height, depth );
-	if( errcode_ret != NULL )
-		*errcode_ret = err;
+    cl_int err = Create( context, mem_flags, fmt, width, height, depth );
+    if( errcode_ret != NULL )
+        *errcode_ret = err;
 }
 
 cl_int clProtectedImage::Create( cl_context context, cl_mem_flags mem_flags, const cl_image_format *fmt, size_t width, size_t height, size_t depth )
-{	
-	cl_int error;
-	
+{
+    cl_int error;
+
 #if defined( __APPLE__ )
   int protect_pages = 1;
   cl_device_id devices[16];
   size_t number_of_devices;
   error = clGetContextInfo(context, CL_CONTEXT_DEVICES, sizeof(devices), devices, &number_of_devices);
   test_error(error, "clGetContextInfo for CL_CONTEXT_DEVICES failed");
-  
+
   number_of_devices /= sizeof(cl_device_id);
   for (int i=0; i<(int)number_of_devices; i++) {
     cl_device_type type;
@@ -220,16 +220,16 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_flags mem_flags, con
       break;
     }
   }
-  
+
   if (protect_pages) {
     size_t pixelBytes = get_pixel_bytes(fmt);
     size_t rowBytes = ROUND_SIZE_UP( width * pixelBytes, kPageSize );
     size_t rowStride = rowBytes + kPageSize;
-    
+
     // create backing store
     backingStoreSize = height * depth * rowStride + 8 * rowStride;
     backingStore = mmap(0, backingStoreSize, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, 0, 0);
-	  
+
     // add guard pages
     size_t row;
     char *p = (char*) backingStore;
@@ -259,40 +259,40 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_flags mem_flags, con
         }
         imagePtr += rowBytes - pixelBytes * width;
     }
-    
-    image = create_image_3d( context, mem_flags | CL_MEM_USE_HOST_PTR, fmt, width, height, depth, rowStride, height*rowStride, imagePtr, &error );    
+
+    image = create_image_3d( context, mem_flags | CL_MEM_USE_HOST_PTR, fmt, width, height, depth, rowStride, height*rowStride, imagePtr, &error );
   } else {
     backingStore = NULL;
     image = create_image_3d( context, mem_flags, fmt, width, height, depth, 0, 0, NULL, &error );
   }
 #else
-	
+
     backingStore = NULL;
     image = create_image_3d( context, mem_flags, fmt, width, height, depth, 0, 0, NULL, &error );
-	
+
 #endif
 
-	return error;
+    return error;
 }
 
 
 clProtectedImage::clProtectedImage( cl_context context, cl_mem_object_type imageType, cl_mem_flags mem_flags, const cl_image_format *fmt, size_t width, size_t height, size_t depth, size_t arraySize, cl_int *errcode_ret )
 {
-	cl_int err = Create( context, imageType, mem_flags, fmt, width, height, depth, arraySize );
-	if( errcode_ret != NULL )
-		*errcode_ret = err;
+    cl_int err = Create( context, imageType, mem_flags, fmt, width, height, depth, arraySize );
+    if( errcode_ret != NULL )
+        *errcode_ret = err;
 }
 
 cl_int clProtectedImage::Create( cl_context context, cl_mem_object_type imageType, cl_mem_flags mem_flags, const cl_image_format *fmt, size_t width, size_t height, size_t depth, size_t arraySize )
 {
-	cl_int error;
+    cl_int error;
 #if defined( __APPLE__ )
     int protect_pages = 1;
     cl_device_id devices[16];
     size_t number_of_devices;
     error = clGetContextInfo(context, CL_CONTEXT_DEVICES, sizeof(devices), devices, &number_of_devices);
     test_error(error, "clGetContextInfo for CL_CONTEXT_DEVICES failed");
-    
+
     number_of_devices /= sizeof(cl_device_id);
     for (int i=0; i<(int)number_of_devices; i++) {
         cl_device_type type;
@@ -303,12 +303,12 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_object_type imageTyp
             break;
         }
     }
-    
+
     if (protect_pages) {
         size_t pixelBytes = get_pixel_bytes(fmt);
         size_t rowBytes = ROUND_SIZE_UP( width * pixelBytes, kPageSize );
         size_t rowStride = rowBytes + kPageSize;
-        
+
         // create backing store
         switch (imageType)
         {
@@ -329,7 +329,7 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_object_type imageTyp
                 break;
         }
         backingStore = mmap(0, backingStoreSize, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, 0, 0);
-        
+
         // add guard pages
         size_t row;
         char *p = (char*) backingStore;
@@ -349,7 +349,7 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_object_type imageTyp
         {
             mprotect( p, rowStride, PROT_NONE );    p += rowStride;
         }
-        
+
         if(  getenv( "CL_ALIGN_RIGHT" ) )
         {
             static int spewEnv = 1;
@@ -360,7 +360,7 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_object_type imageTyp
             }
             imagePtr += rowBytes - pixelBytes * width;
         }
-        
+
         switch (imageType)
         {
             case CL_MEM_OBJECT_IMAGE1D:
@@ -399,10 +399,10 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_object_type imageTyp
                 image = create_image_2d_array( context, mem_flags, fmt, width, height, arraySize, 0, 0, NULL, &error );
                 break;
         }
-        
+
     }
 #else
-    
+
     backingStore = NULL;
     switch (imageType)
     {
@@ -423,7 +423,7 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_object_type imageTyp
             break;
     }
 #endif
-	return error;
+    return error;
 }
 
 
@@ -433,21 +433,21 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_object_type imageTyp
  *******/
 clProtectedArray::clProtectedArray()
 {
-	mBuffer = mValidBuffer = NULL;
+    mBuffer = mValidBuffer = NULL;
 }
 
 clProtectedArray::clProtectedArray( size_t sizeInBytes )
 {
-	mBuffer = mValidBuffer = NULL;
-	Allocate( sizeInBytes );
+    mBuffer = mValidBuffer = NULL;
+    Allocate( sizeInBytes );
 }
 
 clProtectedArray::~clProtectedArray()
 {
-	if( mBuffer != NULL ) {
+    if( mBuffer != NULL ) {
 #if defined( __APPLE__ )
-		int error = munmap( mBuffer, mRealSize );
-  	if (error) log_error("WARNING: munmap failed in clProtectedArray.\n");
+        int error = munmap( mBuffer, mRealSize );
+      if (error) log_error("WARNING: munmap failed in clProtectedArray.\n");
 #else
     free( mBuffer );
 #endif
@@ -459,23 +459,23 @@ void clProtectedArray::Allocate( size_t sizeInBytes )
 
 #if defined( __APPLE__ )
 
-	// Allocate enough space to: round up our actual allocation to an even number of pages
-	// and allocate two pages on either side
-	mRoundedSize = ROUND_SIZE_UP( sizeInBytes, kPageSize );
-	mRealSize = mRoundedSize + kPageSize * 2;
-	
-	// Use mmap here to ensure we start on a page boundary, so the mprotect calls will work OK
-    mBuffer = (char *)mmap(0, mRealSize, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, 0, 0);
-	
-	mValidBuffer = mBuffer + kPageSize;
+    // Allocate enough space to: round up our actual allocation to an even number of pages
+    // and allocate two pages on either side
+    mRoundedSize = ROUND_SIZE_UP( sizeInBytes, kPageSize );
+    mRealSize = mRoundedSize + kPageSize * 2;
 
-	// Protect guard area from access
-	mprotect( mValidBuffer - kPageSize, kPageSize, PROT_NONE );
-	mprotect( mValidBuffer + mRoundedSize, kPageSize, PROT_NONE );
+    // Use mmap here to ensure we start on a page boundary, so the mprotect calls will work OK
+    mBuffer = (char *)mmap(0, mRealSize, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, 0, 0);
+
+    mValidBuffer = mBuffer + kPageSize;
+
+    // Protect guard area from access
+    mprotect( mValidBuffer - kPageSize, kPageSize, PROT_NONE );
+    mprotect( mValidBuffer + mRoundedSize, kPageSize, PROT_NONE );
 #else
   mRoundedSize = mRealSize = sizeInBytes;
   mBuffer = mValidBuffer = (char *)calloc(1, mRealSize);
-#endif  
+#endif
 }
 
 

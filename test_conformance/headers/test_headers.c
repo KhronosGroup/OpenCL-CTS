@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -35,7 +35,7 @@
     #define test_start()
     #define log_info printf
     #define log_error printf
-    #define log_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,		\
+    #define log_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,        \
                         _higherBetter?"higher is better":"lower is better", _number )
     #define test_finish()
     #define vlog_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,    \
@@ -94,21 +94,21 @@ void test_char( void )
     log_info("__cl_char2:  %d %d \n", ((cl_char*)&v2)[0], ((cl_char*)&v2)[1] );
 #else
     log_info( "__cl_char2 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_CHAR4__ )
     __cl_char4 v4 = b4.v4;
     log_info("__cl_char4:  %d %d %d %d \n", ((cl_char*)&v4)[0], ((cl_char*)&v4)[1], ((cl_char*)&v4)[2], ((cl_char*)&v4)[3] );
 #else
     log_info( "__cl_char4 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_CHAR8__ )
     __cl_char8 v8 = b8.v8;
     log_info("__cl_char8:  %d %d %d %d %d %d %d %d \n", ((cl_char*)&v8)[0], ((cl_char*)&v8)[1], ((cl_char*)&v8)[2], ((cl_char*)&v8)[3], ((cl_char*)&v8)[4], ((cl_char*)&v8)[5], ((cl_char*)&v8)[6], ((cl_char*)&v8)[7] );
 #else
     log_info( "__cl_char8 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_CHAR16__ )
     __cl_char16 v16 = b16.v16;
@@ -116,7 +116,7 @@ void test_char( void )
                                                                       ((cl_char*)&v16)[8], ((cl_char*)&v16)[9], ((cl_char*)&v16)[10], ((cl_char*)&v16)[11], ((cl_char*)&v16)[12], ((cl_char*)&v16)[13], ((cl_char*)&v16)[14], ((cl_char*)&v16)[15]);
 #else
     log_info( "__cl_char16 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
     log_info( "\n" );
 }
@@ -153,21 +153,21 @@ void test_uchar( void )
     log_info("__cl_uchar2:  %d %d \n", ((uchar*)&v2)[0], ((cl_uchar*)&v2)[1] );
 #else
     log_info( "__cl_uchar2 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_UCHAR4__ )
     __cl_uchar4 v4 = b4.v4;
     log_info("__cl_uchar4:  %d %d %d %d \n", ((uchar*)&v4)[0], ((cl_uchar*)&v4)[1], ((cl_uchar*)&v4)[2], ((cl_uchar*)&v4)[3] );
 #else
     log_info( "__cl_uchar4 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_UCHAR8__ )
     __cl_uchar8 v8 = b8.v8;
     log_info("__cl_uchar8:  %d %d %d %d %d %d %d %d \n", ((cl_uchar*)&v8)[0], ((cl_uchar*)&v8)[1], ((cl_uchar*)&v8)[2], ((cl_uchar*)&v8)[3], ((cl_uchar*)&v8)[4], ((cl_uchar*)&v8)[5], ((cl_uchar*)&v8)[6], ((cl_uchar*)&v8)[7] );
 #else
     log_info( "__cl_uchar8 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_UCHAR16__ )
     __cl_uchar16 v16 = b16.v16;
@@ -175,7 +175,7 @@ void test_uchar( void )
                                                                       ((cl_uchar*)&v16)[8], ((cl_uchar*)&v16)[9], ((cl_uchar*)&v16)[10], ((cl_uchar*)&v16)[11], ((cl_uchar*)&v16)[12], ((cl_uchar*)&v16)[13], ((cl_uchar*)&v16)[14], ((cl_uchar*)&v16)[15]);
 #else
     log_info( "__cl_uchar16 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
     log_info( "\n" );
 }
@@ -212,21 +212,21 @@ void test_short( void )
     log_info("__cl_short2:  %d %d \n", ((cl_short*)&v2)[0], ((cl_short*)&v2)[1] );
 #else
     log_info( "__cl_short2 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_SHORT4__ )
     __cl_short4 v4 = b4.v4;
     log_info("__cl_short4:  %d %d %d %d \n", ((cl_short*)&v4)[0], ((cl_short*)&v4)[1], ((cl_short*)&v4)[2], ((cl_short*)&v4)[3] );
 #else
     log_info( "__cl_short4 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_SHORT8__ )
     __cl_short8 v8 = b8.v8;
     log_info("__cl_short8:  %d %d %d %d %d %d %d %d \n", ((cl_short*)&v8)[0], ((cl_short*)&v8)[1], ((cl_short*)&v8)[2], ((cl_short*)&v8)[3], ((cl_short*)&v8)[4], ((cl_short*)&v8)[5], ((cl_short*)&v8)[6], ((cl_short*)&v8)[7] );
 #else
     log_info( "__cl_short8 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_SHORT16__ )
     __cl_short16 v16 = b16.v16;
@@ -234,7 +234,7 @@ void test_short( void )
                                                                       ((cl_short*)&v16)[9], ((cl_short*)&v16)[10], ((cl_short*)&v16)[11], ((cl_short*)&v16)[12], ((cl_short*)&v16)[13], ((cl_short*)&v16)[14], ((cl_short*)&v16)[15], ((cl_short*)&v16)[16]);
 #else
     log_info( "__cl_short16 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
     log_info( "\n" );
 }
@@ -271,21 +271,21 @@ void test_ushort( void )
     log_info("__cl_ushort2:  %d %d \n", ((unsigned short*)&v2)[0], ((unsigned short*)&v2)[1] );
 #else
     log_info( "__cl_ushort2 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_USHORT4__ )
     __cl_ushort4 v4 = b4.v4;
     log_info("__cl_ushort4:  %d %d %d %d \n", ((unsigned short*)&v4)[0], ((unsigned short*)&v4)[1], ((unsigned short*)&v4)[2], ((unsigned short*)&v4)[3] );
 #else
     log_info( "__cl_ushort4 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_USHORT8__ )
     __cl_ushort8 v8 = b8.v8;
     log_info("__cl_ushort8:  %d %d %d %d %d %d %d %d \n", ((unsigned short*)&v8)[0], ((unsigned short*)&v8)[1], ((unsigned short*)&v8)[2], ((unsigned short*)&v8)[3], ((unsigned short*)&v8)[4], ((unsigned short*)&v8)[5], ((unsigned short*)&v8)[6], ((unsigned short*)&v8)[7] );
 #else
     log_info( "__cl_ushort8 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_USHORT16__ )
     __cl_ushort16 v16 = b16.v16;
@@ -293,7 +293,7 @@ void test_ushort( void )
                                                                       ((unsigned short*)&v16)[9], ((unsigned short*)&v16)[10], ((unsigned short*)&v16)[11], ((unsigned short*)&v16)[12], ((unsigned short*)&v16)[13], ((unsigned short*)&v16)[14], ((unsigned short*)&v16)[15], ((unsigned short*)&v16)[16]);
 #else
     log_info( "__cl_ushort16 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
     log_info( "\n" );
 }
@@ -330,21 +330,21 @@ void test_int( void )
     log_info("__cl_int2:  %d %d \n", ((cl_int*)&v2)[0], ((cl_int*)&v2)[1] );
 #else
     log_info( "__cl_int2 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_INT4__ )
     __cl_int4 v4 = b4.v4;
     log_info("__cl_int4:  %d %d %d %d \n", ((cl_int*)&v4)[0], ((cl_int*)&v4)[1], ((cl_int*)&v4)[2], ((cl_int*)&v4)[3] );
 #else
     log_info( "__cl_int4 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_INT8__ )
     __cl_int8 v8 = b8.v8;
     log_info("__cl_int8:  %d %d %d %d %d %d %d %d \n", ((cl_int*)&v8)[0], ((cl_int*)&v8)[1], ((cl_int*)&v8)[2], ((cl_int*)&v8)[3], ((cl_int*)&v8)[4], ((cl_int*)&v8)[5], ((cl_int*)&v8)[6], ((cl_int*)&v8)[7] );
 #else
     log_info( "__cl_int8 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_INT16__ )
     __cl_int16 v16 = b16.v16;
@@ -352,7 +352,7 @@ void test_int( void )
                                                                       ((cl_int*)&v16)[9], ((cl_int*)&v16)[10], ((cl_int*)&v16)[11], ((cl_int*)&v16)[12], ((cl_int*)&v16)[13], ((cl_int*)&v16)[14], ((cl_int*)&v16)[15], ((cl_int*)&v16)[16]);
 #else
     log_info( "__cl_int16 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
     log_info( "\n" );
 }
@@ -389,21 +389,21 @@ void test_uint( void )
     log_info("__cl_uint2:  %d %d \n", ((cl_uint*)&v2)[0], ((cl_uint*)&v2)[1] );
 #else
     log_info( "__cl_uint2 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_UINT4__ )
     __cl_uint4 v4 = b4.v4;
     log_info("__cl_uint4:  %d %d %d %d \n", ((cl_uint*)&v4)[0], ((cl_uint*)&v4)[1], ((cl_uint*)&v4)[2], ((cl_uint*)&v4)[3] );
 #else
     log_info( "__cl_uint4 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_UINT8__ )
     __cl_uint8 v8 = b8.v8;
     log_info("__cl_uint8:  %d %d %d %d %d %d %d %d \n", ((cl_uint*)&v8)[0], ((cl_uint*)&v8)[1], ((cl_uint*)&v8)[2], ((cl_uint*)&v8)[3], ((cl_uint*)&v8)[4], ((cl_uint*)&v8)[5], ((cl_uint*)&v8)[6], ((cl_uint*)&v8)[7] );
 #else
     log_info( "__cl_uint8 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_UINT16__ )
     __cl_uint16 v16 = b16.v16;
@@ -411,7 +411,7 @@ void test_uint( void )
                                                                       ((cl_uint*)&v16)[9], ((cl_uint*)&v16)[10], ((cl_uint*)&v16)[11], ((cl_uint*)&v16)[12], ((cl_uint*)&v16)[13], ((cl_uint*)&v16)[14], ((cl_uint*)&v16)[15], ((cl_uint*)&v16)[16]);
 #else
     log_info( "__cl_uint16 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
     log_info( "\n" );
 }
@@ -448,21 +448,21 @@ void test_long( void )
     log_info("__cl_long2:  %lld %lld \n", ((cl_long*)&v2)[0], ((cl_long*)&v2)[1] );
 #else
     log_info( "__cl_long2 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_LONG4__ )
     __cl_long4 v4 = b4.v4;
     log_info("__cl_long4:  %lld %lld %lld %lld \n", ((cl_long*)&v4)[0], ((cl_long*)&v4)[1], ((cl_long*)&v4)[2], ((cl_long*)&v4)[3] );
 #else
     log_info( "__cl_long4 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_LONG8__ )
     __cl_long8 v8 = b8.v8;
     log_info("__cl_long8:  %lld %lld %lld %lld %lld %lld %lld %lld \n", ((cl_long*)&v8)[0], ((cl_long*)&v8)[1], ((cl_long*)&v8)[2], ((cl_long*)&v8)[3], ((cl_long*)&v8)[4], ((cl_long*)&v8)[5], ((cl_long*)&v8)[6], ((cl_long*)&v8)[7] );
 #else
     log_info( "__cl_long8 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_LONG16__ )
     __cl_long16 v16 = b16.v16;
@@ -470,7 +470,7 @@ void test_long( void )
                                                                       ((cl_long*)&v16)[9], ((cl_long*)&v16)[10], ((cl_long*)&v16)[11], ((cl_long*)&v16)[12], ((cl_long*)&v16)[13], ((cl_long*)&v16)[14], ((cl_long*)&v16)[15], ((cl_long*)&v16)[16]);
 #else
     log_info( "__cl_long16 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
     log_info( "\n" );
 }
@@ -507,21 +507,21 @@ void test_ulong( void )
     log_info("__cl_ulong2:  %lld %lld \n", ((cl_ulong*)&v2)[0], ((cl_ulong*)&v2)[1] );
 #else
     log_info( "__cl_ulong2 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_ULONG4__ )
     __cl_ulong4 v4 = b4.v4;
     log_info("__cl_ulong4:  %lld %lld %lld %lld \n", ((cl_ulong*)&v4)[0], ((cl_ulong*)&v4)[1], ((cl_ulong*)&v4)[2], ((cl_ulong*)&v4)[3] );
 #else
     log_info( "__cl_ulong4 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_ULONG8__ )
     __cl_ulong8 v8 = b8.v8;
     log_info("__cl_ulong8:  %lld %lld %lld %lld %lld %lld %lld %lld \n", ((cl_ulong*)&v8)[0], ((cl_ulong*)&v8)[1], ((cl_ulong*)&v8)[2], ((cl_ulong*)&v8)[3], ((cl_ulong*)&v8)[4], ((cl_ulong*)&v8)[5], ((cl_ulong*)&v8)[6], ((cl_ulong*)&v8)[7] );
 #else
     log_info( "__cl_ulong8 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_ULONG16__ )
     __cl_ulong16 v16 = b16.v16;
@@ -529,7 +529,7 @@ void test_ulong( void )
                                                                       ((cl_ulong*)&v16)[9], ((cl_ulong*)&v16)[10], ((cl_ulong*)&v16)[11], ((cl_ulong*)&v16)[12], ((cl_ulong*)&v16)[13], ((cl_ulong*)&v16)[14], ((cl_ulong*)&v16)[15], ((cl_ulong*)&v16)[16]);
 #else
     log_info( "__cl_ulong16 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
     log_info( "\n" );
 }
@@ -567,21 +567,21 @@ void test_float( void )
     log_info("__cl_float2:  %f %f \n", ((cl_float*)&v2)[0], ((cl_float*)&v2)[1] );
 #else
     log_info( "__cl_float2 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_FLOAT4__ )
     __cl_float4 v4 = b4.v4;
     log_info("__cl_float4:  %f %f %f %f \n", ((cl_float*)&v4)[0], ((cl_float*)&v4)[1], ((cl_float*)&v4)[2], ((cl_float*)&v4)[3] );
 #else
     log_info( "__cl_float4 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_FLOAT8__ )
     __cl_float8 v8 = b8.v8;
     log_info("__cl_float8:  %f %f %f %f %f %f %f %f \n", ((cl_float*)&v8)[0], ((cl_float*)&v8)[1], ((cl_float*)&v8)[2], ((cl_float*)&v8)[3], ((cl_float*)&v8)[4], ((cl_float*)&v8)[5], ((cl_float*)&v8)[6], ((cl_float*)&v8)[7] );
 #else
     log_info( "__cl_float8 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_FLOAT16__ )
     __cl_float16 v16 = b16.v16;
@@ -589,7 +589,7 @@ void test_float( void )
                                                                       ((cl_float*)&v16)[9], ((cl_float*)&v16)[10], ((cl_float*)&v16)[11], ((cl_float*)&v16)[12], ((cl_float*)&v16)[13], ((cl_float*)&v16)[14], ((cl_float*)&v16)[15], ((cl_float*)&v16)[16]);
 #else
     log_info( "__cl_float16 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
     log_info( "\n" );
 }
@@ -626,21 +626,21 @@ void test_double( void )
     log_info("__cl_double2:  %f %f \n", ((cl_double*)&v2)[0], ((cl_double*)&v2)[1] );
 #else
     log_info( "__cl_double2 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_DOUBLE4__ )
     __cl_double4 v4 = b4.v4;
     log_info("__cl_double4:  %f %f %f %f \n", ((cl_double*)&v4)[0], ((cl_double*)&v4)[1], ((cl_double*)&v4)[2], ((cl_double*)&v4)[3] );
 #else
     log_info( "__cl_double4 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_DOUBLE8__ )
     __cl_double8 v8 = b8.v8;
     log_info("__cl_double8:  %f %f %f %f %f %f %f %f \n", ((cl_double*)&v8)[0], ((cl_double*)&v8)[1], ((cl_double*)&v8)[2], ((cl_double*)&v8)[3], ((cl_double*)&v8)[4], ((cl_double*)&v8)[5], ((cl_double*)&v8)[6], ((cl_double*)&v8)[7] );
 #else
     log_info( "__cl_double8 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
 #if defined( __CL_DOUBLE16__ )
     __cl_double16 v16 = b16.v16;
@@ -648,7 +648,7 @@ void test_double( void )
                                                                       ((cl_double*)&v16)[9], ((cl_double*)&v16)[10], ((cl_double*)&v16)[11], ((cl_double*)&v16)[12], ((cl_double*)&v16)[13], ((cl_double*)&v16)[14], ((cl_double*)&v16)[15], ((cl_double*)&v16)[16]);
 #else
     log_info( "__cl_double16 SIMD vectors not supported on this architecture.\n" );
-#endif    
+#endif
 
     log_info( "\n" );
 }
@@ -656,7 +656,7 @@ void test_double( void )
 int main( void )
 {
     test_start();
-    
+
     log_info( "\nChecking operations on cl_types.\nNumbers, where presented, should walk upward from 0, with step of 1:\n" );
 
     test_char();
@@ -669,7 +669,7 @@ int main( void )
     test_ulong();
     test_float();
     test_double();
-    
+
     test_finish();
 
     return 0;

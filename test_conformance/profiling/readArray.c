@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,15 +29,15 @@
 #include "procs.h"
 #include "../../test_common/harness/testHarness.h"
 
-#define TEST_PRIME_INT		((1<<16)+1)
-#define TEST_PRIME_UINT		((1U<<16)+1U)
-#define TEST_PRIME_LONG		((1LL<<32)+1LL)
-#define TEST_PRIME_ULONG	((1ULL<<32)+1ULL)
-#define TEST_PRIME_SHORT	((1S<<8)+1S)
-#define TEST_PRIME_FLOAT	(float)3.40282346638528860e+38
-#define TEST_PRIME_HALF		119.f
-#define TEST_BOOL			true
-#define TEST_PRIME_CHAR		0x77
+#define TEST_PRIME_INT        ((1<<16)+1)
+#define TEST_PRIME_UINT        ((1U<<16)+1U)
+#define TEST_PRIME_LONG        ((1LL<<32)+1LL)
+#define TEST_PRIME_ULONG    ((1ULL<<32)+1ULL)
+#define TEST_PRIME_SHORT    ((1S<<8)+1S)
+#define TEST_PRIME_FLOAT    (float)3.40282346638528860e+38
+#define TEST_PRIME_HALF        119.f
+#define TEST_BOOL            true
+#define TEST_PRIME_CHAR        0x77
 
 
 #ifndef ulong
@@ -50,8 +50,8 @@ typedef unsigned char uchar;
 
 #ifndef TestStruct
 typedef struct{
-	int		a;
-	float	b;
+    int        a;
+    float    b;
 } TestStruct;
 #endif
 
@@ -446,15 +446,15 @@ const char *uchar_kernel_name[] = { "test_stream_read_uchar", "test_stream_read_
 
 const char *stream_read_struct_kernel_code[] = {
 "typedef struct{\n"
-"int	a;\n"
-"float	b;\n"
+"int    a;\n"
+"float    b;\n"
 "} TestStruct;\n"
 "__kernel void test_stream_read_struct(__global TestStruct *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
 "\n"
 "    dst[tid].a = ((1<<16)+1);\n"
-"	 dst[tid].b = (float)3.40282346638528860e+38;\n"
+"     dst[tid].b = (float)3.40282346638528860e+38;\n"
 "}\n" };
 
 const char *struct_kernel_name[] = { "test_stream_read_struct" };
@@ -464,56 +464,56 @@ const char *struct_kernel_name[] = { "test_stream_read_struct" };
 //--- the verify functions
 static int verify_read_int(void *ptr, int n)
 {
-    int		i;
-	int		*outptr = (int *)ptr;
-    
+    int        i;
+    int        *outptr = (int *)ptr;
+
     for (i=0; i<n; i++){
-		if( outptr[i] != TEST_PRIME_INT )
-			return -1;
+        if( outptr[i] != TEST_PRIME_INT )
+            return -1;
     }
-    
+
     return 0;
 }
 
 
 static int verify_read_uint(void *ptr, int n)
 {
-    int		i;
-	cl_uint	*outptr = (cl_uint *)ptr;
-    
+    int        i;
+    cl_uint    *outptr = (cl_uint *)ptr;
+
     for (i=0; i<n; i++){
-		if( outptr[i] != TEST_PRIME_UINT )
-			return -1;
+        if( outptr[i] != TEST_PRIME_UINT )
+            return -1;
     }
-    
+
     return 0;
 }
 
 
 static int verify_read_long(void *ptr, int n)
 {
-    int		i;
-	cl_long	*outptr = (cl_long *)ptr;
-    
+    int        i;
+    cl_long    *outptr = (cl_long *)ptr;
+
     for (i=0; i<n; i++){
-		if( outptr[i] != TEST_PRIME_LONG )
-			return -1;
+        if( outptr[i] != TEST_PRIME_LONG )
+            return -1;
     }
-    
+
     return 0;
 }
 
 
 static int verify_read_ulong(void *ptr, int n)
 {
-    int		i;
-	cl_ulong	*outptr = (cl_ulong *)ptr;
-    
+    int        i;
+    cl_ulong    *outptr = (cl_ulong *)ptr;
+
     for (i=0; i<n; i++){
-		if( outptr[i] != TEST_PRIME_ULONG )
-			return -1;
+        if( outptr[i] != TEST_PRIME_ULONG )
+            return -1;
     }
-    
+
     return 0;
 }
 
@@ -521,83 +521,83 @@ static int verify_read_ulong(void *ptr, int n)
 static int verify_read_short(void *ptr, int n)
 {
     int        i;
-	short	*outptr = (short *)ptr;
-    
+    short    *outptr = (short *)ptr;
+
     for (i=0; i<n; i++){
-		if( outptr[i] != (short)((1<<8)+1) )
-			return -1;
+        if( outptr[i] != (short)((1<<8)+1) )
+            return -1;
     }
-    
+
     return 0;
 }
 
 
 static int verify_read_ushort(void *ptr, int n)
 {
-    int		i;
-	cl_ushort	*outptr = (cl_ushort *)ptr;
-    
+    int        i;
+    cl_ushort    *outptr = (cl_ushort *)ptr;
+
     for (i=0; i<n; i++){
-		if( outptr[i] != (cl_ushort)((1<<8)+1) )
-			return -1;
+        if( outptr[i] != (cl_ushort)((1<<8)+1) )
+            return -1;
     }
-    
+
     return 0;
 }
 
 
 static int verify_read_float( void *ptr, int n )
 {
-    int		i;
-	float	*outptr = (float *)ptr;
-    
+    int        i;
+    float    *outptr = (float *)ptr;
+
     for (i=0; i<n; i++){
-		if( outptr[i] != TEST_PRIME_FLOAT )
-			return -1;
+        if( outptr[i] != TEST_PRIME_FLOAT )
+            return -1;
     }
-    
+
     return 0;
 }
 
 
 static int verify_read_half( void *ptr, int n )
 {
-    int		i;
-	float	*outptr = (float *)ptr;
-    
+    int        i;
+    float    *outptr = (float *)ptr;
+
     for( i = 0; i < n / 2; i++ ){
-		if( outptr[i] != TEST_PRIME_HALF )
-			return -1;
+        if( outptr[i] != TEST_PRIME_HALF )
+            return -1;
     }
-    
+
     return 0;
 }
 
 
 static int verify_read_char(void *ptr, int n)
 {
-    int		i;
-	char	*outptr = (char *)ptr;
-    
+    int        i;
+    char    *outptr = (char *)ptr;
+
     for (i=0; i<n; i++){
-		if( outptr[i] != TEST_PRIME_CHAR )
-			return -1;
+        if( outptr[i] != TEST_PRIME_CHAR )
+            return -1;
     }
-    
+
     return 0;
 }
 
 
 static int verify_read_uchar( void *ptr, int n )
 {
-    int		i;
-	uchar	*outptr = (uchar *)ptr;
-    
+    int        i;
+    uchar    *outptr = (uchar *)ptr;
+
     for (i=0; i<n; i++){
-		if( outptr[i] != TEST_PRIME_CHAR )
-			return -1;
+        if( outptr[i] != TEST_PRIME_CHAR )
+            return -1;
     }
-    
+
     return 0;
 }
 
@@ -605,397 +605,397 @@ static int verify_read_uchar( void *ptr, int n )
 static int verify_read_struct( void *ptr, int n )
 {
     int         i;
-	TestStruct	*outptr = (TestStruct *)ptr;
-    
+    TestStruct    *outptr = (TestStruct *)ptr;
+
     for ( i = 0; i < n; i++ ){
-		if( ( outptr[i].a != TEST_PRIME_INT ) ||
-		   ( outptr[i].b != TEST_PRIME_FLOAT ) )
-			return -1;
+        if( ( outptr[i].a != TEST_PRIME_INT ) ||
+           ( outptr[i].b != TEST_PRIME_FLOAT ) )
+            return -1;
     }
-    
+
     return 0;
 }
 
 //----- the test functions
 int test_stream_read( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements, size_t size, const char *type, int loops,
-					 const char *kernelCode[], const char *kernelName[], int (*fn)(void *,int) )
+                     const char *kernelCode[], const char *kernelName[], int (*fn)(void *,int) )
 {
-	cl_mem			streams[5];
-	void			*outptr[5];
-	cl_program		program[5];
-	cl_kernel		kernel[5];
-	cl_event		readEvent;
-	cl_ulong	queueStart, submitStart, readStart, readEnd;
-	size_t			threads[1];
+    cl_mem            streams[5];
+    void            *outptr[5];
+    cl_program        program[5];
+    cl_kernel        kernel[5];
+    cl_event        readEvent;
+    cl_ulong    queueStart, submitStart, readStart, readEnd;
+    size_t            threads[1];
 #ifdef USE_LOCAL_THREADS
-	size_t			localThreads[1];
+    size_t            localThreads[1];
 #endif
-	int				err, err_count = 0;
-	int				i;
-	size_t			ptrSizes[5];
-	
-	threads[0] = (size_t)num_elements;
-	
-#ifdef USE_LOCAL_THREADS
-	err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( cl_uint ), NULL );
-	if( err != CL_SUCCESS ){
-		log_error( "Unable to get thread group max size: %d", err );
-		return -1;
-	}
-	if( localThreads[0] > threads[0] )
-		localThreads[0] = threads[0];
-#endif
-	
-	ptrSizes[0] = size;
-	ptrSizes[1] = ptrSizes[0] << 1;
-	ptrSizes[2] = ptrSizes[1] << 1;
-	ptrSizes[3] = ptrSizes[2] << 1;
-	ptrSizes[4] = ptrSizes[3] << 1;
-	for( i = 0; i < loops; i++ ){
-		outptr[i] = malloc( ptrSizes[i] * num_elements );
-		if( ! outptr[i] ){
-			log_error( " unable to allocate %d bytes for outptr\n", (int)( ptrSizes[i] * num_elements ) );
-			return -1;
-		}
-		streams[i] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  ptrSizes[i] * num_elements, NULL, &err );
-		if( !streams[i] ){
-			log_error( " clCreateBuffer failed\n" );
-			free( outptr[i] );
-			return -1;
-		}
-		err = create_single_kernel_helper( context, &program[i], &kernel[i], 1, &kernelCode[i], kernelName[i] );
-		if( err ){
-			log_error( " Error creating program for %s\n", type );
-			clReleaseMemObject(streams[i]);
-			free( outptr[i] );
-			return -1;
-		}	
-		
-		err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&streams[i] );
-		if( err != CL_SUCCESS ){
-			print_error( err, "clSetKernelArg failed" );
-			clReleaseProgram( program[i] );
-			clReleaseKernel( kernel[i] );
-			clReleaseMemObject( streams[i] );
-			free( outptr[i] );
-			return -1;
-		}
-		
-#ifdef USE_LOCAL_THREADS
-		err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, localThreads, 0, NULL, NULL );
-#else
-		err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL );
-#endif
-		if( err != CL_SUCCESS ){
-			print_error( err, "clEnqueueNDRangeKernel failed" );
-			clReleaseKernel( kernel[i] );
-			clReleaseProgram( program[i] );
-			clReleaseMemObject( streams[i] );
-			free( outptr[i] );
-			return -1;
-		}
-		
-		err = clEnqueueReadBuffer( queue, streams[i], false, 0, ptrSizes[i]*num_elements, outptr[i], 0, NULL, &readEvent );
-		if( err != CL_SUCCESS ){
-			print_error( err, "clEnqueueReadBuffer failed" );
-			clReleaseKernel( kernel[i] );
-			clReleaseProgram( program[i] );
-			clReleaseMemObject( streams[i] );
-			free( outptr[i] );
-			return -1;
-		}
-		err = clWaitForEvents( 1, &readEvent );
-		if( err != CL_SUCCESS )
-		{
-			print_error( err, "Unable to wait for event completion" );
-			clReleaseKernel( kernel[i] );
-			clReleaseProgram( program[i] );
-			clReleaseMemObject( streams[i] );
-			free( outptr[i] );
-			return -1;			
-		}
-		err = clGetEventProfilingInfo( readEvent, CL_PROFILING_COMMAND_QUEUED, sizeof( cl_ulong ), &queueStart, NULL );
-		if( err != CL_SUCCESS ){
-			print_error( err, "clGetEventProfilingInfo failed" );
-			clReleaseKernel( kernel[i] );
-			clReleaseProgram( program[i] );
-			clReleaseMemObject( streams[i] );
-			free( outptr[i] );
-			return -1;
-		}
-		
-		err = clGetEventProfilingInfo( readEvent, CL_PROFILING_COMMAND_SUBMIT, sizeof( cl_ulong ), &submitStart, NULL );
-		if( err != CL_SUCCESS ){
-			print_error( err, "clGetEventProfilingInfo failed" );
-			clReleaseKernel( kernel[i] );
-			clReleaseProgram( program[i] );
-			clReleaseMemObject( streams[i] );
-			free( outptr[i] );
-			return -1;
-		}		
+    int                err, err_count = 0;
+    int                i;
+    size_t            ptrSizes[5];
 
-		err = clGetEventProfilingInfo( readEvent, CL_PROFILING_COMMAND_START, sizeof( cl_ulong ), &readStart, NULL );
-		if( err != CL_SUCCESS ){
-			print_error( err, "clGetEventProfilingInfo failed" );
-			clReleaseKernel( kernel[i] );
-			clReleaseProgram( program[i] );
-			clReleaseMemObject( streams[i] );
-			free( outptr[i] );
-			return -1;
-		}
-	
-		err = clGetEventProfilingInfo( readEvent, CL_PROFILING_COMMAND_END, sizeof( cl_ulong ), &readEnd, NULL );
-		if( err != CL_SUCCESS ){
-			print_error( err, "clGetEventProfilingInfo failed" );
-			clReleaseKernel( kernel[i] );
-			clReleaseProgram( program[i] );
-			clReleaseMemObject( streams[i] );
-			free( outptr[i] );
-			return -1;
-		}
-				
-		if (fn(outptr[i], num_elements*(1<<i))){
-			log_error( " %s%d data failed to verify\n", type, 1<<i );
-			err_count++;
-		}
-		else{
-			log_info( " %s%d data verified\n", type, 1<<i );
-		}
-    
+    threads[0] = (size_t)num_elements;
+
+#ifdef USE_LOCAL_THREADS
+    err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( cl_uint ), NULL );
+    if( err != CL_SUCCESS ){
+        log_error( "Unable to get thread group max size: %d", err );
+        return -1;
+    }
+    if( localThreads[0] > threads[0] )
+        localThreads[0] = threads[0];
+#endif
+
+    ptrSizes[0] = size;
+    ptrSizes[1] = ptrSizes[0] << 1;
+    ptrSizes[2] = ptrSizes[1] << 1;
+    ptrSizes[3] = ptrSizes[2] << 1;
+    ptrSizes[4] = ptrSizes[3] << 1;
+    for( i = 0; i < loops; i++ ){
+        outptr[i] = malloc( ptrSizes[i] * num_elements );
+        if( ! outptr[i] ){
+            log_error( " unable to allocate %d bytes for outptr\n", (int)( ptrSizes[i] * num_elements ) );
+            return -1;
+        }
+        streams[i] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  ptrSizes[i] * num_elements, NULL, &err );
+        if( !streams[i] ){
+            log_error( " clCreateBuffer failed\n" );
+            free( outptr[i] );
+            return -1;
+        }
+        err = create_single_kernel_helper( context, &program[i], &kernel[i], 1, &kernelCode[i], kernelName[i] );
+        if( err ){
+            log_error( " Error creating program for %s\n", type );
+            clReleaseMemObject(streams[i]);
+            free( outptr[i] );
+            return -1;
+        }
+
+        err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&streams[i] );
+        if( err != CL_SUCCESS ){
+            print_error( err, "clSetKernelArg failed" );
+            clReleaseProgram( program[i] );
+            clReleaseKernel( kernel[i] );
+            clReleaseMemObject( streams[i] );
+            free( outptr[i] );
+            return -1;
+        }
+
+#ifdef USE_LOCAL_THREADS
+        err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, localThreads, 0, NULL, NULL );
+#else
+        err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL );
+#endif
+        if( err != CL_SUCCESS ){
+            print_error( err, "clEnqueueNDRangeKernel failed" );
+            clReleaseKernel( kernel[i] );
+            clReleaseProgram( program[i] );
+            clReleaseMemObject( streams[i] );
+            free( outptr[i] );
+            return -1;
+        }
+
+        err = clEnqueueReadBuffer( queue, streams[i], false, 0, ptrSizes[i]*num_elements, outptr[i], 0, NULL, &readEvent );
+        if( err != CL_SUCCESS ){
+            print_error( err, "clEnqueueReadBuffer failed" );
+            clReleaseKernel( kernel[i] );
+            clReleaseProgram( program[i] );
+            clReleaseMemObject( streams[i] );
+            free( outptr[i] );
+            return -1;
+        }
+        err = clWaitForEvents( 1, &readEvent );
+        if( err != CL_SUCCESS )
+        {
+            print_error( err, "Unable to wait for event completion" );
+            clReleaseKernel( kernel[i] );
+            clReleaseProgram( program[i] );
+            clReleaseMemObject( streams[i] );
+            free( outptr[i] );
+            return -1;
+        }
+        err = clGetEventProfilingInfo( readEvent, CL_PROFILING_COMMAND_QUEUED, sizeof( cl_ulong ), &queueStart, NULL );
+        if( err != CL_SUCCESS ){
+            print_error( err, "clGetEventProfilingInfo failed" );
+            clReleaseKernel( kernel[i] );
+            clReleaseProgram( program[i] );
+            clReleaseMemObject( streams[i] );
+            free( outptr[i] );
+            return -1;
+        }
+
+        err = clGetEventProfilingInfo( readEvent, CL_PROFILING_COMMAND_SUBMIT, sizeof( cl_ulong ), &submitStart, NULL );
+        if( err != CL_SUCCESS ){
+            print_error( err, "clGetEventProfilingInfo failed" );
+            clReleaseKernel( kernel[i] );
+            clReleaseProgram( program[i] );
+            clReleaseMemObject( streams[i] );
+            free( outptr[i] );
+            return -1;
+        }
+
+        err = clGetEventProfilingInfo( readEvent, CL_PROFILING_COMMAND_START, sizeof( cl_ulong ), &readStart, NULL );
+        if( err != CL_SUCCESS ){
+            print_error( err, "clGetEventProfilingInfo failed" );
+            clReleaseKernel( kernel[i] );
+            clReleaseProgram( program[i] );
+            clReleaseMemObject( streams[i] );
+            free( outptr[i] );
+            return -1;
+        }
+
+        err = clGetEventProfilingInfo( readEvent, CL_PROFILING_COMMAND_END, sizeof( cl_ulong ), &readEnd, NULL );
+        if( err != CL_SUCCESS ){
+            print_error( err, "clGetEventProfilingInfo failed" );
+            clReleaseKernel( kernel[i] );
+            clReleaseProgram( program[i] );
+            clReleaseMemObject( streams[i] );
+            free( outptr[i] );
+            return -1;
+        }
+
+        if (fn(outptr[i], num_elements*(1<<i))){
+            log_error( " %s%d data failed to verify\n", type, 1<<i );
+            err_count++;
+        }
+        else{
+            log_info( " %s%d data verified\n", type, 1<<i );
+        }
+
     if (check_times(queueStart, submitStart, readStart, readEnd, device))
       err_count++;
-		
-		// cleanup
-		clReleaseEvent(readEvent);
-		clReleaseKernel( kernel[i] );
-		clReleaseProgram( program[i] );
-		clReleaseMemObject( streams[i] );
-		free( outptr[i] );
-	}
-	
-	return err_count;
-	
-}	// end test_stream_read()
+
+        // cleanup
+        clReleaseEvent(readEvent);
+        clReleaseKernel( kernel[i] );
+        clReleaseProgram( program[i] );
+        clReleaseMemObject( streams[i] );
+        free( outptr[i] );
+    }
+
+    return err_count;
+
+}    // end test_stream_read()
 
 
 int read_int_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-	int	(*foo)(void *,int);
-	foo = verify_read_int;
-	
-	return test_stream_read( device, context, queue, num_elements, sizeof( cl_int ), "int", 5,
-							 stream_read_int_kernel_code, int_kernel_name, foo );
+    int    (*foo)(void *,int);
+    foo = verify_read_int;
+
+    return test_stream_read( device, context, queue, num_elements, sizeof( cl_int ), "int", 5,
+                             stream_read_int_kernel_code, int_kernel_name, foo );
 }
 
 
 int read_uint_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-	int	(*foo)(void *,int);
-	foo = verify_read_uint;
-	
-	return test_stream_read( device, context, queue, num_elements, sizeof( cl_uint ), "uint", 5,
-							 stream_read_uint_kernel_code, uint_kernel_name, foo );
+    int    (*foo)(void *,int);
+    foo = verify_read_uint;
+
+    return test_stream_read( device, context, queue, num_elements, sizeof( cl_uint ), "uint", 5,
+                             stream_read_uint_kernel_code, uint_kernel_name, foo );
 }
 
 
 int read_long_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-	int	(*foo)(void *,int);
-	foo = verify_read_long;
-	
-	if (!gHasLong)
-	{
-		log_info("read_long_array: Long types unsupported, skipping.");
-		return CL_SUCCESS;
-	}
+    int    (*foo)(void *,int);
+    foo = verify_read_long;
 
-	return test_stream_read( device, context, queue, num_elements, sizeof( cl_long ), "long", 5,
-							 stream_read_long_kernel_code, long_kernel_name, foo );
+    if (!gHasLong)
+    {
+        log_info("read_long_array: Long types unsupported, skipping.");
+        return CL_SUCCESS;
+    }
+
+    return test_stream_read( device, context, queue, num_elements, sizeof( cl_long ), "long", 5,
+                             stream_read_long_kernel_code, long_kernel_name, foo );
 }
 
 
 int read_ulong_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-	int	(*foo)(void *,int);
-	foo = verify_read_ulong;
-	
-	if (!gHasLong)
-	{
-		log_info("read_long_array: Long types unsupported, skipping.");
-		return CL_SUCCESS;
-	}
-	
-	return test_stream_read( device, context, queue, num_elements, sizeof( cl_ulong ), "ulong", 5,
-							 stream_read_ulong_kernel_code, ulong_kernel_name, foo );
+    int    (*foo)(void *,int);
+    foo = verify_read_ulong;
+
+    if (!gHasLong)
+    {
+        log_info("read_long_array: Long types unsupported, skipping.");
+        return CL_SUCCESS;
+    }
+
+    return test_stream_read( device, context, queue, num_elements, sizeof( cl_ulong ), "ulong", 5,
+                             stream_read_ulong_kernel_code, ulong_kernel_name, foo );
 }
 
 
 int read_short_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-	int	(*foo)(void *,int);
-	foo = verify_read_short;
-	
-	return test_stream_read( device, context, queue, num_elements, sizeof( cl_short ), "short", 5,
-							 stream_read_short_kernel_code, short_kernel_name, foo );
+    int    (*foo)(void *,int);
+    foo = verify_read_short;
+
+    return test_stream_read( device, context, queue, num_elements, sizeof( cl_short ), "short", 5,
+                             stream_read_short_kernel_code, short_kernel_name, foo );
 }
 
 
 int read_ushort_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-	int	(*foo)(void *,int);
-	foo = verify_read_ushort;
-	
-	return test_stream_read( device, context, queue, num_elements, sizeof( cl_ushort ), "ushort", 5,
-							 stream_read_ushort_kernel_code, ushort_kernel_name, foo );
+    int    (*foo)(void *,int);
+    foo = verify_read_ushort;
+
+    return test_stream_read( device, context, queue, num_elements, sizeof( cl_ushort ), "ushort", 5,
+                             stream_read_ushort_kernel_code, ushort_kernel_name, foo );
 }
 
 
 int read_float_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-	int	(*foo)(void *,int);
-	foo = verify_read_float;
-	
-	return test_stream_read( device, context, queue, num_elements, sizeof( cl_float ), "float", 5,
-							 stream_read_float_kernel_code, float_kernel_name, foo );
+    int    (*foo)(void *,int);
+    foo = verify_read_float;
+
+    return test_stream_read( device, context, queue, num_elements, sizeof( cl_float ), "float", 5,
+                             stream_read_float_kernel_code, float_kernel_name, foo );
 }
 
 
 int read_half_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-	int	(*foo)(void *,int);
-	foo = verify_read_half;
-	
-	return test_stream_read( device, context, queue, num_elements, sizeof( cl_half ), "half", 5,
-							 stream_read_half_kernel_code, half_kernel_name, foo );
+    int    (*foo)(void *,int);
+    foo = verify_read_half;
+
+    return test_stream_read( device, context, queue, num_elements, sizeof( cl_half ), "half", 5,
+                             stream_read_half_kernel_code, half_kernel_name, foo );
 }
 
 
 int read_char_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-	int	(*foo)(void *,int);
-	foo = verify_read_char;
-	
-	return test_stream_read( device, context, queue, num_elements, sizeof( cl_char ), "char", 5,
-							 stream_read_char_kernel_code, char_kernel_name, foo );
+    int    (*foo)(void *,int);
+    foo = verify_read_char;
+
+    return test_stream_read( device, context, queue, num_elements, sizeof( cl_char ), "char", 5,
+                             stream_read_char_kernel_code, char_kernel_name, foo );
 }
 
 
 int read_uchar_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-	int	(*foo)(void *,int);
-	foo = verify_read_uchar;
-	
-	return test_stream_read( device, context, queue, num_elements, sizeof( cl_uchar ), "uchar", 5,
-							 stream_read_uchar_kernel_code, uchar_kernel_name, foo );
+    int    (*foo)(void *,int);
+    foo = verify_read_uchar;
+
+    return test_stream_read( device, context, queue, num_elements, sizeof( cl_uchar ), "uchar", 5,
+                             stream_read_uchar_kernel_code, uchar_kernel_name, foo );
 }
 
 
 int read_struct_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
-	int	(*foo)(void *,int);
-	foo = verify_read_struct;
-	
-	return test_stream_read( device, context, queue, num_elements, sizeof( TestStruct ), "struct", 1,
-							 stream_read_struct_kernel_code, struct_kernel_name, foo );
+    int    (*foo)(void *,int);
+    foo = verify_read_struct;
+
+    return test_stream_read( device, context, queue, num_elements, sizeof( TestStruct ), "struct", 1,
+                             stream_read_struct_kernel_code, struct_kernel_name, foo );
 }
 
 /*
 int read_struct_array(cl_device_group device, cl_device id, cl_context context, int num_elements)
 {
-	cl_mem			streams[1];
-	TestStruct		*output_ptr;
-	cl_program		program[1];
-	cl_kernel		kernel[1];
-	void			*values[1];
-	size_t			sizes[1] = { sizeof(cl_stream) };
-	size_t			threads[1];
+    cl_mem            streams[1];
+    TestStruct        *output_ptr;
+    cl_program        program[1];
+    cl_kernel        kernel[1];
+    void            *values[1];
+    size_t            sizes[1] = { sizeof(cl_stream) };
+    size_t            threads[1];
 #ifdef USE_LOCAL_THREADS
-	size_t			localThreads[1];
+    size_t            localThreads[1];
 #endif
-	int				err;
-	size_t			objSize = sizeof(TestStruct);
-	
-	threads[0] = (size_t)num_elements;
-	
+    int                err;
+    size_t            objSize = sizeof(TestStruct);
+
+    threads[0] = (size_t)num_elements;
+
 #ifdef USE_LOCAL_THREADS
-	err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( cl_uint ), NULL );
-	if( err != CL_SUCCESS ){
-		log_error( "Unable to get thread group max size: %d", err );
-		return -1;
-	}
-	if( localThreads[0] > threads[0] )
-		localThreads[0] = threads[0];
+    err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( cl_uint ), NULL );
+    if( err != CL_SUCCESS ){
+        log_error( "Unable to get thread group max size: %d", err );
+        return -1;
+    }
+    if( localThreads[0] > threads[0] )
+        localThreads[0] = threads[0];
 #endif
-	
-	output_ptr = malloc(objSize * num_elements);
-	if( ! output_ptr ){
-		log_error( " unable to allocate %d bytes for output_ptr\n", (int)(objSize * num_elements) );
-		return -1;
-	}
-	streams[0] = clCreateBuffer( device, (cl_mem_flags)(CL_MEM_READ_WRITE),  objSize * num_elements, NULL );
-	if( !streams[0] ){
-		log_error( " clCreateBuffer failed\n" );
-		free( output_ptr );
-		return -1;
-	}
-	
-	err = create_program_and_kernel( device, stream_read_struct_kernel_code, "test_stream_read_struct", &program[0], &kernel[0]);
-	if( err ){
-		clReleaseProgram( program[0] );
-		free( output_ptr );
-		return -1;
-	}
-	
-	err = clSetKernelArg( kernel[0], 0, sizeof( cl_mem ), (void *)&streams[0] );
-	if( err != CL_SUCCESS){
-		print_error( err, "clSetKernelArg failed" );
-		clReleaseProgram( program[0] );
-		clReleaseKernel( kernel[0] );
-		clReleaseMemObject( streams[0] );
-		free( output_ptr );
-		return -1;
-	}
-	
+
+    output_ptr = malloc(objSize * num_elements);
+    if( ! output_ptr ){
+        log_error( " unable to allocate %d bytes for output_ptr\n", (int)(objSize * num_elements) );
+        return -1;
+    }
+    streams[0] = clCreateBuffer( device, (cl_mem_flags)(CL_MEM_READ_WRITE),  objSize * num_elements, NULL );
+    if( !streams[0] ){
+        log_error( " clCreateBuffer failed\n" );
+        free( output_ptr );
+        return -1;
+    }
+
+    err = create_program_and_kernel( device, stream_read_struct_kernel_code, "test_stream_read_struct", &program[0], &kernel[0]);
+    if( err ){
+        clReleaseProgram( program[0] );
+        free( output_ptr );
+        return -1;
+    }
+
+    err = clSetKernelArg( kernel[0], 0, sizeof( cl_mem ), (void *)&streams[0] );
+    if( err != CL_SUCCESS){
+        print_error( err, "clSetKernelArg failed" );
+        clReleaseProgram( program[0] );
+        clReleaseKernel( kernel[0] );
+        clReleaseMemObject( streams[0] );
+        free( output_ptr );
+        return -1;
+    }
+
 #ifdef USE_LOCAL_THREADS
-	err = clEnqueueNDRangeKernel( queue, kernel[0], 1, NULL, threads, localThreads, 0, NULL, NULL );
+    err = clEnqueueNDRangeKernel( queue, kernel[0], 1, NULL, threads, localThreads, 0, NULL, NULL );
 #else
-	err = clEnqueueNDRangeKernel( queue, kernel[0], 1, NULL, threads, NULL, 0, NULL, NULL );
+    err = clEnqueueNDRangeKernel( queue, kernel[0], 1, NULL, threads, NULL, 0, NULL, NULL );
 #endif
-	if( err != CL_SUCCESS ){
-		print_error( err, "clEnqueueNDRangeKernel failed" );
-		clReleaseProgram( program[0] );
-		clReleaseKernel( kernel[0] );
-		clReleaseMemObject( streams[0] );
-		free( output_ptr );
-		return -1;
-	}
-	
-	err = clEnqueueReadBuffer( queue, streams[0], true, 0, objSize*num_elements, (void *)output_ptr, 0, NULL, NULL );
-	if( err != CL_SUCCESS){
-		print_error( err, "clEnqueueReadBuffer failed" );
-		clReleaseProgram( program[0] );
-		clReleaseKernel( kernel[0] );
-		clReleaseMemObject( streams[0] );
-		free( output_ptr );
-		return -1;
-	}
-	
-	if (verify_read_struct(output_ptr, num_elements)){
-		log_error(" struct test failed\n");
-		err = -1;
-	}
-	else{
-		log_info(" struct test passed\n");
-		err = 0;
-	}
-	
-	// cleanup
-	clReleaseProgram( program[0] );
-	clReleaseKernel( kernel[0] );
-	clReleaseMemObject( streams[0] );
-	free( output_ptr );
- 
-	return err;
+    if( err != CL_SUCCESS ){
+        print_error( err, "clEnqueueNDRangeKernel failed" );
+        clReleaseProgram( program[0] );
+        clReleaseKernel( kernel[0] );
+        clReleaseMemObject( streams[0] );
+        free( output_ptr );
+        return -1;
+    }
+
+    err = clEnqueueReadBuffer( queue, streams[0], true, 0, objSize*num_elements, (void *)output_ptr, 0, NULL, NULL );
+    if( err != CL_SUCCESS){
+        print_error( err, "clEnqueueReadBuffer failed" );
+        clReleaseProgram( program[0] );
+        clReleaseKernel( kernel[0] );
+        clReleaseMemObject( streams[0] );
+        free( output_ptr );
+        return -1;
+    }
+
+    if (verify_read_struct(output_ptr, num_elements)){
+        log_error(" struct test failed\n");
+        err = -1;
+    }
+    else{
+        log_info(" struct test passed\n");
+        err = 0;
+    }
+
+    // cleanup
+    clReleaseProgram( program[0] );
+    clReleaseKernel( kernel[0] );
+    clReleaseMemObject( streams[0] );
+    free( output_ptr );
+
+    return err;
 }
 */
 

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -103,7 +103,7 @@ config_info config_infos[] =
     {CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT,"CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT", type_cl_uint, {0}},
     {CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE, "CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE", type_cl_uint, {0}},
     {CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF, "CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF", type_cl_uint, {0}},
-    
+
     {CL_DEVICE_MAX_CLOCK_FREQUENCY, "CL_DEVICE_MAX_CLOCK_FREQUENCY", type_cl_uint, {0}},
     {CL_DEVICE_ADDRESS_BITS, "CL_DEVICE_ADDRESS_BITS", type_cl_uint, {0}},
     {CL_DEVICE_MAX_READ_IMAGE_ARGS, "CL_DEVICE_MAX_READ_IMAGE_ARGS", type_cl_uint, {0}},
@@ -119,7 +119,7 @@ config_info config_infos[] =
     {CL_DEVICE_IMAGE_SUPPORT,      "CL_DEVICE_IMAGE_SUPPORT",      type_cl_uint, {0}},
     {CL_DEVICE_MAX_PARAMETER_SIZE, "CL_DEVICE_MAX_PARAMETER_SIZE", type_size_t,  {0}},
     {CL_DEVICE_MAX_SAMPLERS,       "CL_DEVICE_MAX_SAMPLERS",       type_cl_uint, {0}},
-    
+
     {CL_DEVICE_MEM_BASE_ADDR_ALIGN, "CL_DEVICE_MEM_BASE_ADDR_ALIGN", type_cl_uint, {0}},
     {CL_DEVICE_SINGLE_FP_CONFIG, "CL_DEVICE_SINGLE_FP_CONFIG", type_cl_device_fp_config, {0}},
     {CL_DEVICE_DOUBLE_FP_CONFIG, "CL_DEVICE_DOUBLE_FP_CONFIG", type_cl_device_fp_config, {0}},
@@ -127,7 +127,7 @@ config_info config_infos[] =
     {CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE,"CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE",type_cl_uint, {0}},
     {CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, "CL_DEVICE_GLOBAL_MEM_CACHE_SIZE", type_cl_ulong, {0}},
     {CL_DEVICE_GLOBAL_MEM_SIZE, "CL_DEVICE_GLOBAL_MEM_SIZE", type_cl_ulong, {0}},
-    
+
     {CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, "CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE", type_cl_ulong, {0}},
     {CL_DEVICE_MAX_CONSTANT_ARGS, "CL_DEVICE_MAX_CONSTANT_ARGS", type_cl_uint, {0}},
     {CL_DEVICE_LOCAL_MEM_TYPE, "CL_DEVICE_LOCAL_MEM_TYPE", type_cl_local_mem_type, {0}},
@@ -141,15 +141,15 @@ config_info config_infos[] =
     {CL_DEVICE_LINKER_AVAILABLE, "CL_DEVICE_LINKER_AVAILABLE", type_cl_uint, {0}},
 
     {CL_DEVICE_BUILT_IN_KERNELS, "CL_DEVICE_BUILT_IN_KERNELS", type_string, {0}},
-    
+
     {CL_DEVICE_PRINTF_BUFFER_SIZE, "CL_DEVICE_PRINTF_BUFFER_SIZE", type_size_t, {0}},
     {CL_DEVICE_PREFERRED_INTEROP_USER_SYNC, "CL_DEVICE_PREFERRED_INTEROP_USER_SYNC", type_cl_uint, {0}},
-    
+
     {CL_DEVICE_PARENT_DEVICE, "CL_DEVICE_PARENT_DEVICE", type_cl_device_id, {0}},
     {CL_DEVICE_PARTITION_MAX_SUB_DEVICES, "CL_DEVICE_PARTITION_MAX_SUB_DEVICES", type_cl_uint, {0}},
     {CL_DEVICE_PARTITION_AFFINITY_DOMAIN, "CL_DEVICE_PARTITION_AFFINITY_DOMAIN", type_cl_device_affinity_domain, {0}},
     {CL_DEVICE_REFERENCE_COUNT, "CL_DEVICE_REFERENCE_COUNT", type_cl_uint, {0}},
-    
+
     {CL_DEVICE_EXECUTION_CAPABILITIES, "CL_DEVICE_EXECUTION_CAPABILITIES", type_cl_device_exec_capabilities, {0}},
     {CL_DEVICE_QUEUE_PROPERTIES, "CL_DEVICE_QUEUE_PROPERTIES", type_cl_command_queue_properties, {0}},
     {CL_DEVICE_NAME,       "CL_DEVICE_NAME",       type_string, {0}},
@@ -187,7 +187,7 @@ int getConfigInfo(cl_device_id device, config_info* info)
         case type_cl_device_exec_capabilities:
             err = clGetDeviceInfo(device, info->opcode, sizeof(info->config.exec_capabilities), &info->config.exec_capabilities, &config_size_ret);
             size_err = config_size_ret != sizeof(info->config.exec_capabilities);
-            break;		
+            break;
         case type_cl_command_queue_properties:
             err = clGetDeviceInfo(device, info->opcode, sizeof(info->config.queue_properties), &info->config.queue_properties, &config_size_ret);
             size_err = config_size_ret != sizeof(info->config.queue_properties);
@@ -199,7 +199,7 @@ int getConfigInfo(cl_device_id device, config_info* info)
         case type_cl_device_affinity_domain:
             err = clGetDeviceInfo(device, info->opcode, sizeof(info->config.affinity_domain), &info->config.affinity_domain, &config_size_ret);
             size_err = config_size_ret != sizeof(info->config.affinity_domain);
-            break;            
+            break;
         case type_cl_uint:
             err = clGetDeviceInfo(device, info->opcode, sizeof(info->config.uint), &info->config.uint, &config_size_ret);
             size_err = config_size_ret != sizeof(info->config.uint);
@@ -335,8 +335,8 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
                      (info->config.affinity_domain & CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE) ? "CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE":""
                      );
             {
-                cl_device_affinity_domain all_affinity_domain = CL_DEVICE_AFFINITY_DOMAIN_NUMA | 
-                                                                CL_DEVICE_AFFINITY_DOMAIN_L4_CACHE | 
+                cl_device_affinity_domain all_affinity_domain = CL_DEVICE_AFFINITY_DOMAIN_NUMA |
+                                                                CL_DEVICE_AFFINITY_DOMAIN_L4_CACHE |
                                                                 CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE |
                                                                 CL_DEVICE_AFFINITY_DOMAIN_L2_CACHE |
                                                                 CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE |
@@ -344,7 +344,7 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
                 if(info->config.affinity_domain & ~all_affinity_domain)
                     log_error("ERROR: %s unknown bits found 0x%08llX", info->opcode_name, (info->config.affinity_domain & ~all_affinity_domain));
             }
-            break;            
+            break;
         case type_cl_uint:
             log_info("\t%s == %d\n", info->opcode_name, info->config.uint);
             break;
@@ -361,7 +361,7 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
         case type_string:
             log_info("\t%s == \"%s\"\n", info->opcode_name, info->config.string);
             break;
-    }	
+    }
 }
 
 void print_platform_string_selector( cl_platform_id platform, const char *selector_name, cl_platform_info selector )
@@ -370,26 +370,26 @@ void print_platform_string_selector( cl_platform_id platform, const char *select
     size_t size = 0;
     char *value;
     int err;
-    
+
     if(( err = clGetPlatformInfo( platform, selector, 0, NULL, &size )))
     {
         log_error( "FAILURE: Unable to get platform info size for %s.\n", selector_name );
         exit( -1 );
     }
-    
+
     if( size == 0 )
     {
         log_error( "FAILURE: The size of %s was returned to be zero.\n", selector_name );
         exit( -1 );
     }
-    
+
     value = (char*) malloc( size );
     if( NULL == value )
     {
         log_error( "Internal test failure:  Unable to allocate %ld bytes\n", size );
         exit(-1);
     }
-    
+
     memset( value, -1, size );
     if(( err = clGetPlatformInfo( platform, selector, size, value, NULL )))
     {
@@ -397,14 +397,14 @@ void print_platform_string_selector( cl_platform_id platform, const char *select
         free( value );
         exit( -1 );
     }
-    
+
     if( value[size-1] != '\0' )
     {
         log_error( "FAILURE: platform info for %s is either not NUL terminated, or the size is wrong.\n", selector_name );
         free( value );
         exit( -1 );
     }
-    
+
     log_info( "\t%s: %s\n", selector_name, value );
     free( value );
 }
@@ -413,16 +413,16 @@ int main(int argc, const char** argv)
 {
     cl_platform_id platform;
     test_start();
-    
+
     int err;
     int total_errors = 0;
-    
+
     err = clGetPlatformIDs(1, &platform, NULL);
     test_error(err, "clGetPlatformIDs failed");
     if (err != CL_SUCCESS) {
         total_errors++;
-    }    
-    
+    }
+
     // print platform info
     log_info( "\nclGetPlatformInfo:\n------------------\n" );
     print_platform_string_selector( platform, "CL_PLATFORM_PROFILE", CL_PLATFORM_PROFILE );
@@ -431,7 +431,7 @@ int main(int argc, const char** argv)
     print_platform_string_selector( platform, "CL_PLATFORM_VENDOR", CL_PLATFORM_VENDOR );
     print_platform_string_selector( platform, "CL_PLATFORM_EXTENSIONS", CL_PLATFORM_EXTENSIONS );
     log_info( "\n" );
-    
+
     // Check to see if this test is being run on a specific device
     char* device_type_env = getenv("CL_DEVICE_TYPE");
     char* device_index_env = getenv("CL_DEVICE_INDEX");
@@ -478,7 +478,7 @@ int main(int argc, const char** argv)
         }
         log_info("Getting device IDs for %s devices\n", device_infos[onInfo].device_type_name);
         err = clGetDeviceIDs(platform, device_infos[onInfo].device_type, 0, NULL, &device_infos[onInfo].num_devices);
-        if (err == CL_DEVICE_NOT_FOUND) 
+        if (err == CL_DEVICE_NOT_FOUND)
         {
             log_info("No devices of type %s found.\n", device_infos[onInfo].device_type_name);
             continue;
@@ -520,12 +520,12 @@ int main(int argc, const char** argv)
             free(device_infos[onInfo].devices);
         }
     }
-  
+
     if (total_errors)
         log_error("FAILED computeinfo.\n");
-    else 
+    else
         log_info("PASSED computeinfo.\n");
-    
+
     test_finish();
     if (total_errors)
         return -1;

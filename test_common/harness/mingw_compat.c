@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,7 +21,7 @@
 
 //This function is unavailable on various mingw compilers,
 //especially 64 bit so implementing it here
-const char *basename_dot="."; 
+const char *basename_dot=".";
 char*
 basename(char *path)
 {
@@ -31,19 +31,19 @@ basename(char *path)
     if (path == NULL) {
         return (char*)basename_dot;
     }
-    
+
     // Not absolute path on windows
     if (path[1] != ':') {
         return path;
-    } 
-    
+    }
+
     // Trim trailing path seperators
-    if (path[len - 1]  == '\\' || 
+    if (path[len - 1]  == '\\' ||
         path[len - 1]  == '/' ) {
         len--;
         path[len] = '\0';
     }
-    
+
     while (len) {
         while((*p != '\\' || *p != '/')  && len) {
             p++;

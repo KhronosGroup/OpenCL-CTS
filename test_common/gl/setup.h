@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,22 +27,22 @@
 #endif
 
 
-// Note: the idea here is to have every platform define their own setup.cpp file that implements a GLEnvironment 
+// Note: the idea here is to have every platform define their own setup.cpp file that implements a GLEnvironment
 // subclass internally, then return it as a definition for GLEnvironment::Create
 
 class GLEnvironment
 {
-	public:
-		GLEnvironment() {}
-		virtual ~GLEnvironment() {}
+    public:
+        GLEnvironment() {}
+        virtual ~GLEnvironment() {}
 
- 		virtual int Init( int *argc, char **argv, int use_opengl_32 ) = 0;
-		virtual cl_context CreateCLContext( void ) = 0;
-		virtual int SupportsCLGLInterop( cl_device_type device_type) = 0;
-	
-		static GLEnvironment *	Instance( void );
-	
-	
+         virtual int Init( int *argc, char **argv, int use_opengl_32 ) = 0;
+        virtual cl_context CreateCLContext( void ) = 0;
+        virtual int SupportsCLGLInterop( cl_device_type device_type) = 0;
+
+        static GLEnvironment *    Instance( void );
+
+
 };
 
 #endif // _setup_h

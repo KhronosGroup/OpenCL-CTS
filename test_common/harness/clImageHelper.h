@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,17 +22,17 @@
 #include <CL/cl.h>
 #endif
 
-#include <stdio.h> 
+#include <stdio.h>
 #include "errorHelpers.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-  
-  // helper function to replace clCreateImage2D , to make the existing code use 
+
+  // helper function to replace clCreateImage2D , to make the existing code use
   // the functions of version 1.2 and veriosn 1.1  respectively
-  
+
   inline cl_mem create_image_2d  (cl_context context,
                            cl_mem_flags flags,
                            const cl_image_format *image_format,
@@ -43,9 +43,9 @@ extern "C" {
                            cl_int *errcode_ret)
   {
     cl_mem mImage = NULL;
-    
+
 #ifdef CL_VERSION_1_2
-    cl_image_desc image_desc_dest;    
+    cl_image_desc image_desc_dest;
     image_desc_dest.image_type = CL_MEM_OBJECT_IMAGE2D;;
     image_desc_dest.image_width = image_width;
     image_desc_dest.image_height = image_height;
@@ -55,26 +55,26 @@ extern "C" {
     image_desc_dest.image_slice_pitch = 0;
     image_desc_dest.num_mip_levels = 0;
     image_desc_dest.num_samples = 0;
-    image_desc_dest.buffer = NULL;// no image type of CL_MEM_OBJECT_IMAGE1D_BUFFER in CL_VERSION_1_1, so always is NULL 
-    mImage = clCreateImage( context, flags, image_format, &image_desc_dest, host_ptr, errcode_ret ); 
+    image_desc_dest.buffer = NULL;// no image type of CL_MEM_OBJECT_IMAGE1D_BUFFER in CL_VERSION_1_1, so always is NULL
+    mImage = clCreateImage( context, flags, image_format, &image_desc_dest, host_ptr, errcode_ret );
     if (errcode_ret && (*errcode_ret)) {
-      // Log an info message and rely on the calling function to produce an error 
+      // Log an info message and rely on the calling function to produce an error
       // if necessary.
       log_info("clCreateImage failed (%d)\n", *errcode_ret);
     }
-    
+
 #else
     mImage = clCreateImage2D( context, flags, image_format, image_width, image_height, image_row_pitch, host_ptr, errcode_ret );
     if (errcode_ret && (*errcode_ret)) {
-      // Log an info message and rely on the calling function to produce an error 
+      // Log an info message and rely on the calling function to produce an error
       // if necessary.
       log_info("clCreateImage2D failed (%d)\n", *errcode_ret);
     }
 #endif
-    
+
     return mImage;
   }
-  
+
   inline cl_mem create_image_3d (cl_context context,
                           cl_mem_flags flags,
                           const cl_image_format *image_format,
@@ -87,19 +87,19 @@ extern "C" {
                           cl_int *errcode_ret)
   {
     cl_mem mImage;
-    
+
 #ifdef CL_VERSION_1_2
-    cl_image_desc image_desc;    
+    cl_image_desc image_desc;
     image_desc.image_type = CL_MEM_OBJECT_IMAGE3D;
     image_desc.image_width = image_width;
     image_desc.image_height = image_height;
-    image_desc.image_depth = image_depth; 
+    image_desc.image_depth = image_depth;
     image_desc.image_array_size = 0;// not used for one image
     image_desc.image_row_pitch = image_row_pitch;
     image_desc.image_slice_pitch = image_slice_pitch;
     image_desc.num_mip_levels = 0;
     image_desc.num_samples = 0;
-    image_desc.buffer = NULL; // no image type of CL_MEM_OBJECT_IMAGE1D_BUFFER in CL_VERSION_1_1, so always is NULL 
+    image_desc.buffer = NULL; // no image type of CL_MEM_OBJECT_IMAGE1D_BUFFER in CL_VERSION_1_1, so always is NULL
     mImage = clCreateImage( context,
                            flags,
                            image_format,
@@ -107,14 +107,14 @@ extern "C" {
                            host_ptr,
                            errcode_ret );
     if (errcode_ret && (*errcode_ret)) {
-      // Log an info message and rely on the calling function to produce an error 
+      // Log an info message and rely on the calling function to produce an error
       // if necessary.
       log_info("clCreateImage failed (%d)\n", *errcode_ret);
     }
-    
+
 #else
-    mImage = clCreateImage3D( context,  
-                             flags, image_format, 
+    mImage = clCreateImage3D( context,
+                             flags, image_format,
                              image_width,
                              image_height,
                              image_depth,
@@ -123,15 +123,15 @@ extern "C" {
                              host_ptr,
                              errcode_ret );
     if (errcode_ret && (*errcode_ret)) {
-      // Log an info message and rely on the calling function to produce an error 
+      // Log an info message and rely on the calling function to produce an error
       // if necessary.
       log_info("clCreateImage3D failed (%d)\n", *errcode_ret);
-    }  
+    }
 #endif
-    
+
     return mImage;
   }
-    
+
     inline cl_mem create_image_2d_array (cl_context context,
                                    cl_mem_flags flags,
                                    const cl_image_format *image_format,
@@ -144,18 +144,18 @@ extern "C" {
                                    cl_int *errcode_ret)
     {
         cl_mem mImage;
-        
-        cl_image_desc image_desc;    
+
+        cl_image_desc image_desc;
         image_desc.image_type = CL_MEM_OBJECT_IMAGE2D_ARRAY;
         image_desc.image_width = image_width;
         image_desc.image_height = image_height;
-        image_desc.image_depth = 1; 
+        image_desc.image_depth = 1;
         image_desc.image_array_size = image_array_size;
         image_desc.image_row_pitch = image_row_pitch;
         image_desc.image_slice_pitch = image_slice_pitch;
         image_desc.num_mip_levels = 0;
         image_desc.num_samples = 0;
-        image_desc.buffer = NULL; 
+        image_desc.buffer = NULL;
         mImage = clCreateImage( context,
                                flags,
                                image_format,
@@ -163,11 +163,11 @@ extern "C" {
                                host_ptr,
                                errcode_ret );
         if (errcode_ret && (*errcode_ret)) {
-            // Log an info message and rely on the calling function to produce an error 
+            // Log an info message and rely on the calling function to produce an error
             // if necessary.
             log_info("clCreateImage failed (%d)\n", *errcode_ret);
         }
-        
+
         return mImage;
     }
 
@@ -182,18 +182,18 @@ extern "C" {
                                          cl_int *errcode_ret)
     {
         cl_mem mImage;
-        
-        cl_image_desc image_desc;    
+
+        cl_image_desc image_desc;
         image_desc.image_type = CL_MEM_OBJECT_IMAGE1D_ARRAY;
         image_desc.image_width = image_width;
         image_desc.image_height = 1;
-        image_desc.image_depth = 1; 
+        image_desc.image_depth = 1;
         image_desc.image_array_size = image_array_size;
         image_desc.image_row_pitch = image_row_pitch;
         image_desc.image_slice_pitch = image_slice_pitch;
         image_desc.num_mip_levels = 0;
         image_desc.num_samples = 0;
-        image_desc.buffer = NULL; 
+        image_desc.buffer = NULL;
         mImage = clCreateImage( context,
                                flags,
                                image_format,
@@ -201,11 +201,11 @@ extern "C" {
                                host_ptr,
                                errcode_ret );
         if (errcode_ret && (*errcode_ret)) {
-            // Log an info message and rely on the calling function to produce an error 
+            // Log an info message and rely on the calling function to produce an error
             // if necessary.
             log_info("clCreateImage failed (%d)\n", *errcode_ret);
         }
-        
+
         return mImage;
     }
 
@@ -219,17 +219,17 @@ extern "C" {
                                    cl_int *errcode_ret)
     {
         cl_mem mImage;
-        
-        cl_image_desc image_desc;    
+
+        cl_image_desc image_desc;
         image_desc.image_type = buffer ? CL_MEM_OBJECT_IMAGE1D_BUFFER: CL_MEM_OBJECT_IMAGE1D;
         image_desc.image_width = image_width;
         image_desc.image_height = 1;
-        image_desc.image_depth = 1; 
+        image_desc.image_depth = 1;
         image_desc.image_row_pitch = image_row_pitch;
         image_desc.image_slice_pitch = 0;
         image_desc.num_mip_levels = 0;
         image_desc.num_samples = 0;
-        image_desc.buffer = buffer; 
+        image_desc.buffer = buffer;
         mImage = clCreateImage( context,
                                flags,
                                image_format,
@@ -237,17 +237,17 @@ extern "C" {
                                host_ptr,
                                errcode_ret );
         if (errcode_ret && (*errcode_ret)) {
-            // Log an info message and rely on the calling function to produce an error 
+            // Log an info message and rely on the calling function to produce an error
             // if necessary.
             log_info("clCreateImage failed (%d)\n", *errcode_ret);
         }
-        
+
         return mImage;
     }
-    
-  
+
+
 #ifdef __cplusplus
 }
-#endif  
+#endif
 
 #endif

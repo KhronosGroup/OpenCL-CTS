@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,7 +24,7 @@ extern cl_context       context;
 extern bool             gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding;
 extern cl_device_type   gDeviceType;
 
-const char *read2DArrayKernelSourcePattern = 
+const char *read2DArrayKernelSourcePattern =
 "__kernel void sample_kernel( read_only image2d_array_t input, sampler_t sampler, __global int *results )\n"
 "{\n"
 "   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = get_global_id(2);\n"
@@ -39,7 +39,7 @@ const char *read2DArrayKernelSourcePattern =
 "}";
 
 int test_read_image_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel,
-                        image_descriptor *imageInfo, image_sampler_data *imageSampler, 
+                        image_descriptor *imageInfo, image_sampler_data *imageSampler,
                         ExplicitType outputType, MTdata d )
 {
     int error;
@@ -51,7 +51,7 @@ int test_read_image_2D_array( cl_device_id device, cl_context context, cl_comman
     // Don't use clEnqueueWriteImage; just use copy host ptr to get the data in
     cl_image_desc image_desc;
     cl_mem image;
-        
+
     memset(&image_desc, 0x0, sizeof(cl_image_desc));
     image_desc.image_type = CL_MEM_OBJECT_IMAGE2D_ARRAY;
     image_desc.image_width = imageInfo->width;
@@ -59,7 +59,7 @@ int test_read_image_2D_array( cl_device_id device, cl_context context, cl_comman
     image_desc.image_array_size = imageInfo->arraySize;
     image_desc.image_row_pitch = ( gEnablePitch ? imageInfo->rowPitch : 0 );
     image_desc.image_slice_pitch = ( gEnablePitch ? imageInfo->slicePitch : 0 );
-    image = clCreateImage( context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, imageInfo->format, 
+    image = clCreateImage( context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, imageInfo->format,
                                        &image_desc, imageValues, &error );
     if ( error != CL_SUCCESS )
     {
@@ -74,12 +74,12 @@ int test_read_image_2D_array( cl_device_id device, cl_context context, cl_comman
     // Create results buffer
     cl_mem results = clCreateBuffer( context, 0, imageInfo->width * imageInfo->height * imageInfo->arraySize * sizeof(cl_int), NULL, &error);
     test_error( error, "Unable to create results buffer" );
-    
+
     size_t resultValuesSize = imageInfo->width * imageInfo->height * imageInfo->arraySize * sizeof(cl_int);
     BufferOwningPtr<int> resultValues(malloc( resultValuesSize ));
     memset( resultValues, 0xff, resultValuesSize );
     clEnqueueWriteBuffer( queue, results, CL_TRUE, 0, resultValuesSize, resultValues, 0, NULL, NULL );
-        
+
     // Set arguments
     int idx = 0;
     error = clSetKernelArg( kernel, idx++, sizeof( cl_mem ), &image );
@@ -103,7 +103,7 @@ int test_read_image_2D_array( cl_device_id device, cl_context context, cl_comman
     test_error( error, "Unable to read results from kernel" );
     if ( gDebugTrace )
         log_info( "    results read\n" );
-    
+
     // Check for non-zero comps
     bool allZeroes = true;
     for ( size_t ic = 0; ic < imageInfo->width * imageInfo->height * imageInfo->arraySize; ++ic )
@@ -156,6 +156,10 @@ int test_read_image_set_2D_array( cl_device_id device, cl_image_format *format, 
     error |= clGetDeviceInfo( device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof( memSize ), &memSize, NULL );
     test_error( error, "Unable to get max image 2D array size from device" );
 
+    if (memSize > (cl_ulong)SIZE_MAX) {
+        memSize = (cl_ulong)SIZE_MAX;
+    }
+
     // Determine types
     if ( outputType == kInt )
     {
@@ -197,7 +201,7 @@ int test_read_image_set_2D_array( cl_device_id device, cl_image_format *format, 
                 {
                     if ( gDebugTrace )
                         log_info( "   at size %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize );
-                    int retCode = test_read_image_2D_array( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );    
+                    int retCode = test_read_image_2D_array( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
                     if ( retCode )
                         return retCode;
                 }
@@ -222,7 +226,7 @@ int test_read_image_set_2D_array( cl_device_id device, cl_image_format *format, 
             log_info("Testing %d x %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ]);
             if ( gDebugTrace )
                 log_info( "   at max size %d,%d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
-            int retCode = test_read_image_2D_array( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );    
+            int retCode = test_read_image_2D_array( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
             if ( retCode )
                 return retCode;
         }
@@ -257,7 +261,7 @@ int test_read_image_set_2D_array( cl_device_id device, cl_image_format *format, 
 
             if ( gDebugTrace )
                 log_info( "   at size %d,%d,%d (pitch %d,%d) out of %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize, (int)imageInfo.rowPitch, (int)imageInfo.slicePitch, (int)maxWidth, (int)maxHeight, (int)maxArraySize );
-            int retCode = test_read_image_2D_array( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );    
+            int retCode = test_read_image_2D_array( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
             if ( retCode )
                 return retCode;
         }

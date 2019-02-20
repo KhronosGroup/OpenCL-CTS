@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,7 +27,7 @@
 
 #include "procs.h"
 
-static const char *smoothstep_kernel_code = 
+static const char *smoothstep_kernel_code =
 "__kernel void test_smoothstep(__global float *edge0, __global float *edge1, __global float *x, __global float *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -35,7 +35,7 @@ static const char *smoothstep_kernel_code =
 "    dst[tid] = smoothstep(edge0[tid], edge1[tid], x[tid]);\n"
 "}\n";
 
-static const char *smoothstep2_kernel_code = 
+static const char *smoothstep2_kernel_code =
 "__kernel void test_smoothstep2f(__global float *edge0, __global float *edge1, __global float2 *x, __global float2 *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -43,7 +43,7 @@ static const char *smoothstep2_kernel_code =
 "    dst[tid] = smoothstep(edge0[tid], edge1[tid], x[tid]);\n"
 "}\n";
 
-static const char *smoothstep4_kernel_code = 
+static const char *smoothstep4_kernel_code =
 "__kernel void test_smoothstep4f(__global float *edge0, __global float *edge1, __global float4 *x, __global float4 *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -58,7 +58,7 @@ verify_smoothstep(float *edge0, float *edge1, float *x, float *outptr, int n, in
 {
   float       r, t, delta, max_err = 0.0f;
   int         i, j;
-  
+
   for (i = 0; i < n; ++i) {
     int vi = i * veclen;
     for (j = 0; j < veclen; ++j, ++vi) {
@@ -81,7 +81,7 @@ const static char *fn_names[] = { "SMOOTHSTEP float", "SMOOTHSTEP float2", "SMOO
 int
 test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
 {
-  cl_mem	  streams[4];
+  cl_mem      streams[4];
   cl_float    *input_ptr[3], *output_ptr, *p, *p_edge0;
   cl_program  program[3];
   cl_kernel   kernel[3];
@@ -91,9 +91,9 @@ test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue
   int err;
   int i;
   MTdata d;
-  
+
   num_elements = n_elems * 4;
-  
+
   input_ptr[0] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
   input_ptr[1] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
   input_ptr[2] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
@@ -116,21 +116,21 @@ test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue
     log_error("clCreateBuffer failed\n");
     return -1;
   }
-  
+
   streams[3] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, NULL );
   if (!streams[3])
   {
     log_error("clCreateBuffer failed\n");
     return -1;
   }
-  
+
   d = init_genrand( gRandomSeed );
   p = input_ptr[0];
   for (i=0; i<num_elements; i++)
   {
     p[i] = get_random_float(-0x00200000, 0x00200000, d);
   }
-  
+
   p = input_ptr[1];
   p_edge0 = input_ptr[0];
   for (i=0; i<num_elements; i++)
@@ -144,7 +144,7 @@ test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue
     } while (1);
     p[i] = edge1;
   }
-  
+
   p = input_ptr[2];
   for (i=0; i<num_elements; i++)
   {
@@ -152,7 +152,7 @@ test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue
   }
   free_mtdata(d);
   d = NULL;
-  
+
   err = clEnqueueWriteBuffer( queue, streams[0], true, 0, sizeof(cl_float)*num_elements, (void *)input_ptr[0], 0, NULL, NULL );
   if (err != CL_SUCCESS)
   {
@@ -171,7 +171,7 @@ test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue
     log_error("clWriteArray failed\n");
     return -1;
   }
-  
+
   err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &smoothstep_kernel_code, "test_smoothstep" );
   if (err)
     return -1;
@@ -181,20 +181,20 @@ test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue
   err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &smoothstep4_kernel_code, "test_smoothstep4f" );
   if (err)
     return -1;
-  
+
   for (i=0; i<3; i++)
   {
-	  err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );
-	  err |= clSetKernelArg(kernel[i], 1, sizeof streams[1], &streams[1] );
-	  err |= clSetKernelArg(kernel[i], 2, sizeof streams[2], &streams[2] );
-	  err |= clSetKernelArg(kernel[i], 3, sizeof streams[3], &streams[3] );
-	  if (err != CL_SUCCESS)
+      err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );
+      err |= clSetKernelArg(kernel[i], 1, sizeof streams[1], &streams[1] );
+      err |= clSetKernelArg(kernel[i], 2, sizeof streams[2], &streams[2] );
+      err |= clSetKernelArg(kernel[i], 3, sizeof streams[3], &streams[3] );
+      if (err != CL_SUCCESS)
     {
       log_error("clSetKernelArgs failed\n");
       return -1;
     }
   }
-  
+
   threads[0] = (size_t)n_elems;
   for (i=0; i<3; i++)
   {
@@ -204,14 +204,14 @@ test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue
       log_error("clEnqueueNDRangeKernel failed\n");
       return -1;
     }
-    
+
     err = clEnqueueReadBuffer( queue, streams[3], true, 0, sizeof(cl_float)*num_elements, (void *)output_ptr, 0, NULL, NULL );
     if (err != CL_SUCCESS)
     {
       log_error("clEnqueueReadBuffer failed\n");
       return -1;
     }
-    
+
     switch (i)
     {
       case 0:
@@ -224,7 +224,7 @@ test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue
         max_err = verify_smoothstep(input_ptr[0], input_ptr[1], input_ptr[2], output_ptr, n_elems, 4);
         break;
     }
-    
+
     if (max_err > MAX_ERR)
     {
       log_error("%s test failed %g max err\n", fn_names[i], max_err);
@@ -235,11 +235,11 @@ test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue
       log_info("%s test passed %g max err\n", fn_names[i], max_err);
       err = 0;
     }
-    
+
     if (err)
       break;
   }
-  
+
   clReleaseMemObject(streams[0]);
   clReleaseMemObject(streams[1]);
   clReleaseMemObject(streams[2]);
@@ -253,7 +253,7 @@ test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue
   free(input_ptr[1]);
   free(input_ptr[2]);
   free(output_ptr);
-  
+
   return err;
 }
 

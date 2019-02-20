@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,7 +31,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata);
 int TestFunc_DoubleI_Double_Double(const Func *f, MTdata);
 
 #if defined( __cplusplus )
-	extern "C" 
+    extern "C"
 #endif
 const vtbl _binary_two_results_i = { "binary_two_results_i", TestFunc_FloatI_Float_Float, TestFunc_DoubleI_Double_Double };
 
@@ -46,7 +46,7 @@ static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_progr
                             "   out[i] = ", name, "( in1[i], in2[i], out2 + i );\n"
                             "}\n"
                         };
-        
+
     const char *c3[] = {    "__kernel void math_kernel", sizeNames[vectorSize], "( __global float* out, __global int* out2, __global float* in, __global float* in2)\n"
                             "{\n"
                             "   size_t i = get_global_id(0);\n"
@@ -93,31 +93,31 @@ static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_progr
 
     const char **kern = c;
     size_t kernSize = sizeof(c)/sizeof(c[0]);
-    
+
     if( sizeValues[vectorSize] == 3 )
     {
         kern = c3;
         kernSize = sizeof(c3)/sizeof(c3[0]);
     }
-        
+
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
-   
-    return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);     
+
+    return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);
 }
 
 static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl_program *p )
 {
     const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-	                    "__kernel void math_kernel", sizeNames[vectorSize], "( __global double", sizeNames[vectorSize], "* out, __global int", sizeNames[vectorSize], "* out2, __global double", sizeNames[vectorSize], "* in1, __global double", sizeNames[vectorSize], "* in2)\n"
+                        "__kernel void math_kernel", sizeNames[vectorSize], "( __global double", sizeNames[vectorSize], "* out, __global int", sizeNames[vectorSize], "* out2, __global double", sizeNames[vectorSize], "* in1, __global double", sizeNames[vectorSize], "* in2)\n"
                             "{\n"
                             "   int i = get_global_id(0);\n"
                             "   out[i] = ", name, "( in1[i], in2[i], out2 + i );\n"
                             "}\n"
                         };
-        
+
     const char *c3[] = {    "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-	                        "__kernel void math_kernel", sizeNames[vectorSize], "( __global double* out, __global int* out2, __global double* in, __global double* in2)\n"
+                            "__kernel void math_kernel", sizeNames[vectorSize], "( __global double* out, __global int* out2, __global double* in, __global double* in2)\n"
                             "{\n"
                             "   size_t i = get_global_id(0);\n"
                             "   if( i + 1 < get_global_size(0) )\n"
@@ -163,17 +163,17 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl
 
     const char **kern = c;
     size_t kernSize = sizeof(c)/sizeof(c[0]);
-    
+
     if( sizeValues[vectorSize] == 3 )
     {
         kern = c3;
         kernSize = sizeof(c3)/sizeof(c3[0]);
     }
-        
+
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
-   
-    return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);     
+
+    return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);
 }
 
 typedef struct BuildKernelInfo
@@ -238,10 +238,10 @@ ReferenceF(cl_uint jid, cl_uint tid, void *userInfo)
     cl_uint j;
 
     if (off + count > lim)
-	count = lim - off;
+    count = lim - off;
 
     for (j = 0; j < count; ++j)
-	r[j] = (float)f((double)x[j], (double)y[j], i + j);
+    r[j] = (float)f((double)x[j], (double)y[j], i + j);
 
     return CL_SUCCESS;
 }
@@ -261,12 +261,12 @@ ReferenceD(cl_uint jid, cl_uint tid, void *userInfo)
     cl_uint j;
 
     if (off + count > lim)
-	count = lim - off;
+    count = lim - off;
 
     Force64BitFPUPrecision();
 
     for (j = 0; j < count; ++j)
-	r[j] = (double)f((long double)x[j], (long double)y[j], i + j);
+    r[j] = (double)f((long double)x[j], (long double)y[j], i + j);
 
     return CL_SUCCESS;
 }
@@ -282,7 +282,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
     cl_program programs[ VECTOR_SIZE_COUNT ];
     cl_kernel kernels[ VECTOR_SIZE_COUNT ];
     float maxError = 0.0f;
-	float float_ulps;
+    float float_ulps;
     int64_t maxError2 = 0;
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
     float maxErrorVal = 0.0f;
@@ -295,13 +295,13 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
 
     if( gWimpyMode )
         step = (1ULL<<32) / 16;
-        
-	if( gIsEmbedded )
-		float_ulps = f->float_embedded_ulps;
-	else
-		float_ulps = f->float_ulps;
-        
-    int testingRemquo = !strcmp(f->name, "remquo");    
+
+    if( gIsEmbedded )
+        float_ulps = f->float_embedded_ulps;
+    else
+        float_ulps = f->float_ulps;
+
+    int testingRemquo = !strcmp(f->name, "remquo");
 
     // Init the kernels
     BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs, f->nameInCode };
@@ -329,13 +329,13 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
             vlog_error( "\n*** Error %d in clEnqueueWriteBuffer ***\n", error );
             return error;
         }
-        
+
         if( (error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_TRUE, 0, BUFFER_SIZE, gIn2, 0, NULL, NULL) ))
         {
             vlog_error( "\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error );
             return error;
         }
-        
+
         // write garbage into output arrays
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -354,7 +354,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
                 goto exit;
             }
         }
-        
+
         // Run the kernels
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -375,32 +375,32 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
         // Get that moving
         if( (error = clFlush(gQueue) ))
             vlog( "clFlush failed\n" );
-        
+
         // Calculate the correctly rounded reference result
         float *s = (float *)gIn;
         float *s2 = (float *)gIn2;
 
 #if defined PARALLEL_REFERENCE
-	if (threadCount > 1) {
-	    ComputeReferenceInfoF cri;
-	    cri.x = s;
-	    cri.y = s2;
-	    cri.r = (float *)gOut_Ref;
-	    cri.i = (int *)gOut_Ref2;
-	    cri.f_ffpI = f->func.f_ffpI;
-	    cri.lim = BUFFER_SIZE / sizeof( float );
-	    cri.count = (cri.lim + threadCount - 1) / threadCount;
-	    ThreadPool_Do(ReferenceF, threadCount, &cri);
-	} else {
+    if (threadCount > 1) {
+        ComputeReferenceInfoF cri;
+        cri.x = s;
+        cri.y = s2;
+        cri.r = (float *)gOut_Ref;
+        cri.i = (int *)gOut_Ref2;
+        cri.f_ffpI = f->func.f_ffpI;
+        cri.lim = BUFFER_SIZE / sizeof( float );
+        cri.count = (cri.lim + threadCount - 1) / threadCount;
+        ThreadPool_Do(ReferenceF, threadCount, &cri);
+    } else {
 #endif
             float *r = (float *)gOut_Ref;
             int *r2 = (int *)gOut_Ref2;
             for( j = 0; j < BUFFER_SIZE / sizeof( float ); j++ )
                 r[j] = (float) f->func.f_ffpI( s[j], s2[j], r2+j );
 #if defined PARALLEL_REFERENCE
-	}
+    }
 #endif
-                        
+
         // Read the data back
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -418,7 +418,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
 
         if( gSkipCorrectnessTesting )
             break;
-        
+
         //Verify data
         uint32_t *t = (uint32_t *)gOut_Ref;
         int32_t *t2 = (int32_t *)gOut_Ref2;
@@ -428,14 +428,14 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
             {
                 uint32_t *q = (uint32_t *)gOut[k];
                 int32_t *q2 = (int32_t *)gOut2[k];
-                
-                // Check for exact match to correctly rounded result
-		if (t[j] == q[j] && t2[j] == q2[j])
-		    continue;
 
-		// Check for paired NaNs
-		if ((t[j] & 0x7fffffff) > 0x7f800000 && (q[j] & 0x7fffffff) > 0x7f800000 && t2[j] == q2[j])
-		    continue;
+                // Check for exact match to correctly rounded result
+        if (t[j] == q[j] && t2[j] == q2[j])
+            continue;
+
+        // Check for paired NaNs
+        if ((t[j] & 0x7fffffff) > 0x7f800000 && (q[j] & 0x7fffffff) > 0x7f800000 && t2[j] == q2[j])
+            continue;
 
                 // if( t[j] != q[j] || t2[j] != q2[j] )
                 {
@@ -444,19 +444,19 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
                     double correct = f->func.f_ffpI( s[j], s2[j], &correct2 );
                     float err = Ulp_Error( test, correct );
                     int64_t iErr;
-                    
-                    // in case of remquo, we only care about the sign and last seven bits of 
+
+                    // in case of remquo, we only care about the sign and last seven bits of
                     // integer as per the spec.
                     if(testingRemquo)
-                    	iErr = (long long) (q2[j] & 0x0000007f) - (long long) (correct2 & 0x0000007f);
-                    else 
-                    	iErr = (long long) q2[j] - (long long) correct2;
+                        iErr = (long long) (q2[j] & 0x0000007f) - (long long) (correct2 & 0x0000007f);
+                    else
+                        iErr = (long long) q2[j] - (long long) correct2;
 
-                    //For remquo, if y = 0, x is infinite, or either is NaN then the standard either neglects 
+                    //For remquo, if y = 0, x is infinite, or either is NaN then the standard either neglects
                     //to say what is returned in iptr or leaves it undefined or implementation defined.
-                    int iptrUndefined = fabs(((float*) gIn)[j]) == INFINITY || 
-                                        ((float*) gIn2)[j] == 0.0f          || 
-                                        isnan(((float*) gIn2)[j])           || 
+                    int iptrUndefined = fabs(((float*) gIn)[j]) == INFINITY ||
+                                        ((float*) gIn2)[j] == 0.0f          ||
+                                        isnan(((float*) gIn2)[j])           ||
                                         isnan(((float*) gIn)[j]);
                     if(iptrUndefined)
                          iErr = 0;
@@ -471,7 +471,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
                             if( ! fail )
                                 err = 0.0f;
                         }
-        
+
                         // retry per section 6.5.3.3
                         if( IsFloatSubnormal( s[j] ) )
                         {
@@ -491,7 +491,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
                                 iErr = iErr3;
                             if( llabs(iErr4) < llabs( iErr ) )
                                 iErr = iErr4;
-                            
+
                             // retry per section 6.5.3.4
                             if( IsFloatResultSubnormal(correct2, float_ulps ) || IsFloatResultSubnormal(correct3, float_ulps ) )
                             {
@@ -499,7 +499,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
                                 if( ! fail )
                                     err = 0.0f;
                             }
-                            
+
                             //try with both args as zero
                             if( IsFloatSubnormal( s2[j] ) )
                             {
@@ -534,7 +534,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
                                     iErr = iErr7;
                                 if( llabs(iErr8) < llabs( iErr ) )
                                     iErr = iErr8;
-                                
+
                                 // retry per section 6.5.3.4
                                 if( IsFloatResultSubnormal(correct3, float_ulps ) || IsFloatResultSubnormal(correct4, float_ulps )  ||
                                     IsFloatResultSubnormal(correct7, float_ulps ) || IsFloatResultSubnormal(correct8, float_ulps ) )
@@ -563,7 +563,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
                                 iErr = iErr3;
                             if( llabs(iErr4) < llabs( iErr ) )
                                 iErr = iErr4;
-                            
+
                             // retry per section 6.5.3.4
                             if( IsFloatResultSubnormal(correct2, float_ulps ) || IsFloatResultSubnormal(correct3, float_ulps ) )
                             {
@@ -576,7 +576,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
                     if( fabsf(err ) > maxError )
                     {
                         maxError = fabsf(err);
-                        maxErrorVal = s[j]; 
+                        maxErrorVal = s[j];
                     }
                     if( llabs(iErr) > maxError2 )
                     {
@@ -586,12 +586,12 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
 
                     if( fail )
                     {
-                        vlog_error( "\nERROR: %s%s: {%f, %lld} ulp error at {%a, %a} ({0x%8.8x, 0x%8.8x}): *{%a, %d} ({0x%8.8x, 0x%8.8x}) vs. {%a, %d} ({0x%8.8x, 0x%8.8x})\n", 
-                                    f->name, sizeNames[k], err, iErr, 
-                                   ((float*) gIn)[j], ((float*) gIn2)[j], 
-                                   ((cl_uint*) gIn)[j], ((cl_uint*) gIn2)[j], 
-                                   ((float*) gOut_Ref)[j], ((int*) gOut_Ref2)[j], 
-                                   ((cl_uint*) gOut_Ref)[j], ((cl_uint*) gOut_Ref2)[j], 
+                        vlog_error( "\nERROR: %s%s: {%f, %lld} ulp error at {%a, %a} ({0x%8.8x, 0x%8.8x}): *{%a, %d} ({0x%8.8x, 0x%8.8x}) vs. {%a, %d} ({0x%8.8x, 0x%8.8x})\n",
+                                    f->name, sizeNames[k], err, iErr,
+                                   ((float*) gIn)[j], ((float*) gIn2)[j],
+                                   ((cl_uint*) gIn)[j], ((cl_uint*) gIn2)[j],
+                                   ((float*) gOut_Ref)[j], ((int*) gOut_Ref2)[j],
+                                   ((cl_uint*) gOut_Ref)[j], ((cl_uint*) gOut_Ref2)[j],
                                    test, q2[j],
                                    ((cl_uint*)&test)[0], ((cl_uint*) q2)[j] );
                       error = -1;
@@ -607,7 +607,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
             fflush(stdout);
         }
     }
-    
+
     if( ! gSkipCorrectnessTesting )
     {
         if( gWimpyMode )
@@ -632,7 +632,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
             vlog_error( "\n*** Error %d in clEnqueueWriteBuffer ***\n", error );
             return error;
         }
-        
+
 
         // Run the kernels
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
@@ -661,7 +661,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
                     vlog_error( "Error %d at clFinish\n", error );
                     goto exit;
                 }
-            
+
                 uint64_t endTime = GetTime();
                 double time = SubtractTime( endTime, startTime );
                 sum += time;
@@ -681,7 +681,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d)
     vlog( "\n" );
 
 exit:
-    // Release 
+    // Release
     for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
     {
         clReleaseKernel(kernels[k]);
@@ -707,7 +707,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
     uint64_t step = BUFFER_SIZE / sizeof( double );
     if( gWimpyMode )
         step = (1ULL<<32) / 16;
-    
+
 #if defined PARALLEL_REFERENCE
     cl_uint threadCount = GetThreadCount();
 #endif
@@ -718,8 +718,8 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
 
     // Init the kernels
     BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs, f->nameInCode };
-    if( (error = ThreadPool_Do( BuildKernel_DoubleFn, 
-                                gMaxVectorSizeIndex - gMinVectorSizeIndex, 
+    if( (error = ThreadPool_Do( BuildKernel_DoubleFn,
+                                gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                 &build_info ) ))
     {
         return error;
@@ -746,13 +746,13 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
             vlog_error( "\n*** Error %d in clEnqueueWriteBuffer ***\n", error );
             return error;
         }
-        
+
         if( (error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_TRUE, 0, BUFFER_SIZE, gIn2, 0, NULL, NULL) ))
         {
             vlog_error( "\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error );
             return error;
         }
-        
+
         // write garbage into output arrays
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -771,7 +771,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                 goto exit;
             }
         }
-        
+
         // Run the kernels
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -792,30 +792,30 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
         // Get that moving
         if( (error = clFlush(gQueue) ))
             vlog( "clFlush failed\n" );
-        
+
         //Calculate the correctly rounded reference result
         double *s = (double *)gIn;
         double *s2 = (double *)gIn2;
 
 #if defined PARALLEL_REFERENCE
-	if (threadCount > 1) {
-	    ComputeReferenceInfoD cri;
-	    cri.x = s;
-	    cri.y = s2;
-	    cri.r = (double *)gOut_Ref;
-	    cri.i = (int *)gOut_Ref2;
-	    cri.f_ffpI = f->dfunc.f_ffpI;
-	    cri.lim = BUFFER_SIZE / sizeof( double );
-	    cri.count = (cri.lim + threadCount - 1) / threadCount;
-	    ThreadPool_Do(ReferenceD, threadCount, &cri);
-	} else {
+    if (threadCount > 1) {
+        ComputeReferenceInfoD cri;
+        cri.x = s;
+        cri.y = s2;
+        cri.r = (double *)gOut_Ref;
+        cri.i = (int *)gOut_Ref2;
+        cri.f_ffpI = f->dfunc.f_ffpI;
+        cri.lim = BUFFER_SIZE / sizeof( double );
+        cri.count = (cri.lim + threadCount - 1) / threadCount;
+        ThreadPool_Do(ReferenceD, threadCount, &cri);
+    } else {
 #endif
             double *r = (double *)gOut_Ref;
             int *r2 = (int *)gOut_Ref2;
             for( j = 0; j < BUFFER_SIZE / sizeof( double ); j++ )
                 r[j] = (double) f->dfunc.f_ffpI( s[j], s2[j], r2+j );
 #if defined PARALLEL_REFERENCE
-	}
+    }
 #endif
 
         // Read the data back
@@ -835,7 +835,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
 
         if( gSkipCorrectnessTesting )
             break;
-        
+
         //Verify data
         uint64_t *t = (uint64_t *)gOut_Ref;
         int32_t *t2 = (int32_t *)gOut_Ref2;
@@ -845,16 +845,16 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
             {
                 uint64_t *q = (uint64_t *)gOut[k];
                 int32_t *q2 = (int32_t *)gOut2[k];
-                
-		// Check for exact match to correctly rounded result
-		if (t[j] == q[j] && t2[j] == q2[j])
-		    continue;
 
-		// Check for paired NaNs
-		if ((t[j] & 0x7fffffffffffffffUL) > 0x7ff0000000000000UL &&
-		    (q[j] & 0x7fffffffffffffffUL) > 0x7ff0000000000000UL &&
-		    t2[j] == q2[j])
-		    continue;
+        // Check for exact match to correctly rounded result
+        if (t[j] == q[j] && t2[j] == q2[j])
+            continue;
+
+        // Check for paired NaNs
+        if ((t[j] & 0x7fffffffffffffffUL) > 0x7ff0000000000000UL &&
+            (q[j] & 0x7fffffffffffffffUL) > 0x7ff0000000000000UL &&
+            t2[j] == q2[j])
+            continue;
 
                 // if( t[j] != q[j] || t2[j] != q2[j] )
                 {
@@ -863,19 +863,19 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                     long double correct = f->dfunc.f_ffpI( s[j], s2[j], &correct2 );
                     float err = Ulp_Error_Double( test, correct );
                     int64_t iErr;
-                    
-                    // in case of remquo, we only care about the sign and last seven bits of 
+
+                    // in case of remquo, we only care about the sign and last seven bits of
                     // integer as per the spec.
                     if(testingRemquo)
-                    	iErr = (long long) (q2[j] & 0x0000007f) - (long long) (correct2 & 0x0000007f);
-                    else 
-                    	iErr = (long long) q2[j] - (long long) correct2;
+                        iErr = (long long) (q2[j] & 0x0000007f) - (long long) (correct2 & 0x0000007f);
+                    else
+                        iErr = (long long) q2[j] - (long long) correct2;
 
-                    //For remquo, if y = 0, x is infinite, or either is NaN then the standard either neglects 
+                    //For remquo, if y = 0, x is infinite, or either is NaN then the standard either neglects
                     //to say what is returned in iptr or leaves it undefined or implementation defined.
-                    int iptrUndefined = fabs(((double*) gIn)[j]) == INFINITY || 
-                                        ((double*) gIn2)[j] == 0.0          || 
-                                        isnan(((double*) gIn2)[j])           || 
+                    int iptrUndefined = fabs(((double*) gIn)[j]) == INFINITY ||
+                                        ((double*) gIn2)[j] == 0.0          ||
+                                        isnan(((double*) gIn2)[j])           ||
                                         isnan(((double*) gIn)[j]);
                     if(iptrUndefined)
                          iErr = 0;
@@ -890,7 +890,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                             if( ! fail )
                                 err = 0.0f;
                         }
-        
+
                         // retry per section 6.5.3.3
                         if( IsDoubleSubnormal( s[j] ) )
                         {
@@ -910,7 +910,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                                 iErr = iErr3;
                             if( llabs(iErr4) < llabs( iErr ) )
                                 iErr = iErr4;
-                            
+
                             // retry per section 6.5.3.4
                             if( IsDoubleResultSubnormal( correct2, f->double_ulps ) || IsDoubleResultSubnormal( correct3, f->double_ulps ) )
                             {
@@ -918,7 +918,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                                 if( ! fail )
                                     err = 0.0f;
                             }
-                            
+
                             //try with both args as zero
                             if( IsDoubleSubnormal( s2[j] ) )
                             {
@@ -953,7 +953,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                                     iErr = iErr7;
                                 if( llabs(iErr8) < llabs( iErr ) )
                                     iErr = iErr8;
-                                
+
                                 // retry per section 6.5.3.4
                                 if( IsDoubleResultSubnormal( correct3, f->double_ulps ) || IsDoubleResultSubnormal( correct4, f->double_ulps )  ||
                                     IsDoubleResultSubnormal( correct7, f->double_ulps ) || IsDoubleResultSubnormal( correct8, f->double_ulps ) )
@@ -982,7 +982,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                                 iErr = iErr3;
                             if( llabs(iErr4) < llabs( iErr ) )
                                 iErr = iErr4;
-                            
+
                             // retry per section 6.5.3.4
                             if( IsDoubleResultSubnormal( correct2, f->double_ulps ) || IsDoubleResultSubnormal( correct3, f->double_ulps ) )
                             {
@@ -995,7 +995,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                     if( fabsf(err ) > maxError )
                     {
                         maxError = fabsf(err);
-                        maxErrorVal = s[j]; 
+                        maxErrorVal = s[j];
                     }
                     if( llabs(iErr) > maxError2 )
                     {
@@ -1005,12 +1005,12 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
 
                     if( fail )
                     {
-                        vlog_error( "\nERROR: %sD%s: {%f, %lld} ulp error at {%.13la, %.13la} ({ 0x%16.16llx, 0x%16.16llx}): *{%.13la, %d} ({ 0x%16.16llx, 0x%8.8x}) vs. {%a.13l, %d} ({ 0x%16.16llx, 0x%8.8x})\n", 
-                                    f->name, sizeNames[k], err, iErr, 
-                                   ((double*) gIn)[j], ((double*) gIn2)[j], 
-                                   ((cl_ulong*) gIn)[j], ((cl_ulong*) gIn2)[j], 
-                                   ((double*) gOut_Ref)[j], ((int*) gOut_Ref2)[j], 
-                                   ((cl_ulong*) gOut_Ref)[j], ((cl_uint*) gOut_Ref2)[j], 
+                        vlog_error( "\nERROR: %sD%s: {%f, %lld} ulp error at {%.13la, %.13la} ({ 0x%16.16llx, 0x%16.16llx}): *{%.13la, %d} ({ 0x%16.16llx, 0x%8.8x}) vs. {%a.13l, %d} ({ 0x%16.16llx, 0x%8.8x})\n",
+                                    f->name, sizeNames[k], err, iErr,
+                                   ((double*) gIn)[j], ((double*) gIn2)[j],
+                                   ((cl_ulong*) gIn)[j], ((cl_ulong*) gIn2)[j],
+                                   ((double*) gOut_Ref)[j], ((int*) gOut_Ref2)[j],
+                                   ((cl_ulong*) gOut_Ref)[j], ((cl_uint*) gOut_Ref2)[j],
                                    test, q2[j],
                                    ((cl_ulong*) &test)[j], ((cl_uint*) q2)[j]);
                       error = -1;
@@ -1026,7 +1026,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
             fflush(stdout);
         }
     }
-    
+
     if( ! gSkipCorrectnessTesting )
     {
         if( gWimpyMode )
@@ -1051,7 +1051,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
             vlog_error( "\n*** Error %d in clEnqueueWriteBuffer ***\n", error );
             return error;
         }
-        
+
 
         // Run the kernels
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
@@ -1080,7 +1080,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
                     vlog_error( "Error %d at clFinish\n", error );
                     goto exit;
                 }
-            
+
                 uint64_t endTime = GetTime();
                 double time = SubtractTime( endTime, startTime );
                 sum += time;
@@ -1102,7 +1102,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d)
     vlog( "\n" );
 
 exit:
-    // Release 
+    // Release
     for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
     {
         clReleaseKernel(kernels[k]);

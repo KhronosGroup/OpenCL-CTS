@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 #include "../../test_common/harness/compat.h"
 #include "../../test_common/harness/rounding_mode.h"
 #include "../../test_common/harness/ThreadPool.h"
+#include "../../test_common/harness/parseParameters.h"
 #if defined (_WIN32)
 #define MAX(x,y) ((x>y)?x:y);
 #define MIN(x,y) ((x<y)?x:y);
@@ -29,14 +30,14 @@
 #include <sys/syscall.h>
 #include <linux/sysctl.h>
 #endif
-#if defined(__linux__) 
+#if defined(__linux__)
 #include <sys/param.h>
 #include <libgen.h>
 #endif
 
 #include "mingw_compat.h"
-#if defined(__MINGW32__) 
-#include <sys/param.h>    
+#if defined(__MINGW32__)
+#include <sys/param.h>
 #endif
 
 #include <stdarg.h>
@@ -96,20 +97,21 @@ int             gTimeResults = 0;
 int             gReportAverageTimes = 0;
 void            *gIn = NULL;
 void            *gRef = NULL;
-void		*gAllowZ = NULL;
+void        *gAllowZ = NULL;
 void            *gOut[ kCallStyleCount ] = { NULL };
 cl_mem          gInBuffer;
 cl_mem          gOutBuffers[ kCallStyleCount ];
 size_t          gComputeDevices = 0;
 uint32_t        gDeviceFrequency = 0;
 int             gWimpyMode = 0;
+int             gWimpyReductionFactor = 128;
 int             gSkipTesting = 0;
 int             gForceFTZ = 0;
 int             gMultithread = 1;
 int             gIsRTZ = 0;
 uint32_t        gSimdSize = 1;
 int             gHasDouble = 0;
-int				   gIsEmbedded = 0;
+int                   gIsEmbedded = 0;
 int             gHasLong = 1;
 int             gTestDouble = 1;
 cl_uint         choosen_device_index = 0;
@@ -171,21 +173,21 @@ int main (int argc, const char **argv )
     SaturationMode sat;
     MTdata  d = NULL;
     cl_uint seed = (cl_uint) clock();
-        
+
     test_start();
-    
-    if( (error = ParseArgs( argc, argv )) ) 
+
+    if( (error = ParseArgs( argc, argv )) )
         return error;
-    
+
     //Turn off sleep so our tests run to completion
     PreventSleep();
     atexit( ResumeSleep );
-    
+
     // Init CL data structures
     if( (error = InitCL()) )
         return error;
-    
-#if defined(_MSC_VER) && defined(_M_IX86) 
+
+#if defined(_MSC_VER) && defined(_M_IX86)
     // VS2005 (and probably others, since long double got deprecated) sets
     // the x87 to 53-bit precision. This causes problems with the tests
     // that convert long and ulong to float and double, since they deal
@@ -208,7 +210,7 @@ int main (int argc, const char **argv )
                 vlog_error( "\n\t\t**** ERROR:  Unable to parse function name %s.  Skipping....  *****\n\n", argList[i] );
                 continue;
             }
-            
+
             // skip double if we don't have it
             if( !gTestDouble && (inType == kdouble || outType == kdouble ) )
             {
@@ -220,12 +222,12 @@ int main (int argc, const char **argv )
 
                 continue;
             }
-            
+
             // skip longs on embedded
-            if( ! gHasLong && 
+            if( ! gHasLong &&
                (inType == klong || outType == klong || inType == kulong || outType == kulong))
                 continue;
-            
+
             // Skip the implicit converts if the rounding mode is not default or test is saturated
             if( 0 == startMinVectorSize )
             {
@@ -234,29 +236,29 @@ int main (int argc, const char **argv )
                 else
                     gMinVectorSize = 0;
             }
-            
-            if( (error = DoTest( outType, inType, sat, round, d )) ) 
+
+            if( (error = DoTest( outType, inType, sat, round, d )) )
                 vlog_error( "\t *** convert_%sn%s%s( %sn ) FAILED ** \n", gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
         }
     }
     else
     {
-    
+
         for( outType = (Type)0; outType < kTypeCount; outType = (Type)(outType+1) )
         {
             for( inType = (Type)0; inType < kTypeCount; inType = (Type)(inType+1) )
             {
                 // skip longs on embedded
-                if( ! gHasLong && 
+                if( ! gHasLong &&
                    (inType == klong || outType == klong || inType == kulong || outType == kulong))
-                    continue;  
-                
+                    continue;
+
                 for( sat = (SaturationMode)0; sat < kSaturationModeCount; sat = (SaturationMode)(sat+1) )
                 {
                     //skip illegal saturated conversions to float type
                     if( kSaturated == sat && ( outType == kfloat || outType == kdouble ) )
-                        continue;   
-                    
+                        continue;
+
                     for( round = (RoundingMode)0; round < kRoundingModeCount; round = (RoundingMode)(round+1) )
                     {
                         if( ++testNumber < gStartTestNumber )
@@ -264,12 +266,12 @@ int main (int argc, const char **argv )
                             //     vlog( "%d) skipping convert_%sn%s%s( %sn )\n", testNumber, gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
                             continue;
                         }
-                        else 
+                        else
                             if( gEndTestNumber > 0 && testNumber >= gEndTestNumber  )
                                 goto exit;
-                        
+
                         vlog( "%d) Testing convert_%sn%s%s( %sn ):\n", testNumber, gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
-                        
+
                         // skip double if we don't have it
                         if( ! gTestDouble && (inType == kdouble || outType == kdouble ) )
                         {
@@ -289,42 +291,42 @@ int main (int argc, const char **argv )
                             else
                                 gMinVectorSize = 0;
                         }
-                        
-                        if( (error = DoTest( outType, inType, sat, round, d) ) ) 
+
+                        if( (error = DoTest( outType, inType, sat, round, d) ) )
                             vlog_error( "\t *** %d) convert_%sn%s%s( %sn ) FAILED ** \n", testNumber, gTypeNames[ outType ], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType] );
                     }
                 }
             }
         }
     }
-    
+
 exit:
     free_mtdata(d);
     vlog( "\n\n" );
     vlog( "Tests completed: %d\n", gTestCount );
-    
+
     error = clFinish(gQueue);
     if (error)
-        vlog_error("clFinish failed: %d\n", error);  
-    
+        vlog_error("clFinish failed: %d\n", error);
+
     if (gFailCount == 0 && gTestCount > 0) {
         vlog("PASSED %d of %d tests.\n", gTestCount, gTestCount);
     } else if (gFailCount > 0) {
         vlog_error("FAILED %d of %d tests.\n", gFailCount, gTestCount);
     }
-    
+
     clReleaseMemObject(gInBuffer);
-    
+
     for( i = 0; i < kCallStyleCount; i++ ) {
         clReleaseMemObject(gOutBuffers[i]);
     }
     clReleaseCommandQueue(gQueue);
     clReleaseContext(gContext);
-    
+
     test_finish();
     if (gFailCount > 0)
         return -1;
-        
+
     return 0;
 }
 
@@ -336,10 +338,10 @@ static int ParseArgs( int argc, const char **argv )
     int i;
     argList = (const char **)calloc( argc - 1, sizeof( char*) );
     argCount = 0;
-    
+
     if( NULL == argList && argc > 1 )
         return -1;
-    
+
 #if (defined( __APPLE__ ) || defined(__linux__) || defined (__MINGW32__))
     { // Extract the app name
         char baseName[ MAXPATHLEN ];
@@ -355,17 +357,17 @@ static int ParseArgs( int argc, const char **argv )
     {
         char fname[_MAX_FNAME + _MAX_EXT + 1];
         char ext[_MAX_EXT];
-        
-        errno_t err = _splitpath_s( argv[0], NULL, 0, NULL, 0, 
+
+        errno_t err = _splitpath_s( argv[0], NULL, 0, NULL, 0,
                                    fname, _MAX_FNAME, ext, _MAX_EXT );
-        if (err == 0) { // no error 
+        if (err == 0) { // no error
             strcat (fname, ext); //just cat them, size of frame can keep both
             strncpy (appName, fname, sizeof(appName));
             appName[ sizeof( appName ) -1 ] = '\0';
         }
     }
 #endif
-    
+
     /* Check for environment variable to set device type */
     char *env_mode = getenv( "CL_DEVICE_TYPE" );
     if( env_mode != NULL )
@@ -379,21 +381,21 @@ static int ParseArgs( int argc, const char **argv )
             gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
         else if( strcmp( env_mode, "default" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
             gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-        else 
-        { 
+        else
+        {
             vlog_error( "Unknown CL_DEVICE_TYPE env variable setting: %s.\nAborting...\n", env_mode );
             abort();
         }
     }
-    
-    
+
+
     vlog( "\n%s", appName );
     for( i = 1; i < argc; i++ )
     {
         const char *arg = argv[i];
         if( NULL == arg )
             break;
-        
+
         vlog( "\t%s", arg );
         if( arg[0] == '-' )
         {
@@ -404,7 +406,7 @@ static int ParseArgs( int argc, const char **argv )
                 {
                     case 'd':
                         gTestDouble ^= 1;
-                        break;  
+                        break;
                     case 'l':
                         gSkipTesting ^= 1;
                         break;
@@ -413,7 +415,10 @@ static int ParseArgs( int argc, const char **argv )
                         break;
                     case 'w':
                         gWimpyMode ^= 1;
-                        break;  
+                        break;
+                    case '[':
+                        parseWimpyReductionFactor(arg, gWimpyReductionFactor);
+                        break;
                     case 'z':
                         gForceFTZ ^= 1;
                         break;
@@ -436,27 +441,27 @@ static int ParseArgs( int argc, const char **argv )
                             gMaxVectorSize = 2;
                         }
                         break;
-                        
+
                     case '2':
                         gMinVectorSize = 2;
                         gMaxVectorSize = 3;
                         break;
-                        
+
                     case '3':
                         gMinVectorSize = 3;
                         gMaxVectorSize = 4;
                         break;
-                        
+
                     case '4':
                         gMinVectorSize = 4;
                         gMaxVectorSize = 5;
                         break;
-                        
+
                     case '8':
                         gMinVectorSize = 5;
                         gMaxVectorSize = 6;
                         break;
-                        
+
                     default:
                         vlog( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
                         PrintUsage();
@@ -466,7 +471,7 @@ static int ParseArgs( int argc, const char **argv )
             }
         }
         // Check if a particular device id was requested
-        else if (strlen(argv[i]) >= 3 && argv[i][0] == 'i' && argv[i][1] =='d') 
+        else if (strlen(argv[i]) >= 3 && argv[i][0] == 'i' && argv[i][1] =='d')
         {
             choosen_device_index = atoi(&(argv[i][2]));
         }
@@ -496,21 +501,22 @@ static int ParseArgs( int argc, const char **argv )
             }
         }
     }
-    
+
     vlog( "\n" );
-    
+
     vlog( "Test binary built %s %s\n", __DATE__, __TIME__ );
-    
+
     PrintArch();
-    
+
     if( gWimpyMode )
     {
         vlog( "\n" );
         vlog( "*** WARNING: Testing in Wimpy mode!                     ***\n" );
         vlog( "*** Wimpy mode is not sufficient to verify correctness. ***\n" );
         vlog( "*** It gives warm fuzzy feelings and then nevers calls. ***\n\n" );
+        vlog("*** Wimpy Reduction Factor: %-27u ***\n\n", gWimpyReductionFactor);
     }
-    
+
     return 0;
 }
 
@@ -531,10 +537,11 @@ static void PrintUsage( void )
     vlog( "\t\t\t\tulong_short   converts short to ulong\n" );
     vlog( "\t\t\t\tchar_sat_rte_float   converts float to char with saturated clipping in round to nearest rounding mode\n\n" );
     vlog( "\toptions:\n" );
-	vlog( "\t\t-d\tToggle testing of double precision.  On by default if cl_khr_fp64 is enabled, ignored otherwise.\n" );
+    vlog( "\t\t-d\tToggle testing of double precision.  On by default if cl_khr_fp64 is enabled, ignored otherwise.\n" );
     vlog( "\t\t-l\tToggle link check mode. When on, testing is skipped, and we just check to see that the kernels build. (Off by default.)\n" );
     vlog( "\t\t-m\tToggle Multithreading. (On by default.)\n" );
     vlog( "\t\t-w\tToggle wimpy mode. When wimpy mode is on, we run a very small subset of the tests for each fn. NOT A VALID TEST! (Off by default.)\n" );
+    vlog(" \t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", gWimpyReductionFactor);
     vlog( "\t\t-z\tToggle flush to zero mode  (Default: per device)\n" );
     vlog( "\t\t-#\tTest just vector size given by #, where # is an element of the set {1,2,3,4,8,16}\n" );
     vlog( "\n" );
@@ -556,14 +563,16 @@ static void PrintArch( void )
     vlog( "ARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     vlog( "ARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    vlog( "ARCH:\taarch64\n" );
 #elif defined (_WIN32)
     vlog( "ARCH:\tWindows\n" );
 #else
 #error unknown arch
 #endif
-    
+
 #if defined( __APPLE__ )
-    
+
     int type = 0;
     size_t typeSize = sizeof( type );
     sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
@@ -571,30 +580,30 @@ static void PrintArch( void )
     typeSize = sizeof( type );
     sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
     vlog( "cpu subtype:\t%d\n", type );
-    
+
 #elif defined( __linux__ )
 #define OSNAMESZ 100
-    int _sysctl(struct __sysctl_args *args ); 
-    
-    struct __sysctl_args args; 
-    char osname[OSNAMESZ]; 
-    size_t osnamelth; 
-    int name[] = { CTL_KERN, KERN_OSTYPE }; 
-    memset(&args, 0, sizeof(struct __sysctl_args)); 
-    args.name = name; 
-    args.nlen = sizeof(name)/sizeof(name[0]); 
-    args.oldval = osname; 
-    args.oldlenp = &osnamelth; 
-    
-    osnamelth = sizeof(osname); 
-    
-    if (syscall(SYS__sysctl, &args) == -1) { 
-        vlog( "_sysctl error\n" ); 
-    } 
-    else { 
-        vlog("this machine is running %*s\n", osnamelth, osname); 
-    } 
-    
+    int _sysctl(struct __sysctl_args *args );
+
+    struct __sysctl_args args;
+    char osname[OSNAMESZ];
+    size_t osnamelth;
+    int name[] = { CTL_KERN, KERN_OSTYPE };
+    memset(&args, 0, sizeof(struct __sysctl_args));
+    args.name = name;
+    args.nlen = sizeof(name)/sizeof(name[0]);
+    args.oldval = osname;
+    args.oldlenp = &osnamelth;
+
+    osnamelth = sizeof(osname);
+
+    if (syscall(SYS__sysctl, &args) == -1) {
+        vlog( "_sysctl error\n" );
+    }
+    else {
+        vlog("this machine is running %*s\n", osnamelth, osname);
+    }
+
 #endif
 }
 
@@ -605,20 +614,20 @@ static void PrintArch( void )
 static int GetTestCase( const char *name, Type *outType, Type *inType, SaturationMode *sat, RoundingMode *round )
 {
     int i;
-    
+
     //Find the return type
     for( i = 0; i < kTypeCount; i++ )
         if( name == strstr( name, gTypeNames[i] ) )
         {
             *outType = (Type)i;
             name += strlen( gTypeNames[i] );
-            
+
             break;
         }
-    
+
     if( i == kTypeCount )
         return -1;
-    
+
     // Check to see if _sat appears next
     *sat = (SaturationMode)0;
     for( i = 1; i < kSaturationModeCount; i++ )
@@ -628,7 +637,7 @@ static int GetTestCase( const char *name, Type *outType, Type *inType, Saturatio
             name += strlen( gSaturationNames[i] );
             break;
         }
-    
+
     *round = (RoundingMode)0;
     for( i = 1; i < kRoundingModeCount; i++ )
         if( name == strstr( name, gRoundingModeNames[i] ) )
@@ -637,26 +646,26 @@ static int GetTestCase( const char *name, Type *outType, Type *inType, Saturatio
             name += strlen( gRoundingModeNames[i] );
             break;
         }
-    
+
     if( *name != '_' )
         return -2;
     name++;
-    
+
     for( i = 0; i < kTypeCount; i++ )
         if( name == strstr( name, gTypeNames[i] ) )
         {
             *inType = (Type)i;
             name += strlen( gTypeNames[i] );
-            
+
             break;
         }
-    
+
     if( i == kTypeCount )
         return -3;
-    
+
     if( *name != '\0' )
         return -4;
-    
+
     return 0;
 }
 
@@ -672,55 +681,55 @@ static int InitCL( void )
 {
     int error, i;
     size_t configSize = sizeof( gComputeDevices );
-    
+
     cl_platform_id     platform = NULL;
     cl_uint            num_devices = 0;
     cl_device_id       *devices = NULL;
-    
+
     /* Get the platform */
     error = clGetPlatformIDs(1, &platform, NULL);
     if (error) {
         vlog_error( "clGetPlatformIDs failed: %d\n", error );
         return error;
     }
-    
+
     /* Get the number of requested devices */
     error = clGetDeviceIDs(platform,  gDeviceType, 0, NULL, &num_devices );
     if (error) {
         vlog_error( "clGetDeviceIDs failed: %d\n", error );
         return error;
     }
-    
+
     devices = (cl_device_id *) malloc( num_devices * sizeof( cl_device_id ) );
     if (!devices || choosen_device_index >= num_devices) {
         vlog_error( "device index out of range -- choosen_device_index (%d) >= num_devices (%d)\n", choosen_device_index, num_devices );
         return -1;
     }
-    
+
     /* Get the requested device */
     error = clGetDeviceIDs(platform,  gDeviceType, num_devices, devices, NULL );
     if (error) {
         vlog_error( "clGetDeviceIDs failed: %d\n", error );
         return error;
     }
-    
+
     gDevice = devices[choosen_device_index];
     free(devices);
     devices = NULL;
-    
+
     if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_COMPUTE_UNITS, configSize, &gComputeDevices, NULL )) )
         gComputeDevices = 1;
-    
+
     configSize = sizeof( gDeviceFrequency );
     if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY, configSize, &gDeviceFrequency, NULL )) )
         gDeviceFrequency = 0;
-    
+
     cl_device_fp_config floatCapabilities = 0;
     if( (error = clGetDeviceInfo(gDevice, CL_DEVICE_SINGLE_FP_CONFIG, sizeof(floatCapabilities), &floatCapabilities,  NULL)))
         floatCapabilities = 0;
     if(0 == (CL_FP_DENORM & floatCapabilities) )
         gForceFTZ ^= 1;
-    
+
     if( 0 == (floatCapabilities & CL_FP_ROUND_TO_NEAREST ) )
     {
         char profileStr[128] = "";
@@ -730,22 +739,22 @@ static int InitCL( void )
             vlog_error( "FAILURE: Could not get device profile: error %d\n", error );
             return -1;
         }
-        
+
         if( strcmp( profileStr, "EMBEDDED_PROFILE" ) )
         {
             vlog_error( "FAILURE: non-embedded profile device does not support CL_FP_ROUND_TO_NEAREST\n" );
             return -1;
         }
-        
+
         if( 0 == (floatCapabilities & CL_FP_ROUND_TO_ZERO ) )
         {
             vlog_error( "FAILURE: embedded profile device supports neither CL_FP_ROUND_TO_NEAREST or CL_FP_ROUND_TO_ZERO\n" );
             return -1;
         }
-        
+
         gIsRTZ = 1;
     }
-    
+
     char extensions[2048] = "";
     if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, sizeof( extensions ), extensions,  NULL ) ) )
     {
@@ -757,32 +766,32 @@ static int InitCL( void )
         gHasDouble = 1;
     }
     gTestDouble &= gHasDouble;
-    
+
     //detect whether profile of the device is embedded
     char profile[1024] = "";
     if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL ) ) ){}
     else if( strstr(profile, "EMBEDDED_PROFILE" ) )
-	{
+    {
         gIsEmbedded = 1;
         if( !strstr( extensions, "cles_khr_int64" ) )
-			gHasLong = 0;
-	}    
+            gHasLong = 0;
+    }
 
-    
+
     gContext = clCreateContext( NULL, 1, &gDevice, notify_callback, NULL, &error );
     if( NULL == gDevice || error )
     {
         vlog_error( "clCreateContext failed. (%d)\n", error );
         return error;
     }
-    
+
     gQueue = clCreateCommandQueue(gContext, gDevice, 0, &error);
     if( NULL == gQueue || error )
     {
         vlog_error( "clCreateCommandQueue failed. (%d)\n", error );
         return error;
     }
-    
+
     //Allocate buffers
     //FIXME: use clProtectedArray for guarded allocations?
     gIn   = malloc( BUFFER_SIZE + 2 * kPageSize );
@@ -794,7 +803,7 @@ static int InitCL( void )
         if( NULL == gOut[i] )
             return -3;
     }
-    
+
     // setup input buffers
     gInBuffer = clCreateBuffer(gContext, CL_MEM_READ_ONLY, BUFFER_SIZE, NULL, &error);
     if( gInBuffer == NULL || error)
@@ -802,7 +811,7 @@ static int InitCL( void )
         vlog_error( "clCreateBuffer failed for input (%d)\n", error );
         return error;
     }
-    
+
     // setup output buffers
     for( i = 0; i < kCallStyleCount; i++ )
     {
@@ -815,12 +824,12 @@ static int InitCL( void )
     }
 
 #if defined( __APPLE__ )
-    
+
 #if defined( __i386__ ) || defined( __x86_64__ )
-#define	kHasSSE3                0x00000008
+#define    kHasSSE3                0x00000008
 #define kHasSupplementalSSE3    0x00000100
-#define	kHasSSE4_1              0x00000400
-#define	kHasSSE4_2              0x00000800
+#define    kHasSSE4_1              0x00000400
+#define    kHasSSE4_2              0x00000800
     /* check our environment for a hint to disable SSE variants */
     {
         const char *env = getenv( "CL_MAX_SSE" );
@@ -841,15 +850,15 @@ static int InitCL( void )
                 vlog_error( "Error: Unknown CL_MAX_SSE setting: %s\n", env );
                 return -2;
             }
-            
+
             vlog( "*** Environment: CL_MAX_SSE = %s ***\n", env );
             _cpu_capabilities &= ~mask;
         }
     }
 #endif
 #endif
-    
-    
+
+
     char c[1024];
     static const char *no_yes[] = { "NO", "YES" };
     vlog( "\nCompute Device info:\n" );
@@ -866,11 +875,11 @@ static int InitCL( void )
     vlog( "\tProcessing with %ld devices\n", gComputeDevices );
     vlog( "\tDevice Frequency: %d MHz\n", gDeviceFrequency );
     vlog( "\tSubnormal values supported for floats? %s\n", no_yes[0 != (CL_FP_DENORM & floatCapabilities)] );
-    vlog( "\tTesting with FTZ mode ON for floats? %s\n", no_yes[0 != gForceFTZ] );  
-    vlog( "\tTesting with default RTZ mode for floats? %s\n", no_yes[0 != gIsRTZ] );  
-    vlog( "\tHas Double? %s\n", no_yes[0 != gHasDouble] ); 
-    if( gHasDouble )    
-        vlog( "\tTest Double? %s\n", no_yes[0 != gTestDouble] );  
+    vlog( "\tTesting with FTZ mode ON for floats? %s\n", no_yes[0 != gForceFTZ] );
+    vlog( "\tTesting with default RTZ mode for floats? %s\n", no_yes[0 != gIsRTZ] );
+    vlog( "\tHas Double? %s\n", no_yes[0 != gHasDouble] );
+    if( gHasDouble )
+        vlog( "\tTest Double? %s\n", no_yes[0 != gTestDouble] );
     vlog( "\tHas Long? %s\n", no_yes[0 != gHasLong] );
     vlog( "\tTesting vector sizes: " );
     for( i = gMinVectorSize; i < gMaxVectorSize; i++ )
@@ -883,22 +892,22 @@ static int RunKernel( cl_kernel kernel, void *inBuf, void *outBuf, size_t blockC
 {
     // The global dimensions are just the blockCount to execute since we haven't set up multiple queues for multiple devices.
     int error;
-    
+
     error = clSetKernelArg(kernel, 0, sizeof( inBuf ), &inBuf);
     error |= clSetKernelArg(kernel, 1, sizeof(outBuf), &outBuf);
-    
+
     if( error )
     {
         vlog_error( "FAILED -- could not set kernel args (%d)\n", error );
         return error;
     }
-    
+
     if( (error = clEnqueueNDRangeKernel(gQueue, kernel, 1, NULL, &blockCount, NULL, 0, NULL, NULL)))
     {
         vlog_error( "FAILED -- could not execute kernel (%d)\n", error );
         return error;
     }
-    
+
     return 0;
 }
 
@@ -910,12 +919,12 @@ static void memset_pattern4(void *dest, const void *src_pattern, size_t bytes )
     size_t count = bytes / 4;
     size_t i;
     uint32_t *d = (uint32_t *)dest;
-    
+
     for( i = 0; i < count; i++ )
         d[i] = pat;
-    
+
     d += i;
-    
+
     bytes &= 3;
     if( bytes )
         memcpy( d, src_pattern, bytes );
@@ -950,7 +959,7 @@ double SubtractTime( uint64_t endTime, uint64_t startTime )
 {
     uint64_t diff = endTime - startTime;
     static double conversion = 0.0;
-    
+
     if( 0.0 == conversion )
     {
 #if defined( __APPLE__ )
@@ -958,12 +967,12 @@ double SubtractTime( uint64_t endTime, uint64_t startTime )
         kern_return_t   err = mach_timebase_info( &info );
         if( 0 == err )
             conversion = 1e-9 * (double) info.numer / (double) info.denom;
-#else    
+#else
         // This function consumes output from GetTime() above, and converts the time to secionds.
 #warning need accurate ticks to seconds conversion factor here. Times are invalid.
 #endif
     }
-    
+
     // strictly speaking we should also be subtracting out timer latency here
     return conversion * (double) diff;
 }
@@ -982,7 +991,7 @@ typedef struct CalcReferenceValuesInfo
 typedef struct WriteInputBufferInfo
 {
     volatile cl_event           calcReferenceValues;   // user event which signals when main thread is done calculating reference values
-    volatile cl_event           doneBarrier;     // user event which signals when worker threads are done 
+    volatile cl_event           doneBarrier;     // user event which signals when worker threads are done
     cl_uint                     count;           // the number of elements in the array
     Type                        outType;         // the data type of the conversion result
     Type                        inType;          // the data type of the conversion input
@@ -995,10 +1004,10 @@ cl_uint RoundUpToNextPowerOfTwo( cl_uint x )
 {
     if( 0 == (x & (x-1)))
         return x;
-    
+
     while( x & (x-1) )
        x &= x-1;
-    
+
     return x + x;
 }
 
@@ -1008,7 +1017,7 @@ typedef struct DataInitInfo
 {
     cl_ulong        start;
     cl_uint         size;
-    Type            outType; 
+    Type            outType;
     Type            inType;
     SaturationMode  sat;
     RoundingMode    round;
@@ -1019,8 +1028,8 @@ cl_int InitData( cl_uint job_id, cl_uint thread_id, void *p );
 cl_int InitData( cl_uint job_id, cl_uint thread_id, void *p )
 {
     DataInitInfo *info = (DataInitInfo*) p;
-    
-    gInitFunctions[ info->inType ]( (char*)gIn + job_id * info->size * gTypeSizes[info->inType], info->sat, info->round, 
+
+    gInitFunctions[ info->inType ]( (char*)gIn + job_id * info->size * gTypeSizes[info->inType], info->sat, info->round,
                                    info->outType, info->start + job_id * info->size, info->size, info->d[thread_id] );
     return CL_SUCCESS;
 }
@@ -1029,7 +1038,7 @@ static void setAllowZ(uint8_t *allow, uint32_t *x, cl_uint count)
 {
     cl_uint i;
     for (i = 0; i < count; ++i)
-	allow[i] |= (uint8_t)((x[i] & 0x7f800000U) == 0);
+    allow[i] |= (uint8_t)((x[i] & 0x7f800000U) == 0);
 }
 
 cl_int PrepareReference( cl_uint job_id, cl_uint thread_id, void *p );
@@ -1043,37 +1052,37 @@ cl_int PrepareReference( cl_uint job_id, cl_uint thread_id, void *p )
     size_t j;
 
     Force64BitFPUPrecision();
-    
+
     void *s = (cl_uchar*) gIn + job_id * count * gTypeSizes[info->inType];
     void *a = (cl_uchar*) gAllowZ + job_id * count;
     void *d = (cl_uchar*) gRef + job_id * count * gTypeSizes[info->outType];
-    
-    if (outType != inType) 
+
+    if (outType != inType)
     {
         //create the reference while we wait
         Convert f = gConversions[ outType ][ inType ];
         if( info->sat )
-            f = gSaturatedConversions[ outType ][ inType ];  
-        
+            f = gSaturatedConversions[ outType ][ inType ];
+
         RoundingMode oldRound = set_round( round, outType );
-        f( d, s, count );  
+        f( d, s, count );
         set_round( oldRound, outType );
 
-	// Decide if we allow a zero result in addition to the correctly rounded one
+    // Decide if we allow a zero result in addition to the correctly rounded one
         memset(a, 0, count);
-	if (gForceFTZ) {
-	    if (inType == kfloat)
-		setAllowZ((uint8_t*)a, (uint32_t*)s, count);
-	    if (outType == kfloat)
-		setAllowZ((uint8_t*)a, (uint32_t*)d, count);
-	}
-    } 
-    else 
+    if (gForceFTZ) {
+        if (inType == kfloat)
+        setAllowZ((uint8_t*)a, (uint32_t*)s, count);
+        if (outType == kfloat)
+        setAllowZ((uint8_t*)a, (uint32_t*)d, count);
+    }
+    }
+    else
     {
         // Copy the input to the reference
         memcpy(d, s, info->size * gTypeSizes[inType]);
     }
-    
+
     //Patch up NaNs conversions to integer to zero -- these can be converted to any integer
     if( info->outType != kfloat && info->outType != kdouble )
     {
@@ -1117,7 +1126,7 @@ cl_int PrepareReference( cl_uint job_id, cl_uint thread_id, void *p )
             }
         }
     }
-    
+
     return CL_SUCCESS;
 }
 
@@ -1126,19 +1135,20 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
 #ifdef __APPLE__
     cl_ulong wall_start = mach_absolute_time();
 #endif
-    
+
     DataInitInfo  init_info = { 0, 0, outType, inType, sat, round, NULL };
     WriteInputBufferInfo writeInputBufferInfo;
     int vectorSize;
     int error = 0;
     cl_uint threads = GetThreadCount();
     uint64_t i;
-        
-    gTestCount++;        
+
+    gTestCount++;
     size_t blockCount = BUFFER_SIZE / MAX( gTypeSizes[ inType ], gTypeSizes[ outType ] );
+    size_t step = blockCount;
     uint64_t lastCase = 1ULL << (8*gTypeSizes[ inType ]);
     cl_event writeInputBuffer = NULL;
-    
+
     memset( &writeInputBufferInfo, 0, sizeof( writeInputBufferInfo ) );
     init_info.d = (MTdata*)malloc( threads * sizeof( MTdata ) );
     if( NULL == init_info.d )
@@ -1155,63 +1165,60 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
             return -1;
         }
     }
-    
+
     writeInputBufferInfo.outType = outType;
     writeInputBufferInfo.inType = inType;
-    
+
     for( vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
     {
-        writeInputBufferInfo.calcInfo[vectorSize].program = MakeProgram( outType, inType, sat, round, vectorSize, 
+        writeInputBufferInfo.calcInfo[vectorSize].program = MakeProgram( outType, inType, sat, round, vectorSize,
                                                                         &writeInputBufferInfo.calcInfo[vectorSize].kernel );
         if( NULL == writeInputBufferInfo.calcInfo[vectorSize].program )
         {
             gFailCount++;
             return -1;
-        }        
+        }
         if( NULL == writeInputBufferInfo.calcInfo[vectorSize].kernel )
         {
             gFailCount++;
             vlog_error( "\t\tFAILED -- Failed to create kernel.\n" );
             return -2;
         }
-        
+
         writeInputBufferInfo.calcInfo[vectorSize].parent = &writeInputBufferInfo;
         writeInputBufferInfo.calcInfo[vectorSize].vectorSize = vectorSize;
         writeInputBufferInfo.calcInfo[vectorSize].result = -1;
     }
-    
+
     if( gSkipTesting )
         goto exit;
-    
+
     // Patch up rounding mode if default is RTZ
     // We leave the part above in default rounding mode so that the right kernel is compiled.
     if( round == kDefaultRoundingMode && gIsRTZ && (outType == kfloat) )
         init_info.round = round = kRoundTowardZero;
-    
+
     // Figure out how many elements are in a work block
-    
+
     // we handle 64-bit types a bit differently.
     if( 8*gTypeSizes[ inType ] > 32 )
         lastCase = 0x100000000ULL;
-    
+
+    if ( gWimpyMode )
+        step = (size_t)blockCount * (size_t)gWimpyReductionFactor;
     vlog( "Testing... " );
     fflush(stdout);
-    for( i = 0; i < (uint64_t)lastCase; i += blockCount )
+    for( i = 0; i < (uint64_t)lastCase; i += step )
     {
-        if (gWimpyMode) {
-            uint64_t blockIndex = (i / blockCount) & 0xFF;
-            if (blockIndex != 0 && blockIndex != 0xFF)
-                continue;
-        }
-        
+
         if( 0 == ( i & ((lastCase >> 3) -1))) {
             vlog(".");
             fflush(stdout);
         }
-        
+
         cl_uint count = (uint32_t) MIN( blockCount, lastCase - i );
         writeInputBufferInfo.count = count;
-        
+
         // Crate a user event to represent the status of the reference value computation completion
         writeInputBufferInfo.calcReferenceValues = clCreateUserEvent( gContext, &error);
         if( error || NULL == writeInputBufferInfo.calcReferenceValues )
@@ -1220,7 +1227,7 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
             gFailCount++;
             goto exit;
         }
-        
+
         // retain for consumption by MapOutputBufferComplete
         for( vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
         {
@@ -1231,7 +1238,7 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
                 goto exit;
             }
         }
-        
+
         // Crate a user event to represent when the callbacks are done verifying correctness
         writeInputBufferInfo.doneBarrier = clCreateUserEvent( gContext, &error);
         if( error || NULL == writeInputBufferInfo.calcReferenceValues )
@@ -1240,7 +1247,7 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
             gFailCount++;
             goto exit;
         }
-        
+
         // retain for use by the callback that calls this
         if( (error = clRetainEvent(writeInputBufferInfo.doneBarrier) ))
         {
@@ -1248,10 +1255,10 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
             gFailCount++;
             goto exit;
         }
-        
+
         //      Call this in a multithreaded manner
         //      gInitFunctions[ inType ]( gIn, sat, round, outType, i, count, d );
-        cl_uint chunks = RoundUpToNextPowerOfTwo(threads) * 2; 
+        cl_uint chunks = RoundUpToNextPowerOfTwo(threads) * 2;
         init_info.start = i;
         init_info.size = count / chunks;
         if( init_info.size < 16384 )
@@ -1265,7 +1272,7 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
             }
         }
         ThreadPool_Do(InitData, chunks, &init_info);
-        
+
         // Copy the results to the device
         writeInputBuffer = NULL;
         if( (error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0, count * gTypeSizes[inType], gIn, 0, NULL, &writeInputBuffer )))
@@ -1274,16 +1281,16 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
             gFailCount++;
             goto exit;
         }
-        
+
         // Setup completion callback for the write, which will enqueue the rest of the work
-        // This is somewhat gratuitous.  Because this is an in order queue, we didn't really need to 
+        // This is somewhat gratuitous.  Because this is an in order queue, we didn't really need to
         // do this work in a callback. We could have done it from the main thread.  Here we are
         // verifying that the implementation can enqueue work from a callback, while at the same time
-        // also checking to make sure that the conversions work.  
+        // also checking to make sure that the conversions work.
         //
-        // Because the verification code is also moved to a callback, it is hoped that implementations will 
-        // achieve a test performance improvement because they can verify the results in parallel.  If the 
-        // implementation serializes callbacks however, that won't happen.   Consider it some motivation 
+        // Because the verification code is also moved to a callback, it is hoped that implementations will
+        // achieve a test performance improvement because they can verify the results in parallel.  If the
+        // implementation serializes callbacks however, that won't happen.   Consider it some motivation
         // to do the right thing! :-)
         if( (error = clSetEventCallback( writeInputBuffer, CL_COMPLETE, WriteInputBufferComplete, &writeInputBufferInfo)) )
         {
@@ -1291,7 +1298,7 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
             gFailCount++;
             goto exit;
         }
-        
+
         // The event can't be destroyed until the callback is called, so we can release it now.
         if( (error = clReleaseEvent(writeInputBuffer) ))
         {
@@ -1299,7 +1306,7 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
             gFailCount++;
             goto exit;
         }
-        
+
         // Make sure the work is actually running, so we don't deadlock
         if( (error = clFlush( gQueue ) ) )
         {
@@ -1307,9 +1314,9 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
             gFailCount++;
             goto exit;
         }
-        
+
         ThreadPool_Do(PrepareReference, chunks, &init_info);
-        
+
         // signal we are done calculating the reference results
         if( (error = clSetUserEventStatus( writeInputBufferInfo.calcReferenceValues, CL_COMPLETE ) ) )
         {
@@ -1317,30 +1324,30 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
             gFailCount++;
             goto exit;
         }
-        
-        // Wait for the event callbacks to finish verifying correctness. 
+
+        // Wait for the event callbacks to finish verifying correctness.
         if( (error = clWaitForEvents( 1, (cl_event*) &writeInputBufferInfo.doneBarrier ) ))
         {
             vlog_error( "Error:  Failed to wait for barrier:  %d\n", error );
             gFailCount++;
             goto exit;
         }
-        
+
         if( (error = clReleaseEvent(writeInputBufferInfo.calcReferenceValues ) ))
         {
             vlog_error( "Error:  Failed to release calcReferenceValues:  %d\n", error );
             gFailCount++;
             goto exit;
         }
-        
+
         if( (error = clReleaseEvent(writeInputBufferInfo.doneBarrier ) ))
         {
             vlog_error( "Error:  Failed to release done barrier:  %d\n", error );
             gFailCount++;
             goto exit;
         }
-        
-        
+
+
         for( vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
         {
             if( ( error = writeInputBufferInfo.calcInfo[ vectorSize ].result ))
@@ -1375,22 +1382,22 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
                         abort();
                         break;
                 }
-                
+
                 // tell the user which conversion it was.
                 if( 0 == vectorSize )
-                    vlog( " (implicit scalar conversion from %s to %s)\n", gTypeNames[ inType ], gTypeNames[ outType ] );                    
+                    vlog( " (implicit scalar conversion from %s to %s)\n", gTypeNames[ inType ], gTypeNames[ outType ] );
                 else
-                    vlog( " (convert_%s%s%s%s( %s%s ))\n", gTypeNames[outType], sizeNames[vectorSize], gSaturationNames[ sat ], 
+                    vlog( " (convert_%s%s%s%s( %s%s ))\n", gTypeNames[outType], sizeNames[vectorSize], gSaturationNames[ sat ],
                                                             gRoundingModeNames[ round ], gTypeNames[inType], sizeNames[vectorSize] );
-                
+
                 gFailCount++;
                 goto exit;
             }
         }
     }
-    
+
     log_info( "done.\n" );
-    
+
     if( gTimeResults )
     {
         //Kick off tests for the various vector lengths
@@ -1399,7 +1406,7 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
             size_t workItemCount = blockCount / vectorSizes[vectorSize];
             if( vectorSizes[vectorSize] * gTypeSizes[outType] < 4 )
                 workItemCount /= 4 / (vectorSizes[vectorSize] * gTypeSizes[outType]);
-            
+
             double sum = 0.0;
             double bestTime = INFINITY;
             cl_uint k;
@@ -1411,22 +1418,22 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
                     gFailCount++;
                     goto exit;
                 }
-                
+
                 // Make sure OpenCL is done
                 if( (error = clFinish(gQueue) ) )
                 {
                     vlog_error( "Error %d at clFinish\n", error );
                     goto exit;
                 }
-                
+
                 uint64_t endTime = GetTime();
                 double time = SubtractTime( endTime, startTime );
                 sum += time;
                 if( time < bestTime )
                     bestTime = time;
-                
+
             }
-            
+
             if( gReportAverageTimes )
                 bestTime = sum / PERF_LOOP_COUNT;
             double clocksPerOp = bestTime * (double) gDeviceFrequency * gComputeDevices * gSimdSize * 1e6 / (workItemCount * vectorSizes[vectorSize]);
@@ -1436,20 +1443,20 @@ static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode r
                 vlog_perf( clocksPerOp, LOWER_IS_BETTER, "clocks / element", "convert_%s%s%s%s( %s%s )", gTypeNames[ outType ], sizeNames[vectorSize], gSaturationNames[ sat ], gRoundingModeNames[round], gTypeNames[inType], sizeNames[vectorSize] );
         }
     }
-    
+
     if( gWimpyMode )
         vlog( "\tWimp pass" );
     else
         vlog( "\tpassed" );
-    
+
 #ifdef __APPLE__
     // record the run time
     vlog( "\t(%f s)", 1e-9 * ( mach_absolute_time() - wall_start ) );
 #endif
     vlog( "\n\n" );
     fflush( stdout );
-    
-    
+
+
 exit:
     //clean up
     for( vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
@@ -1457,14 +1464,14 @@ exit:
         clReleaseProgram( writeInputBufferInfo.calcInfo[vectorSize].program );
         clReleaseKernel( writeInputBufferInfo.calcInfo[vectorSize].kernel );
     }
-    
+
     if( init_info.d )
     {
         for( i = 0; i < threads; i++ )
             free_mtdata(init_info.d[i]);
         free(init_info.d);
     }
-    
+
     return error;
 }
 
@@ -1476,30 +1483,30 @@ void CL_CALLBACK WriteInputBufferComplete( cl_event e, cl_int status, void *data
     WriteInputBufferInfo *info = (WriteInputBufferInfo*) data;
     cl_uint count = info->count;
     int vectorSize;
-    
+
     if( CL_SUCCESS != status )
     {
         vlog_error( "ERROR: WriteInputBufferComplete calback failed with status: %d\n", status );
-        gFailCount++;      
+        gFailCount++;
         return;
     }
-    
+
     info->barrierCount = gMaxVectorSize - gMinVectorSize;
-    
-    // now that we know that the write buffer is complete, enqueue callbacks to wait for the main thread to 
+
+    // now that we know that the write buffer is complete, enqueue callbacks to wait for the main thread to
     // finish calculating the reference results.
     for( vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
     {
         size_t workItemCount = (count + vectorSizes[vectorSize] - 1) / ( vectorSizes[vectorSize]);
         cl_event mapComplete = NULL;
-        
+
         if( (status = RunKernel( info->calcInfo[ vectorSize ].kernel, gInBuffer, gOutBuffers[ vectorSize ], workItemCount )) )
         {
-            gFailCount++;       
+            gFailCount++;
             return;
-        }            
-        
-        info->calcInfo[vectorSize].p = clEnqueueMapBuffer( gQueue, gOutBuffers[ vectorSize ], CL_FALSE, CL_MAP_READ | CL_MAP_WRITE, 
+        }
+
+        info->calcInfo[vectorSize].p = clEnqueueMapBuffer( gQueue, gOutBuffers[ vectorSize ], CL_FALSE, CL_MAP_READ | CL_MAP_WRITE,
                                                           0, count * gTypeSizes[ info->outType ], 0, NULL, &mapComplete, &status);
         {
             if( status )
@@ -1507,32 +1514,32 @@ void CL_CALLBACK WriteInputBufferComplete( cl_event e, cl_int status, void *data
                 vlog_error( "ERROR: WriteInputBufferComplete calback failed with status: %d\n", status );
                 gFailCount++;
                 return;
-            }            
+            }
         }
-        
+
         if( (status = clSetEventCallback( mapComplete, CL_COMPLETE, MapResultValuesComplete, info->calcInfo + vectorSize)))
         {
             vlog_error( "ERROR: WriteInputBufferComplete calback failed with status: %d\n", status );
-            gFailCount++;       
+            gFailCount++;
             return;
-        }    
-        
+        }
+
         if( (status = clReleaseEvent(mapComplete)))
         {
             vlog_error( "ERROR: clReleaseEvent calback failed in WriteInputBufferComplete for vector size %d with status: %d\n", vectorSize, status );
-            gFailCount++;       
+            gFailCount++;
             return;
         }
     }
-    
-    // Make sure the work starts moving -- otherwise we may deadlock 
+
+    // Make sure the work starts moving -- otherwise we may deadlock
     if( (status = clFlush(gQueue)))
     {
         vlog_error( "ERROR: WriteInputBufferComplete calback failed with status: %d\n", status );
-        gFailCount++;      
+        gFailCount++;
         return;
     }
-    
+
     // e was already released by the main thread. It should be destroyed automatically soon after we exit.
 }
 
@@ -1543,7 +1550,7 @@ void CL_CALLBACK MapResultValuesComplete( cl_event e, cl_int status, void *data 
 {
     CalcReferenceValuesInfo *info = (CalcReferenceValuesInfo*) data;
     cl_event calcReferenceValues = info->parent->calcReferenceValues;
-    
+
     if( CL_SUCCESS != status )
     {
         vlog_error( "ERROR: MapResultValuesComplete calback failed with status: %d\n", status );
@@ -1551,23 +1558,23 @@ void CL_CALLBACK MapResultValuesComplete( cl_event e, cl_int status, void *data 
         clReleaseEvent(calcReferenceValues);
         return;
     }
-    
+
     // we know that the map is done, wait for the main thread to finish calculating the reference values
     if( (status = clSetEventCallback( calcReferenceValues, CL_COMPLETE, CalcReferenceValuesComplete, data )))
     {
         vlog_error( "ERROR: clSetEventCallback failed in MapResultValuesComplete with status: %d\n", status );
         gFailCount++;       // not thread safe -- being lazy here
     }
-    
+
     // this thread no longer needs its reference to info->calcReferenceValues, so release it
     if( (status = clReleaseEvent(calcReferenceValues) ))
     {
         vlog_error( "ERROR: clReleaseEvent(info->calcReferenceValues) failed with status: %d\n", status );
         gFailCount++;       // not thread safe -- being lazy here
     }
-    
+
     // no need to flush since we didn't enqueue anything
-    
+
     // e was already released by WriteInputBufferComplete. It should be destroyed automatically soon after we exit.
 }
 
@@ -1582,7 +1589,7 @@ void CL_CALLBACK CalcReferenceValuesComplete( cl_event e, cl_int status, void *d
     size_t                      j;
     cl_int                      error;
     cl_event                    doneBarrier = info->parent->doneBarrier;
-    
+
     // report spurious error condition
     if( CL_SUCCESS != status )
     {
@@ -1590,14 +1597,14 @@ void CL_CALLBACK CalcReferenceValuesComplete( cl_event e, cl_int status, void *d
         gFailCount++;       // lazy about thread safety here
         return;
     }
-    
-    // Now we know that both results have been mapped back from the device, and the 
-    // main thread is done calculating the reference results. It is now time to check 
-    // the results. 
-    
+
+    // Now we know that both results have been mapped back from the device, and the
+    // main thread is done calculating the reference results. It is now time to check
+    // the results.
+
     // verify results
     void *mapped = info->p;
-    
+
     //Patch up NaNs conversions to integer to zero -- these can be converted to any integer
     if( outType != kfloat && outType != kdouble )
     {
@@ -1643,12 +1650,12 @@ void CL_CALLBACK CalcReferenceValuesComplete( cl_event e, cl_int status, void *d
             }
         }
     }
-    
+
     if( memcmp( mapped, gRef, count * gTypeSizes[ outType ] ) )
         info->result = gCheckResults[outType]( mapped, gRef, gAllowZ, count, vectorSizes[vectorSize] );
     else
         info->result = 0;
-    
+
     // Fill the output buffer with junk and release it
     {
         cl_uint pattern =  0xffffdead;
@@ -1659,7 +1666,7 @@ void CL_CALLBACK CalcReferenceValuesComplete( cl_event e, cl_int status, void *d
             gFailCount++;
         }
     }
-    
+
     if( 1 == ThreadPool_AtomicAdd( &info->parent->barrierCount, -1) )
     {
         if( (status = clSetUserEventStatus( doneBarrier, CL_COMPLETE) ))
@@ -1668,7 +1675,7 @@ void CL_CALLBACK CalcReferenceValuesComplete( cl_event e, cl_int status, void *d
             gFailCount++;
             return;
         }
-        
+
         if( (status = clReleaseEvent( doneBarrier ) ) )
         {
             vlog_error( "ERROR: clReleaseEvent failed in CalcReferenceValuesComplete (err: %d).\n", status );
@@ -1676,9 +1683,9 @@ void CL_CALLBACK CalcReferenceValuesComplete( cl_event e, cl_int status, void *d
             return;
         }
     }
-    
-    
-    // e was already released by WriteInputBufferComplete. It should be destroyed automatically soon after 
+
+
+    // e was already released by WriteInputBufferComplete. It should be destroyed automatically soon after
     // all the calls to CalcReferenceValuesComplete exit.
 }
 
@@ -1686,7 +1693,7 @@ static cl_program CreateImplicitConvertProgram( Type outType, Type inType, Satur
 {
     char inName[32];
     char outName[32];
-    const char *programSource[] = 
+    const char *programSource[] =
     {
         "", // optional pragma
         "__kernel void ", testName, "( __global ", inName,  " *src, __global ", outName, " *dest )\n"
@@ -1697,17 +1704,17 @@ static cl_program CreateImplicitConvertProgram( Type outType, Type inType, Satur
     };
     size_t stringCount = sizeof( programSource ) / sizeof( programSource[0] );
     const char **strings = programSource;
-    
+
     if (outType == kdouble || inType == kdouble)
         programSource[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
-    
+
     //create the type name
     strncpy( inName, gTypeNames[ inType ], sizeof( inName ) );
     strncpy( outName, gTypeNames[ outType ], sizeof( outName ) );
     sprintf( testName, "test_implicit_%s_%s", outName, inName );
     vlog( "Building implicit %s -> %s conversion test\n", gTypeNames[ inType ],  gTypeNames[ outType ] );
     fflush(stdout);
-    
+
     //create the program
     cl_program program = clCreateProgramWithSource(gContext, (cl_uint) stringCount, strings, NULL, error);
     if( NULL == program || *error )
@@ -1726,7 +1733,7 @@ static cl_program CreateStandardProgram( Type outType, Type inType, SaturationMo
     char convertString[128];
     char inName[32];
     char outName[32];
-    const char *programSource[] = 
+    const char *programSource[] =
     {
         "", // optional pragma
         "__kernel void ", testName, "( __global ", inName,  " *src, __global ", outName, " *dest )\n"
@@ -1735,7 +1742,7 @@ static cl_program CreateStandardProgram( Type outType, Type inType, SaturationMo
         "   dest[i] = ", convertString, "( src[i] );\n"
         "}\n"
     };
-    const char *programSourceV3[] = 
+    const char *programSourceV3[] =
     {
         "", // optional pragma
         "__kernel void ", testName, "( __global ", inName,  " *src, __global ", outName, " *dest )\n"
@@ -1757,15 +1764,15 @@ static cl_program CreateStandardProgram( Type outType, Type inType, SaturationMo
         "   }\n"
         "}\n"
     };
-    size_t stringCount = 3 == vectorSize ?  sizeof( programSourceV3 ) / sizeof( programSourceV3[0] ) : 
+    size_t stringCount = 3 == vectorSize ?  sizeof( programSourceV3 ) / sizeof( programSourceV3[0] ) :
     sizeof( programSource ) / sizeof( programSource[0] );
     const char **strings = 3 == vectorSize ? programSourceV3 : programSource;
-    
+
     if (outType == kdouble || inType == kdouble) {
         programSource[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
         programSourceV3[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
     }
-    
+
     //create the type name
     switch (vectorSize)
     {
@@ -1791,9 +1798,9 @@ static cl_program CreateStandardProgram( Type outType, Type inType, SaturationMo
             vlog( "Building %s( %s ) test\n", convertString, inName );
             break;
     }
-    
+
     fflush(stdout);
-    
+
     //create the program
     cl_program program = clCreateProgramWithSource(gContext, (cl_uint) stringCount, strings, NULL, error);
     if( NULL == program || *error )
@@ -1810,43 +1817,43 @@ static cl_program   MakeProgram( Type outType, Type inType, SaturationMode sat, 
     cl_program program;
     char testName[256];
     int error = 0;
-    
+
     // Create the program. This is a bit complicated because we are trying to avoid byte and short stores.
     if( 0 == vectorSize )
         program = CreateImplicitConvertProgram( outType, inType, sat, round, vectorSize, testName, &error );
     else
         program = CreateStandardProgram( outType, inType, sat, round, vectorSize, testName, &error );
     *outKernel = NULL;
-    
+
     const char *flags = NULL;
     if( gForceFTZ )
         flags = "-cl-denorms-are-zero";
-    
+
     // build it
-    if( (error = clBuildProgram( program, 1, &gDevice, flags, NULL, NULL ))) 
+    if( (error = clBuildProgram( program, 1, &gDevice, flags, NULL, NULL )))
     {
         char    buffer[2048] = "";
-        
+
         vlog_error("\t\tFAILED -- clBuildProgramExecutable() failed: %d\n", error);
         clGetProgramBuildInfo(program, gDevice, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
         vlog_error("Log: %s\n", buffer);
-        
+
         clReleaseProgram( program );
         return NULL;
     }
-    
+
     *outKernel = clCreateKernel(program, testName, &error);
     if( NULL == *outKernel || error)
     {
         char    buffer[2048] = "";
-        
+
         vlog_error("\t\tFAILED -- clCreateKernel() failed (%d):\n", error);
         clGetProgramBuildInfo(program, gDevice, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
         vlog_error("Log: %s\n", buffer);
         clReleaseProgram( program );
         return NULL;
     }
-    
+
     return program;
 }
 

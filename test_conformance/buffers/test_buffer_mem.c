@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,7 +30,7 @@ typedef unsigned char uchar;
 #define USE_LOCAL_WORK_GROUP 1
 
 
-const char *mem_read_write_kernel_code = 
+const char *mem_read_write_kernel_code =
 "__kernel void test_mem_read_write(__global int *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -38,7 +38,7 @@ const char *mem_read_write_kernel_code =
 "    dst[tid] = dst[tid]+1;\n"
 "}\n";
 
-const char *mem_read_kernel_code = 
+const char *mem_read_kernel_code =
 "__kernel void test_mem_read(__global int *src, __global int *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -46,7 +46,7 @@ const char *mem_read_kernel_code =
 "    dst[tid] = src[tid]+1;\n"
 "}\n";
 
-const char *mem_write_kernel_code = 
+const char *mem_write_kernel_code =
 "__kernel void test_mem_write(__global int *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -93,7 +93,7 @@ int test_mem_read_write_flags( cl_device_id deviceID, cl_context context, cl_com
         print_error( err, "clCreateBuffer failed");
         align_free( (void *)outptr );
         align_free( (void *)inptr );
-        return -1;    
+        return -1;
     }
 
     for (i=0; i<num_elements; i++)

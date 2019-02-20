@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -58,33 +58,33 @@ void CDeviceWrapper::WindowInit()
 {
 #if defined(_WIN32)
   _hInstance = GetModuleHandle(NULL);
-  static WNDCLASSEX wc = 
-  { 
-    sizeof(WNDCLASSEX), 
-    CS_CLASSDC, 
-    WndProc, 
-    0L, 
-    0L, 
-    _hInstance, 
-    NULL, 
-    NULL, 
-    NULL, 
-    NULL, 
-    WINDOW_TITLE, 
-    NULL 
+  static WNDCLASSEX wc =
+  {
+    sizeof(WNDCLASSEX),
+    CS_CLASSDC,
+    WndProc,
+    0L,
+    0L,
+    _hInstance,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    WINDOW_TITLE,
+    NULL
   };
 
   RegisterClassEx(&wc);
 
   _hWnd = CreateWindow(
-    WINDOW_TITLE, 
-    WINDOW_TITLE, 
-    WS_OVERLAPPEDWINDOW, 
+    WINDOW_TITLE,
+    WINDOW_TITLE,
+    WS_OVERLAPPEDWINDOW,
     0, 0,
-    WINDOW_WIDTH, WINDOW_HEIGHT, 
-    NULL, 
-    NULL, 
-    wc.hInstance, 
+    WINDOW_WIDTH, WINDOW_HEIGHT,
+    NULL,
+    NULL,
+    wc.hInstance,
     NULL);
 
   if (!_hWnd)
@@ -102,7 +102,7 @@ void CDeviceWrapper::WindowDestroy()
 {
 #if defined(_WIN32)
   if (_hWnd)
-    DestroyWindow(_hWnd); 
+    DestroyWindow(_hWnd);
   _hWnd = NULL;
 #endif
 }
@@ -197,7 +197,7 @@ bool CD3D9Wrapper::Init()
   DWORD processingType = (AccelerationType() == ACCELERATION_HW)? D3DCREATE_HARDWARE_VERTEXPROCESSING:
     D3DCREATE_SOFTWARE_VERTEXPROCESSING;
 
-  if ( FAILED( _d3d9->CreateDevice( _adapterIdx - 1, D3DDEVTYPE_HAL, WindowHandle(), 
+  if ( FAILED( _d3d9->CreateDevice( _adapterIdx - 1, D3DDEVTYPE_HAL, WindowHandle(),
     processingType, &d3dParams, &_d3dDevice) ) )
   {
     log_error("CreateDevice failed\n");
@@ -206,7 +206,7 @@ bool CD3D9Wrapper::Init()
   }
 
   _d3dDevice->BeginScene();
-  _d3dDevice->Clear(0, NULL, D3DCLEAR_TARGET, 0, 1.0f, 0);	
+  _d3dDevice->Clear(0, NULL, D3DCLEAR_TARGET, 0, 1.0f, 0);
   _d3dDevice->EndScene();
 
   return true;
@@ -349,7 +349,7 @@ bool CD3D9ExWrapper::Init()
   DWORD processingType = (AccelerationType() == ACCELERATION_HW)? D3DCREATE_HARDWARE_VERTEXPROCESSING:
     D3DCREATE_SOFTWARE_VERTEXPROCESSING;
 
-  if ( FAILED( _d3d9Ex->CreateDeviceEx( _adapterIdx - 1, D3DDEVTYPE_HAL, WindowHandle(), 
+  if ( FAILED( _d3d9Ex->CreateDeviceEx( _adapterIdx - 1, D3DDEVTYPE_HAL, WindowHandle(),
     processingType, &d3dParams, NULL, &_d3dDeviceEx) ) )
   {
     log_error("CreateDeviceEx failed\n");
@@ -358,7 +358,7 @@ bool CD3D9ExWrapper::Init()
   }
 
   _d3dDeviceEx->BeginScene();
-  _d3dDeviceEx->Clear(0, NULL, D3DCLEAR_TARGET, 0, 1.0f, 0);	
+  _d3dDeviceEx->Clear(0, NULL, D3DCLEAR_TARGET, 0, 1.0f, 0);
   _d3dDeviceEx->EndScene();
 
   return true;

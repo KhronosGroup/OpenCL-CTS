@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,8 +22,8 @@
 #include <GL/gl.h>
 #include <GL/glut.h>
 #include <GL/glext.h>
-#include <GL/freeglut.h>  
-#include <GL/glx.h>   
+#include <GL/freeglut.h>
+#include <GL/glx.h>
 #include <CL/cl_ext.h>
 
 class X11GLEnvironment : public GLEnvironment
@@ -67,11 +67,11 @@ public:
 
         return clCreateContext(properties, 1, m_devices, NULL, NULL, &status);
     }
-  
+
     virtual int SupportsCLGLInterop( cl_device_type device_type )
     {
         int found_valid_device = 0;
-		cl_platform_id platform;
+        cl_platform_id platform;
         cl_device_id devices[64];
         cl_uint num_of_devices;
         int error;
@@ -88,7 +88,7 @@ public:
             print_error(error, "clGetDeviceIDs failed");
             return -1;
         }
-      
+
         char extensions[8192];
         for (int i=0; i<(int)num_of_devices; i++) {
             error = clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(extensions), extensions, NULL);
@@ -96,7 +96,7 @@ public:
                 print_error(error, "clGetDeviceInfo failed");
                 return -1;
             }
-        
+
             if (strstr(extensions, "cl_khr_gl_sharing ") == NULL) {
                 log_info("Device %d of %d does not support required extension cl_khr_gl_sharing.\n", i+1, num_of_devices);
             } else {
@@ -115,8 +115,8 @@ public:
 
 GLEnvironment * GLEnvironment::Instance( void )
 {
-	static X11GLEnvironment * env = NULL;
-	if( env == NULL )
-		env = new X11GLEnvironment();
-	return env;
+    static X11GLEnvironment * env = NULL;
+    if( env == NULL )
+        env = new X11GLEnvironment();
+    return env;
 }

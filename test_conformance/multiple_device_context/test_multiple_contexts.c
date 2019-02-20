@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,21 +23,21 @@ const char *context_test_kernels[] = {
     "    dst[tid] = src[tid];\n"
     "\n"
     "}\n"
-    
+
     "__kernel void sample_test_2(__global int *src, __global int *dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "    dst[tid] = src[tid] * 2;\n"
     "\n"
     "}\n"
-    
+
     "__kernel void sample_test_3(__global int *src, __global int *dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "    dst[tid] = src[tid] / 2;\n"
     "\n"
     "}\n"
-    
+
     "__kernel void sample_test_4(__global int *src, __global int *dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
@@ -54,10 +54,10 @@ int sampleAction4( int source ) { return source / 3; }
 
 typedef int (*sampleActionFn)( int source );
 
-sampleActionFn	sampleActions[4] = { sampleAction1, sampleAction2, sampleAction3, sampleAction4 };
+sampleActionFn    sampleActions[4] = { sampleAction1, sampleAction2, sampleAction3, sampleAction4 };
 
 #define BUFFER_COUNT 2
-#define TEST_SIZE	512
+#define TEST_SIZE    512
 
 typedef struct TestItem
 {
@@ -77,7 +77,7 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
 {
     cl_int error = 0;
     size_t i;
-    
+
     // Allocate the TestItem struct
     TestItem *item = (TestItem *) malloc( sizeof(TestItem ) );
     if( NULL == item  )
@@ -91,7 +91,7 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
     }
     //zero so we know which fields we have initialized
     memset( item, 0, sizeof( *item ) );
-    
+
     item->d = init_genrand( gRandomSeed );
     if( NULL == item->d )
     {
@@ -116,10 +116,10 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
         DestroyTestItem( item );
         return NULL;
     }
-    
+
     // Create a queue
     item->q = clCreateCommandQueue( item->c, deviceID, 0, &error);
-    if( item->q == NULL || error != CL_SUCCESS) 
+    if( item->q == NULL || error != CL_SUCCESS)
     {
         if (err) {
             log_error( "FAILURE: clCreateCommandQueue failed in CreateTestItem: %d\n", error );
@@ -128,7 +128,7 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
         DestroyTestItem( item );
         return NULL;
     }
-    
+
     // Create a program
     item->p = clCreateProgramWithSource( item->c, 1, context_test_kernels, NULL, &error );
     if( NULL == item->p || CL_SUCCESS != error )
@@ -141,7 +141,7 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
         DestroyTestItem( item );
         return NULL;
     }
-    
+
     error = clBuildProgram( item->p, 1, &deviceID, "", NULL, NULL );
     if( error )
     {
@@ -153,7 +153,7 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
         DestroyTestItem( item );
         return NULL;
     }
-    
+
     // create some kernels
     for( i = 0; i < sizeof( item->k ) / sizeof( item->k[0] ); i++ )
     {
@@ -170,7 +170,7 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
             return NULL;
         }
     }
-    
+
     // create some mem objects
     for( i = 0; i < BUFFER_COUNT; i++ )
     {
@@ -186,8 +186,8 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
             return NULL;
         }
     }
-    
-    
+
+
     return item;
 }
 
@@ -195,28 +195,28 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
 static void DestroyTestItem( TestItem *item )
 {
     size_t i;
-    
+
     if( NULL == item )
         return;
 
     if( item->d )
         free_mtdata( item->d );
-    if( item->c) 
+    if( item->c)
         clReleaseContext( item->c );
-    if( item->q) 
+    if( item->q)
         clReleaseCommandQueue( item->q );
-    if( item->p) 
-        clReleaseProgram( item->p );        
+    if( item->p)
+        clReleaseProgram( item->p );
     for( i = 0; i < sizeof( item->k ) / sizeof( item->k[0] ); i++ )
     {
-        if( item->k[i]) 
+        if( item->k[i])
             clReleaseKernel( item->k[i] );
     }
     for( i = 0; i < BUFFER_COUNT; i++ )
     {
-        if( item->m[i]) 
+        if( item->m[i])
             clReleaseMemObject( item->m[i] );
-    }        
+    }
     free(item );
 }
 
@@ -237,10 +237,10 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
         }
         return error;
     }
-    
+
     for( j = 0; j < TEST_SIZE; j++ )
         mapped[j] = genrand_int32(item->d);
-            
+
     error = clEnqueueUnmapMemObject( item->q, item->m[0], mapped, 0, NULL, NULL );
     if( CL_SUCCESS != error )
     {
@@ -266,10 +266,10 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
             }
             return error;
         }
-        
+
         for( i = 0; i < TEST_SIZE; i++ )
             mapped[i] = 0xdeaddead;
-                
+
         error = clEnqueueUnmapMemObject( item->q, item->m[1], mapped, 0, NULL, NULL );
         if( CL_SUCCESS != error )
         {
@@ -280,7 +280,7 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
             }
             return error;
         }
-        
+
         // Run the kernel
         error = clSetKernelArg( item->k[j], 0, sizeof( cl_mem), &item->m[0] );
         if( error )
@@ -292,7 +292,7 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
             }
             return error;
         }
-        
+
         error = clSetKernelArg( item->k[j], 1, sizeof( cl_mem), &item->m[1] );
         if( error )
         {
@@ -303,7 +303,7 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
             }
             return error;
         }
-        
+
         size_t work_size = TEST_SIZE;
         size_t global_offset = 0;
         error = clEnqueueNDRangeKernel( item->q, item->k[j], 1, &global_offset, &work_size, NULL, 0, NULL, NULL );
@@ -316,7 +316,7 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
             }
             return error;
         }
-        
+
         // Get the results back
         mapped = (cl_int*) clEnqueueMapBuffer( item->q, item->m[1], CL_TRUE, CL_MAP_READ, 0, TEST_SIZE * sizeof( cl_int ), 0, NULL, NULL, &error );
         if( NULL == mapped || CL_SUCCESS != error )
@@ -328,7 +328,7 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
             }
             return error;
         }
-        
+
         // Get our input data so we can check against it
         cl_int *inputData = (cl_int*) clEnqueueMapBuffer( item->q, item->m[0], CL_TRUE, CL_MAP_READ, 0, TEST_SIZE * sizeof( cl_int ), 0, NULL, NULL, &error );
         if( NULL == mapped || CL_SUCCESS != error )
@@ -355,7 +355,7 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
                 return -1;
             }
         }
-        
+
         //Clean up
         error = clEnqueueUnmapMemObject( item->q, item->m[0], inputData, 0, NULL, NULL );
         if( CL_SUCCESS != error )
@@ -367,7 +367,7 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
             }
             return error;
         }
-        
+
         error = clEnqueueUnmapMemObject( item->q, item->m[1], mapped, 0, NULL, NULL );
         if( CL_SUCCESS != error )
         {
@@ -378,9 +378,9 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
             }
             return error;
         }
-        
+
     }
-    
+
     // Make sure that the last set of unmap calls get run
     error = clFinish( item->q );
     if( CL_SUCCESS != error )
@@ -392,7 +392,7 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
         }
         return error;
     }
-    
+
     return CL_SUCCESS;
 }
 
@@ -402,17 +402,17 @@ int test_multiple_contexts_same_device(cl_device_id deviceID, size_t maxCount, s
 {
     size_t i, j;
     cl_int err = CL_SUCCESS;
-    
+
     //Figure out how many of these we can make before the first failure
     TestItem *list = NULL;
-    
+
     for( i = 0; i < maxCount; i++ )
     {
         // create a context and accompanying objects
         TestItem *current = CreateTestItem( deviceID, NULL /*no error reporting*/ );
         if( NULL == current )
             break;
-    
+
         // Attempt to use it
         cl_int failed = UseTestItem( current, NULL );
 
@@ -421,7 +421,7 @@ int test_multiple_contexts_same_device(cl_device_id deviceID, size_t maxCount, s
             DestroyTestItem( current );
             break;
         }
-                
+
         // Add the successful test item to the list
         current->next = list;
         list = current;
@@ -443,7 +443,7 @@ int test_multiple_contexts_same_device(cl_device_id deviceID, size_t maxCount, s
 
     // Set the count to be the number we succesfully made
     maxCount = i;
-    
+
     // Make sure we can do it again a few times
     log_info( "Tring to do it 5 more times" );
     fflush( stdout);
@@ -468,7 +468,7 @@ int test_multiple_contexts_same_device(cl_device_id deviceID, size_t maxCount, s
                 log_error( "\nTest Failed with error at CreateTestItem: %d\n", err );
                 goto exit;
             }
-        
+
             // Attempt to use it
             cl_int failed = UseTestItem( current, &err );
 
@@ -478,7 +478,7 @@ int test_multiple_contexts_same_device(cl_device_id deviceID, size_t maxCount, s
                 log_error( "\nTest Failed with error at UseTestItem: %d\n", err );
                 goto exit;
             }
-            
+
             // Add the successful test item to the list
             current->next = list;
             list = current;
@@ -486,7 +486,7 @@ int test_multiple_contexts_same_device(cl_device_id deviceID, size_t maxCount, s
         log_info( "." );
         fflush( stdout );
     }
-    
+
     log_info( "Done.\n" );
 
 exit:
@@ -505,7 +505,7 @@ exit:
 
 //  This test tests to make sure that your implementation isn't super leaky.  We make a bunch of contexts (up to some
 //  sane limit, currently 200), attempting to use each along the way. We keep track of how many we could make before
-//  a failure occurred.   We then free everything and attempt to go do it again a few times.  If you are able to make 
+//  a failure occurred.   We then free everything and attempt to go do it again a few times.  If you are able to make
 //  that many contexts 5 times over, then you pass.
 int test_multiple_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {

@@ -17,9 +17,9 @@ add_executable(conformance_test_conversions
         ../../test_common/harness/msvc9.c
         ../../test_common/harness/mingw_compat.c
         ../../test_common/harness/errorHelpers.c
+        ../../test_common/harness/parseParameters.cpp
 )
 
-if(WIN32)
 set_source_files_properties(
         Sleep.c test_conversions.c basic_test_conversions.c
         ../../test_common/harness/ThreadPool.c
@@ -28,7 +28,6 @@ set_source_files_properties(
         ../../test_common/harness/msvc9.c
         ../../test_common/harness/errorHelpers.c
         PROPERTIES LANGUAGE CXX)
-endif(WIN32)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)")
 if(NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)

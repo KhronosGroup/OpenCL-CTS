@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -47,7 +47,7 @@ extern "C" {
     #define test_start()
     #define log_info printf
     #define log_error printf
-    #define log_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,		\
+    #define log_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,        \
                         _higherBetter?"higher is better":"lower is better", _number )
     #define test_finish()
     #define vlog_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,    \
@@ -73,9 +73,9 @@ extern "C" {
 #define ct_assert_i(b, line)  ct_assert_ii(b, line)
 #define ct_assert_ii(b, line) int _compile_time_assertion_on_line_##line[b ? 1 : -1];
 
-#define test_error(errCode,msg)	test_error_ret(errCode,msg,errCode)
-#define test_error_ret(errCode,msg,retValue)	{ if( errCode != CL_SUCCESS ) { print_error( errCode, msg ); return retValue ; } }
-#define print_error(errCode,msg)	log_error( "ERROR: %s! (%s from %s:%d)\n", msg, IGetErrorString( errCode ), __FILE__, __LINE__ ); 
+#define test_error(errCode,msg)    test_error_ret(errCode,msg,errCode)
+#define test_error_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { print_error( errCode, msg ); return retValue ; } }
+#define print_error(errCode,msg)    log_error( "ERROR: %s! (%s from %s:%d)\n", msg, IGetErrorString( errCode ), __FILE__, __LINE__ );
 
 // expected error code vs. what we got
 #define test_failure_error(errCode, expectedErrCode, msg) test_failure_error_ret(errCode, expectedErrCode, msg, errCode != expectedErrCode)
@@ -85,7 +85,7 @@ extern "C" {
 #define test_failure_warning_ret(errCode, expectedErrCode, msg, retValue) { if( errCode != expectedErrCode ) { print_failure_warning( errCode, expectedErrCode, msg ); warnings++ ; } }
 #define print_failure_warning(errCode, expectedErrCode, msg) log_error( "WARNING: %s! (Got %s, expected %s from %s:%d)\n", msg, IGetErrorString( errCode ), IGetErrorString( expectedErrCode ), __FILE__, __LINE__ );
 
-extern const char	*IGetErrorString( int clErrorCode );
+extern const char    *IGetErrorString( int clErrorCode );
 
 extern float Ulp_Error_Half( cl_ushort test, float reference );
 extern float Ulp_Error( float test, double reference );
@@ -134,7 +134,7 @@ static int vlog_win32(const char *format, ...)
     if (new_format != format) {
         free((void*)new_format);
     }
-    
+
     return 0;
 }
 #endif

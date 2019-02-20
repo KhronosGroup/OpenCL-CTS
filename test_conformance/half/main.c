@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,6 +25,7 @@
 #endif
 
 #include "../../test_common/harness/mingw_compat.h"
+#include "../../test_common/harness/parseParameters.h"
 #if defined (__MINGW32__)
 #include <sys/param.h>
 #endif
@@ -62,54 +63,54 @@ int main (int argc, const char **argv )
       g_arrVecSizes[i] = (1<<i);
     }
     for(i = 0; i < kStrangeVectorSizeCount; ++i) {
-      g_arrVecSizes[i+kVectorSizeCount] = 
-	arrStrangeVecSizes[i];
+      g_arrVecSizes[i+kVectorSizeCount] =
+    arrStrangeVecSizes[i];
     }
 
     for(i = 0, alignbound=1; i <= kLargestVectorSize; ++i) {
-	while(alignbound < i) {
-	    alignbound = alignbound<<1;
-	}
-	g_arrVecAligns[i] = alignbound;
+    while(alignbound < i) {
+        alignbound = alignbound<<1;
+    }
+    g_arrVecAligns[i] = alignbound;
     }
 
     test_start();
-    
-    if( (error = ParseArgs( argc, argv )) ) 
+
+    if( (error = ParseArgs( argc, argv )) )
         goto exit;
-    
-    if( (error = InitCL()) ) 
+
+    if( (error = InitCL()) )
         goto exit;
-    
+
     fflush( stdout );
     error = DoTest();
-    
+
 exit:
-    
+
     if (gFailCount == 0) {
-        if (gTestCount > 1) 
+        if (gTestCount > 1)
             vlog("PASSED %d of %d tests.\n", gTestCount, gTestCount);
         else
             vlog("PASSED test.\n");
     } else if (gFailCount > 0) {
         if (gFailCount+gTestCount > 1)
             vlog_error("FAILED %d of %d tests.\n", gFailCount, gTestCount+gFailCount);
-        else 
+        else
             vlog_error("FAILED test.\n");
     }
-    
+
     if (gQueue) {
-    	int flush_error = clFinish(gQueue);
-    	if (flush_error)
-        	vlog_error("clFinish failed: %d\n", flush_error);
-	}
-    
+        int flush_error = clFinish(gQueue);
+        if (flush_error)
+            vlog_error("clFinish failed: %d\n", flush_error);
+    }
+
     ReleaseCL();
     test_finish();
-    
+
     if (gFailCount)
         return gFailCount;
-    
+
     return error;
 }
 
@@ -120,12 +121,12 @@ static int ParseArgs( int argc, const char **argv )
 {
     int i;
     argList = (const char **)calloc( argc - 1, sizeof( char*) );
-    
+
     argCount = 0;
-    
+
     if( NULL == argList && argc > 1 )
         return -1;
-    
+
 #if (defined( __APPLE__ ) || defined(__linux__) || defined(__MINGW32__))
     { // Extract the app name
         char baseName[ MAXPATHLEN ];
@@ -141,17 +142,17 @@ static int ParseArgs( int argc, const char **argv )
     {
         char fname[_MAX_FNAME + _MAX_EXT + 1];
         char ext[_MAX_EXT];
-        
-        errno_t err = _splitpath_s( argv[0], NULL, 0, NULL, 0, 
+
+        errno_t err = _splitpath_s( argv[0], NULL, 0, NULL, 0,
                                    fname, _MAX_FNAME, ext, _MAX_EXT );
-        if (err == 0) { // no error 
+        if (err == 0) { // no error
             strcat (fname, ext); //just cat them, size of frame can keep both
             strncpy (appName, fname, sizeof(appName));
             appName[ sizeof( appName ) -1 ] = '\0';
         }
     }
 #endif
-    
+
     /* Check for environment variable to set device type */
     char *env_mode = getenv( "CL_DEVICE_TYPE" );
     if( env_mode != NULL )
@@ -164,36 +165,36 @@ static int ParseArgs( int argc, const char **argv )
             gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
         else if( strcmp( env_mode, "default" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
             gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-        else 
-        { 
+        else
+        {
             vlog_error( "Unknown CL_DEVICE_TYPE env variable setting: %s.\nAborting...\n", env_mode );
             abort();
         }
     }
-	
-	unsigned int num_devices;
-	clGetDeviceIDs(NULL, gDeviceType, 0, NULL, &num_devices);
-	
-	const char* device_index_env = getenv("CL_DEVICE_INDEX");
-	if (device_index_env) {
-		if (device_index_env) {
-			gDeviceIndex = atoi(device_index_env);
-		}
-		
-		if (gDeviceIndex >= num_devices) {
-			vlog("Specified CL_DEVICE_INDEX=%d out of range, using index 0.\n", 
-				gDeviceIndex);
-			gDeviceIndex = 0;
-		}
-	}
-    
+
+    unsigned int num_devices;
+    clGetDeviceIDs(NULL, gDeviceType, 0, NULL, &num_devices);
+
+    const char* device_index_env = getenv("CL_DEVICE_INDEX");
+    if (device_index_env) {
+        if (device_index_env) {
+            gDeviceIndex = atoi(device_index_env);
+        }
+
+        if (gDeviceIndex >= num_devices) {
+            vlog("Specified CL_DEVICE_INDEX=%d out of range, using index 0.\n",
+                gDeviceIndex);
+            gDeviceIndex = 0;
+        }
+    }
+
     vlog( "\n%s", appName );
     for( i = 1; i < argc; i++ )
     {
         const char *arg = argv[i];
         if( NULL == arg )
             break;
-        
+
         vlog( "\t%s", arg );
         if( arg[0] == '-' )
         {
@@ -201,23 +202,25 @@ static int ParseArgs( int argc, const char **argv )
             while( *arg != '\0' )
             {
                 switch( *arg )
-                {                                        
+                {
                     case 'd':
                         gTestDouble ^= 1;
                         break;
-                        
+
                     case 'h':
                         PrintUsage();
                         return -1;
-                        
+
                     case 't':
                         gReportTimes ^= 1;
                         break;
-                        
+
                     case 'w':  // Wimpy mode
                         gWimpyMode = true;
                         break;
-                        
+                    case '[':
+                        parseWimpyReductionFactor( arg, gWimpyReductionFactor);
+                        break;
                     default:
                         vlog_error( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
                         PrintUsage();
@@ -243,16 +246,17 @@ static int ParseArgs( int argc, const char **argv )
             }
         }
     }
-    
+
     vlog( "Test binary built %s %s\n", __DATE__, __TIME__ );
     PrintArch();
     PrintDevice();
     if( gWimpyMode )
-    { 
+    {
         vlog( "\n" );
         vlog( "*** WARNING: Testing in Wimpy mode!                     ***\n" );
         vlog( "*** Wimpy mode is not sufficient to verify correctness. ***\n" );
         vlog( "*** It gives warm fuzzy feelings and then nevers calls. ***\n\n" );
+        vlog( "*** Wimpy Reduction Factor: %-27u ***\n\n", gWimpyReductionFactor);
     }
     return 0;
 }
@@ -263,14 +267,15 @@ static void PrintUsage( void )
     vlog( "\t\t-d\tToggle double precision testing (default: on if double supported)\n" );
     vlog( "\t\t-t\tToggle reporting performance data.\n" );
     vlog( "\t\t-w\tRun in wimpy mode\n" );
+    vlog( "\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", gWimpyReductionFactor);
     vlog( "\t\t-h\tHelp\n" );
     vlog( "\n" );
 }
 
 static void PrintArch( void )
 {
-	vlog( "sizeof( void*) = %ld\n", sizeof( void *) );
-    
+    vlog( "sizeof( void*) = %ld\n", sizeof( void *) );
+
 #if defined( __APPLE__ )
 #if defined( __ppc__ )
     vlog( "ARCH:\tppc\n" );
@@ -282,17 +287,19 @@ static void PrintArch( void )
     vlog( "ARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     vlog( "ARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    vlog( "\tARCH:\taarch64\n" );
 #else
 #error unknown arch
 #endif
-	
-	int type = 0;
-	size_t typeSize = sizeof( type );
-	sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
+
+    int type = 0;
+    size_t typeSize = sizeof( type );
+    sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
     vlog( "cpu type:\t%d\n", type );
-	typeSize = sizeof( type );
-	sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
-	vlog( "cpu subtype:\t%d\n", type );
+    typeSize = sizeof( type );
+    sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
+    vlog( "cpu subtype:\t%d\n", type );
 #endif
 }
 
@@ -317,45 +324,45 @@ static void PrintDevice( void)
 static int DoTest( void )
 {
     int error = 0;
-    
+
     if( 0 == argCount )
     { // test all
         if( (error = Test_vload_half()) )
             return error;
-        
+
         if( (error = Test_vloada_half()) )
             return error;
-        
+
         if( (error = Test_vstore_half()) )
             return error;
-        
+
         if( (error = Test_vstorea_half()) )
             return error;
-        
+
         if( (error = Test_vstore_half_rte()) )
             return error;
-        
+
         if( (error = Test_vstorea_half_rte()) )
             return error;
-        
+
         if( (error = Test_vstore_half_rtz()) )
             return error;
-        
+
         if( (error = Test_vstorea_half_rtz()) )
             return error;
-        
+
         if( (error = Test_vstore_half_rtp()) )
             return error;
-        
+
         if( (error = Test_vstorea_half_rtp()) )
             return error;
-        
+
         if( (error = Test_vstore_half_rtn()) )
             return error;
-        
+
         if( (error = Test_vstorea_half_rtn()) )
             return error;
-        
+
         if( (error = Test_roundTrip()) )
             return error;
     }
@@ -363,7 +370,7 @@ static int DoTest( void )
     {
         typedef struct{ int (*f)(void); const char *name; }TestItem;
 #define ENTRY( _x )     { Test_ ## _x, STRINGIFY(_x) }
-        static const TestItem list[] = 
+        static const TestItem list[] =
         {
             ENTRY(vload_half),
             ENTRY(vloada_half),
@@ -380,7 +387,7 @@ static int DoTest( void )
             ENTRY(roundTrip)
         };
         static const size_t list_count = sizeof( list ) / sizeof( list[0] );
-        
+
         size_t i, j;
         for( i = 0; i < argCount; i++ )
         {
@@ -391,7 +398,7 @@ static int DoTest( void )
                 {
                     if( (error = list[j].f()) )
                         return error;
-                    
+
                     break;
                 }
             }
@@ -402,7 +409,7 @@ static int DoTest( void )
             }
         }
     }
-    
+
     return error;
 }
 

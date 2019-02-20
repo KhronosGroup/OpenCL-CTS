@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,16 +21,16 @@
 
 #include "utils.h"
 
-int kernel_functions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, 
+int kernel_functions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements,
                      unsigned int iterationNum, unsigned int width, unsigned int height, cl_dx9_media_adapter_type_khr adapterType,
                      TSurfaceFormat surfaceFormat, TSharedHandleType sharedHandle)
 {
   const unsigned int FRAME_NUM = 2;
   const cl_uchar MAX_VALUE = 255 / 2;
-  const std::string PROGRAM_STR = 
+  const std::string PROGRAM_STR =
     "__kernel void TestFunction( read_only image2d_t planeIn, write_only image2d_t planeOut, "
     NL "                            sampler_t sampler, __global int *planeRes)"
-    NL "{"  
+    NL "{"
     NL "  int w = get_global_id(0);"
     NL "  int h = get_global_id(1);"
     NL "  int width = get_image_width(planeIn);"
@@ -61,7 +61,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context, cl_command_queue
   cl_uchar step = MAX_VALUE / FRAME_NUM;
   for (size_t i = 0; i < FRAME_NUM; ++i)
   {
-    if (!YUVGenerate(surfaceFormat, bufferIn[i], width, height, static_cast<cl_uchar>(step * i), static_cast<cl_uchar>(step * (i + 1))) || 
+    if (!YUVGenerate(surfaceFormat, bufferIn[i], width, height, static_cast<cl_uchar>(step * i), static_cast<cl_uchar>(step * (i + 1))) ||
         !YUVGenerate(surfaceFormat, bufferExp[i], width, height, static_cast<cl_uchar>(step * i), static_cast<cl_uchar>(step * (i + 1)), 0.2))
     {
       result.ResultSub(CResult::TEST_ERROR);
@@ -155,7 +155,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context, cl_command_queue
         result.ResultSub(CResult::TEST_FAIL);
         return result.Result();
       }
-      memObjDstList.push_back(planeDstList[planeIdx]);      
+      memObjDstList.push_back(planeDstList[planeIdx]);
     }
 
     clCommandQueueWrapper cmdQueue = clCreateCommandQueue(ctx, gDeviceIDdetected, 0, &error );

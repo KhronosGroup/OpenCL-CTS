@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -41,7 +41,7 @@
 
 #if defined( __GNUC__ )
     #define UNUSED  __attribute__ ((unused))
-#else   
+#else
     #define UNUSED
 #endif
 
@@ -74,8 +74,8 @@ extern int              gForceFTZ;
 extern int              gWimpyMode;
 extern int              gHasDouble;
 extern int              gIsInRTZMode;
-extern int		        gInfNanSupport;
-extern int		        gIsEmbedded;
+extern int                gInfNanSupport;
+extern int                gIsEmbedded;
 extern uint32_t         gMaxVectorSizeIndex;
 extern uint32_t         gMinVectorSizeIndex;
 extern uint32_t         gDeviceFrequency;
@@ -97,15 +97,15 @@ extern cl_device_fp_config gDoubleCapabilities;
     #define vlog( ... )         ATFLogInfo(__VA_ARGS__)
     #define vlog_error( ... )   ATFLogError(__VA_ARGS__)
     #define vlog_perf( _number, _higherIsBetter, _units, _nameFmt, ... )    ATFLogPerformanceNumber(_number, _higherIsBetter, _units, _nameFmt, __VA_ARGS__ )
-    
+
 #else
 
     #define test_start()
     #define test_finish()
     #define vlog( ... )         printf( __VA_ARGS__ )
-    #define vlog_error( ... )	printf( __VA_ARGS__ )
-    #define vlog_perf( _number, _higherIsBetter, _units, _nameFmt, ... )	printf( "\t%8.2f", _number )
-    
+    #define vlog_error( ... )    printf( __VA_ARGS__ )
+    #define vlog_perf( _number, _higherIsBetter, _units, _nameFmt, ... )    printf( "\t%8.2f", _number )
+
     void _logPerf(double number, int higherIsBetter, const char *units, const char *nameFormat, ...);
 #endif
 
@@ -140,8 +140,8 @@ static inline double DoubleFromUInt32( uint32_t bits )
     // split 0x89abcdef to 0x89abc00000000def
     u.u = bits & 0xfffU;
     u.u |= (uint64_t) (bits & ~0xfffU) << 32;
-    
-    // sign extend the leading bit of def segment as sign bit so that the middle region consists of either all 1s or 0s 
+
+    // sign extend the leading bit of def segment as sign bit so that the middle region consists of either all 1s or 0s
     u.u -= (bits & 0x800U) << 1;
 
     // return result
@@ -162,42 +162,42 @@ void _LogBuildError( cl_program p, int line, const char *file );
 
 // Note: though this takes a double, this is for use with single precision tests
 static inline int IsFloatSubnormal( double x )
-{ 
-#if 2 == FLT_RADIX       
+{
+#if 2 == FLT_RADIX
     // Do this in integer to avoid problems with FTZ behavior
     union{ float d; uint32_t u;}u;
-    u.d = fabsf((float)x); 
+    u.d = fabsf((float)x);
     return (u.u-1) < 0x007fffffU;
 #else
     // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) FLT_MIN && x != 0.0; 
+    return fabs(x) < (double) FLT_MIN && x != 0.0;
 #endif
 }
 
 
 static inline int IsDoubleSubnormal( long double x )
-{ 
-#if 2 == FLT_RADIX       
+{
+#if 2 == FLT_RADIX
     // Do this in integer to avoid problems with FTZ behavior
     union{ double d; uint64_t u;}u;
-    u.d = fabs((double) x); 
+    u.d = fabs((double) x);
     return (u.u-1) < 0x000fffffffffffffULL;
 #else
     // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) DBL_MIN && x != 0.0; 
+    return fabs(x) < (double) DBL_MIN && x != 0.0;
 #endif
 }
 
 //The spec is fairly clear that we may enforce a hard cutoff to prevent premature flushing to zero.
 // However, to avoid conflict for 1.0, we are letting results at TYPE_MIN + ulp_limit to be flushed to zero.
 static inline int IsFloatResultSubnormal( double x, float ulps )
-{ 
-    x = fabs(x) - MAKE_HEX_DOUBLE( 0x1.0p-149, 0x1, -149) * (double) ulps; 
+{
+    x = fabs(x) - MAKE_HEX_DOUBLE( 0x1.0p-149, 0x1, -149) * (double) ulps;
     return x < MAKE_HEX_DOUBLE( 0x1.0p-126, 0x1, -126 );
 }
 
 static inline int IsDoubleResultSubnormal( long double x, float ulps )
-{ 
+{
     x = fabsl(x) - MAKE_HEX_LONG( 0x1.0p-1074, 0x1, -1074) * (long double) ulps;
     return x < MAKE_HEX_LONG( 0x1.0p-1022, 0x1, -1022 );
 }
@@ -251,20 +251,20 @@ static inline void Force64BitFPUPrecision(void)
 #ifdef __cplusplus
 extern "C"
 #else
-extern    
+extern
 #endif
 void memset_pattern4(void *dest, const void *src_pattern, size_t bytes );
 
 typedef union
 {
-	int32_t i;
-	float   f;
+    int32_t i;
+    float   f;
 }int32f_t;
 
 typedef union
 {
-	int64_t l;
-	double  d;
+    int64_t l;
+    double  d;
 }int64d_t;
 
 void MulD(double *rhi, double *rlo, double u, double v);

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,7 +15,7 @@
 //
 #include "utils.h"
 
-int memory_access(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, 
+int memory_access(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements,
                   unsigned int width, unsigned int height, cl_dx9_media_adapter_type_khr adapterType,
                   TSurfaceFormat surfaceFormat, TSharedHandleType sharedHandle)
 {
@@ -34,7 +34,7 @@ int memory_access(cl_device_id deviceID, cl_context context, cl_command_queue qu
   std::vector<cl_uchar> bufferRef0(frameSize, 0);
   std::vector<cl_uchar> bufferRef1(frameSize, 0);
   std::vector<cl_uchar> bufferRef2(frameSize, 0);
-  if (!YUVGenerate(surfaceFormat, bufferRef0, width, height, 0, 90) || 
+  if (!YUVGenerate(surfaceFormat, bufferRef0, width, height, 0, 90) ||
     !YUVGenerate(surfaceFormat, bufferRef1, width, height, 91, 180) ||
     !YUVGenerate(surfaceFormat, bufferRef2, width, height, 181, 255))
   {
@@ -120,7 +120,7 @@ int memory_access(cl_device_id deviceID, cl_context context, cl_command_queue qu
           result.ResultSub(CResult::TEST_FAIL);
           return result.Result();
         }
-        memObjList.push_back(planesList[planeIdx]);     
+        memObjList.push_back(planesList[planeIdx]);
       }
 
       error = clEnqueueAcquireDX9MediaSurfacesKHR(cmdQueue, static_cast<cl_uint>(memObjList.size()), &memObjList[0], 0, 0, 0);
@@ -193,7 +193,7 @@ int memory_access(cl_device_id deviceID, cl_context context, cl_command_queue qu
           result.ResultSub(CResult::TEST_FAIL);
           return result.Result();
         }
-        memObjList.push_back(planesList[planeIdx]);     
+        memObjList.push_back(planesList[planeIdx]);
       }
 
       error = clEnqueueAcquireDX9MediaSurfacesKHR(cmdQueue, static_cast<cl_uint>(memObjList.size()), &memObjList[0], 0, 0, 0);
@@ -274,7 +274,7 @@ int memory_access(cl_device_id deviceID, cl_context context, cl_command_queue qu
           result.ResultSub(CResult::TEST_FAIL);
           return result.Result();
         }
-        memObjList.push_back(planesList[planeIdx]);     
+        memObjList.push_back(planesList[planeIdx]);
       }
 
       error = clEnqueueAcquireDX9MediaSurfacesKHR(cmdQueue, static_cast<cl_uint>(memObjList.size()), &memObjList[0], 0, 0, 0);

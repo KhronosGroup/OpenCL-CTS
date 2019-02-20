@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,32 +13,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "common.h" 
+#include "common.h"
 #include "testBase.h"
 
 #if defined( __APPLE__ )
     #include <OpenGL/glu.h>
 #else
     #include <GL/glu.h>
-    #include <CL/cl_gl.h>    
+    #include <CL/cl_gl.h>
 #endif
 
-int test_images_read_2Darray( cl_device_id device, cl_context context, 
+int test_images_read_2Darray( cl_device_id device, cl_context context,
   cl_command_queue queue, int )
 {
   size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
-  
+
   size_t sizes[] = { 2, 4, 8, 16, 32, 64, 128 };
   size_t nsizes = sizeof(sizes) / sizeof(sizes[0]);
-    
+
   GLenum targets[] = { GL_TEXTURE_2D_ARRAY };
   size_t ntargets = sizeof(targets) / sizeof(targets[0]);
-  
-  return test_images_read_common(device, context, queue, common_formats, 
+
+  return test_images_read_common(device, context, queue, common_formats,
       nformats, targets, ntargets, sizes, nsizes);
 }
 
-int test_images_write_2Darray( cl_device_id device, cl_context context, 
+int test_images_write_2Darray( cl_device_id device, cl_context context,
   cl_command_queue queue, int numElements )
 {
   int error = 0;
@@ -47,7 +47,7 @@ int test_images_write_2Darray( cl_device_id device, cl_context context,
   sizevec_t sizes[nsizes];
 
   // FIXME: Query for 2D image array write support.
-  
+
   GLenum targets[] = { GL_TEXTURE_2D_ARRAY };
   size_t ntargets = sizeof(targets) / sizeof(targets[0]);
   size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
@@ -61,21 +61,21 @@ int test_images_write_2Darray( cl_device_id device, cl_context context,
     sizes[i].depth  = random_in_range( 4, 24, seed );
   }
 
-  return test_images_write_common( device, context, queue, common_formats, 
+  return test_images_write_common( device, context, queue, common_formats,
     nformats, targets, ntargets, sizes, nsizes );
 }
 
-int test_images_2Darray_getinfo( cl_device_id device, cl_context context, 
+int test_images_2Darray_getinfo( cl_device_id device, cl_context context,
   cl_command_queue queue, int )
 {
   size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
-  
+
   size_t sizes[] = { 2, 4, 8, 16, 32, 64, 128 };
   size_t nsizes = sizeof(sizes) / sizeof(sizes[0]);
-    
+
   GLenum targets[] = { GL_TEXTURE_2D_ARRAY };
   size_t ntargets = sizeof(targets) / sizeof(targets[0]);
-  
-  return test_images_get_info_common(device, context, queue, common_formats, 
+
+  return test_images_get_info_common(device, context, queue, common_formats,
       nformats, targets, ntargets, sizes, nsizes);
 }

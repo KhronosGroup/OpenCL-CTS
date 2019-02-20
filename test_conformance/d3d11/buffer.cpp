@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,14 +28,14 @@ BufferProperties bufferProperties[] =
     ADD_BUFFER_PROPERTIES(  0x110000, D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_DEFAULT, 0),
     ADD_BUFFER_PROPERTIES(  0x110000, D3D11_BIND_STREAM_OUTPUT,   D3D11_USAGE_DEFAULT, 0),
     ADD_BUFFER_PROPERTIES(  0x110001, D3D11_BIND_STREAM_OUTPUT,   D3D11_USAGE_DEFAULT, 0),
-    
+
     ADD_BUFFER_PROPERTIES(      0x11, D3D11_BIND_VERTEX_BUFFER,   D3D11_USAGE_DEFAULT, 0),
     ADD_BUFFER_PROPERTIES(      0x11, D3D11_BIND_INDEX_BUFFER,    D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE),
     ADD_BUFFER_PROPERTIES(     0x121, D3D11_BIND_VERTEX_BUFFER,   D3D11_USAGE_DEFAULT, 0),
     ADD_BUFFER_PROPERTIES(    0x1234, D3D11_BIND_INDEX_BUFFER,    D3D11_USAGE_DEFAULT, 0),
     ADD_BUFFER_PROPERTIES(   0x12345, D3D11_BIND_VERTEX_BUFFER,   D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE),
     ADD_BUFFER_PROPERTIES(  0x123456, D3D11_BIND_INDEX_BUFFER,    D3D11_USAGE_DEFAULT, 0),
-#if 0 // avoid large sizes on automation       
+#if 0 // avoid large sizes on automation
     ADD_BUFFER_PROPERTIES( 0x1234567, D3D11_BIND_INDEX_BUFFER,    D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE),
 
     ADD_BUFFER_PROPERTIES( 0x4000000, D3D11_BIND_VERTEX_BUFFER,   D3D11_USAGE_DEFAULT, 0),
@@ -57,9 +57,9 @@ void SubTestBuffer(
     ID3D11Buffer* pBuffer = NULL;
     HRESULT hr = S_OK;
     cl_mem mem = NULL;
-    cl_int result = CL_SUCCESS;   
+    cl_int result = CL_SUCCESS;
 
-    HarnessD3D11_TestBegin("Buffer: Size=%d, BindFlags=%s, Usage=%s, CPUAccess=%s", 
+    HarnessD3D11_TestBegin("Buffer: Size=%d, BindFlags=%s, Usage=%s, CPUAccess=%s",
         props->ByteWidth,
         props->name_BindFlags,
         props->name_Usage,
@@ -108,7 +108,7 @@ void SubTestBuffer(
         // copy 'abcdXXXX' to the front of the buffer and 'xxxx1234' to the back
         D3D11_BOX box = {0};
         box.front   = 0;
-        box.back    = 1;        
+        box.back    = 1;
         box.top     = 0;
         box.bottom  = 1;
 
@@ -116,9 +116,9 @@ void SubTestBuffer(
         box.right   = 8;
         pDC->CopySubresourceRegion(
             pBuffer,
-            0, 
-            0, 
-            0, 
+            0,
+            0,
+            0,
             0,
             pStagingBuffer,
             0,
@@ -127,15 +127,15 @@ void SubTestBuffer(
         box.right   = 16;
         pDC->CopySubresourceRegion(
             pBuffer,
-            0, 
-            props->ByteWidth-8, 
-            0, 
+            0,
+            props->ByteWidth-8,
+            0,
             0,
             pStagingBuffer,
             0,
-            &box);        
-        pStagingBuffer->Release();       
-    }    
+            &box);
+        pStagingBuffer->Release();
+    }
 
     // share the resource with OpenCL
     {
@@ -184,7 +184,7 @@ void SubTestBuffer(
             props->ByteWidth-8,
             4,
             0,
-            NULL, 
+            NULL,
             NULL);
         TestRequire(result == CL_SUCCESS, "clEnqueueCopyBuffer failed.");
 
@@ -196,9 +196,9 @@ void SubTestBuffer(
             4,
             4,
             0,
-            NULL, 
+            NULL,
             NULL);
-        TestRequire(result == CL_SUCCESS, "clEnqueueCopyBuffer failed.");        
+        TestRequire(result == CL_SUCCESS, "clEnqueueCopyBuffer failed.");
     }
 
     // release the resource from OpenCL
@@ -241,35 +241,35 @@ void SubTestBuffer(
         pDC->Unmap(pStagingBuffer, 0);
         TestRequire(SUCCEEDED(hr), "Unmap failed!");
 
-        // copy the 'abcd1234' from the front and back of the buffer to the staging buffer       
+        // copy the 'abcd1234' from the front and back of the buffer to the staging buffer
         D3D11_BOX box = {0};
         box.front   = 0;
-        box.back    = 1;        
+        box.back    = 1;
         box.top     = 0;
         box.bottom  = 1;
-        
+
         box.left    = 0;
-        box.right   = 8;        
+        box.right   = 8;
         pDC->CopySubresourceRegion(
             pStagingBuffer,
-            0, 
-            0, 
-            0, 
+            0,
+            0,
+            0,
             0,
             pBuffer,
             0,
             &box);
-        box.left    = props->ByteWidth-8;        
+        box.left    = props->ByteWidth-8;
         box.right   = props->ByteWidth;
         pDC->CopySubresourceRegion(
             pStagingBuffer,
-            0, 
-            8, 
-            0, 
+            0,
+            8,
+            0,
             0,
             pBuffer,
             0,
-            &box);        
+            &box);
         TestRequire(SUCCEEDED(hr), "CopySubresourceRegion failed!");
 
         // verify that we got the 'abcd1234'
@@ -303,12 +303,12 @@ Cleanup:
 
 
 void TestDeviceBuffer(
-    cl_context context, 
-    cl_command_queue command_queue, 
+    cl_context context,
+    cl_command_queue command_queue,
     ID3D11Device* pDevice,
     ID3D11DeviceContext* pDC)
 {
-    for (UINT i = 0; i < bufferPropertyCount; ++i) 
+    for (UINT i = 0; i < bufferPropertyCount; ++i)
     {
         SubTestBuffer(
             context,

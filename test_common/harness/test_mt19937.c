@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,7 +25,7 @@ int main( void )
                                     0xdf875de9, 0x00517d76, 0xd861c944, 0xa7676404,
                                     0x5491aff4, 0x67616209, 0xc368b3fb, 0x929dfc92 };
     int errcount = 0;
-    
+
     for( i = 0; i < 65536; i++ )
     {
         cl_uint u = genrand_int32( d );
@@ -38,7 +38,7 @@ int main( void )
             }
         }
     }
-    
+
     free_mtdata(d);
 
     if( errcount )

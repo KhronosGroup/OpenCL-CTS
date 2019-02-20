@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,14 +23,32 @@
 
 extern cl_command_queue queue;
 extern cl_context context;
-extern bool			gDebugTrace, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding;
-extern cl_filter_mode	gFilterModeToSkip;
+extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding;
+extern cl_filter_mode    gFilterModeToSkip;
 extern cl_mem_flags gMemFlagsToUse;
 
-extern int verify_write_results( size_t &i, int &numTries, int &totalErrors, char *&imagePtr, void *resultValues, size_t y, size_t z, 
+extern int verify_write_results( size_t &i, int &numTries, int &totalErrors, char *&imagePtr, void *resultValues, size_t y, size_t z,
                                 ExplicitType inputType, image_descriptor *imageInfo, bool verifyRounding );
 
-const char *write3DKernelSourcePattern = 
+// Utility function to clamp down image sizes for certain tests to avoid
+// using too much memory.
+static size_t reduceImageSizeRange(size_t maxDimSize, MTdata& seed) {
+    size_t DimSize = random_log_in_range(8, (int) maxDimSize/32, seed);
+    if (DimSize > (size_t) 128)
+        return 128;
+    else
+        return DimSize;
+}
+
+static size_t reduceImageDepth(size_t maxDimSize, MTdata& seed) {
+    size_t DimSize = random_log_in_range(8, (int) maxDimSize/32, seed);
+    if (DimSize > (size_t) 32)
+        return 32;
+    else
+        return DimSize;
+}
+
+const char *write3DKernelSourcePattern =
 "#pragma OPENCL EXTENSION cl_khr_3d_image_writes : enable\n"
 "__kernel void sample_kernel( __global %s4 *input, write_only image3d_t output )\n"
 "{\n"
@@ -39,13 +57,13 @@ const char *write3DKernelSourcePattern =
 "   write_image%s( output, (int4)( tidX, tidY, tidZ, 0 ), input[ offset ] );\n"
 "}";
 
-int test_write_image_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel, 
+int test_write_image_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel,
                         image_descriptor *imageInfo, ExplicitType inputType, MTdata d )
 {
     int                 totalErrors = 0;
     const cl_mem_flags  mem_flag_types[2] = {  CL_MEM_WRITE_ONLY,   CL_MEM_READ_WRITE };
     const char *        mem_flag_names[2] = { "CL_MEM_WRITE_ONLY", "CL_MEM_READ_WRITE" };
-    
+
     for( size_t mem_flag_index = 0; mem_flag_index < sizeof( mem_flag_types ) / sizeof( mem_flag_types[0] ); mem_flag_index++ )
     {
         int error;
@@ -53,7 +71,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
         bool verifyRounding = false;
         int totalErrors = 0;
         int forceCorrectlyRoundedWrites = 0;
-        
+
 #if defined( __APPLE__ )
         // Require Apple's CPU implementation to be correctly rounded, not just within 0.6
         cl_device_type type = 0;
@@ -65,16 +83,16 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
         if( type == CL_DEVICE_TYPE_CPU )
             forceCorrectlyRoundedWrites = 1;
 #endif
-        
+
         if( imageInfo->format->image_channel_data_type == CL_HALF_FLOAT )
             if( DetectFloatToHalfRoundingMode(queue) )
                 return 1;
-        
+
         clMemWrapper inputStream;
         BufferOwningPtr<char> maxImageUseHostPtrBackingStore, imageValues;
-        
+
         create_random_image_data( inputType, imageInfo, imageValues, d );
-        
+
         if( inputType == kFloat && imageInfo->format->image_channel_data_type != CL_FLOAT )
         {
             // First, fill with arbitrary floats
@@ -87,15 +105,15 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                         inputValues[ i ] = get_random_float( -0.1f, 1.1f, d );
                 }
             }
-            
+
             // Throw a few extra test values in there
             float *inputValues = (float *)(char*)imageValues;
             size_t i = 0;
             inputValues[ i++ ] = -0.0000000000009f;
-            inputValues[ i++ ] = 1.f;		
+            inputValues[ i++ ] = 1.f;
             inputValues[ i++ ] = -1.f;
-            inputValues[ i++ ] = 2.f;		
-            
+            inputValues[ i++ ] = 2.f;
+
             // Also fill in the first few vectors with some deliberate tests to determine the rounding mode
             // is correct
             if( imageInfo->width > 12 )
@@ -121,26 +139,26 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
             inputValues[ i++ ] = 7271820;
             inputValues[ i++ ] = 0;
         }
-        
+
         // Construct testing sources
         clProtectedImage protImage;
         clMemWrapper unprotImage;
         cl_mem image;
-        
+
         if( gMemFlagsToUse == CL_MEM_USE_HOST_PTR )
         {
             create_random_image_data( inputType, imageInfo, maxImageUseHostPtrBackingStore, d );
-            
-            unprotImage = create_image_3d( context, mem_flag_types[mem_flag_index] | CL_MEM_USE_HOST_PTR, imageInfo->format, 
+
+            unprotImage = create_image_3d( context, mem_flag_types[mem_flag_index] | CL_MEM_USE_HOST_PTR, imageInfo->format,
                                           imageInfo->width, imageInfo->height, imageInfo->depth, 0, 0,
-                                          maxImageUseHostPtrBackingStore, &error );    
-            
+                                          maxImageUseHostPtrBackingStore, &error );
+
             if( error != CL_SUCCESS )
             {
                 log_error( "ERROR: Unable to create 3D image of size %ld x %ld x %ld pitch %ld (%s)\n", imageInfo->width, imageInfo->height, imageInfo->depth, imageInfo->rowPitch, IGetErrorString( error ) );
                 return error;
             }
-            
+
             image = (cl_mem)unprotImage;
         }
         else // Either CL_MEM_ALLOC_HOST_PTR, CL_MEM_COPY_HOST_PTR or none
@@ -148,7 +166,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
             // Note: if ALLOC_HOST_PTR is used, the driver allocates memory that can be accessed by the host, but otherwise
             // it works just as if no flag is specified, so we just do the same thing either way
             // Note: if the flags is really CL_MEM_COPY_HOST_PTR, we want to remove it, because we don't want to copy any incoming data
-            unprotImage = create_image_3d( context, mem_flag_types[mem_flag_index] | ( gMemFlagsToUse & ~(CL_MEM_COPY_HOST_PTR) ), imageInfo->format, 
+            unprotImage = create_image_3d( context, mem_flag_types[mem_flag_index] | ( gMemFlagsToUse & ~(CL_MEM_COPY_HOST_PTR) ), imageInfo->format,
                                           imageInfo->width, imageInfo->height, imageInfo->depth, 0, 0, imageValues, &error );
             if( error != CL_SUCCESS )
             {
@@ -157,40 +175,40 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
             }
             image = unprotImage;
         }
-        
-        inputStream = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), 
+
+        inputStream = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ),
                                      get_explicit_type_size( inputType ) * 4 * imageInfo->width * imageInfo->height * imageInfo->depth, imageValues, &error );
         test_error( error, "Unable to create input buffer" );
-        
+
         // Set arguments
         error = clSetKernelArg( kernel, 0, sizeof( cl_mem ), &inputStream );
         test_error( error, "Unable to set kernel arguments" );
         error = clSetKernelArg( kernel, 1, sizeof( cl_mem ), &image );
         test_error( error, "Unable to set kernel arguments" );
-        
+
         // Run the kernel
         threads[0] = (size_t)imageInfo->width;
         threads[1] = (size_t)imageInfo->height;
         threads[2] = (size_t)imageInfo->depth;
         error = clEnqueueNDRangeKernel( queue, kernel, 3, NULL, threads, NULL, NULL, 0, NULL );
         test_error( error, "Unable to run kernel" );
-        
+
         // Get results
         size_t resultSize = imageInfo->slicePitch *imageInfo->depth;
         clProtectedArray PA(resultSize);
         char *resultValues = (char *)((void *)PA);
-        
+
         if( gDebugTrace )
             log_info( "    reading results, %ld kbytes\n", (unsigned long)( resultSize / 1024 ) );
-        
+
         size_t origin[ 3 ] = { 0, 0, 0 };
         size_t region[ 3 ] = { imageInfo->width, imageInfo->height, imageInfo->depth };
-        
+
         error = clEnqueueReadImage( queue, image, CL_TRUE, origin, region, gEnablePitch ? imageInfo->rowPitch : 0, gEnablePitch ? imageInfo->slicePitch : 0, resultValues, 0, NULL, NULL );
         test_error( error, "Unable to read results from kernel" );
         if( gDebugTrace )
             log_info( "    results read\n" );
-        
+
         // Validate results element by element
         char *imagePtr = imageValues;
         int numTries = 5;
@@ -202,7 +220,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                 for( size_t x = 0; x < imageInfo->width; x++, i++ )
                 {
                     char resultBuffer[ 16 ]; // Largest format would be 4 channels * 4 bytes (32 bits) each
-                    
+
                     // Convert this pixel
                     if( inputType == kFloat )
                         pack_image_pixel( (float *)imagePtr, imageInfo->format, resultBuffer );
@@ -210,7 +228,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                         pack_image_pixel( (int *)imagePtr, imageInfo->format, resultBuffer );
                     else // if( inputType == kUInt )
                         pack_image_pixel( (unsigned int *)imagePtr, imageInfo->format, resultBuffer );
-                    
+
                     // Compare against the results
                     if( imageInfo->format->image_channel_data_type == CL_FLOAT )
                     {
@@ -220,7 +238,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                         float err = 0.f;
                         for( unsigned int j = 0; j < get_format_channel_count( imageInfo->format ); j++ )
                             err += ( expected[ j ] != 0 ) ? fabsf( ( expected[ j ] - actual[ j ] ) / expected[ j ] ) : fabsf( expected[ j ] - actual[ j ] );
-                        
+
                         err /= (float)get_format_channel_count( imageInfo->format );
                         if( err > MAX_ERR )
                         {
@@ -262,12 +280,12 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                     {
                         // Exact result passes every time
                         if( memcmp( resultBuffer, resultPtr, get_pixel_size( imageInfo->format ) ) != 0 )
-                        { 
+                        {
                             // result is inexact.  Calculate error
                             int failure = 1;
                             float errors[4] = {NAN, NAN, NAN, NAN};
                             pack_image_pixel_error( (float *)imagePtr, imageInfo->format, resultBuffer, errors );
-                            
+
                             // We are allowed 0.6 absolute error vs. infinitely precise for some normalized formats
                             if( 0 == forceCorrectlyRoundedWrites    &&
                                (
@@ -275,15 +293,15 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                                 imageInfo->format->image_channel_data_type == CL_UNORM_INT_101010 ||
                                 imageInfo->format->image_channel_data_type == CL_UNORM_INT16 ||
                                 imageInfo->format->image_channel_data_type == CL_SNORM_INT8 ||
-                                imageInfo->format->image_channel_data_type == CL_SNORM_INT16 
+                                imageInfo->format->image_channel_data_type == CL_SNORM_INT16
                                 ))
                             {
                                 if( ! (fabsf( errors[0] ) > 0.6f) && ! (fabsf( errors[1] ) > 0.6f) &&
                                    ! (fabsf( errors[2] ) > 0.6f) && ! (fabsf( errors[3] ) > 0.6f)  )
                                     failure = 0;
                             }
-                            
-                            
+
+
                             if( failure )
                             {
                                 totalErrors++;
@@ -295,7 +313,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                                     unsigned int deviceResults[8];
                                     read_image_pixel<unsigned int>( resultPtr, imageInfo, 0, 0, 0, deviceResults );
                                     read_image_pixel<unsigned int>( resultPtr, imageInfo, 1, 0, 0, &deviceResults[ 4 ] );
-                                    
+
                                     if( deviceResults[ 0 ] == 4 && deviceResults[ 1 ] == 4 && deviceResults[ 2 ] == 4 && deviceResults[ 3 ] == 4 &&
                                        deviceResults[ 4 ] == 5 && deviceResults[ 5 ] == 5 && deviceResults[ 6 ] == 5 && deviceResults[ 7 ] == 5 )
                                         deviceRounding = "truncate";
@@ -305,10 +323,10 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                                     else if( deviceResults[ 0 ] == 4 && deviceResults[ 1 ] == 4 && deviceResults[ 2 ] == 4 && deviceResults[ 3 ] == 5 &&
                                             deviceResults[ 4 ] == 5 && deviceResults[ 5 ] == 5 && deviceResults[ 6 ] == 6 && deviceResults[ 7 ] == 6 )
                                         deviceRounding = "round to even";
-                                    
+
                                     log_error( "ERROR: Rounding mode sample (%ld) did not validate, probably due to the device's rounding mode being wrong (%s)\n", i, mem_flag_names[mem_flag_index] );
-                                    log_error( "       Actual values rounded by device: %d %d %d %d %d %d %d %d\n", deviceResults[ 0 ], deviceResults[ 1 ], deviceResults[ 2 ], deviceResults[ 3 ], 
-                                              deviceResults[ 4 ], deviceResults[ 5 ], deviceResults[ 6 ], deviceResults[ 7 ] );	
+                                    log_error( "       Actual values rounded by device: %d %d %d %d %d %d %d %d\n", deviceResults[ 0 ], deviceResults[ 1 ], deviceResults[ 2 ], deviceResults[ 3 ],
+                                              deviceResults[ 4 ], deviceResults[ 5 ], deviceResults[ 6 ], deviceResults[ 7 ] );
                                     log_error( "       Rounding mode of device appears to be %s\n", deviceRounding );
                                     return 1;
                                 }
@@ -350,12 +368,12 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                                         log_error( "    Ulps:     %f %f %f %f\n", errors[0], errors[1], errors[2], errors[3] );
                                         break;
                                 }
-                                
+
                                 float *v = (float *)(char *)imagePtr;
                                 log_error( "   src: %g %g %g %g\n", v[ 0 ], v[ 1], v[ 2 ], v[ 3 ] );
                                 log_error( "      : %a %a %a %a\n", v[ 0 ], v[ 1], v[ 2 ], v[ 3 ] );
                                 log_error( "   src: %12.24f %12.24f %12.24f %12.24f\n", v[0 ], v[  1], v[ 2 ], v[ 3 ] );
-                                
+
                                 if( ( --numTries ) == 0 )
                                     return 1;
                             }
@@ -380,23 +398,27 @@ int test_write_image_3D_set( cl_device_id device, cl_image_format *format, Expli
     clProgramWrapper program;
     clKernelWrapper kernel;
     int error;
-    
+
     // Get our operating parameters
     size_t maxWidth, maxHeight, maxDepth;
     cl_ulong maxAllocSize, memSize;
-    
+
     image_descriptor imageInfo = { 0x0 };
-    
+
     imageInfo.format = format;
     imageInfo.type = CL_MEM_OBJECT_IMAGE3D;
-    
+
     error = clGetDeviceInfo( device, CL_DEVICE_IMAGE3D_MAX_WIDTH, sizeof( maxWidth ), &maxWidth, NULL );
     error |= clGetDeviceInfo( device, CL_DEVICE_IMAGE3D_MAX_HEIGHT, sizeof( maxHeight ), &maxHeight, NULL );
     error |= clGetDeviceInfo( device, CL_DEVICE_IMAGE3D_MAX_DEPTH, sizeof( maxDepth ), &maxDepth, NULL );
     error |= clGetDeviceInfo( device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof( maxAllocSize ), &maxAllocSize, NULL );
     error |= clGetDeviceInfo( device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof( memSize ), &memSize, NULL );
     test_error( error, "Unable to get max image 3D size from device" );
-    
+
+    if (memSize > (cl_ulong)SIZE_MAX) {
+        memSize = (cl_ulong)SIZE_MAX;
+    }
+
     // Determine types
     if( inputType == kInt )
         readFormat = "i";
@@ -404,14 +426,14 @@ int test_write_image_3D_set( cl_device_id device, cl_image_format *format, Expli
         readFormat = "ui";
     else // kFloat
         readFormat = "f";
-    
+
     // Construct the source
     sprintf( programSrc, write3DKernelSourcePattern, get_explicit_type_name( inputType ), readFormat );
-    
+
     ptr = programSrc;
     error = create_single_kernel_helper( context, &program, &kernel, 1, &ptr, "sample_kernel" );
     test_error( error, "Unable to create testing kernel" );
-    
+
     // Run tests
     if( gTestSmallImages )
     {
@@ -421,11 +443,11 @@ int test_write_image_3D_set( cl_device_id device, cl_image_format *format, Expli
             for( imageInfo.height = 1; imageInfo.height < 9; imageInfo.height++ )
             {
                 imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
-				for( imageInfo.depth = 2; imageInfo.depth < 7; imageInfo.depth++ )
+                for( imageInfo.depth = 2; imageInfo.depth < 7; imageInfo.depth++ )
                 {
                     if( gDebugTrace )
                         log_info( "   at size %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth );
-                    int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );	
+                    int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );
                     if( retCode )
                         return retCode;
                 }
@@ -437,9 +459,9 @@ int test_write_image_3D_set( cl_device_id device, cl_image_format *format, Expli
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
         size_t sizes[100][3];
-        
+
         get_max_sizes(&numbeOfSizes, 100, sizes, maxWidth, maxHeight, maxDepth, 1, maxAllocSize, memSize, CL_MEM_OBJECT_IMAGE3D, imageInfo.format);
-        
+
         for( size_t idx = 0; idx < numbeOfSizes; idx++ )
         {
             imageInfo.width = sizes[ idx ][ 0 ];
@@ -448,7 +470,7 @@ int test_write_image_3D_set( cl_device_id device, cl_image_format *format, Expli
             imageInfo.rowPitch = imageInfo.width * get_pixel_size( imageInfo.format );
             imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
             log_info("Testing %d x %d x %d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth);
-            int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );	
+            int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );
             if( retCode )
                 return retCode;
         }
@@ -459,10 +481,10 @@ int test_write_image_3D_set( cl_device_id device, cl_image_format *format, Expli
         imageInfo.height = typeRange / 256;
         imageInfo.width = (size_t)( typeRange / (cl_ulong)imageInfo.height );
         imageInfo.depth = 1;
-        
+
         imageInfo.rowPitch = imageInfo.width * get_pixel_size( imageInfo.format );
         imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
-        int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );	
+        int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );
         if( retCode )
             return retCode;
     }
@@ -475,34 +497,34 @@ int test_write_image_3D_set( cl_device_id device, cl_image_format *format, Expli
             // image, the result array, plus offset arrays, will fit in the global ram space
             do
             {
-                imageInfo.width = (size_t)random_log_in_range( 16, (int)maxWidth / 32, d );
-                imageInfo.height = (size_t)random_log_in_range( 16, (int)maxHeight / 32, d );
-                imageInfo.depth = (size_t)random_log_in_range( 16, (int)maxDepth / 32, d );
-                
+                imageInfo.width = reduceImageSizeRange(maxWidth, d );
+                imageInfo.height = reduceImageSizeRange(maxHeight, d );
+                imageInfo.depth = reduceImageDepth(maxDepth, d );
+
                 imageInfo.rowPitch = imageInfo.width * get_pixel_size( imageInfo.format );
                 imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
                 if( gEnablePitch )
                 {
                     size_t extraWidth = (int)random_log_in_range( 0, 64, d );
                     imageInfo.rowPitch += extraWidth * get_pixel_size( imageInfo.format );
-                    
+
                     imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
                     extraWidth = (int)random_log_in_range( 0, 64, d );
                     imageInfo.slicePitch += extraWidth * imageInfo.rowPitch;
                 }
-                
+
                 size = (size_t)imageInfo.slicePitch * (size_t)imageInfo.depth * 4;
             } while(  size > maxAllocSize || ( size * 3 ) > memSize );
-            
+
             if( gDebugTrace )
-                log_info( "   at size %ld,%ld,%ld (pitch %ld, slice %ld) out of %ld,%ld,%ld\n", imageInfo.width, imageInfo.height, imageInfo.depth, 
+                log_info( "   at size %ld,%ld,%ld (pitch %ld, slice %ld) out of %ld,%ld,%ld\n", imageInfo.width, imageInfo.height, imageInfo.depth,
                          imageInfo.rowPitch, imageInfo.slicePitch, maxWidth, maxHeight, maxDepth );
-            
-            int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );	
+
+            int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );
             if( retCode )
                 return retCode;
         }
     }
-    
+
     return 0;
 }

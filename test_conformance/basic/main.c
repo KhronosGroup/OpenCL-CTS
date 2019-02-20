@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -57,10 +57,10 @@ basefn    basefn_list[] = {
     test_writeimage_int16,
     test_writeimage_fp32,
     test_multireadimageonefmt,
-    
+
     test_multireadimagemultifmt,
     test_image_r8,
-    test_barrier, 
+    test_barrier,
     test_int2float,
     test_float2int,
     test_imagereadwrite,
@@ -76,10 +76,10 @@ basefn    basefn_list[] = {
     test_imagecopy,
     test_imagecopy3d,
     test_imagerandomcopy,
-    test_arrayimagecopy, 
-    test_arrayimagecopy3d, 
+    test_arrayimagecopy,
+    test_arrayimagecopy3d,
     test_imagenpot,
-    
+
     test_vload_global,
     test_vload_local,
     test_vload_constant,
@@ -87,7 +87,7 @@ basefn    basefn_list[] = {
     test_vstore_global,
     test_vstore_local,
     test_vstore_private,
-    
+
     test_createkernelsinprogram,
     test_imagedim_pow2,
     test_imagedim_non_pow2,
@@ -105,26 +105,26 @@ basefn    basefn_list[] = {
     test_explicit_s2v_ulong,
     test_explicit_s2v_float,
     test_explicit_s2v_double,
-    
+
     test_enqueue_map_buffer,
     test_enqueue_map_image,
-    
+
     test_work_item_functions,
-    
+
     test_astype,
-    
+
     test_async_copy_global_to_local,
     test_async_copy_local_to_global,
     test_async_strided_copy_global_to_local,
     test_async_strided_copy_local_to_global,
     test_prefetch,
-    
+
     test_kernel_call_kernel_function,
     test_host_numeric_constants,
     test_kernel_numeric_constants,
     test_kernel_limit_constants,
     test_kernel_preprocessor_macros,
-    
+
     test_basic_parameter_types,
     test_vector_creation,
     test_vec_type_hint,
@@ -132,7 +132,7 @@ basefn    basefn_list[] = {
     test_kernel_memory_alignment_global,
     test_kernel_memory_alignment_constant,
     test_kernel_memory_alignment_private,
-    
+
     test_global_work_offsets,
     test_get_global_offset
 };
@@ -165,7 +165,7 @@ const char    *basefn_names[] = {
     "writeimage_int16",
     "writeimage_fp32",
     "mri_one",
-    
+
     "mri_multiple",
     "image_r8",
     "barrier",
@@ -187,7 +187,7 @@ const char    *basefn_names[] = {
     "arrayimagecopy",
     "arrayimagecopy3d",
     "imagenpot",
-    
+
     "vload_global",
     "vload_local",
     "vload_constant",
@@ -195,7 +195,7 @@ const char    *basefn_names[] = {
     "vstore_global",
     "vstore_local",
     "vstore_private",
-    
+
     "createkernelsinprogram",
     "imagedim_pow2",
     "imagedim_non_pow2",
@@ -213,39 +213,39 @@ const char    *basefn_names[] = {
     "explicit_s2v_ulong",
     "explicit_s2v_float",
     "explicit_s2v_double",
-    
+
     "enqueue_map_buffer",
     "enqueue_map_image",
-    
+
     "work_item_functions",
-    
+
     "astype",
-    
+
     "async_copy_global_to_local",
     "async_copy_local_to_global",
     "async_strided_copy_global_to_local",
     "async_strided_copy_local_to_global",
     "prefetch",
-    
+
     "kernel_call_kernel_function",
     "host_numeric_constants",
     "kernel_numeric_constants",
     "kernel_limit_constants",
     "kernel_preprocessor_macros",
-    
+
     "parameter_types",
-    
+
     "vector_creation",
     "vec_type_hint",
-    
+
     "kernel_memory_alignment_local",
     "kernel_memory_alignment_global",
     "kernel_memory_alignment_constant",
     "kernel_memory_alignment_private",
-    
+
     "global_work_offsets",
     "get_global_offset",
-    
+
     "all",
 };
 

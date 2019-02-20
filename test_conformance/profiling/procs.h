@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,42 +24,42 @@
 
 extern int check_times(cl_ulong queueStart, cl_ulong submitStart, cl_ulong commandStart, cl_ulong commandEnd, cl_device_id device);
 
-extern int		read_int_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_uint_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_long_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_ulong_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_short_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_ushort_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_float_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_half_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_char_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_uchar_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_struct_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_int_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_uint_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_long_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_ulong_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_short_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_ushort_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_float_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_half_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_char_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_uchar_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_struct_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_float_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_char_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		read_uchar_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_float_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_char_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		write_uchar_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		copy_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		copy_partial_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		copy_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		copy_array_to_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		execute( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
-extern int		test_parallel_kernels( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_int_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_uint_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_long_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_ulong_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_short_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_ushort_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_float_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_half_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_char_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_uchar_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_struct_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_int_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_uint_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_long_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_ulong_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_short_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_ushort_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_float_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_half_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_char_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_uchar_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_struct_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_float_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_char_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        read_uchar_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_float_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_char_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        write_uchar_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        copy_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        copy_partial_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        copy_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        copy_array_to_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        execute( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int        test_parallel_kernels( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
 
 
-#endif	// #ifndef __PROCS_H__
+#endif    // #ifndef __PROCS_H__
 
 

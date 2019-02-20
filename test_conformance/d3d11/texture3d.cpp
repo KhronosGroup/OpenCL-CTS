@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
 
-Texture3DSize texture3DSizes[] = 
+Texture3DSize texture3DSizes[] =
 {
     {
         4, // Width
@@ -80,11 +80,11 @@ UINT texture3DSizeCount = sizeof(texture3DSizes)/sizeof(texture3DSizes[0]);
 const char *
 texture3DPatterns[2][2][2] =
 {
-    { 
+    {
         {"PlaceTheCasseroleDis", "hInAColdOvenPlaceACh"},
         {"airFacingTheOvenAndS", "itInItForeverThinkAb"},
     },
-    { 
+    {
         {"outHowHungryYouAreWh", "enNightFallsDoNotTur"},
         {"nOnTheLightMyEyeBeca", "meInflamedIHateCamus"},
     },
@@ -94,7 +94,7 @@ void SubTestTexture3D(
     cl_context context,
     cl_command_queue command_queue,
     ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC,    
+    ID3D11DeviceContext* pDC,
     const TextureFormat* format,
     const Texture3DSize* size)
 {
@@ -103,11 +103,11 @@ void SubTestTexture3D(
 
     cl_int result = CL_SUCCESS;
 
-    HarnessD3D11_TestBegin("3D Texture: Format=%s, Width=%d, Height=%d, Depth=%d, MipLevels=%d", 
-        format->name_format, 
-        size->Width, 
-        size->Height, 
-        size->Depth, 
+    HarnessD3D11_TestBegin("3D Texture: Format=%s, Width=%d, Height=%d, Depth=%d, MipLevels=%d",
+        format->name_format,
+        size->Width,
+        size->Height,
+        size->Depth,
         size->MipLevels);
 
     struct
@@ -133,7 +133,7 @@ void SubTestTexture3D(
         desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
         desc.CPUAccessFlags = 0;
         desc.MiscFlags = 0;
-       
+
         hr = pDevice->CreateTexture3D(&desc, NULL, &pTexture);
         TestRequire(SUCCEEDED(hr), "CreateTexture3D failed.");
     }
@@ -191,8 +191,8 @@ void SubTestTexture3D(
 
         // copy the data to to the texture
         {
-            D3D11_BOX box = {0};       
-            box.front   = 0; box.back    = 1;        
+            D3D11_BOX box = {0};
+            box.front   = 0; box.back    = 1;
             box.top     = 0; box.bottom  = 1;
             box.left    = 0; box.right   = 1;
             pDC->CopySubresourceRegion(
@@ -206,13 +206,13 @@ void SubTestTexture3D(
                 &box);
         }
 
-        pStagingBuffer->Release();        
+        pStagingBuffer->Release();
     }
 
     // create the cl_mem objects for the resources and verify its sanity
     for (UINT i = 0; i < size->SubResourceCount; ++i)
     {
-        // create a cl_mem for the resource       
+        // create a cl_mem for the resource
         subResourceInfo[i].mem = clCreateFromD3D11Texture3DKHR(
             context,
             0,
@@ -262,7 +262,7 @@ void SubTestTexture3D(
             CL_IMAGE_WIDTH,
             sizeof(width),
             &width,
-            NULL);            
+            NULL);
         TestRequire(result == CL_SUCCESS, "clGetImageInfo for CL_IMAGE_WIDTH failed");
         TestRequire(width == subResourceInfo[i].width, "clGetImageInfo for CL_IMAGE_HEIGHT returned incorrect value.");
 
@@ -273,7 +273,7 @@ void SubTestTexture3D(
             CL_IMAGE_HEIGHT,
             sizeof(height),
             &height,
-            NULL);            
+            NULL);
         TestRequire(result == CL_SUCCESS, "clGetImageInfo for CL_IMAGE_HEIGHT failed");
         TestRequire(height == subResourceInfo[i].height, "clGetImageInfo for CL_IMAGE_HEIGHT returned incorrect value.");
 
@@ -284,12 +284,12 @@ void SubTestTexture3D(
             CL_IMAGE_DEPTH,
             sizeof(depth),
             &depth,
-            NULL);            
+            NULL);
         TestRequire(result == CL_SUCCESS, "clGetImageInfo for CL_IMAGE_DEPTH failed");
         TestRequire(depth == subResourceInfo[i].depth, "clGetImageInfo for CL_IMAGE_DEPTH returned incorrect value.");
 
     }
-  
+
     // acquire the resources for OpenCL
     {
         cl_mem memToAcquire[MAX_REGISTERED_SUBRESOURCES];
@@ -322,22 +322,22 @@ void SubTestTexture3D(
         {
             continue;
         }
-        size_t src[3] = 
+        size_t src[3] =
         {
             x ? subResourceInfo[i].width  - 1 : 0,
             y ? subResourceInfo[i].height - 1 : 0,
             z ? subResourceInfo[i].depth  - 1 : 0,
         };
-        size_t dst[3] = 
+        size_t dst[3] =
         {
             x ? subResourceInfo[i].width  - 2 : 1,
             y ? subResourceInfo[i].height - 2 : 1,
             z ? subResourceInfo[i].depth  - 2 : 1,
         };
-        size_t region[3] = 
+        size_t region[3] =
         {
-            1, 
-            1, 
+            1,
+            1,
             1,
         };
         result = clEnqueueCopyImage(
@@ -348,7 +348,7 @@ void SubTestTexture3D(
             dst,
             region,
             0,
-            NULL, 
+            NULL,
             NULL);
         TestRequire(result == CL_SUCCESS, "clEnqueueCopyImage failed.");
     }
@@ -393,7 +393,7 @@ void SubTestTexture3D(
             hr = pDevice->CreateTexture3D(&desc, NULL, &pStagingBuffer);
             TestRequire(SUCCEEDED(hr), "Failed to create staging buffer.");
         }
-    
+
         // wipe out the staging buffer to make sure we don't get stale values
         {
             D3D11_MAPPED_SUBRESOURCE mappedTexture;
@@ -403,14 +403,14 @@ void SubTestTexture3D(
                 D3D11_MAP_READ_WRITE,
                 0,
                 &mappedTexture);
-            TestRequire(SUCCEEDED(hr), "Failed to map staging buffer");        
+            TestRequire(SUCCEEDED(hr), "Failed to map staging buffer");
             memset(mappedTexture.pData, 0, format->bytesPerPixel);
             pDC->Unmap(pStagingBuffer, 0);
         }
 
         // copy the pixel to the staging buffer
         {
-            D3D11_BOX box = {0};       
+            D3D11_BOX box = {0};
             box.left    = x ? subResourceInfo[i].width  - 2 : 1; box.right  = box.left  + 1;
             box.top     = y ? subResourceInfo[i].height - 2 : 1; box.bottom = box.top   + 1;
             box.front   = z ? subResourceInfo[i].depth  - 2 : 1; box.back   = box.front + 1;
@@ -436,12 +436,12 @@ void SubTestTexture3D(
                 &mappedTexture);
             TestRequire(SUCCEEDED(hr), "Failed to map staging buffer");
             TestRequire(
-                !memcmp(mappedTexture.pData, texture3DPatterns[x][y][z], format->bytesPerPixel), 
+                !memcmp(mappedTexture.pData, texture3DPatterns[x][y][z], format->bytesPerPixel),
                 "Failed to map staging buffer");
             pDC->Unmap(pStagingBuffer, 0);
         }
-        
-        pStagingBuffer->Release();       
+
+        pStagingBuffer->Release();
     }
 
 
@@ -450,7 +450,7 @@ Cleanup:
     if (pTexture)
     {
         pTexture->Release();
-    }    
+    }
     for (UINT i = 0; i < size->SubResourceCount; ++i)
     {
         clReleaseMemObject(subResourceInfo[i].mem);
@@ -462,8 +462,8 @@ Cleanup:
 
 void TestDeviceTexture3D(
     cl_device_id device,
-    cl_context context, 
-    cl_command_queue command_queue, 
+    cl_context context,
+    cl_command_queue command_queue,
     ID3D11Device* pDevice,
     ID3D11DeviceContext* pDC)
 {

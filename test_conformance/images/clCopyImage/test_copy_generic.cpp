@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,9 +18,9 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool			gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gTestRounding, gEnablePitch;
-extern cl_filter_mode	gFilterModeToUse;
-extern cl_addressing_mode	gAddressModeToUse;
+extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gTestRounding, gEnablePitch;
+extern cl_filter_mode    gFilterModeToUse;
+extern cl_addressing_mode    gAddressModeToUse;
 extern uint64_t gRoundingStartValue;
 extern cl_command_queue queue;
 extern cl_context context;
@@ -45,7 +45,7 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
     cl_image_desc imageDesc;
     cl_mem_flags mem_flags = CL_MEM_READ_ONLY;
     void *host_ptr = NULL;
-    
+
     memset(&imageDesc, 0x0, sizeof(cl_image_desc));
     imageDesc.image_type = imageInfo->type;
     imageDesc.image_width = imageInfo->width;
@@ -54,7 +54,7 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
     imageDesc.image_array_size = imageInfo->arraySize;
     imageDesc.image_row_pitch = gEnablePitch ? imageInfo->rowPitch : 0;
     imageDesc.image_slice_pitch = gEnablePitch ? imageInfo->slicePitch : 0;
-    
+
     switch (imageInfo->type)
     {
         case CL_MEM_OBJECT_IMAGE1D:
@@ -88,7 +88,7 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
                 host_ptr = malloc( imageInfo->arraySize * imageInfo->slicePitch );
             break;
     }
-    
+
     if (gEnablePitch)
     {
         if ( NULL == host_ptr )
@@ -96,11 +96,11 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
             log_error( "ERROR: Unable to create backing store for pitched 3D image. %ld bytes\n",  imageInfo->depth * imageInfo->slicePitch );
             return NULL;
         }
-        mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;        
+        mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;
     }
-    
+
     img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc, host_ptr, error);
-    
+
     if (gEnablePitch)
     {
         if ( *error == CL_SUCCESS )
@@ -117,7 +117,7 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
         else
             free(host_ptr);
     }
-    
+
     if ( *error != CL_SUCCESS )
     {
         switch (imageInfo->type)
@@ -141,12 +141,12 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
         }
         return NULL;
     }
-    
+
     // Copy the specified data to the image via a Map operation.
     size_t mappedRow, mappedSlice;
     size_t height;
     size_t depth;
-    
+
     switch (imageInfo->type)
     {
         case CL_MEM_OBJECT_IMAGE1D_ARRAY:
@@ -169,26 +169,26 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
             depth = imageInfo->depth;
             break;
     }
-    
+
     size_t origin[ 3 ] = { 0, 0, 0 };
     size_t region[ 3 ] = { imageInfo->width, height, depth };
-    
+
     void* mapped = (char*)clEnqueueMapImage(queue, img, CL_TRUE, CL_MAP_WRITE, origin, region, &mappedRow, &mappedSlice, 0, NULL, NULL, error);
     if (*error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to map image for writing: %s\n", IGetErrorString( *error ) );
-        return NULL;    
+        return NULL;
     }
     size_t mappedSlicePad = mappedSlice - (mappedRow * height);
-    
+
     // Copy the image.
     size_t scanlineSize = imageInfo->rowPitch;
     size_t sliceSize = imageInfo->slicePitch - scanlineSize * height;
     size_t imageSize = scanlineSize * height * depth;
-    
+
     char* src = (char*)data;
     char* dst = (char*)mapped;
-    
+
     if ((mappedRow == scanlineSize) && (mappedSlicePad==0 || (imageInfo->depth==0 && imageInfo->arraySize==0))) {
         // Copy the whole image.
         memcpy( dst, src, imageSize );
@@ -203,21 +203,21 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
                 dst += mappedRow;
                 src += scanlineSize;
             }
-            
+
             // mappedSlicePad is incorrect for 2D images here, but we will exit the z loop before this is a problem.
             dst += mappedSlicePad;
             src += sliceSize;
         }
     }
-    
+
     // Unmap the image.
     *error = clEnqueueUnmapMemObject(queue, img, mapped, 0, NULL, NULL);
     if (*error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to unmap image after writing: %s\n", IGetErrorString( *error ) );
-        return NULL;    
+        return NULL;
     }
-    
+
     return img;
 }
 
@@ -228,16 +228,16 @@ BufferOwningPtr<char> dstData;
 BufferOwningPtr<char> srcHost;
 BufferOwningPtr<char> dstHost;
 
-int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo, 
+int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
                             const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d )
 {
     int error;
-    
+
     clMemWrapper srcImage, dstImage;
-    
+
     if( gDebugTrace )
-        log_info( " ++ Entering inner test loop...\n" );    
-    
+        log_info( " ++ Entering inner test loop...\n" );
+
     // Generate some data to test against
     size_t srcBytes = 0;
     switch (srcImageInfo->type)
@@ -260,12 +260,12 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
     }
 
     if (srcBytes > srcData.getSize())
-    {        
+    {
         if( gDebugTrace )
-            log_info( " - Resizing random image data...\n" );    
-        
+            log_info( " - Resizing random image data...\n" );
+
         generate_random_image_data( srcImageInfo, srcData, d  );
-        
+
         // Update the host verification copy of the data.
         srcHost.reset(malloc(srcBytes),0,srcBytes);
         if (srcHost == NULL) {
@@ -274,16 +274,16 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
         }
         memcpy(srcHost,srcData,srcBytes);
     }
-    
+
     // Construct testing sources
     if( gDebugTrace )
         log_info( " - Writing source image...\n" );
-    
+
     srcImage = create_image( context, srcData, srcImageInfo, &error );
     if( srcImage == NULL )
         return error;
-    
-    
+
+
     // Initialize the destination to empty
     size_t destImageSize = 0;
     switch (dstImageInfo->type)
@@ -304,34 +304,34 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
             destImageSize = dstImageInfo->arraySize * dstImageInfo->slicePitch;
             break;
     }
-    
+
     if (destImageSize > dstData.getSize())
-    {        
+    {
         if( gDebugTrace )
-            log_info( " - Resizing destination buffer...\n" );    
-        
+            log_info( " - Resizing destination buffer...\n" );
+
         dstData.reset(malloc(destImageSize),0,destImageSize);
         if (dstData == NULL) {
             log_error( "ERROR: Unable to malloc %lu bytes for dstData\n", destImageSize );
             return -1;
         }
-        
+
         dstHost.reset(malloc(destImageSize),0,destImageSize);
         if (dstHost == NULL) {
             log_error( "ERROR: Unable to malloc %lu bytes for dstHost\n", destImageSize );
             return -1;
-        }    
+        }
     }
     memset( dstData, 0xff, destImageSize );
-    memset( dstHost, 0xff, destImageSize );  
-    
+    memset( dstHost, 0xff, destImageSize );
+
     if( gDebugTrace )
         log_info( " - Writing destination image...\n" );
-    
+
     dstImage = create_image( context, dstData, dstImageInfo, &error );
     if( dstImage == NULL )
         return error;
-    
+
     size_t dstRegion[ 3 ] = { dstImageInfo->width, 1, 1 };
     switch (dstImageInfo->type)
     {
@@ -352,53 +352,53 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
             dstRegion[ 2 ] = dstImageInfo->arraySize;
             break;
     }
-    
+
     size_t origin[ 3 ] = { 0, 0, 0 };
     size_t region[ 3 ] = { dstRegion[ 0 ], dstRegion[ 1 ], dstRegion[ 2 ] };
-    
+
     // Now copy a subset to the destination image. This is the meat of what we're testing
     if( gDebugTrace )
         log_info( " - Copying from %d,%d,%d to %d,%d,%d size %d,%d,%d\n", (int)sourcePos[ 0 ], (int)sourcePos[ 1 ], (int)sourcePos[ 2 ],
                  (int)destPos[ 0 ], (int)destPos[ 1 ], (int)destPos[ 2 ],
                  (int)regionSize[ 0 ], (int)regionSize[ 1 ], (int)regionSize[ 2 ] );
-    
+
     error = clEnqueueCopyImage( queue, srcImage, dstImage, sourcePos, destPos, regionSize, 0, NULL, NULL );
     if( error != CL_SUCCESS )
     {
-        log_error( "ERROR: Unable to copy image from pos %d,%d,%d to %d,%d,%d size %d,%d,%d! (%s)\n", 
+        log_error( "ERROR: Unable to copy image from pos %d,%d,%d to %d,%d,%d size %d,%d,%d! (%s)\n",
                   (int)sourcePos[ 0 ], (int)sourcePos[ 1 ], (int)sourcePos[ 2 ], (int)destPos[ 0 ], (int)destPos[ 1 ], (int)destPos[ 2 ],
                   (int)regionSize[ 0 ], (int)regionSize[ 1 ], (int)regionSize[ 2 ], IGetErrorString( error ) );
         return error;
     }
-    
-    // Construct the final dest image values to test against  
+
+    // Construct the final dest image values to test against
     if( gDebugTrace )
         log_info( " - Host verification copy...\n" );
-    
+
     copy_image_data( srcImageInfo, dstImageInfo, srcHost, dstHost, sourcePos, destPos, regionSize );
-    
+
     // Map the destination image to verify the results with the host
     // copy. The contents of the entire buffer are compared.
     if( gDebugTrace )
         log_info( " - Mapping results...\n" );
-    
+
     size_t mappedRow, mappedSlice;
     void* mapped = (char*)clEnqueueMapImage(queue, dstImage, CL_TRUE, CL_MAP_READ, origin, region, &mappedRow, &mappedSlice, 0, NULL, NULL, &error);
     if (error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to map image for verification: %s\n", IGetErrorString( error ) );
-        return NULL;    
-    }  
-    
+        return NULL;
+    }
+
     // Verify scanline by scanline, since the pitches are different
     char *sourcePtr = dstHost;
     char *destPtr = (char*)mapped;
-    
+
     size_t scanlineSize = dstImageInfo->width * get_pixel_size( dstImageInfo->format );
-    
+
     if( gDebugTrace )
-        log_info( " - Scanline verification...\n" );  
-    
+        log_info( " - Scanline verification...\n" );
+
     size_t thirdDim;
     size_t secondDim;
     if (dstImageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY)
@@ -416,7 +416,7 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
         secondDim = dstImageInfo->height;
         thirdDim = dstImageInfo->depth;
     }
-    
+
     for( size_t z = 0; z < thirdDim; z++ )
     {
         for( size_t y = 0; y < secondDim; y++ )
@@ -424,7 +424,7 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
             if( memcmp( sourcePtr, destPtr, scanlineSize ) != 0 )
             {
                 log_error( "ERROR: Scanline %d did not verify for image size %d,%d,%d pitch %d (extra %d bytes)\n", (int)y, (int)dstImageInfo->width, (int)dstImageInfo->height, (int)dstImageInfo->depth, (int)dstImageInfo->rowPitch, (int)dstImageInfo->rowPitch - (int)dstImageInfo->width * (int)get_pixel_size( dstImageInfo->format ) );
-                
+
                 // Find the first missing pixel
                 size_t pixel_size = get_pixel_size( dstImageInfo->format );
                 size_t where = 0;
@@ -441,7 +441,7 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
                         log_error( "*0x%4.4x vs. 0x%4.4x\n", ((cl_ushort*)(sourcePtr + pixel_size * where))[0], ((cl_ushort*)(destPtr + pixel_size * where))[0] );
                         break;
                     case 3:
-                        log_error( "*{0x%2.2x, 0x%2.2x, 0x%2.2x} vs. {0x%2.2x, 0x%2.2x, 0x%2.2x}\n", 
+                        log_error( "*{0x%2.2x, 0x%2.2x, 0x%2.2x} vs. {0x%2.2x, 0x%2.2x, 0x%2.2x}\n",
                                   ((cl_uchar*)(sourcePtr + pixel_size * where))[0], ((cl_uchar*)(sourcePtr + pixel_size * where))[1], ((cl_uchar*)(sourcePtr + pixel_size * where))[2],
                                   ((cl_uchar*)(destPtr + pixel_size * where))[0], ((cl_uchar*)(destPtr + pixel_size * where))[1], ((cl_uchar*)(destPtr + pixel_size * where))[2]
                                   );
@@ -450,7 +450,7 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
                         log_error( "*0x%8.8x vs. 0x%8.8x\n", ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[0] );
                         break;
                     case 6:
-                        log_error( "*{0x%4.4x, 0x%4.4x, 0x%4.4x} vs. {0x%4.4x, 0x%4.4x, 0x%4.4x}\n", 
+                        log_error( "*{0x%4.4x, 0x%4.4x, 0x%4.4x} vs. {0x%4.4x, 0x%4.4x, 0x%4.4x}\n",
                                   ((cl_ushort*)(sourcePtr + pixel_size * where))[0], ((cl_ushort*)(sourcePtr + pixel_size * where))[1], ((cl_ushort*)(sourcePtr + pixel_size * where))[2],
                                   ((cl_ushort*)(destPtr + pixel_size * where))[0], ((cl_ushort*)(destPtr + pixel_size * where))[1], ((cl_ushort*)(destPtr + pixel_size * where))[2]
                                   );
@@ -459,13 +459,13 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
                         log_error( "*0x%16.16llx vs. 0x%16.16llx\n", ((cl_ulong*)(sourcePtr + pixel_size * where))[0], ((cl_ulong*)(destPtr + pixel_size * where))[0] );
                         break;
                     case 12:
-                        log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x}\n", 
+                        log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
                                   ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(sourcePtr + pixel_size * where))[1], ((cl_uint*)(sourcePtr + pixel_size * where))[2],
                                   ((cl_uint*)(destPtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[1], ((cl_uint*)(destPtr + pixel_size * where))[2]
                                   );
                         break;
                     case 16:
-                        log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x}\n", 
+                        log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
                                   ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(sourcePtr + pixel_size * where))[1], ((cl_uint*)(sourcePtr + pixel_size * where))[2], ((cl_uint*)(sourcePtr + pixel_size * where))[3],
                                   ((cl_uint*)(destPtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[1], ((cl_uint*)(destPtr + pixel_size * where))[2], ((cl_uint*)(destPtr + pixel_size * where))[3]
                                   );
@@ -474,7 +474,7 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
                         log_error( "Don't know how to print pixel size of %ld\n", pixel_size );
                         break;
                 }
-                
+
                 return -1;
             }
             sourcePtr += dstImageInfo->rowPitch;
@@ -483,15 +483,15 @@ int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo
         sourcePtr += dstImageInfo->slicePitch - dstImageInfo->rowPitch * dstImageInfo->height;
         destPtr += mappedSlice - mappedRow * dstImageInfo->height;
     }
-    
+
     // Unmap the image.
     error = clEnqueueUnmapMemObject(queue, dstImage, mapped, 0, NULL, NULL);
     if (error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to unmap image after verify: %s\n", IGetErrorString( error ) );
-        return NULL;    
-    }    
-    
+        return NULL;
+    }
+
     return 0;
 }
 
@@ -528,9 +528,9 @@ int test_copy_image_size_generic( cl_device_id device, image_descriptor *srcImag
                 sourcePos[ 0 ] = random_in_range( 0, (int)(srcImageInfo->width - 4), d );
                 sourcePos[ 1 ] = random_in_range( 0, (int)(srcImageInfo->height - 4), d );
                 sourcePos[ 2 ] = random_in_range( 0, (int)(srcImageInfo->arraySize - 4), d );
-                break;                
+                break;
         }
-        
+
         switch (dstImageInfo->type)
         {
             case CL_MEM_OBJECT_IMAGE1D:
@@ -557,9 +557,9 @@ int test_copy_image_size_generic( cl_device_id device, image_descriptor *srcImag
                 destPos[ 0 ] = random_in_range( 0, (int)(dstImageInfo->width - 4), d );
                 destPos[ 1 ] = random_in_range( 0, (int)(dstImageInfo->height - 4), d );
                 destPos[ 2 ] = random_in_range( 0, (int)(dstImageInfo->arraySize - 4), d );
-                break;                
+                break;
         }
-        
+
         if ( (dstImageInfo->width - destPos[0]) < (srcImageInfo->width - sourcePos[0]) )
             regionSize[0] = random_in_range(1, (dstImageInfo->width - destPos[0]), d);
         else
@@ -574,7 +574,7 @@ int test_copy_image_size_generic( cl_device_id device, image_descriptor *srcImag
             else
                 regionSize[1] = random_in_range(1, (srcImageInfo->height - sourcePos[1]), d);
         }
-                                                
+
         regionSize[2] = 0;
         if (dstImageInfo->type == CL_MEM_OBJECT_IMAGE3D && srcImageInfo->type == CL_MEM_OBJECT_IMAGE3D)
         {
@@ -588,7 +588,7 @@ int test_copy_image_size_generic( cl_device_id device, image_descriptor *srcImag
             if ( (dstImageInfo->arraySize - destPos[2]) < (srcImageInfo->arraySize - sourcePos[2]) )
                 regionSize[2] = random_in_range(1, (dstImageInfo->arraySize - destPos[2]), d);
             else
-                regionSize[2] = random_in_range(1, (srcImageInfo->arraySize - sourcePos[2]), d);            
+                regionSize[2] = random_in_range(1, (srcImageInfo->arraySize - sourcePos[2]), d);
         }
 
         // Go for it!
@@ -598,7 +598,7 @@ int test_copy_image_size_generic( cl_device_id device, image_descriptor *srcImag
         else
             ret += retCode;
     }
-                                            
+
     return ret;
 }
-                                         
+

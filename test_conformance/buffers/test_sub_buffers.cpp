@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,7 @@
 // Design:
 // To test sub buffers, we first create one main buffer. We then create several sub-buffers and
 // queue Actions on each one. Each Action is encapsulated in a class so it can keep track of
-// what results it expects, and so we can test scaling degrees of Actions on scaling numbers of 
+// what results it expects, and so we can test scaling degrees of Actions on scaling numbers of
 // sub-buffers.
 
 class SubBufferWrapper : public clMemWrapper
@@ -70,7 +70,7 @@ MTdata Action::d = 0;
 
 class ReadWriteAction : public Action
 {
-public:     
+public:
     virtual ~ReadWriteAction() {}
     virtual const char * GetName( void ) const { return "ReadWrite";}
 
@@ -105,7 +105,7 @@ public:
 
 class CopyAction : public Action
 {
-public:     
+public:
     virtual ~CopyAction() {}
     virtual const char * GetName( void ) const { return "Copy";}
 
@@ -128,7 +128,7 @@ public:
 
 class MapAction : public Action
 {
-public:     
+public:
     virtual ~MapAction() {}
     virtual const char * GetName( void ) const { return "Map";}
 
@@ -158,7 +158,7 @@ public:
 
 class KernelReadWriteAction : public Action
 {
-public:     
+public:
     virtual ~KernelReadWriteAction() {}
     virtual const char * GetName( void ) const { return "KernelReadWrite";}
 
@@ -167,8 +167,8 @@ public:
         const char *kernelCode[] = {
             "__kernel void readTest( __global char *inBuffer, char tag )\n"
             "{\n"
-            "	int tid = get_global_id(0);\n"
-            "	inBuffer[ tid ] |= tag;\n"
+            "    int tid = get_global_id(0);\n"
+            "    inBuffer[ tid ] |= tag;\n"
             "}\n" };
 
         clProgramWrapper program;
@@ -262,7 +262,7 @@ int test_sub_buffers_read_write_core( cl_context context, cl_command_queue queue
 
         size_t offset = get_random_size_t( toStartFrom / addressAlign, endRange / addressAlign, Action::GetRandSeed() ) * addressAlign;
         size_t size = get_random_size_t( 1, ( MIN( mainSize / 8, mainSize - offset ) ) / addressAlign, Action::GetRandSeed() ) * addressAlign;
-        error = subBuffers[ numSubBuffers ].Allocate( mainBuffer, CL_MEM_READ_WRITE, offset, size ); 
+        error = subBuffers[ numSubBuffers ].Allocate( mainBuffer, CL_MEM_READ_WRITE, offset, size );
         test_error( error, "Unable to allocate sub buffer" );
 
         toStartFrom = offset + size;
@@ -278,11 +278,11 @@ int test_sub_buffers_read_write_core( cl_context context, cl_command_queue queue
     Action * actions[] = { &rwAction, &mapAction, &copyAction, &kernelAction };
     int numErrors = 0;
 
-    // Do the following steps twice, to make sure the parent gets updated *and* we can 
+    // Do the following steps twice, to make sure the parent gets updated *and* we can
     // still work on the sub-buffers
-    cl_command_queue prev_queue = queueA;  
+    cl_command_queue prev_queue = queueA;
     for ( int time = 0; time < 2; time++ )
-    { 
+    {
         // Randomly apply actions to the set of sub buffers
         size_t i;
         for (  i = 0; i < 64; i++ )
@@ -291,7 +291,7 @@ int test_sub_buffers_read_write_core( cl_context context, cl_command_queue queue
             int whichQueue = random_in_range( 0, 1, Action::GetRandSeed() );
             int whichBufferA = random_in_range( 0, (int)numSubBuffers - 1, Action::GetRandSeed() );
             int whichBufferB;
-            do 
+            do
             {
                 whichBufferB = random_in_range( 0, (int)numSubBuffers - 1, Action::GetRandSeed() );
             } while ( whichBufferB == whichBufferA );
@@ -304,7 +304,7 @@ int test_sub_buffers_read_write_core( cl_context context, cl_command_queue queue
                 prev_queue = queue;
             }
 
-            error = actions[ which ]->Execute( context, queue, (cl_int)i, subBuffers[ whichBufferA ], subBuffers[ whichBufferB ], mainBufferContents );  
+            error = actions[ which ]->Execute( context, queue, (cl_int)i, subBuffers[ whichBufferA ], subBuffers[ whichBufferB ], mainBufferContents );
             test_error( error, "Unable to execute action against sub buffers" );
         }
 
@@ -312,7 +312,7 @@ int test_sub_buffers_read_write_core( cl_context context, cl_command_queue queue
         test_error( error, "Error finishing queueA." );
 
         error = clFinish( queueB );
-        test_error( error, "Error finishing queueB." );    
+        test_error( error, "Error finishing queueB." );
 
         // Validate by reading the final contents of the main buffer and
         // validating against our ref copy we generated
@@ -367,7 +367,7 @@ int test_sub_buffers_read_write_core( cl_context context, cl_command_queue queue
 int test_sub_buffers_read_write( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     cl_int error;
-    size_t mainSize;    
+    size_t mainSize;
     cl_uint addressAlignBits;
 
     // Get the size of the main buffer to use
@@ -379,8 +379,8 @@ int test_sub_buffers_read_write( cl_device_id deviceID, cl_context context, cl_c
     test_error( error, "Unable to get device's address alignment" );
 
     size_t addressAlign = addressAlignBits/8;
-  
-    return test_sub_buffers_read_write_core( context, queue, queue, mainSize, addressAlign ); 
+
+    return test_sub_buffers_read_write_core( context, queue, queue, mainSize, addressAlign );
 }
 
 // This test performs the same basic operations as sub_buffers_read_write, but instead of a single
@@ -411,7 +411,7 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
 
 #if !(defined(_WIN32) && defined(_MSC_VER))
     char device_name[param_size];
-#else        
+#else
     char* device_name = (char*)_malloca(param_size);
 #endif
     error = clGetDeviceInfo(otherDevice, CL_DEVICE_NAME, param_size, &device_name[0], NULL );
@@ -450,7 +450,7 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
     cl_uint addressAlign1 = MAX( addressAlign1Bits, addressAlign2Bits ) / 8;
 
     // Finally time to run!
-    return test_sub_buffers_read_write_core( testingContext, queue1, queue2, maxBuffer1, addressAlign1 ); 
+    return test_sub_buffers_read_write_core( testingContext, queue1, queue2, maxBuffer1, addressAlign1 );
 }
 
 cl_int read_buffer_via_kernel( cl_context context, cl_command_queue queue, cl_mem buffer, size_t length, cl_char *outResults )
@@ -458,8 +458,8 @@ cl_int read_buffer_via_kernel( cl_context context, cl_command_queue queue, cl_me
     const char *kernelCode[] = {
         "__kernel void readTest( __global char *inBuffer, __global char *outBuffer )\n"
         "{\n"
-        "	int tid = get_global_id(0);\n"
-        "	outBuffer[ tid ] = inBuffer[ tid ];\n"
+        "    int tid = get_global_id(0);\n"
+        "    outBuffer[ tid ] = inBuffer[ tid ];\n"
         "}\n" };
 
     clProgramWrapper program;
@@ -494,7 +494,7 @@ cl_int read_buffer_via_kernel( cl_context context, cl_command_queue queue, cl_me
 int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     cl_int error;
-    size_t mainSize;    
+    size_t mainSize;
     cl_uint addressAlign;
 
     clMemWrapper mainBuffer;
@@ -518,7 +518,7 @@ int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_
         size_t offset = get_random_size_t( 0, mainSize / addressAlign, Action::GetRandSeed() ) * addressAlign;
         size_t size = get_random_size_t( 1, ( mainSize - offset ) / addressAlign, Action::GetRandSeed() ) * addressAlign;
 
-        error = subBuffers[ i ].Allocate( mainBuffer, CL_MEM_READ_ONLY, offset, size ); 
+        error = subBuffers[ i ].Allocate( mainBuffer, CL_MEM_READ_ONLY, offset, size );
         test_error( error, "Unable to allocate sub buffer" );
     }
 
@@ -587,7 +587,7 @@ int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_
         }
     }
 
-    log_info( "\tTesting %d sub-buffers with %lld overlapping Kbytes (%d%%; as many as %ld buffers overlapping at once)\n", 
+    log_info( "\tTesting %d sub-buffers with %lld overlapping Kbytes (%d%%; as many as %ld buffers overlapping at once)\n",
               16, ( delta / 1024LL ), (int)( delta * 100LL / (long long)mainSize ), maxOverlap );
 
     // Write some random contents to the main buffer

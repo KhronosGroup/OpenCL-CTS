@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,30 +19,30 @@
 #include "../../test_common/harness/conversions.h"
 #include "../../test_common/harness/mt19937.h"
 
-extern int		test_load_program_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_load_multistring_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_load_two_kernel_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_load_null_terminated_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_load_null_terminated_multi_line_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_load_null_terminated_partial_multi_line_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_load_discreet_length_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_get_program_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_load_program_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_load_multistring_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_load_two_kernel_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_load_null_terminated_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_load_null_terminated_multi_line_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_load_null_terminated_partial_multi_line_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_load_discreet_length_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_get_program_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int		test_large_compile(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_async_build_pieces(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_large_compile(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_async_build_pieces(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int      test_options_optimizations(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_options_build_macro(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_options_build_macro_existence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_options_include_directory(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_options_denorm_cache(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_options_build_macro(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_options_build_macro_existence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_options_include_directory(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_options_denorm_cache(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int		test_preprocessor_define_udef(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_preprocessor_include(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_preprocessor_line_error(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_preprocessor_pragma(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_preprocessor_define_udef(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_preprocessor_include(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_preprocessor_line_error(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_preprocessor_pragma(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int      test_compiler_defines_for_extensions(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems );
 extern int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

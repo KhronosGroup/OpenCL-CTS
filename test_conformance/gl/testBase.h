@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -57,7 +57,7 @@ extern int validate_integer_results( void *expectedResults, void *actualResults,
 extern int validate_float_results( void *expectedResults, void *actualResults, size_t width, size_t height );
 extern int validate_float_results( void *expectedResults, void *actualResults, size_t width, size_t height, size_t depth );
 
-extern int CheckGLObjectInfo(cl_mem mem, cl_gl_object_type expected_cl_gl_type, GLuint expected_gl_name, 
+extern int CheckGLObjectInfo(cl_mem mem, cl_gl_object_type expected_cl_gl_type, GLuint expected_gl_name,
                              GLenum expected_cl_gl_texture_target, GLint expected_cl_gl_mipmap_level);
 
 extern bool CheckGLIntegerExtensionSupport();

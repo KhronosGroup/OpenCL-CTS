@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -117,7 +117,7 @@ basefn  bufferfn_list[] = {
     test_buffer_fill_ulong,
     test_buffer_fill_float,
     test_buffer_fill_struct,
-  
+
     test_buffer_migrate,
     test_image_migrate,
 };
@@ -226,19 +226,19 @@ ct_assert((sizeof(bufferfn_names) / sizeof(bufferfn_names[0]) - 1) == (sizeof(bu
 int num_bufferfns = sizeof(bufferfn_names) / sizeof(char *);
 
 const cl_mem_flags flag_set[] = {
-    CL_MEM_ALLOC_HOST_PTR, 
+    CL_MEM_ALLOC_HOST_PTR,
     CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
     CL_MEM_USE_HOST_PTR,
     CL_MEM_COPY_HOST_PTR,
     0
 };
 const char* flag_set_names[] = {
-    "CL_MEM_ALLOC_HOST_PTR", 
+    "CL_MEM_ALLOC_HOST_PTR",
     "CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR",
     "CL_MEM_USE_HOST_PTR",
     "CL_MEM_COPY_HOST_PTR",
     "0"
-};  
+};
 
 int main( int argc, const char *argv[] )
 {

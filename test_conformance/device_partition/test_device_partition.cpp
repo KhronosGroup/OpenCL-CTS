@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -38,7 +38,7 @@ const char *test_kernels[] = {
 
 const char *printPartition(cl_device_partition_property partition)
 {
-  switch (partition) { 
+  switch (partition) {
     case (0):                                      return "<NONE>";
     case (CL_DEVICE_PARTITION_EQUALLY):            return "CL_DEVICE_PARTITION_EQUALLY";
     case (CL_DEVICE_PARTITION_BY_COUNTS):          return "CL_DEVICE_PARTITION_BY_COUNTS";
@@ -76,7 +76,7 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
     int buildProgramFailed = 0;
     int printedSource = 0;
     error = clBuildProgram( *outProgram, ((parentDevice == NULL) ? 0 : 1), parentDevice, NULL, NULL, NULL );
-    if (error != CL_SUCCESS) 
+    if (error != CL_SUCCESS)
     {
         unsigned int i;
         print_error(error, "clBuildProgram failed");
@@ -84,7 +84,7 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
         printedSource = 1;
         log_error( "Original source is: ------------\n" );
         for( i = 0; i < numKernelLines; i++ )
-            log_error( "%s", kernelProgram[ i ] );    
+            log_error( "%s", kernelProgram[ i ] );
     }
 
     // Verify the build status on all devices
@@ -150,7 +150,7 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
             if (error != CL_SUCCESS || log[0]=='\0'){
                 log_error("Device %d (%s) failed to return a build log\n", z, deviceName);
                 if (error) {
-                    print_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_LOG failed"); 
+                    print_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_LOG failed");
                     free( devices );
                     return error;
                 } else {
@@ -160,7 +160,7 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
                 }
             }
             // In this case we've already printed out the code above.
-            if (!printedSource) 
+            if (!printedSource)
             {
                 unsigned int i;
                 log_error( "Original source is: ------------\n" );
@@ -170,7 +170,7 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
             }
             log_error( "Build log for device \"%s\" is: ------------\n", deviceName );
             log_error( "%s\n", log );
-            log_error( "\n----------\n" );  
+            log_error( "\n----------\n" );
             free( devices );
             return -1;
         }
@@ -250,7 +250,7 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     if( create_single_kernel_helper( context, &program, &kernels[0], 1, test_kernels, "kernelA", parentDevice ) != 0 )
     {
         return -1;
-    }  
+    }
 
     kernels[1] = clCreateKernel(program, "kernelB", &error);
     test_error(error, "clCreateKernel failed");
@@ -300,13 +300,13 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
         for( i = 0; i < queueCount; i++ )
         {
             // Randomly choose a kernel to execute.
-            int kernel_selection = (int)get_random_float(0, 2, seed); 
+            int kernel_selection = (int)get_random_float(0, 2, seed);
             error = clEnqueueNDRangeKernel( queues[ i ], kernels[ kernel_selection ], 1, NULL, threads, localThreads, 0, NULL, NULL );
             test_error( error, "Kernel execution failed" );
 
             // Update the expected results
             for( int j = 0; j < TEST_SIZE; j++ ) {
-                expectedResults[j] = (kernel_selection) ? expectedResults[j]+1 : expectedResults[j]*3; 
+                expectedResults[j] = (kernel_selection) ? expectedResults[j]+1 : expectedResults[j]*3;
                 expectedResultsOneDevice[i % deviceCount][j] = (kernel_selection) ? expectedResultsOneDevice[i % deviceCount][j]+1 : expectedResultsOneDevice[i % deviceCount][j]*3;
             }
 
@@ -339,7 +339,7 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
             }
         }
         if (errorsThisTime)
-            errors++;    
+            errors++;
     }
 
     /* All done now! */
@@ -425,14 +425,14 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
 
 #define PROPERTY_TYPES 8
     cl_device_partition_property partitionProp[PROPERTY_TYPES][5] = {
-    	{ CL_DEVICE_PARTITION_EQUALLY, maxComputeUnits / 2, 0, 0, 0 } ,
-    	{ CL_DEVICE_PARTITION_BY_COUNTS, 1, maxComputeUnits - 1, CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 } ,
-    	{ CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_NUMA, 0, 0, 0 } ,
-    	{ CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L4_CACHE, 0, 0, 0 } ,
-    	{ CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE, 0, 0, 0 } ,
-    	{ CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L2_CACHE, 0, 0, 0 } ,
-    	{ CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE, 0, 0, 0 } ,
-    	{ CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE, 0, 0, 0 }
+        { CL_DEVICE_PARTITION_EQUALLY, maxComputeUnits / 2, 0, 0, 0 } ,
+        { CL_DEVICE_PARTITION_BY_COUNTS, 1, maxComputeUnits - 1, CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 } ,
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_NUMA, 0, 0, 0 } ,
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L4_CACHE, 0, 0, 0 } ,
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE, 0, 0, 0 } ,
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L2_CACHE, 0, 0, 0 } ,
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE, 0, 0, 0 } ,
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE, 0, 0, 0 }
     };
 
     // loop thru each type, creating sub-devices for each type
@@ -442,13 +442,13 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
       {
         if (partitionProp[i][0] == CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN)
         {
-          log_info( "Device partition type \"%s\" \"%s\" is not supported on device %p. Skipping test...\n", 
+          log_info( "Device partition type \"%s\" \"%s\" is not supported on device %p. Skipping test...\n",
                       printPartition(partitionProp[i][0]),
                       printAffinity(partitionProp[i][1]), deviceID);
         }
         else
         {
-          log_info( "Device partition type \"%s\" is not supported on device %p. Skipping test...\n", 
+          log_info( "Device partition type \"%s\" is not supported on device %p. Skipping test...\n",
                       printPartition(partitionProp[i][0]), deviceID);
         }
         continue;
@@ -482,7 +482,7 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
       if (err == 0)
       {
           log_info("Testing on a parent device for context\n");
-   
+
           // add the parent device
           subDevices[deviceCount] = deviceID;
           err = test_device_set(deviceCount + 1, deviceCount, subDevices, num_elements, &deviceID);
@@ -493,7 +493,7 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
           return err;
       }
 
-      // now, recurse and test the FIRST of these sub-devices, to make sure it can be further partitioned 
+      // now, recurse and test the FIRST of these sub-devices, to make sure it can be further partitioned
       err = test_partition_of_device(subDevices[0], context, queue, num_elements, partitionProp[i], starting_property, ending_property);
       if (err != 0)
       {

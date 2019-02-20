@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
 
-Texture2DSize texture2DSizes[] = 
+Texture2DSize texture2DSizes[] =
 {
     {
         4, // Width
@@ -26,124 +26,124 @@ Texture2DSize texture2DSizes[] =
         1, // SubResourceCount
         {  // SubResources
             {0, 0}, // MipLevel, ArraySlice
-            {0, 0}, // MipLevel, ArraySlice 
+            {0, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
         },
         0, // MiscFlags
     },
-    {  
+    {
         15, // Width
         37, // Height
-        2, // MipLevels 
-        1, // ArraySize 
+        2, // MipLevels
+        1, // ArraySize
         2, // SubResourceCount
         {  // SubResources
             {0, 0}, // MipLevel, ArraySlice
-            {1, 0}, // MipLevel, ArraySlice 
+            {1, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
         },
         0, // MiscFlags
     },
-    {  
+    {
         65, // Width
         17, // Height
-        1, // MipLevels 
-        1, // ArraySize 
+        1, // MipLevels
+        1, // ArraySize
         1, // SubResourceCount
         {  // SubResources
             {0, 0}, // MipLevel, ArraySlice
-            {0, 0}, // MipLevel, ArraySlice 
+            {0, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
         },
         D3D11_RESOURCE_MISC_SHARED, // MiscFlags
     },
 
-    {  
+    {
         127, // Width
         125, // Height
-        4, // MipLevels 
-        1, // ArraySize 
+        4, // MipLevels
+        1, // ArraySize
         4, // SubResourceCount
         {  // SubResources
             {3, 0}, // MipLevel, ArraySlice
-            {2, 0}, // MipLevel, ArraySlice 
+            {2, 0}, // MipLevel, ArraySlice
             {1, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
         },
         0, // MiscFlags
     },
-    {  
+    {
         128, // Width
         128, // Height
-        4, // MipLevels 
-        6, // ArraySize 
+        4, // MipLevels
+        6, // ArraySize
         4, // SubResourceCount
         {  // SubResources
             {0, 1}, // MipLevel, ArraySlice
-            {1, 0}, // MipLevel, ArraySlice 
+            {1, 0}, // MipLevel, ArraySlice
             {0, 2}, // MipLevel, ArraySlice
             {3, 5}, // MipLevel, ArraySlice
         },
         0, // MiscFlags
     },
-    {  
+    {
         256, // Width
         256, // Height
-        0, // MipLevels 
-        256, // ArraySize 
+        0, // MipLevels
+        256, // ArraySize
         4, // SubResourceCount
         {  // SubResources
             {0,   0}, // MipLevel, ArraySlice
-            {1, 255}, // MipLevel, ArraySlice 
+            {1, 255}, // MipLevel, ArraySlice
             {2, 127}, // MipLevel, ArraySlice
             {3, 128}, // MipLevel, ArraySlice
         },
         0, // MiscFlags
     },
-    {  
+    {
         258, // Width
         511, // Height
-        1, // MipLevels 
-        1, // ArraySize 
+        1, // MipLevels
+        1, // ArraySize
         1, // SubResourceCount
         {  // SubResources
             {0, 0}, // MipLevel, ArraySlice
-            {0, 0}, // MipLevel, ArraySlice 
+            {0, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
         },
         0, // MiscFlags
     },
-    {  
+    {
         767, // Width
         1025, // Height
-        4, // MipLevels 
-        1, // ArraySize 
+        4, // MipLevels
+        1, // ArraySize
         1, // SubResourceCount
         {  // SubResources
             {0, 0}, // MipLevel, ArraySlice
-            {0, 0}, // MipLevel, ArraySlice 
+            {0, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
         },
         0, // MiscFlags
     },
-    {  
+    {
         2048, // Width
         2048, // Height
-        1, // MipLevels 
-        1, // ArraySize 
+        1, // MipLevels
+        1, // ArraySize
         1, // SubResourceCount
         {  // SubResources
             {0, 0}, // MipLevel, ArraySlice
-            {0, 0}, // MipLevel, ArraySlice 
+            {0, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
             {0, 0}, // MipLevel, ArraySlice
         },
-        0, // MiscFlags        
+        0, // MiscFlags
     },
 };
 UINT texture2DSizeCount = sizeof(texture2DSizes)/sizeof(texture2DSizes[0]);
@@ -160,7 +160,7 @@ void SubTestTexture2D(
     cl_command_queue command_queue,
     cl_kernel kernel,
     ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC,    
+    ID3D11DeviceContext* pDC,
     const TextureFormat* format,
     const Texture2DSize* size)
 {
@@ -169,11 +169,11 @@ void SubTestTexture2D(
     cl_image_format clFormat;
     cl_int result = CL_SUCCESS;
 
-    HarnessD3D11_TestBegin("2D Texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, ArraySize=%d", 
-        format->name_format, 
-        size->Width, 
-        size->Height, 
-        size->MipLevels, 
+    HarnessD3D11_TestBegin("2D Texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, ArraySize=%d",
+        format->name_format,
+        size->Width,
+        size->Height,
+        size->MipLevels,
         size->ArraySize);
 
     struct
@@ -184,7 +184,7 @@ void SubTestTexture2D(
         UINT height;
     }
     subResourceInfo[4];
-    
+
     cl_event events[4] = {NULL, NULL, NULL, NULL};
 
     // create the D3D11 resources
@@ -202,7 +202,7 @@ void SubTestTexture2D(
         desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
         desc.CPUAccessFlags = 0;
         desc.MiscFlags = 0;
-       
+
         hr = pDevice->CreateTexture2D(&desc, NULL, &pTexture);
         TestRequire(SUCCEEDED(hr), "ID3D11Device::CreateTexture2D failed (non-OpenCL D3D error, but test is invalid).");
     }
@@ -263,8 +263,8 @@ void SubTestTexture2D(
 
         // copy the data to to the texture
         {
-            D3D11_BOX box = {0};       
-            box.front   = 0; box.back    = 1;        
+            D3D11_BOX box = {0};
+            box.front   = 0; box.back    = 1;
             box.top     = 0; box.bottom  = 1;
             box.left    = 0; box.right   = 1;
             pDC->CopySubresourceRegion(
@@ -278,7 +278,7 @@ void SubTestTexture2D(
                 &box);
         }
 
-        pStagingBuffer->Release();        
+        pStagingBuffer->Release();
     }
 
     // create the cl_mem objects for the resources and verify its sanity
@@ -315,7 +315,7 @@ void SubTestTexture2D(
         TestRequire(result == CL_SUCCESS, "clGetImageInfo for CL_IMAGE_D3D11_SUBRESOURCE_KHR failed");
         TestRequire(clResource == pTexture, "clGetImageInfo for CL_IMAGE_D3D11_SUBRESOURCE_KHR returned incorrect value.");
 
-        // query format and verify        
+        // query format and verify
         result = clGetImageInfo(
             subResourceInfo[i].mem,
             CL_IMAGE_FORMAT,
@@ -333,7 +333,7 @@ void SubTestTexture2D(
             CL_IMAGE_WIDTH,
             sizeof(width),
             &width,
-            NULL);            
+            NULL);
         TestRequire(result == CL_SUCCESS, "clGetImageInfo for CL_IMAGE_WIDTH failed");
         TestRequire(width == subResourceInfo[i].width, "clGetImageInfo for CL_IMAGE_HEIGHT returned incorrect value.");
 
@@ -344,12 +344,12 @@ void SubTestTexture2D(
             CL_IMAGE_HEIGHT,
             sizeof(height),
             &height,
-            NULL);            
+            NULL);
         TestRequire(result == CL_SUCCESS, "clGetImageInfo for CL_IMAGE_HEIGHT failed");
         TestRequire(height == subResourceInfo[i].height, "clGetImageInfo for CL_IMAGE_HEIGHT returned incorrect value.");
 
     }
-  
+
     // acquire the resources for OpenCL
     for (UINT i = 0; i < 2; ++i)
     {
@@ -357,7 +357,7 @@ void SubTestTexture2D(
         cl_mem memToAcquire[MAX_REGISTERED_SUBRESOURCES];
 
         // cut the registered sub-resources into two sets and send the acquire calls for them separately
-        if (i == 0) 
+        if (i == 0)
         {
             for(UINT j = 0; j < size->SubResourceCount/2; ++j)
             {
@@ -393,13 +393,13 @@ void SubTestTexture2D(
             &eventType,
             NULL);
         TestRequire(result == CL_SUCCESS, "clGetEventInfo for event created by clEnqueueAcquireD3D11ObjectsKHR failed.");
-        TestRequire(eventType == CL_COMMAND_ACQUIRE_D3D11_OBJECTS_KHR, "clGetEventInfo for CL_EVENT_COMMAND_TYPE was not CL_COMMAND_ACQUIRE_D3D11_OBJECTS_KHR.");        
+        TestRequire(eventType == CL_COMMAND_ACQUIRE_D3D11_OBJECTS_KHR, "clGetEventInfo for CL_EVENT_COMMAND_TYPE was not CL_COMMAND_ACQUIRE_D3D11_OBJECTS_KHR.");
     }
 
     // download the data using OpenCL & compare with the expected results
     for (UINT i = 0; i < size->SubResourceCount; ++i)
     {
-        size_t origin[3] = {0,0,0};        
+        size_t origin[3] = {0,0,0};
         size_t region[3] = {subResourceInfo[i].width, subResourceInfo[i].height, 1};
         cl_mem tempImage;
         cl_image_desc image_desc = { 0 };
@@ -411,39 +411,39 @@ void SubTestTexture2D(
         tempImage = clCreateImage(context, 0, &clFormat, &image_desc, NULL, &result);
         TestRequire(result == CL_SUCCESS, "clCreateImage failed");
 
-        result = clEnqueueCopyImage(command_queue, subResourceInfo[i].mem, tempImage, 
+        result = clEnqueueCopyImage(command_queue, subResourceInfo[i].mem, tempImage,
                 origin, origin, region, 0, NULL, NULL);
         TestRequire(result == CL_SUCCESS, "clEnqueueCopyImage failed");
 
         // copy (0,0) to (1,1) and (w-1,h-1) to (w-2,h-2) using a kernel
         {
             result = clSetKernelArg(
-                kernel, 
+                kernel,
                 0,
-                sizeof(cl_mem), 
+                sizeof(cl_mem),
                 (void *)&tempImage);
             result = clSetKernelArg(
-                kernel, 
+                kernel,
                 1,
-                sizeof(cl_mem), 
+                sizeof(cl_mem),
                 (void *)&subResourceInfo[i].mem);
 
             TestRequire(CL_SUCCESS == result, "clSetKernelArg failed");
-            
+
             size_t localWorkSize[] = {1};
             size_t globalWorkSize[] = {1};
             result = clEnqueueNDRangeKernel(
-                command_queue, 
-                kernel, 
+                command_queue,
+                kernel,
                 1,
                 NULL,
                 globalWorkSize,
                 localWorkSize,
                 0,
                 NULL,
-                NULL);       
+                NULL);
             TestRequire(CL_SUCCESS == result, "clEnqueueNDRangeKernel failed");
-        }    
+        }
         // copy (w-1,0) to (w-2,1) and (0,h) to (1,h-2) using a memcpy
         for (UINT x = 0; x < 2; ++x)
         for (UINT y = 0; y < 2; ++y)
@@ -453,22 +453,22 @@ void SubTestTexture2D(
                 continue;
             }
 
-            size_t src[3] = 
+            size_t src[3] =
             {
                 x ? subResourceInfo[i].width  - 1 : 0,
                 y ? subResourceInfo[i].height - 1 : 0,
                 0,
             };
-            size_t dst[3] = 
+            size_t dst[3] =
             {
                 x ? subResourceInfo[i].width  - 2 : 1,
                 y ? subResourceInfo[i].height - 2 : 1,
                 0,
             };
-            size_t region[3] = 
+            size_t region[3] =
             {
-                1, 
-                1, 
+                1,
+                1,
                 1,
             };
             result = clEnqueueCopyImage(
@@ -479,7 +479,7 @@ void SubTestTexture2D(
                 dst,
                 region,
                 0,
-                NULL, 
+                NULL,
                 NULL);
             TestRequire(result == CL_SUCCESS, "clEnqueueCopyImage failed.");
         }
@@ -493,7 +493,7 @@ void SubTestTexture2D(
         cl_mem memToAcquire[MAX_REGISTERED_SUBRESOURCES];
 
         // cut the registered sub-resources into two sets and send the release calls for them separately
-        if (i == 0) 
+        if (i == 0)
         {
             for(UINT j = size->SubResourceCount/4; j < size->SubResourceCount; ++j)
             {
@@ -519,7 +519,7 @@ void SubTestTexture2D(
             &events[2+i]);
         TestRequire(result == CL_SUCCESS, "clEnqueueReleaseD3D11ObjectsKHR failed.");
         TestRequire(events[2+i], "clEnqueueReleaseD3D11ObjectsKHR did not return an event.");
-        
+
         // make sure the event type is correct
         cl_uint eventType = 0;
         result = clGetEventInfo(
@@ -554,7 +554,7 @@ void SubTestTexture2D(
             hr = pDevice->CreateTexture2D(&desc, NULL, &pStagingBuffer);
             TestRequire(SUCCEEDED(hr), "Failed to create staging buffer.");
         }
-    
+
         // wipe out the staging buffer to make sure we don't get stale values
         {
             D3D11_MAPPED_SUBRESOURCE mappedTexture;
@@ -564,14 +564,14 @@ void SubTestTexture2D(
                 D3D11_MAP_READ_WRITE,
                 0,
                 &mappedTexture);
-            TestRequire(SUCCEEDED(hr), "Failed to map staging buffer");        
+            TestRequire(SUCCEEDED(hr), "Failed to map staging buffer");
             memset(mappedTexture.pData, 0, format->bytesPerPixel);
             pDC->Unmap(pStagingBuffer, 0);
         }
 
         // copy the pixel to the staging buffer
         {
-            D3D11_BOX box = {0};       
+            D3D11_BOX box = {0};
             box.left    = x ? subResourceInfo[i].width  - 2 : 1; box.right  = box.left + 1;
             box.top     = y ? subResourceInfo[i].height - 2 : 1; box.bottom = box.top + 1;
             box.front   = 0;                                     box.back   = 1;
@@ -597,12 +597,12 @@ void SubTestTexture2D(
                 &mappedTexture);
             TestRequire(SUCCEEDED(hr), "Failed to map staging buffer");
             TestRequire(
-                !memcmp(mappedTexture.pData, texture2DPatterns[x][y], format->bytesPerPixel), 
-                "Failed to map staging buffer");            
-            pDC->Unmap(pStagingBuffer, 0);        
+                !memcmp(mappedTexture.pData, texture2DPatterns[x][y], format->bytesPerPixel),
+                "Failed to map staging buffer");
+            pDC->Unmap(pStagingBuffer, 0);
         }
-        
-        pStagingBuffer->Release();       
+
+        pStagingBuffer->Release();
     }
 
 
@@ -611,7 +611,7 @@ Cleanup:
     if (pTexture)
     {
         pTexture->Release();
-    }    
+    }
     for (UINT i = 0; i < size->SubResourceCount; ++i)
     {
         clReleaseMemObject(subResourceInfo[i].mem);
@@ -631,15 +631,15 @@ Cleanup:
 
 void TestDeviceTexture2D(
     cl_device_id device,
-    cl_context context, 
-    cl_command_queue command_queue, 
+    cl_context context,
+    cl_command_queue command_queue,
     ID3D11Device* pDevice,
     ID3D11DeviceContext* pDC)
 {
     cl_int result = CL_SUCCESS;
     cl_kernel kernels[3] = {NULL, NULL, NULL};
 
-    const char *sourceRaw = 
+    const char *sourceRaw =
         " \
         __kernel void texture2D\n\
         ( \n\

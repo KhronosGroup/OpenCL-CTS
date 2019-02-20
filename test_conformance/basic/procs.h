@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,15 +33,15 @@ extern int      test_intmath_long(cl_device_id deviceID, cl_context context, cl_
 extern int      test_intmath_long2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_intmath_long4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_hiloeo(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_if(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_sizeof(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_loop(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_pointer_cast(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_local_arg_def(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_local_kernel_def(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_local_kernel_scope(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_constant(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_constant_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_if(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_sizeof(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_loop(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_pointer_cast(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_local_arg_def(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_local_kernel_def(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_local_kernel_scope(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_constant(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_constant_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_readimage(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_readimage_int16(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_readimage_fp32(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

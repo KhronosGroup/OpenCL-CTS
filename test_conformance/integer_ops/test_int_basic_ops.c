@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,7 +34,7 @@
 #define  LONG_MATH_SHIFT_SIZE 26
 #define QUICK_MATH_SHIFT_SIZE 16
 
-static const char *kernel_code = 
+static const char *kernel_code =
 "__kernel void test(__global %s%s *srcA, __global %s%s *srcB, __global %s%s *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -42,7 +42,7 @@ static const char *kernel_code =
 "    dst[tid] = srcA[tid] %s srcB[tid];\n"
 "}\n";
 
-static const char *kernel_code_V3 = 
+static const char *kernel_code_V3 =
 "__kernel void test(__global %s /*%s*/ *srcA, __global %s/*%s*/ *srcB, __global %s/*%s*/ *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -50,7 +50,7 @@ static const char *kernel_code_V3 =
 "    vstore3( vload3( tid, srcA ) %s vload3( tid, srcB), tid, dst );\n"
 "}\n";
 
-static const char *kernel_code_V3_scalar_vector = 
+static const char *kernel_code_V3_scalar_vector =
 "__kernel void test(__global %s /*%s*/ *srcA, __global %s/*%s*/ *srcB, __global %s/*%s*/ *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -58,7 +58,7 @@ static const char *kernel_code_V3_scalar_vector =
 "    vstore3( srcA[tid] %s vload3( tid, srcB), tid, dst );\n"
 "}\n";
 
-static const char *kernel_code_V3_vector_scalar = 
+static const char *kernel_code_V3_vector_scalar =
 "__kernel void test(__global %s /*%s*/ *srcA, __global %s/*%s*/ *srcB, __global %s/*%s*/ *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -68,7 +68,7 @@ static const char *kernel_code_V3_vector_scalar =
 
 
 // Separate kernel here because it does not fit the pattern
-static const char *not_kernel_code = 
+static const char *not_kernel_code =
 "__kernel void test(__global %s%s *srcA, __global %s%s *srcB, __global %s%s *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -76,7 +76,7 @@ static const char *not_kernel_code =
 "    dst[tid] = %ssrcA[tid];\n"
 "}\n";
 
-static const char *not_kernel_code_V3 = 
+static const char *not_kernel_code_V3 =
 "__kernel void test(__global %s /*%s*/ *srcA, __global %s/*%s*/ *srcB, __global %s/*%s*/ *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -84,7 +84,7 @@ static const char *not_kernel_code_V3 =
 "    vstore3( %s vload3( tid, srcA ), tid, dst );\n"
 "}\n";
 
-static const char *kernel_code_scalar_shift = 
+static const char *kernel_code_scalar_shift =
 "__kernel void test(__global %s%s *srcA, __global %s%s *srcB, __global %s%s *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -92,7 +92,7 @@ static const char *kernel_code_scalar_shift =
 "    dst[tid] = srcA[tid] %s srcB[tid]%s;\n"
 "}\n";
 
-static const char *kernel_code_scalar_shift_V3 = 
+static const char *kernel_code_scalar_shift_V3 =
 "__kernel void test(__global %s/*%s*/ *srcA, __global %s/*%s*/ *srcB, __global %s/*%s*/ *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -100,7 +100,7 @@ static const char *kernel_code_scalar_shift_V3 =
 "    vstore3( vload3( tid, srcA) %s vload3( tid, srcB )%s, tid, dst );\n"
 "}\n";
 
-static const char *kernel_code_question_colon = 
+static const char *kernel_code_question_colon =
 "__kernel void test(__global %s%s *srcA, __global %s%s *srcB, __global %s%s *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -108,7 +108,7 @@ static const char *kernel_code_question_colon =
 "    dst[tid] = (srcA[tid]%s < srcB[tid]%s) ? srcA[tid] : srcB[tid];\n"
 "}\n";
 
-static const char *kernel_code_question_colon_V3 = 
+static const char *kernel_code_question_colon_V3 =
 "__kernel void test(__global %s/*%s*/ *srcA, __global %s/*%s*/ *srcB, __global %s/*%s*/ *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -157,38 +157,38 @@ enum Style
     kBothVectors,
     kInputAScalar,
     kInputBScalar,
-    kVectorScalarScalar,	// for the ?: operator only; indicates vector ? scalar : scalar.
-    kInputCAlsoScalar = 0x80	// Or'ed flag to indicate that the selector for the ?: operator is also scalar
+    kVectorScalarScalar,    // for the ?: operator only; indicates vector ? scalar : scalar.
+    kInputCAlsoScalar = 0x80    // Or'ed flag to indicate that the selector for the ?: operator is also scalar
 };
 
 typedef struct _perThreadData
 {
-    cl_mem			m_streams[3];
-    cl_int			*m_input_ptr[2], *m_output_ptr;
+    cl_mem            m_streams[3];
+    cl_int            *m_input_ptr[2], *m_output_ptr;
     size_t                      m_type_size;
-    cl_program		        m_program[NUM_TESTS];
-    cl_kernel		        m_kernel[NUM_TESTS];
+    cl_program                m_program[NUM_TESTS];
+    cl_kernel                m_kernel[NUM_TESTS];
 } perThreadData;
 
 
 perThreadData * perThreadDataNew()
 {
     perThreadData * pThis = (perThreadData *)malloc(sizeof(perThreadData));
-    
-    
+
+
     memset(pThis->m_program, 0, sizeof(cl_program)*NUM_TESTS);
     memset(pThis->m_kernel, 0, sizeof(cl_kernel)*NUM_TESTS);
-    
+
     pThis->m_input_ptr[0] = pThis->m_input_ptr[1] = NULL;
     pThis->m_output_ptr = NULL;
-    
+
     return pThis;
 }
 
 
 void perThreadDataDestroy(perThreadData * pThis)
 {
-    int				i;
+    int                i;
     // cleanup
     clReleaseMemObject(pThis->m_streams[0]);
     clReleaseMemObject(pThis->m_streams[1]);
@@ -201,7 +201,7 @@ void perThreadDataDestroy(perThreadData * pThis)
     free(pThis->m_input_ptr[0]);
     free(pThis->m_input_ptr[1]);
     free(pThis->m_output_ptr);
-    
+
     free(pThis);
 }
 
@@ -214,7 +214,7 @@ cl_int perThreadDataInit(perThreadData * pThis, ExplicitType type,
 {
     int i;
     const char * sizeNames[] = { "", "", "2", "3", "4", "", "", "", "8", "", "", "", "", "", "", "", "16" };
-    
+
     const char *type_name = get_explicit_type_name(type);
     pThis->m_type_size = get_explicit_type_size(type);
     int err;
@@ -242,43 +242,43 @@ cl_int perThreadDataInit(perThreadData * pThis, ExplicitType type,
             return -1;
             break;
     }
-    
-    pThis->m_input_ptr[0] = 
+
+    pThis->m_input_ptr[0] =
     (cl_int*)malloc(pThis->m_type_size * num_elements * vectorSize);
-    pThis->m_input_ptr[1] = 
+    pThis->m_input_ptr[1] =
     (cl_int*)malloc(pThis->m_type_size * num_elements * vectorSize);
-    pThis->m_output_ptr = 
+    pThis->m_output_ptr =
     (cl_int*)malloc(pThis->m_type_size * num_elements * vectorSize);
-    pThis->m_streams[0] = 
+    pThis->m_streams[0] =
     clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), pThis->m_type_size * num_elements * inputAVecSize, NULL, &err);
-    
+
     test_error(err, "clCreateBuffer failed");
-    
-    pThis->m_streams[1] = 
+
+    pThis->m_streams[1] =
     clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), pThis->m_type_size * num_elements * inputBVecSize, NULL, &err );
-    
+
     test_error(err, "clCreateBuffer failed");
-    
-    pThis->m_streams[2] = 
+
+    pThis->m_streams[2] =
     clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), pThis->m_type_size * num_elements * vectorSize, NULL, &err );
-    
+
     test_error(err, "clCreateBuffer failed");
-    
+
     const char *vectorString = sizeNames[ vectorSize ];
     const char *inputAVectorString = sizeNames[ inputAVecSize ];
     const char *inputBVectorString = sizeNames[ inputBVecSize ];
-    
+
     if (testID == -1)
     {
         log_info("\tTesting %s%s (%d bytes)...\n", type_name, vectorString, (int)(pThis->m_type_size*vectorSize));
     }
-    
+
     char programString[4096];
     const char *ptr;
-    
-    
+
+
     const char * kernel_code_base = ( vectorSize != 3 ) ? kernel_code : ( inputAVecSize == 1 ) ? kernel_code_V3_scalar_vector : ( inputBVecSize == 1 ) ? kernel_code_V3_vector_scalar : kernel_code_V3;
-    
+
     for (i=start_test_ID; i<end_test_ID; i++) {
         switch (i) {
             case 10:
@@ -287,12 +287,12 @@ cl_int perThreadDataInit(perThreadData * pThis, ExplicitType type,
                         type_name, vectorString, tests[i], ((vectorSize == 1) ? "":".s0"));
                 break;
             case 12:
-                sprintf(programString, vectorSize == 3 ? not_kernel_code_V3 : not_kernel_code, type_name, inputAVectorString, type_name, inputBVectorString, 
+                sprintf(programString, vectorSize == 3 ? not_kernel_code_V3 : not_kernel_code, type_name, inputAVectorString, type_name, inputBVectorString,
                         type_name, vectorString, tests[i]);
                 break;
             case 13:
-                sprintf(programString, vectorSize == 3 ? kernel_code_question_colon_V3 : kernel_code_question_colon, 
-                        type_name, inputAVectorString, type_name, inputBVectorString, 
+                sprintf(programString, vectorSize == 3 ? kernel_code_question_colon_V3 : kernel_code_question_colon,
+                        type_name, inputAVectorString, type_name, inputBVectorString,
                         type_name, vectorString, ((vectorSize == 1) ? "":".s0"), ((vectorSize == 1) ? "":".s0")) ;
                 break;
             case 14:
@@ -304,46 +304,46 @@ cl_int perThreadDataInit(perThreadData * pThis, ExplicitType type,
             case 20:
             case 21:
                 // Need an unsigned result here for vector sizes > 1
-                sprintf(programString, kernel_code_base, type_name, inputAVectorString, type_name, inputBVectorString, 
+                sprintf(programString, kernel_code_base, type_name, inputAVectorString, type_name, inputBVectorString,
                         ((vectorSize == 1) ? type_name : signed_type_name), vectorString, tests[i]);
                 break;
             case 22:
                 // Need an unsigned result here for vector sizes > 1
-                sprintf(programString, vectorSize == 3 ? not_kernel_code_V3 : not_kernel_code, type_name, inputAVectorString, type_name, inputBVectorString, 
+                sprintf(programString, vectorSize == 3 ? not_kernel_code_V3 : not_kernel_code, type_name, inputAVectorString, type_name, inputBVectorString,
                         ((vectorSize == 1) ? type_name : signed_type_name), vectorString, tests[i]);
                 break;
             default:
-                sprintf(programString, kernel_code_base, type_name, inputAVectorString, type_name, inputBVectorString, 
+                sprintf(programString, kernel_code_base, type_name, inputAVectorString, type_name, inputBVectorString,
                         type_name, vectorString, tests[i]);
                 break;
         }
-        
+
         //printf("kernel: %s\n", programString);
         ptr = programString;
         err = create_single_kernel_helper( context,
-                                          &(pThis->m_program[ i ]), 
-                                          &(pThis->m_kernel[ i ]), 1, 
+                                          &(pThis->m_program[ i ]),
+                                          &(pThis->m_kernel[ i ]), 1,
                                           &ptr, "test" );
         test_error( err, "Unable to create test kernel" );
-        err = clSetKernelArg(pThis->m_kernel[i], 0, 
-                             sizeof pThis->m_streams[0], 
+        err = clSetKernelArg(pThis->m_kernel[i], 0,
+                             sizeof pThis->m_streams[0],
                              &(pThis->m_streams[0]) );
-        err |= clSetKernelArg(pThis->m_kernel[i], 1, 
-                              sizeof pThis->m_streams[1], 
+        err |= clSetKernelArg(pThis->m_kernel[i], 1,
+                              sizeof pThis->m_streams[1],
                               &(pThis->m_streams[1]) );
-        err |= clSetKernelArg(pThis->m_kernel[i], 2, 
-                              sizeof pThis->m_streams[2], 
+        err |= clSetKernelArg(pThis->m_kernel[i], 2,
+                              sizeof pThis->m_streams[2],
                               &(pThis->m_streams[2]) );
-        test_error(err, "clSetKernelArgs failed");    
+        test_error(err, "clSetKernelArgs failed");
     }
-    
+
     return CL_SUCCESS;
 }
 
 typedef struct _globalThreadData
 {
     cl_device_id     m_deviceID;
-    cl_context       m_context; 
+    cl_context       m_context;
     // cl_command_queue m_queue;
     int              m_num_elements;
     int              m_threadcount;
@@ -359,8 +359,8 @@ typedef struct _globalThreadData
 
 
 
-globalThreadData * globalThreadDataNew(cl_device_id deviceID, cl_context context, 
-                                       cl_command_queue queue, int num_elements, 
+globalThreadData * globalThreadDataNew(cl_device_id deviceID, cl_context context,
+                                       cl_command_queue queue, int num_elements,
                                        int vectorSize, Style style, int num_runs_shift,
                                        ExplicitType type, int testID,
                                        int threadcount)
@@ -379,7 +379,7 @@ globalThreadData * globalThreadDataNew(cl_device_id deviceID, cl_context context
     pThis->m_testID = testID;
     pThis->m_arrPerThreadData = NULL;
     pThis->m_threadcount = threadcount;
-    
+
     pThis->m_pRandData = (MTdata *)malloc(threadcount*sizeof(MTdata));
     pThis->m_arrPerThreadData = (perThreadData **)
     malloc(threadcount*sizeof(perThreadData *));
@@ -388,14 +388,14 @@ globalThreadData * globalThreadDataNew(cl_device_id deviceID, cl_context context
         pThis->m_pRandData[i] = init_genrand(i+1);
         pThis->m_arrPerThreadData[i] = NULL;
     }
-    
+
     return pThis;
 }
 
 void globalThreadDataDestroy(globalThreadData * pThis)
 {
     int i;
-    
+
     for(i=0; i < pThis->m_threadcount; ++i)
     {
         free_mtdata(pThis->m_pRandData[i]);
@@ -419,32 +419,32 @@ cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *user
     cl_int error; cl_int result;
     globalThreadData * threadInfoGlobal = (globalThreadData *)userInfo;
     cl_command_queue queue;
-    
+
 #if THREAD_DEBUG
     log_error("Thread %x (job %x) about to create command queue\n",
               thread_id, job_id);
 #endif
-    
+
     queue =  clCreateCommandQueue (threadInfoGlobal->m_context,
-                                   threadInfoGlobal->m_deviceID,0, 
+                                   threadInfoGlobal->m_deviceID,0,
                                    &error);
-    
+
     if(error != CL_SUCCESS)
     {
         log_error("Thread %x (job %x) could not create command queue\n",
                   thread_id, job_id);
         return error; // should we clean up the queue too?
     }
-    
+
 #if THREAD_DEBUG
     log_error("Thread %x (job %x) created command queue\n",
               thread_id, job_id);
 #endif
-    
-    result = test_integer_ops(  threadInfoGlobal->m_deviceID, 
+
+    result = test_integer_ops(  threadInfoGlobal->m_deviceID,
                               threadInfoGlobal->m_context,
-                              queue, 
-                              threadInfoGlobal->m_num_elements, 
+                              queue,
+                              threadInfoGlobal->m_num_elements,
                               threadInfoGlobal->m_vectorSize, threadInfoGlobal->m_style,
                               threadInfoGlobal->m_num_runs_shift,
                               threadInfoGlobal->m_type, threadInfoGlobal->m_testID,
@@ -453,15 +453,15 @@ cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *user
                               threadInfoGlobal->m_offset + threadInfoGlobal->m_num_elements*(job_id+1),
                               &(threadInfoGlobal->m_arrPerThreadData[thread_id])
                               );
-    
+
     if(result != 0)
     {
         log_error("Thread %x (job %x) failed test_integer_ops with result %x\n",
                   thread_id, job_id, result);
         // return error;
     }
-    
-    
+
+
     error = clReleaseCommandQueue(queue);
     if(error != CL_SUCCESS)
     {
@@ -477,35 +477,67 @@ test_integer_ops_threaded(cl_device_id deviceID, cl_context context, cl_command_
 {
     globalThreadData * pThreadInfo = NULL;
     cl_int result=0;
+    cl_uint threadcount = GetThreadCount();
+
+    // This test will run threadcount threads concurrently; each thread will
+    // execute test_integer_ops() which will allocate 2 OpenCL buffers on the
+    // device; each buffer has size num_elements * type_size * vectorSize. We
+    // need to make sure that the total device memory allocated by all threads
+    // does not exceed the maximum memory on the device. If it does, we decrease
+    // num_elements until all threads combined will not over-subscribe device
+    // memory.
+    cl_ulong maxDeviceGlobalMem;
+    result =
+        clGetDeviceInfo(deviceID, CL_DEVICE_GLOBAL_MEM_SIZE,
+                        sizeof(maxDeviceGlobalMem), &maxDeviceGlobalMem, NULL);
+    if (result != CL_SUCCESS) {
+      log_error("clGetDeviceInfo(CL_DEVICE_GLOBAL_MEM_SIZE) failed: %d\n",
+                result);
+      return result;
+    }
+
+    if (maxDeviceGlobalMem > (cl_ulong)SIZE_MAX) {
+      maxDeviceGlobalMem = (cl_ulong)SIZE_MAX;
+    }
+
+    // Let's not take all device memory - reduce by 75%
+    maxDeviceGlobalMem = (maxDeviceGlobalMem * 3) >> 2;
+    // Now reduce num_elements so that the total device memory usage does not
+    // exceed 75% of global device memory.
+    size_t type_size = get_explicit_type_size(type);
+    while ((cl_ulong)threadcount * 4 * num_elements * type_size * vectorSize >
+           maxDeviceGlobalMem) {
+      num_elements >>= 1;
+    }
+
     uint64_t startIndx = (uint64_t)0;
     uint64_t endIndx = (1ULL<<num_runs_shift);
     uint64_t jobcount = (endIndx-startIndx)/num_elements;
-    cl_uint threadcount = GetThreadCount();
-    
+
     if(jobcount==0)
     {
         jobcount = 1;
     }
-    
+
     pThreadInfo = globalThreadDataNew(deviceID, context, queue, num_elements,
                                       vectorSize, style, num_runs_shift,
                                       type, testID, threadcount);
-    
-    
-    pThreadInfo->m_offset = startIndx; 
-    
+
+
+    pThreadInfo->m_offset = startIndx;
+
 #if THREAD_DEBUG
-    log_error("Launching %llx jobs\n", 
+    log_error("Launching %llx jobs\n",
               jobcount);
 #endif
-    
+
     result = ThreadPool_Do(test_integer_ops_do_thread, (cl_uint)jobcount, (void *)pThreadInfo);
-    
+
     if(result != 0)
     {
         // cleanup ??
         log_error("ThreadPool_Do return non-success value %d\n", result);
-        
+
     }
     globalThreadDataDestroy(pThreadInfo);
     return result;
@@ -515,41 +547,41 @@ test_integer_ops_threaded(cl_device_id deviceID, cl_context context, cl_command_
 
 int
 test_integer_ops(cl_device_id deviceID, cl_context context,
-                 cl_command_queue queue, int num_elements, 
+                 cl_command_queue queue, int num_elements,
                  int vectorSize, Style style, int num_runs_shift,
                  ExplicitType type, int testID, MTdata randDataIn,
-                 uint64_t startIndx, uint64_t endIndx, 
+                 uint64_t startIndx, uint64_t endIndx,
                  perThreadData ** ppThreadData)
 {
-    size_t	threads[1];
-    int				err;
-    int				i;
+    size_t    threads[1];
+    int                err;
+    int                i;
     int inputAVecSize, inputBVecSize;
-    
-    
-    
+
+
+
     inputAVecSize = inputBVecSize = vectorSize;
     if( style == kInputAScalar )
         inputAVecSize = 1;
     else if( style == kInputBScalar )
         inputBVecSize = 1;
-    
-    /*    
+
+    /*
      if( inputAVecSize != inputBVecSize )
      log_info("Testing \"%s\" on %s%d (%s-%s inputs) (range %llx - %llx of 0-%llx)\n",
-     test_names[testID], 
-     get_explicit_type_name(type), vectorSize, 
+     test_names[testID],
+     get_explicit_type_name(type), vectorSize,
      ( inputAVecSize == 1 ) ? "scalar" : "vector",
      ( inputBVecSize == 1 ) ? "scalar" : "vector",
      startIndx, endIndx, (1ULL<<num_runs_shift) );
      else
      log_info("Testing \"%s\" on %s%d (range %llx - %llx of 0-%llx)\n",
-     test_names[testID], 
+     test_names[testID],
      get_explicit_type_name(type), vectorSize,
      startIndx, endIndx, (1ULL<<num_runs_shift));
-     */    
-    
-    
+     */
+
+
     // Figure out which sub-test to run, or all of them
     int start_test_ID = 0;
     int end_test_ID = NUM_TESTS;
@@ -561,7 +593,7 @@ test_integer_ops(cl_device_id deviceID, cl_context context,
         log_error("Invalid test ID: %d\n", testID);
         return -1;
     }
-    
+
     if(*ppThreadData == NULL)
     {
         *ppThreadData = perThreadDataNew();
@@ -572,49 +604,49 @@ test_integer_ops(cl_device_id deviceID, cl_context context,
                                 end_test_ID, testID);
         test_error(err, "failed to init per thread data\n");
     }
-    
+
     perThreadData * pThreadData = *ppThreadData;
-    
-    
-    
+
+
+
     threads[0] = (size_t)num_elements;
     int error_count = 0;
     for (i=start_test_ID; i<end_test_ID; i++)
-    { 
-        uint64_t	indx;
-        
-        
+    {
+        uint64_t    indx;
+
+
         if(startIndx >= endIndx)
         {
             startIndx = (uint64_t)0;
             endIndx = (1ULL<<num_runs_shift);
-        }			
+        }
         for (indx=startIndx; indx < endIndx; indx+=num_elements)
         {
-            
+
             switch (type) {
-                case 	kChar:
+                case     kChar:
                     init_char_data(indx, num_elements * vectorSize, (cl_char**)(pThreadData->m_input_ptr), randDataIn);
-                    break;          
-                case 	kUChar:
+                    break;
+                case     kUChar:
                     init_uchar_data(indx, num_elements * vectorSize, (cl_uchar**)(pThreadData->m_input_ptr), randDataIn);
                     break;
-                case 	kShort:
+                case     kShort:
                     init_short_data(indx, num_elements * vectorSize, (cl_short**)(pThreadData->m_input_ptr), randDataIn);
                     break;
-                case 	kUShort:
+                case     kUShort:
                     init_ushort_data(indx, num_elements * vectorSize, (cl_ushort**)(pThreadData->m_input_ptr), randDataIn);
                     break;
-                case 	kInt:
+                case     kInt:
                     init_int_data(indx, num_elements * vectorSize, (cl_int**)(pThreadData->m_input_ptr), randDataIn);
                     break;
-                case 	kUInt:
+                case     kUInt:
                     init_uint_data(indx, num_elements * vectorSize, (cl_uint**)(pThreadData->m_input_ptr), randDataIn);
                     break;
-                case 	kLong:
+                case     kLong:
                     init_long_data(indx, num_elements * vectorSize, (cl_long**)(pThreadData->m_input_ptr), randDataIn);
                     break;
-                case 	kULong:
+                case     kULong:
                     init_ulong_data(indx, num_elements * vectorSize, (cl_ulong**)(pThreadData->m_input_ptr), randDataIn);
                     break;
                 default:
@@ -622,21 +654,21 @@ test_integer_ops(cl_device_id deviceID, cl_context context,
                     log_error("Invalid type.\n");
                     break;
             }
-            
-            
+
+
             err = clEnqueueWriteBuffer(queue, pThreadData->m_streams[0], CL_FALSE, 0, pThreadData->m_type_size*num_elements * inputAVecSize, (void *)pThreadData->m_input_ptr[0], 0, NULL, NULL);
             test_error(err, "clEnqueueWriteBuffer failed");
             err = clEnqueueWriteBuffer( queue, pThreadData->m_streams[1], CL_FALSE, 0, pThreadData->m_type_size*num_elements * inputBVecSize, (void *)pThreadData->m_input_ptr[1], 0, NULL, NULL );
             test_error(err, "clEnqueueWriteBuffer failed");
-            
+
             err = clEnqueueNDRangeKernel( queue, pThreadData->m_kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL );
             test_error(err, "clEnqueueNDRangeKernel failed");
-            
+
             err = clEnqueueReadBuffer( queue, pThreadData->m_streams[2], CL_TRUE, 0, pThreadData->m_type_size*num_elements * vectorSize, (void *)pThreadData->m_output_ptr, 0, NULL, NULL );
             test_error(err, "clEnqueueReadBuffer failed");
-            
+
             // log_info("Performing verification\n");
-            
+
             // If one of the inputs are scalar, we need to extend the input values to vectors
             // to accommodate the verify functions
             if( vectorSize > 1 )
@@ -655,30 +687,30 @@ test_integer_ops(cl_device_id deviceID, cl_context context,
                     }
                 }
             }
-            
+
             switch (type) {
-                case 	kChar:
+                case     kChar:
                     err = verify_char(i, vectorSize, (cl_char*)pThreadData->m_input_ptr[0], (cl_char*)pThreadData->m_input_ptr[1], (cl_char*)pThreadData->m_output_ptr, num_elements * vectorSize);
-                    break;          
-                case 	kUChar:
+                    break;
+                case     kUChar:
                     err = verify_uchar(i, vectorSize, (cl_uchar*)pThreadData->m_input_ptr[0], (cl_uchar*)pThreadData->m_input_ptr[1], (cl_uchar*)pThreadData->m_output_ptr, num_elements * vectorSize);
                     break;
-                case 	kShort:
+                case     kShort:
                     err = verify_short(i, vectorSize, (cl_short*)pThreadData->m_input_ptr[0], (cl_short*)pThreadData->m_input_ptr[1], (cl_short*)pThreadData->m_output_ptr, num_elements * vectorSize);
                     break;
-                case 	kUShort:
+                case     kUShort:
                     err = verify_ushort(i, vectorSize, (cl_ushort*)pThreadData->m_input_ptr[0], (cl_ushort*)pThreadData->m_input_ptr[1], (cl_ushort*)pThreadData->m_output_ptr, num_elements * vectorSize);
                     break;
-                case 	kInt:
+                case     kInt:
                     err = verify_int(i, vectorSize, (cl_int*)pThreadData->m_input_ptr[0], (cl_int*)pThreadData->m_input_ptr[1], (cl_int*)pThreadData->m_output_ptr, num_elements * vectorSize);
                     break;
-                case 	kUInt:
+                case     kUInt:
                     err = verify_uint(i, vectorSize, (cl_uint*)pThreadData->m_input_ptr[0], (cl_uint*)pThreadData->m_input_ptr[1], (cl_uint*)pThreadData->m_output_ptr, num_elements * vectorSize);
                     break;
-                case 	kLong:
+                case     kLong:
                     err = verify_long(i, vectorSize, (cl_long*)pThreadData->m_input_ptr[0], (cl_long*)pThreadData->m_input_ptr[1], (cl_long*)pThreadData->m_output_ptr, num_elements * vectorSize);
                     break;
-                case 	kULong:
+                case     kULong:
                     err = verify_ulong(i, vectorSize, (cl_ulong*)pThreadData->m_input_ptr[0], (cl_ulong*)pThreadData->m_input_ptr[1], (cl_ulong*)pThreadData->m_output_ptr, num_elements * vectorSize);
                     break;
                 default:
@@ -707,7 +739,7 @@ test_integer_ops(cl_device_id deviceID, cl_context context,
                 {
                     log_error( "%02x ", inP[ q ] );
                 }
-                log_error( "\n" );					
+                log_error( "\n" );
                 log_error( "from 36:\n" );
                 inP = (cl_char *)pThreadData->m_input_ptr[0];
                 for( int q = 36; q < 64; q++ )
@@ -732,29 +764,29 @@ test_integer_ops(cl_device_id deviceID, cl_context context,
             }
 #endif
         }
-        
-        /*        
-         
+
+        /*
+
          const char * sizeNames[] = { "", "", "2", "3", "4", "", "", "", "8", "", "", "", "", "", "", "", "16" };
-         
+
          if (err) {
-         log_error("\t\t%s%s test %s failed (range %llx - %llx of 0-%llx)\n", 
-         get_explicit_type_name(type), sizeNames[vectorSize], 
+         log_error("\t\t%s%s test %s failed (range %llx - %llx of 0-%llx)\n",
+         get_explicit_type_name(type), sizeNames[vectorSize],
          test_names[i],
-         startIndx, endIndx, 
+         startIndx, endIndx,
          (1ULL<<num_runs_shift));
          } else {
          log_info("\t\t%s%s test %s passed (range %llx - %llx of 0-%llx)\n",
-         get_explicit_type_name(type), sizeNames[vectorSize], 
+         get_explicit_type_name(type), sizeNames[vectorSize],
          test_names[i],
-         startIndx, endIndx, 
+         startIndx, endIndx,
          (1ULL<<num_runs_shift));
          }
-         */        
+         */
     }
-    
-    
-    
+
+
+
     return error_count;
 }
 
@@ -788,7 +820,7 @@ int run_specific_test(cl_device_id deviceID, cl_context context, cl_command_queu
 int run_multiple_tests(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num, int *tests, int total_tests) {
     int errors = 0;
     int i;
-    for (i=0; i<total_tests; i++) 
+    for (i=0; i<total_tests; i++)
     {
         int localErrors;
         log_info("Testing \"%s\".", test_names[tests[i]]);  fflush( stdout );
@@ -797,10 +829,10 @@ int run_multiple_tests(cl_device_id deviceID, cl_context context, cl_command_que
             log_info( "FAILED.\n" );
         else
             log_info( "passed.\n" );
-        
+
         errors += localErrors;
     }
-    
+
     return errors;
 }
 
@@ -1141,15 +1173,15 @@ int test_quick_uchar(cl_device_id deviceID, cl_context context, cl_command_queue
 }
 
 // Prototype for below
-int test_question_colon_op(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, 
+int test_question_colon_op(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements,
                            int vectorSize, Style style, ExplicitType type );
 
 // Run all the vector sizes for a given test in scalar-vector and vector-scalar modes
-int run_test_sizes(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num, int testID) 
+int run_test_sizes(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num, int testID)
 {
     int sizes[] = { 2, 3, 4, 8, 16, 0 };
     int errors = 0;
-    
+
     for( int i = 0; sizes[ i ] != 0; i++ )
     {
         if( testID == 13 )
@@ -1157,7 +1189,7 @@ int run_test_sizes(cl_device_id deviceID, cl_context context, cl_command_queue q
             errors += test_question_colon_op( deviceID, context, queue, num_elements / sizes[i], sizes[i], kInputAScalar, type );
             errors += test_question_colon_op( deviceID, context, queue, num_elements / sizes[i], sizes[i], kInputBScalar, type );
             errors += test_question_colon_op( deviceID, context, queue, num_elements / sizes[i], sizes[i], kVectorScalarScalar, type );
-            
+
             errors += test_question_colon_op( deviceID, context, queue, num_elements / sizes[i], sizes[i], (Style)(kBothVectors | kInputCAlsoScalar), type );
             errors += test_question_colon_op( deviceID, context, queue, num_elements / sizes[i], sizes[i], (Style)(kInputAScalar | kInputCAlsoScalar), type );
             errors += test_question_colon_op( deviceID, context, queue, num_elements / sizes[i], sizes[i], (Style)(kInputBScalar | kInputCAlsoScalar), type );
@@ -1176,32 +1208,32 @@ int run_vector_scalar_tests( cl_device_id deviceID, cl_context context, cl_comma
 {
     int errors = 0;
     size_t i;
-    
+
     // Shift operators:
     // a) cannot take scalars as first parameter and vectors as second
     // b) have the vector >> scalar case tested by tests 10 and 11
     // so they get skipped entirely
-    
+
     int testsToRun[] = { 0, 1, 2, 3, 4, 5, 6, 7,
         13, 14, 15, 16, 17, 18, 19, 20, 21 };
-    for (i=0; i< sizeof(testsToRun)/sizeof(testsToRun[0]); i++) 
+    for (i=0; i< sizeof(testsToRun)/sizeof(testsToRun[0]); i++)
     {
         errors += run_test_sizes(deviceID, context, queue, 2048, type, num, testsToRun[i]);
     }
     return errors;
 }
 
-int test_vector_scalar_ops(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) 
+int test_vector_scalar_ops(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int errors = 0;
     int numTypes = sizeof( types ) / sizeof( types[ 0 ] );
-    
+
     for( int t = 0; t < numTypes; t++ )
     {
         errors += run_vector_scalar_tests( deviceID, context, queue, num_elements, types[ t ], 1 );
         break;
     }
-    
+
     return errors;
 }
 
@@ -1209,37 +1241,37 @@ void generate_random_bool_data( size_t count, MTdata d, cl_char *outData, size_t
 {
     cl_uint bits = genrand_int32(d);
     cl_uint bitsLeft = 32;
-    
+
     memset( outData, 0, outDataSize * count );
-    
+
     for( size_t i = 0; i < count; i++ )
     {
-        if( 0 == bitsLeft) 
-        { 
-            bits = genrand_int32(d);   
-            bitsLeft = 32; 
+        if( 0 == bitsLeft)
+        {
+            bits = genrand_int32(d);
+            bitsLeft = 32;
         }
-        
-        // Note: we will be setting just any bit non-zero for the type, so we can easily skip past 
+
+        // Note: we will be setting just any bit non-zero for the type, so we can easily skip past
         // and just write bytes (assuming the entire output buffer is already zeroed, which we did)
         *outData = ( bits & 1 ) ? 0xff : 0;
-        
+
         bits >>= 1; bitsLeft -= 1;
-        
+
         outData += outDataSize;
     }
 }
 
-static const char *kernel_question_colon_full = 
+static const char *kernel_question_colon_full =
 "__kernel void test(__global %s%s *srcA, __global %s%s *srcB, __global %s%s *srcC, __global %s%s *dst)\n"
 "{\n"
-"	int  tid = get_global_id(0);\n"
+"    int  tid = get_global_id(0);\n"
 "\n"
-"	%s%s valA = %ssrcA%s"
-"	%s%s valB = %ssrcB%s"
-"	%s%s valC = %ssrcC%s"
-"	%s%s destVal = valC ? valA : valB;\n"
-"	%s"
+"    %s%s valA = %ssrcA%s"
+"    %s%s valB = %ssrcB%s"
+"    %s%s valC = %ssrcC%s"
+"    %s%s destVal = valC ? valA : valB;\n"
+"    %s"
 "}\n";
 
 static const char *kernel_qc_load_plain_prefix = "";
@@ -1251,8 +1283,8 @@ static const char *kernel_qc_load_vec3_suffix = ");\n";
 static const char *kernel_qc_store_plain = "dst[ tid ] = destVal;\n";
 static const char *kernel_qc_store_vec3 = "vstore3( destVal, tid, dst );\n";
 
-int test_question_colon_op(cl_device_id deviceID, cl_context context, 
-                           cl_command_queue queue, int num_elements, 
+int test_question_colon_op(cl_device_id deviceID, cl_context context,
+                           cl_command_queue queue, int num_elements,
                            int vectorSize, Style style, ExplicitType type )
 {
     cl_mem              streams[4];
@@ -1266,7 +1298,7 @@ int test_question_colon_op(cl_device_id deviceID, cl_context context,
     // Identical to sizeNames but with a blank for 3, since we use vload/store there
     const char * paramSizeNames[] = { "", "", "2", "", "4", "", "", "", "8", "", "", "", "", "", "", "", "16" };
     MTdata s_randStates;
-    
+
     inputAVecSize = inputBVecSize = inputCVecSize = vectorSize;
     if( style & kInputCAlsoScalar )
     {
@@ -1279,29 +1311,29 @@ int test_question_colon_op(cl_device_id deviceID, cl_context context,
         inputBVecSize = 1;
     else if( style == kVectorScalarScalar )
         inputAVecSize = inputBVecSize = 1;
-    
-    log_info("Testing \"?:\" on %s%d (%s?%s:%s inputs)\n", 
+
+    log_info("Testing \"?:\" on %s%d (%s?%s:%s inputs)\n",
              get_explicit_type_name(type), vectorSize, ( inputCVecSize == 1 ) ? "scalar" : "vector",
              ( inputAVecSize == 1 ) ? "scalar" : "vector",
              ( inputBVecSize == 1 ) ? "scalar" : "vector" );
-    
-    
+
+
     const char *type_name = get_explicit_type_name(type);
     size_t type_size = get_explicit_type_size(type);
-    
+
     // Create and initialize I/O buffers
-    
+
     input_ptr[0] = (cl_int*)malloc(type_size * num_elements * vectorSize);
     input_ptr[1] = (cl_int*)malloc(type_size * num_elements * vectorSize);
     input_ptr[2] = (cl_int*)malloc(type_size * num_elements * vectorSize);
     output_ptr = (cl_int*)malloc(type_size * num_elements * vectorSize);
-    
+
     s_randStates = init_genrand( gRandomSeed );
-    
+
     generate_random_data( type, num_elements * inputAVecSize, s_randStates, input_ptr[ 0 ] );
     generate_random_data( type, num_elements * inputBVecSize, s_randStates, input_ptr[ 1 ] );
     generate_random_bool_data( num_elements * inputCVecSize, s_randStates, (cl_char *)input_ptr[ 2 ], type_size );
-    
+
     streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR), type_size * num_elements * inputAVecSize, input_ptr[0], &err);
     test_error(err, "clCreateBuffer failed");
     streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR), type_size * num_elements * inputBVecSize, input_ptr[1], &err );
@@ -1310,56 +1342,56 @@ int test_question_colon_op(cl_device_id deviceID, cl_context context,
     test_error(err, "clCreateBuffer failed");
     streams[3] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_WRITE_ONLY), type_size * num_elements * vectorSize, NULL, &err );
     test_error(err, "clCreateBuffer failed");
-    
+
     const char *vectorString = sizeNames[ vectorSize ];
     const char *inputAVectorString = sizeNames[ inputAVecSize ];
     const char *inputBVectorString = sizeNames[ inputBVecSize ];
     const char *inputCVectorString = sizeNames[ inputCVecSize ];
-    
+
     char programString[4096];
     const char *ptr;
-    
-    sprintf( programString, kernel_question_colon_full, type_name, paramSizeNames[ inputAVecSize ], 
-            type_name, paramSizeNames[ inputBVecSize ], 
-            type_name, paramSizeNames[ inputCVecSize ], 
-	     type_name, paramSizeNames[ vectorSize ], 
+
+    sprintf( programString, kernel_question_colon_full, type_name, paramSizeNames[ inputAVecSize ],
+            type_name, paramSizeNames[ inputBVecSize ],
+            type_name, paramSizeNames[ inputCVecSize ],
+         type_name, paramSizeNames[ vectorSize ],
             // Loads
-            type_name, inputAVectorString, ( inputAVecSize == 3 ) ? kernel_qc_load_vec3_prefix : kernel_qc_load_plain_prefix, ( inputAVecSize == 3 ) ? kernel_qc_load_vec3_suffix : kernel_qc_load_plain_suffix, 
-            type_name, inputBVectorString, ( inputBVecSize == 3 ) ? kernel_qc_load_vec3_prefix : kernel_qc_load_plain_prefix, ( inputBVecSize == 3 ) ? kernel_qc_load_vec3_suffix : kernel_qc_load_plain_suffix, 
-            type_name, inputCVectorString, ( inputCVecSize == 3 ) ? kernel_qc_load_vec3_prefix : kernel_qc_load_plain_prefix, ( inputCVecSize == 3 ) ? kernel_qc_load_vec3_suffix : kernel_qc_load_plain_suffix, 
+            type_name, inputAVectorString, ( inputAVecSize == 3 ) ? kernel_qc_load_vec3_prefix : kernel_qc_load_plain_prefix, ( inputAVecSize == 3 ) ? kernel_qc_load_vec3_suffix : kernel_qc_load_plain_suffix,
+            type_name, inputBVectorString, ( inputBVecSize == 3 ) ? kernel_qc_load_vec3_prefix : kernel_qc_load_plain_prefix, ( inputBVecSize == 3 ) ? kernel_qc_load_vec3_suffix : kernel_qc_load_plain_suffix,
+            type_name, inputCVectorString, ( inputCVecSize == 3 ) ? kernel_qc_load_vec3_prefix : kernel_qc_load_plain_prefix, ( inputCVecSize == 3 ) ? kernel_qc_load_vec3_suffix : kernel_qc_load_plain_suffix,
             // Dest type
-            type_name, vectorString, 
+            type_name, vectorString,
             // Store
             ( vectorSize == 3 ) ? kernel_qc_store_vec3 : kernel_qc_store_plain );
-    
+
     ptr = programString;
     err = create_single_kernel_helper( context, &program, &kernel, 1, &ptr, "test" );
     test_error( err, "Unable to create test kernel" );
-    
+
     err = clSetKernelArg( kernel, 0, sizeof streams[0], &streams[0] );
     err |= clSetKernelArg( kernel, 1, sizeof streams[1], &streams[1] );
     err |= clSetKernelArg( kernel, 2, sizeof streams[2], &streams[2] );
     err |= clSetKernelArg( kernel, 3, sizeof streams[3], &streams[3] );
-    test_error(err, "clSetKernelArgs failed");    
-    
+    test_error(err, "clSetKernelArgs failed");
+
     // Run
     threads[0] = (size_t)num_elements;
-    
+
     err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
     test_error(err, "clEnqueueNDRangeKernel failed");
-    
+
     // Read and verify results
     err = clEnqueueReadBuffer( queue, streams[3], CL_TRUE, 0, type_size*num_elements * vectorSize, (void *)output_ptr, 0, NULL, NULL );
     test_error(err, "clEnqueueReadBuffer failed");
-    
+
     // log_info("Performing verification\n");
     int error_count = 0;
-    
+
     char *inputAPtr = (char *)input_ptr[ 0 ];
     char *inputBPtr = (char *)input_ptr[ 1 ];
     cl_char *inputCPtr = (cl_char *)input_ptr[ 2 ];
     char *actualPtr = (char *)output_ptr;
-    
+
     for( int i = 0; i < num_elements; i++ )
     {
         for( int j = 0; j < vectorSize; j++ )
@@ -1373,24 +1405,24 @@ int test_question_colon_op(cl_device_id deviceID, cl_context context,
                 print_type_to_string( type, inputBPtr, inputBStr );
                 print_type_to_string( type, expectedPtr, expectedStr );
                 print_type_to_string( type, actualPtr, actualStr );
-                log_error( "cl_%s verification failed at element %d:%d (expected %s, got %s, inputs: %s, %s, %s)\n", 
+                log_error( "cl_%s verification failed at element %d:%d (expected %s, got %s, inputs: %s, %s, %s)\n",
                           type_name, i, j, expectedStr, actualStr, inputAStr, inputBStr, ( *inputCPtr ) ? "true" : "false" );
 #endif
                 error_count++;
             }
             // Advance for each element member. Note if any of the vec sizes are 1, they don't advance here
-            inputAPtr += ( inputAVecSize == 1 ) ? 0 : type_size;	 
-            inputBPtr += ( inputBVecSize == 1 ) ? 0 : type_size;	 
+            inputAPtr += ( inputAVecSize == 1 ) ? 0 : type_size;
+            inputBPtr += ( inputBVecSize == 1 ) ? 0 : type_size;
             inputCPtr += ( inputCVecSize == 1 ) ? 0 : type_size;
             actualPtr += ( vectorSize == 1 ) ? 0 : type_size;
         }
         // Reverse for the member advance. If the vec sizes are 1, we need to advance, but otherwise they're already correct
-        inputAPtr += ( inputAVecSize == 1 ) ? type_size : 0;	 
-        inputBPtr += ( inputBVecSize == 1 ) ? type_size : 0;	 
+        inputAPtr += ( inputAVecSize == 1 ) ? type_size : 0;
+        inputBPtr += ( inputBVecSize == 1 ) ? type_size : 0;
         inputCPtr += ( inputCVecSize == 1 ) ? type_size : 0;
         actualPtr += ( vectorSize == 1 ) ? type_size : 0;
     }
-    
+
     // cleanup
     clReleaseMemObject(streams[0]);
     clReleaseMemObject(streams[1]);
@@ -1403,6 +1435,6 @@ int test_question_colon_op(cl_device_id deviceID, cl_context context,
     free(input_ptr[2]);
     free(output_ptr);
     free_mtdata( s_randStates );
-    
+
     return error_count;
 }

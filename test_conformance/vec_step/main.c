@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,7 +33,7 @@
 
 
 
-basefn	basefn_list[] = {
+basefn    basefn_list[] = {
     test_step_type,
     test_step_var,
     test_step_typedef_type,
@@ -50,11 +50,11 @@ const char    *basefn_names[] = {
 
 ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0]) - 1) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
 
-int	num_fns = sizeof(basefn_names) / sizeof(char *);
+int    num_fns = sizeof(basefn_names) / sizeof(char *);
 
 int main(int argc, const char *argv[])
 {
-	return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, false, 0 );
+    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, false, 0 );
 }
 
 

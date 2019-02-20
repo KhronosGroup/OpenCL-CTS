@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,7 +28,7 @@ int TestFunc_mad(const Func *f, MTdata);
 int TestFunc_mad_Double(const Func *f, MTdata);
 
 #if defined( __cplusplus)
-	extern "C" 
+    extern "C"
 #endif
 const vtbl _mad_tbl = { "ternary", TestFunc_mad, TestFunc_mad_Double };
 
@@ -37,7 +37,7 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl
 
 static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_program *p )
 {
-    const char *c[] = {     
+    const char *c[] = {
                             "__kernel void math_kernel", sizeNames[vectorSize], "( __global float", sizeNames[vectorSize], "* out, __global float", sizeNames[vectorSize], "* in1, __global float", sizeNames[vectorSize], "* in2,  __global float", sizeNames[vectorSize], "* in3 )\n"
                             "{\n"
                             "   int i = get_global_id(0);\n"
@@ -88,31 +88,31 @@ static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_progr
 
     const char **kern = c;
     size_t kernSize = sizeof(c)/sizeof(c[0]);
-    
+
     if( sizeValues[vectorSize] == 3 )
     {
         kern = c3;
         kernSize = sizeof(c3)/sizeof(c3[0]);
     }
-        
+
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
-   
-    return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);     
+
+    return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);
 }
 
 static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl_program *p )
 {
-    const char *c[] = {     
+    const char *c[] = {
                             "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-			    "__kernel void math_kernel", sizeNames[vectorSize], "( __global double", sizeNames[vectorSize], "* out, __global double", sizeNames[vectorSize], "* in1, __global double", sizeNames[vectorSize], "* in2,  __global double", sizeNames[vectorSize], "* in3 )\n"
+                "__kernel void math_kernel", sizeNames[vectorSize], "( __global double", sizeNames[vectorSize], "* out, __global double", sizeNames[vectorSize], "* in1, __global double", sizeNames[vectorSize], "* in2,  __global double", sizeNames[vectorSize], "* in3 )\n"
                             "{\n"
                             "   int i = get_global_id(0);\n"
                             "   out[i] = ", name, "( in1[i], in2[i], in3[i] );\n"
                             "}\n"
                         };
     const char *c3[] = {    "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-	                        "__kernel void math_kernel", sizeNames[vectorSize], "( __global double* out, __global double* in, __global double* in2, __global double* in3)\n"
+                            "__kernel void math_kernel", sizeNames[vectorSize], "( __global double* out, __global double* in, __global double* in2, __global double* in3)\n"
                             "{\n"
                             "   size_t i = get_global_id(0);\n"
                             "   if( i + 1 < get_global_size(0) )\n"
@@ -156,17 +156,17 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl
 
     const char **kern = c;
     size_t kernSize = sizeof(c)/sizeof(c[0]);
-    
+
     if( sizeValues[vectorSize] == 3 )
     {
         kern = c3;
         kernSize = sizeof(c3)/sizeof(c3[0]);
     }
-        
+
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
-   
-    return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);  
+
+    return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);
 }
 
 typedef struct BuildKernelInfo
@@ -247,7 +247,7 @@ int TestFunc_mad(const Func *f, MTdata d)
             vlog_error( "\n*** Error %d in clEnqueueWriteBuffer3 ***\n", error );
             return error;
         }
-    
+
         // write garbage into output arrays
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -259,7 +259,7 @@ int TestFunc_mad(const Func *f, MTdata d)
                 goto exit;
             }
         }
-        
+
         // Run the kernels
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -280,7 +280,7 @@ int TestFunc_mad(const Func *f, MTdata d)
         // Get that moving
         if( (error = clFlush(gQueue) ))
             vlog( "clFlush failed\n" );
-        
+
         //Calculate the correctly rounded reference result
         float *r = (float *)gOut_Ref;
         float *s = (float *)gIn;
@@ -288,7 +288,7 @@ int TestFunc_mad(const Func *f, MTdata d)
         float *s3 = (float *)gIn3;
         for( j = 0; j < BUFFER_SIZE / sizeof( float ); j++ )
             r[j] = (float) f->func.f_fff( s[j], s2[j], s3[j] );
-                        
+
         // Read the data back
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -301,7 +301,7 @@ int TestFunc_mad(const Func *f, MTdata d)
 
         if( gSkipCorrectnessTesting )
             break;
-        
+
         //Verify data  -- Commented out on purpose. no verification possible. MAD is a random number generator.
 /*
         uint32_t *t = gOut_Ref;
@@ -310,7 +310,7 @@ int TestFunc_mad(const Func *f, MTdata d)
             for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
             {
                 uint32_t *q = gOut[k];
-                
+
                 // If we aren't getting the correctly rounded result
                 if( t[j] != q[j] )
                 {
@@ -328,7 +328,7 @@ int TestFunc_mad(const Func *f, MTdata d)
                             if( ! fail )
                                 err = 0.0f;
                         }
-                        
+
                         // retry per section 6.5.3.3
                         if( fail && IsFloatSubnormal( s[j] ) )
                         { // look at me,
@@ -340,8 +340,8 @@ int TestFunc_mad(const Func *f, MTdata d)
                             if( fabsf( err2 ) < fabsf(err ) )
                                 err = err2;
                             if( fabsf( err3 ) < fabsf(err ) )
-                                err = err3;                            
-                        
+                                err = err3;
+
                             // retry per section 6.5.3.4
                             if( IsFloatResultSubnormal(correct2, f->float_ulps ) || IsFloatResultSubnormal(correct3, f->float_ulps ) )
                             { // look at me now,
@@ -464,7 +464,7 @@ int TestFunc_mad(const Func *f, MTdata d)
                             }
                         }
                         else if( fail && IsFloatSubnormal( s2[j] ) )
-                        { 
+                        {
                             double correct2 = f->func.f_fff( s[j], 0.0, s3[j] );
                             double correct3 = f->func.f_fff( s[j], -0.0, s3[j] );
                             float err2 = Ulp_Error( test, correct2  );
@@ -473,11 +473,11 @@ int TestFunc_mad(const Func *f, MTdata d)
                             if( fabsf( err2 ) < fabsf(err ) )
                                 err = err2;
                             if( fabsf( err3 ) < fabsf(err ) )
-                                err = err3;                            
-                        
+                                err = err3;
+
                             // retry per section 6.5.3.4
                             if( IsFloatResultSubnormal(correct2, f->float_ulps )  || IsFloatResultSubnormal(correct3, f->float_ulps ) )
-                            { 
+                            {
                                 fail = fail && ( test != 0.0f);
                                 if( ! fail )
                                     err = 0.0f;
@@ -485,7 +485,7 @@ int TestFunc_mad(const Func *f, MTdata d)
 
                             //try with second two args as zero
                             if( IsFloatSubnormal( s3[j] ) )
-                            { 
+                            {
                                 correct2 = f->func.f_fff( s[j], 0.0, 0.0 );
                                 correct3 = f->func.f_fff( s[j], -0.0, 0.0 );
                                 double correct4 = f->func.f_fff( s[j], 0.0, -0.0 );
@@ -516,7 +516,7 @@ int TestFunc_mad(const Func *f, MTdata d)
                             }
                         }
                         else if( fail && IsFloatSubnormal(s3[j]) )
-                        { 
+                        {
                             double correct2 = f->func.f_fff( s[j], s2[j], 0.0 );
                             double correct3 = f->func.f_fff( s[j], s2[j], -0.0 );
                             float err2 = Ulp_Error( test, correct2  );
@@ -525,11 +525,11 @@ int TestFunc_mad(const Func *f, MTdata d)
                             if( fabsf( err2 ) < fabsf(err ) )
                                 err = err2;
                             if( fabsf( err3 ) < fabsf(err ) )
-                                err = err3;                            
-                        
+                                err = err3;
+
                             // retry per section 6.5.3.4
                             if( IsFloatResultSubnormal(correct2, f->float_ulps ) || IsFloatResultSubnormal(correct3, f->float_ulps ) )
-                            { 
+                            {
                                 fail = fail && ( test != 0.0f);
                                 if( ! fail )
                                     err = 0.0f;
@@ -540,7 +540,7 @@ int TestFunc_mad(const Func *f, MTdata d)
                     if( fabsf(err ) > maxError )
                     {
                         maxError = fabsf(err);
-                        maxErrorVal = s[j]; 
+                        maxErrorVal = s[j];
                         maxErrorVal2 = s2[j];
                         maxErrorVal3 = s3[j];
                     }
@@ -561,7 +561,7 @@ int TestFunc_mad(const Func *f, MTdata d)
             fflush(stdout);
         }
     }
-    
+
     if( ! gSkipCorrectnessTesting )
     {
         if( gWimpyMode )
@@ -626,7 +626,7 @@ int TestFunc_mad(const Func *f, MTdata d)
                     vlog_error( "Error %d at clFinish\n", error );
                     goto exit;
                 }
-            
+
                 uint64_t endTime = GetTime();
                 double time = SubtractTime( endTime, startTime );
                 sum += time;
@@ -640,13 +640,13 @@ int TestFunc_mad(const Func *f, MTdata d)
             vlog_perf( clocksPerOp, LOWER_IS_BETTER, "clocks / element", "%sf%s", f->name, sizeNames[j] );
         }
     }
-    
+
     if( ! gSkipCorrectnessTesting )
         vlog( "\t%8.2f @ {%a, %a, %a}", maxError, maxErrorVal, maxErrorVal2, maxErrorVal3 );
     vlog( "\n" );
 
 exit:
-    // Release 
+    // Release
     for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
     {
         clReleaseKernel(kernels[k]);
@@ -675,8 +675,8 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
 
     // Init the kernels
     BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs, f->nameInCode };
-    if( (error = ThreadPool_Do( BuildKernel_DoubleFn, 
-                                gMaxVectorSizeIndex - gMinVectorSizeIndex, 
+    if( (error = ThreadPool_Do( BuildKernel_DoubleFn,
+                                gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                 &build_info ) ))
     {
         return error;
@@ -714,7 +714,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
             vlog_error( "\n*** Error %d in clEnqueueWriteBuffer3 ***\n", error );
             return error;
         }
-    
+
         // write garbage into output arrays
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -726,7 +726,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                 goto exit;
             }
         }
-        
+
         // Run the kernels
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -747,7 +747,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
         // Get that moving
         if( (error = clFlush(gQueue) ))
             vlog( "clFlush failed\n" );
-        
+
         //Calculate the correctly rounded reference result
         double *r = (double *)gOut_Ref;
         double *s = (double *)gIn;
@@ -755,7 +755,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
         double *s3 = (double *)gIn3;
         for( j = 0; j < BUFFER_SIZE / sizeof( double ); j++ )
             r[j] = (double) f->dfunc.f_fff( s[j], s2[j], s3[j] );
-                        
+
         // Read the data back
         for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
         {
@@ -768,7 +768,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
 
         if( gSkipCorrectnessTesting )
             break;
-        
+
         //Verify data  -- Commented out on purpose. no verification possible. MAD is a random number generator.
 /*
         uint64_t *t = gOut_Ref;
@@ -777,7 +777,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
             for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
             {
                 uint64_t *q = gOut[k];
-                
+
                 // If we aren't getting the correctly rounded result
                 if( t[j] != q[j] )
                 {
@@ -795,7 +795,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                             if( ! fail )
                                 err = 0.0f;
                         }
-                        
+
                         // retry per section 6.5.3.3
                         if( fail && IsDoubleSubnormal( s[j] ) )
                         { // look at me,
@@ -807,8 +807,8 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                             if( fabsf( err2 ) < fabsf(err ) )
                                 err = err2;
                             if( fabsf( err3 ) < fabsf(err ) )
-                                err = err3;                            
-                        
+                                err = err3;
+
                             // retry per section 6.5.3.4
                             if( IsDoubleResultSubnormal( correct2, f->double_ulps ) || IsDoubleResultSubnormal( correct3, f->double_ulps ) )
                             { // look at me now,
@@ -931,7 +931,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                             }
                         }
                         else if( fail && IsDoubleSubnormal( s2[j] ) )
-                        { 
+                        {
                             long double correct2 = f->dfunc.f_fff( s[j], 0.0, s3[j] );
                             long double correct3 = f->dfunc.f_fff( s[j], -0.0, s3[j] );
                             float err2 = Ulp_Error_Double( test, correct2  );
@@ -940,11 +940,11 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                             if( fabsf( err2 ) < fabsf(err ) )
                                 err = err2;
                             if( fabsf( err3 ) < fabsf(err ) )
-                                err = err3;                            
-                        
+                                err = err3;
+
                             // retry per section 6.5.3.4
                             if( IsDoubleResultSubnormal( correct2, f->double_ulps )  || IsDoubleResultSubnormal( correct3, f->double_ulps ) )
-                            { 
+                            {
                                 fail = fail && ( test != 0.0f);
                                 if( ! fail )
                                     err = 0.0f;
@@ -952,7 +952,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
 
                             //try with second two args as zero
                             if( IsDoubleSubnormal( s3[j] ) )
-                            { 
+                            {
                                 correct2 = f->dfunc.f_fff( s[j], 0.0, 0.0 );
                                 correct3 = f->dfunc.f_fff( s[j], -0.0, 0.0 );
                                 long double correct4 = f->dfunc.f_fff( s[j], 0.0, -0.0 );
@@ -983,7 +983,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                             }
                         }
                         else if( fail && IsDoubleSubnormal(s3[j]) )
-                        { 
+                        {
                             long double correct2 = f->dfunc.f_fff( s[j], s2[j], 0.0 );
                             long double correct3 = f->dfunc.f_fff( s[j], s2[j], -0.0 );
                             float err2 = Ulp_Error_Double( test, correct2  );
@@ -992,11 +992,11 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                             if( fabsf( err2 ) < fabsf(err ) )
                                 err = err2;
                             if( fabsf( err3 ) < fabsf(err ) )
-                                err = err3;                            
-                        
+                                err = err3;
+
                             // retry per section 6.5.3.4
                             if( IsDoubleResultSubnormal( correct2, f->double_ulps ) || IsDoubleResultSubnormal( correct3, f->double_ulps ) )
-                            { 
+                            {
                                 fail = fail && ( test != 0.0f);
                                 if( ! fail )
                                     err = 0.0f;
@@ -1007,7 +1007,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                     if( fabsf(err ) > maxError )
                     {
                         maxError = fabsf(err);
-                        maxErrorVal = s[j]; 
+                        maxErrorVal = s[j];
                         maxErrorVal2 = s2[j];
                         maxErrorVal3 = s3[j];
                     }
@@ -1028,7 +1028,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
             fflush(stdout);
         }
     }
-    
+
     if( ! gSkipCorrectnessTesting )
     {
         if( gWimpyMode )
@@ -1093,7 +1093,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
                     vlog_error( "Error %d at clFinish\n", error );
                     goto exit;
                 }
-            
+
                 uint64_t endTime = GetTime();
                 double time = SubtractTime( endTime, startTime );
                 sum += time;
@@ -1109,13 +1109,13 @@ int TestFunc_mad_Double(const Func *f, MTdata d)
         for( ; j < gMaxVectorSizeIndex; j++ )
             vlog( "\t     -- " );
     }
-    
+
     if( ! gSkipCorrectnessTesting )
         vlog( "\t%8.2f @ {%a, %a, %a}", maxError, maxErrorVal, maxErrorVal2, maxErrorVal3 );
     vlog( "\n" );
 
 exit:
-    // Release 
+    // Release
     for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
     {
         clReleaseKernel(kernels[k]);

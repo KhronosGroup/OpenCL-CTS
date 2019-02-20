@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,7 +30,7 @@ clEnqueueReleaseD3D11ObjectsKHR_fn clEnqueueReleaseD3D11ObjectsKHR = NULL;
 #define INITPFN(x) \
     x = (x ## _fn)clGetExtensionFunctionAddressForPlatform(platform, #x); NonTestRequire(x, "Failed to get function pointer for %s", #x);
 
-void 
+void
 HarnessD3D11_ExtensionCheck()
 {
     bool extensionPresent = false;
@@ -40,9 +40,9 @@ HarnessD3D11_ExtensionCheck()
 
     HarnessD3D11_TestBegin("Extension query");
 
-    result = clGetPlatformIDs(1, &platform, NULL); 
+    result = clGetPlatformIDs(1, &platform, NULL);
         NonTestRequire(result == CL_SUCCESS, "Failed to get any platforms.");
-    result = clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, sizeof(extensions), extensions, NULL); 
+    result = clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, sizeof(extensions), extensions, NULL);
         NonTestRequire(result == CL_SUCCESS, "Failed to list extensions.");
     extensionPresent = strstr(extensions, "cl_khr_d3d11_sharing") ? true : false;
 
@@ -57,7 +57,7 @@ HarnessD3D11_ExtensionCheck()
     {
         TestRequire(extensionPresent, "Extension should be exported on Windows >= 6");
     }
-    
+
 Cleanup:
     HarnessD3D11_TestEnd();
 
@@ -112,7 +112,7 @@ static LRESULT WINAPI HarnessD3D11_Proc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 static void HarnessD3D11_InteractiveLoop()
 {
     MSG msg;
-    while(PeekMessage(&msg,HarnessD3D11_hWnd,0,0,PM_REMOVE)) 
+    while(PeekMessage(&msg,HarnessD3D11_hWnd,0,0,PM_REMOVE))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
@@ -120,8 +120,8 @@ static void HarnessD3D11_InteractiveLoop()
 }
 
 cl_int HarnessD3D11_CreateDevice(
-    IDXGIAdapter* pAdapter, 
-    ID3D11Device **ppDevice, 
+    IDXGIAdapter* pAdapter,
+    ID3D11Device **ppDevice,
     ID3D11DeviceContext** ppDC)
 {
     HRESULT hr = S_OK;
@@ -130,30 +130,30 @@ cl_int HarnessD3D11_CreateDevice(
     *ppDevice = NULL;
 
     // create window
-    static WNDCLASSEX wc = 
-    { 
-        sizeof(WNDCLASSEX), 
-        CS_CLASSDC, 
-        HarnessD3D11_Proc, 
-        0L, 
-        0L, 
-        GetModuleHandle(NULL), 
-        NULL, 
-        NULL, 
-        NULL, 
-        NULL, 
-        "cl_khr_d3d11_sharing_conformance", 
-        NULL 
+    static WNDCLASSEX wc =
+    {
+        sizeof(WNDCLASSEX),
+        CS_CLASSDC,
+        HarnessD3D11_Proc,
+        0L,
+        0L,
+        GetModuleHandle(NULL),
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        "cl_khr_d3d11_sharing_conformance",
+        NULL
     };
     RegisterClassEx(&wc);
     HarnessD3D11_hWnd = CreateWindow(
-        "cl_khr_d3d11_sharing_conformance", 
-        "cl_khr_d3d11_sharing_conformance", 
-        WS_OVERLAPPEDWINDOW, 
-        0, 0, 256, 256, 
-        NULL, 
-        NULL, 
-        wc.hInstance, 
+        "cl_khr_d3d11_sharing_conformance",
+        "cl_khr_d3d11_sharing_conformance",
+        WS_OVERLAPPEDWINDOW,
+        0, 0, 256, 256,
+        NULL,
+        NULL,
+        wc.hInstance,
         NULL);
     NonTestRequire(0 != HarnessD3D11_hWnd, "Failed to create window");
 
@@ -181,16 +181,16 @@ cl_int HarnessD3D11_CreateDevice(
     sd.Windowed = TRUE;
     D3D_FEATURE_LEVEL requestedFeatureLevels[] = {D3D_FEATURE_LEVEL_10_0};
     D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-    hr = D3D11CreateDeviceAndSwapChain( 
-        NULL, // pAdapter, 
+    hr = D3D11CreateDeviceAndSwapChain(
+        NULL, // pAdapter,
         D3D_DRIVER_TYPE_HARDWARE,
-        NULL, 
+        NULL,
         0,
         requestedFeatureLevels,
         1,
-        D3D11_SDK_VERSION, 
-        &sd, 
-        &HarnessD3D11_pSwapChain, 
+        D3D11_SDK_VERSION,
+        &sd,
+        &HarnessD3D11_pSwapChain,
         &HarnessD3D11_pDevice,
         &featureLevel,
         &HarnessD3D11_pDC);
@@ -209,8 +209,8 @@ void HarnessD3D11_DestroyDevice()
     HarnessD3D11_pDevice->Release();
     HarnessD3D11_pDC->Release();
 
-    if (HarnessD3D11_hWnd) DestroyWindow(HarnessD3D11_hWnd); 
-    HarnessD3D11_hWnd = 0;    
+    if (HarnessD3D11_hWnd) DestroyWindow(HarnessD3D11_hWnd);
+    HarnessD3D11_hWnd = 0;
 }
 
 /*
@@ -220,7 +220,7 @@ void HarnessD3D11_DestroyDevice()
  */
 
 #define ADD_TEXTURE_FORMAT(x,y,z,a,b,g) { x, y, z, a*b/8, g, #x, #y, #z, }
-TextureFormat formats[] = 
+TextureFormat formats[] =
 {
     ADD_TEXTURE_FORMAT( DXGI_FORMAT_R32G32B32A32_FLOAT , CL_RGBA , CL_FLOAT           , 32, 4, TextureFormat::GENERIC_FLOAT ),
     ADD_TEXTURE_FORMAT( DXGI_FORMAT_R32G32B32A32_UINT  , CL_RGBA , CL_UNSIGNED_INT32  , 32, 4, TextureFormat::GENERIC_UINT  ),
@@ -314,7 +314,7 @@ void HarnessD3D11_TestEnd()
     HarnessD3D11_testStats.testCount += 1;
     HarnessD3D11_testStats.passCount += HarnessD3D11_testStats.currentTestPass;
 
-    TestPrint("%s\n", 
+    TestPrint("%s\n",
         HarnessD3D11_testStats.currentTestPass ? "PASSED" : "FAILED");
 }
 
@@ -340,15 +340,15 @@ void HarnessD3D11_TestStats()
  */
 
 cl_int HarnessD3D11_CreateKernelFromSource(
-    cl_kernel *outKernel, 
+    cl_kernel *outKernel,
     cl_device_id device,
     cl_context context,
-    const char *source, 
+    const char *source,
     const char *entrypoint)
 {
     cl_int status;
     cl_kernel kernel = NULL;
-    
+
     // compile program
     cl_program program = NULL;
     {
@@ -366,13 +366,13 @@ cl_int HarnessD3D11_CreateKernelFromSource(
             "clCreateProgramWithSource failed");
     }
     status = clBuildProgram(
-        program, 
-        0, 
-        NULL, 
-        NULL, 
-        NULL, 
+        program,
+        0,
+        NULL,
+        NULL,
+        NULL,
         NULL);
-    if (CL_SUCCESS != status) 
+    if (CL_SUCCESS != status)
     {
         char log[2048] = {0};
         status = clGetProgramBuildInfo(
@@ -389,8 +389,8 @@ cl_int HarnessD3D11_CreateKernelFromSource(
     }
 
     kernel = clCreateKernel(
-        program, 
-        entrypoint, 
+        program,
+        entrypoint,
         &status);
     TestRequire(
         CL_SUCCESS == status,

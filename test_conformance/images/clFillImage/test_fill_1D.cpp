@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,7 +26,7 @@ extern cl_command_queue   queue;
 extern cl_context         context;
 
 // Defined in test_fill_2D_3D.cpp
-extern int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo, 
+extern int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
                                     const size_t origin[], const size_t region[], ExplicitType outputType, MTdata d );
 
 
@@ -41,7 +41,7 @@ int test_fill_image_size_1D( cl_device_id device, image_descriptor *imageInfo, E
     region[ 1 ] = 1;
     region[ 2 ] = 1;
 
-    retCode = test_fill_image_generic( device, imageInfo, origin, region, outputType, d ); 
+    retCode = test_fill_image_generic( device, imageInfo, origin, region, outputType, d );
     if ( retCode < 0 )
         return retCode;
     else
@@ -57,7 +57,7 @@ int test_fill_image_size_1D( cl_device_id device, image_descriptor *imageInfo, E
         origin[ 0 ] = ( imageInfo->width > region[ 0 ] ) ? (size_t)random_in_range( 0, (int)( imageInfo->width - region[ 0 ] - 1 ), d ) : 0;
 
         // Go for it!
-        retCode = test_fill_image_generic( device, imageInfo, origin, region, outputType, d ); 
+        retCode = test_fill_image_generic( device, imageInfo, origin, region, outputType, d );
         if ( retCode < 0 )
             return retCode;
         else
@@ -72,9 +72,10 @@ int test_fill_image_set_1D( cl_device_id device, cl_image_format *format, Explic
 {
     size_t maxWidth;
     cl_ulong maxAllocSize, memSize;
-    image_descriptor imageInfo;
-    RandomSeed seed(gRandomSeed); 
-    size_t rowPadding = gEnablePitch ? 48 : 0;
+    image_descriptor imageInfo = {0};
+    RandomSeed seed(gRandomSeed);
+    size_t rowPadding_default = 48;
+    size_t rowPadding = gEnablePitch ? rowPadding_default : 0;
     size_t pixelSize;
 
     memset(&imageInfo, 0x0, sizeof(image_descriptor));
@@ -87,24 +88,29 @@ int test_fill_image_set_1D( cl_device_id device, cl_image_format *format, Explic
     error |= clGetDeviceInfo( device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof( memSize ), &memSize, NULL );
     test_error( error, "Unable to get max image 2D size from device" );
 
+    if (memSize > (cl_ulong)SIZE_MAX) {
+        memSize = (cl_ulong)SIZE_MAX;
+    }
+
     if ( gTestSmallImages )
     {
         for ( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
         {
             imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-          
+
             if (gEnablePitch)
             {
+              rowPadding = rowPadding_default;
               do {
                 rowPadding++;
                 imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
               } while ((imageInfo.rowPitch % pixelSize) != 0);
             }
-          
+
             if ( gDebugTrace )
                 log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.height );
 
-            int ret = test_fill_image_size_1D( device, &imageInfo, outputType, seed );  
+            int ret = test_fill_image_size_1D( device, &imageInfo, outputType, seed );
             if ( ret )
                 return -1;
         }
@@ -121,15 +127,16 @@ int test_fill_image_set_1D( cl_device_id device, cl_image_format *format, Explic
         {
             imageInfo.width = sizes[ idx ][ 0 ];
             imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-          
+
             if (gEnablePitch)
             {
+              rowPadding = rowPadding_default;
               do {
                 rowPadding++;
                 imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
               } while ((imageInfo.rowPitch % pixelSize) != 0);
             }
-          
+
             log_info( "Testing %d\n", (int)sizes[ idx ][ 0 ] );
             if ( gDebugTrace )
                 log_info( "   at max size %d\n", (int)sizes[ idx ][ 0 ] );
@@ -140,7 +147,7 @@ int test_fill_image_set_1D( cl_device_id device, cl_image_format *format, Explic
     else
     {
         for ( int i = 0; i < NUM_IMAGE_ITERATIONS; i++ )
-        {           
+        {
             cl_ulong size;
             // Loop until we get a size that a) will fit in the max alloc size and b) that an allocation of that
             // image, the result array, plus offset arrays, will fit in the global ram space
@@ -149,9 +156,10 @@ int test_fill_image_set_1D( cl_device_id device, cl_image_format *format, Explic
                 imageInfo.width = (size_t)random_log_in_range( 16, (int)maxWidth / 32, seed );
 
                 imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-              
+
                 if (gEnablePitch)
                 {
+                  rowPadding = rowPadding_default;
                   do {
                     rowPadding++;
                     imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
@@ -163,7 +171,7 @@ int test_fill_image_set_1D( cl_device_id device, cl_image_format *format, Explic
 
             if ( gDebugTrace )
                 log_info( "   at size %d (row pitch %d) out of %d\n", (int)imageInfo.width, (int)imageInfo.rowPitch, (int)maxWidth );
-            int ret = test_fill_image_size_1D( device, &imageInfo, outputType, seed );  
+            int ret = test_fill_image_size_1D( device, &imageInfo, outputType, seed );
             if ( ret )
                 return -1;
         }

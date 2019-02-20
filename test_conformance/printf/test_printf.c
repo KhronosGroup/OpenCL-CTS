@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,6 +25,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <memory>
 
 #if ! defined( _WIN32)
 #include <sys/sysctl.h>
@@ -49,7 +50,7 @@ typedef  unsigned int uint32_t;
 
 
 //-----------------------------------------
-// Static helper functions declaration 
+// Static helper functions declaration
 //-----------------------------------------
 
 //Stream helper functions
@@ -94,15 +95,15 @@ int waitForEvent(cl_event* event);
 //-----------------------------------------
 
 // Tests are broken into the major test which is based on the
-// src and cmp type and their corresponding vector types and 
-// sub tests which is for each individual test.  The following 
+// src and cmp type and their corresponding vector types and
+// sub tests which is for each individual test.  The following
 // tracks the subtests
 int s_test_cnt = 0;
 int s_test_fail = 0;
 
 
 //-----------------------------------------
-// Static helper functions definition 
+// Static helper functions definition
 //-----------------------------------------
 
 //-----------------------------------------
@@ -110,9 +111,9 @@ int s_test_fail = 0;
 //-----------------------------------------
 static int acquireOutputStream()
 {
-	int fd = streamDup(fileno(stdout));
-	freopen("tmp","w",stdout);
-	return fd;
+    int fd = streamDup(fileno(stdout));
+    freopen("tmp","w",stdout);
+    return fd;
 }
 
 //-----------------------------------------
@@ -120,9 +121,9 @@ static int acquireOutputStream()
 //-----------------------------------------
 static void releaseOutputStream(int fd)
 {
-	fflush(stdout);
-	streamDup2(fd,fileno(stdout));
-	close(fd);
+    fflush(stdout);
+    streamDup2(fd,fileno(stdout));
+    close(fd);
 }
 
 //-----------------------------------------
@@ -130,15 +131,15 @@ static void releaseOutputStream(int fd)
 //-----------------------------------------
 static void getAnalysisBuffer(char* analysisBuffer)
 {
-	FILE *fp;
-	memset(analysisBuffer,0,ANALYSIS_BUFFER_SIZE);
+    FILE *fp;
+    memset(analysisBuffer,0,ANALYSIS_BUFFER_SIZE);
 
-	fp = fopen("tmp","r");
-	if(NULL == fp)
-		log_error("Failed to open analysis buffer\n");
-	else
-	while(fgets(analysisBuffer,ANALYSIS_BUFFER_SIZE , fp) != NULL );
-	fclose(fp);
+    fp = fopen("tmp","r");
+    if(NULL == fp)
+        log_error("Failed to open analysis buffer\n");
+    else
+    while(fgets(analysisBuffer,ANALYSIS_BUFFER_SIZE , fp) != NULL );
+    fclose(fp);
 }
 
 //-----------------------------------------
@@ -146,14 +147,14 @@ static void getAnalysisBuffer(char* analysisBuffer)
 //-----------------------------------------
 static int isKernelArgument(testCase* pTestCase,size_t testId)
 {
-	return strcmp(pTestCase->_genParameters[testId].addrSpaceArgumentTypeQualifier,"");
+    return strcmp(pTestCase->_genParameters[testId].addrSpaceArgumentTypeQualifier,"");
 }
 //-----------------------------------------
 // isKernelPFormat
 //-----------------------------------------
 static int isKernelPFormat(testCase* pTestCase,size_t testId)
 {
-	return strcmp(pTestCase->_genParameters[testId].addrSpacePAdd,"");
+    return strcmp(pTestCase->_genParameters[testId].addrSpacePAdd,"");
 }
 
 //-----------------------------------------
@@ -161,34 +162,34 @@ static int isKernelPFormat(testCase* pTestCase,size_t testId)
 //-----------------------------------------
 int waitForEvent(cl_event* event)
 {
-	cl_int status = CL_SUCCESS;
-	cl_int eventStatus = CL_QUEUED;
-	while(eventStatus != CL_COMPLETE)
-	{
-		status = clGetEventInfo(
-			*event, 
-			CL_EVENT_COMMAND_EXECUTION_STATUS, 
-			sizeof(cl_int),
-			&eventStatus,
-			NULL);
-		if(status != CL_SUCCESS)
-		{
-			log_error("clGetEventInfo failed");
-			return status;
-		}
-	}
+    cl_int status = CL_SUCCESS;
+    cl_int eventStatus = CL_QUEUED;
+    while(eventStatus != CL_COMPLETE)
+    {
+        status = clGetEventInfo(
+            *event,
+            CL_EVENT_COMMAND_EXECUTION_STATUS,
+            sizeof(cl_int),
+            &eventStatus,
+            NULL);
+        if(status != CL_SUCCESS)
+        {
+            log_error("clGetEventInfo failed");
+            return status;
+        }
+    }
 
-	status = clReleaseEvent(*event);
-	if(status != CL_SUCCESS)
-	{
-		log_error("clReleaseEvent failed. (*event)");
-		return status;
-	}
-	return CL_SUCCESS;
+    status = clReleaseEvent(*event);
+    if(status != CL_SUCCESS)
+    {
+        log_error("clReleaseEvent failed. (*event)");
+        return status;
+    }
+    return CL_SUCCESS;
 }
 
 //-----------------------------------------
-// Static helper functions definition 
+// Static helper functions definition
 //-----------------------------------------
 
 //-----------------------------------------
@@ -196,105 +197,105 @@ int waitForEvent(cl_event* event)
 //-----------------------------------------
 static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context context,const unsigned int testId,const unsigned int testNum,bool isLongSupport,bool is64bAddrSpace)
 {
-	int err,i;
-	cl_program program;
-	cl_device_id devID;
-	char buildLog[ 1024 * 128 ];
-	char testname[256] = {0};
-	char addrSpaceArgument[256] = {0};
+    int err,i;
+    cl_program program;
+    cl_device_id devID;
+    char buildLog[ 1024 * 128 ];
+    char testname[256] = {0};
+    char addrSpaceArgument[256] = {0};
 
-	//Program Source code for int,float,octal,hexadecimal,char,string
-	const char *sourceGen[] = {
-		"__kernel void ", testname, 
+    //Program Source code for int,float,octal,hexadecimal,char,string
+    const char *sourceGen[] = {
+        "__kernel void ", testname,
         "(void)\n",
         "{\n"
         "   printf(\"",
-		allTestCase[testId]->_genParameters[testNum].genericFormat,
-		"\\n\",",
-		allTestCase[testId]->_genParameters[testNum].dataRepresentation,
-		");",  
+        allTestCase[testId]->_genParameters[testNum].genericFormat,
+        "\\n\",",
+        allTestCase[testId]->_genParameters[testNum].dataRepresentation,
+        ");",
         "}\n"
     };
-	//Program Source code for vector
-	const char *sourceVec[] = {
-		"__kernel void ", testname, 
+    //Program Source code for vector
+    const char *sourceVec[] = {
+        "__kernel void ", testname,
         "(void)\n",
         "{\n",
-		allTestCase[testId]->_genParameters[testNum].dataType,
-		allTestCase[testId]->_genParameters[testNum].vectorSize,
-		" tmp = (",
-		allTestCase[testId]->_genParameters[testNum].dataType,
-		allTestCase[testId]->_genParameters[testNum].vectorSize,
-		")",
-		allTestCase[testId]->_genParameters[testNum].dataRepresentation,
-		";",
+        allTestCase[testId]->_genParameters[testNum].dataType,
+        allTestCase[testId]->_genParameters[testNum].vectorSize,
+        " tmp = (",
+        allTestCase[testId]->_genParameters[testNum].dataType,
+        allTestCase[testId]->_genParameters[testNum].vectorSize,
+        ")",
+        allTestCase[testId]->_genParameters[testNum].dataRepresentation,
+        ";",
         "   printf(\"",
-		allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,
-		"v",
-		allTestCase[testId]->_genParameters[testNum].vectorSize,
-		allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,
-		"\\n\",",
-		"tmp);",
+        allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,
+        "v",
+        allTestCase[testId]->_genParameters[testNum].vectorSize,
+        allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,
+        "\\n\",",
+        "tmp);",
         "}\n"
     };
-	//Program Source code for address space
-	const char *sourceAddrSpace[] = {
-        "__kernel void ", testname,"(",addrSpaceArgument, 
+    //Program Source code for address space
+    const char *sourceAddrSpace[] = {
+        "__kernel void ", testname,"(",addrSpaceArgument,
         ")\n{\n",
-		allTestCase[testId]->_genParameters[testNum].addrSpaceVariableTypeQualifier,
-		"printf(",
-		allTestCase[testId]->_genParameters[testNum].genericFormat,
-		",",
-		allTestCase[testId]->_genParameters[testNum].addrSpaceParameter,
-		");",
-		allTestCase[testId]->_genParameters[testNum].addrSpacePAdd,
+        allTestCase[testId]->_genParameters[testNum].addrSpaceVariableTypeQualifier,
+        "printf(",
+        allTestCase[testId]->_genParameters[testNum].genericFormat,
+        ",",
+        allTestCase[testId]->_genParameters[testNum].addrSpaceParameter,
+        ");",
+        allTestCase[testId]->_genParameters[testNum].addrSpacePAdd,
         "\n}\n"
     };
 
-	//Update testname
-	sprintf(testname,"%s%d","test",testId);
+    //Update testname
+    sprintf(testname,"%s%d","test",testId);
 
-	//Update addrSpaceArgument type,based on FULL_PROFILE/EMBEDDED_PROFILE
-	if(allTestCase[testId]->_type == ADDRESS_SPACE)
-	{    
-		sprintf(addrSpaceArgument,allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier);
-		if(isKernelPFormat(allTestCase[testId],testNum) && (!isLongSupport || !is64bAddrSpace))
-		{
-			char* pRep = strstr(addrSpaceArgument,"long");
-			if(pRep != NULL)
-				strncpy(pRep,"int ",4);
-		}
-	}
-  
+    //Update addrSpaceArgument type,based on FULL_PROFILE/EMBEDDED_PROFILE
+    if(allTestCase[testId]->_type == ADDRESS_SPACE)
+    {
+        sprintf(addrSpaceArgument,allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier);
+        if(isKernelPFormat(allTestCase[testId],testNum) && (!isLongSupport || !is64bAddrSpace))
+        {
+            char* pRep = strstr(addrSpaceArgument,"long");
+            if(pRep != NULL)
+                strncpy(pRep,"int ",4);
+        }
+    }
+
   if (strlen(addrSpaceArgument) == 0)
     sprintf(addrSpaceArgument,"void");
 
-	// create program based on its type
+    // create program based on its type
 
-	if(allTestCase[testId]->_type == VECTOR)
-	{
-		program = clCreateProgramWithSource( context,sizeof(sourceVec)/sizeof(sourceVec[0]),sourceVec, NULL, NULL);
-	}
-	else if(allTestCase[testId]->_type == ADDRESS_SPACE)
-	{
-		program = clCreateProgramWithSource( context,sizeof(sourceAddrSpace)/sizeof(sourceAddrSpace[0]),sourceAddrSpace, NULL, NULL);
-	}
-	else
-	{
-		program = clCreateProgramWithSource( context,sizeof(sourceGen)/sizeof(sourceGen[0]),sourceGen, NULL, NULL);
-	}
-    
+    if(allTestCase[testId]->_type == VECTOR)
+    {
+        program = clCreateProgramWithSource( context,sizeof(sourceVec)/sizeof(sourceVec[0]),sourceVec, NULL, NULL);
+    }
+    else if(allTestCase[testId]->_type == ADDRESS_SPACE)
+    {
+        program = clCreateProgramWithSource( context,sizeof(sourceAddrSpace)/sizeof(sourceAddrSpace[0]),sourceAddrSpace, NULL, NULL);
+    }
+    else
+    {
+        program = clCreateProgramWithSource( context,sizeof(sourceGen)/sizeof(sourceGen[0]),sourceGen, NULL, NULL);
+    }
+
     if (!program) {
         log_error("clCreateProgramWithSource failed\n");
         return NULL;
     }
-    
+
     err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     if (err != CL_SUCCESS) {
-		
+
         log_error("clBuildProgramExecutable failed errcode:%d\n", err);
-        
-       
+
+
         err = clGetProgramInfo( program, CL_PROGRAM_DEVICES, sizeof( devID ), &devID, NULL );
         if (err){
             log_error("Unable to get program's device: %d\n",err );
@@ -305,42 +306,42 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
             log_error("Unable to get program's build log: %d\n",err );
             return NULL;
         }
-		size_t sourceLen;
-		const char** source;
+        size_t sourceLen;
+        const char** source;
 
-		if(allTestCase[testId]->_type == VECTOR)
-		{
-			sourceLen = sizeof(sourceVec) / sizeof( sourceVec[0] );
-			source = sourceVec;
-		}
-		else if(allTestCase[testId]->_type == ADDRESS_SPACE)
-		{
-			sourceLen = sizeof(sourceAddrSpace) / sizeof( sourceAddrSpace[0] );
-			source = sourceAddrSpace;
-		}
-		else
-		{
-			sourceLen = sizeof(sourceGen) / sizeof( sourceGen[0] );
-			source = sourceGen;
-		}
+        if(allTestCase[testId]->_type == VECTOR)
+        {
+            sourceLen = sizeof(sourceVec) / sizeof( sourceVec[0] );
+            source = sourceVec;
+        }
+        else if(allTestCase[testId]->_type == ADDRESS_SPACE)
+        {
+            sourceLen = sizeof(sourceAddrSpace) / sizeof( sourceAddrSpace[0] );
+            source = sourceAddrSpace;
+        }
+        else
+        {
+            sourceLen = sizeof(sourceGen) / sizeof( sourceGen[0] );
+            source = sourceGen;
+        }
         log_error( "Build log is: ------------\n" );
         log_error( "%s\n", buildLog );
         log_error( "----------\n" );
-		log_error( " Source is ----------------\n");
-		for(i = 0; i < sourceLen; ++i) {
-			log_error("%s", source[i]);
-		}
-        
+        log_error( " Source is ----------------\n");
+        for(i = 0; i < sourceLen; ++i) {
+            log_error("%s", source[i]);
+        }
+
         log_error( "----------\n" );
         return NULL;
     }
-    
+
     *kernel_ptr = clCreateKernel(program, testname, &err);
     if ( err ) {
         log_error("clCreateKernel failed (%d)\n", err);
         return NULL;
     }
-    
+
     return program;
 }
 
@@ -349,225 +350,230 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
 //-----------------------------------------
 static bool isLongSupported(cl_device_id device_id)
 {
-	//profile type && device extention for long support checking
-	char *profileType = NULL,*devExt = NULL;
+    size_t tempSize = 0;
+    cl_int status;
+    bool extSupport = true;
 
-	size_t tempSize = 0;
-	cl_int status;
-	bool extSupport = true;
+    // Device profile
+    status = clGetDeviceInfo(
+        device_id,
+        CL_DEVICE_PROFILE,
+        0,
+        NULL,
+        &tempSize);
 
-	// Device profile
-	status = clGetDeviceInfo(
-		device_id, 
-		CL_DEVICE_PROFILE,
-		0,
-		NULL,
-		&tempSize);
+    if(status != CL_SUCCESS)
+    {
+        log_error("*** clGetDeviceInfo FAILED ***\n\n");
+        return false;
+    }
 
-	if(status != CL_SUCCESS)
-	{
-		log_error("*** clGetDeviceInfo FAILED ***\n\n");
-		return false;
-	}
+    std::unique_ptr<char[]> profileType(new char[tempSize]);
+    if(profileType == NULL)
+    {
+        log_error("Failed to allocate memory(profileType)");
+        return false;
+    }
 
-	profileType = new char[tempSize];
-	if(profileType == NULL)
-	{
-		log_error("Failed to allocate memory(profileType)");
-		return false;
-	}
-
-	status = clGetDeviceInfo(
-		device_id, 
-		CL_DEVICE_PROFILE,
-		sizeof(char) * tempSize,
-		profileType,
-		NULL);
+    status = clGetDeviceInfo(
+        device_id,
+        CL_DEVICE_PROFILE,
+        sizeof(char) * tempSize,
+        profileType.get(),
+        NULL);
 
 
-	if(!strcmp("EMBEDDED_PROFILE",profileType))
-	{
-		// Device extention
-		status = clGetDeviceInfo(
-			device_id, 
-			CL_DEVICE_EXTENSIONS,
-			0,
-			NULL,
-			&tempSize);
+    if(!strcmp("EMBEDDED_PROFILE",profileType.get()))
+    {
+        // Device extention
+        status = clGetDeviceInfo(
+            device_id,
+            CL_DEVICE_EXTENSIONS,
+            0,
+            NULL,
+            &tempSize);
 
-		if(status != CL_SUCCESS)
-		{
-			log_error("*** clGetDeviceInfo FAILED ***\n\n");
-			return false;
-		}
+        if(status != CL_SUCCESS)
+        {
+            log_error("*** clGetDeviceInfo FAILED ***\n\n");
+            return false;
+        }
 
-		devExt = new char[tempSize];
-		if(devExt == NULL)
-		{
-			log_error("Failed to allocate memory(devExt)");
-			return false;
-		}
+        std::unique_ptr<char[]> devExt(new char[tempSize]);
+        if(devExt == NULL)
+        {
+            log_error("Failed to allocate memory(devExt)");
+            return false;
+        }
 
-		status = clGetDeviceInfo(
-			device_id, 
-			CL_DEVICE_EXTENSIONS,
-			sizeof(char) * tempSize,
-			devExt,
-			NULL);
+        status = clGetDeviceInfo(
+            device_id,
+            CL_DEVICE_EXTENSIONS,
+            sizeof(char) * tempSize,
+            devExt.get(),
+            NULL);
 
-		extSupport  = (strstr(devExt,"cles_khr_int64") != NULL);
-
-		delete devExt;
-		delete profileType;
-	}
-	return extSupport;
+        extSupport  = (strstr(devExt.get(),"cles_khr_int64") != NULL);
+    }
+    return extSupport;
 }
+
 //-----------------------------------------
 // is64bAddressSpace
 //-----------------------------------------
 static bool is64bAddressSpace(cl_device_id  device_id)
 {
-	cl_int status;
-	cl_uint addrSpaceB;
+    cl_int status;
+    cl_uint addrSpaceB;
 
-	// Device profile
-	status = clGetDeviceInfo(
-		device_id, 
-		CL_DEVICE_ADDRESS_BITS,
-		sizeof(cl_uint),
-		&addrSpaceB,
-		NULL);
-	if(status != CL_SUCCESS)
-	{
-		log_error("*** clGetDeviceInfo FAILED ***\n\n");
-		return false;
-	}
-	if(addrSpaceB == 64)
-		return true;
-	else 
-		return false;
+    // Device profile
+    status = clGetDeviceInfo(
+        device_id,
+        CL_DEVICE_ADDRESS_BITS,
+        sizeof(cl_uint),
+        &addrSpaceB,
+        NULL);
+    if(status != CL_SUCCESS)
+    {
+        log_error("*** clGetDeviceInfo FAILED ***\n\n");
+        return false;
+    }
+    if(addrSpaceB == 64)
+        return true;
+    else
+        return false;
 }
 //-----------------------------------------
 // doTest
 //-----------------------------------------
-static int doTest(cl_command_queue queue, cl_context context, const unsigned int testId, const unsigned int testNum, cl_device_id device,bool isLongSupport) 
+static int doTest(cl_command_queue queue, cl_context context, const unsigned int testId, const unsigned int testNum, cl_device_id device,bool isLongSupport)
 {
-	int err;
-	cl_program program;
-	cl_kernel  kernel;
-	cl_mem d_out;
-	char _analysisBuffer[ANALYSIS_BUFFER_SIZE];
+    int err;
+    cl_program program;
+    cl_kernel  kernel;
+    cl_mem d_out, d_a;
+    int has_d_out = 0;
+    int has_d_a = 0;
+    char _analysisBuffer[ANALYSIS_BUFFER_SIZE];
 
-   // Define an index space (global work size) of threads for execution.  
-   size_t globalWorkSize[1];  
+   // Define an index space (global work size) of threads for execution.
+   size_t globalWorkSize[1];
 
-	program = makePrintfProgram(&kernel, context,testId,testNum,isLongSupport,is64bAddressSpace(device));
-	if (!program || !kernel) {
-		++s_test_fail;
-		++s_test_cnt;
-		return -1;
-	} 
-	
-	//For address space test if there is kernel argument - set it
-	if(allTestCase[testId]->_type == ADDRESS_SPACE )
-	{
-		if(isKernelArgument(allTestCase[testId],testNum))
-		{
-			int a = 2;
-			cl_mem d_a = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
-				sizeof(int), &a, &err);
-			if(err!= CL_SUCCESS || d_a == NULL) {
-				log_error("clCreateBuffer failed\n");
-				goto exit;
-			}
-			err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_a);
-			if(err!= CL_SUCCESS) {
-				log_error("clSetKernelArg failed\n");
-				goto exit;
-			}
-		}
-		//For address space test if %p is tested
-		if(isKernelPFormat(allTestCase[testId],testNum))
-		{
-			d_out = clCreateBuffer(context, CL_MEM_READ_WRITE,
-				sizeof(long), NULL, &err);
-			if(err!= CL_SUCCESS || d_out == NULL) {
-				log_error("clCreateBuffer failed\n");
-				goto exit;
-			}
-			err  = clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_out);
-			if(err!= CL_SUCCESS) {
-				log_error("clSetKernelArg failed\n");
-				goto exit;
-			}
-		}
-	}
+    program = makePrintfProgram(&kernel, context,testId,testNum,isLongSupport,is64bAddressSpace(device));
+    if (!program || !kernel) {
+        ++s_test_fail;
+        ++s_test_cnt;
+        return -1;
+    }
 
-	globalWorkSize[0] = 1;
-	cl_event ndrEvt;
-	err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, globalWorkSize, NULL, 0, NULL,&ndrEvt);            
-	if (err != CL_SUCCESS) {
-		log_error("\n clEnqueueNDRangeKernel failed errcode:%d\n", err);
-		++s_test_fail;
-		goto exit;
-	}
-	
-	fflush(stdout);
-	err = clFlush(queue);
+    //For address space test if there is kernel argument - set it
+    if(allTestCase[testId]->_type == ADDRESS_SPACE )
+    {
+        if(isKernelArgument(allTestCase[testId],testNum))
+        {
+            int a = 2;
+            d_a = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
+                sizeof(int), &a, &err);
+            if(err!= CL_SUCCESS || d_a == NULL) {
+                log_error("clCreateBuffer failed\n");
+                goto exit;
+            }
+            has_d_a = 1;
+            err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_a);
+            if(err!= CL_SUCCESS) {
+                log_error("clSetKernelArg failed\n");
+                goto exit;
+            }
+        }
+        //For address space test if %p is tested
+        if(isKernelPFormat(allTestCase[testId],testNum))
+        {
+            d_out = clCreateBuffer(context, CL_MEM_READ_WRITE,
+            sizeof(cl_long), NULL, &err);
+            if(err!= CL_SUCCESS || d_out == NULL) {
+                log_error("clCreateBuffer failed\n");
+                goto exit;
+            }
+            has_d_out = 1;
+            err  = clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_out);
+            if(err!= CL_SUCCESS) {
+                log_error("clSetKernelArg failed\n");
+                goto exit;
+            }
+        }
+    }
+
+    globalWorkSize[0] = 1;
+    cl_event ndrEvt;
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, globalWorkSize, NULL, 0, NULL,&ndrEvt);
+    if (err != CL_SUCCESS) {
+        log_error("\n clEnqueueNDRangeKernel failed errcode:%d\n", err);
+        ++s_test_fail;
+        goto exit;
+    }
+
+    fflush(stdout);
+    err = clFlush(queue);
     if(err != CL_SUCCESS)
-	{
+    {
         log_error("clFlush failed\n");
         goto exit;
-	}
-	//Wait until kernel finishes its execution and (thus) the output printed from the kernel
-	//is immidatly printed
+    }
+    //Wait until kernel finishes its execution and (thus) the output printed from the kernel
+    //is immidatly printed
     err = waitForEvent(&ndrEvt);
-	
+
     if(err != CL_SUCCESS)
     {
         log_error("waitforEvent failed\n");
         goto exit;
     }
-	fflush(stdout);
+    fflush(stdout);
 
-	cl_uint out32;
-	cl_ulong out64;
-	if(allTestCase[testId]->_type == ADDRESS_SPACE && isKernelPFormat(allTestCase[testId],testNum))
-	{
-		// Read the OpenCL output buffer (d_out) to the host output array (out)
-		if(!is64bAddressSpace(device))//32-bit address space
-		{
-			clEnqueueReadBuffer(queue, d_out, CL_TRUE, 0, sizeof(cl_int),&out32,
-				0, NULL, NULL);
-		}
-		else //64-bit address space
-		{
-			clEnqueueReadBuffer(queue, d_out, CL_TRUE, 0, sizeof(cl_ulong),&out64,
-				0, NULL, NULL);
-		}
-	}
+    cl_uint out32;
+    cl_ulong out64;
+    if(allTestCase[testId]->_type == ADDRESS_SPACE && isKernelPFormat(allTestCase[testId],testNum))
+    {
+        // Read the OpenCL output buffer (d_out) to the host output array (out)
+        if(!is64bAddressSpace(device))//32-bit address space
+        {
+            clEnqueueReadBuffer(queue, d_out, CL_TRUE, 0, sizeof(cl_int),&out32,
+                0, NULL, NULL);
+        }
+        else //64-bit address space
+        {
+            clEnqueueReadBuffer(queue, d_out, CL_TRUE, 0, sizeof(cl_ulong),&out64,
+                0, NULL, NULL);
+        }
+    }
 
-	//
-	//Get the output printed from the kernel to _analysisBuffer
-	//and verify its correctness
-	getAnalysisBuffer(_analysisBuffer);
-	if(!is64bAddressSpace(device)) //32-bit address space
-	{
-		if(0 != verifyOutputBuffer(_analysisBuffer,allTestCase[testId],testNum,(cl_ulong) out32))
-			err = ++s_test_fail;
-	}
-	else //64-bit address space
-	{
-		if(0 != verifyOutputBuffer(_analysisBuffer,allTestCase[testId],testNum,out64))
-			err = ++s_test_fail;
-	}
+    //
+    //Get the output printed from the kernel to _analysisBuffer
+    //and verify its correctness
+    getAnalysisBuffer(_analysisBuffer);
+    if(!is64bAddressSpace(device)) //32-bit address space
+    {
+        if(0 != verifyOutputBuffer(_analysisBuffer,allTestCase[testId],testNum,(cl_ulong) out32))
+            err = ++s_test_fail;
+    }
+    else //64-bit address space
+    {
+        if(0 != verifyOutputBuffer(_analysisBuffer,allTestCase[testId],testNum,out64))
+            err = ++s_test_fail;
+    }
 exit:
-	if(clReleaseKernel(kernel) != CL_SUCCESS)
-		log_error("clReleaseKernel failed\n");
-	if(clReleaseProgram(program) != CL_SUCCESS)
-		log_error("clReleaseProgram failed\n");
-	++s_test_cnt;
-	return err;
+  if(has_d_out)
+    if(clReleaseMemObject(d_out) != CL_SUCCESS)
+      log_error("clReleaseMemObject failed\n");
+    if(has_d_a)
+      if(clReleaseMemObject(d_a) != CL_SUCCESS)
+        log_error("clReleaseMemObject failed\n");
+    if(clReleaseKernel(kernel) != CL_SUCCESS)
+        log_error("clReleaseKernel failed\n");
+    if(clReleaseProgram(program) != CL_SUCCESS)
+        log_error("clReleaseProgram failed\n");
+    ++s_test_cnt;
+    return err;
 }
 //-----------------------------------------
 // printUsage
@@ -585,9 +591,9 @@ static void printUsage( void )
 static void printArch( void )
 {
     log_info( "sizeof( void*) = %d\n", (int) sizeof( void *) );
-    
+
 #if defined( __APPLE__ )
-    
+
 #if defined( __ppc__ )
     log_info( "ARCH:\tppc\n" );
 #elif defined( __ppc64__ )
@@ -598,10 +604,12 @@ static void printArch( void )
     log_info( "ARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     log_info( "ARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    vlog( "\tARCH:\taarch64\n" );
 #else
 #error unknown arch
 #endif
-    
+
     int type = 0;
     size_t typeSize = sizeof( type );
     sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
@@ -609,7 +617,7 @@ static void printArch( void )
     typeSize = sizeof( type );
     sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
     log_info( "cpu subtype:\t%d\n", type );
-    
+
 #endif
 }
 
@@ -634,9 +642,9 @@ int main(int argc, char* argv[]) {
     cl_device_id      device_id;
     uint32_t      device_frequency = 0;
     uint32_t       compute_devices = 0;
-	
 
-    
+
+
     test_start();
 
     // Check the environmental to see if there is device preference
@@ -656,27 +664,27 @@ int main(int argc, char* argv[]) {
             abort();
         }
     }
-    
+
     // Determine if we want to run a particular test or if we want to
     // start running from a certain point and if we want to run on cpu/gpu
     // usage: test_printf [test_name] [start test num] [run_long]
     // default is to run all tests on the gpu and be short
     // test names are of the form printf_testId
-    
+
     for (i=1; i < argc; ++i) {
         const char *arg = argv[i];
         if (arg == NULL)
             break;
-        
-        if (arg[0] == '-') 
+
+        if (arg[0] == '-')
         {
             arg++;
-            while(*arg != '\0') 
+            while(*arg != '\0')
             {
                 switch(*arg) {
                     case 'h':
                         printUsage();
-                        return 0;  
+                        return 0;
                     default:
                         log_error( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
                         printUsage();
@@ -704,140 +712,140 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-    
-    
+
+
     int err;
-	int fd = acquireOutputStream();
-	
+    int fd = acquireOutputStream();
+
     // Get platform
     err = clGetPlatformIDs(1, &platform_id, NULL);
-    checkErr(err,"clGetPlatformIDs failed");    
-    
-	
+    checkErr(err,"clGetPlatformIDs failed");
+
+
     // Get Device information
     err = clGetDeviceIDs(platform_id, device_type, 1, &device_id, 0);
     checkErr(err,"clGetComputeDevices");
-    
-	
+
+
     err =  clGetDeviceInfo(device_id, CL_DEVICE_TYPE, sizeof(cl_device_type), &device_type, NULL);
     checkErr(err,"clGetComputeConfigInfo 1");
-    
-	
+
+
     size_t config_size = sizeof( device_frequency );
 #if MULTITHREAD
     if( (err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_COMPUTE_UNITS, config_size, &compute_devices, NULL )) )
 #endif
     compute_devices = 1;
-    
+
     config_size = sizeof(device_frequency);
     if((err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_CLOCK_FREQUENCY, config_size, &device_frequency, NULL )))
         device_frequency = 1;
-    
+
     releaseOutputStream(fd);
 
     log_info( "\nCompute Device info:\n" );
     log_info( "\tProcessing with %d devices\n", compute_devices );
     log_info( "\tDevice Frequency: %d MHz\n", device_frequency );
-    
-	
+
+
 
     printDeviceHeader( device_id );
-	
+
     printArch();
-    
+
     log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
-	
-	fd = acquireOutputStream();
+
+    fd = acquireOutputStream();
 
     cl_context context = clCreateContext(NULL, 1, &device_id, notify_callback, NULL, NULL);
     checkNull(context, "clCreateContext");
-    
+
     cl_command_queue queue = clCreateCommandQueue(context, device_id, 0, NULL);
     checkNull(queue, "clCreateCommandQueue");
-    
-	// Forall types
-	for (int testId = 0; testId < TYPE_COUNT; ++testId) {
-		if ((testId + 1) < test_start_num) {
-			releaseOutputStream(fd);
-			log_info("\n*** Skipping printf  for %s ***\n",strType[testId]);
-			fd = acquireOutputStream();
-		}
-		else {
-			releaseOutputStream(fd);
-			log_info("\n*** Testing printf for %s ***\n",strType[testId]);
-			fd = acquireOutputStream();
-			//For all formats
-			for(unsigned int testNum = 0;testNum < allTestCase[testId]->_testNum;++testNum){
-				releaseOutputStream(fd);
-				if(allTestCase[testId]->_type == VECTOR)
-					log_info("%d)testing printf(\"%sv%s%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,allTestCase[testId]->_genParameters[testNum].vectorSize,
-					allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
-				else if(allTestCase[testId]->_type == ADDRESS_SPACE)
-				{
-					if(isKernelArgument)
-						log_info("%d)testing kernel //argument %s \n   printf(%s,%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier,
-						allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].addrSpaceParameter);
-					else
-						log_info("%d)testing kernel //variable %s \n   printf(%s,%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].addrSpaceVariableTypeQualifier,
-						allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].addrSpaceParameter);
-				}
-				else
-					log_info("%d)testing printf(\"%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
-				fd = acquireOutputStream();
 
-				// Long support for varible type
-				if(allTestCase[testId]->_type == VECTOR && !strcmp(allTestCase[testId]->_genParameters[testNum].dataType,"long") && !isLongSupported(device_id))
-						continue;
+    // Forall types
+    for (int testId = 0; testId < TYPE_COUNT; ++testId) {
+        if ((testId + 1) < test_start_num) {
+            releaseOutputStream(fd);
+            log_info("\n*** Skipping printf  for %s ***\n",strType[testId]);
+            fd = acquireOutputStream();
+        }
+        else {
+            releaseOutputStream(fd);
+            log_info("\n*** Testing printf for %s ***\n",strType[testId]);
+            fd = acquireOutputStream();
+            //For all formats
+            for(unsigned int testNum = 0;testNum < allTestCase[testId]->_testNum;++testNum){
+                releaseOutputStream(fd);
+                if(allTestCase[testId]->_type == VECTOR)
+                    log_info("%d)testing printf(\"%sv%s%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,allTestCase[testId]->_genParameters[testNum].vectorSize,
+                    allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
+                else if(allTestCase[testId]->_type == ADDRESS_SPACE)
+                {
+                    if(isKernelArgument)
+                        log_info("%d)testing kernel //argument %s \n   printf(%s,%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier,
+                        allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].addrSpaceParameter);
+                    else
+                        log_info("%d)testing kernel //variable %s \n   printf(%s,%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].addrSpaceVariableTypeQualifier,
+                        allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].addrSpaceParameter);
+                }
+                else
+                    log_info("%d)testing printf(\"%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
+                fd = acquireOutputStream();
 
-				// Long support for address in FULL_PROFILE/EMBEDDED_PROFILE
-				bool isLongSupport = true;
-				if(allTestCase[testId]->_type == ADDRESS_SPACE && isKernelPFormat(allTestCase[testId],testNum) && !isLongSupported(device_id))
-					isLongSupport = false;
+                // Long support for varible type
+                if(allTestCase[testId]->_type == VECTOR && !strcmp(allTestCase[testId]->_genParameters[testNum].dataType,"long") && !isLongSupported(device_id))
+                        continue;
 
-				// Perform the test
-				if (doTest(queue, context,testId,testNum,device_id,isLongSupport) != 0)
-				{
-					releaseOutputStream(fd);
-					log_error("*** FAILED ***\n\n");
-					fd = acquireOutputStream();
-				}
-				else
-				{
-					releaseOutputStream(fd);
-					log_info("Passed\n");
-					fd = acquireOutputStream();
-				}
-			}
-		}
-	}
-	
+                // Long support for address in FULL_PROFILE/EMBEDDED_PROFILE
+                bool isLongSupport = true;
+                if(allTestCase[testId]->_type == ADDRESS_SPACE && isKernelPFormat(allTestCase[testId],testNum) && !isLongSupported(device_id))
+                    isLongSupport = false;
+
+                // Perform the test
+                if (doTest(queue, context,testId,testNum,device_id,isLongSupport) != 0)
+                {
+                    releaseOutputStream(fd);
+                    log_error("*** FAILED ***\n\n");
+                    fd = acquireOutputStream();
+                }
+                else
+                {
+                    releaseOutputStream(fd);
+                    log_info("Passed\n");
+                    fd = acquireOutputStream();
+                }
+            }
+        }
+    }
+
     int error = clFinish(queue);
     if (error) {
         log_error("clFinish failed: %d\n", error);
     }
-    
-	if(clReleaseCommandQueue(queue)!=CL_SUCCESS)
-		log_error("clReleaseCommandQueue\n");
-    if(clReleaseContext(context)!= CL_SUCCESS)
-		log_error("clReleaseContext\n");
 
-	releaseOutputStream(fd);
-	
+    if(clReleaseCommandQueue(queue)!=CL_SUCCESS)
+        log_error("clReleaseCommandQueue\n");
+    if(clReleaseContext(context)!= CL_SUCCESS)
+        log_error("clReleaseContext\n");
+
+    releaseOutputStream(fd);
+
 
     if (s_test_fail == 0) {
-        if (s_test_cnt > 1) 
+        if (s_test_cnt > 1)
             log_info("PASSED %d of %d tests.\n", s_test_cnt, s_test_cnt);
         else
             log_info("PASSED test.\n");
     } else if (s_test_fail > 0) {
         if (s_test_cnt > 1)
-		{
+        {
             log_error("FAILED %d of %d tests.\n", s_test_fail, s_test_cnt);
-			log_info("PASSED %d of %d tests.\n", s_test_cnt - s_test_fail, s_test_cnt);
-		}
-        else 
+            log_info("PASSED %d of %d tests.\n", s_test_cnt - s_test_fail, s_test_cnt);
+        }
+        else
             log_error(" FAILED test.\n");
-    }  
+    }
 
     test_finish();
     return s_test_fail;

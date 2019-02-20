@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,59 +16,58 @@
 #ifndef _conversions_h
 #define _conversions_h
 
+#include "compat.h"
+
 #include "errorHelpers.h"
 #include "mt19937.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
-#include <float.h>
 #include <string.h>
 #include <sys/types.h>
-#include "compat.h"
 
 #if defined(__cplusplus)
 extern "C" {
-#endif 
+#endif
 
 /* Note: the next three all have to match in size and order!! */
 
 enum ExplicitTypes
 {
-	kBool		= 0,
-	kChar,
-	kUChar,
-	kUnsignedChar,
-	kShort,
-	kUShort,
-	kUnsignedShort,
-	kInt,
-	kUInt,
-	kUnsignedInt,
-	kLong,
-	kULong,
-	kUnsignedLong,
-	kFloat,
-	kHalf,
-	kDouble,
-	kNumExplicitTypes
+    kBool        = 0,
+    kChar,
+    kUChar,
+    kUnsignedChar,
+    kShort,
+    kUShort,
+    kUnsignedShort,
+    kInt,
+    kUInt,
+    kUnsignedInt,
+    kLong,
+    kULong,
+    kUnsignedLong,
+    kFloat,
+    kHalf,
+    kDouble,
+    kNumExplicitTypes
 };
 
-typedef enum ExplicitTypes	ExplicitType;
+typedef enum ExplicitTypes    ExplicitType;
 
 enum RoundingTypes
 {
-	kRoundToEven = 0,
-	kRoundToZero,
-	kRoundToPosInf,
-	kRoundToNegInf,
-	kRoundToNearest,
-	
-	kNumRoundingTypes,
-	
-	kDefaultRoundingType = kRoundToNearest
+    kRoundToEven = 0,
+    kRoundToZero,
+    kRoundToPosInf,
+    kRoundToNegInf,
+    kRoundToNearest,
+
+    kNumRoundingTypes,
+
+    kDefaultRoundingType = kRoundToNearest
 };
 
-typedef enum RoundingTypes	RoundingType;
+typedef enum RoundingTypes    RoundingType;
 
 extern void             print_type_to_string(ExplicitType type, void *data, char* string);
 extern size_t           get_explicit_type_size( ExplicitType type );
@@ -76,7 +75,7 @@ extern const char *     get_explicit_type_name( ExplicitType type );
 extern void             convert_explicit_value( void *inRaw, void *outRaw, ExplicitType inType, bool saturate, RoundingType roundType, ExplicitType outType );
 
 extern void             generate_random_data( ExplicitType type, size_t count, MTdata d, void *outData );
-extern void	*         create_random_data( ExplicitType type, MTdata d, size_t count );
+extern void    *         create_random_data( ExplicitType type, MTdata d, size_t count );
 
 extern cl_long          read_upscale_signed( void *inRaw, ExplicitType inType );
 extern cl_ulong         read_upscale_unsigned( void *inRaw, ExplicitType inType );
@@ -93,28 +92,28 @@ size_t get_random_size_t(size_t low, size_t high, MTdata d);
 
 // Note: though this takes a double, this is for use with single precision tests
 static inline int IsFloatSubnormal( float x )
-{ 
-#if 2 == FLT_RADIX       
+{
+#if 2 == FLT_RADIX
     // Do this in integer to avoid problems with FTZ behavior
     union{ float d; uint32_t u;}u;
-    u.d = fabsf(x); 
+    u.d = fabsf(x);
     return (u.u-1) < 0x007fffffU;
 #else
     // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) FLT_MIN && x != 0.0; 
+    return fabs(x) < (double) FLT_MIN && x != 0.0;
 #endif
 }
 
 static inline int IsDoubleSubnormal( double x )
-{ 
-#if 2 == FLT_RADIX       
+{
+#if 2 == FLT_RADIX
     // Do this in integer to avoid problems with FTZ behavior
     union{ double d; uint64_t u;}u;
-    u.d = fabs( x); 
+    u.d = fabs( x);
     return (u.u-1) < 0x000fffffffffffffULL;
 #else
     // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) DBL_MIN && x != 0.0; 
+    return fabs(x) < (double) DBL_MIN && x != 0.0;
 #endif
 }
 

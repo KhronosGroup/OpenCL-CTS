@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -43,7 +43,7 @@
 #include "../../test_common/harness/conversions.h"
 #include "../../test_common/harness/mt19937.h"
 
-typedef cl_mem 
+typedef cl_mem
 (CL_API_CALL *clCreateFromGLBuffer_fn)(cl_context     context,
                           cl_mem_flags   flags,
                           GLuint         bufobj,
@@ -65,7 +65,7 @@ typedef cl_mem
                         GLuint           texture ,
                         cl_int *         errcode_ret) ;
 
-typedef cl_mem 
+typedef cl_mem
 (CL_API_CALL *clCreateFromGLTexture3D_fn)(cl_context       context ,
                         cl_mem_flags     flags ,
                         GLenum           target ,
@@ -73,25 +73,25 @@ typedef cl_mem
                         GLuint           texture ,
                         cl_int *         errcode_ret) ;
 
-typedef cl_mem 
+typedef cl_mem
 (CL_API_CALL *clCreateFromGLRenderbuffer_fn)(cl_context    context ,
                            cl_mem_flags  flags ,
                            GLuint        renderbuffer ,
                            cl_int *      errcode_ret) ;
 
-typedef cl_int 
+typedef cl_int
 (CL_API_CALL *clGetGLObjectInfo_fn)(cl_mem                 memobj ,
                   cl_gl_object_type *    gl_object_type ,
                   GLuint *               gl_object_name) ;
 
-typedef cl_int 
+typedef cl_int
 (CL_API_CALL *clGetGLTextureInfo_fn)(cl_mem                memobj ,
                    cl_gl_texture_info    param_name ,
                    size_t                param_value_size ,
                    void *                param_value ,
                    size_t *              param_value_size_ret) ;
 
-typedef cl_int 
+typedef cl_int
 (CL_API_CALL *clEnqueueAcquireGLObjects_fn)(cl_command_queue       command_queue ,
                           cl_uint                num_objects ,
                           const cl_mem *         mem_objects ,
@@ -99,7 +99,7 @@ typedef cl_int
                           const cl_event *       event_wait_list ,
                                 cl_event *             event) ;
 
-typedef cl_int 
+typedef cl_int
 (CL_API_CALL *clEnqueueReleaseGLObjects_fn)(cl_command_queue       command_queue ,
                           cl_uint                num_objects ,
                           const cl_mem *         mem_objects ,
@@ -121,93 +121,93 @@ extern clEnqueueReleaseGLObjects_fn clEnqueueReleaseGLObjects_ptr;
 
 class glBufferWrapper
 {
-	public:
-		glBufferWrapper() { mBuffer = 0; }
-		glBufferWrapper( GLuint b ) { mBuffer = b; }
-		~glBufferWrapper() { if( mBuffer != 0 ) glDeleteBuffers( 1, &mBuffer ); }
-		
-		glBufferWrapper & operator=( const GLuint &rhs ) { mBuffer = rhs; return *this; }
-		operator GLuint() { return mBuffer; }
-		operator GLuint *() { return &mBuffer; }
-		
-		GLuint * operator&() { return &mBuffer; }
-		
-		bool operator==( GLuint rhs ) { return mBuffer == rhs; }
-		
-	protected:
-		
-		GLuint mBuffer;
+    public:
+        glBufferWrapper() { mBuffer = 0; }
+        glBufferWrapper( GLuint b ) { mBuffer = b; }
+        ~glBufferWrapper() { if( mBuffer != 0 ) glDeleteBuffers( 1, &mBuffer ); }
+
+        glBufferWrapper & operator=( const GLuint &rhs ) { mBuffer = rhs; return *this; }
+        operator GLuint() { return mBuffer; }
+        operator GLuint *() { return &mBuffer; }
+
+        GLuint * operator&() { return &mBuffer; }
+
+        bool operator==( GLuint rhs ) { return mBuffer == rhs; }
+
+    protected:
+
+        GLuint mBuffer;
 };
 
 class glTextureWrapper
 {
-	public:
-		glTextureWrapper() { mHandle = 0; }
-		glTextureWrapper( GLuint b ) { mHandle = b; }
-		~glTextureWrapper() {
-         if( mHandle != 0 ) glDeleteTextures( 1, &mHandle ); 
+    public:
+        glTextureWrapper() { mHandle = 0; }
+        glTextureWrapper( GLuint b ) { mHandle = b; }
+        ~glTextureWrapper() {
+         if( mHandle != 0 ) glDeleteTextures( 1, &mHandle );
         }
-		
-		glTextureWrapper & operator=( const GLuint &rhs ) { mHandle = rhs; return *this; }
-		operator GLuint() { return mHandle; }
-		operator GLuint *() { return &mHandle; }
-		
-		GLuint * operator&() { return &mHandle; }
-		
-		bool operator==( GLuint rhs ) { return mHandle == rhs; }
-		
-	protected:
-		
+
+        glTextureWrapper & operator=( const GLuint &rhs ) { mHandle = rhs; return *this; }
+        operator GLuint() { return mHandle; }
+        operator GLuint *() { return &mHandle; }
+
+        GLuint * operator&() { return &mHandle; }
+
+        bool operator==( GLuint rhs ) { return mHandle == rhs; }
+
+    protected:
+
     // The texture handle.
-		GLuint mHandle;
+        GLuint mHandle;
 };
 
 class glRenderbufferWrapper
 {
-	public:
-		glRenderbufferWrapper() { mBuffer = 0; }
-		glRenderbufferWrapper( GLuint b ) { mBuffer = b; }
-		~glRenderbufferWrapper() { if( mBuffer != 0 ) glDeleteRenderbuffersEXT( 1, &mBuffer ); }
-		
-		glRenderbufferWrapper & operator=( const GLuint &rhs ) { mBuffer = rhs; return *this; }
-		operator GLuint() { return mBuffer; }
-		operator GLuint *() { return &mBuffer; }
-		
-		GLuint * operator&() { return &mBuffer; }
-		
-		bool operator==( GLuint rhs ) { return mBuffer == rhs; }
-		
-	protected:
-		
-		GLuint mBuffer;
+    public:
+        glRenderbufferWrapper() { mBuffer = 0; }
+        glRenderbufferWrapper( GLuint b ) { mBuffer = b; }
+        ~glRenderbufferWrapper() { if( mBuffer != 0 ) glDeleteRenderbuffersEXT( 1, &mBuffer ); }
+
+        glRenderbufferWrapper & operator=( const GLuint &rhs ) { mBuffer = rhs; return *this; }
+        operator GLuint() { return mBuffer; }
+        operator GLuint *() { return &mBuffer; }
+
+        GLuint * operator&() { return &mBuffer; }
+
+        bool operator==( GLuint rhs ) { return mBuffer == rhs; }
+
+    protected:
+
+        GLuint mBuffer;
 };
 
 class glFramebufferWrapper
 {
-	public:
-		glFramebufferWrapper() { mBuffer = 0; }
-		glFramebufferWrapper( GLuint b ) { mBuffer = b; }
-		~glFramebufferWrapper() { if( mBuffer != 0 ) glDeleteFramebuffersEXT( 1, &mBuffer ); }
-		
-		glFramebufferWrapper & operator=( const GLuint &rhs ) { mBuffer = rhs; return *this; }
-		operator GLuint() { return mBuffer; }
-		operator GLuint *() { return &mBuffer; }
-		
-		GLuint * operator&() { return &mBuffer; }
-		
-		bool operator==( GLuint rhs ) { return mBuffer == rhs; }
-		
-	protected:
-		
-		GLuint mBuffer;
+    public:
+        glFramebufferWrapper() { mBuffer = 0; }
+        glFramebufferWrapper( GLuint b ) { mBuffer = b; }
+        ~glFramebufferWrapper() { if( mBuffer != 0 ) glDeleteFramebuffersEXT( 1, &mBuffer ); }
+
+        glFramebufferWrapper & operator=( const GLuint &rhs ) { mBuffer = rhs; return *this; }
+        operator GLuint() { return mBuffer; }
+        operator GLuint *() { return &mBuffer; }
+
+        GLuint * operator&() { return &mBuffer; }
+
+        bool operator==( GLuint rhs ) { return mBuffer == rhs; }
+
+    protected:
+
+        GLuint mBuffer;
 };
-	
-	
+
+
 // Helper functions (defined in helpers.cpp)
 
 extern void * CreateGLTexture1DArray( size_t width, size_t length,
   GLenum target, GLenum glFormat, GLenum internalFormat, GLenum glType,
-  ExplicitType type, GLuint *outTextureID, int *outError, 
+  ExplicitType type, GLuint *outTextureID, int *outError,
   bool allocateMem, MTdata d);
 
 extern void * CreateGLTexture2DArray( size_t width, size_t height, size_t length,
@@ -221,49 +221,49 @@ extern void * CreateGLTextureBuffer( size_t width,
   bool allocateMem, MTdata d);
 
 extern void * CreateGLTexture1D(size_t width,
-                                GLenum target, GLenum glFormat, 
+                                GLenum target, GLenum glFormat,
                                 GLenum internalFormat, GLenum glType,
-                                ExplicitType type, GLuint *outTextureID, 
+                                ExplicitType type, GLuint *outTextureID,
                                 int *outError, bool allocateMem, MTdata d );
 
-extern void * CreateGLTexture2D( size_t width, size_t height, 
-                               GLenum target, GLenum glFormat, 
+extern void * CreateGLTexture2D( size_t width, size_t height,
+                               GLenum target, GLenum glFormat,
                                GLenum internalFormat, GLenum glType,
-				               ExplicitType type, GLuint *outTextureID, 
+                               ExplicitType type, GLuint *outTextureID,
                                int *outError, bool allocateMem, MTdata d );
-						
+
 
 extern void * CreateGLTexture3D( size_t width, size_t height, size_t depth,
-                                 GLenum target, GLenum glFormat, 
+                                 GLenum target, GLenum glFormat,
                                  GLenum internalFormat, GLenum glType,
-                                 ExplicitType type, GLuint *outTextureID, 
+                                 ExplicitType type, GLuint *outTextureID,
                                  int *outError, MTdata d, bool allocateMem = true );
 
-extern void * ReadGLTexture( GLenum glTarget, GLuint glTexture, GLuint glBuf, GLint width, 
-                             GLenum glFormat, GLenum glInternalFormat, 
-                             GLenum glType, ExplicitType typeToReadAs, 
-                             size_t outWidth, size_t outHeight );                          
+extern void * ReadGLTexture( GLenum glTarget, GLuint glTexture, GLuint glBuf, GLint width,
+                             GLenum glFormat, GLenum glInternalFormat,
+                             GLenum glType, ExplicitType typeToReadAs,
+                             size_t outWidth, size_t outHeight );
 
-extern int CreateGLRenderbufferRaw( GLsizei width, GLsizei height, 
-								   GLenum target, GLenum glFormat, 
-								   GLenum internalFormat, GLenum glType,
-								   GLuint *outFramebuffer, 
-								   GLuint *outRenderbuffer );
+extern int CreateGLRenderbufferRaw( GLsizei width, GLsizei height,
+                                   GLenum target, GLenum glFormat,
+                                   GLenum internalFormat, GLenum glType,
+                                   GLuint *outFramebuffer,
+                                   GLuint *outRenderbuffer );
 
-extern void * CreateGLRenderbuffer( GLsizei width, GLsizei height, 
-                                    GLenum target, GLenum glFormat, 
+extern void * CreateGLRenderbuffer( GLsizei width, GLsizei height,
+                                    GLenum target, GLenum glFormat,
                                     GLenum internalFormat, GLenum glType,
-						            ExplicitType type, 
-						            GLuint *outFramebuffer, 
-						            GLuint *outRenderbuffer, 
-						            int *outError, MTdata d, bool allocateMem );
+                                    ExplicitType type,
+                                    GLuint *outFramebuffer,
+                                    GLuint *outRenderbuffer,
+                                    int *outError, MTdata d, bool allocateMem );
 
-extern void * ReadGLRenderbuffer( GLuint glFramebuffer, GLuint glRenderbuffer, 
-                                  GLenum attachment, GLenum glFormat, 
-                                  GLenum glInternalFormat, GLenum glType, 
-                                  ExplicitType typeToReadAs, 
+extern void * ReadGLRenderbuffer( GLuint glFramebuffer, GLuint glRenderbuffer,
+                                  GLenum attachment, GLenum glFormat,
+                                  GLenum glInternalFormat, GLenum glType,
+                                  ExplicitType typeToReadAs,
                                   size_t outWidth, size_t outHeight );
-                           
+
 extern void DumpGLBuffer(GLenum type, size_t width, size_t height, void* buffer);
 extern const char *GetGLTypeName( GLenum type );
 extern const char *GetGLAttachmentName( GLenum att );

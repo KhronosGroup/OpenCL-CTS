@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -67,55 +67,55 @@ int test_local_kernel_scope(cl_device_id device, cl_context context, cl_command_
     clKernelWrapper kernel;
     clMemWrapper streams[ 2 ];
     MTdata randSeed = init_genrand( gRandomSeed );
-    
+
     // Create a test kernel
     error = create_single_kernel_helper( context, &program, &kernel, 1, kernelSource, "test" );
     test_error( error, "Unable to create test kernel" );
-    
-    
+
+
     // Determine an appropriate test size
     size_t workGroupSize;
     error = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof( workGroupSize ), &workGroupSize, NULL );
     test_error( error, "Unable to obtain kernel work group size" );
-    
+
     // Make sure the work group size doesn't overrun our local storage size in the kernel
     while( workGroupSize > MAX_LOCAL_STORAGE_SIZE )
         workGroupSize >>= 1;
-    
+
     size_t testSize = workGroupSize;
     while( testSize < 1024 )
         testSize += workGroupSize;
     size_t numGroups = testSize / workGroupSize;
     log_info( "\tTesting with %ld groups, %ld elements per group...\n", numGroups, workGroupSize );
-    
+
     // Create two buffers for operation
     cl_uint *inputData = (cl_uint*)malloc( testSize * sizeof(cl_uint) );
     generate_random_data( kUInt, testSize, randSeed, inputData );
-	free_mtdata( randSeed );
+    free_mtdata( randSeed );
     streams[ 0 ] = clCreateBuffer( context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, testSize * sizeof(cl_uint), inputData, &error );
     test_error( error, "Unable to create input buffer" );
-    
+
     cl_uint *outputData = (cl_uint*)malloc( numGroups *sizeof(cl_uint) );
     streams[ 1 ] = clCreateBuffer( context, CL_MEM_WRITE_ONLY, numGroups * sizeof(cl_uint), NULL, &error );
     test_error( error, "Unable to create output buffer" );
-    
-    
+
+
     // Set up the kernel args and run
     error = clSetKernelArg( kernel, 0, sizeof( streams[ 0 ] ), &streams[ 0 ] );
     test_error( error, "Unable to set kernel arg" );
     error = clSetKernelArg( kernel, 1, sizeof( streams[ 1 ] ), &streams[ 1 ] );
     test_error( error, "Unable to set kernel arg" );
-    
+
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, &testSize, &workGroupSize, 0, NULL, NULL );
     test_error( error, "Unable to enqueue kernel" );
-    
-    
+
+
     // Read results and verify
     error = clEnqueueReadBuffer( queue, streams[ 1 ], CL_TRUE, 0, numGroups * sizeof(cl_uint), outputData, 0, NULL, NULL );
     test_error( error, "Unable to read output data" );
-    
+
     // MingW compiler seems to have a bug that otimizes the code below incorrectly.
-    // adding the volatile keyword to size_t decleration to avoid aggressive optimization by the compiler.   
+    // adding the volatile keyword to size_t decleration to avoid aggressive optimization by the compiler.
     for( volatile size_t i = 0; i < numGroups; i++ )
     {
         // Determine the max in our case
@@ -125,7 +125,7 @@ int test_local_kernel_scope(cl_device_id device, cl_context context, cl_command_
             if( inputData[ i * workGroupSize + j ] > localMax )
                 localMax = inputData[ i * workGroupSize + j ];
         }
-        
+
         if( outputData[ i ] != localMax )
         {
             log_error( "ERROR: Local max validation failed! (expected %u, got %u for i=%lu)\n", localMax, outputData[ i ] , i );
@@ -134,7 +134,7 @@ int test_local_kernel_scope(cl_device_id device, cl_context context, cl_command_
             return -1;
         }
     }
-    
+
     free(inputData);
     free(outputData);
     return 0;

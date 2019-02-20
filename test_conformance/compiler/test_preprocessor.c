@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -40,11 +40,11 @@ const char *define_kernel_code[] = {
 "\n"
 "}\n"};
 
-	
+
 
 
 int test_preprocessor_define_udef(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-  
+
   cl_int error;
   clKernelWrapper kernel;
   clProgramWrapper program;
@@ -52,11 +52,11 @@ int test_preprocessor_define_udef(cl_device_id deviceID, cl_context context, cl_
   cl_int *srcData, *resultData;
   int i;
   MTdata d;
-  
+
   error = create_single_kernel_helper(context, &program, &kernel, 1, define_kernel_code, "define_test");
   if (error)
     return -1;
-  
+
   buffer[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elements*sizeof(cl_int), NULL, &error);
   test_error( error, "clCreateBuffer failed");
   buffer[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elements*sizeof(cl_int), NULL, &error);
@@ -69,19 +69,19 @@ int test_preprocessor_define_udef(cl_device_id deviceID, cl_context context, cl_
     log_error("Failed to allocate storage for source data (%d cl_ints).\n", num_elements);
     return -1;
   }
-  
+
   d = init_genrand( gRandomSeed );
   for (i=0; i<num_elements; i++)
     srcData[i] = (int)get_random_float(-1024, 1024,d);
   free_mtdata(d);   d = NULL;
-  
+
   resultData = (cl_int*)malloc(sizeof(cl_int)*num_elements);
   if (resultData == NULL) {
     free(srcData);
     log_error("Failed to allocate storage for result data (%d cl_ints).\n", num_elements);
     return -1;
   }
-  
+
   error = clSetKernelArg(kernel, 0, sizeof(buffer[0]), &buffer[0]);
   test_error(error, "clSetKernelArg failed");
   error = clSetKernelArg(kernel, 1, sizeof(buffer[1]), &buffer[1]);
@@ -92,24 +92,24 @@ int test_preprocessor_define_udef(cl_device_id deviceID, cl_context context, cl_
 
   error = clEnqueueWriteBuffer(queue, buffer[0], CL_TRUE, 0, num_elements*sizeof(cl_int), srcData, 0, NULL, NULL);
   test_error(error, "clEnqueueWriteBuffer failed");
-    
+
   size_t threads[3] = {num_elements, 0, 0};
   error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL);
   test_error(error, "clEnqueueNDRangeKernel failed");
-  
+
   error = clEnqueueReadBuffer(queue, buffer[1], CL_TRUE, 0, num_elements*sizeof(cl_int), resultData, 0, NULL, NULL);
   test_error(error, "clEnqueueReadBuffer failed");
-  
+
   for (i=0; i<num_elements; i++)
     if (resultData[i] != srcData[i]*2) {
       free(srcData);
       free(resultData);
       return -1;
     }
-  
+
   error = clEnqueueReadBuffer(queue, buffer[2], CL_TRUE, 0, num_elements*sizeof(cl_int), resultData, 0, NULL, NULL);
   test_error(error, "clEnqueueReadBuffer failed");
-  
+
   for (i=0; i<num_elements; i++)
     if (resultData[i] != srcData[i]*4) {
       free(srcData);
@@ -123,7 +123,7 @@ int test_preprocessor_define_udef(cl_device_id deviceID, cl_context context, cl_
 }
 
 
-const char *include_kernel_code = 
+const char *include_kernel_code =
 "#include \"%s\"\n"
 "__kernel void include_test(__global int *src, __global int *dstA)\n"
 "{\n"
@@ -138,7 +138,7 @@ const char *include_kernel_code =
 
 
 int test_preprocessor_include(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-  
+
   cl_int error;
   clKernelWrapper kernel;
   clProgramWrapper program;
@@ -152,9 +152,9 @@ int test_preprocessor_include(cl_device_id deviceID, cl_context context, cl_comm
 #if defined( __APPLE__ )
   char* path = 0;
   const char *sep = "/";
-  path = getwd(NULL);    
+  path = getwd(NULL);
 #elif defined( __linux__ )
-  const char *sep = "/";  
+  const char *sep = "/";
   char* path = 0;
   path = get_current_dir_name();
 #elif defined( WIN32 )
@@ -163,7 +163,7 @@ int test_preprocessor_include(cl_device_id deviceID, cl_context context, cl_comm
   if (!path) {
         return -1;
   }
-  GetCurrentDirectoryA(MAX_PATH, path);    
+  GetCurrentDirectoryA(MAX_PATH, path);
 #else
    #error Please set the cwd for your platform
 #endif
@@ -172,41 +172,41 @@ int test_preprocessor_include(cl_device_id deviceID, cl_context context, cl_comm
   sprintf(include_dir,"%s%sincludeTestDirectory%stestIncludeFile.h", path, sep, sep);
   sprintf(include_kernel, include_kernel_code, include_dir);
   if(path) free(path);
-  
+
   const char* test_kernel[] = { include_kernel, 0 };
   error = create_single_kernel_helper(context, &program, &kernel, 1, test_kernel, "include_test");
   if (error)
     return -1;
-  
+
   buffer[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elements*sizeof(cl_int), NULL, &error);
   test_error( error, "clCreateBuffer failed");
   buffer[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elements*sizeof(cl_int), NULL, &error);
   test_error( error, "clCreateBuffer failed");
-    
+
   resultData = (cl_int*)malloc(sizeof(cl_int)*num_elements);
   if (resultData == NULL) {
     log_error("Failed to allocate storage for result data (%d cl_ints).\n", num_elements);
     return -1;
   }
-  
+
   error = clSetKernelArg(kernel, 0, sizeof(buffer[0]), &buffer[0]);
   test_error(error, "clSetKernelArg failed");
   error = clSetKernelArg(kernel, 1, sizeof(buffer[1]), &buffer[1]);
   test_error(error, "clSetKernelArg failed");
-  
+
   size_t threads[3] = {num_elements, 0, 0};
   error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL);
   test_error(error, "clEnqueueNDRangeKernel failed");
-  
+
   error = clEnqueueReadBuffer(queue, buffer[1], CL_TRUE, 0, num_elements*sizeof(cl_int), resultData, 0, NULL, NULL);
   test_error(error, "clEnqueueReadBuffer failed");
-  
+
   for (i=0; i<num_elements; i++)
     if (resultData[i] != 12) {
       free(resultData);
       return -1;
     }
-  
+
   free(resultData);
   return 0;
 }
@@ -226,20 +226,20 @@ const char *line_error_kernel_code[] = {
 
 
 int test_preprocessor_line_error(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-  
+
   cl_int error, error2;
   clKernelWrapper kernel;
   clProgramWrapper program;
   clMemWrapper buffer[2];
-  
+
   char buildLog[ 1024 * 128 ];
-	
+
   log_info("test_preprocessor_line_error may report spurious ERRORS in the conformance log.\n");
-  
+
   /* Create the program object from source */
   program = clCreateProgramWithSource( context, 1, line_error_kernel_code, NULL, &error );
   test_error(error, "clCreateProgramWithSource failed");
-	
+
   /* Compile the program */
   error2 = clBuildProgram( program, 0, NULL, NULL, NULL, NULL );
   if (error2) {
@@ -247,7 +247,7 @@ int test_preprocessor_line_error(cl_device_id deviceID, cl_context context, cl_c
   } else {
     log_info("Error not reported by clBuildProgram.\n");
   }
-  
+
   cl_build_status status;
   error = clGetProgramBuildInfo(program, deviceID, CL_PROGRAM_BUILD_STATUS, sizeof(status), &status, NULL);
   test_error(error, "clGetProgramBuildInfo failed for CL_PROGRAM_BUILD_STATUS");
@@ -255,42 +255,42 @@ int test_preprocessor_line_error(cl_device_id deviceID, cl_context context, cl_c
     log_error("Build status did not return CL_BUILD_ERROR for a program with #error defined.\n");
     return -1;
   } else if (status == CL_BUILD_ERROR || error2) {
-		error2 = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_LOG, sizeof( buildLog ), buildLog, NULL );
-		test_error( error2, "Unable to get program build log" );
-    
+        error2 = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_LOG, sizeof( buildLog ), buildLog, NULL );
+        test_error( error2, "Unable to get program build log" );
+
     log_info("Build failed as expected with #error in source:\n");
-		log_info( "Build log is: ------------\n" );
-		log_info( "%s\n", buildLog );
-		log_info( "Original source is: ------------\n" );
+        log_info( "Build log is: ------------\n" );
+        log_info( "%s\n", buildLog );
+        log_info( "Original source is: ------------\n" );
     log_info( "%s", line_error_kernel_code[0] );
-		log_info( "\n----------\n" );
-    
+        log_info( "\n----------\n" );
+
     if (strstr(buildLog, "fictitious/file/name.c")) {
       log_info("Found file name from #line param in log output.\n");
     } else {
       log_info("WARNING: Did not find file name from #line param in log output.\n");
     }
-    
+
     if (strstr(buildLog, "124")) {
       log_info("Found line number from #line param in log output.\n");
     } else {
       log_info("WARNING: Did not find line number from #line param in log output.\n");
     }
-    
+
     log_info("test_preprocessor_line_error PASSED.\n");
-		return 0;
-	}   
-	
-	/* And create a kernel from it */
-	kernel = clCreateKernel( program, "line_error_test", &error );
+        return 0;
+    }
+
+    /* And create a kernel from it */
+    kernel = clCreateKernel( program, "line_error_test", &error );
   test_error(error, "clCreateKernel failed");
-  
+
   buffer[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elements*sizeof(cl_int), NULL, &error);
   test_error( error, "clCreateBuffer failed");
-    
+
   error = clSetKernelArg(kernel, 0, sizeof(buffer[0]), &buffer[0]);
   test_error(error, "clSetKernelArg failed");
-  
+
   size_t threads[3] = {num_elements, 0, 0};
   error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL);
   test_error(error, "clEnqueueNDRangeKernel failed");
@@ -314,43 +314,43 @@ const char *pragma_kernel_code[] = {
 
 
 int test_preprocessor_pragma(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-  
+
   cl_int error;
   clKernelWrapper kernel;
   clProgramWrapper program;
   clMemWrapper buffer[2];
   cl_int *resultData;
   int i;
-  
+
   error = create_single_kernel_helper(context, &program, &kernel, 1, pragma_kernel_code, "pragma_test");
   if (error)
     return -1;
-  
+
   buffer[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, num_elements*sizeof(cl_int), NULL, &error);
   test_error( error, "clCreateBuffer failed");
-  
+
   error = clSetKernelArg(kernel, 0, sizeof(buffer[0]), &buffer[0]);
   test_error(error, "clSetKernelArg failed");
-  
+
   size_t threads[3] = {num_elements, 0, 0};
   error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL);
   test_error(error, "clEnqueueNDRangeKernel failed");
-  
+
   resultData = (cl_int*)malloc(sizeof(cl_int)*num_elements);
   if (resultData == NULL) {
     log_error("Failed to allocate storage for result data (%d cl_ints).\n", num_elements);
     return -1;
-  }  
-  
+  }
+
   error = clEnqueueReadBuffer(queue, buffer[0], CL_TRUE, 0, num_elements*sizeof(cl_int), resultData, 0, NULL, NULL);
   test_error(error, "clEnqueueReadBuffer failed");
-  
+
   for (i=0; i<num_elements; i++)
     if (resultData[i] != i) {
       free(resultData);
       return -1;
     }
-  
+
   free(resultData);
   return 0;
 }

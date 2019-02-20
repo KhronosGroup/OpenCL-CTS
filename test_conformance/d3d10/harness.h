@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -90,7 +90,7 @@ struct TextureFormat
         GENERIC_UINT  = 1,
         GENERIC_SINT  = 2,
     } generic;
-    
+
     const char *name_format;
     const char *name_channel_order;
     const char *name_channel_type;
@@ -151,55 +151,55 @@ void HarnessD3D10_TestStats();
 
 
 void TestAdapterEnumeration(
-    cl_platform_id platform, 
-    IDXGIAdapter* pAdapter, 
-    ID3D10Device* pDevice, 
+    cl_platform_id platform,
+    IDXGIAdapter* pAdapter,
+    ID3D10Device* pDevice,
     cl_uint* num_devices);
 
 void TestAdapterDevices(
-    cl_platform_id platform, 
-    IDXGIAdapter* pAdapter, 
-    ID3D10Device* pDevice, 
+    cl_platform_id platform,
+    IDXGIAdapter* pAdapter,
+    ID3D10Device* pDevice,
     cl_uint num_devices);
 
 void TestDevice(
-    cl_device_id device, 
+    cl_device_id device,
     ID3D10Device* pDevice);
 
 bool TestDeviceContextCreate(
-    cl_device_id device, 
-    ID3D10Device* pDevice, 
-    cl_context* out_context, 
+    cl_device_id device,
+    ID3D10Device* pDevice,
+    cl_context* out_context,
     cl_command_queue* out_command_queue);
 
 void TestDeviceBuffer(
-    cl_context context, 
-    cl_command_queue command_queue, 
+    cl_context context,
+    cl_command_queue command_queue,
     ID3D10Device* pDevice);
 
 void TestDeviceTexture2D(
-    cl_device_id device, 
-    cl_context context, 
-    cl_command_queue command_queue, 
+    cl_device_id device,
+    cl_context context,
+    cl_command_queue command_queue,
     ID3D10Device* pDevice);
 
 void TestDeviceTexture3D(
-    cl_device_id device, 
-    cl_context context, 
-    cl_command_queue command_queue, 
+    cl_device_id device,
+    cl_context context,
+    cl_command_queue command_queue,
     ID3D10Device* pDevice);
 
 void TestDeviceMisc(
-    cl_device_id device, 
-    cl_context context, 
-    cl_command_queue command_queue, 
+    cl_device_id device,
+    cl_context context,
+    cl_command_queue command_queue,
     ID3D10Device* pDevice);
 
 cl_int HarnessD3D10_CreateKernelFromSource(
-    cl_kernel *outKernel, 
+    cl_kernel *outKernel,
     cl_device_id device,
     cl_context context,
-    const char *source, 
+    const char *source,
     const char *entrypoint);
 
 extern clGetDeviceIDsFromD3D10KHR_fn      clGetDeviceIDsFromD3D10KHR;

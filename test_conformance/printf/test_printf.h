@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -38,7 +38,7 @@
 #if USE_ATF
 // export BUILD_WITH_ATF=1
 #include <ATF/ATF.h>
-#define test_start() ATFTestStart() 
+#define test_start() ATFTestStart()
 #define log_info ATFLogInfo
 #define log_error ATFLogError
 #define test_finish() ATFTestFinish()
@@ -56,34 +56,34 @@
 //-----------------------------------------
 
 //-----------------------------------------
-// Types 
+// Types
 //-----------------------------------------
-enum Type  
- {  
-	 INT,  
-	 FLOAT,  
-	 OCTAL,
-	 UNSIGNED,
-	 HEXADEC,
-	 CHAR,
-	 STRING,  
-	 VECTOR,
-	 ADDRESS_SPACE,
-	 TYPE_COUNT
-}; 
+enum Type
+ {
+     INT,
+     FLOAT,
+     OCTAL,
+     UNSIGNED,
+     HEXADEC,
+     CHAR,
+     STRING,
+     VECTOR,
+     ADDRESS_SPACE,
+     TYPE_COUNT
+};
 
 struct printDataGenParameters
 {
-	const char* genericFormat;
-	const char* dataRepresentation;
-	const char* vectorFormatFlag;
-	const char* vectorFormatSpecifier;
-	const char* dataType;
-	const char* vectorSize;
-	const char* addrSpaceArgumentTypeQualifier;
-	const char* addrSpaceVariableTypeQualifier;
-	const char* addrSpaceParameter;
-	const char* addrSpacePAdd;
+    const char* genericFormat;
+    const char* dataRepresentation;
+    const char* vectorFormatFlag;
+    const char* vectorFormatSpecifier;
+    const char* dataType;
+    const char* vectorSize;
+    const char* addrSpaceArgumentTypeQualifier;
+    const char* addrSpaceVariableTypeQualifier;
+    const char* addrSpaceParameter;
+    const char* addrSpacePAdd;
 };
 
 //-----------------------------------------
@@ -92,11 +92,11 @@ struct printDataGenParameters
 
 struct testCase
 {
-	unsigned int _testNum;                           //test number
-	enum Type _type;                                 //(data)type for test
-	//const char** _strPrint;                          //auxiliary data to build the code for kernel source 
-	const char** _correctBuffer;                     //look-up table for correct results for printf
-	struct printDataGenParameters* _genParameters;   //auxiliary data to build the code for kernel source 
+    unsigned int _testNum;                           //test number
+    enum Type _type;                                 //(data)type for test
+    //const char** _strPrint;                          //auxiliary data to build the code for kernel source
+    const char** _correctBuffer;                     //look-up table for correct results for printf
+    struct printDataGenParameters* _genParameters;   //auxiliary data to build the code for kernel source
 };
 
 
@@ -109,30 +109,30 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
 
 // The next three functions check on different return values.  Returns -1
 // if the check failed
-#define checkErr(err, msg)				\
-    if (err != CL_SUCCESS) {				\
-	log_error("%s failed errcode:%d\n", msg, err);	\
-	return -1;					\
+#define checkErr(err, msg)                \
+    if (err != CL_SUCCESS) {                \
+    log_error("%s failed errcode:%d\n", msg, err);    \
+    return -1;                    \
     }
 
-#define checkZero(val, msg)				\
-    if (val == 0) {					\
-	log_error("%s failed errcode:%d\n", msg, err);	\
-	return -1;					\
+#define checkZero(val, msg)                \
+    if (val == 0) {                    \
+    log_error("%s failed errcode:%d\n", msg, err);    \
+    return -1;                    \
     }
 
-#define checkNull(ptr, msg)			\
-    if (!ptr) {					\
-	log_error("%s failed\n", msg);		\
-	return -1;				\
+#define checkNull(ptr, msg)            \
+    if (!ptr) {                    \
+    log_error("%s failed\n", msg);        \
+    return -1;                \
     }
 
 // When a helper returns a negative one, we want to return from main
 // with negative one. This helper prevents me from having to write
 // this multiple time
-#define checkHelperErr(err)			\
-    if (err == -1) {				\
-	return err;				\
+#define checkHelperErr(err)            \
+    if (err == -1) {                \
+    return err;                \
     }
 
 #endif // TESTSPRINTF_INCLUDED_H

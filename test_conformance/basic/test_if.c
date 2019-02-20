@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,7 +28,7 @@
 
 #include "procs.h"
 
-const char *conditional_kernel_code = 
+const char *conditional_kernel_code =
 "__kernel void test_if(__global int *src, __global int *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -76,32 +76,32 @@ verify_if(int *inptr, int *outptr, int n)
             r = results[inptr[i]];
         else
             r = 0x7FFFFFFF;
-            
+
         if (r != outptr[i])
         {
             log_error("IF test failed\n");
             return -1;
         }
     }
-	
+
     log_info("IF test passed\n");
     return 0;
 }
 
 int test_if(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-	cl_mem streams[2];
-	cl_int *input_ptr, *output_ptr;
-	cl_program program;
-	cl_kernel kernel;
-	size_t threads[1];
-	int err, i;
+    cl_mem streams[2];
+    cl_int *input_ptr, *output_ptr;
+    cl_program program;
+    cl_kernel kernel;
+    size_t threads[1];
+    int err, i;
     MTdata d = init_genrand( gRandomSeed );
-  
+
     size_t length = sizeof(cl_int) * num_elements;
-	input_ptr  = (cl_int*)malloc(length);
-	output_ptr = (cl_int*)malloc(length);
-  
+    input_ptr  = (cl_int*)malloc(length);
+    output_ptr = (cl_int*)malloc(length);
+
     streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, NULL);
     if (!streams[0])
     {
@@ -115,56 +115,56 @@ int test_if(cl_device_id device, cl_context context, cl_command_queue queue, int
         return -1;
     }
 
-	for (i=0; i<num_elements; i++)
-		input_ptr[i] = (int)get_random_float(0, 32, d);
-        
+    for (i=0; i<num_elements; i++)
+        input_ptr[i] = (int)get_random_float(0, 32, d);
+
     free_mtdata(d); d = NULL;
-  
+
   err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length, input_ptr, 0, NULL, NULL);
   if (err != CL_SUCCESS)
   {
     log_error("clEnqueueWriteBuffer failed\n");
     return -1;
   }
-	
+
   err = create_single_kernel_helper(context, &program, &kernel, 1, &conditional_kernel_code, "test_if" );
   if (err)
     return -1;
-  
+
   err  = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
   err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
-	if (err != CL_SUCCESS)
-	{
-		log_error("clSetKernelArgs failed\n");
-		return -1;
-	}
-  
-	threads[0] = (unsigned int)num_elements;
+    if (err != CL_SUCCESS)
+    {
+        log_error("clSetKernelArgs failed\n");
+        return -1;
+    }
+
+    threads[0] = (unsigned int)num_elements;
   err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL);
   if (err != CL_SUCCESS)
   {
     log_error("clEnqueueNDRangeKernel failed\n");
     return -1;
   }
-  
+
   err = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, length, output_ptr, 0, NULL, NULL);
   if (err != CL_SUCCESS)
   {
     log_error("clReadArray failed\n");
     return -1;
   }
-  
+
   err = verify_if(input_ptr, output_ptr, num_elements);
-  
-	// cleanup
-	clReleaseMemObject(streams[0]);
-	clReleaseMemObject(streams[1]);
-	clReleaseKernel(kernel);
-	clReleaseProgram(program);
-	free(input_ptr);
-	free(output_ptr);
-	
-	return err;
+
+    // cleanup
+    clReleaseMemObject(streams[0]);
+    clReleaseMemObject(streams[1]);
+    clReleaseKernel(kernel);
+    clReleaseProgram(program);
+    free(input_ptr);
+    free(output_ptr);
+
+    return err;
 }
 
 

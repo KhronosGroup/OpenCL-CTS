@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -37,13 +37,13 @@ static const char *async_global_to_local_kernel =
 " int i;\n"
 // Zero the local storage first
 " for(i=0; i<copiesPerWorkItem; i++)\n"
-"	 localBuffer[ get_local_id( 0 )*copiesPerWorkItem+i ] = (%s)(%s)0;\n"
+"     localBuffer[ get_local_id( 0 )*copiesPerWorkItem+i ] = (%s)(%s)0;\n"
 // Do this to verify all kernels are done zeroing the local buffer before we try the copy
-"	barrier( CLK_LOCAL_MEM_FENCE );\n"
-"	event_t event;\n"
-"	event = async_work_group_copy( (__local %s*)localBuffer, (__global const %s*)(src+copiesPerWorkgroup*get_group_id(0)), (size_t)copiesPerWorkgroup, (event_t)0 );\n"
+"    barrier( CLK_LOCAL_MEM_FENCE );\n"
+"    event_t event;\n"
+"    event = async_work_group_copy( (__local %s*)localBuffer, (__global const %s*)(src+copiesPerWorkgroup*get_group_id(0)), (size_t)copiesPerWorkgroup, (event_t)0 );\n"
 // Wait for the copy to complete, then verify by manually copying to the dest
-"	wait_group_events( 1, &event );\n"
+"    wait_group_events( 1, &event );\n"
 " for(i=0; i<copiesPerWorkItem; i++)\n"
 "  dst[ get_global_id( 0 )*copiesPerWorkItem+i ] = localBuffer[ get_local_id( 0 )*copiesPerWorkItem+i ];\n"
 "}\n" ;
@@ -57,14 +57,14 @@ static const char *async_local_to_global_kernel =
 " for(i=0; i<copiesPerWorkItem; i++)\n"
 "  localBuffer[ get_local_id( 0 )*copiesPerWorkItem+i ] = (%s)(%s)0;\n"
 // Do this to verify all kernels are done zeroing the local buffer before we try the copy
-"	barrier( CLK_LOCAL_MEM_FENCE );\n"
+"    barrier( CLK_LOCAL_MEM_FENCE );\n"
 " for(i=0; i<copiesPerWorkItem; i++)\n"
 "  localBuffer[ get_local_id( 0 )*copiesPerWorkItem+i ] = src[ get_global_id( 0 )*copiesPerWorkItem+i ];\n"
 // Do this to verify all kernels are done copying to the local buffer before we try the copy
-"	barrier( CLK_LOCAL_MEM_FENCE );\n"
-"	event_t event;\n"
-"	event = async_work_group_copy((__global %s*)(dst+copiesPerWorkgroup*get_group_id(0)), (__local const %s*)localBuffer, (size_t)copiesPerWorkgroup, (event_t)0 );\n"
-"	wait_group_events( 1, &event );\n"
+"    barrier( CLK_LOCAL_MEM_FENCE );\n"
+"    event_t event;\n"
+"    event = async_work_group_copy((__global %s*)(dst+copiesPerWorkgroup*get_group_id(0)), (__local const %s*)localBuffer, (size_t)copiesPerWorkgroup, (event_t)0 );\n"
+"    wait_group_events( 1, &event );\n"
 "}\n" ;
 
 
@@ -82,7 +82,7 @@ static const char *prefetch_kernel =
 
 
 int test_copy(cl_device_id deviceID, cl_context context, cl_command_queue queue, const char *kernelCode,
-              ExplicitType vecType, int vecSize 
+              ExplicitType vecType, int vecSize
               )
 {
     int error;
@@ -97,43 +97,43 @@ int test_copy(cl_device_id deviceID, cl_context context, cl_command_queue queue,
         sprintf(vecNameString, "%s", get_explicit_type_name(vecType));
     else
         sprintf(vecNameString, "%s%d", get_explicit_type_name(vecType), vecSize);
-    
-    
+
+
     size_t elementSize = get_explicit_type_size(vecType)*vecSize;
     log_info("Testing %s\n", vecNameString);
-    
+
     cl_long max_local_mem_size;
     error = clGetDeviceInfo(deviceID, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(max_local_mem_size), &max_local_mem_size, NULL);
     test_error( error, "clGetDeviceInfo for CL_DEVICE_LOCAL_MEM_SIZE failed.");
-    
+
     unsigned int num_of_compute_devices;
     error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(num_of_compute_devices), &num_of_compute_devices, NULL);
     test_error( error, "clGetDeviceInfo for CL_DEVICE_MAX_COMPUTE_UNITS failed.");
-    
+
     char programSource[4096]; programSource[0]=0;
     char *programPtr;
-    
-    sprintf(programSource, kernelCode,  
+
+    sprintf(programSource, kernelCode,
             vecType == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
             vecNameString, vecNameString, vecNameString, vecNameString, get_explicit_type_name(vecType), vecNameString, vecNameString);
     //log_info("program: %s\n", programSource);
     programPtr = programSource;
-    
+
     error = create_single_kernel_helper( context, &program, &kernel, 1, (const char **)&programPtr, "test_fn" );
     test_error( error, "Unable to create testing kernel" );
-    
+
     size_t max_workgroup_size;
     error = clGetKernelWorkGroupInfo(kernel, deviceID, CL_KERNEL_WORK_GROUP_SIZE, sizeof(max_workgroup_size), &max_workgroup_size, NULL);
     test_error (error, "clGetKernelWorkGroupInfo failed for CL_KERNEL_WORK_GROUP_SIZE.");
-    
+
     size_t max_local_workgroup_size[3];
     error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(max_local_workgroup_size), max_local_workgroup_size, NULL);
     test_error (error, "clGetDeviceInfo failed for CL_DEVICE_MAX_WORK_ITEM_SIZES");
-    
+
     // Pick the minimum of the device and the kernel
     if (max_workgroup_size > max_local_workgroup_size[0])
         max_workgroup_size = max_local_workgroup_size[0];
-    
+
     size_t numberOfCopiesPerWorkitem = 13;
     size_t localStorageSpacePerWorkitem = numberOfCopiesPerWorkitem*elementSize;
     size_t maxLocalWorkgroupSize = (((int)max_local_mem_size/2)/localStorageSpacePerWorkitem);
@@ -143,39 +143,39 @@ int test_copy(cl_device_id deviceID, cl_context context, cl_command_queue queue,
     {
         maxLocalWorkgroupSize = 1;
     }
-    
+
     size_t localWorkgroupSize = maxLocalWorkgroupSize;
     if (maxLocalWorkgroupSize > max_workgroup_size)
         localWorkgroupSize = max_workgroup_size;
-    
+
     size_t localBufferSize = localWorkgroupSize*elementSize*numberOfCopiesPerWorkitem;
     size_t numberOfLocalWorkgroups = 1111;
     size_t globalBufferSize = numberOfLocalWorkgroups*localBufferSize;
     size_t globalWorkgroupSize = numberOfLocalWorkgroups*localWorkgroupSize;
-    
+
     inBuffer = (void*)malloc(globalBufferSize);
     outBuffer = (void*)malloc(globalBufferSize);
-    memset(outBuffer, 0, globalBufferSize); 
-    
+    memset(outBuffer, 0, globalBufferSize);
+
     cl_int copiesPerWorkItemInt, copiesPerWorkgroup;
     copiesPerWorkItemInt = (int)numberOfCopiesPerWorkitem;
     copiesPerWorkgroup = (int)(numberOfCopiesPerWorkitem*localWorkgroupSize);
-    
+
     log_info("Global: %d, local %d, local buffer %db, global buffer %db, each work group will copy %d elements and each work item item will copy %d elements.\n",
              (int) globalWorkgroupSize, (int)localWorkgroupSize, (int)localBufferSize, (int)globalBufferSize, copiesPerWorkgroup, copiesPerWorkItemInt);
-    
+
     threads[0] = globalWorkgroupSize;
     localThreads[0] = localWorkgroupSize;
-    
+
     d = init_genrand( gRandomSeed );
     generate_random_data( vecType, globalBufferSize/get_explicit_type_size(vecType), d, inBuffer );
     free_mtdata(d); d = NULL;
-    
+
     streams[ 0 ] = clCreateBuffer( context, CL_MEM_COPY_HOST_PTR, globalBufferSize, inBuffer, &error );
     test_error( error, "Unable to create input buffer" );
     streams[ 1 ] = clCreateBuffer( context, CL_MEM_COPY_HOST_PTR, globalBufferSize, outBuffer, &error );
     test_error( error, "Unable to create output buffer" );
-    
+
     error = clSetKernelArg( kernel, 0, sizeof( streams[ 0 ] ), &streams[ 0 ] );
     test_error( error, "Unable to set kernel argument" );
     error = clSetKernelArg( kernel, 1, sizeof( streams[ 1 ] ), &streams[ 1 ] );
@@ -186,15 +186,15 @@ int test_copy(cl_device_id deviceID, cl_context context, cl_command_queue queue,
     test_error( error, "Unable to set kernel argument" );
     error = clSetKernelArg( kernel, 4, sizeof(copiesPerWorkItemInt), &copiesPerWorkItemInt );
     test_error( error, "Unable to set kernel argument" );
-    
+
     // Enqueue
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Unable to queue kernel" );
-    
+
     // Read
     error = clEnqueueReadBuffer( queue, streams[ 1 ], CL_TRUE, 0, globalBufferSize, outBuffer, 0, NULL, NULL );
     test_error( error, "Unable to read results" );
-    
+
     // Verify
     if( memcmp( inBuffer, outBuffer, globalBufferSize ) != 0 )
     {
@@ -227,10 +227,10 @@ int test_copy(cl_device_id deviceID, cl_context context, cl_command_queue queue,
         }
         return -1;
     }
-    
+
     free(inBuffer);
     free(outBuffer);
-    
+
     return 0;
 }
 
@@ -238,9 +238,9 @@ int test_copy_all_types(cl_device_id deviceID, cl_context context, cl_command_qu
     ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort, kInt, kUInt, kLong, kULong, kFloat, kDouble, kNumExplicitTypes };
     unsigned int vecSizes[] = { 1, 2, 4, 8, 16, 0 };
     unsigned int size, typeIndex;
-    
+
     int errors = 0;
-    
+
     for( typeIndex = 0; vecType[ typeIndex ] != kNumExplicitTypes; typeIndex++ )
     {
         if( vecType[ typeIndex ] == kDouble && !is_extension_available( deviceID, "cl_khr_fp64" ) )

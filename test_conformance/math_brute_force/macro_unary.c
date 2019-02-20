@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,7 +28,7 @@ int TestMacro_Int_Float(const Func *f, MTdata);
 int TestMacro_Int_Double(const Func *f, MTdata);
 
 #if defined( __cplusplus)
-	extern "C" 
+    extern "C"
 #endif
 const vtbl _macro_unary = { "macro_unary", TestMacro_Int_Float, TestMacro_Int_Double };
 
@@ -82,31 +82,31 @@ static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, 
 
     const char **kern = c;
     size_t kernSize = sizeof(c)/sizeof(c[0]);
-    
+
     if( sizeValues[vectorSize] == 3 )
     {
         kern = c3;
         kernSize = sizeof(c3)/sizeof(c3[0]);
     }
-        
+
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
-   
-    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);     
+
+    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);
 }
 
 static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p )
 {
     const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-	                    "__kernel void math_kernel", sizeNames[vectorSize], "( __global long", sizeNames[vectorSize], "* out, __global double", sizeNames[vectorSize], "* in)\n"
+                        "__kernel void math_kernel", sizeNames[vectorSize], "( __global long", sizeNames[vectorSize], "* out, __global double", sizeNames[vectorSize], "* in)\n"
                             "{\n"
                             "   int i = get_global_id(0);\n"
                             "   out[i] = ", name, "( in[i] );\n"
                             "}\n"
                         };
-        
+
     const char *c3[] = {    "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-	                    "__kernel void math_kernel", sizeNames[vectorSize], "( __global long* out, __global double* in)\n"
+                        "__kernel void math_kernel", sizeNames[vectorSize], "( __global long* out, __global double* in)\n"
                         "{\n"
                         "   size_t i = get_global_id(0);\n"
                         "   if( i + 1 < get_global_size(0) )\n"
@@ -144,18 +144,18 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_c
 
     const char **kern = c;
     size_t kernSize = sizeof(c)/sizeof(c[0]);
-    
+
     if( sizeValues[vectorSize] == 3 )
     {
         kern = c3;
         kernSize = sizeof(c3)/sizeof(c3[0]);
     }
 
-        
+
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
-   
-    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);     
+
+    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);
 }
 
 typedef struct BuildKernelInfo
@@ -270,16 +270,16 @@ int TestMacro_Int_Float(const Func *f, MTdata d)
             goto exit;
         }
     }
-    
+
     // Init the kernels
     BuildKernelInfo build_info = { gMinVectorSizeIndex, test_info.threadCount, test_info.k, test_info.programs, f->nameInCode };
     if( (error = ThreadPool_Do( BuildKernel_FloatFn, gMaxVectorSizeIndex - gMinVectorSizeIndex, &build_info ) ))
         goto exit;
-    
+
     if( !gSkipCorrectnessTesting )
     {
         error = ThreadPool_Do( TestFloat, (cl_uint) ((1ULL<<32) / test_info.step), &test_info );
-        
+
         if( error )
             goto exit;
 
@@ -288,7 +288,7 @@ int TestMacro_Int_Float(const Func *f, MTdata d)
         else
             vlog( "passed." );
     }
-    
+
     if( gMeasureTimes )
     {
         //Init input array
@@ -327,7 +327,7 @@ int TestMacro_Int_Float(const Func *f, MTdata d)
                     vlog_error( "Error %d at clFinish\n", error );
                     goto exit;
                 }
-            
+
                 uint64_t endTime = GetTime();
                 double time = SubtractTime( endTime, startTime );
                 sum += time;
@@ -341,9 +341,9 @@ int TestMacro_Int_Float(const Func *f, MTdata d)
             vlog_perf( clocksPerOp, LOWER_IS_BETTER, "clocks / element", "%sf%s", f->name, sizeNames[j] );
         }
     }
-    
-    vlog( "\n" );    
-    
+
+    vlog( "\n" );
+
 exit:
     for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
     {
@@ -365,7 +365,7 @@ exit:
                 clReleaseMemObject(test_info.tinfo[i].outBuf[j]);
             clReleaseCommandQueue(test_info.tinfo[i].tQueue);
         }
-        
+
         free( test_info.tinfo );
     }
 
@@ -385,12 +385,12 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
     cl_uint j, k;
     cl_int error = CL_SUCCESS;
     const char *name = job->f->name;
-	
-	int signbit_test = 0;
-	if(!strcmp(name, "signbit"))
-		signbit_test = 1;
-	
-	#define ref_func(s) ( signbit_test ? func.i_f_f( s ) : func.i_f( s ) ) 
+
+    int signbit_test = 0;
+    if(!strcmp(name, "signbit"))
+        signbit_test = 1;
+
+    #define ref_func(s) ( signbit_test ? func.i_f_f( s ) : func.i_f( s ) )
 
     // start the map of the output arrays
     cl_event e[ VECTOR_SIZE_COUNT ];
@@ -402,19 +402,19 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
         {
             vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
             return error;
-        }        
+        }
     }
 
 
     // Get that moving
     if( (error = clFlush(tinfo->tQueue) ))
         vlog( "clFlush failed\n" );
-    
+
     // Write the new values to the input array
     cl_uint *p = (cl_uint*) gIn + thread_id * buffer_elements;
     for( j = 0; j < buffer_elements; j++ )
         p[j] = base + j * scale;
-        
+
     if( (error = clEnqueueWriteBuffer( tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0, buffer_size, p, 0, NULL, NULL) ))
     {
         vlog_error( "Error: clEnqueueWriteBuffer failed! err: %d\n", error );
@@ -426,15 +426,15 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
         //Wait for the map to finish
         if( (error = clWaitForEvents(1, e + j) ))
         {
-            vlog_error( "Error: clWaitForEvents failed! err: %d\n", error ); 
+            vlog_error( "Error: clWaitForEvents failed! err: %d\n", error );
             return error;
         }
         if( (error = clReleaseEvent( e[j] ) ))
         {
-            vlog_error( "Error: clReleaseEvent failed! err: %d\n", error ); 
+            vlog_error( "Error: clReleaseEvent failed! err: %d\n", error );
             return error;
         }
-    
+
         // Fill the result buffer with garbage, so that old results don't carry over
         uint32_t pattern = 0xffffdead;
         memset_pattern4(out[j], &pattern, buffer_size);
@@ -448,7 +448,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
         size_t vectorCount = (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id];  //each worker thread has its own copy of the cl_kernel
         cl_program program = job->programs[j];
-        
+
         if( ( error = clSetKernelArg( kernel, 0, sizeof( tinfo->outBuf[j] ), &tinfo->outBuf[j] ))){ LogBuildError(program); return error; }
         if( ( error = clSetKernelArg( kernel, 1, sizeof( tinfo->inBuf ), &tinfo->inBuf ) )) { LogBuildError(program); return error; }
 
@@ -458,7 +458,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
             return error;
         }
     }
-    
+
 
     // Get that moving
     if( (error = clFlush(tinfo->tQueue) ))
@@ -466,13 +466,13 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
 
     if( gSkipCorrectnessTesting )
         return CL_SUCCESS;
-    
+
     //Calculate the correctly rounded reference result
     cl_int *r = (cl_int *)gOut_Ref + thread_id * buffer_elements;
     float *s = (float *)p;
     for( j = 0; j < buffer_elements; j++ )
         r[j] = ref_func( s[j] );
-                    
+
     // Read the data back -- no need to wait for the first N-1 buffers. This is an in order queue.
     for( j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++ )
     {
@@ -481,7 +481,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
         {
             vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
             return error;
-        }        
+        }
     }
     // Wait for the last buffer
     out[j] = (cl_int*) clEnqueueMapBuffer( tinfo->tQueue, tinfo->outBuf[j], CL_TRUE, CL_MAP_READ, 0, buffer_size, 0, NULL, NULL, &error);
@@ -489,7 +489,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
     {
         vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
         return error;
-    }        
+    }
 
     //Verify data
     cl_int *t = (cl_int *)r;
@@ -498,7 +498,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
         for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
         {
             cl_int *q = out[0];
-            
+
             // If we aren't getting the correctly rounded result
             if( gMinVectorSizeIndex == 0 && t[j] != q[j])
             {
@@ -539,7 +539,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
                                 continue;
                         }
                     }
-                
+
                     uint32_t err = -t[j] - q[j];
                     if( q[j] > -t[j] )
                         err = q[j] + t[j];
@@ -547,10 +547,10 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
                   error = -1;
                   goto exit;
                 }
-            }            
+            }
         }
     }
-    
+
 exit:
     for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
     {
@@ -558,9 +558,9 @@ exit:
         {
             vlog_error( "Error: clEnqueueUnmapMemObject %d failed 2! err: %d\n", j, error );
             return error;
-        }        
+        }
     }
-   
+
     if( (error = clFlush(tinfo->tQueue) ))
         vlog( "clFlush 3 failed\n" );
 
@@ -570,7 +570,7 @@ exit:
         vlog("." );
         fflush(stdout);
     }
-    
+
     return error;
 }
 
@@ -591,7 +591,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d)
     test_info.step = (cl_uint) test_info.subBufferSize * test_info.scale;
     test_info.f = f;
     test_info.ftz = f->ftz || gForceFTZ;
-    
+
     // cl_kernels aren't thread safe, so we make one for each vector size for every thread
     for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
     {
@@ -648,7 +648,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d)
     if( !gSkipCorrectnessTesting )
     {
         error = ThreadPool_Do( TestDouble, (cl_uint) ((1ULL<<32) / test_info.step), &test_info );
-        
+
         if( error )
             goto exit;
 
@@ -657,7 +657,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d)
         else
             vlog( "passed." );
     }
-    
+
     if( gMeasureTimes )
     {
         //Init input array
@@ -696,7 +696,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d)
                     vlog_error( "Error %d at clFinish\n", error );
                     goto exit;
                 }
-            
+
                 uint64_t endTime = GetTime();
                 double time = SubtractTime( endTime, startTime );
                 sum += time;
@@ -712,9 +712,9 @@ int TestMacro_Int_Double(const Func *f, MTdata d)
         for( ; j < gMaxVectorSizeIndex; j++ )
             vlog( "\t     -- " );
     }
-    
+
     vlog( "\n" );
-    
+
 exit:
     for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
     {
@@ -736,7 +736,7 @@ exit:
                 clReleaseMemObject(test_info.tinfo[i].outBuf[j]);
             clReleaseCommandQueue(test_info.tinfo[i].tQueue);
         }
-        
+
         free( test_info.tinfo );
     }
 
@@ -753,7 +753,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
     ThreadInfo *tinfo = job->tinfo + thread_id;
     dptr    dfunc = job->f->dfunc;
     cl_uint j, k;
-    cl_int error;    
+    cl_int error;
     int ftz = job->ftz;
     const char *name = job->f->name;
 
@@ -769,18 +769,18 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         {
             vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
             return error;
-        }        
+        }
     }
 
     // Get that moving
     if( (error = clFlush(tinfo->tQueue) ))
         vlog( "clFlush failed\n" );
-    
+
     // Write the new values to the input array
     cl_double *p = (cl_double*) gIn + thread_id * buffer_elements;
     for( j = 0; j < buffer_elements; j++ )
         p[j] = DoubleFromUInt32( base + j * scale);
-        
+
     if( (error = clEnqueueWriteBuffer( tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0, buffer_size, p, 0, NULL, NULL) ))
     {
         vlog_error( "Error: clEnqueueWriteBuffer failed! err: %d\n", error );
@@ -792,15 +792,15 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         //Wait for the map to finish
         if( (error = clWaitForEvents(1, e + j) ))
         {
-            vlog_error( "Error: clWaitForEvents failed! err: %d\n", error ); 
+            vlog_error( "Error: clWaitForEvents failed! err: %d\n", error );
             return error;
         }
         if( (error = clReleaseEvent( e[j] ) ))
         {
-            vlog_error( "Error: clReleaseEvent failed! err: %d\n", error ); 
+            vlog_error( "Error: clReleaseEvent failed! err: %d\n", error );
             return error;
         }
-    
+
         // Fill the result buffer with garbage, so that old results don't carry over
         uint32_t pattern = 0xffffdead;
         memset_pattern4(out[j], &pattern, buffer_size);
@@ -814,7 +814,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         size_t vectorCount = (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id];  //each worker thread has its own copy of the cl_kernel
         cl_program program = job->programs[j];
-        
+
         if( ( error = clSetKernelArg( kernel, 0, sizeof( tinfo->outBuf[j] ), &tinfo->outBuf[j] ))){ LogBuildError(program); return error; }
         if( ( error = clSetKernelArg( kernel, 1, sizeof( tinfo->inBuf ), &tinfo->inBuf ) )) { LogBuildError(program); return error; }
 
@@ -824,12 +824,12 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
             return error;
         }
     }
-    
+
 
     // Get that moving
     if( (error = clFlush(tinfo->tQueue) ))
         vlog( "clFlush 2 failed\n" );
-    
+
     if( gSkipCorrectnessTesting )
         return CL_SUCCESS;
 
@@ -838,7 +838,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
     cl_double *s = (cl_double *)p;
     for( j = 0; j < buffer_elements; j++ )
         r[j] = dfunc.i_f( s[j] );
-                    
+
     // Read the data back -- no need to wait for the first N-1 buffers. This is an in order queue.
     for( j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++ )
     {
@@ -847,7 +847,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         {
             vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
             return error;
-        }        
+        }
     }
     // Wait for the last buffer
     out[j] = (cl_long*) clEnqueueMapBuffer( tinfo->tQueue, tinfo->outBuf[j], CL_TRUE, CL_MAP_READ, 0, buffer_size, 0, NULL, NULL, &error);
@@ -855,7 +855,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
     {
         vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
         return error;
-    }        
+    }
 
 
     //Verify data
@@ -864,7 +864,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
     {
         cl_long *q = out[0];
 
-                
+
         // If we aren't getting the correctly rounded result
         if( gMinVectorSizeIndex == 0 && t[j] != q[j])
         {
@@ -904,7 +904,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
                             continue;
                     }
                 }
-            
+
                 cl_ulong err = -t[j] - q[j];
                 if( q[j] > -t[j] )
                     err = q[j] + t[j];
@@ -914,16 +914,16 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         }
 
     }
-    
+
     for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
     {
         if( (error = clEnqueueUnmapMemObject( tinfo->tQueue, tinfo->outBuf[j], out[j], 0, NULL, NULL)) )
         {
             vlog_error( "Error: clEnqueueUnmapMemObject %d failed 2! err: %d\n", j, error );
             return error;
-        }        
+        }
     }
-   
+
     if( (error = clFlush(tinfo->tQueue) ))
         vlog( "clFlush 3 failed\n" );
 
@@ -933,7 +933,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
         vlog("." );
         fflush(stdout);
     }
-    
+
     return CL_SUCCESS;
 }
 

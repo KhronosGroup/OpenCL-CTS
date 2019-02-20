@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,46 +26,46 @@ extern "C" { extern cl_uint gRandomSeed; };
 const char *equivTestKernelPattern_double =
 "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
 "__kernel void sample_test(__global double%s *sourceA, __global double%s *sourceB, __global long%s *destValues, __global long%s *destValuesB)\n"
-"{\n"																			
-"    int  tid = get_global_id(0);\n"										
+"{\n"
+"    int  tid = get_global_id(0);\n"
 "    destValues[tid] = %s( sourceA[tid], sourceB[tid] );\n"
 "    destValuesB[tid] = sourceA[tid] %s sourceB[tid];\n"
-"\n"																			
+"\n"
 "}\n";
 
-const char *equivTestKernelPatternLessGreater_double =  
+const char *equivTestKernelPatternLessGreater_double =
 "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
 "__kernel void sample_test(__global double%s *sourceA, __global double%s *sourceB, __global long%s *destValues, __global long%s *destValuesB)\n"
-"{\n"																			
-"    int  tid = get_global_id(0);\n"										
+"{\n"
+"    int  tid = get_global_id(0);\n"
 "    destValues[tid] = %s( sourceA[tid], sourceB[tid] );\n"
 "    destValuesB[tid] = (sourceA[tid] < sourceB[tid]) | (sourceA[tid] > sourceB[tid]);\n"
-"\n"																			
+"\n"
 "}\n";
 
 
 const char *equivTestKernelPattern_double3 =
 "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
 "__kernel void sample_test(__global double%s *sourceA, __global double%s *sourceB, __global long%s *destValues, __global long%s *destValuesB)\n"
-"{\n"																			
-"    int  tid = get_global_id(0);\n"	
+"{\n"
+"    int  tid = get_global_id(0);\n"
 "    double3 sampA = vload3(tid, (__global double *)sourceA);\n"
 "    double3 sampB = vload3(tid, (__global double *)sourceB);\n"
 "    vstore3(%s( sampA, sampB ), tid, (__global long *)destValues);\n"
 "    vstore3(( sampA %s sampB ), tid, (__global long *)destValuesB);\n"
-"\n"																			
+"\n"
 "}\n";
 
-const char *equivTestKernelPatternLessGreater_double3 =  
+const char *equivTestKernelPatternLessGreater_double3 =
 "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
 "__kernel void sample_test(__global double%s *sourceA, __global double%s *sourceB, __global long%s *destValues, __global long%s *destValuesB)\n"
-"{\n"																			
-"    int  tid = get_global_id(0);\n"	
+"{\n"
+"    int  tid = get_global_id(0);\n"
 "    double3 sampA = vload3(tid, (__global double *)sourceA);\n"
-"    double3 sampB = vload3(tid, (__global double *)sourceB);\n"	
+"    double3 sampB = vload3(tid, (__global double *)sourceB);\n"
 "    vstore3(%s( sampA, sampB ), tid, (__global long *)destValues);\n"
 "    vstore3(( sampA < sampB ) | (sampA > sampB), tid, (__global long *)destValuesB);\n"
-"\n"																			
+"\n"
 "}\n";
 
 
@@ -76,7 +76,7 @@ void verify_equiv_values_double( unsigned int vecSize, double *inDataA, double *
     unsigned int i;
     cl_long trueResult;
     bool result;
-    
+
     trueResult = ( vecSize == 1 ) ? 1 : -1;
     for( i = 0; i < vecSize; i++ )
     {
@@ -88,9 +88,9 @@ void verify_equiv_values_double( unsigned int vecSize, double *inDataA, double *
 void generate_equiv_test_data_double( double *outData, unsigned int vecSize, bool alpha, MTdata d )
 {
     unsigned int i;
-    
+
     generate_random_data( kDouble, vecSize * TEST_SIZE, d, outData );
-    
+
     // Fill the first few vectors with NAN in each vector element (or the second set if we're alpha, so we can test either case)
     if( alpha )
         outData += vecSize * vecSize;
@@ -109,7 +109,7 @@ void generate_equiv_test_data_double( double *outData, unsigned int vecSize, boo
     }
 }
 
-int test_equiv_kernel_double(cl_context context, cl_command_queue queue, const char *fnName, const char *opName, 
+int test_equiv_kernel_double(cl_context context, cl_command_queue queue, const char *fnName, const char *opName,
                              unsigned int vecSize, equivVerifyFn verifyFn, MTdata d )
 {
     clProgramWrapper program;
@@ -122,14 +122,14 @@ int test_equiv_kernel_double(cl_context context, cl_command_queue queue, const c
     char kernelSource[10240];
     char *programPtr;
     char sizeName[4];
-    
-    
+
+
     /* Create the source */
     if( vecSize == 1 )
         sizeName[ 0 ] = 0;
     else
         sprintf( sizeName, "%d", vecSize );
-    
+
     if(DENSE_PACK_VECS && vecSize == 3) {
         if (strcmp(fnName, "islessgreater")) {
             sprintf( kernelSource, equivTestKernelPattern_double3, sizeName, sizeName, sizeName, sizeName, fnName, opName );
@@ -142,19 +142,19 @@ int test_equiv_kernel_double(cl_context context, cl_command_queue queue, const c
         } else {
             sprintf( kernelSource, equivTestKernelPatternLessGreater_double, sizeName, sizeName, sizeName, sizeName, fnName );
         }
-    } 
-    
+    }
+
     /* Create kernels */
     programPtr = kernelSource;
     if( create_single_kernel_helper( context, &program, &kernel, 1, (const char **)&programPtr, "sample_test" ) )
     {
         return -1;
     }
-    
+
     /* Generate some streams */
     generate_equiv_test_data_double( inDataA, vecSize, true, d );
     generate_equiv_test_data_double( inDataB, vecSize, false, d );
-    
+
     streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof( cl_double ) * vecSize * TEST_SIZE, &inDataA, &error);
     if( streams[0] == NULL )
     {
@@ -179,8 +179,8 @@ int test_equiv_kernel_double(cl_context context, cl_command_queue queue, const c
         print_error( error, "Creating output array failed!\n");
         return -1;
     }
-    
-    
+
+
     /* Assign streams and execute */
     error = clSetKernelArg( kernel, 0, sizeof( streams[0] ), &streams[0] );
     test_error( error, "Unable to set indexed kernel arguments" );
@@ -190,26 +190,26 @@ int test_equiv_kernel_double(cl_context context, cl_command_queue queue, const c
     test_error( error, "Unable to set indexed kernel arguments" );
     error = clSetKernelArg( kernel, 3, sizeof( streams[3] ), &streams[3] );
     test_error( error, "Unable to set indexed kernel arguments" );
-    
-    
+
+
     /* Run the kernel */
     threads[0] = TEST_SIZE;
-    
+
     error = get_max_common_work_group_size( context, kernel, threads[0], &localThreads[0] );
     test_error( error, "Unable to get work group size to use" );
-    
+
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Unable to execute test kernel" );
-    
+
     /* Now get the results */
     error = clEnqueueReadBuffer( queue, streams[2], true, 0, sizeof( cl_long ) * TEST_SIZE * vecSize, outData, 0, NULL, NULL );
     test_error( error, "Unable to read output array!" );
-    
+
     /* And verify! */
     for( i = 0; i < TEST_SIZE; i++ )
     {
         verify_equiv_values_double( vecSize, &inDataA[ i * vecSize ], &inDataB[ i * vecSize ], expected, verifyFn);
-        
+
         for( j = 0; j < (int)vecSize; j++ )
         {
             if( expected[ j ] != outData[ i * vecSize + j ] )
@@ -220,16 +220,16 @@ int test_equiv_kernel_double(cl_context context, cl_command_queue queue, const c
             }
         }
     }
-    
+
     /* Now get the results */
     error = clEnqueueReadBuffer( queue, streams[3], true, 0, sizeof( cl_long ) * TEST_SIZE * vecSize, outData, 0, NULL, NULL );
     test_error( error, "Unable to read output array!" );
-    
+
     /* And verify! */
     for( i = 0; i < TEST_SIZE; i++ )
     {
         verify_equiv_values_double( vecSize, &inDataA[ i * vecSize ], &inDataB[ i * vecSize ], expected, verifyFn);
-        
+
         for( j = 0; j < (int)vecSize; j++ )
         {
             if( expected[ j ] != outData[ i * vecSize + j ] )
@@ -240,7 +240,7 @@ int test_equiv_kernel_double(cl_context context, cl_command_queue queue, const c
             }
         }
     }
-    
+
     return 0;
 }
 
@@ -249,13 +249,13 @@ int test_equiv_kernel_set_double(cl_device_id device, cl_context context, cl_com
     unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
     unsigned int index;
     int retVal = 0;
-    
+
     if (!is_extension_available(device, "cl_khr_fp64")) {
         log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
         return 0;
-    }  
+    }
     log_info("Testing doubles.\n");
-    
+
     for( index = 0; vecSizes[ index ] != 0; index++ )
     {
         // Test!
@@ -265,8 +265,8 @@ int test_equiv_kernel_set_double(cl_device_id device, cl_context context, cl_com
             retVal = -1;
         }
     }
-    
-    return retVal;	
+
+    return retVal;
 }
 
 bool isequal_verify_fn_double( double valueA, double valueB )

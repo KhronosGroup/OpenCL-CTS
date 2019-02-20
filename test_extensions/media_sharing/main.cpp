@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -167,8 +167,8 @@ bool CmdlineParse(int argc, const char *argv[])
       gDeviceTypeSelected = CL_DEVICE_TYPE_ACCELERATOR;
     else if(strcmp(env_mode, "default") == 0 || strcmp(env_mode, "CL_DEVICE_TYPE_DEFAULT") == 0)
       gDeviceTypeSelected = CL_DEVICE_TYPE_DEFAULT;
-    else 
-    { 
+    else
+    {
       log_error("Unknown CL_DEVICE_TYPE env variable setting: %s.\nAborting...\n", env_mode);
       return false;
     }

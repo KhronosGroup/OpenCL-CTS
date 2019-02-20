@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,7 +19,7 @@
 #include <math.h>
 #include <float.h>
 
-const char *anyAllTestKernelPattern =  
+const char *anyAllTestKernelPattern =
 "%s\n" // optional pragma
 "__kernel void sample_test(__global %s%s *sourceA, __global int *destValues)\n"
 "{\n"
@@ -28,7 +28,7 @@ const char *anyAllTestKernelPattern =
 "\n"
 "}\n";
 
-const char *anyAllTestKernelPatternVload =  
+const char *anyAllTestKernelPatternVload =
 "%s\n" // optional pragma
 "__kernel void sample_test(__global %s%s *sourceA, __global int *destValues)\n"
 "{\n"
@@ -44,8 +44,8 @@ extern "C" {extern cl_uint gRandomSeed;};
 typedef int (*anyAllVerifyFn)( ExplicitType vecType, unsigned int vecSize, void *inData );
 
 int test_any_all_kernel(cl_context context, cl_command_queue queue,
-                        const char *fnName, ExplicitType vecType, 
-                        unsigned int vecSize, anyAllVerifyFn verifyFn, 
+                        const char *fnName, ExplicitType vecType,
+                        unsigned int vecSize, anyAllVerifyFn verifyFn,
                         MTdata d )
 {
     clProgramWrapper program;
@@ -58,40 +58,40 @@ int test_any_all_kernel(cl_context context, cl_command_queue queue,
     char kernelSource[10240];
     char *programPtr;
     char sizeName[4];
-    
-    
+
+
     /* Create the source */
     if( g_vector_aligns[vecSize] == 1 ) {
         sizeName[ 0 ] = 0;
     } else {
         sprintf( sizeName, "%d", vecSize );
     }
-    log_info("Testing any/all on %s%s\n", 
+    log_info("Testing any/all on %s%s\n",
              get_explicit_type_name( vecType ), sizeName);
     if(DENSE_PACK_VECS && vecSize == 3) {
         // anyAllTestKernelPatternVload
-        sprintf( kernelSource, anyAllTestKernelPatternVload, 
+        sprintf( kernelSource, anyAllTestKernelPatternVload,
                 vecType == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
                 get_explicit_type_name( vecType ), sizeName, fnName,
                 get_explicit_type_name(vecType));
     } else {
-        sprintf( kernelSource, anyAllTestKernelPattern, 
+        sprintf( kernelSource, anyAllTestKernelPattern,
                 vecType == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
                 get_explicit_type_name( vecType ), sizeName, fnName );
     }
     /* Create kernels */
     programPtr = kernelSource;
-    if( create_single_kernel_helper( context, &program, &kernel, 1, 
+    if( create_single_kernel_helper( context, &program, &kernel, 1,
                                     (const char **)&programPtr,
                                     "sample_test" ) )
     {
         return -1;
     }
-    
+
     /* Generate some streams */
     generate_random_data( vecType, TEST_SIZE * g_vector_aligns[vecSize], d, inDataA );
     memset( clearData, 0, sizeof( clearData ) );
-    
+
     streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), get_explicit_type_size( vecType ) * g_vector_aligns[vecSize] * TEST_SIZE, &inDataA, &error);
     if( streams[0] == NULL )
     {
@@ -104,26 +104,26 @@ int test_any_all_kernel(cl_context context, cl_command_queue queue,
         print_error( error, "Creating output array failed!\n");
         return -1;
     }
-    
+
     /* Assign streams and execute */
     error = clSetKernelArg( kernel, 0, sizeof( streams[0] ), &streams[0] );
     test_error( error, "Unable to set indexed kernel arguments" );
     error = clSetKernelArg( kernel, 1, sizeof( streams[1] ), &streams[1] );
     test_error( error, "Unable to set indexed kernel arguments" );
-    
+
     /* Run the kernel */
     threads[0] = TEST_SIZE;
-    
+
     error = get_max_common_work_group_size( context, kernel, threads[0], &localThreads[0] );
     test_error( error, "Unable to get work group size to use" );
-    
+
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Unable to execute test kernel" );
-    
+
     /* Now get the results */
     error = clEnqueueReadBuffer( queue, streams[1], true, 0, sizeof( int ) * TEST_SIZE, outData, 0, NULL, NULL );
     test_error( error, "Unable to read output array!" );
-    
+
     /* And verify! */
     for( i = 0; i < TEST_SIZE; i++ )
     {
@@ -131,12 +131,12 @@ int test_any_all_kernel(cl_context context, cl_command_queue queue,
         if( expected != outData[ i ] )
         {
             unsigned int *ptr = (unsigned int *)( (char *)inDataA + i * get_explicit_type_size( vecType ) * g_vector_aligns[vecSize] );
-            log_error( "ERROR: Data sample %d does not validate! Expected (%d), got (%d), source 0x%08x\n", 
+            log_error( "ERROR: Data sample %d does not validate! Expected (%d), got (%d), source 0x%08x\n",
                       i, expected, outData[i], *ptr );
             return -1;
         }
     }
-    
+
     return 0;
 }
 
@@ -152,7 +152,7 @@ int anyVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
             for( i = 0; i < vecSize; i++ )
                 sum |= tData[ i ] & 0x80;
             return (sum != 0) ? 1 : 0;
-        }			
+        }
         case kShort:
         {
             short sum = 0;
@@ -160,7 +160,7 @@ int anyVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
             for( i = 0; i < vecSize; i++ )
                 sum |= tData[ i ] & 0x8000;
             return (sum != 0);
-        }			
+        }
         case kInt:
         {
             cl_int sum = 0;
@@ -168,7 +168,7 @@ int anyVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
             for( i = 0; i < vecSize; i++ )
                 sum |= tData[ i ] & (cl_int)0x80000000L;
             return (sum != 0);
-        }			
+        }
         case kLong:
         {
             cl_long sum = 0;
@@ -176,7 +176,7 @@ int anyVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
             for( i = 0; i < vecSize; i++ )
                 sum |= tData[ i ] & 0x8000000000000000LL;
             return (sum != 0);
-        }			
+        }
         default:
             return 0;
     }
@@ -189,7 +189,7 @@ int test_relational_any(cl_device_id device, cl_context context, cl_command_queu
     unsigned int index, typeIndex;
     int retVal = 0;
     RandomSeed seed(gRandomSeed );
-    
+
     for( typeIndex = 0; typeIndex < 4; typeIndex++ )
     {
         for( index = 0; vecSizes[ index ] != 0; index++ )
@@ -202,8 +202,8 @@ int test_relational_any(cl_device_id device, cl_context context, cl_command_queu
             }
         }
     }
-    
-    return retVal;	
+
+    return retVal;
 }
 
 int allVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
@@ -218,7 +218,7 @@ int allVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
             for( i = 0; i < vecSize; i++ )
                 sum &= tData[ i ] & 0x80;
             return (sum != 0) ? 1 : 0;
-        }			
+        }
         case kShort:
         {
             short sum = 0x8000;
@@ -226,7 +226,7 @@ int allVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
             for( i = 0; i < vecSize; i++ )
                 sum &= tData[ i ] & 0x8000;
             return (sum != 0);
-        }			
+        }
         case kInt:
         {
             cl_int sum = 0x80000000L;
@@ -234,7 +234,7 @@ int allVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
             for( i = 0; i < vecSize; i++ )
                 sum &= tData[ i ] & (cl_int)0x80000000L;
             return (sum != 0);
-        }			
+        }
         case kLong:
         {
             cl_long sum = 0x8000000000000000LL;
@@ -242,7 +242,7 @@ int allVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
             for( i = 0; i < vecSize; i++ )
                 sum &= tData[ i ] & 0x8000000000000000LL;
             return (sum != 0);
-        }			
+        }
         default:
             return 0;
     }
@@ -255,8 +255,8 @@ int test_relational_all(cl_device_id device, cl_context context, cl_command_queu
     unsigned int index, typeIndex;
     int retVal = 0;
     RandomSeed seed(gRandomSeed );
-    
-    
+
+
     for( typeIndex = 0; typeIndex < 4; typeIndex++ )
     {
         for( index = 0; vecSizes[ index ] != 0; index++ )
@@ -269,33 +269,33 @@ int test_relational_all(cl_device_id device, cl_context context, cl_command_queu
             }
         }
     }
-    
-    return retVal;	
+
+    return retVal;
 }
 
-const char *selectTestKernelPattern =  
+const char *selectTestKernelPattern =
 "%s\n" // optional pragma
 "__kernel void sample_test(__global %s%s *sourceA, __global %s%s *sourceB, __global %s%s *sourceC, __global %s%s *destValues)\n"
-"{\n"																			
-"    int  tid = get_global_id(0);\n"										
+"{\n"
+"    int  tid = get_global_id(0);\n"
 "    destValues[tid] = %s( sourceA[tid], sourceB[tid], sourceC[tid] );\n"
-"\n"																			
+"\n"
 "}\n";
 
 
-const char *selectTestKernelPatternVload =  
+const char *selectTestKernelPatternVload =
 "%s\n" // optional pragma
 "__kernel void sample_test(__global %s%s *sourceA, __global %s%s *sourceB, __global %s%s *sourceC, __global %s%s *destValues)\n"
-"{\n"																			
-"    int  tid = get_global_id(0);\n"										
+"{\n"
+"    int  tid = get_global_id(0);\n"
 "    %s%s tmp = %s( vload3(tid, (__global %s *)sourceA), vload3(tid, (__global %s *)sourceB), vload3(tid, (__global %s *)sourceC) );\n"
 "    vstore3(tmp, tid, (__global %s *)destValues);\n"
-"\n"																			
+"\n"
 "}\n";
 
 typedef void (*selectVerifyFn)( ExplicitType vecType, ExplicitType testVecType, unsigned int vecSize, void *inDataA, void *inDataB, void *inDataTest, void *outData );
 
-int test_select_kernel(cl_context context, cl_command_queue queue, const char *fnName, 
+int test_select_kernel(cl_context context, cl_command_queue queue, const char *fnName,
                        ExplicitType vecType, unsigned int vecSize, ExplicitType testVecType, selectVerifyFn verifyFn, MTdata d )
 {
     clProgramWrapper program;
@@ -309,28 +309,28 @@ int test_select_kernel(cl_context context, cl_command_queue queue, const char *f
     char *programPtr;
     char sizeName[4], outSizeName[4];
     unsigned int outVecSize;
-    
-    
+
+
     /* Create the source */
     if( vecSize == 1 )
         sizeName[ 0 ] = 0;
     else
         sprintf( sizeName, "%d", vecSize );
-    
+
     outVecSize = vecSize;
-    
+
     if( outVecSize == 1 )
         outSizeName[ 0 ] = 0;
     else
         sprintf( outSizeName, "%d", outVecSize );
-    
+
     if(DENSE_PACK_VECS && vecSize == 3) {
         // anyAllTestKernelPatternVload
-        sprintf( kernelSource, selectTestKernelPatternVload, 
+        sprintf( kernelSource, selectTestKernelPatternVload,
                 (vecType == kDouble || testVecType == kDouble) ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
                 get_explicit_type_name( vecType ), sizeName,
-                get_explicit_type_name( vecType ), sizeName, 
-                get_explicit_type_name( testVecType ), sizeName, 
+                get_explicit_type_name( vecType ), sizeName,
+                get_explicit_type_name( testVecType ), sizeName,
                 get_explicit_type_name( vecType ), outSizeName,
                 get_explicit_type_name( vecType ), sizeName,
                 fnName,
@@ -339,27 +339,27 @@ int test_select_kernel(cl_context context, cl_command_queue queue, const char *f
                 get_explicit_type_name( vecType ),
                 get_explicit_type_name( testVecType ) );
     } else {
-        sprintf( kernelSource, selectTestKernelPattern, 
+        sprintf( kernelSource, selectTestKernelPattern,
                 (vecType == kDouble || testVecType == kDouble) ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
                 get_explicit_type_name( vecType ), sizeName,
-                get_explicit_type_name( vecType ), sizeName, 
-                get_explicit_type_name( testVecType ), sizeName, 
+                get_explicit_type_name( vecType ), sizeName,
+                get_explicit_type_name( testVecType ), sizeName,
                 get_explicit_type_name( vecType ), outSizeName,
                 fnName );
     }
-    
+
     /* Create kernels */
     programPtr = kernelSource;
     if( create_single_kernel_helper( context, &program, &kernel, 1, (const char **)&programPtr, "sample_test" ) )
     {
         return -1;
     }
-    
+
     /* Generate some streams */
     generate_random_data( vecType, TEST_SIZE * g_vector_aligns[vecSize], d, inDataA );
     generate_random_data( vecType, TEST_SIZE * g_vector_aligns[vecSize], d, inDataB );
     generate_random_data( testVecType, TEST_SIZE * g_vector_aligns[vecSize], d, inDataC );
-    
+
     streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), get_explicit_type_size( vecType ) * g_vector_aligns[vecSize] * TEST_SIZE, &inDataA, &error);
     if( streams[0] == NULL )
     {
@@ -384,7 +384,7 @@ int test_select_kernel(cl_context context, cl_command_queue queue, const char *f
         print_error( error, "Creating output array failed!\n");
         return -1;
     }
-    
+
     /* Assign streams and execute */
     error = clSetKernelArg( kernel, 0, sizeof( streams[0] ), &streams[0] );
     test_error( error, "Unable to set indexed kernel arguments" );
@@ -394,20 +394,20 @@ int test_select_kernel(cl_context context, cl_command_queue queue, const char *f
     test_error( error, "Unable to set indexed kernel arguments" );
     error = clSetKernelArg( kernel, 3, sizeof( streams[3] ), &streams[3] );
     test_error( error, "Unable to set indexed kernel arguments" );
-    
+
     /* Run the kernel */
     threads[0] = TEST_SIZE;
-    
+
     error = get_max_common_work_group_size( context, kernel, threads[0], &localThreads[0] );
     test_error( error, "Unable to get work group size to use" );
-    
+
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Unable to execute test kernel" );
-    
+
     /* Now get the results */
     error = clEnqueueReadBuffer( queue, streams[3], true, 0, get_explicit_type_size( vecType ) * TEST_SIZE * g_vector_aligns[outVecSize], outData, 0, NULL, NULL );
     test_error( error, "Unable to read output array!" );
-    
+
     /* And verify! */
     for( i = 0; i < (int)(TEST_SIZE * g_vector_aligns[vecSize]); i++ )
     {
@@ -418,23 +418,23 @@ int test_select_kernel(cl_context context, cl_command_queue queue, const char *f
                  (char *)inDataB + i * get_explicit_type_size( vecType ),
                  (char *)inDataC + i * get_explicit_type_size( testVecType ),
                  expected);
-        
+
         char *outPtr = (char *)outData;
         outPtr += ( i / g_vector_aligns[vecSize] ) * get_explicit_type_size( vecType ) * g_vector_aligns[outVecSize];
         outPtr += ( i % g_vector_aligns[vecSize] ) * get_explicit_type_size( vecType );
         if( memcmp( expected, outPtr, get_explicit_type_size( vecType ) ) != 0 )
         {
-            log_error( "ERROR: Data sample %d:%d does not validate! Expected (0x%08x), got (0x%08x) from (0x%08x) and (0x%08x) with test (0x%08x)\n", 
-                      i / g_vector_aligns[vecSize], 
-                      i % g_vector_aligns[vecSize], 
+            log_error( "ERROR: Data sample %d:%d does not validate! Expected (0x%08x), got (0x%08x) from (0x%08x) and (0x%08x) with test (0x%08x)\n",
+                      i / g_vector_aligns[vecSize],
+                      i % g_vector_aligns[vecSize],
                       *( (int *)expected ),
-                      *( (int *)( (char *)outData + 
+                      *( (int *)( (char *)outData +
                                  i * get_explicit_type_size( vecType
                                                             ) ) ),
                       *( (int *)( (char *)inDataA +
                                  i * get_explicit_type_size( vecType
                                                             ) ) ),
-                      *( (int *)( (char *)inDataB + 
+                      *( (int *)( (char *)inDataB +
                                  i * get_explicit_type_size( vecType
                                                             ) ) ),
                       *( (int *)( (char *)inDataC +
@@ -464,7 +464,7 @@ int test_select_kernel(cl_context context, cl_command_queue queue, const char *f
             return -1;
         }
     }
-    
+
     return 0;
 }
 
@@ -472,7 +472,7 @@ void bitselect_verify_fn( ExplicitType vecType, ExplicitType testVecType, unsign
 {
     char *inA = (char *)inDataA, *inB = (char *)inDataB, *inT = (char *)inDataTest, *out = (char *)outData;
     size_t i, numBytes = get_explicit_type_size( vecType );
-    
+
     // Type is meaningless, this is all bitwise!
     for( i = 0; i < numBytes; i++ )
     {
@@ -487,19 +487,19 @@ int test_relational_bitselect(cl_device_id device, cl_context context, cl_comman
     unsigned int index, typeIndex;
     int retVal = 0;
     RandomSeed seed( gRandomSeed );
-    
-    
+
+
     for( typeIndex = 0; typeIndex < 10; typeIndex++ )
     {
-        
-        if (vecType[typeIndex] == kDouble) 
+
+        if (vecType[typeIndex] == kDouble)
         {
-            if(!is_extension_available(device, "cl_khr_fp64")) 
+            if(!is_extension_available(device, "cl_khr_fp64"))
             {
                 log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
                 continue;
-            } 
-            else 
+            }
+            else
                 log_info("Testing doubles.\n");
         }
         for( index = 0; vecSizes[ index ] != 0; index++ )
@@ -512,8 +512,8 @@ int test_relational_bitselect(cl_device_id device, cl_context context, cl_comman
             }
         }
     }
-    
-    return retVal;	
+
+    return retVal;
 }
 
 void select_signed_verify_fn( ExplicitType vecType, ExplicitType testVecType, unsigned int vecSize, void *inDataA, void *inDataB, void *inDataTest, void *outData )
@@ -570,10 +570,10 @@ int test_relational_select_signed(cl_device_id device, cl_context context, cl_co
     unsigned int index, typeIndex, testTypeIndex;
     int retVal = 0;
     RandomSeed seed( gRandomSeed );
-    
+
     for( typeIndex = 0; typeIndex < 10; typeIndex++ )
     {
-        
+
         if (vecType[typeIndex] == kDouble) {
             if(!is_extension_available(device, "cl_khr_fp64")) {
                 log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
@@ -586,7 +586,7 @@ int test_relational_select_signed(cl_device_id device, cl_context context, cl_co
         {
             if( testVecType[ testTypeIndex ] != vecType[ typeIndex ] )
                 continue;
-            
+
             for( index = 0; vecSizes[ index ] != 0; index++ )
             {
                 // Test!
@@ -599,8 +599,8 @@ int test_relational_select_signed(cl_device_id device, cl_context context, cl_co
             }
         }
     }
-    
-    return retVal;	
+
+    return retVal;
 }
 
 void select_unsigned_verify_fn( ExplicitType vecType, ExplicitType testVecType, unsigned int vecSize, void *inDataA, void *inDataB, void *inDataTest, void *outData )
@@ -653,15 +653,15 @@ int test_relational_select_unsigned(cl_device_id device, cl_context context, cl_
 {
     ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort, kInt, kUInt, kLong, kULong, kFloat, kDouble };
     ExplicitType testVecType[] = { kUChar, kUShort, kUInt, kULong, kNumExplicitTypes };
-    unsigned int vecSizes[] = { 1, 2, 4, 8, 16, 0 };  
+    unsigned int vecSizes[] = { 1, 2, 4, 8, 16, 0 };
     unsigned int index, typeIndex, testTypeIndex;
     int retVal = 0;
     RandomSeed seed(gRandomSeed);
-    
-    
+
+
     for( typeIndex = 0; typeIndex < 10; typeIndex++ )
     {
-        
+
         if (vecType[typeIndex] == kDouble) {
             if(!is_extension_available(device, "cl_khr_fp64")) {
                 log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
@@ -674,7 +674,7 @@ int test_relational_select_unsigned(cl_device_id device, cl_context context, cl_
         {
             if( testVecType[ testTypeIndex ] != vecType[ typeIndex ] )
                 continue;
-            
+
             for( index = 0; vecSizes[ index ] != 0; index++ )
             {
                 // Test!
@@ -687,8 +687,8 @@ int test_relational_select_unsigned(cl_device_id device, cl_context context, cl_
             }
         }
     }
-    
-    return retVal;	
+
+    return retVal;
 }
 
 

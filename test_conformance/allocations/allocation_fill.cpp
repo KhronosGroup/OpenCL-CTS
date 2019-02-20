@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,16 +21,16 @@
 #include "../../test_common/harness/compat.h"
 
 int fill_buffer_with_data(cl_context context, cl_device_id device_id, cl_command_queue *queue, cl_mem mem, size_t size, MTdata d, cl_bool blocking_write) {
- 	size_t i, j;
+     size_t i, j;
   cl_uint *data;
   int error, result;
   cl_uint checksum_delta = 0;
   cl_event event;
-  
+
   size_t size_to_use = BUFFER_CHUNK_SIZE;
   if (size_to_use > size)
     size_to_use = size;
-  
+
   data = (cl_uint*)malloc(size_to_use);
   if (data == NULL) {
     log_error("Failed to malloc host buffer for writing into buffer.\n");
@@ -45,11 +45,11 @@ int fill_buffer_with_data(cl_context context, cl_device_id device_id, cl_command
     if (blocking_write) {
       error = clEnqueueWriteBuffer(*queue, mem, CL_TRUE, i, size_to_use, data, 0, NULL, NULL);
       result = check_allocation_error(context, device_id, error, queue);
-  
+
       if (result == FAILED_ABORT) {
         print_error(error, "clEnqueueWriteBuffer failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         free(data);
         clReleaseMemObject(mem);
@@ -58,51 +58,51 @@ int fill_buffer_with_data(cl_context context, cl_device_id device_id, cl_command
     } else {
       error = clEnqueueWriteBuffer(*queue, mem, CL_FALSE, i, size_to_use, data, 0, NULL, &event);
       result = check_allocation_error(context, device_id, error, queue);
-  
+
       if (result == FAILED_ABORT) {
         print_error(error, "clEnqueueWriteBuffer failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         free(data);
         clReleaseMemObject(mem);
         return result;
       }
-  
+
       error = clWaitForEvents(1, &event);
       result = check_allocation_error(context, device_id, error, queue);
-  
+
       if (result == FAILED_ABORT) {
         print_error(error, "clWaitForEvents failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         clReleaseEvent(event);
         free(data);
         clReleaseMemObject(mem);
         return result;
       }
-      
+
       clReleaseEvent(event);
     }
   }
-  
+
   // Deal with any leftover bits
   if (i < size) {
     // Put values in the data, and keep a checksum as we go along.
     for (j=0; j<(size-i)/sizeof(cl_uint); j++) {
       data[j] = (cl_uint)genrand_int32(d);
       checksum_delta += data[j];
-    }    
+    }
 
     if (blocking_write) {
       error = clEnqueueWriteBuffer(*queue, mem, CL_TRUE, i, size-i, data, 0, NULL, NULL);
       result = check_allocation_error(context, device_id, error, queue);
-      
+
       if (result == FAILED_ABORT) {
         print_error(error, "clEnqueueWriteBuffer failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         clReleaseMemObject(mem);
         free(data);
@@ -111,35 +111,35 @@ int fill_buffer_with_data(cl_context context, cl_device_id device_id, cl_command
     } else {
       error = clEnqueueWriteBuffer(*queue, mem, CL_FALSE, i, size-i, data, 0, NULL, &event);
       result = check_allocation_error(context, device_id, error, queue);
-      
+
       if (result == FAILED_ABORT) {
         print_error(error, "clEnqueueWriteBuffer failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         clReleaseMemObject(mem);
         free(data);
         return result;
       }
-  
+
       error = clWaitForEvents(1, &event);
       result = check_allocation_error(context, device_id, error, queue);
-  
+
       if (result == FAILED_ABORT) {
         print_error(error, "clWaitForEvents failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         clReleaseEvent(event);
         free(data);
         clReleaseMemObject(mem);
         return result;
       }
-      
+
       clReleaseEvent(event);
     }
   }
-  
+
   free(data);
   // Only update the checksum if this succeeded.
   checksum += checksum_delta;
@@ -153,12 +153,12 @@ int fill_image_with_data(cl_context context, cl_device_id device_id, cl_command_
   cl_uint *data;
   cl_uint checksum_delta = 0;
   cl_event event;
-  
+
   size_t image_lines_to_use;
   image_lines_to_use = IMAGE_LINES;
   if (image_lines_to_use > height)
-	  image_lines_to_use = height;
-  
+      image_lines_to_use = height;
+
   data = (cl_uint*)malloc(width*4*sizeof(cl_uint)*IMAGE_LINES);
   if (data == NULL) {
     log_error("Failed to malloc host buffer for writing into image.\n");
@@ -175,16 +175,16 @@ int fill_image_with_data(cl_context context, cl_device_id device_id, cl_command_
     for (j=0; j<width*4*IMAGE_LINES; j++) {
       data[j] = (cl_uint)genrand_int32(d);
       checksum_delta += data[j];
-    }  
-    
+    }
+
     if (blocking_write) {
       error = clEnqueueWriteImage(*queue, mem, CL_TRUE, origin, region, 0, 0, data, 0, NULL, NULL);
       result = check_allocation_error(context, device_id, error, queue);
-      
+
       if (result == FAILED_ABORT) {
         print_error(error, "clEnqueueWriteImage failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         clReleaseMemObject(mem);
         free(data);
@@ -193,52 +193,52 @@ int fill_image_with_data(cl_context context, cl_device_id device_id, cl_command_
     } else {
       error = clEnqueueWriteImage(*queue, mem, CL_FALSE, origin, region, 0, 0, data, 0, NULL, &event);
       result = check_allocation_error(context, device_id, error, queue);
-      
+
       if (result == FAILED_ABORT) {
         print_error(error, "clEnqueueWriteImage failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         clReleaseMemObject(mem);
         free(data);
         return result;
       }
-  
+
       error = clWaitForEvents(1, &event);
       result = check_allocation_error(context, device_id, error, queue);
-  
+
       if (result == FAILED_ABORT) {
         print_error(error, "clWaitForEvents failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         clReleaseEvent(event);
         free(data);
         clReleaseMemObject(mem);
         return result;
       }
-      
+
       clReleaseEvent(event);
     }
   }
-  
+
   // Deal with any leftover bits
   if (origin[1] < height) {
     // Put values in the data, and keep a checksum as we go along.
     for (j=0; j<width*4*(height-origin[1]); j++) {
       data[j] = (cl_uint)genrand_int32(d);
       checksum_delta += data[j];
-    }  
-    
+    }
+
     region[1] = height-origin[1];
     if(blocking_write) {
       error = clEnqueueWriteImage(*queue, mem, CL_TRUE, origin, region, 0, 0, data, 0, NULL, NULL);
       result = check_allocation_error(context, device_id, error, queue);
-      
+
       if (result == FAILED_ABORT) {
         print_error(error, "clEnqueueWriteImage failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         clReleaseMemObject(mem);
         free(data);
@@ -247,35 +247,35 @@ int fill_image_with_data(cl_context context, cl_device_id device_id, cl_command_
     } else {
       error = clEnqueueWriteImage(*queue, mem, CL_FALSE, origin, region, 0, 0, data, 0, NULL, &event);
       result = check_allocation_error(context, device_id, error, queue);
-      
+
       if (result == FAILED_ABORT) {
         print_error(error, "clEnqueueWriteImage failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         clReleaseMemObject(mem);
         free(data);
         return result;
       }
-  
+
       error = clWaitForEvents(1, &event);
       result = check_allocation_error(context, device_id, error, queue);
-  
+
       if (result == FAILED_ABORT) {
         print_error(error, "clWaitForEvents failed.");
       }
-      
+
       if (result != SUCCEEDED) {
         clReleaseEvent(event);
         free(data);
         clReleaseMemObject(mem);
         return result;
       }
-      
+
       clReleaseEvent(event);
     }
   }
-  
+
   free(data);
   // Only update the checksum if this succeeded.
   checksum += checksum_delta;
@@ -288,10 +288,10 @@ int fill_mem_with_data(cl_context context, cl_device_id device_id, cl_command_qu
   int error;
   cl_mem_object_type type;
   size_t size, width, height;
-  
+
   error = clGetMemObjectInfo(mem, CL_MEM_TYPE, sizeof(type), &type, NULL);
   test_error_abort(error, "clGetMemObjectInfo failed for CL_MEM_TYPE.");
-  
+
   if (type == CL_MEM_OBJECT_BUFFER) {
     error = clGetMemObjectInfo(mem, CL_MEM_SIZE, sizeof(size), &size, NULL);
     test_error_abort(error, "clGetMemObjectInfo failed for CL_MEM_SIZE.");
@@ -303,7 +303,7 @@ int fill_mem_with_data(cl_context context, cl_device_id device_id, cl_command_qu
     test_error_abort(error, "clGetImageInfo failed for CL_IMAGE_HEIGHT.");
     return fill_image_with_data(context, device_id, queue, mem, width, height, d, blocking_write);
   }
-    
+
   log_error("Invalid CL_MEM_TYPE: %d\n", type);
   return FAILED_ABORT;
 }

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,7 +26,7 @@
 
 #include "../../test_common/harness/compat.h"
 
-basefn	basefn_list[] = {
+basefn    basefn_list[] = {
 test_quick_thread_dimensions_1d_explicit_local,
 test_quick_thread_dimensions_2d_explicit_local,
 test_quick_thread_dimensions_3d_explicit_local,
@@ -60,12 +60,12 @@ const char *commonfn_names[] = {
 
 ct_assert((sizeof(commonfn_names) / sizeof(commonfn_names[0]) - 1) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
 
-int	num_commonfns = sizeof(commonfn_names) / sizeof(char *);
+int    num_commonfns = sizeof(commonfn_names) / sizeof(char *);
 
 int
 main(int argc, const char *argv[])
 {
-	return runTestHarness( argc, argv, num_commonfns, basefn_list, commonfn_names, false, false, 0 );
+    return runTestHarness( argc, argv, num_commonfns, basefn_list, commonfn_names, false, false, 0 );
 }
 
 

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,27 +25,27 @@
 
 cl_int get_type_size( cl_context context, cl_command_queue queue, const char *type, cl_ulong *size  )
 {
-    const char *sizeof_kernel_code[4] = 
+    const char *sizeof_kernel_code[4] =
     {
         "", /* optional pragma string */
         "__kernel __attribute__((reqd_work_group_size(1,1,1))) void test_sizeof(__global uint *dst) \n"
         "{\n"
         "   dst[0] = (uint) sizeof( ", type, " );\n"
-        "}\n" 
+        "}\n"
     };
-    
+
     cl_program  p;
     cl_kernel   k;
     cl_mem      m;
-    cl_uint	    temp;
-    
+    cl_uint        temp;
+
     if ( strncmp(type, "double", 6) == 0)
         sizeof_kernel_code[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
-    
+
     cl_int err = create_single_kernel_helper( context, &p, &k, 4, sizeof_kernel_code, "test_sizeof" );
     if( err )
         return err;
-    
+
     m = clCreateBuffer( context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, sizeof( cl_ulong ), size, &err );
     if( NULL == m )
     {
@@ -54,7 +54,7 @@ cl_int get_type_size( cl_context context, cl_command_queue queue, const char *ty
         log_error("\nclCreateBuffer FAILED\n");
         return err;
     }
-    
+
     err = clSetKernelArg( k, 0, sizeof( cl_mem ), &m );
     if( err )
     {
@@ -64,7 +64,7 @@ cl_int get_type_size( cl_context context, cl_command_queue queue, const char *ty
         log_error("\nclSetKernelArg FAILED\n");
         return err;
     }
-    
+
     err = clEnqueueTask( queue, k, 0, NULL, NULL );
     clReleaseProgram( p );
     clReleaseKernel( k );
@@ -74,15 +74,15 @@ cl_int get_type_size( cl_context context, cl_command_queue queue, const char *ty
         log_error( "\nclEnqueueTask FAILED\n" );
         return err;
     }
-    
+
     err = clEnqueueReadBuffer( queue, m, CL_TRUE, 0, sizeof( cl_uint ), &temp, 0, NULL, NULL );
     clReleaseMemObject( m );
     if( err )
         log_error( "\nclEnqueueReadBuffer FAILED\n" );
-    
+
     *size = (cl_ulong) temp;
-    
-    return err;    
+
+    return err;
 }
 
 typedef struct size_table
@@ -92,7 +92,7 @@ typedef struct size_table
     cl_ulong   cl_size;
 }size_table;
 
-const size_table  scalar_table[] = 
+const size_table  scalar_table[] =
 {
     // Fixed size entries from table 6.1
     {  "char",              1,  sizeof( cl_char )   },
@@ -110,7 +110,7 @@ const size_table  scalar_table[] =
     {  "unsigned long",     8,  sizeof( cl_ulong)   }
 };
 
-const size_table  vector_table[] = 
+const size_table  vector_table[] =
 {
     // Fixed size entries from table 6.1
     {  "char",      1,  sizeof( cl_char )   },
@@ -124,19 +124,19 @@ const size_table  vector_table[] =
     {  "ulong",     8,  sizeof( cl_ulong)   }
 };
 
-const char  *ptr_table[] = 
+const char  *ptr_table[] =
 {
-    "void*", 
-    "size_t", 
+    "global void*",
+    "size_t",
     "sizeof(int)",      // check return type of sizeof
     "ptrdiff_t"
 };
 
-const char *other_types[] = 
+const char *other_types[] =
 {
     "event_t",
     "image2d_t",
-    "image3d_t", 
+    "image3d_t",
     "sampler_t"
 };
 
@@ -148,7 +148,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
     cl_ulong test;
     cl_uint ptr_size = CL_UINT_MAX;
     cl_int err = CL_SUCCESS;
-    
+
     // Check address space size
     err = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(ptr_size), &ptr_size, NULL);
     if( err || ptr_size > 64)
@@ -158,11 +158,11 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
     }
     log_info( "\tCL_DEVICE_ADDRESS_BITS = %u\n", ptr_size );
     ptr_size /= 8;
-    
+
     // Test standard scalar sizes
     for( i = 0; i < sizeof( scalar_table ) / sizeof( scalar_table[0] ); i++ )
     {
-        if( ! gHasLong && 
+        if( ! gHasLong &&
            (0 == strcmp(scalar_table[i].name, "long") ||
             0 == strcmp(scalar_table[i].name, "ulong") ||
             0 == strcmp(scalar_table[i].name, "unsigned long")))
@@ -170,7 +170,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
             log_info("\nLongs are not supported by this device. Skipping test.\t");
             continue;
         }
-        
+
         test = CL_ULONG_MAX;
         err = get_type_size( context, queue, scalar_table[i].name, &test  );
         if( err )
@@ -188,24 +188,24 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
         log_info( "%16s", scalar_table[i].name );
     }
     log_info( "\n" );
-    
+
     // Test standard vector sizes
     for( j = 2; j <= 16; j *= 2 )
     {
         // For each vector size, iterate through types
         for( i = 0; i < sizeof( vector_table ) / sizeof( vector_table[0] ); i++ )
         {
-            if( !gHasLong && 
+            if( !gHasLong &&
                (0 == strcmp(vector_table[i].name, "long") ||
                 0 == strcmp(vector_table[i].name, "ulong")))
             {
                 log_info("\nLongs are not supported by this device. Skipping test.\t");
                 continue;
             }
-            
+
             char name[32];
             sprintf( name, "%s%ld", vector_table[i].name, j );
-            
+
             test = CL_ULONG_MAX;
             err = get_type_size( context, queue, name, &test  );
             if( err )
@@ -224,8 +224,8 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
         }
         log_info( "\n" );
     }
-    
-    //Check that pointer sizes are correct    
+
+    //Check that pointer sizes are correct
     for( i = 0; i < sizeof( ptr_table ) / sizeof( ptr_table[0] ); i++ )
     {
         test = CL_ULONG_MAX;
@@ -239,7 +239,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
         }
         log_info( "%16s", ptr_table[i] );
     }
-    
+
     // Check that intptr_t is large enough
     test = CL_ULONG_MAX;
     err = get_type_size( context, queue, "intptr_t", &test  );
@@ -256,7 +256,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
         return -2;
     }
     log_info( "%16s", "intptr_t" );
-    
+
     // Check that uintptr_t is large enough
     test = CL_ULONG_MAX;
     err = get_type_size( context, queue, "uintptr_t", &test  );
@@ -273,17 +273,17 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
         return -2;
     }
     log_info( "%16s\n", "uintptr_t" );
-    
-    //Check that other types are powers of two    
+
+    //Check that other types are powers of two
     for( i = 0; i < sizeof( other_types ) / sizeof( other_types[0] ); i++ )
     {
         if( 0 == strcmp(other_types[i], "image2d_t") &&
-           checkForImageSupport( device ) == CL_IMAGE_FORMAT_NOT_SUPPORTED) 
+           checkForImageSupport( device ) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
         {
             log_info("\nimages are not supported by this device. Skipping test.\t");
             continue;
         }
-        
+
         if( gIsEmbedded &&
            0 == strcmp(other_types[i], "image3d_t") &&
            checkFor3DImageSupport( device ) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
@@ -291,14 +291,14 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
             log_info("\n3D images are not supported by this device. Skipping test.\t");
             continue;
         }
-      
+
         if( 0 == strcmp(other_types[i], "sampler_t") &&
-           checkForImageSupport( device ) == CL_IMAGE_FORMAT_NOT_SUPPORTED) 
+           checkForImageSupport( device ) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
         {
           log_info("\nimages are not supported by this device. Skipping test.\t");
           continue;
         }
-        
+
         test = CL_ULONG_MAX;
         err = get_type_size( context, queue, other_types[i], &test  );
         if( err )
@@ -311,8 +311,8 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
         log_info( "%16s", other_types[i] );
     }
     log_info( "\n" );
-    
-    
+
+
     //Check double
     if( is_extension_available( device, "cl_khr_fp64" ) )
     {
@@ -327,13 +327,13 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
             return -1;
         }
         log_info( "%16s", "double" );
-        
+
         // Test standard vector sizes
         for( j = 2; j <= 16; j *= 2 )
         {
             char name[32];
             sprintf( name, "double%ld", j );
-            
+
             test = CL_ULONG_MAX;
             err = get_type_size( context, queue, name, &test  );
             if( err )
@@ -347,7 +347,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
         }
         log_info( "\n" );
     }
-    
+
     //Check half
     if( is_extension_available( device, "cl_khr_fp16" ) )
     {
@@ -356,19 +356,19 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
         err = get_type_size( context, queue, "half", &test  );
         if( err )
             return err;
-        if( test != 8 )
+        if( test != 2 )
         {
             log_error( "\nFAILED: half has size %lld, but must be 2!\n", test );
             return -1;
         }
         log_info( "%16s", "half" );
-        
+
         // Test standard vector sizes
         for( j = 2; j <= 16; j *= 2 )
         {
             char name[32];
             sprintf( name, "half%ld", j );
-            
+
             test = CL_ULONG_MAX;
             err = get_type_size( context, queue, name, &test  );
             if( err )
@@ -382,7 +382,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
         }
         log_info( "\n" );
     }
-    
+
     return err;
 }
 

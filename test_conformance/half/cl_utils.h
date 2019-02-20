@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,7 +26,7 @@
 
 #if !defined(_WIN32)
 #include <stdbool.h>
-#include <sys/param.h> 
+#include <sys/param.h>
 #endif
 
 #include "../../test_common/harness/compat.h"
@@ -70,7 +70,7 @@ extern cl_mem          gOutBuffer_single;
 extern cl_mem          gInBuffer_double;
 extern cl_mem          gOutBuffer_double;
 
-extern uint32_t		   gDeviceIndex;
+extern uint32_t           gDeviceIndex;
 extern cl_device_type  gDeviceType;
 extern cl_device_id    gDevice;
 extern cl_context      gContext;
@@ -88,6 +88,7 @@ extern int             gReportTimes;
 // size of 32 bit ranges to a much smaller set.  This is meant to be used
 // as a smoke test
 extern bool            gWimpyMode;
+extern int             gWimpyReductionFactor;
 
 uint64_t ReadTime( void );
 double SubtractTime( uint64_t endTime, uint64_t startTime );
@@ -123,8 +124,8 @@ static inline double DoubleFromUInt32( uint32_t bits )
     // split 0x89abcdef to 0x89abc00000000def
     u.u = bits & 0xffU;
     u.u |= (uint64_t) (bits & ~0xffU) << 32;
-    
-    // sign extend the leading bit of def segment as sign bit so that the middle region consists of either all 1s or 0s 
+
+    // sign extend the leading bit of def segment as sign bit so that the middle region consists of either all 1s or 0s
     u.u -= (bits & 0x80U) << 1;
 
     // return result
@@ -132,8 +133,8 @@ static inline double DoubleFromUInt32( uint32_t bits )
 }
 
 static inline int IsHalfSubnormal( uint16_t x )
-{ 
-    return ((x&0x7fffU)-1U) < 0x03ffU; 
+{
+    return ((x&0x7fffU)-1U) < 0x03ffU;
 }
 
 // prevent silent failures due to missing FLT_RADIX
@@ -142,28 +143,28 @@ static inline int IsHalfSubnormal( uint16_t x )
 #endif
 
 static inline int IsFloatSubnormal( double x )
-{ 
-#if 2 == FLT_RADIX       
+{
+#if 2 == FLT_RADIX
     // Do this in integer to avoid problems with FTZ behavior
     union{ float d; uint32_t u;}u;
-    u.d = fabsf((float) x); 
+    u.d = fabsf((float) x);
     return (u.u-1) < 0x007fffffU;
 #else
     // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) FLT_MIN && x != 0.0; 
+    return fabs(x) < (double) FLT_MIN && x != 0.0;
 #endif
 }
 
 static inline int IsDoubleSubnormal( long double x )
-{ 
-#if 2 == FLT_RADIX       
+{
+#if 2 == FLT_RADIX
     // Do this in integer to avoid problems with FTZ behavior
     union{ double d; uint64_t u;}u;
-    u.d = fabs((double)x); 
+    u.d = fabs((double)x);
     return (u.u-1) < 0x000fffffffffffffULL;
 #else
     // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) DBL_MIN && x != 0.0; 
+    return fabs(x) < (double) DBL_MIN && x != 0.0;
 #endif
 }
 

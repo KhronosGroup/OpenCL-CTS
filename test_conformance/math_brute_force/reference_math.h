@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -53,8 +53,8 @@ double reference_tanpi( double );
 double reference_pow(double x, double y);
 double reference_pown( double, int );
 double reference_powr( double, double );
-double reference_cos( double ); 
-double reference_sin( double ); 
+double reference_cos( double );
+double reference_sin( double );
 double reference_tan( double );
 double reference_log( double );
 double reference_log10( double );
@@ -116,7 +116,7 @@ double reference_ldexp( double x, int n );
 double reference_assignment( double x );
 int    reference_not( double x );
 
-// -- for testing double -- 
+// -- for testing double --
 
 long double reference_sinhl( long double x );
 long double reference_sqrtl( long double x );
@@ -148,8 +148,8 @@ long double reference_tanpil( long double );
 long double reference_powl(long double x, long double y);
 long double reference_pownl( long double, int );
 long double reference_powrl( long double, long double );
-long double reference_cosl( long double ); 
-long double reference_sinl(long double ); 
+long double reference_cosl( long double );
+long double reference_sinl(long double );
 long double reference_tanl( long double );
 long double reference_logl( long double );
 long double reference_log10l( long double );

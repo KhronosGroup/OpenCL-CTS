@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,7 +33,7 @@ extern cl_device_type       gDeviceType;
 #define MAX_TRIES   1
 #define MAX_CLAMPED 1
 
-const char *read2DKernelSourcePattern = 
+const char *read2DKernelSourcePattern =
 "__kernel void sample_kernel( read_only image2d_t input, sampler_t sampler, __global int *results )\n"
 "{\n"
 "   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
@@ -49,7 +49,7 @@ const char *read2DKernelSourcePattern =
 
 
 int test_read_image_2D( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel,
-                        image_descriptor *imageInfo, image_sampler_data *imageSampler, 
+                        image_descriptor *imageInfo, image_sampler_data *imageSampler,
                         ExplicitType outputType, MTdata d )
 {
     int error;
@@ -66,13 +66,13 @@ int test_read_image_2D( cl_device_id device, cl_context context, cl_command_queu
     // Construct testing sources
     cl_mem image;
     cl_image_desc image_desc;
-        
+
     memset(&image_desc, 0x0, sizeof(cl_image_desc));
     image_desc.image_type = CL_MEM_OBJECT_IMAGE2D;
     image_desc.image_width = imageInfo->width;
     image_desc.image_height = imageInfo->height;
     image_desc.image_row_pitch = ( gEnablePitch ? imageInfo->rowPitch : 0 );
-    image = clCreateImage( context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, imageInfo->format, 
+    image = clCreateImage( context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, imageInfo->format,
                                        &image_desc, imageValues, &error );
     if ( error != CL_SUCCESS )
     {
@@ -86,16 +86,16 @@ int test_read_image_2D( cl_device_id device, cl_context context, cl_command_queu
     // Create sampler to use
     actualSampler = clCreateSampler( context, false, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &error );
     test_error( error, "Unable to create image sampler" );
-    
+
     // Create results buffer
     cl_mem results = clCreateBuffer( context, 0, imageInfo->width * imageInfo->height * sizeof(cl_int), NULL, &error);
     test_error( error, "Unable to create results buffer" );
-    
+
     size_t resultValuesSize = imageInfo->width * imageInfo->height * sizeof(cl_int);
     BufferOwningPtr<int> resultValues(malloc( resultValuesSize ));
     memset( resultValues, 0xff, resultValuesSize );
     clEnqueueWriteBuffer( queue, results, CL_TRUE, 0, resultValuesSize, resultValues, 0, NULL, NULL );
-    
+
     // Set arguments
     int idx = 0;
     error = clSetKernelArg( kernel, idx++, sizeof( cl_mem ), &image );
@@ -113,12 +113,12 @@ int test_read_image_2D( cl_device_id device, cl_context context, cl_command_queu
 
     if ( gDebugTrace )
         log_info( "    reading results, %ld kbytes\n", (unsigned long)( imageInfo->width * imageInfo->height * sizeof(cl_int) / 1024 ) );
-    
+
     error = clEnqueueReadBuffer( queue, results, CL_TRUE, 0, resultValuesSize, resultValues, 0, NULL, NULL );
     test_error( error, "Unable to read results from kernel" );
     if ( gDebugTrace )
         log_info( "    results read\n" );
-    
+
     // Check for non-zero comps
     bool allZeroes = true;
     for ( size_t ic = 0; ic < imageInfo->width * imageInfo->height; ++ic )
@@ -141,7 +141,7 @@ int test_read_image_2D( cl_device_id device, cl_context context, cl_command_queu
     return 0;
 }
 
-int test_read_image_set_2D( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler, 
+int test_read_image_set_2D( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler,
                             ExplicitType outputType )
 {
     char programSrc[10240];
@@ -205,7 +205,7 @@ int test_read_image_set_2D( cl_device_id device, cl_image_format *format, image_
                 if ( gDebugTrace )
                     log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.height );
 
-                int retCode = test_read_image_2D( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );    
+                int retCode = test_read_image_2D( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
                 if ( retCode )
                     return retCode;
             }
@@ -235,7 +235,7 @@ int test_read_image_set_2D( cl_device_id device, cl_image_format *format, image_
     else
     {
         for ( int i = 0; i < NUM_IMAGE_ITERATIONS; i++ )
-        {            
+        {
             cl_ulong size;
             // Loop until we get a size that a) will fit in the max alloc size and b) that an allocation of that
             // image, the result array, plus offset arrays, will fit in the global ram space

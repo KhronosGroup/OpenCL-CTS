@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,12 +19,12 @@ cl_command_queue reset_queue(cl_context context, cl_device_id device_id, cl_comm
 {
   log_info("Invalid command queue. Releasing and recreating the command queue.\n");
   clReleaseCommandQueue(*queue);
-	*queue = clCreateCommandQueue(context, device_id, 0, error);
+    *queue = clCreateCommandQueue(context, device_id, 0, error);
   return *queue;
 }
 
 int check_allocation_error(cl_context context, cl_device_id device_id, int error, cl_command_queue *queue) {
-  //log_info("check_allocation_error context=%p device_id=%p error=%d *queue=%p\n", context, device_id, error, *queue);  
+  //log_info("check_allocation_error context=%p device_id=%p error=%d *queue=%p\n", context, device_id, error, *queue);
   if ((error == CL_MEM_OBJECT_ALLOCATION_FAILURE ) || (error == CL_OUT_OF_RESOURCES ) || (error == CL_OUT_OF_HOST_MEMORY) || (error == CL_INVALID_IMAGE_SIZE)) {
     return FAILED_TOO_BIG;
   } else if (error == CL_INVALID_COMMAND_QUEUE) {
@@ -40,7 +40,7 @@ int check_allocation_error(cl_context context, cl_device_id device_id, int error
     log_error("Allocation failed with %s.\n", IGetErrorString(error));
     return FAILED_ABORT;
   }
-  return SUCCEEDED;   
+  return SUCCEEDED;
 }
 
 
@@ -52,13 +52,13 @@ size_t get_actual_allocation_size(cl_mem mem) {
   int error;
   cl_mem_object_type type;
   size_t size, width, height;
-  
+
   error = clGetMemObjectInfo(mem, CL_MEM_TYPE, sizeof(type), &type, NULL);
   if (error) {
-  	print_error(error, "clGetMemObjectInfo failed for CL_MEM_TYPE.");
+      print_error(error, "clGetMemObjectInfo failed for CL_MEM_TYPE.");
     return 0;
   }
-  
+
   if (type == CL_MEM_OBJECT_BUFFER) {
     error = clGetMemObjectInfo(mem, CL_MEM_SIZE, sizeof(size), &size, NULL);
     if (error) {
@@ -79,7 +79,7 @@ size_t get_actual_allocation_size(cl_mem mem) {
     }
     return width*height*4*sizeof(cl_uint);
   }
-  
+
   log_error("Invalid CL_MEM_TYPE: %d\n", type);
   return 0;
 }

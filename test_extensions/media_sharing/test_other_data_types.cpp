@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,16 +22,16 @@
 #include "utils.h"
 
 template<typename T>
-int other_data_types(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, 
+int other_data_types(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements,
                     unsigned int iterationNum, unsigned int width, unsigned int height, cl_dx9_media_adapter_type_khr adapterType,
                     TSurfaceFormat surfaceFormat, TSharedHandleType sharedHandle)
 {
   const unsigned int FRAME_NUM = 2;
   const float MAX_VALUE = 0.6f;
-  const std::string PROGRAM_STR = 
+  const std::string PROGRAM_STR =
     "__kernel void TestFunction( read_only image2d_t imageIn, write_only image2d_t imageOut, "
     NL "                            sampler_t sampler, __global int *imageRes)"
-    NL "{"  
+    NL "{"
     NL "  int w = get_global_id(0);"
     NL "  int h = get_global_id(1);"
     NL "  int width = get_image_width(imageIn);"
@@ -195,7 +195,7 @@ int other_data_types(cl_device_id deviceID, cl_context context, cl_command_queue
       result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (!GetImageInfo(objectSrcShared, format, sizeof(T) * planeNum, 
+    if (!GetImageInfo(objectSrcShared, format, sizeof(T) * planeNum,
       width * sizeof(T) * planeNum,  0, width, height, 0, 0))
     {
       log_error("clGetImageInfo failed\n");
@@ -218,7 +218,7 @@ int other_data_types(cl_device_id deviceID, cl_context context, cl_command_queue
       size_t lineSize = width * planeNum * sizeof(T);
       T *ptr = static_cast<T *>(rect.pBits);
 
-      for (size_t y = 0; y < height; ++y) 
+      for (size_t y = 0; y < height; ++y)
         memcpy(ptr + y * pitch, &bufferIn[frameIdx % FRAME_NUM][y * width * planeNum], lineSize);
 
       (*dx9SurfaceSrc)->UnlockRect();

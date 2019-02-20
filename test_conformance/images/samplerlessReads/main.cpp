@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,7 +33,7 @@
 
 #if defined(__PPC__)
 // Global varaiable used to hold the FPU control register state. The FPSCR register can not
-// be used because not all Power implementations retain or observed the NI (non-IEEE 
+// be used because not all Power implementations retain or observed the NI (non-IEEE
 // mode) bit.
 __thread fpu_control_t fpu_control = 0;
 #endif
@@ -50,7 +50,7 @@ cl_device_type      gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 cl_command_queue    queue;
 cl_context          context;
 
-#define MAX_ALLOWED_STD_DEVIATION_IN_MB		8.0
+#define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
 void printUsage( const char *execName )
 {
@@ -67,7 +67,7 @@ void printUsage( const char *execName )
     log_info( "\t\tfloat - Test float I/O (read_imagef)\n" );
     log_info( "\n" );
     log_info( "You may also use appropriate CL_ channel type and ordering constants.\n" );
-    log_info( "\n" );    
+    log_info( "\n" );
     log_info( "\t1D - Only test 1D images\n" );
     log_info( "\t2D - Only test 2D images\n" );
     log_info( "\t3D - Only test 3D images\n" );
@@ -92,13 +92,13 @@ int main(int argc, const char *argv[])
     cl_channel_type chanType;
     cl_channel_order chanOrder;
     char            str[ 128 ];
-    int             testMethods = 0;    
+    int             testMethods = 0;
     bool            randomize = false;
 
     test_start();
 
     //Check CL_DEVICE_TYPE environment variable
-    checkDeviceTypeOverride( &gDeviceType );    
+    checkDeviceTypeOverride( &gDeviceType );
 
     // Parse arguments
     for ( int i = 1; i < argc; i++ )
@@ -239,12 +239,12 @@ int main(int argc, const char *argv[])
     if ( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
 
-    // On most platforms which support denorm, default is FTZ off. However, 
+    // On most platforms which support denorm, default is FTZ off. However,
     // on some hardware where the reference is computed, default might be flush denorms to zero e.g. arm.
-    // This creates issues in result verification. Since spec allows the implementation to either flush or 
+    // This creates issues in result verification. Since spec allows the implementation to either flush or
     // not flush denorms to zero, an implementation may choose not to flush i.e. return denorm result whereas
     // reference result may be zero (flushed denorm). Hence we need to disable denorm flushing on host side
-    // where reference is being computed to make sure we get non-flushed reference result. If implementation 
+    // where reference is being computed to make sure we get non-flushed reference result. If implementation
     // returns flushed result, we correctly take care of that in verification code.
 
     FPU_mode_type oldMode;

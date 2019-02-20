@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -133,7 +133,7 @@ int get_format_list( cl_device_id device, cl_mem_object_type imageType, cl_image
     return 0;
 }
 
-int test_read_image_type( cl_device_id device, cl_image_format *format, 
+int test_read_image_type( cl_device_id device, cl_image_format *format,
                           image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType )
 {
     int ret = 0;
@@ -222,27 +222,27 @@ int test_image_set( cl_device_id device, cl_mem_object_type imageType )
     {
         log_info( "---- Supported %s read formats for this device ---- \n", convert_image_type_to_string(imageType) );
         for ( unsigned int f = 0; f < numFormats; f++ )
-            log_info( "  %-7s %-24s %d\n", GetChannelOrderName( formatList[ f ].image_channel_order ), 
-                      GetChannelTypeName( formatList[ f ].image_channel_data_type ), 
+            log_info( "  %-7s %-24s %d\n", GetChannelOrderName( formatList[ f ].image_channel_order ),
+                      GetChannelTypeName( formatList[ f ].image_channel_data_type ),
                       (int)get_format_channel_count( &formatList[ f ] ) );
         log_info( "------------------------------------------- \n" );
         printedFormatList = imageType;
     }
 
-    image_sampler_data imageSampler;    
+    image_sampler_data imageSampler;
 
     /////// float tests ///////
 
     if ( gTypesToTest & kTestFloat )
     {
-        cl_channel_type floatFormats[] = { CL_UNORM_SHORT_565, CL_UNORM_SHORT_555, CL_UNORM_INT_101010, 
+        cl_channel_type floatFormats[] = { CL_UNORM_SHORT_565, CL_UNORM_SHORT_555, CL_UNORM_INT_101010,
 #ifdef OBSOLETE_FORAMT
             CL_UNORM_SHORT_565_REV, CL_UNORM_SHORT_555_REV, CL_UNORM_INT_8888, CL_UNORM_INT_8888_REV, CL_UNORM_INT_101010_REV,
 #endif
 #ifdef CL_SFIXED14_APPLE
             CL_SFIXED14_APPLE,
 #endif
-            CL_UNORM_INT8, CL_SNORM_INT8, 
+            CL_UNORM_INT8, CL_SNORM_INT8,
             CL_UNORM_INT16, CL_SNORM_INT16, CL_FLOAT, CL_HALF_FLOAT, (cl_channel_type)-1 };
         if ( filter_formats( formatList, filterFlags, numFormats, floatFormats ) == 0 )
         {
@@ -285,7 +285,7 @@ int test_image_set( cl_device_id device, cl_mem_object_type imageType )
             // Only filter mode we support on uint is nearest
             imageSampler.filter_mode = CL_FILTER_NEAREST;
             ret += test_read_image_formats( device, formatList, filterFlags, numFormats, &imageSampler, kUInt, imageType );
-        }   
+        }
     }
 
 

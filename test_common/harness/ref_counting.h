@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,19 +17,19 @@
 #define _ref_counting_h
 
 #define MARK_REF_COUNT_BASE( c, type, bigType ) \
-	cl_uint c##_refCount; \
-	error = clGet##type##Info( c, CL_##bigType##_REFERENCE_COUNT, sizeof( c##_refCount ), &c##_refCount, NULL ); \
-	test_error( error, "Unable to check reference count for " #type );
+    cl_uint c##_refCount; \
+    error = clGet##type##Info( c, CL_##bigType##_REFERENCE_COUNT, sizeof( c##_refCount ), &c##_refCount, NULL ); \
+    test_error( error, "Unable to check reference count for " #type );
 
 #define TEST_REF_COUNT_BASE( c, type, bigType ) \
-	cl_uint c##_refCount_new; \
-	error = clGet##type##Info( c, CL_##bigType##_REFERENCE_COUNT, sizeof( c##_refCount_new ), &c##_refCount_new, NULL ); \
-	test_error( error, "Unable to check reference count for " #type ); \
-	if( c##_refCount != c##_refCount_new ) \
-	{	\
-		log_error( "ERROR: Reference count for " #type " changed! (was %d, now %d)\n", c##_refCount, c##_refCount_new );	\
-		return -1; \
-	}
+    cl_uint c##_refCount_new; \
+    error = clGet##type##Info( c, CL_##bigType##_REFERENCE_COUNT, sizeof( c##_refCount_new ), &c##_refCount_new, NULL ); \
+    test_error( error, "Unable to check reference count for " #type ); \
+    if( c##_refCount != c##_refCount_new ) \
+    {    \
+        log_error( "ERROR: Reference count for " #type " changed! (was %d, now %d)\n", c##_refCount, c##_refCount_new );    \
+        return -1; \
+    }
 
 #define MARK_REF_COUNT_CONTEXT( c ) MARK_REF_COUNT_BASE( c, Context, CONTEXT )
 #define TEST_REF_COUNT_CONTEXT( c ) TEST_REF_COUNT_BASE( c, Context, CONTEXT )
