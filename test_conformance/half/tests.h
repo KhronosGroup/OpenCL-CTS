@@ -17,19 +17,19 @@
 #define TESTS_H
 
 
-int Test_vload_half( void );
-int Test_vloada_half( void );
-int Test_vstore_half( void );
-int Test_vstorea_half( void );
-int Test_vstore_half_rte( void );
-int Test_vstorea_half_rte( void );
-int Test_vstore_half_rtz( void );
-int Test_vstorea_half_rtz( void );
-int Test_vstore_half_rtp( void );
-int Test_vstorea_half_rtp( void );
-int Test_vstore_half_rtn( void );
-int Test_vstorea_half_rtn( void );
-int Test_roundTrip( void );
+int Test_vload_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_vloada_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_vstore_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_vstorea_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_vstore_half_rte( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_vstorea_half_rte( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_vstore_half_rtz( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_vstorea_half_rtz( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_vstore_half_rtp( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_vstorea_half_rtp( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_vstore_half_rtn( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_vstorea_half_rtn( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int Test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 
 typedef cl_ushort (*f2h)( float );
 typedef cl_ushort (*d2h)( double );

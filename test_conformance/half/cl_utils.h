@@ -68,11 +68,9 @@ extern uint32_t        gDeviceFrequency;
 extern uint32_t        gComputeDevices;
 extern size_t          gMaxThreadGroupSize;
 extern size_t          gWorkGroupSize;
-extern int             gTestCount;
 extern int             gFailCount;
 extern int             gTestDouble;
 extern int             gReportTimes;
-extern int             gIsEmbedded;
 extern size_t          gBufferSize;
 
 // gWimpyMode indicates if we run the test in wimpy mode where we limit the
@@ -98,10 +96,6 @@ int InitCL( void );
 void ReleaseCL( void );
 int RunKernel( cl_kernel kernel, void *inBuf, void *outBuf, uint32_t blockCount , int extraArg);
 cl_program   MakeProgram( const char *source[], int count );
-
-#if ! defined( __APPLE__ )
-    extern void memset_pattern4(void *dest, const void *src_pattern, size_t bytes );
-#endif
 
 #define STRING( _x )    STRINGIFY( _x )
 #define STRINGIFY(x)    #x

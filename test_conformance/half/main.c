@@ -26,6 +26,7 @@
 #include <sys/param.h>
 #endif
 
+#include "../../test_common/harness/testHarness.h"
 #include "../../test_common/harness/mingw_compat.h"
 #include "../../test_common/harness/parseParameters.h"
 #if defined (__MINGW32__)
@@ -48,12 +49,47 @@ static int ParseArgs( int argc, const char **argv );
 static void PrintUsage( void );
 static void PrintArch(void);
 static void PrintDevice(void);
-static int DoTest( void);
 
 
 int g_arrVecSizes[kVectorSizeCount+kStrangeVectorSizeCount];
 int g_arrVecAligns[kLargestVectorSize+1];
 static int arrStrangeVecSizes[kStrangeVectorSizeCount] = {3};
+
+basefn basefn_list[] = {
+    Test_vload_half,
+    Test_vloada_half,
+    Test_vstore_half,
+    Test_vstorea_half,
+    Test_vstore_half_rte,
+    Test_vstorea_half_rte,
+    Test_vstore_half_rtz,
+    Test_vstorea_half_rtz,
+    Test_vstore_half_rtp,
+    Test_vstorea_half_rtp,
+    Test_vstore_half_rtn,
+    Test_vstorea_half_rtn,
+    Test_roundTrip,
+};
+
+const char *basefn_names[] = {
+    "vload_half",
+    "vloada_half",
+    "vstore_half",
+    "vstorea_half",
+    "vstore_half_rte",
+    "vstorea_half_rte",
+    "vstore_half_rtz",
+    "vstorea_half_rtz",
+    "vstore_half_rtp",
+    "vstorea_half_rtp",
+    "vstore_half_rtn",
+    "vstorea_half_rtn",
+    "roundTrip",
+};
+
+ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
+
+int num_fns = sizeof(basefn_names) / sizeof(char *);
 
 int main (int argc, const char **argv )
 {
@@ -99,33 +135,25 @@ int main (int argc, const char **argv )
     }
 
     fflush( stdout );
-    error = DoTest();
+    error = parseAndCallCommandLineTests( argCount, argList, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
 
 exit:
-
-    if (gFailCount == 0) {
-        if (gTestCount > 1)
-            vlog("PASSED %d of %d tests.\n", gTestCount, gTestCount);
-        else
-            vlog("PASSED test.\n");
-    } else if (gFailCount > 0) {
-        if (gFailCount+gTestCount > 1)
-            vlog_error("FAILED %d of %d tests.\n", gFailCount, gTestCount+gFailCount);
-        else
-            vlog_error("FAILED test.\n");
+    if(gQueue)
+    {
+        int flush_error = clFinish(gQueue);
+        if(flush_error)
+        {
+            vlog_error("clFinish failed: %d\n", flush_error);
+        }
     }
 
-    if (gQueue) {
-        int flush_error = clFinish(gQueue);
-        if (flush_error)
-            vlog_error("clFinish failed: %d\n", flush_error);
+    if(gFailCount > 0)
+    {
+        vlog_error("FAILED %d sub-tests.\n", gFailCount);
     }
 
     ReleaseCL();
     test_finish();
-
-    if (gFailCount)
-        return gFailCount;
 
     return error;
 }
@@ -138,10 +166,14 @@ static int ParseArgs( int argc, const char **argv )
     int i;
     argList = (const char **)calloc( argc - 1, sizeof( char*) );
 
-    argCount = 0;
+    if( NULL == argList )
+    {
+        vlog_error( "Failed to allocate memory for argList.\n" );
+        return 1;
+    }
 
-    if( NULL == argList && argc > 1 )
-        return -1;
+    argList[0] = argv[0];
+    argCount = 1;
 
 #if (defined( __APPLE__ ) || defined(__linux__) || defined(__MINGW32__))
     { // Extract the app name
@@ -311,7 +343,10 @@ static void PrintUsage( void )
     vlog( "\t\t-w\tRun in wimpy mode\n" );
     vlog( "\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", gWimpyReductionFactor);
     vlog( "\t\t-h\tHelp\n" );
-    vlog( "\n" );
+    for( int i = 0; i < num_fns; i++ )
+    {
+        vlog("\t\t%s\n", basefn_names[i] );
+    }
 }
 
 static void PrintArch( void )
@@ -362,97 +397,3 @@ static void PrintDevice( void)
             break;
     }
 }
-
-static int DoTest( void )
-{
-    int error = 0;
-
-    if( 0 == argCount )
-    { // test all
-        if( (error = Test_vload_half()) )
-            return error;
-
-        if( (error = Test_vloada_half()) )
-            return error;
-
-        if( (error = Test_vstore_half()) )
-            return error;
-
-        if( (error = Test_vstorea_half()) )
-            return error;
-
-        if( (error = Test_vstore_half_rte()) )
-            return error;
-
-        if( (error = Test_vstorea_half_rte()) )
-            return error;
-
-        if( (error = Test_vstore_half_rtz()) )
-            return error;
-
-        if( (error = Test_vstorea_half_rtz()) )
-            return error;
-
-        if( (error = Test_vstore_half_rtp()) )
-            return error;
-
-        if( (error = Test_vstorea_half_rtp()) )
-            return error;
-
-        if( (error = Test_vstore_half_rtn()) )
-            return error;
-
-        if( (error = Test_vstorea_half_rtn()) )
-            return error;
-
-        if( (error = Test_roundTrip()) )
-            return error;
-    }
-    else
-    {
-        typedef struct{ int (*f)(void); const char *name; }TestItem;
-#define ENTRY( _x )     { Test_ ## _x, STRINGIFY(_x) }
-        static const TestItem list[] =
-        {
-            ENTRY(vload_half),
-            ENTRY(vloada_half),
-            ENTRY(vstore_half),
-            ENTRY(vstorea_half),
-            ENTRY(vstore_half_rte),
-            ENTRY(vstorea_half_rte),
-            ENTRY(vstore_half_rtz),
-            ENTRY(vstorea_half_rtz),
-            ENTRY(vstore_half_rtp),
-            ENTRY(vstorea_half_rtp),
-            ENTRY(vstore_half_rtn),
-            ENTRY(vstorea_half_rtn),
-            ENTRY(roundTrip)
-        };
-        static const size_t list_count = sizeof( list ) / sizeof( list[0] );
-
-        size_t i, j;
-        for( i = 0; i < argCount; i++ )
-        {
-            const char *argp = argList[i];
-            for( j = 0; j < list_count; j++ )
-            {
-                if( 0 == strcmp(argp, list[j].name) )
-                {
-                    if( (error = list[j].f()) )
-                        return error;
-
-                    break;
-                }
-            }
-            if( j == list_count )
-            {
-                vlog_error( "Unknown test name: %s\n. Exiting...\n", argp );
-                return -5;
-            }
-        }
-    }
-
-    return error;
-}
-
-
