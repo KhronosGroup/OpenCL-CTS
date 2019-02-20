@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,27 +17,27 @@
 #include "errorHelpers.h"
 #include "imageHelpers.h"
 
-#if defined(__MINGW32__) 
+#if defined(__MINGW32__)
 #include "mingw_compat.h"
 #endif
 
 int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_kernel *outKernel, unsigned int numKernelLines, const char **kernelProgram, const char *kernelName )
 {
-	int error = CL_SUCCESS;	
-	
-	/* Create the program object from source */
-	*outProgram = clCreateProgramWithSource( context, numKernelLines, kernelProgram, NULL, &error );
-	if( *outProgram == NULL || error != CL_SUCCESS)
-	{
-		print_error( error, "clCreateProgramWithSource failed" );
-		return error;
-	}
-	
-	/* Compile the program */
+    int error = CL_SUCCESS;
+
+    /* Create the program object from source */
+    *outProgram = clCreateProgramWithSource( context, numKernelLines, kernelProgram, NULL, &error );
+    if( *outProgram == NULL || error != CL_SUCCESS)
+    {
+        print_error( error, "clCreateProgramWithSource failed" );
+        return error;
+    }
+
+    /* Compile the program */
   int buildProgramFailed = 0;
   int printedSource = 0;
-	error = clBuildProgram( *outProgram, 0, NULL, NULL, NULL, NULL );
-  if (error != CL_SUCCESS) 
+    error = clBuildProgram( *outProgram, 0, NULL, NULL, NULL, NULL );
+  if (error != CL_SUCCESS)
   {
     unsigned int i;
     print_error(error, "clBuildProgram failed");
@@ -45,22 +45,22 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
     printedSource = 1;
     log_error( "Original source is: ------------\n" );
     for( i = 0; i < numKernelLines; i++ )
-      log_error( "%s", kernelProgram[ i ] );    
+      log_error( "%s", kernelProgram[ i ] );
   }
-  
+
   // Verify the build status on all devices
   cl_uint deviceCount = 0;
   error = clGetProgramInfo( *outProgram, CL_PROGRAM_NUM_DEVICES, sizeof( deviceCount ), &deviceCount, NULL );
   if (error != CL_SUCCESS) {
     print_error(error, "clGetProgramInfo CL_PROGRAM_NUM_DEVICES failed");
-  	return error;
+      return error;
   }
-  
+
   if (deviceCount == 0) {
     log_error("No devices found for program.\n");
     return -1;
   }
-  
+
   cl_device_id    *devices = (cl_device_id*) malloc( deviceCount * sizeof( cl_device_id ) );
   if( NULL == devices )
     return -1;
@@ -71,7 +71,7 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
     free( devices );
     return error;
   }
-  
+
   cl_uint z;
   for( z = 0; z < deviceCount; z++ )
   {
@@ -81,7 +81,7 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
       log_error("Device \"%d\" failed to return a name\n", z);
       print_error(error, "clGetDeviceInfo CL_DEVICE_NAME failed");
     }
-    
+
     cl_build_status buildStatus;
     error = clGetProgramBuildInfo(*outProgram, devices[z], CL_PROGRAM_BUILD_STATUS, sizeof(buildStatus), &buildStatus, NULL);
     if (error != CL_SUCCESS) {
@@ -89,11 +89,11 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
       free( devices );
       return error;
     }
-    
+
     if (buildStatus != CL_BUILD_SUCCESS || buildProgramFailed) {
       char log[10240] = "";
       if (buildStatus == CL_BUILD_SUCCESS && buildProgramFailed) log_error("clBuildProgram returned an error, but buildStatus is marked as CL_BUILD_SUCCESS.\n");
-      
+
       char statusString[64] = "";
       if (buildStatus == (cl_build_status)CL_BUILD_SUCCESS)
         sprintf(statusString, "CL_BUILD_SUCCESS");
@@ -111,9 +111,9 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
       if (error != CL_SUCCESS || log[0]=='\0'){
         log_error("Device %d (%s) failed to return a build log\n", z, deviceName);
         if (error) {
-       		print_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_LOG failed"); 
+               print_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_LOG failed");
             free( devices );
-        	return error;
+            return error;
         } else {
           log_error("clGetProgramBuildInfo returned an empty log.\n");
           free( devices );
@@ -121,7 +121,7 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
         }
       }
       // In this case we've already printed out the code above.
-      if (!printedSource) 
+      if (!printedSource)
       {
         unsigned int i;
         log_error( "Original source is: ------------\n" );
@@ -131,23 +131,23 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
       }
       log_error( "Build log for device \"%s\" is: ------------\n", deviceName );
       log_error( "%s\n", log );
-      log_error( "\n----------\n" );  
+      log_error( "\n----------\n" );
       free( devices );
       return -1;
     }
   }
-  	
-	/* And create a kernel from it */
-	*outKernel = clCreateKernel( *outProgram, kernelName, &error );
-	if( *outKernel == NULL || error != CL_SUCCESS)
-	{
-		print_error( error, "Unable to create kernel" );
+
+    /* And create a kernel from it */
+    *outKernel = clCreateKernel( *outProgram, kernelName, &error );
+    if( *outKernel == NULL || error != CL_SUCCESS)
+    {
+        print_error( error, "Unable to create kernel" );
         free( devices );
-		return error;
-	}
-	
+        return error;
+    }
+
     free( devices );
-	return 0;
+    return 0;
 }
 
 int get_device_version( cl_device_id id, size_t* major, size_t* minor)
@@ -172,45 +172,45 @@ int get_device_version( cl_device_id id, size_t* major, size_t* minor)
 
 int get_max_allowed_work_group_size( cl_context context, cl_kernel kernel, size_t *outMaxSize, size_t *outLimits )
 {
-	cl_device_id *devices;
-	size_t size, maxCommonSize = 0;
-	int numDevices, i, j, error;
+    cl_device_id *devices;
+    size_t size, maxCommonSize = 0;
+    int numDevices, i, j, error;
   cl_uint numDims;
-	size_t outSize;
+    size_t outSize;
   size_t sizeLimit[]={1,1,1};
-	
-	
-	/* Assume fewer than 16 devices will be returned */
+
+
+    /* Assume fewer than 16 devices will be returned */
   error = clGetContextInfo( context, CL_CONTEXT_DEVICES, 0, NULL, &outSize );
   test_error( error, "Unable to obtain list of devices size for context" );
   devices = (cl_device_id *)malloc(outSize);
   error = clGetContextInfo( context, CL_CONTEXT_DEVICES, outSize, devices, NULL );
   test_error( error, "Unable to obtain list of devices for context" );
-	
-	numDevices = (int)( outSize / sizeof( cl_device_id ) );
 
-	for( i = 0; i < numDevices; i++ )
-	{
-		error = clGetDeviceInfo( devices[i], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof( size ), &size, NULL );
-		test_error( error, "Unable to obtain max work group size for device" );
-		if( size < maxCommonSize || maxCommonSize == 0)
-			maxCommonSize = size;
+    numDevices = (int)( outSize / sizeof( cl_device_id ) );
 
-		error = clGetKernelWorkGroupInfo( kernel, devices[i], CL_KERNEL_WORK_GROUP_SIZE, sizeof( size ), &size, NULL );
-		test_error( error, "Unable to obtain max work group size for device and kernel combo" );
-		if( size < maxCommonSize  || maxCommonSize == 0)
-			maxCommonSize = size;
-    
+    for( i = 0; i < numDevices; i++ )
+    {
+        error = clGetDeviceInfo( devices[i], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof( size ), &size, NULL );
+        test_error( error, "Unable to obtain max work group size for device" );
+        if( size < maxCommonSize || maxCommonSize == 0)
+            maxCommonSize = size;
+
+        error = clGetKernelWorkGroupInfo( kernel, devices[i], CL_KERNEL_WORK_GROUP_SIZE, sizeof( size ), &size, NULL );
+        test_error( error, "Unable to obtain max work group size for device and kernel combo" );
+        if( size < maxCommonSize  || maxCommonSize == 0)
+            maxCommonSize = size;
+
     error= clGetDeviceInfo( devices[i], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof( numDims ), &numDims, NULL);
     test_error( error, "clGetDeviceInfo failed for CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS");
     sizeLimit[0] = 1;
     error= clGetDeviceInfo( devices[i], CL_DEVICE_MAX_WORK_ITEM_SIZES, numDims*sizeof(size_t), sizeLimit, NULL);
-		test_error( error, "clGetDeviceInfo failed for CL_DEVICE_MAX_WORK_ITEM_SIZES");
-    
-        if (outLimits != NULL) 
+        test_error( error, "clGetDeviceInfo failed for CL_DEVICE_MAX_WORK_ITEM_SIZES");
+
+        if (outLimits != NULL)
         {
       if (i == 0) {
-        for (j=0; j<3; j++) 
+        for (j=0; j<3; j++)
           outLimits[j] = sizeLimit[j];
       } else {
         for (j=0; j<(int)numDims; j++) {
@@ -219,52 +219,52 @@ int get_max_allowed_work_group_size( cl_context context, cl_kernel kernel, size_
         }
       }
     }
-	}
-	free(devices);
-  
-	*outMaxSize = (unsigned int)maxCommonSize;
-	return 0;
+    }
+    free(devices);
+
+    *outMaxSize = (unsigned int)maxCommonSize;
+    return 0;
 }
 
 
-int get_max_common_work_group_size( cl_context context, cl_kernel kernel, 
-								   size_t globalThreadSize, size_t *outMaxSize )
+int get_max_common_work_group_size( cl_context context, cl_kernel kernel,
+                                   size_t globalThreadSize, size_t *outMaxSize )
 {
   size_t sizeLimit[3];
-	int error = get_max_allowed_work_group_size( context, kernel, outMaxSize, sizeLimit );
-	if( error != 0 )
-		return error;
-	
-	/* Now find the largest factor of globalThreadSize that is <= maxCommonSize */
-	/* Note for speed, we don't need to check the range of maxCommonSize, b/c once it gets to 1,
-	 the modulo test will succeed and break the loop anyway */
-	for( ; ( globalThreadSize % *outMaxSize ) != 0 || (*outMaxSize > sizeLimit[0]); (*outMaxSize)-- )
-		;
-	return 0;
+    int error = get_max_allowed_work_group_size( context, kernel, outMaxSize, sizeLimit );
+    if( error != 0 )
+        return error;
+
+    /* Now find the largest factor of globalThreadSize that is <= maxCommonSize */
+    /* Note for speed, we don't need to check the range of maxCommonSize, b/c once it gets to 1,
+     the modulo test will succeed and break the loop anyway */
+    for( ; ( globalThreadSize % *outMaxSize ) != 0 || (*outMaxSize > sizeLimit[0]); (*outMaxSize)-- )
+        ;
+    return 0;
 }
 
-int get_max_common_2D_work_group_size( cl_context context, cl_kernel kernel, 
-								   size_t *globalThreadSizes, size_t *outMaxSizes )
+int get_max_common_2D_work_group_size( cl_context context, cl_kernel kernel,
+                                   size_t *globalThreadSizes, size_t *outMaxSizes )
 {
   size_t sizeLimit[3];
-	size_t maxSize;
-	int error = get_max_allowed_work_group_size( context, kernel, &maxSize, sizeLimit );
-	if( error != 0 )
-		return error;
+    size_t maxSize;
+    int error = get_max_allowed_work_group_size( context, kernel, &maxSize, sizeLimit );
+    if( error != 0 )
+        return error;
 
-	/* Now find a set of factors, multiplied together less than maxSize, but each a factor of the global
-	   sizes */
-	
-	/* Simple case */
-	if( globalThreadSizes[ 0 ] * globalThreadSizes[ 1 ] <= maxSize )
-	{
+    /* Now find a set of factors, multiplied together less than maxSize, but each a factor of the global
+       sizes */
+
+    /* Simple case */
+    if( globalThreadSizes[ 0 ] * globalThreadSizes[ 1 ] <= maxSize )
+    {
     if (globalThreadSizes[ 0 ] <= sizeLimit[0] &&  globalThreadSizes[ 1 ] <= sizeLimit[1]) {
       outMaxSizes[ 0 ] = globalThreadSizes[ 0 ];
       outMaxSizes[ 1 ] = globalThreadSizes[ 1 ];
       return 0;
     }
-	}
-	  
+    }
+
   size_t remainingSize, sizeForThisOne;
   remainingSize = maxSize;
   int i, j;
@@ -278,33 +278,33 @@ int get_max_common_2D_work_group_size( cl_context context, cl_kernel kernel,
     remainingSize = maxSize;
     for (j=0; j<=i; j++)
       remainingSize /=outMaxSizes[j];
-  }  
-  
-	return 0;
+  }
+
+    return 0;
 }
 
-int get_max_common_3D_work_group_size( cl_context context, cl_kernel kernel, 
-									  size_t *globalThreadSizes, size_t *outMaxSizes )
+int get_max_common_3D_work_group_size( cl_context context, cl_kernel kernel,
+                                      size_t *globalThreadSizes, size_t *outMaxSizes )
 {
   size_t sizeLimit[3];
-	size_t maxSize;
-	int error = get_max_allowed_work_group_size( context, kernel, &maxSize, sizeLimit );
-	if( error != 0 )
-		return error;
-	/* Now find a set of factors, multiplied together less than maxSize, but each a factor of the global
-	 sizes */
-	
-	/* Simple case */
-	if( globalThreadSizes[ 0 ] * globalThreadSizes[ 1 ] * globalThreadSizes[ 2 ] <= maxSize )
-	{
+    size_t maxSize;
+    int error = get_max_allowed_work_group_size( context, kernel, &maxSize, sizeLimit );
+    if( error != 0 )
+        return error;
+    /* Now find a set of factors, multiplied together less than maxSize, but each a factor of the global
+     sizes */
+
+    /* Simple case */
+    if( globalThreadSizes[ 0 ] * globalThreadSizes[ 1 ] * globalThreadSizes[ 2 ] <= maxSize )
+    {
     if (globalThreadSizes[ 0 ] <= sizeLimit[0] && globalThreadSizes[ 1 ] <= sizeLimit[1] && globalThreadSizes[ 2 ] <= sizeLimit[2]) {
       outMaxSizes[ 0 ] = globalThreadSizes[ 0 ];
       outMaxSizes[ 1 ] = globalThreadSizes[ 1 ];
       outMaxSizes[ 2 ] = globalThreadSizes[ 2 ];
       return 0;
     }
-	}
-	  
+    }
+
   size_t remainingSize, sizeForThisOne;
   remainingSize = maxSize;
   int i, j;
@@ -319,8 +319,8 @@ int get_max_common_3D_work_group_size( cl_context context, cl_kernel kernel,
     for (j=0; j<=i; j++)
       remainingSize /=outMaxSizes[j];
   }
-  
-	return 0;
+
+    return 0;
 }
 
 /* Helper to determine if an extension is supported by a device */
@@ -330,16 +330,16 @@ int is_extension_available( cl_device_id device, const char *extensionName )
     size_t size = 0;
     int err;
     int result = 0;
-    
+
     if(( err = clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, 0, NULL, &size) ))
     {
         log_error( "Error: failed to determine size of device extensions string at %s:%d (err = %d)\n", __FILE__, __LINE__, err );
         return 0;
     }
-    
+
     if( 0 == size )
         return 0;
-        
+
     extString = (char*) malloc( size );
     if( NULL == extString )
     {
@@ -353,10 +353,10 @@ int is_extension_available( cl_device_id device, const char *extensionName )
         free( extString );
         return 0;
     }
-    
+
     if( strstr( extString, extensionName ) )
         result = 1;
-    
+
     free( extString );
     return result;
 }
@@ -369,7 +369,7 @@ int is_image_format_supported( cl_context context, cl_mem_flags flags, cl_mem_ob
     cl_int err = clGetSupportedImageFormats( context, flags, image_type, 128, NULL, &count );
     if( count == 0 )
         return 0;
-        
+
     list = (cl_image_format*) malloc( count * sizeof( cl_image_format ) );
     if( NULL == list )
     {
@@ -393,9 +393,9 @@ int is_image_format_supported( cl_context context, cl_mem_flags flags, cl_mem_ob
             fmt->image_channel_order == list[ i ].image_channel_order )
             break;
     }
-    
+
     free( list );
-    return ( i < count ) ? true : false;
+    return ( i < count ) ? 1 : 0;
 }
 
 size_t get_pixel_bytes( const cl_image_format *fmt );
@@ -445,7 +445,7 @@ size_t get_pixel_bytes( const cl_image_format *fmt )
 
           case CL_UNORM_INT_101010:
             return 4;
-            
+
           case CL_SNORM_INT8:
           case CL_UNORM_INT8:
           case CL_SIGNED_INT8:
@@ -461,12 +461,12 @@ size_t get_pixel_bytes( const cl_image_format *fmt )
           case CL_SFIXED14_APPLE:
 #endif
             return chanCount * 2;
-            
+
           case CL_SIGNED_INT32:
           case CL_UNSIGNED_INT32:
           case CL_FLOAT:
             return chanCount * 4;
-            
+
         default:
             log_error("Unknown channel data type at %s:%d!\n", __FILE__, __LINE__ );
             abort();
@@ -477,45 +477,45 @@ size_t get_pixel_bytes( const cl_image_format *fmt )
 
 int verifyImageSupport( cl_device_id device )
 {
-	if( checkForImageSupport( device ) )
-	{
-		log_error( "ERROR: Device does not supported images as required by this test!\n" );
-		return CL_IMAGE_FORMAT_NOT_SUPPORTED;
-	}
-	return 0;
+    if( checkForImageSupport( device ) )
+    {
+        log_error( "ERROR: Device does not supported images as required by this test!\n" );
+        return CL_IMAGE_FORMAT_NOT_SUPPORTED;
+    }
+    return 0;
 }
-	
+
 int checkForImageSupport( cl_device_id device )
 {
-	cl_uint i;
-	int error;
-	
-	
-	/* Check the device props to see if images are supported at all first */
-	error = clGetDeviceInfo( device, CL_DEVICE_IMAGE_SUPPORT, sizeof( i ), &i, NULL );
-	test_error( error, "Unable to query device for image support" );
-	if( i == 0 )
-	{
-		return CL_IMAGE_FORMAT_NOT_SUPPORTED;
-	}
-	
-	/* So our support is good */
-	return 0;
+    cl_uint i;
+    int error;
+
+
+    /* Check the device props to see if images are supported at all first */
+    error = clGetDeviceInfo( device, CL_DEVICE_IMAGE_SUPPORT, sizeof( i ), &i, NULL );
+    test_error( error, "Unable to query device for image support" );
+    if( i == 0 )
+    {
+        return CL_IMAGE_FORMAT_NOT_SUPPORTED;
+    }
+
+    /* So our support is good */
+    return 0;
 }
 
 int checkFor3DImageSupport( cl_device_id device )
 {
-	cl_uint i;
-	int error;
-	
-	/* Check the device props to see if images are supported at all first */
-	error = clGetDeviceInfo( device, CL_DEVICE_IMAGE_SUPPORT, sizeof( i ), &i, NULL );
-	test_error( error, "Unable to query device for image support" );
-	if( i == 0 )
-	{
-		return CL_IMAGE_FORMAT_NOT_SUPPORTED;
-	}
-	
+    cl_uint i;
+    int error;
+
+    /* Check the device props to see if images are supported at all first */
+    error = clGetDeviceInfo( device, CL_DEVICE_IMAGE_SUPPORT, sizeof( i ), &i, NULL );
+    test_error( error, "Unable to query device for image support" );
+    if( i == 0 )
+    {
+        return CL_IMAGE_FORMAT_NOT_SUPPORTED;
+    }
+
     char profile[128];
     error = clGetDeviceInfo( device, CL_DEVICE_PROFILE, sizeof(profile ), profile, NULL );
     test_error( error, "Unable to query device for CL_DEVICE_PROFILE" );
@@ -530,13 +530,13 @@ int checkFor3DImageSupport( cl_device_id device )
         test_error( error, "Unable to get CL_DEVICE_IMAGE3D_MAX_HEIGHT" );
         error = clGetDeviceInfo( device, CL_DEVICE_IMAGE3D_MAX_DEPTH, sizeof(depth), &depth, NULL );
         test_error( error, "Unable to get CL_DEVICE_IMAGE3D_MAX_DEPTH" );
-        
+
         if( 0 == (height | width | depth ))
             return CL_IMAGE_FORMAT_NOT_SUPPORTED;
     }
-    
-	/* So our support is good */
-	return 0;
+
+    /* So our support is good */
+    return 0;
 }
 
 void * align_malloc(size_t size, size_t alignment)
@@ -545,15 +545,27 @@ void * align_malloc(size_t size, size_t alignment)
     return _aligned_malloc(size, alignment);
 #elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
     void * ptr = NULL;
-    if (0 == posix_memalign(&ptr, alignment, size)) 
-        return ptr;    
+    // alignemnt must be a power of two and multiple of sizeof(void *).
+    if ( alignment < sizeof( void * ) )
+    {
+        alignment = sizeof( void * );
+    }
+#if defined(__ANDROID__)
+    ptr = memalign(alignment, size);
+    if ( ptr )
+        return ptr;
+#else
+    if (0 == posix_memalign(&ptr, alignment, size))
+        return ptr;
+#endif
     return NULL;
 #elif defined(__MINGW32__)
     return __mingw_aligned_malloc(size, alignment);
 #else
-    #error "Please add support OS for aligned malloc" 
+    #error "Please add support OS for aligned malloc"
 #endif
 }
+
 
 void   align_free(void * ptr)
 {
@@ -562,9 +574,9 @@ void   align_free(void * ptr)
 #elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
     return  free(ptr);
 #elif defined(__MINGW32__)
-    return __mingw_aligned_free(ptr); 
+    return __mingw_aligned_free(ptr);
 #else
-    #error "Please add support OS for aligned free" 
+    #error "Please add support OS for aligned free"
 #endif
 }
 
@@ -575,54 +587,54 @@ size_t get_min_alignment(cl_context context)
     if( 0 == align_size )
     {
         cl_device_id * devices;
-        size_t devices_size = 0; 
-        cl_uint result = 0; 
+        size_t devices_size = 0;
+        cl_uint result = 0;
         cl_int error;
         int i;
-        
+
         error = clGetContextInfo (context,
                                   CL_CONTEXT_DEVICES,
                                   0,
                                   NULL,
                                   &devices_size);
         test_error_ret(error, "clGetContextInfo failed", 0);
-        
+
         devices = (cl_device_id*)malloc(devices_size);
         if (devices == NULL) {
             print_error( error, "malloc failed" );
             return 0;
         }
-        
+
         error = clGetContextInfo (context,
                                   CL_CONTEXT_DEVICES,
                                   devices_size,
                                   (void*)devices,
                                   NULL);
         test_error_ret(error, "clGetContextInfo failed", 0);
-        
-        for (i = 0; i < (int)(devices_size/sizeof(cl_device_id)); i++) 
-        {    
+
+        for (i = 0; i < (int)(devices_size/sizeof(cl_device_id)); i++)
+        {
             cl_uint alignment = 0;
-            
+
             error = clGetDeviceInfo (devices[i],
                                      CL_DEVICE_MEM_BASE_ADDR_ALIGN,
                                      sizeof(cl_uint),
                                      (void*)&alignment,
                                      NULL);
-                                     
-            if (error == CL_SUCCESS) 
+
+            if (error == CL_SUCCESS)
             {
                 alignment >>= 3;    // convert bits to bytes
                 result = (alignment > result) ? alignment : result;
             }
-            else 
+            else
                 print_error( error, "clGetDeviceInfo failed" );
         }
-        
+
         align_size = result;
         free(devices);
     }
-    
+
     return align_size;
 }
 
@@ -636,10 +648,10 @@ cl_device_fp_config get_default_rounding_mode( cl_device_id device )
 
     if( single & CL_FP_ROUND_TO_NEAREST )
         return CL_FP_ROUND_TO_NEAREST;
-    
+
     if( 0 == (single & CL_FP_ROUND_TO_ZERO) )
         test_error_ret( -1, "FAILURE: device must support either CL_DEVICE_SINGLE_FP_CONFIG or CL_FP_ROUND_TO_NEAREST", 0 );
-    
+
     // Make sure we are an embedded device before allowing a pass
     if( (error = clGetDeviceInfo( device, CL_DEVICE_PROFILE, sizeof( profileStr ), &profileStr, NULL ) ))
         test_error_ret( error, "FAILURE: Unable to get CL_DEVICE_PROFILE", 0 );
@@ -652,33 +664,33 @@ cl_device_fp_config get_default_rounding_mode( cl_device_id device )
 
 int checkDeviceForQueueSupport( cl_device_id device, cl_command_queue_properties prop )
 {
-	cl_command_queue_properties realProps;
-	cl_int error = clGetDeviceInfo( device, CL_DEVICE_QUEUE_PROPERTIES, sizeof( realProps ), &realProps, NULL );
-	test_error_ret( error, "FAILURE: Unable to get device queue properties", 0 );
+    cl_command_queue_properties realProps;
+    cl_int error = clGetDeviceInfo( device, CL_DEVICE_QUEUE_PROPERTIES, sizeof( realProps ), &realProps, NULL );
+    test_error_ret( error, "FAILURE: Unable to get device queue properties", 0 );
 
-	return ( realProps & prop ) ? 1 : 0;
+    return ( realProps & prop ) ? 1 : 0;
 }
 
 int printDeviceHeader( cl_device_id device )
 {
     char deviceName[ 512 ], deviceVendor[ 512 ], deviceVersion[ 512 ], cLangVersion[ 512 ];
-	int error;
-	
-	error = clGetDeviceInfo( device, CL_DEVICE_NAME, sizeof( deviceName ), deviceName, NULL );
-	test_error( error, "Unable to get CL_DEVICE_NAME for device" );
+    int error;
 
-	error = clGetDeviceInfo( device, CL_DEVICE_VENDOR, sizeof( deviceVendor ), deviceVendor, NULL );
-	test_error( error, "Unable to get CL_DEVICE_VENDOR for device" );
+    error = clGetDeviceInfo( device, CL_DEVICE_NAME, sizeof( deviceName ), deviceName, NULL );
+    test_error( error, "Unable to get CL_DEVICE_NAME for device" );
 
-	error = clGetDeviceInfo( device, CL_DEVICE_VERSION, sizeof( deviceVersion ), deviceVersion, NULL );
-	test_error( error, "Unable to get CL_DEVICE_VERSION for device" );
+    error = clGetDeviceInfo( device, CL_DEVICE_VENDOR, sizeof( deviceVendor ), deviceVendor, NULL );
+    test_error( error, "Unable to get CL_DEVICE_VENDOR for device" );
 
-	error = clGetDeviceInfo( device, CL_DEVICE_OPENCL_C_VERSION, sizeof( cLangVersion ), cLangVersion, NULL );
-	test_error( error, "Unable to get CL_DEVICE_OPENCL_C_VERSION for device" );
-	
-	log_info("Compute Device Name = %s, Compute Device Vendor = %s, Compute Device Version = %s%s%s\n", 
-			 deviceName, deviceVendor, deviceVersion, ( error == CL_SUCCESS ) ? ", CL C Version = " : "", 
-			 ( error == CL_SUCCESS ) ? cLangVersion : "" );
-	
-	return CL_SUCCESS;
+    error = clGetDeviceInfo( device, CL_DEVICE_VERSION, sizeof( deviceVersion ), deviceVersion, NULL );
+    test_error( error, "Unable to get CL_DEVICE_VERSION for device" );
+
+    error = clGetDeviceInfo( device, CL_DEVICE_OPENCL_C_VERSION, sizeof( cLangVersion ), cLangVersion, NULL );
+    test_error( error, "Unable to get CL_DEVICE_OPENCL_C_VERSION for device" );
+
+    log_info("Compute Device Name = %s, Compute Device Vendor = %s, Compute Device Version = %s%s%s\n",
+             deviceName, deviceVendor, deviceVersion, ( error == CL_SUCCESS ) ? ", CL C Version = " : "",
+             ( error == CL_SUCCESS ) ? cLangVersion : "" );
+
+    return CL_SUCCESS;
 }

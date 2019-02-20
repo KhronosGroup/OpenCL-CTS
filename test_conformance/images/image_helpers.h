@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -88,7 +88,7 @@ typedef struct
 
 void get_max_sizes(size_t *numberOfSizes, const int maxNumberOfSizes,
                    size_t sizes[][3], size_t maxWidth, size_t maxHeight, size_t maxDepth, size_t maxArraySize,
-                   const cl_ulong maxIndividualAllocSize, const cl_ulong maxTotalAllocSize, cl_mem_object_type image_type, cl_image_format *format);  
+                   const cl_ulong maxIndividualAllocSize, const cl_ulong maxTotalAllocSize, cl_mem_object_type image_type, cl_image_format *format);
 extern size_t get_format_max_int( cl_image_format *format );
 
 extern char * generate_random_image_data( image_descriptor *imageInfo, BufferOwningPtr<char> &Owner, MTdata d );
@@ -110,14 +110,14 @@ int has_alpha(cl_image_format *format);
 
 inline float calculate_array_index( float coord, float extent );
 
-template <class T> void read_image_pixel( void *imageData, image_descriptor *imageInfo, 
+template <class T> void read_image_pixel( void *imageData, image_descriptor *imageInfo,
                                          int x, int y, int z, T *outData )
 {
     float convert_half_to_float( unsigned short halfValue );
 
-    if ( x < 0 || x >= (int)imageInfo->width 
+    if ( x < 0 || x >= (int)imageInfo->width
                || ( imageInfo->height != 0 && ( y < 0 || y >= (int)imageInfo->height ) )
-               || ( imageInfo->depth != 0 && ( z < 0 || z >= (int)imageInfo->depth ) ) 
+               || ( imageInfo->depth != 0 && ( z < 0 || z >= (int)imageInfo->depth ) )
                || ( imageInfo->arraySize != 0 && ( z < 0 || z >= (int)imageInfo->arraySize ) ) )
     {
         // Border color
@@ -126,18 +126,18 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
             outData[3] = 1;
         return;
     }
-    
+
     cl_image_format *format = imageInfo->format;
-    
+
     unsigned int i;
     T tempData[ 4 ];
-    
+
     // Advance to the right spot
     char *ptr = (char *)imageData;
     size_t pixelSize = get_pixel_size( format );
-    
+
     ptr += z * imageInfo->slicePitch + y * imageInfo->rowPitch + x * pixelSize;
-    
+
     // OpenCL only supports reading floats from certain formats
     switch( format->image_channel_data_type )
     {
@@ -146,65 +146,65 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
             cl_char *dPtr = (cl_char *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ];
-            break;			
+            break;
         }
-            
+
         case CL_UNORM_INT8:
         {
             cl_uchar *dPtr = (cl_uchar *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ];
-            break;			
+            break;
         }
-            
+
         case CL_SIGNED_INT8:
         {
             cl_char *dPtr = (cl_char *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ];
-            break;			
+            break;
         }
-            
+
         case CL_UNSIGNED_INT8:
         {
             cl_uchar *dPtr = (cl_uchar*)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ];
-            break;			
+            break;
         }
-            
+
         case CL_SNORM_INT16:
         {
             cl_short *dPtr = (cl_short *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ];
-            break;			
+            break;
         }
-            
+
         case CL_UNORM_INT16:
         {
             cl_ushort *dPtr = (cl_ushort *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ];
-            break;			
+            break;
         }
-            
+
         case CL_SIGNED_INT16:
         {
             cl_short *dPtr = (cl_short *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ];
-            break;			
+            break;
         }
-            
+
         case CL_UNSIGNED_INT16:
         {
             cl_ushort *dPtr = (cl_ushort *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ];
-            break;			
+            break;
         }
-            
+
         case CL_HALF_FLOAT:
         {
             cl_ushort *dPtr = (cl_ushort *)ptr;
@@ -212,32 +212,32 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
                 tempData[ i ] = (T)convert_half_to_float( dPtr[ i ] );
             break;
         }
-            
+
         case CL_SIGNED_INT32:
         {
             cl_int *dPtr = (cl_int *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ];
-            break;			
+            break;
         }
-            
+
         case CL_UNSIGNED_INT32:
         {
             cl_uint *dPtr = (cl_uint *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ];
-            break;			
+            break;
         }
-            
+
         case CL_UNORM_SHORT_565:
         {
             cl_ushort *dPtr = (cl_ushort*)ptr;
             tempData[ 0 ] = (T)( dPtr[ 0 ] >> 11 );
             tempData[ 1 ] = (T)( ( dPtr[ 0 ] >> 5 ) & 63 );
             tempData[ 2 ] = (T)( dPtr[ 0 ] & 31 );
-            break;			
+            break;
         }
-            
+
 #ifdef OBSOLETE_FORMAT
         case CL_UNORM_SHORT_565_REV:
         {
@@ -245,18 +245,18 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
             tempData[ 2 ] = (T)( dPtr[ 0 ] >> 11 );
             tempData[ 1 ] = (T)( ( dPtr[ 0 ] >> 5 ) & 63 );
             tempData[ 0 ] = (T)( dPtr[ 0 ] & 31 );
-            break;			
+            break;
         }
-            
+
         case CL_UNORM_SHORT_555_REV:
         {
             unsigned short *dPtr = (unsigned short *)ptr;
             tempData[ 2 ] = (T)( ( dPtr[ 0 ] >> 10 ) & 31 );
             tempData[ 1 ] = (T)( ( dPtr[ 0 ] >> 5 ) & 31 );
             tempData[ 0 ] = (T)( dPtr[ 0 ] & 31 );
-            break;			
+            break;
         }
-            
+
         case CL_UNORM_INT_8888:
         {
             unsigned int *dPtr = (unsigned int *)ptr;
@@ -264,7 +264,7 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
             tempData[ 2 ] = (T)( ( dPtr[ 0 ] >> 16 ) & 0xff );
             tempData[ 1 ] = (T)( ( dPtr[ 0 ] >> 8 ) & 0xff );
             tempData[ 0 ] = (T)( dPtr[ 0 ] & 0xff );
-            break;			
+            break;
         }
         case CL_UNORM_INT_8888_REV:
         {
@@ -273,42 +273,42 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
             tempData[ 1 ] = (T)( ( dPtr[ 0 ] >> 16 ) & 0xff );
             tempData[ 2 ] = (T)( ( dPtr[ 0 ] >> 8 ) & 0xff );
             tempData[ 3 ] = (T)( dPtr[ 0 ] & 0xff );
-            break;			
+            break;
         }
-            
+
         case CL_UNORM_INT_101010_REV:
         {
             unsigned int *dPtr = (unsigned int *)ptr;
             tempData[ 2 ] = (T)( ( dPtr[ 0 ] >> 20 ) & 0x3ff );
             tempData[ 1 ] = (T)( ( dPtr[ 0 ] >> 10 ) & 0x3ff );
             tempData[ 0 ] = (T)( dPtr[ 0 ] & 0x3ff );
-            break;			
+            break;
         }
-#endif			
+#endif
         case CL_UNORM_SHORT_555:
         {
             cl_ushort *dPtr = (cl_ushort *)ptr;
             tempData[ 0 ] = (T)( ( dPtr[ 0 ] >> 10 ) & 31 );
             tempData[ 1 ] = (T)( ( dPtr[ 0 ] >> 5 ) & 31 );
             tempData[ 2 ] = (T)( dPtr[ 0 ] & 31 );
-            break;			
+            break;
         }
-            
+
         case CL_UNORM_INT_101010:
         {
             cl_uint *dPtr = (cl_uint *)ptr;
             tempData[ 0 ] = (T)( ( dPtr[ 0 ] >> 20 ) & 0x3ff );
             tempData[ 1 ] = (T)( ( dPtr[ 0 ] >> 10 ) & 0x3ff );
             tempData[ 2 ] = (T)( dPtr[ 0 ] & 0x3ff );
-            break;			
+            break;
         }
-            
+
         case CL_FLOAT:
         {
             cl_float *dPtr = (cl_float *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ];
-            break;			
+            break;
         }
 #ifdef CL_SFIXED14_APPLE
         case CL_SFIXED14_APPLE:
@@ -316,15 +316,15 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
             cl_float *dPtr = (cl_float *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
                 tempData[ i ] = (T)dPtr[ i ] + 0x4000;
-            break;			
+            break;
         }
 #endif
     }
-    
-    
+
+
     outData[ 0 ] = outData[ 1 ] = outData[ 2 ] = 0;
     outData[ 3 ] = 1;
-    
+
     if( format->image_channel_order == CL_A )
     {
         outData[ 3 ] = tempData[ 0 ];
@@ -422,27 +422,27 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
 }
 
 // Stupid template rules
-bool get_integer_coords( float x, float y, float z, 
-                        size_t width, size_t height, size_t depth,   
-                        image_sampler_data *imageSampler, image_descriptor *imageInfo, 
+bool get_integer_coords( float x, float y, float z,
+                        size_t width, size_t height, size_t depth,
+                        image_sampler_data *imageSampler, image_descriptor *imageInfo,
                         int &outX, int &outY, int &outZ );
-bool get_integer_coords_offset( float x, float y, float z, 
-                               float xAddressOffset, float yAddressOffset, float zAddressOffset, 
-                               size_t width, size_t height, size_t depth, 
-                               image_sampler_data *imageSampler, image_descriptor *imageInfo, 
+bool get_integer_coords_offset( float x, float y, float z,
+                               float xAddressOffset, float yAddressOffset, float zAddressOffset,
+                               size_t width, size_t height, size_t depth,
+                               image_sampler_data *imageSampler, image_descriptor *imageInfo,
                                int &outX, int &outY, int &outZ );
 
 
-template <class T> void sample_image_pixel_offset( void *imageData, image_descriptor *imageInfo, 
+template <class T> void sample_image_pixel_offset( void *imageData, image_descriptor *imageInfo,
                                                   float x, float y, float z, float xAddressOffset, float yAddressOffset, float zAddressOffset,
                                                   image_sampler_data *imageSampler, T *outData )
 {
     int iX, iY, iZ;
-    
+
     float max_w = imageInfo->width;
     float max_h;
     float max_d;
-        
+
     switch (imageInfo->type) {
         case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             max_h = imageInfo->arraySize;
@@ -457,23 +457,23 @@ template <class T> void sample_image_pixel_offset( void *imageData, image_descri
             max_d = imageInfo->depth;
             break;
     }
-    
+
     get_integer_coords_offset( x, y, z, xAddressOffset, yAddressOffset, zAddressOffset, max_w, max_h, max_d, imageSampler, imageInfo, iX, iY, iZ );
-    
+
     read_image_pixel<T>( imageData, imageInfo, iX, iY, iZ, outData );
 }
 
 
-template <class T> void sample_image_pixel( void *imageData, image_descriptor *imageInfo, 
+template <class T> void sample_image_pixel( void *imageData, image_descriptor *imageInfo,
                                            float x, float y, float z, image_sampler_data *imageSampler, T *outData )
 {
     return sample_image_pixel_offset<T>(imageData, imageInfo, x, y, z, 0.0f, 0.0f, 0.0f, imageSampler, outData);
 }
 
-FloatPixel sample_image_pixel_float( void *imageData, image_descriptor *imageInfo, 
+FloatPixel sample_image_pixel_float( void *imageData, image_descriptor *imageInfo,
                                     float x, float y, float z, image_sampler_data *imageSampler, float *outData, int verbose, int *containsDenorms );
 
-FloatPixel sample_image_pixel_float_offset( void *imageData, image_descriptor *imageInfo, 
+FloatPixel sample_image_pixel_float_offset( void *imageData, image_descriptor *imageInfo,
                                            float x, float y, float z, float xAddressOffset, float yAddressOffset, float zAddressOffset,
                                            image_sampler_data *imageSampler, float *outData, int verbose, int *containsDenorms );
 
@@ -491,7 +491,6 @@ extern char *create_random_image_data( ExplicitType dataType, image_descriptor *
 extern void get_sampler_kernel_code( image_sampler_data *imageSampler, char *outLine );
 extern float get_max_absolute_error( cl_image_format *format, image_sampler_data *sampler);
 extern float get_max_relative_error( cl_image_format *format, image_sampler_data *sampler, int is3D, int isLinearFilter );
-extern int issubnormal(float);
 
 
 #define errMax( _x , _y )       ( (_x) != (_x) ? (_x) : (_x) > (_y) ? (_x) : (_y) )
@@ -511,8 +510,8 @@ static inline cl_float relative_error( float test, float expected )
     // 0-0/0 is 0 in this case, not NaN
     if( test == 0.0f && expected == 0.0f )
         return 0.0f;
-    
-    return (test - expected) / expected; 
+
+    return (test - expected) / expected;
 }
 
 extern float random_float(float low, float high);
@@ -522,13 +521,13 @@ class CoordWalker
 public:
     CoordWalker( void * coords, bool useFloats, size_t vecSize );
     ~CoordWalker();
-    
-    cl_float	Get( size_t idx, size_t el );
-    
+
+    cl_float    Get( size_t idx, size_t el );
+
 protected:
     cl_float * mFloatCoords;
     cl_int * mIntCoords;
-    size_t	mVecSize;
+    size_t    mVecSize;
 };
 
 extern int  DetectFloatToHalfRoundingMode( cl_command_queue );  // Returns CL_SUCCESS on success

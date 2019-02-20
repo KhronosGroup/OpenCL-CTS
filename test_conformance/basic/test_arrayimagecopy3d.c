@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -40,38 +40,38 @@ int test_arrayimagecopy3d_single_format(cl_device_id device, cl_context context,
   cl_int          err;
   MTdata          d;
   cl_event  copyevent;
-  
+
   log_info("Testing %s %s\n", GetChannelOrderName(format->image_channel_order), GetChannelTypeName(format->image_channel_data_type));
 
   image = create_image_3d(context, (cl_mem_flags)(CL_MEM_READ_WRITE), format, img_width, img_height, img_depth, 0, 0, NULL, &err);
   test_error(err, "create_image_3d failed");
-  
-  err = clGetImageInfo(image, CL_IMAGE_ELEMENT_SIZE, sizeof(size_t), &elem_size, NULL); 
+
+  err = clGetImageInfo(image, CL_IMAGE_ELEMENT_SIZE, sizeof(size_t), &elem_size, NULL);
   test_error(err, "clGetImageInfo failed");
-  
+
   buffer_size = sizeof(cl_uchar) * elem_size * img_width * img_height * img_depth;
-  
+
   buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  buffer_size, NULL, &err);
   test_error(err, "clCreateBuffer failed");
-  
+
   bufptr = (cl_uchar*)malloc(buffer_size);
-  
+
   d = init_genrand( gRandomSeed );
   bufptr = (cl_uchar*)malloc(buffer_size);
   for (i=0; i<(int)buffer_size; i++) {
      bufptr[i] = (cl_uchar)genrand_int32(d);
   }
   free_mtdata(d); d = NULL;
-  
+
   size_t origin[3]={0,0,0}, region[3]={img_width,img_height,img_depth};
   err = clEnqueueWriteBuffer( queue, buffer, CL_TRUE, 0, buffer_size, bufptr, 0, NULL, NULL);
   test_error(err, "clEnqueueWriteBuffer failed");
-  
+
   err = clEnqueueCopyBufferToImage( queue, buffer, image, 0, origin, region, 0, NULL, &copyevent );
   test_error(err, "clEnqueueCopyImageToBuffer failed");
 
   imgptr = (cl_uchar*)malloc(buffer_size);
-  
+
   err = clEnqueueReadImage( queue, image, CL_TRUE, origin, region, 0, 0, imgptr, 1, &copyevent, NULL );
   test_error(err, "clEnqueueReadBuffer failed");
 
@@ -108,12 +108,12 @@ int test_arrayimagecopy3d_single_format(cl_device_id device, cl_context context,
     }
     err = -1;
   }
-  
+
   free(bufptr);
   free(imgptr);
-  
+
   if (err)
-    log_error("ARRAY to IMAGE3D copy test failed for image_channel_order=0x%lx and image_channel_data_type=0x%lx\n", 
+    log_error("ARRAY to IMAGE3D copy test failed for image_channel_order=0x%lx and image_channel_data_type=0x%lx\n",
               (unsigned long)format->image_channel_order, (unsigned long)format->image_channel_data_type);
 
   return err;
@@ -128,22 +128,22 @@ int test_arrayimagecopy3d(cl_device_id device, cl_context context, cl_command_qu
 
   PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( device )
 
-  err = clGetSupportedImageFormats(context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE3D, 0, NULL, &num_formats);  
+  err = clGetSupportedImageFormats(context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE3D, 0, NULL, &num_formats);
   test_error(err, "clGetSupportedImageFormats failed");
-  
+
   formats = (cl_image_format *)malloc(num_formats * sizeof(cl_image_format));
-  
-  err = clGetSupportedImageFormats(context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE3D, num_formats, formats, NULL);  
+
+  err = clGetSupportedImageFormats(context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE3D, num_formats, formats, NULL);
   test_error(err, "clGetSupportedImageFormats failed");
-  
+
   for (i = 0; i < num_formats; i++) {
     err |= test_arrayimagecopy3d_single_format(device, context, queue, &formats[i]);
   }
-  
+
   if (err)
     log_error("ARRAY to IMAGE3D copy test failed\n");
   else
     log_info("ARRAY to IMAGE3D copy test passed\n");
-  
+
   return err;
 }

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -57,70 +57,70 @@ const char *sample_double_kernel = {
 int
 test_createkernelsinprogram(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-	cl_program		program;
-	cl_kernel		kernel[2];
-	unsigned int	num_kernels;
-	size_t			lengths[2];
-	int				err;
-		
-	lengths[0] = strlen(sample_single_kernel);
+    cl_program        program;
+    cl_kernel        kernel[2];
+    unsigned int    num_kernels;
+    size_t            lengths[2];
+    int                err;
+
+    lengths[0] = strlen(sample_single_kernel);
     program = clCreateProgramWithSource(context, 1, &sample_single_kernel, lengths, NULL);
-	if (!program)
-	{
-		log_error("clCreateProgramWithSource failed\n");
-		return -1;
-	}
-	
-	err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-	if (err != CL_SUCCESS)
-	{
-		log_error("clBuildProgramExecutable failed\n");
-		return -1;
-	}
-	
-	err = clCreateKernelsInProgram(program, 1, kernel, &num_kernels);
-	if ( (err != CL_SUCCESS) || (num_kernels != 1) )
-	{
-		log_error("clCreateKernelsInProgram test failed for a single kernel\n");
-		return -1;
-	}
-	
-	clReleaseKernel(kernel[0]);
-	clReleaseProgram(program);
-	
+    if (!program)
+    {
+        log_error("clCreateProgramWithSource failed\n");
+        return -1;
+    }
+
+    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    if (err != CL_SUCCESS)
+    {
+        log_error("clBuildProgramExecutable failed\n");
+        return -1;
+    }
+
+    err = clCreateKernelsInProgram(program, 1, kernel, &num_kernels);
+    if ( (err != CL_SUCCESS) || (num_kernels != 1) )
+    {
+        log_error("clCreateKernelsInProgram test failed for a single kernel\n");
+        return -1;
+    }
+
+    clReleaseKernel(kernel[0]);
+    clReleaseProgram(program);
+
   lengths[0] = strlen(sample_double_kernel);
   program = clCreateProgramWithSource(context, 1, &sample_double_kernel, lengths, NULL);
-	if (!program)
-	{
-		log_error("clCreateProgramWithSource failed\n");
-		return -1;
-	}
-	
-	err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-	if (err != CL_SUCCESS)
-	{
-		log_error("clBuildProgramExecutable failed\n");
-		return -1;
-	}
-	
-	err = clCreateKernelsInProgram(program, 2, kernel, &num_kernels);
-	if ( (err != CL_SUCCESS) || (num_kernels != 2) )
-	{
-		log_error("clCreateKernelsInProgram test failed for two kernels\n");
-		return -1;
-	}
-  
+    if (!program)
+    {
+        log_error("clCreateProgramWithSource failed\n");
+        return -1;
+    }
+
+    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    if (err != CL_SUCCESS)
+    {
+        log_error("clBuildProgramExecutable failed\n");
+        return -1;
+    }
+
+    err = clCreateKernelsInProgram(program, 2, kernel, &num_kernels);
+    if ( (err != CL_SUCCESS) || (num_kernels != 2) )
+    {
+        log_error("clCreateKernelsInProgram test failed for two kernels\n");
+        return -1;
+    }
+
   log_info("clCreateKernelsInProgram test passed\n");
-	
-	clReleaseKernel(kernel[0]);
-	clReleaseKernel(kernel[1]);
-	clReleaseProgram(program);
-  
-  
-	return err;
+
+    clReleaseKernel(kernel[0]);
+    clReleaseKernel(kernel[1]);
+    clReleaseProgram(program);
+
+
+    return err;
 }
 
 
-	
+
 
 

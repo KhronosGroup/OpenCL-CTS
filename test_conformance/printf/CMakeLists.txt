@@ -1,3 +1,5 @@
+add_compile_options(-std=c++11)
+
 add_executable(conformance_test_printf
 	test_printf.c
 	util_printf.c

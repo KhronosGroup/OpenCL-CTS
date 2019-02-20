@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -53,7 +53,7 @@ const char *kernel_call_kernel_code[] = {
     "  dst[tid] = 1;\n"
     "  for (a=0; a<times; a++)\n"
     "    test_function_to_call(dst, src, tid);\n"
-    "}\n"  
+    "}\n"
 };
 
 
@@ -61,21 +61,21 @@ const char *kernel_call_kernel_code[] = {
 int test_kernel_call_kernel_function(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     num_elements = 256;
-    
+
     int error, errors = 0;
     clProgramWrapper program;
     clKernelWrapper kernel1, kernel2, kernel_to_call;
-    clMemWrapper	streams[2];
-    
-    size_t	threads[] = {num_elements,1,1};
+    clMemWrapper    streams[2];
+
+    size_t    threads[] = {num_elements,1,1};
     cl_int *input, *output, *expected;
     cl_int times = 4;
     int pass = 0;
-    
+
     input = (cl_int*)malloc(sizeof(cl_int)*num_elements);
     output = (cl_int*)malloc(sizeof(cl_int)*num_elements);
     expected = (cl_int*)malloc(sizeof(cl_int)*num_elements);
-    
+
     for (int i=0; i<num_elements; i++) {
         input[i] = i;
         output[i] = i;
@@ -93,7 +93,7 @@ int test_kernel_call_kernel_function(cl_device_id deviceID, cl_context context, 
             }
         }
     }
-    
+
     // Test kernel calling a kernel
     log_info("Testing kernel calling kernel...\n");
     // Create the kernel
@@ -101,29 +101,29 @@ int test_kernel_call_kernel_function(cl_device_id deviceID, cl_context context, 
     {
         return -1;
     }
-    
+
     kernel_to_call = clCreateKernel(program, "test_kernel_to_call", &error);
     test_error(error, "clCreateKernel failed");
-    
+
     /* Create some I/O streams */
     streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,  sizeof(cl_int)*num_elements, input, &error);
     test_error( error, "clCreateBuffer failed" );
     streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,  sizeof(cl_int)*num_elements, output, &error);
     test_error( error, "clCreateBuffer failed" );
-    
+
     error = clSetKernelArg(kernel1, 0, sizeof( streams[0] ), &streams[0]);
     test_error( error, "clSetKernelArg failed" );
     error = clSetKernelArg(kernel1, 1, sizeof( streams[1] ), &streams[1]);
     test_error( error, "clSetKernelArg failed" );
     error = clSetKernelArg(kernel1, 2, sizeof( times ), &times);
     test_error( error, "clSetKernelArg failed" );
-    
+
     error = clEnqueueNDRangeKernel( queue, kernel1, 1, NULL, threads, NULL, 0, NULL, NULL );
     test_error( error, "clEnqueueNDRangeKernel failed" );
-    
+
     error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*num_elements, output, 0, NULL, NULL );
     test_error( error, "clEnqueueReadBuffer failed" );
-    
+
     // Compare the results
     pass = 1;
     for (int i=0; i<num_elements; i++) {
@@ -140,9 +140,9 @@ int test_kernel_call_kernel_function(cl_device_id deviceID, cl_context context, 
         }
     }
     if (pass) log_info("Passed kernel calling kernel...\n");
-    
-    
-    
+
+
+
     // Test kernel calling a function
     log_info("Testing kernel calling function...\n");
     // Reset the inputs
@@ -154,23 +154,23 @@ int test_kernel_call_kernel_function(cl_device_id deviceID, cl_context context, 
     test_error(error, "clEnqueueWriteBuffer failed");
     error = clEnqueueWriteBuffer(queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*num_elements, output, 0, NULL, NULL);
     test_error(error, "clEnqueueWriteBuffer failed");
-    
+
     kernel2 = clCreateKernel(program, "test_call_function", &error);
     test_error(error, "clCreateKernel failed");
-    
+
     error = clSetKernelArg(kernel2, 0, sizeof( streams[0] ), &streams[0]);
     test_error( error, "clSetKernelArg failed" );
     error = clSetKernelArg(kernel2, 1, sizeof( streams[1] ), &streams[1]);
     test_error( error, "clSetKernelArg failed" );
     error = clSetKernelArg(kernel2, 2, sizeof( times ), &times);
     test_error( error, "clSetKernelArg failed" );
-    
+
     error = clEnqueueNDRangeKernel( queue, kernel2, 1, NULL, threads, NULL, 0, NULL, NULL );
     test_error( error, "clEnqueueNDRangeKernel failed" );
-    
+
     error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*num_elements, output, 0, NULL, NULL );
     test_error( error, "clEnqueueReadBuffer failed" );
-    
+
     // Compare the results
     pass = 1;
     for (int i=0; i<num_elements; i++) {
@@ -187,8 +187,8 @@ int test_kernel_call_kernel_function(cl_device_id deviceID, cl_context context, 
         }
     }
     if (pass) log_info("Passed kernel calling function...\n");
-    
-    
+
+
     // Test calling the kernel we called from another kernel
     log_info("Testing calling the kernel we called from another kernel before...\n");
     // Reset the inputs
@@ -201,7 +201,7 @@ int test_kernel_call_kernel_function(cl_device_id deviceID, cl_context context, 
     test_error(error, "clEnqueueWriteBuffer failed");
     error = clEnqueueWriteBuffer(queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*num_elements, output, 0, NULL, NULL);
     test_error(error, "clEnqueueWriteBuffer failed");
-    
+
     // Calculate the expected results
     int where = times;
     for (int tid=0; tid<num_elements; tid++) {
@@ -211,21 +211,21 @@ int test_kernel_call_kernel_function(cl_device_id deviceID, cl_context context, 
             expected[tid] += input[b];
         }
     }
-    
-    
+
+
     error = clSetKernelArg(kernel_to_call, 0, sizeof( streams[1] ), &streams[1]);
     test_error( error, "clSetKernelArg failed" );
     error = clSetKernelArg(kernel_to_call, 1, sizeof( streams[0] ), &streams[0]);
     test_error( error, "clSetKernelArg failed" );
     error = clSetKernelArg(kernel_to_call, 2, sizeof( times ), &times);
     test_error( error, "clSetKernelArg failed" );
-    
+
     error = clEnqueueNDRangeKernel( queue, kernel_to_call, 1, NULL, threads, NULL, 0, NULL, NULL );
     test_error( error, "clEnqueueNDRangeKernel failed" );
-    
+
     error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*num_elements, output, 0, NULL, NULL );
     test_error( error, "clEnqueueReadBuffer failed" );
-    
+
     // Compare the results
     pass = 1;
     for (int i=0; i<num_elements; i++) {
@@ -242,11 +242,11 @@ int test_kernel_call_kernel_function(cl_device_id deviceID, cl_context context, 
         }
     }
     if (pass) log_info("Passed calling the kernel we called from another kernel before...\n");
-    
+
     free( input );
     free( output );
     free( expected );
-    
+
     return errors;
 }
 

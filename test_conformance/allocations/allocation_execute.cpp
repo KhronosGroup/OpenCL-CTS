@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -72,13 +72,13 @@ int check_image(cl_command_queue queue, cl_mem mem) {
     size_t width, height;
     size_t origin[3], region[3], x, j;
     cl_uint *data;
-    
+
     error = clGetMemObjectInfo(mem, CL_MEM_TYPE, sizeof(type), &type, NULL);
     if (error) {
         print_error(error, "clGetMemObjectInfo failed for CL_MEM_TYPE.");
         return -1;
     }
-    
+
     if (type == CL_MEM_OBJECT_BUFFER) {
         log_error("Expected image object, not buffer.\n");
         return -1;
@@ -94,8 +94,8 @@ int check_image(cl_command_queue queue, cl_mem mem) {
             return -1;
         }
     }
-    
-    
+
+
     data = (cl_uint*)malloc(width*4*sizeof(cl_uint));
     if (data == NULL) {
         log_error("Failed to malloc host buffer for writing into image.\n");
@@ -114,7 +114,7 @@ int check_image(cl_command_queue queue, cl_mem mem) {
             free(data);
             return error;
         }
-        
+
         for (x=0; x<width; x++) {
             for (j=0; j<4; j++) {
                 if (data[x*4+j] != (cl_uint)(x*origin[1]+j)) {
@@ -133,7 +133,7 @@ int check_image(cl_command_queue queue, cl_mem mem) {
 #define NUM_OF_WORK_ITEMS 8192*2
 
 int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id device_id, int test, cl_mem mems[], int number_of_mems_used, int verify_checksum) {
-    
+
     char *argument_string;
     char *access_string;
     char *kernel_string;
@@ -148,7 +148,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
     cl_uint returned_results[NUM_OF_WORK_ITEMS], final_result;
     clEventWrapper event;
     cl_int event_status;
-    
+
     // Allocate memory for the kernel source
     argument_string = (char*)malloc(sizeof(char)*MAX_NUMBER_TO_ALLOCATE*64);
     access_string = (char*)malloc(sizeof(char)*MAX_NUMBER_TO_ALLOCATE*(strlen(read_pattern)+10));
@@ -156,11 +156,11 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
     argument_string[0] = '\0';
     access_string[0] = '\0';
     kernel_string[0] = '\0';
-    
+
     // Zero the results.
     for (i=0; i<NUM_OF_WORK_ITEMS; i++)
         returned_results[i] = 0;
-    
+
     // Build the kernel source
     if (test == BUFFER || test == BUFFER_NON_BLOCKING) {
         for(i=0; i<number_of_mems_used; i++) {
@@ -184,14 +184,14 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
         sprintf(kernel_string, image_kernel_pattern, argument_string, offset_pattern, access_string);
     }
     ptr = kernel_string;
-    
+
     // Create the kernel
     error = create_single_kernel_helper( context, &program, &kernel, 1, (const char **)&ptr, "sample_test" );
-    
+
     free(argument_string);
     free(access_string);
     free(kernel_string);
-    
+
     result = check_allocation_error(context, device_id, error, queue);
     if (result != SUCCEEDED) {
         if (result == FAILED_TOO_BIG)
@@ -200,22 +200,22 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
             print_error(error, "Create kernel and program failed");
         return result;
     }
-    
+
     // Set the arguments
     for (i=0; i<number_of_mems_used; i++) {
         error = clSetKernelArg(kernel, i, sizeof(cl_mem), &mems[i]);
         test_error(error, "clSetKernelArg failed");
     }
-    
+
     // Set the result
     result_mem = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_uint)*NUM_OF_WORK_ITEMS, &returned_results, &error);
     test_error(error, "clCreateBuffer failed");
     error = clSetKernelArg(kernel, i, sizeof(result_mem), &result_mem);
     test_error(error, "clSetKernelArg failed");
-    
+
     // Thread dimensions for execution
     global_dims[0] = NUM_OF_WORK_ITEMS; global_dims[1] = 1; global_dims[2] = 1;
-    
+
     // We have extra arguments for the buffer kernel because we need to pass in the buffer sizes
     cl_uint *sizes = (cl_uint*)malloc(sizeof(cl_uint)*number_of_mems_used);
     cl_uint max_size = 0;
@@ -225,7 +225,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
             size_t size;
             error = clGetMemObjectInfo(mems[i], CL_MEM_SIZE, sizeof(size), &size, NULL);
             test_error_abort(error, "clGetMemObjectInfo failed for CL_MEM_SIZE.");
-            sizes[i] = (cl_uint)(size/sizeof(cl_uint)); 
+            sizes[i] = (cl_uint)(size/sizeof(cl_uint));
             if (size/sizeof(cl_uint) > max_size)
                 max_size = (cl_uint)(size/sizeof(cl_uint));
         }
@@ -233,7 +233,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
         test_error_abort(error, "clCreateBuffer failed");
         error = clSetKernelArg(kernel, number_of_mems_used+1, sizeof(cl_mem), &buffer_sizes);
         test_error(error, "clSetKernelArg failed");
-        per_item = (cl_ulong)ceil((double)max_size/global_dims[0]); 
+        per_item = (cl_ulong)ceil((double)max_size/global_dims[0]);
         if (per_item > CL_UINT_MAX)
             log_error("Size is too large for a uint parameter to the kernel. Expect invalid results.\n");
         per_item_uint = (cl_uint)per_item;
@@ -241,11 +241,11 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
         test_error(error, "clSetKernelArg failed");
         free(sizes);
     }
-    
+
     size_t local_dims[3] = {1,1,1};
     error = get_max_common_work_group_size(context, kernel, global_dims[0], &local_dims[0]);
     test_error(error, "get_max_common_work_group_size failed");
-    
+
     // Execute the kernel
     error = clEnqueueNDRangeKernel(*queue, kernel, 1, NULL, global_dims, local_dims, 0, NULL, &event);
     result = check_allocation_error(context, device_id, error, queue);
@@ -256,12 +256,12 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
             print_error(error, "clEnqueueNDRangeKernel failed");
         return result;
     }
-    
+
     // Finish the test
     error = clFinish(*queue);
-    
+
     result = check_allocation_error(context, device_id, error, queue);
-    
+
     if (result != SUCCEEDED) {
         if (result == FAILED_TOO_BIG)
             log_info("\t\tclFinish failed: %s.\n", IGetErrorString(error));
@@ -269,7 +269,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
             print_error(error, "clFinish failed");
         return result;
     }
-    
+
     // Verify that the event from the execution did not have an error
     error = clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(event_status), &event_status, NULL);
     test_error_abort(error, "clGetEventInfo for CL_EVENT_COMMAND_EXECUTION_STATUS failed");
@@ -283,13 +283,13 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
             return result;
         }
     }
-    
+
     // If we are not verifying the checksum return here
     if (!verify_checksum) {
         log_info("Note: Allocations were not initialized so kernel execution can not verify correct results.\n");
         return SUCCEEDED;
     }
-    
+
     // Verify the checksum.
     // Read back the result
     error = clEnqueueReadBuffer(*queue, result_mem, CL_TRUE, 0, sizeof(cl_uint)*NUM_OF_WORK_ITEMS, &returned_results, 0, NULL, NULL);
@@ -301,7 +301,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
             final_result += returned_results[i];
         }
         if (final_result != checksum) {
-            log_error("\t\tChecksum failed to verify. Expected %u got %u.\n", checksum, final_result); 
+            log_error("\t\tChecksum failed to verify. Expected %u got %u.\n", checksum, final_result);
             return FAILED_ABORT;
         }
         log_info("\t\tChecksum verified (%u == %u).\n", checksum, final_result);
@@ -309,13 +309,13 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
         // For write images we need to verify the values
         for (i=0; i<number_of_mems_used; i++) {
             if (check_image(*queue, mems[i])) {
-                log_error("\t\tImage contents failed to verify for image %d.\n", (int)i); 
+                log_error("\t\tImage contents failed to verify for image %d.\n", (int)i);
                 return FAILED_ABORT;
             }
         }
         log_info("\t\tImage contents verified.\n");
     }
-    
+
     // Finish the test
     error = clFinish(*queue);
     result = check_allocation_error(context, device_id, error, queue);
@@ -326,7 +326,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
             print_error(error, "clFinish failed");
         return result;
     }
-    
+
     return SUCCEEDED;
 }
 

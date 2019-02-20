@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,14 +34,11 @@
 #include <limits.h>
 #include "test_select.h"
 
-#if defined(_WIN32)
 #include "../../test_common/harness/testHarness.h"
-#endif
 
 #include "../../test_common/harness/kernelHelpers.h"
 #include "../../test_common/harness/mt19937.h"
-cl_uint gRandomSeed = 0;
-cl_uint gIsEmbedded = 0;
+#include "../../test_common/harness/parseParameters.h"
 
 //-----------------------------------------
 // Static functions
@@ -79,10 +76,11 @@ static int doTest(cl_command_queue queue, cl_context context,
 // range.  Otherwise, we test a subset of the range
 // [-min_short, min_short]
 static bool  s_wimpy_mode = false;
+static int s_wimpy_reduction_factor = 256;
 
 // Tests are broken into the major test which is based on the
-// src and cmp type and their corresponding vector types and 
-// sub tests which is for each individual test.  The following 
+// src and cmp type and their corresponding vector types and
+// sub tests which is for each individual test.  The following
 // tracks the subtests
 int s_test_cnt = 0;
 int s_test_fail = 0;
@@ -95,7 +93,7 @@ int s_test_fail = 0;
 int int_log2(size_t value) {
     if( 0 == value )
         return INT_MIN;
-    
+
 #if defined( __GNUC__ )
     return (unsigned) (8*sizeof(size_t) - 1UL - __builtin_clzl(value));
 #else
@@ -110,12 +108,12 @@ int int_log2(size_t value) {
 }
 
 
-static void initSrcBuffer(void* src1, Type stype, MTdata d) 
+static void initSrcBuffer(void* src1, Type stype, MTdata d)
 {
     unsigned int* s1 = (unsigned int *)src1;
     size_t i;
-    
-    for ( i=0 ; i < BUFFER_SIZE/sizeof(cl_int); i++) 
+
+    for ( i=0 ; i < BUFFER_SIZE/sizeof(cl_int); i++)
         s1[i]   = genrand_int32(d);
 }
 
@@ -133,7 +131,7 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
             uint16_t* us = (uint16_t *)cmp;
             for (i=0; i < count; ++i)
                 us[i] = (uint16_t)start++;
-            break; 
+            break;
         }
         case 4: {
             if (!s_wimpy_mode) {
@@ -162,7 +160,7 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
                 ll[i] = start*sign;
                 sign = sign * -1;
             }
-            break; 
+            break;
         }
         default:
             log_error("invalid cmptype %s\n",type_name[cmptype]);
@@ -172,20 +170,20 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
 // Make the various incarnations of the program we want to run
 //  stype: source and destination type for the select
 //  ctype: compare type
-static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context context, Type srctype, Type cmptype, size_t vec_len) 
+static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context context, Type srctype, Type cmptype, size_t vec_len)
 {
     char testname[256];
     char stypename[32];
     char ctypename[32];
     char extension[128] = "";
     int  err = 0;
-    
+
     int i; // generic, re-usable loop variable
-    
+
     const char *source[] = {
-        extension,  
-        "__kernel void ", testname, 
-        "(__global ", stypename, " *dest, __global ", stypename, " *src1,\n __global ", 
+        extension,
+        "__kernel void ", testname,
+        "(__global ", stypename, " *dest, __global ", stypename, " *src1,\n __global ",
         stypename, " *src2, __global ",  ctypename, " *cmp)\n",
         "{\n"
         "   size_t tid = get_global_id(0);\n"
@@ -193,12 +191,12 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
         "       dest[tid] = select(src1[tid], src2[tid], cmp[tid]);\n"
         "}\n"
     };
-    
-    
+
+
     const char *sourceV3[] = {
-        extension, 
-        "__kernel void ", testname, 
-        "(__global ", stypename, " *dest, __global ", stypename, " *src1,\n __global ", 
+        extension,
+        "__kernel void ", testname,
+        "(__global ", stypename, " *dest, __global ", stypename, " *src1,\n __global ",
         stypename, " *src2, __global ",  ctypename, " *cmp)\n",
         "{\n"
         "   size_t tid = get_global_id(0);\n"
@@ -242,10 +240,10 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
         "   }\n"
         "}\n"
     };
-    
-    if (srctype == kdouble) 
+
+    if (srctype == kdouble)
         strcpy( extension, "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n" );
-    
+
     // create type name and testname
     switch( vec_len )
     {
@@ -263,7 +261,7 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
             break;
         case 2:
         case 4:
-        case 8: 
+        case 8:
         case 16:
             snprintf(stypename,sizeof(stypename), "%s%d", type_name[srctype],(int)vec_len);
             snprintf(ctypename,sizeof(ctypename), "%s%d", type_name[cmptype],(int)vec_len);
@@ -275,27 +273,27 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
             exit(-1);
             break;
     }
-    
+
     /*
      int j;
      for( j = 0; j < sizeof( source ) / sizeof( source[0] ); j++ )
      log_info( "%s", source[j] );
      */
-    
+
     // create program
-    cl_program program = clCreateProgramWithSource( context, 
-                                                   (cl_uint)(vec_len == 3 ? sizeof( sourceV3 ) / sizeof(sourceV3[0]) : sizeof( source ) / sizeof(source[0])), 
+    cl_program program = clCreateProgramWithSource( context,
+                                                   (cl_uint)(vec_len == 3 ? sizeof( sourceV3 ) / sizeof(sourceV3[0]) : sizeof( source ) / sizeof(source[0])),
                                                    vec_len == 3 ? sourceV3 : source, NULL, NULL);
-    
+
     if (!program) {
         log_error("clCreateProgramWithSource failed\n");
         return NULL;
     }
-    
+
     err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     if (err != CL_SUCCESS) {
         log_error("clBuildProgramExecutable failed errcode:%d\n", err);
-        
+
         char buildLog[ 1024 * 128 ];
         cl_device_id devID;
         err = clGetProgramInfo( program, CL_PROGRAM_DEVICES, sizeof( devID ), &devID, NULL );
@@ -321,24 +319,24 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
                 log_error("%s", source[i]);
             }
         }
-        
+
         log_error( "----------\n" );
         return NULL;
     }
-    
+
     *kernel_ptr = clCreateKernel(program, testname, &err);
     if ( err ) {
         log_error("clCreateKernel failed (%d)\n", err);
         return NULL;
     }
-    
+
     return program;
 }
 
 
 #define VECTOR_SIZE_COUNT   6
 
-static int doTest(cl_command_queue queue, cl_context context, Type stype, Type cmptype, cl_device_id device) 
+static int doTest(cl_command_queue queue, cl_context context, Type stype, Type cmptype, cl_device_id device)
 {
     int err = CL_SUCCESS;
     MTdata    d;
@@ -349,18 +347,18 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     cl_mem dest = NULL;
     void *ref = NULL;
     void *sref = NULL;
-        
+
     cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
     size_t block_elements = BUFFER_SIZE / type_size[stype];
-    size_t step = s_wimpy_mode ? 256 : 1;
+    size_t step = s_wimpy_mode ? s_wimpy_reduction_factor : 1;
     cl_ulong cmp_stride = block_elements * step;
-    
+
     // It is more efficient to create the tests all at once since we
     // use the same test data on each of the vector sizes
     int vecsize;
     cl_program programs[VECTOR_SIZE_COUNT];
     cl_kernel  kernels[VECTOR_SIZE_COUNT];
-    
+
     if(stype == kdouble && ! is_extension_available( device, "cl_khr_fp64" ))
     {
         log_info("Skipping double because cl_khr_fp64 extension is not supported.\n");
@@ -369,28 +367,28 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
 
     if (gIsEmbedded)
     {
-	   if (( stype == klong || stype == kulong ) && ! is_extension_available( device, "cles_khr_int64" ))
-	   {
-	     log_info("Long types unsupported, skipping.");
-	     return 0;
-	   }
+       if (( stype == klong || stype == kulong ) && ! is_extension_available( device, "cles_khr_int64" ))
+       {
+         log_info("Long types unsupported, skipping.");
+         return 0;
+       }
 
-	   if (( cmptype == klong || cmptype == kulong ) && ! is_extension_available( device, "cles_khr_int64" ))
-	   {
-	     log_info("Long types unsupported, skipping.");
-	     return 0;
-	   }
+       if (( cmptype == klong || cmptype == kulong ) && ! is_extension_available( device, "cles_khr_int64" ))
+       {
+         log_info("Long types unsupported, skipping.");
+         return 0;
+       }
     }
-    
-    for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize) 
+
+    for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
     {
         programs[vecsize] = makeSelectProgram(&kernels[vecsize], context, stype, cmptype, element_count[vecsize] );
         if (!programs[vecsize] || !kernels[vecsize]) {
             ++s_test_fail;
             return -1;
-        } 
+        }
     }
-    
+
     ref = malloc( BUFFER_SIZE );
     if( NULL == ref ){ log_error("Error: could not allocate ref buffer\n" ); goto exit; }
     sref = malloc( BUFFER_SIZE );
@@ -403,100 +401,100 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     if( err ) { log_error( "Error: could not allocate cmp buffer\n" );  ++s_test_fail; goto exit; }
     dest = clCreateBuffer( context, CL_MEM_WRITE_ONLY, BUFFER_SIZE, NULL, &err );
     if( err ) { log_error( "Error: could not allocate dest buffer\n" );  ++s_test_fail; goto exit; }
-    
-    
+
+
     // We block the test as we are running over the range of compare values
     // "block the test" means "break the test into blocks"
     if( type_size[stype] == 4 )
         cmp_stride = block_elements * step * (0x100000000ULL / 0x100000000ULL);
     if( type_size[stype] == 8 )
         cmp_stride = block_elements * step * (0xffffffffffffffffULL / 0x100000000ULL + 1);
-    
+
     log_info("Testing...");
     d = init_genrand( gRandomSeed );
     uint64_t i;
-    for (i=0; i < blocks; i+=step) 
-    {        
+    for (i=0; i < blocks; i+=step)
+    {
         void *s1 = clEnqueueMapBuffer( queue, src1, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
         if( err ){ log_error( "Error: Could not map src1" ); goto exit; }
         // Setup the input data to change for each block
         initSrcBuffer( s1, stype, d);
-        
+
         void *s2 = clEnqueueMapBuffer( queue, src2, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
         if( err ){ log_error( "Error: Could not map src2" ); goto exit; }
         // Setup the input data to change for each block
         initSrcBuffer( s2, stype, d);
-        
+
         void *s3 = clEnqueueMapBuffer( queue, cmp, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
         if( err ){ log_error( "Error: Could not map cmp" ); goto exit; }
         // Setup the input data to change for each block
         initCmpBuffer(s3, cmptype, i * cmp_stride, block_elements);
-        
+
         // Create the reference result
         Select sfunc = (cmptype == ctype[stype][0]) ? vrefSelects[stype][0] : vrefSelects[stype][1];
         (*sfunc)(ref, s1, s2, s3, block_elements);
-        
+
         sfunc = (cmptype == ctype[stype][0]) ? refSelects[stype][0] : refSelects[stype][1];
         (*sfunc)(sref, s1, s2, s3, block_elements);
-        
+
         if( (err = clEnqueueUnmapMemObject( queue, src1, s1, 0, NULL, NULL )))
         { log_error( "Error: coult not unmap src1\n" );  ++s_test_fail; goto exit; }
         if( (err = clEnqueueUnmapMemObject( queue, src2, s2, 0, NULL, NULL )))
         { log_error( "Error: coult not unmap src2\n" );  ++s_test_fail; goto exit; }
         if( (err = clEnqueueUnmapMemObject( queue, cmp, s3, 0, NULL, NULL )))
         { log_error( "Error: coult not unmap cmp\n" );  ++s_test_fail; goto exit; }
-        
-        for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize) 
+
+        for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
         {
             size_t vector_size = element_count[vecsize] * type_size[stype];
             size_t vector_count =  (BUFFER_SIZE + vector_size - 1) / vector_size;
-            
+
             if((err = clSetKernelArg(kernels[vecsize], 0,  sizeof dest, &dest) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }            
+            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
             if((err = clSetKernelArg(kernels[vecsize], 1,  sizeof src1, &src1) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }            
+            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
             if((err = clSetKernelArg(kernels[vecsize], 2,  sizeof src2, &src2) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }            
+            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
             if((err = clSetKernelArg(kernels[vecsize], 3,  sizeof cmp, &cmp) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }            
-            
-            
+            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
+
+
             // Wipe destination
             void *d = clEnqueueMapBuffer( queue, dest, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
             if( err ){ log_error( "Error: Could not map dest" );  ++s_test_fail; goto exit; }
             memset( d, -1, BUFFER_SIZE );
             if( (err = clEnqueueUnmapMemObject( queue, dest, d, 0, NULL, NULL ) ) ){ log_error( "Error: Could not unmap dest" ); ++s_test_fail; goto exit; }
-            
-            err = clEnqueueNDRangeKernel(queue, kernels[vecsize], 1, NULL, &vector_count, NULL, 0, NULL, NULL);            
+
+            err = clEnqueueNDRangeKernel(queue, kernels[vecsize], 1, NULL, &vector_count, NULL, 0, NULL, NULL);
             if (err != CL_SUCCESS) {
                 log_error("clEnqueueNDRangeKernel failed errcode:%d\n", err);
                 ++s_test_fail;
                 goto exit;
             }
-            
+
             d = clEnqueueMapBuffer( queue, dest, CL_TRUE, CL_MAP_READ, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
             if( err ){ log_error( "Error: Could not map dest # 2" );  ++s_test_fail; goto exit; }
-            
+
             if ((*checkResults[stype])(d, vecsize == 0 ? sref : ref, block_elements, element_count[vecsize])!=0){
                 log_error("vec_size:%d indx: 0x%16.16llx\n", (int)element_count[vecsize], i);
                 ++s_test_fail;
                 goto exit;
             }
-            
+
             if( (err = clEnqueueUnmapMemObject( queue, dest, d, 0, NULL, NULL ) ) )
-            { 
-                log_error( "Error: Could not unmap dest" ); 
-                ++s_test_fail; 
-                goto exit; 
+            {
+                log_error( "Error: Could not unmap dest" );
+                ++s_test_fail;
+                goto exit;
             }
         } // for vecsize
     } // for i
-    
+
     if (!s_wimpy_mode)
         log_info(" Passed\n\n");
     else
         log_info(" Wimpy Passed\n\n");
-    
+
 exit:
     if( src1 )  clReleaseMemObject( src1 );
     if( src2 )  clReleaseMemObject( src2 );
@@ -504,7 +502,7 @@ exit:
     if( dest)   clReleaseMemObject( dest );
     if( ref )   free(ref );
     if( sref )  free(sref );
-    
+
     free_mtdata(d);
     for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; vecsize++) {
         clReleaseKernel(kernels[vecsize]);
@@ -519,6 +517,7 @@ static void printUsage( void )
     log_info("test_select:  [-cghw] [test_name|start_test_num] \n");
     log_info("  default is to run the full test on the default device\n");
     log_info("  -w run in wimpy mode (smoke test)\n");
+    log_info("  -[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", s_wimpy_reduction_factor);
     log_info("  test_name will run only one test of that name\n");
     log_info("  start_test_num will start running from that num\n");
 }
@@ -526,9 +525,9 @@ static void printUsage( void )
 static void printArch( void )
 {
     log_info( "sizeof( void*) = %d\n", (int) sizeof( void *) );
-    
+
 #if defined( __APPLE__ )
-    
+
 #if defined( __ppc__ )
     log_info( "ARCH:\tppc\n" );
 #elif defined( __ppc64__ )
@@ -539,10 +538,12 @@ static void printArch( void )
     log_info( "ARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     log_info( "ARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    log_info( "ARCH:\taarch64\n" );
 #else
 #error unknown arch
 #endif
-    
+
     int type = 0;
     size_t typeSize = sizeof( type );
     sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
@@ -550,15 +551,9 @@ static void printArch( void )
     typeSize = sizeof( type );
     sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
     log_info( "cpu subtype:\t%d\n", type );
-    
+
 #endif
 }
-
-void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
-{
-    log_info( "%s\n", errinfo );
-}
-
 
 //-----------------------------------------
 // main
@@ -572,12 +567,12 @@ int main(int argc, char* argv[]) {
     cl_device_id      device_id;
     uint32_t       device_frequency = 0;
     uint32_t       compute_devices = 0;
-    
-    
+
+
     test_start();
-    
+
     // Maybe we want turn off sleep
-    
+
     // Check the environmental to see if there is device preference
     char *device_env = getenv("CL_DEVICE_TYPE");
     if (device_env != NULL) {
@@ -595,7 +590,7 @@ int main(int argc, char* argv[]) {
             abort();
         }
     }
-    
+
     // Determine if we want to run a particular test or if we want to
     // start running from a certain point and if we want to run on cpu/gpu
     // usage: test_selects [test_name] [start test num] [run_long]
@@ -607,11 +602,11 @@ int main(int argc, char* argv[]) {
         const char *arg = argv[i];
         if (arg == NULL)
             break;
-        
-        if (arg[0] == '-') 
+
+        if (arg[0] == '-')
         {
             arg++;
-            while(*arg != '\0') 
+            while(*arg != '\0')
             {
                 switch(*arg) {
                     case 'h':
@@ -619,7 +614,10 @@ int main(int argc, char* argv[]) {
                         return 0;
                     case 'w':  // Wimpy mode
                         s_wimpy_mode = true;
-                        break;   
+                        break;
+                    case '[':
+                        parseWimpyReductionFactor(arg, s_wimpy_reduction_factor);
+                        break;
                     default:
                         log_error( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
                         printUsage();
@@ -647,27 +645,27 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-    
-    
+
+
     int err;
-    
+
     // Get platform
     err = clGetPlatformIDs(1, &platform_id, NULL);
-    checkErr(err,"clGetPlatformIDs failed");    
-    
+    checkErr(err,"clGetPlatformIDs failed");
+
     // Get Device information
     err = clGetDeviceIDs(platform_id, device_type, 1, &device_id, 0);
     checkErr(err,"clGetComputeDevices");
-    
+
     err =  clGetDeviceInfo(device_id, CL_DEVICE_TYPE, sizeof(cl_device_type), &device_type, NULL);
     checkErr(err,"clGetComputeConfigInfo 1");
-    
+
     size_t config_size = sizeof( device_frequency );
 #if MULTITHREAD
     if( (err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_COMPUTE_UNITS, config_size, &compute_devices, NULL )) )
 #endif
         compute_devices = 1;
-    
+
     config_size = sizeof(device_frequency);
     if((err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_CLOCK_FREQUENCY, config_size, &device_frequency, NULL )))
         device_frequency = 1;
@@ -679,30 +677,31 @@ int main(int argc, char* argv[]) {
     {
         gIsEmbedded = 1;
     }
- 
-    
+
+
     log_info( "\nCompute Device info:\n" );
     log_info( "\tProcessing with %d devices\n", compute_devices );
     log_info( "\tDevice Frequency: %d MHz\n", device_frequency );
-    
+
     printDeviceHeader( device_id );
     printArch();
-    
+
     log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
-    if (s_wimpy_mode) { 
+    if (s_wimpy_mode) {
         log_info("\n");
         log_info("*** WARNING: Testing in Wimpy mode!                     ***\n");
         log_info("*** Wimpy mode is not sufficient to verify correctness. ***\n");
         log_info("*** It gives warm fuzzy feelings and then nevers calls. ***\n\n");
+        log_info("*** Wimpy Reduction Factor: %-27u ***\n\n", s_wimpy_reduction_factor);
     }
-    
+
     cl_context context = clCreateContext(NULL, 1, &device_id, notify_callback, NULL, NULL);
     checkNull(context, "clCreateContext");
-    
+
     cl_command_queue queue = clCreateCommandQueue(context, device_id, 0, NULL);
     checkNull(queue, "clCreateCommandQueue");
-    
-    
+
+
     if (exec_testname) {
         // Parse name
         // Skip the first part of the name
@@ -749,7 +748,7 @@ int main(int argc, char* argv[]) {
         test_num = 0;
         for (src_type = 0; src_type < kTypeCount; ++src_type) {
             for (j = 0; j < 2; ++j) {
-                Type cmp_type = ctype[src_type][j]; 
+                Type cmp_type = ctype[src_type][j];
                 if (++test_num < test_start_num) {
                     log_info("%d) skipping select_%s_%s\n", test_num,
                              type_name[src_type], type_name[cmp_type]);
@@ -764,27 +763,27 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-    
+
     int error = clFinish(queue);
     if (error) {
         log_error("clFinish failed: %d\n", error);
     }
-    
+
     clReleaseContext(context);
     clReleaseCommandQueue(queue);
-    
+
     if (s_test_fail == 0) {
-        if (s_test_cnt > 1) 
+        if (s_test_cnt > 1)
             log_info("PASSED %d of %d tests.\n", s_test_cnt, s_test_cnt);
         else
             log_info("PASSED test.\n");
     } else if (s_test_fail > 0) {
         if (s_test_cnt > 1)
             log_error("FAILED %d of %d tests.\n", s_test_fail, s_test_cnt);
-        else 
+        else
             log_error("FAILED test.\n");
-    }  
-    
+    }
+
     test_finish();
     return s_test_fail;
 }

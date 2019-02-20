@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,9 +26,9 @@
 #define kLastVectorSizeToTest (kVectorSizeCount + kStrangeVectorSizeCount)
 
 // #define BUFFER_SIZE     (1024*1024)
-// #define BUFFER_SIZE 
+// #define BUFFER_SIZE
 #define BUFFER_SIZE (64*1024) // minimum value for max constant buffer size
-// 
+//
 extern size_t getBufferSize(cl_device_id device_id);
 extern cl_ulong getBufferCount(cl_device_id device_id, size_t vecSize, size_t typeSize);
 // could call

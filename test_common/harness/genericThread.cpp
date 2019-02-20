@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,8 +23,8 @@
 
 void * genericThread::IStaticReflector( void * data )
 {
-	genericThread *t = (genericThread *)data;
-	return t->IRun();
+    genericThread *t = (genericThread *)data;
+    return t->IRun();
 }
 
 bool genericThread::Start( void )
@@ -33,8 +33,8 @@ bool genericThread::Start( void )
     mHandle = CreateThread( NULL, 0, (LPTHREAD_START_ROUTINE) IStaticReflector, this, 0, NULL );
     return ( mHandle != NULL );
 #else // !_WIN32
-	int error = pthread_create( (pthread_t*)&mHandle, NULL, IStaticReflector, (void *)this );
-	return ( error == 0 );
+    int error = pthread_create( (pthread_t*)&mHandle, NULL, IStaticReflector, (void *)this );
+    return ( error == 0 );
 #endif // !_WIN32
 }
 
@@ -44,10 +44,10 @@ void * genericThread::Join( void )
     WaitForSingleObject( (HANDLE)mHandle, INFINITE );
     return NULL;
 #else // !_WIN32
-	void * retVal;
-	int error = pthread_join( (pthread_t)mHandle, &retVal );
-	if( error != 0 )
-		retVal = NULL;
-	return retVal;
+    void * retVal;
+    int error = pthread_join( (pthread_t)mHandle, &retVal );
+    if( error != 0 )
+        retVal = NULL;
+    return retVal;
 #endif // !_WIN32
 }

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,7 +29,7 @@
 #include <unistd.h>
 #endif
 
-basefn	basefn_list[] = {
+basefn    basefn_list[] = {
     test_load_program_source,
     test_load_multistring_source,
     test_load_two_kernel_source,
@@ -40,21 +40,21 @@ basefn	basefn_list[] = {
     test_get_program_source,
     test_get_program_build_info,
     test_get_program_info,
-    
-    test_large_compile, 
+
+    test_large_compile,
     test_async_build_pieces,
-    
+
     test_options_optimizations,
     test_options_build_macro,
     test_options_build_macro_existence,
     test_options_include_directory,
     test_options_denorm_cache,
-    
+
     test_preprocessor_define_udef,
     test_preprocessor_include,
     test_preprocessor_line_error,
     test_preprocessor_pragma,
-    
+
     test_compiler_defines_for_extensions,
     test_image_macro,
 
@@ -64,8 +64,8 @@ basefn	basefn_list[] = {
     test_simple_compile_with_callback,
     test_simple_embedded_header_compile,
     test_simple_link_only,
-    test_two_file_regular_variable_access,	
-    test_two_file_regular_struct_access,	
+    test_two_file_regular_variable_access,
+    test_two_file_regular_struct_access,
     test_two_file_regular_function_access,
     test_simple_link_with_callback,
     test_simple_embedded_header_link,
@@ -105,21 +105,21 @@ const char    *basefn_names[] = {
     "get_program_source",
     "get_program_build_info",
     "get_program_info",
-    
-    "large_compile", 
+
+    "large_compile",
     "async_build",
-    
+
     "options_build_optimizations",
     "options_build_macro",
     "options_build_macro_existence",
     "options_include_directory",
     "options_denorm_cache",
-    
+
     "preprocessor_define_udef",
     "preprocessor_include",
     "preprocessor_line_error",
     "preprocessor_pragma",
-    
+
     "compiler_defines_for_extensions",
     "image_macro",
 
@@ -129,7 +129,7 @@ const char    *basefn_names[] = {
     "simple_compile_with_callback",
     "simple_embedded_header_compile",
     "simple_link_only",
-    "two_file_regular_variable_access",	
+    "two_file_regular_variable_access",
     "two_file_regular_struct_access",
     "two_file_regular_function_access",
     "simple_link_with_callback",
@@ -161,7 +161,7 @@ const char    *basefn_names[] = {
 
 ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0]) - 1) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
 
-int	num_fns = sizeof(basefn_names) / sizeof(char *);
+int    num_fns = sizeof(basefn_names) / sizeof(char *);
 
 int main(int argc, const char *argv[])
 {

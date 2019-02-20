@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,7 +15,69 @@
 //
 #include "rounding_mode.h"
 
-#if !(defined(_WIN32) && defined(_MSC_VER))
+#if (defined( __arm__ ) || defined(__aarch64__))
+    #define FPSCR_FZ    (1 << 24)       // Flush-To-Zero mode
+    #define FPSCR_ROUND_MASK (3 << 22)  // Rounding mode:
+
+    #define _ARM_FE_FTZ     0x1000000
+    #define _ARM_FE_NFTZ    0x0
+    #if defined(__aarch64__)
+        #define _FPU_GETCW(cw) __asm__ ("MRS %0,FPCR" : "=r" (cw))
+        #define _FPU_SETCW(cw) __asm__ ("MSR FPCR,%0" : :"ri" (cw))
+    #else
+        #define _FPU_GETCW(cw) __asm__ ("VMRS %0,FPSCR" : "=r" (cw))
+        #define _FPU_SETCW(cw) __asm__ ("VMSR FPSCR,%0" : :"ri" (cw))
+    #endif
+#endif
+
+#if (defined( __arm__ ) || defined(__aarch64__)) && defined( __GNUC__ )
+#define _ARM_FE_TONEAREST           0x0
+#define _ARM_FE_UPWARD              0x400000
+#define _ARM_FE_DOWNWARD            0x800000
+#define _ARM_FE_TOWARDZERO          0xc00000
+RoundingMode set_round( RoundingMode r, Type outType )
+{
+    static const int flt_rounds[ kRoundingModeCount ] = { _ARM_FE_TONEAREST,
+                                                          _ARM_FE_TONEAREST, _ARM_FE_UPWARD, _ARM_FE_DOWNWARD, _ARM_FE_TOWARDZERO };
+    static const int int_rounds[ kRoundingModeCount ] = { _ARM_FE_TOWARDZERO,
+                                                          _ARM_FE_TONEAREST, _ARM_FE_UPWARD, _ARM_FE_DOWNWARD, _ARM_FE_TOWARDZERO };
+    const int *p = int_rounds;
+    if( outType == kfloat || outType == kdouble )
+        p = flt_rounds;
+
+    int fpscr = 0;
+    RoundingMode oldRound = get_round();
+
+    _FPU_GETCW(fpscr);
+    _FPU_SETCW( p[r] | (fpscr & ~FPSCR_ROUND_MASK));
+
+    return oldRound;
+}
+
+RoundingMode get_round( void )
+{
+    int fpscr;
+    int oldRound;
+
+    _FPU_GETCW(fpscr);
+    oldRound = (fpscr & FPSCR_ROUND_MASK);
+
+    switch( oldRound )
+    {
+        case _ARM_FE_TONEAREST:
+            return kRoundToNearestEven;
+        case _ARM_FE_UPWARD:
+            return kRoundUp;
+        case _ARM_FE_DOWNWARD:
+            return kRoundDown;
+        case _ARM_FE_TOWARDZERO:
+            return kRoundTowardZero;
+    }
+
+    return kDefaultRoundingMode;
+}
+
+#elif !(defined(_WIN32) && defined(_MSC_VER))
 RoundingMode set_round( RoundingMode r, Type outType )
 {
     static const int flt_rounds[ kRoundingModeCount ] = { FE_TONEAREST, FE_TONEAREST, FE_UPWARD, FE_DOWNWARD, FE_TOWARDZERO };
@@ -25,7 +87,7 @@ RoundingMode set_round( RoundingMode r, Type outType )
         p = flt_rounds;
     int oldRound = fegetround();
     fesetround( p[r] );
-    
+
     switch( oldRound )
     {
         case FE_TONEAREST:
@@ -57,7 +119,7 @@ RoundingMode get_round( void )
         case FE_TOWARDZERO:
             return kRoundTowardZero;
     }
-    
+
     return kDefaultRoundingMode;
 }
 
@@ -71,18 +133,18 @@ RoundingMode set_round( RoundingMode r, Type outType )
 
     int err = _controlfp_s(&oldRound, 0, 0); //get rounding mode into oldRound
     if (err) {
-        vlog_error("\t\tERROR: -- cannot get rounding mode in %s:%d\n", __FILE__, __LINE__); 
+        vlog_error("\t\tERROR: -- cannot get rounding mode in %s:%d\n", __FILE__, __LINE__);
         return kDefaultRoundingMode;    //what else never happens
     }
-   
+
     oldRound &= _MCW_RC;
 
-    RoundingMode old = 
+    RoundingMode old =
         (oldRound == _RC_NEAR)? kRoundToNearestEven :
         (oldRound == _RC_UP)?   kRoundUp :
         (oldRound == _RC_DOWN)? kRoundDown :
-        (oldRound == _RC_CHOP)? kRoundTowardZero: 
-        kDefaultRoundingMode; 
+        (oldRound == _RC_CHOP)? kRoundTowardZero:
+        kDefaultRoundingMode;
 
     _controlfp_s(&oldRound, p[r], _MCW_RC); //setting new rounding mode
     return old;    //returning old rounding mode
@@ -94,38 +156,38 @@ RoundingMode get_round( void )
 
     int err = _controlfp_s(&oldRound, 0, 0); //get rounding mode into oldRound
     oldRound &= _MCW_RC;
-    return 
+    return
         (oldRound == _RC_NEAR)? kRoundToNearestEven :
         (oldRound == _RC_UP)?   kRoundUp :
         (oldRound == _RC_DOWN)? kRoundDown :
-        (oldRound == _RC_CHOP)? kRoundTowardZero: 
-        kDefaultRoundingMode; 
+        (oldRound == _RC_CHOP)? kRoundTowardZero:
+        kDefaultRoundingMode;
 }
 
 #endif
 
 //
 // FlushToZero() sets the host processor into ftz mode.  It is intended to have a remote effect on the behavior of the code in
-// basic_test_conversions.c. Some host processors may not support this mode, which case you'll need to do some clamping in 
+// basic_test_conversions.c. Some host processors may not support this mode, which case you'll need to do some clamping in
 // software by testing against FLT_MIN or DBL_MIN in that file.
 //
-// Note: IEEE-754 says conversions are basic operations.  As such they do *NOT* have the behavior in section 7.5.3 of 
-// the OpenCL spec. They *ALWAYS* flush to zero for subnormal inputs or outputs when FTZ mode is on like other basic 
+// Note: IEEE-754 says conversions are basic operations.  As such they do *NOT* have the behavior in section 7.5.3 of
+// the OpenCL spec. They *ALWAYS* flush to zero for subnormal inputs or outputs when FTZ mode is on like other basic
 // operators do (e.g. add, subtract, multiply, divide, etc.)
 //
-// Configuring hardware to FTZ mode varies by platform.  
+// Configuring hardware to FTZ mode varies by platform.
 // CAUTION: Some C implementations may also fail to behave properly in this mode.
 //
 //  On PowerPC, it is done by setting the FPSCR into non-IEEE mode.
-//  On Intel, you can do this by turning on the FZ and DAZ bits in the MXCSR -- provided that SSE/SSE2 
-//          is used for floating point computation! If your OS uses x87, you'll need to figure out how 
-//          to turn that off for the conversions code in basic_test_conversions.c so that they flush to 
+//  On Intel, you can do this by turning on the FZ and DAZ bits in the MXCSR -- provided that SSE/SSE2
+//          is used for floating point computation! If your OS uses x87, you'll need to figure out how
+//          to turn that off for the conversions code in basic_test_conversions.c so that they flush to
 //          zero properly.  Otherwise, you'll need to add appropriate software clamping to basic_test_conversions.c
 //          in which case, these function are at liberty to do nothing.
 //
 #if defined( __i386__ ) || defined( __x86_64__ ) || defined (_WIN32)
     #include <xmmintrin.h>
-#elif defined( __PPC__ ) 
+#elif defined( __PPC__ )
     #include <fpu_control.h>
 #endif
 void *FlushToZero( void )
@@ -135,14 +197,16 @@ void *FlushToZero( void )
         union{ int i;  void *p; }u = { _mm_getcsr() };
         _mm_setcsr( u.i | 0x8040 );
         return u.p;
-    #elif defined( __arm__ )
-        // processor is already in FTZ mode -- do nothing
+    #elif defined( __arm__ ) || defined(__aarch64__)
+        int fpscr;
+        _FPU_GETCW(fpscr);
+        _FPU_SETCW(fpscr | FPSCR_FZ);
         return NULL;
     #elif defined( __PPC__ )
         fpu_control_t flags = 0;
         _FPU_GETCW(flags);
         flags |= _FPU_MASK_NI;
-        _FPU_SETCW(flags);    
+        _FPU_SETCW(flags);
         return NULL;
         #else
         #error Unknown arch
@@ -159,8 +223,10 @@ void UnFlushToZero( void *p)
     #if defined( __i386__ ) || defined( __x86_64__ ) || defined(_MSC_VER)
         union{ void *p; int i;  }u = { p };
         _mm_setcsr( u.i );
-    #elif defined( __arm__ )
-        // processor is already in FTZ mode -- do nothing
+    #elif defined( __arm__ ) || defined(__aarch64__)
+        int fpscr;
+        _FPU_GETCW(fpscr);
+        _FPU_SETCW(fpscr & ~FPSCR_FZ);
     #elif defined( __PPC__)
         fpu_control_t flags = 0;
         _FPU_GETCW(flags);

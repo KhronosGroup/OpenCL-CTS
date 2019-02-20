@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -42,21 +42,21 @@ int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue
     char buf[256];
     int status;
     cl_program program;
-    
-    status = clGetDeviceInfo( deviceID, CL_DEVICE_NAME, sizeof( buf ), buf, NULL );    
+
+    status = clGetDeviceInfo( deviceID, CL_DEVICE_NAME, sizeof( buf ), buf, NULL );
     if( status )
     {
       log_error( "getting device info (name): %d\n", status );
       exit(-1);
     }
-    
-    status = clGetDeviceInfo( deviceID, CL_DEVICE_IMAGE_SUPPORT, sizeof( image_support ), &image_support, NULL );    
+
+    status = clGetDeviceInfo( deviceID, CL_DEVICE_IMAGE_SUPPORT, sizeof( image_support ), &image_support, NULL );
     if( status )
     {
       log_error( "getting device info (image support): %d\n", status );
       return status;
     }
-    
+
     if( (image_support == CL_TRUE) )
     {
         program = clCreateProgramWithSource( context, 1, (const char**) &image_supported_source, NULL, &status );
@@ -66,14 +66,14 @@ int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue
             log_error ("Failure creating program, [%d] \n", status );
             return status;
         }
-      
+
         status = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
         if( status )
             log_error("CL_DEVICE_IMAGE_SUPPORT is set, __IMAGE_SUPPORT__ macro not set \n");
-        else 
-            log_info("CL_DEVICE_IMAGE_SUPPORT is set, __IMAGE_SUPPORT__ macro is set \n");      
+        else
+            log_info("CL_DEVICE_IMAGE_SUPPORT is set, __IMAGE_SUPPORT__ macro is set \n");
     }
-    else 
+    else
     {
         program = clCreateProgramWithSource( context, 1, (const char**)  &image_not_supported_source, NULL, &status );
         if( status )
@@ -81,12 +81,12 @@ int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue
             log_error ("Failure creating program, [%d] \n", status );
             return status;
         }
-      
+
         status = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
         if( status )
             log_error("CL_DEVICE_IMAGE_SUPPORT not set, __IMAGE_SUPPORT__ macro is set \n");
-        else 
-            log_info("CL_DEVICE_IMAGE_SUPPORT not set, __IMAGE_SUPPORT__ macro not set \n");      
+        else
+            log_info("CL_DEVICE_IMAGE_SUPPORT not set, __IMAGE_SUPPORT__ macro not set \n");
     }
 
     clReleaseProgram( program );

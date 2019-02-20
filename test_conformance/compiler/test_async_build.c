@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,70 +29,70 @@ const char *sample_async_kernel[] = {
 "\n"
 "}\n" };
 
-volatile int	   buildNotificationSent;
-		 
+volatile int       buildNotificationSent;
+
 void CL_CALLBACK test_notify_build_complete( cl_program program, void *userData )
 {
-	if( userData == NULL || strcmp( (char *)userData, "userData" ) != 0 )
-	{
-		log_error( "ERROR: User data passed in to build notify function was not correct!\n" );
-		buildNotificationSent = -1;
-	}
-	else
-		buildNotificationSent = 1;
-	log_info( "\n   <-- program successfully built\n" );
+    if( userData == NULL || strcmp( (char *)userData, "userData" ) != 0 )
+    {
+        log_error( "ERROR: User data passed in to build notify function was not correct!\n" );
+        buildNotificationSent = -1;
+    }
+    else
+        buildNotificationSent = 1;
+    log_info( "\n   <-- program successfully built\n" );
 }
 
 int test_async_build_pieces(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-	int error;
-	cl_program program;
-	cl_build_status status;
+    int error;
+    cl_program program;
+    cl_build_status status;
 
-	
-	buildNotificationSent = 0;
 
-	/* First, test by doing the slow method of the individual calls */
-	program = clCreateProgramWithSource( context, 1, sample_async_kernel, NULL, &error );
-	if( program == NULL || error != CL_SUCCESS)
-	{
-		print_error( error, "Unable to create test program" );
-		return -1;
-	}
-	
-	/* Compile the program */
-	error = clBuildProgram( program, 1, &deviceID, NULL, test_notify_build_complete, (void *)"userData" );
-	test_error( error, "Unable to build program source" );
+    buildNotificationSent = 0;
 
-	/* Wait for build to complete (just keep polling, since we're just a test */
-	if( ( error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_STATUS, sizeof( status ), &status, NULL ) ) != CL_SUCCESS )
-	{
-		print_error( error, "Unable to get program build status" );
-		return -1;
-	}
-	while( (int)status == CL_BUILD_IN_PROGRESS )
-	{
-		log_info( "\n  -- still waiting for build... (status is %d)", status );
-		sleep( 1 );
-		error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_STATUS, sizeof( status ), &status, NULL );
-		test_error( error, "Unable to get program build status" );
-	}
-	
-	if( status != CL_BUILD_SUCCESS )
-	{
-		log_error( "ERROR: build failed! (status: %d)\n", (int)status );
-		return -1;
-	}
-	
-	if( buildNotificationSent == 0 )
-	{
-		log_error( "ERROR: Async build completed, but build notification was not sent!\n" );
-		return -1;
-	}
-	
-	clReleaseProgram( program );
-	
-	return 0;
+    /* First, test by doing the slow method of the individual calls */
+    program = clCreateProgramWithSource( context, 1, sample_async_kernel, NULL, &error );
+    if( program == NULL || error != CL_SUCCESS)
+    {
+        print_error( error, "Unable to create test program" );
+        return -1;
+    }
+
+    /* Compile the program */
+    error = clBuildProgram( program, 1, &deviceID, NULL, test_notify_build_complete, (void *)"userData" );
+    test_error( error, "Unable to build program source" );
+
+    /* Wait for build to complete (just keep polling, since we're just a test */
+    if( ( error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_STATUS, sizeof( status ), &status, NULL ) ) != CL_SUCCESS )
+    {
+        print_error( error, "Unable to get program build status" );
+        return -1;
+    }
+    while( (int)status == CL_BUILD_IN_PROGRESS )
+    {
+        log_info( "\n  -- still waiting for build... (status is %d)", status );
+        sleep( 1 );
+        error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_STATUS, sizeof( status ), &status, NULL );
+        test_error( error, "Unable to get program build status" );
+    }
+
+    if( status != CL_BUILD_SUCCESS )
+    {
+        log_error( "ERROR: build failed! (status: %d)\n", (int)status );
+        return -1;
+    }
+
+    if( buildNotificationSent == 0 )
+    {
+        log_error( "ERROR: Async build completed, but build notification was not sent!\n" );
+        return -1;
+    }
+
+    clReleaseProgram( program );
+
+    return 0;
 }
 
 

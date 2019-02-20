@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,7 +28,7 @@
 
 #include "procs.h"
 
-const char *fpadd_kernel_code = 
+const char *fpadd_kernel_code =
 "__kernel void test_fpadd(__global float *srcA, __global float *srcB, __global float *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -36,7 +36,7 @@ const char *fpadd_kernel_code =
 "    dst[tid] = srcA[tid] + srcB[tid];\n"
 "}\n";
 
-const char *fpsub_kernel_code = 
+const char *fpsub_kernel_code =
 "__kernel void test_fpsub(__global float *srcA, __global float *srcB, __global float *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -44,7 +44,7 @@ const char *fpsub_kernel_code =
 "    dst[tid] = srcA[tid] - srcB[tid];\n"
 "}\n";
 
-const char *fpmul_kernel_code = 
+const char *fpmul_kernel_code =
 "__kernel void test_fpmul(__global float *srcA, __global float *srcB, __global float *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -53,14 +53,14 @@ const char *fpmul_kernel_code =
 "}\n";
 
 
-static const float	MAX_ERR = 1e-5f;
+static const float    MAX_ERR = 1e-5f;
 
 int
 verify_fpadd(float *inptrA, float *inptrB, float *outptr, int n)
 {
     float       r;
     int         i;
-    
+
     for (i=0; i<n; i++)
     {
         r = inptrA[i] + inptrB[i];
@@ -70,7 +70,7 @@ verify_fpadd(float *inptrA, float *inptrB, float *outptr, int n)
             return -1;
         }
     }
-    
+
     log_info("FP_ADD float test passed\n");
     return 0;
 }
@@ -80,7 +80,7 @@ verify_fpsub(float *inptrA, float *inptrB, float *outptr, int n)
 {
     float       r;
     int         i;
-    
+
     for (i=0; i<n; i++)
     {
         r = inptrA[i] - inptrB[i];
@@ -90,7 +90,7 @@ verify_fpsub(float *inptrA, float *inptrB, float *outptr, int n)
             return -1;
         }
     }
-    
+
     log_info("FP_SUB float test passed\n");
     return 0;
 }
@@ -100,7 +100,7 @@ verify_fpmul(float *inptrA, float *inptrB, float *outptr, int n)
 {
     float       r;
     int         i;
-    
+
     for (i=0; i<n; i++)
     {
         r = inptrA[i] * inptrB[i];
@@ -110,7 +110,7 @@ verify_fpmul(float *inptrA, float *inptrB, float *outptr, int n)
             return -1;
         }
     }
-    
+
     log_info("FP_MUL float test passed\n");
     return 0;
 }
@@ -119,18 +119,18 @@ verify_fpmul(float *inptrA, float *inptrB, float *outptr, int n)
 int
 test_fpmath_float(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-	cl_mem streams[4];
-	cl_program program[3];
-	cl_kernel kernel[3];
+    cl_mem streams[4];
+    cl_program program[3];
+    cl_kernel kernel[3];
 
     float *input_ptr[3], *output_ptr, *p;
-	size_t threads[1];
-	int err, i;
+    size_t threads[1];
+    int err, i;
     MTdata d = init_genrand( gRandomSeed );
     size_t length = sizeof(cl_float) * num_elements;
     int isRTZ = 0;
     RoundingMode oldMode = kDefaultRoundingMode;
-	
+
     // check for floating point capabilities
     cl_device_fp_config single_config = 0;
     err = clGetDeviceInfo( device, CL_DEVICE_SINGLE_FP_CONFIG, sizeof( single_config ), &single_config, NULL );
@@ -138,7 +138,7 @@ test_fpmath_float(cl_device_id device, cl_context context, cl_command_queue queu
       log_error("clGetDeviceInfo for CL_DEVICE_SINGLE_FP_CONFIG failed: %d", err);
       test_finish();
       return -1;
-    } 
+    }
     //If we only support rtz mode
     if( CL_FP_ROUND_TO_ZERO == ( single_config & (CL_FP_ROUND_TO_ZERO|CL_FP_ROUND_TO_NEAREST) ) )
     {
@@ -157,16 +157,16 @@ test_fpmath_float(cl_device_id device, cl_context context, cl_command_queue queu
             test_finish();
             return -1;
         }
-        
+
         isRTZ = 1;
         oldMode = get_round();
     }
-    
-    
-	input_ptr[0] = (cl_float*)malloc(length);
-	input_ptr[1] = (cl_float*)malloc(length);
-	input_ptr[2] = (cl_float*)malloc(length);
-	output_ptr   = (cl_float*)malloc(length);
+
+
+    input_ptr[0] = (cl_float*)malloc(length);
+    input_ptr[1] = (cl_float*)malloc(length);
+    input_ptr[2] = (cl_float*)malloc(length);
+    output_ptr   = (cl_float*)malloc(length);
 
     streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), length, NULL, &err);
     test_error( err, "clCreateBuffer failed.");
@@ -186,7 +186,7 @@ test_fpmath_float(cl_device_id device, cl_context context, cl_command_queue queu
     p = input_ptr[2];
     for (i=0; i<num_elements; i++)
         p[i] = get_random_float(-MAKE_HEX_FLOAT(0x1.0p31f, 0x1, 31), MAKE_HEX_FLOAT(0x1.0p31f, 0x1, 31), d);
-    
+
     err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length, input_ptr[0], 0, NULL, NULL);
     test_error( err, "clEnqueueWriteBuffer failed.");
 
@@ -268,7 +268,7 @@ test_fpmath_float(cl_device_id device, cl_context context, cl_command_queue queu
     free(input_ptr[2]);
     free(output_ptr);
     free_mtdata( d );
-    
+
     return err;
 }
 

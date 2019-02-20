@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -91,7 +91,7 @@ struct TextureFormat
         GENERIC_UINT  = 1,
         GENERIC_SINT  = 2,
     } generic;
-    
+
     const char *name_format;
     const char *name_channel_order;
     const char *name_channel_type;
@@ -143,7 +143,7 @@ struct Texture3DSize
 
 void HarnessD3D11_Initialize(cl_platform_id platform);
 cl_int HarnessD3D11_CreateDevice(
-    IDXGIAdapter* pAdapter, 
+    IDXGIAdapter* pAdapter,
     ID3D11Device **ppDevice,
     ID3D11DeviceContext** ppDC);
 void HarnessD3D11_DestroyDevice();
@@ -154,60 +154,60 @@ void HarnessD3D11_TestEnd();
 void HarnessD3D11_TestStats();
 
 void TestAdapterEnumeration(
-    cl_platform_id platform, 
-    IDXGIAdapter* pAdapter, 
-    ID3D11Device* pDevice, 
+    cl_platform_id platform,
+    IDXGIAdapter* pAdapter,
+    ID3D11Device* pDevice,
     cl_uint* num_devices);
 
 void TestAdapterDevices(
-    cl_platform_id platform, 
-    IDXGIAdapter* pAdapter, 
-    ID3D11Device* pDevice, 
-    ID3D11DeviceContext* pDC, 
+    cl_platform_id platform,
+    IDXGIAdapter* pAdapter,
+    ID3D11Device* pDevice,
+    ID3D11DeviceContext* pDC,
     cl_uint num_devices);
 
 void TestDevice(
-    cl_device_id device, 
-    ID3D11Device* pDevice, 
+    cl_device_id device,
+    ID3D11Device* pDevice,
     ID3D11DeviceContext* pDC);
 
 bool TestDeviceContextCreate(
-    cl_device_id device, 
-    ID3D11Device* pDevice, 
-    cl_context* out_context, 
+    cl_device_id device,
+    ID3D11Device* pDevice,
+    cl_context* out_context,
     cl_command_queue* out_command_queue);
 
 void TestDeviceBuffer(
-    cl_context context, 
-    cl_command_queue command_queue, 
-    ID3D11Device* pDevice, 
+    cl_context context,
+    cl_command_queue command_queue,
+    ID3D11Device* pDevice,
     ID3D11DeviceContext* pDC);
 
 void TestDeviceTexture2D(
-    cl_device_id device, 
-    cl_context context, 
-    cl_command_queue command_queue, 
-    ID3D11Device* pDevice, 
+    cl_device_id device,
+    cl_context context,
+    cl_command_queue command_queue,
+    ID3D11Device* pDevice,
     ID3D11DeviceContext* pDC);
 
 void TestDeviceTexture3D(
-    cl_device_id device, 
-    cl_context context, 
-    cl_command_queue command_queue, 
-    ID3D11Device* pDevice, 
+    cl_device_id device,
+    cl_context context,
+    cl_command_queue command_queue,
+    ID3D11Device* pDevice,
     ID3D11DeviceContext* pDC);
 
 void TestDeviceMisc(
-    cl_device_id device, 
-    cl_context context, 
-    cl_command_queue command_queue, 
+    cl_device_id device,
+    cl_context context,
+    cl_command_queue command_queue,
     ID3D11Device* pDevice);
 
 cl_int HarnessD3D11_CreateKernelFromSource(
-    cl_kernel *outKernel, 
+    cl_kernel *outKernel,
     cl_device_id device,
     cl_context context,
-    const char *source, 
+    const char *source,
     const char *entrypoint);
 
 extern clGetDeviceIDsFromD3D11KHR_fn      clGetDeviceIDsFromD3D11KHR;

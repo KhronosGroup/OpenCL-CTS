@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,20 +24,20 @@
 
 #include "procs.h"
 
-//#define HK_DO_NOT_RUN_SHORT_ASYNC	1
-//#define HK_DO_NOT_RUN_USHORT_ASYNC	1
-//#define HK_DO_NOT_RUN_CHAR_ASYNC	1
-//#define HK_DO_NOT_RUN_UCHAR_ASYNC	1
+//#define HK_DO_NOT_RUN_SHORT_ASYNC    1
+//#define HK_DO_NOT_RUN_USHORT_ASYNC    1
+//#define HK_DO_NOT_RUN_CHAR_ASYNC    1
+//#define HK_DO_NOT_RUN_UCHAR_ASYNC    1
 
-#define TEST_PRIME_INT		((1<<16)+1)
-#define TEST_PRIME_UINT		((1U<<16)+1U)
-#define TEST_PRIME_LONG		((1LL<<32)+1LL)
-#define TEST_PRIME_ULONG	((1ULL<<32)+1ULL)
-#define TEST_PRIME_SHORT	((1S<<8)+1S)
-#define TEST_PRIME_FLOAT	(float)3.40282346638528860e+38
-#define TEST_PRIME_HALF		119.f
-#define TEST_BOOL			true
-#define TEST_PRIME_CHAR		0x77
+#define TEST_PRIME_INT        ((1<<16)+1)
+#define TEST_PRIME_UINT        ((1U<<16)+1U)
+#define TEST_PRIME_LONG        ((1LL<<32)+1LL)
+#define TEST_PRIME_ULONG    ((1ULL<<32)+1ULL)
+#define TEST_PRIME_SHORT    ((1S<<8)+1S)
+#define TEST_PRIME_FLOAT    (float)3.40282346638528860e+38
+#define TEST_PRIME_HALF        119.f
+#define TEST_BOOL            true
+#define TEST_PRIME_CHAR        0x77
 
 #ifndef ulong
 typedef unsigned long ulong;
@@ -441,17 +441,17 @@ static const char *buffer_read_uchar_kernel_code[] = {
 static const char *uchar_kernel_name[] = { "test_buffer_read_uchar", "test_buffer_read_uchar2", "test_buffer_read_uchar4", "test_buffer_read_uchar8", "test_buffer_read_uchar16" };
 
 
-static const char *buffer_read_struct_kernel_code = 
+static const char *buffer_read_struct_kernel_code =
 "typedef struct{\n"
-"int	a;\n"
-"float	b;\n"
+"int    a;\n"
+"float    b;\n"
 "} TestStruct;\n"
 "__kernel void test_buffer_read_struct(__global TestStruct *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
 "\n"
 "    dst[tid].a = ((1<<16)+1);\n"
-"	 dst[tid].b = (float)3.40282346638528860e+38;\n"
+"     dst[tid].b = (float)3.40282346638528860e+38;\n"
 "}\n";
 
 
@@ -850,7 +850,7 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
                 return -1;
             }
 
-#ifdef USE_LOCAL_WORK_GROUP		
+#ifdef USE_LOCAL_WORK_GROUP
             err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
             test_error( err, "Unable to get work group size to use" );
 
@@ -971,7 +971,7 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
                 log_error( " unable to allocate %d bytes for inptr\n", (int)(ptrSizes[i] * num_elements) );
                 return -1;
             }
-            memset( inptr[i], 0, ptrSizes[i] * num_elements );  // initialize to zero to tell difference  
+            memset( inptr[i], 0, ptrSizes[i] * num_elements );  // initialize to zero to tell difference
 
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
                 buffers[i] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, inptr[i], &err);
@@ -1083,7 +1083,7 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
 
 
 #define DECLARE_READ_TEST(type, realType) \
-int test_buffer_read_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )	\
+int test_buffer_read_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )    \
 { \
 return test_buffer_read( deviceID, context, queue, num_elements, sizeof( realType ), (char*)#type, 5, \
 buffer_read_##type##_kernel_code, type##_kernel_name, verify_read_##type ); \
@@ -1107,7 +1107,7 @@ int test_buffer_half_read( cl_device_id deviceID, cl_context context, cl_command
 
 
 #define DECLARE_ASYNC_TEST(type, realType) \
-int test_buffer_read_async_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )	\
+int test_buffer_read_async_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )    \
 { \
 return test_buffer_read_async( deviceID, context, queue, num_elements, sizeof( realType ), (char*)#type, 5, \
 buffer_read_##type##_kernel_code, type##_kernel_name, verify_read_##type ); \
@@ -1125,7 +1125,7 @@ DECLARE_ASYNC_TEST(float, cl_float)
 
 
 #define DECLARE_BARRIER_TEST(type, realType) \
-int test_buffer_read_array_barrier_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )	\
+int test_buffer_read_array_barrier_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )    \
 { \
 return test_buffer_read_array_barrier( deviceID, context, queue, num_elements, sizeof( realType ), (char*)#type, 5, \
 buffer_read_##type##_kernel_code, type##_kernel_name, verify_read_##type ); \
@@ -1144,17 +1144,17 @@ DECLARE_BARRIER_TEST(float, cl_float)
 /*
  int test_buffer_half_read(cl_device_group device, cl_device id, cl_context context, int num_elements)
  {
- cl_mem		buffers[1];
- float	    *outptr;
+ cl_mem        buffers[1];
+ float        *outptr;
  cl_program program[1];
- cl_kernel	kernel[1];
- void		*values[1];
- size_t		sizes[1] = { sizeof(cl_buffer) };
- uint		threads[1];
- int		err;
- int		i;
- size_t		ptrSize;	// sizeof(half)
- 
+ cl_kernel    kernel[1];
+ void        *values[1];
+ size_t        sizes[1] = { sizeof(cl_buffer) };
+ uint        threads[1];
+ int        err;
+ int        i;
+ size_t        ptrSize;    // sizeof(half)
+
  ptrSize = sizeof(cl_float)/2;
  outptr = (float *)malloc(ptrSize * num_elements);
  buffers[0] = clCreateBuffer(device, (cl_mem_flags)(CL_MEM_READ_WRITE),  ptrSize * num_elements, NULL);
@@ -1162,7 +1162,7 @@ DECLARE_BARRIER_TEST(float, cl_float)
  log_error("clCreateBuffer failed\n");
  return -1;
  }
- 
+
  err = create_program_and_kernel(device, buffer_read_half_kernel_code, "test_buffer_read_half", &program[0], &kernel[0]);
  if( err ){
  log_error( " Error creating program for half\n" );
@@ -1170,27 +1170,27 @@ DECLARE_BARRIER_TEST(float, cl_float)
  free( (void *)outptr );
  return -1;
  }
- 
+
  values[0] = buffers[0];
  err = clSetKernelArgs(context, kernel[0], 1, NULL, &(values[i]), sizes);
  if( err != CL_SUCCESS ){
  log_error("clSetKernelArgs failed\n");
  return -1;
  }
- 
+
  global_work_size[0] = (cl_uint)num_elements;
  err = clEnqueueNDRangeKernel(queue, kernel[0], 1, NULL, threads, NULL, 0, NULL, NULL );
  if( err != CL_SUCCESS ){
  log_error("clEnqueueNDRangeKernel failed\n");
  return -1;
  }
- 
+
  err = clEnqueueReadBuffer( queue, buffers[0], true, 0, ptrSize*num_elements, (void *)outptr, 0, NULL, NULL );
  if( err != CL_SUCCESS ){
  log_error("clEnqueueReadBuffer failed: %d\n", err);
  return -1;
  }
- 
+
  if( verify_read_half( outptr, num_elements >> 1 ) ){
  log_error( "buffer_READ half test failed\n" );
  err = -1;
@@ -1199,16 +1199,16 @@ DECLARE_BARRIER_TEST(float, cl_float)
  log_info( "buffer_READ half test passed\n" );
  err = 0;
  }
- 
+
  // cleanup
  clReleaseMemObject( buffers[0] );
  clReleaseKernel( kernel[0] );
  clReleaseProgram( program[0] );
  free( (void *)outptr );
- 
+
  return err;
- 
- }	// end test_buffer_half_read()
+
+ }    // end test_buffer_half_read()
  */
 
 int test_buffer_read_struct(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)

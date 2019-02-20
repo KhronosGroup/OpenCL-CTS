@@ -65,3 +65,6 @@ add_subdirectory(select)
 add_subdirectory(thread_dimensions)
 add_subdirectory(vec_align)
 add_subdirectory(vec_step)
+
+# Add any extension folders
+add_subdirectory(spir)

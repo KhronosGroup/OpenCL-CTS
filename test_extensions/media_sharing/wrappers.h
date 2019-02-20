@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -41,7 +41,7 @@ public:
 #if defined(_WIN32)
   HWND WindowHandle() const;
 #endif
-  int WindowWidth() const; 
+  int WindowWidth() const;
   int WindowHeight() const;
   void WindowInit();
 

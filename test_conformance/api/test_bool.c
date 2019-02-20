@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,21 +32,21 @@ const char *kernel_with_bool[] = {
     "        dst[tid] = 0;\n"
     "    }\n"
     "\n"
-    "}\n" 
+    "}\n"
 };
 
-int test_for_bool_type(cl_device_id deviceID, cl_context context, 
-		       cl_command_queue queue, int num_elements)
+int test_for_bool_type(cl_device_id deviceID, cl_context context,
+               cl_command_queue queue, int num_elements)
 {
 
     cl_program program;
     cl_kernel kernel;
 
     int err = create_single_kernel_helper(context,
-					  &program, 
-					  &kernel, 
-					  1, kernel_with_bool, 
-					  "kernel_with_bool" );
+                      &program,
+                      &kernel,
+                      1, kernel_with_bool,
+                      "kernel_with_bool" );
     return err;
 }
 

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -57,8 +57,8 @@ extern int      test_absdiff(cl_device_id deviceID, cl_context context, cl_comma
 extern int      test_add_sat(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_sub_sat(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int		test_intmul24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int		test_intmad24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_intmul24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_intmad24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 
 extern int test_long_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

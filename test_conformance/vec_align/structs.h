@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,7 +24,7 @@
 typedef struct _clState
 {
     cl_device_id m_device;
-    cl_context m_context; 
+    cl_context m_context;
     cl_command_queue m_queue;
 
     cl_program m_program;
@@ -36,22 +36,22 @@ clState * newClState(cl_device_id device, cl_context context, cl_command_queue q
 clState * destroyClState(clState * pState);
 
 int clStateMakeProgram(clState * pState, const char * prog,
-		       const char * kernelName);
+               const char * kernelName);
 void clStateDestroyProgramAndKernel(clState * pState);
 
 int runKernel(clState * pState, size_t numThreads);
 
-typedef struct _bufferStruct 
+typedef struct _bufferStruct
 {
     void * m_pIn;
     void * m_pOut;
-    
+
     cl_mem m_outBuffer;
     cl_mem m_inBuffer;
 
     size_t m_bufSizeIn, m_bufSizeOut;
 
-	int	   m_bufferUploaded;
+    int       m_bufferUploaded;
 } bufferStruct;
 
 
@@ -59,9 +59,9 @@ bufferStruct * newBufferStruct(size_t inSize, size_t outSize, clState * pClState
 
 bufferStruct * destroyBufferStruct(bufferStruct * destroyMe, clState * pClState);
 
-void initContents(bufferStruct * pBufferStruct, clState * pClState, 
-		     size_t typeSize,
-		     size_t vecWidth);
+void initContents(bufferStruct * pBufferStruct, clState * pClState,
+             size_t typeSize,
+             size_t vecWidth);
 
 int pushArgs(bufferStruct * pBufferStruct, clState * pClState);
 int retrieveResults(bufferStruct * pBufferStruct, clState * pClState);
@@ -69,7 +69,7 @@ int retrieveResults(bufferStruct * pBufferStruct, clState * pClState);
 // vecSizeIdx indexes into g_arrVecAlignMasks, g_arrVecSizeNames
 // and g_arrVecSizes
 int checkCorrectness(bufferStruct * pBufferStruct, clState * pClState,
-		     size_t minAlign);
+             size_t minAlign);
 
 int checkPackedCorrectness(bufferStruct * pBufferStruct, clState * pClState,
-			   size_t totSize, size_t beforeSize);
+               size_t totSize, size_t beforeSize);

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,7 +25,7 @@
 #include "procs.h"
 #include "../../test_common/harness/errorHelpers.h"
 
-#define USE_LOCAL_WORK_GROUP	1
+#define USE_LOCAL_WORK_GROUP    1
 
 #ifndef uchar
 typedef unsigned char uchar;
@@ -432,17 +432,17 @@ const char *buffer_write_ulong_kernel_code[] = {
 static const char *ulong_kernel_name[] = { "test_buffer_write_ulong", "test_buffer_write_ulong2", "test_buffer_write_ulong4", "test_buffer_write_ulong8", "test_buffer_write_ulong16" };
 
 
-static const char *struct_kernel_code = 
+static const char *struct_kernel_code =
 "typedef struct{\n"
-"int	a;\n"
-"float	b;\n"
+"int    a;\n"
+"float    b;\n"
 "} TestStruct;\n"
 "__kernel void read_write_struct(__global TestStruct *src, __global TestStruct *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
 "\n"
 "    dst[tid].a = src[tid].a;\n"
-"	 dst[tid].b = src[tid].b;\n"
+"     dst[tid].b = src[tid].b;\n"
 "}\n";
 
 
@@ -1593,7 +1593,7 @@ int test_buffer_write_async_int( cl_device_id deviceID, cl_context context, cl_c
 {
     int     *inptr[5];
     size_t  ptrSizes[5];
-    int     i, err; 
+    int     i, err;
     cl_uint j;
     MTdata  d = init_genrand( gRandomSeed );
     int     (*foo)(void *,void *,int);
@@ -1632,7 +1632,7 @@ int test_buffer_write_async_uint( cl_device_id deviceID, cl_context context, cl_
 {
     cl_uint *inptr[5];
     size_t  ptrSizes[5];
-    int     i, err; 
+    int     i, err;
     cl_uint j;
     MTdata  d = init_genrand( gRandomSeed );
     int     (*foo)(void *,void *,int);
@@ -1671,7 +1671,7 @@ int test_buffer_write_async_short( cl_device_id deviceID, cl_context context, cl
 {
     short   *inptr[5];
     size_t  ptrSizes[5];
-    int     i, err; 
+    int     i, err;
     cl_uint j;
     MTdata  d = init_genrand( gRandomSeed );
     int     (*foo)(void *,void *,int);
@@ -1711,7 +1711,7 @@ int test_buffer_write_async_ushort( cl_device_id deviceID, cl_context context, c
 {
     cl_ushort *inptr[5];
     size_t    ptrSizes[5];
-    int       i, err; 
+    int       i, err;
     cl_uint   j;
     MTdata    d = init_genrand( gRandomSeed );
     int       (*foo)(void *,void *,int);
@@ -1751,7 +1751,7 @@ int test_buffer_write_async_char( cl_device_id deviceID, cl_context context, cl_
 {
     char    *inptr[5];
     size_t  ptrSizes[5];
-    int     i, err; 
+    int     i, err;
     cl_uint j;
     MTdata  d = init_genrand( gRandomSeed );
     int     (*foo)(void *,void *,int);
@@ -1791,7 +1791,7 @@ int test_buffer_write_async_uchar( cl_device_id deviceID, cl_context context, cl
 {
     uchar   *inptr[5];
     size_t  ptrSizes[5];
-    int     i, err; 
+    int     i, err;
     cl_uint j;
     MTdata  d = init_genrand( gRandomSeed );
     int     (*foo)(void *,void *,int);
@@ -1831,7 +1831,7 @@ int test_buffer_write_async_float( cl_device_id deviceID, cl_context context, cl
 {
     float   *inptr[5];
     size_t  ptrSizes[5];
-    int     i, err; 
+    int     i, err;
     cl_uint j;
     MTdata  d = init_genrand( gRandomSeed );
     int     (*foo)(void *,void *,int);

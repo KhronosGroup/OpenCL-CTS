@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,22 +27,22 @@
 
 enum TypesToTest
 {
-	kTestInt = ( 1 << 0 ),
-	kTestUInt = ( 1 << 1 ),
-	kTestFloat = ( 1 << 2 ),
-	kTestAllTypes = kTestInt | kTestUInt | kTestFloat
+    kTestInt = ( 1 << 0 ),
+    kTestUInt = ( 1 << 1 ),
+    kTestFloat = ( 1 << 2 ),
+    kTestAllTypes = kTestInt | kTestUInt | kTestFloat
 };
 
 // For the clCopyImage test
 enum MethodsToTest
 {
     k1D = ( 1 << 0 ),
-	k2D	= ( 1 << 1 ),
+    k2D    = ( 1 << 1 ),
     k1DArray = ( 1 << 2 ),
     k2DArray = ( 1 << 3 ),
-	k3D = ( 1 << 4 ),
-	k2DTo3D = ( 1 << 5 ),
-	k3DTo2D = ( 1 << 6 ),
+    k3D = ( 1 << 4 ),
+    k2DTo3D = ( 1 << 5 ),
+    k3DTo2D = ( 1 << 6 ),
     k2DArrayTo2D = ( 1 << 7 ),
     k2DTo2DArray = ( 1 << 8 ),
     k2DArrayTo3D = ( 1 << 9 ),
@@ -52,12 +52,12 @@ enum MethodsToTest
 
 
 typedef int (*test_format_set_fn)( cl_device_id device, cl_image_format *formatList, bool *filterFlags, unsigned int numFormats,
-								  image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType );
+                                  image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType );
 
 extern int test_read_image_formats( cl_device_id device, cl_image_format *formatList, bool *filterFlags, unsigned int numFormats,
-								   image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType );
+                                   image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType );
 extern int test_write_image_formats( cl_device_id device, cl_image_format *formatList, bool *filterFlags, unsigned int numFormats,
-								   image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType );
+                                   image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType );
 
 #endif // _testBase_h
 

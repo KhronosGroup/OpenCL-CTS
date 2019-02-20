@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,40 +30,40 @@
 #include <unistd.h>
 #endif
 
-basefn	basefn_list[] = {
-  		test_multiple_contexts_same_device,
-			test_two_contexts_same_device,
-			test_three_contexts_same_device,
-			test_four_contexts_same_device,
-			
-			test_two_devices,
-			test_max_devices,
-			
-			test_hundred_queues
+basefn    basefn_list[] = {
+          test_multiple_contexts_same_device,
+            test_two_contexts_same_device,
+            test_three_contexts_same_device,
+            test_four_contexts_same_device,
+
+            test_two_devices,
+            test_max_devices,
+
+            test_hundred_queues
 };
 
 
 const char    *basefn_names[] = {
-  		"context_multiple_contexts_same_device",
-			"context_two_contexts_same_device",
-			"context_three_contexts_same_device",
-			"context_four_contexts_same_device",
+          "context_multiple_contexts_same_device",
+            "context_two_contexts_same_device",
+            "context_three_contexts_same_device",
+            "context_four_contexts_same_device",
 
-			"two_devices",
-			"max_devices",
-			
-			"hundred_queues",
+            "two_devices",
+            "max_devices",
 
-			"all",
+            "hundred_queues",
+
+            "all",
 };
 
 ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0]) - 1) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
 
-int	num_fns = sizeof(basefn_names) / sizeof(char *);
+int    num_fns = sizeof(basefn_names) / sizeof(char *);
 
 int main(int argc, const char *argv[])
 {
-	return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, true, 0 );
+    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, true, 0 );
 }
 
 

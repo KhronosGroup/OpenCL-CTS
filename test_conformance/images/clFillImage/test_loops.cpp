@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -92,21 +92,21 @@ int filter_formats( cl_image_format *formatList, bool *filterFlags, unsigned int
 }
 
 
-int get_format_list( cl_device_id device, cl_mem_object_type image_type, cl_image_format * &outFormatList, 
+int get_format_list( cl_device_id device, cl_mem_object_type image_type, cl_image_format * &outFormatList,
                     unsigned int &outFormatCount, cl_mem_flags flags )
 {
-	int error;
-	
-	cl_image_format tempList[ 128 ];
-	error = clGetSupportedImageFormats( context, (cl_mem_flags)flags,
-									   image_type, 128, tempList, &outFormatCount );
-	test_error( error, "Unable to get count of supported image formats" );
-	
-	outFormatList = new cl_image_format[ outFormatCount ];
-	error = clGetSupportedImageFormats( context, (cl_mem_flags)flags,
+    int error;
+
+    cl_image_format tempList[ 128 ];
+    error = clGetSupportedImageFormats( context, (cl_mem_flags)flags,
+                                       image_type, 128, tempList, &outFormatCount );
+    test_error( error, "Unable to get count of supported image formats" );
+
+    outFormatList = new cl_image_format[ outFormatCount ];
+    error = clGetSupportedImageFormats( context, (cl_mem_flags)flags,
                                        image_type, outFormatCount, outFormatList, NULL );
-	test_error( error, "Unable to get list of supported image formats" );
-	return 0;
+    test_error( error, "Unable to get list of supported image formats" );
+    return 0;
 }
 
 
@@ -114,7 +114,7 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
 {
     const char *name;
     cl_mem_object_type imageType;
-    
+
     if ( testMethod == k1D )
     {
         name = "1D Image Fill";
@@ -162,19 +162,19 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
     memset( filterFlags, 0, sizeof( bool ) * numFormats );
 
     /////// float tests ///////
-    
+
     if( gTypesToTest & kTestFloat )
     {
-        cl_channel_type floatFormats[] = { CL_UNORM_SHORT_565, CL_UNORM_SHORT_555, CL_UNORM_INT_101010, 
+        cl_channel_type floatFormats[] = { CL_UNORM_SHORT_565, CL_UNORM_SHORT_555, CL_UNORM_INT_101010,
 #ifdef OBSOLETE_FORAMT
             CL_UNORM_SHORT_565_REV, CL_UNORM_SHORT_555_REV, CL_UNORM_INT_8888, CL_UNORM_INT_8888_REV, CL_UNORM_INT_101010_REV,
 #endif
 #ifdef CL_SFIXED14_APPLE
             CL_SFIXED14_APPLE,
 #endif
-            CL_UNORM_INT8, CL_SNORM_INT8, 
+            CL_UNORM_INT8, CL_SNORM_INT8,
             CL_UNORM_INT16, CL_SNORM_INT16, CL_FLOAT, CL_HALF_FLOAT, (cl_channel_type)-1 };
-        if( filter_formats( formatList, filterFlags, numFormats, floatFormats ) == 0 )	
+        if( filter_formats( formatList, filterFlags, numFormats, floatFormats ) == 0 )
         {
             log_info( "No formats supported for float type\n" );
         }
@@ -188,11 +188,11 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
                 {
                     continue;
                 }
-                
+
                 print_header( &formatList[ i ], false );
-                
+
                 gTestCount++;
-                
+
                 if ( testMethod == k1D )
                     test_return = test_fill_image_set_1D( device, &formatList[ i ], kFloat );
                 else if ( testMethod == k2D )
@@ -203,7 +203,7 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
                     test_return = test_fill_image_set_2D_array( device, &formatList[ i ], kFloat );
                 else if ( testMethod == k3D )
                     test_return = test_fill_image_set_3D( device, &formatList[ i ], kFloat );
-                
+
                 if (test_return)
                 {
                     gTestFailure++;
@@ -211,12 +211,12 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
                     print_header( &formatList[ i ], true );
                     log_info( "\n" );
                 }
-                
+
                 ret += test_return;
             }
         }
     }
-    
+
     /////// int tests ///////
     if( gTypesToTest & kTestInt )
     {
@@ -235,11 +235,11 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
                 {
                     continue;
                 }
-                
+
                 print_header( &formatList[ i ], false );
-                
+
                 gTestCount++;
-                
+
                 if ( testMethod == k1D )
                     test_return = test_fill_image_set_1D( device, &formatList[ i ], kInt );
                 else if ( testMethod == k2D )
@@ -250,21 +250,21 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
                     test_return = test_fill_image_set_2D_array( device, &formatList[ i ], kInt );
                 else if ( testMethod == k3D )
                     test_return = test_fill_image_set_3D( device, &formatList[ i ], kInt );
-                
+
                 if (test_return) {
                     gTestFailure++;
                     log_error( "FAILED: " );
                     print_header( &formatList[ i ], true );
                     log_info( "\n" );
                 }
-                
+
                 ret += test_return;
             }
         }
     }
-    
+
     /////// uint tests ///////
-    
+
     if( gTypesToTest & kTestUInt )
     {
         cl_channel_type uintFormats[] = { CL_UNSIGNED_INT8, CL_UNSIGNED_INT16, CL_UNSIGNED_INT32, (cl_channel_type)-1 };
@@ -282,11 +282,11 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
                 {
                     continue;
                 }
-                
+
                 print_header( &formatList[ i ], false );
-                
+
                 gTestCount++;
-                
+
                 if ( testMethod == k1D )
                     test_return = test_fill_image_set_1D( device, &formatList[ i ], kUInt );
                 else if ( testMethod == k2D )
@@ -297,17 +297,17 @@ int test_image_type( cl_device_id device, MethodsToTest testMethod, cl_mem_flags
                     test_return = test_fill_image_set_2D_array( device, &formatList[ i ], kUInt );
                 else if ( testMethod == k3D )
                     test_return = test_fill_image_set_3D( device, &formatList[ i ], kUInt );
-                
+
                 if (test_return) {
                     gTestFailure++;
                     log_error( "FAILED: " );
                     print_header( &formatList[ i ], true );
                     log_info( "\n" );
                 }
-                
+
                 ret += test_return;
             }
-        }	
+        }
     }
 
     delete filterFlags;

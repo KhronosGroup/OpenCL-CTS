@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,7 +30,7 @@ clEnqueueReleaseD3D10ObjectsKHR_fn clEnqueueReleaseD3D10ObjectsKHR = NULL;
 #define INITPFN(x) \
     x = (x ## _fn)clGetExtensionFunctionAddressForPlatform(platform, #x); NonTestRequire(x, "Failed to get function pointer for %s", #x);
 
-void 
+void
 HarnessD3D10_ExtensionCheck()
 {
     bool extensionPresent = false;
@@ -40,9 +40,9 @@ HarnessD3D10_ExtensionCheck()
 
     HarnessD3D10_TestBegin("Extension query");
 
-    result = clGetPlatformIDs(1, &platform, NULL); 
+    result = clGetPlatformIDs(1, &platform, NULL);
         NonTestRequire(result == CL_SUCCESS, "Failed to get any platforms.");
-    result = clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, sizeof(extensions), extensions, NULL); 
+    result = clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, sizeof(extensions), extensions, NULL);
         NonTestRequire(result == CL_SUCCESS, "Failed to list extensions.");
     extensionPresent = strstr(extensions, "cl_khr_d3d10_sharing") ? true : false;
 
@@ -57,7 +57,7 @@ HarnessD3D10_ExtensionCheck()
     {
         TestRequire(extensionPresent, "Extension should be exported on Windows >= 6");
     }
-    
+
 Cleanup:
     HarnessD3D10_TestEnd();
 
@@ -111,7 +111,7 @@ static LRESULT WINAPI HarnessD3D10_Proc(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 static void HarnessD3D10_InteractiveLoop()
 {
     MSG msg;
-    while(PeekMessage(&msg,HarnessD3D10_hWnd,0,0,PM_REMOVE)) 
+    while(PeekMessage(&msg,HarnessD3D10_hWnd,0,0,PM_REMOVE))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
@@ -126,30 +126,30 @@ cl_int HarnessD3D10_CreateDevice(IDXGIAdapter* pAdapter, ID3D10Device **ppDevice
     *ppDevice = NULL;
 
     // create window
-    static WNDCLASSEX wc = 
-    { 
-        sizeof(WNDCLASSEX), 
-        CS_CLASSDC, 
-        HarnessD3D10_Proc, 
-        0L, 
-        0L, 
-        GetModuleHandle(NULL), 
-        NULL, 
-        NULL, 
-        NULL, 
-        NULL, 
-        "cl_khr_d3d10_sharing_conformance", 
-        NULL 
+    static WNDCLASSEX wc =
+    {
+        sizeof(WNDCLASSEX),
+        CS_CLASSDC,
+        HarnessD3D10_Proc,
+        0L,
+        0L,
+        GetModuleHandle(NULL),
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        "cl_khr_d3d10_sharing_conformance",
+        NULL
     };
     RegisterClassEx(&wc);
     HarnessD3D10_hWnd = CreateWindow(
-        "cl_khr_d3d10_sharing_conformance", 
-        "cl_khr_d3d10_sharing_conformance", 
-        WS_OVERLAPPEDWINDOW, 
-        0, 0, 256, 256, 
-        NULL, 
-        NULL, 
-        wc.hInstance, 
+        "cl_khr_d3d10_sharing_conformance",
+        "cl_khr_d3d10_sharing_conformance",
+        WS_OVERLAPPEDWINDOW,
+        0, 0, 256, 256,
+        NULL,
+        NULL,
+        wc.hInstance,
         NULL);
     NonTestRequire(0 != HarnessD3D10_hWnd, "Failed to create window");
 
@@ -176,13 +176,13 @@ cl_int HarnessD3D10_CreateDevice(IDXGIAdapter* pAdapter, ID3D10Device **ppDevice
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
     hr = D3D10CreateDeviceAndSwapChain(
-        pAdapter, 
-        D3D10_DRIVER_TYPE_HARDWARE, 
-        NULL, 
+        pAdapter,
+        D3D10_DRIVER_TYPE_HARDWARE,
+        NULL,
         D3D10_CREATE_DEVICE_DEBUG,
-        D3D10_SDK_VERSION, 
-        &sd, 
-        &HarnessD3D10_pSwapChain, 
+        D3D10_SDK_VERSION,
+        &sd,
+        &HarnessD3D10_pSwapChain,
         &HarnessD3D10_pDevice);
 
     if (FAILED(hr) ) {
@@ -198,8 +198,8 @@ void HarnessD3D10_DestroyDevice()
     HarnessD3D10_pSwapChain->Release();
     HarnessD3D10_pDevice->Release();
 
-    if (HarnessD3D10_hWnd) DestroyWindow(HarnessD3D10_hWnd); 
-    HarnessD3D10_hWnd = 0;    
+    if (HarnessD3D10_hWnd) DestroyWindow(HarnessD3D10_hWnd);
+    HarnessD3D10_hWnd = 0;
 }
 
 /*
@@ -209,7 +209,7 @@ void HarnessD3D10_DestroyDevice()
  */
 
 #define ADD_TEXTURE_FORMAT(x,y,z,a,b,g) { x, y, z, a*b/8, g, #x, #y, #z, }
-TextureFormat formats[] = 
+TextureFormat formats[] =
 {
     ADD_TEXTURE_FORMAT( DXGI_FORMAT_R32G32B32A32_FLOAT , CL_RGBA , CL_FLOAT           , 32, 4, TextureFormat::GENERIC_FLOAT ),
     ADD_TEXTURE_FORMAT( DXGI_FORMAT_R32G32B32A32_UINT  , CL_RGBA , CL_UNSIGNED_INT32  , 32, 4, TextureFormat::GENERIC_UINT  ),
@@ -303,7 +303,7 @@ void HarnessD3D10_TestEnd()
     HarnessD3D10_testStats.testCount += 1;
     HarnessD3D10_testStats.passCount += HarnessD3D10_testStats.currentTestPass;
 
-    TestPrint("%s\n", 
+    TestPrint("%s\n",
         HarnessD3D10_testStats.currentTestPass ? "PASSED" : "FAILED");
 }
 
@@ -329,16 +329,16 @@ void HarnessD3D10_TestStats()
  */
 
 cl_int HarnessD3D10_CreateKernelFromSource(
-    cl_kernel *outKernel, 
+    cl_kernel *outKernel,
     cl_device_id device,
     cl_context context,
-    const char *source, 
+    const char *source,
     const char *entrypoint)
 {
     cl_int status;
     cl_program program = NULL;
     cl_kernel kernel = NULL;
-    
+
     // compile program
     {
         const char *sourceTexts[] = {source};
@@ -355,13 +355,13 @@ cl_int HarnessD3D10_CreateKernelFromSource(
             "clCreateProgramWithSource failed");
     }
     status = clBuildProgram(
-        program, 
-        0, 
-        NULL, 
-        NULL, 
-        NULL, 
+        program,
+        0,
+        NULL,
+        NULL,
+        NULL,
         NULL);
-    if (CL_SUCCESS != status) 
+    if (CL_SUCCESS != status)
     {
         char log[2048] = {0};
         status = clGetProgramBuildInfo(
@@ -378,8 +378,8 @@ cl_int HarnessD3D10_CreateKernelFromSource(
     }
 
     kernel = clCreateKernel(
-        program, 
-        entrypoint, 
+        program,
+        entrypoint,
         &status);
     TestRequire(
         CL_SUCCESS == status,

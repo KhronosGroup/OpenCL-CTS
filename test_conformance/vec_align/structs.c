@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,14 +20,14 @@
 
 #define DEBUG_MEM_ALLOC 0
 
-/** typedef struct _bufferStruct 
+/** typedef struct _bufferStruct
  {
  void * m_pIn;
  void * m_pOut;
- 
+
  cl_mem m_outBuffer;
  cl_mem m_inBuffer;
- 
+
  size_t m_bufSize;
  } bufferStruct;
  */
@@ -39,11 +39,11 @@ clState * newClState(cl_device_id device, cl_context context, cl_command_queue q
 #if DEBUG_MEM_ALLOC
     log_info("malloc clState * %x\n", pResult);
 #endif
-    
+
     pResult->m_device = device;
     pResult->m_context = context;
     pResult->m_queue = queue;
-    
+
     pResult->m_kernel = NULL; pResult->m_program = NULL;
     return pResult;
 }
@@ -65,8 +65,8 @@ int clStateMakeProgram(clState * pState, const char * prog,
     const char * srcArr[1] = {NULL};
     srcArr[0] = prog;
     int err = create_single_kernel_helper(pState->m_context,
-                                          &(pState->m_program), 
-                                          &(pState->m_kernel), 
+                                          &(pState->m_program),
+                                          &(pState->m_kernel),
                                           1, srcArr, kernelName );
 #if DEBUG_MEM_ALLOC
     log_info("create program and kernel\n");
@@ -82,7 +82,7 @@ int runKernel(clState * pState, size_t numThreads) {
                                  NULL, 0, NULL, NULL);
     if(err != CL_SUCCESS)
     {
-        log_error("clEnqueueNDRangeKernel returned %d (%x)\n", 
+        log_error("clEnqueueNDRangeKernel returned %d (%x)\n",
                   err, err);
         return -1;
     }
@@ -111,19 +111,19 @@ bufferStruct * newBufferStruct(size_t inSize, size_t outSize, clState * pClState
 #if DEBUG_MEM_ALLOC
     log_info("malloc bufferStruct * %x\n", pResult);
 #endif
-    
+
     pResult->m_bufSizeIn = inSize;
     pResult->m_bufSizeOut = outSize;
-    
+
     pResult->m_pIn = malloc(inSize);
     pResult->m_pOut = malloc(outSize);
 #if DEBUG_MEM_ALLOC
     log_info("malloc m_pIn %x\n", pResult->m_pIn);
     log_info("malloc m_pOut %x\n", pResult->m_pOut);
 #endif
-    
-    pResult->m_inBuffer = clCreateBuffer(pClState->m_context, CL_MEM_READ_ONLY, 
-                                         inSize, NULL, &error); 
+
+    pResult->m_inBuffer = clCreateBuffer(pClState->m_context, CL_MEM_READ_ONLY,
+                                         inSize, NULL, &error);
     if( pResult->m_inBuffer == NULL )
     {
         vlog_error( "clCreateArray failed for input (%d)\n", error );
@@ -132,9 +132,9 @@ bufferStruct * newBufferStruct(size_t inSize, size_t outSize, clState * pClState
 #if DEBUG_MEM_ALLOC
     log_info("clCreateBuffer %x\n", pResult->m_inBuffer);
 #endif
-    
-    pResult->m_outBuffer = clCreateBuffer( pClState->m_context, 
-                                          CL_MEM_WRITE_ONLY, 
+
+    pResult->m_outBuffer = clCreateBuffer( pClState->m_context,
+                                          CL_MEM_WRITE_ONLY,
                                           outSize,
                                           NULL,
                                           &error );
@@ -146,14 +146,14 @@ bufferStruct * newBufferStruct(size_t inSize, size_t outSize, clState * pClState
 #if DEBUG_MEM_ALLOC
     log_info("clCreateBuffer %x\n", pResult->m_outBuffer);
 #endif
-    
+
     pResult->m_bufferUploaded = false;
-    
-    return pResult; 
+
+    return pResult;
 }
 
 bufferStruct * destroyBufferStruct(bufferStruct * destroyMe, clState * pClState) {
-    if(destroyMe) 
+    if(destroyMe)
     {
         if(destroyMe->m_outBuffer != NULL) {
 #if DEBUG_MEM_ALLOC
@@ -192,15 +192,15 @@ bufferStruct * destroyBufferStruct(bufferStruct * destroyMe, clState * pClState)
     return destroyMe;
 }
 
-void initContents(bufferStruct * pBufferStruct, clState * pClState, 
+void initContents(bufferStruct * pBufferStruct, clState * pClState,
                   size_t typeSize,
                   size_t countIn, size_t countOut )
 {
     size_t i;
-    
+
     uint64_t start = 0;
-    
-    switch(typeSize) 
+
+    switch(typeSize)
     {
         case 1: {
             uint8_t* ub = (uint8_t *)(pBufferStruct->m_pIn);
@@ -262,7 +262,7 @@ int pushArgs(bufferStruct * pBufferStruct, clState * pClState)
     if( !pBufferStruct->m_bufferUploaded )
     {
         err = clEnqueueWriteBuffer(pClState->m_queue, pBufferStruct->m_inBuffer,
-                                   CL_TRUE, 0, pBufferStruct->m_bufSizeIn, 
+                                   CL_TRUE, 0, pBufferStruct->m_bufSizeIn,
                                    pBufferStruct->m_pIn, 0, NULL, NULL);
 #if DEBUG_MEM_ALLOC
         log_info("clEnqueueWriteBuffer %x\n", pBufferStruct->m_inBuffer);
@@ -274,8 +274,8 @@ int pushArgs(bufferStruct * pBufferStruct, clState * pClState)
         }
         pBufferStruct->m_bufferUploaded = true;
     }
-    
-    err = clSetKernelArg(pClState->m_kernel, 0, 
+
+    err = clSetKernelArg(pClState->m_kernel, 0,
                          sizeof(pBufferStruct->m_inBuffer), // pBufferStruct->m_bufSizeIn,
                          &(pBufferStruct->m_inBuffer));
 #if DEBUG_MEM_ALLOC
@@ -286,8 +286,8 @@ int pushArgs(bufferStruct * pBufferStruct, clState * pClState)
         log_error("clSetKernelArgs failed, first arg (0)\n");
         return -1;
     }
-    
-    err = clSetKernelArg(pClState->m_kernel, 1, 
+
+    err = clSetKernelArg(pClState->m_kernel, 1,
                          sizeof(pBufferStruct->m_outBuffer), // pBufferStruct->m_bufSizeOut,
                          &(pBufferStruct->m_outBuffer));
     if(err != CL_SUCCESS)
@@ -295,11 +295,11 @@ int pushArgs(bufferStruct * pBufferStruct, clState * pClState)
         log_error("clSetKernelArgs failed, second arg (1)\n");
         return -1;
     }
-    
+
 #if DEBUG_MEM_ALLOC
     // log_info("clSetKernelArg 0, %x\n", pBufferStruct->m_outBuffer);
 #endif
-    
+
     return 0;
 }
 
@@ -309,7 +309,7 @@ int retrieveResults(bufferStruct * pBufferStruct, clState * pClState)
     err = clEnqueueReadBuffer(pClState->m_queue, pBufferStruct->m_outBuffer,
                               CL_TRUE, 0, pBufferStruct->m_bufSizeOut,
                               pBufferStruct->m_pOut, 0, NULL, NULL);
-    if(err != CL_SUCCESS) 
+    if(err != CL_SUCCESS)
     {
         log_error("clEnqueueReadBuffer failed\n");
         return -1;
@@ -323,10 +323,10 @@ int checkCorrectness(bufferStruct * pBufferStruct, clState * pClState,
                      size_t minAlign)
 {
     size_t i;
-    cl_ulong * targetArr = (cl_ulong *)(pBufferStruct->m_pOut); 
-    for(i = 0; i < pClState->m_numThreads; ++i) 
+    cl_ulong * targetArr = (cl_ulong *)(pBufferStruct->m_pOut);
+    for(i = 0; i < pClState->m_numThreads; ++i)
     {
-        if((targetArr[i])%minAlign != (cl_ulong)0) 
+        if((targetArr[i])%minAlign != (cl_ulong)0)
         {
             vlog_error("Error %ld (of %ld).  Expected a multple of %lx, got %llx\n",
                        i, pClState->m_numThreads,
@@ -335,7 +335,7 @@ int checkCorrectness(bufferStruct * pBufferStruct, clState * pClState,
             return -1;
         }
     }
-    
+
     /*    log_info("\n");
      for(i = 0; i < 4; ++i) {
      log_info("%lx, ", targetArr[i]);
@@ -352,10 +352,10 @@ int checkPackedCorrectness(bufferStruct * pBufferStruct, clState * pClState,
                            size_t totSize, size_t beforeSize)
 {
     size_t i;
-    cl_ulong * targetArr = (cl_ulong *)(pBufferStruct->m_pOut); 
-    for(i = 0; i < pClState->m_numThreads; ++i) 
+    cl_ulong * targetArr = (cl_ulong *)(pBufferStruct->m_pOut);
+    for(i = 0; i < pClState->m_numThreads; ++i)
     {
-        if((targetArr[i]-beforeSize)%totSize != (cl_ulong)0) 
+        if((targetArr[i]-beforeSize)%totSize != (cl_ulong)0)
         {
             vlog_error("Error %ld (of %ld).  Expected %ld more than a multple of %ld, got %lld \n",
                        i, pClState->m_numThreads, beforeSize,
@@ -364,7 +364,7 @@ int checkPackedCorrectness(bufferStruct * pBufferStruct, clState * pClState,
             return -1;
         }
     }
-    
+
     /*    log_info("\n");
      for(i = 0; i < 4; ++i) {
      log_info("%lx, ", targetArr[i]);

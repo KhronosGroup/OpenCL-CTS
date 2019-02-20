@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,7 +29,7 @@ void SubTestMiscMultipleCreates(
     cl_int result = CL_SUCCESS;
 
     HarnessD3D11_TestBegin("Misc: Multiple Creates");
-    
+
     // create the D3D11 resources
     {
         D3D11_TEXTURE2D_DESC desc;
@@ -45,7 +45,7 @@ void SubTestMiscMultipleCreates(
         desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
         desc.CPUAccessFlags = 0;
         desc.MiscFlags = 0;
-       
+
         hr = pDevice->CreateTexture2D(&desc, NULL, &pTexture);
         TestRequire(SUCCEEDED(hr), "Failed to create texture.");
     }
@@ -83,7 +83,7 @@ void SubTestMiscMultipleCreates(
         1,
         &result);
     TestRequire(result == CL_SUCCESS, "clCreateFromD3D11Texture2DKHR failed");
-    
+
     mem[3] = clCreateFromD3D11Texture2DKHR(
         context,
         0,
@@ -100,31 +100,31 @@ void SubTestMiscMultipleCreates(
         &result);
     TestRequire(result == CL_INVALID_VALUE, "clCreateFromD3D11Texture2DKHR succeeded when it shouldn't");
 
-    
+
 Cleanup:
 
     for (UINT i = 0; i < 4; ++i)
     {
-        if (mem[i]) 
-        {           
+        if (mem[i])
+        {
             clReleaseMemObject(mem[i]);
         }
     }
     if (pBuffer)
     {
         pBuffer->Release();
-    }    
+    }
     if (pTexture)
     {
         pTexture->Release();
-    }    
+    }
 
     HarnessD3D11_TestEnd();
 }
 
 void SubTestMiscAcquireRelease(
     cl_device_id  device,
-    cl_context context,    
+    cl_context context,
     ID3D11Device* pDevice)
 {
     ID3D11Buffer* pBuffer = NULL;
@@ -132,11 +132,11 @@ void SubTestMiscAcquireRelease(
     HRESULT hr = S_OK;
 
     cl_int result = CL_SUCCESS;
-    cl_mem mem[2] = {NULL, NULL};       
+    cl_mem mem[2] = {NULL, NULL};
 
     HarnessD3D11_TestBegin("Misc: Acquire Release");
-    
-    
+
+
     // create the D3D11 resources
     {
         D3D11_TEXTURE2D_DESC desc;
@@ -152,7 +152,7 @@ void SubTestMiscAcquireRelease(
         desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
         desc.CPUAccessFlags = 0;
         desc.MiscFlags = 0;
-       
+
         hr = pDevice->CreateTexture2D(&desc, NULL, &pTexture);
         TestRequire(SUCCEEDED(hr), "Failed to create texture.");
     }
@@ -184,30 +184,30 @@ void SubTestMiscAcquireRelease(
         &result);
     TestRequire(result == CL_SUCCESS, "clCreateFromD3D11Texture2DKHR failed");
 
-Cleanup:    
+Cleanup:
     for (UINT i = 0; i < 2; ++i)
     {
-        if (mem[i]) 
-        {           
+        if (mem[i])
+        {
             clReleaseMemObject(mem[i]);
         }
     }
     if (pBuffer)
     {
         pBuffer->Release();
-    }    
+    }
     if (pTexture)
     {
         pTexture->Release();
-    }    
+    }
 
     HarnessD3D11_TestEnd();
 }
 
 void TestDeviceMisc(
     cl_device_id device,
-    cl_context context, 
-    cl_command_queue command_queue, 
+    cl_context context,
+    cl_command_queue command_queue,
     ID3D11Device* pDevice)
 {
     SubTestMiscMultipleCreates(

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,15 +25,15 @@
 #include "../../test_common/harness/errorHelpers.h"
 
 
-#define TEST_PRIME_INT		((1<<16)+1)
-#define TEST_PRIME_UINT		((1U<<16)+1U)
-#define TEST_PRIME_LONG		((1LL<<32)+1LL)
-#define TEST_PRIME_ULONG	((1ULL<<32)+1ULL)
-#define TEST_PRIME_SHORT	((1S<<8)+1S)
-#define TEST_PRIME_FLOAT	(float)3.40282346638528860e+38
-#define TEST_PRIME_HALF		119.f
-#define TEST_BOOL			true
-#define TEST_PRIME_CHAR		0x77
+#define TEST_PRIME_INT        ((1<<16)+1)
+#define TEST_PRIME_UINT        ((1U<<16)+1U)
+#define TEST_PRIME_LONG        ((1LL<<32)+1LL)
+#define TEST_PRIME_ULONG    ((1ULL<<32)+1ULL)
+#define TEST_PRIME_SHORT    ((1S<<8)+1S)
+#define TEST_PRIME_FLOAT    (float)3.40282346638528860e+38
+#define TEST_PRIME_HALF        119.f
+#define TEST_BOOL            true
+#define TEST_PRIME_CHAR        0x77
 
 
 #ifndef TestStruct
@@ -394,15 +394,15 @@ static const char *uchar_kernel_name[] = { "test_buffer_read_uchar", "test_buffe
 
 static const char *buffer_read_struct_kernel_code[] = {
     "typedef struct{\n"
-    "int	a;\n"
-    "float	b;\n"
+    "int    a;\n"
+    "float    b;\n"
     "} TestStruct;\n"
     "__kernel void test_buffer_read_struct(__global TestStruct *dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "\n"
     "    dst[tid].a = ((1<<16)+1);\n"
-    "	 dst[tid].b = (float)3.40282346638528860e+38;\n"
+    "     dst[tid].b = (float)3.40282346638528860e+38;\n"
     "}\n" };
 
 static const char *struct_kernel_name[] = { "test_buffer_read_struct" };
@@ -634,7 +634,7 @@ static int test_buffer_map_read( cl_device_id deviceID, cl_context context, cl_c
                 return -1;
             }
 
-            mappedPtr = clEnqueueMapBuffer(queue, buffers[i], CL_TRUE, CL_MAP_READ, 0, ptrSizes[i]*num_elements, 0, NULL, NULL, &err);    
+            mappedPtr = clEnqueueMapBuffer(queue, buffers[i], CL_TRUE, CL_MAP_READ, 0, ptrSizes[i]*num_elements, 0, NULL, NULL, &err);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueMapBuffer failed" );
                 clReleaseKernel( kernel[i] );
@@ -675,7 +675,7 @@ static int test_buffer_map_read( cl_device_id deviceID, cl_context context, cl_c
 
 
 #define DECLARE_LOCK_TEST(type, realType) \
-int test_buffer_map_read_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )	\
+int test_buffer_map_read_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )    \
 { \
 return test_buffer_map_read( deviceID, context, queue,  num_elements, sizeof( realType ), (char*)#type, 5, \
 buffer_read_##type##_kernel_code, type##_kernel_name, verify_read_##type ); \

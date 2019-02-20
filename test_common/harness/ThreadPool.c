@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,6 +32,9 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/errno.h>
+#ifdef __linux__
+#include <sched.h>
+#endif
 #endif // !_WIN32
 
 // declarations
@@ -63,18 +66,18 @@ cl_int ThreadPool_AtomicAdd( volatile cl_int *a, cl_int b )
     return old;
 #elif defined( __GNUC__ )
     // GCC extension: http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html#Atomic-Builtins
-    return __sync_fetch_and_add( a, b );    
+    return __sync_fetch_and_add( a, b );
     // do we need __sync_synchronize() here, too?  GCC docs are unclear whether __sync_fetch_and_add does a synchronize
 #elif defined( _MSC_VER )
     return (cl_int) _InterlockedExchangeAdd( (volatile LONG*) a, (LONG) b );
 #else
     #warning  Please add a atomic add implementation here, with memory barrier.  Fallback code is slow.
     if( pthread_mutex_lock(&gAtomicLock) )
-        log_error( "Atomic operation failed. pthread_mutex_lock(&gAtomicLock) returned an error\n"); 
+        log_error( "Atomic operation failed. pthread_mutex_lock(&gAtomicLock) returned an error\n");
     cl_int old = *a;
     *a = old + b;
     if( pthread_mutex_unlock(&gAtomicLock) )
-        log_error( "Failed to release gAtomicLock. Further atomic operations may deadlock!\n"); 
+        log_error( "Failed to release gAtomicLock. Further atomic operations may deadlock!\n");
     return old;
 #endif
 }
@@ -109,7 +112,7 @@ static BOOL _InitOnceExecuteOnce(
         if (*InitOnce != _INIT_ONCE_IN_PROGRESS && _InterlockedCompareExchange( InitOnce, _INIT_ONCE_IN_PROGRESS, _INIT_ONCE_UNINITIALIZED ) == _INIT_ONCE_UNINITIALIZED )
         {
             InitFn( InitOnce, Parameter, Context );
-            *InitOnce = _INIT_ONCE_DONE; 
+            *InitOnce = _INIT_ONCE_DONE;
             return TRUE;
         }
         Sleep( 1 );
@@ -123,7 +126,7 @@ static BOOL _InitOnceExecuteOnce(
 
 #if defined(HAS_CONDITION_VARIABLE)
 #define _CONDITION_VARIABLE          CONDITION_VARIABLE
-#define _InitializeConditionVariable InitializeConditionVariable 
+#define _InitializeConditionVariable InitializeConditionVariable
 #define _SleepConditionVariableCS    SleepConditionVariableCS
 #define _WakeAllConditionVariable    WakeAllConditionVariable
 #else // !HAS_CONDITION_VARIABLE
@@ -199,13 +202,13 @@ static void _WakeAllConditionVariable( _PCONDITION_VARIABLE cond_var )
 #if defined( _MSC_VER ) && (_WIN32_WINNT >= 0x600)
 static _INIT_ONCE threadpool_init_control;
 #elif defined (_WIN32)  // MingW of XP
-static int threadpool_init_control;    
+static int threadpool_init_control;
 #else // Posix platforms
 pthread_once_t threadpool_init_control = PTHREAD_ONCE_INIT;
-#endif 
+#endif
 cl_int threadPoolInitErr = -1;          // set to CL_SUCCESS on successful thread launch
 
-// critical region lock around ThreadPool_Do.  We can only run one ThreadPool_Do at a time, 
+// critical region lock around ThreadPool_Do.  We can only run one ThreadPool_Do at a time,
 // because we are too lazy to set up a queue here, and don't expect to need one.
 #if defined( _WIN32 )
 CRITICAL_SECTION    gThreadPoolLock[1];
@@ -221,13 +224,13 @@ _CONDITION_VARIABLE cond_var[1];
 pthread_mutex_t     cond_lock;
 pthread_cond_t      cond_var;
 #endif // !_WIN32
-volatile cl_int     gRunCount = 0;              // Condition variable state. How many iterations on the function left to run. 
+volatile cl_int     gRunCount = 0;              // Condition variable state. How many iterations on the function left to run.
                                                 // set to CL_INT_MAX to cause worker threads to exit. Note: this value might go negative.
 
-// State that only changes when the threadpool is not working.  
+// State that only changes when the threadpool is not working.
 volatile TPFuncPtr  gFunc_ptr = NULL;
 volatile void       *gUserInfo = NULL;
-volatile cl_int     gJobCount = 0;              
+volatile cl_int     gJobCount = 0;
 
 // State that may change while the thread pool is working
 volatile cl_int     jobError = CL_SUCCESS;      // err code return for the job as a whole
@@ -249,11 +252,10 @@ void ThreadPool_WorkerFunc( void *p )
 void *ThreadPool_WorkerFunc( void *p )
 #endif
 {
-    cl_uint threadID = ThreadPool_AtomicAdd( (volatile cl_int *) p, 1 );    
+    cl_uint threadID = ThreadPool_AtomicAdd( (volatile cl_int *) p, 1 );
     cl_int item = ThreadPool_AtomicAdd( &gRunCount, -1 );
-    ThreadPool_AtomicAdd( &gRunning, 1 );
 //    log_info( "ThreadPool_WorkerFunc start: gRunning = %d\n", gRunning );
-    
+
     while( MAX_COUNT > item )
     {
         cl_int err;
@@ -262,7 +264,7 @@ void *ThreadPool_WorkerFunc( void *p )
         if( 0 >= item )
         {
 //            log_info( "Thread %d has run out of work.\n", threadID );
-            
+
             // No work to do. Attempt to block waiting for work
 #if defined( _WIN32 )
             EnterCriticalSection( cond_lock );
@@ -273,7 +275,7 @@ void *ThreadPool_WorkerFunc( void *p )
                 goto exit;
             }
 #endif // !_WIN32
-            
+
             cl_int remaining = ThreadPool_AtomicAdd( &gRunning, -1 );
 //            log_info( "ThreadPool_WorkerFunc: gRunning = %d\n", remaining - 1 );
             if( 1 == remaining )
@@ -312,11 +314,11 @@ void *ThreadPool_WorkerFunc( void *p )
                     goto exit;
                 }
 #endif // !_WIN32
-                
+
                 // try again to get a valid item id
                 item = ThreadPool_AtomicAdd( &gRunCount, -1 );
                 if( MAX_COUNT <= item )  // exit if we are done
-                {   
+                {
 #if defined( _WIN32 )
                     LeaveCriticalSection( cond_lock );
 #else // !_WIN32
@@ -328,7 +330,7 @@ void *ThreadPool_WorkerFunc( void *p )
 
             ThreadPool_AtomicAdd( &gRunning, 1 );
 //            log_info( "Thread %d has found work.\n", threadID);
-                        
+
 #if defined( _WIN32 )
             LeaveCriticalSection( cond_lock );
 #else // !_WIN32
@@ -338,7 +340,7 @@ void *ThreadPool_WorkerFunc( void *p )
                 goto exit;
             }
 #endif // !_WIN32
-            
+
         }
 
         // we have a valid item, so do the work
@@ -347,13 +349,13 @@ void *ThreadPool_WorkerFunc( void *p )
 //            log_info( "Thread %d doing job %d\n", threadID, item - 1);
 
 #if defined(__APPLE__) && defined(__arm__)
-            // On most platforms which support denorm, default is FTZ off. However, 
+            // On most platforms which support denorm, default is FTZ off. However,
             // on some hardware where the reference is computed, default might be flush denorms to zero e.g. arm.
-            // This creates issues in result verification. Since spec allows the implementation to either flush or 
+            // This creates issues in result verification. Since spec allows the implementation to either flush or
             // not flush denorms to zero, an implementation may choose not be flush i.e. return denorm result whereas
             // reference result may be zero (flushed denorm). Hence we need to disable denorm flushing on host side
-            // where reference is being computed to make sure we get non-flushed reference result. If implementation 
-            // returns flushed result, we correctly take care of that in verification code. 
+            // where reference is being computed to make sure we get non-flushed reference result. If implementation
+            // returns flushed result, we correctly take care of that in verification code.
             FPU_mode_type oldMode;
             DisableFTZ( &oldMode );
 #endif
@@ -361,7 +363,7 @@ void *ThreadPool_WorkerFunc( void *p )
             // Call the user's function with this item ID
             err = gFunc_ptr( item - 1, threadID, (void*) gUserInfo );
 #if defined(__APPLE__) && defined(__arm__)
-            // Restore FP state 
+            // Restore FP state
             RestoreFPState( &oldMode );
 #endif
 
@@ -372,7 +374,7 @@ void *ThreadPool_WorkerFunc( void *p )
                 if( jobError == CL_SUCCESS );
                     jobError = err;
                 gRunCount = 0;
-                LeaveCriticalSection(&gAtomicLock);             
+                LeaveCriticalSection(&gAtomicLock);
 #elif defined( __GNUC__ )
                 // GCC extension: http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html#Atomic-Builtins
                 // set the new error if we are the first one there.
@@ -390,40 +392,40 @@ void *ThreadPool_WorkerFunc( void *p )
                 _mm_mfence();
 #else
                 if( pthread_mutex_lock(&gAtomicLock) )
-                    log_error( "Atomic operation failed. pthread_mutex_lock(&gAtomicLock) returned an error\n"); 
+                    log_error( "Atomic operation failed. pthread_mutex_lock(&gAtomicLock) returned an error\n");
                 if( jobError == CL_SUCCESS );
                     jobError = err;
                 gRunCount = 0;
                 if( pthread_mutex_unlock(&gAtomicLock) )
-                    log_error( "Failed to release gAtomicLock. Further atomic operations may deadlock\n"); 
+                    log_error( "Failed to release gAtomicLock. Further atomic operations may deadlock\n");
 #endif
             }
         }
-                
+
         // get the next item
         item = ThreadPool_AtomicAdd( &gRunCount, -1 );
     }
-    
+
 exit:
     log_info( "ThreadPool: thread %d exiting.\n", threadID );
     ThreadPool_AtomicAdd( &gThreadCount, -1 );
 #if !defined(_WIN32)
     return NULL;
-#endif     
+#endif
 }
 
 // SetThreadCount() may be used to artifically set the number of worker threads
 // If the value is 0 (the default) the number of threads will be determined based on
-// the number of CPU cores.  If it is a unicore machine, then 2 will be used, so 
-// that we still get some testing for thread safety.  
+// the number of CPU cores.  If it is a unicore machine, then 2 will be used, so
+// that we still get some testing for thread safety.
 //
-// If count < 2 or the CL_TEST_SINGLE_THREADED environment variable is set then the 
-// code will run single threaded, but will report an error to indicate that the test 
+// If count < 2 or the CL_TEST_SINGLE_THREADED environment variable is set then the
+// code will run single threaded, but will report an error to indicate that the test
 // is invalid.  This option is intended for debugging purposes only. It is suggested
 // as a convention that test apps set the thread count to 1 in response to the -m flag.
 //
 // SetThreadCount() must be called before the first call to GetThreadCount() or ThreadPool_Do(),
-// otherwise the behavior is indefined. 
+// otherwise the behavior is indefined.
 void        SetThreadCount( int count )
 {
     if( threadPoolInitErr == CL_SUCCESS )
@@ -431,7 +433,7 @@ void        SetThreadCount( int count )
         log_error( "Error: It is illegal to set the thread count after the first call to ThreadPool_Do or GetThreadCount\n" );
         abort();
     }
-    
+
     gThreadCount = count;
 }
 
@@ -444,12 +446,11 @@ void ThreadPool_Init(void)
     // Check for manual override of multithreading code. We add this for better debuggability.
     if( getenv( "CL_TEST_SINGLE_THREADED" ) )
     {
-        log_error("ERROR: CL_TEST_SINGLE_THREADED is set in the environment. Running single threaded.\n*** TEST IS INVALID! ***\n");
         gThreadCount = 1;
         return;
     }
-    
-    // Figure out how many threads to run -- check first for non-zero to give the implementation the chance 
+
+    // Figure out how many threads to run -- check first for non-zero to give the implementation the chance
     if( 0 == gThreadCount )
     {
 #if defined(_MSC_VER) || defined (__MINGW64__)
@@ -458,7 +459,9 @@ void ThreadPool_Init(void)
 
         GetLogicalProcessorInformation( NULL, &length );
         buffer = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION) malloc( length );
-        if( buffer != NULL && GetLogicalProcessorInformation( buffer, &length ) == TRUE )
+        if( buffer != NULL )
+        {
+            if ( GetLogicalProcessorInformation( buffer, &length ) == TRUE )
         {
             PSYSTEM_LOGICAL_PROCESSOR_INFORMATION ptr = buffer;
             while( ptr < &buffer[ length / sizeof( SYSTEM_LOGICAL_PROCESSOR_INFORMATION ) ] )
@@ -475,14 +478,29 @@ void ThreadPool_Init(void)
                 }
                 ++ptr;
             }
+            }
             free(buffer);
         }
-#elif defined (__MINGW32__)        
+#elif defined (__MINGW32__)
         {
             #warning  How about this, instead of hard coding it to 2?
             SYSTEM_INFO sysinfo;
             GetSystemInfo( &sysinfo );
             gThreadCount = sysinfo.dwNumberOfProcessors;
+        }
+#elif defined (__linux__) && !defined(__ANDROID__)
+        cpu_set_t    affinity;
+        if ( 0 == sched_getaffinity(0, sizeof(cpu_set_t), &affinity) )
+        {
+#if !(defined(CPU_COUNT))
+        gThreadCount = 1;
+#else
+            gThreadCount = CPU_COUNT(&affinity);
+#endif
+        }
+        else
+        {
+            gThreadCount = (cl_int) sysconf(_SC_NPROCESSORS_CONF);       // Hopefully your system returns logical cpus here, as does MacOS X
         }
 #else // !_WIN32
         gThreadCount = (cl_int) sysconf(_SC_NPROCESSORS_CONF);       // Hopefully your system returns logical cpus here, as does MacOS X
@@ -493,9 +511,21 @@ void ThreadPool_Init(void)
             gThreadCount = 2;
     }
 
+    // When working in 32 bit limit the thread number to 12
+    // This fix was made due to memory issues in integer_ops test
+    // When running integer_ops, the test opens as many threads as the
+    // machine has and each thread allocates a fixed amount of memory
+    // When running this test on dual socket machine in 32-bit, the
+    // process memory is not sufficient and the test fails
+    #if defined(_WIN32) && !defined(_M_X64)
+        if (gThreadCount > 12) {
+            gThreadCount = 12;
+        }
+    #endif
+
     //Allow the app to set thread count to <0 for debugging purposes.  This will cause the test to run single threaded.
     if( gThreadCount < 2 )
-    {   
+    {
         log_error( "ERROR: Running single threaded because thread count < 2. \n*** TEST IS INVALID! ***\n");
         gThreadCount = 1;
         return;
@@ -506,7 +536,7 @@ void ThreadPool_Init(void)
     InitializeCriticalSection( cond_lock );
     _InitializeConditionVariable( cond_var );
     caller_event = CreateEvent( NULL, FALSE, FALSE, NULL );
-#elif defined (__GNUC__) 
+#elif defined (__GNUC__)
     // Dont rely on PTHREAD_MUTEX_INITIALIZER for intialization of a mutex since it might cause problem
     // with some flavors of gcc compilers.
     pthread_cond_init(&cond_var, NULL);
@@ -516,12 +546,12 @@ void ThreadPool_Init(void)
     pthread_mutex_init(&gThreadPoolLock, NULL);
 #endif
 
-#if !(defined(__GNUC__) || defined(_MSC_VER) || defined(__MINGW32__)) 
+#if !(defined(__GNUC__) || defined(_MSC_VER) || defined(__MINGW32__))
     pthread_mutex_initialize(gAtomicLock);
 #elif defined (__MINGW32__)
     InitializeCriticalSection(&gAtomicLock);
 #endif
-    // Make sure the last thread done in the work pool doesn't signal us to wake before we get to the point where we are supposed to wait 
+    // Make sure the last thread done in the work pool doesn't signal us to wake before we get to the point where we are supposed to wait
     //  That would cause a deadlock.
 #if !defined( _WIN32 )
     if((err = pthread_mutex_lock( &caller_cond_lock) ))
@@ -532,6 +562,7 @@ void ThreadPool_Init(void)
     }
 #endif // !_WIN32
 
+    gRunning = gThreadCount;
     // init threads
     for( i = 0; i < gThreadCount; i++ )
     {
@@ -553,7 +584,7 @@ void ThreadPool_Init(void)
 
     atexit( ThreadPool_Exit );
 
-// block until they are done launching. 
+// block until they are done launching.
     do
     {
 #if defined( _WIN32 )
@@ -574,8 +605,8 @@ void ThreadPool_Init(void)
         log_error("Error %d from pthread_mutex_unlock. Unable to block for work to finish. ThreadPool_Init failed.\n", err );
         return;
     }
-#endif // !_WIN32    
-    
+#endif // !_WIN32
+
     threadPoolInitErr = CL_SUCCESS;
 }
 
@@ -585,7 +616,7 @@ static BOOL CALLBACK _ThreadPool_Init(_PINIT_ONCE InitOnce, PVOID Parameter, PVO
     ThreadPool_Init();
     return TRUE;
 }
-#endif 
+#endif
 
 void ThreadPool_Exit(void)
 {
@@ -616,35 +647,35 @@ void ThreadPool_Exit(void)
         usleep(1000);
 #endif // !_WIN32
     }
-    
+
     if( gThreadCount )
         log_error( "Error: Thread pool timed out after 1 second with %d threads still active.\n", gThreadCount );
     else
         log_info( "Thread pool exited in a orderly fashion.\n" );
 }
- 
+
 
 // Blocking API that farms out count jobs to a thread pool.
 // It may return with some work undone if func_ptr() returns a non-zero
-// result. 
+// result.
 //
 // This function obviously has its shortcommings. Only one call to ThreadPool_Do
 // can be running at a time. It is not intended for general purpose use.
 // If clEnqueueNativeKernelFn, out of order queues and a CL_DEVICE_TYPE_CPU were
-// all available then it would make more sense to use those features. 
-cl_int ThreadPool_Do( TPFuncPtr func_ptr, 
-                      cl_uint count, 
+// all available then it would make more sense to use those features.
+cl_int ThreadPool_Do( TPFuncPtr func_ptr,
+                      cl_uint count,
                       void *userInfo )
 {
     cl_int newErr;
     cl_int err = 0;
     // Lazily set up our threads
-#if defined(_MSC_VER) && (_WIN32_WINNT >= 0x600)  
+#if defined(_MSC_VER) && (_WIN32_WINNT >= 0x600)
     err = !_InitOnceExecuteOnce( &threadpool_init_control, _ThreadPool_Init, NULL, NULL );
-#elif defined (_WIN32)  
+#elif defined (_WIN32)
     if (threadpool_init_control == 0) {
     #warning  This is buggy and race prone.  Find a better way.
-        ThreadPool_Init();        
+        ThreadPool_Init();
         threadpool_init_control = 1;
     }
 #else //posix platform
@@ -654,21 +685,21 @@ cl_int ThreadPool_Do( TPFuncPtr func_ptr,
         log_error("Error %d from pthread_once. Unable to init threads. ThreadPool_Do failed.\n", err );
         return err;
     }
-#endif     
+#endif
     // Single threaded code to handle case where threadpool wasn't allocated or was disabled by environment variable
     if( threadPoolInitErr )
     {
         cl_uint currentJob = 0;
         cl_int  result = CL_SUCCESS;
-        
+
 #if defined(__APPLE__) && defined(__arm__)
-        // On most platforms which support denorm, default is FTZ off. However, 
+        // On most platforms which support denorm, default is FTZ off. However,
         // on some hardware where the reference is computed, default might be flush denorms to zero e.g. arm.
-        // This creates issues in result verification. Since spec allows the implementation to either flush or 
+        // This creates issues in result verification. Since spec allows the implementation to either flush or
         // not flush denorms to zero, an implementation may choose not be flush i.e. return denorm result whereas
         // reference result may be zero (flushed denorm). Hence we need to disable denorm flushing on host side
-        // where reference is being computed to make sure we get non-flushed reference result. If implementation 
-        // returns flushed result, we correctly take care of that in verification code. 
+        // where reference is being computed to make sure we get non-flushed reference result. If implementation
+        // returns flushed result, we correctly take care of that in verification code.
         FPU_mode_type oldMode;
         DisableFTZ( &oldMode );
 #endif
@@ -680,22 +711,22 @@ cl_int ThreadPool_Do( TPFuncPtr func_ptr,
                 RestoreFPState( &oldMode );
 #endif
                 return result;
-            }   
-        
+            }
+
 #if defined(__APPLE__) && defined(__arm__)
         // Restore FP state before leaving
         RestoreFPState( &oldMode );
-#endif        
-        
+#endif
+
         return CL_SUCCESS;
     }
-    
+
     if( count >= MAX_COUNT )
     {
         log_error("Error: ThreadPool_Do count %d >= max threadpool count of %d\n", count, MAX_COUNT );
         return -1;
     }
-    
+
     // Enter critical region
 #if defined( _WIN32 )
     EnterCriticalSection( gThreadPoolLock );
@@ -717,7 +748,7 @@ cl_int ThreadPool_Do( TPFuncPtr func_ptr,
     }
 #endif // !_WIN32
 
-    // Start modifying the job state observable by worker threads    
+    // Start modifying the job state observable by worker threads
 #if defined( _WIN32 )
     EnterCriticalSection( cond_lock );
 #else // !_WIN32
@@ -728,7 +759,7 @@ cl_int ThreadPool_Do( TPFuncPtr func_ptr,
     }
 #endif // !_WIN32
 
-    // Make sure the last thread done in the work pool doesn't signal us to wake before we get to the point where we are supposed to wait 
+    // Make sure the last thread done in the work pool doesn't signal us to wake before we get to the point where we are supposed to wait
     //  That would cause a deadlock.
 #if !defined( _WIN32 )
     if((err = pthread_mutex_lock( &caller_cond_lock) ))
@@ -743,8 +774,9 @@ cl_int ThreadPool_Do( TPFuncPtr func_ptr,
     gRunCount = gJobCount = count;
     gFunc_ptr = func_ptr;
     gUserInfo = userInfo;
-    
+
 #if defined( _WIN32 )
+    ResetEvent(caller_event);
     _WakeAllConditionVariable( cond_var );
     LeaveCriticalSection( cond_lock );
 #else // !_WIN32
@@ -782,11 +814,11 @@ cl_int ThreadPool_Do( TPFuncPtr func_ptr,
         goto exit;
     }
 #endif // !_WIN32
-    
+
     err = jobError;
-    
+
 exit:
-    // exit critical region 
+    // exit critical region
 #if defined( _WIN32 )
     LeaveCriticalSection( gThreadPoolLock );
 #else // !_WIN32
@@ -809,7 +841,7 @@ cl_uint GetThreadCount( void )
 #elif defined (_WIN32)
     if (threadpool_init_control == 0) {
     #warning  This is buggy and race prone.  Find a better way.
-        ThreadPool_Init();        
+        ThreadPool_Init();
         threadpool_init_control = 1;
     }
 #else
@@ -834,10 +866,10 @@ cl_uint GetThreadCount( void )
 #endif
 //
 // We require multithreading in parts of the test as a means of simultaneously testing reentrancy requirements
-// of OpenCL API, while also checking 
+// of OpenCL API, while also checking
 //
-// A sample single threaded implementation follows, for documentation / bootstrapping purposes.  
-// It is not okay to use this for conformance testing!!!   
+// A sample single threaded implementation follows, for documentation / bootstrapping purposes.
+// It is not okay to use this for conformance testing!!!
 //
 // Exception:  If your operating system does not support multithreaded execution of any kind, then you may use this code.
 //
@@ -845,32 +877,32 @@ cl_uint GetThreadCount( void )
 cl_int ThreadPool_AtomicAdd( volatile cl_int *a, cl_int b )
 {
     cl_uint r = *a;
-    
+
     // since this fallback code path is not multithreaded, we just do a regular add here
     // If your operating system supports memory-barrier-atomics, use those here
     *a = r + b;
-    
+
     return r;
 }
 
 // Blocking API that farms out count jobs to a thread pool.
 // It may return with some work undone if func_ptr() returns a non-zero
-// result. 
-cl_int ThreadPool_Do(   TPFuncPtr func_ptr, 
-                        cl_uint count, 
+// result.
+cl_int ThreadPool_Do(   TPFuncPtr func_ptr,
+                        cl_uint count,
                         void *userInfo )
 {
     cl_uint currentJob = 0;
     cl_int  result = CL_SUCCESS;
-    
+
 #ifndef MY_OS_REALLY_REALLY_DOESNT_SUPPORT_THREADS
     // THIS FUNCTION IS NOT INTENDED FOR USE!!
     log_error( "ERROR:  Test must be multithreaded!\n" );
     exit(-1);
 #else
     static int spewCount = 0;
-    
-    if( 0 == spewCount )  
+
+    if( 0 == spewCount )
     {
         log_info( "\nWARNING:  The operating system is claimed not to support threads of any sort. Running single threaded.\n" );
         spewCount = 1;
@@ -881,7 +913,7 @@ cl_int ThreadPool_Do(   TPFuncPtr func_ptr,
     for( currentJob = 0; currentJob < count; currentJob++ )
         if((result = func_ptr( currentJob, 0, userInfo )))
             return result;
-    
+
     return CL_SUCCESS;
 }
 

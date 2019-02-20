@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,10 +14,10 @@
 // limitations under the License.
 //
 #if defined(__APPLE__)
-	#include <OpenCL/opencl.h>
-	#include <mach/mach_time.h>
+    #include <OpenCL/opencl.h>
+    #include <mach/mach_time.h>
 #else
-	#include <CL/cl.h>
+    #include <CL/cl.h>
   #include <malloc.h>
 #endif
 #include <assert.h>
@@ -140,25 +140,25 @@ int test_userevents( cl_device_id deviceID, cl_context context, cl_command_queue
   // Test event properties.
   cl_int s;
   size_t sizeofs;
-  CL_EXIT_ERROR(clGetEventInfo(u1, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof s, &s, &sizeofs),"clGetEventInfo failed");   
+  CL_EXIT_ERROR(clGetEventInfo(u1, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof s, &s, &sizeofs),"clGetEventInfo failed");
   CL_EXIT_ERROR((sizeof s == sizeofs) ? CL_SUCCESS : -1,"clGetEventInfo returned wrong size for CL_EVENT_COMMAND_EXECUTION_STATUS");
-  CL_EXIT_ERROR((s == CL_SUBMITTED) ? CL_SUCCESS : -1,"clGetEventInfo returned wrong value for CL_EVENT_COMMAND_EXECUTION_STATUS"); 
+  CL_EXIT_ERROR((s == CL_SUBMITTED) ? CL_SUCCESS : -1,"clGetEventInfo returned wrong value for CL_EVENT_COMMAND_EXECUTION_STATUS");
 
   cl_command_type t;
   size_t sizeoft;
-  CL_EXIT_ERROR(clGetEventInfo(u1, CL_EVENT_COMMAND_TYPE, sizeof t, &t, &sizeoft),"clGetEventInfo failed");   
+  CL_EXIT_ERROR(clGetEventInfo(u1, CL_EVENT_COMMAND_TYPE, sizeof t, &t, &sizeoft),"clGetEventInfo failed");
   CL_EXIT_ERROR((sizeof t == sizeoft) ? CL_SUCCESS : -1,"clGetEventInfo returned wrong size for CL_EVENT_COMMAND_TYPE");
-  CL_EXIT_ERROR((t == CL_COMMAND_USER) ? CL_SUCCESS : -1,"clGetEventInfo returned wrong value for CL_EVENT_COMMAND_TYPE"); 
+  CL_EXIT_ERROR((t == CL_COMMAND_USER) ? CL_SUCCESS : -1,"clGetEventInfo returned wrong value for CL_EVENT_COMMAND_TYPE");
 
   cl_command_queue q;
   size_t sizeofq;
-  CL_EXIT_ERROR(clGetEventInfo(u1, CL_EVENT_COMMAND_QUEUE, sizeof q, &q, &sizeofq),"clGetEventInfo failed");  
+  CL_EXIT_ERROR(clGetEventInfo(u1, CL_EVENT_COMMAND_QUEUE, sizeof q, &q, &sizeofq),"clGetEventInfo failed");
   CL_EXIT_ERROR((sizeof q == sizeofq) ? CL_SUCCESS : -1,"clGetEventInfo returned wrong size for CL_EVENT_COMMAND_QUEUE");
   CL_EXIT_ERROR((q == NULL) ? CL_SUCCESS : -1,"clGetEventInfo returned wrong value for CL_EVENT_COMMAND_QUEUE");
 
   cl_context c;
   size_t sizeofc;
-  CL_EXIT_ERROR(clGetEventInfo(u1, CL_EVENT_CONTEXT, sizeof c, &c, &sizeofc),"clGetEventInfo failed");  
+  CL_EXIT_ERROR(clGetEventInfo(u1, CL_EVENT_CONTEXT, sizeof c, &c, &sizeofc),"clGetEventInfo failed");
   CL_EXIT_ERROR((sizeof c == sizeofc) ? CL_SUCCESS : -1,"clGetEventInfo returned wrong size for CL_EVENT_CONTEXT");
   CL_EXIT_ERROR((c == context) ? CL_SUCCESS : -1,"clGetEventInfo returned wrong value for CL_EVENT_CONTEXT");
 
@@ -186,7 +186,7 @@ int test_userevents( cl_device_id deviceID, cl_context context, cl_command_queue
   {
     cl_event e[4];
     cl_uint  N = sizeof e / sizeof(cl_event);
-    
+
     log_info("Enqueuing tasks\n");
     for (cl_uint i = 0; i != N; ++i)
       CL_EXIT_ERROR(clEnqueueTask(queue,k0,1,&u1,&e[i]),"clEnqueueTaskFailed");
@@ -196,24 +196,24 @@ int test_userevents( cl_device_id deviceID, cl_context context, cl_command_queue
       CL_EXIT_ERROR(clGetEventInfo(e[i],CL_EVENT_COMMAND_EXECUTION_STATUS,sizeof s,&s,0),"clGetEventInfo failed");
       CL_EXIT_ERROR((s >= CL_SUBMITTED) ? CL_SUCCESS : -1,"clGetEventInfo %u returned wrong status before user event",i);
     }
-    
+
     log_info("Setting user event status to complete\n");
     CL_EXIT_ERROR(clSetUserEventStatus(u1,CL_COMPLETE),"clSetUserEventStatus failed");
-    
+
     log_info("Waiting for tasks to finish executing\n");
     CL_EXIT_ERROR(clWaitForEvents( 1, &e[N-1] ),"clWaitForEvent failed");
-    
+
     log_info("Checking task status after setting user event status\n");
     for (cl_uint i = 0; i != N; ++i) {
       CL_EXIT_ERROR(clGetEventInfo(e[i],CL_EVENT_COMMAND_EXECUTION_STATUS,sizeof s,&s,0),"clGetEventInfo failed");
       CL_EXIT_ERROR((s != CL_QUEUED) ? CL_SUCCESS : -1,"clGetEventInfo %u returned wrong status %04x after successful user event",i,s);
-    }  
-    
+    }
+
     CL_EXIT_ERROR(clReleaseEvent(u1),"clReleaseEvent failed");
-    
+
     for (cl_uint i = 0; i != N; ++i)
       CL_EXIT_ERROR(clReleaseEvent(e[i]),"clReleaseEvent failed");
-    
+
     log_info("Successful user event case passed.\n");
 
   }
@@ -225,7 +225,7 @@ int test_userevents( cl_device_id deviceID, cl_context context, cl_command_queue
 
     cl_event e[4];
     cl_uint  N = sizeof e / sizeof(cl_event);
-    
+
     log_info("Enqueuing tasks\n");
     for (cl_uint i = 0; i != N; ++i)
       CL_EXIT_ERROR(clEnqueueTask(queue,k0,1,&u2,&e[i]),"clEnqueueTaskFailed");
@@ -235,33 +235,33 @@ int test_userevents( cl_device_id deviceID, cl_context context, cl_command_queue
       CL_EXIT_ERROR(clGetEventInfo(e[i],CL_EVENT_COMMAND_EXECUTION_STATUS,sizeof s,&s,0),"clGetEventInfo failed");
       CL_EXIT_ERROR((s == CL_QUEUED) ? CL_SUCCESS : -1,"clGetEventInfo %u returned wrong status before user event",i);
     }
-    
+
     log_info("Setting user event status to unsuccessful result\n");
     CL_EXIT_ERROR(clSetUserEventStatus(u2,-1),"clSetUserEventStatus failed");
-    
+
     log_info("Waiting for tasks to finish executing\n");
     CL_EXIT_ERROR((clWaitForEvents( N, &e[0] )!=CL_SUCCESS) ? CL_SUCCESS : -1,"clWaitForEvent succeeded when it should have failed");
-    
+
     log_info("Checking task status after setting user event status\n");
     for (cl_uint i = 0; i != N; ++i) {
       CL_EXIT_ERROR(clGetEventInfo(e[i],CL_EVENT_COMMAND_EXECUTION_STATUS,sizeof s,&s,0),"clGetEventInfo failed");
       CL_EXIT_ERROR((s != CL_QUEUED) ? CL_SUCCESS : -1,"clGetEventInfo %u returned wrong status %04x after unsuccessful user event",i,s);
-    }  
-    
+    }
+
     CL_EXIT_ERROR(clReleaseEvent(u2),"clReleaseEvent failed");
-    
+
     for (cl_uint i = 0; i != N; ++i)
       CL_EXIT_ERROR(clReleaseEvent(e[i]),"clReleaseEvent failed");
-    
+
     log_info("Unsuccessful user event case passed.\n");
-  }  
-  
-  return 0;  
+  }
+
+  return 0;
 
 }
 
 #if 0
-int main(int argc, char** argv) 
+int main(int argc, char** argv)
 {
 
   cl_int err;
@@ -283,7 +283,7 @@ int main(int argc, char** argv)
   CL_EXIT_ERROR(err,"clCreateCommandQueue failed");
 
   int ret = test_userevents( device_type, context, queue, 0 );
-  
+
   test_finish();
 
   return ret;

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,7 +33,7 @@ extern cl_device_type       gDeviceType;
 #define MAX_TRIES   1
 #define MAX_CLAMPED 1
 
-const char *read1DBufferKernelSourcePattern = 
+const char *read1DBufferKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_buffer_t inputA, read_only image1d_t inputB, sampler_t sampler, __global int *results )\n"
 "{\n"
 "   int tidX = get_global_id(0);\n"
@@ -48,7 +48,7 @@ const char *read1DBufferKernelSourcePattern =
 
 
 int test_read_image_1D_buffer( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel,
-                        image_descriptor *imageInfo, image_sampler_data *imageSampler, 
+                        image_descriptor *imageInfo, image_sampler_data *imageSampler,
                         ExplicitType outputType, MTdata d )
 {
     int error;
@@ -64,19 +64,19 @@ int test_read_image_1D_buffer( cl_device_id device, cl_context context, cl_comma
     // Construct testing sources
     cl_mem image[2];
     cl_image_desc image_desc;
-    
+
     cl_mem imageBuffer = clCreateBuffer( context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, imageInfo->rowPitch, imageValues, &error);
     if ( error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create buffer of size %d bytes (%s)\n", (int)imageInfo->rowPitch, IGetErrorString( error ) );
         return error;
     }
-        
+
     memset(&image_desc, 0x0, sizeof(cl_image_desc));
     image_desc.image_type = CL_MEM_OBJECT_IMAGE1D_BUFFER;
     image_desc.image_width = imageInfo->width;
     image_desc.buffer = imageBuffer;
-    image[0] = clCreateImage( context, CL_MEM_READ_ONLY, imageInfo->format, 
+    image[0] = clCreateImage( context, CL_MEM_READ_ONLY, imageInfo->format,
         &image_desc, NULL, &error );
     if ( error != CL_SUCCESS )
     {
@@ -93,23 +93,23 @@ int test_read_image_1D_buffer( cl_device_id device, cl_context context, cl_comma
         log_error( "ERROR: Unable to create IMAGE1D of size %d pitch %d (%s)\n", (int)imageInfo->width, (int)imageInfo->rowPitch, IGetErrorString( error ) );
         return error;
     }
-    
+
     if ( gDebugTrace )
         log_info( " - Creating kernel arguments...\n" );
 
     // Create sampler to use
     actualSampler = clCreateSampler( context, false, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &error );
     test_error( error, "Unable to create image sampler" );
-    
+
     // Create results buffer
     cl_mem results = clCreateBuffer( context, 0, imageInfo->width * sizeof(cl_int), NULL, &error);
     test_error( error, "Unable to create results buffer" );
-    
+
     size_t resultValuesSize = imageInfo->width * sizeof(cl_int);
     BufferOwningPtr<int> resultValues(malloc( resultValuesSize ));
     memset( resultValues, 0xff, resultValuesSize );
     clEnqueueWriteBuffer( queue, results, CL_TRUE, 0, resultValuesSize, resultValues, 0, NULL, NULL );
-    
+
     // Set arguments
     int idx = 0;
     error = clSetKernelArg( kernel, idx++, sizeof( cl_mem ), &image[0] );
@@ -128,12 +128,12 @@ int test_read_image_1D_buffer( cl_device_id device, cl_context context, cl_comma
 
     if ( gDebugTrace )
         log_info( "    reading results, %ld kbytes\n", (unsigned long)( imageInfo->width * sizeof(cl_int) / 1024 ) );
-    
+
     error = clEnqueueReadBuffer( queue, results, CL_TRUE, 0, resultValuesSize, resultValues, 0, NULL, NULL );
     test_error( error, "Unable to read results from kernel" );
     if ( gDebugTrace )
         log_info( "    results read\n" );
-    
+
     // Check for non-zero comps
     bool allZeroes = true;
     for ( size_t ic = 0; ic < imageInfo->width; ++ic )
@@ -157,7 +157,7 @@ int test_read_image_1D_buffer( cl_device_id device, cl_context context, cl_comma
     return 0;
 }
 
-int test_read_image_set_1D_buffer( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler, 
+int test_read_image_set_1D_buffer( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler,
                             ExplicitType outputType )
 {
     char programSrc[10240];
@@ -185,6 +185,11 @@ int test_read_image_set_1D_buffer( cl_device_id device, cl_image_format *format,
     error |= clGetDeviceInfo( device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof( memSize ), &memSize, NULL );
     error |= clGetDeviceInfo( device, CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof( maxWidth ), &maxWidth1D, NULL );
     test_error( error, "Unable to get max image 1D buffer size from device" );
+
+    if (memSize > (cl_ulong)SIZE_MAX) {
+        memSize = (cl_ulong)SIZE_MAX;
+    }
+
     // note: image_buffer test uses image1D for results validation.
     // So the test can't use the biggest possible size for image_buffer if it's bigger than the max image1D size
     maxWidth = (maxWidth > maxWidth1D) ? maxWidth1D : maxWidth;
@@ -222,7 +227,7 @@ int test_read_image_set_1D_buffer( cl_device_id device, cl_image_format *format,
                 if ( gDebugTrace )
                     log_info( "   at size %d\n", (int)imageInfo.width );
 
-                int retCode = test_read_image_1D_buffer( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );    
+                int retCode = test_read_image_1D_buffer( device, context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
                 if ( retCode )
                     return retCode;
             }
@@ -251,7 +256,7 @@ int test_read_image_set_1D_buffer( cl_device_id device, cl_image_format *format,
     else
     {
         for ( int i = 0; i < NUM_IMAGE_ITERATIONS; i++ )
-        {            
+        {
             cl_ulong size;
             // Loop until we get a size that a) will fit in the max alloc size and b) that an allocation of that
             // image, the result array, plus offset arrays, will fit in the global ram space

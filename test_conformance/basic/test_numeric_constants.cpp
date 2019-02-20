@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -73,7 +73,7 @@ int test_host_numeric_constants(cl_device_id deviceID, cl_context context, cl_co
     TEST_VALUE_EQUAL_LITERAL( "CL_LONG_MAX",     CL_LONG_MAX,    ((cl_long) 0x7FFFFFFFFFFFFFFFLL))
     TEST_VALUE_EQUAL_LITERAL( "CL_LONG_MIN",     CL_LONG_MIN,    ((cl_long) -0x7FFFFFFFFFFFFFFFLL - 1LL))
     TEST_VALUE_EQUAL_LITERAL( "CL_ULONG_MAX",    CL_ULONG_MAX,   ((cl_ulong) 0xFFFFFFFFFFFFFFFFULL))
-    
+
     TEST_VALUE_EQUAL_LITERAL( "CL_FLT_DIG",         CL_FLT_DIG,         6)
     TEST_VALUE_EQUAL_LITERAL( "CL_FLT_MANT_DIG",    CL_FLT_MANT_DIG,    24)
     TEST_VALUE_EQUAL_LITERAL( "CL_FLT_MAX_10_EXP",  CL_FLT_MAX_10_EXP,  +38)
@@ -84,7 +84,7 @@ int test_host_numeric_constants(cl_device_id deviceID, cl_context context, cl_co
     TEST_VALUE_EQUAL_LITERAL( "CL_FLT_MAX",         CL_FLT_MAX,         MAKE_HEX_FLOAT( 0x1.fffffep127f, 0x1fffffeL, 103))
     TEST_VALUE_EQUAL_LITERAL( "CL_FLT_MIN",         CL_FLT_MIN,         MAKE_HEX_FLOAT(0x1.0p-126f, 0x1L, -126))
     TEST_VALUE_EQUAL_LITERAL( "CL_FLT_EPSILON",     CL_FLT_EPSILON,     MAKE_HEX_FLOAT(0x1.0p-23f, 0x1L, -23))
-    
+
     TEST_VALUE_EQUAL_LITERAL( "CL_DBL_DIG",         CL_DBL_DIG,         15)
     TEST_VALUE_EQUAL_LITERAL( "CL_DBL_MANT_DIG",    CL_DBL_MANT_DIG,    53)
     TEST_VALUE_EQUAL_LITERAL( "CL_DBL_MAX_10_EXP",  CL_DBL_MAX_10_EXP,  +308)
@@ -143,7 +143,7 @@ const char *kernel_int_float[] = {
   "  int_out[9] = INT_MAX;\n"
   "  int_out[10] = INT_MIN;\n"
   "  uint_out[0] = UINT_MAX;\n"
- 
+
   "  int_out[11] = FLT_DIG;\n"
   "  int_out[12] = FLT_MANT_DIG;\n"
   "  int_out[13] = FLT_MAX_10_EXP;\n"
@@ -174,7 +174,7 @@ const char *kernel_int_float[] = {
   "  float_out[15] = M_SQRT1_2_F;\n"
   "}\n"
 };
- 
+
 const char *kernel_long[] = {
   "__kernel void test(__global long *long_out, __global ulong *ulong_out) \n"
   "{\n"
@@ -183,7 +183,7 @@ const char *kernel_long[] = {
   "  ulong_out[0] = ULONG_MAX;\n"
   "}\n"
 };
- 
+
 const char *kernel_double[] = {
   "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
   "__kernel void test( __global double *double_out, __global long *long_out ) \n    "
@@ -224,7 +224,7 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
     cl_program program;
     cl_kernel kernel;
     cl_mem    streams[3];
-    
+
     size_t    threads[] = {1,1,1};
     cl_float float_out[16];
     cl_int int_out[19];
@@ -232,7 +232,7 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
     cl_long long_out[7];
     cl_ulong ulong_out[1];
     cl_double double_out[16];
-    
+
     /** INTs and FLOATs **/
 
     // Create the kernel
@@ -240,7 +240,7 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
     {
         return -1;
     }
-    
+
     /* Create some I/O streams */
     streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(float_out), NULL, &error);
     test_error( error, "Creating test array failed" );
@@ -248,24 +248,24 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
     test_error( error, "Creating test array failed" );
     streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(uint_out), NULL, &error);
     test_error( error, "Creating test array failed" );
-    
+
     error = clSetKernelArg(kernel, 1, sizeof( streams[1] ), &streams[1]);
     test_error( error, "Unable to set indexed kernel arguments" );
     error = clSetKernelArg(kernel, 0, sizeof( streams[0] ), &streams[0]);
     test_error( error, "Unable to set indexed kernel arguments" );
     error = clSetKernelArg(kernel, 2, sizeof( streams[2] ), &streams[2]);
     test_error( error, "Unable to set indexed kernel arguments" );
-    
+
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
     test_error( error, "Kernel execution failed" );
-    
+
     error = clEnqueueReadBuffer( queue, streams[0], CL_TRUE, 0, sizeof(float_out), (void*)float_out, 0, NULL, NULL );
     test_error( error, "Unable to get result data" );
     error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(int_out), (void*)int_out, 0, NULL, NULL );
     test_error( error, "Unable to get result data" );
     error = clEnqueueReadBuffer( queue, streams[2], CL_TRUE, 0, sizeof(uint_out), (void*)uint_out, 0, NULL, NULL );
     test_error( error, "Unable to get result data" );
-    
+
     TEST_VALUE_EQUAL_LITERAL( "CHAR_BIT", int_out[0],         8)
     TEST_VALUE_EQUAL_LITERAL( "SCHAR_MAX", int_out[1],        127)
     TEST_VALUE_EQUAL_LITERAL( "SCHAR_MIN", int_out[2],        (-127-1))
@@ -302,7 +302,7 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
     TEST_VALUE_EQUAL( "M_2_SQRTPI_F", float_out[13],     CL_M_2_SQRTPI_F )
     TEST_VALUE_EQUAL( "M_SQRT2_F", float_out[14],        CL_M_SQRT2_F )
     TEST_VALUE_EQUAL( "M_SQRT1_2_F", float_out[15],      CL_M_SQRT1_2_F )
-    
+
     // We need to check these values against what we know is supported on the device
     if( checkForImageSupport( deviceID ) == 0 )
     { // has images
@@ -332,7 +332,7 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
             log_error( "FAILURE: GPUs are required to support images in OpenCL 1.1 and later.\n" );
             return -1;
         }
-    
+
         // If images aren't supported, the constant should be undefined
         if( int_out[18] != 0xf00baa )
         {
@@ -341,118 +341,118 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
         }
     }
     log_info( "\t__IMAGE_SUPPORT__: %d\n", int_out[18]);
-    
+
     clReleaseMemObject(streams[0]); streams[0] = NULL;
     clReleaseMemObject(streams[1]); streams[1] = NULL;
     clReleaseMemObject(streams[2]); streams[2] = NULL;
     clReleaseKernel(kernel); kernel = NULL;
     clReleaseProgram(program); program = NULL;
-	
-	/** LONGs **/
+
+    /** LONGs **/
 
     if(!gHasLong) {
         log_info("Longs not supported; skipping long tests.\n");
     }
-	else
-	{    
-		// Create the kernel
-		if( create_single_kernel_helper( context, &program, &kernel, 1, kernel_long, "test" ) != 0 )
-		{
-			return -1;
-		}
-		
-		streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(long_out), NULL, &error);
-		test_error( error, "Creating test array failed" );
-		streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(ulong_out), NULL, &error);
-		test_error( error, "Creating test array failed" );
-		
-		error = clSetKernelArg(kernel, 1, sizeof( streams[1] ), &streams[1]);
-		test_error( error, "Unable to set indexed kernel arguments" );
-		error = clSetKernelArg(kernel, 0, sizeof( streams[0] ), &streams[0]);
-		test_error( error, "Unable to set indexed kernel arguments" );
-		
-		error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
-		test_error( error, "Kernel execution failed" );
-		
-		error = clEnqueueReadBuffer( queue, streams[0], CL_TRUE, 0, sizeof(long_out), &long_out, 0, NULL, NULL );
-		test_error( error, "Unable to get result data" );
-		error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(ulong_out), &ulong_out, 0, NULL, NULL );
-		test_error( error, "Unable to get result data" );
-		
-		TEST_VALUE_EQUAL_LITERAL( "LONG_MAX", long_out[0],        ((cl_long) 0x7FFFFFFFFFFFFFFFLL))
-		TEST_VALUE_EQUAL_LITERAL( "LONG_MIN", long_out[1],        ((cl_long) -0x7FFFFFFFFFFFFFFFLL - 1LL))
-		TEST_VALUE_EQUAL_LITERAL( "ULONG_MAX", ulong_out[0],       ((cl_ulong) 0xFFFFFFFFFFFFFFFFULL))
-    
-		clReleaseMemObject(streams[0]); streams[0] = NULL;
-		clReleaseMemObject(streams[1]); streams[1] = NULL;
-		clReleaseKernel(kernel); kernel = NULL;
-		clReleaseProgram(program); program = NULL;
-	}
-   
-	/** DOUBLEs **/
+    else
+    {
+        // Create the kernel
+        if( create_single_kernel_helper( context, &program, &kernel, 1, kernel_long, "test" ) != 0 )
+        {
+            return -1;
+        }
+
+        streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(long_out), NULL, &error);
+        test_error( error, "Creating test array failed" );
+        streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(ulong_out), NULL, &error);
+        test_error( error, "Creating test array failed" );
+
+        error = clSetKernelArg(kernel, 1, sizeof( streams[1] ), &streams[1]);
+        test_error( error, "Unable to set indexed kernel arguments" );
+        error = clSetKernelArg(kernel, 0, sizeof( streams[0] ), &streams[0]);
+        test_error( error, "Unable to set indexed kernel arguments" );
+
+        error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
+        test_error( error, "Kernel execution failed" );
+
+        error = clEnqueueReadBuffer( queue, streams[0], CL_TRUE, 0, sizeof(long_out), &long_out, 0, NULL, NULL );
+        test_error( error, "Unable to get result data" );
+        error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(ulong_out), &ulong_out, 0, NULL, NULL );
+        test_error( error, "Unable to get result data" );
+
+        TEST_VALUE_EQUAL_LITERAL( "LONG_MAX", long_out[0],        ((cl_long) 0x7FFFFFFFFFFFFFFFLL))
+        TEST_VALUE_EQUAL_LITERAL( "LONG_MIN", long_out[1],        ((cl_long) -0x7FFFFFFFFFFFFFFFLL - 1LL))
+        TEST_VALUE_EQUAL_LITERAL( "ULONG_MAX", ulong_out[0],       ((cl_ulong) 0xFFFFFFFFFFFFFFFFULL))
+
+        clReleaseMemObject(streams[0]); streams[0] = NULL;
+        clReleaseMemObject(streams[1]); streams[1] = NULL;
+        clReleaseKernel(kernel); kernel = NULL;
+        clReleaseProgram(program); program = NULL;
+    }
+
+    /** DOUBLEs **/
 
     if(!is_extension_available(deviceID, "cl_khr_fp64")) {
         log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
     }
-	else
-	{    
-		// Create the kernel
-		if( create_single_kernel_helper( context, &program, &kernel, 1, kernel_double, "test" ) != 0 )
-		{
-			return -1;
-		}
-		
-		streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(double_out), NULL, &error);
-		test_error( error, "Creating test array failed" );
-		streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(long_out), NULL, &error);
-		test_error( error, "Creating test array failed" );
-		
-		error = clSetKernelArg(kernel, 1, sizeof( streams[1] ), &streams[1]);
-		test_error( error, "Unable to set indexed kernel arguments" );
-		error = clSetKernelArg(kernel, 0, sizeof( streams[0] ), &streams[0]);
-		test_error( error, "Unable to set indexed kernel arguments" );
-		
-		error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
-		test_error( error, "Kernel execution failed" );
-		
-		error = clEnqueueReadBuffer( queue, streams[0], CL_TRUE, 0, sizeof(double_out), &double_out, 0, NULL, NULL );
-		test_error( error, "Unable to get result data" );
-		error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(long_out), &long_out, 0, NULL, NULL );
-		test_error( error, "Unable to get result data" );
-		
-		TEST_VALUE_EQUAL_LITERAL( "DBL_DIG", long_out[0],          15)
-		TEST_VALUE_EQUAL_LITERAL( "DBL_MANT_DIG", long_out[1],     53)
-		TEST_VALUE_EQUAL_LITERAL( "DBL_MAX_10_EXP", long_out[2],   +308)
-		TEST_VALUE_EQUAL_LITERAL( "DBL_MAX_EXP", long_out[3],      +1024)
-		TEST_VALUE_EQUAL_LITERAL( "DBL_MIN_10_EXP", long_out[4],   -307)
-		TEST_VALUE_EQUAL_LITERAL( "DBL_MIN_EXP", long_out[5],      -1021)
-		TEST_VALUE_EQUAL_LITERAL( "DBL_RADIX", long_out[6],        2)
-		TEST_VALUE_EQUAL( "DBL_MAX", double_out[0],         MAKE_HEX_DOUBLE(0x1.fffffffffffffp1023, 0x1fffffffffffffLL, 971))
-		TEST_VALUE_EQUAL( "DBL_MIN", double_out[1],         MAKE_HEX_DOUBLE(0x1.0p-1022, 0x1LL, -1022))
-		TEST_VALUE_EQUAL( "DBL_EPSILON", double_out[2],     MAKE_HEX_DOUBLE(0x1.0p-52, 0x1LL, -52))
-		//TEST_VALUE_EQUAL( "M_E", double_out[3], CL_M_E )
-		TEST_VALUE_EQUAL( "M_LOG2E", double_out[4],         CL_M_LOG2E )
-		TEST_VALUE_EQUAL( "M_LOG10E", double_out[5],        CL_M_LOG10E )
-		TEST_VALUE_EQUAL( "M_LN2", double_out[6],           CL_M_LN2 )
-		TEST_VALUE_EQUAL( "M_LN10", double_out[7],          CL_M_LN10 )
-		TEST_VALUE_EQUAL( "M_PI", double_out[8],            CL_M_PI )
-		TEST_VALUE_EQUAL( "M_PI_2", double_out[9],          CL_M_PI_2 )
-		TEST_VALUE_EQUAL( "M_PI_4", double_out[10],         CL_M_PI_4 )
-		TEST_VALUE_EQUAL( "M_1_PI", double_out[11],         CL_M_1_PI )
-		TEST_VALUE_EQUAL( "M_2_PI", double_out[12],         CL_M_2_PI )
-		TEST_VALUE_EQUAL( "M_2_SQRTPI", double_out[13],     CL_M_2_SQRTPI )
-		TEST_VALUE_EQUAL( "M_SQRT2", double_out[14],        CL_M_SQRT2 )
-		TEST_VALUE_EQUAL( "M_SQRT1_2", double_out[15],      CL_M_SQRT1_2 )
+    else
+    {
+        // Create the kernel
+        if( create_single_kernel_helper( context, &program, &kernel, 1, kernel_double, "test" ) != 0 )
+        {
+            return -1;
+        }
 
-		clReleaseMemObject(streams[0]); streams[0] = NULL;
-		clReleaseMemObject(streams[1]); streams[1] = NULL;
-		clReleaseKernel(kernel); kernel = NULL;
-		clReleaseProgram(program); program = NULL;
-	}
-    
+        streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(double_out), NULL, &error);
+        test_error( error, "Creating test array failed" );
+        streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(long_out), NULL, &error);
+        test_error( error, "Creating test array failed" );
+
+        error = clSetKernelArg(kernel, 1, sizeof( streams[1] ), &streams[1]);
+        test_error( error, "Unable to set indexed kernel arguments" );
+        error = clSetKernelArg(kernel, 0, sizeof( streams[0] ), &streams[0]);
+        test_error( error, "Unable to set indexed kernel arguments" );
+
+        error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
+        test_error( error, "Kernel execution failed" );
+
+        error = clEnqueueReadBuffer( queue, streams[0], CL_TRUE, 0, sizeof(double_out), &double_out, 0, NULL, NULL );
+        test_error( error, "Unable to get result data" );
+        error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(long_out), &long_out, 0, NULL, NULL );
+        test_error( error, "Unable to get result data" );
+
+        TEST_VALUE_EQUAL_LITERAL( "DBL_DIG", long_out[0],          15)
+        TEST_VALUE_EQUAL_LITERAL( "DBL_MANT_DIG", long_out[1],     53)
+        TEST_VALUE_EQUAL_LITERAL( "DBL_MAX_10_EXP", long_out[2],   +308)
+        TEST_VALUE_EQUAL_LITERAL( "DBL_MAX_EXP", long_out[3],      +1024)
+        TEST_VALUE_EQUAL_LITERAL( "DBL_MIN_10_EXP", long_out[4],   -307)
+        TEST_VALUE_EQUAL_LITERAL( "DBL_MIN_EXP", long_out[5],      -1021)
+        TEST_VALUE_EQUAL_LITERAL( "DBL_RADIX", long_out[6],        2)
+        TEST_VALUE_EQUAL( "DBL_MAX", double_out[0],         MAKE_HEX_DOUBLE(0x1.fffffffffffffp1023, 0x1fffffffffffffLL, 971))
+        TEST_VALUE_EQUAL( "DBL_MIN", double_out[1],         MAKE_HEX_DOUBLE(0x1.0p-1022, 0x1LL, -1022))
+        TEST_VALUE_EQUAL( "DBL_EPSILON", double_out[2],     MAKE_HEX_DOUBLE(0x1.0p-52, 0x1LL, -52))
+        //TEST_VALUE_EQUAL( "M_E", double_out[3], CL_M_E )
+        TEST_VALUE_EQUAL( "M_LOG2E", double_out[4],         CL_M_LOG2E )
+        TEST_VALUE_EQUAL( "M_LOG10E", double_out[5],        CL_M_LOG10E )
+        TEST_VALUE_EQUAL( "M_LN2", double_out[6],           CL_M_LN2 )
+        TEST_VALUE_EQUAL( "M_LN10", double_out[7],          CL_M_LN10 )
+        TEST_VALUE_EQUAL( "M_PI", double_out[8],            CL_M_PI )
+        TEST_VALUE_EQUAL( "M_PI_2", double_out[9],          CL_M_PI_2 )
+        TEST_VALUE_EQUAL( "M_PI_4", double_out[10],         CL_M_PI_4 )
+        TEST_VALUE_EQUAL( "M_1_PI", double_out[11],         CL_M_1_PI )
+        TEST_VALUE_EQUAL( "M_2_PI", double_out[12],         CL_M_2_PI )
+        TEST_VALUE_EQUAL( "M_2_SQRTPI", double_out[13],     CL_M_2_SQRTPI )
+        TEST_VALUE_EQUAL( "M_SQRT2", double_out[14],        CL_M_SQRT2 )
+        TEST_VALUE_EQUAL( "M_SQRT1_2", double_out[15],      CL_M_SQRT1_2 )
+
+        clReleaseMemObject(streams[0]); streams[0] = NULL;
+        clReleaseMemObject(streams[1]); streams[1] = NULL;
+        clReleaseKernel(kernel); kernel = NULL;
+        clReleaseProgram(program); program = NULL;
+    }
+
     error = clFinish(queue);
     test_error(error, "clFinish failed");
-    
+
     return errors;
 }
 
@@ -513,7 +513,7 @@ const char *kernel_constant_extended_limits[] = {
     "  intOut[29] = ( INFINITY != NAN ); \n"
     "  intOut[30] = ( NAN > INFINITY ); \n"
     "  intOut[31] = ( NAN < -INFINITY ); \n"
-    
+
     "}\n"
 };
 
@@ -543,53 +543,53 @@ int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_co
     cl_int              intOut[ 32 ];
     cl_float            floatOut[ 3 ];
     cl_double           doubleOut[ 1 ];
-    
-    
+
+
     /* Create some I/O streams */
     intStream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(intOut), NULL, &error );
     test_error( error, "Creating test array failed" );
     floatStream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(floatOut), NULL, &error );
     test_error( error, "Creating test array failed" );
-    
+
     // Stage 1: basic limits on MAXFLOAT
     {
         clProgramWrapper program;
         clKernelWrapper kernel;
-        
+
         if( create_single_kernel_helper( context, &program, &kernel, 1, kernel_constant_limits, "test" ) != 0 )
         {
             return -1;
         }
-        
+
         error = clSetKernelArg( kernel, 0, sizeof( intStream ), &intStream );
         test_error( error, "Unable to set indexed kernel arguments" );
         error = clSetKernelArg( kernel, 1, sizeof( floatStream ), &floatStream );
         test_error( error, "Unable to set indexed kernel arguments" );
-        
+
         error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
         test_error( error, "Kernel execution failed" );
-        
+
         error = clEnqueueReadBuffer( queue, intStream, CL_TRUE, 0, sizeof(intOut), intOut, 0, NULL, NULL );
         test_error( error, "Unable to get result data" );
         error = clEnqueueReadBuffer( queue, floatStream, CL_TRUE, 0, sizeof(floatOut), floatOut, 0, NULL, NULL );
         test_error( error, "Unable to get result data" );
-        
+
         // Test MAXFLOAT properties
-        TEST_FLOAT_ASSERTION( intOut[0] == 0, "isinf( MAXFLOAT ) = false", floatOut[0] ) 
-        TEST_FLOAT_ASSERTION( intOut[1] == 1, "isnormal( MAXFLOAT ) = true", floatOut[0] ) 
-        TEST_FLOAT_ASSERTION( intOut[2] == 0, "isnan( MAXFLOAT ) = false", floatOut[0] ) 
-        TEST_FLOAT_ASSERTION( intOut[3] == 4, "sizeof( MAXFLOAT ) = 4", floatOut[0] ) 
-        TEST_FLOAT_ASSERTION( intOut[4] == 1, "MAXFLOAT = FLT_MAX", floatOut[0] ) 
-        TEST_FLOAT_ASSERTION( floatOut[0] == CL_FLT_MAX, "MAXFLOAT = CL_FLT_MAX", floatOut[0] ) 
-        TEST_FLOAT_ASSERTION( intOut[6] == 1, "MAXFLOAT = MAXFLOAT", floatOut[0] ) 
-        TEST_FLOAT_ASSERTION( floatOut[0] == MAKE_HEX_FLOAT( 0x1.fffffep127f, 0x1fffffeL, 103), "MAXFLOAT = 0x1.fffffep127f", floatOut[0] ) 
+        TEST_FLOAT_ASSERTION( intOut[0] == 0, "isinf( MAXFLOAT ) = false", floatOut[0] )
+        TEST_FLOAT_ASSERTION( intOut[1] == 1, "isnormal( MAXFLOAT ) = true", floatOut[0] )
+        TEST_FLOAT_ASSERTION( intOut[2] == 0, "isnan( MAXFLOAT ) = false", floatOut[0] )
+        TEST_FLOAT_ASSERTION( intOut[3] == 4, "sizeof( MAXFLOAT ) = 4", floatOut[0] )
+        TEST_FLOAT_ASSERTION( intOut[4] == 1, "MAXFLOAT = FLT_MAX", floatOut[0] )
+        TEST_FLOAT_ASSERTION( floatOut[0] == CL_FLT_MAX, "MAXFLOAT = CL_FLT_MAX", floatOut[0] )
+        TEST_FLOAT_ASSERTION( intOut[6] == 1, "MAXFLOAT = MAXFLOAT", floatOut[0] )
+        TEST_FLOAT_ASSERTION( floatOut[0] == MAKE_HEX_FLOAT( 0x1.fffffep127f, 0x1fffffeL, 103), "MAXFLOAT = 0x1.fffffep127f", floatOut[0] )
     }
-    
+
     // Stage 2: INFINITY and NAN
     char profileStr[128] = "";
     error = clGetDeviceInfo( deviceID, CL_DEVICE_PROFILE, sizeof( profileStr ), &profileStr, NULL );
     test_error( error, "Unable to run INFINITY/NAN tests (unable to get CL_DEVICE_PROFILE" );
-    
+
     bool testInfNan = true;
     if( strcmp( profileStr, "EMBEDDED_PROFILE" ) == 0 )
     {
@@ -597,65 +597,65 @@ int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_co
         cl_device_fp_config single = 0;
         error = clGetDeviceInfo( deviceID, CL_DEVICE_SINGLE_FP_CONFIG, sizeof( single ), &single, NULL );
         test_error( error, "Unable to run INFINITY/NAN tests (unable to get FP_CONFIG bits)" );
-        
+
         if( ( single & CL_FP_INF_NAN ) == 0 )
         {
             log_info( "Skipping INFINITY and NAN tests on embedded device (INF/NAN not supported on this device)" );
             testInfNan = false;
         }
     }
-    
-    if( testInfNan ) 
+
+    if( testInfNan )
     {
         clProgramWrapper program;
         clKernelWrapper kernel;
-        
+
         if( create_single_kernel_helper( context, &program, &kernel, 1, kernel_constant_extended_limits, "test" ) != 0 )
         {
             return -1;
         }
-        
+
         error = clSetKernelArg( kernel, 0, sizeof( intStream ), &intStream );
         test_error( error, "Unable to set indexed kernel arguments" );
         error = clSetKernelArg( kernel, 1, sizeof( floatStream ), &floatStream );
         test_error( error, "Unable to set indexed kernel arguments" );
-        
+
         error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
         test_error( error, "Kernel execution failed" );
-        
+
         error = clEnqueueReadBuffer( queue, intStream, CL_TRUE, 0, sizeof(intOut), intOut, 0, NULL, NULL );
         test_error( error, "Unable to get result data" );
         error = clEnqueueReadBuffer( queue, floatStream, CL_TRUE, 0, sizeof(floatOut), floatOut, 0, NULL, NULL );
         test_error( error, "Unable to get result data" );
-        
-        TEST_FLOAT_ASSERTION( intOut[0] == 1, "INFINITY == HUGE_VALF", intOut[0] ) 
-        TEST_FLOAT_ASSERTION( intOut[1] == 4, "sizeof( INFINITY ) == 4", intOut[1] ) 
-        TEST_FLOAT_ASSERTION( intOut[2] == 1, "isinf( INFINITY ) == true", intOut[2] ) 
-        TEST_FLOAT_ASSERTION( intOut[3] == 0, "isnormal( INFINITY ) == false", intOut[3] ) 
-        TEST_FLOAT_ASSERTION( intOut[4] == 0, "isnan( INFINITY ) == false", intOut[4] ) 
-        TEST_FLOAT_ASSERTION( intOut[5] == 1, "INFINITY > MAXFLOAT", intOut[5] ) 
-        TEST_FLOAT_ASSERTION( intOut[6] == 1, "-INFINITY < -MAXFLOAT", intOut[6] ) 
-        TEST_FLOAT_ASSERTION( intOut[7] == 1, "( MAXFLOAT + MAXFLOAT ) == INFINITY", intOut[7] ) 
-        TEST_FLOAT_ASSERTION( intOut[8] == 1, "nextafter( MAXFLOAT, INFINITY ) == INFINITY", intOut[8] ) 
-        TEST_FLOAT_ASSERTION( intOut[9] == 1, "nextafter( -MAXFLOAT, -INFINITY ) == -INFINITY", intOut[9] ) 
-        TEST_FLOAT_ASSERTION( intOut[10] == 1, "INFINITY = INFINITY", intOut[10] ) 
-        TEST_FLOAT_ASSERTION( intOut[11] == 1, "asuint( INFINITY ) == 0x7f800000", intOut[11] ) 
-        TEST_FLOAT_ASSERTION( *( (uint32_t *)&floatOut[0] ) == 0x7f800000, "asuint( INFINITY ) == 0x7f800000", floatOut[0] ) 
-        TEST_FLOAT_ASSERTION( floatOut[1] == INFINITY, "INFINITY == INFINITY", floatOut[1] ) 
-        
-        TEST_FLOAT_ASSERTION( intOut[12] == 4, "sizeof( HUGE_VALF ) == 4", intOut[12] ) 
-        TEST_FLOAT_ASSERTION( intOut[13] == 1, "HUGE_VALF == INFINITY", intOut[13] ) 
-        TEST_FLOAT_ASSERTION( floatOut[1] == HUGE_VALF, "HUGE_VALF == HUGE_VALF", floatOut[1] ) 
-        
-        TEST_FLOAT_ASSERTION( intOut[14] == 0, "(NAN == NAN) = false", intOut[14] ) 
-        TEST_FLOAT_ASSERTION( intOut[15] == 1, "(NAN != NAN) = true", intOut[15] ) 
-        TEST_FLOAT_ASSERTION( intOut[16] == 1, "isnan( NAN ) = true", intOut[16] ) 
-        TEST_FLOAT_ASSERTION( intOut[17] == 0, "isinf( NAN ) = false", intOut[17] ) 
-        TEST_FLOAT_ASSERTION( intOut[18] == 0, "isnormal( NAN ) = false", intOut[18] ) 
-        TEST_FLOAT_ASSERTION( intOut[19] == 1, "( as_uint( NAN ) & 0x7fffffff ) > 0x7f800000", intOut[19] ) 
-        TEST_FLOAT_ASSERTION( intOut[20] == 4, "sizeof( NAN ) = 4", intOut[20] ) 
-        TEST_FLOAT_ASSERTION( ( *( (uint32_t *)&floatOut[2] ) & 0x7fffffff ) > 0x7f800000, "( as_uint( NAN ) & 0x7fffffff ) > 0x7f800000", floatOut[2] ) 
-        
+
+        TEST_FLOAT_ASSERTION( intOut[0] == 1, "INFINITY == HUGE_VALF", intOut[0] )
+        TEST_FLOAT_ASSERTION( intOut[1] == 4, "sizeof( INFINITY ) == 4", intOut[1] )
+        TEST_FLOAT_ASSERTION( intOut[2] == 1, "isinf( INFINITY ) == true", intOut[2] )
+        TEST_FLOAT_ASSERTION( intOut[3] == 0, "isnormal( INFINITY ) == false", intOut[3] )
+        TEST_FLOAT_ASSERTION( intOut[4] == 0, "isnan( INFINITY ) == false", intOut[4] )
+        TEST_FLOAT_ASSERTION( intOut[5] == 1, "INFINITY > MAXFLOAT", intOut[5] )
+        TEST_FLOAT_ASSERTION( intOut[6] == 1, "-INFINITY < -MAXFLOAT", intOut[6] )
+        TEST_FLOAT_ASSERTION( intOut[7] == 1, "( MAXFLOAT + MAXFLOAT ) == INFINITY", intOut[7] )
+        TEST_FLOAT_ASSERTION( intOut[8] == 1, "nextafter( MAXFLOAT, INFINITY ) == INFINITY", intOut[8] )
+        TEST_FLOAT_ASSERTION( intOut[9] == 1, "nextafter( -MAXFLOAT, -INFINITY ) == -INFINITY", intOut[9] )
+        TEST_FLOAT_ASSERTION( intOut[10] == 1, "INFINITY = INFINITY", intOut[10] )
+        TEST_FLOAT_ASSERTION( intOut[11] == 1, "asuint( INFINITY ) == 0x7f800000", intOut[11] )
+        TEST_FLOAT_ASSERTION( *( (uint32_t *)&floatOut[0] ) == 0x7f800000, "asuint( INFINITY ) == 0x7f800000", floatOut[0] )
+        TEST_FLOAT_ASSERTION( floatOut[1] == INFINITY, "INFINITY == INFINITY", floatOut[1] )
+
+        TEST_FLOAT_ASSERTION( intOut[12] == 4, "sizeof( HUGE_VALF ) == 4", intOut[12] )
+        TEST_FLOAT_ASSERTION( intOut[13] == 1, "HUGE_VALF == INFINITY", intOut[13] )
+        TEST_FLOAT_ASSERTION( floatOut[1] == HUGE_VALF, "HUGE_VALF == HUGE_VALF", floatOut[1] )
+
+        TEST_FLOAT_ASSERTION( intOut[14] == 0, "(NAN == NAN) = false", intOut[14] )
+        TEST_FLOAT_ASSERTION( intOut[15] == 1, "(NAN != NAN) = true", intOut[15] )
+        TEST_FLOAT_ASSERTION( intOut[16] == 1, "isnan( NAN ) = true", intOut[16] )
+        TEST_FLOAT_ASSERTION( intOut[17] == 0, "isinf( NAN ) = false", intOut[17] )
+        TEST_FLOAT_ASSERTION( intOut[18] == 0, "isnormal( NAN ) = false", intOut[18] )
+        TEST_FLOAT_ASSERTION( intOut[19] == 1, "( as_uint( NAN ) & 0x7fffffff ) > 0x7f800000", intOut[19] )
+        TEST_FLOAT_ASSERTION( intOut[20] == 4, "sizeof( NAN ) = 4", intOut[20] )
+        TEST_FLOAT_ASSERTION( ( *( (uint32_t *)&floatOut[2] ) & 0x7fffffff ) > 0x7f800000, "( as_uint( NAN ) & 0x7fffffff ) > 0x7f800000", floatOut[2] )
+
         TEST_FLOAT_ASSERTION( intOut[ 21 ] == 1, "isnan( INFINITY / INFINITY ) = true", intOut[ 21 ] )
         TEST_FLOAT_ASSERTION( intOut[ 22 ] == 1, "isnan( INFINITY - INFINITY ) = true", intOut[ 22 ] )
         TEST_FLOAT_ASSERTION( intOut[ 23 ] == 1, "isnan( 0.f / 0.f ) = true", intOut[ 23 ] )
@@ -668,7 +668,7 @@ int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_co
         TEST_FLOAT_ASSERTION( intOut[ 30 ] == 0, "( NAN < INFINITY ) = false", intOut[ 30 ] )
         TEST_FLOAT_ASSERTION( intOut[ 31 ] == 0, "( NAN > -INFINITY ) = false", intOut[ 31 ] )
     }
-    
+
     // Stage 3: limits on HUGE_VAL (double)
     if( !is_extension_available( deviceID, "cl_khr_fp64" ) )
         log_info( "Note: Skipping double HUGE_VAL tests (doubles unsupported on device)\n" );
@@ -677,46 +677,46 @@ int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_co
         cl_device_fp_config config = 0;
         error = clGetDeviceInfo( deviceID, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof( config ), &config, NULL );
         test_error( error, "Unable to run INFINITY/NAN tests (unable to get double FP_CONFIG bits)" );
-        
+
         if( ( config & CL_FP_INF_NAN ) == 0 )
             log_info( "Skipping HUGE_VAL tests (INF/NAN not supported on this device)" );
         else
         {
             clProgramWrapper program;
             clKernelWrapper kernel;
-            
+
             if( create_single_kernel_helper( context, &program, &kernel, 1, kernel_constant_double_limits, "test" ) != 0 )
             {
                 return -1;
             }
-            
+
             doubleStream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(doubleOut), NULL, &error );
             test_error( error, "Creating test array failed" );
-            
+
             error = clSetKernelArg( kernel, 0, sizeof( intStream ), &intStream );
             test_error( error, "Unable to set indexed kernel arguments" );
             error = clSetKernelArg( kernel, 1, sizeof( doubleStream ), &doubleStream );
             test_error( error, "Unable to set indexed kernel arguments" );
-            
+
             error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
             test_error( error, "Kernel execution failed" );
-            
+
             error = clEnqueueReadBuffer( queue, intStream, CL_TRUE, 0, sizeof(intOut), intOut, 0, NULL, NULL );
             test_error( error, "Unable to get result data" );
             error = clEnqueueReadBuffer( queue, doubleStream, CL_TRUE, 0, sizeof(doubleOut), doubleOut, 0, NULL, NULL );
             test_error( error, "Unable to get result data" );
-            
-            TEST_DOUBLE_ASSERTION( intOut[0] == 8, "sizeof( HUGE_VAL ) = 8", intOut[0] ) 
-            TEST_DOUBLE_ASSERTION( intOut[1] == 1, "HUGE_VAL = INFINITY", intOut[1] ) 
-            TEST_DOUBLE_ASSERTION( intOut[2] == 1, "isinf( HUGE_VAL ) = true", intOut[2] ) 
-            TEST_DOUBLE_ASSERTION( intOut[3] == 0, "isnormal( HUGE_VAL ) = false", intOut[3] ) 
-            TEST_DOUBLE_ASSERTION( intOut[4] == 0, "isnan( HUGE_VAL ) = false", intOut[4] ) 
-            TEST_DOUBLE_ASSERTION( intOut[5] == 1, "HUGE_VAL = HUGE_VAL", intOut[5] ) 
-            TEST_DOUBLE_ASSERTION( intOut[6] == 1, "as_ulong( HUGE_VAL ) = 0x7ff0000000000000UL", intOut[6] ) 
-            TEST_DOUBLE_ASSERTION( *( (uint64_t *)&doubleOut[0] ) == 0x7ff0000000000000ULL, "as_ulong( HUGE_VAL ) = 0x7ff0000000000000UL", doubleOut[0] ) 
+
+            TEST_DOUBLE_ASSERTION( intOut[0] == 8, "sizeof( HUGE_VAL ) = 8", intOut[0] )
+            TEST_DOUBLE_ASSERTION( intOut[1] == 1, "HUGE_VAL = INFINITY", intOut[1] )
+            TEST_DOUBLE_ASSERTION( intOut[2] == 1, "isinf( HUGE_VAL ) = true", intOut[2] )
+            TEST_DOUBLE_ASSERTION( intOut[3] == 0, "isnormal( HUGE_VAL ) = false", intOut[3] )
+            TEST_DOUBLE_ASSERTION( intOut[4] == 0, "isnan( HUGE_VAL ) = false", intOut[4] )
+            TEST_DOUBLE_ASSERTION( intOut[5] == 1, "HUGE_VAL = HUGE_VAL", intOut[5] )
+            TEST_DOUBLE_ASSERTION( intOut[6] == 1, "as_ulong( HUGE_VAL ) = 0x7ff0000000000000UL", intOut[6] )
+            TEST_DOUBLE_ASSERTION( *( (uint64_t *)&doubleOut[0] ) == 0x7ff0000000000000ULL, "as_ulong( HUGE_VAL ) = 0x7ff0000000000000UL", doubleOut[0] )
         }
     }
-    
+
     return 0;
 }
 

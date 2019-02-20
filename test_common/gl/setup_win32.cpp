@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -110,7 +110,7 @@ public:
                 log_info("Using platform with name: %s \n", name);
                 free(name);
             }
-            
+
             clGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn) clGetExtensionFunctionAddressForPlatform(platform, "clGetGLContextInfoKHR");
             if (!clGetGLContextInfoKHR) {
                 print_error(CL_INVALID_PLATFORM, "Failed to query proc address for clGetGLContextInfoKHR");
@@ -124,7 +124,7 @@ public:
                                        &dev_size);
         if (status != CL_SUCCESS) {
             print_error(status, "clGetGLContextInfoKHR failed");
-            return 0;            
+            return 0;
         }
         dev_size /= sizeof(cl_device_id);
         log_info("GL context supports %d compute devices\n", dev_size);
@@ -136,7 +136,7 @@ public:
                                        &dev_size);
         if (status != CL_SUCCESS) {
             print_error(status, "clGetGLContextInfoKHR failed");
-            return 0;            
+            return 0;
         }
 
         cl_device_id ctxDevice = m_devices[0];
@@ -154,7 +154,7 @@ public:
 
         return clCreateContext(properties, 1, &ctxDevice, NULL, NULL, &status);
     }
-  
+
     virtual int SupportsCLGLInterop( cl_device_type device_type )
     {
         cl_device_id devices[MAX_DEVICES];
@@ -170,7 +170,7 @@ public:
             print_error(error, "clGetDeviceIDs failed");
             return -1;
         }
-      
+
         // Check all devices, search for one that supports cl_khr_gl_sharing
         char extensions[8192];
         for (int i=0; i<(int)num_of_devices; i++) {
@@ -179,7 +179,7 @@ public:
                 print_error(error, "clGetDeviceInfo failed");
                 return -1;
             }
-        
+
             if (strstr(extensions, "cl_khr_gl_sharing") == NULL) {
                 log_info("Device %d of %d does not support required extension cl_khr_gl_sharing.\n", i+1, num_of_devices);
             } else {
@@ -197,8 +197,8 @@ public:
 
 GLEnvironment * GLEnvironment::Instance( void )
 {
-	static WGLEnvironment * env = NULL;
-	if( env == NULL )
-		env = new WGLEnvironment();
-	return env;
+    static WGLEnvironment * env = NULL;
+    if( env == NULL )
+        env = new WGLEnvironment();
+    return env;
 }

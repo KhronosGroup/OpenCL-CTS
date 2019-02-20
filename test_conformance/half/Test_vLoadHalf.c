@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,17 +22,17 @@ extern const char *addressSpaceNames[];
 
 static inline float half2float( cl_ushort us )
 {
-    uint32_t u = us;                   
+    uint32_t u = us;
     uint32_t sign = (u << 16) & 0x80000000;
-    int32_t exponent = (u & 0x7c00) >> 10;     
+    int32_t exponent = (u & 0x7c00) >> 10;
     uint32_t mantissa = (u & 0x03ff) << 13;
     union{ unsigned int u; float f;}uu;
-    
+
     if( exponent == 0 )
     {
         if( mantissa == 0 )
             return sign ? -0.0f : 0.0f;
-        
+
         int shift = __builtin_clz( mantissa ) - 8;
         exponent -= shift-1;
         mantissa <<= shift;
@@ -46,16 +46,16 @@ static inline float half2float( cl_ushort us )
                 uu.u |= 0x7fc00000;
             else
                 uu.u |= 0x7f800000;
-            
+
             return uu.f;
         }
-    
+
     exponent += 127 - 15;
     exponent <<= 23;
-    
+
     exponent |= mantissa;
     uu.u = exponent | sign;
-    
+
     return uu.f;
 }
 
@@ -70,13 +70,13 @@ int Test_vLoadHalf_private( bool aligned )
     uint64_t time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
     uint64_t min_time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
     size_t q;
-    
+
     memset( min_time, -1, sizeof( min_time ) );
-    
+
     vlog( "Testing vload%s_half\n", aligned ? "a" : "" );
     fflush( stdout );
     const char *vector_size_names[]   = {"1", "2", "4", "8", "16", "3"};
-    
+
     int minVectorSize = kMinVectorSize;
     // There is no aligned scalar vloada_half in CL 1.1
 #if ! defined( CL_VERSION_1_1 ) && ! defined(__APPLE__)
@@ -84,10 +84,10 @@ int Test_vLoadHalf_private( bool aligned )
     if (aligned && minVectorSize == 0)
         minVectorSize = 1;
 #endif
-    
+
     for( vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
     {
-        
+
         int effectiveVectorSize = g_arrVecSizes[vectorSize];
         if(effectiveVectorSize == 3 && aligned) {
             effectiveVectorSize = 4;
@@ -99,7 +99,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   f[i] = vload", aligned ? "a" : "", "_half",vector_size_name_extensions[vectorSize],"( i, p );\n"
             "}\n"
         };
-        
+
         const char *sourceV3[] = {
             "__kernel void test( const __global half *p, __global float *f,\n"
             "                   uint extra_last_thread)\n"
@@ -116,7 +116,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   }\n"
             "}\n"
         };
-        
+
         const char *sourceV3aligned[] = {
             "__kernel void test( const __global half *p, __global float3 *f )\n"
             "{\n"
@@ -125,7 +125,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   ((__global float *)f)[4*i+3] = vloada_half(4*i+3,p);\n"
             "}\n"
         };
-        
+
         const char *source_private1[] = {
             "__kernel void test( const __global half *p, __global float *f )\n"
             "{\n"
@@ -136,8 +136,8 @@ int Test_vLoadHalf_private( bool aligned )
             "   f[i] = vload", (aligned ? "a" : ""), "_half( 0, hdata_p );\n"
             "}\n"
         };
-		
-		const char *source_private2[] = {
+
+        const char *source_private2[] = {
             "__kernel void test( const __global half *p, __global float", vector_size_name_extensions[vectorSize], " *f )\n"
             "{\n"
             "   __private ", align_types[vectorSize], " data[", vector_size_names[vectorSize], "/", align_divisors[vectorSize], "];\n"
@@ -160,7 +160,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   __global  ushort* i_p = (__global  ushort*)p;\n"
             "   size_t i = get_global_id(0);\n"
             "   int k;\n"
-            //	    "   data = vload3(i, i_p);\n"
+            //        "   data = vload3(i, i_p);\n"
             "   size_t last_i = get_global_size(0)-1;\n"
             "   if(last_i == i && extra_last_thread != 0) {\n"
             "     if(extra_last_thread ==2) {\n"
@@ -174,7 +174,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   }\n"
             "}\n"
         };
-        
+
         const char *source_privateV3aligned[] = {
             "__kernel void test( const __global half *p, __global float3 *f )\n"
             "{\n"
@@ -182,7 +182,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   half* hdata_p = (half*) &data;\n"
             "   size_t i = get_global_id(0);\n"
             "   global  ushort* i_p = (global  ushort*)p + i * 4;\n"
-            "   int offset = i & 3;\n"   
+            "   int offset = i & 3;\n"
             "   data[offset] = (ushort4)( i_p[0], i_p[1], i_p[2], USHRT_MAX ); \n"
             "   data[offset^1] = USHRT_MAX; \n"
             "   data[offset^2] = USHRT_MAX; \n"
@@ -194,9 +194,9 @@ int Test_vLoadHalf_private( bool aligned )
             "   ((__global float *)f)[4*i+3] = vload_half(4*i+3, p);\n"
             "}\n"
         };
-        
+
         char local_buf_size[10];
-        
+
         sprintf(local_buf_size, "%lld", (uint64_t)((effectiveVectorSize))*gWorkGroupSize);
         const char *source_local1[] = {
             "__kernel void test( const __global half *p, __global float *f )\n"
@@ -209,7 +209,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   f[i] = vload", aligned ? "a" : "", "_half( lid, hdata_p );\n"
             "}\n"
         };
-        		
+
         const char *source_local2[] = {
             "__kernel void test( const __global half *p, __global float", vector_size_name_extensions[vectorSize], " *f )\n"
             "{\n"
@@ -224,7 +224,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   f[i] = vload", aligned ? "a" : "", "_half",vector_size_name_extensions[vectorSize],"( lid, hdata_p );\n"
             "}\n"
         };
-        
+
         const char *source_localV3[] = {
             "__kernel void test( const __global half *p, __global float *f,\n"
             "                    uint extra_last_thread)\n"
@@ -248,7 +248,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   };\n"
             "}\n"
         };
-        
+
         const char *source_localV3aligned[] = {
             "__kernel void test( const __global half *p, __global float3 *f )\n"
             "{\n"
@@ -264,7 +264,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   ((__global float *)f)[4*i+3] = vload_half(lid*4+3, hdata_p);\n"
             "}\n"
         };
-        
+
         const char *source_constant[] = {
             "__kernel void test( __constant half *p, __global float", vector_size_name_extensions[vectorSize], " *f )\n"
             "{\n"
@@ -272,7 +272,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   f[i] = vload", aligned ? "a" : "", "_half",vector_size_name_extensions[vectorSize],"( i, p );\n"
             "}\n"
         };
-        
+
         const char *source_constantV3[] = {
             "__kernel void test( __constant half *p, __global float *f,\n"
             "                    uint extra_last_thread)\n"
@@ -289,7 +289,7 @@ int Test_vLoadHalf_private( bool aligned )
             "   }\n"
             "}\n"
         };
-        
+
         const char *source_constantV3aligned[] = {
             "__kernel void test( __constant half *p, __global float3 *f )\n"
             "{\n"
@@ -298,8 +298,8 @@ int Test_vLoadHalf_private( bool aligned )
             "   ((__global float *)f)[4*i+3] = vload_half(4*i+3,p);\n"
             "}\n"
         };
-        
-        
+
+
         if(g_arrVecSizes[vectorSize] != 3) {
             programs[vectorSize][0] = MakeProgram( source, sizeof( source) / sizeof( source[0])  );
             if( NULL == programs[ vectorSize ][0] ) {
@@ -328,9 +328,9 @@ int Test_vLoadHalf_private( bool aligned )
                 for ( q= 0; q < sizeof( sourceV3) / sizeof( sourceV3[0]); q++)
                     vlog_error("%s", sourceV3[q]);
                 return -1;
-            }   
+            }
         }
-        
+
         kernels[ vectorSize ][0] = clCreateKernel( programs[ vectorSize ][0], "test", &error );
         if( NULL == kernels[vectorSize][0] )
         {
@@ -338,7 +338,7 @@ int Test_vLoadHalf_private( bool aligned )
             vlog_error( "\t\tFAILED -- Failed to create kernel. (%d)\n", error );
             return -2;
         }
-        
+
         const char** source_ptr;
         uint32_t source_size;
         if (vectorSize == 0) {
@@ -365,7 +365,7 @@ int Test_vLoadHalf_private( bool aligned )
                 vlog_error("%s", source_ptr[q]);
             return -1;
         }
-        
+
         kernels[ vectorSize ][1] = clCreateKernel( programs[ vectorSize ][1], "test", &error );
         if( NULL == kernels[vectorSize][1] )
         {
@@ -373,7 +373,7 @@ int Test_vLoadHalf_private( bool aligned )
             vlog_error( "\t\tFAILED -- Failed to create private kernel. (%d)\n", error );
             return -2;
         }
-        
+
         if (vectorSize == 0) {
             source_ptr = source_local1;
             source_size = sizeof( source_local1) / sizeof( source_local1[0]);
@@ -398,7 +398,7 @@ int Test_vLoadHalf_private( bool aligned )
                 vlog_error("%s", source_ptr[q]);
             return -1;
         }
-        
+
         kernels[ vectorSize ][2] = clCreateKernel( programs[ vectorSize ][2], "test", &error );
         if( NULL == kernels[vectorSize][2] )
         {
@@ -406,7 +406,7 @@ int Test_vLoadHalf_private( bool aligned )
             vlog_error( "\t\tFAILED -- Failed to create local kernel. (%d)\n", error );
             return -2;
         }
-        
+
         if(g_arrVecSizes[vectorSize] == 3) {
             if(aligned) {
                 programs[vectorSize][3] = MakeProgram( source_constantV3aligned, sizeof(source_constantV3aligned) / sizeof( source_constantV3aligned[0])  );
@@ -428,7 +428,7 @@ int Test_vLoadHalf_private( bool aligned )
                         vlog_error("%s", source_constantV3[q]);
                     return -1;
                 }
-            } 
+            }
         } else {
             programs[vectorSize][3] = MakeProgram( source_constant, sizeof(source_constant) / sizeof( source_constant[0])  );
             if( NULL == programs[ vectorSize ][3] )
@@ -440,7 +440,7 @@ int Test_vLoadHalf_private( bool aligned )
                 return -1;
             }
         }
-        
+
         kernels[ vectorSize ][3] = clCreateKernel( programs[ vectorSize ][3], "test", &error );
         if( NULL == kernels[vectorSize][3] )
         {
@@ -449,53 +449,53 @@ int Test_vLoadHalf_private( bool aligned )
             return -2;
         }
     }
-    
+
     // Figure out how many elements are in a work block
     size_t elementSize = MAX( sizeof(cl_half), sizeof(cl_float));
     size_t blockCount = getBufferSize(gDevice) / elementSize; // elementSize is power of 2
     uint64_t lastCase = 1ULL << (8*sizeof(cl_half)); // number of things of size cl_half
-    
+
     // we handle 64-bit types a bit differently.
     if( lastCase == 0 )
         lastCase = 0x100000000ULL;
-    
-    
+
+
     uint64_t i, j;
     uint64_t printMask = (lastCase >> 4) - 1;
     uint32_t count = 0;
     error = 0;
     int addressSpace;
     //    int reported_vector_skip = 0;
-    
+
     for( i = 0; i < (uint64_t)lastCase; i += blockCount )
     {
         count = (uint32_t) MIN( blockCount, lastCase - i );
-        
+
         //Init the input stream
         uint16_t *p = (uint16_t *)gIn_half;
         for( j = 0; j < count; j++ )
             p[j] = j + i;
-        
+
         if( (error = clEnqueueWriteBuffer(gQueue, gInBuffer_half, CL_TRUE, 0, count * sizeof( cl_half ), gIn_half, 0, NULL, NULL)))
         {
             vlog_error( "Failure in clWriteArray\n" );
             gFailCount++;
             goto exit;
         }
-        
+
         //create the reference result
         const unsigned short *s = (const unsigned short *)gIn_half;
         float *d = (float *)gOut_single_reference;
         for( j = 0; j < count; j++ )
-            d[j] = half2float( s[j] );  
-        
+            d[j] = half2float( s[j] );
+
         //Check the vector lengths
         for( vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
         { // here we loop through vector sizes, 3 is last
-            
+
             for ( addressSpace = 0; addressSpace < 4; addressSpace++) {
                 uint32_t pattern = 0x7fffdead;
-                
+
                 /*
                  if (addressSpace == 3) {
                  vlog("Note: skipping address space %s due to small buffer size.\n", addressSpaceNames[addressSpace]);
@@ -509,12 +509,12 @@ int Test_vLoadHalf_private( bool aligned )
                     gFailCount++;
                     goto exit;
                 }
-                
+
                 if(g_arrVecSizes[vectorSize] == 3 && !aligned) {
                     // now we need to add the extra const argument for how
                     // many elements the last thread should take care of.
                 }
-                
+
                 // okay, here is where we have to be careful
                 if( (error = RunKernel( kernels[vectorSize][addressSpace], gInBuffer_half, gOutBuffer_single, numVecs(count, vectorSize, aligned) ,
                                        runsOverBy(count, vectorSize, aligned) ) ) )
@@ -522,14 +522,14 @@ int Test_vLoadHalf_private( bool aligned )
                     gFailCount++;
                     goto exit;
                 }
-                
+
                 if( (error = clEnqueueReadBuffer(gQueue, gOutBuffer_single, CL_TRUE, 0, count * sizeof( float ), gOut_single, 0, NULL, NULL)) )
                 {
                     vlog_error( "Failure in clReadArray\n" );
                     gFailCount++;
                     goto exit;
                 }
-                
+
                 if( memcmp( gOut_single, gOut_single_reference, count * sizeof( float )) )
                 {
                     uint32_t *u1 = (uint32_t *)gOut_single;
@@ -551,14 +551,14 @@ int Test_vLoadHalf_private( bool aligned )
                         }
                     }
                 }
-                
+
                 if( gReportTimes && addressSpace == 0)
                 {
                     //Run again for timing
                     for( j = 0; j < 100; j++ )
                     {
                         uint64_t startTime = ReadTime();
-                        error = 
+                        error =
                         RunKernel( kernels[vectorSize][addressSpace], gInBuffer_half, gOutBuffer_single, numVecs(count, vectorSize, aligned) ,
                                   runsOverBy(count, vectorSize, aligned));
                         if(error)
@@ -566,7 +566,7 @@ int Test_vLoadHalf_private( bool aligned )
                             gFailCount++;
                             goto exit;
                         }
-                        
+
                         if( (error = clFinish(gQueue)) )
                         {
                             vlog_error( "Failure in clFinish\n" );
@@ -581,26 +581,26 @@ int Test_vLoadHalf_private( bool aligned )
                 }
             }
         }
-        
+
         if( ((i+blockCount) & ~printMask) == (i+blockCount) )
         {
             vlog( "." );
             fflush( stdout );
         }
     }
-    
+
     vlog( "\tPassed\n" );
-    
+
     if( gReportTimes )
     {
         for( vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
             vlog_perf( SubtractTime( time[ vectorSize ], 0 ) * 1e6 * gDeviceFrequency * gComputeDevices / (double) (count * 100), 0,
                       "average us/elem", "vLoad%sHalf avg. (%s, vector size: %d)", ( (aligned) ? "a" : ""), addressSpaceNames[0], (g_arrVecSizes[vectorSize])  );
         for( vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
-            vlog_perf( SubtractTime( min_time[ vectorSize ], 0 ) * 1e6 * gDeviceFrequency * gComputeDevices / (double) count, 0, 
+            vlog_perf( SubtractTime( min_time[ vectorSize ], 0 ) * 1e6 * gDeviceFrequency * gComputeDevices / (double) count, 0,
                       "best us/elem", "vLoad%sHalf best (%s vector size: %d)", ( (aligned) ? "a" : ""), addressSpaceNames[0], (g_arrVecSizes[vectorSize]) );
     }
-    
+
 exit:
     //clean up
     for( vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
@@ -610,7 +610,7 @@ exit:
             clReleaseProgram( programs[ vectorSize ][addressSpace] );
         }
     }
-    
+
     gTestCount++;
     return error;
 }

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -84,7 +84,7 @@ const char *test_names[] = {
     "!",  // 22
 };
 
-const size_t vector_aligns[] = {0, 1, 2, 4, 4, 
+const size_t vector_aligns[] = {0, 1, 2, 4, 4,
     8, 8, 8, 8,
     16, 16, 16, 16,
     16, 16, 16, 16};
@@ -95,10 +95,10 @@ const size_t vector_aligns[] = {0, 1, 2, 4, 4,
 int
 verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_long *outptr, size_t n)
 {
-    cl_long			r, shift_mask = (sizeof(cl_long)*8)-1;
+    cl_long            r, shift_mask = (sizeof(cl_long)*8)-1;
     size_t         i, j;
     int count=0;
-    
+
     for (j=0; j<n; j += vector_size )
     {
         for( i = j; i < j + vector_size; i++ )
@@ -158,7 +158,7 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    } 
+                    }
                     break;
                 case 15:
                     // Scalars are set to 1/0
@@ -166,7 +166,7 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 16:
                     // Scalars are set to 1/0
@@ -174,7 +174,7 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }    
+                    }
                     break;
                 case 17:
                     // Scalars are set to 1/0
@@ -182,7 +182,7 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 18:
                     // Scalars are set to 1/0
@@ -190,7 +190,7 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 19:
                     // Scalars are set to 1/0
@@ -198,7 +198,7 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 20:
                     // Scalars are set to 1/0
@@ -206,7 +206,7 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 21:
                     // Scalars are set to 1/0
@@ -214,7 +214,7 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 22:
                     // Scalars are set to 1/0
@@ -222,7 +222,7 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 default:
                     log_error("Invalid test: %d\n", test);
@@ -237,7 +237,7 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
                     log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %lld (0x%llx).\n", (int)log2(sizeof(cl_long)*8),  inptrB[i]&shift_mask, inptrB[i]&shift_mask);
                 }
                 else if (test == 10 || test == 11) {
-                    
+
                     log_error("cl_long Verification failed at element %ld of %ld (%ld): 0x%llx %s 0x%llx = 0x%llx, got 0x%llx\n", i, n, j, inptrA[i], tests[test], inptrB[j], r, outptr[i]);
                     log_error("\t1) Scalar shift failure at element %ld: original is 0x%llx %s %d (0x%llx)\n", i, inptrA[i], tests[test], (int)inptrB[j], inptrB[j]);
                     log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %lld (0x%llx).\n", (int)log2(sizeof(cl_long)*8),  inptrB[j]&shift_mask, inptrB[j]&shift_mask);
@@ -255,16 +255,16 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
             }
         }
     }
-    
+
     if (count) return -1; else return 0;
 }
 
 void
-init_long_data(uint64_t indx, int num_elements, cl_long *input_ptr[], MTdata d) 
+init_long_data(uint64_t indx, int num_elements, cl_long *input_ptr[], MTdata d)
 {
     cl_ulong        *p = (cl_ulong *)input_ptr[0];
     int         j;
-    
+
     if (indx == 0) {
         // Do the tricky values the first time around
         fill_test_values( input_ptr[ 0 ], input_ptr[ 1 ], (size_t)num_elements, d );
@@ -294,7 +294,7 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
     cl_ulong        r, shift_mask = (sizeof(cl_ulong)*8)-1;
     size_t          i, j;
     int count=0;
-    
+
     for (j=0; j<n; j += vector_size )
     {
         for( i = j; i < j + vector_size; i++ )
@@ -342,7 +342,7 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
                 case 11:
                     r = inptrA[i] << (inptrB[j] & shift_mask);
                     break;
-                case 12:        
+                case 12:
                     r = ~inptrA[i];
                     break;
                 case 13:
@@ -354,7 +354,7 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    } 
+                    }
                     break;
                 case 15:
                     // Scalars are set to 1/0
@@ -362,7 +362,7 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 16:
                     // Scalars are set to 1/0
@@ -370,7 +370,7 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }    
+                    }
                     break;
                 case 17:
                     // Scalars are set to 1/0
@@ -378,7 +378,7 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 18:
                     // Scalars are set to 1/0
@@ -386,7 +386,7 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 19:
                     // Scalars are set to 1/0
@@ -394,7 +394,7 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 20:
                     // Scalars are set to 1/0
@@ -402,7 +402,7 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 21:
                     // Scalars are set to 1/0
@@ -410,7 +410,7 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 22:
                     // Scalars are set to 1/0
@@ -418,7 +418,7 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 default:
                     log_error("Invalid test: %d\n", test);
@@ -454,20 +454,20 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
 }
 
 void
-init_ulong_data(uint64_t indx, int num_elements, cl_ulong *input_ptr[], MTdata d) 
+init_ulong_data(uint64_t indx, int num_elements, cl_ulong *input_ptr[], MTdata d)
 {
-    cl_ulong		*p = (cl_ulong *)input_ptr[0];
-    int			j;
-    
-    if (indx == 0) 
+    cl_ulong        *p = (cl_ulong *)input_ptr[0];
+    int            j;
+
+    if (indx == 0)
     {
         // Do the tricky values the first time around
         fill_test_values( (cl_long*)input_ptr[ 0 ], (cl_long*)input_ptr[ 1 ], (size_t)num_elements, d );
     }
-    else 
+    else
     {
         // Then just test lots of random ones.
-        for (j=0; j<num_elements; j++) 
+        for (j=0; j<num_elements; j++)
         {
             cl_ulong a = genrand_int32(d);
             cl_ulong b = genrand_int32(d);
@@ -475,7 +475,7 @@ init_ulong_data(uint64_t indx, int num_elements, cl_ulong *input_ptr[], MTdata d
             p[j] = (a <<32) | b;
         }
         p = (cl_ulong *)input_ptr[1];
-        for (j=0; j<num_elements; j++) 
+        for (j=0; j<num_elements; j++)
         {
             cl_ulong a = genrand_int32(d);
             cl_ulong b = genrand_int32(d);
@@ -492,10 +492,10 @@ init_ulong_data(uint64_t indx, int num_elements, cl_ulong *input_ptr[], MTdata d
 int
 verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int *outptr, size_t n)
 {
-    cl_int			r, shift_mask = (sizeof(cl_int)*8)-1;
+    cl_int            r, shift_mask = (sizeof(cl_int)*8)-1;
     size_t          i, j;
     int count=0;
-    
+
     for (j=0; j<n; j += vector_size )
     {
         for( i = j; i < j + vector_size; i++ )
@@ -543,7 +543,7 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
                 case 11:
                     r = inptrA[i] << (inptrB[j] & shift_mask);
                     break;
-                case 12:        
+                case 12:
                     r = ~inptrA[i];
                     break;
                 case 13:
@@ -555,7 +555,7 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    } 
+                    }
                     break;
                 case 15:
                     // Scalars are set to 1/0
@@ -563,7 +563,7 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 16:
                     // Scalars are set to 1/0
@@ -571,7 +571,7 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }    
+                    }
                     break;
                 case 17:
                     // Scalars are set to 1/0
@@ -579,7 +579,7 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 18:
                     // Scalars are set to 1/0
@@ -587,7 +587,7 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 19:
                     // Scalars are set to 1/0
@@ -595,7 +595,7 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 20:
                     // Scalars are set to 1/0
@@ -603,7 +603,7 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 21:
                     // Scalars are set to 1/0
@@ -611,7 +611,7 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 22:
                     // Scalars are set to 1/0
@@ -619,7 +619,7 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 default:
                     log_error("Invalid test: %d\n", test);
@@ -651,23 +651,23 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
             }
         }
     }
-    
+
     if (count) return -1; else return 0;
 }
 
 void
-init_int_data(uint64_t indx, int num_elements, cl_int *input_ptr[], MTdata d) 
+init_int_data(uint64_t indx, int num_elements, cl_int *input_ptr[], MTdata d)
 {
     static const cl_int specialCaseList[] = { 0, -1, 1, CL_INT_MIN, CL_INT_MIN + 1, CL_INT_MAX };
-    int			j;
-    
+    int            j;
+
     // Set the inputs to a random number
     for (j=0; j<num_elements; j++)
     {
         ((cl_int *)input_ptr[0])[j] = (cl_int)genrand_int32(d);
         ((cl_int *)input_ptr[1])[j] = (cl_int)genrand_int32(d);
     }
-    
+
     // Init the first few values to test special cases
     {
         size_t x, y, index = 0;
@@ -687,10 +687,10 @@ init_int_data(uint64_t indx, int num_elements, cl_int *input_ptr[], MTdata d)
 int
 verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_uint *outptr, size_t n)
 {
-    cl_uint			r, shift_mask = (sizeof(cl_uint)*8)-1;
+    cl_uint            r, shift_mask = (sizeof(cl_uint)*8)-1;
     size_t          i, j;
     int count=0;
-    
+
     for (j=0; j<n; j += vector_size )
     {
         for( i = j; i < j + vector_size; i++ )
@@ -738,7 +738,7 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
                 case 11:
                     r = inptrA[i] << (inptrB[j] & shift_mask);
                     break;
-                case 12:        
+                case 12:
                     r = ~inptrA[i];
                     break;
                 case 13:
@@ -750,7 +750,7 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    } 
+                    }
                     break;
                 case 15:
                     // Scalars are set to 1/0
@@ -758,7 +758,7 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 16:
                     // Scalars are set to 1/0
@@ -766,7 +766,7 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }    
+                    }
                     break;
                 case 17:
                     // Scalars are set to 1/0
@@ -774,7 +774,7 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 18:
                     // Scalars are set to 1/0
@@ -782,7 +782,7 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 19:
                     // Scalars are set to 1/0
@@ -790,7 +790,7 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 20:
                     // Scalars are set to 1/0
@@ -798,7 +798,7 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 21:
                     // Scalars are set to 1/0
@@ -806,7 +806,7 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 22:
                     // Scalars are set to 1/0
@@ -814,7 +814,7 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 default:
                     log_error("Invalid test: %d\n", test);
@@ -850,11 +850,11 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
 }
 
 void
-init_uint_data(uint64_t indx, int num_elements, cl_uint *input_ptr[], MTdata d) 
+init_uint_data(uint64_t indx, int num_elements, cl_uint *input_ptr[], MTdata d)
 {
     static cl_uint specialCaseList[] = { 0, (cl_uint) CL_INT_MAX, (cl_uint) CL_INT_MAX + 1, CL_UINT_MAX-1, CL_UINT_MAX };
-    int			j;
-    
+    int            j;
+
     // Set the first input to an incrementing number
     // Set the second input to a random number
     for (j=0; j<num_elements; j++)
@@ -862,7 +862,7 @@ init_uint_data(uint64_t indx, int num_elements, cl_uint *input_ptr[], MTdata d)
         ((cl_uint *)input_ptr[0])[j] = genrand_int32(d);
         ((cl_uint *)input_ptr[1])[j] = genrand_int32(d);
     }
-    
+
     // Init the first few values to test special cases
     {
         size_t x, y, index = 0;
@@ -882,11 +882,11 @@ int
 verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, cl_short *outptr, size_t n)
 {
     cl_short r;
-    cl_int   shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int)*8)-1 
+    cl_int   shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int)*8)-1
     : (cl_int)(sizeof(cl_short)*8)-1;
     size_t   i, j;
     int      count=0;
-    
+
     for (j=0; j<n; j += vector_size )
     {
         for( i = j; i < j + vector_size; i++ )
@@ -934,7 +934,7 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
                 case 11:
                     r = inptrA[i] << (inptrB[j] & shift_mask);
                     break;
-                case 12:        
+                case 12:
                     r = ~inptrA[i];
                     break;
                 case 13:
@@ -946,7 +946,7 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    } 
+                    }
                     break;
                 case 15:
                     // Scalars are set to 1/0
@@ -954,7 +954,7 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 16:
                     // Scalars are set to 1/0
@@ -962,7 +962,7 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }    
+                    }
                     break;
                 case 17:
                     // Scalars are set to 1/0
@@ -970,7 +970,7 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 18:
                     // Scalars are set to 1/0
@@ -978,7 +978,7 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 19:
                     // Scalars are set to 1/0
@@ -986,7 +986,7 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 20:
                     // Scalars are set to 1/0
@@ -994,7 +994,7 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 21:
                     // Scalars are set to 1/0
@@ -1002,7 +1002,7 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 22:
                     // Scalars are set to 1/0
@@ -1010,7 +1010,7 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 default:
                     log_error("Invalid test: %d\n", test);
@@ -1042,16 +1042,16 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
             }
         }
     }
-    
+
     if (count) return -1; else return 0;
 }
 
 void
-init_short_data(uint64_t indx, int num_elements, cl_short *input_ptr[], MTdata d) 
+init_short_data(uint64_t indx, int num_elements, cl_short *input_ptr[], MTdata d)
 {
     static const cl_short specialCaseList[] = { 0, -1, 1, CL_SHRT_MIN, CL_SHRT_MIN + 1, CL_SHRT_MAX };
-    int			j;
-    
+    int            j;
+
     // Set the inputs to a random number
     for (j=0; j<num_elements; j++)
     {
@@ -1059,7 +1059,7 @@ init_short_data(uint64_t indx, int num_elements, cl_short *input_ptr[], MTdata d
         ((cl_short *)input_ptr[0])[j] = (cl_short) bits;
         ((cl_short *)input_ptr[1])[j] = (cl_short) (bits >> 16);
     }
-    
+
     // Init the first few values to test special cases
     {
         size_t x, y, index = 0;
@@ -1080,11 +1080,11 @@ int
 verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB, cl_ushort *outptr, size_t n)
 {
     cl_ushort       r;
-    cl_uint   shift_mask = vector_size == 1 ? (cl_uint)(sizeof(cl_uint)*8)-1 
+    cl_uint   shift_mask = vector_size == 1 ? (cl_uint)(sizeof(cl_uint)*8)-1
     : (cl_uint)(sizeof(cl_ushort)*8)-1;
     size_t          i, j;
     int             count=0;
-    
+
     for (j=0; j<n; j += vector_size )
     {
         for( i = j; i < j + vector_size; i++ )
@@ -1132,7 +1132,7 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
                 case 11:
                     r = inptrA[i] << (inptrB[j] & shift_mask);
                     break;
-                case 12:        
+                case 12:
                     r = ~inptrA[i];
                     break;
                 case 13:
@@ -1144,7 +1144,7 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    } 
+                    }
                     break;
                 case 15:
                     // Scalars are set to 1/0
@@ -1152,7 +1152,7 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 16:
                     // Scalars are set to 1/0
@@ -1160,7 +1160,7 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }    
+                    }
                     break;
                 case 17:
                     // Scalars are set to 1/0
@@ -1168,7 +1168,7 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 18:
                     // Scalars are set to 1/0
@@ -1176,7 +1176,7 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 19:
                     // Scalars are set to 1/0
@@ -1184,7 +1184,7 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 20:
                     // Scalars are set to 1/0
@@ -1192,7 +1192,7 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 21:
                     // Scalars are set to 1/0
@@ -1200,7 +1200,7 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 22:
                     // Scalars are set to 1/0
@@ -1208,7 +1208,7 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 default:
                     log_error("Invalid test: %d\n", test);
@@ -1240,16 +1240,16 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
             }
         }
     }
-    
+
     if (count) return -1; else return 0;
 }
 
 void
-init_ushort_data(uint64_t indx, int num_elements, cl_ushort *input_ptr[], MTdata d) 
+init_ushort_data(uint64_t indx, int num_elements, cl_ushort *input_ptr[], MTdata d)
 {
     static const cl_ushort specialCaseList[] = { 0, -1, 1, CL_SHRT_MAX, CL_SHRT_MAX + 1, CL_USHRT_MAX };
-    int			j;
-    
+    int            j;
+
     // Set the inputs to a random number
     for (j=0; j<num_elements; j++)
     {
@@ -1257,7 +1257,7 @@ init_ushort_data(uint64_t indx, int num_elements, cl_ushort *input_ptr[], MTdata
         ((cl_ushort *)input_ptr[0])[j] = (cl_ushort) bits;
         ((cl_ushort *)input_ptr[1])[j] = (cl_ushort) (bits >> 16);
     }
-    
+
     // Init the first few values to test special cases
     {
         size_t x, y, index = 0;
@@ -1279,16 +1279,16 @@ int
 verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_char *outptr, size_t n)
 {
     cl_char   r;
-    cl_int    shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int)*8)-1 
+    cl_int    shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int)*8)-1
     : (cl_int)(sizeof(cl_char)*8)-1;
     size_t    i, j;
     int       count=0;
-    
+
     for (j=0; j<n; j += vector_size )
     {
         for( i = j; i < j + vector_size; i++ )
         {
-            
+
             switch (test) {
                 case 0:
                     r = inptrA[i] + inptrB[i];
@@ -1332,7 +1332,7 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
                 case 11:
                     r = inptrA[i] << (inptrB[j] & shift_mask);
                     break;
-                case 12:        
+                case 12:
                     r = ~inptrA[i];
                     break;
                 case 13:
@@ -1344,7 +1344,7 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    } 
+                    }
                     break;
                 case 15:
                     // Scalars are set to 1/0
@@ -1352,7 +1352,7 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 16:
                     // Scalars are set to 1/0
@@ -1360,7 +1360,7 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }    
+                    }
                     break;
                 case 17:
                     // Scalars are set to 1/0
@@ -1368,7 +1368,7 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 18:
                     // Scalars are set to 1/0
@@ -1376,7 +1376,7 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 19:
                     // Scalars are set to 1/0
@@ -1384,7 +1384,7 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 20:
                     // Scalars are set to 1/0
@@ -1392,7 +1392,7 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 21:
                     // Scalars are set to 1/0
@@ -1400,7 +1400,7 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 22:
                     // Scalars are set to 1/0
@@ -1408,7 +1408,7 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 default:
                     log_error("Invalid test: %d\n", test);
@@ -1444,20 +1444,20 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
 }
 
 void
-init_char_data(uint64_t indx, int num_elements, cl_char *input_ptr[], MTdata d) 
+init_char_data(uint64_t indx, int num_elements, cl_char *input_ptr[], MTdata d)
 {
     static const cl_char specialCaseList[] = { 0, -1, 1, CL_CHAR_MIN, CL_CHAR_MIN + 1, CL_CHAR_MAX };
-    int			j;
-    
+    int            j;
+
     // FIXME comment below might not be appropriate for
-    // vector data.  Yes, checking every scalar char against every 
+    // vector data.  Yes, checking every scalar char against every
     // scalar char is only 2^16 ~ 64000 tests, but once we get to vec3,
     // vec4, vec8...
-    
+
     // in the meantime, this means I can use [] to access vec3 instead of
     // vload3 / vstore3 :D
-    
-    // FIXME: we really should just check every char against every char here  
+
+    // FIXME: we really should just check every char against every char here
     // Set the inputs to a random number
     for (j=0; j<num_elements; j++)
     {
@@ -1465,7 +1465,7 @@ init_char_data(uint64_t indx, int num_elements, cl_char *input_ptr[], MTdata d)
         ((cl_char *)input_ptr[0])[j] = (cl_char) bits;
         ((cl_char *)input_ptr[1])[j] = (cl_char) (bits >> 16);
     }
-    
+
     // Init the first few values to test special cases
     {
         size_t x, y, index = 0;
@@ -1486,11 +1486,11 @@ int
 verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, cl_uchar *outptr, size_t n)
 {
     cl_uchar r;
-    cl_uint  shift_mask = vector_size == 1 ? (cl_uint)(sizeof(cl_uint)*8)-1 
+    cl_uint  shift_mask = vector_size == 1 ? (cl_uint)(sizeof(cl_uint)*8)-1
     : (cl_uint)(sizeof(cl_uchar)*8)-1;;
     size_t   i, j;
     int      count=0;
-    
+
     for (j=0; j<n; j += vector_size )
     {
         for( i = j; i < j + vector_size; i++ )
@@ -1538,7 +1538,7 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
                 case 11:
                     r = inptrA[i] << (inptrB[j] & shift_mask);
                     break;
-                case 12:        
+                case 12:
                     r = ~inptrA[i];
                     break;
                 case 13:
@@ -1550,7 +1550,7 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    } 
+                    }
                     break;
                 case 15:
                     // Scalars are set to 1/0
@@ -1558,7 +1558,7 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 16:
                     // Scalars are set to 1/0
@@ -1566,7 +1566,7 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }    
+                    }
                     break;
                 case 17:
                     // Scalars are set to 1/0
@@ -1574,7 +1574,7 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 18:
                     // Scalars are set to 1/0
@@ -1582,7 +1582,7 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 19:
                     // Scalars are set to 1/0
@@ -1590,7 +1590,7 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 20:
                     // Scalars are set to 1/0
@@ -1598,7 +1598,7 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 21:
                     // Scalars are set to 1/0
@@ -1606,7 +1606,7 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 case 22:
                     // Scalars are set to 1/0
@@ -1614,7 +1614,7 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
                     // Vectors are set to -1/0
                     if (vector_size != 1 && r) {
                         r = -1;
-                    }         
+                    }
                     break;
                 default:
                     log_error("Invalid test: %d\n", test);
@@ -1646,18 +1646,18 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
             }
         }
     }
-    
+
     if (count) return -1; else return 0;
 }
 
 void
-init_uchar_data(uint64_t indx, int num_elements, cl_uchar *input_ptr[], MTdata d) 
+init_uchar_data(uint64_t indx, int num_elements, cl_uchar *input_ptr[], MTdata d)
 {
     static const cl_uchar specialCaseList[] = { 0, -1, 1, CL_CHAR_MAX, CL_CHAR_MAX + 1, CL_UCHAR_MAX };
-    int			j;
-    
+    int            j;
+
     // FIXME: we really should just check every char against every char here
-    
+
     // Set the inputs to a random number
     for (j=0; j<num_elements; j++)
     {
@@ -1665,7 +1665,7 @@ init_uchar_data(uint64_t indx, int num_elements, cl_uchar *input_ptr[], MTdata d
         ((cl_uchar *)input_ptr[0])[j] = (cl_uchar) bits;
         ((cl_uchar *)input_ptr[1])[j] = (cl_uchar) (bits >> 16);
     }
-    
+
     // Init the first few values to test special cases
     {
         size_t x, y, index = 0;

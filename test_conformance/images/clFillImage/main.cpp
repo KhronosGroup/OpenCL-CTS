@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -40,7 +40,7 @@ cl_command_queue queue;
 
 extern int test_image_set( cl_device_id device, MethodsToTest testMethod );
 
-#define MAX_ALLOWED_STD_DEVIATION_IN_MB		8.0
+#define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
 void printUsage( const char *execName )
 {
@@ -50,11 +50,11 @@ void printUsage( const char *execName )
 
     log_info( "Usage: %s [debug_trace] [small_images]\n", execName );
     log_info( "Where:\n" );
-	log_info( "\t1D - Only test 1D images\n" );
-	log_info( "\t2D - Only test 2D images\n" );
-	log_info( "\t3D - Only test 3D images\n" );
-	log_info( "\t1Darray - Only test 1D image arrays\n" );
-	log_info( "\t2Darray - Only test 2D image arrays\n" );
+    log_info( "\t1D - Only test 1D images\n" );
+    log_info( "\t2D - Only test 2D images\n" );
+    log_info( "\t3D - Only test 3D images\n" );
+    log_info( "\t1Darray - Only test 1D image arrays\n" );
+    log_info( "\t2Darray - Only test 2D image arrays\n" );
     log_info( "\n" );
     log_info( "\tThe following flags specify the types to test. They can be combined; if none are specified, all are tested:\n" );
     log_info( "\t\tint - Test integer fill\n" );
@@ -117,10 +117,10 @@ int main(int argc, const char *argv[])
             testMethods |= k2D;
         else if ( strcmp( str, "3D" ) == 0 )
             testMethods |= k3D;
-		else if( strcmp( str, "1Darray" ) == 0 )
-			testMethods |= k1DArray;
-		else if( strcmp( str, "2Darray" ) == 0 )
-			testMethods |= k2DArray;
+        else if( strcmp( str, "1Darray" ) == 0 )
+            testMethods |= k1DArray;
+        else if( strcmp( str, "2Darray" ) == 0 )
+            testMethods |= k2DArray;
 
         else if( strcmp( str, "int" ) == 0 )
             gTypesToTest |= kTestInt;
@@ -128,7 +128,7 @@ int main(int argc, const char *argv[])
             gTypesToTest |= kTestUInt;
         else if( strcmp( str, "float" ) == 0 )
             gTypesToTest |= kTestFloat;
-        
+
         else if ( strcmp( str, "help" ) == 0 || strcmp( str, "?" ) == 0 )
         {
             printUsage( argv[ 0 ] );

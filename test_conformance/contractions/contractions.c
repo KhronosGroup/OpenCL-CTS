@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,7 +22,7 @@
 #include <fenv.h>
 #endif
 
-#include <float.h> 
+#include <float.h>
 #include <math.h>
 
 #if !defined(_WIN32)
@@ -56,12 +56,12 @@
 #endif
 
 #if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
-#include <xmmintrin.h>
+#include <emmintrin.h>
 #endif
 
 #if defined(__PPC__)
 // Global varaiable used to hold the FPU control register state. The FPSCR register can not
-// be used because not all Power implementations retain or observed the NI (non-IEEE 
+// be used because not all Power implementations retain or observed the NI (non-IEEE
 // mode) bit.
 __thread fpu_control_t fpu_control = 0;
 #endif
@@ -83,7 +83,7 @@ int                 gSeedSpecified = 0;
 int                 gHasDouble = 0;
 MTdata              gMTdata = NULL;
 int                 gSkipNanInf = 0;
-int		             gIgnoreZeroSign = 0;
+int                     gIgnoreZeroSign = 0;
 
 cl_mem              bufA = NULL;
 cl_mem              bufB = NULL;
@@ -94,7 +94,7 @@ cl_mem              bufC_double = NULL;
 cl_mem              bufD_double = NULL;
 float               *buf1, *buf2, *buf3, *buf4, *buf5, *buf6;
 float               *correct[8];
-int		             *skipTest[8];
+int                     *skipTest[8];
 
 double              *buf3_double, *buf4_double, *buf5_double, *buf6_double;
 double              *correct_double[8];
@@ -116,10 +116,10 @@ float sse_add(float x, float y)
 {
     volatile float a = x;
     volatile float b = y;
-    
+
     // defeat x87
-    __m128 va = _mm_set_ss( (float) a ); 
-    __m128 vb = _mm_set_ss( (float) b ); 
+    __m128 va = _mm_set_ss( (float) a );
+    __m128 vb = _mm_set_ss( (float) b );
     va = _mm_add_ss( va, vb );
     _mm_store_ss( (float*) &a, va );
     return a;
@@ -129,10 +129,10 @@ double sse_add_sd(double x, double y)
 {
     volatile double a = x;
     volatile double b = y;
-    
+
     // defeat x87
-    __m128d va = _mm_set_sd( (double) a ); 
-    __m128d vb = _mm_set_sd( (double) b ); 
+    __m128d va = _mm_set_sd( (double) a );
+    __m128d vb = _mm_set_sd( (double) b );
     va = _mm_add_sd( va, vb );
     _mm_store_sd( (double*) &a, va );
     return a;
@@ -142,10 +142,10 @@ float sse_sub(float x, float y)
 {
     volatile float a = x;
     volatile float b = y;
-    
+
     // defeat x87
-    __m128 va = _mm_set_ss( (float) a ); 
-    __m128 vb = _mm_set_ss( (float) b ); 
+    __m128 va = _mm_set_ss( (float) a );
+    __m128 vb = _mm_set_ss( (float) b );
     va = _mm_sub_ss( va, vb );
     _mm_store_ss( (float*) &a, va );
     return a;
@@ -155,10 +155,10 @@ double sse_sub_sd(double x, double y)
 {
     volatile double a = x;
     volatile double b = y;
-    
+
     // defeat x87
-    __m128d va = _mm_set_sd( (double) a ); 
-    __m128d vb = _mm_set_sd( (double) b ); 
+    __m128d va = _mm_set_sd( (double) a );
+    __m128d vb = _mm_set_sd( (double) b );
     va = _mm_sub_sd( va, vb );
     _mm_store_sd( (double*) &a, va );
     return a;
@@ -168,10 +168,10 @@ float sse_mul(float x, float y)
 {
     volatile float a = x;
     volatile float b = y;
-    
+
     // defeat x87
-    __m128 va = _mm_set_ss( (float) a ); 
-    __m128 vb = _mm_set_ss( (float) b ); 
+    __m128 va = _mm_set_ss( (float) a );
+    __m128 vb = _mm_set_ss( (float) b );
     va = _mm_mul_ss( va, vb );
     _mm_store_ss( (float*) &a, va );
     return a;
@@ -181,10 +181,10 @@ double sse_mul_sd(double x, double y)
 {
     volatile double a = x;
     volatile double b = y;
-    
+
     // defeat x87
-    __m128d va = _mm_set_sd( (double) a ); 
-    __m128d vb = _mm_set_sd( (double) b ); 
+    __m128d va = _mm_set_sd( (double) a );
+    __m128d vb = _mm_set_sd( (double) b );
     va = _mm_mul_sd( va, vb );
     _mm_store_sd( (double*) &a, va );
     return a;
@@ -192,73 +192,73 @@ double sse_mul_sd(double x, double y)
 #endif
 
 #ifdef __PPC__
-float ppc_mul(float a, float b) 
-{ 
-    float p; 
-    
-    if (gForceFTZ) { 
-        // Flush input a to zero if it is sub-normal 
-        if (fabsf(a) < FLT_MIN) { 
-            a = copysignf(0.0, a); 
-        } 
-        // Flush input b to zero if it is sub-normal 
-        if (fabsf(b) < FLT_MIN) { 
-            b = copysignf(0.0, b); 
-        } 
-        // Perform multiply 
-        p = a * b; 
-        // Flush the product if it is a sub-normal 
-        if (fabs((double)a * (double)b) < FLT_MIN) { 
-            p = copysignf(0.0, p); 
-        } 
-    } else { 
-        p = a * b; 
-    } 
-    return p; 
-} 
+float ppc_mul(float a, float b)
+{
+    float p;
+
+    if (gForceFTZ) {
+        // Flush input a to zero if it is sub-normal
+        if (fabsf(a) < FLT_MIN) {
+            a = copysignf(0.0, a);
+        }
+        // Flush input b to zero if it is sub-normal
+        if (fabsf(b) < FLT_MIN) {
+            b = copysignf(0.0, b);
+        }
+        // Perform multiply
+        p = a * b;
+        // Flush the product if it is a sub-normal
+        if (fabs((double)a * (double)b) < FLT_MIN) {
+            p = copysignf(0.0, p);
+        }
+    } else {
+        p = a * b;
+    }
+    return p;
+}
 #endif
 
 int main( int argc, const char **argv )
 {
     int error  = 0;
     int i;
-    
+
     test_start();
-    
+
     error = ParseArgs( argc, argv );
     if( error )
         return error;
-    
+
     // Init OpenCL
     error = InitCL();
-    if( error ) 
+    if( error )
         return error;
-    
+
     // run the tests
     log_info( "Testing floats...\n" );
     for( i = 0; i < 8; i++ )
         error |= RunTest( i );
-    
+
     if( gHasDouble )
     {
         log_info( "Testing doubles...\n" );
         for( i = 0; i < 8; i++ )
             error |= RunTest_Double( i );
     }
-    
-    
+
+
     int flush_error = clFinish(gQueue);
     if (flush_error)
         log_error("clFinish failed: %d\n", flush_error);
-    
+
     if( error )
         vlog_error( "Contractions test FAILED.\n" );
     else
         vlog( "Contractions test PASSED.\n" );
-    
+
     ReleaseCL();
     test_finish();
-    
+
     return error;
 }
 
@@ -268,12 +268,12 @@ static int ParseArgs( int argc, const char **argv )
 {
     int i;
     int length_of_seed = 0;
-    
+
     { // Extract the app name
         strncpy( appName, argv[0], MAXPATHLEN );
-        
+
 #if (defined( __APPLE__ ) || defined(__linux__) || defined(__MINGW32__))
-        char baseName[MAXPATHLEN];        
+        char baseName[MAXPATHLEN];
         char *base = NULL;
         strncpy( baseName, argv[0], MAXPATHLEN );
         base = basename( baseName );
@@ -285,17 +285,17 @@ static int ParseArgs( int argc, const char **argv )
 #elif defined (_WIN32)
         char fname[_MAX_FNAME + _MAX_EXT + 1];
         char ext[_MAX_EXT];
-        
-        errno_t err = _splitpath_s( argv[0], NULL, 0, NULL, 0, 
+
+        errno_t err = _splitpath_s( argv[0], NULL, 0, NULL, 0,
                                    fname, _MAX_FNAME, ext, _MAX_EXT );
-        if (err == 0) { // no error 
+        if (err == 0) { // no error
             strcat (fname, ext); //just cat them, size of frame can keep both
             strncpy (appName, fname, sizeof(appName));
             appName[ sizeof( appName ) -1 ] = '\0';
         }
 #endif
     }
-    
+
     /* Check if we are forced to CPU mode */
     char *env_mode = getenv( "CL_DEVICE_TYPE" );
     if( env_mode != NULL )
@@ -308,20 +308,20 @@ static int ParseArgs( int argc, const char **argv )
             gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
         else if( strcmp( env_mode, "default" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
             gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-        else 
-        { 
+        else
+        {
             vlog_error( "Unknown CL_DEVICE_TYPE env variable setting: %s.\nAborting...\n", env_mode );
             abort();
         }
     }
-    
+
     vlog( "\n%s\t", appName );
     for( i = 1; i < argc; i++ )
     {
         const char *arg = argv[i];
         if( NULL == arg )
             break;
-        
+
         vlog( "\t%s", arg );
         int optionFound = 0;
         if( arg[0] == '-' )
@@ -335,23 +335,23 @@ static int ParseArgs( int argc, const char **argv )
                     case 'h':
                         PrintUsage();
                         return -1;
-                        
+
                     case 's':
                         arg++;
-                        gSeed = atoi( arg ); 
+                        gSeed = atoi( arg );
                         while (arg[length_of_seed] >='0' && arg[length_of_seed]<='9')
                             length_of_seed++;
                         gSeedSpecified = 1;
                         arg+=length_of_seed-1;
                         break;
-                        
+
                     case 'z':
                         gForceFTZ ^= 1;
                         break;
-                        
+
                     case ' ':
                         break;
-                        
+
                     default:
                         vlog( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
                         PrintUsage();
@@ -374,9 +374,9 @@ static int ParseArgs( int argc, const char **argv )
         }
     }
     vlog( "\n\nTest binary built %s %s\n", __DATE__, __TIME__ );
-    
+
     PrintArch();
-    
+
     return 0;
 }
 
@@ -396,10 +396,12 @@ static void PrintArch( void )
     vlog( "\tARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     vlog( "\tARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    vlog( "\tARCH:\taarch64\n" );
 #else
     vlog( "\tARCH:\tunknown\n" );
 #endif
-    
+
 #if defined( __APPLE__ )
     int type = 0;
     size_t typeSize = sizeof( type );
@@ -408,11 +410,11 @@ static void PrintArch( void )
     typeSize = sizeof( type );
     sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
     vlog( "\tcpu subtype:\t%d\n", type );
-    
+
 #elif defined( __linux__ )
     int _sysctl(struct __sysctl_args *args );
 #define OSNAMESZ 100
-    
+
     struct __sysctl_args args;
     char osname[OSNAMESZ];
     size_t osnamelth;
@@ -422,16 +424,16 @@ static void PrintArch( void )
     args.nlen = sizeof(name)/sizeof(name[0]);
     args.oldval = osname;
     args.oldlenp = &osnamelth;
-    
+
     osnamelth = sizeof(osname);
-    
+
     if (syscall(SYS__sysctl, &args) == -1) {
         vlog( "_sysctl error\n" );
     }
     else {
         vlog("this machine is running %*s\n", osnamelth, osname);
     }
-    
+
 #endif
 }
 
@@ -461,19 +463,19 @@ static int InitCL( void )
     int isRTZ = 0;
     int isEmbedded = 0;
     RoundingMode oldRoundMode = kDefaultRoundingMode;
-    
+
     if( (error = clGetPlatformIDs(1, &platform, NULL) ) )
         return error;
-    
+
     if( (error = clGetDeviceIDs(platform,  gDeviceType, 1, &gDevice, NULL )) )
         return error;
-    
+
     cl_device_fp_config floatCapabilities = 0;
     if( (error = clGetDeviceInfo(gDevice, CL_DEVICE_SINGLE_FP_CONFIG, sizeof(floatCapabilities), &floatCapabilities, NULL)))
         floatCapabilities = 0;
     if(0 == (CL_FP_DENORM & floatCapabilities) )
         gForceFTZ ^= 1;
-    
+
     // check for cl_khr_fp64
     size_t extensions_size = 0;
     if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, 0, NULL, &extensions_size )))
@@ -489,188 +491,188 @@ static int InitCL( void )
             vlog_error( "ERROR: Unable to allocate %ld bytes to hold extensions string\n", extensions_size );
             return -1;
         }
-        
+
         if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, extensions_size, extensions, NULL )))
         {
             vlog_error( "clGetDeviceInfo(CL_DEVICE_EXTENSIONS) failed 2. %d\n", error );
             return -1;
         }
-        
+
         gHasDouble = NULL != strstr( extensions, "cl_khr_fp64" );
         free( extensions );
     }
-    
+
     if(0 == (CL_FP_INF_NAN & floatCapabilities) )
         gSkipNanInf = 1;
-    
+
     char profile[1024] = "";
     if ( (error = clGetDeviceInfo(gDevice, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL ) ) ) {}
-    else if (strstr(profile, "EMBEDDED_PROFILE")) 
+    else if (strstr(profile, "EMBEDDED_PROFILE"))
         isEmbedded = 1;
-    
+
     // Embedded devices that flush to zero are allowed to have an undefined sign.
-    if (isEmbedded && gForceFTZ) 
+    if (isEmbedded && gForceFTZ)
         gIgnoreZeroSign = 1;
-    
+
     gContext = clCreateContext( NULL, 1, &gDevice, notify_callback, NULL, &error );
     if( NULL == gContext || error )
     {
         vlog_error( "clCreateDeviceGroup failed. %d\n", error );
         return -1;
     }
-    
+
     gQueue = clCreateCommandQueue( gContext, gDevice, 0, &error );
     if( NULL == gQueue || error )
     {
         vlog_error( "clCreateContext failed. %d\n", error );
         return -2;
     }
-    
+
     // setup input buffers
     bufA = clCreateBuffer(  gContext,  CL_MEM_READ_WRITE, BUFFER_SIZE, NULL, NULL );
     bufB = clCreateBuffer(  gContext,  CL_MEM_READ_WRITE, BUFFER_SIZE, NULL, NULL );
     bufC = clCreateBuffer(  gContext,  CL_MEM_READ_WRITE, BUFFER_SIZE, NULL, NULL );
     bufD = clCreateBuffer(  gContext,  CL_MEM_READ_WRITE, BUFFER_SIZE, NULL, NULL );
     bufE = clCreateBuffer(  gContext,  CL_MEM_READ_WRITE, BUFFER_SIZE, NULL, NULL );
-    
-    if( bufA == NULL    || 
-       bufB == NULL    || 
-       bufC == NULL    || 
-       bufD == NULL    || 
+
+    if( bufA == NULL    ||
+       bufB == NULL    ||
+       bufC == NULL    ||
+       bufD == NULL    ||
        bufE == NULL    )
     {
         vlog_error( "clCreateArray failed for input\n" );
         return -4;
     }
-    
+
     if( gHasDouble )
-    {   
+    {
         bufC_double = clCreateBuffer(  gContext,  CL_MEM_READ_WRITE, BUFFER_SIZE, NULL, NULL );
         bufD_double = clCreateBuffer(  gContext,  CL_MEM_READ_WRITE, BUFFER_SIZE, NULL, NULL );
-        if( bufC_double == NULL    || 
+        if( bufC_double == NULL    ||
            bufD_double == NULL    )
         {
             vlog_error( "clCreateArray failed for input DP\n" );
             return -4;
         }
     }
-    
+
     const char *kernels[] = {
         "", "#pragma OPENCL FP_CONTRACT OFF\n"
         "__kernel void kernel1( __global ", NULL, " *out, const __global ", NULL, " *a, const __global ", NULL, " *b, const __global ", NULL, " *c )\n"
         "{\n"
-        "   int i = get_global_id(0);\n" 
+        "   int i = get_global_id(0);\n"
         "   out[i] = a[i] * b[i] + c[i];\n"
         "}\n"
         "\n"
         "__kernel void kernel2( __global ", NULL, " *out, const __global ", NULL, " *a, const __global ", NULL, " *b, const __global ", NULL, " *c )\n"
         "{\n"
-        "   int i = get_global_id(0);\n" 
+        "   int i = get_global_id(0);\n"
         "   out[i] = a[i] * b[i] - c[i];\n"
         "}\n"
         "\n"
         "__kernel void kernel3( __global ", NULL, " *out, const __global ", NULL, " *a, const __global ", NULL, " *b, const __global ", NULL, " *c )\n"
         "{\n"
-        "   int i = get_global_id(0);\n" 
+        "   int i = get_global_id(0);\n"
         "   out[i] = c[i] + a[i] * b[i];\n"
         "}\n"
         "\n"
         "__kernel void kernel4( __global ", NULL, " *out, const __global ", NULL, " *a, const __global ", NULL, " *b, const __global ", NULL, " *c )\n"
         "{\n"
-        "   int i = get_global_id(0);\n" 
+        "   int i = get_global_id(0);\n"
         "   out[i] = c[i] - a[i] * b[i];\n"
         "}\n"
         "\n"
         "__kernel void kernel5( __global ", NULL, " *out, const __global ", NULL, " *a, const __global ", NULL, " *b, const __global ", NULL, " *c )\n"
         "{\n"
-        "   int i = get_global_id(0);\n" 
+        "   int i = get_global_id(0);\n"
         "   out[i] = -(a[i] * b[i] + c[i]);\n"
         "}\n"
         "\n"
         "__kernel void kernel6( __global ", NULL, " *out, const __global ", NULL, " *a, const __global ", NULL, " *b, const __global ", NULL, " *c )\n"
         "{\n"
-        "   int i = get_global_id(0);\n" 
+        "   int i = get_global_id(0);\n"
         "   out[i] = -(a[i] * b[i] - c[i]);\n"
         "}\n"
         "\n"
         "__kernel void kernel7( __global ", NULL, " *out, const __global ", NULL, " *a, const __global ", NULL, " *b, const __global ", NULL, " *c )\n"
         "{\n"
-        "   int i = get_global_id(0);\n" 
+        "   int i = get_global_id(0);\n"
         "   out[i] = -(c[i] + a[i] * b[i]);\n"
         "}\n"
         "\n"
         "__kernel void kernel8( __global ", NULL, " *out, const __global ", NULL, " *a, const __global ", NULL, " *b, const __global ", NULL, " *c )\n"
         "{\n"
-        "   int i = get_global_id(0);\n" 
+        "   int i = get_global_id(0);\n"
         "   out[i] = -(c[i] - a[i] * b[i]);\n"
         "}\n"
         "\n" };
-    
+
     for( i = 0; i < sizeof( sizeNames ) / sizeof( sizeNames[0] ); i++ )
     {
         size_t strCount = sizeof( kernels ) / sizeof( kernels[0] );
         kernels[0] = "";
-        
+
         for( j = 2; j < strCount; j += 2 )
             kernels[j] = sizeNames[i];
-        
+
         gProgram[i] = clCreateProgramWithSource(gContext, strCount, kernels, NULL, &error);
         if( NULL == gProgram[i] )
         {
             vlog_error( "clCreateProgramWithSource failed\n" );
             return -5;
         }
-        
+
         if(( error = clBuildProgram(gProgram[i], 1, &gDevice, NULL, NULL, NULL) ))
         {
             vlog_error( "clBuildProgramExecutable failed\n" );
             char build_log[2048] = "";
-            
+
             clGetProgramBuildInfo(gProgram[i], gDevice, CL_PROGRAM_BUILD_LOG, sizeof(build_log), build_log, NULL);
             vlog_error( "Log:\n%s\n", build_log );
             return -5;
         }
     }
-    
+
     if( gHasDouble )
     {
         kernels[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
         for( i = 0; i < sizeof( sizeNames_double ) / sizeof( sizeNames_double[0] ); i++ )
         {
             size_t strCount = sizeof( kernels ) / sizeof( kernels[0] );
-            
+
             for( j = 2; j < strCount; j += 2 )
                 kernels[j] = sizeNames_double[i];
-            
+
             gProgram_double[i] = clCreateProgramWithSource(gContext, strCount, kernels, NULL, &error);
             if( NULL == gProgram_double[i] )
             {
                 vlog_error( "clCreateProgramWithSource failed\n" );
                 return -5;
             }
-            
+
             if(( error = clBuildProgram(gProgram_double[i], 1, &gDevice, NULL, NULL, NULL) ))
             {
                 vlog_error( "clBuildProgramExecutable failed\n" );
                 char build_log[2048] = "";
-                
+
                 clGetProgramBuildInfo(gProgram_double[i], gDevice, CL_PROGRAM_BUILD_LOG, sizeof(build_log), build_log, NULL);
                 vlog_error( "Log:\n%s\n", build_log );
                 return -5;
             }
         }
     }
-    
+
     if( 0 == gSeedSpecified )
     {
         time_t currentTime = time( NULL );
         struct tm *t = localtime(&currentTime);
-        gSeed = t->tm_sec + 60 * ( t->tm_min + 60 * (t->tm_hour + 24 * (t->tm_yday + 365 * t->tm_year))); 
+        gSeed = t->tm_sec + 60 * ( t->tm_min + 60 * (t->tm_hour + 24 * (t->tm_yday + 365 * t->tm_year)));
         gSeed = (uint32_t) (((uint64_t) gSeed * (uint64_t) gSeed ) >> 16);
     }
     gMTdata = init_genrand( gSeed );
-    
-    
+
+
     // Init bufA and bufB
     {
         buf1 = (float *)malloc( BUFFER_SIZE );
@@ -679,9 +681,9 @@ static int InitCL( void )
         buf4 = (float *)malloc( BUFFER_SIZE );
         buf5 = (float *)malloc( BUFFER_SIZE );
         buf6 = (float *)malloc( BUFFER_SIZE );
-        
+
         bufSkip = (int *)malloc( BUFFER_SIZE );
-        
+
         if( NULL == buf1 || NULL == buf2 || NULL == buf3 || NULL == buf4 || NULL == buf5 || NULL == buf6 || NULL == bufSkip)
         {
             vlog_error( "Out of memory initializing buffers\n" );
@@ -697,28 +699,28 @@ static int InitCL( void )
                 return -15;
             }
         }
-        
+
         for( i = 0; i < BUFFER_SIZE / sizeof(float); i++ )
             ((uint32_t*) buf1)[i] = genrand_int32( gMTdata );
-        
+
         if( (error = clEnqueueWriteBuffer(gQueue, bufA, CL_FALSE, 0, BUFFER_SIZE, buf1, 0, NULL, NULL) ))
         {
             vlog_error( "Failure %d at clEnqueueWriteBuffer1\n", error );
             return error;
         }
-        
+
         for( i = 0; i < BUFFER_SIZE / sizeof(float); i++ )
             ((uint32_t*) buf2)[i] = genrand_int32( gMTdata );
-        
+
         if( (error = clEnqueueWriteBuffer(gQueue, bufB, CL_FALSE, 0, BUFFER_SIZE, buf2, 0, NULL, NULL) ))
         {
             vlog_error( "Failure %d at clEnqueueWriteBuffer2\n", error );
             return error;
         }
-        
+
         void *ftzInfo = NULL;
         if( gForceFTZ )
-            ftzInfo = FlushToZero();        
+            ftzInfo = FlushToZero();
         if ((CL_FP_ROUND_TO_ZERO == get_default_rounding_mode(gDevice)) && isEmbedded) {
             oldRoundMode = set_round(kRoundTowardZero, kfloat);
             isRTZ = 1;
@@ -731,7 +733,7 @@ static int InitCL( void )
         {
             float q = f[i];
             float q2 = f2[i];
-            
+
             feclearexcept(FE_OVERFLOW);
 #if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
             // VS2005 might use x87 for straight multiplies, and we can't
@@ -753,14 +755,14 @@ static int InitCL( void )
                                           (fabsf(q)  == FLT_MAX) || (q  != q)  ||
                                           (fabsf(q2) == FLT_MAX) || (q2 != q2)));
         }
-        
+
         if( gForceFTZ )
             UnFlushToZero(ftzInfo);
 
-	if (isRTZ) 
-	  (void)set_round(oldRoundMode, kfloat);        
+    if (isRTZ)
+      (void)set_round(oldRoundMode, kfloat);
 
-        
+
         if( (error = clEnqueueWriteBuffer(gQueue, bufC, CL_FALSE, 0, BUFFER_SIZE, buf3, 0, NULL, NULL) ))
         {
             vlog_error( "Failure %d at clEnqueueWriteBuffer3\n", error );
@@ -771,25 +773,25 @@ static int InitCL( void )
             vlog_error( "Failure %d at clEnqueueWriteBuffer4\n", error );
             return error;
         }
-        
+
         // Fill the buffers with NaN
         float *f5 = (float*) buf5;
         float nan_val = nanf("");
         for( i = 0; i < BUFFER_SIZE / sizeof( float ); i++ )
             f5[i] = nan_val;
-        
+
         // calculate reference results
         for( i = 0; i < BUFFER_SIZE / sizeof( float ); i++ )
         {
-            for ( j=0; j<8; j++) 
+            for ( j=0; j<8; j++)
             {
                 feclearexcept(FE_OVERFLOW);
-                switch (j) 
+                switch (j)
                 {
 #if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
                         // VS2005 might use x87 for straight add/sub, and we can't
                         // turn that off
-                    case 0: 
+                    case 0:
                         correct[0][i] = sse_add(buf3[i],buf4[i]); break;
                     case 1:
                         correct[1][i] = sse_sub(buf3[i],buf3[i]); break;
@@ -826,20 +828,20 @@ static int InitCL( void )
                 }
                 // Further skip test inputs if the device doesn support infinities AND NaNs
                 // resulting sum overflows
-                skipTest[j][i] = (bufSkip[i] || 
+                skipTest[j][i] = (bufSkip[i] ||
                                   (gSkipNanInf && (FE_OVERFLOW == (FE_OVERFLOW & fetestexcept(FE_OVERFLOW)))));
-                
+
 #if defined(__PPC__)
                 // Since the current Power processors don't emulate flush to zero in HW,
                 // it must be emulated in SW instead.
-                if (gForceFTZ) 
+                if (gForceFTZ)
                 {
-                    if ((fabsf(correct[j][i]) < FLT_MIN) && (correct[j][i] != 0.0f)) 
+                    if ((fabsf(correct[j][i]) < FLT_MIN) && (correct[j][i] != 0.0f))
                         correct[j][i] = copysignf(0.0f, correct[j][i]);
                 }
 #endif
-            } 
-        }   
+            }
+        }
         if( gHasDouble )
         {
             // Spec requires correct non-flushed results
@@ -848,7 +850,7 @@ static int InitCL( void )
             // It is no-op if platform default is not FTZ (e.g. x86)
             FPU_mode_type oldMode;
             DisableFTZ( &oldMode );
-            
+
             buf3_double = (double *)malloc( BUFFER_SIZE );
             buf4_double = (double *)malloc( BUFFER_SIZE );
             buf5_double = (double *)malloc( BUFFER_SIZE );
@@ -867,8 +869,8 @@ static int InitCL( void )
                     return -15;
                 }
             }
-            
-            
+
+
             double *f  = (double*) buf1;
             double *f2 = (double*) buf2;
             double *f3 = (double*) buf3_double;
@@ -887,7 +889,7 @@ static int InitCL( void )
                 f4[i] = -q * q2;
 #endif
             }
-            
+
             if( (error = clEnqueueWriteBuffer(gQueue, bufC_double, CL_FALSE, 0, BUFFER_SIZE, buf3_double, 0, NULL, NULL) ))
             {
                 vlog_error( "Failure %d at clEnqueueWriteBuffer3\n", error );
@@ -898,13 +900,13 @@ static int InitCL( void )
                 vlog_error( "Failure %d at clEnqueueWriteBuffer4\n", error );
                 return error;
             }
-            
+
             // Fill the buffers with NaN
             double *f5 = (double*) buf5_double;
             double nan_val = nanf("");
             for( i = 0; i < BUFFER_SIZE / sizeof( double ); i++ )
                 f5[i] = nan_val;
-            
+
             // calculate reference results
             for( i = 0; i < BUFFER_SIZE / sizeof( double ); i++ )
             {
@@ -930,13 +932,13 @@ static int InitCL( void )
                 correct_double[7][i] = -(buf3_double[i] - buf3_double[i]);
 #endif
             }
-            
-            // Restore previous FP state since we modified it for 
+
+            // Restore previous FP state since we modified it for
             // reference result computation (see DisableFTZ call above)
             RestoreFPState(&oldMode);
         }
     }
-    
+
     char c[1000];
     static const char *no_yes[] = { "NO", "YES" };
     vlog( "\nCompute Device info:\n" );
@@ -955,7 +957,7 @@ static int InitCL( void )
     vlog( "\tTesting Doubles? %s\n", no_yes[0 != gHasDouble] );
     vlog( "\tRandom Number seed: 0x%8.8x\n", gSeed );
     vlog( "\n\n" );
-    
+
     return 0;
 }
 
@@ -992,8 +994,8 @@ static int RunTest( int testNumber )
     int error = 0;
     cl_mem args[4];
     float *c;
-    const char *kernelName[] = { "kernel1", "kernel2", "kernel3", "kernel4", 
-        "kernel5", "kernel6", "kernel7", "kernel8" }; 
+    const char *kernelName[] = { "kernel1", "kernel2", "kernel3", "kernel4",
+        "kernel5", "kernel6", "kernel7", "kernel8" };
     switch( testNumber )
     {
         case 0:     args[0] = bufE;     args[1] = bufA;     args[2] = bufB;     args[3] = bufD;     c = buf4;   break;      // a * b + c
@@ -1008,8 +1010,8 @@ static int RunTest( int testNumber )
             vlog_error( "Unknown test case %d passed to RunTest\n", testNumber );
             return -1;
     }
-    
-    
+
+
     int vectorSize;
     for( vectorSize = 0; vectorSize < 5; vectorSize++ )
     {
@@ -1019,7 +1021,7 @@ static int RunTest( int testNumber )
             vlog_error( "%d) Unable to find kernel \"%s\" for vector size: %d\n", error, kernelName[ testNumber ], 1 << vectorSize );
             return -2;
         }
-        
+
         // set the kernel args
         for( i = 0; i < sizeof(args ) / sizeof( args[0]); i++ )
             if( (error = clSetKernelArg(k, i, sizeof( cl_mem ), args + i) ))
@@ -1027,14 +1029,14 @@ static int RunTest( int testNumber )
                 vlog_error( "Error %d setting kernel arg # %ld\n", error, i );
                 return error;
             }
-        
+
         // write NaNs to the result array
         if( (error = clEnqueueWriteBuffer(gQueue, bufE, CL_TRUE, 0, BUFFER_SIZE, buf5, 0, NULL, NULL) ))
         {
             vlog_error( "Failure %d at clWriteArray %d\n", error, testNumber );
             return error;
         }
-        
+
         // execute the kernel
         size_t gDim[3] = { BUFFER_SIZE / (sizeof( cl_float ) * (1<<vectorSize)), 0, 0 };
         if( ((error = clEnqueueNDRangeKernel(gQueue, k, 1, NULL, gDim, NULL, 0, NULL, NULL) )))
@@ -1042,14 +1044,14 @@ static int RunTest( int testNumber )
             vlog_error( "Got Error # %d trying to execture kernel\n", error );
             return error;
         }
-        
+
         // read the data back
         if( (error = clEnqueueReadBuffer(gQueue, bufE, CL_TRUE, 0, BUFFER_SIZE, buf6, 0, NULL, NULL ) ))
         {
             vlog_error( "Failure %d at clReadArray %d\n", error, testNumber );
             return error;
         }
-        
+
         // verify results
         float *test = (float*) buf6;
         float *a = (float*) buf1;
@@ -1058,12 +1060,12 @@ static int RunTest( int testNumber )
         {
             if( isnan(test[i]) && isnan(correct[testNumber][i] ) )
                 continue;
-            
+
             if( skipTest[testNumber][i] )
                 continue;
-            
+
             // sign of zero must be correct
-            if(( ((uint32_t*) test)[i] != ((uint32_t*) correct[testNumber])[i] ) && 
+            if(( ((uint32_t*) test)[i] != ((uint32_t*) correct[testNumber])[i] ) &&
                !(gIgnoreZeroSign && (test[i] == 0.0f) && (correct[testNumber][i] == 0.0f)) )
             {
                 switch( testNumber )
@@ -1077,7 +1079,7 @@ static int RunTest( int testNumber )
                                            c[i], a[i], b[i], correct[testNumber][i], test[i] );       clReleaseKernel(k); return -1;
                     case 3:     vlog_error( "%ld) Error for %s %s: %a - %a * %a =  *%a vs. %a\n", i, sizeNames[ vectorSize], kernelName[ testNumber ],
                                            c[i], a[i], b[i], correct[testNumber][i], test[i] );       clReleaseKernel(k); return -1;
-                        
+
                         // Zeros for these should be negative
                     case 4:     vlog_error( "%ld) Error for %s %s: -(%a * %a + %a) =  *%a vs. %a\n", i, sizeNames[ vectorSize], kernelName[ testNumber ],
                                            a[i], b[i], c[i], correct[testNumber][i], test[i] );       clReleaseKernel(k); return -1;
@@ -1094,10 +1096,10 @@ static int RunTest( int testNumber )
                 }
             }
         }
-        
+
         clReleaseKernel(k);
     }
-    
+
     return error;
 }
 
@@ -1107,9 +1109,9 @@ static int RunTest_Double( int testNumber )
     int error = 0;
     cl_mem args[4];
     double *c;
-    const char *kernelName[] = { "kernel1", "kernel2", "kernel3", "kernel4", 
-        "kernel5", "kernel6", "kernel7", "kernel8" }; 
-    
+    const char *kernelName[] = { "kernel1", "kernel2", "kernel3", "kernel4",
+        "kernel5", "kernel6", "kernel7", "kernel8" };
+
     switch( testNumber )
     {
         case 0:     args[0] = bufE;     args[1] = bufA;     args[2] = bufB;     args[3] = bufD_double;     c = buf4_double;   break;      // a * b + c
@@ -1124,7 +1126,7 @@ static int RunTest_Double( int testNumber )
             vlog_error( "Unknown test case %d passed to RunTest\n", testNumber );
             return -1;
     }
-    
+
     int vectorSize;
     for( vectorSize = 0; vectorSize < 5; vectorSize++ )
     {
@@ -1134,7 +1136,7 @@ static int RunTest_Double( int testNumber )
             vlog_error( "%d) Unable to find kernel \"%s\" for vector size: %d\n", error, kernelName[ testNumber ], 1 << vectorSize );
             return -2;
         }
-        
+
         // set the kernel args
         for( i = 0; i < sizeof(args ) / sizeof( args[0]); i++ )
             if( (error = clSetKernelArg(k, i, sizeof( cl_mem ), args + i) ))
@@ -1142,14 +1144,14 @@ static int RunTest_Double( int testNumber )
                 vlog_error( "Error %d setting kernel arg # %ld\n", error, i );
                 return error;
             }
-        
+
         // write NaNs to the result array
         if( (error = clEnqueueWriteBuffer(gQueue, bufE, CL_FALSE, 0, BUFFER_SIZE, buf5_double, 0, NULL, NULL) ))
         {
             vlog_error( "Failure %d at clWriteArray %d\n", error, testNumber );
             return error;
         }
-        
+
         // execute the kernel
         size_t gDim[3] = { BUFFER_SIZE / (sizeof( cl_double ) * (1<<vectorSize)), 0, 0 };
         if( ((error = clEnqueueNDRangeKernel(gQueue, k, 1, NULL, gDim, NULL, 0, NULL, NULL) )))
@@ -1157,14 +1159,14 @@ static int RunTest_Double( int testNumber )
             vlog_error( "Got Error # %d trying to execture kernel\n", error );
             return error;
         }
-        
+
         // read the data back
         if( (error = clEnqueueReadBuffer(gQueue, bufE, CL_TRUE, 0, BUFFER_SIZE, buf6_double, 0, NULL, NULL ) ))
         {
             vlog_error( "Failure %d at clReadArray %d\n", error, testNumber );
             return error;
         }
-        
+
         // verify results
         double *test = (double*) buf6_double;
         double *a = (double*) buf1;
@@ -1173,7 +1175,7 @@ static int RunTest_Double( int testNumber )
         {
             if( isnan(test[i]) && isnan(correct_double[testNumber][i] ) )
                 continue;
-            
+
             // sign of zero must be correct
             if( ((uint64_t*) test)[i] != ((uint64_t*) correct_double[testNumber])[i] )
             {
@@ -1188,7 +1190,7 @@ static int RunTest_Double( int testNumber )
                                            c[i], a[i], b[i], correct[testNumber][i], test[i] );       return -1;
                     case 3:     vlog_error( "%ld) Error for %s %s: %a - %a * %a =  *%a vs. %a\n", i, sizeNames_double[ vectorSize], kernelName[ testNumber ],
                                            c[i], a[i], b[i], correct[testNumber][i], test[i] );       return -1;
-                        
+
                         // Zeros for these should be negative
                     case 4:     vlog_error( "%ld) Error for %s %s: -(%a * %a + %a) =  *%a vs. %a\n", i, sizeNames_double[ vectorSize], kernelName[ testNumber ],
                                            a[i], b[i], c[i], correct[testNumber][i], test[i] );       return -1;
@@ -1204,9 +1206,9 @@ static int RunTest_Double( int testNumber )
                 }
             }
         }
-        
+
         clReleaseKernel(k);
     }
-    
+
     return error;
 }

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -52,8 +52,8 @@
 #define IMAGE_READ_NON_BLOCKING 16
 #define IMAGE_WRITE_NON_BLOCKING 32
 
-#define test_error_abort(errCode,msg)	test_error_ret_abort(errCode,msg,errCode)
-#define test_error_ret_abort(errCode,msg,retValue)	{ if( errCode != CL_SUCCESS ) { print_error( errCode, msg ); return FAILED_ABORT ; } }
+#define test_error_abort(errCode,msg)    test_error_ret_abort(errCode,msg,errCode)
+#define test_error_ret_abort(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { print_error( errCode, msg ); return FAILED_ABORT ; } }
 
 
 #endif // _testBase_h

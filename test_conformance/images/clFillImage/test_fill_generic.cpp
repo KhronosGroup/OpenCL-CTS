@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -40,7 +40,7 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
     cl_image_desc imageDesc;
     cl_mem_flags mem_flags = CL_MEM_READ_ONLY;
     void *host_ptr = NULL;
-    
+
     memset(&imageDesc, 0x0, sizeof(cl_image_desc));
     imageDesc.image_type = imageInfo->type;
     imageDesc.image_width = imageInfo->width;
@@ -83,7 +83,7 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
                 host_ptr = malloc( imageInfo->arraySize * imageInfo->slicePitch );
             break;
     }
-    
+
     if (gEnablePitch)
     {
         if ( NULL == host_ptr )
@@ -91,11 +91,11 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
             log_error( "ERROR: Unable to create backing store for pitched 3D image. %ld bytes\n",  imageInfo->depth * imageInfo->slicePitch );
             return NULL;
         }
-        mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;        
+        mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;
     }
-    
+
     img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc, host_ptr, error);
-    
+
     if (gEnablePitch)
     {
         if ( *error == CL_SUCCESS )
@@ -112,7 +112,7 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
         else
             free(host_ptr);
     }
-    
+
     if ( *error != CL_SUCCESS )
     {
         switch (imageInfo->type)
@@ -141,7 +141,7 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
     size_t mappedRow, mappedSlice;
     size_t height;
     size_t depth;
-    
+
     switch (imageInfo->type)
     {
         case CL_MEM_OBJECT_IMAGE1D_ARRAY:
@@ -164,7 +164,7 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
             depth = imageInfo->depth;
             break;
     }
-    
+
     size_t origin[ 3 ] = { 0, 0, 0 };
     size_t region[ 3 ] = { imageInfo->width, height, depth };
 
@@ -172,7 +172,7 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
     if (*error != CL_SUCCESS || !mapped)
     {
         log_error( "ERROR: Unable to map image for writing: %s\n", IGetErrorString( *error ) );
-        return NULL;    
+        return NULL;
     }
     size_t mappedSlicePad = mappedSlice - (mappedRow * height);
 
@@ -210,19 +210,19 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
     if (*error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to unmap image after writing: %s\n", IGetErrorString( *error ) );
-        return NULL;    
+        return NULL;
     }
 
     return img;
 }
 
-static void fill_region_with_value( image_descriptor *imageInfo, void *imageValues, 
+static void fill_region_with_value( image_descriptor *imageInfo, void *imageValues,
     void *value, const size_t origin[], const size_t region[] )
-{	
+{
     size_t pixelSize = get_pixel_size( imageInfo->format );
 
     // Get initial pointer
-    char *destPtr   = (char *)imageValues + origin[ 2 ] * imageInfo->slicePitch 
+    char *destPtr   = (char *)imageValues + origin[ 2 ] * imageInfo->slicePitch
         + origin[ 1 ] * imageInfo->rowPitch + pixelSize * origin[ 0 ];
 
     char *fillColor = (char *)malloc(pixelSize);
@@ -233,7 +233,7 @@ static void fill_region_with_value( image_descriptor *imageInfo, void *imageValu
         char *rowDestPtr = destPtr;
         for( size_t y = 0; y < region[ 1 ]; y++ ) {
             char *pixelDestPtr = rowDestPtr;
-        
+
             for( size_t x = 0; x < region[ 0 ]; x++ ) {
                 memcpy( pixelDestPtr, fillColor, pixelSize );
                 pixelDestPtr += pixelSize;
@@ -246,7 +246,7 @@ static void fill_region_with_value( image_descriptor *imageInfo, void *imageValu
     free(fillColor);
 }
 
-int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo, 
+int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
                              const size_t origin[], const size_t region[], ExplicitType outputType, MTdata d )
 {
     BufferOwningPtr<char> imgData;
@@ -279,14 +279,14 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
             dataBytes = imageInfo->arraySize * imageInfo->slicePitch;
             break;
     }
-    
+
     if (dataBytes > imgData.getSize())
     {
         if ( gDebugTrace )
             log_info( " - Resizing random image data...\n" );
-    
+
         generate_random_image_data( imageInfo, imgData, d  );
-    
+
         imgHost.reset(malloc(dataBytes),0,dataBytes);
         if (imgHost == NULL)
         {
@@ -310,19 +310,19 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
     if ( gDebugTrace )
         log_info( " - Filling at %d,%d,%d size %d,%d,%d\n", (int)origin[ 0 ], (int)origin[ 1 ], (int)origin[ 2 ],
                  (int)region[ 0 ], (int)region[ 1 ], (int)region[ 2 ] );
-    
+
     // We need to know the rounding mode, in the case of half to allow the
     // pixel pack that generates the verification value to succeed.
     if (imageInfo->format->image_channel_data_type == CL_HALF_FLOAT)
         DetectFloatToHalfRoundingMode(queue);
-    
+
     if( outputType == kFloat )
     {
         cl_float fillColor[ 4 ];
         read_image_pixel_float( imgHost, imageInfo, origin[ 0 ], origin[ 1 ], origin[ 2 ], fillColor );
         if ( gDebugTrace )
             log_info( " - with value %g, %g, %g, %g\n", fillColor[ 0 ], fillColor[ 1 ], fillColor[ 2 ], fillColor[ 3 ] );
-        error = clEnqueueFillImage ( queue, image, fillColor, origin, region, 0, NULL, NULL );       
+        error = clEnqueueFillImage ( queue, image, fillColor, origin, region, 0, NULL, NULL );
         if ( error != CL_SUCCESS )
         {
             log_error( "ERROR: Unable to fill image at %d,%d,%d size %d,%d,%d! (%s)\n",
@@ -330,11 +330,11 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
                       (int)region[ 0 ], (int)region[ 1 ], (int)region[ 2 ], IGetErrorString( error ) );
             return error;
         }
-        
+
         // Write the approriate verification value to the correct region.
         void* verificationValue = malloc(get_pixel_size(imageInfo->format));
         pack_image_pixel(fillColor, imageInfo->format, verificationValue);
-        fill_region_with_value( imageInfo, imgHost, verificationValue, origin, region ); 
+        fill_region_with_value( imageInfo, imgHost, verificationValue, origin, region );
         free(verificationValue);
     }
     else if( outputType == kInt )
@@ -343,7 +343,7 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
         read_image_pixel<cl_int>( imgHost, imageInfo, origin[ 0 ], origin[ 1 ], origin[ 2 ], fillColor );
         if ( gDebugTrace )
             log_info( " - with value %d, %d, %d, %d\n", fillColor[ 0 ], fillColor[ 1 ], fillColor[ 2 ], fillColor[ 3 ] );
-        error = clEnqueueFillImage ( queue, image, fillColor, origin, region, 0, NULL, NULL );        
+        error = clEnqueueFillImage ( queue, image, fillColor, origin, region, 0, NULL, NULL );
         if ( error != CL_SUCCESS )
         {
             log_error( "ERROR: Unable to fill image at %d,%d,%d size %d,%d,%d! (%s)\n",
@@ -351,11 +351,11 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
                       (int)region[ 0 ], (int)region[ 1 ], (int)region[ 2 ], IGetErrorString( error ) );
             return error;
         }
-        
+
         // Write the approriate verification value to the correct region.
         void* verificationValue = malloc(get_pixel_size(imageInfo->format));
         pack_image_pixel(fillColor, imageInfo->format, verificationValue);
-        fill_region_with_value( imageInfo, imgHost, verificationValue, origin, region ); 
+        fill_region_with_value( imageInfo, imgHost, verificationValue, origin, region );
         free(verificationValue);
     }
     else // if( outputType == kUInt )
@@ -364,7 +364,7 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
         read_image_pixel<cl_uint>( imgHost, imageInfo, origin[ 0 ], origin[ 1 ], origin[ 2 ], fillColor );
         if ( gDebugTrace )
             log_info( " - with value %u, %u, %u, %u\n", fillColor[ 0 ], fillColor[ 1 ], fillColor[ 2 ], fillColor[ 3 ] );
-        error = clEnqueueFillImage ( queue, image, fillColor, origin, region, 0, NULL, NULL );        
+        error = clEnqueueFillImage ( queue, image, fillColor, origin, region, 0, NULL, NULL );
         if ( error != CL_SUCCESS )
         {
             log_error( "ERROR: Unable to fill image at %d,%d,%d size %d,%d,%d! (%s)\n",
@@ -372,11 +372,11 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
                       (int)region[ 0 ], (int)region[ 1 ], (int)region[ 2 ], IGetErrorString( error ) );
             return error;
         }
-        
+
         // Write the approriate verification value to the correct region.
         void* verificationValue = malloc(get_pixel_size(imageInfo->format));
         pack_image_pixel(fillColor, imageInfo->format, verificationValue);
-        fill_region_with_value( imageInfo, imgHost, verificationValue, origin, region ); 
+        fill_region_with_value( imageInfo, imgHost, verificationValue, origin, region );
         free(verificationValue);
     }
 
@@ -384,8 +384,8 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
     // copy. The contents of the entire buffer are compared.
     if ( gDebugTrace )
         log_info( " - Mapping results...\n" );
-    
-    size_t imageOrigin[ 3 ] = { 0, 0, 0 }; 
+
+    size_t imageOrigin[ 3 ] = { 0, 0, 0 };
     size_t imageRegion[ 3 ] = { imageInfo->width, 1, 1 };
     switch (imageInfo->type)
     {
@@ -406,7 +406,7 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
             imageRegion[ 2 ] = imageInfo->arraySize;
             break;
     }
-                                
+
     size_t mappedRow, mappedSlice;
     void* mapped = (char*)clEnqueueMapImage(queue, image, CL_TRUE, CL_MAP_READ, imageOrigin, imageRegion, &mappedRow, &mappedSlice, 0, NULL, NULL, &error);
     if (error != CL_SUCCESS)
@@ -441,7 +441,7 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
         secondDim = imageInfo->height;
         thirdDim = imageInfo->depth;
     }
-    
+
     for ( size_t z = 0; z < thirdDim; z++ )
     {
         for ( size_t y = 0; y < secondDim; y++ )
@@ -466,7 +466,7 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
                     log_error( "*0x%4.4x vs. 0x%4.4x\n", ((cl_ushort*)(sourcePtr + pixel_size * where))[0], ((cl_ushort*)(destPtr + pixel_size * where))[0] );
                     break;
                 case 3:
-                    log_error( "*{0x%2.2x, 0x%2.2x, 0x%2.2x} vs. {0x%2.2x, 0x%2.2x, 0x%2.2x}\n", 
+                    log_error( "*{0x%2.2x, 0x%2.2x, 0x%2.2x} vs. {0x%2.2x, 0x%2.2x, 0x%2.2x}\n",
                                ((cl_uchar*)(sourcePtr + pixel_size * where))[0], ((cl_uchar*)(sourcePtr + pixel_size * where))[1], ((cl_uchar*)(sourcePtr + pixel_size * where))[2],
                                ((cl_uchar*)(destPtr + pixel_size * where))[0], ((cl_uchar*)(destPtr + pixel_size * where))[1], ((cl_uchar*)(destPtr + pixel_size * where))[2]
                              );
@@ -475,7 +475,7 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
                     log_error( "*0x%8.8x vs. 0x%8.8x\n", ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[0] );
                     break;
                 case 6:
-                    log_error( "*{0x%4.4x, 0x%4.4x, 0x%4.4x} vs. {0x%4.4x, 0x%4.4x, 0x%4.4x}\n", 
+                    log_error( "*{0x%4.4x, 0x%4.4x, 0x%4.4x} vs. {0x%4.4x, 0x%4.4x, 0x%4.4x}\n",
                                ((cl_ushort*)(sourcePtr + pixel_size * where))[0], ((cl_ushort*)(sourcePtr + pixel_size * where))[1], ((cl_ushort*)(sourcePtr + pixel_size * where))[2],
                                ((cl_ushort*)(destPtr + pixel_size * where))[0], ((cl_ushort*)(destPtr + pixel_size * where))[1], ((cl_ushort*)(destPtr + pixel_size * where))[2]
                              );
@@ -484,13 +484,13 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
                     log_error( "*0x%16.16llx vs. 0x%16.16llx\n", ((cl_ulong*)(sourcePtr + pixel_size * where))[0], ((cl_ulong*)(destPtr + pixel_size * where))[0] );
                     break;
                 case 12:
-                    log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x}\n", 
+                    log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
                                ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(sourcePtr + pixel_size * where))[1], ((cl_uint*)(sourcePtr + pixel_size * where))[2],
                                ((cl_uint*)(destPtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[1], ((cl_uint*)(destPtr + pixel_size * where))[2]
                              );
                     break;
                 case 16:
-                    log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x}\n", 
+                    log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
                                ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(sourcePtr + pixel_size * where))[1], ((cl_uint*)(sourcePtr + pixel_size * where))[2], ((cl_uint*)(sourcePtr + pixel_size * where))[3],
                                ((cl_uint*)(destPtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[1], ((cl_uint*)(destPtr + pixel_size * where))[2], ((cl_uint*)(destPtr + pixel_size * where))[3]
                              );
@@ -514,7 +514,7 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
     if (error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to unmap image after verify: %s\n", IGetErrorString( error ) );
-        return NULL;    
+        return NULL;
     }
 
     imgHost.reset(0x0);

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -94,30 +94,30 @@ extern CheckResults checkResults[kTypeCount];
 
 // The next three functions check on different return values.  Returns -1
 // if the check failed
-#define checkErr(err, msg)				\
-    if (err != CL_SUCCESS) {				\
-	log_error("%s failed errcode:%d\n", msg, err);	\
-	return -1;					\
+#define checkErr(err, msg)                \
+    if (err != CL_SUCCESS) {                \
+    log_error("%s failed errcode:%d\n", msg, err);    \
+    return -1;                    \
     }
 
-#define checkZero(val, msg)				\
-    if (val == 0) {					\
-	log_error("%s failed errcode:%d\n", msg, err);	\
-	return -1;					\
+#define checkZero(val, msg)                \
+    if (val == 0) {                    \
+    log_error("%s failed errcode:%d\n", msg, err);    \
+    return -1;                    \
     }
 
-#define checkNull(ptr, msg)			\
-    if (!ptr) {					\
-	log_error("%s failed\n", msg);		\
-	return -1;				\
+#define checkNull(ptr, msg)            \
+    if (!ptr) {                    \
+    log_error("%s failed\n", msg);        \
+    return -1;                \
     }
 
 // When a helper returns a negative one, we want to return from main
 // with negative one. This helper prevents me from having to write
 // this multiple time
-#define checkHelperErr(err)			\
-    if (err == -1) {				\
-	return err;				\
+#define checkHelperErr(err)            \
+    if (err == -1) {                \
+    return err;                \
     }
 
 

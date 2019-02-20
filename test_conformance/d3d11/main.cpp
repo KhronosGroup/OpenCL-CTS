@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
     cl_int result;
     cl_platform_id platform = NULL;
     cl_uint num_devices_tested = 0;
-    
+
     // get the platforms to test
     result = clGetPlatformIDs(1, &platform, NULL); NonTestRequire(result == CL_SUCCESS, "Failed to get any platforms.");
 
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
         {
             break;
         }
-        
+
         // print data about the adapter
         DXGI_ADAPTER_DESC desc;
         hr = pAdapter->GetDesc(&desc);
@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
         num_devices_tested += num_devices;
 
         // destroy the D3D11 device
-        if (pDevice) 
+        if (pDevice)
         {
             HarnessD3D11_DestroyDevice();
         }
@@ -84,13 +84,13 @@ int main(int argc, char* argv[])
 }
 
 void TestAdapterEnumeration(
-    cl_platform_id platform, 
-    IDXGIAdapter* pAdapter, 
-    ID3D11Device* pDevice, 
+    cl_platform_id platform,
+    IDXGIAdapter* pAdapter,
+    ID3D11Device* pDevice,
     cl_uint* num_devices)
 {
     cl_uint num_adapter_devices = 0;
-    cl_device_id* adapter_devices = NULL;    
+    cl_device_id* adapter_devices = NULL;
 
     cl_uint num_device_devices = 0;
     cl_device_id* device_devices = NULL;
@@ -118,7 +118,7 @@ void TestAdapterEnumeration(
             TestPrint("No devices found for adapter.\n");
         }
         else
-        {       
+        {
             // if there were devices, query them
             adapter_devices = new cl_device_id[num_adapter_devices];
             result = clGetDeviceIDsFromD3D11KHR(
@@ -137,7 +137,7 @@ void TestAdapterEnumeration(
 
     // get the cl_device_ids for the device (if it was successfully created)
     if (pDevice)
-    {            
+    {
         result = clGetDeviceIDsFromD3D11KHR(
             platform,
             CL_D3D11_DEVICE_KHR,
@@ -165,7 +165,7 @@ void TestAdapterEnumeration(
                 CL_ALL_DEVICES_FOR_D3D11_KHR,
                 num_device_devices,
                 device_devices,
-                NULL);    
+                NULL);
             TestRequire(
                 (result == CL_SUCCESS),
                 "clGetDeviceIDsFromD3D11KHR failed.");
@@ -175,11 +175,11 @@ void TestAdapterEnumeration(
 
 Cleanup:
 
-    if (adapter_devices) 
+    if (adapter_devices)
     {
         delete[] adapter_devices;
     }
-    if (device_devices) 
+    if (device_devices)
     {
         delete[] device_devices;
     }
@@ -190,9 +190,9 @@ Cleanup:
 }
 
 void TestAdapterDevices(
-    cl_platform_id platform, 
-    IDXGIAdapter* pAdapter, 
-    ID3D11Device* pDevice, 
+    cl_platform_id platform,
+    IDXGIAdapter* pAdapter,
+    ID3D11Device* pDevice,
     ID3D11DeviceContext* pDC,
     cl_uint num_devices_expected)
 {
@@ -202,9 +202,9 @@ void TestAdapterDevices(
 
     devices = new cl_device_id[num_devices_expected];
     NonTestRequire(
-        devices, 
+        devices,
         "Memory allocation failure.");
-    
+
     result = clGetDeviceIDsFromD3D11KHR(
         platform,
         CL_D3D11_DEVICE_KHR,
@@ -212,7 +212,7 @@ void TestAdapterDevices(
         CL_ALL_DEVICES_FOR_D3D11_KHR,
         num_devices_expected,
         devices,
-        &num_devices);    
+        &num_devices);
     NonTestRequire(
         (result == CL_SUCCESS),
         "clGetDeviceIDsFromD3D11KHR failed.");
@@ -227,7 +227,7 @@ void TestAdapterDevices(
 }
 
 void TestDevice(
-    cl_device_id device, 
+    cl_device_id device,
     ID3D11Device* pDevice,
     ID3D11DeviceContext* pDC)
 {
@@ -257,10 +257,10 @@ void TestDevice(
 
     // make sure that we can query the shared resource preference
     result = clGetContextInfo(
-        context, 
-        CL_CONTEXT_D3D11_PREFER_SHARED_RESOURCES_KHR, 
-        sizeof(prefer_shared_resources), 
-        &prefer_shared_resources, 
+        context,
+        CL_CONTEXT_D3D11_PREFER_SHARED_RESOURCES_KHR,
+        sizeof(prefer_shared_resources),
+        &prefer_shared_resources,
         NULL);
     NonTestRequire(CL_SUCCESS == result, "clGetContextInfo with CL_CONTEXT_D3D10_PREFER_SHARED_RESOURCES_KHR failed");
 
@@ -292,14 +292,14 @@ void TestDevice(
         device,
         context,
         command_queue,
-        pDevice);    
+        pDevice);
 
     clReleaseContext(context);
     clReleaseCommandQueue(command_queue);
 }
 
 bool TestDeviceContextCreate(
-    cl_device_id device, 
+    cl_device_id device,
     ID3D11Device* pDevice,
     cl_context* out_context,
     cl_command_queue* out_command_queue)
@@ -307,9 +307,9 @@ bool TestDeviceContextCreate(
     cl_int result = CL_SUCCESS;
     cl_context context = NULL;
     cl_command_queue command_queue = NULL;
-    
+
     ID3D11Device* clDevice = NULL;
-    
+
     bool succeeded = false;
 
     HarnessD3D11_TestBegin("Context creation");

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,15 +16,11 @@
 #ifndef __ROUNDING_MODE_H__
 #define __ROUNDING_MODE_H__
 
-#include <stdlib.h>
+#include "compat.h"
 
 #if (defined(_WIN32) && defined (_MSC_VER))
-// need for _controlfp_s and rouinding modes in RoundingMode
-#include <float.h>
 #include "errorHelpers.h"
 #include "testHarness.h"
-#else
-    #include <fenv.h>
 #endif
 
 typedef enum
@@ -50,7 +46,7 @@ typedef enum
     kdouble = 7,
     kulong = 8,
     klong = 9,
-    
+
     //This goes last
     kTypeCount
 }Type;

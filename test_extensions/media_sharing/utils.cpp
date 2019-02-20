@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -285,10 +285,10 @@ bool YUVSurfaceSetNV12( std::auto_ptr<CSurfaceWrapper> &surface, const std::vect
   size_t pitch = rect.Pitch / sizeof(cl_uchar);
   size_t lineSize = width * sizeof(cl_uchar);
   cl_uchar *ptr = static_cast<cl_uchar *>(rect.pBits);
-  for (size_t y = 0; y < height; ++y) 
+  for (size_t y = 0; y < height; ++y)
     memcpy(ptr + y * pitch, &yuv.at(y * width), lineSize);
 
-  for (size_t y = 0; y < height / 2; ++y) 
+  for (size_t y = 0; y < height / 2; ++y)
     memcpy(ptr + height * pitch + y * pitch, &yuv.at(width * height + y * width), lineSize);
 
   (*d3dSurface)->UnlockRect();
@@ -320,17 +320,17 @@ bool YUVSurfaceSetYV12( std::auto_ptr<CSurfaceWrapper> &surface, const std::vect
   size_t yuvOffset = 0;
   cl_uchar *ptr = static_cast<cl_uchar *>(rect.pBits);
 
-  for (size_t y = 0; y < height; ++y) 
+  for (size_t y = 0; y < height; ++y)
     memcpy(ptr + surfaceOffset + y * pitch, &yuv.at(yuvOffset + y * width), lineSize);
 
   surfaceOffset += height * pitch;
   yuvOffset += width * height;
-  for (size_t y = 0; y < height / 2; ++y) 
+  for (size_t y = 0; y < height / 2; ++y)
     memcpy(ptr + surfaceOffset + y * pitchHalf, &yuv.at(yuvOffset + y * lineHalfSize), lineHalfSize);
 
   surfaceOffset += pitchHalf * height / 2;
   yuvOffset += width * height / 4;
-  for (size_t y = 0; y < height / 2; ++y) 
+  for (size_t y = 0; y < height / 2; ++y)
     memcpy(ptr + surfaceOffset + y * pitchHalf, &yuv.at(yuvOffset + y * lineHalfSize), lineHalfSize);
 
   (*d3dSurface)->UnlockRect();
@@ -625,7 +625,7 @@ void DataGenerate( TSurfaceFormat surfaceFormat, cl_channel_type type, std::vect
         break;
       }
     }
-  } 
+  }
 }
 
 void DataGenerate( TSurfaceFormat surfaceFormat, cl_channel_type type, std::vector<cl_half> &data, unsigned int width, unsigned int height,
@@ -672,7 +672,7 @@ void DataGenerate( TSurfaceFormat surfaceFormat, cl_channel_type type, std::vect
             break;
           }
         }
-      } 
+      }
       break;
     }
   case CL_UNORM_INT16:
@@ -762,7 +762,7 @@ void DataGenerate( TSurfaceFormat surfaceFormat, cl_channel_type type, std::vect
       }
     }
   }
-} 
+}
 
 bool DataCompare( TSurfaceFormat surfaceFormat, cl_channel_type type, const std::vector<float> &dataTest, const std::vector<float> &dataExp,
                  unsigned int width, unsigned int height, unsigned int channelNum)
@@ -1077,9 +1077,9 @@ bool ImageInfoVerify( cl_dx9_media_adapter_type_khr adapterType, const std::vect
   formatPlane.image_channel_order = CL_R;
 
   //plane 0 verification
-  if (!GetImageInfo(memObjList[0], formatPlane, sizeof(cl_uchar), 
-    width * sizeof(cl_uchar), 
-    0, 
+  if (!GetImageInfo(memObjList[0], formatPlane, sizeof(cl_uchar),
+    width * sizeof(cl_uchar),
+    0,
     width, height, 0, 0))
   {
     log_error("clGetImageInfo failed\n");
@@ -1092,9 +1092,9 @@ bool ImageInfoVerify( cl_dx9_media_adapter_type_khr adapterType, const std::vect
     {
       formatPlane.image_channel_data_type = CL_UNORM_INT8;
       formatPlane.image_channel_order = CL_RG;
-      if (!GetImageInfo(memObjList[1], formatPlane, sizeof(cl_uchar) * 2, 
-        width * sizeof(cl_uchar), 
-        0, 
+      if (!GetImageInfo(memObjList[1], formatPlane, sizeof(cl_uchar) * 2,
+        width * sizeof(cl_uchar),
+        0,
         width / 2, height / 2, 0, 1))
       {
         log_error("clGetImageInfo failed\n");
@@ -1104,18 +1104,18 @@ bool ImageInfoVerify( cl_dx9_media_adapter_type_khr adapterType, const std::vect
     break;
   case 3:
     {
-      if (!GetImageInfo(memObjList[1], formatPlane, sizeof(cl_uchar), 
-        width * sizeof(cl_uchar) / 2, 
-        0, 
+      if (!GetImageInfo(memObjList[1], formatPlane, sizeof(cl_uchar),
+        width * sizeof(cl_uchar) / 2,
+        0,
         width / 2, height / 2, 0, 1))
       {
         log_error("clGetImageInfo failed\n");
         return false;
       }
 
-      if (!GetImageInfo(memObjList[2], formatPlane, sizeof(cl_uchar), 
-        width * sizeof(cl_uchar) / 2, 
-        0, 
+      if (!GetImageInfo(memObjList[2], formatPlane, sizeof(cl_uchar),
+        width * sizeof(cl_uchar) / 2,
+        0,
         width / 2, height / 2, 0, 2))
       {
         log_error("clGetImageInfo failed\n");
@@ -1565,7 +1565,7 @@ bool MediaSurfaceCreate(cl_dx9_media_adapter_type_khr adapterType, unsigned int 
       HRESULT hr = 0;
       D3DFORMAT d3dFormat = SurfaceFormatToD3D(surfaceFormat);
       IDXVAHD_Device *dxvaDevice = (IDXVAHD_Device *)device.Device();
-      hr = dxvaDevice->CreateVideoSurface(width, height, d3dFormat, D3DPOOL_DEFAULT, 0, 
+      hr = dxvaDevice->CreateVideoSurface(width, height, d3dFormat, D3DPOOL_DEFAULT, 0,
         DXVAHD_SURFACE_TYPE_VIDEO_INPUT,  1, &(*d3dSurface), sharedHandle ? objectSharedHandle: 0);
 
       if ( FAILED(hr))
@@ -1591,9 +1591,9 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
 
   if( gFloatToHalfRoundingMode == kDefaultRoundingMode )
   {
-    // Some numbers near 0.5f, that we look at to see how the values are rounded. 
+    // Some numbers near 0.5f, that we look at to see how the values are rounded.
     static const cl_uint  inData[4*4] = {   0x3f000fffU, 0x3f001000U, 0x3f001001U, 0U, 0x3f001fffU, 0x3f002000U, 0x3f002001U, 0U,
-      0x3f002fffU, 0x3f003000U, 0x3f003001U, 0U, 0x3f003fffU, 0x3f004000U, 0x3f004001U, 0U    }; 
+      0x3f002fffU, 0x3f003000U, 0x3f003001U, 0U, 0x3f003fffU, 0x3f004000U, 0x3f004001U, 0U    };
     static const size_t count = sizeof( inData ) / (4*sizeof( inData[0] ));
     const float *inp = (const float*) inData;
     cl_context context = NULL;
@@ -1898,7 +1898,7 @@ float convert_half_to_float( unsigned short halfValue )
   int mantissa = ( halfValue )       & 0x03ff;
 
   // Note: we use a union here to be able to access the bits of a float directly
-  union 
+  union
   {
     unsigned int bits;
     float floatValue;
@@ -1929,7 +1929,7 @@ float convert_half_to_float( unsigned short halfValue )
   else if( exponent == 31 ) // Special-case "numbers"
   {
     // If the exponent is 31, it's a special case number (+/- infinity or NAN).
-    // If the mantissa is 0, it's infinity, else it's NAN, but in either case, the packing 
+    // If the mantissa is 0, it's infinity, else it's NAN, but in either case, the packing
     // method is the same
     outFloat.bits = ( sign << 31 ) | 0x7f800000 | ( mantissa << 13 );
     return outFloat.floatValue;

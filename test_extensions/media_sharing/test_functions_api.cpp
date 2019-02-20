@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,7 +15,7 @@
 //
 #include "utils.h"
 
-int api_functions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, 
+int api_functions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements,
                   unsigned int iterationNum, unsigned int width, unsigned int height, cl_dx9_media_adapter_type_khr adapterType,
                   TSurfaceFormat surfaceFormat, TSharedHandleType sharedHandle)
 {
@@ -39,7 +39,7 @@ int api_functions(cl_device_id deviceID, cl_context context, cl_command_queue qu
   cl_uchar step = MAX_VALUE / FRAME_NUM;
   for (size_t i = 0; i < FRAME_NUM; ++i)
   {
-    if (!YUVGenerate(surfaceFormat, bufferRef1[i], width, height, static_cast<cl_uchar>(step * i), static_cast<cl_uchar>(step * (i + 1))) || 
+    if (!YUVGenerate(surfaceFormat, bufferRef1[i], width, height, static_cast<cl_uchar>(step * i), static_cast<cl_uchar>(step * (i + 1))) ||
         !YUVGenerate(surfaceFormat, bufferRef2[i], width, height, static_cast<cl_uchar>(step * i), static_cast<cl_uchar>(step * (i + 1)), 0.2) ||
         !YUVGenerate(surfaceFormat, bufferRef3[i], width, height, static_cast<cl_uchar>(step * i), static_cast<cl_uchar>(step * (i + 1)), 0.4))
     {
@@ -111,7 +111,7 @@ int api_functions(cl_device_id deviceID, cl_context context, cl_command_queue qu
         result.ResultSub(CResult::TEST_FAIL);
         return result.Result();
       }
-      memObjList.push_back(planesList[planeIdx]);     
+      memObjList.push_back(planesList[planeIdx]);
     }
 
     clCommandQueueWrapper cmdQueue = clCreateCommandQueue(ctx, gDeviceIDdetected, 0, &error );

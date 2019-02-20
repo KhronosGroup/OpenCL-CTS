@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,7 +23,7 @@
 #include "../../test_common/harness/errorHelpers.h"
 
 // For global, local, and constant
-const char *parameter_kernel_long = 
+const char *parameter_kernel_long =
 "%s\n" // optional pragma
 "kernel void test(global ulong *results, %s %s *mem0, %s %s2 *mem2, %s %s2 *mem3, %s %s4 *mem4, %s %s8 *mem8, %s %s16 *mem16)\n"
 "{\n"
@@ -36,7 +36,7 @@ const char *parameter_kernel_long =
 "}\n";
 
 // For private and local
-const char *local_kernel_long = 
+const char *local_kernel_long =
 "%s\n" // optional pragma
 "kernel void test(global ulong *results)\n"
 "{\n"
@@ -55,7 +55,7 @@ const char *local_kernel_long =
 "}\n";
 
 // For constant
-const char *constant_kernel_long = 
+const char *constant_kernel_long =
 "%s\n" // optional pragma
 "  constant %s mem0[3]    = {0};\n"
 "  constant %s2 mem2[3]   = {(%s2)(0)};\n"
@@ -76,7 +76,7 @@ const char *constant_kernel_long =
 
 
 // For global, local, and constant
-const char *parameter_kernel_no_long = 
+const char *parameter_kernel_no_long =
 "%s\n" // optional pragma
 "kernel void test(global uint *results, %s %s *mem0, %s %s2 *mem2, %s %s2 *mem3, %s %s4 *mem4, %s %s8 *mem8, %s %s16 *mem16)\n"
 "{\n"
@@ -89,7 +89,7 @@ const char *parameter_kernel_no_long =
 "}\n";
 
 // For private and local
-const char *local_kernel_no_long = 
+const char *local_kernel_no_long =
 "%s\n" // optional pragma
 "kernel void test(global uint *results)\n"
 "{\n"
@@ -108,7 +108,7 @@ const char *local_kernel_no_long =
 "}\n";
 
 // For constant
-const char *constant_kernel_no_long = 
+const char *constant_kernel_no_long =
 "%s\n" // optional pragma
 "  constant %s mem0[3]    = {0};\n"
 "  constant %s2 mem2[3]   = {(%s2)(0)};\n"
@@ -129,21 +129,21 @@ const char *constant_kernel_no_long =
 
 enum AddressSpaces
 {
-    kGlobal		= 0,
+    kGlobal        = 0,
     kLocal,
     kConstant,
     kPrivate
 };
 
-typedef enum AddressSpaces	AddressSpaces;
+typedef enum AddressSpaces    AddressSpaces;
 
 #define DEBUG 0
 
 const char * get_explicit_address_name( AddressSpaces address )
 {
-    /* Quick method to avoid branching: make sure the following array matches the Enum order */		
+    /* Quick method to avoid branching: make sure the following array matches the Enum order */
     static const char *sExplicitAddressNames[] = { "global", "local", "constant", "private"};
-    
+
     return sExplicitAddressNames[ address ];
 }
 
@@ -176,11 +176,11 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
     cl_mem results;
     cl_ulong *results_data;
     cl_mem mem0, mem2, mem3, mem4, mem8, mem16;
-    
+
     results_data = (cl_ulong*)malloc(sizeof(cl_ulong)*6);
     results = clCreateBuffer(context, 0, sizeof(cl_ulong)*6, NULL, &error);
     test_error(error, "clCreateBuffer failed");
-    
+
     mem0 = clCreateBuffer(context, 0, sizeof(cl_long), NULL, &error);
     test_error(error, "clCreateBuffer failed");
     mem2 = clCreateBuffer(context, 0, sizeof(cl_long)*2, NULL, &error);
@@ -193,34 +193,34 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
     test_error(error, "clCreateBuffer failed");
     mem16 = clCreateBuffer(context, 0, sizeof(cl_long)*16, NULL, &error);
     test_error(error, "clCreateBuffer failed");
-    
-    
+
+
     // For each type
-    
+
     // Calculate alignment mask for each size
-    
+
     // For global, local, constant, private
-    
+
     // If global, local or constant -- do parameter_kernel
     // If private or local -- do local_kernel
     // If constant -- do constant kernel
 
     int numConstantArgs;
     clGetDeviceInfo(device, CL_DEVICE_MAX_CONSTANT_ARGS, sizeof(numConstantArgs), &numConstantArgs, NULL);
-    
+
     int typeIndex;
     for (typeIndex = 0; typeIndex < 10; typeIndex++) {
         // Skip double tests if we don't support doubles
         if (vecType[typeIndex] == kDouble && !is_extension_available(device, "cl_khr_fp64")) {
             log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
             continue;
-        }  
+        }
 
         if (( vecType[ typeIndex ] == kLong || vecType[ typeIndex ] == kULong ) && !gHasLong )
             continue;
-        
+
         log_info("Testing %s...\n", get_explicit_type_name(vecType[typeIndex]));
-        
+
         // Determine the expected alignment masks.
         // E.g., if it is supposed to be 4 byte aligned, we should get 4-1=3 = ... 000011
         // We can then and the returned address with that and we should have 0.
@@ -231,13 +231,13 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
         alignments[3] = (get_explicit_type_size(vecType[typeIndex])<<2)-1;
         alignments[4] = (get_explicit_type_size(vecType[typeIndex])<<3)-1;
         alignments[5] = (get_explicit_type_size(vecType[typeIndex])<<4)-1;
-        
+
         // Parameter kernel
         if (address == kGlobal || address == kLocal || address == kConstant) {
             log_info("\tTesting parameter kernel...\n");
 
             if ( (gIsEmbedded) && (address == kConstant) && (numConstantArgs < 6)) {
-                sprintf(kernel_code, parameter_kernel, 
+                sprintf(kernel_code, parameter_kernel,
                     vecType[typeIndex] == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
                     get_explicit_address_name(address), get_explicit_type_name(vecType[typeIndex]),
                     get_explicit_address_name(address), get_explicit_type_name(vecType[typeIndex]),
@@ -248,7 +248,7 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
                 );
             }
             else {
-                sprintf(kernel_code, parameter_kernel, 
+                sprintf(kernel_code, parameter_kernel,
                     vecType[typeIndex] == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
                     get_explicit_address_name(address), get_explicit_type_name(vecType[typeIndex]),
                     get_explicit_address_name(address), get_explicit_type_name(vecType[typeIndex]),
@@ -259,16 +259,16 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
                 );
             }
             //printf("Kernel is: \n%s\n", kernel_code);
-            
+
             // Create the kernel
             error = create_single_kernel_helper(context, &program, &kernel, 1, (const char **)&kernel_code, "test");
             test_error(error, "create_single_kernel_helper failed");
-            
+
             // Initialize the results
             memset(results_data, 0, sizeof(cl_long)*5);
             error = clEnqueueWriteBuffer(queue, results, CL_TRUE, 0, sizeof(cl_long)*6, results_data, 0, NULL, NULL);
             test_error(error, "clEnqueueWriteBuffer failed");
-            
+
             // Set the arguments
             error = clSetKernelArg(kernel, 0, sizeof(results), &results);
             test_error(error, "clSetKernelArg failed");
@@ -299,16 +299,16 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
                 error = clSetKernelArg(kernel, 6, get_explicit_type_size(vecType[typeIndex])*16, NULL);
                 test_error(error, "clSetKernelArg failed");
             }
-            
+
             // Enqueue the kernel
             size_t global_size = 1;
             error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_size, NULL, 0, NULL, NULL);
             test_error(error, "clEnqueueNDRangeKernel failed");
-            
+
             // Read back the results
             error = clEnqueueReadBuffer(queue, results, CL_TRUE, 0, sizeof(cl_ulong)*6, results_data, 0, NULL, NULL);
             test_error(error, "clEnqueueReadBuffer failed");
-            
+
             // Verify the results
             for (int i=0; i<6; i++) {
                 if ((results_data[i] & alignments[i]) != 0) {
@@ -321,14 +321,14 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
             clReleaseKernel(kernel);
             clReleaseProgram(program);
         }
-        
-        
-        
-        
+
+
+
+
         // Local kernel
         if (address == kLocal || address == kPrivate) {
             log_info("\tTesting local kernel...\n");
-            sprintf(kernel_code, local_kernel, 
+            sprintf(kernel_code, local_kernel,
                     vecType[typeIndex] == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
                     get_explicit_address_name(address), get_explicit_type_name(vecType[typeIndex]),
                     get_explicit_address_name(address), get_explicit_type_name(vecType[typeIndex]),
@@ -338,29 +338,29 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
                     get_explicit_address_name(address), get_explicit_type_name(vecType[typeIndex])
                     );
             //printf("Kernel is: \n%s\n", kernel_code);
-            
+
             // Create the kernel
             error = create_single_kernel_helper(context, &program, &kernel, 1, (const char **)&kernel_code, "test");
             test_error(error, "create_single_kernel_helper failed");
-            
+
             // Initialize the results
             memset(results_data, 0, sizeof(cl_long)*5);
             error = clEnqueueWriteBuffer(queue, results, CL_TRUE, 0, sizeof(cl_long)*5, results_data, 0, NULL, NULL);
             test_error(error, "clEnqueueWriteBuffer failed");
-            
+
             // Set the arguments
             error = clSetKernelArg(kernel, 0, sizeof(results), &results);
             test_error(error, "clSetKernelArg failed");
-            
+
             // Enqueue the kernel
             size_t global_size = 1;
             error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_size, NULL, 0, NULL, NULL);
             test_error(error, "clEnqueueNDRangeKernel failed");
-            
+
             // Read back the results
             error = clEnqueueReadBuffer(queue, results, CL_TRUE, 0, sizeof(cl_ulong)*5, results_data, 0, NULL, NULL);
             test_error(error, "clEnqueueReadBuffer failed");
-            
+
             // Verify the results
             for (int i=0; i<5; i++) {
                 if ((results_data[i] & alignments[i]) != 0) {
@@ -373,51 +373,51 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
             clReleaseKernel(kernel);
             clReleaseProgram(program);
         }
-        
-        
-        
+
+
+
         // Constant kernel
         if (address == kConstant) {
             log_info("\tTesting constant kernel...\n");
             sprintf(kernel_code, constant_kernel,
                     vecType[typeIndex] == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
-                    get_explicit_type_name(vecType[typeIndex]), 
-                    get_explicit_type_name(vecType[typeIndex]),
-                    get_explicit_type_name(vecType[typeIndex]), 
                     get_explicit_type_name(vecType[typeIndex]),
                     get_explicit_type_name(vecType[typeIndex]),
                     get_explicit_type_name(vecType[typeIndex]),
-                    get_explicit_type_name(vecType[typeIndex]), 
                     get_explicit_type_name(vecType[typeIndex]),
-                    get_explicit_type_name(vecType[typeIndex]), 
+                    get_explicit_type_name(vecType[typeIndex]),
+                    get_explicit_type_name(vecType[typeIndex]),
+                    get_explicit_type_name(vecType[typeIndex]),
+                    get_explicit_type_name(vecType[typeIndex]),
+                    get_explicit_type_name(vecType[typeIndex]),
                     get_explicit_type_name(vecType[typeIndex]),
                     get_explicit_type_name(vecType[typeIndex]),
                     get_explicit_type_name(vecType[typeIndex])
                     );
             //printf("Kernel is: \n%s\n", kernel_code);
-            
+
             // Create the kernel
             error = create_single_kernel_helper(context, &program, &kernel, 1, (const char **)&kernel_code, "test");
             test_error(error, "create_single_kernel_helper failed");
-            
+
             // Initialize the results
             memset(results_data, 0, sizeof(cl_long)*5);
             error = clEnqueueWriteBuffer(queue, results, CL_TRUE, 0, sizeof(cl_long)*5, results_data, 0, NULL, NULL);
             test_error(error, "clEnqueueWriteBuffer failed");
-            
+
             // Set the arguments
             error = clSetKernelArg(kernel, 0, sizeof(results), &results);
             test_error(error, "clSetKernelArg failed");
-            
+
             // Enqueue the kernel
             size_t global_size = 1;
             error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_size, NULL, 0, NULL, NULL);
             test_error(error, "clEnqueueNDRangeKernel failed");
-            
+
             // Read back the results
             error = clEnqueueReadBuffer(queue, results, CL_TRUE, 0, sizeof(cl_ulong)*5, results_data, 0, NULL, NULL);
             test_error(error, "clEnqueueReadBuffer failed");
-            
+
             // Verify the results
             for (int i=0; i<5; i++) {
                 if ((results_data[i] & alignments[i]) != 0) {
@@ -430,10 +430,10 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
             clReleaseKernel(kernel);
             clReleaseProgram(program);
         }
-        
-        
+
+
     }
-    
+
     clReleaseMemObject(results);
     clReleaseMemObject(mem0);
     clReleaseMemObject(mem2);
@@ -443,11 +443,11 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
     clReleaseMemObject(mem16);
     free( kernel_code );
     free( results_data );
-    
+
     if (total_errors != 0)
         return -1;
     return 0;
-    
+
 }
 
 
@@ -464,20 +464,20 @@ int test_kernel_memory_alignment_global(cl_device_id device, cl_context context,
 int test_kernel_memory_alignment_constant(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
 {
     // There is a class of approved OpenCL 1.0 conformant devices out there that in some circumstances
-    // are unable to meaningfully take (or more precisely use) the address of constant data by virtue 
-    // of limitations in their ISA design. This feature was not tested in 1.0, so they were declared 
+    // are unable to meaningfully take (or more precisely use) the address of constant data by virtue
+    // of limitations in their ISA design. This feature was not tested in 1.0, so they were declared
     // conformant by Khronos. The failure is however caught here.
     //
     // Unfortunately, determining whether or not these devices are 1.0 conformant is not the jurisdiction
-    // of the 1.1 tests -- We can't fail them from 1.1 conformance here because they are not 1.1 
-    // devices. They are merely 1.0 conformant devices that interop with 1.1 devices in a 1.1 platform. 
-    // To add new binding tests now to conformant 1.0 devices would violate the workingroup requirement 
-    // of no new tests for 1.0 devices.  So certain allowances have to be made in intractable cases 
-    // such as this one. 
+    // of the 1.1 tests -- We can't fail them from 1.1 conformance here because they are not 1.1
+    // devices. They are merely 1.0 conformant devices that interop with 1.1 devices in a 1.1 platform.
+    // To add new binding tests now to conformant 1.0 devices would violate the workingroup requirement
+    // of no new tests for 1.0 devices.  So certain allowances have to be made in intractable cases
+    // such as this one.
     //
-    // There is some precedent. Similar allowances are made for other 1.0 hardware features such as 
+    // There is some precedent. Similar allowances are made for other 1.0 hardware features such as
     // local memory size.  The minimum required local memory size grew from 16 kB to 32 kB in OpenCL 1.1.
-    
+
     // Detect 1.0 devices
     // Get CL_DEVICE_VERSION size
     size_t string_size = 0;
@@ -487,7 +487,7 @@ int test_kernel_memory_alignment_constant(cl_device_id device, cl_context contex
         log_error( "FAILURE: Unable to get size of CL_DEVICE_VERSION string!" );
         return -1;
     }
-    
+
     //Allocate storage to hold the version string
     char *version_string = (char*) malloc(string_size);
     if( NULL == version_string )
@@ -502,7 +502,7 @@ int test_kernel_memory_alignment_constant(cl_device_id device, cl_context contex
         log_error( "FAILURE: Unable to read CL_DEVICE_VERSION string!" );
         return -1;
     }
-    
+
     // easy out for 1.0 devices
     const char *string_1_0 = "OpenCL 1.0 ";
     if( 0 == strncmp( version_string, string_1_0, strlen(string_1_0)) )
@@ -513,7 +513,7 @@ int test_kernel_memory_alignment_constant(cl_device_id device, cl_context contex
     }
     log_info( "Device version string: \"%s\"\n", version_string );
     free(version_string);
-    
+
     // Everyone else is to be ground mercilessly under the wheels of progress
     return test_kernel_memory_alignment( device,  context,  queue,  n_elems, kConstant );
 }

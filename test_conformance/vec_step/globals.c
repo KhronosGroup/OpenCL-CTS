@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,29 +24,29 @@ const char * g_arrVecSizeNames[NUM_VECTOR_SIZES] = {"", "2","3","4","8","16"};
 
 bool g_wimpyMode = false;
 
-ExplicitType types[] = { kChar, kUChar, 
-			 kShort, kUShort, 
-			 kInt, kUInt, 
-			 kLong, kULong, 
-			 kFloat, kDouble,
-			 kNumExplicitTypes };
+ExplicitType types[] = { kChar, kUChar,
+             kShort, kUShort,
+             kInt, kUInt,
+             kLong, kULong,
+             kFloat, kDouble,
+             kNumExplicitTypes };
 
 
-const char *g_arrTypeNames[] = 
+const char *g_arrTypeNames[] =
     {
-	"char",  "uchar", 
-	"short", "ushort", 
-	"int",   "uint", 
-	"long",  "ulong", 
-	"float", "double"
+    "char",  "uchar",
+    "short", "ushort",
+    "int",   "uint",
+    "long",  "ulong",
+    "float", "double"
     };
 
-extern const size_t g_arrTypeSizes[] = 
+extern const size_t g_arrTypeSizes[] =
     {
-	1, 1,
-	2, 2,
-	4, 4,
-	8, 8,
-	4, 8
+    1, 1,
+    2, 2,
+    4, 4,
+    8, 8,
+    4, 8
     };
 

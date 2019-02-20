@@ -1,12 +1,12 @@
-/* 
+/*
    A C-program for MT19937, with initialization improved 2002/1/26.
    Coded by Takuji Nishimura and Makoto Matsumoto.
 
-   Before using, initialize the state by using init_genrand(seed)  
+   Before using, initialize the state by using init_genrand(seed)
    or init_by_array(init_key, key_length).
 
    Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
-   All rights reserved.                          
+   All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -19,8 +19,8 @@
         notice, this list of conditions and the following disclaimer in the
         documentation and/or other materials provided with the distribution.
 
-     3. The names of its contributors may not be used to endorse or promote 
-        products derived from this software without specific prior written 
+     3. The names of its contributors may not be used to endorse or promote
+        products derived from this software without specific prior written
         permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -39,7 +39,7 @@
    Any feedback is very welcome.
    http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html
    email: m-mat @ math.sci.hiroshima-u.ac.jp (remove space)
-   
+
    Modifications for use in OpenCL by Ian Ollmann, Apple Inc.
 
 */
@@ -59,13 +59,19 @@ static void * align_malloc(size_t size, size_t alignment)
     return _aligned_malloc(size, alignment);
 #elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
     void * ptr = NULL;
-    if (0 == posix_memalign(&ptr, alignment, size)) 
-        return ptr;    
+#if defined(__ANDROID__)
+    ptr = memalign(alignment, size);
+    if ( ptr )
+        return ptr;
+#else
+    if (0 == posix_memalign(&ptr, alignment, size))
+        return ptr;
+#endif
     return NULL;
 #elif defined(__MINGW32__)
     return __mingw_aligned_malloc(size, alignment);
 #else
-    #error "Please add support OS for aligned malloc" 
+    #error "Please add support OS for aligned malloc"
 #endif
 }
 
@@ -76,21 +82,21 @@ static void   align_free(void * ptr)
 #elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
     return  free(ptr);
 #elif defined(__MINGW32__)
-    return __mingw_aligned_free(ptr); 
+    return __mingw_aligned_free(ptr);
 #else
-    #error "Please add support OS for aligned free" 
+    #error "Please add support OS for aligned free"
 #endif
 }
 
 
-/* Period parameters */  
+/* Period parameters */
 #define N 624   /* vector code requires multiple of 4 here */
 #define M 397
 #define MATRIX_A    (cl_uint) 0x9908b0dfUL   /* constant vector a */
 #define UPPER_MASK  (cl_uint) 0x80000000UL /* most significant w-r bits */
 #define LOWER_MASK  (cl_uint) 0x7fffffffUL /* least significant r bits */
 
-typedef struct _MTdata 
+typedef struct _MTdata
 {
     cl_uint mt[N];
 #ifdef __SSE2__
@@ -110,7 +116,7 @@ MTdata init_genrand(cl_uint s)
         mt[0]= s; // & 0xffffffffUL;
         for (mti=1; mti<N; mti++) {
             mt[mti] = (cl_uint)
-            (1812433253UL * (mt[mti-1] ^ (mt[mti-1] >> 30)) + mti); 
+            (1812433253UL * (mt[mti-1] ^ (mt[mti-1] >> 30)) + mti);
             /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
             /* In the previous versions, MSBs of the seed affect   */
             /* only MSBs of the array mt[].                        */
@@ -120,7 +126,7 @@ MTdata init_genrand(cl_uint s)
         }
         r->mti = mti;
     }
-    
+
     return r;
 }
 
@@ -144,7 +150,7 @@ cl_uint genrand_int32( MTdata d)
     cl_uint *mt = d->mt;
     cl_uint y;
 
-    if (d->mti == N) 
+    if (d->mti == N)
     { /* generate N words at one time */
         int kk;
 
@@ -153,8 +159,8 @@ cl_uint genrand_int32( MTdata d)
         {
             upper_mask.s[0] = upper_mask.s[1] = upper_mask.s[2] = upper_mask.s[3] = UPPER_MASK;
             lower_mask.s[0] = lower_mask.s[1] = lower_mask.s[2] = lower_mask.s[3] = LOWER_MASK;
-            one.s[0] = one.s[1] = one.s[2] = one.s[3] = 1;        
-            matrix_a.s[0] = matrix_a.s[1] = matrix_a.s[2] = matrix_a.s[3] = MATRIX_A;  
+            one.s[0] = one.s[1] = one.s[2] = one.s[3] = 1;
+            matrix_a.s[0] = matrix_a.s[1] = matrix_a.s[2] = matrix_a.s[3] = MATRIX_A;
             c0.s[0] = c0.s[1] = c0.s[2] = c0.s[3] = (cl_uint) 0x9d2c5680UL;
             c1.s[0] = c1.s[1] = c1.s[2] = c1.s[3] = (cl_uint) 0xefc60000UL;
             init = 1;
@@ -166,9 +172,9 @@ cl_uint genrand_int32( MTdata d)
         // vector loop
         for( ; kk + 4 <= N-M; kk += 4 )
         {
-            __m128i vy = _mm_or_si128(  _mm_and_si128( _mm_load_si128( (__m128i*)(mt + kk) ), upper_mask.v ),    
+            __m128i vy = _mm_or_si128(  _mm_and_si128( _mm_load_si128( (__m128i*)(mt + kk) ), upper_mask.v ),
                                         _mm_and_si128( _mm_loadu_si128( (__m128i*)(mt + kk + 1) ), lower_mask.v ));        //  ((mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK))
-        
+
             __m128i mask = _mm_cmpeq_epi32( _mm_and_si128( vy, one.v), one.v );                                         // y & 1 ? -1 : 0
             __m128i vmag01 = _mm_and_si128( mask, matrix_a.v );                                                         // y & 1 ? MATRIX_A, 0    =  mag01[y & (cl_uint) 0x1UL]
             __m128i vr = _mm_xor_si128( _mm_loadu_si128( (__m128i*)(mt + kk + M)), (__m128i) _mm_srli_epi32( vy, 1 ) );    // mt[kk+M] ^ (y >> 1)
@@ -187,13 +193,13 @@ cl_uint genrand_int32( MTdata d)
             y = (cl_uint) ((mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK));
             mt[kk] = mt[kk+(M-N)] ^ (y >> 1) ^ mag01[y & (cl_uint) 0x1UL];
         }
-        
+
         // vector loop
         for( ; kk + 4 <= N-1; kk += 4 )
         {
-            __m128i vy = _mm_or_si128(  _mm_and_si128( _mm_load_si128( (__m128i*)(mt + kk) ), upper_mask.v ),    
+            __m128i vy = _mm_or_si128(  _mm_and_si128( _mm_load_si128( (__m128i*)(mt + kk) ), upper_mask.v ),
                                         _mm_and_si128( _mm_loadu_si128( (__m128i*)(mt + kk + 1) ), lower_mask.v ));        //  ((mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK))
-        
+
             __m128i mask = _mm_cmpeq_epi32( _mm_and_si128( vy, one.v), one.v );                                         // y & 1 ? -1 : 0
             __m128i vmag01 = _mm_and_si128( mask, matrix_a.v );                                                         // y & 1 ? MATRIX_A, 0    =  mag01[y & (cl_uint) 0x1UL]
             __m128i vr = _mm_xor_si128( _mm_loadu_si128( (__m128i*)(mt + kk + M - N)), _mm_srli_epi32( vy, 1 ) );          // mt[kk+M-N] ^ (y >> 1)
@@ -226,7 +232,7 @@ cl_uint genrand_int32( MTdata d)
     }
 #ifdef __SSE2__
     y = d->cache[d->mti++];
-#else        
+#else
     y = mt[d->mti++];
 
     /* Tempering */
@@ -235,7 +241,7 @@ cl_uint genrand_int32( MTdata d)
     y ^= (y << 15) & (cl_uint) 0xefc60000UL;
     y ^= (y >> 18);
 #endif
-  
+
 
     return y;
 }
@@ -248,27 +254,27 @@ cl_ulong genrand_int64( MTdata d)
 /* generates a random number on [0,1]-real-interval */
 double genrand_real1(MTdata d)
 {
-    return genrand_int32(d)*(1.0/4294967295.0); 
-    /* divided by 2^32-1 */ 
+    return genrand_int32(d)*(1.0/4294967295.0);
+    /* divided by 2^32-1 */
 }
 
 /* generates a random number on [0,1)-real-interval */
 double genrand_real2(MTdata d)
 {
-    return genrand_int32(d)*(1.0/4294967296.0); 
+    return genrand_int32(d)*(1.0/4294967296.0);
     /* divided by 2^32 */
 }
 
 /* generates a random number on (0,1)-real-interval */
 double genrand_real3(MTdata d)
 {
-    return (((double)genrand_int32(d)) + 0.5)*(1.0/4294967296.0); 
+    return (((double)genrand_int32(d)) + 0.5)*(1.0/4294967296.0);
     /* divided by 2^32 */
 }
 
 /* generates a random number on [0,1) with 53-bit resolution*/
-double genrand_res53(MTdata d) 
-{ 
-    unsigned long a=genrand_int32(d)>>5, b=genrand_int32(d)>>6; 
-    return(a*67108864.0+b)*(1.0/9007199254740992.0); 
-} 
+double genrand_res53(MTdata d)
+{
+    unsigned long a=genrand_int32(d)>>5, b=genrand_int32(d)>>6;
+    return(a*67108864.0+b)*(1.0/9007199254740992.0);
+}
