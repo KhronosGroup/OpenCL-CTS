@@ -409,6 +409,7 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
     char _analysisBuffer[ANALYSIS_BUFFER_SIZE];
     cl_uint out32 = 0;
     cl_ulong out64 = 0;
+    int fd = -1;
 
    // Define an index space (global work size) of threads for execution.
    size_t globalWorkSize[1];
@@ -455,7 +456,7 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
         }
     }
 
-    int fd = acquireOutputStream();
+    fd = acquireOutputStream();
     globalWorkSize[0] = 1;
     cl_event ndrEvt;
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, globalWorkSize, NULL, 0, NULL,&ndrEvt);
