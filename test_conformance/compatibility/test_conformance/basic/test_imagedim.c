@@ -16,6 +16,7 @@
 #include "../../test_common/harness/compat.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -112,6 +113,10 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
     log_info("Device reported max image sizes of %lu x %lu, and max mem size of %gMB.\n",
            max_image2d_width, max_image2d_height, max_mem_size/(1024.0*1024.0));
 
+    if (max_mem_size > (cl_ulong)SIZE_MAX) {
+        max_mem_size = (cl_ulong)SIZE_MAX;
+    }
+
     cl_sampler sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
     test_error(err, "clCreateSampler failed");
 
@@ -182,7 +187,7 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
 
             size_t origin[3] = {0,0,0};
             size_t region[3] = {img_width, img_height, 1};
-            err = clEnqueueWriteImage(queue, streams[0], CL_TRUE, origin, region, 0, 0, input_ptr, 0, NULL, NULL);
+            err = clEnqueueWriteImage(queue, streams[0], CL_FALSE, origin, region, 0, 0, input_ptr, 0, NULL, NULL);
             if (err != CL_SUCCESS)
             {
                 log_error("clWriteImage failed\n");
@@ -324,6 +329,10 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
     max_img_width = (int)max_image2d_width;
     max_img_height = (int)max_image2d_height;
 
+  if (max_mem_size > (cl_ulong)SIZE_MAX) {
+    max_mem_size = (cl_ulong)SIZE_MAX;
+  }
+
     // determine max image dim we can allocate - assume RGBA image, 4 bytes per pixel,
     //  and we want to consume 1/4 of global memory (this is the minimum required to be
     //  supported by the spec)
@@ -351,6 +360,9 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
             max_img_width, max_img_height, (max_img_width*max_img_height*4)/(1024.0*1024.0));
 
     d = init_genrand( gRandomSeed );
+    input_ptr = generate_8888_image(max_img_width, max_img_height, d);
+    output_ptr = (unsigned char*)malloc(sizeof(unsigned char) * 4 * max_img_width * max_img_height);
+
     int plus_minus;
     for (plus_minus=0; plus_minus < 3; plus_minus++)
     {
@@ -390,9 +402,6 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
                       break;
                 }
 
-                input_ptr = generate_8888_image(effective_img_width, effective_img_height, d);
-                output_ptr = (unsigned char*)malloc(sizeof(unsigned char) * 4 * effective_img_width * effective_img_height);
-
                 img_format.image_channel_order = CL_RGBA;
                 img_format.image_channel_data_type = CL_UNORM_INT8;
                 streams[0] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format, effective_img_width, effective_img_height, 0, NULL, NULL);
@@ -419,7 +428,7 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
 
                   size_t origin[3] = {0,0,0};
                   size_t region[3] = {effective_img_width, effective_img_height, 1};
-                  err = clEnqueueWriteImage(queue, streams[0], CL_TRUE, origin, region, 0, 0, input_ptr, 0, NULL, NULL);
+                  err = clEnqueueWriteImage(queue, streams[0], CL_FALSE, origin, region, 0, 0, input_ptr, 0, NULL, NULL);
                 if (err != CL_SUCCESS)
                 {
                     log_error("clWriteImage failed\n");
@@ -484,14 +493,14 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
 
                 clReleaseMemObject(streams[0]);
                 clReleaseMemObject(streams[1]);
-                free(input_ptr);
-                free(output_ptr);
             }
         }
 
   }
 
     // cleanup
+    free(input_ptr);
+    free(output_ptr);
     free_mtdata(d);
     clReleaseSampler(sampler);
     clReleaseKernel(kernel);

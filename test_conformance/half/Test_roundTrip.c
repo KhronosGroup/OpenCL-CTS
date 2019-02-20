@@ -161,7 +161,7 @@ int Test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue 
 
     // Figure out how many elements are in a work block
     size_t elementSize = MAX( sizeof(cl_half), sizeof(cl_float));
-    size_t blockCount = (size_t)getBufferSize(gDevice) / elementSize; //elementSize is a power of two
+    size_t blockCount = (size_t)gBufferSize / elementSize; //elementSize is a power of two
     uint64_t lastCase = 1ULL << (8*sizeof(cl_half)); // number of cl_half
     size_t stride = blockCount;
 

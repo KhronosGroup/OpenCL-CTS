@@ -65,7 +65,7 @@ ct_assert(arr_size(commonfn_names) == arr_size(basefn_list))
 
 static const int num_commonfns = arr_size(commonfn_names);
 
-int deviceCheck(cl_device_id device)
+test_status deviceCheck(cl_device_id device)
 {
     static const char expected_cl[] =  "OpenCL 2.0";
     static const char expected_clc[] = "OpenCL C 2.0";
@@ -77,7 +77,7 @@ int deviceCheck(cl_device_id device)
     if(res != CL_SUCCESS || ret_len < strlen(expected_cl) || strncmp(version, expected_cl, strlen(expected_cl)))
     {
         log_info("Device does not support '%s'. Skipping the test.\n", expected_cl);
-        return CL_INVALID_DEVICE;
+        return TEST_FAIL;
     }
 
     version[0] = 0;
@@ -87,10 +87,10 @@ int deviceCheck(cl_device_id device)
     if(res != CL_SUCCESS || ret_len < strlen(expected_clc) || strncmp(version, expected_clc, strlen(expected_clc)))
     {
         log_info("Device does not support '%s'. Skipping the test.\n", expected_clc);
-        return CL_INVALID_DEVICE;
+        return TEST_FAIL;
     }
 
-    return CL_SUCCESS;
+    return TEST_PASS;
 }
 
 int

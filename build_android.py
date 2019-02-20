@@ -108,7 +108,9 @@ def install_android_cmake():
     print "input: "
     if get_input():
         print("installing android-cmake")
-        subprocess.call(['git', 'clone', 'https://github.com/taka-no-me/android-cmake'])
+        #subprocess.call(['git', 'clone', 'https://github.com/taka-no-me/android-cmake'])
+        # Use a newer fork of android-cmake which has been updated to support Clang. GCC is deprecated in newer NDKs and C11 atomics conformance doesn't build with NDK > 10.
+        subprocess.call(['git', 'clone', 'https://github.com/daewoong-jang/android-cmake'])
         args.android_cmake = os.path.join(args.src_dir,"android-cmake")
     else:
         exit()

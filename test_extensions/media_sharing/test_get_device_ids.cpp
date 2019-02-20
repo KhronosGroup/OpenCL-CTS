@@ -53,6 +53,12 @@ int get_device_ids(cl_device_id deviceID, cl_context context, cl_command_queue q
     std::vector<void *> mediaDevices;
     mediaDevices.push_back(deviceWrapper->Device());
 
+    //check if the test can be run on the adapter
+    if (CL_SUCCESS != (error = deviceExistForCLTest(gPlatformIDdetected, adapterType, deviceWrapper->Device(), result)))
+    {
+      return result.Result();
+    }
+
     cl_uint devicesAllNum = 0;
     error = clGetDeviceIDsFromDX9MediaAdapterKHR(gPlatformIDdetected, 1, &mediaAdapterTypes[0], &mediaDevices[0],
       CL_ALL_DEVICES_FOR_DX9_MEDIA_ADAPTER_KHR, 0, 0, &devicesAllNum);
@@ -140,13 +146,20 @@ int get_device_ids(cl_device_id deviceID, cl_context context, cl_command_queue q
     }
   }
 
-  if (!deviceWrapper->Status())
+  if (deviceWrapper->Status() != DEVICE_PASS)
   {
-    std::string adapter;
-    AdapterToString(adapterType, adapter);
-    log_error("%s init failed\n", adapter.c_str());
+    std::string adapterName;
+    AdapterToString(adapterType, adapterName);
+    if (deviceWrapper->Status() == DEVICE_FAIL)
+  {
+      log_error("%s init failed\n", adapterName.c_str());
     result.ResultSub(CResult::TEST_FAIL);
-    return result.Result();
+    }
+    else
+    {
+      log_error("%s init incomplete due to unsupported device\n", adapterName.c_str());
+      result.ResultSub(CResult::TEST_NOTSUPPORTED);
+    }
   }
 
   return result.Result();

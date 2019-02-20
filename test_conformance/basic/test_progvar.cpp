@@ -872,12 +872,14 @@ static int l_write_read_for_type( cl_device_id device, cl_context context, cl_co
 
     // We need to create 5 random values of the given type,
     // and read 4 of them back.
-    cl_uchar CL_ALIGNED(ALIGNMENT) write_data[NUM_TESTED_VALUES * sizeof(cl_ulong16)];
-    cl_uchar CL_ALIGNED(ALIGNMENT) read_data[ (NUM_TESTED_VALUES-1) * sizeof(cl_ulong16)];
+    const size_t write_data_size = NUM_TESTED_VALUES * sizeof(cl_ulong16);
+    const size_t read_data_size = (NUM_TESTED_VALUES - 1) * sizeof(cl_ulong16);
+    cl_uchar* write_data = (cl_uchar*)align_malloc(write_data_size, ALIGNMENT);
+    cl_uchar* read_data = (cl_uchar*)align_malloc(read_data_size, ALIGNMENT);
 
-    clMemWrapper write_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, sizeof(write_data), write_data, &status ) );
+    clMemWrapper write_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, write_data_size, write_data, &status ) );
     test_error_ret(status,"Failed to allocate write buffer",status);
-    clMemWrapper read_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, sizeof(read_data), read_data, &status ) );
+    clMemWrapper read_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, read_data_size, read_data, &status ) );
     test_error_ret(status,"Failed to allocate read buffer",status);
 
     status = clSetKernelArg(writer,0,sizeof(cl_mem),&write_mem); test_error_ret(status,"set arg",status);
@@ -892,7 +894,7 @@ static int l_write_read_for_type( cl_device_id device, cl_context context, cl_co
             // Generate new random data to push through.
             // Generate 5 * 128 bytes all the time, even though the test for many types use less than all that.
 
-            cl_uchar *write_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, write_mem, CL_TRUE, CL_MAP_WRITE, 0, sizeof(write_data), 0, 0, 0, 0);
+            cl_uchar *write_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, write_mem, CL_TRUE, CL_MAP_WRITE, 0, write_data_size, 0, 0, 0, 0);
 
             if ( ti.is_bool() ) {
                 // For boolean, random data cast to bool isn't very random.
@@ -904,7 +906,7 @@ static int l_write_read_for_type( cl_device_id device, cl_context context, cl_co
                 }
                 bool_iter++;
             } else {
-                l_set_randomly( write_data, sizeof(write_data), rand_state );
+                l_set_randomly( write_data, write_data_size, rand_state );
             }
             status = clSetKernelArg(writer,1,sizeof(cl_uint),&iptr_idx); test_error_ret(status,"set arg",status);
 
@@ -913,7 +915,7 @@ static int l_write_read_for_type( cl_device_id device, cl_context context, cl_co
             status = clSetKernelArg(reader,1,ti.get_size(),write_data + (NUM_TESTED_VALUES-1)*ti.get_size()); test_error_ret(status,"set arg",status);
 
             // Determine the expected values.
-            cl_uchar expected[ (NUM_TESTED_VALUES-1) * sizeof(cl_ulong16)];
+            cl_uchar expected[read_data_size];
             memset( expected, -1, sizeof(expected) );
             l_copy( expected, 0, write_data, 0, ti );
             l_copy( expected, 1, write_data, 1, ti );
@@ -930,8 +932,8 @@ static int l_write_read_for_type( cl_device_id device, cl_context context, cl_co
                 for ( unsigned i = 0; i <  NUM_TESTED_VALUES-1 ; i++ ) expected[i] = (bool)expected[i];
             }
 
-            cl_uchar *read_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, read_mem, CL_TRUE, CL_MAP_READ, 0, sizeof(read_data), 0, 0, 0, 0);
-            memset( read_data, -1, sizeof(read_data) );
+            cl_uchar *read_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, read_mem, CL_TRUE, CL_MAP_READ, 0, read_data_size, 0, 0, 0, 0);
+            memset(read_data, -1, read_data_size);
             clEnqueueUnmapMemObject(queue, read_mem, read_ptr, 0, 0, 0);
 
             // Now run the kernel
@@ -940,7 +942,7 @@ static int l_write_read_for_type( cl_device_id device, cl_context context, cl_co
             status = clEnqueueNDRangeKernel(queue,reader,1,0,&one,0,0,0,0); test_error_ret(status,"enqueue reader",status);
             status = clFinish(queue); test_error_ret(status,"finish",status);
 
-            read_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, read_mem, CL_TRUE, CL_MAP_READ, 0, sizeof(read_data), 0, 0, 0, 0);
+            read_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, read_mem, CL_TRUE, CL_MAP_READ, 0, read_data_size, 0, 0, 0, 0);
 
             if ( ti.is_bool() ) {
                 // Collapse down to one bit.
@@ -959,7 +961,8 @@ static int l_write_read_for_type( cl_device_id device, cl_context context, cl_co
     }
 
     if ( CL_SUCCESS == err ) { log_info("OK\n"); FLUSH; }
-
+    align_free(write_data);
+    align_free(read_data);
     return err;
 }
 
@@ -1018,12 +1021,14 @@ static int l_init_write_read_for_type( cl_device_id device, cl_context context, 
 
     // We need to create 5 random values of the given type,
     // and read 4 of them back.
-    cl_uchar CL_ALIGNED(ALIGNMENT) write_data[NUM_TESTED_VALUES * sizeof(cl_ulong16)];
-    cl_uchar CL_ALIGNED(ALIGNMENT) read_data[ (NUM_TESTED_VALUES-1) * sizeof(cl_ulong16)];
+    const size_t write_data_size = NUM_TESTED_VALUES * sizeof(cl_ulong16);
+    const size_t read_data_size = (NUM_TESTED_VALUES-1) * sizeof(cl_ulong16);
 
-    clMemWrapper write_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, sizeof(write_data), write_data, &status ) );
+    cl_uchar* write_data = (cl_uchar*)align_malloc(write_data_size, ALIGNMENT);
+    cl_uchar* read_data = (cl_uchar*)align_malloc(read_data_size, ALIGNMENT);
+    clMemWrapper write_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, write_data_size, write_data, &status ) );
     test_error_ret(status,"Failed to allocate write buffer",status);
-    clMemWrapper read_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, sizeof(read_data), read_data, &status ) );
+    clMemWrapper read_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, read_data_size, read_data, &status ) );
     test_error_ret(status,"Failed to allocate read buffer",status);
 
     status = clSetKernelArg(writer,0,sizeof(cl_mem),&write_mem); test_error_ret(status,"set arg",status);
@@ -1043,7 +1048,7 @@ static int l_init_write_read_for_type( cl_device_id device, cl_context context, 
             // Generate new random data to push through.
             // Generate 5 * 128 bytes all the time, even though the test for many types use less than all that.
 
-            cl_uchar *write_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, write_mem, CL_TRUE, CL_MAP_WRITE, 0, sizeof(write_data), 0, 0, 0, 0);
+            cl_uchar *write_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, write_mem, CL_TRUE, CL_MAP_WRITE, 0, write_data_size, 0, 0, 0, 0);
 
             if ( ti.is_bool() ) {
                 // For boolean, random data cast to bool isn't very random.
@@ -1055,7 +1060,7 @@ static int l_init_write_read_for_type( cl_device_id device, cl_context context, 
                 }
                 bool_iter++;
             } else {
-                l_set_randomly( write_data, sizeof(write_data), rand_state );
+                l_set_randomly( write_data, write_data_size, rand_state );
             }
             status = clSetKernelArg(writer,1,sizeof(cl_uint),&iptr_idx); test_error_ret(status,"set arg",status);
 
@@ -1071,7 +1076,7 @@ static int l_init_write_read_for_type( cl_device_id device, cl_context context, 
             status = clSetKernelArg(reader,1,ti.get_size(),write_data + (NUM_TESTED_VALUES-1)*ti.get_size()); test_error_ret(status,"set arg",status);
 
             // Determine the expected values.
-            cl_uchar expected[ (NUM_TESTED_VALUES-1) * sizeof(cl_ulong16)];
+            cl_uchar expected[read_data_size];
             memset( expected, -1, sizeof(expected) );
             if ( iteration ) {
                 l_copy( expected, 0, write_data, 0, ti );
@@ -1102,8 +1107,8 @@ static int l_init_write_read_for_type( cl_device_id device, cl_context context, 
 
             clEnqueueUnmapMemObject(queue, write_mem, write_ptr, 0, 0, 0);
 
-            cl_uchar *read_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, read_mem, CL_TRUE, CL_MAP_READ, 0, sizeof(read_data), 0, 0, 0, 0);
-            memset( read_data, -1, sizeof(read_data) );
+            cl_uchar *read_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, read_mem, CL_TRUE, CL_MAP_READ, 0, read_data_size, 0, 0, 0, 0);
+            memset( read_data, -1, read_data_size );
             clEnqueueUnmapMemObject(queue, read_mem, read_ptr, 0, 0, 0);
 
             // Now run the kernel
@@ -1117,7 +1122,7 @@ static int l_init_write_read_for_type( cl_device_id device, cl_context context, 
             status = clEnqueueNDRangeKernel(queue,reader,1,0,&one,0,0,0,0); test_error_ret(status,"enqueue reader",status);
             status = clFinish(queue); test_error_ret(status,"finish",status);
 
-            read_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, read_mem, CL_TRUE, CL_MAP_READ, 0, sizeof(read_data), 0, 0, 0, 0);
+            read_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, read_mem, CL_TRUE, CL_MAP_READ, 0, read_data_size, 0, 0, 0, 0);
 
             if ( ti.is_bool() ) {
                 // Collapse down to one bit.
@@ -1139,6 +1144,8 @@ static int l_init_write_read_for_type( cl_device_id device, cl_context context, 
     }
 
     if ( CL_SUCCESS == err ) { log_info("OK\n"); FLUSH; }
+    align_free(write_data);
+    align_free(read_data);
 
     return err;
 }
@@ -1352,6 +1359,13 @@ static int l_user_type( cl_device_id device, cl_context context, cl_command_queu
             print_build_log(program, 1, &device, ksrc.num_str(), ksrc.strs(), ksrc.lengths(), OPTIONS);
             return status;
         }
+
+        status = clBuildProgram(program, 1, &device, OPTIONS, 0, 0);
+        if(check_error(status, "Failed to compile program for user type test (%s)", IGetErrorString(status)))
+        {
+            print_build_log(program, 1, &device, ksrc.num_str(), ksrc.strs(), ksrc.lengths(), OPTIONS);
+            return status;
+        }
     }
 
 
@@ -1372,12 +1386,12 @@ static int l_user_type( cl_device_id device, cl_context context, cl_command_queu
     test_error_ret(status,"Failed to create reader kernel for user type test",status);
 
     // Set up data.
-    cl_uchar CL_ALIGNED(ALIGNMENT) uchar_data;
-    cl_uint CL_ALIGNED(ALIGNMENT) uint_data;
+    cl_uchar* uchar_data = (cl_uchar*)align_malloc(sizeof(cl_uchar), ALIGNMENT);
+    cl_uint* uint_data = (cl_uint*)align_malloc(sizeof(cl_uint), ALIGNMENT);
 
-    clMemWrapper uchar_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, sizeof(uchar_data), &uchar_data, &status ) );
+    clMemWrapper uchar_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, sizeof(cl_uchar), uchar_data, &status ) );
     test_error_ret(status,"Failed to allocate uchar buffer",status);
-    clMemWrapper uint_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, sizeof(uint_data), &uint_data, &status ) );
+    clMemWrapper uint_mem( clCreateBuffer( context, CL_MEM_USE_HOST_PTR, sizeof(cl_uint), uint_data, &status ) );
     test_error_ret(status,"Failed to allocate uint buffer",status);
 
     status = clSetKernelArg(reader,0,sizeof(cl_mem),&uchar_mem); test_error_ret(status,"set arg",status);
@@ -1387,18 +1401,18 @@ static int l_user_type( cl_device_id device, cl_context context, cl_command_queu
     cl_uint expected_uint = 42;
     for ( unsigned iter = 0; iter < 5 ; iter++ ) { // Must go around at least twice
         // Read back data
-        uchar_data = -1;
-        uint_data = -1;
+        *uchar_data = -1;
+        *uint_data = -1;
         const size_t one = 1;
         status = clEnqueueNDRangeKernel(queue,reader,1,0,&one,0,0,0,0); test_error_ret(status,"enqueue reader",status);
         status = clFinish(queue); test_error_ret(status,"finish",status);
 
-        cl_uchar *uint_data_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, uint_mem, CL_TRUE, CL_MAP_READ, 0, sizeof(uint_data), 0, 0, 0, 0);
-        cl_uchar *uchar_data_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, uchar_mem, CL_TRUE, CL_MAP_READ, 0, sizeof(uchar_data), 0, 0, 0, 0);
+        cl_uchar *uint_data_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, uint_mem, CL_TRUE, CL_MAP_READ, 0, sizeof(cl_uint), 0, 0, 0, 0);
+        cl_uchar *uchar_data_ptr = (cl_uchar *)clEnqueueMapBuffer(queue, uchar_mem, CL_TRUE, CL_MAP_READ, 0, sizeof(cl_uchar), 0, 0, 0, 0);
 
-        if ( expected_uchar != uchar_data || expected_uint != uint_data ) {
+        if ( expected_uchar != *uchar_data || expected_uint != *uint_data ) {
             log_error("FAILED: Iteration %d Got (0x%2x,%d) but expected (0x%2x,%d)\n",
-                    iter, (int)uchar_data, uint_data, (int)expected_uchar, expected_uint );
+                    iter, (int)*uchar_data, *uint_data, (int)expected_uchar, expected_uint );
             err |= 1;
         }
 
@@ -1410,16 +1424,17 @@ static int l_user_type( cl_device_id device, cl_context context, cl_command_queu
         expected_uint++;
 
         // Write the new values into persistent store.
-        uchar_data = expected_uchar;
-        uint_data = expected_uint;
-        status = clSetKernelArg(writer,0,sizeof(uchar_data),&uchar_data); test_error_ret(status,"set arg",status);
-        status = clSetKernelArg(writer,1,sizeof(uint_data),&uint_data); test_error_ret(status,"set arg",status);
+        *uchar_data = expected_uchar;
+        *uint_data = expected_uint;
+        status = clSetKernelArg(writer,0,sizeof(cl_uchar),uchar_data); test_error_ret(status,"set arg",status);
+        status = clSetKernelArg(writer,1,sizeof(cl_uint),uint_data); test_error_ret(status,"set arg",status);
         status = clEnqueueNDRangeKernel(queue,writer,1,0,&one,0,0,0,0); test_error_ret(status,"enqueue writer",status);
         status = clFinish(queue); test_error_ret(status,"finish",status);
     }
 
     if ( CL_SUCCESS == err ) { log_info("OK\n"); FLUSH; }
-
+    align_free(uchar_data);
+    align_free(uint_data);
     return err;
 }
 

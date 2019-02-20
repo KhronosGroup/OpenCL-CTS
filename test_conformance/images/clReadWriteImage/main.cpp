@@ -52,11 +52,11 @@ int test_3D(cl_device_id deviceID, cl_context context, cl_command_queue queue, i
 {
     return test_image_set( device, CL_MEM_OBJECT_IMAGE3D );
 }
-int test_1DArray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_1Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return test_image_set( device, CL_MEM_OBJECT_IMAGE1D_ARRAY );
 }
-int test_2DArray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_2Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return test_image_set( device, CL_MEM_OBJECT_IMAGE2D_ARRAY );
 }
@@ -65,16 +65,16 @@ basefn basefn_list[] = {
     test_1D,
     test_2D,
     test_3D,
-    test_1DArray,
-    test_2DArray,
+    test_1Darray,
+    test_2Darray,
 };
 
 const char *basefn_names[] = {
     "1D",
     "2D",
     "3D",
-    "1DArray",
-    "2DArray",
+    "1Darray",
+    "2Darray",
 };
 
 ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));

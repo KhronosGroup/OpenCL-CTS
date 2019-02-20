@@ -613,6 +613,28 @@ void TestNonUniformWorkGroup::showTestInfo () {
   }
 }
 
+size_t TestNonUniformWorkGroup::adjustLocalArraySize (size_t localArraySize) {
+  // In case if localArraySize is too big, sometimes we can not run kernel because of lack
+  // of resources due to kernel itself requires some local memory to run
+  int err;
+
+  cl_ulong kernelLocalMemSize = 0;
+  err = clGetKernelWorkGroupInfo(_testKernel, _device, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(kernelLocalMemSize), &kernelLocalMemSize, NULL);
+  test_error(err, "clGetKernelWorkGroupInfo failed");
+
+  cl_ulong deviceLocalMemSize = 0;
+  err = clGetDeviceInfo(_device, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(deviceLocalMemSize), &deviceLocalMemSize, NULL);
+  test_error(err, "clGetDeviceInfo failed");
+
+  if (kernelLocalMemSize + localArraySize > deviceLocalMemSize) {
+    size_t adjustedLocalArraySize = deviceLocalMemSize - kernelLocalMemSize;
+    log_info("localArraySize was adjusted from %lu to %lu\n", localArraySize, adjustedLocalArraySize);
+    localArraySize = adjustedLocalArraySize;
+  }
+
+  return localArraySize;
+}
+
 int TestNonUniformWorkGroup::runKernel () {
   int err;
 
@@ -630,7 +652,8 @@ int TestNonUniformWorkGroup::runKernel () {
   test_error(err, "clSetKernelArg failed");
 
   //creating local buffer
-  err = clSetKernelArg(_testKernel, 1, localArraySize*sizeof(unsigned int), NULL);
+  localArraySize = adjustLocalArraySize(localArraySize*sizeof(unsigned int));
+  err = clSetKernelArg(_testKernel, 1, localArraySize, NULL);
   test_error(err, "clSetKernelArg failed");
 
   clMemWrapper testGlobalArray = clCreateBuffer(_context, CL_MEM_READ_WRITE, _numOfGlobalWorkItems*sizeof(cl_uint), NULL, &err);

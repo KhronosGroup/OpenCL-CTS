@@ -454,7 +454,7 @@ int Test_vLoadHalf_private( bool aligned )
 
     // Figure out how many elements are in a work block
     size_t elementSize = MAX( sizeof(cl_half), sizeof(cl_float));
-    size_t blockCount = getBufferSize(gDevice) / elementSize; // elementSize is power of 2
+    size_t blockCount = gBufferSize / elementSize; // elementSize is power of 2
     uint64_t lastCase = 1ULL << (8*sizeof(cl_half)); // number of things of size cl_half
 
     // we handle 64-bit types a bit differently.
@@ -504,7 +504,7 @@ int Test_vLoadHalf_private( bool aligned )
                  continue;
                  }
                  */
-                memset_pattern4( gOut_single, &pattern, getBufferSize(gDevice));
+                memset_pattern4( gOut_single, &pattern, gBufferSize);
                 if( (error = clEnqueueWriteBuffer(gQueue, gOutBuffer_single, CL_TRUE, 0, count * sizeof( float ), gOut_single, 0, NULL, NULL)) )
                 {
                     vlog_error( "Failure in clWriteArray\n" );

@@ -113,6 +113,7 @@ basefn    basefn_list[] = {
     test_get_image1d_info,
     test_get_image1d_array_info,
     test_get_image2d_array_info,
+    test_queue_properties,
 };
 
 
@@ -200,6 +201,7 @@ const char    *basefn_names[] = {
     "get_image1d_info",
     "get_image1d_array_info",
     "get_image2d_array_info",
+    "queue_properties",
 };
 
 ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));

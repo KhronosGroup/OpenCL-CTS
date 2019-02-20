@@ -346,9 +346,12 @@ bool test_suite(cl_device_id device, cl_uint size_t_width, const char *folder,
     {
         std::cout << "Failed tests:" << std::endl;
         std::for_each(ErrList.begin(), ErrList.end(), printError);
+        std::cout << std::endl;
+        return false;
     }
+
     std::cout << std::endl;
-    return tests_passed == number_of_tests;
+    return true;
 }
 
 static std::string getTestFolder(const std::string& TS)
@@ -840,7 +843,6 @@ bool test_basic (cl_device_id device, cl_uint size_t_width, const char *folder)
         "test_sizeof.sizeof_uintptr_t",
         "test_sizeof.sizeof_image2d_t",
         "test_sizeof.sizeof_image3d_t",
-        "test_sizeof.sizeof_sampler_t",
         "test_sizeof.sizeof_double",
         "test_sizeof.sizeof_double2",
         "test_sizeof.sizeof_double4",
