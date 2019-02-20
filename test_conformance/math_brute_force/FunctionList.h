@@ -85,7 +85,7 @@ typedef struct Func
   float           relaxed_error;
   int             ftz;
   int             relaxed;
-  const ::vtbl    *vtbl;
+  const vtbl      *vtbl_ptr;
 }Func;
 
 

@@ -479,16 +479,6 @@ struct AddressingTable
 
 static AddressingTable  sAddressingTable;
 
-bool alpha_is_x(cl_image_format *format){
-    switch (format->image_channel_order) {
-        case CL_RGBx:
-        case CL_sRGBx:
-            return true;
-        default:
-            return false;
-    }
-}
-
 bool is_sRGBA_order(cl_channel_order image_channel_order){
     switch (image_channel_order) {
         case CL_sRGB:
@@ -508,19 +498,21 @@ int has_alpha(cl_image_format *format) {
         case CL_R:
             return 0;
         case CL_A:
-        case CL_Rx:
             return 1;
+        case CL_Rx:
+            return 0;
         case CL_RG:
             return 0;
         case CL_RA:
-        case CL_RGx:
             return 1;
+        case CL_RGx:
+            return 0;
         case CL_RGB:
         case CL_sRGB:
             return 0;
         case CL_RGBx:
         case CL_sRGBx:
-            return 1;
+            return 0;
         case CL_RGBA:
             return 1;
         case CL_BGRA:
@@ -717,13 +709,6 @@ void get_max_sizes(size_t *numberOfSizes, const int maxNumberOfSizes,
         break;
     }
   }
-}
-
-int issubnormal(float a)
-{
-    union { cl_int i; cl_float f; } u;
-    u.f = a;
-    return (u.i & 0x7f800000U) == 0;
 }
 
 float get_max_absolute_error( cl_image_format *format, image_sampler_data *sampler) {
@@ -1412,16 +1397,9 @@ void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
                || ( depth_lod != 0 && z >= (int)depth_lod )
                || ( imageInfo->arraySize != 0 && z >= (int)imageInfo->arraySize ) )
     {
-        // Border color
-        if (imageInfo->format->image_channel_order == CL_DEPTH)
-        {
-            outData[ 0 ] = 0;
-        }
-        else {
             outData[ 0 ] = outData[ 1 ] = outData[ 2 ] = outData[ 3 ] = 0;
             if (!has_alpha(imageInfo->format))
-                outData[3] = alpha_is_x(imageInfo->format) ? 0 : 1;
-        }
+                outData[3] = 1;
         return;
     }
 

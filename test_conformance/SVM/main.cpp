@@ -226,7 +226,7 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
     }
 
     error = clGetDeviceInfo(devices[i], CL_DEVICE_SVM_CAPABILITIES, sizeof(cl_device_svm_capabilities), &caps, NULL);
-    test_error(error,"clGetDeviceInfo failed for CL_DEVICE_MEM_SHARING");
+    test_error(error,"clGetDeviceInfo failed for CL_DEVICE_SVM_CAPABILITIES");
     if(caps & (~(CL_DEVICE_SVM_COARSE_GRAIN_BUFFER | CL_DEVICE_SVM_FINE_GRAIN_BUFFER |  CL_DEVICE_SVM_FINE_GRAIN_SYSTEM | CL_DEVICE_SVM_ATOMICS)))
     {
       log_error("clGetDeviceInfo returned an invalid cl_device_svm_capabilities value");

@@ -26,11 +26,7 @@
 #include <stdio.h>
 #include "../../test_common/harness/rounding_mode.h"
 #include "../../test_common/harness/fpcontrol.h"
-
-#if defined( _WIN32) && defined (_MSC_VER)
 #include "../../test_common/harness/testHarness.h"
-#endif
-
 #include "../../test_common/harness/ThreadPool.h"
 #define BUFFER_SIZE         (1024*1024*2)
 
@@ -112,7 +108,7 @@ extern "C" {
 float Abs_Error( float test, double reference );
 float Ulp_Error( float test, double reference );
 //float Ulp_Error_Half( float test, double reference );
-float Ulp_Error_Double( double test, long double reference );
+float Bruteforce_Ulp_Error_Double( double test, long double reference );
 #ifdef __cplusplus
 } //extern "C"
 #endif

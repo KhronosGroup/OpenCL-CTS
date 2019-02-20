@@ -17,6 +17,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <memory>
 
 #if ! defined( _WIN32)
 #if ! defined( __ANDROID__ )
@@ -356,9 +357,6 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
 //-----------------------------------------
 static bool isLongSupported(cl_device_id device_id)
 {
-    //profile type && device extention for long support checking
-    char *profileType = NULL,*devExt = NULL;
-
     size_t tempSize = 0;
     cl_int status;
     bool extSupport = true;
@@ -377,7 +375,7 @@ static bool isLongSupported(cl_device_id device_id)
         return false;
     }
 
-    profileType = new char[tempSize];
+    std::unique_ptr<char[]> profileType(new char[tempSize]);
     if(profileType == NULL)
     {
         log_error("Failed to allocate memory(profileType)");
@@ -388,11 +386,11 @@ static bool isLongSupported(cl_device_id device_id)
         device_id,
         CL_DEVICE_PROFILE,
         sizeof(char) * tempSize,
-        profileType,
+        profileType.get(),
         NULL);
 
 
-    if(!strcmp("EMBEDDED_PROFILE",profileType))
+    if(!strcmp("EMBEDDED_PROFILE",profileType.get()))
     {
         // Device extention
         status = clGetDeviceInfo(
@@ -408,7 +406,7 @@ static bool isLongSupported(cl_device_id device_id)
             return false;
         }
 
-        devExt = new char[tempSize];
+        std::unique_ptr<char[]> devExt(new char[tempSize]);
         if(devExt == NULL)
         {
             log_error("Failed to allocate memory(devExt)");
@@ -419,13 +417,10 @@ static bool isLongSupported(cl_device_id device_id)
             device_id,
             CL_DEVICE_EXTENSIONS,
             sizeof(char) * tempSize,
-            devExt,
+            devExt.get(),
             NULL);
 
-        extSupport  = (strstr(devExt,"cles_khr_int64") != NULL);
-
-        delete devExt;
-        delete profileType;
+        extSupport  = (strstr(devExt.get(),"cles_khr_int64") != NULL);
     }
     return extSupport;
 }
@@ -501,7 +496,8 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
     int err;
     cl_program program;
     cl_kernel  kernel;
-    cl_mem d_out;
+    cl_mem d_out = NULL;
+    cl_mem d_a = NULL;
     char _analysisBuffer[ANALYSIS_BUFFER_SIZE];
     cl_uint out32 = 0;
     cl_ulong out64 = 0;
@@ -523,7 +519,7 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
         if(isKernelArgument(allTestCase[testId],testNum))
         {
             int a = 2;
-            cl_mem d_a = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
+            d_a = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
                 sizeof(int), &a, &err);
             if(err!= CL_SUCCESS || d_a == NULL) {
                 log_error("clCreateBuffer failed\n");
@@ -613,6 +609,10 @@ exit:
         log_error("clReleaseKernel failed\n");
     if(clReleaseProgram(program) != CL_SUCCESS)
         log_error("clReleaseProgram failed\n");
+    if(d_out)
+	    clReleaseMemObject(d_out);
+    if(d_a)
+	    clReleaseMemObject(d_a);
     ++s_test_cnt;
 
 
@@ -639,6 +639,8 @@ static void printArch( void )
     log_info( "ARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     log_info( "ARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    log_info( "ARCH:\taarch64\n" );
 #else
 #error unknown arch
 #endif
@@ -757,7 +759,6 @@ int test_float_15(cl_device_id deviceID, cl_context context, cl_command_queue qu
 {
     return doTest(gQueue, gContext, TYPE_FLOAT, 15, gDevice);
 }
-#if ! defined( __ANDROID__ )
 int test_float_16(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(gQueue, gContext, TYPE_FLOAT, 16, gDevice);
@@ -766,7 +767,6 @@ int test_float_17(cl_device_id deviceID, cl_context context, cl_command_queue qu
 {
     return doTest(gQueue, gContext, TYPE_FLOAT, 17, gDevice);
 }
-#endif
 int test_float_18(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(gQueue, gContext, TYPE_FLOAT, 18, gDevice);
@@ -857,10 +857,6 @@ int test_string_2(cl_device_id deviceID, cl_context context, cl_command_queue qu
 {
     return doTest(gQueue, gContext, TYPE_STRING, 2, gDevice);
 }
-int test_string_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_STRING, 3, gDevice);
-}
 
 
 int test_vector_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
@@ -933,10 +929,8 @@ basefn basefn_list[] = {
     test_float_13,
     test_float_14,
     test_float_15,
-#if ! defined( __ANDROID__ )
     test_float_16,
     test_float_17,
-#endif
     test_float_18,
     test_float_19,
     test_float_20,
@@ -962,7 +956,6 @@ basefn basefn_list[] = {
     test_string_0,
     test_string_1,
     test_string_2,
-    test_string_3,
 
     test_vector_0,
     test_vector_1,
@@ -1004,10 +997,8 @@ const char *basefn_names[] = {
     "float_13",
     "float_14",
     "float_15",
-#if ! defined( __ANDROID__ )
     "float_16",
     "float_17",
-#endif
     "float_18",
     "float_19",
     "float_20",
@@ -1033,7 +1024,6 @@ const char *basefn_names[] = {
     "string_0",
     "string_1",
     "string_2",
-    "string_3",
 
     "vector_0",
     "vector_1",

@@ -378,7 +378,10 @@ bool TestRunner::runBuildTest(cl_device_id device, const char *folder,
 
     if (strstr(test_name, "div_cr") || strstr(test_name, "sqrt_cr")) {
       if ((gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT) == 0)
+      {
+        std::cout << "Skipped. CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT is not supported." << std::endl;
         return true;
+      }
       else {
         bcoptions += " -cl-fp32-correctly-rounded-divide-sqrt";
         cloptions += " -cl-fp32-correctly-rounded-divide-sqrt";

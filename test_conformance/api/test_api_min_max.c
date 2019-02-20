@@ -1303,7 +1303,6 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
     int error;
     clProgramWrapper program;
     clKernelWrapper kernel;
-    clMemWrapper            streams[3];
     size_t    threads[1], localThreads[1];
     cl_int *constantData, *resultData;
     cl_ulong maxSize, stepSize, currentSize, maxGlobalSize, maxAllocSize;
@@ -1324,12 +1323,12 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
 
     log_info("Reported max constant buffer size of %lld bytes.\n", maxSize);
 
-    // Limit test buffer size to 1/4 of CL_DEVICE_GLOBAL_MEM_SIZE
+    // Limit test buffer size to 1/8 of CL_DEVICE_GLOBAL_MEM_SIZE
     error = clGetDeviceInfo(deviceID, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(maxGlobalSize), &maxGlobalSize, 0);
     test_error(error, "Unable to get CL_DEVICE_GLOBAL_MEM_SIZE");
 
-    if (maxSize > maxGlobalSize / 4)
-        maxSize = maxGlobalSize / 4;
+    if (maxSize > maxGlobalSize / 8)
+        maxSize = maxGlobalSize / 8;
 
     error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE , sizeof(maxAllocSize), &maxAllocSize, 0);
     test_error(error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE ");
@@ -1358,6 +1357,7 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
         for(i=0; i<(int)(numberOfInts); i++)
             constantData[i] = (int)genrand_int32(d);
 
+        clMemWrapper streams[3];
         streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeToAllocate, constantData, &error);
         test_error( error, "Creating test array failed" );
         streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeToAllocate, NULL, &error);
@@ -1427,7 +1427,7 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
 
     if (allocPassed) {
         if (currentSize < maxSize/PASSING_FRACTION) {
-            log_error("Failed to allocate at least 1/4 of the reported constant size.\n");
+            log_error("Failed to allocate at least 1/8 of the reported constant size.\n");
             return -1;
         } else if (currentSize != maxSize) {
             log_info("Passed at reduced size. (%lld of %lld bytes)\n", currentSize, maxSize);

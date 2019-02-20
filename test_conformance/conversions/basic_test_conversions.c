@@ -751,16 +751,11 @@ static void ulong2uint( void *out, void *in){ ((cl_uint*) out)[0] = (cl_uint) ((
 static void ulong2int( void *out, void *in){ ((cl_int*) out)[0] = (cl_int) ((cl_ulong*) in)[0]; }
 static void ulong2float( void *out, void *in)
 {
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && defined(_M_X64)
     cl_ulong l = ((cl_ulong*) in)[0];
     float result;
-
     cl_long sl = ((cl_long)l < 0) ? (cl_long)((l >> 1) | (l & 1)) : (cl_long)l;
-#if defined(_M_X64)
     _mm_store_ss(&result, _mm_cvtsi64_ss(_mm_setzero_ps(), sl));
-#else
-    result = sl;
-#endif
     ((float*) out)[0] = (l == 0 ? 0.0f : (((cl_long)l < 0) ? result * 2.0f : result));
 #else
     cl_ulong l = ((cl_ulong*) in)[0];

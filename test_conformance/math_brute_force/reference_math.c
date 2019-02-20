@@ -1790,7 +1790,7 @@ static const double //two52 = 4.50359962737049600000e+15, /* 0x43300000, 0x00000
 //    *signgamp = 1;
     ix = hx&0x7fffffff;
     if(ix>=0x7ff00000) return x*x;
-    if((ix|lx)==0) return one/zero;
+    if((ix|lx)==0) return INFINITY;
     if(ix<0x3b900000) {    /* |x|<2**-70, return -log(|x|) */
         if(hx<0) {
 //            *signgamp = -1;
@@ -1799,9 +1799,9 @@ static const double //two52 = 4.50359962737049600000e+15, /* 0x43300000, 0x00000
     }
     if(hx<0) {
         if(ix>=0x43300000)     /* |x|>=2**52, must be -integer */
-        return one/zero;
+        return INFINITY;
         t = reference_sinpi(x);
-        if(t==zero) return one/zero; /* -integer */
+        if(t==zero) return INFINITY; /* -integer */
         nadj = reference_log(pi/reference_fabs(t*x));
 //        if(t<zero) *signgamp = -1;
         x = -x;

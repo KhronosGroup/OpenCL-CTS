@@ -212,8 +212,6 @@ struct printDataGenParameters printFloatGenParameters[] = {
 
     {"%+#21.15E","789456123.0"},
 
-#if ! defined( __ANDROID__ )
-
     //Double argument representing floating-point,in [-]xh.hhhhpAd style
 
     {"%.6a","0.1"},
@@ -221,8 +219,6 @@ struct printDataGenParameters printFloatGenParameters[] = {
     //(Minimum)Ten-wide,Double argument representing floating-point,in xh.hhhhpAd style,default(right)-justified
 
     {"%10.2a","9990.235"},
-
-#endif
 
     //Infinity (1.0/0.0)
 
@@ -275,13 +271,9 @@ const char* correctBufferFloat[] = {
 
     "+7.894561230000000E+8",
 
-#if ! defined( __ANDROID__ )
-
     "0x1.99999ap-4",
 
     "0x1.38p+13",
-
-#endif
 
     "inf",
 
@@ -622,10 +614,6 @@ struct printDataGenParameters printStringGenParameters[] = {
 
     {"%s","\"%%\""},
 
-    //null string
-
-    {"%s","(void*)0"}
-
 };
 
 //---------------------------------------------------------
@@ -887,7 +875,7 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
     if(!strcmp(pTestCase->_correctBuffer[testId],"inf"))
     return strcmp(analysisBuffer,"inf")&&strcmp(analysisBuffer,"infinity")&&strcmp(analysisBuffer,"1.#INF00")&&strcmp(analysisBuffer,"Inf");
     if(!strcmp(pTestCase->_correctBuffer[testId],"nan") || !strcmp(pTestCase->_correctBuffer[testId],"-nan")) {
-      return strcmp(analysisBuffer,"nan")&&strcmp(analysisBuffer,"-nan")&&strcmp(analysisBuffer,"1.#IND00")&&strcmp(analysisBuffer,"-1.#IND00")&&strcmp(analysisBuffer,"NaN")&&strcmp(analysisBuffer,"nan(ind)")&&strcmp(analysisBuffer,"nan(snan)");
+       return strcmp(analysisBuffer,"nan")&&strcmp(analysisBuffer,"-nan")&&strcmp(analysisBuffer,"1.#IND00")&&strcmp(analysisBuffer,"-1.#IND00")&&strcmp(analysisBuffer,"NaN")&&strcmp(analysisBuffer,"nan(ind)")&&strcmp(analysisBuffer,"nan(snan)")&&strcmp(analysisBuffer,"-nan(ind)");
     }
     return strcmp(analysisBuffer,pTestCase->_correctBuffer[testId]);
 }

@@ -17,6 +17,7 @@
 #define _kernelHelpers_h
 
 #include "compat.h"
+#include "testHarness.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,8 +91,8 @@ extern int is_image_format_supported( cl_context context, cl_mem_flags flags, cl
 /* Helper to get pixel size for a pixel format */
 size_t get_pixel_bytes( const cl_image_format *fmt );
 
-/* Verify the given device supports images. 0 means you're good to go, otherwise an error */
-extern int verifyImageSupport( cl_device_id device );
+/* Verify the given device supports images. */
+extern test_status verifyImageSupport( cl_device_id device );
 
 /* Checks that the given device supports images. Same as verify, but doesn't print an error */
 extern int checkForImageSupport( cl_device_id device );

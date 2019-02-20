@@ -40,15 +40,15 @@ ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_lis
 
 static const int num_fns = sizeof(basefn_names) / sizeof(char *);
 
-static int
+static test_status
 checkSubGroupsExtension(cl_device_id device)
 {
     if (!is_extension_available(device, "cl_khr_subgroups")) {
         log_info("Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
-        return CL_INVALID_DEVICE;
+        return TEST_SKIP;
     }
 
-    return CL_SUCCESS;
+    return TEST_PASS;
 }
 
 int

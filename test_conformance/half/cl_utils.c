@@ -61,8 +61,10 @@ size_t          gMaxThreadGroupSize = 0;
 size_t          gWorkGroupSize = 0;
 int             gFailCount = 0;
 bool            gWimpyMode = false;
+int             gWimpyReductionFactor = 512;
 int             gTestDouble = 0;
 uint32_t        gDeviceIndex = 0;
+size_t          gBufferSize = 0;
 
 #if defined( __APPLE__ )
 int             gReportTimes = 1;
@@ -178,17 +180,19 @@ int InitCL( void )
 #if defined( __APPLE__ )
     // FIXME: use clProtectedArray
 #endif
+    gBufferSize = getBufferSize(gDevice);
+
     //Allocate buffers
-    gIn_half   = malloc( getBufferSize(gDevice)/2  );
+    gIn_half   = malloc( gBufferSize/2  );
     gOut_half = malloc( BUFFER_SIZE/2  );
     gOut_half_reference = malloc( BUFFER_SIZE/2  );
     gOut_half_reference_double = malloc( BUFFER_SIZE/2  );
     gIn_single   = malloc( BUFFER_SIZE );
-    gOut_single = malloc( getBufferSize(gDevice)  );
-    gOut_single_reference = malloc( getBufferSize(gDevice)  );
+    gOut_single = malloc( gBufferSize  );
+    gOut_single_reference = malloc( gBufferSize  );
     gIn_double   = malloc( 2*BUFFER_SIZE  );
-    // gOut_double = malloc( (2*getBufferSize(gDevice))  );
-    // gOut_double_reference = malloc( (2*getBufferSize(gDevice))  );
+    // gOut_double = malloc( (2*gBufferSize)  );
+    // gOut_double_reference = malloc( (2*gBufferSize)  );
 
     if ( NULL == gIn_half ||
      NULL == gOut_half ||
@@ -201,7 +205,7 @@ int InitCL( void )
          )
         return -3;
 
-    gInBuffer_half = clCreateBuffer(gContext, CL_MEM_READ_ONLY, getBufferSize(gDevice) / 2, NULL, &error);
+    gInBuffer_half = clCreateBuffer(gContext, CL_MEM_READ_ONLY, gBufferSize / 2, NULL, &error);
     if( gInBuffer_half == NULL )
     {
         vlog_error( "clCreateArray failed for input (%d)\n", error );
@@ -229,7 +233,7 @@ int InitCL( void )
         return -5;
     }
 
-    gOutBuffer_single = clCreateBuffer(gContext, CL_MEM_WRITE_ONLY, getBufferSize(gDevice), NULL, &error );
+    gOutBuffer_single = clCreateBuffer(gContext, CL_MEM_WRITE_ONLY, gBufferSize, NULL, &error );
     if( gOutBuffer_single == NULL )
     {
         vlog_error( "clCreateArray failed for output (%d)\n", error );
@@ -237,7 +241,7 @@ int InitCL( void )
     }
 
 #if 0
-    gOutBuffer_double = clCreateBuffer(gContext, CL_MEM_WRITE_ONLY, (size_t)(2*getBufferSize(gDevice)), NULL, &error );
+    gOutBuffer_double = clCreateBuffer(gContext, CL_MEM_WRITE_ONLY, (size_t)(2*gBufferSize), NULL, &error );
     if( gOutBuffer_double == NULL )
     {
         vlog_error( "clCreateArray failed for output (%d)\n", error );
@@ -310,6 +314,15 @@ void ReleaseCL(void)
     // clReleaseMemObject(gOutBuffer_double);
     clReleaseCommandQueue(gQueue);
     clReleaseContext(gContext);
+
+    free(gIn_half);
+    free(gOut_half);
+    free(gOut_half_reference);
+    free(gOut_half_reference_double);
+    free(gIn_single);
+    free(gOut_single);
+    free(gOut_single_reference);
+    free(gIn_double);
 }
 
 cl_uint numVecs(cl_uint count, int vectorSizeIdx, bool aligned) {
@@ -427,21 +440,30 @@ size_t getBufferSize(cl_device_id device_id)
 
     if(s_initialized == 0 || s_device_id != device_id)
     {
-        cl_ulong result;
+        cl_ulong result, maxGlobalSize;
         cl_int err = clGetDeviceInfo (device_id,
                                       CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,
                                       sizeof(result), (void *)&result,
                                       NULL);
         if(err)
         {
-            vlog_error("clGetDeviceInfo() failed\n");
+            vlog_error("clGetDeviceInfo(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE) failed\n");
             s_result = 64*1024;
             goto exit;
         }
+        log_info("Const buffer size is %llx (%llu)\n", result, result);
+        err = clGetDeviceInfo (device_id,
+                               CL_DEVICE_GLOBAL_MEM_SIZE,
+                               sizeof(maxGlobalSize), (void *)&maxGlobalSize,
+                               NULL);
+        if(err)
+        {
+            vlog_error("clGetDeviceInfo(CL_DEVICE_GLOBAL_MEM_SIZE) failed\n");
+            goto exit;
+        }
         result = result / 2;
-        if (result > BUFFER_SIZE)
-            result = BUFFER_SIZE;
-        log_info("Using const buffer size 0x%lx (%lu)\n", (unsigned long)result, (unsigned long)result);
+        if(maxGlobalSize < result * 10)
+            result = result / 10;
         s_initialized = 1;
         s_device_id = device_id;
         s_result = result;
