@@ -267,7 +267,7 @@ int doTest( const char* name )
                 gTestFastRelaxed = 0;
 
                 int isBasicTest = 0;
-                for( j = 0; j < gNumBasicDoubleFuncs; j++ ) {
+                for( size_t j = 0; j < gNumBasicDoubleFuncs; j++ ) {
                     if( 0 == strcmp(gBasicDoubleFuncs[j], func_data->name ) ) {
                         isBasicTest = 1;
                         break;
@@ -277,7 +277,7 @@ int doTest( const char* name )
                     gTestCount++;
                     if( gTestFloat )
                         vlog( "    " );
-                    if( func_data->vtbl->DoubleTestFunc( func_data, gMTdata )  )
+                    if( func_data->vtbl_ptr->DoubleTestFunc( func_data, gMTdata )  )
                     {
                         gFailCount++;
                         error++;
