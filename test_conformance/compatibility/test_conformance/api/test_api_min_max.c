@@ -1674,7 +1674,9 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context, cl_co
     test_error( error, "Unable to get device version string" );
     if (!gIsEmbedded)
     {
-        if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
+        if( memcmp( buffer, "OpenCL 2.1", strlen( "OpenCL 2.1" ) ) == 0 )
+            min_max_local_mem_size = 16L * 1024L;
+        else if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
             min_max_local_mem_size = 16L * 1024L;
         else if( memcmp( buffer, "OpenCL 1.2", strlen( "OpenCL 1.2" ) ) != 0 )
             min_max_local_mem_size = 16L * 1024L;
