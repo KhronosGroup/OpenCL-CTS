@@ -1,4 +1,4 @@
-To run the 2.2 conformance tests test suite for the C++ features you need need 
+To run the 2.2 conformance tests test suite for the C++ features you need
 SPIR-V binaries.
 
 If you are using a conformance package then the binaries are included in the 
