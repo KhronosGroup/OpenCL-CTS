@@ -117,6 +117,7 @@ private:
   void calculateExpectedValues ();
   void showTestInfo ();
   size_t adjustLocalArraySize(size_t localArraySize);
+  size_t adjustGlobalBufferSize(size_t globalBufferSize);
 };
 
 // Class responsible for running subtest scenarios in test function
@@ -145,3 +146,4 @@ private:
 };
 
 #endif // _TESTNONUNIFORMWORKGROUP_H
+
