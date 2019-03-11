@@ -35,6 +35,7 @@ const char *known_extensions[] = {
     "cl_khr_byte_addressable_store",
     "cl_khr_fp16",
     "cl_khr_spir",
+    "cl_khr_depth_images",
 
     //API-only extensions after this point.  If you add above here, modify first_API_extension below.
     "cl_khr_gl_sharing",
@@ -44,15 +45,17 @@ const char *known_extensions[] = {
     "cl_khr_egl_image",
     "cl_khr_egl_event",
     "cl_khr_create_command_queue",
-    "cl_khr_priority_hints",
-    "cl_khr_throttle_hints",
-    "cl_khr_il_program",
-    "cl_khr_mipmap_image",
-    "cl_khr_mipmap_image_writes",
+    "cl_khr_image2d_from_buffer",
+    "cl_khr_dx9_media_sharing",
+    "cl_khr_d3d11_sharing",
+    "cl_khr_gl_depth_images",
+    "cl_khr_initialize_memory",
+    "cl_khr_terminate_context",
+    "cl_khr_gl_msaa_sharing",
 };
 
 size_t num_known_extensions = sizeof(known_extensions)/sizeof(char*);
-size_t first_API_extension = 11;
+size_t first_API_extension = 12;
 
 const char *known_embedded_extensions[] = {
     "cles_khr_int64",
