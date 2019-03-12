@@ -39,6 +39,22 @@ public:
     virtual basefn getFunction() = 0;
 };
 
+// parseAndCallCommandLineTests called by runTestHarness expects there to
+// be an additinal test at the end of the get list called "all", if the
+// user requests "all" on the command line it will not call the specific
+// test function but instead run all the tests. This is required to avoid
+// off by 1 failures when the user requested the last test in the test list
+// by name on the command line.
+class test_all_class : public baseTestClass
+{
+public:
+    basefn getFunction() override {
+        // Return a function which will never be called because the "all" test
+        // name is intercepted and instead runs all the tests.
+        return [](cl_device_id, cl_context, cl_command_queue, int) -> int { return 0; };
+    }
+};
+
 class spirvTestsRegistry {
 private:
     std::vector<const char *> testNames;

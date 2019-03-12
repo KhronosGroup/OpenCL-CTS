@@ -174,6 +174,13 @@ int get_program_with_il(clProgramWrapper &prog,
 int main(int argc, const char *argv[])
 {
     gReSeed = 1;
+    // parseAndCallCommandLineTests called by runTestHarness expects there to
+    // be an additinal test at the end of the get list called "all", if the
+    // user requests "all" on the command line it will not call the specific
+    // test function but instead run all the tests. This is required to avoid
+    // off by 1 failures when the user requested the last test in the test list
+    // by name on the command line.
+    createAndRegister<test_all_class>("all");
     return runTestHarness(argc, argv,
                           spirvTestsRegistry::getInstance().getNumTests(),
                           spirvTestsRegistry::getInstance().getTests(),
