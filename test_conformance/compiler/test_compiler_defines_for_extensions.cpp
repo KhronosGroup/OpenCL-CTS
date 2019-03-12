@@ -45,6 +45,7 @@ const char *known_extensions[] = {
     "cl_khr_egl_image",
     "cl_khr_egl_event",
     "cl_khr_create_command_queue",
+    "cl_khr_il_program",
     "cl_khr_image2d_from_buffer",
     "cl_khr_dx9_media_sharing",
     "cl_khr_d3d11_sharing",
