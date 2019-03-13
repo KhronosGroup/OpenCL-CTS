@@ -14,6 +14,8 @@ or Khronos Conformance Test Source License Agreement as executed between Khronos
 #pragma once
 #include <CL/cl.h>
 
+#include "../../test_common/harness/kernelHelpers.h"
+
 #if defined(_MSC_VER) || defined(_WIN32)
 #define PACKED(__STRUCT__) __pragma(pack(push, 1)) __STRUCT__ __pragma(pack(pop))
 #elif defined(__GNUC__) || defined(__clang__)
@@ -182,3 +184,32 @@ Tv notOpVec(Tv in)
     }
     return out;
 }
+
+template <typename T>
+struct align_allocator {
+    typedef T value_type;
+    typedef T* pointer;
+    typedef const T* const_pointer;
+    typedef T& reference;
+    typedef const T& const_reference;
+    typedef size_t size_type;
+    typedef ptrdiff_t difference_type;
+
+    template <class U>
+    struct rebind {
+        typedef align_allocator<U> other;
+    };
+
+    template <class U>
+    align_allocator(const align_allocator<U> &) {}
+
+    align_allocator() {}
+
+    T* allocate(size_t count) {
+        return static_cast<T *>(align_malloc(sizeof(T) * count, alignof(T)));
+    };
+
+    void deallocate(T* ptr, size_t) {
+        align_free(ptr);
+    };
+};

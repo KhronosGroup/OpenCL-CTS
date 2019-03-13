@@ -25,8 +25,8 @@ int test_fmath(cl_device_id deviceID,
                const char *funcName,
                const char *Tname,
                bool fast_math,
-               std::vector<T> &h_lhs,
-               std::vector<T> &h_rhs)
+               std::vector<T, align_allocator<T>> &h_lhs,
+               std::vector<T, align_allocator<T>> &h_rhs)
 {
 
     if(std::string(Tname).find("double") != std::string::npos) {
@@ -84,7 +84,7 @@ int test_fmath(cl_device_id deviceID,
 
     const char *options = fast_math ? "-cl-fast-relaxed-math" : NULL;
 
-    std::vector<T> h_ref(num);
+    std::vector<T, align_allocator<T>> h_ref(num);
 
     {
         // Run the cl kernel for reference results
@@ -141,7 +141,7 @@ int test_fmath(cl_device_id deviceID,
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue cl kernel");
 
-    std::vector<T> h_res(num);
+    std::vector<T, align_allocator<T>> h_res(num);
     err = clEnqueueReadBuffer(queue, res, CL_TRUE, 0, bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read from ref");
 
@@ -162,8 +162,8 @@ int test_fmath(cl_device_id deviceID,
             PASSIVE_REQUIRE_FP16_SUPPORT(deviceID); \
         }                                           \
         const int num = 1 << 20;                    \
-        std::vector<cl_##TYPE> lhs(num);            \
-        std::vector<cl_##TYPE> rhs(num);            \
+        std::vector<cl_##TYPE, align_allocator<cl_##TYPE>> lhs(num);            \
+        std::vector<cl_##TYPE, align_allocator<cl_##TYPE>> rhs(num);            \
                                                     \
         RandomSeed seed(gRandomSeed);               \
                                                     \

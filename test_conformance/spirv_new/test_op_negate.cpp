@@ -23,7 +23,7 @@ int test_negation(cl_device_id deviceID,
                   cl_command_queue queue,
                   const char *Tname,
                   const char *funcName,
-                  const std::vector<Tv> &h_in,
+                  const std::vector<Tv, align_allocator<Tv>> &h_in,
                   Tv (*negate)(Tv) = negOp<Tv>)
 {
     if(std::string(Tname).find("double") != std::string::npos) {
@@ -61,7 +61,7 @@ int test_negation(cl_device_id deviceID,
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue cl kernel");
 
-    std::vector<Tv> h_out(num);
+    std::vector<Tv, align_allocator<Tv>> h_out(num);
     err = clEnqueueReadBuffer(queue, in, CL_TRUE, 0, bytes, &h_out[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read from ref");
 
@@ -79,7 +79,7 @@ int test_negation(cl_device_id deviceID,
     {                                           \
         PASSIVE_REQUIRE_IL_PROGRAM_SUPPORT(deviceID); \
         int num = 1 << 20;                      \
-        std::vector<Tv> in(num);                \
+        std::vector<Tv, align_allocator<Tv>> in(num);                \
         RandomSeed seed(gRandomSeed);           \
         for (int i = 0; i < num; i++) {         \
             in[i] = genrand<Tv>(seed);          \
@@ -105,15 +105,8 @@ TEST_NEG(long)
 TEST_NOT(int)
 TEST_NOT(long)
 
-#ifdef __GNUC__
-// std::vector<cl_short> is causing compilation errors on GCC 5.3 (works on gcc 4.8)
-// Needs further investigation
-TEST_NEGATION(short, short, op_neg, negOp<cl_short>)
-TEST_NEGATION(short, short, op_not, notOp<cl_short>)
-#else
 TEST_NEG(short)
 TEST_NOT(short)
-#endif
 
 TEST_NEG_VEC(float  , 4)
 TEST_NEG_VEC(int    , 4)

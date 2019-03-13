@@ -17,7 +17,7 @@ or Khronos Conformance Test Source License Agreement as executed between Khronos
 template<typename Tv, typename Ts>
 int test_extract(cl_device_id deviceID, cl_context context,
                  cl_command_queue queue, const char *name,
-                 const std::vector<Tv> &h_in, const int n)
+                 const std::vector<Tv, align_allocator<Tv>> &h_in, const int n)
 {
     if(std::string(name).find("double") != std::string::npos) {
         if(!is_extension_available(deviceID, "cl_khr_fp64")) {
@@ -35,7 +35,7 @@ int test_extract(cl_device_id deviceID, cl_context context,
     SPIRV_CHECK_ERROR(err, "Failed to create kernel");
 
     int num = (int)h_in.size();
-    std::vector<Ts> h_out(num);
+    std::vector<Ts, align_allocator<Ts>> h_out(num);
 
     size_t in_bytes = num * sizeof(Tv);
     clMemWrapper in = clCreateBuffer(context, CL_MEM_READ_WRITE, in_bytes, NULL, &err);
@@ -83,7 +83,7 @@ int test_extract(cl_device_id deviceID, cl_context context,
         typedef cl_##TYPE##N Tv;                            \
         typedef cl_##TYPE Ts;                               \
         const int num = 1 << 20;                            \
-        std::vector<Tv> in(num);                            \
+        std::vector<Tv, align_allocator<Tv>> in(num);       \
         const char *name = "vector_" #TYPE #N "_extract";   \
                                                             \
         RandomSeed seed(gRandomSeed);                       \
