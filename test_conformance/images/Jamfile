@@ -1,9 +1,0 @@
-build-project clCopyImage ;
-build-project clFillImage ;
-build-project clGetInfo ;
-build-project clReadWriteImage ;
-build-project kernel_image_methods ;
-build-project kernel_read_write ;
-build_project samplerlessReads ;
-
-use-project /images : . ;
