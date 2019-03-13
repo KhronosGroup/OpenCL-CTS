@@ -22,8 +22,8 @@ int test_vector_times_scalar(cl_device_id deviceID,
                              cl_context context,
                              cl_command_queue queue,
                              const char *Tname,
-                             std::vector<Tv> &h_lhs,
-                             std::vector<Ts> &h_rhs)
+                             std::vector<Tv, align_allocator<Tv>> &h_lhs,
+                             std::vector<Ts, align_allocator<Ts>> &h_rhs)
 {
     if(std::string(Tname).find("double") != std::string::npos) {
         if(!is_extension_available(deviceID, "cl_khr_fp64")) {
@@ -78,7 +78,7 @@ int test_vector_times_scalar(cl_device_id deviceID,
     size_t kernelLen = kernelStr.size();
     const char *kernelBuf = kernelStr.c_str();
 
-    std::vector<Tv> h_ref(num);
+    std::vector<Tv, align_allocator<Tv>> h_ref(num);
     {
         // Run the cl kernel for reference results
         clProgramWrapper prog;
@@ -139,7 +139,7 @@ int test_vector_times_scalar(cl_device_id deviceID,
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue cl kernel");
 
-    std::vector<Tv> h_res(num);
+    std::vector<Tv, align_allocator<Tv>> h_res(num);
     err = clEnqueueReadBuffer(queue, res, CL_TRUE, 0, res_bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read from ref");
 
@@ -161,8 +161,8 @@ int test_vector_times_scalar(cl_device_id deviceID,
         typedef cl_##TYPE##N Tv;                                \
         typedef cl_##TYPE Ts;                                   \
         const int num = 1 << 20;                                \
-        std::vector<Tv> lhs(num);                               \
-        std::vector<Ts> rhs(num);                               \
+        std::vector<Tv, align_allocator<Tv>> lhs(num);                               \
+        std::vector<Ts, align_allocator<Ts>> rhs(num);                               \
                                                                 \
         RandomSeed seed(gRandomSeed);                           \
                                                                 \

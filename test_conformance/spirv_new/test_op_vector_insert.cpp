@@ -17,7 +17,7 @@ or Khronos Conformance Test Source License Agreement as executed between Khronos
 template<typename Ts, typename Tv>
 int test_insert(cl_device_id deviceID, cl_context context,
                  cl_command_queue queue, const char *name,
-                 const std::vector<Ts> &h_in, const int n)
+                 const std::vector<Ts, align_allocator<Ts>> &h_in, const int n)
 {
     if(std::string(name).find("double") != std::string::npos) {
         if(!is_extension_available(deviceID, "cl_khr_fp64")) {
@@ -34,8 +34,8 @@ int test_insert(cl_device_id deviceID, cl_context context,
     SPIRV_CHECK_ERROR(err, "Failed to create kernel");
 
     int num = (int)h_in.size();
-    std::vector<Tv> h_ref(num);
-    std::vector<Tv> h_out(num);
+    std::vector<Tv, align_allocator<Tv>> h_ref(num);
+    std::vector<Tv, align_allocator<Tv>> h_out(num);
 
     RandomSeed seed(gRandomSeed);
     for (int i = 0; i < num; i++) {
@@ -100,7 +100,7 @@ int test_insert(cl_device_id deviceID, cl_context context,
         typedef cl_##TYPE##N Tv;                            \
         typedef cl_##TYPE Ts;                               \
         const int num = 1 << 20;                            \
-        std::vector<Ts> in(num);                            \
+        std::vector<Ts, align_allocator<Ts>> in(num);                            \
         const char *name = "vector_" #TYPE #N "_insert";    \
                                                             \
         RandomSeed seed(gRandomSeed);                       \

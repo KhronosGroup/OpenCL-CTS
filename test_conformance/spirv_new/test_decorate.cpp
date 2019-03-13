@@ -201,8 +201,8 @@ int verify_saturated_results(cl_device_id deviceID,
     size_t in_bytes = sizeof(Ti) * num;
     size_t out_bytes = sizeof(To) * num;
 
-    std::vector<Ti> h_lhs(num);
-    std::vector<Ti> h_rhs(num);
+    std::vector<Ti, align_allocator<Ti>> h_lhs(num);
+    std::vector<Ti, align_allocator<Ti>> h_rhs(num);
 
     To loVal = std::numeric_limits<To>::min();
     To hiVal = std::numeric_limits<To>::max();
@@ -249,7 +249,7 @@ int verify_saturated_results(cl_device_id deviceID,
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue cl kernel");
 
-    std::vector<To> h_res(num);
+    std::vector<To, align_allocator<To>> h_res(num);
     err = clEnqueueReadBuffer(queue, res, CL_TRUE, 0, out_bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read to output");
 
@@ -318,7 +318,7 @@ int test_image_decorate(cl_device_id deviceID,
     const int width = 4096;
     const int height = 4096;
 
-    std::vector<cl_uint4> src(width * height);
+    std::vector<cl_uint4, align_allocator<cl_uint4>> src(width * height);
     RandomSeed seed(gRandomSeed);
 
     for (auto &val : src) {
@@ -369,7 +369,7 @@ int test_image_decorate(cl_device_id deviceID,
     err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global, NULL, 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue kernel");
 
-    std::vector<cl_uint4> dst(src.size());
+    std::vector<cl_uint4, align_allocator<cl_uint4>> dst(src.size());
     err = clEnqueueReadBuffer(queue, dstBuffer, CL_TRUE, 0, bytes, &dst[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to copy data back to host");
 
@@ -406,7 +406,7 @@ TEST_SPIRV_FUNC(decorate_nonreadable)
     const int height = 4096;
     cl_int err = CL_SUCCESS;
 
-    std::vector<cl_uint4> src(width * height);
+    std::vector<cl_uint4, align_allocator<cl_uint4>> src(width * height);
     RandomSeed seed(gRandomSeed);
 
     for (auto &val : src) {
@@ -459,7 +459,7 @@ TEST_SPIRV_FUNC(decorate_nonreadable)
     err = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global, NULL, 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue kernel");
 
-    std::vector<cl_uint4> dst(src.size());
+    std::vector<cl_uint4, align_allocator<cl_uint4>> dst(src.size());
     size_t origin[] = {0, 0, 0};
     size_t region[] = {height, width, 1};
     err = clEnqueueReadImage(queue, dstImage, CL_TRUE, origin, region, 0, 0, &dst[0], 0, NULL, NULL);
@@ -483,8 +483,8 @@ int test_fp_rounding(cl_device_id deviceID,
                      cl_context context,
                      cl_command_queue queue,
                      const char *name,
-                     std::vector<Ti> &h_in,
-                     std::vector<To> &h_out)
+                     std::vector<Ti, align_allocator<Ti>> &h_in,
+                     std::vector<To, align_allocator<To>> &h_out)
 {
     if(std::string(name).find("double") != std::string::npos) {
         if(!is_extension_available(deviceID, "cl_khr_fp64")) {
@@ -523,7 +523,7 @@ int test_fp_rounding(cl_device_id deviceID,
     size_t global = num;
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
 
-    std::vector<To> h_res(num);
+    std::vector<To, align_allocator<To>> h_res(num);
     err = clEnqueueReadBuffer(queue, out, CL_TRUE, 0, out_bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read from output");
 
@@ -580,8 +580,8 @@ inline To round_to_neginf(Ti in)
         typedef cl_##Ti clTi;                                           \
         typedef cl_##To clTo;                                           \
         const int num = 1 << 16;                                        \
-        std::vector<clTi> in(num);                                      \
-        std::vector<clTo>  out(num);                                    \
+        std::vector<clTi, align_allocator<clTi>> in(num);               \
+        std::vector<clTo, align_allocator<clTo>> out(num);              \
         RandomSeed seed(gRandomSeed);                                   \
                                                                         \
         for (int i = 0; i < num; i++) {                                 \

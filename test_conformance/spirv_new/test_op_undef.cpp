@@ -47,7 +47,7 @@ int test_undef(cl_device_id deviceID, cl_context context,
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue kernel");
 
-    std::vector<T> host(num);
+    std::vector<T, align_allocator<T>> host(num);
     err = clEnqueueReadBuffer(queue, mem, CL_TRUE, 0, bytes, &host[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to copy from cl_buffer");
 

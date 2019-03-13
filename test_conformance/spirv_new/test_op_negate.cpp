@@ -23,7 +23,7 @@ int test_negation(cl_device_id deviceID,
                   cl_command_queue queue,
                   const char *Tname,
                   const char *funcName,
-                  const std::vector<Tv> &h_in,
+                  const std::vector<Tv, align_allocator<Tv>> &h_in,
                   Tv (*negate)(Tv) = negOp<Tv>)
 {
     if(std::string(Tname).find("double") != std::string::npos) {
@@ -61,7 +61,7 @@ int test_negation(cl_device_id deviceID,
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue cl kernel");
 
-    std::vector<Tv> h_out(num);
+    std::vector<Tv, align_allocator<Tv>> h_out(num);
     err = clEnqueueReadBuffer(queue, in, CL_TRUE, 0, bytes, &h_out[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read from ref");
 
@@ -78,7 +78,7 @@ int test_negation(cl_device_id deviceID,
     TEST_SPIRV_FUNC(OP##_##TYPE)                \
     {                                           \
         int num = 1 << 20;                      \
-        std::vector<Tv> in(num);                \
+        std::vector<Tv, align_allocator<Tv>> in(num);                \
         RandomSeed seed(gRandomSeed);           \
         for (int i = 0; i < num; i++) {         \
             in[i] = genrand<Tv>(seed);          \
