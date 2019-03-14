@@ -72,7 +72,7 @@ int fill_buffer_with_data(cl_context context, cl_device_id device_id, cl_command
       }
 
       error = clWaitForEvents(1, &event);
-      result = check_allocation_error(context, device_id, error, queue);
+      result = check_allocation_error(context, device_id, error, queue, &event);
 
       if (result == FAILED_ABORT) {
         print_error(error, "clWaitForEvents failed.");
@@ -128,7 +128,7 @@ int fill_buffer_with_data(cl_context context, cl_device_id device_id, cl_command
       }
 
       error = clWaitForEvents(1, &event);
-      result = check_allocation_error(context, device_id, error, queue);
+      result = check_allocation_error(context, device_id, error, queue, &event);
 
       if (result == FAILED_ABORT) {
         print_error(error, "clWaitForEvents failed.");
@@ -219,16 +219,7 @@ int fill_image_with_data(cl_context context, cl_device_id device_id, cl_command_
       }
 
       error = clWaitForEvents(1, &event);
-
-      // Dig out execution error if that is the problem
-      if (error == CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST) {
-          cl_int err, exec_status;
-          err = clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(exec_status), &exec_status, NULL);
-          test_error(err, "clGetEventInfo failed getting CL_EVENT_COMMAND_EXECUTION_STATUS from failed event");
-          error = exec_status;
-      }
-
-      result = check_allocation_error(context, device_id, error, queue);
+      result = check_allocation_error(context, device_id, error, queue, &event);
 
       if (result == FAILED_ABORT) {
         print_error(error, "clWaitForEvents failed.");
@@ -284,7 +275,7 @@ int fill_image_with_data(cl_context context, cl_device_id device_id, cl_command_
       }
 
       error = clWaitForEvents(1, &event);
-      result = check_allocation_error(context, device_id, error, queue);
+      result = check_allocation_error(context, device_id, error, queue, &event);
 
       if (result == FAILED_ABORT) {
         print_error(error, "clWaitForEvents failed.");
