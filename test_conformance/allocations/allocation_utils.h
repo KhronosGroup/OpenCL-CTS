@@ -13,12 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef _allocation_utils_h
+#define _allocation_utils_h
+
 #include "testBase.h"
 
 extern cl_uint checksum;
 
-int check_allocation_error(cl_context context, cl_device_id device_id, int error, cl_command_queue *queue);
+int check_allocation_error(cl_context context, cl_device_id device_id, int error, cl_command_queue *queue, cl_event *event = 0);
 double toMB(cl_ulong size_in);
 size_t get_actual_allocation_size(cl_mem mem);
 
-
+#endif // _allocation_utils_h
