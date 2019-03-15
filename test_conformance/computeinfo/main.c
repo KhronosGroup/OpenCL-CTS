@@ -22,7 +22,6 @@
 #include "../../test_common/harness/errorHelpers.h"
 #include "../../test_common/harness/kernelHelpers.h"
 
-
 static int dump_supported_formats;
 
 typedef struct
@@ -383,6 +382,7 @@ int getConfigInfo(cl_device_id device, config_info* info)
             if (err == CL_SUCCESS && config_size_set > 0) {
                 info->config.string = (char*)malloc(config_size_set);
                 err = clGetDeviceInfo(device, info->opcode, config_size_set, info->config.string, &config_size_ret);
+				size_err = config_size_set != config_size_ret;
             }
             break;
         case type_cl_device_svm_capabilities:
@@ -698,7 +698,7 @@ int getConfigInfos( cl_device_id device )
           }
         }
         if (info.config_type == type_string) {
-            free(info.config.string);
+          free(info.config.string);
         }
       } else {
         total_errors++;

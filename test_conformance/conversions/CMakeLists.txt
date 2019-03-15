@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O0")
 endif(MSVC)
 
 set (${MODULE_NAME}_SOURCES
-      Sleep.c test_conversions.c basic_test_conversions.c
+      Sleep.c test_conversions.cpp basic_test_conversions.c
       ../../test_common/harness/ThreadPool.c
       ../../test_common/harness/rounding_mode.c
       ../../test_common/harness/mt19937.c
@@ -42,7 +42,7 @@ endif(NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
 
 if(NOT ANDROID)
 set_source_files_properties(
-        Sleep.c test_conversions.c basic_test_conversions.c
+        Sleep.c test_conversions.cpp basic_test_conversions.c
         COMPILE_FLAGS -msse2)
 endif(NOT ANDROID)
 
