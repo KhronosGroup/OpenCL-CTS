@@ -28,7 +28,6 @@
 
 bool            gDebugTrace = false, gTestSmallImages = false, gTestMaxImages = false, gUseRamp = false, gTestRounding = false, gEnablePitch = false, gTestMipmaps = false;
 int             gTypesToTest = 0;
-bool gPrintOptions = false;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
 cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
 cl_device_type    gDeviceType = CL_DEVICE_TYPE_DEFAULT;
@@ -175,9 +174,6 @@ int main(int argc, const char *argv[])
         else if( strcmp( argv[i], "randomize" ) == 0 )
             randomize = true;
 
-        else if( strcmp( argv[i], "print_options" ) == 0 )
-             gPrintOptions = true;
-
         else if( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 )
         {
             printUsage( argv[ 0 ] );
@@ -305,7 +301,6 @@ static void printUsage( const char *execName )
     log_info( "\trandomize - Use random seed\n" );
     log_info( "\tuse_pitches - Enables row and slice pitches\n" );
     log_info( "\tuse_ramp - Instead of random data, uses images filled with ramps (and 0xff on any padding pixels) to ease debugging\n" );
-    log_info( "\tprint_options - Just prints all the image options that are being tested, doesn't perform any testing\n" );
     log_info( "\n" );
     log_info( "Test names:\n" );
     for( int i = 0; i < num_fns; i++ )
