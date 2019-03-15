@@ -552,7 +552,9 @@ int test_min_max_image_2d_width(cl_device_id deviceID, cl_context context, cl_co
     // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
     error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
     test_error( error, "Unable to get device version string" );
-    if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
+    if( memcmp( buffer, "OpenCL 2.1", strlen( "OpenCL 2.1" ) ) == 0 )
+        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
+    else if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
         minRequiredDimension = gIsEmbedded ? 2048 : 8192;
     else if( memcmp( buffer, "OpenCL 1.2", strlen( "OpenCL 1.2" ) ) == 0 )
         minRequiredDimension = gIsEmbedded ? 2048 : 8192;
@@ -628,7 +630,9 @@ int test_min_max_image_2d_height(cl_device_id deviceID, cl_context context, cl_c
     // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
     error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
     test_error( error, "Unable to get device version string" );
-    if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
+    if( memcmp( buffer, "OpenCL 2.1", strlen( "OpenCL 2.1" ) ) == 0 )
+        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
+    else if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
         minRequiredDimension = gIsEmbedded ? 2048 : 8192;
     else if( memcmp( buffer, "OpenCL 1.2", strlen( "OpenCL 1.2" ) ) == 0 )
         minRequiredDimension = gIsEmbedded ? 2048 : 8192;
