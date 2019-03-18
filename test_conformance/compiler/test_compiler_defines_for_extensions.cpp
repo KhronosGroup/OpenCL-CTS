@@ -57,6 +57,7 @@ const char *known_extensions[] = {
     "cl_khr_priority_hints",
     "cl_khr_create_command_queue",
     "cl_khr_il_program",
+    "cl_khr_spirv_no_integer_wrap_decoration",
 };
 
 size_t num_known_extensions = sizeof(known_extensions)/sizeof(char*);
