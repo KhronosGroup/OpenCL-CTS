@@ -43,8 +43,6 @@ const char *known_extensions[] = {
     "cl_khr_mipmap_image",
     "cl_khr_mipmap_image_writes",
     "cl_khr_srgb_image_writes",
-    "cl_khr_priority_hints",
-    "cl_khr_throttle_hints",
     "cl_khr_subgroup_named_barrier",
 
     //API-only extensions after this point.  If you add above here, modify first_API_extension below.
@@ -62,10 +60,12 @@ const char *known_extensions[] = {
     "cl_khr_create_command_queue",
     "cl_khr_initialize_memory",
     "cl_khr_terminate_context",
+    "cl_khr_priority_hints",
+    "cl_khr_throttle_hints",
 };
 
 size_t num_known_extensions = sizeof(known_extensions)/sizeof(char*);
-size_t first_API_extension = 22;
+size_t first_API_extension = 20;
 
 const char *known_embedded_extensions[] = {
     "cles_khr_int64",
