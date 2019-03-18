@@ -45,12 +45,15 @@
 #endif
 #define SUCCEEDED 0
 
-#define BUFFER 1
-#define IMAGE_READ 2
-#define IMAGE_WRITE 4
-#define BUFFER_NON_BLOCKING 8
-#define IMAGE_READ_NON_BLOCKING 16
-#define IMAGE_WRITE_NON_BLOCKING 32
+enum AllocType
+{
+    BUFFER,
+    IMAGE_READ,
+    IMAGE_WRITE,
+    BUFFER_NON_BLOCKING,
+    IMAGE_READ_NON_BLOCKING,
+    IMAGE_WRITE_NON_BLOCKING,
+};
 
 #define test_error_abort(errCode,msg)    test_error_ret_abort(errCode,msg,errCode)
 #define test_error_ret_abort(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { print_error( errCode, msg ); return FAILED_ABORT ; } }
