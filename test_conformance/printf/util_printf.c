@@ -859,14 +859,14 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
 
         char* eCorrectBuffer = strstr((char*)pTestCase->_correctBuffer[testId],correctExp);
         if(eCorrectBuffer == NULL)
-            return false;
+            return 1;
 
         eCorrectBuffer+=2;
         exp += 2;
 
         //Exponent always contains at least two digits
         if(strlen(exp) < 2)
-            return false;
+            return 1;
         //Scip leading zeros in the exponent
         while(*exp == '0')
             ++exp;
