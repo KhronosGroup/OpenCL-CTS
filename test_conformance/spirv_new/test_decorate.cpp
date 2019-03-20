@@ -389,6 +389,7 @@ int test_image_decorate(cl_device_id deviceID,
 #define TEST_SPIRV_IMAGE_DECORATE(type)                         \
     TEST_SPIRV_FUNC(decorate_##type)                            \
     {                                                           \
+        PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID);                \
         return test_image_decorate(deviceID, context, queue,    \
                                    "decorate_" #type);          \
     }                                                           \
@@ -399,6 +400,7 @@ TEST_SPIRV_IMAGE_DECORATE(nonwritable)
 
 TEST_SPIRV_FUNC(decorate_nonreadable)
 {
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID);
     const char *name = "decorate_nonreadable";
     const int width = 4096;
     const int height = 4096;
