@@ -17,6 +17,7 @@ set(CMAKE_CXX_STANDARD 11)
 file(GLOB SPIRV_NEW_SOURCES "*.cpp")
 
 set(TEST_HARNESS_SOURCES
+  ../../test_common/harness/crc32.c
   ../../test_common/harness/errorHelpers.c
   ../../test_common/harness/threadTesting.c
   ../../test_common/harness/testHarness.c

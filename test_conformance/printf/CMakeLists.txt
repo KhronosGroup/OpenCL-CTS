@@ -16,6 +16,7 @@ set(${MODULE_NAME}_SOURCES
          #../../test_common/harness/imageHelpers.cpp
          ../../test_common/harness/parseParameters.cpp
          ../../test_common/harness/kernelHelpers.c
+         ../../test_common/harness/crc32.c
          )
 
 include(../CMakeCommon.txt)
