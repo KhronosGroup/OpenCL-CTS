@@ -25,6 +25,7 @@ set (GL_SOURCES
     ../../test_common/harness/conversions.c
     ../../test_common/harness/msvc9.c
     ../../test_common/harness/parseParameters.cpp
+    ../../test_common/harness/crc32.c
     )
 
 if (WIN32)

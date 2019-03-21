@@ -10,6 +10,7 @@ set(${MODULE_NAME}_SOURCES
     ../../../test_common/harness/mt19937.c
     ../../../test_common/harness/conversions.c
     ../../../test_common/harness/imageHelpers.cpp
+    ../../../test_common/harness/crc32.c
 )
 
 include(../../CMakeCommon.txt)

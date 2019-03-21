@@ -32,7 +32,9 @@ set(D3D10_SOURCES
     ../../test_common/harness/mt19937.c
     ../../test_common/harness/conversions.c
     ../../test_common/harness/msvc9.c
-    ../../test_common/harness/parseParameters.cpp)
+    ../../test_common/harness/parseParameters.cpp
+    ../../test_common/harness/crc32.c
+)
 
 add_executable(conformance_test_d3d10
     ${D3D10_SOURCES})

@@ -74,6 +74,7 @@ set(${MODULE_NAME}_SOURCES
     test_local_linear_id.c
     test_progvar.cpp
     ../../test_common/harness/parseParameters.cpp
+    ../../test_common/harness/crc32.c
 )
 
 if(APPLE)

@@ -12,6 +12,7 @@ set(${MODULE_NAME}_SOURCES
         ../../test_common/harness/ThreadPool.c
         ../../test_common/harness/parseParameters.cpp
         ../../test_common/harness/testHarness.c
+        ../../test_common/harness/crc32.c
 )
 
 include(../CMakeCommon.txt)
