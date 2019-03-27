@@ -38,6 +38,7 @@
 #include "datagen.h"
 #include "run_services.h"
 #include "run_build_test.h"
+#include "../math_brute_force/FunctionList.h"
 #include <CL/cl.h>
 //
 // Task
@@ -262,7 +263,8 @@ size_t KernelEnumerator::size() const {
  Run the single test - run the test for both CL and SPIR versions of the kernel
  */
 static bool run_test(cl_context context, cl_command_queue queue, cl_program clprog,
-    cl_program bcprog, const std::string& kernel_name, std::string& err, const cl_device_id device)
+    cl_program bcprog, const std::string& kernel_name, std::string& err, const cl_device_id device,
+    float ulps)
 {
     WorkSizeInfo ws;
     TestResult cl_result;
@@ -274,7 +276,7 @@ static bool run_test(cl_context context, cl_command_queue queue, cl_program clpr
         // based on the kernel characteristics, we are generating and initializing the arguments for both phases (cl and bc executions)
         generate_kernel_data(context, kernel, ws, cl_result);
         bc_result.reset(cl_result.clone(context, ws, kernel, device));
-        assert (compare_results(cl_result, *bc_result) && "not equal?");
+        assert (compare_results(cl_result, *bc_result, ulps) && "not equal?");
         run_kernel( kernel, queue, ws, cl_result );
     }
     // now, run the single BC test
@@ -292,12 +294,43 @@ static bool run_test(cl_context context, cl_command_queue queue, cl_program clpr
     }
 
     // compare the results
-    if( !compare_results(cl_result, *bc_result) )
+    if( !compare_results(cl_result, *bc_result, ulps) )
     {
         err = " (result diff in kernel '" + kernel_name + "').";
         return false;
     }
     return true;
+}
+
+/**
+ Get the maximum relative error defined as ULP of floating-point math functions
+ */
+static float get_max_ulps(const char *test_name)
+{
+    float ulps = 0.f;
+    // Get ULP values from math_brute_force functionList
+    if (strstr(test_name, "math_kernel"))
+    {
+        for( size_t i = 0; i < functionListCount; i++ )
+        {
+            char name[64];
+            const Func *func = &functionList[ i ];
+            sprintf(name, ".%s_float", func->name);
+            if (strstr(test_name, name))
+            {
+                ulps = func->float_ulps;
+            }
+            else
+            {
+                sprintf(name, ".%s_double", func->name);
+                if (strstr(test_name, name))
+                {
+                    ulps = func->double_ulps;
+                }
+            }
+        }
+    }
+    return ulps;
 }
 
 TestRunner::TestRunner(EventHandler *success, EventHandler *failure,
@@ -320,6 +353,8 @@ bool TestRunner::runBuildTest(cl_device_id device, const char *folder,
     free(dir);
 
     log_info("%s...\n", test_name);
+
+    float ulps = get_max_ulps(test_name);
 
     // Figure out whether the test can run on the device. If not, we skip it.
     const KhrSupport& khrDb = *KhrSupport::get(csvName);
@@ -415,7 +450,7 @@ bool TestRunner::runBuildTest(cl_device_id device, const char *folder,
         std::string err;
         try
         {
-            bool success = run_test(context, queue, clprog, bcprog, kernel_name, err, device);
+            bool success = run_test(context, queue, clprog, bcprog, kernel_name, err, device, ulps);
             if (success)
             {
                 log_info("kernel '%s' passed.\n", kernel_name.c_str());
