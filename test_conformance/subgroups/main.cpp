@@ -22,26 +22,16 @@
 
 MTdata gMTdata;
 
-basefn basefn_list[] = {
-    test_sub_group_info,
-    test_work_item_functions,
-    test_work_group_functions,
-    test_barrier_functions,
+test_definition test_list[] = {
+    ADD_TEST( sub_group_info ),
+    ADD_TEST( work_item_functions ),
+    ADD_TEST( work_group_functions ),
+    ADD_TEST( barrier_functions ),
 };
 
-const char *basefn_names[] = {
-    "sub_group_info",
-    "work_item_functions",
-    "work_group_functions",
-    "barrier_functions",
-};
+const int test_num = ARRAY_SIZE( test_list );
 
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-static const int num_fns = sizeof(basefn_names) / sizeof(char *);
-
-static test_status
-checkSubGroupsExtension(cl_device_id device)
+static test_status checkSubGroupsExtension(cl_device_id device)
 {
     if (!is_extension_available(device, "cl_khr_subgroups")) {
         log_info("Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
@@ -51,10 +41,9 @@ checkSubGroupsExtension(cl_device_id device)
     return TEST_PASS;
 }
 
-int
-main(int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
     gMTdata = init_genrand(0);
-    return runTestHarnessWithCheck(argc, argv, num_fns, basefn_list, basefn_names, false, false, NULL, checkSubGroupsExtension);
+    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, false, NULL, checkSubGroupsExtension);
 }
 

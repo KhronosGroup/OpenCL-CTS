@@ -130,7 +130,7 @@ int launch_kernels_and_verify(clContextWrapper &context, clCommandQueueWrapper* 
 // Each bin in the hash table is a linked list.  Each bin is protected against simultaneous
 // update using a lock free technique.  The correctness of the list is verfied on the host.
 // This test requires the new OpenCL 2.0 atomic operations that implement the new seq_cst memory ordering.
-int    test_fine_grain_memory_consistency(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
+int test_svm_fine_grain_memory_consistency(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
 {
   clContextWrapper context;
   clProgramWrapper program;

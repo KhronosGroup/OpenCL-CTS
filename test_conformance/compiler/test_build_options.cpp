@@ -90,7 +90,7 @@ cl_int get_result_from_program( cl_context context, cl_command_queue queue, cl_p
     return CL_SUCCESS;
 }
 
-int test_options_optimizations(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_options_build_optimizations(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int error;
     cl_build_status status;

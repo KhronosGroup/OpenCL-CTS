@@ -978,7 +978,7 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
  }    // end test_stream_struct_write()
  */
 
-int write_int_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_write_array_int( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     int    *inptr[5];
     size_t    ptrSizes[5];
@@ -1014,7 +1014,7 @@ int write_int_array( cl_device_id device, cl_context context, cl_command_queue q
 }    // end write_int_array()
 
 
-int write_uint_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_write_array_uint( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     cl_uint    *inptr[5];
     size_t    ptrSizes[5];
@@ -1049,7 +1049,7 @@ int write_uint_array( cl_device_id device, cl_context context, cl_command_queue 
 }    // end write_uint_array()
 
 
-int write_short_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_write_array_short( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     short    *inptr[5];
     size_t    ptrSizes[5];
@@ -1084,7 +1084,7 @@ int write_short_array( cl_device_id device, cl_context context, cl_command_queue
 }    // end write_short_array()
 
 
-int write_ushort_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_write_array_ushort( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     cl_ushort    *inptr[5];
     size_t    ptrSizes[5];
@@ -1119,7 +1119,7 @@ int write_ushort_array( cl_device_id device, cl_context context, cl_command_queu
 }    // end write_ushort_array()
 
 
-int write_char_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_write_array_char( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     char    *inptr[5];
     size_t    ptrSizes[5];
@@ -1154,7 +1154,7 @@ int write_char_array( cl_device_id device, cl_context context, cl_command_queue 
 }    // end write_char_array()
 
 
-int write_uchar_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_write_array_uchar( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     uchar    *inptr[5];
     size_t    ptrSizes[5];
@@ -1189,7 +1189,7 @@ int write_uchar_array( cl_device_id device, cl_context context, cl_command_queue
 }    // end write_uchar_array()
 
 
-int write_float_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_write_array_float( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     float    *inptr[5];
     size_t    ptrSizes[5];
@@ -1224,7 +1224,7 @@ int write_float_array( cl_device_id device, cl_context context, cl_command_queue
 }    // end write_float_array()
 
 
-int write_half_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_write_array_half( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     float    *inptr[5];
     size_t    ptrSizes[5];
@@ -1259,7 +1259,7 @@ int write_half_array( cl_device_id device, cl_context context, cl_command_queue 
 }    // end write_half_array()
 
 
-int write_long_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_write_array_long( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     cl_long    *inptr[5];
     size_t        ptrSizes[5];
@@ -1300,7 +1300,7 @@ int write_long_array( cl_device_id device, cl_context context, cl_command_queue 
 }    // end write_long_array()
 
 
-int write_ulong_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_write_array_ulong( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     cl_ulong    *inptr[5];
     size_t                ptrSizes[5];
@@ -1341,7 +1341,7 @@ int write_ulong_array( cl_device_id device, cl_context context, cl_command_queue
 }    // end write_ulong_array()
 
 
-int write_struct_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_write_array_struct( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     TestStruct            *inptr[1];
     size_t                ptrSizes[1];

@@ -27,43 +27,23 @@
 std::string gKernelName;
 int gWimpyMode = 0;
 
-basefn basefn_list[] =
-{
+test_definition test_list[] = {
 #ifdef CL_VERSION_2_0
-    test_device_info,
-    test_device_queue,
-    test_execute_block,
-    test_enqueue_block,
-    test_enqueue_nested_blocks,
-    test_enqueue_wg_size,
-    test_enqueue_flags,
-    test_enqueue_multi_queue,
-    test_host_multi_queue,
-    test_enqueue_ndrange,
-    test_host_queue_order,
+    ADD_TEST( device_info ),
+    ADD_TEST( device_queue ),
+    ADD_TEST( execute_block ),
+    ADD_TEST( enqueue_block ),
+    ADD_TEST( enqueue_nested_blocks ),
+    ADD_TEST( enqueue_wg_size ),
+    ADD_TEST( enqueue_flags ),
+    ADD_TEST( enqueue_multi_queue ),
+    ADD_TEST( host_multi_queue ),
+    ADD_TEST( enqueue_ndrange ),
+    ADD_TEST( host_queue_order ),
 #endif
 };
 
-const char *commonfn_names[] =
-{
-#ifdef CL_VERSION_2_0
-    "test_device_info",
-    "test_device_queue",
-    "test_execute_block",
-    "test_enqueue_block",
-    "test_enqueue_nested_blocks",
-    "test_enqueue_wg_size",
-    "test_enqueue_flags",
-    "test_enqueue_multi_queue",
-    "test_host_multi_queue",
-    "test_enqueue_ndrange",
-    "test_host_queue_order",
-#endif
-};
-
-ct_assert(arr_size(commonfn_names) == arr_size(basefn_list))
-
-static const int num_commonfns = arr_size(commonfn_names);
+const int test_num = ARRAY_SIZE( test_list );
 
 test_status deviceCheck(cl_device_id device)
 {
@@ -93,8 +73,7 @@ test_status deviceCheck(cl_device_id device)
     return TEST_PASS;
 }
 
-int
-main(int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
     for (int i = 0; i < argc; ++i) {
       int argsRemoveNum = 0;
@@ -122,5 +101,5 @@ main(int argc, const char *argv[])
       }
     }
 
-    return runTestHarnessWithCheck(argc, argv, num_commonfns, basefn_list, commonfn_names, false, false, 0, deviceCheck);
+    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, false, 0, deviceCheck);
 }

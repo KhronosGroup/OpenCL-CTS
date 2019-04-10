@@ -43,7 +43,7 @@ void CL_CALLBACK test_notify_build_complete( cl_program program, void *userData 
     log_info( "\n   <-- program successfully built\n" );
 }
 
-int test_async_build_pieces(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_async_build(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int error;
     cl_program program;

@@ -92,7 +92,7 @@ private:
     const std::vector<std::string> _kernels;
 };
 
-int test_function_params_get_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+int test_function_get_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
     const std::string KERNEL_FUNCTION = common::CONFORMANCE_VERIFY_FENCE +
         NL
         NL "__global int gint = 1;"
@@ -140,7 +140,7 @@ int test_function_params_get_fence(cl_device_id deviceID, cl_context context, cl
     return test.Execute(deviceID, context, queue, num_elements);
 }
 
-int test_function_params_to_address_space(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+int test_function_to_address_space(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
     const std::string KERNEL_FUNCTION =
         NL
         NL "__global int gint = 1;"

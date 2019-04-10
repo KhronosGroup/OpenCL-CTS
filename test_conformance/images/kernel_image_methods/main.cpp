@@ -61,25 +61,15 @@ int test_2Darray(cl_device_id deviceID, cl_context context, cl_command_queue que
     return test_image_set( device, CL_MEM_OBJECT_IMAGE2D_ARRAY );
 }
 
-basefn basefn_list[] = {
-    test_1D,
-    test_2D,
-    test_3D,
-    test_1Darray,
-    test_2Darray,
+test_definition test_list[] = {
+    ADD_TEST( 1D ),
+    ADD_TEST( 2D ),
+    ADD_TEST( 3D ),
+    ADD_TEST( 1Darray ),
+    ADD_TEST( 2Darray ),
 };
 
-const char *basefn_names[] = {
-    "1D",
-    "2D",
-    "3D",
-    "1Darray",
-    "2Darray",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
@@ -231,7 +221,7 @@ int main(int argc, const char *argv[])
     if( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
 
-    int ret = parseAndCallCommandLineTests( argCount, argList, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
+    int ret = parseAndCallCommandLineTests( argCount, argList, NULL, test_num, test_list, true, 0, 0 );
 
   // Clean up
   error = clFinish(queue);
@@ -270,8 +260,8 @@ static void printUsage( const char *execName )
     log_info( "\trandomize - Uses random seed\n" );
     log_info( "\n" );
     log_info( "Test names:\n" );
-    for( int i = 0; i < num_fns; i++ )
+    for( int i = 0; i < test_num; i++ )
     {
-        log_info( "\t%s\n", basefn_names[i] );
+        log_info( "\t%s\n", test_list[i].name );
     }
 }

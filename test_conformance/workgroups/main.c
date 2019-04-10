@@ -23,48 +23,27 @@
 #include <unistd.h>
 #endif
 
-basefn    basefn_list[] = {
-            test_work_group_all,
-            test_work_group_any,
-            test_work_group_reduce_add,
-            test_work_group_reduce_min,
-            test_work_group_reduce_max,
-            test_work_group_scan_inclusive_add,
-            test_work_group_scan_inclusive_min,
-            test_work_group_scan_inclusive_max,
-            test_work_group_scan_exclusive_add,
-            test_work_group_scan_exclusive_min,
-            test_work_group_scan_exclusive_max,
-            test_work_group_broadcast_1D,
-            test_work_group_broadcast_2D,
-            test_work_group_broadcast_3D,
+test_definition test_list[] = {
+    ADD_TEST( work_group_all ),
+    ADD_TEST( work_group_any ),
+    ADD_TEST( work_group_reduce_add ),
+    ADD_TEST( work_group_reduce_min ),
+    ADD_TEST( work_group_reduce_max ),
+    ADD_TEST( work_group_scan_inclusive_add ),
+    ADD_TEST( work_group_scan_inclusive_min ),
+    ADD_TEST( work_group_scan_inclusive_max ),
+    ADD_TEST( work_group_scan_exclusive_add ),
+    ADD_TEST( work_group_scan_exclusive_min ),
+    ADD_TEST( work_group_scan_exclusive_max ),
+    ADD_TEST( work_group_broadcast_1D ),
+    ADD_TEST( work_group_broadcast_2D ),
+    ADD_TEST( work_group_broadcast_3D ),
 };
 
-
-const char    *basefn_names[] = {
-            "work_group_all",
-            "work_group_any",
-            "work_group_reduce_add",
-            "work_group_reduce_min",
-            "work_group_reduce_max",
-            "work_group_scan_inclusive_add",
-            "work_group_scan_inclusive_min",
-            "work_group_scan_inclusive_max",
-            "work_group_scan_exclusive_add",
-            "work_group_scan_exclusive_min",
-            "work_group_scan_exclusive_max",
-            "work_group_broadcast_1D",
-            "work_group_broadcast_2D",
-            "work_group_broadcast_3D",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, false, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
-
 

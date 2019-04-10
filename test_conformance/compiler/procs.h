@@ -31,9 +31,9 @@ extern int        test_get_program_build_info(cl_device_id deviceID, cl_context 
 extern int        test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int        test_large_compile(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_async_build_pieces(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_async_build(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int      test_options_optimizations(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_options_build_optimizations(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_options_build_macro(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_options_build_macro_existence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_options_include_directory(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

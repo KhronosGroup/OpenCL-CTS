@@ -300,47 +300,26 @@ int test_contractions_double_7(cl_device_id deviceID, cl_context context, cl_com
     return RunTest_Double(7);
 }
 
-basefn basefn_list[] = {
-    test_contractions_float_0,
-    test_contractions_float_1,
-    test_contractions_float_2,
-    test_contractions_float_3,
-    test_contractions_float_4,
-    test_contractions_float_5,
-    test_contractions_float_6,
-    test_contractions_float_7,
-    test_contractions_double_0,
-    test_contractions_double_1,
-    test_contractions_double_2,
-    test_contractions_double_3,
-    test_contractions_double_4,
-    test_contractions_double_5,
-    test_contractions_double_6,
-    test_contractions_double_7,
+test_definition test_list[] = {
+    ADD_TEST( contractions_float_0 ),
+    ADD_TEST( contractions_float_1 ),
+    ADD_TEST( contractions_float_2 ),
+    ADD_TEST( contractions_float_3 ),
+    ADD_TEST( contractions_float_4 ),
+    ADD_TEST( contractions_float_5 ),
+    ADD_TEST( contractions_float_6 ),
+    ADD_TEST( contractions_float_7 ),
+    ADD_TEST( contractions_double_0 ),
+    ADD_TEST( contractions_double_1 ),
+    ADD_TEST( contractions_double_2 ),
+    ADD_TEST( contractions_double_3 ),
+    ADD_TEST( contractions_double_4 ),
+    ADD_TEST( contractions_double_5 ),
+    ADD_TEST( contractions_double_6 ),
+    ADD_TEST( contractions_double_7 ),
 };
 
-const char *basefn_names[] = {
-    "contractions_float_0",
-    "contractions_float_1",
-    "contractions_float_2",
-    "contractions_float_3",
-    "contractions_float_4",
-    "contractions_float_5",
-    "contractions_float_6",
-    "contractions_float_7",
-    "contractions_double_0",
-    "contractions_double_1",
-    "contractions_double_2",
-    "contractions_double_3",
-    "contractions_double_4",
-    "contractions_double_5",
-    "contractions_double_6",
-    "contractions_double_7",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main( int argc, const char **argv )
 {
@@ -355,7 +334,7 @@ int main( int argc, const char **argv )
     if( error )
         goto exit;
 
-    error = parseAndCallCommandLineTests( gArgCount, gArgList, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
+    error = parseAndCallCommandLineTests( gArgCount, gArgList, NULL, test_num, test_list, true, 0, 0 );
 
 exit:
     if( gQueue )
@@ -564,9 +543,9 @@ static void PrintUsage( void )
     vlog( "\t\t-sNUMBER set random seed.\n");
     vlog( "\n" );
     vlog( "\tTest names:\n" );
-    for( int i = 0; i < num_fns; i++ )
+    for( int i = 0; i < test_num; i++ )
     {
-        vlog( "\t\t%s\n", basefn_names[i] );
+        vlog( "\t\t%s\n", test_list[i].name );
     }
 }
 

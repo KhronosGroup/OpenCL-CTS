@@ -23,39 +23,21 @@
 #include <unistd.h>
 #endif
 
-basefn    basefn_list[] = {
-            test_geom_cross,
-            test_geom_dot,
-            test_geom_distance,
-            test_geom_fast_distance,
-            test_geom_length,
-            test_geom_fast_length,
-            test_geom_normalize,
-            test_geom_fast_normalize
+test_definition test_list[] = {
+    ADD_TEST( geom_cross ),
+    ADD_TEST( geom_dot ),
+    ADD_TEST( geom_distance ),
+    ADD_TEST( geom_fast_distance ),
+    ADD_TEST( geom_length ),
+    ADD_TEST( geom_fast_length ),
+    ADD_TEST( geom_normalize ),
+    ADD_TEST( geom_fast_normalize ),
 };
 
-
-const char    *basefn_names[] = {
-            "geom_cross",
-            "geom_dot",
-            "geom_distance",
-            "geom_fast_distance",
-            "geom_length",
-            "geom_fast_length",
-            "geom_normalize",
-            "geom_fast_normalize",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
-
-const unsigned int g_vecSizeof[] = {0,1,2,4,4,0,0,0,8,
-               0,0,0,0,0,0,0,16};
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, false, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
-
 

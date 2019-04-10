@@ -45,8 +45,7 @@ const char *kernel_code_long =
 "  result[1] = %s(ul);\n"
 "}\n";
 
-int
-test_basic_parameter_types_long(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+int test_parameter_types_long(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
      clMemWrapper results;
   int error;
@@ -157,10 +156,9 @@ test_basic_parameter_types_long(cl_device_id device, cl_context context, cl_comm
   return total_errors;
 }
 
-int
-test_basic_parameter_types(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+int test_parameter_types(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-     clMemWrapper results;
+  clMemWrapper results;
   int error;
   size_t global[3] = {1, 1, 1};
   float results_back[7*16];
@@ -289,7 +287,7 @@ test_basic_parameter_types(cl_device_id device, cl_context context, cl_command_q
 
   if (gHasLong) {
     log_info("Testing long types...\n");
-    total_errors += test_basic_parameter_types_long( device, context, queue, num_elements );
+    total_errors += test_parameter_types_long( device, context, queue, num_elements );
   }
   else {
     log_info("Longs unsupported, skipping.");

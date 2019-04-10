@@ -220,27 +220,16 @@ int test_image2d_write_non_blocking(cl_device_id deviceID, cl_context context, c
     return doTest( IMAGE_WRITE_NON_BLOCKING );
 }
 
-basefn basefn_list[] = {
-    test_buffer,
-    test_image2d_read,
-    test_image2d_write,
-    test_buffer_non_blocking,
-    test_image2d_read_non_blocking,
-    test_image2d_write_non_blocking,
+test_definition test_list[] = {
+    ADD_TEST( buffer ),
+    ADD_TEST( image2d_read ),
+    ADD_TEST( image2d_write ),
+    ADD_TEST( buffer_non_blocking ),
+    ADD_TEST( image2d_read_non_blocking ),
+    ADD_TEST( image2d_write_non_blocking ),
 };
 
-const char *basefn_names[] = {
-    "buffer",
-    "image2d_read",
-    "image2d_write",
-    "buffer_non_blocking",
-    "image2d_read_non_blocking",
-    "image2d_write_non_blocking",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
@@ -393,7 +382,7 @@ int main(int argc, const char *argv[])
         g_global_mem_size *= 0.60;
     }
 
-    int ret = parseAndCallCommandLineTests( argCount, argList, NULL, num_fns, basefn_list, basefn_names, true, 0, 0 );
+    int ret = parseAndCallCommandLineTests( argCount, argList, NULL, test_num, test_list, true, 0, 0 );
 
     free(argList);
 
@@ -422,8 +411,8 @@ void printUsage( const char *execName )
     log_info( "\tdo_not_execute - Disable executing a kernel that accesses all of the memory objects.\n" );
     log_info( "\n" );
     log_info( "Test names (Allocation Types):\n" );
-    for( int i = 0; i < num_fns; i++ )
+    for( int i = 0; i < test_num; i++ )
     {
-        log_info( "\t%s\n", basefn_names[i] );
+        log_info( "\t%s\n", test_list[i].name );
     }
 }
