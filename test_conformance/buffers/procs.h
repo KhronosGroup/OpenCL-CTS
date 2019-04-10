@@ -83,10 +83,10 @@ extern int      test_buffer_write_async_long( cl_device_id deviceID, cl_context 
 extern int      test_buffer_write_async_ulong( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 extern int      test_buffer_copy( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 extern int      test_buffer_partial_copy( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
-extern int      testBufferSize( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+extern int      test_array_info_size( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 extern int      test_mem_read_write_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
-extern int      test_mem_write_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
-extern int      test_mem_read_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+extern int      test_mem_write_only_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+extern int      test_mem_read_only_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 extern int      test_mem_copy_host_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 extern int      test_mem_alloc_ref_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 extern int      test_buffer_map_read_int( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );

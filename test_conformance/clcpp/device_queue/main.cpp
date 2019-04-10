@@ -20,11 +20,6 @@
 
 int main(int argc, const char *argv[])
 {
-    // Get list to all test functions
-    std::vector<basefn> testfn_list = autotest::test_suite::get_test_functions();
-    // Get names of all test functions
-    std::vector<std::string> testfn_names = autotest::test_suite::get_test_names();
-    // Create a vector of pointers to the names test functions
-    std::vector<const char *> testfn_names_c_str = autotest::get_strings_ptrs(testfn_names);
-    return runTestHarness(argc, argv, testfn_list.size(), testfn_list.data(), testfn_names_c_str.data(), false, false, 0);
+    auto& tests = autotest::test_suite::global_test_suite().test_defs;
+    return runTestHarness(argc, argv, tests.size(), tests.data(), false, false, 0);
 }

@@ -377,7 +377,7 @@ static int copy_partial_size( cl_device_id device, cl_context context, cl_comman
 }    // end copy_partial_size()
 
 
-int copy_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_copy_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     int        i, err = 0;
     int        size;
@@ -401,7 +401,7 @@ int copy_array( cl_device_id device, cl_context context, cl_command_queue queue,
 }    // end copy_array()
 
 
-int copy_partial_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_copy_partial_array( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     int        i, err = 0;
     int        size;
@@ -692,7 +692,7 @@ static int copy_image_size( cl_device_id device, cl_context context,
 }    // end copy_image_size()
 
 
-int copy_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_copy_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     int            err = 0;
     int            i;
@@ -765,7 +765,7 @@ int copy_image( cl_device_id device, cl_context context, cl_command_queue queue,
 }    // end copy_image()
 
 
-int copy_array_to_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+int test_copy_array_to_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
     cl_mem            memobjs[3];
     cl_image_format    image_format_desc = { CL_RGBA, CL_UNORM_INT8 };

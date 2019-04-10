@@ -18,10 +18,10 @@
 #include "../../test_common/harness/typeWrappers.h"
 #include "../../test_common/harness/mt19937.h"
 
-extern int        test_multiple_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_two_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_three_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_four_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_context_multiple_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_context_two_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_context_three_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_context_four_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int        test_two_devices(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_max_devices(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

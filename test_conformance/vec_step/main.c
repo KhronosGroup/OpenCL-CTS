@@ -24,31 +24,17 @@
 #include <unistd.h>
 #endif
 
-
-
-
-
-basefn    basefn_list[] = {
-    test_step_type,
-    test_step_var,
-    test_step_typedef_type,
-    test_step_typedef_var,
+test_definition test_list[] = {
+    ADD_TEST( step_type ),
+    ADD_TEST( step_var ),
+    ADD_TEST( step_typedef_type ),
+    ADD_TEST( step_typedef_var ),
 };
 
-const char    *basefn_names[] = {
-    "step_type",
-    "step_var",
-    "step_typedef_type",
-    "step_typedef_var",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, false, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
-
 

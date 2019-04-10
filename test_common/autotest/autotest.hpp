@@ -17,19 +17,6 @@
 #define TEST_COMMON_AUTOTEST_AUTOTEST_HPP
 
 #include "test_suite.hpp"
-#include "test_case.hpp"
-
-namespace autotest {
-    inline std::vector<const char*> get_strings_ptrs(const std::vector<std::string>& list)
-    {
-        std::vector<const char*> v;
-        for(auto& s : list)
-        {
-            v.push_back(s.c_str());
-        }
-        return v;
-    }
-}
 
 #define STR_JOIN( X, Y ) STR_DO_JOIN( X, Y )
 #define STR_DO_JOIN( X, Y ) STR_DO_JOIN_2(X,Y)
@@ -43,13 +30,6 @@ namespace autotest {
 //      (test case code...)
 // }
 //
-// It automatically registers created test case to global test_suite object. Test functions
-// names and pointers to those functions can be later retrieved this way: 
-// - std::vector<basefn> test_functions_list = autotest::test_suite::get_test_functions();
-// - std::vector<std::string> test_functions_names = autotest::test_suite::get_test_names();
-//
-// Helper function which constructs vector of const char pointers to test functions names:
-// - std::vector<const char *> test_functions_names_c_str = autotest::get_strings_ptrs(test_functions_names);
 #define AUTO_TEST_CASE(name) \
     struct name { static int run_test(cl_device_id, cl_context, cl_command_queue, int); }; \
     static autotest::detail::test_case_registration STR_JOIN(name, STR_JOIN(_registration, __LINE__)) (#name, name::run_test); \

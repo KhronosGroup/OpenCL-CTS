@@ -38,82 +38,58 @@
 static cl_context        sCurrentContext = NULL;
 
 
-#define TEST_FN_REDIRECT( fn )    redirect_##fn
+#define TEST_FN_REDIRECT( fn ) ADD_TEST( redirect_##fn )
 #define TEST_FN_REDIRECTOR( fn ) \
-int redirect_##fn(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )    \
+int test_redirect_##fn(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )    \
 { \
     int error; \
     clCommandQueueWrapper realQueue = clCreateCommandQueue( sCurrentContext, device, 0, &error ); \
     test_error( error, "Unable to create command queue" );    \
-    return fn( device, sCurrentContext, realQueue, numElements ); \
+    return test_##fn( device, sCurrentContext, realQueue, numElements ); \
 }
 
-TEST_FN_REDIRECTOR( test_buffers )
-TEST_FN_REDIRECTOR( test_buffers_getinfo )
-TEST_FN_REDIRECTOR( test_images_read )
-TEST_FN_REDIRECTOR( test_images_2D_getinfo )
-TEST_FN_REDIRECTOR( test_images_read_cube )
-TEST_FN_REDIRECTOR( test_images_cube_getinfo )
-TEST_FN_REDIRECTOR( test_images_read_3D )
-TEST_FN_REDIRECTOR( test_images_3D_getinfo )
-TEST_FN_REDIRECTOR( test_images_write )
-TEST_FN_REDIRECTOR( test_images_write_cube )
-TEST_FN_REDIRECTOR( test_renderbuffer_read )
-TEST_FN_REDIRECTOR( test_renderbuffer_write )
-TEST_FN_REDIRECTOR( test_renderbuffer_getinfo )
+TEST_FN_REDIRECTOR( buffers )
+TEST_FN_REDIRECTOR( buffers_getinfo )
+TEST_FN_REDIRECTOR( images_read )
+TEST_FN_REDIRECTOR( images_2D_getinfo )
+TEST_FN_REDIRECTOR( images_read_cube )
+TEST_FN_REDIRECTOR( images_cube_getinfo )
+TEST_FN_REDIRECTOR( images_read_3D )
+TEST_FN_REDIRECTOR( images_3D_getinfo )
+TEST_FN_REDIRECTOR( images_write )
+TEST_FN_REDIRECTOR( images_write_cube )
+TEST_FN_REDIRECTOR( renderbuffer_read )
+TEST_FN_REDIRECTOR( renderbuffer_write )
+TEST_FN_REDIRECTOR( renderbuffer_getinfo )
 
 #ifndef GL_ES_VERSION_2_0
 TEST_FN_REDIRECTOR( test_fence_sync )
 #endif
 
-basefn    basefn_list[] = {
-    TEST_FN_REDIRECT( test_buffers ),
-  TEST_FN_REDIRECT( test_buffers_getinfo ),
-    TEST_FN_REDIRECT( test_images_read ),
-  TEST_FN_REDIRECT( test_images_2D_getinfo ),
-    TEST_FN_REDIRECT( test_images_read_cube ),
-  TEST_FN_REDIRECT( test_images_cube_getinfo ),
-    TEST_FN_REDIRECT( test_images_read_3D ),
-  TEST_FN_REDIRECT( test_images_3D_getinfo ),
-    TEST_FN_REDIRECT( test_images_write ),
-    TEST_FN_REDIRECT( test_images_write_cube ),
-    TEST_FN_REDIRECT( test_renderbuffer_read ),
-     TEST_FN_REDIRECT( test_renderbuffer_write ),
-  TEST_FN_REDIRECT( test_renderbuffer_getinfo )
+test_definition test_list[] = {
+    TEST_FN_REDIRECT( buffers ),
+    TEST_FN_REDIRECT( buffers_getinfo ),
+    TEST_FN_REDIRECT( images_read ),
+    TEST_FN_REDIRECT( images_2D_getinfo ),
+    TEST_FN_REDIRECT( images_read_cube ),
+    TEST_FN_REDIRECT( images_cube_getinfo ),
+    TEST_FN_REDIRECT( images_read_3D ),
+    TEST_FN_REDIRECT( images_3D_getinfo ),
+    TEST_FN_REDIRECT( images_write ),
+    TEST_FN_REDIRECT( images_write_cube ),
+    TEST_FN_REDIRECT( renderbuffer_read ),
+    TEST_FN_REDIRECT( renderbuffer_write ),
+    TEST_FN_REDIRECT( renderbuffer_getinfo )
 };
 
 #ifndef GL_ES_VERSION_2_0
-basefn    basefn_list32[] = {
-    TEST_FN_REDIRECT( test_fence_sync )
+test_definition test_list32[] = {
+    TEST_FN_REDIRECT( fence_sync )
 };
 #endif
 
-const char    *basefn_names[] = {
-    "buffers",
-  "buffers_getinfo",
-    "images_read",
-  "images_2D_getinfo",
-    "images_read_cube",
-  "images_cube_getinfo",
-    "images_read_3D",
-  "images_3D_getinfo",
-    "images_write",
-    "images_write_cube",
-    "renderbuffer_read",
-    "renderbuffer_write",
-  "renderbuffer_getinfo",
-    "all"
-};
-
-const char    *basefn_names32[] = {
-    "fence_sync",
-  "all"
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0]) - 1) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
-int num_fns32 = sizeof(basefn_names32) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
+const int test_num32 = ARRAY_SIZE( test_list32 );
 
 
 int main(int argc, const char *argv[])
@@ -134,12 +110,12 @@ int main(int argc, const char *argv[])
     if(strcmp( argv[ z ], "-list" ) == 0 )
     {
         log_info( "Available 2.x tests:\n" );
-        for( int i = 0; i < num_fns - 1; i++ )
-            log_info( "\t%s\n", basefn_names[ i ] );
+        for( int i = 0; i < test_num; i++ )
+            log_info( "\t%s\n", test_list[i].name );
 
         log_info( "Available 3.2 tests:\n" );
-        for( int i = 0; i < num_fns32 - 1; i++ )
-            log_info( "\t%s\n", basefn_names32[ i ] );
+        for( int i = 0; i < test_num32; i++ )
+            log_info( "\t%s\n", test_list32[i].name );
 
     log_info( "Note: Any 3.2 test names must follow 2.1 test names on the command line." );
     log_info( "Use environment variables to specify desired device." );
@@ -168,8 +144,8 @@ int main(int argc, const char *argv[])
   unsigned first_32_testname = 0;
 
   for (int j=1; (j<argc) && (!first_32_testname); ++j)
-    for (int i=0;i<num_fns32-1;++i)
-      if (strcmp(basefn_names32[i],argv[j])==0) {
+    for (int i = 0; i < test_num32; ++i)
+      if (strcmp(test_list32[i].name, argv[j]) == 0 ) {
         first_32_testname = j;
         break;
       }
@@ -292,7 +268,7 @@ int main(int argc, const char *argv[])
     }
 
         // Note: don't use the entire harness, because we have a different way of obtaining the device (via the context)
-        error = parseAndCallCommandLineTests( argc_tmp, argv_tmp, deviceIDs[ i ], num_fns, basefn_list, basefn_names, true, 0, 1024 );
+        error = parseAndCallCommandLineTests( argc_tmp, argv_tmp, deviceIDs[i], test_num, test_list, true, 0, 1024 );
         if( error != 0 )
           break;
     }
@@ -369,7 +345,7 @@ int main(int argc, const char *argv[])
         goto cleanup;
 #else
         // Note: don't use the entire harness, because we have a different way of obtaining the device (via the context)
-        error = parseAndCallCommandLineTests( argc_, argv_, deviceIDs[ i ], num_fns32, basefn_list32, basefn_names32, true, 0, 1024 );
+        error = parseAndCallCommandLineTests( argc_, argv_, deviceIDs[ i ], test_num32, test_list32, true, 0, 1024 );
         if( error != 0 )
           break;
 #endif

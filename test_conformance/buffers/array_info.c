@@ -25,7 +25,7 @@
 
 
 
-int testBufferSize( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_array_info_size( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     cl_mem          memobj;
     cl_int          err;

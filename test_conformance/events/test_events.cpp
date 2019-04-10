@@ -590,7 +590,7 @@ int test_event_enqueue_marker( cl_device_id deviceID, cl_context context, cl_com
 }
 
 #ifdef CL_VERSION_1_2
-int test_event_enqueue_marker_with_list( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_event_enqueue_marker_with_event_list( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
 
     cl_int status;
@@ -634,10 +634,8 @@ int test_event_enqueue_marker_with_list( cl_device_id deviceID, cl_context conte
     FINISH_EVENT(queue);
     return 0;
 }
-#endif
 
-#ifdef CL_VERSION_1_2
-int test_event_enqueue_barrier_with_list( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_event_enqueue_barrier_with_event_list( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
 
     cl_int status;

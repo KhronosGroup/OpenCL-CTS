@@ -24,34 +24,18 @@
 #include <unistd.h>
 #endif
 
-
-
-
-
-basefn    basefn_list[] = {
-    test_vec_align_array,
-    test_vec_align_struct,
-    test_vec_align_packed_struct,
-    test_vec_align_struct_arr,
-    test_vec_align_packed_struct_arr
-
+test_definition test_list[] = {
+    ADD_TEST( vec_align_array ),
+    ADD_TEST( vec_align_struct ),
+    ADD_TEST( vec_align_packed_struct ),
+    ADD_TEST( vec_align_struct_arr ),
+    ADD_TEST( vec_align_packed_struct_arr ),
 };
 
-const char    *basefn_names[] = {
-    "vec_align_array",
-    "vec_align_struct",
-    "vec_align_packed_struct",
-    "vec_align_struct_arr",
-    "vec_align_packed_struct_arr",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, false, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
-
 

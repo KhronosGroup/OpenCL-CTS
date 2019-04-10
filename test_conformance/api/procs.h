@@ -29,7 +29,7 @@ extern int        test_create_kernels_in_program(cl_device_id deviceID, cl_conte
 extern int        test_enqueue_task(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_repeated_setup_cleanup(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int      test_for_bool_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_bool_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_platform_extensions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_get_platform_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_get_sampler_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
@@ -39,7 +39,7 @@ extern int        test_get_device_info(cl_device_id deviceID, cl_context context
 extern int        test_kernel_required_group_size(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int        test_binary_get(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_program_binary_create(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_binary_create(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int        test_release_kernel_order(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_release_during_execute(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

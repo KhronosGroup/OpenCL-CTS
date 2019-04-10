@@ -40,7 +40,7 @@ void spawnAnalysisTask(int location)
 // Concept: a device kernel is used to search an input image for regions that match a target pattern.
 // The device immediately notifies the host when it finds a target (via an atomic operation that works across host and devices).
 // The host is then able to spawn a task that further analyzes the target while the device continues searching for more targets.
-int    test_fine_grain_sync_buffers(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
+int test_svm_fine_grain_sync_buffers(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
 {
   clContextWrapper    context = NULL;
   clProgramWrapper    program = NULL;
