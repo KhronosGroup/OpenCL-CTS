@@ -651,7 +651,7 @@ int write_image( cl_device_id device, cl_context context, cl_command_queue queue
 }    // end write_image()
 
 
-int write_float_image( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+int test_write_image_float( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
     cl_image_format    image_format_desc = { CL_RGBA, CL_UNORM_INT8 };
     PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
@@ -661,7 +661,7 @@ int write_float_image( cl_device_id device, cl_context context, cl_command_queue
 }
 
 
-int write_char_image( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+int test_write_image_char( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
     cl_image_format    image_format_desc = { CL_RGBA, CL_SIGNED_INT8 };
     PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
@@ -671,7 +671,7 @@ int write_char_image( cl_device_id device, cl_context context, cl_command_queue 
 }
 
 
-int write_uchar_image( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+int test_write_image_uchar( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
     cl_image_format    image_format_desc = { CL_RGBA, CL_UNSIGNED_INT8 };
     PASSIVE_REQUIRE_IMAGE_SUPPORT( device )

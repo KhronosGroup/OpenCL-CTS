@@ -24,253 +24,128 @@
 #include <unistd.h>
 #endif
 
-basefn    basefn_list[] = {
-    test_integer_clz,
-    test_integer_ctz,
-    test_integer_hadd,
-    test_integer_rhadd,
-    test_integer_mul_hi,
-    test_integer_rotate,
-    test_integer_clamp,
-    test_integer_mad_sat,
-    test_integer_mad_hi,
-    test_integer_min,
-    test_integer_max,
-    test_integer_upsample,
+test_definition test_list[] = {
+    ADD_TEST( integer_clz ),
+    ADD_TEST( integer_ctz ),
+    ADD_TEST( integer_hadd ),
+    ADD_TEST( integer_rhadd ),
+    ADD_TEST( integer_mul_hi ),
+    ADD_TEST( integer_rotate ),
+    ADD_TEST( integer_clamp ),
+    ADD_TEST( integer_mad_sat ),
+    ADD_TEST( integer_mad_hi ),
+    ADD_TEST( integer_min ),
+    ADD_TEST( integer_max ),
+    ADD_TEST( integer_upsample ),
 
-    test_abs,
-    test_absdiff,
-    test_add_sat,
-    test_sub_sat,
+    ADD_TEST( integer_abs ),
+    ADD_TEST( integer_abs_diff ),
+    ADD_TEST( integer_add_sat ),
+    ADD_TEST( integer_sub_sat ),
 
-    test_integer_addAssign,
-    test_integer_subtractAssign,
-    test_integer_multiplyAssign,
-    test_integer_divideAssign,
-    test_integer_moduloAssign,
-    test_integer_andAssign,
-    test_integer_orAssign,
-    test_integer_exclusiveOrAssign,
+    ADD_TEST( integer_addAssign ),
+    ADD_TEST( integer_subtractAssign ),
+    ADD_TEST( integer_multiplyAssign ),
+    ADD_TEST( integer_divideAssign ),
+    ADD_TEST( integer_moduloAssign ),
+    ADD_TEST( integer_andAssign ),
+    ADD_TEST( integer_orAssign ),
+    ADD_TEST( integer_exclusiveOrAssign ),
 
-    test_unary_ops_increment,
-    test_unary_ops_decrement,
-    test_unary_ops_full,
+    ADD_TEST( unary_ops_increment ),
+    ADD_TEST( unary_ops_decrement ),
+    ADD_TEST( unary_ops_full ),
 
-    test_intmul24,
-    test_intmad24,
+    ADD_TEST( integer_mul24 ),
+    ADD_TEST( integer_mad24 ),
 
-    test_long_math,
-    test_long_logic,
-    test_long_shift,
-    test_long_compare,
+    ADD_TEST( long_math ),
+    ADD_TEST( long_logic ),
+    ADD_TEST( long_shift ),
+    ADD_TEST( long_compare ),
 
-    test_ulong_math,
-    test_ulong_logic,
-    test_ulong_shift,
-    test_ulong_compare,
+    ADD_TEST( ulong_math ),
+    ADD_TEST( ulong_logic ),
+    ADD_TEST( ulong_shift ),
+    ADD_TEST( ulong_compare ),
 
-    test_int_math,
-    test_int_logic,
-    test_int_shift,
-    test_int_compare,
+    ADD_TEST( int_math ),
+    ADD_TEST( int_logic ),
+    ADD_TEST( int_shift ),
+    ADD_TEST( int_compare ),
 
-    test_uint_math,
-    test_uint_logic,
-    test_uint_shift,
-    test_uint_compare,
+    ADD_TEST( uint_math ),
+    ADD_TEST( uint_logic ),
+    ADD_TEST( uint_shift ),
+    ADD_TEST( uint_compare ),
 
-    test_short_math,
-    test_short_logic,
-    test_short_shift,
-    test_short_compare,
+    ADD_TEST( short_math ),
+    ADD_TEST( short_logic ),
+    ADD_TEST( short_shift ),
+    ADD_TEST( short_compare ),
 
-    test_ushort_math,
-    test_ushort_logic,
-    test_ushort_shift,
-    test_ushort_compare,
+    ADD_TEST( ushort_math ),
+    ADD_TEST( ushort_logic ),
+    ADD_TEST( ushort_shift ),
+    ADD_TEST( ushort_compare ),
 
-    test_char_math,
-    test_char_logic,
-    test_char_shift,
-    test_char_compare,
+    ADD_TEST( char_math ),
+    ADD_TEST( char_logic ),
+    ADD_TEST( char_shift ),
+    ADD_TEST( char_compare ),
 
-    test_uchar_math,
-    test_uchar_logic,
-    test_uchar_shift,
-    test_uchar_compare,
+    ADD_TEST( uchar_math ),
+    ADD_TEST( uchar_logic ),
+    ADD_TEST( uchar_shift ),
+    ADD_TEST( uchar_compare ),
 
-    test_popcount,
-
-
-    // Quick
-    test_quick_long_math,
-    test_quick_long_logic,
-    test_quick_long_shift,
-    test_quick_long_compare,
-
-    test_quick_ulong_math,
-    test_quick_ulong_logic,
-    test_quick_ulong_shift,
-    test_quick_ulong_compare,
-
-    test_quick_int_math,
-    test_quick_int_logic,
-    test_quick_int_shift,
-    test_quick_int_compare,
-
-    test_quick_uint_math,
-    test_quick_uint_logic,
-    test_quick_uint_shift,
-    test_quick_uint_compare,
-
-    test_quick_short_math,
-    test_quick_short_logic,
-    test_quick_short_shift,
-    test_quick_short_compare,
-
-    test_quick_ushort_math,
-    test_quick_ushort_logic,
-    test_quick_ushort_shift,
-    test_quick_ushort_compare,
-
-    test_quick_char_math,
-    test_quick_char_logic,
-    test_quick_char_shift,
-    test_quick_char_compare,
-
-    test_quick_uchar_math,
-    test_quick_uchar_logic,
-    test_quick_uchar_shift,
-    test_quick_uchar_compare,
-
-    test_vector_scalar_ops,
-};
-
-
-const char    *basefn_names[] = {
-    "integer_clz",
-    "integer_ctz",
-    "integer_hadd",
-    "integer_rhadd",
-    "integer_mul_hi",
-    "integer_rotate",
-    "integer_clamp",
-    "integer_mad_sat",
-    "integer_mad_hi",
-    "integer_min",
-    "integer_max",
-    "integer_upsample",
-
-    "integer_abs",
-    "integer_abs_diff",
-    "integer_add_sat",
-    "integer_sub_sat",
-
-    "integer_addAssign",
-    "integer_subtractAssign",
-    "integer_multiplyAssign",
-    "integer_divideAssign",
-    "integer_moduloAssign",
-    "integer_andAssign",
-    "integer_orAssign",
-    "integer_exclusiveOrAssign",
-
-    "unary_ops_increment",
-    "unary_ops_decrement",
-    "unary_ops_full",
-
-    "integer_mul24",
-    "integer_mad24",
-
-    "long_math",
-    "long_logic",
-    "long_shift",
-    "long_compare",
-
-    "ulong_math",
-    "ulong_logic",
-    "ulong_shift",
-    "ulong_compare",
-
-    "int_math",
-    "int_logic",
-    "int_shift",
-    "int_compare",
-
-    "uint_math",
-    "uint_logic",
-    "uint_shift",
-    "uint_compare",
-
-    "short_math",
-    "short_logic",
-    "short_shift",
-    "short_compare",
-
-    "ushort_math",
-    "ushort_logic",
-    "ushort_shift",
-    "ushort_compare",
-
-    "char_math",
-    "char_logic",
-    "char_shift",
-    "char_compare",
-
-    "uchar_math",
-    "uchar_logic",
-    "uchar_shift",
-    "uchar_compare",
-
-    "popcount",
+    ADD_TEST( popcount ),
 
     // Quick
-    "quick_long_math",
-    "quick_long_logic",
-    "quick_long_shift",
-    "quick_long_compare",
+    ADD_TEST( quick_long_math ),
+    ADD_TEST( quick_long_logic ),
+    ADD_TEST( quick_long_shift ),
+    ADD_TEST( quick_long_compare ),
 
-    "quick_ulong_math",
-    "quick_ulong_logic",
-    "quick_ulong_shift",
-    "quick_ulong_compare",
+    ADD_TEST( quick_ulong_math ),
+    ADD_TEST( quick_ulong_logic ),
+    ADD_TEST( quick_ulong_shift ),
+    ADD_TEST( quick_ulong_compare ),
 
-    "quick_int_math",
-    "quick_int_logic",
-    "quick_int_shift",
-    "quick_int_compare",
+    ADD_TEST( quick_int_math ),
+    ADD_TEST( quick_int_logic ),
+    ADD_TEST( quick_int_shift ),
+    ADD_TEST( quick_int_compare ),
 
-    "quick_uint_math",
-    "quick_uint_logic",
-    "quick_uint_shift",
-    "quick_uint_compare",
+    ADD_TEST( quick_uint_math ),
+    ADD_TEST( quick_uint_logic ),
+    ADD_TEST( quick_uint_shift ),
+    ADD_TEST( quick_uint_compare ),
 
-    "quick_short_math",
-    "quick_short_logic",
-    "quick_short_shift",
-    "quick_short_compare",
+    ADD_TEST( quick_short_math ),
+    ADD_TEST( quick_short_logic ),
+    ADD_TEST( quick_short_shift ),
+    ADD_TEST( quick_short_compare ),
 
-    "quick_ushort_math",
-    "quick_ushort_logic",
-    "quick_ushort_shift",
-    "quick_ushort_compare",
+    ADD_TEST( quick_ushort_math ),
+    ADD_TEST( quick_ushort_logic ),
+    ADD_TEST( quick_ushort_shift ),
+    ADD_TEST( quick_ushort_compare ),
 
-    "quick_char_math",
-    "quick_char_logic",
-    "quick_char_shift",
-    "quick_char_compare",
+    ADD_TEST( quick_char_math ),
+    ADD_TEST( quick_char_logic ),
+    ADD_TEST( quick_char_shift ),
+    ADD_TEST( quick_char_compare ),
 
-    "quick_uchar_math",
-    "quick_uchar_logic",
-    "quick_uchar_shift",
-    "quick_uchar_compare",
+    ADD_TEST( quick_uchar_math ),
+    ADD_TEST( quick_uchar_logic ),
+    ADD_TEST( quick_uchar_shift ),
+    ADD_TEST( quick_uchar_compare ),
 
-    "vector_scalar",
+    ADD_TEST( vector_scalar ),
 };
 
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 void fill_test_values( cl_long *outBufferA, cl_long *outBufferB, size_t numElements, MTdata d )
 {
@@ -335,13 +210,8 @@ void fill_test_values( cl_long *outBufferA, cl_long *outBufferB, size_t numEleme
     }
 }
 
-
-
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false /* image support required */, false /* force no context creation */, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
-
-
-
 

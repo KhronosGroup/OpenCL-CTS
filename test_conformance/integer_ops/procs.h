@@ -53,13 +53,13 @@ extern int test_integer_andAssign(cl_device_id deviceID, cl_context context, cl_
 extern int test_integer_orAssign(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_integer_exclusiveOrAssign(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int      test_abs(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_absdiff(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_add_sat(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_sub_sat(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_integer_abs(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_integer_abs_diff(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_integer_add_sat(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_integer_sub_sat(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int        test_intmul24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_intmad24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_integer_mul24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_integer_mad24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 
 extern int test_long_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
@@ -139,5 +139,5 @@ extern int test_unary_ops_full(cl_device_id deviceID, cl_context context, cl_com
 extern int test_unary_ops_increment(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_unary_ops_decrement(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int test_vector_scalar_ops(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_vector_scalar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 

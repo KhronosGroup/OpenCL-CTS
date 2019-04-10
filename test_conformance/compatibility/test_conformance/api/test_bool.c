@@ -35,8 +35,7 @@ const char *kernel_with_bool[] = {
     "}\n"
 };
 
-int test_for_bool_type(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
+int test_bool_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
 
     cl_program program;

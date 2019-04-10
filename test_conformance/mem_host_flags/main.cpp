@@ -29,40 +29,26 @@
 #include <unistd.h>
 #endif
 
-basefn clfn_list[] = {test_mem_host_read_only_buffer,
-  test_mem_host_read_only_subbuffer,
-  test_mem_host_write_only_buffer,
-  test_mem_host_write_only_subbuffer,
-  test_mem_host_no_access_buffer,
-  test_mem_host_no_access_subbuffer,
-  test_mem_host_read_only_image,
-  test_mem_host_write_only_image,
-  test_mem_host_no_access_image};
-
-const char *clfn_names[] = {"test_mem_host_read_only_buffer",
-  "test_mem_host_read_only_subbuffer",
-  "test_mem_host_write_only_buffer",
-  "test_mem_host_write_only_subbuffer",
-  "test_mem_host_no_access_buffer",
-  "test_mem_host_no_access_subbuffer",
-  "test_mem_host_read_only_image",
-  "test_mem_host_write_only_image",
-  "test_mem_host_no_access_image",
+test_definition test_list[] = {
+    ADD_TEST( mem_host_read_only_buffer ),
+    ADD_TEST( mem_host_read_only_subbuffer ),
+    ADD_TEST( mem_host_write_only_buffer ),
+    ADD_TEST( mem_host_write_only_subbuffer ),
+    ADD_TEST( mem_host_no_access_buffer ),
+    ADD_TEST( mem_host_no_access_subbuffer ),
+    ADD_TEST( mem_host_read_only_image ),
+    ADD_TEST( mem_host_write_only_image ),
+    ADD_TEST( mem_host_no_access_image ),
 };
 
-ct_assert((sizeof(clfn_names) / sizeof(clfn_names[0])) == (sizeof(clfn_list) / sizeof(clfn_list[0])));
-
-int num_fns = sizeof(clfn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 bool gTestRounding = true;
 
 int main(int argc, const char *argv[])
 {
-  int error = 0;
-  test_start();// in fact no code
-  log_info("1st part, non gl-sharing objects...\n");
-  error = runTestHarness(argc, argv, num_fns, clfn_list, clfn_names, false, false, 0);
+    log_info("1st part, non gl-sharing objects...\n");
 
-  return error;
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }

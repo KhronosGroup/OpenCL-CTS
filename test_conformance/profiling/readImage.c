@@ -354,7 +354,7 @@ int read_image( cl_device_id device, cl_context context, cl_command_queue queue,
 }    // end read_image()
 
 
-int read_float_image( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+int test_read_image_float( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
     cl_image_format    image_format_desc = { CL_RGBA, CL_UNORM_INT8 };
     PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
@@ -364,7 +364,7 @@ int read_float_image( cl_device_id device, cl_context context, cl_command_queue 
 }
 
 
-int read_char_image( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+int test_read_image_char( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
     cl_image_format    image_format_desc = { CL_RGBA, CL_SIGNED_INT8 };
     PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
@@ -374,7 +374,7 @@ int read_char_image( cl_device_id device, cl_context context, cl_command_queue q
 }
 
 
-int read_uchar_image( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+int test_read_image_uchar( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
     cl_image_format    image_format_desc = { CL_RGBA, CL_UNSIGNED_INT8 };
     PASSIVE_REQUIRE_IMAGE_SUPPORT( device )

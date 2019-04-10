@@ -20,20 +20,21 @@
 #endif
 #include <stdio.h>
 #include "../../test_common/harness/errorHelpers.h"
+#include "../../test_common/harness/testHarness.h"
 
 
-void test_char( void );
-void test_uchar( void );
-void test_short( void );
-void test_ushort( void );
-void test_int( void );
-void test_uint( void );
-void test_long( void );
-void test_ulong( void );
-void test_float( void );
-void test_double( void );
+int test_char( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int test_uchar(cl_device_id deviceID , cl_context context, cl_command_queue queue, int num_elements);
+int test_short( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int test_ushort( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int test_int( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int test_uint( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int test_long( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int test_ulong( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int test_float( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+int test_double( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 
-void test_char( void )
+int test_char( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
 /* char */
     /* Constructor */
@@ -90,9 +91,10 @@ void test_char( void )
 #endif
 
     log_info( "\n" );
+    return 0;
 }
 
-void test_uchar( void )
+int test_uchar( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
 /* uchar */
     /* Constructor */
@@ -149,9 +151,10 @@ void test_uchar( void )
 #endif
 
     log_info( "\n" );
+    return 0;
 }
 
-void test_short( void )
+int test_short( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
 /* short */
     /* Constructor */
@@ -208,9 +211,10 @@ void test_short( void )
 #endif
 
     log_info( "\n" );
+    return 0;
 }
 
-void test_ushort( void )
+int test_ushort( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
 /* ushort */
     /* Constructor */
@@ -267,9 +271,10 @@ void test_ushort( void )
 #endif
 
     log_info( "\n" );
+    return 0;
 }
 
-void test_int( void )
+int test_int(cl_device_id deviceID , cl_context context, cl_command_queue queue, int num_elements)
 {
 /* int */
     /* Constructor */
@@ -326,9 +331,10 @@ void test_int( void )
 #endif
 
     log_info( "\n" );
+    return 0;
 }
 
-void test_uint( void )
+int test_uint( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
 /* uint */
     /* Constructor */
@@ -385,9 +391,10 @@ void test_uint( void )
 #endif
 
     log_info( "\n" );
+    return 0;
 }
 
-void test_long( void )
+int test_long( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
 /* long */
     /* Constructor */
@@ -444,9 +451,10 @@ void test_long( void )
 #endif
 
     log_info( "\n" );
+    return 0;
 }
 
-void test_ulong( void )
+int test_ulong( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
 /* ulong */
     /* Constructor */
@@ -503,10 +511,10 @@ void test_ulong( void )
 #endif
 
     log_info( "\n" );
+    return 0;
 }
 
-
-void test_float( void )
+int test_float( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
 /* float */
     /* Constructor */
@@ -565,9 +573,10 @@ void test_float( void )
 #endif
 
     log_info( "\n" );
+    return 0;
 }
 
-void test_double( void )
+int test_double( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
 /* double */
     /* Constructor */
@@ -624,27 +633,27 @@ void test_double( void )
 #endif
 
     log_info( "\n" );
+    return 0;
 }
 
-int main( void )
-{
-    test_start();
+test_definition test_list[] = {
+    ADD_TEST( char ),
+    ADD_TEST( uchar ),
+    ADD_TEST( short ),
+    ADD_TEST( ushort ),
+    ADD_TEST( int ),
+    ADD_TEST( uint ),
+    ADD_TEST( long ),
+    ADD_TEST( ulong ),
+    ADD_TEST( float ),
+    ADD_TEST( double ),
+};
 
+const int test_num = ARRAY_SIZE( test_list );
+
+int main(int argc, const char** argv)
+{
     log_info( "\nChecking operations on cl_types.\nNumbers, where presented, should walk upward from 0, with step of 1:\n" );
 
-    test_char();
-    test_uchar();
-    test_short();
-    test_ushort();
-    test_int();
-    test_uint();
-    test_long();
-    test_ulong();
-    test_float();
-    test_double();
-
-    test_finish();
-    log_info("PASSED test.\n");
-
-    return 0;
+    return parseAndCallCommandLineTests( argc, argv, NULL, test_num, test_list, true, 0, 0 );
 }

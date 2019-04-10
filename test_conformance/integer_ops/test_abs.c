@@ -174,7 +174,7 @@ static const char * dest_stores[] = {
     "    vstore3(tmp, tid, dst);\n"
 };
 
-int test_abs(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+int test_integer_abs(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
 {
     cl_int *input_ptr, *output_ptr, *p;
     int err;

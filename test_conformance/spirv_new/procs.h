@@ -41,17 +41,14 @@ public:
 
 class spirvTestsRegistry {
 private:
-    std::vector<const char *> testNames;
     std::vector<baseTestClass *> testClasses;
-    std::vector<basefn> tests;
+    std::vector<test_definition> testDefinitions;
 
 public:
 
     static spirvTestsRegistry& getInstance();
 
-    const char **getTestNames();
-
-    basefn *getTests();
+    test_definition *getTestDefinitions();
 
     size_t getNumTests();
 

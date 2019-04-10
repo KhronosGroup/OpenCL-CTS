@@ -548,55 +548,30 @@ int test_select_double_long(cl_device_id deviceID, cl_context context, cl_comman
     return doTest(queue, context, kdouble, klong, deviceID);
 }
 
-basefn basefn_list[] = {
-    test_select_uchar_uchar,
-    test_select_uchar_char,
-    test_select_char_uchar,
-    test_select_char_char,
-    test_select_ushort_ushort,
-    test_select_ushort_short,
-    test_select_short_ushort,
-    test_select_short_short,
-    test_select_uint_uint,
-    test_select_uint_int,
-    test_select_int_uint,
-    test_select_int_int,
-    test_select_float_uint,
-    test_select_float_int,
-    test_select_ulong_ulong,
-    test_select_ulong_long,
-    test_select_long_ulong,
-    test_select_long_long,
-    test_select_double_ulong,
-    test_select_double_long,
+test_definition test_list[] = {
+    ADD_TEST( select_uchar_uchar ),
+    ADD_TEST( select_uchar_char ),
+    ADD_TEST( select_char_uchar ),
+    ADD_TEST( select_char_char ),
+    ADD_TEST( select_ushort_ushort ),
+    ADD_TEST( select_ushort_short ),
+    ADD_TEST( select_short_ushort ),
+    ADD_TEST( select_short_short ),
+    ADD_TEST( select_uint_uint ),
+    ADD_TEST( select_uint_int ),
+    ADD_TEST( select_int_uint ),
+    ADD_TEST( select_int_int ),
+    ADD_TEST( select_float_uint ),
+    ADD_TEST( select_float_int ),
+    ADD_TEST( select_ulong_ulong ),
+    ADD_TEST( select_ulong_long ),
+    ADD_TEST( select_long_ulong ),
+    ADD_TEST( select_long_long ),
+    ADD_TEST( select_double_ulong ),
+    ADD_TEST( select_double_long ),
 };
 
-const char *basefn_names[] = {
-    "select_uchar_uchar",
-    "select_uchar_char",
-    "select_char_uchar",
-    "select_char_char",
-    "select_ushort_ushort",
-    "select_ushort_short",
-    "select_short_ushort",
-    "select_short_short",
-    "select_uint_uint",
-    "select_uint_int",
-    "select_int_uint",
-    "select_int_int",
-    "select_float_uint",
-    "select_float_int",
-    "select_ulong_ulong",
-    "select_ulong_long",
-    "select_long_ulong",
-    "select_long_long",
-    "select_double_ulong",
-    "select_double_long",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, char* argv[])
 {
@@ -658,7 +633,7 @@ int main(int argc, char* argv[])
         log_info("*** Wimpy Reduction Factor: %-27u ***\n\n", s_wimpy_reduction_factor);
     }
 
-    int err = runTestHarness( argCount, argList, num_fns, basefn_list, basefn_names, false, false, 0 );
+    int err = runTestHarness( argCount, argList, test_num, test_list, false, false, 0 );
 
     free( argList );
 
@@ -673,8 +648,8 @@ static void printUsage( void )
     log_info("\t-[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", s_wimpy_reduction_factor);
     log_info("\n");
     log_info("Test names:\n");
-    for( int i = 0; i < num_fns; i++ )
+    for( int i = 0; i < test_num; i++ )
     {
-        log_info( "\t%s\n", basefn_names[i] );
+        log_info( "\t%s\n", test_list[i].name );
     }
 }

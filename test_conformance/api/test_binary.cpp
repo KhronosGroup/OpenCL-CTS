@@ -71,7 +71,7 @@ int test_binary_get(cl_device_id deviceID, cl_context context, cl_command_queue 
 }
 
 
-int test_program_binary_create(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_binary_create(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     /* To test this in a self-contained fashion, we have to create a program with
    source, then get the binary, then use that binary to reload the program, and then verify */

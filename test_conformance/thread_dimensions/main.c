@@ -19,46 +19,25 @@
 #include <string.h>
 #include "procs.h"
 
-basefn    basefn_list[] = {
-test_quick_thread_dimensions_1d_explicit_local,
-test_quick_thread_dimensions_2d_explicit_local,
-test_quick_thread_dimensions_3d_explicit_local,
-test_quick_thread_dimensions_1d_implicit_local,
-test_quick_thread_dimensions_2d_implicit_local,
-test_quick_thread_dimensions_3d_implicit_local,
-test_full_thread_dimensions_1d_explicit_local,
-test_full_thread_dimensions_2d_explicit_local,
-test_full_thread_dimensions_3d_explicit_local,
-test_full_thread_dimensions_1d_implicit_local,
-test_full_thread_dimensions_2d_implicit_local,
-test_full_thread_dimensions_3d_implicit_local,
+test_definition test_list[] = {
+    ADD_TEST( quick_1d_explicit_local ),
+    ADD_TEST( quick_2d_explicit_local ),
+    ADD_TEST( quick_3d_explicit_local ),
+    ADD_TEST( quick_1d_implicit_local ),
+    ADD_TEST( quick_2d_implicit_local ),
+    ADD_TEST( quick_3d_implicit_local ),
+    ADD_TEST( full_1d_explicit_local ),
+    ADD_TEST( full_2d_explicit_local ),
+    ADD_TEST( full_3d_explicit_local ),
+    ADD_TEST( full_1d_implicit_local ),
+    ADD_TEST( full_2d_implicit_local ),
+    ADD_TEST( full_3d_implicit_local ),
 };
 
-const char *commonfn_names[] = {
-"quick_1d_explicit_local",
-"quick_2d_explicit_local",
-"quick_3d_explicit_local",
-"quick_1d_implicit_local",
-"quick_2d_implicit_local",
-"quick_3d_implicit_local",
-"full_1d_explicit_local",
-"full_2d_explicit_local",
-"full_3d_explicit_local",
-"full_1d_implicit_local",
-"full_2d_implicit_local",
-"full_3d_implicit_local",
-};
+const int test_num = ARRAY_SIZE( test_list );
 
-ct_assert((sizeof(commonfn_names) / sizeof(commonfn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_commonfns = sizeof(commonfn_names) / sizeof(char *);
-
-int
-main(int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_commonfns, basefn_list, commonfn_names, false, false, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
-
-
-
 
