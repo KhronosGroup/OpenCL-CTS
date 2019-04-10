@@ -16,7 +16,7 @@ or Khronos Conformance Test Source License Agreement as executed between Khronos
 
 #include "../../test_common/harness/kernelHelpers.h"
 
-#if defined(_MSC_VER) || defined(_WIN32)
+#if defined(_MSC_VER)
 #define PACKED(__STRUCT__) __pragma(pack(push, 1)) __STRUCT__ __pragma(pack(pop))
 #elif defined(__GNUC__) || defined(__clang__)
 #define PACKED(__STRUCT__) __STRUCT__ __attribute__((packed))

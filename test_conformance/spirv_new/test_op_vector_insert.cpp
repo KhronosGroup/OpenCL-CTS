@@ -34,8 +34,8 @@ int test_insert(cl_device_id deviceID, cl_context context,
     SPIRV_CHECK_ERROR(err, "Failed to create kernel");
 
     int num = (int)h_in.size();
-    std::vector<Tv, align_allocator<Ts>> h_ref(num);
-    std::vector<Tv, align_allocator<Ts>> h_out(num);
+    std::vector<Tv, align_allocator<Tv>> h_ref(num);
+    std::vector<Tv, align_allocator<Tv>> h_out(num);
 
     RandomSeed seed(gRandomSeed);
     for (int i = 0; i < num; i++) {

@@ -529,7 +529,7 @@ int test_fp_rounding(cl_device_id deviceID,
     size_t global = num;
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
 
-    std::vector<To, align_allocator<Ti>> h_res(num);
+    std::vector<To, align_allocator<To>> h_res(num);
     err = clEnqueueReadBuffer(queue, out, CL_TRUE, 0, out_bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read from output");
 
