@@ -30,6 +30,10 @@
 #include "../../test_common/harness/compat.h"
 #include "../../test_common/harness/mt19937.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef union fptr
 {
     void    *p;
@@ -82,7 +86,7 @@ typedef struct Func
     float           double_ulps;
     float           float_embedded_ulps;
     int             ftz;
-    const vtbl      *vtbl;
+    const vtbl      *vtbl_ptr;
 }Func;
 
 
@@ -90,6 +94,9 @@ extern const Func  functionList[];
 
 extern const size_t functionListCount;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
