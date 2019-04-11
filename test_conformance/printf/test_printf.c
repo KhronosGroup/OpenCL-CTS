@@ -449,7 +449,8 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
     int err;
     cl_program program;
     cl_kernel  kernel;
-    cl_mem d_out;
+    cl_mem d_out = NULL;
+    cl_mem d_a = NULL;
     char _analysisBuffer[ANALYSIS_BUFFER_SIZE];
     cl_uint out32 = 0;
     cl_ulong out64 = 0;
@@ -471,7 +472,7 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
         if(isKernelArgument(allTestCase[testId],testNum))
         {
             int a = 2;
-            cl_mem d_a = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
+            d_a = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
                 sizeof(int), &a, &err);
             if(err!= CL_SUCCESS || d_a == NULL) {
                 log_error("clCreateBuffer failed\n");
@@ -566,6 +567,10 @@ exit:
         log_error("clReleaseKernel failed\n");
     if(clReleaseProgram(program) != CL_SUCCESS)
         log_error("clReleaseProgram failed\n");
+    if(d_out)
+	    clReleaseMemObject(d_out);
+    if(d_a)
+	    clReleaseMemObject(d_a);
     ++s_test_cnt;
     return err;
 }
