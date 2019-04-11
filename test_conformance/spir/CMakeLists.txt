@@ -4,13 +4,17 @@ endfunction()
 
 include_directories(${CLConf_SRC_DIR}/test_common)
 
+# Import function list from math_brute_force
+add_definitions(-DFUNCTION_LIST_ULPS_ONLY)
+
 clconf_add_executable(
     test_spir
     main.cpp
     datagen.cpp
     run_build_test.cpp
     run_services.cpp
-    kernelargs.cpp)
+    kernelargs.cpp
+    ../math_brute_force/FunctionList.c)
 
 target_link_libraries(
     test_spir${CLConf_SUFFIX}
