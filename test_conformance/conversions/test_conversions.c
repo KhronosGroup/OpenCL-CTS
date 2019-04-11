@@ -441,25 +441,7 @@ static int ParseArgs( int argc, const char **argv )
                         gWimpyMode ^= 1;
                         break;
                     case '[':
-                        // wimpy reduction factor can be set with the option -[2^n]
-                        // Default factor is 128, and n practically can be from 1 to 12
-                        {
-                            const char *arg_temp = strchr(&arg[1], ']');
-                            if (arg_temp != 0)
-                            {
-                                int new_factor = atoi(&arg[1]);
-                                arg = arg_temp; // Advance until ']'
-                                if (new_factor && !(new_factor & (new_factor - 1)))
-                                {
-                                    vlog(" WimpyReduction factor changed from %d to %d \n", gWimpyReductionFactor, new_factor);
-                                    gWimpyReductionFactor = new_factor;
-                                }
-                                else
-                                {
-                                    vlog(" Error in WimpyReduction factor, must be power of 2 \n");
-                                }
-                            }
-                        }
+                        parseWimpyReductionFactor(arg, gWimpyReductionFactor);
                         break;
                     case 'z':
                         gForceFTZ ^= 1;
