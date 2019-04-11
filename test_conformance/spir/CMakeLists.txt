@@ -3,6 +3,9 @@ function (install_spir_artifacts suite_name)
           COMPONENT OpenCLCTS)
 endfunction()
 
+# Import function list from math_brute_force
+add_definitions(-DFUNCTION_LIST_ULPS_ONLY)
+
 add_executable(
     conformance_test_spir
     main.cpp
@@ -10,6 +13,7 @@ add_executable(
     run_build_test.cpp
     run_services.cpp
     kernelargs.cpp
+    ../math_brute_force/FunctionList.c
     ../../test_common/harness/errorHelpers.c
     ../../test_common/harness/kernelHelpers.c
     ../../test_common/harness/mt19937.c

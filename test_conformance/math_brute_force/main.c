@@ -232,7 +232,7 @@ int main (int argc, const char * argv[])
             if( gTestFloat )
             {
                 gTestCount++;
-                if( f->vtbl->TestFunc( f, d )  )
+                if( f->vtbl_ptr->TestFunc( f, d )  )
                 {
                     gFailCount++;
                     error++;
@@ -243,12 +243,12 @@ int main (int argc, const char * argv[])
 
 //            while(1)
             {
-                if( gHasDouble && NULL != f->vtbl->DoubleTestFunc && NULL != f->dfunc.p )
+                if( gHasDouble && NULL != f->vtbl_ptr->DoubleTestFunc && NULL != f->dfunc.p )
                 {
                     gTestCount++;
                     if( gTestFloat )
                         vlog( "    " );
-                    if( f->vtbl->DoubleTestFunc( f, d )  )
+                    if( f->vtbl_ptr->DoubleTestFunc( f, d )  )
                     {
                         gFailCount++;
                         error++;
@@ -259,7 +259,7 @@ int main (int argc, const char * argv[])
             }
 #if defined( __APPLE__ )
             {
-                if( gHasBasicDouble && NULL != f->vtbl->DoubleTestFunc && NULL != f->dfunc.p)
+                if( gHasBasicDouble && NULL != f->vtbl_ptr->DoubleTestFunc && NULL != f->dfunc.p)
                 {
                     int isBasicTest = 0;
                     for( j = 0; j < gNumBasicDoubleFuncs; j++ ) {
@@ -272,7 +272,7 @@ int main (int argc, const char * argv[])
                         gTestCount++;
                         if( gTestFloat )
                             vlog( "    " );
-                        if( f->vtbl->DoubleTestFunc( f, d )  )
+                        if( f->vtbl_ptr->DoubleTestFunc( f, d )  )
                         {
                             gFailCount++;
                             error++;
