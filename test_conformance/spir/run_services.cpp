@@ -746,7 +746,7 @@ void run_kernel( cl_kernel kernel, cl_command_queue queue, WorkSizeInfo &ws, Tes
 /**
  Compare two test results
  */
-bool compare_results( const TestResult& lhs, const TestResult& rhs )
+bool compare_results( const TestResult& lhs, const TestResult& rhs, float ulps )
 {
     if( lhs.kernelArgs().getArgCount() != rhs.kernelArgs().getArgCount() )
     {
@@ -756,7 +756,7 @@ bool compare_results( const TestResult& lhs, const TestResult& rhs )
 
     for( size_t i = 0 ; i < lhs.kernelArgs().getArgCount(); ++i )
     {
-        if( ! lhs.kernelArgs().getArg(i)->compare( *rhs.kernelArgs().getArg(i)) )
+        if( ! lhs.kernelArgs().getArg(i)->compare( *rhs.kernelArgs().getArg(i), ulps ) )
         {
             log_error("the kernel parameter (%d) is different between SPIR and CL version of the kernel\n", i);
             return false;

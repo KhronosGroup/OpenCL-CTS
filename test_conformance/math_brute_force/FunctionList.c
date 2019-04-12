@@ -24,6 +24,36 @@
 
 #define STRINGIFY( _s)                  #_s
 
+// Only use ulps information in spir test
+#ifdef FUNCTION_LIST_ULPS_ONLY
+
+#define ENTRY(      _name, _ulp, _embedded_ulp, _rmode, _type )                 { STRINGIFY(_name), STRINGIFY(_name),                 {NULL}, {NULL}, {NULL}, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
+#define ENTRY_EXT(  _name, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, _type )   { STRINGIFY(_name), STRINGIFY(_name),                 {NULL}, {NULL}, {NULL}, _ulp, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, RELAXED_ON,  _type }
+#define HALF_ENTRY( _name, _ulp, _embedded_ulp, _rmode, _type )                 { "half_" STRINGIFY(_name), "half_" STRINGIFY(_name), {NULL}, {NULL}, {NULL}, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
+#define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _rmode, _type)    { STRINGIFY(_name), _operator,                        {NULL}, {NULL}, {NULL}, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
+#define unaryF                NULL
+#define i_unaryF              NULL
+#define unaryF_u              NULL
+#define macro_unaryF          NULL
+#define binaryF               NULL
+#define binaryF_nextafter     NULL
+#define binaryOperatorF       NULL
+#define binaryF_i             NULL
+#define macro_binaryF         NULL
+#define ternaryF              NULL
+#define unaryF_two_results    NULL
+#define unaryF_two_results_i  NULL
+#define binaryF_two_results_i NULL
+#define mad_function          NULL
+
+#define reference_sqrt        NULL
+#define reference_sqrtl       NULL
+#define reference_divide      NULL
+#define reference_dividel     NULL
+#define reference_relaxed_divide NULL
+
+#else // FUNCTION_LIST_ULPS_ONLY
+
 #define ENTRY(      _name, _ulp, _embedded_ulp, _rmode, _type )                 { STRINGIFY(_name), STRINGIFY(_name),                 {(void*)reference_##_name}, {(void*)reference_##_name##l}, {(void*)reference_##_name},           _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
 #define ENTRY_EXT(  _name, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, _type )   { STRINGIFY(_name), STRINGIFY(_name),                 {(void*)reference_##_name}, {(void*)reference_##_name##l}, {(void*)reference_##relaxed_##_name}, _ulp, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, RELAXED_ON,  _type }
 #define HALF_ENTRY( _name, _ulp, _embedded_ulp, _rmode, _type )                 { "half_" STRINGIFY(_name), "half_" STRINGIFY(_name), {(void*)reference_##_name}, {NULL}, {NULL},                   _ulp, _ulp, _embedded_ulp, INFINITY, _rmode, RELAXED_OFF, _type }
@@ -65,6 +95,7 @@ extern const vtbl _mad_tbl;             // float mad( float, float, float )
 #define binaryF_two_results_i  &_binary_two_results_i
 #define mad_function        &_mad_tbl
 
+#endif // FUNCTION_LIST_ULPS_ONLY
 
 const Func  functionList[] = {
                                     ENTRY( acos,                  4.0f,         4.0f,         FTZ_OFF,     unaryF),

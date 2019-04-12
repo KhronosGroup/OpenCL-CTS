@@ -110,7 +110,7 @@ public:
         return m_buffer;
     }
 
-    virtual bool compare( const KernelArg& rhs ) const
+    virtual bool compare( const KernelArg& rhs, float ulps ) const
     {
         if( m_argInfo != rhs.m_argInfo )
         {
@@ -133,21 +133,58 @@ public:
             return true;
         }
 
+        bool match = true;
         if( memcmp( m_buffer, rhs.m_buffer, m_size) )
         {
+            std::string typeName = m_argInfo.getTypeName();
             size_t compared = 0;
-            while (compared < m_size)
+            if (typeName.compare("float*") == 0)
             {
-                if ( *(((char*)m_buffer)+compared) != *(((char*)rhs.m_buffer)+compared) )
+                while (compared < m_size)
                 {
-                    std::cerr << std::endl << " difference is at offset " << compared << std::endl;
-                    return false;
+                    float l = *(float*)(((char*)m_buffer)+compared);
+                    float r = *(float*)(((char*)rhs.m_buffer)+compared);
+                    if (fabsf(Ulp_Error(l, r)) > ulps)
+                    {
+                        match = false;
+                        break;
+                    }
+                    compared += sizeof(float);
                 }
-                compared++;
+            }
+            else if (typeName.compare("double*") == 0)
+            {
+                while (compared < m_size)
+                {
+                    double l = *(double*)(((char*)m_buffer)+compared);
+                    double r = *(double*)(((char*)rhs.m_buffer)+compared);
+                    if (fabsf(Ulp_Error_Double(l, r)) > ulps)
+                    {
+                        match = false;
+                        break;
+                    }
+                    compared += sizeof(double);
+                }
+            }
+            else
+            {
+                while (compared < m_size)
+                {
+                    if ( *(((char*)m_buffer)+compared) != *(((char*)rhs.m_buffer)+compared) )
+                    {
+                        match = false;
+                        break;
+                    }
+                    compared++;
+                }
+            }
+            if (!match)
+            {
+                std::cerr << std::endl << " difference is at offset " << compared << std::endl;
             }
         }
 
-        return true;
+        return match;
     }
 
     virtual void readToHost(cl_command_queue queue)

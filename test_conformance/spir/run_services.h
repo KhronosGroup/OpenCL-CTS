@@ -217,6 +217,6 @@ void generate_kernel_data(cl_context context, cl_kernel kernel,
                           WorkSizeInfo &ws, TestResult& res);
 
 void run_kernel(cl_kernel kernel, cl_command_queue queue, WorkSizeInfo &ws, TestResult& result);
-bool compare_results(const TestResult& lhs, const TestResult& rhs);
+bool compare_results(const TestResult& lhs, const TestResult& rhs, float ulps);
 
 #endif
