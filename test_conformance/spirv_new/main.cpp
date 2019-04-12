@@ -164,7 +164,7 @@ int main(int argc, const char *argv[])
 {
     gReSeed = 1;
     return runTestHarness(argc, argv,
-                          spirvTestsRegistry::getInstance().getNumTests() + 1,
+                          spirvTestsRegistry::getInstance().getNumTests(),
                           spirvTestsRegistry::getInstance().getTestDefinitions(),
                           false, false, 0);
 }
