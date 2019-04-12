@@ -75,10 +75,10 @@ std::vector<char> get_file_content(const std::string &fileName)
 
 std::string get_kernel_name(const std::string &source)
 {
-    cl_uint crc = 0x04c11db7;
+    cl_uint crc = ~0U;
 
     // Count CRC
-    crc = crc32(crc, &source[0], source.size());
+    crc = crc32(crc, source.data(), source.size());
 
     // Create list of kernel names
     std::string kernelsList;
