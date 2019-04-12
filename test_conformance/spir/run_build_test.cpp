@@ -373,16 +373,18 @@ bool TestRunner::runBuildTest(cl_device_id device, const char *folder,
     cl_int err;
     if ((err = clGetDeviceInfo(device, CL_DEVICE_SINGLE_FP_CONFIG, sizeof(gFloatCapabilities), &gFloatCapabilities, NULL)))
     {
-      log_info("Unable to get device CL_DEVICE_SINGLE_FP_CONFIG. (%d)\n", err);
+        log_info("Unable to get device CL_DEVICE_SINGLE_FP_CONFIG. (%d)\n", err);
     }
 
     if (strstr(test_name, "div_cr") || strstr(test_name, "sqrt_cr")) {
-      if ((gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT) == 0)
-        return true;
-      else {
-        bcoptions += " -cl-fp32-correctly-rounded-divide-sqrt";
-        cloptions += " -cl-fp32-correctly-rounded-divide-sqrt";
-      }
+        if ((gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT) == 0) {
+            (*m_successHandler)(test_name, "");
+            std::cout << "Skipped. (Cannot run on device due to missing CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT property.)" << std::endl;
+            return true;
+        } else {
+            bcoptions += " -cl-fp32-correctly-rounded-divide-sqrt";
+            cloptions += " -cl-fp32-correctly-rounded-divide-sqrt";
+        }
     }
 
     // Building the programs.
