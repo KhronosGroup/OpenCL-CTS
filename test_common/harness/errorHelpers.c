@@ -747,6 +747,7 @@ const char * subtests_to_skip_with_offline_compiler[] = {
             "multiple_embedded_headers",
             "program_binary_type",
             "compile_and_link_status_options_log",
+            "kernel_preprocessor_macros",
 };
 
 int check_opencl_version_with_testname(const char *subtestname, cl_device_id device)

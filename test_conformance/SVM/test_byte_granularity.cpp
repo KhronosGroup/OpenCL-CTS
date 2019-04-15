@@ -49,7 +49,7 @@ const char *byte_manipulation_kernels[] = {
 
 
 
-int    test_byte_granularity(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
+int test_svm_byte_granularity(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
 {
   clContextWrapper context;
   clProgramWrapper program;

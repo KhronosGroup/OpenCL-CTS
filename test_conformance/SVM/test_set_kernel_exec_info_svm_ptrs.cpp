@@ -42,16 +42,16 @@ const char *set_kernel_exec_info_svm_ptrs_kernel[] = {
 
 // Test that clSetKernelExecInfo works correctly with CL_KERNEL_EXEC_INFO_SVM_PTRS flag.
 //
-int test_set_kernel_exec_info_svm_ptrs(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+int test_svm_set_kernel_exec_info_svm_ptrs(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
 {
   clContextWrapper    c = NULL;
   clProgramWrapper    program = NULL;
   cl_uint     num_devices = 0;
   cl_int      error = CL_SUCCESS;
-  clCommandQueueWrapper q;
+  clCommandQueueWrapper queues[MAXQ];
 
   //error = create_cl_objects(deviceID, &set_kernel_exec_info_svm_ptrs_kernel[0], &context, &program, &q, &num_devices, CL_DEVICE_SVM_FINE_GRAIN);
-  error = create_cl_objects(deviceID, &set_kernel_exec_info_svm_ptrs_kernel[0], &c, &program, &q, &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+  error = create_cl_objects(deviceID, &set_kernel_exec_info_svm_ptrs_kernel[0], &c, &program, &queues[0], &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
   if(error == 1) return 0; // no devices capable of requested SVM level, so don't execute but count test as passing.
   if(error < 0) return -1; // fail test.
 
@@ -80,13 +80,13 @@ int test_set_kernel_exec_info_svm_ptrs(cl_device_id deviceID, cl_context context
     bBuf = clCreateBuffer(c, CL_MEM_USE_HOST_PTR, sizeof(BufPtrs), pBuf, &error);
     test_error(error, "clCreateBuffer failed");
 
-    clEnqueueMapBuffer(q, ba, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
+    clEnqueueMapBuffer(queues[0], ba, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
     test_error(error, "clEnqueueMapBuffer failed");
-    clEnqueueMapBuffer(q, bb, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
+    clEnqueueMapBuffer(queues[0], bb, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
     test_error(error, "clEnqueueMapBuffer failed");
-    clEnqueueMapBuffer(q, bc, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
+    clEnqueueMapBuffer(queues[0], bc, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
     test_error(error, "clEnqueueMapBuffer failed");
-    clEnqueueMapBuffer(q, bBuf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, sizeof(BufPtrs), 0, NULL, NULL, &error);
+    clEnqueueMapBuffer(queues[0], bBuf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, sizeof(BufPtrs), 0, NULL, NULL, &error);
     test_error(error, "clEnqueueMapBuffer failed");
 
     for(int i = 0; i < num_elements; i++) pA[i] = pB[i] = pC[i] = 0;
@@ -95,51 +95,51 @@ int test_set_kernel_exec_info_svm_ptrs(cl_device_id deviceID, cl_context context
     pBuf->pB = pB;
     pBuf->pC = pC;
 
-    error = clEnqueueUnmapMemObject(q, ba, pA, 0,NULL,NULL);
+    error = clEnqueueUnmapMemObject(queues[0], ba, pA, 0, NULL, NULL);
     test_error(error, " clEnqueueUnmapMemObject failed.");
-    error = clEnqueueUnmapMemObject(q, bb, pB, 0,NULL,NULL);
+    error = clEnqueueUnmapMemObject(queues[0], bb, pB, 0, NULL, NULL);
     test_error(error, " clEnqueueUnmapMemObject failed.");
-    error = clEnqueueUnmapMemObject(q, bc, pC, 0,NULL,NULL);
+    error = clEnqueueUnmapMemObject(queues[0], bc, pC, 0, NULL, NULL);
     test_error(error, " clEnqueueUnmapMemObject failed.");
-    error = clEnqueueUnmapMemObject(q, bBuf, pBuf, 0,NULL,NULL);
+    error = clEnqueueUnmapMemObject(queues[0], bBuf, pBuf, 0, NULL, NULL);
     test_error(error, " clEnqueueUnmapMemObject failed.");
 
 
-    error = clSetKernelArgSVMPointer(k, 0, pBuf);
+    error = clSetKernelArgSVMPointer(k, 0, pBuf); 
     test_error(error, "clSetKernelArg failed");
 
     error = clSetKernelExecInfo(k, CL_KERNEL_EXEC_INFO_SVM_PTRS, sizeof(BufPtrs), pBuf);
     test_error(error, "clSetKernelExecInfo failed");
 
     size_t range =  num_elements;
-    error = clEnqueueNDRangeKernel(q, k, 1, NULL, &range, NULL, 0, NULL, NULL);
+    error = clEnqueueNDRangeKernel(queues[0], k, 1, NULL, &range, NULL, 0, NULL, NULL);
     test_error(error,"clEnqueueNDRangeKernel failed");
 
-    error = clFinish(q);
+    error = clFinish(queues[0]);
     test_error(error, "clFinish failed.");
 
-    clEnqueueMapBuffer(q, ba, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
+    clEnqueueMapBuffer(queues[0], ba, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
     test_error(error, "clEnqueueMapBuffer failed");
-    clEnqueueMapBuffer(q, bb, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
+    clEnqueueMapBuffer(queues[0], bb, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
     test_error(error, "clEnqueueMapBuffer failed");
-    clEnqueueMapBuffer(q, bc, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
+    clEnqueueMapBuffer(queues[0], bc, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
     test_error(error, "clEnqueueMapBuffer failed");
 
-    for(int i = 0; i < num_elements; i++)
+    for(int i = 0; i < num_elements; i++) 
     {
       if(pA[i] + pB[i] + pC[i] != 3)
         failed = true;
     }
 
-    error = clEnqueueUnmapMemObject(q, ba, pA, 0,NULL,NULL);
+    error = clEnqueueUnmapMemObject(queues[0], ba, pA, 0, NULL, NULL);
     test_error(error, " clEnqueueUnmapMemObject failed.");
-    error = clEnqueueUnmapMemObject(q, bb, pB, 0,NULL,NULL);
+    error = clEnqueueUnmapMemObject(queues[0], bb, pB, 0, NULL, NULL);
     test_error(error, " clEnqueueUnmapMemObject failed.");
-    error = clEnqueueUnmapMemObject(q, bc, pC, 0,NULL,NULL);
+    error = clEnqueueUnmapMemObject(queues[0], bc, pC, 0, NULL, NULL);
     test_error(error, " clEnqueueUnmapMemObject failed.");
   }
 
-  error = clFinish(q);
+  error = clFinish(queues[0]);
   test_error(error, " clFinish failed.");
 
   clSVMFree(c, pA);

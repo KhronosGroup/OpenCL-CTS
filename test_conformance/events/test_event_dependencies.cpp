@@ -389,7 +389,7 @@ int test( cl_device_id deviceID, cl_context context, cl_command_queue queue, int
 }
 
 
-int test_event_waitlist_single_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_out_of_order_event_waitlist_single_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int two_queues = 0;
     int two_devices = 0;
@@ -400,7 +400,7 @@ int test_event_waitlist_single_queue( cl_device_id deviceID, cl_context context,
     return test(deviceID, context, queue, num_elements, two_queues, two_devices, test_enqueue_wait_for_events, test_barrier, use_waitlists, use_marker);
 }
 
-int test_event_waitlist_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_out_of_order_event_waitlist_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int two_queues = 1;
     int two_devices = 0;
@@ -411,7 +411,7 @@ int test_event_waitlist_multi_queue( cl_device_id deviceID, cl_context context, 
     return test(deviceID, context, queue, num_elements, two_queues, two_devices, test_enqueue_wait_for_events, test_barrier, use_waitlists, use_marker);
 }
 
-int test_event_waitlist_multi_queue_multi_device( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_out_of_order_event_waitlist_multi_queue_multi_device( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int two_queues = 1;
     int two_devices = 1;
@@ -423,7 +423,7 @@ int test_event_waitlist_multi_queue_multi_device( cl_device_id deviceID, cl_cont
 }
 
 
-int test_event_enqueue_wait_for_events_single_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_out_of_order_event_enqueue_wait_for_events_single_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int two_queues = 0;
     int two_devices = 0;
@@ -434,7 +434,7 @@ int test_event_enqueue_wait_for_events_single_queue( cl_device_id deviceID, cl_c
     return test(deviceID, context, queue, num_elements, two_queues, two_devices, test_enqueue_wait_for_events, test_barrier, use_waitlists, use_marker);
 }
 
-int test_event_enqueue_wait_for_events_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_out_of_order_event_enqueue_wait_for_events_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int two_queues = 1;
     int two_devices = 0;
@@ -446,7 +446,7 @@ int test_event_enqueue_wait_for_events_multi_queue( cl_device_id deviceID, cl_co
 }
 
 
-int test_event_enqueue_wait_for_events_multi_queue_multi_device( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_out_of_order_event_enqueue_wait_for_events_multi_queue_multi_device( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int two_queues = 1;
     int two_devices = 1;
@@ -460,7 +460,7 @@ int test_event_enqueue_wait_for_events_multi_queue_multi_device( cl_device_id de
 
 
 
-int test_event_enqueue_barrier_single_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_out_of_order_event_enqueue_barrier_single_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int two_queues = 0;
     int two_devices = 0;
@@ -472,7 +472,7 @@ int test_event_enqueue_barrier_single_queue( cl_device_id deviceID, cl_context c
 }
 
 
-int test_event_enqueue_marker_single_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_out_of_order_event_enqueue_marker_single_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int two_queues = 0;
     int two_devices = 0;
@@ -483,7 +483,7 @@ int test_event_enqueue_marker_single_queue( cl_device_id deviceID, cl_context co
     return test(deviceID, context, queue, num_elements, two_queues, two_devices, test_enqueue_wait_for_events, test_barrier, use_waitlists, use_marker);
 }
 
-int test_event_enqueue_marker_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_out_of_order_event_enqueue_marker_multi_queue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int two_queues = 1;
     int two_devices = 0;
@@ -495,7 +495,7 @@ int test_event_enqueue_marker_multi_queue( cl_device_id deviceID, cl_context con
 }
 
 
-int test_event_enqueue_marker_multi_queue_multi_device( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_out_of_order_event_enqueue_marker_multi_queue_multi_device( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int two_queues = 1;
     int two_devices = 1;

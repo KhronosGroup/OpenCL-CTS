@@ -46,104 +46,64 @@ extern int test_atomic_fetch_max(cl_device_id deviceID, cl_context context, cl_c
 extern int test_atomic_flag(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_atomic_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int test_atomic_init_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_store_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_load_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_store_load_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_exchange_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_compare_exchange_weak_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_compare_exchange_strong_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_add_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_sub_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_and_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_or_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_orand_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_xor_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_xor2_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_min_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_max_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_flag_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fence_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_init(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_store(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_load(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_store_load(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_exchange(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_compare_exchange_weak(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_compare_exchange_strong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_add(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_sub(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_and(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_or(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_orand(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_xor(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_xor2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_min(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_max(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_flag(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-basefn    basefn_list[] = {
-  test_atomic_init,
-  test_atomic_store,
-  test_atomic_load,
-  test_atomic_exchange,
-  test_atomic_compare_exchange_weak,
-  test_atomic_compare_exchange_strong,
-  test_atomic_fetch_add,
-  test_atomic_fetch_sub,
-  test_atomic_fetch_and,
-  test_atomic_fetch_or,
-  test_atomic_fetch_orand,
-  test_atomic_fetch_xor,
-  test_atomic_fetch_xor2,
-  test_atomic_fetch_min,
-  test_atomic_fetch_max,
-  test_atomic_flag,
-  test_atomic_fence,
+test_definition test_list[] = {
+    ADD_TEST( atomic_init ),
+    ADD_TEST( atomic_store ),
+    ADD_TEST( atomic_load ),
+    ADD_TEST( atomic_exchange ),
+    ADD_TEST( atomic_compare_exchange_weak ),
+    ADD_TEST( atomic_compare_exchange_strong ),
+    ADD_TEST( atomic_fetch_add ),
+    ADD_TEST( atomic_fetch_sub ),
+    ADD_TEST( atomic_fetch_and ),
+    ADD_TEST( atomic_fetch_or ),
+    ADD_TEST( atomic_fetch_orand ),
+    ADD_TEST( atomic_fetch_xor ),
+    ADD_TEST( atomic_fetch_xor2 ),
+    ADD_TEST( atomic_fetch_min ),
+    ADD_TEST( atomic_fetch_max ),
+    ADD_TEST( atomic_flag ),
+    ADD_TEST( atomic_fence ),
 
-  test_atomic_init_svm,
-  test_atomic_store_svm,
-  test_atomic_load_svm,
-  test_atomic_exchange_svm,
-  test_atomic_compare_exchange_weak_svm,
-  test_atomic_compare_exchange_strong_svm,
-  test_atomic_fetch_add_svm,
-  test_atomic_fetch_sub_svm,
-  test_atomic_fetch_and_svm,
-  test_atomic_fetch_or_svm,
-  test_atomic_fetch_orand_svm,
-  test_atomic_fetch_xor_svm,
-  test_atomic_fetch_xor2_svm,
-  test_atomic_fetch_min_svm,
-  test_atomic_fetch_max_svm,
-  test_atomic_flag_svm,
-  test_atomic_fence_svm
+    ADD_TEST( svm_atomic_init ),
+    ADD_TEST( svm_atomic_store ),
+    ADD_TEST( svm_atomic_load ),
+    ADD_TEST( svm_atomic_exchange ),
+    ADD_TEST( svm_atomic_compare_exchange_weak ),
+    ADD_TEST( svm_atomic_compare_exchange_strong ),
+    ADD_TEST( svm_atomic_fetch_add ),
+    ADD_TEST( svm_atomic_fetch_sub ),
+    ADD_TEST( svm_atomic_fetch_and ),
+    ADD_TEST( svm_atomic_fetch_or ),
+    ADD_TEST( svm_atomic_fetch_orand ),
+    ADD_TEST( svm_atomic_fetch_xor ),
+    ADD_TEST( svm_atomic_fetch_xor2 ),
+    ADD_TEST( svm_atomic_fetch_min ),
+    ADD_TEST( svm_atomic_fetch_max ),
+    ADD_TEST( svm_atomic_flag ),
+    ADD_TEST( svm_atomic_fence ),
 };
 
-const char    *basefn_names[] = {
-  "atomic_init",
-  "atomic_store",
-  "atomic_load",
-  "atomic_exchange",
-  "atomic_compare_exchange_weak",
-  "atomic_compare_exchange_strong",
-  "atomic_fetch_add",
-  "atomic_fetch_sub",
-  "atomic_fetch_and",
-  "atomic_fetch_or",
-  "atomic_fetch_orand",
-  "atomic_fetch_xor",
-  "atomic_fetch_xor2",
-  "atomic_fetch_min",
-  "atomic_fetch_max",
-  "atomic_flag",
-  "atomic_fence",
-
-  "svm_atomic_init",
-  "svm_atomic_store",
-  "svm_atomic_load",
-  "svm_atomic_exchange",
-  "svm_atomic_compare_exchange_weak",
-  "svm_atomic_compare_exchange_strong",
-  "svm_atomic_fetch_add",
-  "svm_atomic_fetch_sub",
-  "svm_atomic_fetch_and",
-  "svm_atomic_fetch_or",
-  "svm_atomic_fetch_orand",
-  "svm_atomic_fetch_xor",
-  "svm_atomic_fetch_xor2",
-  "svm_atomic_fetch_min",
-  "svm_atomic_fetch_max",
-  "svm_atomic_flag",
-  "svm_atomic_fence",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
@@ -226,5 +186,5 @@ int main(int argc, const char *argv[])
     log_info("*** Use of this mode is not sufficient to verify correctness.              ***\n");
     log_info("***                                                                        ***\n");
   }
-  return runTestHarness(argc, argv, num_fns, basefn_list, basefn_names, false, false, 0);
+  return runTestHarness(argc, argv, test_num, test_list, false, false, 0);
 }

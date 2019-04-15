@@ -27,10 +27,7 @@
 #include <limits.h>
 #include "test_select.h"
 
-
 #include "../../test_common/harness/testHarness.h"
-
-
 #include "../../test_common/harness/kernelHelpers.h"
 #include "../../test_common/harness/mt19937.h"
 #include "../../test_common/harness/parseParameters.h"
@@ -57,6 +54,9 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
 // for the given stype and cmptype.
 static int doTest(cl_command_queue queue, cl_context context,
                   Type stype, Type cmptype, cl_device_id device);
+
+
+static void printUsage( void );
 
 //-----------------------------------------
 // Definitions and initializations
@@ -467,109 +467,127 @@ exit:
     return err;
 }
 
-static void printUsage( void )
+int test_select_uchar_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    log_info("test_select:  [-cghw] [test_name|start_test_num] \n");
-    log_info("  default is to run the full test on the default device\n");
-    log_info("  -w run in wimpy mode (smoke test)\n");
-    log_info("  -[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", s_wimpy_reduction_factor);
-    log_info("  test_name will run only one test of that name\n");
-    log_info("  start_test_num will start running from that num\n");
+    return doTest(queue, context, kuchar, kuchar, deviceID);
+}
+int test_select_uchar_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kuchar, kchar, deviceID);
+}
+int test_select_char_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kchar, kuchar, deviceID);
+}
+int test_select_char_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kchar, kchar, deviceID);
+}
+int test_select_ushort_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kushort, kushort, deviceID);
+}
+int test_select_ushort_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kushort, kshort, deviceID);
+}
+int test_select_short_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kshort, kushort, deviceID);
+}
+int test_select_short_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kshort, kshort, deviceID);
+}
+int test_select_uint_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kuint, kuint, deviceID);
+}
+int test_select_uint_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kuint, kint, deviceID);
+}
+int test_select_int_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kint, kuint, deviceID);
+}
+int test_select_int_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kint, kint, deviceID);
+}
+int test_select_float_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kfloat, kuint, deviceID);
+}
+int test_select_float_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kfloat, kint, deviceID);
+}
+int test_select_ulong_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kulong, kulong, deviceID);
+}
+int test_select_ulong_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kulong, klong, deviceID);
+}
+int test_select_long_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, klong, kulong, deviceID);
+}
+int test_select_long_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, klong, klong, deviceID);
+}
+int test_select_double_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kdouble, kulong, deviceID);
+}
+int test_select_double_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, kdouble, klong, deviceID);
 }
 
-static void printArch( void )
+test_definition test_list[] = {
+    ADD_TEST( select_uchar_uchar ),
+    ADD_TEST( select_uchar_char ),
+    ADD_TEST( select_char_uchar ),
+    ADD_TEST( select_char_char ),
+    ADD_TEST( select_ushort_ushort ),
+    ADD_TEST( select_ushort_short ),
+    ADD_TEST( select_short_ushort ),
+    ADD_TEST( select_short_short ),
+    ADD_TEST( select_uint_uint ),
+    ADD_TEST( select_uint_int ),
+    ADD_TEST( select_int_uint ),
+    ADD_TEST( select_int_int ),
+    ADD_TEST( select_float_uint ),
+    ADD_TEST( select_float_int ),
+    ADD_TEST( select_ulong_ulong ),
+    ADD_TEST( select_ulong_long ),
+    ADD_TEST( select_long_ulong ),
+    ADD_TEST( select_long_long ),
+    ADD_TEST( select_double_ulong ),
+    ADD_TEST( select_double_long ),
+};
+
+const int test_num = ARRAY_SIZE( test_list );
+
+int main(int argc, char* argv[])
 {
-    log_info( "sizeof( void*) = %d\n", (int) sizeof( void *) );
+    const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 
-#if defined( __APPLE__ )
-
-#if defined( __ppc__ )
-    log_info( "ARCH:\tppc\n" );
-#elif defined( __ppc64__ )
-    log_info( "ARCH:\tppc64\n" );
-#elif defined( __i386__ )
-    log_info( "ARCH:\ti386\n" );
-#elif defined( __x86_64__ )
-    log_info( "ARCH:\tx86_64\n" );
-#elif defined( __arm__ )
-    log_info( "ARCH:\tarm\n" );
-#elif defined( __aarch64__ )
-    log_info( "ARCH:\taarch64\n" );
-#else
-#error unknown arch
-#endif
-
-    int type = 0;
-    size_t typeSize = sizeof( type );
-    sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
-    log_info( "cpu type:\t%d\n", type );
-    typeSize = sizeof( type );
-    sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
-    log_info( "cpu subtype:\t%d\n", type );
-
-#endif
-}
-
-
-
-
-//-----------------------------------------
-// main
-//-----------------------------------------
-int main(int argc, const char* argv[]) {
-    int i;
-    cl_device_type device_type = CL_DEVICE_TYPE_DEFAULT;
-    cl_platform_id platform_id;
-    long           test_start_num = 0;   // start test number
-    const char*    exec_testname = NULL;
-    cl_device_id      device_id;
-    uint32_t       device_frequency = 0;
-    uint32_t       compute_devices = 0;
-
-
-    test_start();
-
-    argc = parseCustomParam(argc, argv);
-    if (argc == -1)
+    if( NULL == argList )
     {
-        test_finish();
-        return -1;
+        log_error( "Failed to allocate memory for argList array.\n" );
+        return 1;
     }
 
-    // Maybe we want turn off sleep
+    argList[0] = argv[0];
+    size_t argCount = 1;
 
-    // Check the environmental to see if there is device preference
-    char *device_env = getenv("CL_DEVICE_TYPE");
-    if (device_env != NULL) {
-        if( strcmp( device_env, "gpu" ) == 0 || strcmp( device_env, "CL_DEVICE_TYPE_GPU" ) == 0 )
-            device_type = CL_DEVICE_TYPE_GPU;
-        else if( strcmp( device_env, "cpu" ) == 0 || strcmp( device_env, "CL_DEVICE_TYPE_CPU" ) == 0 )
-            device_type = CL_DEVICE_TYPE_CPU;
-        else if( strcmp( device_env, "accelerator" ) == 0 || strcmp( device_env, "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
-            device_type = CL_DEVICE_TYPE_ACCELERATOR;
-        else if( strcmp( device_env, "default" ) == 0 || strcmp( device_env, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
-            device_type = CL_DEVICE_TYPE_DEFAULT;
-        else
-        {
-            log_error( "Unknown CL_DEVICE_TYPE environment variable: %s.\nAborting...\n", device_env );
-            abort();
-        }
-    }
-
-    // Check for the wimpy mode environment variable
-    if (getenv("CL_WIMPY_MODE")) {
-      log_info("*** Detected CL_WIMPY_MODE env\n");
-      s_wimpy_mode = 1;
-    }
-
-    // Determine if we want to run a particular test or if we want to
-    // start running from a certain point and if we want to run on cpu/gpu
-    // usage: test_selects [test_name] [start test num] [run_long]
-    // default is to run all tests on the gpu and be short
-    // test names are of the form select_[src/dest type]_[cmp_type]
-    // In the long test, we run the full range for any type >= 32 bits
-    // and 32 bits subset for the 64 bit value.
-    for (i=1; i < argc; ++i) {
+    for( int i = 1; i < argc; ++i )
+    {
         const char *arg = argv[i];
         if (arg == NULL)
             break;
@@ -583,82 +601,28 @@ int main(int argc, const char* argv[]) {
                     case 'h':
                         printUsage();
                         return 0;
-                    case 'w':  // Wimpy mode
+                    case 'w':
                         s_wimpy_mode = true;
                         break;
                     case '[':
                         parseWimpyReductionFactor(arg, s_wimpy_reduction_factor);
                         break;
                     default:
-                        log_error( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
-                        printUsage();
-                        return 0;
+                        break;
                 }
                 arg++;
             }
         }
-        else {
-            char* t = NULL;
-            long num = strtol(argv[i], &t, 0);
-            if (t != argv[i])
-                test_start_num = num;
-            else if( 0 == strcmp( argv[i], "CL_DEVICE_TYPE_CPU" ) )
-                device_type = CL_DEVICE_TYPE_CPU;
-            else if( 0 == strcmp( argv[i], "CL_DEVICE_TYPE_GPU" ) )
-                device_type = CL_DEVICE_TYPE_GPU;
-            else if( 0 == strcmp( argv[i], "CL_DEVICE_TYPE_ACCELERATOR" ) )
-                device_type = CL_DEVICE_TYPE_ACCELERATOR;
-            else if( 0 == strcmp( argv[i], "CL_DEVICE_TYPE_DEFAULT" ) )
-                device_type = CL_DEVICE_TYPE_DEFAULT;
-            else if( 0 == strcmp( argv[i], "randomize" ) ) {
-                gRandomSeed = (cl_uint) time( NULL );
-                log_info("\nRandom seed: %u.\n", gRandomSeed );
-            } else {
-                // assume it is a test name that we want to execute
-                exec_testname = argv[i];
-            }
+        else
+        {
+            argList[argCount] = arg;
+            argCount++;
         }
     }
 
-
-    int err;
-
-    // Get platform
-    err = clGetPlatformIDs(1, &platform_id, NULL);
-    checkErr(err,"clGetPlatformIDs failed");
-
-    // Get Device information
-    err = clGetDeviceIDs(platform_id, device_type, 1, &device_id, 0);
-    checkErr(err,"clGetComputeDevices");
-
-    err =  clGetDeviceInfo(device_id, CL_DEVICE_TYPE, sizeof(cl_device_type), &device_type, NULL);
-    checkErr(err,"clGetComputeConfigInfo 1");
-
-    size_t config_size = sizeof( device_frequency );
-#if MULTITHREAD
-    if( (err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_COMPUTE_UNITS, config_size, &compute_devices, NULL )) )
-#endif
-        compute_devices = 1;
-
-    config_size = sizeof(device_frequency);
-    if((err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_CLOCK_FREQUENCY, config_size, &device_frequency, NULL )))
-        device_frequency = 1;
-
-    //detect whether profile of the device is embedded
-    char profile[1024] = "";
-    if( (err = clGetDeviceInfo(device_id, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL ) ) ){}
-    else if( strstr(profile, "EMBEDDED_PROFILE" ) )
-    {
-        gIsEmbedded = 1;
+    if (getenv("CL_WIMPY_MODE")) {
+        s_wimpy_mode = true;
     }
-
-
-    log_info( "\nCompute Device info:\n" );
-    log_info( "\tProcessing with %d devices\n", compute_devices );
-    log_info( "\tDevice Frequency: %d MHz\n", device_frequency );
-
-    printDeviceHeader( device_id );
-    printArch();
 
     log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
     if (s_wimpy_mode) {
@@ -669,95 +633,23 @@ int main(int argc, const char* argv[]) {
         log_info("*** Wimpy Reduction Factor: %-27u ***\n\n", s_wimpy_reduction_factor);
     }
 
-    cl_context context = clCreateContext(NULL, 1, &device_id, notify_callback, NULL, NULL);
-    checkNull(context, "clCreateContext");
+    int err = runTestHarness( argCount, argList, test_num, test_list, false, false, 0 );
 
-    cl_command_queue queue = clCreateCommandQueueWithProperties(context, device_id, 0, NULL);
-    checkNull(queue, "clCreateCommandQueue");
+    free( argList );
 
+    return err;
+}
 
-    if (exec_testname) {
-        // Parse name
-        // Skip the first part of the name
-        bool success = false;
-        if (strncmp(exec_testname, "select_", 7) == 0) {
-            int i;
-            Type src_type = kTypeCount;
-            Type cmp_type = kTypeCount;
-            char* sptr = (char *)strchr(exec_testname, '_');
-            if (sptr) {
-                for (++sptr, i=0; i < kTypeCount; i++) {
-                    if (strncmp(sptr, type_name[i], strlen(type_name[i])) == 0) {
-                        src_type = (Type)i;
-                        break;
-                    }
-                }
-                sptr = strchr(sptr, '_');
-                if (sptr) {
-                    for (++sptr, i=0; i < kTypeCount; i++) {
-                        if (strncmp(sptr, type_name[i], strlen(type_name[i])) == 0) {
-                            cmp_type = (Type)i;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (src_type != kTypeCount && cmp_type != kTypeCount) {
-                success = true;
-                log_info("Testing only select_%s_%s\n",
-                         type_name[src_type], type_name[cmp_type]);
-                if (doTest(queue, context, src_type, cmp_type, device_id) != 0)
-                    log_error("*** select_%s_%s FAILED ***\n\n",
-                              type_name[src_type], type_name[cmp_type]);
-            }
-        }
-        if (!success) {
-            log_error("can not find test:%s", exec_testname);
-            return -1;
-        }
+static void printUsage( void )
+{
+    log_info("test_select:  [-w] <optional: test_names> \n");
+    log_info("\tdefault is to run the full test on the default device\n");
+    log_info("\t-w run in wimpy mode (smoke test)\n");
+    log_info("\t-[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", s_wimpy_reduction_factor);
+    log_info("\n");
+    log_info("Test names:\n");
+    for( int i = 0; i < test_num; i++ )
+    {
+        log_info( "\t%s\n", test_list[i].name );
     }
-    else {
-        int src_type, j;
-        int test_num;
-        test_num = 0;
-        for (src_type = 0; src_type < kTypeCount; ++src_type) {
-            for (j = 0; j < 2; ++j) {
-                Type cmp_type = ctype[src_type][j];
-                if (++test_num < test_start_num) {
-                    log_info("%d) skipping select_%s_%s\n", test_num,
-                             type_name[src_type], type_name[cmp_type]);
-                }
-                else {
-                    log_info("%d) Testing select_%s_%s\n",
-                             test_num, type_name[src_type], type_name[cmp_type]);
-                    if (doTest(queue, context, (Type)src_type, cmp_type, device_id) != 0)
-                        log_error("*** %d) select_%s_%s FAILED ***\n\n", test_num,
-                                  type_name[src_type], type_name[cmp_type]);
-                }
-            }
-        }
-    }
-
-    int error = clFinish(queue);
-    if (error) {
-        log_error("clFinish failed: %d\n", error);
-    }
-
-    clReleaseContext(context);
-    clReleaseCommandQueue(queue);
-
-    if (s_test_fail == 0) {
-        if (s_test_cnt > 1)
-            log_info("PASSED %d of %d tests.\n", s_test_cnt, s_test_cnt);
-        else
-            log_info("PASSED test.\n");
-    } else if (s_test_fail > 0) {
-        if (s_test_cnt > 1)
-            log_error("FAILED %d of %d tests.\n", s_test_fail, s_test_cnt);
-        else
-            log_error("FAILED test.\n");
-    }
-
-    test_finish();
-    return s_test_fail;
 }

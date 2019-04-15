@@ -1331,7 +1331,7 @@ int run_vector_scalar_tests( cl_device_id deviceID, cl_context context, cl_comma
     return errors;
 }
 
-int test_vector_scalar_ops(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_vector_scalar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int errors = 0;
     int numTypes = sizeof( types ) / sizeof( types[ 0 ] );

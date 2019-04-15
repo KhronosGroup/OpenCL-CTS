@@ -92,7 +92,7 @@ private:
     const std::vector<std::string> _kernels;
 };
 
-int test_function_params_get_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+int test_function_get_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
     const std::string KERNEL_FUNCTION = common::CONFORMANCE_VERIFY_FENCE +
         NL
         NL "__global int gint = 1;"
@@ -140,7 +140,7 @@ int test_function_params_get_fence(cl_device_id deviceID, cl_context context, cl
     return test.Execute(deviceID, context, queue, num_elements);
 }
 
-int test_function_params_to_address_space(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+int test_function_to_address_space(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
     const std::string KERNEL_FUNCTION =
         NL
         NL "__global int gint = 1;"
@@ -648,19 +648,25 @@ int test_language_union(cl_device_id deviceID, cl_context context, cl_command_qu
         NL "    __local U u;"
         NL
         NL "    u.gintp = &g;"
+        NL "    work_group_barrier(CLK_LOCAL_MEM_FENCE);"
         NL "    failures += !(isFenceValid(get_fence(u.gintp)));"
         NL "    failures += !to_global(u.gintp);"
         NL "    failures += (*(u.gintp) != 1);"
         NL
+        NL "    work_group_barrier(CLK_LOCAL_MEM_FENCE);"
         NL "    u.lintp = &l;"
+        NL "    work_group_barrier(CLK_LOCAL_MEM_FENCE);"
         NL "    failures += !(isFenceValid(get_fence(u.lintp)));"
         NL "    failures += !to_local(u.lintp);"
         NL "    failures += (*(u.lintp) != 2);"
         NL
-        NL "    u.pintp = &p;"
-        NL "    failures += !(isFenceValid(get_fence(u.pintp)));"
-        NL "    failures += !to_private(u.pintp);"
-        NL "    failures += (*(u.pintp) != 3);"
+        NL "    work_group_barrier(CLK_LOCAL_MEM_FENCE);"
+        NL "    if(get_local_id(0) == 0) {"
+        NL "      u.pintp = &p;"
+        NL "      failures += !(isFenceValid(get_fence(u.pintp)));"
+        NL "      failures += !to_private(u.pintp);"
+        NL "      failures += (*(u.pintp) != 3);"
+        NL "    }"
         NL
         NL "    results[tid] = (failures == 0);"
         NL "}"

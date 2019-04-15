@@ -1309,7 +1309,7 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
     clKernelWrapper kernel;
     size_t    threads[1], localThreads[1];
     cl_int *constantData, *resultData;
-    cl_ulong maxSize, stepSize, currentSize;
+    cl_ulong maxSize, stepSize, currentSize, maxGlobalSize, maxAllocSize;
     int i;
     cl_event event;
     cl_int event_status;
@@ -1327,6 +1327,14 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
 
     log_info("Reported max constant buffer size of %lld bytes.\n", maxSize);
 
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(maxGlobalSize), &maxGlobalSize, 0);
+    test_error(error, "Unable to get CL_DEVICE_GLOBAL_MEM_SIZE");
+    if (maxSize > maxGlobalSize / 8)
+        maxSize = maxGlobalSize / 8;
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE , sizeof(maxAllocSize), &maxAllocSize, 0);
+    test_error(error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE ");
+    if (maxSize > maxAllocSize)
+        maxSize = maxAllocSize;
     /* Create a kernel to test with */
     if( create_single_kernel_helper( context, &program, &kernel, 1, sample_const_arg_kernel, "sample_test" ) != 0 )
     {

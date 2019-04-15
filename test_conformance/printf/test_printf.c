@@ -34,9 +34,9 @@
 #include <io.h>
 #define streamDup(fd1) _dup(fd1)
 #define streamDup2(fd1,fd2) _dup2(fd1,fd2)
-#include "../../test_common/harness/testHarness.h"
 #endif
 
+#include "../../test_common/harness/testHarness.h"
 #include "../../test_common/harness/errorHelpers.h"
 #include "../../test_common/harness/kernelHelpers.h"
 #include "../../test_common/harness/mt19937.h"
@@ -45,9 +45,13 @@
 typedef  unsigned int uint32_t;
 
 
+test_status InitCL( cl_device_id device );
+
 //-----------------------------------------
 // Static helper functions declaration
 //-----------------------------------------
+
+static void printUsage( void );
 
 //Stream helper functions
 
@@ -75,7 +79,7 @@ static int isKernelPFormat(testCase* pTestCase,size_t testId);
 static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context context,const unsigned int testId,const unsigned int testNum,bool isLongSupport = true,bool is64bAddrSpace = false);
 
 // Creates and execute the printf test for the given device, context, type/format
-static int doTest(cl_command_queue queue, cl_context context, const unsigned int testId, const unsigned int testNum, cl_device_id device,bool isLongSupport = true);
+static int doTest(cl_command_queue queue, cl_context context, const unsigned int testId, const unsigned int testNum, cl_device_id device);
 
 // Check if device supports long
 static bool isLongSupported(cl_device_id  device_id);
@@ -97,6 +101,10 @@ int waitForEvent(cl_event* event);
 int s_test_cnt = 0;
 int s_test_fail = 0;
 
+
+static cl_context        gContext;
+static cl_command_queue  gQueue;
+static int               gFd;
 
 //-----------------------------------------
 // Static helper functions definition
@@ -400,8 +408,45 @@ static bool is64bAddressSpace(cl_device_id  device_id)
 //-----------------------------------------
 // doTest
 //-----------------------------------------
-static int doTest(cl_command_queue queue, cl_context context, const unsigned int testId, const unsigned int testNum, cl_device_id device,bool isLongSupport)
+static int doTest(cl_command_queue queue, cl_context context, const unsigned int testId, const unsigned int testNum, cl_device_id device)
 {
+    if(allTestCase[testId]->_type == TYPE_VECTOR)
+    {
+        log_info("%d)testing printf(\"%sv%s%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,allTestCase[testId]->_genParameters[testNum].vectorSize,
+                 allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
+    }
+    else if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
+    {
+        if(isKernelArgument(allTestCase[testId], testNum))
+        {
+            log_info("%d)testing kernel //argument %s \n   printf(%s,%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier,
+                     allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].addrSpaceParameter);
+        }
+        else
+        {
+            log_info("%d)testing kernel //variable %s \n   printf(%s,%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].addrSpaceVariableTypeQualifier,
+                     allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].addrSpaceParameter);
+        }
+    }
+    else
+    {
+        log_info("%d)testing printf(\"%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
+    }
+
+    // Long support for varible type
+    if(allTestCase[testId]->_type == TYPE_VECTOR && !strcmp(allTestCase[testId]->_genParameters[testNum].dataType,"long") && !isLongSupported(device))
+    {
+        log_info( "Long is not supported, test not run.\n" );
+        return 0;
+    }
+
+    // Long support for address in FULL_PROFILE/EMBEDDED_PROFILE
+    bool isLongSupport = true;
+    if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE && isKernelPFormat(allTestCase[testId],testNum) && !isLongSupported(device))
+    {
+        isLongSupport = false;
+    }
+
     int err;
     cl_program program;
     cl_kernel  kernel;
@@ -530,15 +575,6 @@ exit:
     ++s_test_cnt;
     return err;
 }
-//-----------------------------------------
-// printUsage
-//-----------------------------------------
-static void printUsage( void )
-{
-    log_info("test_printf:  [-cghw] [start_test_num] \n");
-    log_info("  default is to run the full test on the default device\n");
-    log_info("  start_test_num will start running from that num\n");
-}
 
 //-----------------------------------------
 // printArch
@@ -559,7 +595,7 @@ static void printArch( void )
     log_info( "ARCH:\tx86_64\n" );
 #elif defined( __arm__ )
     log_info( "ARCH:\tarm\n" );
-#elif defined( __aarch64__ );
+#elif defined( __aarch64__ )
     log_info( "ARCH:\taarch64\n" );
 #else
 #error unknown arch
@@ -576,64 +612,345 @@ static void printArch( void )
 #endif
 }
 
-//-----------------------------------------
-// notify_callback
-//-----------------------------------------
-void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
+
+int test_int_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    log_info( "%s\n", errinfo );
+    return doTest(gQueue, gContext, TYPE_INT, 0, deviceID);
+}
+int test_int_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_INT, 1, deviceID);
+}
+int test_int_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_INT, 2, deviceID);
+}
+int test_int_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_INT, 3, deviceID);
+}
+int test_int_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_INT, 4, deviceID);
+}
+int test_int_5(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_INT, 5, deviceID);
+}
+int test_int_6(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_INT, 6, deviceID);
+}
+int test_int_7(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_INT, 7, deviceID);
+}
+int test_int_8(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_INT, 8, deviceID);
 }
 
+
+int test_float_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 0, deviceID);
+}
+int test_float_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 1, deviceID);
+}
+int test_float_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 2, deviceID);
+}
+int test_float_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 3, deviceID);
+}
+int test_float_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 4, deviceID);
+}
+int test_float_5(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 5, deviceID);
+}
+int test_float_6(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 6, deviceID);
+}
+int test_float_7(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 7, deviceID);
+}
+int test_float_8(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 8, deviceID);
+}
+int test_float_9(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 9, deviceID);
+}
+int test_float_10(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 10, deviceID);
+}
+int test_float_11(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 11, deviceID);
+}
+int test_float_12(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 12, deviceID);
+}
+int test_float_13(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 13, deviceID);
+}
+int test_float_14(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 14, deviceID);
+}
+int test_float_15(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 15, deviceID);
+}
+int test_float_16(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 16, deviceID);
+}
+int test_float_17(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 17, deviceID);
+}
+int test_float_18(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 18, deviceID);
+}
+int test_float_19(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 19, deviceID);
+}
+int test_float_20(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_FLOAT, 20, deviceID);
+}
+
+
+int test_octal_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_OCTAL, 0, deviceID);
+}
+int test_octal_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_OCTAL, 1, deviceID);
+}
+int test_octal_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_OCTAL, 2, deviceID);
+}
+int test_octal_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_OCTAL, 3, deviceID);
+}
+
+
+int test_unsigned_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_UNSIGNED, 0, deviceID);
+}
+int test_unsigned_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_UNSIGNED, 1, deviceID);
+}
+
+
+int test_hexadecimal_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HEXADEC, 0, deviceID);
+}
+int test_hexadecimal_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HEXADEC, 1, deviceID);
+}
+int test_hexadecimal_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HEXADEC, 2, deviceID);
+}
+int test_hexadecimal_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HEXADEC, 3, deviceID);
+}
+int test_hexadecimal_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HEXADEC, 4, deviceID);
+}
+
+
+int test_char_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_CHAR, 0, deviceID);
+}
+int test_char_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_CHAR, 1, deviceID);
+}
+int test_char_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_CHAR, 2, deviceID);
+}
+
+
+int test_string_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_STRING, 0, deviceID);
+}
+int test_string_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_STRING, 1, deviceID);
+}
+int test_string_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_STRING, 2, deviceID);
+}
+
+
+int test_vector_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_VECTOR, 0, deviceID);
+}
+int test_vector_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_VECTOR, 1, deviceID);
+}
+int test_vector_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_VECTOR, 2, deviceID);
+}
+int test_vector_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_VECTOR, 3, deviceID);
+}
+int test_vector_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_VECTOR, 4, deviceID);
+}
+
+
+int test_address_space_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 0, deviceID);
+}
+int test_address_space_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 1, deviceID);
+}
+int test_address_space_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 2, deviceID);
+}
+int test_address_space_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 3, deviceID);
+}
+int test_address_space_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 4, deviceID);
+}
+
+test_definition test_list[] = {
+    ADD_TEST( int_0 ),
+    ADD_TEST( int_1 ),
+    ADD_TEST( int_2 ),
+    ADD_TEST( int_3 ),
+    ADD_TEST( int_4 ),
+    ADD_TEST( int_5 ),
+    ADD_TEST( int_6 ),
+    ADD_TEST( int_7 ),
+    ADD_TEST( int_8 ),
+
+    ADD_TEST( float_0 ),
+    ADD_TEST( float_1 ),
+    ADD_TEST( float_2 ),
+    ADD_TEST( float_3 ),
+    ADD_TEST( float_4 ),
+    ADD_TEST( float_5 ),
+    ADD_TEST( float_6 ),
+    ADD_TEST( float_7 ),
+    ADD_TEST( float_8 ),
+    ADD_TEST( float_9 ),
+    ADD_TEST( float_10 ),
+    ADD_TEST( float_11 ),
+    ADD_TEST( float_12 ),
+    ADD_TEST( float_13 ),
+    ADD_TEST( float_14 ),
+    ADD_TEST( float_15 ),
+    ADD_TEST( float_16 ),
+    ADD_TEST( float_17 ),
+    ADD_TEST( float_18 ),
+    ADD_TEST( float_19 ),
+    ADD_TEST( float_20 ),
+
+    ADD_TEST( octal_0 ),
+    ADD_TEST( octal_1 ),
+    ADD_TEST( octal_2 ),
+    ADD_TEST( octal_3 ),
+
+    ADD_TEST( unsigned_0 ),
+    ADD_TEST( unsigned_1 ),
+
+    ADD_TEST( hexadecimal_0 ),
+    ADD_TEST( hexadecimal_1 ),
+    ADD_TEST( hexadecimal_2 ),
+    ADD_TEST( hexadecimal_3 ),
+    ADD_TEST( hexadecimal_4 ),
+
+    ADD_TEST( char_0 ),
+    ADD_TEST( char_1 ),
+    ADD_TEST( char_2 ),
+
+    ADD_TEST( string_0 ),
+    ADD_TEST( string_1 ),
+    ADD_TEST( string_2 ),
+
+    ADD_TEST( vector_0 ),
+    ADD_TEST( vector_1 ),
+    ADD_TEST( vector_2 ),
+    ADD_TEST( vector_3 ),
+    ADD_TEST( vector_4 ),
+
+    ADD_TEST( address_space_0 ),
+    ADD_TEST( address_space_1 ),
+    ADD_TEST( address_space_2 ),
+    ADD_TEST( address_space_3 ),
+    ADD_TEST( address_space_4 ),
+};
+
+const int test_num = ARRAY_SIZE( test_list );
 
 //-----------------------------------------
 // main
 //-----------------------------------------
-int main(int argc, const char* argv[]) {
-    int i;
-    cl_device_type device_type = CL_DEVICE_TYPE_DEFAULT;
-    cl_platform_id platform_id;
-    long           test_filter_num = 0;   // test number to run or 0
-    const char*    exec_testname = NULL;
-    cl_device_id      device_id;
-    uint32_t      device_frequency = 0;
-    uint32_t       compute_devices = 0;
-
-
-
-    test_start();
-
+int main(int argc, const char* argv[])
+{
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
     {
-        test_finish();
         return -1;
     }
 
-    // Check the environmental to see if there is device preference
-    char *device_env = getenv("CL_DEVICE_TYPE");
-    if (device_env != NULL) {
-        if( strcmp( device_env, "gpu" ) == 0 || strcmp( device_env, "CL_DEVICE_TYPE_GPU" ) == 0 )
-            device_type = CL_DEVICE_TYPE_GPU;
-        else if( strcmp( device_env, "cpu" ) == 0 || strcmp( device_env, "CL_DEVICE_TYPE_CPU" ) == 0 )
-            device_type = CL_DEVICE_TYPE_CPU;
-        else if( strcmp( device_env, "accelerator" ) == 0 || strcmp( device_env, "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
-            device_type = CL_DEVICE_TYPE_ACCELERATOR;
-        else if( strcmp( device_env, "default" ) == 0 || strcmp( device_env, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
-            device_type = CL_DEVICE_TYPE_DEFAULT;
-        else
-        {
-            log_error( "Unknown CL_DEVICE_TYPE environment variable: %s.\nAborting...\n", device_env );
-            abort();
-        }
+    const char ** argList = (const char **)calloc( argc, sizeof( char*) );
+
+    if( NULL == argList )
+    {
+        log_error( "Failed to allocate memory for argList array.\n" );
+        return 1;
     }
 
-    // Determine if we want to run a particular test or if we want to
-    // start running from a certain point and if we want to run on cpu/gpu
-    // usage: test_printf [test_name] [start test num] [run_long]
-    // default is to run all tests on the gpu and be short
-    // test names are of the form printf_testId
+    argList[0] = argv[0];
+    size_t argCount = 1;
 
-    for (i=1; i < argc; ++i) {
+    for (int i=1; i < argc; ++i) {
         const char *arg = argv[i];
         if (arg == NULL)
             break;
@@ -656,150 +973,93 @@ int main(int argc, const char* argv[]) {
             }
         }
         else {
-            char* t = NULL;
-            long num = strtol(argv[i], &t, 0);
-            if (t != argv[i])
-                test_filter_num = num;
-            else if( 0 == strcmp( argv[i], "CL_DEVICE_TYPE_CPU" ) )
-                device_type = CL_DEVICE_TYPE_CPU;
-            else if( 0 == strcmp( argv[i], "CL_DEVICE_TYPE_GPU" ) )
-                device_type = CL_DEVICE_TYPE_GPU;
-            else if( 0 == strcmp( argv[i], "CL_DEVICE_TYPE_ACCELERATOR" ) )
-                device_type = CL_DEVICE_TYPE_ACCELERATOR;
-            else if( 0 == strcmp( argv[i], "CL_DEVICE_TYPE_DEFAULT" ) )
-                device_type = CL_DEVICE_TYPE_DEFAULT;
-            else {
-                // assume it is a test name that we want to execute
-                exec_testname = argv[i];
-            }
+            argList[argCount] = arg;
+            argCount++;
         }
     }
 
+    int err = runTestHarnessWithCheck( argCount, argList, test_num, test_list, false, true, 0, InitCL );
+
+    if(gQueue)
+    {
+        int error = clFinish(gQueue);
+        if (error) {
+            log_error("clFinish failed: %d\n", error);
+        }
+    }
+
+    if(clReleaseCommandQueue(gQueue)!=CL_SUCCESS)
+        log_error("clReleaseCommandQueue\n");
+    if(clReleaseContext(gContext)!= CL_SUCCESS)
+        log_error("clReleaseContext\n");
+
+    releaseOutputStream(gFd);
+
+
+    free(argList);
+    return err;
+}
+
+//-----------------------------------------
+// printUsage
+//-----------------------------------------
+static void printUsage( void )
+{
+    log_info("test_printf: <optional: testnames> \n");
+    log_info("\tdefault is to run the full test on the default device\n");
+    log_info("\n");
+    for( int i = 0; i < test_num; i++ )
+    {
+        log_info( "\t%s\n", test_list[i].name );
+    }
+}
+
+test_status InitCL( cl_device_id device )
+{
+    uint32_t device_frequency = 0;
+    uint32_t compute_devices = 0;
 
     int err;
-
-    // Get platform
-    err = clGetPlatformIDs(1, &platform_id, NULL);
-    checkErr(err,"clGetPlatformIDs failed");
-
-
-    // Get Device information
-    err = clGetDeviceIDs(platform_id, device_type, 1, &device_id, 0);
-    checkErr(err,"clGetComputeDevices");
-
-
-    err =  clGetDeviceInfo(device_id, CL_DEVICE_TYPE, sizeof(cl_device_type), &device_type, NULL);
-    checkErr(err,"clGetComputeConfigInfo 1");
-
+    gFd = acquireOutputStream();
 
     size_t config_size = sizeof( device_frequency );
 #if MULTITHREAD
-    if( (err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_COMPUTE_UNITS, config_size, &compute_devices, NULL )) )
+    if( (err = clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS, config_size, &compute_devices, NULL )) )
 #endif
     compute_devices = 1;
 
     config_size = sizeof(device_frequency);
-    if((err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_CLOCK_FREQUENCY, config_size, &device_frequency, NULL )))
+    if((err = clGetDeviceInfo(device, CL_DEVICE_MAX_CLOCK_FREQUENCY, config_size, &device_frequency, NULL )))
         device_frequency = 1;
+
+    releaseOutputStream(gFd);
 
     log_info( "\nCompute Device info:\n" );
     log_info( "\tProcessing with %d devices\n", compute_devices );
     log_info( "\tDevice Frequency: %d MHz\n", device_frequency );
 
-
-
-    printDeviceHeader( device_id );
+    printDeviceHeader( device );
 
     printArch();
 
-    err = check_opencl_version(device_id,1,2);
+    err = check_opencl_version(device,1,2);
     if( err != CL_SUCCESS ) {
       print_missing_feature(err,"printf");
       test_finish();
-      return err;
+      return TEST_FAIL;
     }
 
     log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
 
-    cl_context context = clCreateContext(NULL, 1, &device_id, notify_callback, NULL, NULL);
-    checkNull(context, "clCreateContext");
+    gFd = acquireOutputStream();
 
-    cl_command_queue queue = clCreateCommandQueueWithProperties(context, device_id, 0, NULL);
-    checkNull(queue, "clCreateCommandQueue");
+    gContext = clCreateContext(NULL, 1, &device, notify_callback, NULL, NULL);
+    checkNull(gContext, "clCreateContext");
 
-    // Forall types
-    for (int testId = 0; testId < TYPE_COUNT; ++testId) {
-        if (test_filter_num && (testId != test_filter_num)) {
-            log_info("\n*** Skipping printf  for %s ***\n",strType[testId]);
-        }
-        else {
-            log_info("\n*** Testing printf for %s ***\n",strType[testId]);
+    gQueue = clCreateCommandQueueWithProperties(gContext, device, 0, NULL);
+    checkNull(gQueue, "clCreateCommandQueue");
 
-            //For all formats
-            for(unsigned int testNum = 0;testNum < allTestCase[testId]->_testNum;++testNum){
-                if(allTestCase[testId]->_type == TYPE_VECTOR)
-                    log_info("%d)testing printf(\"%sv%s%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,allTestCase[testId]->_genParameters[testNum].vectorSize,
-                    allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
-                else if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
-                {
-                    if(isKernelArgument(allTestCase[testId], testNum))
-                        log_info("%d)testing kernel //argument %s \n   printf(%s,%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier,
-                        allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].addrSpaceParameter);
-                    else
-                        log_info("%d)testing kernel //variable %s \n   printf(%s,%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].addrSpaceVariableTypeQualifier,
-                        allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].addrSpaceParameter);
-                }
-                else
-                    log_info("%d)testing printf(\"%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].genericFormat,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
+    releaseOutputStream(gFd);
 
-                // Long support for varible type
-                if(allTestCase[testId]->_type == TYPE_VECTOR && !strcmp(allTestCase[testId]->_genParameters[testNum].dataType,"long") && !isLongSupported(device_id))
-                        continue;
-
-                // Long support for address in FULL_PROFILE/EMBEDDED_PROFILE
-                bool isLongSupport = true;
-                if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE && isKernelPFormat(allTestCase[testId],testNum) && !isLongSupported(device_id))
-                    isLongSupport = false;
-
-                // Perform the test
-                if (doTest(queue, context,testId,testNum,device_id,isLongSupport) != 0)
-                {
-                    log_error("*** FAILED ***\n\n");
-                }
-                else
-                {
-                    log_info("Passed\n");
-                }
-            }
-        }
-    }
-
-    int error = clFinish(queue);
-    if (error) {
-        log_error("clFinish failed: %d\n", error);
-    }
-
-    if(clReleaseCommandQueue(queue)!=CL_SUCCESS)
-        log_error("clReleaseCommandQueue\n");
-    if(clReleaseContext(context)!= CL_SUCCESS)
-        log_error("clReleaseContext\n");
-
-
-    if (s_test_fail == 0) {
-        if (s_test_cnt > 1)
-            log_info("PASSED %d of %d tests.\n", s_test_cnt, s_test_cnt);
-        else
-            log_info("PASSED test.\n");
-    } else if (s_test_fail > 0) {
-        if (s_test_cnt > 1)
-        {
-            log_error("FAILED %d of %d tests.\n", s_test_fail, s_test_cnt);
-            log_info("PASSED %d of %d tests.\n", s_test_cnt - s_test_fail, s_test_cnt);
-        }
-        else
-            log_error(" FAILED test.\n");
-    }
-
-    test_finish();
-    return s_test_fail;
+    return TEST_PASS;
 }

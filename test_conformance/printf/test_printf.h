@@ -119,7 +119,7 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
 #define checkNull(ptr, msg)            \
     if (!ptr) {                    \
     log_error("%s failed\n", msg);        \
-    return -1;                \
+    return TEST_FAIL;                \
     }
 
 // When a helper returns a negative one, we want to return from main

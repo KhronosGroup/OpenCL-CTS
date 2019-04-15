@@ -583,7 +583,7 @@ int test_partition_by_affinity_domain_next_partitionable(cl_device_id deviceID, 
   return test_partition_of_device(deviceID, context, queue, num_elements, NULL, 7, 8);
 }
 
-int test_partition(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_partition_all(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   return test_partition_of_device(deviceID, context, queue, num_elements, NULL, 0, 8);
 }

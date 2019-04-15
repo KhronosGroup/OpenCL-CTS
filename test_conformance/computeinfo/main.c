@@ -718,22 +718,11 @@ int getConfigInfos( cl_device_id device )
 }
 
 
-int main(int argc, const char** argv)
+int test_computeinfo( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements )
 {
-    cl_platform_id platform;
-    test_start();
-
-    if (argc == 2) {
-    if (!strcmp(argv[1], "-v"))
-        dump_supported_formats = 1;
-    else {
-        log_info("Use option \"-v\" for verbose output\n");
-        return 0;
-    }
-    }
-
     int err;
     int total_errors = 0;
+    cl_platform_id platform;
 
     err = clGetPlatformIDs(1, &platform, NULL);
     test_error(err, "clGetPlatformIDs failed");
@@ -864,14 +853,40 @@ int main(int argc, const char** argv)
       }
     }
 
-    if (total_errors)
-        log_error("FAILED computeinfo.\n");
-    else
-        log_info("PASSED computeinfo.\n");
+    return total_errors;
+}
 
-    test_finish();
-    if (total_errors)
-        return -1;
-    return 0;
+test_definition test_list[] = {
+    ADD_TEST( computeinfo ),
+};
+
+const int test_num = ARRAY_SIZE( test_list );
+
+int main(int argc, const char** argv)
+{
+    const char** argList = (const char**)calloc( argc, sizeof(char*) );
+    if( NULL == argList )
+    {
+        log_error( "Failed to allocate memory for argList array.\n" );
+        return 1;
+    }
+
+    argList[0] = argv[0];
+    size_t argCount = 1;
+
+    for( int i = 1; i < argc; i++ )
+    {
+        if( strcmp(argv[1], "-v") == 0)
+        {
+            dump_supported_formats = 1;
+        }
+        else
+        {
+            argList[argCount] = argv[i];
+            argCount++;
+        }
+    }
+
+    return runTestHarness( argCount, argList, test_num, test_list, false, true, 0 );
 }
 

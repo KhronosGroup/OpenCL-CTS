@@ -128,7 +128,7 @@ cl_int verify_linked_lists_on_host(int ci, cl_command_queue cmdq, cl_mem nodes, 
 // on another device or the host.
 // The linked list nodes are allocated from two different buffers this is done to ensure that cross buffer pointers work correctly.
 // This basic test is performed for all combinations of devices and the host.
-int test_cross_buffer_pointers_coarse_grain(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+int test_svm_cross_buffer_pointers_coarse_grain(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
 {
   clContextWrapper    context = NULL;
   clProgramWrapper    program = NULL;

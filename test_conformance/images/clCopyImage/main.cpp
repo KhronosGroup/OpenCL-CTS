@@ -24,143 +24,157 @@
 #endif
 
 #include "../testBase.h"
+#include "../../../test_common/harness/testHarness.h"
 
 bool            gDebugTrace = false, gTestSmallImages = false, gTestMaxImages = false, gUseRamp = false, gTestRounding = false, gEnablePitch = false, gTestMipmaps = false;
-int                gTypesToTest = 0;
+int             gTypesToTest = 0;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
 cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
 cl_device_type    gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 cl_context context;
 cl_command_queue queue;
+static cl_device_id device;
 
 extern int test_image_set( cl_device_id device, MethodsToTest testMethod );
 
 #define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
-void printUsage( const char *execName )
-{
-    const char *p = strrchr( execName, '/' );
-    if( p != NULL )
-        execName = p + 1;
+static void printUsage( const char *execName );
 
-    log_info( "Usage: %s [debug_trace] [small_images]\n", execName );
-    log_info( "Where:\n" );
-    log_info( "\t1D - Only test 1D images\n" );
-    log_info( "\t2D - Only test 2D images\n" );
-    log_info( "\t3D - Only test 3D images\n" );
-    log_info( "\t1Darray - Only test 1D image arrays\n" );
-    log_info( "\t2Darray - Only test 2D image arrays\n" );
-    log_info( "\t2Dto3D - Only test 2D -> 3D images\n" );
-    log_info( "\t3Dto2D - Only test 3D -> 2D images\n" );
-    log_info( "\t2Darrayto2D - Only test 2D image arrays -> 2D images\n" );
-    log_info( "\t2Dto2Darray - Only test 2D images -> 2D image arrays\n" );
-    log_info( "\t2Darrayto3D - Only test 2D image arrays -> 3D images\n" );
-    log_info( "\t3Dto2Darray - Only test 3D images -> 2D image arrays\n" );
-    log_info( "\n" );
-    log_info( "\ttest_mipmaps - Test with mipmapped images\n" );
-    log_info( "\tdebug_trace - Enables additional debug info logging\n" );
-    log_info( "\tsmall_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes\n" );
-    log_info( "\tmax_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128\n" );
-    log_info( "\trounding - Runs every format through a single image filled with every possible value for that image format, to verify rounding works properly\n" );
-    //log_info( "\tuse_pitches - Enables row and slice pitches\n" );
-    log_info( "\tuse_ramp - Instead of random data, uses images filled with ramps (and 0xff on any padding pixels) to ease debugging\n" );
+int test_1D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, k1D );
+}
+int test_2D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, k2D );
+}
+int test_3D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, k3D );
+}
+int test_1Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, k1DArray );
+}
+int test_2Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, k2DArray );
+}
+int test_2Dto3D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, k2DTo3D );
+}
+int test_3Dto2D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, k3DTo2D );
+}
+int test_2Darrayto2D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, k2DArrayTo2D );
+}
+int test_2Dto2Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, k2DTo2DArray );
+}
+int test_2Darrayto3D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, k2DArrayTo3D );
+}
+int test_3Dto2Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    return test_image_set( device, k3DTo2DArray );
 }
 
+test_definition test_list[] = {
+    ADD_TEST( 1D ),
+    ADD_TEST( 2D ),
+    ADD_TEST( 3D ),
+    ADD_TEST( 1Darray ),
+    ADD_TEST( 2Darray ),
+    ADD_TEST( 2Dto3D ),
+    ADD_TEST( 3Dto2D ),
+    ADD_TEST( 2Darrayto2D ),
+    ADD_TEST( 2Dto2Darray ),
+    ADD_TEST( 2Darrayto3D ),
+    ADD_TEST( 3Dto2Darray ),
+};
+
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
     cl_platform_id  platform;
-    cl_device_id       device;
     cl_channel_type chanType;
     cl_channel_order chanOrder;
-    char            str[ 128 ];
-    int                testMethods = 0;
     bool            randomize = false;
 
     test_start();
 
     checkDeviceTypeOverride( &gDeviceType );
 
+    const char ** argList = (const char **)calloc( argc, sizeof( char*) );
+
+    if( NULL == argList )
+    {
+        log_error( "Failed to allocate memory for argList array.\n" );
+        return 1;
+    }
+
+    argList[0] = argv[0];
+    size_t argCount = 1;
+
     // Parse arguments
     for( int i = 1; i < argc; i++ )
     {
-        strncpy( str, argv[ i ], sizeof( str ) - 1 );
-
-        if( strcmp( str, "cpu" ) == 0 || strcmp( str, "CL_DEVICE_TYPE_CPU" ) == 0 )
+        if( strcmp( argv[i], "cpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_CPU" ) == 0 )
             gDeviceType = CL_DEVICE_TYPE_CPU;
-        else if( strcmp( str, "gpu" ) == 0 || strcmp( str, "CL_DEVICE_TYPE_GPU" ) == 0 )
+        else if( strcmp( argv[i], "gpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_GPU" ) == 0 )
             gDeviceType = CL_DEVICE_TYPE_GPU;
-        else if( strcmp( str, "accelerator" ) == 0 || strcmp( str, "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
+        else if( strcmp( argv[i], "accelerator" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
             gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-        else if( strcmp( str, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
+        else if( strcmp( argv[i], "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
             gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
-        else if( strcmp( str, "test_mipmaps" ) == 0 )
+        else if( strcmp( argv[i], "test_mipmaps" ) == 0 )
         {
             gTestMipmaps = true;
             // Don't test pitches with mipmaps, at least currently.
             gEnablePitch = false;
         }
-        else if( strcmp( str, "debug_trace" ) == 0 )
+        else if( strcmp( argv[i], "debug_trace" ) == 0 )
             gDebugTrace = true;
 
-        else if( strcmp( str, "small_images" ) == 0 )
+        else if( strcmp( argv[i], "small_images" ) == 0 )
             gTestSmallImages = true;
-        else if( strcmp( str, "max_images" ) == 0 )
+        else if( strcmp( argv[i], "max_images" ) == 0 )
             gTestMaxImages = true;
-        else if( strcmp( str, "use_ramps" ) == 0 )
+        else if( strcmp( argv[i], "use_ramps" ) == 0 )
             gUseRamp = true;
 
-        else if( strcmp( str, "use_pitches" ) == 0 )
+        else if( strcmp( argv[i], "use_pitches" ) == 0 )
             gEnablePitch = true;
 
-        else if( strcmp( str, "randomize" ) == 0 )
+        else if( strcmp( argv[i], "randomize" ) == 0 )
             randomize = true;
 
-        else if( strcmp( str, "1D" ) == 0 )
-            testMethods |= k1D;
-        else if( strcmp( str, "2D" ) == 0 )
-            testMethods |= k2D;
-        else if( strcmp( str, "3D" ) == 0 )
-            testMethods |= k3D;
-        else if( strcmp( str, "1Darray" ) == 0 )
-            testMethods |= k1DArray;
-        else if( strcmp( str, "2Darray" ) == 0 )
-            testMethods |= k2DArray;
-        else if( strcmp( str, "2Dto3D" ) == 0 )
-            testMethods |= k2DTo3D;
-        else if( strcmp( str, "3Dto2D" ) == 0 )
-            testMethods |= k3DTo2D;
-        else if( strcmp( str, "2Darrayto2D" ) == 0 )
-            testMethods |= k2DArrayTo2D;
-        else if( strcmp( str, "2Dto2Darray" ) == 0 )
-            testMethods |= k2DTo2DArray;
-        else if( strcmp( str, "2Darrayto3D" ) == 0 )
-            testMethods |= k2DArrayTo3D;
-        else if( strcmp( str, "3Dto2Darray" ) == 0 )
-            testMethods |= k3DTo2DArray;
-
-        else if( strcmp( str, "help" ) == 0 || strcmp( str, "?" ) == 0 )
+        else if( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 )
         {
             printUsage( argv[ 0 ] );
             return -1;
         }
 
-        else if( ( chanType = get_channel_type_from_name( str ) ) != (cl_channel_type)-1 )
+        else if( ( chanType = get_channel_type_from_name( argv[i] ) ) != (cl_channel_type)-1 )
             gChannelTypeToUse = chanType;
 
-        else if( ( chanOrder = get_channel_order_from_name( str ) ) != (cl_channel_order)-1 )
+        else if( ( chanOrder = get_channel_order_from_name( argv[i] ) ) != (cl_channel_order)-1 )
             gChannelOrderToUse = chanOrder;
         else
         {
-            log_error( "ERROR: Unknown argument %d: %s.  Exiting....\n", i, str );
-            return -1;
+            argList[argCount] = argv[i];
+            argCount++;
         }
-
     }
-
-    if( testMethods == 0 )
-        testMethods = k1D | k2D | k3D | k1DArray | k2DArray | k2DTo3D | k3DTo2D | k2DArrayTo2D | k2DTo2DArray | k2DArrayTo3D | k3DTo2DArray;
 
     // Seed the random # generators
     if( randomize )
@@ -229,13 +243,7 @@ int main(int argc, const char *argv[])
     if( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
 
-    // Run the test now
-    int ret = 0;
-    for( int test = k1D; test <= k3DTo2DArray; test <<= 1 )
-    {
-        if( testMethods & test )
-            ret += test_image_set( device, (MethodsToTest)test );
-    }
+    int ret = parseAndCallCommandLineTests( argCount, argList, NULL, test_num, test_list, true, 0, 0 );
 
     error = clFinish(queue);
     if (error)
@@ -243,23 +251,44 @@ int main(int argc, const char *argv[])
 
     if (gTestFailure == 0) {
         if (gTestCount > 1)
-            log_info("PASSED %d of %d tests.\n", gTestCount, gTestCount);
+            log_info("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
         else
-            log_info("PASSED test.\n");
+            log_info("PASSED sub-test.\n");
     } else if (gTestFailure > 0) {
         if (gTestCount > 1)
-            log_error("FAILED %d of %d tests.\n", gTestFailure, gTestCount);
+            log_error("FAILED %d of %d sub-tests.\n", gTestFailure, gTestCount);
         else
-            log_error("FAILED test.\n");
+            log_error("FAILED sub-test.\n");
     }
 
     // Clean up
     clReleaseCommandQueue(queue);
     clReleaseContext(context);
+    free(argList);
     test_finish();
 
-    if (gTestFailure > 0)
-        return gTestFailure;
-
     return ret;
+}
+
+static void printUsage( const char *execName )
+{
+    const char *p = strrchr( execName, '/' );
+    if( p != NULL )
+        execName = p + 1;
+
+    log_info( "Usage: %s [option] [test_names]\n", execName );
+    log_info( "Options:\n" );
+    log_info( "\ttest_mipmaps - Test with mipmapped images\n" );
+    log_info( "\tdebug_trace - Enables additional debug info logging\n" );
+    log_info( "\tsmall_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes\n" );
+    log_info( "\tmax_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128\n" );
+    log_info( "\trandomize - Use random seed\n" );
+    log_info( "\tuse_pitches - Enables row and slice pitches\n" );
+    log_info( "\tuse_ramp - Instead of random data, uses images filled with ramps (and 0xff on any padding pixels) to ease debugging\n" );
+    log_info( "\n" );
+    log_info( "Test names:\n" );
+    for( int i = 0; i < test_num; i++ )
+    {
+        log_info( "\t%s\n", test_list[i].name );
+    }
 }
