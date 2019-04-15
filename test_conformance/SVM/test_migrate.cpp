@@ -73,8 +73,7 @@ wait_and_release(const char* s, cl_event* evs, int n)
     return 0;
 }
 
-int
-test_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
+int test_svm_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
 {
     cl_uint amem[GLOBAL_SIZE];
     cl_uint bmem[GLOBAL_SIZE];
@@ -98,24 +97,20 @@ test_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int nu
     if (error)
         return -1;
 
-    cl_command_queue queue0 = queues[0];
-    clCommandQueueWrapper queue1;
-
     if (num_devices > 1) {
         log_info("  Running on two devices.\n");
-        queue1 = queues[1];
     } else {
         // Ensure we have two distinct queues
         cl_device_id did;
-        error = clGetCommandQueueInfo(queue0, CL_QUEUE_DEVICE, sizeof(did), (void *)&did, NULL);
+        error = clGetCommandQueueInfo(queues[0], CL_QUEUE_DEVICE, sizeof(did), (void *)&did, NULL);
         test_error(error, "clGetCommandQueueInfo failed");
 
         cl_command_queue_properties cqp;
-        error = clGetCommandQueueInfo(queue0, CL_QUEUE_PROPERTIES, sizeof(cqp), &cqp, NULL);
+        error = clGetCommandQueueInfo(queues[0], CL_QUEUE_PROPERTIES, sizeof(cqp), &cqp, NULL);
         test_error(error, "clGetCommandQueueInfo failed");
 
         cl_queue_properties qp[3] = { CL_QUEUE_PROPERTIES, cqp, 0 };
-        queue1 = clCreateCommandQueueWithProperties(context, did, qp, &error);
+        queues[1] = clCreateCommandQueueWithProperties(context, did, qp, &error);
         test_error(error, "clCteateCommandQueueWithProperties failed");
     }
 
@@ -161,20 +156,20 @@ test_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int nu
     {
         // First, fill in the data on device0
         cl_uint patt[] = { 0, 0, 0, 0};
-        error = clEnqueueSVMMemFill(queue0, (void *)asvm, patt, sizeof(patt), global_size*sizeof(cl_uint), 0, NULL, &evs[0]);
+        error = clEnqueueSVMMemFill(queues[0], (void *)asvm, patt, sizeof(patt), global_size*sizeof(cl_uint), 0, NULL, &evs[0]);
         test_error(error, "clEnqueueSVMMemFill failed");
 
-        error = clEnqueueSVMMemFill(queue0, (void *)bsvm, patt, sizeof(patt), global_size*sizeof(cl_uint), 0, NULL, &evs[1]);
+        error = clEnqueueSVMMemFill(queues[0], (void *)bsvm, patt, sizeof(patt), global_size*sizeof(cl_uint), 0, NULL, &evs[1]);
         test_error(error, "clEnqueueSVMMemFill failed");
 
-        error = clEnqueueSVMMemFill(queue0, (void *)csvm, patt, sizeof(patt), global_size*sizeof(cl_uint), 0, NULL, &evs[2]);
+        error = clEnqueueSVMMemFill(queues[0], (void *)csvm, patt, sizeof(patt), global_size*sizeof(cl_uint), 0, NULL, &evs[2]);
         test_error(error, "clEnqueueSVMMemFill failed");
     }
 
     {
         // Now migrate fully to device 1 and discard the data
         char* ptrs[] = { asvm, bsvm, csvm };
-        error = clEnqueueSVMMigrateMem(queue1, 3, (const void**)ptrs, NULL, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 1, &evs[2], &evs[3]);
+        error = clEnqueueSVMMigrateMem(queues[1], 3, (const void**)ptrs, NULL, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 1, &evs[2], &evs[3]);
         test_error(error, "clEnqueueSVMMigrateMem failed");
     }
 
@@ -182,26 +177,26 @@ test_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int nu
         // Test host flag
         char *ptrs[] = { asvm+1, bsvm+3, csvm+5 };
         const size_t szs[] = { 1, 1, 0 };
-        error = clEnqueueSVMMigrateMem(queue0, 3, (const void**)ptrs, szs, CL_MIGRATE_MEM_OBJECT_HOST, 1, &evs[3], &evs[4]);
+        error = clEnqueueSVMMigrateMem(queues[0], 3, (const void**)ptrs, szs, CL_MIGRATE_MEM_OBJECT_HOST, 1, &evs[3], &evs[4]);
         test_error(error, "clEnqueueSVMMigrateMem failed");
     }
 
     {
         // Next fill with known data
-        error = clEnqueueSVMMap(queue1, CL_FALSE, CL_MAP_WRITE, (void*)asvm, global_size*sizeof(cl_uint), 1, &evs[4], &evs[5]);
+        error = clEnqueueSVMMap(queues[1], CL_FALSE, CL_MAP_WRITE, (void*)asvm, global_size*sizeof(cl_uint), 1, &evs[4], &evs[5]);
         test_error(error, "clEnqueueSVMMap failed");
 
-        error = clEnqueueSVMMap(queue1, CL_FALSE, CL_MAP_WRITE, (void*)bsvm, global_size*sizeof(cl_uint), 0, NULL, &evs[6]);
+        error = clEnqueueSVMMap(queues[1], CL_FALSE, CL_MAP_WRITE, (void*)bsvm, global_size*sizeof(cl_uint), 0, NULL, &evs[6]);
         test_error(error, "clEnqueueSVMMap failed");
 
-        error = clEnqueueSVMMap(queue1, CL_FALSE, CL_MAP_WRITE, (void*)csvm, global_size*sizeof(cl_uint), 0, NULL, &evs[7]);
+        error = clEnqueueSVMMap(queues[1], CL_FALSE, CL_MAP_WRITE, (void*)csvm, global_size*sizeof(cl_uint), 0, NULL, &evs[7]);
         test_error(error, "clEnqueueSVMMap failed");
     }
 
-    error = clFlush(queue0);
+    error = clFlush(queues[0]);
     test_error(error, "clFlush failed");
 
-    error = clFlush(queue1);
+    error = clFlush(queues[1]);
     test_error(error, "clFlush failed");
 
     error = wait_and_release("first batch", evs, 8);
@@ -213,13 +208,13 @@ test_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int nu
     memcpy((void *)csvm, (void *)cmem, global_size*sizeof(cl_uint));
 
     {
-        error = clEnqueueSVMUnmap(queue1, (void *)asvm, 0, NULL, &evs[0]);
+        error = clEnqueueSVMUnmap(queues[1], (void *)asvm, 0, NULL, &evs[0]);
         test_error(error, "clEnqueueSVMUnmap failed");
 
-        error = clEnqueueSVMUnmap(queue1, (void *)bsvm, 0, NULL, &evs[1]);
+        error = clEnqueueSVMUnmap(queues[1], (void *)bsvm, 0, NULL, &evs[1]);
         test_error(error, "clEnqueueSVMUnmap failed");
 
-        error = clEnqueueSVMUnmap(queue1, (void *)csvm, 0, NULL, &evs[2]);
+        error = clEnqueueSVMUnmap(queues[1], (void *)csvm, 0, NULL, &evs[2]);
         test_error(error, "clEnqueueSVMUnmap failed");
     }
 
@@ -229,10 +224,10 @@ test_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int nu
         char *ptrs[] = { asvm+100, bsvm+17, csvm+1000, asvm+101, bsvm+19, csvm+1017 };
         const size_t szs[] = { 13, 23, 43, 3, 7, 11 };
 
-        error = clEnqueueSVMMigrateMem(queue0, 3, (const void**)ptrs, szs, 0, 1, &evs[2], &evs[3]);
+        error = clEnqueueSVMMigrateMem(queues[0], 3, (const void**)ptrs, szs, 0, 1, &evs[2], &evs[3]);
         test_error(error, "clEnqueueSVMMigrateMem failed");
 
-        error = clEnqueueNDRangeKernel(queue0, kernel, 1, NULL, &global_size, NULL, 0, NULL, &evs[4]);
+        error = clEnqueueNDRangeKernel(queues[0], kernel, 1, NULL, &global_size, NULL, 0, NULL, &evs[4]);
         test_error(error, "clEnqueueNDRangeKernel failed");
     }
 
@@ -241,10 +236,10 @@ test_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int nu
         char *ptrs[] = { asvm+8, bsvm+17, csvm+31, csvm+83 };
         const size_t szs[] = { 0, 1, 3, 7 };
 
-        error = clEnqueueSVMMigrateMem(queue1, 4, (const void**)ptrs, szs, 0, 1, &evs[4], &evs[5]);
+        error = clEnqueueSVMMigrateMem(queues[1], 4, (const void**)ptrs, szs, 0, 1, &evs[4], &evs[5]);
         test_error(error, "clEnqueueSVMMigrateMem failed");
 
-        error = clEnqueueNDRangeKernel(queue1, kernel, 1, NULL, &global_size, NULL, 0, NULL, &evs[6]);
+        error = clEnqueueNDRangeKernel(queues[1], kernel, 1, NULL, &global_size, NULL, 0, NULL, &evs[6]);
         test_error(error, "clEnqueueNDRangeKernel failed");
     }
 
@@ -253,10 +248,10 @@ test_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int nu
         char *ptrs[] = { asvm+64, asvm+128, bsvm+64, bsvm+128, csvm, csvm+64 };
         const size_t szs[] = { 64, 64, 64, 64, 64, 64 };
 
-        error = clEnqueueSVMMigrateMem(queue0, 6, (const void**)ptrs, szs, 0, 1, &evs[6], &evs[7]);
+        error = clEnqueueSVMMigrateMem(queues[0], 6, (const void**)ptrs, szs, 0, 1, &evs[6], &evs[7]);
         test_error(error, "clEnqueueSVMMigrateMem failed");
 
-        error = clEnqueueNDRangeKernel(queue0, kernel, 1, NULL, &global_size, NULL, 0, NULL, &evs[8]);
+        error = clEnqueueNDRangeKernel(queues[0], kernel, 1, NULL, &global_size, NULL, 0, NULL, &evs[8]);
         test_error(error, "clEnqueueNDRangeKernel failed");
     }
 
@@ -265,28 +260,28 @@ test_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int nu
         char *ptrs[] = { asvm, asvm, bsvm, csvm, csvm };
         const size_t szs[] = { 0, 1, 0, 1, 0 };
 
-        error = clEnqueueSVMMigrateMem(queue1, 5, (const void**)ptrs, szs, 0, 1, &evs[8], &evs[9]);
+        error = clEnqueueSVMMigrateMem(queues[1], 5, (const void**)ptrs, szs, 0, 1, &evs[8], &evs[9]);
         test_error(error, "clEnqueueSVMMigrateMem failed");
 
-        error = clEnqueueNDRangeKernel(queue1, kernel, 1, NULL, &global_size, NULL, 0, NULL, &evs[10]);
+        error = clEnqueueNDRangeKernel(queues[1], kernel, 1, NULL, &global_size, NULL, 0, NULL, &evs[10]);
         test_error(error, "clEnqueueNDRangeKernel failed");
     }
 
     {
-        error = clEnqueueSVMMap(queue1, CL_FALSE, CL_MAP_READ, (void*)asvm, global_size*sizeof(cl_uint), 0, NULL, &evs[11]);
+        error = clEnqueueSVMMap(queues[1], CL_FALSE, CL_MAP_READ, (void*)asvm, global_size*sizeof(cl_uint), 0, NULL, &evs[11]);
         test_error(error, "clEnqueueSVMMap failed");
 
-        error = clEnqueueSVMMap(queue1, CL_FALSE, CL_MAP_READ, (void*)bsvm, global_size*sizeof(cl_uint), 0, NULL, &evs[12]);
+        error = clEnqueueSVMMap(queues[1], CL_FALSE, CL_MAP_READ, (void*)bsvm, global_size*sizeof(cl_uint), 0, NULL, &evs[12]);
         test_error(error, "clEnqueueSVMMap failed");
 
-        error = clEnqueueSVMMap(queue1, CL_FALSE, CL_MAP_READ, (void*)csvm, global_size*sizeof(cl_uint), 0, NULL, &evs[13]);
+        error = clEnqueueSVMMap(queues[1], CL_FALSE, CL_MAP_READ, (void*)csvm, global_size*sizeof(cl_uint), 0, NULL, &evs[13]);
         test_error(error, "clEnqueueSVMMap failed");
     }
 
-    error = clFlush(queue0);
+    error = clFlush(queues[0]);
     test_error(error, "clFlush failed");
 
-    error = clFlush(queue1);
+    error = clFlush(queues[1]);
     test_error(error, "clFlush failed");
 
     error = wait_and_release("batch 2", evs, 14);
@@ -301,28 +296,24 @@ test_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int nu
     {
         void *ptrs[] = { asvm, bsvm, csvm };
 
-        error = clEnqueueSVMUnmap(queue1, (void *)asvm, 0, NULL, &evs[0]);
+        error = clEnqueueSVMUnmap(queues[1], (void *)asvm, 0, NULL, &evs[0]);
         test_error(error, "clEnqueueSVMUnmap failed");
 
-        error = clEnqueueSVMUnmap(queue1, (void *)bsvm, 0, NULL, &evs[1]);
+        error = clEnqueueSVMUnmap(queues[1], (void *)bsvm, 0, NULL, &evs[1]);
         test_error(error, "clEnqueueSVMUnmap failed");
 
-        error = clEnqueueSVMUnmap(queue1, (void *)csvm, 0, NULL, &evs[2]);
+        error = clEnqueueSVMUnmap(queues[1], (void *)csvm, 0, NULL, &evs[2]);
         test_error(error, "clEnqueueSVMUnmap failed");
 
-        error = clEnqueueSVMFree(queue1, 3, ptrs, NULL, NULL, 0, NULL, &evs[3]);
+        error = clEnqueueSVMFree(queues[1], 3, ptrs, NULL, NULL, 0, NULL, &evs[3]);
     }
 
-    error = clFlush(queue1);
+    error = clFlush(queues[1]);
     test_error(error, "clFlush failed");
 
     error = wait_and_release("batch 3", evs, 4);
     if (error)
         return -1;
-
-    clSVMFree(context, asvm);
-    clSVMFree(context, bsvm);
-    clSVMFree(context, csvm);
 
     // The wrappers will clean up the rest
     return ok ? 0 : -1;

@@ -127,3 +127,27 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
   }
   return argc;
 }
+
+bool is_power_of_two(int number)
+{
+    return number && !(number & (number - 1));
+}
+
+extern void parseWimpyReductionFactor(const char *&arg, int &wimpyReductionFactor)
+{
+    const char *arg_temp = strchr(&arg[1], ']');
+    if (arg_temp != 0)
+    {
+        int new_factor = atoi(&arg[1]);
+        arg = arg_temp; // Advance until ']'
+        if (is_power_of_two(new_factor))
+        {
+            log_info("\n Wimpy reduction factor changed from %d to %d \n", wimpyReductionFactor, new_factor);
+            wimpyReductionFactor = new_factor;
+        }
+        else
+        {
+            log_info("\n WARNING: Incorrect wimpy reduction factor %d, must be power of 2. The default value will be used.\n", new_factor);
+        }
+    }
+}

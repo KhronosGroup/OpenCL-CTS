@@ -18,8 +18,6 @@
 #include "../../test_common/harness/threadTesting.h"
 #include "../../test_common/harness/typeWrappers.h"
 
-extern const unsigned int g_vecSizeof[];
-
 extern int      create_program_and_kernel(const char *source, const char *kernel_name, cl_program *program_ret, cl_kernel *kernel_ret);
 
 extern int test_geom_cross(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

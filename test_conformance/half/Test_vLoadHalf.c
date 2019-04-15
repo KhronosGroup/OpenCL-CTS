@@ -617,12 +617,12 @@ exit:
     return error;
 }
 
-int Test_vload_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_vload_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vLoadHalf_private( false );
 }
 
-int Test_vloada_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_vloada_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return Test_vLoadHalf_private( true );
 }

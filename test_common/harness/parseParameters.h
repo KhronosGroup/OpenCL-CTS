@@ -16,6 +16,7 @@
 #ifndef _parseParameters_h
 #define _parseParameters_h
 
+#include "compat.h"
 #include <string>
 
 extern bool gOfflineCompiler;
@@ -33,5 +34,7 @@ enum OfflineCompilerOutputType
 extern OfflineCompilerOutputType gOfflineCompilerOutputType;
 
 extern int parseCustomParam (int argc, const char *argv[], const char *ignore = 0 );
+
+extern void parseWimpyReductionFactor(const char *&arg, int &wimpyReductionFactor);
 
 #endif // _parseParameters_h

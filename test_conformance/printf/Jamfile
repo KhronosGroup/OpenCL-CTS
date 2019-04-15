@@ -1,5 +1,0 @@
-project    : requirements      <target-os>windows,<toolset>gcc:<cflags>-xc++      <toolset>msvc:<cflags>"/TP"     ;
-exe test_printf    : test_printf.c	  util_printf.c      ../../test_common/harness/mt19937.c      ../../test_common/harness/kernelHelpers.c      ../../test_common/harness/errorHelpers.c    : <target-os>windows:<source>../../test_common/harness/msvc9.c    ;
-install dist    : test_printf    : <variant>debug:<location>$(DIST)/debug/tests/conformance/1.2/x86/printf      <variant>release:<location>$(DIST)/release/tests/conformance/1.2/x86/printf    ;
-
-install dist    : test_printf    : <variant>debug:<location>$(DIST)/debug/tests/conformance/1.2/x86_64/printf      <variant>release:<location>$(DIST)/release/tests/conformance/1.2/x86_64/printf      <address-model>64    ;

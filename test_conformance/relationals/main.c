@@ -44,57 +44,32 @@ const int g_vector_allocs[] = {0, 1, 2, 4, 4,
                                16, 16, 16, 16};
 
 
-basefn    basefn_list[] = {
-            test_relational_any,
-            test_relational_all,
-            test_relational_bitselect,
-            test_relational_select_signed,
-            test_relational_select_unsigned,
+test_definition test_list[] = {
+    ADD_TEST( relational_any ),
+    ADD_TEST( relational_all ),
+    ADD_TEST( relational_bitselect ),
+    ADD_TEST( relational_select_signed ),
+    ADD_TEST( relational_select_unsigned ),
 
-            test_relational_isequal,
-            test_relational_isnotequal,
-            test_relational_isgreater,
-            test_relational_isgreaterequal,
-            test_relational_isless,
-            test_relational_islessequal,
-            test_relational_islessgreater,
+    ADD_TEST( relational_isequal ),
+    ADD_TEST( relational_isnotequal ),
+    ADD_TEST( relational_isgreater ),
+    ADD_TEST( relational_isgreaterequal ),
+    ADD_TEST( relational_isless ),
+    ADD_TEST( relational_islessequal ),
+    ADD_TEST( relational_islessgreater ),
 
-            test_shuffle_copy,
-            test_shuffle_function_call,
-            test_shuffle_array_cast,
-            test_shuffle_built_in,
-            test_shuffle_built_in_dual_input
+    ADD_TEST( shuffle_copy ),
+    ADD_TEST( shuffle_function_call ),
+    ADD_TEST( shuffle_array_cast ),
+    ADD_TEST( shuffle_built_in ),
+    ADD_TEST( shuffle_built_in_dual_input ),
 };
 
-const char    *basefn_names[] = {
-            "relational_any",
-            "relational_all",
-            "relational_bitselect",
-            "relational_select_signed",
-            "relational_select_unsigned",
-
-            "relational_isequal",
-            "relational_isnotequal",
-            "relational_isgreater",
-            "relational_isgreaterequal",
-            "relational_isless",
-            "relational_islessequal",
-            "relational_islessgreater",
-
-            "shuffle_copy",
-            "shuffle_function_call",
-            "shuffle_array_cast",
-            "shuffle_built_in",
-            "shuffle_built_in_dual_input",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int    num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, false, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
-
 

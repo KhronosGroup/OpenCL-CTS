@@ -20,7 +20,7 @@
 // This is done by creating a linked list on a device and then verifying the correctness of the list
 // on another device or the host.  This basic test is performed for all combinations of devices and the host that exist within
 // the platform.  The test passes only if every combination passes.
-int test_shared_address_space_fine_grain(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+int test_svm_shared_address_space_fine_grain(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
 {
   clContextWrapper    context = NULL;
   clProgramWrapper    program = NULL;

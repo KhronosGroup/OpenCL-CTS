@@ -21,17 +21,17 @@
 
 extern const int kVectorSizeCount;
 
-extern int test_quick_thread_dimensions_1d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_quick_thread_dimensions_2d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_quick_thread_dimensions_3d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_quick_thread_dimensions_1d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_quick_thread_dimensions_2d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_quick_thread_dimensions_3d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_quick_1d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_quick_2d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_quick_3d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_quick_1d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_quick_2d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_quick_3d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int test_full_thread_dimensions_1d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_full_thread_dimensions_2d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_full_thread_dimensions_3d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_full_thread_dimensions_1d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_full_thread_dimensions_2d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_full_thread_dimensions_3d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_full_1d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_full_2d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_full_3d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_full_1d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_full_2d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_full_3d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 

@@ -183,7 +183,7 @@ static void printSrc(const char *src[], int nSrcStrings) {
     }
 }
 
-int test_absdiff(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+int test_integer_abs_diff(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
 {
     cl_int *input_ptr[2], *output_ptr, *p;
     int err;

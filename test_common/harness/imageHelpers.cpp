@@ -1397,16 +1397,9 @@ void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
                || ( depth_lod != 0 && z >= (int)depth_lod )
                || ( imageInfo->arraySize != 0 && z >= (int)imageInfo->arraySize ) )
     {
-        // Border color
-        if (imageInfo->format->image_channel_order == CL_DEPTH)
-        {
-            outData[ 0 ] = 0;
-        }
-        else {
             outData[ 0 ] = outData[ 1 ] = outData[ 2 ] = outData[ 3 ] = 0;
             if (!has_alpha(imageInfo->format))
                 outData[3] = 1;
-        }
         return;
     }
 

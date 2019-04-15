@@ -41,7 +41,7 @@ const char* flag_set_names[] = {
 };
 
 
-int test_allocate_shared_buffer(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+int test_svm_allocate_shared_buffer(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
 {
   clContextWrapper    context = NULL;
   clProgramWrapper    program = NULL;
@@ -97,6 +97,10 @@ int test_allocate_shared_buffer(cl_device_id deviceID, cl_context context2, cl_c
           log_error("SVM pointer returned by clEnqueueMapBuffer doesn't match pointer returned by clSVMalloc");
           return -1;
         }
+        err = clEnqueueUnmapMemObject(queues[0], buf, pBufData2, 0, NULL, NULL);
+        test_error(err, "clEnqueueUnmapMemObject failed");
+        err = clFinish(queues[0]);
+        test_error(err, "clFinish failed");
       }
     }
 

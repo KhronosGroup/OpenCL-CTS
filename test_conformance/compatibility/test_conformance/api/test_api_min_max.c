@@ -493,29 +493,33 @@ int test_min_max_mem_alloc_size(cl_device_id deviceID, cl_context context, cl_co
     error = clGetDeviceInfo( deviceID, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof( memSize ), &memSize, NULL );
     test_error( error, "Unable to get global memory size from device" );
 
+    if (memSize > (cl_ulong)SIZE_MAX) {
+      memSize = (cl_ulong)SIZE_MAX;
+    }
     if( maxAllocSize < requiredAllocSize)
     {
         log_error( "ERROR: Reported max allocation size is less than required %lldMB! (%llu or %lluMB, from a total mem size of %lldMB)\n", (requiredAllocSize / 1024) / 1024, maxAllocSize, (maxAllocSize / 1024)/1024, (memSize / 1024)/1024 );
         return -1;
     }
 
-    if( maxAllocSize < memSize / 4 )
+    requiredAllocSize = ((memSize / 4) > (1024 * 1024 * 1024)) ? 1024 * 1024 * 1024 : memSize / 4;
+    if (gIsEmbedded)
+        requiredAllocSize = (requiredAllocSize < 1 * 1024 * 1024) ? 1 * 1024 * 1024 : requiredAllocSize;
+    else
+    requiredAllocSize = (requiredAllocSize < 128 * 1024 * 1024) ? 128 * 1024 * 1024 : requiredAllocSize;
+    if( maxAllocSize < requiredAllocSize )
     {
-        log_error( "ERROR: Reported max allocation size is less than required 1/4 of total memory! (%llu or %lluMB, from a total mem size of %lluMB)\n", maxAllocSize, (maxAllocSize / 1024)/1024, (memSize / 1024)/1024 );
+        log_error( "ERROR: Reported max allocation size is less than required of total memory! (%llu or %lluMB, from a total mem size of %lluMB)\n", maxAllocSize, (maxAllocSize / 1024)/1024, (requiredAllocSize / 1024)/1024 );
         return -1;
     }
 
     log_info("Reported max allocation size of %lld bytes (%gMB) and global mem size of %lld bytes (%gMB).\n",
-             maxAllocSize, maxAllocSize/(1024.0*1024.0), memSize, memSize/(1024.0*1024.0));
+             maxAllocSize, maxAllocSize/(1024.0*1024.0), requiredAllocSize, requiredAllocSize/(1024.0*1024.0));
 
     if ( memSize < maxAllocSize ) {
         log_info("Global memory size is less than max allocation size, using that.\n");
         maxAllocSize = memSize;
-    }
 
-    if ( maxAllocSize > (cl_ulong)4 * 1024 * 1024 * 1024) {
-        log_info("Limiting max allocation size to 4GB for test.\n");
-        maxAllocSize =  (cl_ulong)4 * 1024 * 1024 * 1024;
     }
 
     minSizeToTry = maxAllocSize/16;
@@ -552,7 +556,9 @@ int test_min_max_image_2d_width(cl_device_id deviceID, cl_context context, cl_co
     // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
     error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
     test_error( error, "Unable to get device version string" );
-    if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
+    if( memcmp( buffer, "OpenCL 2.1", strlen( "OpenCL 2.1" ) ) == 0 )
+        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
+    else if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
         minRequiredDimension = gIsEmbedded ? 2048 : 8192;
     else if( memcmp( buffer, "OpenCL 1.2", strlen( "OpenCL 1.2" ) ) == 0 )
         minRequiredDimension = gIsEmbedded ? 2048 : 8192;
@@ -628,7 +634,9 @@ int test_min_max_image_2d_height(cl_device_id deviceID, cl_context context, cl_c
     // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
     error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
     test_error( error, "Unable to get device version string" );
-    if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
+    if( memcmp( buffer, "OpenCL 2.1", strlen( "OpenCL 2.1" ) ) == 0 )
+        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
+    else if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
         minRequiredDimension = gIsEmbedded ? 2048 : 8192;
     else if( memcmp( buffer, "OpenCL 1.2", strlen( "OpenCL 1.2" ) ) == 0 )
         minRequiredDimension = gIsEmbedded ? 2048 : 8192;
@@ -1294,7 +1302,7 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
     clMemWrapper            streams[3];
     size_t    threads[1], localThreads[1];
     cl_int *constantData, *resultData;
-    cl_ulong maxSize, stepSize, currentSize;
+    cl_ulong maxSize, stepSize, currentSize, maxGlobalSize, maxAllocSize;
     int i;
     cl_event event;
     cl_int event_status;
@@ -1312,6 +1320,14 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
 
     log_info("Reported max constant buffer size of %lld bytes.\n", maxSize);
 
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(maxGlobalSize), &maxGlobalSize, 0);
+    test_error(error, "Unable to get CL_DEVICE_GLOBAL_MEM_SIZE");
+    if (maxSize > maxGlobalSize / 8)
+        maxSize = maxGlobalSize / 8;
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE , sizeof(maxAllocSize), &maxAllocSize, 0);
+    test_error(error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE ");
+    if (maxSize > maxAllocSize)
+        maxSize = maxAllocSize;
     /* Create a kernel to test with */
     if( create_single_kernel_helper( context, &program, &kernel, 1, sample_const_arg_kernel, "sample_test" ) != 0 )
     {

@@ -1,6 +1,13 @@
 set(HEADERS_SOURCES
     test_headers.c
+    ../../test_common/harness/errorHelpers.c
+    ../../test_common/harness/kernelHelpers.c
+    ../../test_common/harness/testHarness.c
+    ../../test_common/harness/msvc9.c
+    ../../test_common/harness/parseParameters.cpp
 )
+
+set_source_files_properties(${HEADERS_SOURCES} PROPERTIES LANGUAGE CXX)
 
 set(HEADERS_OUT ${CONFORMANCE_PREFIX}headers${CONFORMANCE_SUFFIX})
 

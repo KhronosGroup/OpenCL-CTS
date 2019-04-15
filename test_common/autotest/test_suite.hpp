@@ -19,8 +19,6 @@
 #include <vector>
 #include <string> 
 
-#include "test_case.hpp"
-
 namespace autotest {
 
 struct test_suite {
@@ -30,33 +28,13 @@ struct test_suite {
 
     } 
 
-    void add(const test_case& tc)
+    void add(const test_definition& td)
     {
-        test_cases.push_back(tc);
+        test_defs.push_back(td);
     }    
 
-    static std::vector<basefn> get_test_functions()
-    {
-        std::vector<basefn> v;
-        for(auto& tc: global_test_suite().test_cases)
-        {
-            v.push_back(tc.function_pointer);
-        }
-        return v;
-    }
-
-    static std::vector<std::string> get_test_names()
-    {
-        std::vector<std::string> v;
-        for(auto& tc : global_test_suite().test_cases)
-        {
-            v.push_back(tc.name);
-        }
-        return v;
-    }
-
-    // List of test cases
-    std::vector<test_case> test_cases;
+    // List of test definitions
+    std::vector<test_definition> test_defs;
     // Test suite name
     const std::string name;
 
@@ -73,7 +51,7 @@ struct test_case_registration
 {
     test_case_registration(const std::string& name, const basefn ptr)
     {
-        ::autotest::test_suite::global_test_suite().add(test_case(name, ptr));
+        ::autotest::test_suite::global_test_suite().add(test_definition({ptr, name.c_str()}));
     }
 };
 

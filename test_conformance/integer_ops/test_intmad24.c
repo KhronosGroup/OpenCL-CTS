@@ -183,8 +183,7 @@ static inline int random_int32( MTdata d )
 }
 
 
-int
-test_intmad24(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+int test_integer_mad24(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
 {
     cl_mem streams[4];
     cl_int *input_ptr[3], *output_ptr, *p;

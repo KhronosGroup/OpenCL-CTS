@@ -23,8 +23,25 @@ cl_command_queue reset_queue(cl_context context, cl_device_id device_id, cl_comm
   return *queue;
 }
 
-int check_allocation_error(cl_context context, cl_device_id device_id, int error, cl_command_queue *queue) {
+int check_allocation_error(cl_context context, cl_device_id device_id, int error, cl_command_queue *queue, cl_event *event) {
   //log_info("check_allocation_error context=%p device_id=%p error=%d *queue=%p\n", context, device_id, error, *queue);
+  if (error == CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST && event != 0)
+  {
+    // check for errors from clWaitForEvents (e.g after clEnqueueWriteBuffer)
+    cl_int eventError;
+    error = clGetEventInfo(*event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(error), &eventError, 0);
+    if (CL_SUCCESS != error)
+    {
+      log_error("Failed to get event execution status: %s\n", IGetErrorString(error));
+      return FAILED_ABORT;
+    }
+    if (eventError >= 0)
+    {
+      log_error("Non-negative event execution status after CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST: %s\n", IGetErrorString(error));
+      return FAILED_ABORT;
+    }
+    error = eventError;
+  }
   if ((error == CL_MEM_OBJECT_ALLOCATION_FAILURE ) || (error == CL_OUT_OF_RESOURCES ) || (error == CL_OUT_OF_HOST_MEMORY) || (error == CL_INVALID_IMAGE_SIZE)) {
     return FAILED_TOO_BIG;
   } else if (error == CL_INVALID_COMMAND_QUEUE) {
