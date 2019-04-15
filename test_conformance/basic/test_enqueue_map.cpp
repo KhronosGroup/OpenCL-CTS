@@ -46,7 +46,8 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context, cl_comman
     int error;
     const size_t bufferSize = 256*256;
     MTdataHolder d{gRandomSeed};
-    BufferOwningPtr<cl_char> initialData{malloc(bufferSize)};
+    BufferOwningPtr<cl_char> hostPtrData{malloc(bufferSize)};
+    BufferOwningPtr<cl_char> referenceData{malloc(bufferSize)};
     BufferOwningPtr<cl_char> finalData{malloc(bufferSize)};
 
     for (int src_flag_id=0; src_flag_id < ARRAY_SIZE(flag_set); src_flag_id++)
@@ -54,19 +55,20 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context, cl_comman
         clMemWrapper memObject;
         log_info("Testing with cl_mem_flags src: %s\n", flag_set_names[src_flag_id]);
 
-        generate_random_data( kChar, (unsigned int)bufferSize, d, initialData );
+        generate_random_data( kChar, (unsigned int)bufferSize, d, hostPtrData );
+        memcpy(referenceData, hostPtrData, bufferSize);
 
         void *hostPtr = nullptr;
         cl_mem_flags flags = flag_set[src_flag_id];
         bool hasHostPtr = (flags & CL_MEM_USE_HOST_PTR) || (flags & CL_MEM_COPY_HOST_PTR);
         if (hasHostPtr)
-            hostPtr = initialData;
+            hostPtr = hostPtrData;
         memObject = clCreateBuffer(context, flags,  bufferSize, hostPtr, &error);
         test_error( error, "Unable to create testing buffer" );
 
         if (!hasHostPtr)
         {
-            error = clEnqueueWriteBuffer(queue, memObject, CL_TRUE, 0, bufferSize, initialData, 0, NULL, NULL);
+            error = clEnqueueWriteBuffer(queue, memObject, CL_TRUE, 0, bufferSize, hostPtrData, 0, NULL, NULL);
             test_error( error, "clEnqueueWriteBuffer failed");
         }
 
@@ -96,9 +98,9 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context, cl_comman
             mappedRegion[ j ] = value;
 
             // Also update the initial data array
-            value = initialData[ offset + j ];
+            value = referenceData[ offset + j ];
             value = spin - value;
-            initialData[ offset + j ] = value;
+            referenceData[ offset + j ] = value;
           }
 
           // Unmap
@@ -112,9 +114,9 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context, cl_comman
 
         for( size_t q = 0; q < bufferSize; q++ )
         {
-            if( initialData[ q ] != finalData[ q ] )
+            if( referenceData[ q ] != finalData[ q ] )
             {
-                log_error( "ERROR: Sample %d did not validate! Got %d, expected %d\n", (int)q, (int)finalData[ q ], (int)initialData[ q ] );
+                log_error( "ERROR: Sample %d did not validate! Got %d, expected %d\n", (int)q, (int)finalData[ q ], (int)referenceData[ q ] );
                 return -1;
             }
         }
@@ -132,7 +134,8 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID )
 
-    BufferOwningPtr<cl_uint> initialData{malloc(imageDataSize)};
+    BufferOwningPtr<cl_uint> hostPtrData{malloc(imageDataSize)};
+    BufferOwningPtr<cl_uint> referenceData{malloc(imageDataSize)};
     BufferOwningPtr<cl_uint> finalData{malloc(imageDataSize)};
 
     MTdataHolder d{gRandomSeed};
@@ -140,20 +143,21 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command
     clMemWrapper memObject;
     log_info("Testing with cl_mem_flags src: %s\n", flag_set_names[src_flag_id]);
 
-    generate_random_data( kUInt, (unsigned int)( imageSize * imageSize ), d, initialData );
+    generate_random_data( kUInt, (unsigned int)( imageSize * imageSize ), d, hostPtrData );
+    memcpy(referenceData, hostPtrData, imageDataSize);
 
     cl_mem_flags flags = flag_set[src_flag_id];
     bool hasHostPtr = (flags & CL_MEM_USE_HOST_PTR) || (flags & CL_MEM_COPY_HOST_PTR);
     void *hostPtr = nullptr;
     if (hasHostPtr)
-      hostPtr = initialData;
+      hostPtr = hostPtrData;
     memObject = create_image_2d(context, CL_MEM_READ_WRITE | flags, &format,
                                 imageSize, imageSize, 0, hostPtr, &error );
     test_error( error, "Unable to create testing buffer" );
 
     if (!hasHostPtr) {
       size_t write_origin[3]={0,0,0}, write_region[3]={imageSize, imageSize, 1};
-      error = clEnqueueWriteImage(queue, memObject, CL_TRUE, write_origin, write_region, 0, 0, initialData, 0, NULL, NULL);
+      error = clEnqueueWriteImage(queue, memObject, CL_TRUE, write_origin, write_region, 0, 0, hostPtrData, 0, NULL, NULL);
       test_error( error, "Unable to write to testing buffer" );
     }
 
@@ -193,9 +197,9 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command
           mappedPtr[ ( y * rowPitch/sizeof(cl_uint) ) + x ] = value;
 
           // Also update the initial data array
-          value = initialData[ ( ( offset[ 1 ] + y ) * imageSize + offset[ 0 ] ) * 4 + x ];
+          value = referenceData[ ( ( offset[ 1 ] + y ) * imageSize + offset[ 0 ] ) * 4 + x ];
           value = spin - value;
-          initialData[ ( ( offset[ 1 ] + y ) * imageSize + offset[ 0 ] ) * 4 + x ] = value;
+          referenceData[ ( ( offset[ 1 ] + y ) * imageSize + offset[ 0 ] ) * 4 + x ] = value;
         }
       }
 
@@ -211,10 +215,10 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command
 
     for( size_t q = 0; q < imageSize * imageSize * 4; q++ )
     {
-      if( initialData[ q ] != finalData[ q ] )
+      if( referenceData[ q ] != finalData[ q ] )
       {
         log_error( "ERROR: Sample %d (coord %d,%d) did not validate! Got %d, expected %d\n", (int)q, (int)( ( q / 4 ) % imageSize ), (int)( ( q / 4 ) / imageSize ),
-                                    (int)finalData[ q ], (int)initialData[ q ] );
+                                    (int)finalData[ q ], (int)referenceData[ q ] );
         return -1;
       }
     }
