@@ -62,6 +62,7 @@ const char *known_extensions[] = {
     "cl_khr_terminate_context",
     "cl_khr_priority_hints",
     "cl_khr_throttle_hints",
+    "cl_khr_spirv_no_integer_wrap_decoration",
 };
 
 size_t num_known_extensions = sizeof(known_extensions)/sizeof(char*);
