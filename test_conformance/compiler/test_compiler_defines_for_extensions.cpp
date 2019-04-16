@@ -24,6 +24,9 @@
 
 
 const char *known_extensions[] = {
+    "cl_khr_byte_addressable_store",
+    "cl_khr_3d_image_writes",
+    "cl_khr_fp16",
     "cl_khr_fp64",
     "cl_khr_global_int32_base_atomics",
     "cl_khr_global_int32_extended_atomics",
@@ -31,37 +34,39 @@ const char *known_extensions[] = {
     "cl_khr_local_int32_extended_atomics",
     "cl_khr_int64_base_atomics",
     "cl_khr_int64_extended_atomics",
-    "cl_khr_3d_image_writes",
-    "cl_khr_byte_addressable_store",
-    "cl_khr_fp16",
+    "cl_khr_select_fprounding_mode",
+    "cl_khr_depth_images",
+    "cl_khr_gl_depth_images",
+    "cl_khr_gl_msaa_sharing",
+    "cl_khr_device_enqueue_local_arg_types",
+    "cl_khr_subgroups",
+    "cl_khr_mipmap_image",
+    "cl_khr_mipmap_image_writes",
+    "cl_khr_srgb_image_writes",
+    "cl_khr_subgroup_named_barrier",
+
+    //API-only extensions after this point.  If you add above here, modify first_API_extension below.
+    "cl_khr_icd",
     "cl_khr_gl_sharing",
     "cl_khr_gl_event",
     "cl_khr_d3d10_sharing",
     "cl_khr_d3d11_sharing",
-    "cl_khr_icd",
     "cl_khr_dx9_media_sharing",
-    "cl_khr_depth_images",
-    "cl_khr_gl_depth_images",
-    "cl_khr_gl_msaa_sharing",
+    "cl_khr_egl_event",
+    "cl_khr_egl_image",
     "cl_khr_image2d_from_buffer",
+    "cl_khr_spir",
+    "cl_khr_il_program",
+    "cl_khr_create_command_queue",
     "cl_khr_initialize_memory",
     "cl_khr_terminate_context",
-    "cl_khr_spir",
-    "cl_khr_srgb_image_writes",
-    "cl_khr_subgroups",
-    "cl_khr_mipmap_image",
-    "cl_khr_mipmap_image_writes",
-    "cl_khr_egl_image",
-    "cl_khr_egl_event",
-    "cl_khr_throttle_hints",
     "cl_khr_priority_hints",
-    "cl_khr_create_command_queue",
-    "cl_khr_il_program",
+    "cl_khr_throttle_hints",
     "cl_khr_spirv_no_integer_wrap_decoration",
 };
 
 size_t num_known_extensions = sizeof(known_extensions)/sizeof(char*);
-size_t first_API_extension = 10;
+size_t first_API_extension = 20;
 
 const char *known_embedded_extensions[] = {
     "cles_khr_int64",
