@@ -320,19 +320,6 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
     }
     else
     { // no images
-        // if we are a GPU, images are required so maybe fail on that
-        cl_device_type  device_type = 0;
-        if( (error = clGetDeviceInfo(deviceID, CL_DEVICE_TYPE, sizeof( device_type), &device_type, NULL)))
-        {
-            log_error( "ERROR: could not get device type. error = %d", error );
-            return -1;
-        }
-        if( CL_DEVICE_TYPE_GPU == (device_type & CL_DEVICE_TYPE_GPU) )
-        {   // It turns out we are a GPU, so no conformance pass for you!
-            log_error( "FAILURE: GPUs are required to support images in OpenCL 1.1 and later.\n" );
-            return -1;
-        }
-
         // If images aren't supported, the constant should be undefined
         if( int_out[18] != 0xf00baa )
         {
