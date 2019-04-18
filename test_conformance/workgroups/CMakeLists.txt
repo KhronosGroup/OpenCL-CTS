@@ -21,6 +21,7 @@ set(${MODULE_NAME}_SOURCES
     ../../test_common/harness/msvc9.c
     ../../test_common/harness/conversions.c
     ../../test_common/harness/parseParameters.cpp
+    ../../test_common/harness/crc32.c
 )
 
 include(../CMakeCommon.txt)

@@ -20,6 +20,7 @@ set (MEDIA_SOURCES
         ../../test_common/harness/typeWrappers.cpp
         ../../test_common/harness/mt19937.c
         ../../test_common/harness/parseParameters.cpp
+        ../../test_common/harness/crc32.c
     )
 
 add_executable(conformance_test_media_surface_sharing
