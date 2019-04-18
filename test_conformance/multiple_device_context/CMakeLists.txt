@@ -14,6 +14,7 @@ set(${MODULE_NAME}_SOURCES
     ../../test_common/harness/mt19937.c
     ../../test_common/harness/msvc9.c
     ../../test_common/harness/parseParameters.cpp
+    ../../test_common/harness/crc32.c
 )
 
 
@@ -30,6 +31,7 @@ set_source_files_properties(
     ../../test_common/harness/conversions.c
     ../../test_common/harness/msvc9.c
     ../../test_common/harness/parseParameters.cpp
+    ../../test_common/harness/crc32.c
         PROPERTIES LANGUAGE CXX)
 
 include(../CMakeCommon.txt)

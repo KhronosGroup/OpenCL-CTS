@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "crc32.h"
 #include "kernelHelpers.h"
 #include "errorHelpers.h"
 #include "imageHelpers.h"
@@ -74,17 +75,8 @@ std::vector<char> get_file_content(const std::string &fileName)
 
 std::string get_kernel_name(const std::string &source)
 {
-    cl_uint crc = 0;
-
     // Count CRC
-    for (cl_uint i = 0; i < source.size() - source.size() % sizeof(cl_uint); i += sizeof(cl_uint))
-    {
-        cl_uint *ptr = (cl_uint *)&source[i];
-        crc += *ptr;
-    }
-    cl_uint remainder = 0;
-    memcpy(&remainder, &source[0] + source.size() - source.size() % sizeof(cl_uint), source.size() % sizeof(cl_uint));
-    crc += remainder;
+    cl_uint crc = crc32(source.data(), source.size());
 
     // Create list of kernel names
     std::string kernelsList;
