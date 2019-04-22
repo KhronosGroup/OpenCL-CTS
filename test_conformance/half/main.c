@@ -48,7 +48,6 @@ const char *addressSpaceNames[] = {"global", "private", "local", "constant"};
 static int ParseArgs( int argc, const char **argv );
 static void PrintUsage( void );
 static void PrintArch(void);
-static void PrintDevice(void);
 
 
 int g_arrVecSizes[kVectorSizeCount+kStrangeVectorSizeCount];
@@ -94,8 +93,6 @@ int main (int argc, const char **argv )
         g_arrVecAligns[i] = alignbound;
     }
 
-    test_start();
-
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
     {
@@ -106,9 +103,6 @@ int main (int argc, const char **argv )
     if( (error = ParseArgs( argc, argv )) )
         goto exit;
 
-    if( (error = InitCL()) )
-        goto exit;
-
     if (gIsEmbedded) {
         vlog( "\tProfile: Embedded\n" );
     }else
@@ -117,7 +111,7 @@ int main (int argc, const char **argv )
     }
 
     fflush( stdout );
-    error = parseAndCallCommandLineTests( argCount, argList, NULL, test_num, test_list, true, 0, 0 );
+    error = runTestHarnessWithCheck( argCount, argList, test_num, test_list, false, true, 0, InitCL );
 
 exit:
     if(gQueue)
@@ -135,8 +129,6 @@ exit:
     }
 
     ReleaseCL();
-    test_finish();
-
     return error;
 }
 
@@ -183,43 +175,6 @@ static int ParseArgs( int argc, const char **argv )
     }
 #endif
 
-    /* Check for environment variable to set device type */
-    char *env_mode = getenv( "CL_DEVICE_TYPE" );
-    if( env_mode != NULL )
-    {
-        if( strcmp( env_mode, "gpu" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_GPU" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_GPU;
-        else if( strcmp( env_mode, "cpu" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_CPU" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_CPU;
-        else if( strcmp( env_mode, "accelerator" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-        else if( strcmp( env_mode, "default" ) == 0 || strcmp( env_mode, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-        else
-        {
-            vlog_error( "Unknown CL_DEVICE_TYPE env variable setting: %s.\nAborting...\n", env_mode );
-            abort();
-        }
-    }
-
-    unsigned int num_devices;
-    cl_platform_id platform = NULL;
-    clGetPlatformIDs(1, &platform, NULL);
-    clGetDeviceIDs(platform, gDeviceType, 0, NULL, &num_devices);
-
-    const char* device_index_env = getenv("CL_DEVICE_INDEX");
-    if (device_index_env) {
-        if (device_index_env) {
-            gDeviceIndex = atoi(device_index_env);
-        }
-
-        if (gDeviceIndex >= num_devices) {
-            vlog("Specified CL_DEVICE_INDEX=%d out of range, using index 0.\n",
-                gDeviceIndex);
-            gDeviceIndex = 0;
-        }
-    }
-
     vlog( "\n%s", appName );
     for( i = 1; i < argc; i++ )
     {
@@ -263,19 +218,8 @@ static int ParseArgs( int argc, const char **argv )
         }
         else
         {
-            if( 0 == strcmp( arg, "CL_DEVICE_TYPE_CPU" ) )
-                gDeviceType = CL_DEVICE_TYPE_CPU;
-            else if( 0 == strcmp( arg, "CL_DEVICE_TYPE_GPU" ) )
-                gDeviceType = CL_DEVICE_TYPE_GPU;
-            else if( 0 == strcmp( arg, "CL_DEVICE_TYPE_ACCELERATOR" ) )
-                gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-            else if( 0 == strcmp( arg, "CL_DEVICE_TYPE_DEFAULT" ) )
-                gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-            else
-            {
-                argList[ argCount ] = arg;
-                argCount++;
-            }
+            argList[ argCount ] = arg;
+            argCount++;
         }
     }
 
@@ -287,7 +231,6 @@ static int ParseArgs( int argc, const char **argv )
 
     vlog( "Test binary built %s %s\n", __DATE__, __TIME__ );
     PrintArch();
-    PrintDevice();
     if( gWimpyMode )
     {
         vlog( "\n" );
@@ -342,22 +285,4 @@ static void PrintArch( void )
     sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
     vlog( "cpu subtype:\t%d\n", type );
 #endif
-}
-
-static void PrintDevice( void)
-{
-    switch(gDeviceType) {
-        case CL_DEVICE_TYPE_CPU:
-            vlog( "DEVICE:\tcpu\n" );
-            break;
-        case CL_DEVICE_TYPE_GPU:
-            vlog( "DEVICE:\tgpu\n" );
-            break;
-        case CL_DEVICE_TYPE_ACCELERATOR:
-            vlog( "DEVICE:\taccelerator\n" );
-            break;
-        default:
-            vlog_error( "DEVICE:\tunknown\n" );
-            break;
-    }
 }
