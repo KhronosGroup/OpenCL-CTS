@@ -33,8 +33,8 @@ int test_roundTrip( cl_device_id deviceID, cl_context context, cl_command_queue 
 
 typedef cl_ushort (*f2h)( float );
 typedef cl_ushort (*d2h)( double );
-int Test_vStoreHalf_private( f2h referenceFunc, d2h referenceDoubleFunc, const char *roundName );
-int Test_vStoreaHalf_private( f2h referenceFunc, d2h referenceDoubleFunc, const char *roundName );
+int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h referenceDoubleFunc, const char *roundName );
+int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h referenceDoubleFunc, const char *roundName );
 
 #endif /* TESTS_H */
 

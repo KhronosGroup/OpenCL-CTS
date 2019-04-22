@@ -16,6 +16,7 @@
 #ifndef CL_UTILS_H
 #define  CL_UTILS_H
 
+#include "../../test_common/harness/testHarness.h"
 #include "../../test_common/harness/compat.h"
 
 #include <stdio.h>
@@ -59,9 +60,6 @@ extern cl_mem          gOutBuffer_single;
 extern cl_mem          gInBuffer_double;
 // extern cl_mem          gOutBuffer_double;
 
-extern uint32_t           gDeviceIndex;
-extern cl_device_type  gDeviceType;
-extern cl_device_id    gDevice;
 extern cl_context      gContext;
 extern cl_command_queue gQueue;
 extern uint32_t        gDeviceFrequency;
@@ -71,7 +69,6 @@ extern size_t          gWorkGroupSize;
 extern int             gFailCount;
 extern int             gTestDouble;
 extern int             gReportTimes;
-extern size_t          gBufferSize;
 
 // gWimpyMode indicates if we run the test in wimpy mode where we limit the
 // size of 32 bit ranges to a much smaller set.  This is meant to be used
@@ -92,10 +89,10 @@ extern const char *vector_size_strings[kVectorSizeCount+kStrangeVectorSizeCount]
 extern const char *align_divisors[kVectorSizeCount+kStrangeVectorSizeCount];
 extern const char *align_types[kVectorSizeCount+kStrangeVectorSizeCount];
 
-int InitCL( void );
+test_status InitCL( cl_device_id device );
 void ReleaseCL( void );
-int RunKernel( cl_kernel kernel, void *inBuf, void *outBuf, uint32_t blockCount , int extraArg);
-cl_program   MakeProgram( const char *source[], int count );
+int RunKernel( cl_device_id device, cl_kernel kernel, void *inBuf, void *outBuf, uint32_t blockCount , int extraArg);
+cl_program MakeProgram( cl_device_id device, const char *source[], int count );
 
 #define STRING( _x )    STRINGIFY( _x )
 #define STRINGIFY(x)    #x
