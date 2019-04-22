@@ -993,8 +993,6 @@ int main(int argc, const char* argv[])
     if(clReleaseContext(gContext)!= CL_SUCCESS)
         log_error("clReleaseContext\n");
 
-    releaseOutputStream(gFd);
-
 
     free(argList);
     return err;
