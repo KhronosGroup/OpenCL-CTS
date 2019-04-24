@@ -20,9 +20,6 @@
 
 extern bool            gDebugTrace, gTestSmallImages, gTestMaxImages;
 
-extern clCommandQueueWrapper queue;
-extern clContextWrapper context;
-
 typedef struct image_kernel_data
 {
     cl_int width;
@@ -69,7 +66,7 @@ static const char *methodTestKernelPattern =
 static const char *depthKernelLine = "   outData->depth = get_image_depth( input );\n";
 static const char *depthDimKernelLine = "   outData->depthDim = dim.z;\n";
 
-int test_get_image_info_single( cl_device_id device, image_descriptor *imageInfo, MTdata d )
+int test_get_image_info_single( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d )
 {
     int error = 0;
 
@@ -199,7 +196,7 @@ int test_get_image_info_single( cl_device_id device, image_descriptor *imageInfo
     return error;
 }
 
-int test_get_image_info_2D( cl_device_id device, cl_image_format *format )
+int test_get_image_info_2D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format )
 {
     size_t maxWidth, maxHeight;
     cl_ulong maxAllocSize, memSize;
@@ -232,7 +229,7 @@ int test_get_image_info_2D( cl_device_id device, cl_image_format *format )
                 if( gDebugTrace )
                     log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.height );
 
-                int ret = test_get_image_info_single( device, &imageInfo, seed );
+                int ret = test_get_image_info_single( context, queue, &imageInfo, seed );
                 if( ret )
                     return -1;
             }
@@ -255,7 +252,7 @@ int test_get_image_info_2D( cl_device_id device, cl_image_format *format )
             log_info( "Testing %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ]);
             if( gDebugTrace )
                 log_info( "   at max size %d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ] );
-            if( test_get_image_info_single( device, &imageInfo, seed ) )
+            if( test_get_image_info_single( context, queue, &imageInfo, seed ) )
                 return -1;
         }
     }
@@ -285,7 +282,7 @@ int test_get_image_info_2D( cl_device_id device, cl_image_format *format )
 
             if( gDebugTrace )
                 log_info( "   at size %d,%d (row pitch %d) out of %d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.rowPitch, (int)maxWidth, (int)maxHeight );
-            int ret = test_get_image_info_single( device, &imageInfo, seed );
+            int ret = test_get_image_info_single( context, queue, &imageInfo, seed );
             if( ret )
                 return -1;
         }
