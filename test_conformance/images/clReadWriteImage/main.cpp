@@ -25,40 +25,42 @@
 
 #include "../testBase.h"
 
-bool            gDebugTrace = false, gTestSmallImages = false, gTestMaxImages = false, gUseRamp = false, gTestRounding = false, gTestMipmaps = false;
-int                gTypesToTest = 0;
+bool gDebugTrace;
+bool gTestSmallImages;
+bool gTestMaxImages;
+bool gUseRamp;
+bool gTestRounding;
+bool gTestMipmaps;
+int  gTypesToTest;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
 bool            gEnablePitch = false;
 cl_device_type    gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-cl_command_queue queue;
-cl_context context;
-static cl_device_id device;
 
 #define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
 static void printUsage( const char *execName );
 
-extern int test_image_set( cl_device_id device, cl_mem_object_type image_type );
+extern int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type image_type );
 
-int test_1D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_1D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_image_set( device, CL_MEM_OBJECT_IMAGE1D );
+    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE1D );
 }
-int test_2D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_2D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_image_set( device, CL_MEM_OBJECT_IMAGE2D );
+    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE2D );
 }
-int test_3D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_3D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_image_set( device, CL_MEM_OBJECT_IMAGE3D );
+    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE3D );
 }
-int test_1Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_1Darray(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_image_set( device, CL_MEM_OBJECT_IMAGE1D_ARRAY );
+    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE1D_ARRAY );
 }
-int test_2Darray(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_2Darray(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_image_set( device, CL_MEM_OBJECT_IMAGE2D_ARRAY );
+    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE2D_ARRAY );
 }
 
 test_definition test_list[] = {
@@ -73,11 +75,7 @@ const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    cl_platform_id platform;
     cl_channel_type chanType;
-    bool randomize = false;
-
-  test_start();
 
     checkDeviceTypeOverride( &gDeviceType );
 
@@ -120,8 +118,6 @@ int main(int argc, const char *argv[])
             // Don't test pitches with mipmaps right now.
             gEnablePitch = false;
         }
-        else if( strcmp( argv[i], "randomize" ) == 0 )
-            randomize = true;
 
         else if( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 )
         {
@@ -137,100 +133,10 @@ int main(int argc, const char *argv[])
         }
     }
 
-    // Seed the random # generators
-  if( randomize )
-  {
-    gRandomSeed = (cl_uint) time( NULL );
-    log_info( "Random seed: %u.\n", gRandomSeed );
-    gReSeed = 1;
-  }
-
-  int error;
-  // Get our platform
-  error = clGetPlatformIDs(1, &platform, NULL);
-  if( error )
-  {
-    print_error( error, "Unable to get platform" );
-    test_finish();
-    return -1;
-  }
-
-  // Get our device
-  unsigned int num_devices;
-  error = clGetDeviceIDs(platform, gDeviceType, 0, NULL, &num_devices);
-  if( error )
-  {
-    print_error( error, "Unable to get number of devices" );
-    test_finish();
-    return -1;
-  }
-
-  uint32_t gDeviceIndex = 0;
-  const char* device_index_env = getenv("CL_DEVICE_INDEX");
-  if (device_index_env) {
-    if (device_index_env) {
-      gDeviceIndex = atoi(device_index_env);
-    }
-
-    if (gDeviceIndex >= num_devices) {
-      vlog("Specified CL_DEVICE_INDEX=%d out of range, using index 0.\n", gDeviceIndex);
-      gDeviceIndex = 0;
-    }
-  }
-
-  cl_device_id *gDeviceList = (cl_device_id *)malloc( num_devices * sizeof( cl_device_id ) );
-  error = clGetDeviceIDs(platform, gDeviceType, num_devices, gDeviceList, NULL);
-  if( error )
-  {
-    print_error( error, "Unable to get devices" );
-    free( gDeviceList );
-    test_finish();
-    return -1;
-  }
-
-  device = gDeviceList[gDeviceIndex];
-  free( gDeviceList );
-
-  log_info( "Using " );
-  if( printDeviceHeader( device ) != CL_SUCCESS )
-  {
-    test_finish();
-    return -1;
-  }
-
-  // Check for image support
-  if(checkForImageSupport( device ) == CL_IMAGE_FORMAT_NOT_SUPPORTED) {
-    log_info("Device does not support images. Skipping test.\n");
-    test_finish();
-    return 0;
-  }
-
-    // Create a context to test with
-    context = clCreateContext( NULL, 1, &device, notify_callback, NULL, &error );
-    if( error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to create testing context" );
-        test_finish();
-        return -1;
-    }
-
-    // Create a queue against the context
-    queue = clCreateCommandQueueWithProperties( context, device, 0, &error );
-  if( error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to create testing command queue" );
-        test_finish();
-        return -1;
-    }
-
     if( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
 
-    int ret = parseAndCallCommandLineTests( argCount, argList, NULL, test_num, test_list, true, 0, 0 );
-
-  error = clFinish(queue);
-  if (error)
-    print_error(error, "clFinish failed.");
+    int ret = runTestHarness( argCount, argList, test_num, test_list, true, false, 0 );
 
   if (gTestFailure == 0) {
     if (gTestCount > 1)
@@ -244,12 +150,7 @@ int main(int argc, const char *argv[])
       log_error("FAILED sub-test.\n");
   }
 
-    // Clean up
-  clReleaseCommandQueue(queue);
-  clReleaseContext(context);
-  free(argList);
-    test_finish();
-
+    free(argList);
     return ret;
 }
 
