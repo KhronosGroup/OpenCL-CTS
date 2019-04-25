@@ -60,15 +60,15 @@
 //-----------------------------------------
 enum Type
  {
-     INT,
-     FLOAT,
-     OCTAL,
-     UNSIGNED,
-     HEXADEC,
-     CHAR,
-     STRING,
-     VECTOR,
-     ADDRESS_SPACE,
+     TYPE_INT,
+     TYPE_FLOAT,
+     TYPE_OCTAL,
+     TYPE_UNSIGNED,
+     TYPE_HEXADEC,
+     TYPE_CHAR,
+     TYPE_STRING,
+     TYPE_VECTOR,
+     TYPE_ADDRESS_SPACE,
      TYPE_COUNT
 };
 

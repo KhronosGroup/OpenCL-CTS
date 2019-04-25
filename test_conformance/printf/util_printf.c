@@ -130,7 +130,7 @@ testCase testCaseInt = {
 
     sizeof(correctBufferInt)/sizeof(char*),
 
-    INT,
+    TYPE_INT,
 
     correctBufferInt,
 
@@ -297,7 +297,7 @@ testCase testCaseFloat = {
 
     sizeof(correctBufferFloat)/sizeof(char*),
 
-    FLOAT,
+    TYPE_FLOAT,
 
     correctBufferFloat,
 
@@ -371,7 +371,7 @@ testCase testCaseOctal = {
 
     sizeof(correctBufferOctal)/sizeof(char*),
 
-    OCTAL,
+    TYPE_OCTAL,
 
     correctBufferOctal,
 
@@ -433,7 +433,7 @@ testCase testCaseUnsigned = {
 
     sizeof(correctBufferUnsigned)/sizeof(char*),
 
-    UNSIGNED,
+    TYPE_UNSIGNED,
 
     correctBufferUnsigned,
 
@@ -513,7 +513,7 @@ testCase testCaseHexadecimal = {
 
     sizeof(correctBufferHexadecimal)/sizeof(char*),
 
-    HEXADEC,
+    TYPE_HEXADEC,
 
     correctBufferHexadecimal,
 
@@ -581,7 +581,7 @@ testCase testCaseChar = {
 
     sizeof(correctBufferChar)/sizeof(char*),
 
-    CHAR,
+    TYPE_CHAR,
 
     correctBufferChar,
 
@@ -645,7 +645,7 @@ testCase testCaseString = {
 
     sizeof(correctBufferString)/sizeof(char*),
 
-    STRING,
+    TYPE_STRING,
 
     correctBufferString,
 
@@ -723,7 +723,7 @@ testCase testCaseVector = {
 
     sizeof(correctBufferVector)/(sizeof(char *)),
 
-    VECTOR,
+    TYPE_VECTOR,
 
     correctBufferVector,
 
@@ -795,7 +795,7 @@ testCase testCaseAddrSpace = {
 
     sizeof(correctAddrSpace)/(sizeof(char *)),
 
-    ADDRESS_SPACE,
+    TYPE_ADDRESS_SPACE,
 
     correctAddrSpace,
 
@@ -825,7 +825,7 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
 
     analysisBuffer[strlen(analysisBuffer)-1] = '\0';
     //Convert analysis buffer to long for address space
-    if(pTestCase->_type == ADDRESS_SPACE && strcmp(pTestCase->_genParameters[testId].addrSpacePAdd,""))
+    if(pTestCase->_type == TYPE_ADDRESS_SPACE && strcmp(pTestCase->_genParameters[testId].addrSpacePAdd,""))
 
     {
         char analysisBufferTmp[ANALYSIS_BUFFER_SIZE];

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "../../test_common/harness/compat.h"
 #if !defined(_WIN32)
 #include <stdint.h>
 #endif
@@ -34,6 +35,7 @@
 #define streamDup2(fd1,fd2) dup2(fd1,fd2)
 #endif
 #include <limits.h>
+#include <time.h>
 #include "test_printf.h"
 
 #if defined(_WIN32)
@@ -55,10 +57,10 @@ typedef  unsigned int uint32_t;
 
 //Stream helper functions
 
-//Associate stdout stream with the file(tmp):i.e redirect stdout stream to the specific files (tmp)
+//Associate stdout stream with the file(gFileName):i.e redirect stdout stream to the specific files (gFileName)
 static int acquireOutputStream();
 
-//Close the file(tmp) associated with the stdout stream and disassociates it.
+//Close the file(gFileName) associated with the stdout stream and disassociates it.
 static void releaseOutputStream(int fd);
 
 //Get analysis buffer to verify the correctess of printed data
@@ -101,10 +103,34 @@ int waitForEvent(cl_event* event);
 int s_test_cnt = 0;
 int s_test_fail = 0;
 
+static char gFileName[256];
 
 //-----------------------------------------
 // Static helper functions definition
 //-----------------------------------------
+
+//-----------------------------------------
+// getTempFileName
+//-----------------------------------------
+static int getTempFileName()
+{
+    // Create a unique temporary file to allow parallel executed tests.
+#if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
+    sprintf(gFileName, "/tmp/tmpfile.XXXXXX");
+    int fd = mkstemp(gFileName);
+    if (fd == -1)
+        return -1;
+    close(fd);
+#elif defined(_WIN32)
+    UINT ret = GetTempFileName(".", "tmp", 0, gFileName);
+    if (ret == 0)
+        return -1;
+#else
+    MTdata d = init_genrand((cl_uint)time(NULL));
+    sprintf(gFileName, "tmpfile.%u", genrand_int32(d));
+#endif
+    return 0;
+}
 
 //-----------------------------------------
 // acquireOutputStream
@@ -112,7 +138,7 @@ int s_test_fail = 0;
 static int acquireOutputStream()
 {
     int fd = streamDup(fileno(stdout));
-    freopen("tmp","w",stdout);
+    freopen(gFileName,"w",stdout);
     return fd;
 }
 
@@ -134,7 +160,7 @@ static void getAnalysisBuffer(char* analysisBuffer)
     FILE *fp;
     memset(analysisBuffer,0,ANALYSIS_BUFFER_SIZE);
 
-    fp = fopen("tmp","r");
+    fp = fopen(gFileName,"r");
     if(NULL == fp)
         log_error("Failed to open analysis buffer\n");
     else
@@ -256,7 +282,7 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
     sprintf(testname,"%s%d","test",testId);
 
     //Update addrSpaceArgument type,based on FULL_PROFILE/EMBEDDED_PROFILE
-    if(allTestCase[testId]->_type == ADDRESS_SPACE)
+    if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
     {
         sprintf(addrSpaceArgument,allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier);
         if(isKernelPFormat(allTestCase[testId],testNum) && (!isLongSupport || !is64bAddrSpace))
@@ -272,11 +298,11 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
 
     // create program based on its type
 
-    if(allTestCase[testId]->_type == VECTOR)
+    if(allTestCase[testId]->_type == TYPE_VECTOR)
     {
         program = clCreateProgramWithSource( context,sizeof(sourceVec)/sizeof(sourceVec[0]),sourceVec, NULL, NULL);
     }
-    else if(allTestCase[testId]->_type == ADDRESS_SPACE)
+    else if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
     {
         program = clCreateProgramWithSource( context,sizeof(sourceAddrSpace)/sizeof(sourceAddrSpace[0]),sourceAddrSpace, NULL, NULL);
     }
@@ -309,12 +335,12 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
         size_t sourceLen;
         const char** source;
 
-        if(allTestCase[testId]->_type == VECTOR)
+        if(allTestCase[testId]->_type == TYPE_VECTOR)
         {
             sourceLen = sizeof(sourceVec) / sizeof( sourceVec[0] );
             source = sourceVec;
         }
-        else if(allTestCase[testId]->_type == ADDRESS_SPACE)
+        else if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
         {
             sourceLen = sizeof(sourceAddrSpace) / sizeof( sourceAddrSpace[0] );
             source = sourceAddrSpace;
@@ -467,7 +493,7 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
     }
 
     //For address space test if there is kernel argument - set it
-    if(allTestCase[testId]->_type == ADDRESS_SPACE )
+    if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE )
     {
         if(isKernelArgument(allTestCase[testId],testNum))
         {
@@ -532,7 +558,7 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
 
     cl_uint out32;
     cl_ulong out64;
-    if(allTestCase[testId]->_type == ADDRESS_SPACE && isKernelPFormat(allTestCase[testId],testNum))
+    if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE && isKernelPFormat(allTestCase[testId],testNum))
     {
         // Read the OpenCL output buffer (d_out) to the host output array (out)
         if(!is64bAddressSpace(device))//32-bit address space
@@ -713,6 +739,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    if (getTempFileName() == -1)
+    {
+        log_error("getTempFileName failed\n");
+        return -1;
+    }
 
     int err;
     int fd = acquireOutputStream();
@@ -777,10 +808,10 @@ int main(int argc, char* argv[]) {
             //For all formats
             for(unsigned int testNum = 0;testNum < allTestCase[testId]->_testNum;++testNum){
                 releaseOutputStream(fd);
-                if(allTestCase[testId]->_type == VECTOR)
+                if(allTestCase[testId]->_type == TYPE_VECTOR)
                     log_info("%d)testing printf(\"%sv%s%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,allTestCase[testId]->_genParameters[testNum].vectorSize,
                     allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
-                else if(allTestCase[testId]->_type == ADDRESS_SPACE)
+                else if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
                 {
                     if(isKernelArgument)
                         log_info("%d)testing kernel //argument %s \n   printf(%s,%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier,
@@ -794,12 +825,12 @@ int main(int argc, char* argv[]) {
                 fd = acquireOutputStream();
 
                 // Long support for varible type
-                if(allTestCase[testId]->_type == VECTOR && !strcmp(allTestCase[testId]->_genParameters[testNum].dataType,"long") && !isLongSupported(device_id))
+                if(allTestCase[testId]->_type == TYPE_VECTOR && !strcmp(allTestCase[testId]->_genParameters[testNum].dataType,"long") && !isLongSupported(device_id))
                         continue;
 
                 // Long support for address in FULL_PROFILE/EMBEDDED_PROFILE
                 bool isLongSupport = true;
-                if(allTestCase[testId]->_type == ADDRESS_SPACE && isKernelPFormat(allTestCase[testId],testNum) && !isLongSupported(device_id))
+                if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE && isKernelPFormat(allTestCase[testId],testNum) && !isLongSupported(device_id))
                     isLongSupport = false;
 
                 // Perform the test
@@ -847,6 +878,7 @@ int main(int argc, char* argv[]) {
             log_error(" FAILED test.\n");
     }
 
+    remove(gFileName);
     test_finish();
     return s_test_fail;
 }
