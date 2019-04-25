@@ -28,6 +28,7 @@
 #define streamDup2(fd1,fd2) dup2(fd1,fd2)
 #endif
 #include <limits.h>
+#include <time.h>
 #include "test_printf.h"
 
 #if defined(_WIN32)
@@ -54,10 +55,10 @@ static void printUsage( void );
 
 //Stream helper functions
 
-//Associate stdout stream with the file(/tmp/tmpfile):i.e redirect stdout stream to the specific files (/tmp/tmpfile)
+//Associate stdout stream with the file(gFileName):i.e redirect stdout stream to the specific files (gFileName)
 static int acquireOutputStream();
 
-//Close the file(/tmp/tmpfile) associated with the stdout stream and disassociates it.
+//Close the file(gFileName) associated with the stdout stream and disassociates it.
 static void releaseOutputStream(int fd);
 
 //Get analysis buffer to verify the correctess of printed data
@@ -105,9 +106,34 @@ static cl_context        gContext;
 static cl_command_queue  gQueue;
 static int               gFd;
 
+static char gFileName[256];
+
 //-----------------------------------------
 // Static helper functions definition
 //-----------------------------------------
+
+//-----------------------------------------
+// getTempFileName
+//-----------------------------------------
+static int getTempFileName()
+{
+    // Create a unique temporary file to allow parallel executed tests.
+#if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
+    sprintf(gFileName, "/tmp/tmpfile.XXXXXX");
+    int fd = mkstemp(gFileName);
+    if (fd == -1)
+        return -1;
+    close(fd);
+#elif defined(_WIN32)
+    UINT ret = GetTempFileName(".", "tmp", 0, gFileName);
+    if (ret == 0)
+        return -1;
+#else
+    MTdata d = init_genrand((cl_uint)time(NULL));
+    sprintf(gFileName, "tmpfile.%u", genrand_int32(d));
+#endif
+    return 0;
+}
 
 //-----------------------------------------
 // acquireOutputStream
@@ -115,11 +141,7 @@ static int               gFd;
 static int acquireOutputStream()
 {
     int fd = streamDup(fileno(stdout));
-#if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
-    freopen("/tmp/tmpfile","w",stdout);
-#else
-    freopen("tmpfile","w",stdout);
-#endif
+    freopen(gFileName,"w",stdout);
     return fd;
 }
 
@@ -141,11 +163,7 @@ static void getAnalysisBuffer(char* analysisBuffer)
     FILE *fp;
     memset(analysisBuffer,0,ANALYSIS_BUFFER_SIZE);
 
-#if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
-    fp = fopen("/tmp/tmpfile","r");
-#else
-    fp = fopen("tmpfile","r");
-#endif
+    fp = fopen(gFileName,"r");
     if(NULL == fp)
         log_error("Failed to open analysis buffer ('%s')\n", strerror(errno));
     else
@@ -1017,6 +1035,12 @@ int main(int argc, char* argv[])
         }
     }
 
+    if (getTempFileName() == -1)
+    {
+        log_error("getTempFileName failed\n");
+        return -1;
+    }
+
     int err = runTestHarnessWithCheck( argCount, argList, test_num, test_list, false, true, 0, InitCL );
 
     if(gQueue)
@@ -1034,6 +1058,7 @@ int main(int argc, char* argv[])
 
 
     free(argList);
+    remove(gFileName);
     return err;
 }
 
