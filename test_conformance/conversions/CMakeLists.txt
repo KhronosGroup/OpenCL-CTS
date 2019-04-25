@@ -29,7 +29,7 @@ set_source_files_properties(
         ../../test_common/harness/errorHelpers.c
         PROPERTIES LANGUAGE CXX)
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)")
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86$)|(X86$)")
 if(NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
 # -march is needed for CPU atomics, default arch on gcc is i386 
 # that does not support atomics. 

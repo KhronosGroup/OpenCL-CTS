@@ -50,7 +50,7 @@ set_source_files_properties(
 endif(MSVC)
 
 if (NOT CMAKE_CL_64 AND NOT MSVC)
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)" AND NOT MSVC)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86$)|(X86$)" AND NOT MSVC)
 set_source_files_properties(
     FunctionList.c
     Sleep.c
