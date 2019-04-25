@@ -30,7 +30,7 @@ const std::string slash = "/";
 #endif
 
 const std::string spvExt = ".spv";
-const std::string addrWidth = (sizeof(void *) == 4) ? "32" : "64";
+std::string gAddrWidth = "";
 
 std::vector<unsigned char> readBinary(const char *file_name)
 {
@@ -58,7 +58,7 @@ std::vector<unsigned char> readBinary(const char *file_name)
 
 std::vector<unsigned char> readSPIRV(const char *file_name)
 {
-    std::string full_name_str = gSpirVPath + slash + file_name + spvExt + addrWidth;
+    std::string full_name_str = gSpirVPath + slash + file_name + spvExt + gAddrWidth;
     return readBinary(full_name_str.c_str());
 }
 
@@ -104,7 +104,7 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     std::string scriptArgs =
         gOfflineCompilerInput + " "  +
         gOfflineCompilerOutput + " " +
-        addrWidth + " " +
+        gAddrWidth + " " +
         outputTypeStr + " " +
         "-cl-std=CL2.0";
 
@@ -171,6 +171,19 @@ int get_program_with_il(clProgramWrapper &prog,
     return err;
 }
 
+cl_int checkAddressWidth(cl_device_id id)
+{
+  cl_uint address_bits;
+  cl_int err = clGetDeviceInfo(id, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &address_bits, NULL);
+  if(err != CL_SUCCESS){
+    log_error("clGetDeviceInfo failed to get address bits!");
+    return err;
+  }
+
+  gAddrWidth = address_bits == 32 ? "32" : "64";
+  return CL_SUCCESS;
+}
+
 int main(int argc, const char *argv[])
 {
     gReSeed = 1;
@@ -181,9 +194,10 @@ int main(int argc, const char *argv[])
     // off by 1 failures when the user requested the last test in the test list
     // by name on the command line.
     createAndRegister<test_all_class>("all");
-    return runTestHarness(argc, argv,
+
+    return runTestHarnessWithCheck(argc, argv,
                           spirvTestsRegistry::getInstance().getNumTests(),
                           spirvTestsRegistry::getInstance().getTests(),
                           spirvTestsRegistry::getInstance().getTestNames(),
-                          false, false, 0);
+                          false, false, 0, checkAddressWidth);
 }
