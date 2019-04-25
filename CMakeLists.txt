@@ -38,9 +38,9 @@ endif(MSVC90)
 #-----------------------------------------------------------
 # Default Configurable Test Set
 #-----------------------------------------------------------
-set(D3D10_IS_SUPPORTED)
-set(D3D11_IS_SUPPORTED)
-set(GL_IS_SUPPORTED)
+option(D3D10_IS_SUPPORTED "Run DirectX 10 interop tests" OFF)
+option(D3D11_IS_SUPPORTED "Run DirectX 11 interop tests" OFF)
+option(GL_IS_SUPPORTED "Run OpenGL interop tests" OFF)
 
 #-----------------------------------------------------------
 # Vendor Customization
