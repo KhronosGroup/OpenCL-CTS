@@ -41,6 +41,7 @@ endif(MSVC90)
 option(D3D10_IS_SUPPORTED "Run DirectX 10 interop tests" OFF)
 option(D3D11_IS_SUPPORTED "Run DirectX 11 interop tests" OFF)
 option(GL_IS_SUPPORTED "Run OpenGL interop tests" OFF)
+option(GLES_IS_SUPPORTED "Run OpenGL ES interop tests" OFF)
 
 #-----------------------------------------------------------
 # Vendor Customization
