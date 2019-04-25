@@ -99,7 +99,7 @@ TEST_FN_REDIRECTOR( renderbuffer_read )
 TEST_FN_REDIRECTOR( renderbuffer_write )
 TEST_FN_REDIRECTOR( renderbuffer_getinfo )
 
-TEST_FN_REDIRECTOR( test_fence_sync )
+TEST_FN_REDIRECTOR( fence_sync )
 
 test_definition test_list[] = {
     TEST_FN_REDIRECT( buffers ),
@@ -132,6 +132,22 @@ test_definition test_list[] = {
     TEST_FN_REDIRECT( renderbuffer_read ),
     TEST_FN_REDIRECT( renderbuffer_write ),
     TEST_FN_REDIRECT( renderbuffer_getinfo )
+};
+
+test_definition test_list32[] = {
+    TEST_FN_REDIRECT( images_read_texturebuffer ),
+    TEST_FN_REDIRECT( images_write_texturebuffer ),
+    TEST_FN_REDIRECT( images_texturebuffer_getinfo ),
+
+    TEST_FN_REDIRECT( fence_sync ),
+    TEST_FN_REDIRECT( images_read_2D_depth ),
+    TEST_FN_REDIRECT( images_write_2D_depth ),
+    TEST_FN_REDIRECT( images_read_2Darray_depth ),
+    TEST_FN_REDIRECT( images_write_2Darray_depth ),
+    TEST_FN_REDIRECT( images_read_2D_multisample ),
+    TEST_FN_REDIRECT( images_read_2Darray_multisample ),
+    TEST_FN_REDIRECT( image_methods_depth ),
+    TEST_FN_REDIRECT( image_methods_multisample )
 };
 
 const int test_num = ARRAY_SIZE( test_list );
