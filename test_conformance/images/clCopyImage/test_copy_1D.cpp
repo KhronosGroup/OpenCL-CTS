@@ -22,13 +22,11 @@ extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gEnablePi
 extern cl_filter_mode    gFilterModeToUse;
 extern cl_addressing_mode    gAddressModeToUse;
 extern uint64_t gRoundingStartValue;
-extern cl_command_queue queue;
-extern cl_context context;
 
-extern int test_copy_image_generic( cl_device_id device, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
+extern int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
                                    const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d );
 
-int test_copy_image_size_1D( cl_device_id device, image_descriptor *imageInfo, MTdata d )
+int test_copy_image_size_1D( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d )
 {
   size_t sourcePos[ 3 ], destPos[ 3 ], regionSize[ 3 ];
   int ret = 0, retCode;
@@ -64,7 +62,7 @@ int test_copy_image_size_1D( cl_device_id device, image_descriptor *imageInfo, M
         regionSize[ 0 ] = width_lod;
     }
 
-    retCode = test_copy_image_generic( device, imageInfo, imageInfo, sourcePos, destPos, regionSize, d );
+    retCode = test_copy_image_generic( context, queue, imageInfo, imageInfo, sourcePos, destPos, regionSize, d );
     if( retCode < 0 )
       return retCode;
     else
@@ -93,7 +91,7 @@ int test_copy_image_size_1D( cl_device_id device, image_descriptor *imageInfo, M
 
 
       // Go for it!
-      retCode = test_copy_image_generic( device, imageInfo, imageInfo, sourcePos, destPos, regionSize, d );
+      retCode = test_copy_image_generic( context, queue, imageInfo, imageInfo, sourcePos, destPos, regionSize, d );
       if( retCode < 0 )
         return retCode;
       else
@@ -103,7 +101,7 @@ int test_copy_image_size_1D( cl_device_id device, image_descriptor *imageInfo, M
       return ret;
 }
 
-int test_copy_image_set_1D( cl_device_id device, cl_image_format *format )
+int test_copy_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format )
 {
     size_t maxWidth;
     cl_ulong maxAllocSize, memSize;
@@ -146,7 +144,7 @@ int test_copy_image_set_1D( cl_device_id device, cl_image_format *format )
             if( gDebugTrace )
                 log_info( "   at size %d\n", (int)imageInfo.width );
 
-            int ret = test_copy_image_size_1D( device, &imageInfo, seed );
+            int ret = test_copy_image_size_1D( context, queue, &imageInfo, seed );
             if( ret )
                 return -1;
         }
@@ -179,7 +177,7 @@ int test_copy_image_set_1D( cl_device_id device, cl_image_format *format )
             log_info( "Testing %d\n", (int)sizes[ idx ][ 0 ] );
             if( gDebugTrace )
                 log_info( "   at max size %d\n", (int)sizes[ idx ][ 0 ] );
-            if( test_copy_image_size_1D( device, &imageInfo, seed ) )
+            if( test_copy_image_size_1D( context, queue, &imageInfo, seed ) )
                 return -1;
         }
     }
@@ -225,7 +223,7 @@ int test_copy_image_set_1D( cl_device_id device, cl_image_format *format )
           log_info( "   and %llu mip levels\n", (size_t) imageInfo.num_mip_levels );
       }
 
-            int ret = test_copy_image_size_1D( device, &imageInfo, seed );
+            int ret = test_copy_image_size_1D( context, queue, &imageInfo, seed );
             if( ret )
                 return -1;
         }
