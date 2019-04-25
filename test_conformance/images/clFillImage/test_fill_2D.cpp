@@ -22,15 +22,13 @@ extern bool               gDebugTrace, gDisableOffsets, gTestSmallImages, gEnabl
 extern cl_filter_mode     gFilterModeToUse;
 extern cl_addressing_mode gAddressModeToUse;
 extern uint64_t           gRoundingStartValue;
-extern cl_command_queue   queue;
-extern cl_context         context;
 
 // Defined in test_fill_2D_3D.cpp
-extern int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
+extern int test_fill_image_generic( cl_context context, cl_command_queue queue, image_descriptor *imageInfo,
                                     const size_t origin[], const size_t region[], ExplicitType outputType, MTdata d );
 
 
-int test_fill_image_size_2D( cl_device_id device, image_descriptor *imageInfo, ExplicitType outputType, MTdata d )
+int test_fill_image_size_2D( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, ExplicitType outputType, MTdata d )
 {
     size_t origin[ 3 ], region[ 3 ];
     int ret = 0, retCode;
@@ -41,7 +39,7 @@ int test_fill_image_size_2D( cl_device_id device, image_descriptor *imageInfo, E
     region[ 1 ] = imageInfo->height;
     region[ 2 ] = 1;
 
-    retCode = test_fill_image_generic( device, imageInfo, origin, region, outputType, d );
+    retCode = test_fill_image_generic( context, queue, imageInfo, origin, region, outputType, d );
     if ( retCode < 0 )
         return retCode;
     else
@@ -59,7 +57,7 @@ int test_fill_image_size_2D( cl_device_id device, image_descriptor *imageInfo, E
         origin[ 1 ] = ( imageInfo->height > region[ 1 ] ) ? (size_t)random_in_range( 0, (int)( imageInfo->height - region[ 1 ] - 1 ), d ) : 0;
 
         // Go for it!
-        retCode = test_fill_image_generic( device, imageInfo, origin, region, outputType, d );
+        retCode = test_fill_image_generic( context, queue, imageInfo, origin, region, outputType, d );
         if ( retCode < 0 )
             return retCode;
         else
@@ -70,7 +68,7 @@ int test_fill_image_size_2D( cl_device_id device, image_descriptor *imageInfo, E
 }
 
 
-int test_fill_image_set_2D( cl_device_id device, cl_image_format *format, ExplicitType outputType )
+int test_fill_image_set_2D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType outputType )
 {
     size_t maxWidth, maxHeight;
     cl_ulong maxAllocSize, memSize;
@@ -115,7 +113,7 @@ int test_fill_image_set_2D( cl_device_id device, cl_image_format *format, Explic
                 if ( gDebugTrace )
                     log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.height );
 
-                int ret = test_fill_image_size_2D( device, &imageInfo, outputType, seed );
+                int ret = test_fill_image_size_2D( context, queue, &imageInfo, outputType, seed );
                 if ( ret )
                     return -1;
             }
@@ -147,7 +145,7 @@ int test_fill_image_set_2D( cl_device_id device, cl_image_format *format, Explic
             log_info( "Testing %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ] );
             if ( gDebugTrace )
                 log_info( "   at max size %d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ] );
-            if ( test_fill_image_size_2D( device, &imageInfo, outputType, seed ) )
+            if ( test_fill_image_size_2D( context, queue, &imageInfo, outputType, seed ) )
                 return -1;
         }
     }
@@ -179,7 +177,7 @@ int test_fill_image_set_2D( cl_device_id device, cl_image_format *format, Explic
 
             if ( gDebugTrace )
                 log_info( "   at size %d,%d (row pitch %d) out of %d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.rowPitch, (int)maxWidth, (int)maxHeight );
-            int ret = test_fill_image_size_2D( device, &imageInfo, outputType, seed );
+            int ret = test_fill_image_size_2D( context, queue, &imageInfo, outputType, seed );
             if ( ret )
                 return -1;
         }
