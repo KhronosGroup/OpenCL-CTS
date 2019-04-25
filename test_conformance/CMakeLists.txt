@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
+option(GL_IS_SUPPORTED "Run OpenGL interop tests" OFF)
+
 if(MSVC)
   # The CTS will not link on MSVC 32-bit builds. To workaround this, add the
   # /LARGEADDRESSAWARE option as a linker flag. This is automatically set for
