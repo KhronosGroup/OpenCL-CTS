@@ -47,7 +47,7 @@ option(GLES_IS_SUPPORTED "Run OpenGL ES interop tests" OFF)
 # Vendor Customization
 #-----------------------------------------------------------
 #Vendor Customization File can be included here to provide a way to automatically
-#build driver as a depencency of the conformance tests, or other such CMake customization
+#build driver as a dependency of the conformance tests, or other such CMake customization
 include(CMakeVendor.txt OPTIONAL)
 
  if(CL_INCLUDE_DIR AND CL_LIB_DIR)
@@ -78,7 +78,7 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
 endif()
 
-# Clang gives C++11 narrowing warnings so surpress these for now
+# Clang gives C++11 narrowing warnings so suppress these for now
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++11-narrowing")
 endif()
