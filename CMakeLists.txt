@@ -51,15 +51,15 @@ option(GLES_IS_SUPPORTED "Run OpenGL ES interop tests" OFF)
 #-----------------------------------------------------------
 # Set the prefix and suffix for the generated executables
 # For example, if you want the api executable to be test_conformance_api_12
-# Set previx to "test_conformance_" and suffix to "_12"
+# Set prefix to "test_conformance_" and suffix to "_12"
 set(CONFORMANCE_PREFIX "test_" )
-set(CONFORMNACE_SUFFIX "" )
+set(CONFORMANCE_SUFFIX "" )
 
 #-----------------------------------------------------------
 # Vendor Customization
 #-----------------------------------------------------------
 #Vendor Customization File can be included here to provide a way to automatically
-#build driver as a depencency of the conformance tests, or other such CMake customization
+#build driver as a dependency of the conformance tests, or other such CMake customization
 option(USE_VENDOR_CUSTOM_FILE "Use Vendor Customization File" OFF)
 if(USE_VENDOR_CUSTOM_FILE)
     include(CMakeVendor.txt OPTIONAL)
