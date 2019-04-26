@@ -23,9 +23,6 @@ cmake_minimum_required(VERSION 3.1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_0_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_1_APIS=1)
 
-# where to look first for cmake modules, before ${CMAKE_ROOT}/Modules/ is checked
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-
 
 # Support both VS2008 and VS2012.
 set(BUILD_DIR "$ENV{ADRENO_DRIVER}/build")
