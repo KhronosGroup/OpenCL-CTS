@@ -32,6 +32,11 @@ else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CTS_EXTRA_FLAGS}")
 endif()
 
+# Clang gives C++11 narrowing warnings so suppress these for now
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++11-narrowing")
+endif()
+
 include_directories(BEFORE SYSTEM ${CLConform_HEADERS})
 link_directories(${CLConform_LIB_DIR})
 
