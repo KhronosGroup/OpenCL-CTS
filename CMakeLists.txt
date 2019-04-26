@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.1)
+
 set( CONFORMANCE_SUFFIX "" )
 
 set(CLConform_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -17,8 +19,6 @@ set(CLConform_VERSION_EXTRA "")
 set(CLConform_VERSION "${CLConform_VERSION_MAJOR}.${CLConform_VERSION_MINOR}")
 set(CLConform_VERSION_FULL
     "${CLConform_VERSION}.${CLConform_VERSION_MICRO}${CLConform_VERSION_EXTRA}")
-
-cmake_minimum_required(VERSION 3.1)
 
 add_definitions(-DCL_TARGET_OPENCL_VERSION=210)
 
