@@ -117,6 +117,7 @@ long double rintl(long double x)
     return x;
 }
 
+#if _MSC_VER < 1800
 
 ///////////////////////////////////////////////////////////////////
 //
@@ -221,7 +222,7 @@ int ilogbl (long double x)
     return exp - 0x3fff;
 }
 
-
+#endif // _MSC_VER < 1800
 
 ///////////////////////////////////////////////////////////////////
 //
@@ -566,7 +567,7 @@ long int lrintf (float x)
 //
 ///////////////////////////////////////////////////////////////////
 
-#if _MSC_VER < 1900
+#if _MSC_VER < 1800
 int fetestexcept(int excepts)
 {
     unsigned int status = _statusfp();
