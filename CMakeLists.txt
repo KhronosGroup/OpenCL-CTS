@@ -121,7 +121,7 @@ endif(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
-if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float
     # to falsely fail. -ffloat-store also works, but WG suggested
