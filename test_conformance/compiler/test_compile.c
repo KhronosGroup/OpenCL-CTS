@@ -14,12 +14,12 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#if defined(_WIN32)
 #include <time.h>
-#elif  defined(__linux__) || defined(__APPLE__)
+#if  defined(__linux__) || defined(__APPLE__)
 #include <sys/time.h>
 #include <unistd.h>
 #endif
+#include <errno.h>
 #include "../../test_common/harness/conversions.h"
 
 extern cl_uint gRandomSeed;
@@ -2519,6 +2519,33 @@ int test_execute_after_embedded_header_link(cl_device_id deviceID, cl_context co
 #include <direct.h>
 #endif
 
+/*
+ * Create a unique directory fooXXX in the current working directory. XXX is
+ * replaced with a three-letter string that makes the directory unique.
+ */
+static int mkdir_foo(char *foo)
+{
+    const char alphanum[] =
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    int num_x = 3;
+    int len_alphanum = (int)strlen(alphanum);
+    int attempts = 1;
+    for (int i = 0; i < num_x; i++)
+        attempts *= len_alphanum;
+    int ret;
+    char *xxx = foo + (int)strlen(foo) - num_x;
+    MTdata d = init_genrand((cl_uint)time(NULL));
+    while (attempts-- > 0)
+    {
+        for (int i = 0; i < num_x; i++)
+            xxx[i] = alphanum[random_in_range(0, len_alphanum - 1, d)];
+        ret = _mkdir(foo);
+        if (ret == 0 || errno != EEXIST)
+            break;
+    }
+    return ret;
+}
+
 int test_execute_after_included_header_link(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int error;
@@ -2537,20 +2564,23 @@ int test_execute_after_included_header_link(cl_device_id deviceID, cl_context co
 #if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
     /* Some tests systems doesn't allow one to write in the test directory */
     if (_chdir("/tmp") != 0) {
-        log_error( "ERROR: Unable to remove directory foo/bar! (in %s:%d)\n", __FILE__, __LINE__ );
+        log_error( "ERROR: Unable to change to directory /tmp! (in %s:%d)\n", __FILE__, __LINE__ );
         return -1;
     }
 #endif
-    if (_mkdir("foo") != 0) {
-        log_error( "ERROR: Unable to create directory foo! (in %s:%d)\n", __FILE__, __LINE__ );
+    char foo[] = "fooXXX";
+    if (mkdir_foo(foo) != 0) {
+        log_error( "ERROR: Unable to create directory %s! (in %s:%d)\n", foo, __FILE__, __LINE__ );
         return -1;
     }
-    if (_mkdir("foo/bar") != 0) {
-        log_error( "ERROR: Unable to create directory foo/bar! (in %s:%d)\n", __FILE__, __LINE__ );
+    char foobar[] = "fooXXX/bar";
+    strncpy(foobar, foo, strlen(foo));
+    if (_mkdir(foobar) != 0) {
+        log_error( "ERROR: Unable to create directory %s! (in %s:%d)\n", foobar, __FILE__, __LINE__ );
         return -1;
     }
-    if (_chdir("foo/bar") != 0) {
-        log_error( "ERROR: Unable to change to directory foo/bar! (in %s:%d)\n", __FILE__, __LINE__ );
+    if (_chdir(foobar) != 0) {
+        log_error( "ERROR: Unable to change to directory %s! (in %s:%d)\n", foobar, __FILE__, __LINE__ );
         return -1;
     }
     FILE* simple_header_file = fopen(simple_header_name, "w");
@@ -2570,16 +2600,18 @@ int test_execute_after_included_header_link(cl_device_id deviceID, cl_context co
         log_error( "ERROR: Unable to change to original working directory! (in %s:%d)\n", __FILE__, __LINE__);
         return -1;
     }
+    char options[64];
 #if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
-    error = clCompileProgram(program, 1, &deviceID, "-I/tmp/foo/bar", 0, NULL, NULL, NULL, NULL);
+    snprintf(options, sizeof(options), "-I/tmp/%s", foobar);
 #else
-    error = clCompileProgram(program, 1, &deviceID, "-Ifoo/bar", 0, NULL, NULL, NULL, NULL);
+    snprintf(options, sizeof(options), "-I%s", foobar);
 #endif
+    error = clCompileProgram(program, 1, &deviceID, options, 0, NULL, NULL, NULL, NULL);
     test_error( error, "Unable to compile a simple program with included header" );
 
     /* cleanup */
-    if (_chdir("foo/bar") != 0) {
-        log_error( "ERROR: Unable to change to directory foo/bar! (in %s:%d)\n", __FILE__, __LINE__ );
+    if (_chdir(foobar) != 0) {
+        log_error( "ERROR: Unable to change to directory %s! (in %s:%d)\n", foobar, __FILE__, __LINE__ );
         return -1;
     }
     if (_unlink(simple_header_name) != 0) {
@@ -2590,12 +2622,12 @@ int test_execute_after_included_header_link(cl_device_id deviceID, cl_context co
         log_error( "ERROR: Unable to change to original working directory! (in %s:%d)\n", __FILE__, __LINE__ );
         return -1;
     }
-    if (_rmdir("foo/bar") != 0) {
-        log_error( "ERROR: Unable to remove directory foo/bar! (in %s:%d)\n", __FILE__, __LINE__ );
+    if (_rmdir(foobar) != 0) {
+        log_error( "ERROR: Unable to remove directory %s! (in %s:%d)\n", foobar, __FILE__, __LINE__ );
         return -1;
     }
-    if (_rmdir("foo") != 0) {
-        log_error( "ERROR: Unable to remove directory foo! (in %s:%d)\n", __FILE__, __LINE__ );
+    if (_rmdir(foo) != 0) {
+        log_error( "ERROR: Unable to remove directory %s! (in %s:%d)\n", foo, __FILE__, __LINE__ );
         return -1;
     }
 
