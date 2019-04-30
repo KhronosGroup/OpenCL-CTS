@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.1)
+
 set( CONFORMANCE_SUFFIX "" )
 
 set(CLConform_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -18,13 +20,11 @@ set(CLConform_VERSION "${CLConform_VERSION_MAJOR}.${CLConform_VERSION_MINOR}")
 set(CLConform_VERSION_FULL
     "${CLConform_VERSION}.${CLConform_VERSION_MICRO}${CLConform_VERSION_EXTRA}")
 
-cmake_minimum_required(VERSION 3.1)
+add_definitions(-DCL_TARGET_OPENCL_VERSION=200)
 
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_0_APIS=1)
+add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_1_APIS=1)
-
-# where to look first for cmake modules, before ${CMAKE_ROOT}/Modules/ is checked
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 
 # Support both VS2008 and VS2012.
@@ -61,7 +61,7 @@ include(CMakeVendor.txt OPTIONAL)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
-if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float
     # to falsely fail. -ffloat-store also works, but WG suggested
@@ -79,7 +79,7 @@ else()
 endif()
 
 # Clang gives C++11 narrowing warnings so suppress these for now
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++11-narrowing")
 endif()
 
