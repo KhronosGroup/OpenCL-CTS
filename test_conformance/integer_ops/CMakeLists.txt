@@ -41,7 +41,7 @@ set_source_files_properties(
         PROPERTIES LANGUAGE CXX)
         
 if (NOT CMAKE_CL_64 AND NOT MSVC)                   
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)" AND NOT MSVC)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86$)|(X86$)" AND NOT MSVC)
 set_source_files_properties(
 	main.c
 	test_popcount.c
