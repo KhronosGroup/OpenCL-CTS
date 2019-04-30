@@ -635,6 +635,24 @@ size_t TestNonUniformWorkGroup::adjustLocalArraySize (size_t localArraySize) {
   return localArraySize;
 }
 
+size_t TestNonUniformWorkGroup::adjustGlobalBufferSize(size_t globalBufferSize) {
+  // In case if global buffer size is too big, sometimes we can not run kernel because of lack
+  // of resources due to kernel itself requires some global memory to run
+  int err;
+
+  cl_ulong deviceMaxAllocObjSize = 0;
+  err = clGetDeviceInfo(_device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(deviceMaxAllocObjSize), &deviceMaxAllocObjSize, NULL);
+  test_error(err, "clGetDeviceInfo failed");
+
+  size_t adjustedGlobalBufferSize = globalBufferSize;
+  if (deviceMaxAllocObjSize < globalBufferSize) {
+    adjustedGlobalBufferSize = deviceMaxAllocObjSize;
+    log_info("globalBufferSize was adjusted from %lu to %lu\n", globalBufferSize, adjustedGlobalBufferSize);
+  }
+
+  return adjustedGlobalBufferSize;
+}
+
 int TestNonUniformWorkGroup::runKernel () {
   int err;
 
@@ -656,7 +674,8 @@ int TestNonUniformWorkGroup::runKernel () {
   err = clSetKernelArg(_testKernel, 1, localArraySize, NULL);
   test_error(err, "clSetKernelArg failed");
 
-  clMemWrapper testGlobalArray = clCreateBuffer(_context, CL_MEM_READ_WRITE, _numOfGlobalWorkItems*sizeof(cl_uint), NULL, &err);
+  size_t globalBufferSize = adjustGlobalBufferSize(_numOfGlobalWorkItems*sizeof(cl_uint));
+  clMemWrapper testGlobalArray = clCreateBuffer(_context, CL_MEM_READ_WRITE, globalBufferSize, NULL, &err);
   test_error(err, "clCreateBuffer failed");
 
   err = clSetKernelArg(_testKernel, 2, sizeof(testGlobalArray), &testGlobalArray);
@@ -780,3 +799,4 @@ int SubTestExecutor::status() {
     return 0;
   }
 }
+
