@@ -25,8 +25,6 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern cl_command_queue queue;
-extern cl_context context;
 extern bool            gDebugTrace, gExtraValidateInfo, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding, gTestMipmaps;
 extern cl_device_type    gDeviceType;
 extern bool            gUseKernelSamplers;
@@ -236,7 +234,7 @@ static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *im
 #endif
 
 
-int test_read_image_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel,
+int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel kernel,
                         image_descriptor *imageInfo, image_sampler_data *imageSampler,
                        bool useFloatCoords, ExplicitType outputType, MTdata d )
 {
@@ -988,7 +986,7 @@ int test_read_image_1D( cl_device_id device, cl_context context, cl_command_queu
     return numTries != MAX_TRIES || numClamped != MAX_CLAMPED;
 }
 
-int test_read_image_set_1D( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler,
+int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler,
                         bool floatCoords, ExplicitType outputType )
 {
     char programSrc[10240];
@@ -1078,7 +1076,7 @@ int test_read_image_set_1D( cl_device_id device, cl_image_format *format, image_
             if( gDebugTrace )
                 log_info( "   at size %d\n", (int)imageInfo.width );
 
-            int retCode = test_read_image_1D( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+            int retCode = test_read_image_1D( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
             if( retCode )
                 return retCode;
         }
@@ -1100,7 +1098,7 @@ int test_read_image_set_1D( cl_device_id device, cl_image_format *format, image_
                 imageInfo.num_mip_levels = (size_t)random_in_range(2, (compute_max_mip_levels(imageInfo.width, 0, 0)-1), seed);
             if( gDebugTrace )
                 log_info( "   at max size %d\n", (int)sizes[ idx ][ 0 ] );
-            int retCode = test_read_image_1D( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+            int retCode = test_read_image_1D( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
             if( retCode )
                 return retCode;
         }
@@ -1120,7 +1118,7 @@ int test_read_image_set_1D( cl_device_id device, cl_image_format *format, image_
         {
             if( gDebugTrace )
                 log_info( "   at size %d, starting round ramp at %llu for range %llu\n", (int)imageInfo.width, gRoundingStartValue, typeRange );
-            int retCode = test_read_image_1D( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+            int retCode = test_read_image_1D( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
             if( retCode )
                 return retCode;
 
@@ -1159,7 +1157,7 @@ int test_read_image_set_1D( cl_device_id device, cl_image_format *format, image_
 
             if( gDebugTrace )
                 log_info( "   at size %d (row pitch %d) out of %d\n", (int)imageInfo.width, (int)imageInfo.rowPitch, (int)maxWidth );
-            int retCode = test_read_image_1D( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+            int retCode = test_read_image_1D( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
             if( retCode )
                 return retCode;
         }
