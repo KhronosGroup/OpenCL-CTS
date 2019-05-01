@@ -19,8 +19,6 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern cl_command_queue queue;
-extern cl_context context;
 extern bool         gDebugTrace, gExtraValidateInfo, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding, gTestMipmaps;
 extern cl_device_type   gDeviceType;
 extern bool         gUseKernelSamplers;
@@ -316,7 +314,7 @@ static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *im
 #define MAX(_a, _b)             ((_a) > (_b) ? (_a) : (_b))
 #endif
 
-int test_read_image_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel,
+int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_kernel kernel,
                        image_descriptor *imageInfo, image_sampler_data *imageSampler,
                        bool useFloatCoords, ExplicitType outputType, MTdata d )
 {
@@ -1269,7 +1267,7 @@ int test_read_image_2D_array( cl_device_id device, cl_context context, cl_comman
     return numTries != MAX_TRIES || numClamped != MAX_CLAMPED;
 }
 
-int test_read_image_set_2D_array( cl_device_id device, cl_image_format *format, image_sampler_data *imageSampler,
+int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler,
                            bool floatCoords, ExplicitType outputType )
 {
     char programSrc[10240];
@@ -1380,7 +1378,7 @@ int test_read_image_set_2D_array( cl_device_id device, cl_image_format *format, 
 
                     if( gDebugTrace )
                         log_info( "   at size %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize );
-                    int retCode = test_read_image_2D_array( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+                    int retCode = test_read_image_2D_array( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
                     if( retCode )
                         return retCode;
                 }
@@ -1427,7 +1425,7 @@ int test_read_image_set_2D_array( cl_device_id device, cl_image_format *format, 
             log_info("Testing %d x %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ]);
             if( gDebugTrace )
                 log_info( "   at max size %d,%d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
-            int retCode = test_read_image_2D_array( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+            int retCode = test_read_image_2D_array( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
             if( retCode )
                 return retCode;
         }
@@ -1441,7 +1439,7 @@ int test_read_image_set_2D_array( cl_device_id device, cl_image_format *format, 
 
         imageInfo.rowPitch = imageInfo.width * pixelSize;
         imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
-        int retCode = test_read_image_2D_array( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+        int retCode = test_read_image_2D_array( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
         if( retCode )
             return retCode;
     }
@@ -1492,7 +1490,7 @@ int test_read_image_set_2D_array( cl_device_id device, cl_image_format *format, 
                 if ( gTestMipmaps )
                     log_info("  and %d mip levels\n", (int) imageInfo.num_mip_levels);
             }
-            int retCode = test_read_image_2D_array( device, context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
+            int retCode = test_read_image_2D_array( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
             if( retCode )
                 return retCode;
         }
