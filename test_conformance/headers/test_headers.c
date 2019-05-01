@@ -655,5 +655,5 @@ int main(int argc, const char** argv)
 {
     log_info( "\nChecking operations on cl_types.\nNumbers, where presented, should walk upward from 0, with step of 1:\n" );
 
-    return parseAndCallCommandLineTests( argc, argv, NULL, test_num, test_list, true, 0, 0 );
+    return runTestHarness( argc, argv, test_num, test_list, false, true, 0 );
 }
