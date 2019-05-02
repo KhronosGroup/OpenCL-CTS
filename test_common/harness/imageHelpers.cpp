@@ -1420,7 +1420,7 @@ void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
     {
         case CL_SNORM_INT8:
         {
-            char *dPtr = (char *)ptr;
+            cl_char *dPtr = (cl_char *)ptr;
             for( i = 0; i < channelCount; i++ )
                 tempData[ i ] = CLAMP_FLOAT( (float)dPtr[ i ] / 127.0f );
             break;
@@ -2636,7 +2636,7 @@ void pack_image_pixel( float *srcVector, const cl_image_format *imageFormat, voi
         {
             cl_char *ptr = (cl_char *)outData;
             for( unsigned int i = 0; i < channelCount; i++ )
-                ptr[ i ] = (char)NORMALIZE_SIGNED( srcVector[ i ], -127.0f, 127.f );
+                ptr[ i ] = (cl_char)NORMALIZE_SIGNED( srcVector[ i ], -127.0f, 127.f );
             break;
         }
         case CL_SNORM_INT16:
@@ -2707,7 +2707,7 @@ void pack_image_pixel( float *srcVector, const cl_image_format *imageFormat, voi
         {
             cl_char *ptr = (cl_char *)outData;
             for( unsigned int i = 0; i < channelCount; i++ )
-                ptr[ i ] = (char)CONVERT_INT( srcVector[ i ], -127.0f, 127.f, 127 );
+                ptr[ i ] = (cl_char)CONVERT_INT( srcVector[ i ], -127.0f, 127.f, 127 );
             break;
         }
         case CL_SIGNED_INT16:
