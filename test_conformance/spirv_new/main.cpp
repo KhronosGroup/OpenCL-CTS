@@ -79,6 +79,8 @@ void spirvTestsRegistry::addTestClass(baseTestClass *test, const char *testName)
     test_definition testDef;
     testDef.func = test->getFunction();
     testDef.name = testName;
+    testDef.selected = false;
+    testDef.result = 0;
     testDefinitions.push_back(testDef);
 }
 
