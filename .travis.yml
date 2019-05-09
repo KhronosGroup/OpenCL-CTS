@@ -14,7 +14,7 @@ script:
   - cd ${TOP}/OpenCL-ICD-Loader
   - mkdir build
   - cd build
-  - cmake -DOPENCL_INCLUDE_DIRS=${TOP}/OpenCL-Headers/ ..
+  - cmake -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ ..
   - make
   - cd ${TOP}
   - git clone https://github.com/KhronosGroup/libclcxx.git
@@ -22,7 +22,7 @@ script:
   - mkdir build
   - cd build
   - cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers
-          -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build/lib
+          -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build
           -DCL_LIBCLCXX_DIR=${TOP}/libclcxx
           -DCL_OFFLINE_COMPILER=/dummy/path/to/compiler
           -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin
