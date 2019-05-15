@@ -49,7 +49,7 @@
 %11 = OpTypeVoid
 %12 = OpTypeVector %2 4
 %13 = OpTypePointer CrossWorkgroup %12
-%14 = OpTypeImage %11 2D 0 0 0 0 Unknown
+%14 = OpTypeImage %11 2D 0 0 0 0 Unknown ReadOnly
 %15 = OpTypeFunction %11 %13 %14
 %31 = OpTypeVector %2 2
 %35 = OpTypeSampler

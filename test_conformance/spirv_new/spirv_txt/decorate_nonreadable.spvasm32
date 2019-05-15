@@ -32,7 +32,7 @@
  %3 = OpTypeVector %2 3
  %4 = OpTypePointer UniformConstant %3
  %7 = OpTypeVoid
- %8 = OpTypeImage %7 2D 0 0 0 0 Unknown
+ %8 = OpTypeImage %7 2D 0 0 0 0 Unknown WriteOnly
  %9 = OpTypeVector %2 4
 %10 = OpTypePointer CrossWorkgroup %9
 %11 = OpTypeFunction %7 %8 %10
