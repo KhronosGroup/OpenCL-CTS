@@ -14,14 +14,14 @@ script:
   - cd ${TOP}/OpenCL-ICD-Loader
   - mkdir build
   - cd build
-  - cmake -DOPENCL_INCLUDE_DIRS=${TOP}/OpenCL-Headers/ ..
+  - cmake -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ ..
   - make
   - cd ${TOP}
   - ls -l
   - mkdir build
   - cd build
   - cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers
-          -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build/lib
+          -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build
           -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin
           -DOPENCL_LIBRARIES="-lOpenCL -lpthread"
           ..
