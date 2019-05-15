@@ -20,5 +20,9 @@ script:
   - ls -l
   - mkdir build
   - cd build
-  - cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin -DOPENCL_LIBRARIES="-lOpenCL -lpthread" ..
+  - cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers
+          -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build
+          -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin
+          -DOPENCL_LIBRARIES="-lOpenCL -lpthread"
+          ..
   - make -j2
