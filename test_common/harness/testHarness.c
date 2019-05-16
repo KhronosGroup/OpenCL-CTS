@@ -526,7 +526,7 @@ static int find_matching_tests( test_definition testList[], unsigned char select
 }
 
 static int saveResultsToJson( const char *fileName, const char *suiteName, test_definition testList[],
-                              unsigned char selectedTestList[], int resultTestList[], int testNum )
+                              unsigned char selectedTestList[], test_status resultTestList[], int testNum )
 {
     FILE *file = fopen( fileName, "w" );
     if( NULL == file )
@@ -536,7 +536,7 @@ static int saveResultsToJson( const char *fileName, const char *suiteName, test_
     }
 
     const char *save_map[] = { "success", "failure" };
-    const char *result_map[] = { "pass", "fail" };
+    const char *result_map[] = { "pass", "fail", "skip" };
     const char *linebreak[] = { "", ",\n" };
     int add_linebreak = 0;
 
@@ -548,7 +548,7 @@ static int saveResultsToJson( const char *fileName, const char *suiteName, test_
     {
         if( selectedTestList[i] )
         {
-            fprintf( file, "%s\t\t\"%s\": \"%s\"", linebreak[add_linebreak], testList[i].name, result_map[(bool)resultTestList[i]] );
+            fprintf( file, "%s\t\t\"%s\": \"%s\"", linebreak[add_linebreak], testList[i].name, result_map[(int)resultTestList[i]] );
             add_linebreak = 1;
         }
     }
@@ -571,7 +571,7 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
     int ret = EXIT_SUCCESS;
 
     unsigned char *selectedTestList = ( unsigned char* ) calloc( testNum, 1 );
-    int *resultTestList = NULL;
+    test_status *resultTestList = NULL;
 
     if( argc == 1 )
     {
@@ -608,9 +608,10 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
 
     if( ret == EXIT_SUCCESS )
     {
-        resultTestList = ( int* ) calloc( testNum, sizeof(int) );
+        resultTestList = ( test_status* ) calloc( testNum, sizeof(*resultTestList) );
 
-        ret = callTestFunctions( testList, selectedTestList, resultTestList, testNum, device, forceNoContextCreation, num_elements, queueProps );
+        callTestFunctions( testList, selectedTestList, resultTestList, testNum, device,
+                           forceNoContextCreation, num_elements, queueProps );
 
         if( gTestsFailed == 0 )
         {
@@ -638,7 +639,7 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
         char *filename = getenv( "CL_CONFORMANCE_RESULTS_FILENAME" );
         if( filename != NULL )
         {
-            ret += saveResultsToJson( filename, argv[0], testList, selectedTestList, resultTestList, testNum );
+            ret = saveResultsToJson( filename, argv[0], testList, selectedTestList, resultTestList, testNum );
         }
     }
 
@@ -650,32 +651,18 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
     return ret;
 }
 
-int callTestFunctions( test_definition testList[], unsigned char selectedTestList[], int resultTestList[],
-                       int testNum, cl_device_id deviceToUse, int forceNoContextCreation, int numElementsToUse,
-                       cl_command_queue_properties queueProps )
+void callTestFunctions( test_definition testList[], unsigned char selectedTestList[], test_status resultTestList[],
+                        int testNum, cl_device_id deviceToUse, int forceNoContextCreation, int numElementsToUse,
+                        cl_command_queue_properties queueProps )
 {
-    int totalErrors = 0;
-
     for( int i = 0; i < testNum; ++i )
     {
         if( selectedTestList[i] )
         {
-            // Skip unimplemented test (can happen when you select all of the tests)
-            if( testList[i].func != NULL )
-            {
-                int errors = callSingleTestFunction( testList[i], deviceToUse, forceNoContextCreation,
-                                                     numElementsToUse, queueProps );
-                resultTestList[i] = errors;
-                totalErrors += errors;
-            }
-            else
-            {
-                log_info( "Skipping %s. Test currently not implemented.\n", testList[i].name );
-            }
+            resultTestList[i] = callSingleTestFunction( testList[i], deviceToUse, forceNoContextCreation,
+                                                        numElementsToUse, queueProps );
         }
     }
-
-    return totalErrors;
 }
 
 void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
@@ -684,10 +671,10 @@ void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, 
 }
 
 // Actual function execution
-int callSingleTestFunction( test_definition test, cl_device_id deviceToUse, int forceNoContextCreation,
-                            int numElementsToUse, const cl_queue_properties queueProps )
+test_status callSingleTestFunction( test_definition test, cl_device_id deviceToUse, int forceNoContextCreation,
+                                    int numElementsToUse, const cl_queue_properties queueProps )
 {
-    int numErrors = 0, ret;
+    test_status status;
     cl_int error;
     cl_context context = NULL;
     cl_command_queue queue = NULL;
@@ -701,14 +688,14 @@ int callSingleTestFunction( test_definition test, cl_device_id deviceToUse, int 
         if (!context)
         {
             print_error( error, "Unable to create testing context" );
-            return 1;
+            return TEST_FAIL;
         }
 
         queue = clCreateCommandQueueWithProperties( context, deviceToUse, &queueCreateProps[0], &error );
         if( queue == NULL )
         {
             print_error( error, "Unable to create testing command queue" );
-            return 1;
+            return TEST_FAIL;
         }
     }
 
@@ -717,29 +704,44 @@ int callSingleTestFunction( test_definition test, cl_device_id deviceToUse, int 
     fflush( stdout );
 
     error = check_opencl_version_with_testname(test.name, deviceToUse);
-    test_missing_feature(error, test.name);
+    if( error != CL_SUCCESS ) 
+    { 
+        print_missing_feature( error, test.name );
+        return TEST_SKIP; 
+    }
 
     error = check_functions_for_offline_compiler(test.name, deviceToUse);
     test_missing_support_offline_cmpiler(error, test.name);
 
-    ret = test.func(deviceToUse, context, queue, numElementsToUse);        //test_threaded_function( ptr_basefn_list[i], group, context, num_elements);
-    if( ret == TEST_NOT_IMPLEMENTED )
+    if( test.func == NULL )
     {
-        /* Tests can also let us know they're not implemented yet */
-        log_info("%s test currently not implemented\n\n", test.name);
+        // Skip unimplemented test, can happen when all of the tests are selected
+        log_info("%s test currently not implemented\n", test.name);
+        status = TEST_SKIP;
     }
     else
     {
-        /* Print result */
-        if( ret == 0 ) {
-            log_info( "%s passed\n", test.name );
-            gTestsPassed++;
+        int ret = test.func(deviceToUse, context, queue, numElementsToUse);        //test_threaded_function( ptr_basefn_list[i], group, context, num_elements);
+        if( ret == TEST_NOT_IMPLEMENTED )
+        {
+            /* Tests can also let us know they're not implemented yet */
+            log_info("%s test currently not implemented\n", test.name);
+            status = TEST_SKIP;
         }
         else
         {
-            numErrors++;
-            log_error( "%s FAILED\n", test.name );
-            gTestsFailed++;
+            /* Print result */
+            if( ret == 0 ) {
+                log_info( "%s passed\n", test.name );
+                gTestsPassed++;
+                status = TEST_PASS;
+            }
+            else
+            {
+                log_error( "%s FAILED\n", test.name );
+                gTestsFailed++;
+                status = TEST_FAIL;
+            }
         }
     }
 
@@ -749,13 +751,13 @@ int callSingleTestFunction( test_definition test, cl_device_id deviceToUse, int 
         int error = clFinish(queue);
         if (error) {
             log_error("clFinish failed: %d", error);
-            numErrors++;
+            status = TEST_FAIL;
         }
         clReleaseCommandQueue( queue );
         clReleaseContext( context );
     }
 
-    return numErrors;
+    return status;
 }
 
 void checkDeviceTypeOverride( cl_device_type *inOutType )
