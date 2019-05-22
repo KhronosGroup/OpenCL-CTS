@@ -112,7 +112,6 @@ int test_ext_cl_khr_spirv_no_integer_wrap_decoration(cl_device_id deviceID,
     size_t kernelLen = kernelStr.size();
     const char *kernelBuf = kernelStr.c_str();
 
-    const char *options = "";
     for (int i = 0; i < num; i++) {
         if (std::string(funcName) == std::string("fadd")) {
             expected_results[i] = h_lhs[i] + h_rhs[i];
