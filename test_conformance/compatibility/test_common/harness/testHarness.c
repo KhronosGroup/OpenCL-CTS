@@ -23,6 +23,9 @@
 #endif
 
 #include <string.h>
+#include <cassert>
+#include <stdexcept>
+#include <vector>
 #include "threadTesting.h"
 #include "errorHelpers.h"
 #include "kernelHelpers.h"
@@ -701,6 +704,14 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
     log_info( "%s...\n", test.name );
     fflush( stdout );
 
+    const Version device_version = get_device_cl_version(deviceToUse);
+    if (test.min_version > device_version)
+    {
+        log_info("%s skipped (requires at least version %s, but the device reports version %s)\n",
+                 test.name, test.min_version.to_string().c_str(), device_version.to_string().c_str());
+        return TEST_SKIP;
+    }
+
     if( test.func == NULL )
     {
         // Skip unimplemented test, can happen when all of the tests are selected
@@ -881,4 +892,28 @@ cl_device_id GetOpposingDevice( cl_device_id device )
     return NULL;
 }
 
+Version get_device_cl_version(cl_device_id device)
+{
+    size_t str_size;
+    cl_int err = clGetDeviceInfo(device, CL_DEVICE_VERSION, 0, NULL, &str_size);
+    ASSERT_SUCCESS(err, "clGetDeviceInfo");
 
+    std::vector<char> str(str_size);
+    err = clGetDeviceInfo(device, CL_DEVICE_VERSION, str_size, str.data(), NULL);
+    ASSERT_SUCCESS(err, "clGetDeviceInfo");
+
+    if (strstr(str.data(), "OpenCL 1.0") != NULL)
+        return Version(1, 0);
+    else if (strstr(str.data(), "OpenCL 1.1") != NULL)
+        return Version(1, 1);
+    else if (strstr(str.data(), "OpenCL 1.2") != NULL)
+        return Version(1, 2);
+    else if (strstr(str.data(), "OpenCL 2.0") != NULL)
+        return Version(2, 0);
+    else if (strstr(str.data(), "OpenCL 2.1") != NULL)
+        return Version(2, 1);
+    else if (strstr(str.data(), "OpenCL 2.2") != NULL)
+        return Version(2, 2);
+
+    throw std::runtime_error(std::string("Unknown OpenCL version: ") + str.data());
+}
