@@ -18,20 +18,43 @@
 
 #include "threadTesting.h"
 #include "clImageHelper.h"
+#include <string>
+#include <sstream>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define ADD_TEST(fn) {test_##fn, #fn}
-#define NOT_IMPLEMENTED_TEST(fn) {NULL, #fn}
+#define ADD_TEST(fn) {test_##fn, #fn, Version(1, 0)}
+#define ADD_TEST_VERSION(fn, ver) {test_##fn, #fn, ver}
+#define NOT_IMPLEMENTED_TEST(fn) {NULL, #fn, Version(0, 0)}
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+class Version
+{
+public:
+    Version() : m_major(0), m_minor(0) {}
+    Version(int major, int minor) : m_major(major), m_minor(minor) {}
+    bool operator>(const Version& rhs) const { return to_int() > rhs.to_int(); }
+    int to_int() const { return m_major * 10 + m_minor; }
+    std::string to_string() const 
+    {
+        std::stringstream ss;
+        ss << m_major << "." << m_minor;
+        return ss.str();
+    }
+
+private:
+    int m_major;
+    int m_minor;
+};
 
 typedef struct test_definition
 {
     basefn func;
     const char* name;
+    Version min_version;
 } test_definition;
 
 typedef enum test_status
@@ -95,6 +118,8 @@ extern cl_device_type GetDeviceType( cl_device_id );
 // Note that returning NULL means an error was hit, but if no error was hit and the device passed in
 // is the only device available, the SAME device is returned, so check!
 extern cl_device_id GetOpposingDevice( cl_device_id device );
+
+Version get_device_cl_version(cl_device_id device);
 
 
 extern int      gFlushDenormsToZero;    // This is set to 1 if the device does not support denorms (CL_FP_DENORM)

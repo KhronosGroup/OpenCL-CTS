@@ -16,6 +16,8 @@
 #ifndef _errorHelpers_h
 #define _errorHelpers_h
 
+#include <sstream>
+
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
 #else
@@ -96,6 +98,19 @@ extern "C" {
 #define test_failure_warning(errCode, expectedErrCode, msg) test_failure_warning_ret(errCode, expectedErrCode, msg, errCode != expectedErrCode)
 #define test_failure_warning_ret(errCode, expectedErrCode, msg, retValue) { if( errCode != expectedErrCode ) { print_failure_warning( errCode, expectedErrCode, msg ); warnings++ ; } }
 #define print_failure_warning(errCode, expectedErrCode, msg) log_error( "WARNING: %s! (Got %s, expected %s from %s:%d)\n", msg, IGetErrorString( errCode ), IGetErrorString( expectedErrCode ), __FILE__, __LINE__ );
+
+#define ASSERT_SUCCESS(expr, msg)                                                                  \
+    do                                                                                             \
+    {                                                                                              \
+        cl_int _temp_retval = (expr);                                                              \
+        if (_temp_retval != CL_SUCCESS)                                                            \
+        {                                                                                          \
+            std::stringstream ss;                                                                  \
+            ss << "ERROR: " << msg << "=" << IGetErrorString(_temp_retval)                         \
+               << " at " << __FILE__ << ":" << __LINE__ << "\n";                                   \
+            throw std::runtime_error(ss.str());                                                    \
+        }                                                                                          \
+    } while (0)
 
 extern const char    *IGetErrorString( int clErrorCode );
 
