@@ -27,6 +27,7 @@
 #include <iterator>
 #include <memory>
 #include <sstream>
+#include <vector>
 
 #include "exceptions.h"
 #include "datagen.h"
@@ -345,15 +346,19 @@ DataRow& DataTable::operator[](int index)
  */
 OclExtensions OclExtensions::getDeviceCapabilities(cl_device_id devId)
 {
-    char extensions[1024] = {0};
     size_t size;
-
+    size_t set_size;
+    cl_int errcode = clGetDeviceInfo(devId, CL_DEVICE_EXTENSIONS, 0, NULL, &set_size);
+    if (errcode)
+        throw Exceptions::TestError("Device query failed");
     // Querying the device for its supported extensions
-    cl_int errcode = clGetDeviceInfo(devId,
-                                     CL_DEVICE_EXTENSIONS,
-                                     sizeof(extensions),
-                                     extensions,
-                                     &size);
+    std::vector<char> extensions(set_size);
+    errcode = clGetDeviceInfo(devId,
+                              CL_DEVICE_EXTENSIONS,
+                              extensions.size(),
+                              extensions.data(),
+                              &size);
+
     if (errcode)
         throw Exceptions::TestError("Device query failed");
 
@@ -367,13 +372,13 @@ OclExtensions OclExtensions::getDeviceCapabilities(cl_device_id devId)
         throw Exceptions::TestError("Device query failed");
 
     OclExtensions ret = OclExtensions::empty();
-    assert(size < sizeof(extensions));
+    assert(size == set_size);
     if (!size)
       return ret;
 
     // Iterate over the extensions, and convert them into the bit field.
     std::list<std::string> extVector;
-    std::stringstream khrStream(extensions);
+    std::stringstream khrStream(extensions.data());
     std::copy(std::istream_iterator<std::string>(khrStream),
               std::istream_iterator<std::string>(),
               std::back_inserter(extVector));
