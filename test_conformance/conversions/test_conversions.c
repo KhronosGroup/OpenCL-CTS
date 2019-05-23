@@ -703,7 +703,7 @@ test_status InitCL( cl_device_id device )
         gIsRTZ = 1;
     }
 
-    else if(is_extension_available(gDevice, "cl_khr_fp64"))
+    else if(is_extension_available(device, "cl_khr_fp64"))
     {
         gHasDouble = 1;
     }
@@ -711,11 +711,11 @@ test_status InitCL( cl_device_id device )
 
     //detect whether profile of the device is embedded
     char profile[1024] = "";
-    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL ) ) ){}
+    if( (error = clGetDeviceInfo( device, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL ) ) ){}
     else if( strstr(profile, "EMBEDDED_PROFILE" ) )
     {
         gIsEmbedded = 1;
-        if( !is_extension_available(gDevice, "cles_khr_int64" ) )
+        if( !is_extension_available(device, "cles_khr_int64" ) )
             gHasLong = 0;
     }
 
