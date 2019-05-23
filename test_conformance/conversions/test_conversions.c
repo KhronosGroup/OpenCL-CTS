@@ -703,20 +703,7 @@ test_status InitCL( cl_device_id device )
         gIsRTZ = 1;
     }
 
-    size_t set_size;
-    if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_EXTENSIONS, 0, NULL, &set_size)))
-    {
-        vlog_error("FAILURE: unable to get device info for CL_DEVICE_EXTENSIONS!");
-        return -1;
-    }
-
-    std::vector<char> extensions(set_size);
-    if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, extensions.size(), extensions.data(),  NULL ) ) )
-    {
-        vlog_error( "FAILURE: unable to get device info for CL_DEVICE_EXTENSIONS!" );
-        return -1;
-    }
-    else if( strstr( extensions.data(), "cl_khr_fp64" ) )
+    else if(is_extension_available(gDevice, "cl_khr_fp64"))
     {
         gHasDouble = 1;
     }
@@ -728,7 +715,7 @@ test_status InitCL( cl_device_id device )
     else if( strstr(profile, "EMBEDDED_PROFILE" ) )
     {
         gIsEmbedded = 1;
-        if( !strstr( extensions.data(), "cles_khr_int64" ) )
+        if( !is_extension_available(gDevice, "cles_khr_int64" ) )
             gHasLong = 0;
     }
 
