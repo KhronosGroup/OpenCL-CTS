@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2019 The Khronos Group Inc.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,6 +69,8 @@ extern cl_uint gRandomSeed;
 
 // Supply a list of functions to test here. This will allocate a CL device, create a context, all that
 // setup work, and then call each function in turn as dictatated by the passed arguments.
+// Returns EXIT_SUCCESS iff all tests succeeded or the tests were listed,
+// otherwise return EXIT_FAILURE.
 extern int runTestHarness(int argc, const char *argv[], int testNum, test_definition testList[],
                            int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps );
 
@@ -76,6 +78,8 @@ extern int runTestHarness(int argc, const char *argv[], int testNum, test_defini
 typedef test_status (*DeviceCheckFn)( cl_device_id device );
 
 // Same as runTestHarness, but also supplies a function that checks the created device for required functionality.
+// Returns EXIT_SUCCESS iff all tests succeeded or the tests were listed,
+// otherwise return EXIT_FAILURE.
 extern int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_definition testList[],
                                     int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps,
                                     DeviceCheckFn deviceCheckFn );
