@@ -49,6 +49,7 @@ add_subdirectory( generic_address_space )
 add_subdirectory( subgroups )
 add_subdirectory( workgroups )
 add_subdirectory( pipes ) 
+add_subdirectory( spir )
 
 install_files(
     opencl_conformance_tests_conversions.csv
