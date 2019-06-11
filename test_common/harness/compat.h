@@ -123,30 +123,35 @@ typedef long long           int64_t;
         extern "C" {
     #endif
 
-#ifndef M_PI
-    #define M_PI    3.14159265358979323846264338327950288
-#endif
+    #ifndef M_PI
+        #define M_PI    3.14159265358979323846264338327950288
+    #endif
 
-    #if ! defined( __INTEL_COMPILER )
+    #ifndef NAN
+        #define NAN  (INFINITY - INFINITY)
+    #endif
 
-        #ifndef NAN
-            #define NAN  (INFINITY - INFINITY)
-        #endif
-        #ifndef HUGE_VALF
-            #define HUGE_VALF (float)HUGE_VAL
-        #endif
-        #ifndef INFINITY
-            #define INFINITY    (FLT_MAX + FLT_MAX)
-        #endif
-        #ifndef isfinite
-            #define isfinite(x) _finite(x)
-        #endif
-        #ifndef isnan
-#define    isnan( x )       ((x) != (x))
-        #endif
-        #ifndef isinf
-#define     isinf( _x)      ((_x) == INFINITY || (_x) == -INFINITY)
-        #endif
+    #ifndef HUGE_VALF
+        #define HUGE_VALF (float)HUGE_VAL
+    #endif
+
+    #ifndef INFINITY
+        #define INFINITY    (FLT_MAX + FLT_MAX)
+    #endif
+
+    #ifndef isfinite
+        #define isfinite(x) _finite(x)
+    #endif
+
+    #ifndef isnan
+        #define    isnan( x )       ((x) != (x))
+    #endif
+
+    #ifndef isinf
+        #define     isinf( _x)      ((_x) == INFINITY || (_x) == -INFINITY)
+    #endif
+        
+#if ! defined( __INTEL_COMPILER )
 
 double rint( double x);
 float  rintf( float x);
