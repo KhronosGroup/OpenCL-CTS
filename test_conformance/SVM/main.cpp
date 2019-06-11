@@ -197,30 +197,12 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
   cl_uint num_capable_devices = 0;
   for(cl_uint i = 0; i < *num_devices; i++)
   {
-    size_t ret_len = 0;
-    error = clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, 0, 0, &ret_len);
-    if (error != CL_SUCCESS)
-    {
-      log_error("clGetDeviceInfo failed %s\n", IGetErrorString(error));
-      return -1;
-    }
+    size_t major = 0;
+    size_t minor = 0;
+    error = get_device_version(devices[i], &major, &minor);
+    test_error(error, "get_device_version failed");
 
-    std::vector<char> oclVersion(ret_len + 1);
-    error = clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, sizeof(char) * oclVersion.size(), &oclVersion[0], 0);
-    if (error != CL_SUCCESS)
-    {
-      log_error("clGetDeviceInfo failed %s\n", IGetErrorString(error));
-      return -1;
-    }
-
-    std::string versionStr(&oclVersion[7]);
-    std::stringstream stream;
-    stream << versionStr;
-
-    double version = 0.0;
-    stream >> version;
-
-    if(device_from_harness != devices[i] && version < 2.0)
+    if(device_from_harness != devices[i] && major < 2)
     {
       continue;
     }
