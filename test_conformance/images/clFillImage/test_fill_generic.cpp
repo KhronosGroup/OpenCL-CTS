@@ -190,12 +190,26 @@ cl_mem create_image( cl_context context, BufferOwningPtr<char>& data, image_desc
     }
     else {
         // Else copy one scan line at a time.
+        size_t dstPitch2D = 0;
+        switch (imageInfo->type)
+        {
+            case CL_MEM_OBJECT_IMAGE3D:
+            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            case CL_MEM_OBJECT_IMAGE2D:
+                dstPitch2D = mappedRow;
+                break;
+            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            case CL_MEM_OBJECT_IMAGE1D:
+                dstPitch2D = mappedSlice;
+                break;
+        }
+
         for ( size_t z = 0; z < depth; z++ )
         {
             for ( size_t y = 0; y < height; y++ )
             {
                 memcpy( dst, src, scanlineSize );
-                dst += mappedRow;
+                dst += dstPitch2D;
                 src += scanlineSize;
             }
 
@@ -503,6 +517,9 @@ int test_fill_image_generic( cl_device_id device, image_descriptor *imageInfo,
                 return -1;
             }
             sourcePtr += imageInfo->rowPitch;
+            if((imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY || imageInfo->type == CL_MEM_OBJECT_IMAGE1D))
+            destPtr += mappedSlice;
+            else
             destPtr += mappedRow;
         }
         sourcePtr += imageInfo->slicePitch - ( imageInfo->rowPitch * (imageInfo->height > 0 ? imageInfo->height : 1) );
