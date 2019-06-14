@@ -18,7 +18,8 @@ endif()
 
 if(WIN32)
 set_source_files_properties(
-        contractions.c    
+        contractions.c
+        ../../test_common/harness/mt19937.c        
         ../../test_common/harness/msvc9.c        
         ../../test_common/harness/mingw_compat.c
         ../../test_common/harness/errorHelpers.c

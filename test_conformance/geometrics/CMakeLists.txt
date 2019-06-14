@@ -19,6 +19,7 @@ add_executable(conformance_test_geometrics
 
 set_source_files_properties(
         main.c
+    ../../test_common/harness/mt19937.c
 	../../test_common/harness/errorHelpers.c
 	../../test_common/harness/threadTesting.c
 	../../test_common/harness/testHarness.c

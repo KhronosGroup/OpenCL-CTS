@@ -19,6 +19,7 @@ endif()
 set_source_files_properties(
         main.c readArray.c writeArray.c readImage.c writeImage.c copy.c
         execute.c execute_multipass.c
+        ../../test_common/harness/mt19937.c
         ../../test_common/harness/testHarness.c
 	../../test_common/harness/errorHelpers.c
 	../../test_common/harness/kernelHelpers.c

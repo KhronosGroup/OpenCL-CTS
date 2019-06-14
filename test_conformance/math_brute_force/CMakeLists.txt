@@ -46,6 +46,7 @@ set_source_files_properties(
     ../../test_common/harness/rounding_mode.c
     ../../test_common/harness/ThreadPool.c
     ../../test_common/harness/msvc9.c
+    ../../test_common/harness/mt19937.c
 	PROPERTIES LANGUAGE CXX)
 endif(MSVC)
 

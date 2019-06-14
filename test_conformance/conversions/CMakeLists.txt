@@ -22,6 +22,7 @@ add_executable(conformance_test_conversions
 
 set_source_files_properties(
         Sleep.c test_conversions.c basic_test_conversions.c
+        ../../test_common/harness/mt19937.c
         ../../test_common/harness/ThreadPool.c
         ../../test_common/harness/rounding_mode.c
         ../../test_common/harness/mingw_compat.c
