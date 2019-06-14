@@ -127,8 +127,6 @@ typedef long long           int64_t;
     #define M_PI    3.14159265358979323846264338327950288
 #endif
 
-    #if ! defined( __INTEL_COMPILER )
-
         #ifndef NAN
             #define NAN  (INFINITY - INFINITY)
         #endif
@@ -148,6 +146,7 @@ typedef long long           int64_t;
 #define     isinf( _x)      ((_x) == INFINITY || (_x) == -INFINITY)
         #endif
 
+    #if ! defined( __INTEL_COMPILER )
 double rint( double x);
 float  rintf( float x);
 long double rintl( long double x);
