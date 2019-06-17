@@ -51,6 +51,7 @@ add_subdirectory( workgroups )
 add_subdirectory( pipes )
 add_subdirectory( device_timer )
 add_subdirectory( spirv_new )
+add_subdirectory( spir )
 
 install_files(
     opencl_conformance_tests_conversions.csv
