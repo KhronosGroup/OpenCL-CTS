@@ -17,7 +17,6 @@
 #include "../../test_common/harness/typeWrappers.h"
 #include "../../test_common/harness/conversions.h"
 #include "../../test_common/harness/errorHelpers.h"
-#include <float.h>
 
 const char *crossKernelSource_double =
 "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
@@ -114,9 +113,9 @@ void vector2string_double( char *string, double *vector, size_t elements )
 void fillWithTrickyNumbers_double( double *aVectors, double *bVectors, size_t vecSize )
 {
     static const cl_double trickyValues[] = { -FLT_EPSILON, FLT_EPSILON,
-        MAKE_HEX_FLOAT(0x1.0p511f, 0x1L, 511), MAKE_HEX_FLOAT(0x1.8p511f, 0x18L, 507), MAKE_HEX_FLOAT(0x1.0p512f, 0x1L, 512), MAKE_HEX_FLOAT(-0x1.0p511f, -0x1L, 511), MAKE_HEX_FLOAT(-0x1.8p-511f, -0x18L, -515), MAKE_HEX_FLOAT(-0x1.0p512f, -0x1L, 512),
-        MAKE_HEX_FLOAT(0x1.0p-511f, 0x1L, -511), MAKE_HEX_FLOAT(0x1.8p-511f, 0x18L, -515), MAKE_HEX_FLOAT(0x1.0p-512f, 0x1L, -512), MAKE_HEX_FLOAT(-0x1.0p-511f, -0x1L, -511), MAKE_HEX_FLOAT(-0x1.8p-511f, -0x18L, -515), MAKE_HEX_FLOAT(-0x1.0p-512f, -0x1L, -512),
-        DBL_MAX / 2.f, -DBL_MAX / 2.f, INFINITY,  -INFINITY, 0.f, -0.f };
+        MAKE_HEX_DOUBLE(0x1.0p511, 0x1L, 511), MAKE_HEX_DOUBLE(0x1.8p511, 0x18L, 507), MAKE_HEX_DOUBLE(0x1.0p512, 0x1L, 512), MAKE_HEX_DOUBLE(-0x1.0p511, -0x1L, 511), MAKE_HEX_DOUBLE(-0x1.8p-511, -0x18L, -515), MAKE_HEX_DOUBLE(-0x1.0p512, -0x1L, 512),
+        MAKE_HEX_DOUBLE(0x1.0p-511, 0x1L, -511), MAKE_HEX_DOUBLE(0x1.8p-511, 0x18L, -515), MAKE_HEX_DOUBLE(0x1.0p-512, 0x1L, -512), MAKE_HEX_DOUBLE(-0x1.0p-511, -0x1L, -511), MAKE_HEX_DOUBLE(-0x1.8p-511, -0x18L, -515), MAKE_HEX_DOUBLE(-0x1.0p-512, -0x1L, -512),
+        DBL_MAX / 2., -DBL_MAX / 2., INFINITY,  -INFINITY, 0., -0. };
     static const size_t trickyCount = sizeof( trickyValues ) / sizeof( trickyValues[0] );
     static const size_t stride[4] = {1, trickyCount, trickyCount*trickyCount, trickyCount*trickyCount*trickyCount };
     size_t i, j, k;
