@@ -16,6 +16,7 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#include "../../test_common/harness/compat.h"
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
 #else
@@ -26,8 +27,6 @@
 #include <stdint.h>
 #endif
 
-#include <float.h>
-#include <math.h>
 #include "../../test_common/harness/rounding_mode.h"
 #include "../../test_common/harness/fpcontrol.h"
 
@@ -35,7 +34,7 @@
 #include "../../test_common/harness/testHarness.h"
 #endif
 
-#include "../../test_common/harness/compat.h"
+
 #include "../../test_common/harness/ThreadPool.h"
 #define BUFFER_SIZE         (1024*1024*2)
 
@@ -243,6 +242,11 @@ static inline void Force64BitFPUPrecision(void)
     __asm__ __volatile__ ("fstcw %0":"=m" (orig_cw));
     new_cw = orig_cw | 0x0300;   // set precision to 64-bit
     __asm__ __volatile__ ("fldcw  %0"::"m" (new_cw));
+#elif defined( _WIN32 ) && defined( __INTEL_COMPILER )
+    int cw;
+    __asm { fnstcw cw };    // Get current value of FPU control word.
+    cw = cw & 0xfffffcff | ( 3 << 8 ); // Set Precision Control to Double Extended Precision.
+    __asm { fldcw cw };     // Set new value of FPU control word.
 #else
     /* Implement for other platforms if needed */
 #endif
