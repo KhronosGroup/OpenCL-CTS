@@ -24,6 +24,7 @@ set_source_files_properties(
     test_comparisons_float.cpp
     test_comparisons_double.cpp
 	test_shuffles.cpp
+    ../../test_common/harness/mt19937.c
 	../../test_common/harness/errorHelpers.c
 	../../test_common/harness/threadTesting.c
 	../../test_common/harness/testHarness.c

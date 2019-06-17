@@ -22,6 +22,7 @@ set_source_files_properties(
         main.c
         structs.c
         type_replacer.c
+        ../../test_common/harness/mt19937.c
         ../../test_common/harness/testHarness.c
         ../../test_common/harness/msvc9.c
         ../../test_common/harness/kernelHelpers.c

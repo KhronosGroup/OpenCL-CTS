@@ -19,6 +19,7 @@ endif()
 set_source_files_properties(
         main.c
 	test_thread_dimensions.c
+    ../../test_common/harness/mt19937.c
 	../../test_common/harness/errorHelpers.c
 	../../test_common/harness/threadTesting.c
 	../../test_common/harness/testHarness.c

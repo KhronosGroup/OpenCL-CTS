@@ -5,9 +5,9 @@ endfunction()
 
 # Import function list from math_brute_force
 add_definitions(-DFUNCTION_LIST_ULPS_ONLY)
-
-add_executable(
-    conformance_test_spir
+set(SPIR_OUT conformance_test_spir)
+    
+set (SPIR_SOURCES
     main.cpp
     datagen.cpp
     run_build_test.cpp
@@ -22,10 +22,16 @@ add_executable(
     ../../test_common/harness/testHarness.c
     ../../test_common/miniz/miniz.c)
 
+add_executable(${SPIR_OUT}
+    ${SPIR_SOURCES})
+
+
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND NOT MSVC)
 set_source_files_properties(
         COMPILE_FLAGS -msse2)
 endif()
+
+set_source_files_properties(${SPIR_SOURCES} PROPERTIES LANGUAGE CXX)
 
 if(UNIX)
     set_target_properties(conformance_test_spir PROPERTIES

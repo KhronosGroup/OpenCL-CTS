@@ -21,6 +21,7 @@ endif()
 set_source_files_properties(
         main.c
 	test_multiple_contexts.c
+    ../../test_common/harness/mt19937.c
 	../../test_common/harness/errorHelpers.c
 	../../test_common/harness/threadTesting.c
 	../../test_common/harness/testHarness.c
