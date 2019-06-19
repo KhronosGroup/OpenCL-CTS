@@ -565,6 +565,7 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
                                   cl_command_queue_properties queueProps, int num_elements )
 {
     int ret = EXIT_SUCCESS;
+    setvbuf(stdout, NULL, _IONBF, 0);
 
     unsigned char *selectedTestList = ( unsigned char* ) calloc( testNum, 1 );
     test_status *resultTestList = NULL;
