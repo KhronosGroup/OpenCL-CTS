@@ -476,6 +476,7 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
                                  int forceNoContextCreation, cl_command_queue_properties queueProps, int num_elements )
 {
     int            ret, argIndex;
+    setvbuf(stdout, NULL, _IONBF, 0);
     unsigned int            i;
     int            fn_to_test = -1;    // initialized to test all.
                                        //    unsigned int threadSize;
