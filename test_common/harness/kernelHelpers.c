@@ -233,11 +233,16 @@ static cl_int get_device_address_bits(cl_context context, cl_uint &device_addres
     return CL_SUCCESS;
 }
 
-int create_single_kernel_helper_create_program(cl_context context, cl_program *outProgram, unsigned int numKernelLines, const char **kernelProgram, const char *buildOptions)
+static int create_single_kernel_helper_create_program(cl_context context,
+                                                      cl_program *outProgram,
+                                                      unsigned int numKernelLines,
+                                                      const char **kernelProgram,
+                                                      const char *buildOptions,
+                                                      CompilationMode compilationMode)
 {
     int error = CL_SUCCESS;
 
-    if (gOfflineCompiler)
+    if (compilationMode != kOnline)
     {
         std::string kernel;
 
@@ -261,7 +266,7 @@ int create_single_kernel_helper_create_program(cl_context context, cl_program *o
         std::string size_t_width_str;
 
         cl_uint device_address_space_size = 0;
-        if (gOfflineCompilerOutputType == kSpir_v)
+        if (compilationMode == kSpir_v)
         {
             cl_int error = get_device_address_bits(context, device_address_space_size);
             if (error != CL_SUCCESS)
@@ -276,11 +281,12 @@ int create_single_kernel_helper_create_program(cl_context context, cl_program *o
             size_t_width_str = size_t_width_stream.str();
         }
 
-        // try to read cached output file when test is run with gForceSpirVGenerate = false
+        // try to read cached output file when test is run with gCompilationCacheMode != kCacheModeOverwrite
         std::ifstream ifs(outputFilename.c_str(), std::ios::binary);
-        if (!ifs.good() || gForceSpirVGenerate)
+
+        if (gCompilationCacheMode == kCacheModeOverwrite || !ifs.good())
         {
-            if (gForceSpirVCache)
+            if (gCompilationCacheMode == kCacheModeForceRead)
             {
                 log_info("OfflineCompiler: can't open cached SpirV file: %s\n", outputFilename.c_str());
                 return -1;
@@ -288,7 +294,7 @@ int create_single_kernel_helper_create_program(cl_context context, cl_program *o
 
             ifs.close();
 
-            if (!gForceSpirVGenerate)
+            if (gCompilationCacheMode != kCacheModeOverwrite)
                 log_info("OfflineCompiler: can't find cached SpirV file: %s\n", outputFilename.c_str());
 
             std::ofstream ofs(sourceFilename.c_str(), std::ios::binary);
@@ -305,7 +311,7 @@ int create_single_kernel_helper_create_program(cl_context context, cl_program *o
             // set output type and default script
             std::string outputTypeStr;
             std::string defaultScript;
-            if (gOfflineCompilerOutputType == kBinary)
+            if (compilationMode == kBinary)
             {
                 outputTypeStr = "binary";
                 #if defined(_WIN32)
@@ -314,7 +320,7 @@ int create_single_kernel_helper_create_program(cl_context context, cl_program *o
                 defaultScript = "../build_script_binary.py ";
                 #endif
             }
-            else if (gOfflineCompilerOutputType == kSpir_v)
+            else if (compilationMode == kSpir_v)
             {
                 outputTypeStr = "spir_v";
                 #if defined(_WIN32)
@@ -390,7 +396,7 @@ int create_single_kernel_helper_create_program(cl_context context, cl_program *o
         ifs.seekg(0, ifs.beg);
 
         //treat modifiedProgram as input for clCreateProgramWithBinary
-        if (gOfflineCompilerOutputType == kBinary)
+        if (compilationMode == kBinary)
         {
             // read binary from file:
             std::vector<unsigned char> modifiedKernelBuf(length);
@@ -417,7 +423,7 @@ int create_single_kernel_helper_create_program(cl_context context, cl_program *o
             }
         }
         //treat modifiedProgram as input for clCreateProgramWithIL
-        else if (gOfflineCompilerOutputType == kSpir_v)
+        else if (compilationMode == kSpir_v)
         {
             // read spir-v from file:
             std::vector<unsigned char> modifiedKernelBuf(length);
@@ -436,7 +442,7 @@ int create_single_kernel_helper_create_program(cl_context context, cl_program *o
             }
         }
     }
-    else
+    else // compilationMode == kOnline
     {
         /* Create the program object from source */
         *outProgram = clCreateProgramWithSource(context, numKernelLines, kernelProgram, NULL, &error);
@@ -449,7 +455,23 @@ int create_single_kernel_helper_create_program(cl_context context, cl_program *o
     return 0;
 }
 
-int create_single_kernel_helper_with_build_options(cl_context context, cl_program *outProgram, cl_kernel *outKernel, unsigned int numKernelLines, const char **kernelProgram, const char *kernelName, const char *buildOptions)
+int create_single_kernel_helper_create_program(cl_context context,
+                                               cl_program *outProgram,
+                                               unsigned int numKernelLines,
+                                               const char **kernelProgram,
+                                               const char *buildOptions)
+{
+    return create_single_kernel_helper_create_program(context, outProgram, numKernelLines,
+                                                      kernelProgram, buildOptions, gCompilationMode);
+}
+
+int create_single_kernel_helper_with_build_options(cl_context context,
+                                                   cl_program *outProgram,
+                                                   cl_kernel *outKernel,
+                                                   unsigned int numKernelLines,
+                                                   const char **kernelProgram,
+                                                   const char *kernelName,
+                                                   const char *buildOptions)
 {
     return create_single_kernel_helper(context, outProgram, outKernel, numKernelLines, kernelProgram, kernelName, buildOptions);
 }
