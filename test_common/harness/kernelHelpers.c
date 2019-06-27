@@ -21,6 +21,7 @@
 #include "testHarness.h"
 #include "parseParameters.h"
 
+#include <cassert>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -200,6 +201,20 @@ std::string add_build_options(const std::string &baseName, const char *options)
     return get_file_name(baseName, i, "");
 }
 
+static std::string get_offline_compilation_file_type_str(const CompilationMode compilationMode)
+{
+    switch (compilationMode)
+    {
+        default:
+            assert(0 && "Invalid compilation mode for offline compilation");
+            abort();
+        case kBinary:
+            return "binary";
+        case kSpir_v:
+            return "SPIR-V";
+    }
+}
+
 static cl_int get_device_address_bits(cl_context context, cl_uint &device_address_space_size)
 {
     cl_uint numDevices = 0;
@@ -287,16 +302,20 @@ static int create_single_kernel_helper_create_program(cl_context context,
 
         if (gCompilationCacheMode == kCacheModeOverwrite || !ifs.good())
         {
+            std::string file_type = get_offline_compilation_file_type_str(compilationMode);
+
             if (gCompilationCacheMode == kCacheModeForceRead)
             {
-                log_info("OfflineCompiler: can't open cached SpirV file: %s\n", outputFilename.c_str());
+                log_info("OfflineCompiler: can't open cached %s file: %s\n",
+                         file_type.c_str(), outputFilename.c_str());
                 return -1;
             }
 
             ifs.close();
 
             if (gCompilationCacheMode != kCacheModeOverwrite)
-                log_info("OfflineCompiler: can't find cached SpirV file: %s\n", outputFilename.c_str());
+                log_info("OfflineCompiler: can't find cached %s file: %s\n",
+                         file_type.c_str(), outputFilename.c_str());
 
             std::ofstream ofs(sourceFilename.c_str(), std::ios::binary);
             if (!ofs.good())
@@ -387,7 +406,8 @@ static int create_single_kernel_helper_create_program(cl_context context,
             ifs.open(outputFilename.c_str(), std::ios::binary);
             if (!ifs.good())
             {
-                log_info("OfflineCompiler: can't read output file: %s\n", outputFilename.c_str());
+                log_info("OfflineCompiler: can't read generated %s file: %s\n",
+                         file_type.c_str(), outputFilename.c_str());
                 return -1;
             }
         }
