@@ -58,7 +58,7 @@ std::vector<unsigned char> readBinary(const char *file_name)
 
 std::vector<unsigned char> readSPIRV(const char *file_name)
 {
-    std::string full_name_str = gSpirVPath + slash + file_name + spvExt + gAddrWidth;
+    std::string full_name_str = gCompilationCachePath + slash + file_name + spvExt + gAddrWidth;
     return readBinary(full_name_str.c_str());
 }
 
@@ -97,7 +97,7 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     cl_int err = 0;
     std::string outputTypeStr = "binary";
     std::string defaultScript = std::string("..") + slash + std::string("spv_to_binary.py");
-    std::string outputFilename = gSpirVPath + slash + std::string(prog_name);
+    std::string outputFilename = gCompilationCachePath + slash + std::string(prog_name);
     std::string sourceFilename = outputFilename +  spvExt;
 
     std::string scriptArgs =

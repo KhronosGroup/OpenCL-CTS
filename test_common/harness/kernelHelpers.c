@@ -173,7 +173,7 @@ std::string add_build_options(const std::string &baseName, const char *options)
     do
     {
         i++;
-        std::string fileName = gSpirVPath + slash + get_file_name(baseName, i, ".options");
+        std::string fileName = gCompilationCachePath + slash + get_file_name(baseName, i, ".options");
         long fileSize = get_file_size(fileName);
         if (fileSize == 0)
             break;
@@ -186,7 +186,8 @@ std::string add_build_options(const std::string &baseName, const char *options)
     } while (!equal);
     if (equal)
         return get_file_name(baseName, i, "");
-    std::string fileName = gSpirVPath + slash + get_file_name(baseName, i, ".options");
+
+    std::string fileName = gCompilationCachePath + slash + get_file_name(baseName, i, ".options");
     std::ofstream ofs(fileName.c_str(), std::ios::binary);
     if (!ofs.good())
     {
@@ -260,8 +261,8 @@ static int create_single_kernel_helper_create_program(cl_context context,
 
         kernelName = add_build_options(kernelName, buildOptions);
 
-        std::string sourceFilename = gSpirVPath + slash + kernelName + ".cl";
-        std::string outputFilename = gSpirVPath + slash + kernelName;
+        std::string sourceFilename = gCompilationCachePath + slash + kernelName + ".cl";
+        std::string outputFilename = gCompilationCachePath + slash + kernelName;
 
         std::string size_t_width_str;
 
