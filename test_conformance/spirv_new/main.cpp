@@ -139,7 +139,7 @@ int get_program_with_il(clProgramWrapper &prog,
                         const char *prog_name)
 {
     cl_int err = 0;
-    if (gOfflineCompiler && gOfflineCompilerOutputType == kBinary) {
+    if (gCompilationMode == kBinary) {
         return offline_get_program_with_il(prog, deviceID, context, prog_name);
     }
 
