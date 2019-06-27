@@ -234,16 +234,17 @@ static cl_int get_device_address_bits(cl_context context, cl_uint &device_addres
     return CL_SUCCESS;
 }
 
-int create_single_kernel_helper_create_program(cl_context context,
-                                               cl_program *outProgram,
-                                               unsigned int numKernelLines,
-                                               const char **kernelProgram,
-                                               const char *buildOptions,
-                                               const bool openclCXX)
+static int create_single_kernel_helper_create_program(cl_context context,
+                                                      cl_program *outProgram,
+                                                      unsigned int numKernelLines,
+                                                      const char **kernelProgram,
+                                                      const char *buildOptions,
+                                                      const bool openclCXX,
+                                                      CompilationMode compilationMode)
 {
     int error = CL_SUCCESS;
 
-    if (gOfflineCompiler)
+    if (compilationMode != kOnline)
     {
         #ifndef CL_OFFLINE_COMPILER
             log_error("Offline compilation is not possible: CL_OFFLINE_COMPILER was not defined.\n");
@@ -270,7 +271,7 @@ int create_single_kernel_helper_create_program(cl_context context,
 
         // Get device CL_DEVICE_ADDRESS_BITS
         cl_uint device_address_space_size = 0;
-        if (gOfflineCompilerOutputType == kSpir_v)
+        if (compilationMode == kSpir_v)
         {
             cl_int error = get_device_address_bits(context, device_address_space_size);
             if (error != CL_SUCCESS)
@@ -281,11 +282,12 @@ int create_single_kernel_helper_create_program(cl_context context,
             outputFilename += extension.str();
         }
 
-        // try to read cached output file when test is run with gForceSpirVGenerate = false
+        // try to read cached output file when test is run with gCompilationCacheMode != kCacheModeOverwrite
         std::ifstream ifs(outputFilename.c_str(), std::ios::binary);
-        if (!ifs.good() || gForceSpirVGenerate)
+
+        if (gCompilationCacheMode == kCacheModeOverwrite || !ifs.good())
         {
-            if (gForceSpirVCache)
+            if (gCompilationCacheMode == kCacheModeForceRead)
             {
                 log_info("OfflineCompiler: can't open cached SpirV file: %s\n", outputFilename.c_str());
                 return -1;
@@ -293,7 +295,7 @@ int create_single_kernel_helper_create_program(cl_context context,
 
             ifs.close();
 
-            if (!gForceSpirVGenerate)
+            if (gCompilationCacheMode != kCacheModeOverwrite)
                 log_info("OfflineCompiler: can't find cached SpirV file: %s\n", outputFilename.c_str());
 
             std::ofstream ofs(sourceFilename.c_str(), std::ios::binary);
@@ -380,7 +382,7 @@ int create_single_kernel_helper_create_program(cl_context context,
         ifs.seekg(0, ifs.beg);
 
         //treat modifiedProgram as input for clCreateProgramWithBinary
-        if (gOfflineCompilerOutputType == kBinary)
+        if (compilationMode == kBinary)
         {
             // read binary from file:
             std::vector<unsigned char> modifiedKernelBuf(length);
@@ -407,7 +409,7 @@ int create_single_kernel_helper_create_program(cl_context context,
             }
         }
         //treat modifiedProgram as input for clCreateProgramWithIL
-        else if (gOfflineCompilerOutputType == kSpir_v)
+        else if (compilationMode == kSpir_v)
         {
             // read spir-v from file:
             std::vector<unsigned char> modifiedKernelBuf(length);
@@ -426,7 +428,7 @@ int create_single_kernel_helper_create_program(cl_context context,
             }
         }
     }
-    else // gOfflineCompiler == false
+    else // compilationMode == kOnline
     {
         /* Create the program object from source */
         *outProgram = clCreateProgramWithSource(context, numKernelLines, kernelProgram, NULL, &error);
@@ -437,6 +439,18 @@ int create_single_kernel_helper_create_program(cl_context context,
         }
     }
     return 0;
+}
+
+int create_single_kernel_helper_create_program(cl_context context,
+                                               cl_program *outProgram,
+                                               unsigned int numKernelLines,
+                                               const char **kernelProgram,
+                                               const char *buildOptions,
+                                               const bool openclCXX)
+{
+    return create_single_kernel_helper_create_program(context, outProgram, numKernelLines,
+                                                      kernelProgram, buildOptions,
+                                                      openclCXX, gCompilationMode);
 }
 
 int create_single_kernel_helper_with_build_options(cl_context context,
@@ -471,9 +485,9 @@ int create_single_kernel_helper(cl_context context,
     // Only OpenCL C++ to SPIR-V compilation
     #if defined(DEVELOPMENT) && defined(ONLY_SPIRV_COMPILATION)
         // Save global variable
-        bool tempgForceSpirVGenerate = gForceSpirVGenerate;
+        bool tempgCompilationCacheMode = gCompilationCacheMode;
         // Force OpenCL C++ -> SPIR-V compilation on every run
-        gForceSpirVGenerate = true;
+        gCompilationCacheMode = kCacheModeOverwrite;
     #endif
         error = create_openclcpp_program(
             context, outProgram, numKernelLines, kernelProgram, buildOptions
@@ -488,7 +502,7 @@ int create_single_kernel_helper(cl_context context,
     // -----------------------------------------------------------------------------------
     #if defined(DEVELOPMENT) && defined(ONLY_SPIRV_COMPILATION)
         // Restore global variables
-        gForceSpirVGenerate = tempgForceSpirVGenerate;
+        gCompilationCacheMode = tempgCompilationCacheMode;
         log_info("WARNING: KERNEL %s WAS ONLY COMPILED TO SPIR-V\n", kernelName);
         return error;
     #endif
@@ -535,21 +549,10 @@ int create_openclcpp_program(cl_context context,
                              const char **kernelProgram,
                              const char *buildOptions)
 {
-    // Save global variables
-    bool tempgOfflineCompiler = gOfflineCompiler;
-    OfflineCompilerOutputType tempgOfflineCompilerOutputType = gOfflineCompilerOutputType;
-    // Force offline compilation to SPIR-V
-    gOfflineCompiler = true;
-    gOfflineCompilerOutputType = OfflineCompilerOutputType::kSpir_v;
     // Create program
-    int error = create_single_kernel_helper_create_program(
-        context, outProgram, numKernelLines, kernelProgram, buildOptions, true
+    return create_single_kernel_helper_create_program(
+        context, outProgram, numKernelLines, kernelProgram, buildOptions, true, kSpir_v
     );
-    // Restore global variable
-    gOfflineCompiler = tempgOfflineCompiler;
-    gOfflineCompilerOutputType = tempgOfflineCompilerOutputType;
-    // Return result
-    return error;
 }
 
 // Builds OpenCL C/C++ program and creates
