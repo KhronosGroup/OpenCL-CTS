@@ -35,7 +35,7 @@ enum CompilationCacheMode
 
 extern CompilationMode gCompilationMode;
 extern CompilationCacheMode gCompilationCacheMode;
-extern std::string gSpirVPath;
+extern std::string gCompilationCachePath;
 
 extern int parseCustomParam (int argc, const char *argv[], const char *ignore = 0 );
 
