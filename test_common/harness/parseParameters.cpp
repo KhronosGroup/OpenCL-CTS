@@ -27,11 +27,9 @@
 
 using namespace std;
 
-bool             gOfflineCompiler = false;
-bool             gForceSpirVCache = false;
-bool             gForceSpirVGenerate = false;
-std::string      gSpirVPath = ".";
-OfflineCompilerOutputType gOfflineCompilerOutputType;
+CompilationMode      gCompilationMode = kOnline;
+CompilationCacheMode gCompilationCacheMode = kCacheModeCompileIfAbsent;
+std::string          gSpirVPath = ".";
 
 void helpInfo ()
 {
@@ -70,29 +68,27 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
             delArg = 1;
             if ((i + 1) < argc)
             {
-                gOfflineCompiler = true;
-
                 if (!strcmp(argv[i + 1], "binary"))
                 {
-                    gOfflineCompilerOutputType = kBinary;
+                    gCompilationMode = kBinary;
                     delArg++;
                 }
                 else if (!strcmp(argv[i + 1], "spir_v"))
                 {
-                    gOfflineCompilerOutputType = kSpir_v;
+                    gCompilationMode = kSpir_v;
                     delArg++;
                     if ((i + 3) < argc)
                     {
                         if (!strcmp(argv[i + 2], "cache"))
                         {
-                            gForceSpirVCache = true;
+                            gCompilationCacheMode = kCacheModeForceRead;
                             gSpirVPath = argv[i + 3];
                             log_info(" SpirV reading from cache enabled.\n");
                             delArg += 2;
                         }
                         else if (!strcmp(argv[i + 2], "generate"))
                         {
-                            gForceSpirVGenerate = true;
+                            gCompilationCacheMode = kCacheModeOverwrite;
                             gSpirVPath = argv[i + 3];
                             log_info(" SpirV force generate binaries enabled.\n");
                             delArg += 2;

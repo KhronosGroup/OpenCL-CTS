@@ -19,18 +19,23 @@
 #include "compat.h"
 #include <string>
 
-extern bool gOfflineCompiler;
-extern bool gForceSpirVCache;
-extern bool gForceSpirVGenerate;
-extern std::string gSpirVPath;
-
-enum OfflineCompilerOutputType
+enum CompilationMode
 {
-    kBinary = 0,
+    kOnline = 0,
+    kBinary,
     kSpir_v
 };
 
-extern OfflineCompilerOutputType gOfflineCompilerOutputType;
+enum CompilationCacheMode
+{
+    kCacheModeCompileIfAbsent = 0,
+    kCacheModeForceRead,
+    kCacheModeOverwrite
+};
+
+extern CompilationMode gCompilationMode;
+extern CompilationCacheMode gCompilationCacheMode;
+extern std::string gSpirVPath;
 
 extern int parseCustomParam (int argc, const char *argv[], const char *ignore = 0 );
 
