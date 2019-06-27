@@ -29,7 +29,7 @@ using namespace std;
 
 CompilationMode      gCompilationMode = kOnline;
 CompilationCacheMode gCompilationCacheMode = kCacheModeCompileIfAbsent;
-std::string          gSpirVPath = ".";
+std::string          gCompilationCachePath = ".";
 
 void helpInfo ()
 {
@@ -67,7 +67,7 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
         }
         else if (!strcmp(argv[i], "-ILPath"))
         {
-            gSpirVPath = argv[i + 1];
+            gCompilationCachePath = argv[i + 1];
             delArg = 2;
         }
         else if (!strcmp(argv[i], "-offlineCompiler"))
@@ -90,14 +90,14 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
                         if (!strcmp(argv[i + 2], "cache"))
                         {
                             gCompilationCacheMode = kCacheModeForceRead;
-                            gSpirVPath = argv[i + 3];
+                            gCompilationCachePath = argv[i + 3];
                             log_info(" SpirV reading from cache enabled.\n");
                             delArg += 2;
                         }
                         else if (!strcmp(argv[i + 2], "generate"))
                         {
                             gCompilationCacheMode = kCacheModeOverwrite;
-                            gSpirVPath = argv[i + 3];
+                            gCompilationCachePath = argv[i + 3];
                             log_info(" SpirV force generate binaries enabled.\n");
                             delArg += 2;
                         }
