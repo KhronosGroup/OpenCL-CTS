@@ -1,0 +1,25 @@
+The cl_offline_compiler program used for offline compilation must
+implement the following interface.
+
+   usage: cl_offline_compiler --source FILE --output FILE
+                              --cl-device-info FILE --mode MODE
+                              -- [BUILD_OPTIONS [BUILD_OPTIONS ...]]
+
+   positional arguments:
+     BUILD_OPTIONS          additional options to pass to the compiler
+
+   optional arguments:
+     --source FILE          OpenCL C source file to compile
+     --output FILE          SPIR-V or binary file to create
+     --cl-device-info FILE  OpenCL device info file
+     --mode                 compilation mode (spir-v or binary)
+
+The --cl-device-info file is a list of KEY=VALUE pairs containing device
+information relevant to the mode of offline compilation in question.
+It is of the following form:
+
+   # OpenCL device info affecting <SPIR-V|binary> offline compilation:
+   CL_DEVICE_ADDRESS_BITS=<32|64>
+   CL_DEVICE_EXTENSIONS="<space separated list of CL extensions>"
+   CL_DEVICE_IL_VERSION="<space separated list of IL versions>"
+   CL_DEVICE_VERSION="OpenCL <version> <vendor info>"

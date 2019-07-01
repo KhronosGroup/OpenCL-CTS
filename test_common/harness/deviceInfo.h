@@ -31,6 +31,12 @@ int is_extension_available(cl_device_id device, const char *extensionName);
 /* Returns a newly allocated C string containing the supported extensions list for a device. */
 char *alloc_and_get_device_extensions_string(cl_device_id device);
 
+/* Returns a newly allocated C string containing the supported IL version(s) for a device. */
+char *alloc_and_get_device_il_version_string(cl_device_id device);
+
+/* Returns a newly allocated C string containing the supported OpenCL version for a device. */
+char *alloc_and_get_device_version_string(cl_device_id device);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
