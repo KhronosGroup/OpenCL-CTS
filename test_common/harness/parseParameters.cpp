@@ -36,9 +36,8 @@ OfflineCompilerOutputType gOfflineCompilerOutputType;
 void helpInfo ()
 {
   log_info("  '-ILPath path_to_spirv_bin.\n");
-  log_info("  '-offlineCompiler <output_type:binary|source|spir_v>': use offline compiler\n");
+  log_info("  '-offlineCompiler <output_type:binary|spir_v>': use offline compiler\n");
   log_info("  '                  output_type binary - \"../build_script_binary.py\" is invoked\n");
-  log_info("  '                  output_type source - \"../build_script_source.py\"  is invoked\n");
   log_info("  '                  output_type spir_v <mode:generate|cache> - \"../cl_build_script_spir_v.py\" is invoked. optional modes: generate, cache\n");
   log_info("  '                                     mode generate <path> - force binary generation\n");
   log_info("  '                                     mode cache <path> - force reading binary files from cache\n");
@@ -86,11 +85,6 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
                 gOfflineCompilerOutputType = kBinary;
                 delArg++;
             }
-            else if (!strcmp(argv[i + 1], "source"))
-            {
-                gOfflineCompilerOutputType = kSource;
-                delArg++;
-            }
             else if (!strcmp(argv[i + 1], "spir_v"))
             {
                 gOfflineCompilerOutputType = kSpir_v;
@@ -122,7 +116,7 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
         else
         {
             log_error(" Offline Compiler parameters are incorrect. Usage:\n");
-            log_error("       -offlineCompiler <input> <output> <output_type:binary | source | spir_v>\n");
+            log_error("       -offlineCompiler <input> <output> <output_type:binary|spir_v>\n");
             return -1;
         }
     }

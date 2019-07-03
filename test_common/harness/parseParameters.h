@@ -27,7 +27,6 @@ extern std::string gSpirVPath;
 enum OfflineCompilerOutputType
 {
     kBinary = 0,
-    kSource,
     kSpir_v
 };
 
