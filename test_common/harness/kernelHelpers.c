@@ -202,8 +202,6 @@ std::string add_build_options(const std::string &baseName, const char *options)
 int create_single_kernel_helper_create_program(cl_context context, cl_program *outProgram, unsigned int numKernelLines, const char **kernelProgram, const char *buildOptions)
 {
     int error = CL_SUCCESS;
-    std::string modifiedKernelStr;
-    const char* modifiedKernelCode;
 
     if (gOfflineCompiler)
     {
@@ -311,15 +309,6 @@ int create_single_kernel_helper_create_program(cl_context context, cl_program *o
                 defaultScript = "../build_script_binary.py ";
                 #endif
             }
-            else if (gOfflineCompilerOutputType == kSource)
-            {
-                outputTypeStr = "source";
-                #if defined(_WIN32)
-                defaultScript = "..\\build_script_source.py ";
-                #else
-                defaultScript = "../build_script_source.py ";
-                #endif
-            }
             else if (gOfflineCompilerOutputType == kSpir_v)
             {
                 outputTypeStr = "spir_v";
@@ -395,30 +384,8 @@ int create_single_kernel_helper_create_program(cl_context context, cl_program *o
         int length = ifs.tellg();
         ifs.seekg(0, ifs.beg);
 
-        //treat modifiedProgram as input for clCreateProgramWithSource
-        if (gOfflineCompilerOutputType == kSource)
-        {
-            // read source from file:
-            std::vector<char> modifiedKernelBuf(length);
-
-            ifs.read(&modifiedKernelBuf[0], length);
-            ifs.close();
-
-            for (int i = 0; i < length; i++)
-                modifiedKernelStr.push_back(modifiedKernelBuf[i]);
-
-            modifiedKernelCode = &modifiedKernelStr[0];
-
-            /* Create the program object from source - to be removed in the future as we will use offline compiler here */
-            *outProgram = clCreateProgramWithSource(context, numKernelLines, &modifiedKernelCode, NULL, &error);
-            if (*outProgram == NULL || error != CL_SUCCESS)
-            {
-                print_error(error, "clCreateProgramWithSource failed");
-                return error;
-            }
-        }
         //treat modifiedProgram as input for clCreateProgramWithBinary
-        else if (gOfflineCompilerOutputType == kBinary)
+        if (gOfflineCompilerOutputType == kBinary)
         {
             // read binary from file:
             std::vector<unsigned char> modifiedKernelBuf(length);
