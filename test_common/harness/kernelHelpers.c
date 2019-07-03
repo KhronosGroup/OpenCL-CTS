@@ -231,8 +231,8 @@ int create_single_kernel_helper_create_program(cl_context context,
 
         kernelName = add_build_options(kernelName, buildOptions);
 
-        std::string gOfflineCompilerInput = gSpirVPath + slash + kernelName + ".cl";
-        std::string gOfflineCompilerOutput = gSpirVPath + slash + kernelName;
+        std::string sourceFilename = gSpirVPath + slash + kernelName + ".cl";
+        std::string outputFilename = gSpirVPath + slash + kernelName;
 
         // Get device CL_DEVICE_ADDRESS_BITS
         cl_uint device_address_space_size = 0;
@@ -270,33 +270,33 @@ int create_single_kernel_helper_create_program(cl_context context,
 
             if (device_address_space_size == 32)
             {
-                gOfflineCompilerOutput += ".spv32";
+                outputFilename += ".spv32";
             }
             else if (device_address_space_size == 64)
             {
-                gOfflineCompilerOutput += ".spv64";
+                outputFilename += ".spv64";
             }
         }
 
         // try to read cached output file when test is run with gForceSpirVGenerate = false
-        std::ifstream ifs(gOfflineCompilerOutput.c_str(), std::ios::binary);
+        std::ifstream ifs(outputFilename.c_str(), std::ios::binary);
         if (!ifs.good() || gForceSpirVGenerate)
         {
             if (gForceSpirVCache)
             {
-                log_info("OfflineCompiler: can't open cached SpirV file: %s\n", gOfflineCompilerOutput.c_str());
+                log_info("OfflineCompiler: can't open cached SpirV file: %s\n", outputFilename.c_str());
                 return -1;
             }
 
             ifs.close();
 
             if (!gForceSpirVGenerate)
-                log_info("OfflineCompiler: can't find cached SpirV file: %s\n", gOfflineCompilerOutput.c_str());
+                log_info("OfflineCompiler: can't find cached SpirV file: %s\n", outputFilename.c_str());
 
-            std::ofstream ofs(gOfflineCompilerInput.c_str(), std::ios::binary);
+            std::ofstream ofs(sourceFilename.c_str(), std::ios::binary);
             if (!ofs.good())
             {
-                log_info("OfflineCompiler: can't create source file: %s\n", gOfflineCompilerInput.c_str());
+                log_info("OfflineCompiler: can't create source file: %s\n", sourceFilename.c_str());
                 return -1;
             }
 
@@ -339,8 +339,8 @@ int create_single_kernel_helper_create_program(cl_context context,
             // Add build options passed to this function
             compilerOptions += " " + bOptions;
             compilerOptions +=
-                " " + gOfflineCompilerInput +
-                " -o " + gOfflineCompilerOutput;
+                " " + sourceFilename +
+                " -o " + outputFilename;
             std::string runString = STRINGIFY_VALUE(CL_OFFLINE_COMPILER) + compilerOptions;
 
             // execute script
@@ -353,10 +353,10 @@ int create_single_kernel_helper_create_program(cl_context context,
                 return CL_COMPILE_PROGRAM_FAILURE;
             }
             // read output file
-            ifs.open(gOfflineCompilerOutput.c_str(), std::ios::binary);
+            ifs.open(outputFilename.c_str(), std::ios::binary);
             if (!ifs.good())
             {
-                log_info("OfflineCompiler: can't read output file: %s\n", gOfflineCompilerOutput.c_str());
+                log_info("OfflineCompiler: can't read output file: %s\n", outputFilename.c_str());
                 return -1;
             }
         }
