@@ -200,6 +200,40 @@ std::string add_build_options(const std::string &baseName, const char *options)
     return get_file_name(baseName, i, "");
 }
 
+static cl_int get_device_address_bits(cl_context context, cl_uint &device_address_space_size)
+{
+    cl_uint numDevices = 0;
+    cl_int error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDevices, NULL);
+    if (error != CL_SUCCESS)
+    {
+        print_error(error, "clGetContextInfo failed getting CL_CONTEXT_NUM_DEVICES");
+        return error;
+    }
+
+    std::vector<cl_device_id> devices(numDevices, 0);
+    error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], NULL);
+    if (error != CL_SUCCESS)
+    {
+        print_error(error, "clGetContextInfo failed getting CL_CONTEXT_DEVICES");
+        return error;
+    }
+
+    error = clGetDeviceInfo(devices[0], CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &device_address_space_size, NULL);
+    if (error != CL_SUCCESS)
+    {
+        print_error(error, "Unable to obtain device address bits");
+        return error;
+    }
+
+    if (device_address_space_size != 32 && device_address_space_size != 64)
+    {
+        print_error(error, "Unexpected number of device address bits");
+        return -1;
+    }
+
+    return CL_SUCCESS;
+}
+
 int create_single_kernel_helper_create_program(cl_context context,
                                                cl_program *outProgram,
                                                unsigned int numKernelLines,
@@ -238,44 +272,13 @@ int create_single_kernel_helper_create_program(cl_context context,
         cl_uint device_address_space_size = 0;
         if (gOfflineCompilerOutputType == kSpir_v)
         {
-            cl_device_id device;
-            cl_uint numDevices = 0;
-            cl_int error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDevices, 0);
+            cl_int error = get_device_address_bits(context, device_address_space_size);
             if (error != CL_SUCCESS)
-            {
-                print_error(error, "clGetContextInfo failed");
                 return error;
-            }
 
-            std::vector<cl_device_id> devices(numDevices, 0);
-            error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], 0);
-            if (error != CL_SUCCESS)
-            {
-                print_error(error, "clGetContextInfo failed");
-                return error;
-            }
-
-            error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], NULL);
-            if (error != CL_SUCCESS)
-            {
-                print_error(error, "clGetContextInfo failed");
-                return error;
-            }
-
-            if ((0 == device_address_space_size) && ((error = clGetDeviceInfo(devices[0], CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &device_address_space_size, NULL))))
-            {
-                print_error(error, "Unable to obtain device address bits");
-                return -1;
-            }
-
-            if (device_address_space_size == 32)
-            {
-                outputFilename += ".spv32";
-            }
-            else if (device_address_space_size == 64)
-            {
-                outputFilename += ".spv64";
-            }
+            std::ostringstream extension;
+            extension << ".spv" << device_address_space_size;
+            outputFilename += extension.str();
         }
 
         // try to read cached output file when test is run with gForceSpirVGenerate = false
