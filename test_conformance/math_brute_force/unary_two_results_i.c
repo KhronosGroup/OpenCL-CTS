@@ -20,8 +20,6 @@
 #endif
 
 #include <limits.h>
-#include <stdlib.h>
-#include <float.h>
 #include <string.h>
 #include "FunctionList.h"
 

@@ -19,8 +19,6 @@
 #include <stdint.h>
 #endif
 
-#include <float.h>
-#include <stdlib.h>
 #include <string.h>
 #include "FunctionList.h"
 

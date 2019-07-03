@@ -19,9 +19,7 @@
 #include <stdint.h>
 #endif
 
-#include <stdlib.h>
 #include <string.h>
-#include <float.h>
 #include "FunctionList.h"
 
 #if defined( __APPLE__ )

@@ -17,9 +17,8 @@
 #if ! defined( _WIN32)
     #include <stdint.h>
 #endif
-#include <stdlib.h>
+
 #include <string.h>
-#include <float.h>
 #include "FunctionList.h"
 
 int TestFunc_Float_UInt(const Func *f, MTdata);
