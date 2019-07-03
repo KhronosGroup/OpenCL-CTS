@@ -97,12 +97,12 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     cl_int err = 0;
     std::string outputTypeStr = "binary";
     std::string defaultScript = std::string("..") + slash + std::string("spv_to_binary.py");
-    std::string gOfflineCompilerOutput = gSpirVPath + slash + std::string(prog_name);
-    std::string gOfflineCompilerInput = gOfflineCompilerOutput +  spvExt;
+    std::string outputFilename = gSpirVPath + slash + std::string(prog_name);
+    std::string sourceFilename = outputFilename +  spvExt;
 
     std::string scriptArgs =
-        gOfflineCompilerInput + " "  +
-        gOfflineCompilerOutput + " " +
+        sourceFilename + " " +
+        outputFilename + " " +
         gAddrWidth + " " +
         outputTypeStr + " " +
         "-cl-std=CL2.0";
@@ -119,10 +119,10 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     }
 
     // read output file
-    std::vector<unsigned char> buffer_vec = readBinary(gOfflineCompilerOutput.c_str());
+    std::vector<unsigned char> buffer_vec = readBinary(outputFilename.c_str());
     size_t file_bytes = buffer_vec.size();
     if (file_bytes == 0) {
-        log_error("OfflinerCompiler: Failed to open binary file: %s", gOfflineCompilerOutput.c_str());
+        log_error("OfflinerCompiler: Failed to open binary file: %s", outputFilename.c_str());
         return -1;
     }
 
