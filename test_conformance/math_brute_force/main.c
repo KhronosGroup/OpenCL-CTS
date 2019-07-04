@@ -1257,28 +1257,6 @@ static void CL_CALLBACK bruteforce_notify_callback(const char *errinfo, const vo
     vlog( "%s  (%p, %zd, %p)\n", errinfo, private_info, cb, user_data );
 }
 
-static void * align_malloc(size_t size, size_t alignment)
-{
-#if defined(_WIN32) && defined(_MSC_VER)
-    return _aligned_malloc(size, alignment);
-#elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
-    void * ptr = NULL;
-#if defined(__ANDROID__)
-    ptr = memalign(alignment, size);
-    if( ptr )
-        return ptr;
-#else
-    if (0 == posix_memalign(&ptr, alignment, size))
-        return ptr;
-#endif
-    return NULL;
-#elif defined(__MINGW32__)
-    return __mingw_aligned_malloc(size, alignment);
-#else
-#error "Please add support OS for aligned malloc"
-#endif
-}
-
 test_status InitCL( cl_device_id device )
 {
     int error;
