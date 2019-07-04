@@ -24,6 +24,9 @@
 #include "FunctionList.h"
 #include "Sleep.h"
 
+#include "../../test_common/harness/errorHelpers.h"
+#include "../../test_common/harness/kernelHelpers.h"
+
 #if defined( __APPLE__ )
     #include <sys/sysctl.h>
     #include <sys/mman.h>
@@ -1271,20 +1274,6 @@ static void * align_malloc(size_t size, size_t alignment)
 #endif
 }
 
-void   align_free(void * ptr)
-{
-#if defined(_WIN32) && defined(_MSC_VER)
-    _aligned_free(ptr);
-#elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
-    return  free(ptr);
-#elif defined(__MINGW32__)
-    return __mingw_aligned_free(ptr);
-#else
-    #error "Please add support OS for aligned free"
-#endif
-}
-
-
 test_status InitCL( cl_device_id device )
 {
     int error;
@@ -1838,26 +1827,13 @@ int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel
       strcat(options, " -cl-fast-relaxed-math");
     }
 
-    *p = clCreateProgramWithSource( gContext, count, c, NULL, &error );
-    if( NULL == *p || error )
+    error = create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
+    if ( error != CL_SUCCESS )
     {
         vlog_error( "\t\tFAILED -- Failed to create program. (%d)\n", error );
         return -1;
     }
 
-    // build it
-    if( (error = clBuildProgram( *p, 1, &gDevice, options, NULL, NULL )) )
-    {
-        char    buffer[2048] = "";
-
-        vlog_error("\t\tFAILED -- clBuildProgram() failed: (%d)\n", error);
-        clGetProgramBuildInfo(*p, gDevice, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
-        vlog_error("Log: %s\n", buffer);
-
-        clReleaseProgram( *p );
-        *p = NULL;
-        return error;
-    }
 
     memset( k, 0, kernel_count * sizeof( *k) );
     for( i = 0; i< kernel_count; i++ )
@@ -1875,7 +1851,7 @@ int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel
         }
     }
 
-    return 0;
+    return error;
 }
 
 
