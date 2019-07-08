@@ -605,6 +605,10 @@ int parseVersion( char const * str, version_t * version )
     version->major = 1;
     version->minor = 2;
     rc = 0;
+  } else if ( strncmp( str, "OpenCL 1.0", 10 ) == 0 && ( str[ 10 ] == 0 || str[ 10 ] == ' ' ) ) {
+    version->major = 1;
+    version->minor = 0;
+    rc = 0;
   } else if ( strncmp( str, "OpenCL 1.1", 10 ) == 0 && ( str[ 10 ] == 0 || str[ 10 ] == ' ' ) ) {
     version->major = 1;
     version->minor = 1;
@@ -616,6 +620,10 @@ int parseVersion( char const * str, version_t * version )
   } else if ( strncmp( str, "OpenCL 2.1", 10 ) == 0 && ( str[ 10 ] == 0 || str[ 10 ] == ' ' ) ) {
     version->major = 2;
     version->minor = 1;
+    rc = 0;
+  } else if ( strncmp( str, "OpenCL 2.2", 10 ) == 0 && ( str[ 10 ] == 0 || str[ 10 ] == ' ' ) ) {
+    version->major = 2;
+    version->minor = 2;
     rc = 0;
   } else {
     log_error( "ERROR: Unexpected version string: `%s'.\n", str );
