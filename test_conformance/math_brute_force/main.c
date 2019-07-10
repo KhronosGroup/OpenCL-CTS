@@ -22,6 +22,9 @@
 #include <time.h>
 #include "FunctionList.h"
 #include "Sleep.h"
+
+#include "../../test_common/harness/errorHelpers.h"
+#include "../../test_common/harness/kernelHelpers.h"
 #include "../../test_common/harness/parseParameters.h"
 
 #if defined( __APPLE__ )
@@ -1254,42 +1257,6 @@ static void CL_CALLBACK bruteforce_notify_callback(const char *errinfo, const vo
     vlog( "%s  (%p, %zd, %p)\n", errinfo, private_info, cb, user_data );
 }
 
-static void * align_malloc(size_t size, size_t alignment)
-{
-#if defined(_WIN32) && defined(_MSC_VER)
-    return _aligned_malloc(size, alignment);
-#elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
-    void * ptr = NULL;
-#if defined(__ANDROID__)
-    ptr = memalign(alignment, size);
-    if( ptr )
-        return ptr;
-#else
-    if (0 == posix_memalign(&ptr, alignment, size))
-        return ptr;
-#endif
-    return NULL;
-#elif defined(__MINGW32__)
-    return __mingw_aligned_malloc(size, alignment);
-#else
-#error "Please add support OS for aligned malloc"
-#endif
-}
-
-void   align_free(void * ptr)
-{
-#if defined(_WIN32) && defined(_MSC_VER)
-    _aligned_free(ptr);
-#elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
-    return  free(ptr);
-#elif defined(__MINGW32__)
-    return __mingw_aligned_free(ptr);
-#else
-    #error "Please add support OS for aligned free"
-#endif
-}
-
-
 test_status InitCL( cl_device_id device )
 {
     int error;
@@ -1654,18 +1621,11 @@ int InitILogbConstants( void )
     "   out[1] = FP_ILOGBNAN;\n"
     "}\n";
 
-    cl_program query = clCreateProgramWithSource(gContext, 1, &kernel, NULL, &error);
-    if( NULL == query || error)
+    cl_program query;
+    error = create_single_kernel_helper(gContext, &query, NULL, 1, &kernel, NULL);
+    if (NULL == query || error)
     {
         vlog_error( "Error: Unable to create program to get FP_ILOGB0 and FP_ILOGBNAN for the device. (%d)", error );
-        return error;
-    }
-    if(( error = clBuildProgram( query, 1, &gDevice, NULL, NULL, NULL ) ))
-    {
-        vlog_error( "Error: Unable to build program to get FP_ILOGB0 and FP_ILOGBNAN for the device. Err = %d\n", error );
-        char log_msg[2048] = "";
-        clGetProgramBuildInfo(query, gDevice, CL_PROGRAM_BUILD_LOG, sizeof( log_msg), log_msg, NULL);
-        vlog_error( "Log:\n%s\n", log_msg );
         return error;
     }
 
@@ -1716,18 +1676,10 @@ int IsTininessDetectedBeforeRounding( void )
     "   out[0] = a * b;\n"
     "}\n";
 
-    cl_program query = clCreateProgramWithSource(gContext, 1, &kernel, NULL, &error);
-    if( NULL == query || error)
-    {
+    cl_program query;
+    error = create_single_kernel_helper(gContext, &query, NULL, 1, &kernel, NULL);
+    if (error != CL_SUCCESS) {
         vlog_error( "Error: Unable to create program to detect how tininess is detected for the device. (%d)", error );
-        return error;
-    }
-    if(( error = clBuildProgram( query, 1, &gDevice, NULL, NULL, NULL ) ))
-    {
-        vlog_error( "Error: Unable to build program to detect how tininess is detected  for the device. Err = %d\n", error );
-        char log_msg[2048] = "";
-        clGetProgramBuildInfo(query, gDevice, CL_PROGRAM_BUILD_LOG, sizeof( log_msg), log_msg, NULL);
-        vlog_error( "Log:\n%s\n", log_msg );
         return error;
     }
 
@@ -1784,24 +1736,10 @@ int MakeKernel( const char **c, cl_uint count, const char *name, cl_kernel *k, c
       strcat(options, " -cl-fast-relaxed-math");
     }
 
-    *p = clCreateProgramWithSource( gContext, count, c, NULL, &error );
-    if( NULL == *p || error )
+    error = create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
+    if (error != CL_SUCCESS)
     {
-        vlog_error( "\t\tFAILED -- Failed to create program. (%d)\n", error );
-        return -1;
-    }
-
-    // build it
-    if( (error = clBuildProgram( *p, 1, &gDevice, options, NULL, NULL )) )
-    {
-        char    buffer[2048] = "";
-
-        vlog_error("\t\tFAILED -- clBuildProgram() failed: (%d)\n", error);
-        clGetProgramBuildInfo(*p, gDevice, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
-        vlog_error("Log: %s\n", buffer);
-
-        clReleaseProgram( *p );
-        *p = NULL;
+        vlog_error("\t\tFAILED -- Failed to create program. (%d)\n", error);
         return error;
     }
 
@@ -1843,26 +1781,13 @@ int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel
       strcat(options, " -cl-fast-relaxed-math");
     }
 
-    *p = clCreateProgramWithSource( gContext, count, c, NULL, &error );
-    if( NULL == *p || error )
+    error = create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
+    if ( error != CL_SUCCESS )
     {
         vlog_error( "\t\tFAILED -- Failed to create program. (%d)\n", error );
-        return -1;
-    }
-
-    // build it
-    if( (error = clBuildProgram( *p, 1, &gDevice, options, NULL, NULL )) )
-    {
-        char    buffer[2048] = "";
-
-        vlog_error("\t\tFAILED -- clBuildProgram() failed: (%d)\n", error);
-        clGetProgramBuildInfo(*p, gDevice, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
-        vlog_error("Log: %s\n", buffer);
-
-        clReleaseProgram( *p );
-        *p = NULL;
         return error;
     }
+
 
     memset( k, 0, kernel_count * sizeof( *k) );
     for( i = 0; i< kernel_count; i++ )
@@ -1880,7 +1805,7 @@ int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel
         }
     }
 
-    return 0;
+    return error;
 }
 
 
@@ -1895,25 +1820,17 @@ static int IsInRTZMode( void )
     "   out[0] = (a + 0x1.fffffep-1f == a) && (b - 0x1.fffffep-1f == b);\n"
     "}\n";
 
-    cl_program query = clCreateProgramWithSource(gContext, 1, &kernel, NULL, &error);
-    if( NULL == query || error)
-    {
+    cl_program query;
+    error = create_single_kernel_helper(gContext, &query, NULL, 1, &kernel, NULL);
+    if (error != CL_SUCCESS) {
         vlog_error( "Error: Unable to create program to detect RTZ mode for the device. (%d)", error );
-        return error;
-    }
-    if(( error = clBuildProgram( query, 1, &gDevice, NULL, NULL, NULL ) ))
-    {
-        vlog_error( "Error: Unable to build program to detect RTZ mode for the device. Err = %d\n", error );
-        char log_msg[2048] = "";
-        clGetProgramBuildInfo(query, gDevice, CL_PROGRAM_BUILD_LOG, sizeof( log_msg), log_msg, NULL);
-        vlog_error( "Log:\n%s\n", log_msg );
         return error;
     }
 
     cl_kernel k = clCreateKernel( query, "GetRoundingMode", &error );
     if( NULL == k || error)
     {
-      vlog_error( "Error: Unable to create kernel to gdetect RTZ mode for the device. Err = %d", error );
+        vlog_error( "Error: Unable to create kernel to gdetect RTZ mode for the device. Err = %d", error );
         return error;
     }
 
