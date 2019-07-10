@@ -1731,7 +1731,7 @@ int MakeKernel( const char **c, cl_uint count, const char *name, cl_kernel *k, c
       strcat(options, " -cl-fast-relaxed-math");
     }
 
-    error = create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
+    error = create_single_kernel_helper_with_build_options(gContext, p, NULL, count, c, NULL, options);
     if (error != CL_SUCCESS)
     {
         vlog_error("\t\tFAILED -- Failed to create program. (%d)\n", error);
@@ -1776,7 +1776,7 @@ int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel
       strcat(options, " -cl-fast-relaxed-math");
     }
 
-    error = create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
+    error = create_single_kernel_helper_with_build_options(gContext, p, NULL, count, c, NULL, options);
     if ( error != CL_SUCCESS )
     {
         vlog_error( "\t\tFAILED -- Failed to create program. (%d)\n", error );
