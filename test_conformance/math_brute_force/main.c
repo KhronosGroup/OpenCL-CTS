@@ -1621,18 +1621,11 @@ int InitILogbConstants( void )
     "   out[1] = FP_ILOGBNAN;\n"
     "}\n";
 
-    cl_program query = clCreateProgramWithSource(gContext, 1, &kernel, NULL, &error);
-    if( NULL == query || error)
+    cl_program query;
+    error = create_single_kernel_helper(gContext, &query, NULL, 1, &kernel, NULL);
+    if (NULL == query || error)
     {
         vlog_error( "Error: Unable to create program to get FP_ILOGB0 and FP_ILOGBNAN for the device. (%d)", error );
-        return error;
-    }
-    if(( error = clBuildProgram( query, 1, &gDevice, NULL, NULL, NULL ) ))
-    {
-        vlog_error( "Error: Unable to build program to get FP_ILOGB0 and FP_ILOGBNAN for the device. Err = %d\n", error );
-        char log_msg[2048] = "";
-        clGetProgramBuildInfo(query, gDevice, CL_PROGRAM_BUILD_LOG, sizeof( log_msg), log_msg, NULL);
-        vlog_error( "Log:\n%s\n", log_msg );
         return error;
     }
 
@@ -1683,18 +1676,10 @@ int IsTininessDetectedBeforeRounding( void )
     "   out[0] = a * b;\n"
     "}\n";
 
-    cl_program query = clCreateProgramWithSource(gContext, 1, &kernel, NULL, &error);
-    if( NULL == query || error)
-    {
+    cl_program query;
+    error = create_single_kernel_helper(gContext, &query, NULL, 1, &kernel, NULL);
+    if (error != CL_SUCCESS) {
         vlog_error( "Error: Unable to create program to detect how tininess is detected for the device. (%d)", error );
-        return error;
-    }
-    if(( error = clBuildProgram( query, 1, &gDevice, NULL, NULL, NULL ) ))
-    {
-        vlog_error( "Error: Unable to build program to detect how tininess is detected  for the device. Err = %d\n", error );
-        char log_msg[2048] = "";
-        clGetProgramBuildInfo(query, gDevice, CL_PROGRAM_BUILD_LOG, sizeof( log_msg), log_msg, NULL);
-        vlog_error( "Log:\n%s\n", log_msg );
         return error;
     }
 
@@ -1751,24 +1736,10 @@ int MakeKernel( const char **c, cl_uint count, const char *name, cl_kernel *k, c
       strcat(options, " -cl-fast-relaxed-math");
     }
 
-    *p = clCreateProgramWithSource( gContext, count, c, NULL, &error );
-    if( NULL == *p || error )
+    error = create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
+    if (error != CL_SUCCESS)
     {
-        vlog_error( "\t\tFAILED -- Failed to create program. (%d)\n", error );
-        return -1;
-    }
-
-    // build it
-    if( (error = clBuildProgram( *p, 1, &gDevice, options, NULL, NULL )) )
-    {
-        char    buffer[2048] = "";
-
-        vlog_error("\t\tFAILED -- clBuildProgram() failed: (%d)\n", error);
-        clGetProgramBuildInfo(*p, gDevice, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
-        vlog_error("Log: %s\n", buffer);
-
-        clReleaseProgram( *p );
-        *p = NULL;
+        vlog_error("\t\tFAILED -- Failed to create program. (%d)\n", error);
         return error;
     }
 
@@ -1814,7 +1785,7 @@ int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel
     if ( error != CL_SUCCESS )
     {
         vlog_error( "\t\tFAILED -- Failed to create program. (%d)\n", error );
-        return -1;
+        return error;
     }
 
 
@@ -1849,25 +1820,17 @@ static int IsInRTZMode( void )
     "   out[0] = (a + 0x1.fffffep-1f == a) && (b - 0x1.fffffep-1f == b);\n"
     "}\n";
 
-    cl_program query = clCreateProgramWithSource(gContext, 1, &kernel, NULL, &error);
-    if( NULL == query || error)
-    {
+    cl_program query;
+    error = create_single_kernel_helper(gContext, &query, NULL, 1, &kernel, NULL);
+    if (error != CL_SUCCESS) {
         vlog_error( "Error: Unable to create program to detect RTZ mode for the device. (%d)", error );
-        return error;
-    }
-    if(( error = clBuildProgram( query, 1, &gDevice, NULL, NULL, NULL ) ))
-    {
-        vlog_error( "Error: Unable to build program to detect RTZ mode for the device. Err = %d\n", error );
-        char log_msg[2048] = "";
-        clGetProgramBuildInfo(query, gDevice, CL_PROGRAM_BUILD_LOG, sizeof( log_msg), log_msg, NULL);
-        vlog_error( "Log:\n%s\n", log_msg );
         return error;
     }
 
     cl_kernel k = clCreateKernel( query, "GetRoundingMode", &error );
     if( NULL == k || error)
     {
-      vlog_error( "Error: Unable to create kernel to gdetect RTZ mode for the device. Err = %d", error );
+        vlog_error( "Error: Unable to create kernel to gdetect RTZ mode for the device. Err = %d", error );
         return error;
     }
 
