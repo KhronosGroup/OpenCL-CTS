@@ -486,6 +486,17 @@ int create_single_kernel_helper_create_program(cl_context context,
                                                       kernelProgram, buildOptions, gCompilationMode);
 }
 
+int create_single_kernel_helper_create_program_force_cmpl(cl_context context,
+    cl_program *outProgram,
+    unsigned int numKernelLines,
+    const char **kernelProgram,
+    const char *buildOptions,
+    CompilationMode compilationMode)
+{
+    return create_single_kernel_helper_create_program(context, outProgram, numKernelLines,
+        kernelProgram, buildOptions, compilationMode);
+}
+
 int create_single_kernel_helper_with_build_options(cl_context context,
                                                    cl_program *outProgram,
                                                    cl_kernel *outKernel,

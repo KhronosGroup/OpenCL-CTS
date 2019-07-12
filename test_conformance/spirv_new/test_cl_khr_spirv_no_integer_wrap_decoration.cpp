@@ -129,7 +129,7 @@ int test_ext_cl_khr_spirv_no_integer_wrap_decoration(cl_device_id deviceID,
     {
         // Run the cl kernel for reference results
         clProgramWrapper prog;
-        err = create_single_kernel_helper_create_program(context, &prog, 1, &kernelBuf, NULL);
+        err = create_single_kernel_helper_create_program_force_cmpl(context, &prog, 1, &kernelBuf, NULL, kOnline);
         SPIRV_CHECK_ERROR(err, "Failed to create cl program");
 
         err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
