@@ -136,6 +136,7 @@ public:
 
     bool is_vecbase(void) const {return m_is_vecbase;}
     bool is_atomic(void) const {return m_is_atomic;}
+    bool is_atomic_64bit(void) const {return m_is_atomic && m_size == 8;}
     bool is_like_size_t(void) const {return m_is_like_size_t;}
     bool is_bool(void) const {return m_is_bool;}
     size_t get_size(void) const {return m_size;}
@@ -485,6 +486,11 @@ static const char* l_get_cles_int64_pragma(void)
     return l_has_cles_int64 ? "#pragma OPENCL EXTENSION cles_khr_int64 : enable\n" : "";
 }
 
+static const char* l_get_int64_atomic_pragma(void)
+{
+    return "#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable\n"
+           "#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable\n";
+}
 
 static int l_build_type_table(cl_device_id device)
 {
@@ -835,6 +841,8 @@ static int l_write_read_for_type( cl_device_id device, cl_context context, cl_co
     StringTable ksrc;
     ksrc.add( l_get_fp64_pragma() );
     ksrc.add( l_get_cles_int64_pragma() );
+    if (ti.is_atomic_64bit())
+      ksrc.add( l_get_int64_atomic_pragma() );
     ksrc.add( conversion_functions(ti) );
     ksrc.add( global_decls(ti,false) );
     ksrc.add( writer_function(ti) );
@@ -982,6 +990,8 @@ static int l_init_write_read_for_type( cl_device_id device, cl_context context, 
     StringTable ksrc;
     ksrc.add( l_get_fp64_pragma() );
     ksrc.add( l_get_cles_int64_pragma() );
+    if (ti.is_atomic_64bit())
+      ksrc.add( l_get_int64_atomic_pragma() );
     ksrc.add( conversion_functions(ti) );
     ksrc.add( global_decls(ti,true) );
     ksrc.add( writer_function(ti) );
