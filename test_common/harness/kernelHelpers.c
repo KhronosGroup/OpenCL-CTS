@@ -219,6 +219,9 @@ static std::string get_offline_compilation_file_type_str(const CompilationMode c
     switch (compilationMode)
     {
         default:
+            assert(0 && "Invalid compilation mode");
+            abort();
+        case kOnline:
             assert(0 && "Invalid compilation mode for offline compilation");
             abort();
         case kBinary:
@@ -228,11 +231,12 @@ static std::string get_offline_compilation_file_type_str(const CompilationMode c
     }
 }
 
+#ifdef KHRONOS_OFFLINE_COMPILER
 static std::string get_khronos_compiler_command(const cl_uint device_address_space_size,
-                                                   const bool openclCXX,
-                                                   const std::string &bOptions,
-                                                   const std::string &sourceFilename,
-                                                   const std::string &outputFilename)
+                                                const bool openclCXX,
+                                                const std::string &bOptions,
+                                                const std::string &sourceFilename,
+                                                const std::string &outputFilename)
 {
     // Set compiler options
     // Emit SPIR-V
@@ -275,6 +279,7 @@ static std::string get_khronos_compiler_command(const cl_uint device_address_spa
 
     return runString;
 }
+#endif // KHRONOS_OFFLINE_COMPILER
 
 static std::string get_offline_compilation_command(const cl_uint device_address_space_size,
                                                    const CompilationMode compilationMode,
@@ -369,14 +374,19 @@ static int invoke_offline_compiler(const cl_device_id device,
         log_error("CL C++ compilation is not possible: KHRONOS_OFFLINE_COMPILER was not defined.\n");
         return CL_INVALID_OPERATION;
 #else
+        if (compilationMode != kSpir_v)
+        {
+            log_error("Compilation mode must be SPIR-V for Khronos compiler");
+            return -1;
+        }
         runString = get_khronos_compiler_command(device_address_space_size, openclCXX, bOptions,
-                                        sourceFilename, outputFilename);
+                                                 sourceFilename, outputFilename);
 #endif
     }
     else
     {
         runString = get_offline_compilation_command(device_address_space_size, compilationMode, bOptions,
-                                        sourceFilename, outputFilename);
+                                                    sourceFilename, outputFilename);
     }
 
     // execute script
@@ -435,7 +445,7 @@ static int get_offline_compiler_output(std::ifstream &ifs,
                                        const std::string &bOptions,
                                        const std::string &kernelName)
 {
-    std::string sourceFilename = gCompilationCachePath + slash + kernelName + ".cl";
+    std::string baseFilename = gCompilationCachePath + slash + kernelName;
 
     // Get device CL_DEVICE_ADDRESS_BITS
     cl_uint device_address_space_size = 0;
@@ -443,7 +453,7 @@ static int get_offline_compiler_output(std::ifstream &ifs,
     if (error != CL_SUCCESS)
         return error;
 
-    std::string outputFilename = gCompilationCachePath + slash + kernelName;
+    std::string outputFilename = baseFilename;
     if (compilationMode == kSpir_v)
     {
         std::ostringstream extension;
@@ -452,7 +462,8 @@ static int get_offline_compiler_output(std::ifstream &ifs,
     }
 
     // try to read cached output file when test is run with gCompilationCacheMode != kCacheModeOverwrite
-    ifs.open(outputFilename.c_str(), std::ios::binary);
+    if (gCompilationCacheMode != kCacheModeOverwrite)
+        ifs.open(outputFilename.c_str(), std::ios::binary);
 
     if (gCompilationCacheMode == kCacheModeOverwrite || !ifs.good())
     {
@@ -470,6 +481,8 @@ static int get_offline_compiler_output(std::ifstream &ifs,
         if (gCompilationCacheMode != kCacheModeOverwrite)
             log_info("OfflineCompiler: can't find cached %s file: %s\n",
                      file_type.c_str(), outputFilename.c_str());
+
+        std::string sourceFilename = baseFilename + ".cl";
 
         std::ofstream ofs(sourceFilename.c_str(), std::ios::binary);
         if (!ofs.good())
