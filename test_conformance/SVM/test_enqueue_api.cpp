@@ -118,25 +118,22 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
     svm
   };
 
-  typedef struct _TestType {
+  struct TestType {
     allocationTypes srcAlloc;
     allocationTypes dstAlloc;
-    _TestType(allocationTypes type1, allocationTypes type2): srcAlloc(type1), dstAlloc(type2){}
-  } TestType;
+    TestType(allocationTypes type1, allocationTypes type2): srcAlloc(type1), dstAlloc(type2){}
+  };
 
- typedef std::vector<TestType> TestTypes;
+ std::vector<TestType> testTypes;
 
- TestTypes testTypes;
  testTypes.push_back(TestType(host, svm));
  testTypes.push_back(TestType(svm, host));
  testTypes.push_back(TestType(svm, svm));
 
- size_t array_size_2 = sizeof(typeSizes) / sizeof(typeSizes[0]);
-
   for (const auto test_case : testTypes)
   {
     log_info("clEnqueueSVMMemcpy case: src_alloc = %s, dst_alloc = %s\n", test_case.srcAlloc == svm ? "svm" : "host", test_case.dstAlloc == svm ? "svm" : "host");
-    for (size_t i = 0; i < sizeof(typeSizes) / sizeof(typeSizes[0]); ++i)
+    for (size_t i = 0; i < ARRAY_SIZE(typeSizes); ++i)
     {
       //generate initial data
       std::vector<cl_uchar> fillData0(typeSizes[i]), fillData1(typeSizes[i]);
@@ -167,14 +164,12 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
       cl_uchar * dst_ptr;
       if (test_case.srcAlloc == host) {
         src_ptr = srcHostData.data();
-      }
-      if (test_case.srcAlloc == svm) {
+      } else if (test_case.srcAlloc == svm) {
         src_ptr = srcBuffer;
       }
       if (test_case.dstAlloc == host) {
         dst_ptr = dstHostData.data();
-      }
-      if (test_case.dstAlloc == svm) {
+      } else if (test_case.dstAlloc == svm) {
         dst_ptr = dstBuffer;
       }
       clEventWrapper eventMemcpy;
@@ -224,20 +219,14 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
 
       //event info verification for new SVM commands
       cl_command_type commandType;
-      error = clGetEventInfo(eventMemFillList[0], CL_EVENT_COMMAND_TYPE, sizeof(cl_command_type), &commandType, NULL);
-      test_error(error, "clGetEventInfo failed");
-      if (commandType != CL_COMMAND_SVM_MEMFILL)
-      {
-        log_error("Invalid command type returned for clEnqueueSVMMemFill\n");
-        return TEST_FAIL;
-      }
-
-      error = clGetEventInfo(eventMemFillList[1], CL_EVENT_COMMAND_TYPE, sizeof(cl_command_type), &commandType, NULL);
-      test_error(error, "clGetEventInfo failed");
-      if (commandType != CL_COMMAND_SVM_MEMFILL)
-      {
-          log_error("Invalid command type returned for clEnqueueSVMMemFill\n");
-          return TEST_FAIL;
+      for (auto check_event : eventMemFillList) {
+          error = clGetEventInfo(check_event, CL_EVENT_COMMAND_TYPE, sizeof(cl_command_type), &commandType, NULL);
+          test_error(error, "clGetEventInfo failed");
+          if (commandType != CL_COMMAND_SVM_MEMFILL)
+          {
+              log_error("Invalid command type returned for clEnqueueSVMMemFill\n");
+              return TEST_FAIL;
+          }
       }
 
       error = clGetEventInfo(eventMemcpy, CL_EVENT_COMMAND_TYPE, sizeof(cl_command_type), &commandType, NULL);
