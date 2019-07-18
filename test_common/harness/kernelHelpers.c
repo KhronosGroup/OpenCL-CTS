@@ -215,34 +215,41 @@ static std::string get_offline_compilation_file_type_str(const CompilationMode c
     }
 }
 
-static cl_int get_device_address_bits(cl_context context, cl_uint &device_address_space_size)
+static cl_int get_first_device_id(const cl_context context, cl_device_id &device)
 {
     cl_uint numDevices = 0;
     cl_int error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDevices, NULL);
-    if (error != CL_SUCCESS)
+    test_error(error, "clGetContextInfo failed getting CL_CONTEXT_NUM_DEVICES");
+
+    if (numDevices == 0)
     {
-        print_error(error, "clGetContextInfo failed getting CL_CONTEXT_NUM_DEVICES");
-        return error;
+        log_error("ERROR: No CL devices found\n");
+        return -1;
     }
 
     std::vector<cl_device_id> devices(numDevices, 0);
     error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], NULL);
+    test_error(error, "clGetContextInfo failed getting CL_CONTEXT_DEVICES");
+
+    device = devices[0];
+    return CL_SUCCESS;
+}
+
+static cl_int get_first_device_address_bits(const cl_context context, cl_uint &device_address_space_size)
+{
+    cl_device_id device;
+    cl_int error = get_first_device_id(context, device);
     if (error != CL_SUCCESS)
     {
-        print_error(error, "clGetContextInfo failed getting CL_CONTEXT_DEVICES");
         return error;
     }
 
-    error = clGetDeviceInfo(devices[0], CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &device_address_space_size, NULL);
-    if (error != CL_SUCCESS)
-    {
-        print_error(error, "Unable to obtain device address bits");
-        return error;
-    }
+    error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &device_address_space_size, NULL);
+    test_error(error, "Unable to obtain device address bits");
 
     if (device_address_space_size != 32 && device_address_space_size != 64)
     {
-        print_error(error, "Unexpected number of device address bits");
+        log_error("ERROR: Unexpected number of device address bits: %u\n", device_address_space_size);
         return -1;
     }
 
@@ -284,7 +291,7 @@ static int create_single_kernel_helper_create_program(cl_context context,
         cl_uint device_address_space_size = 0;
         if (compilationMode == kSpir_v)
         {
-            cl_int error = get_device_address_bits(context, device_address_space_size);
+            cl_int error = get_first_device_address_bits(context, device_address_space_size);
             if (error != CL_SUCCESS)
                 return error;
 
@@ -425,18 +432,14 @@ static int create_single_kernel_helper_create_program(cl_context context,
             ifs.read((char *)&modifiedKernelBuf[0], length);
             ifs.close();
 
-            cl_uint numDevices = 0;
-            cl_int error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDevices, 0);
-            test_error(error, "clGetContextInfo failed");
-
-            std::vector<cl_device_id> devices(numDevices, 0);
-            error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], 0);
-            test_error(error, "clGetContextInfo failed");
+            cl_device_id device;
+            error = get_first_device_id(context, device);
+            test_error(error, "Failed to get device ID");
 
             size_t lengths = modifiedKernelBuf.size();
             const unsigned char *binaries = { &modifiedKernelBuf[0] };
             log_info("offlineCompiler: clCreateProgramWithSource replaced with clCreateProgramWithBinary\n");
-            *outProgram = clCreateProgramWithBinary(context, 1, &devices[0], &lengths, &binaries, NULL, &error);
+            *outProgram = clCreateProgramWithBinary(context, 1, &device, &lengths, &binaries, NULL, &error);
             if (*outProgram == NULL || error != CL_SUCCESS)
             {
                 print_error(error, "clCreateProgramWithBinary failed");
