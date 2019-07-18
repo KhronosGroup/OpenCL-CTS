@@ -499,14 +499,8 @@ int create_single_kernel_helper_with_build_options(cl_context context,
 
 int create_single_kernel_helper(cl_context context, cl_program *outProgram, cl_kernel *outKernel, unsigned int numKernelLines, const char **kernelProgram, const char *kernelName, const char *buildOptions)
 {
-    int error = CL_SUCCESS;
-
-    create_single_kernel_helper_create_program(context, outProgram, numKernelLines, kernelProgram, buildOptions);
-    if (error != CL_SUCCESS)
-    {
-        log_error("Create program failed");
-        return -1;
-    }
+    int error = create_single_kernel_helper_create_program(context, outProgram, numKernelLines, kernelProgram, buildOptions);
+    test_error(error, "Create program failed");
 
     /* Compile the program */
   int buildProgramFailed = 0;
