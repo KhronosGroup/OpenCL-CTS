@@ -31,6 +31,7 @@ const std::string slash = "/";
 
 const std::string spvExt = ".spv";
 std::string gAddrWidth = "";
+std::string testCachePath = "spirv_bin";
 
 std::vector<unsigned char> readBinary(const char *file_name)
 {
@@ -58,7 +59,7 @@ std::vector<unsigned char> readBinary(const char *file_name)
 
 std::vector<unsigned char> readSPIRV(const char *file_name)
 {
-    std::string full_name_str = gCompilationCachePath + slash + file_name + spvExt + gAddrWidth;
+    std::string full_name_str = testCachePath + slash + file_name + spvExt + gAddrWidth;
     return readBinary(full_name_str.c_str());
 }
 
@@ -174,9 +175,40 @@ test_status checkAddressWidth(cl_device_id id)
   return TEST_PASS;
 }
 
+void printUsage() {
+    log_info("Test spirv_new read binary spv files from default path spirv_bin\n");
+    log_info("In case you want to set other directory user paramter --testCachePath\n");
+}
+
 int main(int argc, const char *argv[])
 {
     gReSeed = 1;
+    bool userModifyCachePath = false;
+    for (int i = 0; i < argc; ++i) {
+        int argsRemoveNum = 0;
+        if (strcmp(argv[i], "--testCachePath") == 0) {
+            if (argv[i + 1] == NULL) {
+                log_error("Missing value for --testCachePath argument\n");
+                return TEST_FAIL;
+            } else {
+                testCachePath = std::string(argv[i + 1]);
+                argsRemoveNum += 2;
+                userModifyCachePath = true;
+            }
+        }
+
+        if (argsRemoveNum > 0) {
+            for (int j = i; j < (argc - argsRemoveNum); ++j)
+                argv[j] = argv[j + argsRemoveNum];
+
+            argc -= argsRemoveNum;
+            --i;
+        }
+    }
+    if (userModifyCachePath == false) {
+       printUsage();
+    }
+
     return runTestHarnessWithCheck(argc, argv,
                           spirvTestsRegistry::getInstance().getNumTests(),
                           spirvTestsRegistry::getInstance().getTestDefinitions(),
