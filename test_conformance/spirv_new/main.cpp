@@ -31,7 +31,8 @@ const std::string slash = "/";
 
 const std::string spvExt = ".spv";
 std::string gAddrWidth = "";
-std::string testCachePath = "spirv_bin";
+std::string spvBinariesPath = "spirv_bin";
+std::string spvBinariesPathArg = "--spirv-binaries-path";
 
 std::vector<unsigned char> readBinary(const char *file_name)
 {
@@ -59,7 +60,7 @@ std::vector<unsigned char> readBinary(const char *file_name)
 
 std::vector<unsigned char> readSPIRV(const char *file_name)
 {
-    std::string full_name_str = testCachePath + slash + file_name + spvExt + gAddrWidth;
+    std::string full_name_str = spvBinariesPath + slash + file_name + spvExt + gAddrWidth;
     return readBinary(full_name_str.c_str());
 }
 
@@ -98,7 +99,7 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     cl_int err = 0;
     std::string outputTypeStr = "binary";
     std::string defaultScript = std::string("..") + slash + std::string("spv_to_binary.py");
-    std::string outputFilename = gCompilationCachePath + slash + std::string(prog_name);
+    std::string outputFilename = spvBinariesPath + slash + std::string(prog_name);
     std::string sourceFilename = outputFilename +  spvExt;
 
     std::string scriptArgs =
@@ -176,24 +177,24 @@ test_status checkAddressWidth(cl_device_id id)
 }
 
 void printUsage() {
-    log_info("Test spirv_new read binary spv files from default path spirv_bin\n");
-    log_info("In case you want to set other directory user paramter --testCachePath\n");
+    log_info("Reading SPIR-V files from default '%s' path.\n", spvBinariesPath.c_str());
+    log_info("In case you want to set other directory use '%s' argument.\n", spvBinariesPathArg.c_str());
 }
 
 int main(int argc, const char *argv[])
 {
     gReSeed = 1;
-    bool userModifyCachePath = false;
+    bool modifiedSpvBinariesPath = false;
     for (int i = 0; i < argc; ++i) {
         int argsRemoveNum = 0;
-        if (strcmp(argv[i], "--testCachePath") == 0) {
-            if (argv[i + 1] == NULL) {
-                log_error("Missing value for --testCachePath argument\n");
+        if (argv[i] == spvBinariesPathArg) {
+            if (argc == 2) {
+                log_error("Missing value for '%s' argument.\n", spvBinariesPathArg.c_str());
                 return TEST_FAIL;
             } else {
-                testCachePath = std::string(argv[i + 1]);
+                spvBinariesPath = std::string(argv[i + 1]);
                 argsRemoveNum += 2;
-                userModifyCachePath = true;
+                modifiedSpvBinariesPath = true;
             }
         }
 
@@ -205,7 +206,7 @@ int main(int argc, const char *argv[])
             --i;
         }
     }
-    if (userModifyCachePath == false) {
+    if (modifiedSpvBinariesPath == false) {
        printUsage();
     }
 
