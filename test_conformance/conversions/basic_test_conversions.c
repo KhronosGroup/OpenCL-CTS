@@ -819,15 +819,15 @@ static void uchar2float_sat( void *out, void *in){ ((cl_float*) out)[0] = my_fab
 static void uchar2double_sat( void *out, void *in){ ((cl_double*) out)[0] = my_fabs( (cl_double) ((cl_uchar*) in)[0]); } // my_fabs workaround for <rdar://problem/5965527>
 static void uchar2ulong_sat( void *out, void *in){ ((cl_ulong*) out)[0] = ((cl_uchar*) in)[0]; }
 static void uchar2long_sat( void *out, void *in){ ((cl_long*) out)[0] = ((cl_uchar*) in)[0]; }
-static void char2uchar_sat( void *out, void *in){ cl_char c = ((char*) in)[0]; ((cl_uchar*) out)[0] = c < 0 ? 0 : c; }
-static void char2ushort_sat( void *out, void *in){ cl_char c = ((char*) in)[0]; ((cl_ushort*) out)[0] = c < 0 ? 0 : c; }
+static void char2uchar_sat( void *out, void *in){ cl_char c = ((cl_char*) in)[0]; ((cl_uchar*) out)[0] = c < 0 ? 0 : c; }
+static void char2ushort_sat( void *out, void *in){ cl_char c = ((cl_char*) in)[0]; ((cl_ushort*) out)[0] = c < 0 ? 0 : c; }
 static void char2short_sat( void *out, void *in){ ((cl_short*) out)[0] = ((cl_char*) in)[0]; }
-static void char2uint_sat( void *out, void *in){ cl_char c = ((char*) in)[0]; ((cl_uint*) out)[0] = c < 0 ? 0 : c; }
+static void char2uint_sat( void *out, void *in){ cl_char c = ((cl_char*) in)[0]; ((cl_uint*) out)[0] = c < 0 ? 0 : c; }
 static void char2int_sat( void *out, void *in){ ((cl_int*) out)[0] = ((cl_char*) in)[0]; }
 static void char2float_sat( void *out, void *in){ ((cl_float*) out)[0] = ((cl_char*) in)[0]; }
 static void char2double_sat( void *out, void *in){ ((cl_double*) out)[0] = ((cl_char*) in)[0]; }
 static void char2ulong_sat( void *out, void *in){ cl_char c = ((cl_char*) in)[0]; ((cl_ulong*) out)[0] = c < 0 ? 0 : c; }
-static void char2long_sat( void *out, void *in){ ((cl_long*) out)[0] = ((char*) in)[0]; }
+static void char2long_sat( void *out, void *in){ ((cl_long*) out)[0] = ((cl_char*) in)[0]; }
 static void ushort2uchar_sat( void *out, void *in){ cl_ushort u = ((cl_ushort*) in)[0]; ((cl_uchar*) out)[0] = u > 0xff ? 0xFF : u; }
 static void ushort2char_sat( void *out, void *in){ cl_ushort u = ((cl_ushort*) in)[0]; ((cl_char*) out)[0] = u > 0x7f ? 0x7F : u; }
 static void ushort2short_sat( void *out, void *in){ cl_ushort u = ((cl_ushort*) in)[0]; ((cl_short*) out)[0] = u > 0x7fff ? 0x7fFF : u; }
@@ -862,7 +862,7 @@ static void int2short_sat( void *out, void *in){ cl_int i = ((cl_int*) in)[0]; (
 static void int2uint_sat( void *out, void *in){ cl_int i = ((cl_int*) in)[0]; ((cl_uint*) out)[0] = CLAMP( 0, i, CL_INT_MAX); }
 static void int2float_sat( void *out, void *in){ ((cl_float*) out)[0] = ((cl_int*) in)[0]; }
 static void int2double_sat( void *out, void *in){ ((cl_double*) out)[0] = ((cl_int*) in)[0]; }
-static void int2ulong_sat( void *out, void *in){ cl_int i = ((int*) in)[0]; ((cl_ulong*) out)[0] = i < 0 ? 0 : i; }
+static void int2ulong_sat( void *out, void *in){ cl_int i = ((cl_int*) in)[0]; ((cl_ulong*) out)[0] = i < 0 ? 0 : i; }
 static void int2long_sat( void *out, void *in){ ((cl_long*) out)[0] = ((cl_int*) in)[0]; }
 static void float2uchar_sat( void *out, void *in){ ((cl_uchar*) out)[0] = CLAMP( 0, lrintf_clamped(((cl_float*) in)[0]), CL_UCHAR_MAX ); }
 static void float2char_sat( void *out, void *in){ ((cl_char*) out)[0] = CLAMP( CL_CHAR_MIN, lrintf_clamped(((cl_float*) in)[0]), CL_CHAR_MAX); }
