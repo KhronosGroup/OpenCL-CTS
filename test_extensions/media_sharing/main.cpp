@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,38 +18,20 @@
 
 #include "../../test_common/harness/testHarness.h"
 #include "utils.h"
+#include "procs.h"
 
-extern int test_context_create(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_get_device_ids(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_kernel(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_other_data_types(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_memory_access(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_interop_user_sync(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-basefn basefn_list[] = {
-  test_context_create,
-  test_get_device_ids,
-  test_api,
-  test_kernel,
-  test_other_data_types,
-  test_memory_access,
-  test_interop_user_sync,
+test_definition test_list[] = {
+ADD_TEST( context_create ),
+ADD_TEST( get_device_ids ),
+ADD_TEST( api ),
+ADD_TEST( kernel ),
+ADD_TEST( other_data_types ),
+ADD_TEST( memory_access ),
+ADD_TEST( interop_user_sync )
 };
 
-const char *basefn_names[] = {
-  "test_context_create",
-  "test_get_device_ids",
-  "test_api",
-  "test_kernel",
-  "test_other_data_types",
-  "test_memory_access",
-  "test_interop_user_sync",
-};
-
-ct_assert((sizeof(basefn_names) / sizeof(basefn_names[0])) == (sizeof(basefn_list) / sizeof(basefn_list[0])));
-
-int num_fns = sizeof(basefn_names) / sizeof(char *);
+const int test_num = ARRAY_SIZE(test_list);
 
 clGetDeviceIDsFromDX9MediaAdapterKHR_fn clGetDeviceIDsFromDX9MediaAdapterKHR = NULL;
 clCreateFromDX9MediaSurfaceKHR_fn clCreateFromDX9MediaSurfaceKHR = NULL;
@@ -207,16 +189,16 @@ bool CmdlineParse(int argc, const char *argv[])
 int main(int argc, const char *argv[])
 {
   if (!CmdlineParse(argc, argv))
-    return 2;
+    return TEST_FAIL;
 
   if (!DetectPlatformAndDevice())
   {
     log_info("Test was not run, because the media surface sharing extension is not supported\n");
-    return TEST_NOT_SUPPORTED;
+    return TEST_SKIP;
   }
 
   if (!MediaSurfaceSharingExtensionInit())
-    return 2;
+    return TEST_FAIL;
 
-  return runTestHarness( argc, argv, num_fns, basefn_list, basefn_names, false, true, 0 );
+  return runTestHarness(argc, argv, test_num, test_list, false, true, 0);
 }
