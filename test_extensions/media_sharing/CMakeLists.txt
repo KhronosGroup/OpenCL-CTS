@@ -1,6 +1,5 @@
 if(WIN32)
 list(APPEND CLConform_LIBRARIES d3d9.lib dxva2.lib )
-endif(WIN32)
 
 set (MEDIA_SOURCES
         main.cpp
@@ -21,6 +20,7 @@ set (MEDIA_SOURCES
         ../../test_common/harness/mt19937.c
         ../../test_common/harness/parseParameters.cpp
         ../../test_common/harness/crc32.c
+        ../../test_common/harness/msvc9.c
     )
 
 add_executable(conformance_test_media_surface_sharing
@@ -32,3 +32,5 @@ set_source_files_properties(
 
 TARGET_LINK_LIBRARIES(conformance_test_media_surface_sharing
         ${CLConform_LIBRARIES})
+
+endif(WIN32)
