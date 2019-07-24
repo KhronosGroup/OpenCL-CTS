@@ -15,7 +15,11 @@
 //
 #include "common.h"
 
-const char *hash_table_kernel[] = {
+static char hash_table_kernel[] =
+  "#if 0\n"
+  "#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable\n"
+  "#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable\n"
+  "#endif\n"
   "typedef struct BinNode {\n"
   " int value;\n"
   " atomic_uintptr_t pNext;\n"
@@ -32,8 +36,7 @@ const char *hash_table_kernel[] = {
   " {\n"
   "   atomic_store_explicit(&(pNew->pNext), next, memory_order_seq_cst, memory_scope_all_svm_devices);\n" // always inserting at head of list
   " } while(!atomic_compare_exchange_strong_explicit(&(pNodes[b].pNext), &next, (uintptr_t)pNew, memory_order_seq_cst, memory_order_relaxed, memory_scope_all_svm_devices));\n"
-  "}\n"
-};
+  "}\n";
 
 typedef struct BinNode{
   cl_uint value;
@@ -143,7 +146,12 @@ int test_svm_fine_grain_memory_consistency(cl_device_id deviceID, cl_context c, 
       return 0;
   }
 
-  err = create_cl_objects(deviceID, &hash_table_kernel[0], &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS);
+  // Make pragmas visible for 64-bit addresses
+  hash_table_kernel[4] = sizeof(void *) == 8 ? '1' : '0';
+
+  char *source[] = { hash_table_kernel };
+
+  err = create_cl_objects(deviceID, (const char**)source, &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS);
   if(err == 1) return 0; // no devices capable of requested SVM level, so don't execute but count test as passing.
   if(err < 0) return -1; // fail test.
 
