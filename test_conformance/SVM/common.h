@@ -44,7 +44,8 @@ bool AtomicCompareExchangeStrongExplicit(volatile T *a, T *expected, T desired,
 {
     T tmp;
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-    tmp = (T)InterlockedCompareExchange((volatile LONG *)a, (LONG)desired, *(LONG *)expected);
+    tmp = (sizeof(void*) == 8) ? (T)InterlockedCompareExchange64((volatile LONG64 *)a, (LONG64)desired, *(LONG64 *)expected) :
+      (T)InterlockedCompareExchange((volatile LONG*)a, (LONG)desired, *(LONG*)expected);
 #elif defined(__GNUC__)
     tmp = (T)__sync_val_compare_and_swap((volatile intptr_t*)a, (intptr_t)(*expected), (intptr_t)desired);
 #else
