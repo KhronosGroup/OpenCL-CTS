@@ -188,7 +188,7 @@ int main(int argc, const char *argv[])
     for (int i = 0; i < argc; ++i) {
         int argsRemoveNum = 0;
         if (argv[i] == spvBinariesPathArg) {
-            if (argc == 2) {
+            if (i + 1 == argc) {
                 log_error("Missing value for '%s' argument.\n", spvBinariesPathArg.c_str());
                 return TEST_FAIL;
             } else {
