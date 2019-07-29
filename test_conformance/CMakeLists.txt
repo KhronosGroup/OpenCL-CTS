@@ -22,7 +22,7 @@ else()
     # set it, so setting it here once means we have consistent compiliation
     # flags across the entire conformance_test_* executables.
     set(CTS_EXTRA_FLAGS "${CTS_EXTRA_FLAGS} -mfpmath=sse -msse2")
-  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(ARM)|(ARM64)")
+  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(ARM)|(ARM64)|(aarch64)")
     # The OpenCL CTS assumes that the char type is signed, which is not the
     # default on ARM compilers, so we need to set it.
     set(CTS_EXTRA_FLAGS "${CTS_EXTRA_FLAGS} -fsigned-char")
