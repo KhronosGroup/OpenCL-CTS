@@ -163,3 +163,4 @@ if(MSVC)
 endif(MSVC)
 
 set_property(TARGET COPY_FILES${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
+add_subdirectory( "test_extensions" )
