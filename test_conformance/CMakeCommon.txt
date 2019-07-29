@@ -1,5 +1,4 @@
-set_source_files_properties(
-        COMPILE_FLAGS -msse2)
+set_source_files_properties(COMPILE_FLAGS -msse2)
 
 string(TOLOWER ${MODULE_NAME} MODULE_NAME_LOWER)
 
