@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
 set( CONFORMANCE_SUFFIX "" )
-
 set(CLConform_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 project(CLConform${CONFORMANCE_SUFFIX})
@@ -26,6 +25,7 @@ add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_1_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_0_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_1_APIS=1)
+add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_0_APIS=1)
 
 
 # Support both VS2008 and VS2012.
@@ -103,14 +103,11 @@ if(APPLE)
     list(APPEND CLConform_LIBRARIES ${iokit})
 endif(APPLE)
 
-list(APPEND CLConform_INCLUDE_DIR ${OPENCL_INCLUDE_DIR})
-
-include_directories (${CLConform_SOURCE_DIR}/test_common/harness
-                     ${CLConform_SOURCE_DIR}/test_common/gles
-                     ${CLConform_SOURCE_DIR}/test_common/gl
-                     ${CLConform_INCLUDE_DIR}
-                     ${CMAKE_CURRENT_SOURCE_DIR}/test_common/harness
-                    )
+include_directories(SYSTEM ${OPENCL_INCLUDE_DIR})
+include_directories(${CLConform_SOURCE_DIR}/test_common/harness
+                    ${CLConform_SOURCE_DIR}/test_common/gles
+                    ${CLConform_SOURCE_DIR}/test_common/gl
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_common/harness)
 
 if(CMAKE_BUILD_TYPE STREQUAL "release")
     set (BUILD_FLAVOR "release")
@@ -128,13 +125,13 @@ set (DLL_FILES "${VS_BUILD_DIR}/Debug/*.dll")
 set (DST_DIR   "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/")
 
 if (WIN32)
-set (COPY "echo")
-add_custom_target( COPY_DLL${CONFORMANCE_SUFFIX} ALL
-                   COMMAND ${COPY} \"${DLL_FILES}\" \"${DST_DIR}\"
-                   COMMENT "Copying dll files.. ")
+    set (COPY "echo")
+    add_custom_target(COPY_DLL${CONFORMANCE_SUFFIX} ALL
+                      COMMAND ${COPY} "${DLL_FILES}" "${DST_DIR}"
+                      COMMENT "Copying dll files.. ")
 else (WIN32)
-set (COPY cp)
-add_custom_target( COPY_DLL${CONFORMANCE_SUFFIX} )
+    set (COPY cp)
+    add_custom_target(COPY_DLL${CONFORMANCE_SUFFIX})
 endif(WIN32)
 
 set_property(TARGET COPY_DLL${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")

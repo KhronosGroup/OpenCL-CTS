@@ -25,11 +25,8 @@ IF NOT EXIST CLConform.sln (
    echo "Solution file found CLConform.sln "
 )
 
-
-
 echo Building CLConform.sln...
 %VCPATH% CLConform.sln /build
 
 
 GOTO:EOF
-

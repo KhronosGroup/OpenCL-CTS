@@ -312,17 +312,17 @@ static int invoke_offline_compiler(cl_context context,
                                    const std::string &sourceFilename,
                                    const std::string &outputFilename)
 {
-    std::string scriptToRunString =
+    std::string runString =
         get_offline_compilation_command(device_address_space_size, compilationMode, bOptions,
                                         sourceFilename, outputFilename);
 
     // execute script
-    log_info("Executing command: %s\n", scriptToRunString.c_str());
+    log_info("Executing command: %s\n", runString.c_str());
     fflush(stdout);
-    int returnCode = system(scriptToRunString.c_str());
+    int returnCode = system(runString.c_str());
     if (returnCode != 0)
     {
-        log_error("Command finished with error: 0x%x\n", returnCode);
+        log_error("ERROR: Command finished with error: 0x%x\n", returnCode);
         return CL_COMPILE_PROGRAM_FAILURE;
     }
 
@@ -568,139 +568,151 @@ int create_single_kernel_helper(cl_context context, cl_program *outProgram, cl_k
     test_error(error, "Create program failed");
 
     /* Compile the program */
-  int buildProgramFailed = 0;
-  int printedSource = 0;
-  error = clBuildProgram(*outProgram, 0, NULL, buildOptions, NULL, NULL);
-  if (error != CL_SUCCESS)
-  {
-    unsigned int i;
-    print_error(error, "clBuildProgram failed");
-    buildProgramFailed = 1;
-    printedSource = 1;
-    log_error( "Build options: %s\n", buildOptions );
-    log_error( "Original source is: ------------\n" );
-    for( i = 0; i < numKernelLines; i++ )
-      log_error( "%s", kernelProgram[ i ] );
-  }
-
-  // Verify the build status on all devices
-  cl_uint deviceCount = 0;
-  error = clGetProgramInfo( *outProgram, CL_PROGRAM_NUM_DEVICES, sizeof( deviceCount ), &deviceCount, NULL );
-  if (error != CL_SUCCESS) {
-    print_error(error, "clGetProgramInfo CL_PROGRAM_NUM_DEVICES failed");
-      return error;
-  }
-
-  if (deviceCount == 0) {
-    log_error("No devices found for program.\n");
-    return -1;
-  }
-
-  cl_device_id    *devices = (cl_device_id*) malloc( deviceCount * sizeof( cl_device_id ) );
-  if( NULL == devices )
-    return -1;
-  BufferOwningPtr<cl_device_id> devicesBuf(devices);
-
-  memset( devices, 0, deviceCount * sizeof( cl_device_id ));
-  error = clGetProgramInfo( *outProgram, CL_PROGRAM_DEVICES, sizeof( cl_device_id ) * deviceCount, devices, NULL );
-  if (error != CL_SUCCESS) {
-    print_error(error, "clGetProgramInfo CL_PROGRAM_DEVICES failed");
-    return error;
-  }
-
-  cl_uint z;
-  bool buildFailed = false;
-  for( z = 0; z < deviceCount; z++ )
-  {
-    char deviceName[4096] = "";
-    error = clGetDeviceInfo(devices[z], CL_DEVICE_NAME, sizeof( deviceName), deviceName, NULL);
-    if (error != CL_SUCCESS || deviceName[0] == '\0') {
-      log_error("Device \"%d\" failed to return a name\n", z);
-      print_error(error, "clGetDeviceInfo CL_DEVICE_NAME failed");
-    }
-
-    cl_build_status buildStatus;
-    error = clGetProgramBuildInfo(*outProgram, devices[z], CL_PROGRAM_BUILD_STATUS, sizeof(buildStatus), &buildStatus, NULL);
-    if (error != CL_SUCCESS) {
-      print_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_STATUS failed");
-      return error;
-    }
-
-    if (buildStatus == CL_BUILD_SUCCESS && buildProgramFailed && deviceCount == 1)
+    int buildProgramFailed = 0;
+    int printedSource = 0;
+    error = clBuildProgram(*outProgram, 0, NULL, buildOptions, NULL, NULL);
+    if (error != CL_SUCCESS)
     {
-        buildFailed = true;
-        log_error("clBuildProgram returned an error, but buildStatus is marked as CL_BUILD_SUCCESS.\n");
+        unsigned int i;
+        print_error(error, "clBuildProgram failed");
+        buildProgramFailed = 1;
+        printedSource = 1;
+        log_error("Build options: %s\n", buildOptions);
+        log_error("Original source is: ------------\n");
+        for (i = 0; i < numKernelLines; i++)
+            log_error("%s", kernelProgram[i]);
     }
 
-    if (buildStatus != CL_BUILD_SUCCESS) {
+    // Verify the build status on all devices
+    cl_uint deviceCount = 0;
+    error = clGetProgramInfo(*outProgram, CL_PROGRAM_NUM_DEVICES, sizeof(deviceCount), &deviceCount, NULL);
+    if (error != CL_SUCCESS)
+    {
+        print_error(error, "clGetProgramInfo CL_PROGRAM_NUM_DEVICES failed");
+        return error;
+    }
 
-        char statusString[64] = "";
-        if (buildStatus == (cl_build_status)CL_BUILD_SUCCESS)
-            sprintf(statusString, "CL_BUILD_SUCCESS");
-        else if (buildStatus == (cl_build_status)CL_BUILD_NONE)
-            sprintf(statusString, "CL_BUILD_NONE");
-        else if (buildStatus == (cl_build_status)CL_BUILD_ERROR)
-            sprintf(statusString, "CL_BUILD_ERROR");
-        else if (buildStatus == (cl_build_status)CL_BUILD_IN_PROGRESS)
-            sprintf(statusString, "CL_BUILD_IN_PROGRESS");
-        else
-            sprintf(statusString, "UNKNOWN (%d)", buildStatus);
+    if (deviceCount == 0)
+    {
+        log_error("No devices found for program.\n");
+        return -1;
+    }
 
-        if (buildStatus != CL_BUILD_SUCCESS) log_error("Build not successful for device \"%s\", status: %s\n", deviceName, statusString);
-        size_t paramSize = 0;
-        error = clGetProgramBuildInfo(*outProgram, devices[z], CL_PROGRAM_BUILD_LOG, 0, NULL, &paramSize);
-        if (error != CL_SUCCESS) {
+    cl_device_id *devices = (cl_device_id *)malloc(deviceCount * sizeof(cl_device_id));
+    if (NULL == devices)
+        return -1;
+    BufferOwningPtr<cl_device_id> devicesBuf(devices);
 
-            print_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_LOG failed");
+    memset(devices, 0, deviceCount * sizeof(cl_device_id));
+    error = clGetProgramInfo(*outProgram, CL_PROGRAM_DEVICES, sizeof(cl_device_id) * deviceCount, devices, NULL);
+    if (error != CL_SUCCESS)
+    {
+        print_error(error, "clGetProgramInfo CL_PROGRAM_DEVICES failed");
+        return error;
+    }
+
+    cl_uint z;
+    bool buildFailed = false;
+    for (z = 0; z < deviceCount; z++)
+    {
+        char deviceName[4096] = "";
+        error = clGetDeviceInfo(devices[z], CL_DEVICE_NAME, sizeof(deviceName), deviceName, NULL);
+        if (error != CL_SUCCESS || deviceName[0] == '\0')
+        {
+            log_error("Device \"%d\" failed to return a name\n", z);
+            print_error(error, "clGetDeviceInfo CL_DEVICE_NAME failed");
+        }
+
+        cl_build_status buildStatus;
+        error = clGetProgramBuildInfo(*outProgram, devices[z], CL_PROGRAM_BUILD_STATUS, sizeof(buildStatus), &buildStatus, NULL);
+        if (error != CL_SUCCESS)
+        {
+            print_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_STATUS failed");
             return error;
         }
 
-        std::string log;
-        log.resize(paramSize / sizeof(char));
-        error = clGetProgramBuildInfo(*outProgram, devices[z], CL_PROGRAM_BUILD_LOG, paramSize, &log[0], NULL);
-        if (error != CL_SUCCESS || log[0] == '\0'){
-            log_error("Device %d (%s) failed to return a build log\n", z, deviceName);
-            if (error) {
+        if (buildStatus == CL_BUILD_SUCCESS && buildProgramFailed && deviceCount == 1)
+        {
+            buildFailed = true;
+            log_error("clBuildProgram returned an error, but buildStatus is marked as CL_BUILD_SUCCESS.\n");
+        }
+
+        if (buildStatus != CL_BUILD_SUCCESS)
+        {
+
+            char statusString[64] = "";
+            if (buildStatus == (cl_build_status)CL_BUILD_SUCCESS)
+                sprintf(statusString, "CL_BUILD_SUCCESS");
+            else if (buildStatus == (cl_build_status)CL_BUILD_NONE)
+                sprintf(statusString, "CL_BUILD_NONE");
+            else if (buildStatus == (cl_build_status)CL_BUILD_ERROR)
+                sprintf(statusString, "CL_BUILD_ERROR");
+            else if (buildStatus == (cl_build_status)CL_BUILD_IN_PROGRESS)
+                sprintf(statusString, "CL_BUILD_IN_PROGRESS");
+            else
+                sprintf(statusString, "UNKNOWN (%d)", buildStatus);
+
+            if (buildStatus != CL_BUILD_SUCCESS)
+                log_error("Build not successful for device \"%s\", status: %s\n", deviceName, statusString);
+            size_t paramSize = 0;
+            error = clGetProgramBuildInfo(*outProgram, devices[z], CL_PROGRAM_BUILD_LOG, 0, NULL, &paramSize);
+            if (error != CL_SUCCESS)
+            {
+
                 print_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_LOG failed");
                 return error;
-            } else {
-                log_error("clGetProgramBuildInfo returned an empty log.\n");
-                return -1;
             }
+
+            std::string log;
+            log.resize(paramSize / sizeof(char));
+            error = clGetProgramBuildInfo(*outProgram, devices[z], CL_PROGRAM_BUILD_LOG, paramSize, &log[0], NULL);
+            if (error != CL_SUCCESS || log[0] == '\0')
+            {
+                log_error("Device %d (%s) failed to return a build log\n", z, deviceName);
+                if (error)
+                {
+                    print_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_LOG failed");
+                    return error;
+                }
+                else
+                {
+                    log_error("clGetProgramBuildInfo returned an empty log.\n");
+                    return -1;
+                }
+            }
+            // In this case we've already printed out the code above.
+            if (!printedSource)
+            {
+                unsigned int i;
+                log_error("Original source is: ------------\n");
+                for (i = 0; i < numKernelLines; i++)
+                    log_error("%s", kernelProgram[i]);
+                printedSource = 1;
+            }
+            log_error("Build log for device \"%s\" is: ------------\n", deviceName);
+            log_error("%s\n", log.c_str());
+            log_error("\n----------\n");
+            return -1;
         }
-        // In this case we've already printed out the code above.
-        if (!printedSource)
-        {
-            unsigned int i;
-            log_error("Original source is: ------------\n");
-            for (i = 0; i < numKernelLines; i++)
-                log_error("%s", kernelProgram[i]);
-            printedSource = 1;
-        }
-        log_error("Build log for device \"%s\" is: ------------\n", deviceName);
-        log_error("%s\n", log.c_str());
-        log_error("\n----------\n");
+    }
+
+    if (buildFailed)
+    {
         return -1;
     }
-  }
 
-  if (buildFailed)
-  {
-      return -1;
-  }
+    /* And create a kernel from it */
+    if (kernelName != NULL)
+    {
+        *outKernel = clCreateKernel(*outProgram, kernelName, &error);
+        if (*outKernel == NULL || error != CL_SUCCESS)
+        {
+            print_error(error, "Unable to create kernel");
+            return error;
+        }
+    }
 
-  /* And create a kernel from it */
-  if (kernelName != NULL)
-  {
-      *outKernel = clCreateKernel(*outProgram, kernelName, &error);
-      if (*outKernel == NULL || error != CL_SUCCESS)
-      {
-          print_error(error, "Unable to create kernel");
-          return error;
-      }
-  }
-
-  return 0;
+    return 0;
 }
 
 int get_device_version( cl_device_id id, size_t* major, size_t* minor)
