@@ -779,8 +779,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSize * num_elements, NULL, &err);
             if ( err ){
                 print_error(err, " clCreateBuffer failed\n" );
-                clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
                 free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
@@ -791,8 +789,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 err = clEnqueueWriteBuffer(queue, buffers[0], CL_FALSE, 0, ptrSize * num_elements, hostptr, 0, NULL, NULL);
                 if ( err != CL_SUCCESS ){
                     print_error(err, " clEnqueueWriteBuffer failed\n" );
-                    clReleaseEvent( event[0] );
-                    clReleaseEvent( event[1] );
                     free( (void *)pattern );
                     align_free( (void *)inptr );
                     align_free( (void *)hostptr );
@@ -807,8 +803,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 print_error(err, " clCreateBuffer failed\n" );
                 align_free( outptr );
                 clReleaseMemObject(buffers[0]);
-                clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
                 free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
@@ -828,7 +822,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 clReleaseMemObject(buffers[0]);
                 clReleaseMemObject(buffers[1]);
                 clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
                 free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
@@ -843,7 +836,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 clReleaseMemObject(buffers[0]);
                 clReleaseMemObject(buffers[1]);
                 clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
                 free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
@@ -866,7 +858,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 clReleaseMemObject(buffers[0]);
                 clReleaseMemObject(buffers[1]);
                 clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
                 free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
@@ -883,7 +874,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 clReleaseMemObject(buffers[0]);
                 clReleaseMemObject(buffers[1]);
                 clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
                 free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
@@ -905,7 +895,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 clReleaseMemObject(buffers[0]);
                 clReleaseMemObject(buffers[1]);
                 clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
                 free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );

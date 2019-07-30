@@ -27,7 +27,7 @@
 #endif
 
 static int test_degrees_double(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems);
-
+static int test_degrees_float(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems);
 
 const char *degrees_kernel_code =
 "__kernel void test_degrees(__global float *src, __global float *dst)\n"
@@ -79,6 +79,19 @@ const char *degrees3_kernel_code =
 
 
 #define MAX_ERR  2.0f
+int
+test_degrees(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems) 
+{
+    int err;
+    err = test_degrees_float(device, context, queue, n_elems);
+    if( ! is_extension_available( device, "cl_khr_fp64" ) )
+    {
+        log_info( "Skipping double -- cl_khr_fp64 is not supported by this device.\n" );
+    } else {
+        err |= test_degrees_double(device, context, queue, n_elems);
+    }
+    return err;
+}
 
 static int
 verify_degrees(float *inptr, float *outptr, int n)
@@ -109,8 +122,8 @@ verify_degrees(float *inptr, float *outptr, int n)
     return 0;
 }
 
-int
-test_degrees(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+static int
+test_degrees_float(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
 {
     cl_mem       streams[2];
     cl_float     *input_ptr[1], *output_ptr, *p;
@@ -119,7 +132,7 @@ test_degrees(cl_device_id device, cl_context context, cl_command_queue queue, in
     void        *values[2];
     size_t threads[1];
     int          num_elements;
-    int          err;
+    int          err = 0;
     int          i;
     MTdata        d;
 
@@ -160,21 +173,11 @@ test_degrees(cl_device_id device, cl_context context, cl_command_queue queue, in
     }
 
     err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &degrees_kernel_code, "test_degrees" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &degrees2_kernel_code, "test_degrees2" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &degrees4_kernel_code, "test_degrees4" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &degrees8_kernel_code, "test_degrees8" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &degrees16_kernel_code, "test_degrees16" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &degrees3_kernel_code, "test_degrees3" );
+    err |= create_single_kernel_helper( context, &program[1], &kernel[1], 1, &degrees2_kernel_code, "test_degrees2" );
+    err |= create_single_kernel_helper( context, &program[2], &kernel[2], 1, &degrees4_kernel_code, "test_degrees4" );
+    err |= create_single_kernel_helper( context, &program[3], &kernel[3], 1, &degrees8_kernel_code, "test_degrees8" );
+    err |= create_single_kernel_helper( context, &program[4], &kernel[4], 1, &degrees16_kernel_code, "test_degrees16" );
+    err |= create_single_kernel_helper( context, &program[5], &kernel[5], 1, &degrees3_kernel_code, "test_degrees3" );
     if (err)
         return -1;
 
@@ -237,16 +240,9 @@ test_degrees(cl_device_id device, cl_context context, cl_command_queue queue, in
     free(input_ptr[0]);
     free(output_ptr);
 
-    if( err )
         return err;
 
-    if( ! is_extension_available( device, "cl_khr_fp64" ) )
-    {
-        log_info( "Skipping double -- cl_khr_fp64 is not supported by this device.\n" );
-        return 0;
-    }
 
-    return test_degrees_double( device, context, queue, n_elems);
 }
 
 #pragma mark -
@@ -388,21 +384,11 @@ test_degrees_double(cl_device_id device, cl_context context, cl_command_queue qu
     }
 
     err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &degrees_kernel_code_double, "test_degrees_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &degrees2_kernel_code_double, "test_degrees2_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &degrees4_kernel_code_double, "test_degrees4_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &degrees8_kernel_code_double, "test_degrees8_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &degrees16_kernel_code_double, "test_degrees16_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &degrees3_kernel_code_double, "test_degrees3_double" );
+    err |= create_single_kernel_helper( context, &program[1], &kernel[1], 1, &degrees2_kernel_code_double, "test_degrees2_double" );
+    err |= create_single_kernel_helper( context, &program[2], &kernel[2], 1, &degrees4_kernel_code_double, "test_degrees4_double" );
+    err |= create_single_kernel_helper( context, &program[3], &kernel[3], 1, &degrees8_kernel_code_double, "test_degrees8_double" );
+    err |= create_single_kernel_helper( context, &program[4], &kernel[4], 1, &degrees16_kernel_code_double, "test_degrees16_double" );
+    err |= create_single_kernel_helper( context, &program[5], &kernel[5], 1, &degrees3_kernel_code_double, "test_degrees3_double" );
     if (err)
         return -1;
 

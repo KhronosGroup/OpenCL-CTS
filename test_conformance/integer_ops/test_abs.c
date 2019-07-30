@@ -177,7 +177,7 @@ static const char * dest_stores[] = {
 int test_integer_abs(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
 {
     cl_int *input_ptr, *output_ptr, *p;
-    int err;
+    int err, compile_count = 0;
     int i;
     cl_uint vectorSizeIdx;
     cl_uint type;
@@ -261,9 +261,11 @@ int test_integer_abs(cl_device_id device, cl_context context, cl_command_queue q
             char kernelName[128];
             snprintf( kernelName, sizeof( kernelName ), "test_abs_%s%s", test_str_names[type], vector_size_names[vectorSizeIdx] );
             err = create_single_kernel_helper(context, &program, &kernel, sizeof( source ) / sizeof( source[0] ), source, kernelName );
-            if (err)
-                return -1;
-
+            if (err) {
+                compile_count++;
+                log_error("Failed to compile %s", kernelName);
+                continue;
+            }
             err  = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
             err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
             if (err != CL_SUCCESS)
@@ -324,6 +326,10 @@ int test_integer_abs(cl_device_id device, cl_context context, cl_command_queue q
         log_info("Failed on %d types\n", fail_count);
         return -1;
     }
+    if(compile_count) {
+        log_info("Failed to compile %d kernels\n", compile_count);
+        return -1;
+    }    
     log_info("ABS test passed\n");
 
     free(input_ptr);

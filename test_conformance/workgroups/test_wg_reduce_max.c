@@ -569,12 +569,9 @@ test_work_group_reduce_max(cl_device_id device, cl_context context, cl_command_q
     int err;
 
     err = test_work_group_reduce_max_int(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_reduce_max_uint(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_reduce_max_long(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_reduce_max_ulong(device, context, queue, n_elems);
+    err |= test_work_group_reduce_max_uint(device, context, queue, n_elems);
+    err |= test_work_group_reduce_max_long(device, context, queue, n_elems);
+    err |= test_work_group_reduce_max_ulong(device, context, queue, n_elems);
     return err;
 }
 

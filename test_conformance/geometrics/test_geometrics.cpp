@@ -154,7 +154,7 @@ int test_geom_cross(cl_device_id deviceID, cl_context context, cl_command_queue 
 {
     int vecsize;
     RandomSeed seed(gRandomSeed);
-
+    int error = 0;
     /* Get the default rounding mode */
     cl_device_fp_config defaultRoundingMode = get_default_rounding_mode(deviceID);
     if( 0 == defaultRoundingMode )
@@ -178,7 +178,10 @@ int test_geom_cross(cl_device_id deviceID, cl_context context, cl_command_queue 
 
         /* Create kernels */
         if( create_single_kernel_helper( context, &program, &kernel, 1, vecsize == 3 ? &crossKernelSourceV3 : &crossKernelSource, "sample_test" ) )
-            return -1;
+        {
+            error = -1;
+            continue;
+        }
 
         /* Generate some streams. Note: deliberately do some random data in w to verify that it gets ignored */
         for( i = 0; i < TEST_SIZE * vecsize; i++ )
@@ -265,10 +268,11 @@ int test_geom_cross(cl_device_id deviceID, cl_context context, cl_command_queue 
 
     if(!is_extension_available(deviceID, "cl_khr_fp64")) {
         log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
-        return 0;
+        return error;
     } else {
         log_info("Testing doubles...\n");
-        return test_geom_cross_double( deviceID,  context,  queue,  num_elements, seed);
+        error |= test_geom_cross_double( deviceID,  context,  queue,  num_elements, seed);
+        return error;
     }
 }
 
@@ -502,17 +506,16 @@ int test_geom_dot(cl_device_id deviceID, cl_context context, cl_command_queue qu
         }
     }
 
-    if (retVal)
-        return retVal;
 
     if(!is_extension_available(deviceID, "cl_khr_fp64"))
     {
         log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
-        return 0;
+        return retVal;
     }
 
     log_info("Testing doubles...\n");
-    return test_geom_dot_double( deviceID,  context,  queue,  num_elements, seed);
+    retVal |= test_geom_dot_double( deviceID,  context,  queue,  num_elements, seed);
+    return retVal;
 }
 
 double verifyFastDistance( float *srcA, float *srcB, size_t vecSize )
@@ -602,16 +605,15 @@ int test_geom_distance(cl_device_id deviceID, cl_context context, cl_command_que
             log_info( "   distance vector size %d passed\n", (int)sizes[ size ] );
         }
     }
-    if (retVal)
-        return retVal;
 
     if(!is_extension_available(deviceID, "cl_khr_fp64"))
     {
         log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
-        return 0;
+        return retVal;
     } else {
         log_info("Testing doubles...\n");
-        return test_geom_distance_double( deviceID,  context,  queue,  num_elements, seed);
+        retVal |= test_geom_distance_double( deviceID,  context,  queue,  num_elements, seed);
+        return retVal;
     }
 }
 
@@ -766,18 +768,17 @@ int test_geom_length(cl_device_id deviceID, cl_context context, cl_command_queue
             log_info( "   length vector vector size %d passed\n", (int)sizes[ size ] );
         }
     }
-    if (retVal)
-        return retVal;
 
     if(!is_extension_available(deviceID, "cl_khr_fp64"))
     {
         log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
-        return 0;
+        return retVal;
     }
     else
     {
         log_info("Testing doubles...\n");
-        return test_geom_length_double( deviceID,  context,  queue,  num_elements, seed);
+        retVal |= test_geom_length_double( deviceID,  context,  queue,  num_elements, seed);
+        return retVal;
     }
 }
 
@@ -1048,6 +1049,7 @@ int test_geom_normalize(cl_device_id deviceID, cl_context context, cl_command_qu
     size_t sizes[] = { 1, 2, 3, 4, 0 };
     unsigned int size;
     int retVal = 0;
+    int warnings = 0;
     RandomSeed seed(gRandomSeed);
 
     for( size = 0; sizes[ size ] != 0 ; size++ )
@@ -1065,16 +1067,15 @@ int test_geom_normalize(cl_device_id deviceID, cl_context context, cl_command_qu
             log_info( "   normalized vector size %d passed\n", (int)sizes[ size ] );
         }
     }
-    if (retVal)
-        return retVal;
 
     if(!is_extension_available(deviceID, "cl_khr_fp64"))
     {
         log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
-        return 0;
+        return retVal;
     } else {
         log_info("Testing doubles...\n");
-        return test_geom_normalize_double( deviceID,  context,  queue,  num_elements, seed);
+        retVal |= test_geom_normalize_double( deviceID,  context,  queue,  num_elements, seed);
+        return retVal;
     }
 }
 

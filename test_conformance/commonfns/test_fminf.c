@@ -152,21 +152,11 @@ test_fminf(cl_device_id device, cl_context context, cl_command_queue queue, int 
     }
 
     err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &fmin_kernel_code, "test_fmin" );
-    if (err)
-    return -1;
-    err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &fmin2_kernel_code, "test_fmin2" );
-    if (err)
-    return -1;
-    err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &fmin4_kernel_code, "test_fmin4" );
-    if (err)
-    return -1;
-    err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &fmin8_kernel_code, "test_fmin8" );
-    if (err)
-    return -1;
-    err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &fmin16_kernel_code, "test_fmin16" );
-    if (err)
-    return -1;
-    err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &fmin3_kernel_code, "test_fmin3" );
+    err |= create_single_kernel_helper( context, &program[1], &kernel[1], 1, &fmin2_kernel_code, "test_fmin2" );
+    err |= create_single_kernel_helper( context, &program[2], &kernel[2], 1, &fmin4_kernel_code, "test_fmin4" );
+    err |= create_single_kernel_helper( context, &program[3], &kernel[3], 1, &fmin8_kernel_code, "test_fmin8" );
+    err |= create_single_kernel_helper( context, &program[4], &kernel[4], 1, &fmin16_kernel_code, "test_fmin16" );
+    err |= create_single_kernel_helper( context, &program[5], &kernel[5], 1, &fmin3_kernel_code, "test_fmin3" );
     if (err)
     return -1;
 

@@ -207,7 +207,7 @@ cl_int perThreadDataInit(perThreadData * pThis, ExplicitType type,
                          cl_context context, int start_test_ID,
                          int end_test_ID, int testID)
 {
-    int i;
+    int i, compile_count = 0;
     const char * sizeNames[] = { "", "", "2", "3", "4", "", "", "", "8", "", "", "", "", "", "", "", "16" };
 
     const char *type_name = get_explicit_type_name(type);
@@ -319,7 +319,11 @@ cl_int perThreadDataInit(perThreadData * pThis, ExplicitType type,
                                           &(pThis->m_program[ i ]),
                                           &(pThis->m_kernel[ i ]), 1,
                                           &ptr, "test" );
-        test_error( err, "Unable to create test kernel" );
+        if(err) {
+            log_error("Unable to compile kernel");
+            compile_count++;
+            continue;
+        }
         err = clSetKernelArg(pThis->m_kernel[i], 0,
                              sizeof pThis->m_streams[0],
                              &(pThis->m_streams[0]) );
@@ -331,7 +335,9 @@ cl_int perThreadDataInit(perThreadData * pThis, ExplicitType type,
                               &(pThis->m_streams[2]) );
         test_error(err, "clSetKernelArgs failed");
     }
-
+    if(compile_count) {
+        return -1;
+    }
     return CL_SUCCESS;
 }
 

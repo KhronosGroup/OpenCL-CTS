@@ -60,7 +60,7 @@ int test_binary_fn( cl_device_id device, cl_context context, cl_command_queue qu
     cl_kernel   *kernel;
     size_t threads[1];
     int num_elements;
-    int err;
+    int err, warnings = 0;
     int i, j;
     MTdata d;
 
@@ -141,7 +141,7 @@ int test_binary_fn( cl_device_id device, cl_context context, cl_command_queue qu
         }
         const char *ptr = programSrc;
         err = create_single_kernel_helper( context, &program[ i ], &kernel[ i ], 1, &ptr, "test_fn" );
-        test_error( err, "Unable to create kernel" );
+        test_failure_warning(CL_SUCCESS, err, "Unable to create kernel" );
 
         if (test_double)
         {
@@ -160,10 +160,14 @@ int test_binary_fn( cl_device_id device, cl_context context, cl_command_queue qu
         }
             ptr = programSrc;
             err = create_single_kernel_helper( context, &program[ kTotalVecCount + i ], &kernel[ kTotalVecCount + i ], 1, &ptr, "test_fn" );
-            test_error( err, "Unable to create kernel" );
+            test_failure_warning(CL_SUCCESS, err, "Unable to create kernel" );
         }
     }
 
+    if(warnings > 0) 
+    {
+        return -1;
+    }
     for( i = 0; i < kTotalVecCount; i++ )
     {
         for( j = 0; j < 3; j++ )

@@ -189,7 +189,7 @@ int test_geom_cross_double(cl_device_id deviceID, cl_context context, cl_command
         clKernelWrapper kernel;
         clMemWrapper streams[3];
         cl_double testVector[4];
-        int error, i;
+        int i;
         size_t threads[1], localThreads[1];
         BufferOwningPtr<cl_double> A(malloc(bufSize));
         BufferOwningPtr<cl_double> B(malloc(bufSize));
@@ -200,7 +200,10 @@ int test_geom_cross_double(cl_device_id deviceID, cl_context context, cl_command
 
         /* Create kernels */
         if( create_single_kernel_helper( context, &program, &kernel, 1, vecsize == 3 ? &crossKernelSource_doubleV3 : &crossKernelSource_double, "sample_test" ) )
-            return -1;
+        {
+            error = -1;
+            continue;
+        }
 
         /* Generate some streams. Note: deliberately do some random data in w to verify that it gets ignored */
         for( i = 0; i < size * vecsize; i++ )
@@ -275,7 +278,7 @@ int test_geom_cross_double(cl_device_id deviceID, cl_context context, cl_command
             }
         }
     }
-    return 0;
+    return error;
 }
 
 double getMaxValue_double( double vecA[], double vecB[], size_t vecSize )

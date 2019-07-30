@@ -569,12 +569,9 @@ test_work_group_reduce_min(cl_device_id device, cl_context context, cl_command_q
     int err;
 
     err = test_work_group_reduce_min_int(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_reduce_min_uint(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_reduce_min_long(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_reduce_min_ulong(device, context, queue, n_elems);
+    err |= test_work_group_reduce_min_uint(device, context, queue, n_elems);
+    err |= test_work_group_reduce_min_long(device, context, queue, n_elems);
+    err |= test_work_group_reduce_min_ulong(device, context, queue, n_elems);
     return err;
 }
 

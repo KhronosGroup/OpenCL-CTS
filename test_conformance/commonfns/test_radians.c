@@ -161,21 +161,11 @@ test_radians(cl_device_id device, cl_context context, cl_command_queue queue, in
     }
 
     err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &radians_kernel_code, "test_radians" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &radians2_kernel_code, "test_radians2" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &radians4_kernel_code, "test_radians4" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &radians8_kernel_code, "test_radians8" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &radians16_kernel_code, "test_radians16" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &radians3_kernel_code, "test_radians3" );
+    err |= create_single_kernel_helper( context, &program[1], &kernel[1], 1, &radians2_kernel_code, "test_radians2" );
+    err |= create_single_kernel_helper( context, &program[2], &kernel[2], 1, &radians4_kernel_code, "test_radians4" );
+    err |= create_single_kernel_helper( context, &program[3], &kernel[3], 1, &radians8_kernel_code, "test_radians8" );
+    err |= create_single_kernel_helper( context, &program[4], &kernel[4], 1, &radians16_kernel_code, "test_radians16" );
+    err |= create_single_kernel_helper( context, &program[5], &kernel[5], 1, &radians3_kernel_code, "test_radians3" );
     if (err)
         return -1;
 
@@ -390,21 +380,11 @@ test_radians_double(cl_device_id device, cl_context context, cl_command_queue qu
     }
 
     err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &radians_kernel_code_double, "test_radians_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &radians2_kernel_code_double, "test_radians2_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &radians4_kernel_code_double, "test_radians4_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &radians8_kernel_code_double, "test_radians8_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &radians16_kernel_code_double, "test_radians16_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &radians3_kernel_code_double, "test_radians3_double" );
+    err |= create_single_kernel_helper( context, &program[1], &kernel[1], 1, &radians2_kernel_code_double, "test_radians2_double" );
+    err |= create_single_kernel_helper( context, &program[2], &kernel[2], 1, &radians4_kernel_code_double, "test_radians4_double" );
+    err |= create_single_kernel_helper( context, &program[3], &kernel[3], 1, &radians8_kernel_code_double, "test_radians8_double" );
+    err |= create_single_kernel_helper( context, &program[4], &kernel[4], 1, &radians16_kernel_code_double, "test_radians16_double" );
+    err |= create_single_kernel_helper( context, &program[5], &kernel[5], 1, &radians3_kernel_code_double, "test_radians3_double" );
     if (err)
         return -1;
 

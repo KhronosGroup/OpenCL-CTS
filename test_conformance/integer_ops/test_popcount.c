@@ -90,7 +90,7 @@ static void printSrc(const char *src[], int nSrcStrings) {
 int test_popcount(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
 {
     cl_int *input_ptr[1], *output_ptr, *p;
-    int err;
+    int err, compile_count = 0;;
     int i;
     cl_uint vectorSize;
     cl_uint type;
@@ -172,7 +172,9 @@ int test_popcount(cl_device_id device, cl_context context, cl_command_queue queu
             err = create_single_kernel_helper(context, &program, &kernel, sizeof( source ) / sizeof( source[0] ), source, kernelName );
 
             if (err) {
-                return -1;
+                compile_count++;
+                log_error("Failed to compile %s", kernelName);
+                continue;
             }
 
             err  = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
@@ -237,6 +239,10 @@ int test_popcount(cl_device_id device, cl_context context, cl_command_queue queu
         log_info("Failed on %d types\n", fail_count);
         return -1;
     }
+    if(compile_count) {
+        log_info("Failed to compile %d kernels\n", compile_count);
+        return -1;
+    }        
     log_info("popcount test passed\n");
 
     free(input_ptr[0]);

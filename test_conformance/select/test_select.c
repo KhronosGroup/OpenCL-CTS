@@ -335,13 +335,18 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
        }
     }
 
+    int compilation_count = 0;
     for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
     {
         programs[vecsize] = makeSelectProgram(&kernels[vecsize], context, stype, cmptype, element_count[vecsize] );
         if (!programs[vecsize] || !kernels[vecsize]) {
             ++s_test_fail;
-            return -1;
+            compilation_count++;
+            continue;
         }
+    }
+    if(compilation_count) {
+        return -1;
     }
 
     ref = malloc( BUFFER_SIZE );
@@ -573,13 +578,18 @@ test_definition test_list[] = {
 
 const int test_num = ARRAY_SIZE( test_list );
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 
     if( NULL == argList )
     {
         log_error( "Failed to allocate memory for argList array.\n" );
+        return 1;
+    }
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
         return 1;
     }
 

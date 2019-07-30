@@ -234,40 +234,18 @@ int test_integer_mad24(cl_device_id device, cl_context context, cl_command_queue
       test_error(err, "clEnqueueWriteBuffer failed");
 
     err = create_single_kernel_helper(context, &program[0], &kernel[0], 1, &int_mad24_kernel_code, "test_int_mad24");
-    if (err)
-        return -1;
-    err = create_single_kernel_helper(context, &program[1], &kernel[1], 1, &int2_mad24_kernel_code, "test_int2_mad24");
-    if (err)
-        return -1;
-    err = create_single_kernel_helper(context, &program[2], &kernel[2], 1, &int3_mad24_kernel_code, "test_int3_mad24");
-    if (err)
-        return -1;
-    err = create_single_kernel_helper(context, &program[3], &kernel[3], 1, &int4_mad24_kernel_code, "test_int4_mad24");
-    if (err)
-        return -1;
-    err = create_single_kernel_helper(context, &program[4], &kernel[4], 1, &int8_mad24_kernel_code, "test_int8_mad24");
-    if (err)
-        return -1;
-    err = create_single_kernel_helper(context, &program[5], &kernel[5], 1, &int16_mad24_kernel_code, "test_int16_mad24");
-    if (err)
-        return -1;
+    err |= create_single_kernel_helper(context, &program[1], &kernel[1], 1, &int2_mad24_kernel_code, "test_int2_mad24");
+    err |= create_single_kernel_helper(context, &program[2], &kernel[2], 1, &int3_mad24_kernel_code, "test_int3_mad24");
+    err |= create_single_kernel_helper(context, &program[3], &kernel[3], 1, &int4_mad24_kernel_code, "test_int4_mad24");
+    err |= create_single_kernel_helper(context, &program[4], &kernel[4], 1, &int8_mad24_kernel_code, "test_int8_mad24");
+    err |= create_single_kernel_helper(context, &program[5], &kernel[5], 1, &int16_mad24_kernel_code, "test_int16_mad24");
 
-    err = create_single_kernel_helper(context, &program[NUM_PROGRAMS], &kernel[NUM_PROGRAMS], 1, &uint_mad24_kernel_code, "test_uint_mad24");
-    if (err)
-        return -1;
-    err = create_single_kernel_helper(context, &program[NUM_PROGRAMS+1], &kernel[NUM_PROGRAMS+1], 1, &uint2_mad24_kernel_code, "test_uint2_mad24");
-    if (err)
-        return -1;
-    err = create_single_kernel_helper(context, &program[NUM_PROGRAMS+2], &kernel[NUM_PROGRAMS+2], 1, &uint3_mad24_kernel_code, "test_uint3_mad24");
-    if (err)
-        return -1;
-    err = create_single_kernel_helper(context, &program[NUM_PROGRAMS+3], &kernel[NUM_PROGRAMS+3], 1, &uint4_mad24_kernel_code, "test_uint4_mad24");
-    if (err)
-        return -1;
-    err = create_single_kernel_helper(context, &program[NUM_PROGRAMS+4], &kernel[NUM_PROGRAMS+4], 1, &uint8_mad24_kernel_code, "test_uint8_mad24");
-    if (err)
-        return -1;
-    err = create_single_kernel_helper(context, &program[NUM_PROGRAMS+5], &kernel[NUM_PROGRAMS+5], 1, &uint16_mad24_kernel_code, "test_uint16_mad24");
+    err |= create_single_kernel_helper(context, &program[NUM_PROGRAMS], &kernel[NUM_PROGRAMS], 1, &uint_mad24_kernel_code, "test_uint_mad24");
+    err |= create_single_kernel_helper(context, &program[NUM_PROGRAMS+1], &kernel[NUM_PROGRAMS+1], 1, &uint2_mad24_kernel_code, "test_uint2_mad24");
+    err |= create_single_kernel_helper(context, &program[NUM_PROGRAMS+2], &kernel[NUM_PROGRAMS+2], 1, &uint3_mad24_kernel_code, "test_uint3_mad24");
+    err |= create_single_kernel_helper(context, &program[NUM_PROGRAMS+3], &kernel[NUM_PROGRAMS+3], 1, &uint4_mad24_kernel_code, "test_uint4_mad24");
+    err |= create_single_kernel_helper(context, &program[NUM_PROGRAMS+4], &kernel[NUM_PROGRAMS+4], 1, &uint8_mad24_kernel_code, "test_uint8_mad24");
+    err |= create_single_kernel_helper(context, &program[NUM_PROGRAMS+5], &kernel[NUM_PROGRAMS+5], 1, &uint16_mad24_kernel_code, "test_uint16_mad24");
     if (err)
         return -1;
 

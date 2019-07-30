@@ -86,7 +86,7 @@ static std::string get_kernel_content(unsigned int numKernelLines, const char *c
     return kernel;
 }
 
-std::string get_kernel_name(const std::string &source)
+std::string get_kernel_name(const std::string &source, const std::string &options)
 {
     // Count CRC
     cl_uint crc = crc32(source.data(), source.size());
@@ -172,6 +172,10 @@ std::string get_kernel_name(const std::string &source)
         oss << kernelsList;
     }
     oss << std::hex << std::setfill('0') << std::setw(8) << crc;
+    if(!options.empty()) {
+        crc = crc32(options.data(), options.size());
+        oss << '.' << std::hex << std::setfill('0') << std::setw(8) << crc;; 
+    }
     return oss.str();
 }
 
@@ -391,6 +395,12 @@ static int get_offline_compiler_output(std::ifstream &ifs,
             return -1;
         }
 
+        if(gExecutionMode == kGenerate) {
+            // in this mode we don't emit the compiler
+            // we fake a compilation error instead
+            return -1;
+        }
+
         // write source to input file
         ofs.write(kernel.c_str(), kernel.size());
         ofs.close();
@@ -423,13 +433,14 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
 {
     int error;
     std::string kernel = get_kernel_content(numKernelLines, kernelProgram);
-    std::string kernelName = get_kernel_name(kernel);
 
     // set build options
     std::string bOptions;
     bOptions += buildOptions ? std::string(buildOptions) : "";
 
+    std::string kernelName = get_kernel_name(kernel, bOptions);
     kernelName = add_build_options(kernelName, buildOptions);
+
 
     std::ifstream ifs;
     error = get_offline_compiler_output(ifs, context, kernel, openclCXX, compilationMode, bOptions, kernelName);
@@ -608,6 +619,13 @@ int create_single_kernel_helper(cl_context context,
             return error;
         }
     }
+
+    if(gExecutionMode == kGenerate)
+    {
+        log_info("INFO: KERNEL %s WAS GENERATED\n", kernelName);
+        return -1;
+    }
+
     // Remove offline-compiler-only build options
     std::string newBuildOptions;
     if (buildOptions != NULL)

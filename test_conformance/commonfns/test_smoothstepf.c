@@ -168,12 +168,8 @@ test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue
   }
 
   err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &smoothstep_kernel_code, "test_smoothstep" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &smoothstep2_kernel_code, "test_smoothstep2f" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &smoothstep4_kernel_code, "test_smoothstep4f" );
+  err |= create_single_kernel_helper( context, &program[1], &kernel[1], 1, &smoothstep2_kernel_code, "test_smoothstep2f" );
+  err |= create_single_kernel_helper( context, &program[2], &kernel[2], 1, &smoothstep4_kernel_code, "test_smoothstep4f" );
   if (err)
     return -1;
 

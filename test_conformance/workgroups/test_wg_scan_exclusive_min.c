@@ -569,12 +569,9 @@ test_work_group_scan_exclusive_min(cl_device_id device, cl_context context, cl_c
     int err;
 
     err = test_work_group_scan_exclusive_min_int(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_scan_exclusive_min_uint(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_scan_exclusive_min_long(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_scan_exclusive_min_ulong(device, context, queue, n_elems);
+    err |= test_work_group_scan_exclusive_min_uint(device, context, queue, n_elems);
+    err |= test_work_group_scan_exclusive_min_long(device, context, queue, n_elems);
+    err |= test_work_group_scan_exclusive_min_ulong(device, context, queue, n_elems);
     return err;
 }
 

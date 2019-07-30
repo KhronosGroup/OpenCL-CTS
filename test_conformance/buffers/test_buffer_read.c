@@ -1242,7 +1242,6 @@ int test_buffer_read_struct(cl_device_id deviceID, cl_context context, cl_comman
 
     err = create_single_kernel_helper(  context, &program[0], &kernel[0], 1, &buffer_read_struct_kernel_code, "test_buffer_read_struct" );
     if ( err ){
-        clReleaseProgram( program[0] );
         align_free( output_ptr );
         return -1;
     }

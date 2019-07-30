@@ -149,21 +149,11 @@ test_fmax(cl_device_id device, cl_context context, cl_command_queue queue, int n
     }
 
     err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &fmax_kernel_code, "test_fmax" );
-    if (err)
-    return -1;
-    err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &fmax2_kernel_code, "test_fmax2" );
-    if (err)
-    return -1;
-    err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &fmax4_kernel_code, "test_fmax4" );
-    if (err)
-    return -1;
-    err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &fmax8_kernel_code, "test_fmax8" );
-    if (err)
-    return -1;
-    err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &fmax16_kernel_code, "test_fmax16" );
-    if (err)
-    return -1;
-    err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &fmax3_kernel_code, "test_fmax3" );
+    err |= create_single_kernel_helper( context, &program[1], &kernel[1], 1, &fmax2_kernel_code, "test_fmax2" );
+    err |= create_single_kernel_helper( context, &program[2], &kernel[2], 1, &fmax4_kernel_code, "test_fmax4" );
+    err |= create_single_kernel_helper( context, &program[3], &kernel[3], 1, &fmax8_kernel_code, "test_fmax8" );
+    err |= create_single_kernel_helper( context, &program[4], &kernel[4], 1, &fmax16_kernel_code, "test_fmax16" );
+    err |= create_single_kernel_helper( context, &program[5], &kernel[5], 1, &fmax3_kernel_code, "test_fmax3" );
     if (err)
     return -1;
 
