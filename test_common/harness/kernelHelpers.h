@@ -163,6 +163,13 @@ cl_device_fp_config get_default_rounding_mode( cl_device_id device );
         return 0;    \
     }
 
+#define PASSIVE_REQUIRE_FP16_SUPPORT(device)                            \
+    if (!is_extension_available(device, "cl_khr_fp16"))                 \
+    {                                                                   \
+        log_info("\n\tNote: device does not support fp16. Skipping test...\n"); \
+        return 0;                                                       \
+    }
+
 /* Prints out the standard device header for all tests given the device to print for */
 extern int printDeviceHeader( cl_device_id device );
 

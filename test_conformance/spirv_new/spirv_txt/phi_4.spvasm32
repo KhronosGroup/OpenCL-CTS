@@ -1,0 +1,61 @@
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %func "phi_4"
+               OpName %out_ptr "res"
+               OpName %lhs_ptr "lhs"
+               OpName %rhs_ptr "rhs"
+               OpDecorate %dec FuncParamAttr NoCapture
+%dec         = OpDecorationGroup
+               OpDecorate %global_id BuiltIn GlobalInvocationId
+               OpDecorate %global_id Constant
+               OpDecorate %global_id LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpGroupDecorate %dec %out_ptr %lhs_ptr %rhs_ptr
+%idx_t       = OpTypeInt 32 0
+%idx3_t      = OpTypeVector %idx_t 3
+%idx3_ptr_t  = OpTypePointer UniformConstant %idx3_t
+%bool_t      = OpTypeBool
+%void_t      = OpTypeVoid
+%int_t       = OpTypeInt 32 0
+%cmp_val     = OpConstant %int_t 0
+%int_ptr_t   = OpTypePointer CrossWorkgroup %int_t
+%func_t      = OpTypeFunction %void_t %int_ptr_t %int_ptr_t %int_ptr_t
+%global_id   = OpVariable %idx3_ptr_t UniformConstant
+%func        = OpFunction %void_t None %func_t
+%out_ptr     = OpFunctionParameter %int_ptr_t
+%lhs_ptr     = OpFunctionParameter %int_ptr_t
+%rhs_ptr     = OpFunctionParameter %int_ptr_t
+%entry       = OpLabel
+%idx3        = OpLoad %idx3_t %global_id Aligned 0
+%idx         = OpCompositeExtract %idx_t %idx3 0
+%lhs_loc     = OpInBoundsPtrAccessChain %int_ptr_t %lhs_ptr %idx
+%lhs_val     = OpLoad %int_t %lhs_loc Aligned 4
+%rhs_loc     = OpInBoundsPtrAccessChain %int_ptr_t %rhs_ptr %idx
+%rhs_val     = OpLoad %int_t %rhs_loc Aligned 4
+%compare1    = OpSLessThan %bool_t %lhs_val %rhs_val
+               OpBranchConditional %compare1 %block1 %block2
+%block1      = OpLabel
+%compare2    = OpSLessThan %bool_t %lhs_val %cmp_val
+               OpBranchConditional %compare2 %block1_1 %block1_2
+%block1_1    = OpLabel
+%out1_1      = OpISub %int_t %cmp_val %lhs_val
+               OpBranch %block_phi
+%block1_2    = OpLabel
+%out1_2      = OpISub %int_t %lhs_val %cmp_val
+               OpBranch %block_phi
+%block2      = OpLabel
+%compare3    = OpSLessThan %bool_t %rhs_val %cmp_val
+               OpBranchConditional %compare3 %block2_1 %block2_2
+%block2_1    = OpLabel
+%out2_1      = OpISub %int_t %cmp_val %rhs_val
+               OpBranch %block_phi
+%block2_2    = OpLabel
+%out2_2      = OpISub %int_t %rhs_val %cmp_val
+               OpBranch %block_phi
+%block_phi   = OpLabel
+%out_val     = OpPhi %int_t %out1_1 %block1_1 %out1_2 %block1_2 %out2_1 %block2_1 %out2_2 %block2_2
+%out_loc     = OpInBoundsPtrAccessChain %int_ptr_t %out_ptr %idx
+               OpStore %out_loc %out_val Aligned 4
+               OpReturn
+               OpFunctionEnd
