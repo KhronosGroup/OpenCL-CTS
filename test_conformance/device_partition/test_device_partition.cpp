@@ -70,7 +70,7 @@ int create_single_kernel_helper( cl_context context, cl_program *outProgram, cl_
     int error = CL_SUCCESS;
 
     /* Create the program object from source */
-    *outProgram = clCreateProgramWithSource( context, numKernelLines, kernelProgram, NULL, &error );
+    error = create_single_kernel_helper_create_program(context, outProgram, numKernelLines, kernelProgram);
     if( *outProgram == NULL || error != CL_SUCCESS)
     {
         print_error( error, "clCreateProgramWithSource failed" );

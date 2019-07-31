@@ -408,12 +408,7 @@ cl_int HarnessD3D11_CreateKernelFromSource(
         const char *sourceTexts[] = {source};
         size_t sourceLengths[] = {strlen(source) };
 
-        program = clCreateProgramWithSource(
-            context,
-            1,
-            sourceTexts,
-            sourceLengths,
-            &status);
+        status = create_single_kernel_helper_create_program(context, &program, 1, &sourceTexts[0]);
         TestRequire(
             CL_SUCCESS == status,
             "clCreateProgramWithSource failed");

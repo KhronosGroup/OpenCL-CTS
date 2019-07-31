@@ -56,21 +56,12 @@ test_createkernelsinprogram(cl_device_id device, cl_context context, cl_command_
     cl_program        program;
     cl_kernel        kernel[2];
     unsigned int    num_kernels;
-    size_t            lengths[2];
     int                err;
 
-    lengths[0] = strlen(sample_single_kernel);
-    program = clCreateProgramWithSource(context, 1, &sample_single_kernel, lengths, NULL);
-    if (!program)
-    {
-        log_error("clCreateProgramWithSource failed\n");
-        return -1;
-    }
-
-    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    err = create_single_kernel_helper(context, &program, NULL, 1, &sample_single_kernel, NULL);
     if (err != CL_SUCCESS)
     {
-        log_error("clBuildProgramExecutable failed\n");
+        log_error("create_single_kernel_helper failed\n");
         return -1;
     }
 
@@ -84,18 +75,10 @@ test_createkernelsinprogram(cl_device_id device, cl_context context, cl_command_
     clReleaseKernel(kernel[0]);
     clReleaseProgram(program);
 
-  lengths[0] = strlen(sample_double_kernel);
-  program = clCreateProgramWithSource(context, 1, &sample_double_kernel, lengths, NULL);
-    if (!program)
-    {
-        log_error("clCreateProgramWithSource failed\n");
-        return -1;
-    }
-
-    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    err = create_single_kernel_helper(context, &program, NULL, 1, &sample_double_kernel, NULL);
     if (err != CL_SUCCESS)
     {
-        log_error("clBuildProgramExecutable failed\n");
+        log_error("create_single_kernel_helper failed\n");
         return -1;
     }
 

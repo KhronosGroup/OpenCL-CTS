@@ -301,65 +301,19 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
 
     if(allTestCase[testId]->_type == TYPE_VECTOR)
     {
-        program = clCreateProgramWithSource( context,sizeof(sourceVec)/sizeof(sourceVec[0]),sourceVec, NULL, NULL);
+        err = create_single_kernel_helper(context, &program, NULL, sizeof(sourceVec) / sizeof(sourceVec[0]), sourceVec, NULL);
     }
     else if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
     {
-        program = clCreateProgramWithSource( context,sizeof(sourceAddrSpace)/sizeof(sourceAddrSpace[0]),sourceAddrSpace, NULL, NULL);
+        err = create_single_kernel_helper(context, &program, NULL, sizeof(sourceAddrSpace) / sizeof(sourceAddrSpace[0]), sourceAddrSpace, NULL);
     }
     else
     {
-        program = clCreateProgramWithSource( context,sizeof(sourceGen)/sizeof(sourceGen[0]),sourceGen, NULL, NULL);
+        err = create_single_kernel_helper(context, &program, NULL, sizeof(sourceGen) / sizeof(sourceGen[0]), sourceGen, NULL);
     }
 
-    if (!program) {
-        log_error("clCreateProgramWithSource failed\n");
-        return NULL;
-    }
-
-    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-    if (err != CL_SUCCESS) {
-
-        log_error("clBuildProgramExecutable failed errcode:%d\n", err);
-
-
-        err = clGetProgramInfo( program, CL_PROGRAM_DEVICES, sizeof( devID ), &devID, NULL );
-        if (err){
-            log_error("Unable to get program's device: %d\n",err );
-            return NULL;
-        }
-        err = clGetProgramBuildInfo( program, devID, CL_PROGRAM_BUILD_LOG, sizeof( buildLog ), buildLog, NULL );
-        if (err){
-            log_error("Unable to get program's build log: %d\n",err );
-            return NULL;
-        }
-        size_t sourceLen;
-        const char** source;
-
-        if(allTestCase[testId]->_type == TYPE_VECTOR)
-        {
-            sourceLen = sizeof(sourceVec) / sizeof( sourceVec[0] );
-            source = sourceVec;
-        }
-        else if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
-        {
-            sourceLen = sizeof(sourceAddrSpace) / sizeof( sourceAddrSpace[0] );
-            source = sourceAddrSpace;
-        }
-        else
-        {
-            sourceLen = sizeof(sourceGen) / sizeof( sourceGen[0] );
-            source = sourceGen;
-        }
-        log_error( "Build log is: ------------\n" );
-        log_error( "%s\n", buildLog );
-        log_error( "----------\n" );
-        log_error( " Source is ----------------\n");
-        for(i = 0; i < sourceLen; ++i) {
-            log_error("%s", source[i]);
-        }
-
-        log_error( "----------\n" );
+    if (!program || err) {
+        log_error("create_single_kernel_helper failed\n");
         return NULL;
     }
 

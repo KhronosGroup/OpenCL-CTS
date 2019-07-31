@@ -189,7 +189,7 @@ int test_large_single_compile(cl_context context, cl_device_id deviceID, unsigne
     free_mtdata(d);     d = NULL;
 
     /* Try to create a program with these lines */
-    program = clCreateProgramWithSource( context, numLines, lines, NULL, &error );
+    error = create_single_kernel_helper_create_program(context, &program, numLines, lines);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create long test program with %d lines! (%s in %s:%d)", numLines, IGetErrorString( error ), __FILE__, __LINE__ );
@@ -296,7 +296,7 @@ int test_large_multi_file_library(cl_context context, cl_device_id deviceID, cl_
     }
 
     /* Try to create a program with these lines */
-    program = clCreateProgramWithSource( context, 2*numLines + 2, lines, NULL, &error );
+    error = create_single_kernel_helper_create_program(context, &program, 2 * numLines + 2, lines);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create long test program with %d lines! (%s) (in %s:%d)\n", numLines, IGetErrorString( error ), __FILE__, __LINE__  );
@@ -465,7 +465,7 @@ int test_large_multiple_embedded_headers(cl_context context, cl_device_id device
 
         sprintf(buffer, composite_kernel_extern_template, i);
         const char* line = _strdup(buffer);
-        headers[i] = clCreateProgramWithSource(context, 1, &line, NULL, &error);
+        error = create_single_kernel_helper_create_program(context, &headers[i], 1, &line);
         if( headers[i] == NULL || error != CL_SUCCESS )
         {
             log_error( "ERROR: Unable to create a simple header program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__);
@@ -484,7 +484,7 @@ int test_large_multiple_embedded_headers(cl_context context, cl_device_id device
     }
 
     /* Try to create a program with these lines */
-    program = clCreateProgramWithSource( context, 2*numLines + 2, lines, NULL, &error );
+    error = create_single_kernel_helper_create_program(context, &program, 2 * numLines + 2, lines);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create long test program with %d lines! (%s) (in %s:%d)\n", numLines, IGetErrorString( error ), __FILE__, __LINE__ );
@@ -500,7 +500,7 @@ int test_large_multiple_embedded_headers(cl_context context, cl_device_id device
     {
         sprintf(buffer, simple_kernel_template, i);
         const char* kernel_source = _strdup(buffer);
-        simple_kernels[i] = clCreateProgramWithSource( context, 1, &kernel_source, NULL, &error );
+        error = create_single_kernel_helper_create_program(context, &simple_kernels[i], 1, &kernel_source);
         if( simple_kernels[i] == NULL || error != CL_SUCCESS )
         {
             log_error( "ERROR: Unable to create long test program with %d lines! (%s) (in %s:%d)\n", numLines, IGetErrorString( error ), __FILE__, __LINE__ );
@@ -659,7 +659,7 @@ int test_large_multiple_libraries(cl_context context, cl_device_id deviceID, cl_
     }
 
     /* Try to create a program with these lines */
-    my_program_and_libraries[0] = clCreateProgramWithSource( context, 2*numLines + 2, lines, NULL, &error );
+    error = create_single_kernel_helper_create_program(context, &my_program_and_libraries[0], 2 * numLines + 2, lines);
     if( my_program_and_libraries[0] == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create long test program with %d lines! (%s in %s:%d)\n", numLines, IGetErrorString( error ), __FILE__, __LINE__ );
@@ -675,7 +675,7 @@ int test_large_multiple_libraries(cl_context context, cl_device_id deviceID, cl_
     {
         sprintf(buffer, simple_kernel_template, i);
         const char* kernel_source = _strdup(buffer);
-        simple_kernels[i] = clCreateProgramWithSource( context, 1, &kernel_source, NULL, &error );
+        error = create_single_kernel_helper_create_program(context, &simple_kernels[i], 1, &kernel_source);
         if( simple_kernels[i] == NULL || error != CL_SUCCESS )
         {
             log_error( "ERROR: Unable to create long test program with %d lines! (%s in %s:%d)\n", numLines, IGetErrorString( error ), __FILE__, __LINE__ );
@@ -823,7 +823,7 @@ int test_large_multiple_files_multiple_libraries(cl_context context, cl_device_i
     }
 
     /* Try to create a program with these lines */
-    my_programs_and_libraries[0] = clCreateProgramWithSource( context, 2*numLines + 2, lines, NULL, &error );
+    error = create_single_kernel_helper_create_program(context, &my_programs_and_libraries[0], 2 * numLines + 2, lines);
     if( my_programs_and_libraries[0] == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create long test program with %d lines! (%s in %s:%d)\n", numLines, IGetErrorString( error ), __FILE__, __LINE__ );
@@ -839,7 +839,7 @@ int test_large_multiple_files_multiple_libraries(cl_context context, cl_device_i
     {
         sprintf(buffer, simple_kernel_template, i);
         const char* kernel_source = _strdup(buffer);
-        simple_kernels[i] = clCreateProgramWithSource( context, 1, &kernel_source, NULL, &error );
+        error = create_single_kernel_helper_create_program(context, &simple_kernels[i], 1, &kernel_source);
         if( simple_kernels[i] == NULL || error != CL_SUCCESS )
         {
             log_error( "ERROR: Unable to create long test program with %d lines! (%s in %s:%d)\n", numLines, IGetErrorString( error ), __FILE__, __LINE__ );
@@ -982,7 +982,7 @@ int test_large_multiple_files(cl_context context, cl_device_id deviceID, cl_comm
     }
 
     /* Try to create a program with these lines */
-    my_programs[0] = clCreateProgramWithSource( context, 2*numLines + 2, lines, NULL, &error );
+    error = create_single_kernel_helper_create_program(context, &my_programs[0], 2 * numLines + 2, lines);
     if( my_programs[0] == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create long test program with %d lines! (%s in %s:%d)\n", numLines, IGetErrorString( error ), __FILE__, __LINE__ );
@@ -998,7 +998,7 @@ int test_large_multiple_files(cl_context context, cl_device_id deviceID, cl_comm
     {
         sprintf(buffer, simple_kernel_template, i);
         const char* kernel_source = _strdup(buffer);
-        my_programs[i+1] = clCreateProgramWithSource( context, 1, &kernel_source, NULL, &error );
+        error = create_single_kernel_helper_create_program(context, &my_programs[i + 1], 1, &kernel_source);
         if( my_programs[i+1] == NULL || error != CL_SUCCESS )
         {
             log_error( "ERROR: Unable to create long test program with %d lines! (%s in %s:%d)\n", numLines, IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1092,7 +1092,7 @@ int test_simple_compile_only(cl_device_id deviceID, cl_context context, cl_comma
     cl_program program;
 
     log_info("Testing a simple compilation only...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1116,7 +1116,7 @@ int test_simple_static_compile_only(cl_device_id deviceID, cl_context context, c
 
     log_info("Testing a simple static compilations only...\n");
 
-    program = clCreateProgramWithSource(context, 1, &compile_static_var, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &compile_static_var);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple static variable test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1131,7 +1131,7 @@ int test_simple_static_compile_only(cl_device_id deviceID, cl_context context, c
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
-    program = clCreateProgramWithSource(context, 1, &compile_static_struct, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &compile_static_struct);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple static struct test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1146,7 +1146,7 @@ int test_simple_static_compile_only(cl_device_id deviceID, cl_context context, c
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
-    program = clCreateProgramWithSource(context, 1, &compile_static_function, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &compile_static_function);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple static function test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1170,7 +1170,7 @@ int test_simple_extern_compile_only(cl_device_id deviceID, cl_context context, c
     cl_program program;
 
     log_info("Testing a simple extern compilations only...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_header, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_header);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple extern kernel test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1185,7 +1185,7 @@ int test_simple_extern_compile_only(cl_device_id deviceID, cl_context context, c
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
-    program = clCreateProgramWithSource(context, 1, &compile_extern_var, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &compile_extern_var);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple extern variable test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1200,7 +1200,7 @@ int test_simple_extern_compile_only(cl_device_id deviceID, cl_context context, c
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
-    program = clCreateProgramWithSource(context, 1, &compile_extern_struct, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &compile_extern_struct);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple extern struct test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1215,7 +1215,7 @@ int test_simple_extern_compile_only(cl_device_id deviceID, cl_context context, c
     error = clReleaseProgram( program );
     test_error( error, "Unable to release program object" );
 
-    program = clCreateProgramWithSource(context, 1, &compile_extern_function, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &compile_extern_function);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple extern function test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1268,7 +1268,7 @@ int test_simple_compile_with_callback(cl_device_id deviceID, cl_context context,
     cl_event compile_program_completion_event;
 
     log_info("Testing a simple compilation with callback...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1335,7 +1335,7 @@ int test_simple_link_only(cl_device_id deviceID, cl_context context, cl_command_
     cl_program program;
 
     log_info("Testing a simple linking only...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1365,7 +1365,7 @@ int test_two_file_regular_variable_access(cl_device_id deviceID, cl_context cont
 
     const char* sources[2] = {simple_kernel, compile_regular_var}; // here we want to avoid linking error due to lack of kernels
     log_info("Compiling and linking two program objects, where one tries to access regular variable from another...\n");
-    program = clCreateProgramWithSource(context, 2, sources, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 2, sources);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a test program with regular variable! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1375,7 +1375,7 @@ int test_two_file_regular_variable_access(cl_device_id deviceID, cl_context cont
     error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL, NULL);
     test_error( error, "Unable to compile a simple program with regular function" );
 
-    second_program = clCreateProgramWithSource(context, 1, &link_static_var_access, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &second_program, 1, &link_static_var_access);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a test program that tries to access a regular variable! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1409,7 +1409,7 @@ int test_two_file_regular_struct_access(cl_device_id deviceID, cl_context contex
 
     const char* sources[2] = {simple_kernel, compile_regular_struct}; // here we want to avoid linking error due to lack of kernels
     log_info("Compiling and linking two program objects, where one tries to access regular struct from another...\n");
-    program = clCreateProgramWithSource(context, 2, sources, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 2, sources);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a test program with regular struct! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1419,7 +1419,7 @@ int test_two_file_regular_struct_access(cl_device_id deviceID, cl_context contex
     error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL, NULL);
     test_error( error, "Unable to compile a simple program with regular struct" );
 
-    second_program = clCreateProgramWithSource(context, 1, &link_static_struct_access, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &second_program, 1, &link_static_struct_access);
     if( second_program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a test program that tries to access a regular struct! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1454,7 +1454,7 @@ int test_two_file_regular_function_access(cl_device_id deviceID, cl_context cont
 
     const char* sources[2] = {simple_kernel, compile_regular_function}; // here we want to avoid linking error due to lack of kernels
     log_info("Compiling and linking two program objects, where one tries to access regular function from another...\n");
-    program = clCreateProgramWithSource(context, 2, sources, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 2, sources);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a test program with regular function! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1464,7 +1464,7 @@ int test_two_file_regular_function_access(cl_device_id deviceID, cl_context cont
     error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL, NULL);
     test_error( error, "Unable to compile a simple program with regular function" );
 
-    second_program = clCreateProgramWithSource(context, 1, &link_static_function_access, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &second_program, 1, &link_static_function_access);
     if( second_program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a test program that tries to access a regular function! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1514,7 +1514,7 @@ int test_simple_embedded_header_link(cl_device_id deviceID, cl_context context, 
     error = clCompileProgram(program, 1, &deviceID, NULL, 1, &header, &simple_header_name, NULL, NULL);
     test_error( error, "Unable to compile a simple program with embedded header" );
 
-    simple_program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &simple_program, 1, &simple_kernel);
     if( simple_program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1574,7 +1574,7 @@ int test_simple_link_with_callback(cl_device_id deviceID, cl_context context, cl
     cl_event link_program_completion_event;
 
     log_info("Testing a simple linking with callback...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1738,7 +1738,7 @@ int test_execute_after_simple_compile_and_link(cl_device_id deviceID, cl_context
     cl_program program;
 
     log_info("Testing execution after a simple compile and link...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1777,7 +1777,7 @@ int test_execute_after_simple_compile_and_link_no_device_info(cl_device_id devic
     cl_program program;
 
     log_info("Testing execution after a simple compile and link with no device information provided...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1816,7 +1816,7 @@ int test_execute_after_simple_compile_and_link_with_defines(cl_device_id deviceI
     cl_program program;
 
     log_info("Testing execution after a simple compile and link with defines...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel_with_defines, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel_with_defines, "-DFIRST=5 -DSECOND=37");
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1857,7 +1857,7 @@ int test_execute_after_serialize_reload_object(cl_device_id deviceID, cl_context
     unsigned char *binary;
 
     log_info("Testing execution after serialization and reloading of the object...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1943,7 +1943,7 @@ int test_execute_after_serialize_reload_library(cl_device_id deviceID, cl_contex
 
     log_info("Testing execution after linking a binary with a simple library...\n");
     // we will test creation of a simple library from one file
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -1995,7 +1995,7 @@ int test_execute_after_serialize_reload_library(cl_device_id deviceID, cl_contex
     cl_program library_with_binary = clCreateProgramWithBinary(context, 1, &deviceID, &binarySize, (const unsigned char**)buffers, loadErrors, &error);
     test_error( error, "Unable to create program with binary" );
 
-    another_program = clCreateProgramWithSource(context, 1, &another_simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &another_program, 1, &another_simple_kernel);
     if( another_program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2087,7 +2087,7 @@ int test_execute_after_simple_compile_and_link_with_callbacks(cl_device_id devic
     cl_event compile_program_completion_event, link_program_completion_event;
 
     log_info("Testing execution after a simple compile and link with callbacks...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2146,7 +2146,7 @@ int test_simple_library_only(cl_device_id deviceID, cl_context context, cl_comma
     cl_program program;
 
     log_info("Testing creation of a simple library...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2176,7 +2176,7 @@ int test_simple_library_with_callback(cl_device_id deviceID, cl_context context,
     cl_event link_program_completion_event;
 
     log_info("Testing creation of a simple library with a callback...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2217,7 +2217,7 @@ int test_simple_library_with_link(cl_device_id deviceID, cl_context context, cl_
     cl_program program, another_program;
 
     log_info("Testing creation and linking with a simple library...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2230,7 +2230,7 @@ int test_simple_library_with_link(cl_device_id deviceID, cl_context context, cl_
     cl_program my_newly_minted_library = clLinkProgram(context, 1, &deviceID, "-create-library", 1, &program, NULL, NULL, &error);
     test_error( error, "Unable to create a simple library" );
 
-    another_program = clCreateProgramWithSource(context, 1, &another_simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &another_program, 1, &another_simple_kernel);
     if( another_program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2266,7 +2266,7 @@ int test_execute_after_simple_library_with_link(cl_device_id deviceID, cl_contex
     cl_program program, another_program;
 
     log_info("Testing execution after linking a binary with a simple library...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2279,7 +2279,7 @@ int test_execute_after_simple_library_with_link(cl_device_id deviceID, cl_contex
     cl_program my_newly_minted_library = clLinkProgram(context, 1, &deviceID, "-create-library", 1, &program, NULL, NULL, &error);
     test_error( error, "Unable to create a simple library" );
 
-    another_program = clCreateProgramWithSource(context, 1, &another_simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &another_program, 1, &another_simple_kernel);
     if( another_program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2335,7 +2335,7 @@ int test_two_file_link(cl_device_id deviceID, cl_context context, cl_command_que
     cl_program program, another_program;
 
     log_info("Testing two file compiling and linking...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2346,7 +2346,7 @@ int test_two_file_link(cl_device_id deviceID, cl_context context, cl_command_que
     test_error( error, "Unable to compile a simple program" );
 
 
-    another_program = clCreateProgramWithSource(context, 1, &another_simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &another_program, 1, &another_simple_kernel);
     if( another_program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2379,7 +2379,7 @@ int test_execute_after_two_file_link(cl_device_id deviceID, cl_context context, 
     cl_program program, another_program;
 
     log_info("Testing two file compiling and linking and execution of two kernels afterwards ...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2389,7 +2389,7 @@ int test_execute_after_two_file_link(cl_device_id deviceID, cl_context context, 
     error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL, NULL);
     test_error( error, "Unable to compile a simple program" );
 
-    another_program = clCreateProgramWithSource(context, 1, &another_simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &another_program, 1, &another_simple_kernel);
     if( another_program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2656,7 +2656,7 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context, cl_comma
     unsigned char *binary;
 
     log_info("Testing querying of program binary type...\n");
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2783,7 +2783,7 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context, cl_comma
     program_type = -1;
   free(binary);
 
-    another_program = clCreateProgramWithSource(context, 1, &another_simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &another_program, 1, &another_simple_kernel);
     if( another_program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -2884,7 +2884,7 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context, cl_comma
     test_error( error, "Unable to release program object" );
 
     /* Oh, one more thing. Steve Jobs and apparently Herb Sutter. The question is "Who is copying whom?" */
-    program = clCreateProgramWithSource(context, 1, &simple_kernel, NULL, &error);
+    error = create_single_kernel_helper_create_program(context, &program, 1, &simple_kernel);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create a simple test program! (%s in %s:%d)\n", IGetErrorString( error ), __FILE__, __LINE__ );
@@ -3017,7 +3017,7 @@ int test_large_compile_and_link_status_options_log(cl_context context, cl_device
     }
 
     /* Try to create a program with these lines */
-    program = clCreateProgramWithSource( context, 2*numLines + 2, lines, NULL, &error );
+    error = create_single_kernel_helper_create_program(context, &program, 2 * numLines + 2, lines);
     if( program == NULL || error != CL_SUCCESS )
     {
         log_error( "ERROR: Unable to create long test program with %d lines! (%s) (in %s:%d)\n", numLines, IGetErrorString( error ), __FILE__, __LINE__ );
@@ -3079,7 +3079,7 @@ int test_large_compile_and_link_status_options_log(cl_context context, cl_device
     {
         sprintf(buffer, simple_kernel_template, i);
         const char* kernel_source = _strdup(buffer);
-        simple_kernels[i] = clCreateProgramWithSource( context, 1, &kernel_source, NULL, &error );
+        error = create_single_kernel_helper_create_program(context, &simple_kernels[i], 1, &kernel_source);
         if( simple_kernels[i] == NULL || error != CL_SUCCESS )
         {
             log_error( "ERROR: Unable to create long test program with %d lines! (%s in %s:%d)", numLines, IGetErrorString( error ), __FILE__, __LINE__ );

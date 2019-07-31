@@ -277,52 +277,11 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
      */
 
     // create program
-    cl_program program = clCreateProgramWithSource( context,
-                                                   (cl_uint)(vec_len == 3 ? sizeof( sourceV3 ) / sizeof(sourceV3[0]) : sizeof( source ) / sizeof(source[0])),
-                                                   vec_len == 3 ? sourceV3 : source, NULL, NULL);
+    cl_program program;
 
-    if (!program) {
-        log_error("clCreateProgramWithSource failed\n");
-        return NULL;
-    }
-
-    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-    if (err != CL_SUCCESS) {
-        log_error("clBuildProgramExecutable failed errcode:%d\n", err);
-
-        char buildLog[ 1024 * 128 ];
-        cl_device_id devID;
-        err = clGetProgramInfo( program, CL_PROGRAM_DEVICES, sizeof( devID ), &devID, NULL );
-        if (err){
-            log_error("Unable to get program's device: %d\n",err );
-            return NULL;
-        }
-        err = clGetProgramBuildInfo( program, devID, CL_PROGRAM_BUILD_LOG, sizeof( buildLog ), buildLog, NULL );
-        if (err){
-            log_error("Unable to get program's build log: %d\n",err );
-            return NULL;
-        }
-        log_error( "Build log is: ------------\n" );
-        log_error( "%s\n", buildLog );
-        log_error( "----------\n" );
-        log_error( " Source is ----------------\n");
-        if(vec_len == 3) {
-            for(i = 0; i < sizeof(sourceV3) / sizeof( sourceV3[0] ); ++i) {
-                log_error("%s", sourceV3[i]);
-            }
-        } else {
-            for(i = 0; i < sizeof(source) / sizeof( source[0] ); ++i) {
-                log_error("%s", source[i]);
-            }
-        }
-
-        log_error( "----------\n" );
-        return NULL;
-    }
-
-    *kernel_ptr = clCreateKernel(program, testname, &err);
-    if ( err ) {
-        log_error("clCreateKernel failed (%d)\n", err);
+    if (create_single_kernel_helper(context, &program, kernel_ptr, (cl_uint)(vec_len == 3 ? sizeof(sourceV3) / sizeof(sourceV3[0]) : sizeof(source) / sizeof(source[0])), vec_len == 3 ? sourceV3 : source, testname))
+    {
+        log_error("Failed to build program (%d)\n", err);
         return NULL;
     }
 

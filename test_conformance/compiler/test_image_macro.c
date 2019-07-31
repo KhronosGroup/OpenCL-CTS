@@ -59,7 +59,7 @@ int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue
 
     if( (image_support == CL_TRUE) )
     {
-        program = clCreateProgramWithSource( context, 1, (const char**) &image_supported_source, NULL, &status );
+        status = create_single_kernel_helper_create_program(context, &program, 1, (const char**)&image_supported_source);
 
         if( status )
         {
@@ -75,7 +75,7 @@ int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue
     }
     else
     {
-        program = clCreateProgramWithSource( context, 1, (const char**)  &image_not_supported_source, NULL, &status );
+        status = create_single_kernel_helper_create_program(context, &program, 1, (const char**)&image_not_supported_source);
         if( status )
         {
             log_error ("Failure creating program, [%d] \n", status );

@@ -606,17 +606,8 @@ int test_create_kernels_in_program(cl_device_id deviceID, cl_context context, cl
     cl_kernel  kernel[3];
     unsigned int kernelCount;
 
-    /* Create a test program */
-    program = clCreateProgramWithSource( context, 2, sample_two_kernel_program, NULL, &error);
-    if( program == NULL || error != CL_SUCCESS )
-    {
-        log_error( "ERROR: Unable to create test program!\n" );
-        return -1;
-    }
-
-    /* Build */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
-    test_error( error, "Unable to build test program" );
+    error = create_single_kernel_helper(context, &program, NULL, 2, sample_two_kernel_program, NULL);
+    test_error(error, "Unable to build test program");
 
     /* Try getting the kernel count */
     error = clCreateKernelsInProgram( program, 0, NULL, &kernelCount );

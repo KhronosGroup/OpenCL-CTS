@@ -32,11 +32,7 @@ int test_binary_get(cl_device_id deviceID, cl_context context, cl_command_queue 
     size_t            binarySize;
 
 
-    program = clCreateProgramWithSource( context, 1, sample_binary_kernel_source, NULL, &error );
-    test_error( error, "Unable to create program from source" );
-
-    // Build so we have a binary to get
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = create_single_kernel_helper(context, &program, NULL, 1, sample_binary_kernel_source, NULL);
     test_error( error, "Unable to build test program" );
 
     // Get the size of the resulting binary (only one device)
@@ -85,11 +81,7 @@ int test_binary_create(cl_device_id deviceID, cl_context context, cl_command_que
     size_t            binarySize;
 
 
-    program = clCreateProgramWithSource( context, 1, sample_binary_kernel_source, NULL, &error );
-    test_error( error, "Unable to create program from source" );
-
-    // Build so we have a binary to get
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = create_single_kernel_helper(context, &program, NULL, 1, sample_binary_kernel_source, NULL);
     test_error( error, "Unable to build test program" );
 
     // Get the size of the resulting binary (only one device)

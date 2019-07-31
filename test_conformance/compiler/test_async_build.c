@@ -53,12 +53,8 @@ int test_async_build(cl_device_id deviceID, cl_context context, cl_command_queue
     buildNotificationSent = 0;
 
     /* First, test by doing the slow method of the individual calls */
-    program = clCreateProgramWithSource( context, 1, sample_async_kernel, NULL, &error );
-    if( program == NULL || error != CL_SUCCESS)
-    {
-        print_error( error, "Unable to create test program" );
-        return -1;
-    }
+    error = create_single_kernel_helper_create_program(context, &program, 1, sample_async_kernel);
+    test_error(error, "Unable to create program from source");
 
     /* Compile the program */
     error = clBuildProgram( program, 1, &deviceID, NULL, test_notify_build_complete, (void *)"userData" );
