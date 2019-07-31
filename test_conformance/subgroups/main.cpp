@@ -33,7 +33,22 @@ const int test_num = ARRAY_SIZE( test_list );
 
 static test_status checkSubGroupsExtension(cl_device_id device)
 {
-    if (!is_extension_available(device, "cl_khr_subgroups")) {
+    // The extension is optional in OpenCL 2.0 (minimum required version) and
+    // required in later versions.
+    auto version = get_device_cl_version(device);
+
+    if (version < Version(2, 0)) {
+        return TEST_SKIP;
+    }
+
+    bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
+
+    if ((version == Version(2, 0)) && !hasExtension) {
+        log_info("Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
+        return TEST_SKIP;
+    }
+
+    if ((version > Version(2, 0)) && !hasExtension) {
         log_error("'cl_khr_subgroups' is a required extension, failing.\n");
         return TEST_FAIL;
     }
