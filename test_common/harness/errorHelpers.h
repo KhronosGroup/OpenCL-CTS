@@ -87,6 +87,10 @@ extern "C" {
 #define test_missing_feature_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { print_missing_feature( errCode, msg ); return CL_SUCCESS ; } }
 #define print_missing_feature(errCode, msg) log_missing_feature("ERROR: Subtest %s tests a feature not supported by the device version! (from %s:%d)\n", msg, __FILE__, __LINE__ );
 
+#define test_missing_support_offline_cmpiler(errCode, msg) test_missing_support_offline_cmpiler_ret(errCode, msg, errCode)
+// this macro should always return CL_SUCCESS, but print the skip message on test not supported with offline compiler
+#define test_missing_support_offline_cmpiler_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { log_info( "INFO: Subtest %s tests is not supported in offline compiler execution path! (from %s:%d)\n", msg, __FILE__, __LINE__ ); return TEST_SKIP ; } }
+
 // expected error code vs. what we got
 #define test_failure_error(errCode, expectedErrCode, msg) test_failure_error_ret(errCode, expectedErrCode, msg, errCode != expectedErrCode)
 #define test_failure_error_ret(errCode, expectedErrCode, msg, retValue) { if( errCode != expectedErrCode ) { print_failure_error( errCode, expectedErrCode, msg ); return retValue ; } }
@@ -123,6 +127,7 @@ extern const char *GetAddressModeName( cl_addressing_mode mode );
 extern const char *GetDeviceTypeName( cl_device_type type );
 int check_opencl_version_with_testname(const char *subtestname, cl_device_id device);
 int check_opencl_version(cl_device_id device, cl_uint requestedMajorVersion, cl_uint requestedMinorVersion);
+int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device);
 
 // NON-REENTRANT UNLESS YOU PROVIDE A BUFFER PTR (pass null to use static storage, but it's not reentrant then!)
 extern const char *GetDataVectorString( void *dataBuffer, size_t typeSize, size_t vecSize, char *buffer );

@@ -23,10 +23,11 @@ set(${MODULE_NAME}_SOURCES
     ../../test_common/harness/ThreadPool.c
     ../../test_common/harness/mt19937.c
     ../../test_common/harness/msvc9.c
+    ../../test_common/harness/parseParameters.cpp
     ../../test_common/harness/kernelHelpers.c
     ../../test_common/harness/errorHelpers.c
     ../../test_common/harness/testHarness.c
-    ../../test_common/harness/parseParameters.cpp
+    ../../test_common/harness/crc32.c
 )
 
 
@@ -51,6 +52,7 @@ endif(NOT ANDROID)
 
 set_source_files_properties(
     ${MODULE_NAME}_SOURCES
+    ../../test_common/harness/crc32.c
     PROPERTIES LANGUAGE CXX)
 
 if(CMAKE_COMPILER_IS_GNUCC)

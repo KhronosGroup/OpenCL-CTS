@@ -19,6 +19,26 @@
 #include "compat.h"
 #include <string>
 
+enum CompilationMode
+{
+    kOnline = 0,
+    kBinary,
+    kSpir_v
+};
+
+enum CompilationCacheMode
+{
+    kCacheModeCompileIfAbsent = 0,
+    kCacheModeForceRead,
+    kCacheModeOverwrite
+};
+
+extern CompilationMode gCompilationMode;
+extern CompilationCacheMode gCompilationCacheMode;
+extern std::string gCompilationCachePath;
+
+extern int parseCustomParam (int argc, const char *argv[], const char *ignore = 0 );
+
 extern void parseWimpyReductionFactor(const char *&arg, int &wimpyReductionFactor);
 
 #endif // _parseParameters_h

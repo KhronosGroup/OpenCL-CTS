@@ -25,6 +25,7 @@
 #include "procs.h"
 #include "../../test_common/gl/setup.h"
 #include "../../test_common/harness/testHarness.h"
+#include "../../test_common/harness/parseParameters.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -160,7 +161,13 @@ int main(int argc, const char *argv[])
   int error = 0;
   int numErrors = 0;
 
-    test_start();
+  test_start();
+  argc = parseCustomParam(argc, argv);
+  if (argc == -1)
+  {
+    test_finish ();
+    return -1;
+  }	
 
   cl_device_type requestedDeviceType = CL_DEVICE_TYPE_DEFAULT;
   checkDeviceTypeOverride(&requestedDeviceType);

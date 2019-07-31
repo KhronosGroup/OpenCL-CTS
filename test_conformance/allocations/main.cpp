@@ -19,6 +19,7 @@
 #include "allocation_fill.h"
 #include "allocation_execute.h"
 #include "../../test_common/harness/testHarness.h"
+#include "../../test_common/harness/parseParameters.h"
 #include <time.h>
 
 typedef long long unsigned llu;
@@ -272,6 +273,13 @@ int main(int argc, const char *argv[])
 {
     char *endPtr;
     int r;
+
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        test_finish();
+        return 1;
+    }
 
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 

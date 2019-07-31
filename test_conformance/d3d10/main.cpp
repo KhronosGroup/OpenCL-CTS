@@ -17,12 +17,16 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
+#include "../../test_common/harness/testHarness.h"
+#include "../../test_common/harness/parseParameters.h"
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
     cl_int result;
     cl_platform_id platform = NULL;
     cl_uint num_devices_tested = 0;
+
+    argc = parseCustomParam(argc, argv);
 
     // get the platform to test
     result = clGetPlatformIDs(1, &platform, NULL); NonTestRequire(result == CL_SUCCESS, "Failed to get any platforms.");

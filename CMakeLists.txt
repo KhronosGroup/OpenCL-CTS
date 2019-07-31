@@ -19,7 +19,7 @@ set(CLConform_VERSION "${CLConform_VERSION_MAJOR}.${CLConform_VERSION_MINOR}")
 set(CLConform_VERSION_FULL
     "${CLConform_VERSION}.${CLConform_VERSION_MICRO}${CLConform_VERSION_EXTRA}")
 
-add_definitions(-DCL_TARGET_OPENCL_VERSION=200)
+add_definitions(-DCL_TARGET_OPENCL_VERSION=220)
 
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_0_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)

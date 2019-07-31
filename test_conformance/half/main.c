@@ -93,6 +93,13 @@ int main (int argc, const char **argv )
         g_arrVecAligns[i] = alignbound;
     }
 
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        test_finish();
+        return -1;
+    }
+
     if( (error = ParseArgs( argc, argv )) )
         goto exit;
 

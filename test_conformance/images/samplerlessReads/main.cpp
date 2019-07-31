@@ -25,6 +25,7 @@
 
 #include "../testBase.h"
 #include "../../../test_common/harness/fpcontrol.h"
+#include "../../../test_common/harness/parseParameters.h"
 
 #if defined(__PPC__)
 // Global varaiable used to hold the FPU control register state. The FPSCR register can not
@@ -86,6 +87,12 @@ int main(int argc, const char *argv[])
 {
     cl_channel_type chanType;
     cl_channel_order chanOrder;
+
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        return -1;
+    }
 
     //Check CL_DEVICE_TYPE environment variable
     checkDeviceTypeOverride( &gDeviceType );

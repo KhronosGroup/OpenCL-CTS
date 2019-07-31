@@ -36,6 +36,7 @@
 #include "../../test_common/harness/rounding_mode.h"
 #include "../../test_common/harness/fpcontrol.h"
 #include "../../test_common/harness/testHarness.h"
+#include "../../test_common/harness/parseParameters.h"
 #if defined( __APPLE__ )
 #include <sys/sysctl.h>
 #endif
@@ -321,6 +322,12 @@ const int test_num = ARRAY_SIZE( test_list );
 
 int main( int argc, const char **argv )
 {
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        return -1;
+    }
+
     int error = ParseArgs( argc, argv );
 
     if( !error )

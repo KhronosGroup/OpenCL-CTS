@@ -18,7 +18,7 @@
 #else
     #include <CL/cl_platform.h>
 #endif
-
+#include <stdio.h>
 #include "../../test_common/harness/errorHelpers.h"
 #include "../../test_common/harness/testHarness.h"
 
