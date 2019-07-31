@@ -1,4 +1,4 @@
-# Remember curren source directory (`test_conformance').
+# Remember current source directory (`test_conformance').
 set( CLConf_Install_Base_Dir "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 add_subdirectory( allocations )
@@ -48,7 +48,7 @@ add_subdirectory( SVM )
 add_subdirectory( generic_address_space )
 add_subdirectory( subgroups )
 add_subdirectory( workgroups )
-add_subdirectory( pipes ) 
+add_subdirectory( pipes )
 add_subdirectory( spir )
 
 install_files(

@@ -3,7 +3,7 @@
 #/******************************************************************
 #//
 #//  OpenCL Conformance Tests
-#// 
+#//
 #//  Copyright:  (c) 2008-2009 by Apple Inc. All Rights Reserved.
 #//
 #******************************************************************/
@@ -24,15 +24,15 @@ def write_help_info() :
  print("run_conformance.py test_list [CL_DEVICE_TYPE(s) to test] [partial-test-names, ...] [log=path/to/log/file/]")
  print(" test_list - the .csv file containing the test names and commands to run the tests.")
  print(" [partial-test-names, ...] - optional partial strings to select a subset of the tests to run.")
- print(" [CL_DEVICE_TYPE(s) to test] - list of CL device types to test, default is CL_DEVICE_TYPE_DEFAULT.") 
- print(" [log=path/to/log/file/] - provide a path for the test log file, default is in the current directory.") 
+ print(" [CL_DEVICE_TYPE(s) to test] - list of CL device types to test, default is CL_DEVICE_TYPE_DEFAULT.")
+ print(" [log=path/to/log/file/] - provide a path for the test log file, default is in the current directory.")
  print("   (Note: spaces are not allowed in the log file path.")
 
 
 # Get the time formatted nicely
 def get_time() :
  return time.strftime("%d-%b %H:%M:%S", time.localtime())
- 
+
 # Write text to the screen and the log file
 def write_screen_log(text) :
  global log_file
@@ -52,7 +52,7 @@ def get_tests(filename, devices_to_test):
   comment = re.search("^#.*", line)
   if (comment):
    continue
-  device_specific_match = re.search("^\s*(.+)\s*,\s*(.+)\s*,\s*(.+)\s*", line)
+  device_specific_match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*,\s*(.+?)\s*$", line)
   if (device_specific_match):
    if (device_specific_match.group(1) in devices_to_test):
     test_path = string.replace(device_specific_match.group(3), '/', os.sep)
@@ -61,8 +61,8 @@ def get_tests(filename, devices_to_test):
    else:
     print("Skipping " + device_specific_match.group(2) + " because " + device_specific_match.group(1) + " is not in the list of devices to test.")
    continue
-  match = re.search("^\s*(.+)\s*,\s*(.+)\s*", line)
-  if (match): 
+  match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*$", line)
+  if (match):
    test_path = string.replace(match.group(2), '/', os.sep)
    test_name = string.replace(match.group(1), '/', os.sep)
    tests.append((test_name, test_path))
@@ -107,7 +107,7 @@ def run_test_checking_output(current_directory, test_dir, log_file):
   pointer = 0
   pointer_at_last_user_update = 0
   output_this_run = False
-  try: 
+  try:
     read_output = open(output_name, 'r')
   except IOError:
     write_screen_log("\n           ==> ERROR: could not open output file from test.")
@@ -131,7 +131,7 @@ def run_test_checking_output(current_directory, test_dir, log_file):
     p.poll()
     if (not done and p.returncode != None):
       if (p.returncode < 0):
-        if (not output_this_run): 
+        if (not output_this_run):
          print ""
          output_this_run = True
         write_screen_log("           ==> ERROR: test killed/crashed: " + str(p.returncode)+ ".")
@@ -148,8 +148,8 @@ def run_test_checking_output(current_directory, test_dir, log_file):
       # Look for failures and report them as such
       match = re.search(".*(FAILED|ERROR).*", line)
       if (match):
-        if (not output_this_run): 
-         print "" 
+        if (not output_this_run):
+         print ""
          output_this_run = True
         print("           ==> " + line.replace('\n',''))
       match = re.search(".*FAILED.*", line)
@@ -157,8 +157,8 @@ def run_test_checking_output(current_directory, test_dir, log_file):
         failures_this_run = failures_this_run + 1
       match = re.search(".*(PASSED).*", line)
       if (match):
-       if (not output_this_run): 
-        print "" 
+       if (not output_this_run):
+        print ""
         output_this_run = True
        print("               " + line.replace('\n',''))
       # Write it to the log
@@ -171,7 +171,7 @@ def run_test_checking_output(current_directory, test_dir, log_file):
       more_to_read = False
       read_output.close()
       time.sleep(1)
-      try: 
+      try:
         os.fsync(output_fd)
         read_output = open(output_name, 'r')
         # See if there is more to read. This happens if the process ends and we have data left.
@@ -221,7 +221,7 @@ def run_tests(tests) :
    log_file.write("     ----------------------------------------------------------------------------------------\n")
    log_file.flush()
    sys.stdout.flush()
-  
+
    # Run the test
    result = 0
    start_time = time.time()
@@ -236,12 +236,12 @@ def run_tests(tests) :
     if (answer.find("y") != -1):
      write_screen_log("\nUser chose to abort all tests.")
      log_file.close()
-     sys.exit(-1)     
+     sys.exit(-1)
     else:
      write_screen_log("\nUser chose to continue with other tests. Reporting this test as failed.")
-     result = 1   
+     result = 1
    run_time = (time.time() - start_time)
-          
+
    # Move print the finish status
    if (result == 0):
     print("("+get_time()+")     PASSED " + test_name.ljust(40) +": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) +")"),
@@ -251,7 +251,7 @@ def run_tests(tests) :
    test_number = test_number + 1
    log_file.write("     ----------------------------------------------------------------------------------------\n")
    log_file.flush()
-    
+
    print("")
    if (result != 0):
     log_file.write("  *******************************************************************************************\n")
@@ -260,7 +260,7 @@ def run_tests(tests) :
     failures = failures + 1
    else:
     log_file.write("     ("+get_time()+")     Test " + test_name +" passed in " + str(run_time) + "s\n")
-     
+
    log_file.write("     ----------------------------------------------------------------------------------------\n")
    log_file.write("\n")
   return failures
