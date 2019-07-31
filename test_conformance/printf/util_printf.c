@@ -613,7 +613,6 @@ struct printDataGenParameters printStringGenParameters[] = {
     //%% specification
 
     {"%s","\"%%\""},
-
 };
 
 //---------------------------------------------------------
@@ -629,9 +628,6 @@ const char * correctBufferString[] = {
     "f",
 
     "%%",
-
-    "(null)"
-
 };
 
 //---------------------------------------------------------
