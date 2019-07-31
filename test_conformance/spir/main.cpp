@@ -349,7 +349,6 @@ bool test_suite(cl_device_id device, cl_uint size_t_width, const char *folder,
         std::cout << std::endl;
         return false;
     }
-
     std::cout << std::endl;
     return true;
 }

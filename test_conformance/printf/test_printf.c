@@ -41,6 +41,7 @@
 #include "../../test_common/harness/errorHelpers.h"
 #include "../../test_common/harness/kernelHelpers.h"
 #include "../../test_common/harness/mt19937.h"
+#include "../../test_common/harness/parseParameters.h"
 
 typedef  unsigned int uint32_t;
 
@@ -994,8 +995,14 @@ const int test_num = ARRAY_SIZE( test_list );
 //-----------------------------------------
 // main
 //-----------------------------------------
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        return -1;
+    }
+
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 
     if( NULL == argList )

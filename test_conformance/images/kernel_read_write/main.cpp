@@ -25,6 +25,7 @@
 
 #include "../testBase.h"
 #include "../../../test_common/harness/fpcontrol.h"
+#include "../../../test_common/harness/parseParameters.h"
 
 #include <vector>
 
@@ -265,6 +266,13 @@ int main(int argc, const char *argv[])
 {
     cl_channel_type chanType;
     cl_channel_order chanOrder;
+
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        test_finish();
+        return -1;
+    }
 
     //Check CL_DEVICE_TYPE environment variable
     checkDeviceTypeOverride( &gDeviceType );

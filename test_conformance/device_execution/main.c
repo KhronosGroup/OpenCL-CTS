@@ -21,6 +21,7 @@
 #endif
 
 #include "../../test_common/harness/testHarness.h"
+#include "../../test_common/harness/parseParameters.h"
 #include "utils.h"
 #include "procs.h"
 
@@ -75,6 +76,8 @@ test_status deviceCheck(cl_device_id device)
 
 int main(int argc, const char *argv[])
 {
+    argc = parseCustomParam(argc, argv);
+
     for (int i = 0; i < argc; ++i) {
       int argsRemoveNum = 0;
       if ( strcmp(argv[i], "-kernelName") == 0 ) {

@@ -31,7 +31,10 @@ set(D3D11_SOURCES
     ../../test_common/harness/kernelHelpers.c
     ../../test_common/harness/mt19937.c
     ../../test_common/harness/conversions.c
-    ../../test_common/harness/msvc9.c)
+    ../../test_common/harness/msvc9.c
+    ../../test_common/harness/parseParameters.cpp
+    ../../test_common/harness/crc32.c
+)
 
 add_executable(conformance_test_d3d11
     ${D3D11_SOURCES})

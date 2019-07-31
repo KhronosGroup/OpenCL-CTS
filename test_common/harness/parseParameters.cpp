@@ -14,8 +14,166 @@
 // limitations under the License.
 //
 #include "parseParameters.h"
+
 #include "errorHelpers.h"
+#include "testHarness.h"
+#include "ThreadPool.h"
+
+#include <iostream>
+#include <sstream>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <string.h>
+
+using namespace std;
+
+CompilationMode      gCompilationMode = kOnline;
+CompilationCacheMode gCompilationCacheMode = kCacheModeCompileIfAbsent;
+std::string          gCompilationCachePath = ".";
+
+void helpInfo ()
+{
+    log_info("Common options:\n"
+             "        -h, --help                  This help\n"
+             "        --compilation-mode <mode>   Specify a compilation mode.  Mode can be:\n"
+             "                           online     Use online compilation (default)\n"
+             "                           binary     Use binary offline compilation\n"
+             "                           spir-v     Use SPIR-V offline compilation\n"
+             "\n"
+             "    For offline compilation (binary and spir-v modes) only:\n"
+             "        --compilation-cache-mode <cache-mode>  Specify a compilation caching mode:\n"
+             "                                 compile-if-absent  Read from cache if already populated, or\n"
+             "                                                    else perform offline compilation (default)\n"
+             "                                 force-read      Force reading from the cache\n"
+             "                                 overwrite       Disable reading from the cache\n"
+             "        --compilation-cache-path <path>   Path for offline compiler output and CL source\n"
+             "\n");
+}
+
+int parseCustomParam (int argc, const char *argv[], const char *ignore)
+{
+    int delArg = 0;
+
+    for (int i=1; i<argc; i++)
+    {
+        if(ignore != 0)
+        {
+            // skip parameters that require special/different treatment in application
+            // (generic interpretation and parameter removal will not be performed)
+            const char * ptr = strstr(ignore, argv[i]);
+            if(ptr != 0 &&
+               (ptr == ignore || ptr[-1] == ' ') && //first on list or ' ' before
+               (ptr[strlen(argv[i])] == 0 || ptr[strlen(argv[i])] == ' ')) // last on list or ' ' after
+                continue;
+        }
+
+        delArg = 0;
+
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+        {
+            // Note: we don't increment delArg to delete this argument,
+            // to allow the caller's argument parsing routine to see the
+            // option and print its own help.
+            helpInfo ();
+        }
+        else if (!strcmp(argv[i], "--compilation-mode"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                const char *mode = argv[i + 1];
+
+                if (!strcmp(mode, "online"))
+                {
+                    gCompilationMode = kOnline;
+                }
+                else if (!strcmp(mode, "binary"))
+                {
+                    gCompilationMode = kBinary;
+                }
+                else if (!strcmp(mode, "spir-v"))
+                {
+                    gCompilationMode = kSpir_v;
+                }
+                else
+                {
+                    log_error("Compilation mode not recognized: %s\n", mode);
+                    return -1;
+                }
+                log_info("Compilation mode specified: %s\n", mode);
+            }
+            else
+            {
+                log_error("Compilation mode parameters are incorrect. Usage:\n"
+                          "  --compilation-mode <online|binary|spir-v>\n");
+                return -1;
+            }
+        }
+        else if (!strcmp(argv[i], "--compilation-cache-mode"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                const char *mode = argv[i + 1];
+
+                if (!strcmp(mode, "compile-if-absent"))
+                {
+                    gCompilationCacheMode = kCacheModeCompileIfAbsent;
+                }
+                else if (!strcmp(mode, "force-read"))
+                {
+                    gCompilationCacheMode = kCacheModeForceRead;
+                }
+                else if (!strcmp(mode, "overwrite"))
+                {
+                    gCompilationCacheMode = kCacheModeOverwrite;
+                }
+                else
+                {
+                    log_error("Compilation cache mode not recognized: %s\n", mode);
+                    return -1;
+                }
+                log_info("Compilation cache mode specified: %s\n", mode);
+            }
+            else
+            {
+                log_error("Compilation cache mode parameters are incorrect. Usage:\n"
+                          "  --compilation-cache-mode <compile-if-absent|force-read|overwrite>\n");
+                return -1;
+            }
+        }
+        else if (!strcmp(argv[i], "--compilation-cache-path"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                gCompilationCachePath = argv[i + 1];
+            }
+            else
+            {
+                log_error("Path argument for --compilation-cache-path was not specified.\n");
+                return -1;
+            }
+        }
+
+        //cleaning parameters from argv tab
+        for (int j = i; j < argc - delArg; j++)
+            argv[j] = argv[j + delArg];
+        argc -= delArg;
+        i -= delArg;
+    }
+
+    if (gCompilationCacheMode != kCacheModeCompileIfAbsent && gCompilationMode == kOnline)
+    {
+        log_error("Compilation cache mode can only be specified when using an offline compilation mode.\n");
+        return -1;
+    }
+
+    return argc;
+}
 
 bool is_power_of_two(int number)
 {

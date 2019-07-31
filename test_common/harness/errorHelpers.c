@@ -20,6 +20,8 @@
 
 #include "errorHelpers.h"
 
+#include "parseParameters.h"
+
 const char    *IGetErrorString( int clErrorCode )
 {
     switch( clErrorCode )
@@ -705,6 +707,48 @@ const char * subtests_requiring_opencl_1_2[] = {
     "popcount"
 };
 
+const char * subtests_to_skip_with_offline_compiler[] = {
+            "get_kernel_arg_info",
+            "binary_create",
+            "load_program_source",
+            "load_multistring_source",
+            "load_two_kernel_source",
+            "load_null_terminated_source",
+            "load_null_terminated_multi_line_source",
+            "load_null_terminated_partial_multi_line_source",
+            "load_discreet_length_source",
+            "get_program_source",
+            "get_program_build_info",
+            "options_build_optimizations",
+            "options_build_macro",
+            "options_build_macro_existence",
+            "options_include_directory",
+            "options_denorm_cache",
+            "preprocessor_define_udef",
+            "preprocessor_include",
+            "preprocessor_line_error",
+            "preprocessor_pragma",
+            "compiler_defines_for_extensions",
+            "image_macro",
+            "simple_extern_compile_only",
+            "simple_embedded_header_compile",
+            "two_file_regular_variable_access",
+            "two_file_regular_struct_access",
+            "two_file_regular_function_access",
+            "simple_embedded_header_link",
+            "execute_after_simple_compile_and_link_with_defines",
+            "execute_after_simple_compile_and_link_with_callbacks",
+            "execute_after_embedded_header_link",
+            "execute_after_included_header_link",
+            "multi_file_libraries",
+            "multiple_files",
+            "multiple_libraries",
+            "multiple_files_multiple_libraries",
+            "multiple_embedded_headers",
+            "program_binary_type",
+            "compile_and_link_status_options_log",
+            "kernel_preprocessor_macros",
+};
 
 int check_opencl_version_with_testname(const char *subtestname, cl_device_id device)
 {
@@ -751,4 +795,17 @@ int check_opencl_version(cl_device_id device, cl_uint requestedMajorVersion, cl_
     return 1;
 }
 
-
+int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device)
+{
+    if (gCompilationMode != kOnline)
+    {
+        int nNotRequiredWithOfflineCompiler = sizeof(subtests_to_skip_with_offline_compiler)/sizeof(char *);
+        size_t i;
+        for(i=0; i < nNotRequiredWithOfflineCompiler; ++i) {
+            if(!strcmp(subtestname, subtests_to_skip_with_offline_compiler[i])) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}

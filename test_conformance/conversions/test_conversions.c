@@ -288,6 +288,12 @@ int main (int argc, const char **argv )
     int error;
     cl_uint seed = (cl_uint) time( NULL );
 
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        return 1;
+    }
+
     if( (error = ParseArgs( argc, argv )) )
         return error;
 

@@ -26,6 +26,7 @@
 #include "kernelHelpers.h"
 #include "fpcontrol.h"
 #include "typeWrappers.h"
+#include "parseParameters.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -126,6 +127,13 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     }
 
     /* Process the command line arguments */
+
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        test_finish();
+        return EXIT_FAILURE;
+    }
 
     /* Special case: just list the tests */
     if( ( argc > 1 ) && (!strcmp( argv[ 1 ], "-list" ) || !strcmp( argv[ 1 ], "-h" ) || !strcmp( argv[ 1 ], "--help" )))
@@ -706,6 +714,9 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
                  test.name, test.min_version.to_string().c_str(), device_version.to_string().c_str());
         return TEST_SKIP;
     }
+
+    error = check_functions_for_offline_compiler(test.name, deviceToUse);
+    test_missing_support_offline_cmpiler(error, test.name);
 
     if( test.func == NULL )
     {

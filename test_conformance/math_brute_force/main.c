@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/parseParameters.h"
 #include "Utility.h"
 
 #include <stdio.h>
@@ -26,6 +25,7 @@
 
 #include "../../test_common/harness/errorHelpers.h"
 #include "../../test_common/harness/kernelHelpers.h"
+#include "../../test_common/harness/parseParameters.h"
 
 #if defined( __APPLE__ )
     #include <sys/sysctl.h>
@@ -814,6 +814,11 @@ int main (int argc, const char * argv[])
 {
     int error;
 
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        return -1;
+    }
     atexit(TestFinishAtExit);
 
 #if defined( __APPLE__ )

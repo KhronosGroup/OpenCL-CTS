@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "../../../test_common/harness/compat.h"
+#include "../../../test_common/harness/parseParameters.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -74,6 +75,13 @@ int main(int argc, const char *argv[])
 {
     cl_channel_type chanType;
 
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        test_finish();
+        return -1;
+    }
+  
     checkDeviceTypeOverride( &gDeviceType );
 
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );

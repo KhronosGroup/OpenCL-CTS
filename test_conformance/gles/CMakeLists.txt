@@ -9,7 +9,7 @@ set (${MODULE_NAME}_SOURCES
         test_images_2D_info.cpp
         test_images_3D_info.cpp
         test_renderbuffer_info.cpp
-		test_fence_sync.cpp
+        test_fence_sync.cpp
         helpers.cpp
         setup_egl.cpp
         ../../test_common/gles/helpers.cpp
@@ -21,6 +21,8 @@ set (${MODULE_NAME}_SOURCES
         ../../test_common/harness/mt19937.c
         ../../test_common/harness/conversions.c
         ../../test_common/harness/msvc9.c
+        ../../test_common/harness/parseParameters.cpp
+        ../../test_common/harness/crc32.c
     )
 
 if(ANDROID)

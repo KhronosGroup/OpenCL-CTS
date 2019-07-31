@@ -17,7 +17,8 @@ set (SPIR_SOURCES
     ../../test_common/harness/msvc9.c
     ../../test_common/harness/os_helpers.cpp
     ../../test_common/harness/testHarness.c
-    ../../test_common/miniz/miniz.c)
+    ../../test_common/miniz/miniz.c
+    ../../test_common/harness/crc32.c)
 
 add_executable(${SPIR_OUT}
     ${SPIR_SOURCES})

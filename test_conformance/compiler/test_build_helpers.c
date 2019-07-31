@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-
+#include "../../test_common/harness/testHarness.h"
+#include "../../test_common/harness/parseParameters.h"
 
 const char *sample_kernel_code_single_line[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"

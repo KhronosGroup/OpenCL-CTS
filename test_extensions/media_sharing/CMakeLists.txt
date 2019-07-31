@@ -18,6 +18,8 @@ set (MEDIA_SOURCES
         ../../test_common/harness/rounding_mode.c
         ../../test_common/harness/typeWrappers.cpp
         ../../test_common/harness/mt19937.c
+        ../../test_common/harness/parseParameters.cpp
+        ../../test_common/harness/crc32.c
         ../../test_common/harness/msvc9.c
     )
 
