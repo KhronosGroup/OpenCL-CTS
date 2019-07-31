@@ -317,7 +317,7 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
     cl_uint numInstances;
 
 
-    program = clCreateProgramWithSource( context, 1, sample_kernel_code_single_line, NULL, &error );
+    error = create_single_kernel_helper_create_program(context, &program, 1, sample_kernel_code_single_line);
     if( program == NULL )
     {
         log_error( "ERROR: Unable to create reference program!\n" );
@@ -413,7 +413,7 @@ int test_get_program_source(cl_device_id deviceID, cl_context context, cl_comman
     size_t length;
 
 
-    program = clCreateProgramWithSource( context, 1, sample_kernel_code_single_line, NULL, &error );
+    error = create_single_kernel_helper_create_program(context, &program, 1, sample_kernel_code_single_line);
     if( program == NULL )
     {
         log_error( "ERROR: Unable to create test program!\n" );
@@ -423,7 +423,7 @@ int test_get_program_source(cl_device_id deviceID, cl_context context, cl_comman
     /* Try getting the length */
     error = clGetProgramInfo( program, CL_PROGRAM_SOURCE, NULL, NULL, &length );
     test_error( error, "Unable to get program source length" );
-    if( length != strlen( sample_kernel_code_single_line[0] ) + 1 )
+    if (length != strlen(sample_kernel_code_single_line[0]) + 1 && gCompilationMode == kOnline)
     {
         log_error( "ERROR: Length returned for program source is incorrect!\n" );
         return -1;
@@ -432,7 +432,7 @@ int test_get_program_source(cl_device_id deviceID, cl_context context, cl_comman
     /* Try normal source */
     error = clGetProgramInfo( program, CL_PROGRAM_SOURCE, sizeof( buffer ), buffer, NULL );
     test_error( error, "Unable to get program source" );
-    if( strlen( buffer ) != strlen( sample_kernel_code_single_line[0] ) )
+    if (strlen(buffer) != strlen(sample_kernel_code_single_line[0]) && gCompilationMode == kOnline)
     {
         log_error( "ERROR: Length of program source is incorrect!\n" );
         return -1;
@@ -441,12 +441,12 @@ int test_get_program_source(cl_device_id deviceID, cl_context context, cl_comman
     /* Try both at once */
     error = clGetProgramInfo( program, CL_PROGRAM_SOURCE, sizeof( buffer ), buffer, &length );
     test_error( error, "Unable to get program source" );
-    if( strlen( buffer ) != strlen( sample_kernel_code_single_line[0] ) )
+    if (strlen(buffer) != strlen(sample_kernel_code_single_line[0]) && gCompilationMode == kOnline)
     {
         log_error( "ERROR: Length of program source is incorrect!\n" );
         return -1;
     }
-    if( length != strlen( sample_kernel_code_single_line[0] ) + 1 )
+    if (length != strlen(sample_kernel_code_single_line[0]) + 1 && gCompilationMode == kOnline)
     {
         log_error( "ERROR: Returned length of program source is incorrect!\n" );
         return -1;
@@ -468,7 +468,7 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
     cl_build_status status;
 
 
-    program = clCreateProgramWithSource( context, 1, sample_kernel_code_single_line, NULL, &error );
+    error = create_single_kernel_helper_create_program(context, &program, 1, sample_kernel_code_single_line);
     if( program == NULL )
     {
         log_error( "ERROR: Unable to create test program!\n" );

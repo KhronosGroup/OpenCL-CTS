@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include "../../test_common/harness/kernelHelpers.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // ATF performance framework.
@@ -167,7 +168,8 @@ int test_userevents( cl_device_id deviceID, cl_context context, cl_command_queue
   CL_EXIT_ERROR((err != CL_SUCCESS) ? CL_SUCCESS : -1,"clGetEventProfilingInfo returned wrong error.");
 
   // Test semantics.
-  cl_program program = clCreateProgramWithSource(context,1,src,NULL,&err);
+  cl_program program;
+  err = create_single_kernel_helper_create_program(context, &program, 1, src);
   CL_EXIT_ERROR(err,"clCreateProgramWithSource failed");
 
   CL_EXIT_BUILD_ERROR(clBuildProgram(program,0,NULL,"",NULL,NULL),program,"Building program from inline src:\t%s",src[0]);

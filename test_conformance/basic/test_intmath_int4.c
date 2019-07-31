@@ -211,87 +211,31 @@ test_intmath_int4(cl_device_id device, cl_context context, cl_command_queue queu
         return -1;
     }
 
-    program[0] = clCreateProgramWithSource(context, 1, &int_add4_kernel_code, NULL, NULL);
-    if (!program[0])
-    {
-        log_error("clCreateProgramWithSource failed\n");
-        return -1;
-    }
-
-    err = clBuildProgram(program[0], 0, NULL, NULL, NULL, NULL);
+    err = create_single_kernel_helper(context, &program[0], &kernel[0], 1, &int_add4_kernel_code, "test_int_add4");
     if (err != CL_SUCCESS)
     {
-        log_error("clBuildProgram failed\n");
+        log_error("create_single_kernel_helper failed\n");
         return -1;
     }
 
-    kernel[0] = clCreateKernel(program[0], "test_int_add4", NULL);
-    if (!kernel[0])
-    {
-        log_error("clCreateKernel failed\n");
-        return -1;
-    }
-
-  program[1] = clCreateProgramWithSource(context, 1, &int_sub4_kernel_code, NULL, NULL);
-    if (!program[1])
-    {
-        log_error("clCreateProgramWithSource failed\n");
-        return -1;
-    }
-
-    err = clBuildProgram(program[1], 0, NULL, NULL, NULL, NULL);
+    err = create_single_kernel_helper(context, &program[1], &kernel[1], 1, &int_sub4_kernel_code, "test_int_sub4");
     if (err != CL_SUCCESS)
     {
-        log_error("clBuildProgram failed\n");
+        log_error("create_single_kernel_helper failed\n");
         return -1;
     }
 
-    kernel[1] = clCreateKernel(program[1], "test_int_sub4", NULL);
-    if (!kernel[1])
-    {
-        log_error("clCreateKernel failed\n");
-        return -1;
-    }
-
-  program[2] = clCreateProgramWithSource(context, 1, &int_mul4_kernel_code, NULL, NULL);
-    if (!program[2])
-    {
-        log_error("clCreateProgramWithSource failed\n");
-        return -1;
-    }
-
-    err = clBuildProgram(program[2], 0, NULL, NULL, NULL, NULL);
+    err = create_single_kernel_helper(context, &program[2], &kernel[2], 1, &int_mul4_kernel_code, "test_int_mul4");
     if (err != CL_SUCCESS)
     {
-        log_error("clBuildProgram failed\n");
+        log_error("create_single_kernel_helper failed\n");
         return -1;
     }
 
-    kernel[2] = clCreateKernel(program[2], "test_int_mul4", NULL);
-    if (!kernel[2])
-    {
-        log_error("clCreateKernel failed\n");
-        return -1;
-    }
-
-  program[3] = clCreateProgramWithSource(context, 1, &int_mad4_kernel_code, NULL, NULL);
-    if (!program[3])
-    {
-        log_error("clCreateProgramWithSource failed\n");
-        return -1;
-    }
-
-    err = clBuildProgram(program[3], 0, NULL, NULL, NULL, NULL);
+    err = create_single_kernel_helper(context, &program[3], &kernel[3], 1, &int_mad4_kernel_code, "test_int_mad4");
     if (err != CL_SUCCESS)
     {
-        log_error("clBuildProgram failed\n");
-        return -1;
-    }
-
-    kernel[3] = clCreateKernel(program[3], "test_int_mad4", NULL);
-    if (!kernel[3])
-    {
-        log_error("clCreateKernel failed\n");
+        log_error("create_single_kernel_helper failed\n");
         return -1;
     }
 

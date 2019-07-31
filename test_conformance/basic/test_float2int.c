@@ -62,7 +62,6 @@ test_float2int(cl_device_id device, cl_context context, cl_command_queue queue, 
     cl_program        program;
     cl_kernel        kernel;
     void            *values[2];
-    size_t            lengths[1];
     size_t    threads[1];
     int                err;
     int                i;
@@ -95,25 +94,10 @@ test_float2int(cl_device_id device, cl_context context, cl_command_queue queue, 
         return -1;
     }
 
-    lengths[0] = strlen(float2int_kernel_code);
-    program = clCreateProgramWithSource(context, 1, &float2int_kernel_code, lengths, NULL);
-    if (!program)
-    {
-        log_error("clCreateProgramWithSource failed\n");
-        return -1;
-    }
-
-    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    err = create_single_kernel_helper(context, &program, &kernel, 1, &float2int_kernel_code, "test_float2int");
     if (err != CL_SUCCESS)
     {
-        log_error("clBuildProgramExecutable failed\n");
-        return -1;
-    }
-
-    kernel = clCreateKernel(program, "test_float2int", NULL);
-    if (!kernel)
-    {
-        log_error("clCreateKernel failed\n");
+        log_error("create_single_kernel_helper failed\n");
         return -1;
     }
 

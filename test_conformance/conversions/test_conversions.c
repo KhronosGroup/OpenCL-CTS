@@ -120,7 +120,7 @@ static void PrintArch(void);
 test_status InitCL( cl_device_id device );
 static int GetTestCase( const char *name, Type *outType, Type *inType, SaturationMode *sat, RoundingMode *round );
 static int DoTest( cl_device_id device, Type outType, Type inType, SaturationMode sat, RoundingMode round, MTdata d );
-static cl_program MakeProgram( cl_device_id device, Type outType, Type inType, SaturationMode sat, RoundingMode round, int vectorSize, cl_kernel *outKernel );
+static cl_program   MakeProgram( Type outType, Type inType, SaturationMode sat, RoundingMode round, int vectorSize, cl_kernel *outKernel );
 static int RunKernel( cl_kernel kernel, void *inBuf, void *outBuf, size_t blockCount );
 
 void *FlushToZero( void );
@@ -1131,7 +1131,7 @@ static int DoTest( cl_device_id device, Type outType, Type inType, SaturationMod
 
     for( vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
     {
-        writeInputBufferInfo.calcInfo[vectorSize].program = MakeProgram( device, outType, inType, sat, round, vectorSize,
+        writeInputBufferInfo.calcInfo[vectorSize].program = MakeProgram( outType, inType, sat, round, vectorSize,
                                                                         &writeInputBufferInfo.calcInfo[vectorSize].kernel );
         if( NULL == writeInputBufferInfo.calcInfo[vectorSize].program )
         {
@@ -1652,140 +1652,116 @@ void CL_CALLBACK CalcReferenceValuesComplete( cl_event e, cl_int status, void *d
     // all the calls to CalcReferenceValuesComplete exit.
 }
 
-static cl_program CreateImplicitConvertProgram( Type outType, Type inType, SaturationMode sat, RoundingMode round, int vectorSize, char testName[256], cl_int *error )
-{
-    char inName[32];
-    char outName[32];
-    const char *programSource[] =
-    {
-        "", // optional pragma
-        "__kernel void ", testName, "( __global ", inName,  " *src, __global ", outName, " *dest )\n"
-        "{\n"
-        "   size_t i = get_global_id(0);\n"
-        "   dest[i] =  src[i];\n"
-        "}\n"
-    };
-    size_t stringCount = sizeof( programSource ) / sizeof( programSource[0] );
-    const char **strings = programSource;
-
-    if (outType == kdouble || inType == kdouble)
-        programSource[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
-
-    //create the type name
-    strncpy( inName, gTypeNames[ inType ], sizeof( inName ) );
-    strncpy( outName, gTypeNames[ outType ], sizeof( outName ) );
-    sprintf( testName, "test_implicit_%s_%s", outName, inName );
-    vlog( "Building implicit %s -> %s conversion test\n", gTypeNames[ inType ],  gTypeNames[ outType ] );
-    fflush(stdout);
-
-    //create the program
-    cl_program program = clCreateProgramWithSource(gContext, (cl_uint) stringCount, strings, NULL, error);
-    if( NULL == program || *error )
-    {
-        vlog_error( "\t\tFAILED -- Failed to create program. (%d)\n", *error );
-        return NULL;
-    }
-    return program;
-}
-
-
-static cl_program CreateStandardProgram( Type outType, Type inType, SaturationMode sat, RoundingMode round, int vectorSize, char testName[256], cl_int *error )
-{
-    vectorSize = vectorSizes[ vectorSize ];
-
-    char convertString[128];
-    char inName[32];
-    char outName[32];
-    const char *programSource[] =
-    {
-        "", // optional pragma
-        "__kernel void ", testName, "( __global ", inName,  " *src, __global ", outName, " *dest )\n"
-        "{\n"
-        "   size_t i = get_global_id(0);\n"
-        "   dest[i] = ", convertString, "( src[i] );\n"
-        "}\n"
-    };
-    const char *programSourceV3[] =
-    {
-        "", // optional pragma
-        "__kernel void ", testName, "( __global ", inName,  " *src, __global ", outName, " *dest )\n"
-        "{\n"
-        "   size_t i = get_global_id(0);\n"
-        "   if( i + 1 < get_global_size(0))\n"
-        "       vstore3( ", convertString, "( vload3( i, src)), i, dest );\n"
-        "   else\n"
-        "   {\n"
-        "       ", inName, "3 in;\n"
-        "       ", outName, "3 out;\n"
-        "       if( 0 == (i & 1) )\n"
-        "           in.y = src[3*i+1];\n"
-        "       in.x = src[3*i];\n"
-        "       out = ", convertString, "( in ); \n"
-        "       dest[3*i] = out.x;\n"
-        "       if( 0 == (i & 1) )\n"
-        "           dest[3*i+1] = out.y;\n"
-        "   }\n"
-        "}\n"
-    };
-    size_t stringCount = 3 == vectorSize ?  sizeof( programSourceV3 ) / sizeof( programSourceV3[0] ) :
-    sizeof( programSource ) / sizeof( programSource[0] );
-    const char **strings = 3 == vectorSize ? programSourceV3 : programSource;
-
-    if (outType == kdouble || inType == kdouble) {
-        programSource[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
-        programSourceV3[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
-    }
-
-    //create the type name
-    switch (vectorSize)
-    {
-        case 1:
-            strncpy( inName, gTypeNames[ inType ], sizeof( inName ) );
-            strncpy( outName, gTypeNames[ outType ], sizeof( outName ) );
-            snprintf( convertString, sizeof(convertString), "convert_%s%s%s", outName, gSaturationNames[ sat ], gRoundingModeNames[ round ] );
-            snprintf( testName, 256, "test_%s_%s", convertString, inName );
-            vlog( "Building %s( %s ) test\n", convertString, inName );
-            break;
-        case 3:
-            strncpy( inName, gTypeNames[ inType ], sizeof( inName ) );
-            strncpy( outName, gTypeNames[ outType ], sizeof( outName ) );
-            snprintf( convertString, sizeof(convertString), "convert_%s3%s%s", outName, gSaturationNames[ sat ], gRoundingModeNames[ round ] );
-            snprintf( testName, 256, "test_%s_%s3", convertString, inName );
-            vlog( "Building %s( %s3 ) test\n", convertString, inName );
-            break;
-        default:
-            snprintf( inName, sizeof( inName ), "%s%d", gTypeNames[ inType ],  vectorSize );
-            snprintf( outName, sizeof( outName ), "%s%d", gTypeNames[ outType ],  vectorSize );
-            snprintf( convertString, sizeof(convertString), "convert_%s%s%s", outName, gSaturationNames[ sat ], gRoundingModeNames[ round ] );
-            snprintf( testName, 256, "test_%s_%s", convertString, inName );
-            vlog( "Building %s( %s ) test\n", convertString, inName );
-            break;
-    }
-
-    fflush(stdout);
-
-    //create the program
-    cl_program program = clCreateProgramWithSource(gContext, (cl_uint) stringCount, strings, NULL, error);
-    if( NULL == program || *error )
-    {
-        vlog_error( "\t\tFAILED -- Failed to create program. (%d)\n", *error );
-        return NULL;
-    }
-    return program;
-}
-
-
-static cl_program MakeProgram( cl_device_id device, Type outType, Type inType, SaturationMode sat, RoundingMode round, int vectorSize, cl_kernel *outKernel )
+static cl_program   MakeProgram( Type outType, Type inType, SaturationMode sat, RoundingMode round, int vectorSize, cl_kernel *outKernel )
 {
     cl_program program;
     char testName[256];
     int error = 0;
+    const char **strings;
+    size_t stringCount = 0;
 
     // Create the program. This is a bit complicated because we are trying to avoid byte and short stores.
-    if( 0 == vectorSize )
-        program = CreateImplicitConvertProgram( outType, inType, sat, round, vectorSize, testName, &error );
+    if (0 == vectorSize)
+    {
+        char inName[32];
+        char outName[32];
+        const char *programSource[] =
+        {
+            "", // optional pragma
+            "__kernel void ", testName, "( __global ", inName, " *src, __global ", outName, " *dest )\n"
+            "{\n"
+            "   size_t i = get_global_id(0);\n"
+            "   dest[i] =  src[i];\n"
+            "}\n"
+        };
+        stringCount = sizeof(programSource) / sizeof(programSource[0]);
+        strings = programSource;
+
+        if (outType == kdouble || inType == kdouble)
+            programSource[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+
+        //create the type name
+        strncpy(inName, gTypeNames[inType], sizeof(inName));
+        strncpy(outName, gTypeNames[outType], sizeof(outName));
+        sprintf(testName, "test_implicit_%s_%s", outName, inName);
+        vlog("Building implicit %s -> %s conversion test\n", gTypeNames[inType], gTypeNames[outType]);
+        fflush(stdout);
+    }
     else
-        program = CreateStandardProgram( outType, inType, sat, round, vectorSize, testName, &error );
+    {
+        int vectorSizetmp = vectorSizes[vectorSize];
+
+        char convertString[128];
+        char inName[32];
+        char outName[32];
+        const char *programSource[] =
+        {
+            "", // optional pragma
+            "__kernel void ", testName, "( __global ", inName, " *src, __global ", outName, " *dest )\n"
+            "{\n"
+            "   size_t i = get_global_id(0);\n"
+            "   dest[i] = ", convertString, "( src[i] );\n"
+            "}\n"
+        };
+        const char *programSourceV3[] =
+        {
+            "", // optional pragma
+            "__kernel void ", testName, "( __global ", inName, " *src, __global ", outName, " *dest )\n"
+            "{\n"
+            "   size_t i = get_global_id(0);\n"
+            "   if( i + 1 < get_global_size(0))\n"
+            "       vstore3( ", convertString, "( vload3( i, src)), i, dest );\n"
+            "   else\n"
+            "   {\n"
+            "       ", inName, "3 in;\n"
+            "       ", outName, "3 out;\n"
+            "       if( 0 == (i & 1) )\n"
+            "           in.y = src[3*i+1];\n"
+            "       in.x = src[3*i];\n"
+            "       out = ", convertString, "( in ); \n"
+            "       dest[3*i] = out.x;\n"
+            "       if( 0 == (i & 1) )\n"
+            "           dest[3*i+1] = out.y;\n"
+            "   }\n"
+            "}\n"
+        };
+        stringCount = 3 == vectorSizetmp ? sizeof(programSourceV3) / sizeof(programSourceV3[0]) :
+            sizeof(programSource) / sizeof(programSource[0]);
+        strings = 3 == vectorSizetmp ? programSourceV3 : programSource;
+
+        if (outType == kdouble || inType == kdouble) {
+            programSource[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+            programSourceV3[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+        }
+
+        //create the type name
+        switch (vectorSizetmp)
+        {
+        case 1:
+            strncpy(inName, gTypeNames[inType], sizeof(inName));
+            strncpy(outName, gTypeNames[outType], sizeof(outName));
+            snprintf(convertString, sizeof(convertString), "convert_%s%s%s", outName, gSaturationNames[sat], gRoundingModeNames[round]);
+            snprintf(testName, 256, "test_%s_%s", convertString, inName);
+            vlog("Building %s( %s ) test\n", convertString, inName);
+            break;
+        case 3:
+            strncpy(inName, gTypeNames[inType], sizeof(inName));
+            strncpy(outName, gTypeNames[outType], sizeof(outName));
+            snprintf(convertString, sizeof(convertString), "convert_%s3%s%s", outName, gSaturationNames[sat], gRoundingModeNames[round]);
+            snprintf(testName, 256, "test_%s_%s3", convertString, inName);
+            vlog("Building %s( %s3 ) test\n", convertString, inName);
+            break;
+        default:
+            snprintf(inName, sizeof(inName), "%s%d", gTypeNames[inType], vectorSizetmp);
+            snprintf(outName, sizeof(outName), "%s%d", gTypeNames[outType], vectorSizetmp);
+            snprintf(convertString, sizeof(convertString), "convert_%s%s%s", outName, gSaturationNames[sat], gRoundingModeNames[round]);
+            snprintf(testName, 256, "test_%s_%s", convertString, inName);
+            vlog("Building %s( %s ) test\n", convertString, inName);
+            break;
+        }
+
+        fflush(stdout);
+    }
     *outKernel = NULL;
 
     const char *flags = NULL;
@@ -1793,30 +1769,15 @@ static cl_program MakeProgram( cl_device_id device, Type outType, Type inType, S
         flags = "-cl-denorms-are-zero";
 
     // build it
-    if( (error = clBuildProgram( program, 1, &device, flags, NULL, NULL )))
+    error = create_single_kernel_helper(gContext, &program, outKernel, (cl_uint)stringCount, strings, testName, flags);
+    if (error)
     {
         char    buffer[2048] = "";
 
-        vlog_error("\t\tFAILED -- clBuildProgramExecutable() failed: %d\n", error);
-        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
-        vlog_error("Log: %s\n", buffer);
-
-        clReleaseProgram( program );
-        return NULL;
-    }
-
-    *outKernel = clCreateKernel(program, testName, &error);
-    if( NULL == *outKernel || error)
-    {
-        char    buffer[2048] = "";
-
-        vlog_error("\t\tFAILED -- clCreateKernel() failed (%d):\n", error);
-        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
-        vlog_error("Log: %s\n", buffer);
-        clReleaseProgram( program );
+        vlog_error("Failed to build kernel/program.\n", error);
+        clReleaseProgram(program);
         return NULL;
     }
 
     return program;
 }
-

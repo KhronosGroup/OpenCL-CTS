@@ -97,7 +97,8 @@ int test_options_build_optimizations(cl_device_id deviceID, cl_context context, 
 
     for(size_t i = 0; i < sizeof(optimization_options) / (sizeof(char*)); i++) {
 
-        clProgramWrapper program = clCreateProgramWithSource( context, 1, options_test_kernel, NULL, &error );
+        clProgramWrapper program;
+        error = create_single_kernel_helper_create_program(context, &program, 1, options_test_kernel, optimization_options[i]);
         if( program == NULL || error != CL_SUCCESS )
         {
             log_error( "ERROR: Unable to create reference program!\n" );

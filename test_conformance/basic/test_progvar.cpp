@@ -1350,10 +1350,8 @@ static int l_user_type( cl_device_id device, cl_context context, cl_command_queu
         ksrc.add( reader_src );
 
         int status = CL_SUCCESS;
-        program = clCreateProgramWithSource( context, ksrc.num_str(), ksrc.strs(), ksrc.lengths(), &status );
-        test_error_ret(status,"Failed to create program for user type test",status);
 
-        status = clBuildProgram( program, 1, &device, OPTIONS, 0, 0 );
+        status = create_single_kernel_helper_create_program(context, &program, ksrc.num_str(), ksrc.strs(), OPTIONS);
         if(check_error(status, "Failed to build program for user type test (%s)", IGetErrorString(status)))
         {
             print_build_log(program, 1, &device, ksrc.num_str(), ksrc.strs(), ksrc.lengths(), OPTIONS);

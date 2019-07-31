@@ -29,11 +29,7 @@ int test_release_kernel_order(cl_device_id deviceID, cl_context context, cl_comm
     const char *testProgram[] = { "__kernel void sample_test(__global int *data){}" };
 
     /* Create a test program */
-    program = clCreateProgramWithSource( context, 1, testProgram, NULL, &error);
-    test_error( error, "Unable to create program to test with" );
-
-    /* Compile the program */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = create_single_kernel_helper(context, &program, NULL, 1, testProgram, NULL);
     test_error( error, "Unable to build sample program to test with" );
 
     /* And create a kernel from it */

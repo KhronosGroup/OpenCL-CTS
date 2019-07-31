@@ -86,19 +86,9 @@ int test_load_single_kernel(cl_device_id deviceID, cl_context context, cl_comman
     size_t realSize;
 
 
-    /* Preprocess: calc the length of each source file line */
-    sample_single_kernel_lengths[ 0 ] = strlen( sample_single_kernel[ 0 ] );
+    error = create_single_kernel_helper(context, &program, NULL, 1, sample_single_kernel, NULL);
+    test_error( error, "Unable to build test program" );
 
-    /* Create a program */
-    program = clCreateProgramWithSource( context, 1, sample_single_kernel, sample_single_kernel_lengths, &error );
-    if( program == NULL || error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to create single kernel program" );
-        return -1;
-    }
-
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
-    test_error( error, "Unable to build single kernel program" );
     error = clCreateKernelsInProgram(program, 1, &kernel, &numKernels);
     test_error( error, "Unable to create single kernel program" );
 
@@ -179,19 +169,9 @@ int test_load_two_kernels(cl_device_id deviceID, cl_context context, cl_command_
     cl_uint testArgCount;
 
 
-    /* Preprocess: calc the length of each source file line */
-    sample_two_kernel_lengths[ 0 ] = strlen( sample_two_kernels[ 0 ] );
-    sample_two_kernel_lengths[ 1 ] = strlen( sample_two_kernels[ 1 ] );
+    error = create_single_kernel_helper(context, &program, NULL, 2, sample_two_kernels, NULL);
+    test_error( error, "Unable to build test program" );
 
-    /* Now create a test program */
-    program = clCreateProgramWithSource( context, 2, sample_two_kernels, sample_two_kernel_lengths, &error );
-    if( program == NULL || error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to create dual kernel program!" );
-        return -1;
-    }
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
-    test_error( error, "Unable to build dual kernel program" );
     error = clCreateKernelsInProgram(program, 2, &kernel[0], &numKernels);
     test_error( error, "Unable to create dual kernel program" );
 
@@ -269,18 +249,9 @@ int test_load_two_kernels_in_one(cl_device_id deviceID, cl_context context, cl_c
     cl_uint testArgCount;
 
 
-    /* Preprocess: calc the length of each source file line */
-    sample_two_kernels_in_1_lengths[ 0 ] = strlen( sample_two_kernels_in_1[ 0 ] );
+    error = create_single_kernel_helper(context, &program, NULL, 1, sample_two_kernels_in_1, NULL);
+    test_error( error, "Unable to build test program" );
 
-    /* Now create a test program */
-    program = clCreateProgramWithSource( context, 1, sample_two_kernels_in_1, sample_two_kernels_in_1_lengths, &error );
-    if( program == NULL || error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to create dual kernel program" );
-        return -1;
-    }
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
-    test_error( error, "Unable to build dual kernel program" );
     error = clCreateKernelsInProgram(program, 2, &kernel[0], &numKernels);
     test_error( error, "Unable to create dual kernel program" );
 
@@ -357,16 +328,8 @@ int test_load_two_kernels_manually( cl_device_id deviceID, cl_context context, c
 
 
     /* Now create a test program */
-    program = clCreateProgramWithSource( context, 1, sample_two_kernels_in_1, NULL, &error );
-    if( program == NULL || error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to create dual kernel program" );
-        return -1;
-    }
-
-    /* Compile the program */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
-    test_error( error, "Unable to build kernel program" );
+    error = create_single_kernel_helper(context, &program, NULL, 1, sample_two_kernels_in_1, NULL);
+    test_error( error, "Unable to build test program" );
 
     /* Try manually creating kernels (backwards just in case) */
     kernel1 = clCreateKernel( program, "sample_test2", &error );
@@ -396,16 +359,8 @@ int test_get_program_info_kernel_names( cl_device_id deviceID, cl_context contex
     size_t i;
 
     /* Now create a test program */
-    program = clCreateProgramWithSource( context, 1, sample_two_kernels_in_1, NULL, &error );
-    if( program == NULL || error != CL_SUCCESS )
-    {
-        print_error( error, "Unable to create dual kernel program" );
-        return -1;
-    }
-
-    /* Compile the program */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
-    test_error( error, "Unable to build kernel program" );
+    error = create_single_kernel_helper(context, &program, NULL, 1, sample_two_kernels_in_1, NULL);
+    test_error( error, "Unable to build test program" );
 
     /* Lookup the number of kernels in the program. */
     size_t total_kernels = 0;
@@ -569,11 +524,8 @@ int test_repeated_setup_cleanup(cl_device_id deviceID, cl_context context, cl_co
         local_queue = clCreateCommandQueueWithProperties(local_context, deviceID, 0, &error);
         test_error( error, "clCreateCommandQueue failed");
 
-        local_program = clCreateProgramWithSource(local_context, 1, &repeate_test_kernel, NULL, &error);
-        test_error( error, "clCreateProgramWithSource failed");
-
-        error = clBuildProgram(local_program, 0, NULL, NULL, NULL, NULL);
-        test_error( error, "clBuildProgram failed");
+        error = create_single_kernel_helper(local_context, &local_program, NULL, 1, &repeate_test_kernel, NULL);
+        test_error( error, "Unable to build test program" );
 
         local_kernel = clCreateKernel(local_program, "test_kernel", &error);
         test_error( error, "clCreateKernel failed");

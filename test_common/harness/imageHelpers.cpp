@@ -2971,7 +2971,10 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
             "{\n"
             "   write_imagef( out, (int2)(get_global_id(0),0), in[get_global_id(0)] );\n"
             "}\n" };
-        cl_program program = clCreateProgramWithSource( context, 1, kernel, NULL, &err );
+
+        clProgramWrapper program;
+        err = create_single_kernel_helper_create_program(context, &program, 1, kernel);
+
         if( NULL == program || err )
         {
             log_error( "Error:  could not create program in DetectFloatToHalfRoundingMode (err: %d)", err );
@@ -2987,7 +2990,6 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
             log_error( "Error:  could not get device from command queue in DetectFloatToHalfRoundingMode  (%d)", err );
             clReleaseMemObject( inBuf );
             clReleaseMemObject( outImage );
-            clReleaseProgram( program );
             return err;
         }
 
@@ -2997,7 +2999,6 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
             log_error( "Error:  could not build program in DetectFloatToHalfRoundingMode  (%d)", err );
             clReleaseMemObject( inBuf );
             clReleaseMemObject( outImage );
-            clReleaseProgram( program );
             return err;
         }
 
@@ -3007,7 +3008,6 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
             log_error( "Error:  could not create kernel in DetectFloatToHalfRoundingMode  (%d)", err );
             clReleaseMemObject( inBuf );
             clReleaseMemObject( outImage );
-            clReleaseProgram( program );
             return err;
         }
 
@@ -3017,7 +3017,6 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
             log_error( "Error: could not set argument 0 of kernel in DetectFloatToHalfRoundingMode (%d)", err );
             clReleaseMemObject( inBuf );
             clReleaseMemObject( outImage );
-            clReleaseProgram( program );
             clReleaseKernel( k );
             return err;
         }
@@ -3028,7 +3027,6 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
             log_error( "Error: could not set argument 1 of kernel in DetectFloatToHalfRoundingMode (%d)", err );
             clReleaseMemObject( inBuf );
             clReleaseMemObject( outImage );
-            clReleaseProgram( program );
             clReleaseKernel( k );
             return err;
         }
@@ -3041,7 +3039,6 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
             log_error( "Error: could not enqueue kernel in DetectFloatToHalfRoundingMode (%d)", err );
             clReleaseMemObject( inBuf );
             clReleaseMemObject( outImage );
-            clReleaseProgram( program );
             clReleaseKernel( k );
             return err;
         }
@@ -3057,7 +3054,6 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
             log_error( "Error: could not read output image in DetectFloatToHalfRoundingMode (%d)", err );
             clReleaseMemObject( inBuf );
             clReleaseMemObject( outImage );
-            clReleaseProgram( program );
             clReleaseKernel( k );
             return err;
         }
@@ -3105,7 +3101,6 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
     // clean up
         clReleaseMemObject( inBuf );
         clReleaseMemObject( outImage );
-        clReleaseProgram( program );
         clReleaseKernel( k );
         return err;
     }

@@ -130,7 +130,7 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
     }
 
     // Create a program
-    item->p = clCreateProgramWithSource( item->c, 1, context_test_kernels, NULL, &error );
+    error = create_single_kernel_helper_create_program(item->c, &item->p, 1, context_test_kernels);
     if( NULL == item->p || CL_SUCCESS != error )
     {
         if( err )

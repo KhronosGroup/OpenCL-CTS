@@ -22,6 +22,7 @@
 
 #include "test_config.h"
 #include "string.h"
+#include "../../test_common/harness/kernelHelpers.h"
 
 #include "../../test_common/harness/testHarness.h"
 
@@ -244,7 +245,8 @@ cl_program MakeProgram( cl_device_id device, const char *source[], int count )
     int i;
 
     //create the program
-    cl_program program = clCreateProgramWithSource( gContext, count, source, NULL, &error );
+    cl_program program;
+    error = create_single_kernel_helper_create_program(gContext, &program, (cl_uint)count, source);
     if( NULL == program )
     {
         vlog_error( "\t\tFAILED -- Failed to create program. (%d)\n", error );

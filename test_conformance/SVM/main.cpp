@@ -19,6 +19,7 @@
 #include <vector>
 #include <sstream>
 #include "../../test_common/harness/testHarness.h"
+#include "../../test_common/harness/kernelHelpers.h"
 
 #include "common.h"
 
@@ -243,32 +244,8 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
 
   if(ppCodeString)
   {
-    *program = clCreateProgramWithSource(*context, 1, ppCodeString , NULL, &error);
-    test_error( error, "clCreateProgramWithSource failed" );
-
-    error = clBuildProgram(*program,0,NULL,"-cl-std=CL2.0",NULL,NULL);
-    if (error != CL_SUCCESS)
-    {
-      print_error(error, "clBuildProgram failed");
-
-      char *buildLog = NULL;
-      size_t buildLogSize = 0;
-      error = clGetProgramBuildInfo (*program, devices[0], CL_PROGRAM_BUILD_LOG, buildLogSize, buildLog, &buildLogSize);
-      buildLog = (char*)malloc(buildLogSize);
-      memset(buildLog, 0, buildLogSize);
-      error = clGetProgramBuildInfo (*program, devices[0], CL_PROGRAM_BUILD_LOG, buildLogSize, buildLog, NULL);
-      char string[15000];
-      sprintf(string,"%s", buildLog);
-      //MessageBox(NULL,(LPCWSTR)string,(LPCWSTR)"OpenCL Error",MB_OK);
-      //MessageBox(NULL,string,"OpenCL Error",MB_OK);
-      free(buildLog);
-      log_info("%s",string);
-      if (error) {
-        print_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_LOG failed");
-        return -1;
-      }
-      return -1;
-    }
+    error = create_single_kernel_helper(*context, program, 0, 1, ppCodeString, 0, "-cl-std=CL2.0");
+    test_error( error, "failed to create program" );
   }
 
   return 0;
