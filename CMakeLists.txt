@@ -161,7 +161,7 @@ include_directories(SYSTEM ${OPENCL_INCLUDE_DIR})
 include_directories(${CLConform_SOURCE_DIR}/test_common/harness
                     ${CLConform_SOURCE_DIR}/test_common/gles
                     ${CLConform_SOURCE_DIR}/test_common/gl
-                    ${CMAKE_CURRENT_SOURCE_DIR}/test_common/harness)
+                    ${CLConform_SOURCE_DIR}/test_common)
 
 if(CMAKE_BUILD_TYPE STREQUAL "release")
     set (BUILD_FLAVOR "release")

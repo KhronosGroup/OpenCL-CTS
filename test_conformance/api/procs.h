@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/clImageHelper.h"
-#include "../../test_common/harness/imageHelpers.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/clImageHelper.h"
+#include "harness/imageHelpers.h"
 extern float    calculate_ulperror(float a, float b);
 
 extern int        test_load_single_kernel(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

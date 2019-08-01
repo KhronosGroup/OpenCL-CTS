@@ -23,9 +23,9 @@
 #include "FunctionList.h"
 #include "Sleep.h"
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/parseParameters.h"
 
 #if defined( __APPLE__ )
     #include <sys/sysctl.h>
@@ -43,7 +43,7 @@
 #include <sys/param.h>
 #endif
 
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 #define kPageSize           4096
 #define DOUBLE_REQUIRED_FEATURES    ( CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM  )

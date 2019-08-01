@@ -16,7 +16,7 @@
 #ifndef __DATAGEN_H
 #define __DATAGEN_H
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <assert.h>
 
@@ -27,7 +27,7 @@
 #include <fstream>
 #include <algorithm>
 
-#include "../../test_common/harness/mt19937.h"
+#include "harness/mt19937.h"
 
 #include "exceptions.h"
 #include "kernelargs.h"

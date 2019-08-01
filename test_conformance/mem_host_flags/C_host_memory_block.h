@@ -16,7 +16,7 @@
 #ifndef test_conformance_cHost_MemoryBlock_h
 #define test_conformance_cHost_MemoryBlock_h
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>

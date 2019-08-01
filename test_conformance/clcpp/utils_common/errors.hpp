@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "../../../test_common/harness/errorHelpers.h"
+#include "../harness/errorHelpers.h"
 
 // ------------- Check OpenCL error helpers (marcos) -----------------
 

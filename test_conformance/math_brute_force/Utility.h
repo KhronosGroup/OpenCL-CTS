@@ -16,7 +16,7 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -24,10 +24,10 @@
 #include <CL/opencl.h>
 #endif
 #include <stdio.h>
-#include "../../test_common/harness/rounding_mode.h"
-#include "../../test_common/harness/fpcontrol.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/ThreadPool.h"
+#include "harness/rounding_mode.h"
+#include "harness/fpcontrol.h"
+#include "harness/testHarness.h"
+#include "harness/ThreadPool.h"
 #define BUFFER_SIZE         (1024*1024*2)
 
 #if defined( __GNUC__ )
@@ -91,7 +91,7 @@ extern cl_device_fp_config gDoubleCapabilities;
     #define vlog_perf( _number, _higherIsBetter, _units, _nameFmt, ... )    ATFLogPerformanceNumber(_number, _higherIsBetter, _units, _nameFmt, __VA_ARGS__ )
 
 #else
-    #include "../../test_common/harness/errorHelpers.h"
+    #include "harness/errorHelpers.h"
 #endif
 
 #if defined (_MSC_VER )

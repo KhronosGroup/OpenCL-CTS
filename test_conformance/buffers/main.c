@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "procs.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 test_definition test_list[] = {
     ADD_TEST( buffer_read_async_int ),

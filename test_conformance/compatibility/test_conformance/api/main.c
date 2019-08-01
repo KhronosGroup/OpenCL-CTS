@@ -13,18 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
 #include "procs.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
 
-// FIXME: To use certain functions in ../../test_common/harness/imageHelpers.h
+// FIXME: To use certain functions in harness/imageHelpers.h
 // (for example, generate_random_image_data()), the tests are required to declare
 // the following variables:
 cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;

@@ -22,9 +22,9 @@
 
 #include "test_config.h"
 #include "string.h"
-#include "../../test_common/harness/kernelHelpers.h"
+#include "harness/kernelHelpers.h"
 
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 #define HALF_MIN 1.0p-14
 

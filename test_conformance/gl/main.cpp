@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -23,9 +23,9 @@
 #endif
 
 #include "procs.h"
-#include "../../test_common/gl/setup.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "gl/setup.h"
+#include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>

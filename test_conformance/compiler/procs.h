@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
+#include "harness/mt19937.h"
 
 extern int        test_load_program_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_load_multistring_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

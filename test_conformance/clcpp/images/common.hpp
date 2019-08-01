@@ -24,7 +24,7 @@
 // This global variable is used by read_image_pixel from harness/imageHelpers
 bool gTestRounding = false;
 
-#include "../../../test_common/harness/imageHelpers.h"
+#include "../harness/imageHelpers.h"
 
 
 namespace detail

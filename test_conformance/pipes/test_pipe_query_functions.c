@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -21,7 +21,7 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 
 #define TEST_PRIME_INT        ((1<<16)+1)
 

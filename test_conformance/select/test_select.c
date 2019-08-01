@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -27,10 +27,10 @@
 #include <limits.h>
 #include "test_select.h"
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/mt19937.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
+#include "harness/mt19937.h"
+#include "harness/parseParameters.h"
 
 
 //-----------------------------------------

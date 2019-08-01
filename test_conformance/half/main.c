@@ -26,9 +26,9 @@
 #include <sys/param.h>
 #endif
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/mingw_compat.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/mingw_compat.h"
+#include "harness/parseParameters.h"
 #if defined (__MINGW32__)
 #include <sys/param.h>
 #endif

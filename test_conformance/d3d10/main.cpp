@@ -17,8 +17,8 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 
 int main(int argc, const char* argv[])
 {

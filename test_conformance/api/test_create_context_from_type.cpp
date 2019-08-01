@@ -14,13 +14,13 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 #ifndef _WIN32
 #include <unistd.h>
 #endif
 
-#include "../../test_common/harness/conversions.h"
+#include "harness/conversions.h"
 
 extern cl_uint gRandomSeed;
 

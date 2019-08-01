@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -21,7 +21,7 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 
 const char* pipe_readwrite_errors_kernel_code = {
     "__kernel void test_pipe_write_error(__global int *src, __write_only pipe int out_pipe, __global int *status)\n"

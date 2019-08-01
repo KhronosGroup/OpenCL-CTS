@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
 
 static int dump_supported_formats;
 
