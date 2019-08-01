@@ -26,8 +26,8 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/ThreadPool.h"
+#include "harness/conversions.h"
+#include "harness/ThreadPool.h"
 
 #define NUM_TESTS 23
 

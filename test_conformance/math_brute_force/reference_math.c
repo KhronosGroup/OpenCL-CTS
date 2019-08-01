@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 #include "reference_math.h"
 #include <limits.h>
 

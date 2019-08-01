@@ -32,9 +32,9 @@ else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CTS_EXTRA_FLAGS}")
 endif()
 
-# Clang gives C++11 narrowing warnings so suppress these for now
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++11-narrowing")
+# Suppress narrowing warnings given by Clang and GCC
+if("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Clang)|(GNU)")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++11-narrowing -Wno-narrowing")
 endif()
 
 if( WIN32 AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )
@@ -43,6 +43,7 @@ if( WIN32 AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )
 endif()
 
 include_directories(BEFORE SYSTEM ${CLConform_HEADERS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../test_common)
 link_directories(${CLConform_LIB_DIR})
 
 add_definitions(-DCL_TARGET_OPENCL_VERSION=120)

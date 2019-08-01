@@ -34,14 +34,14 @@
 
 #include <time.h>
 
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/imageHelpers.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/mt19937.h"
-#include "../../test_common/harness/rounding_mode.h"
-#include "../../test_common/harness/clImageHelper.h"
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/imageHelpers.h"
+#include "harness/errorHelpers.h"
+#include "harness/mt19937.h"
+#include "harness/rounding_mode.h"
+#include "harness/clImageHelper.h"
 
 extern int gTestCount;
 extern int gTestFailure;

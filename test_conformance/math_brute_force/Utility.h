@@ -16,7 +16,7 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
 #else
@@ -27,15 +27,15 @@
 #include <stdint.h>
 #endif
 
-#include "../../test_common/harness/rounding_mode.h"
-#include "../../test_common/harness/fpcontrol.h"
+#include "harness/rounding_mode.h"
+#include "harness/fpcontrol.h"
 
 #if defined( _WIN32) && defined (_MSC_VER)
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #endif
 
 
-#include "../../test_common/harness/ThreadPool.h"
+#include "harness/ThreadPool.h"
 #define BUFFER_SIZE         (1024*1024*2)
 
 #if defined( __GNUC__ )

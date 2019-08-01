@@ -28,7 +28,7 @@
 
 
 #include "procs.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/conversions.h"
 
 static const char *async_strided_global_to_local_kernel =
 "%s\n" // optional pragma string

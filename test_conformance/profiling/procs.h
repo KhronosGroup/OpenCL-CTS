@@ -16,10 +16,10 @@
 #ifndef __PROCS_H__
 #define __PROCS_H__
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/imageHelpers.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/imageHelpers.h"
+#include "harness/mt19937.h"
 
 
 extern int check_times(cl_ulong queueStart, cl_ulong submitStart, cl_ulong commandStart, cl_ulong commandEnd, cl_device_id device);

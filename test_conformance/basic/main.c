@@ -26,7 +26,7 @@
 
 #include <math.h>
 #include <string.h>
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #include "procs.h"
 
 basefn    basefn_list[] = {

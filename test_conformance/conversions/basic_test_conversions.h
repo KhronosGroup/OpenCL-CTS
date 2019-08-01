@@ -21,9 +21,9 @@
 #include <stdint.h>
 #endif
 
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/rounding_mode.h"
+#include "harness/compat.h"
+#include "harness/errorHelpers.h"
+#include "harness/rounding_mode.h"
 
 #include <stdio.h>
 #if defined( __APPLE__ )
@@ -32,7 +32,7 @@
     #include <CL/opencl.h>
 #endif
 
-#include "../../test_common/harness/mt19937.h"
+#include "harness/mt19937.h"
 
 typedef void (*Convert)( void *dest, void *src, size_t );
 

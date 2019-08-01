@@ -19,7 +19,7 @@
 #include <math.h>
 #include <string.h>
 #include "procs.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 basefn  bufferfn_list[] = {
     test_buffer_read_async_int,

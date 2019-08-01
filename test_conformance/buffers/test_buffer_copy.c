@@ -22,7 +22,7 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 
 
 static int verify_copy_buffer(int *inptr, int *outptr, int n)

@@ -26,7 +26,7 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 
 static int min_verify_float( float *x, float *y, float *out, int numElements, int vecSize )
 {

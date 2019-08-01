@@ -19,7 +19,7 @@
 #include "wrappers.h"
 #include "CL/cl_dx9_media_sharing.h"
 
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/typeWrappers.h"
 
 #include <iostream>
 #include <string>

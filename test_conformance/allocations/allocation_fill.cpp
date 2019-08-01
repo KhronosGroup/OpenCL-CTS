@@ -18,7 +18,7 @@
 #define BUFFER_CHUNK_SIZE 8*1024*1024
 #define IMAGE_LINES 8
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 int fill_buffer_with_data(cl_context context, cl_device_id device_id, cl_command_queue *queue, cl_mem mem, size_t size, MTdata d, cl_bool blocking_write) {
      size_t i, j;

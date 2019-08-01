@@ -1,5 +1,3 @@
-include_directories(../../test_common/harness)
-
 add_executable(conformance_test_contractions
         contractions.c
         ../../test_common/harness/mt19937.c

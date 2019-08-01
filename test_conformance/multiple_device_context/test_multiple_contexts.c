@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 const char *context_test_kernels[] = {
     "__kernel void sample_test_1(__global int *src, __global int *dst)\n"

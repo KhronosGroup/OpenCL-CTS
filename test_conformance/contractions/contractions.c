@@ -30,17 +30,17 @@
 #include <sys/param.h>
 #endif
 
-#include "mingw_compat.h"
+#include "harness/mingw_compat.h"
 #if defined (__MINGW32__)
 #include <sys/param.h>
 #endif
 
 #include <time.h>
-#include "errorHelpers.h"
-#include "../../test_common/harness/mt19937.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/rounding_mode.h"
-#include "../../test_common/harness/fpcontrol.h"
+#include "harness/errorHelpers.h"
+#include "harness/mt19937.h"
+#include "harness/kernelHelpers.h"
+#include "harness/rounding_mode.h"
+#include "harness/fpcontrol.h"
 #if defined( __APPLE__ )
 #include <sys/sysctl.h>
 #endif
@@ -51,7 +51,7 @@
 #endif
 
 #if defined (_WIN32)
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 #include <string.h>
 #endif
 

@@ -27,8 +27,8 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
 
 #ifndef uchar
 typedef unsigned char uchar;

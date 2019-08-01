@@ -7,8 +7,6 @@ set(CMAKE_C_FLAGS_RELEASE "-O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O0")
 endif(MSVC)
 
-include_directories(../../test_common/harness)
-
 add_executable(conformance_test_conversions
         Sleep.c test_conversions.c basic_test_conversions.c
         ../../test_common/harness/ThreadPool.c

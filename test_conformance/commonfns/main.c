@@ -24,7 +24,7 @@
 #include <string.h>
 #include "procs.h"
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 int g_arrVecSizes[kVectorSizeCount + kStrangeVectorSizeCount];
 int g_arrStrangeVectorSizes[kStrangeVectorSizeCount] = {3};

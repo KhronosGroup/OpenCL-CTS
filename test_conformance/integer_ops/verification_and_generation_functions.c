@@ -26,7 +26,7 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/conversions.h"
 
 extern     MTdata          d;
 

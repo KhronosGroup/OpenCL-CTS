@@ -17,8 +17,8 @@
 #include <stdlib.h>
 
 #include "procs.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/testHarness.h"
 
 #define MAX_SUB_DEVICES        16        // Limit the sub-devices to ensure no out of resource errors.
 #define BUFFER_SIZE        1024

@@ -24,7 +24,7 @@
 #include <string.h>
 #include "procs.h"
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 basefn    basefn_list[] = {
 test_quick_thread_dimensions_1d_explicit_local,

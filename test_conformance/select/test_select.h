@@ -32,7 +32,7 @@
 #include <CL/opencl.h>
 #endif
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 // Enable the test to be used with ATF
 #if USE_ATF

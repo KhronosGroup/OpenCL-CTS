@@ -23,8 +23,8 @@
 #include <math.h>
 #include <string.h>
 #include "procs.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/testHarness.h"
+#include "harness/mt19937.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>

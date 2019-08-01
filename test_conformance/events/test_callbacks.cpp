@@ -15,8 +15,8 @@
 //
 #include "testBase.h"
 #include "action_classes.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/ThreadPool.h"
+#include "harness/conversions.h"
+#include "harness/ThreadPool.h"
 
 #if !defined (_MSC_VER)
 #include <unistd.h>

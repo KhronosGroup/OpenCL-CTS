@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #include "utils.h"
 
 extern int test_context_create(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

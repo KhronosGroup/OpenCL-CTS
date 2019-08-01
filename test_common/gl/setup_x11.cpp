@@ -17,7 +17,7 @@
 
 #include "setup.h"
 #include "testBase.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 
 #include <GL/gl.h>
 #include <GL/glut.h>

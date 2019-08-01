@@ -32,10 +32,10 @@
 #include <unistd.h>
 #endif
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/testHarness.h"
 
 
 #define MAX_NUMBER_TO_ALLOCATE 100

@@ -26,9 +26,9 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/conversions.h"
 
 //--- the code for the kernel executables
 static const char *write_kernel_code =

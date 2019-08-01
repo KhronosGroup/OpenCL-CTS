@@ -17,8 +17,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
 
 typedef struct
 {

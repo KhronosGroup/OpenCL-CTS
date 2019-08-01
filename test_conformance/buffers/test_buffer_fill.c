@@ -23,7 +23,7 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 
 #define USE_LOCAL_WORK_GROUP    1
 
