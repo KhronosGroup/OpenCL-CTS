@@ -38,42 +38,6 @@ std::string slash = "\\";
 std::string slash = "/";
 #endif
 
-std::string get_file_name(const std::string &baseName, int index, const std::string &extension)
-{
-    std::ostringstream fileName;
-    fileName << baseName << "." << index << extension;
-    return fileName.str();
-}
-
-long get_file_size(const std::string &fileName)
-{
-    std::ifstream ifs(fileName.c_str(), std::ios::binary);
-    if (!ifs.good())
-        return 0;
-    // get length of file:
-    ifs.seekg(0, std::ios::end);
-    std::ios::pos_type length = ifs.tellg();
-    return static_cast<long>(length);
-}
-
-std::vector<char> get_file_content(const std::string &fileName)
-{
-    std::ifstream ifs(fileName.c_str(), std::ios::binary);
-    if (!ifs.good())
-        return std::vector<char>(0);
-    // get length of file:
-    ifs.seekg(0, std::ios::end);
-    std::ios::pos_type length = ifs.tellg();
-    ifs.seekg(0, std::ios::beg);
-
-    // allocate memory:
-    std::vector<char> content(static_cast<size_t>(length));
-
-    // read data as a block:
-    ifs.read(&content[0], length);
-    return content;
-}
-
 static std::string get_kernel_content(unsigned int numKernelLines, const char *const *kernelProgram)
 {
     std::string kernel;
@@ -86,11 +50,8 @@ static std::string get_kernel_content(unsigned int numKernelLines, const char *c
     return kernel;
 }
 
-std::string get_kernel_name(const std::string &source, const std::string &options)
+std::string get_kernel_name(const std::string &source)
 {
-    // Count CRC
-    cl_uint crc = crc32(source.data(), source.size());
-
     // Create list of kernel names
     std::string kernelsList;
     size_t kPos = source.find("kernel");
@@ -171,50 +132,7 @@ std::string get_kernel_name(const std::string &source, const std::string &option
         }
         oss << kernelsList;
     }
-    oss << std::hex << std::setfill('0') << std::setw(8) << crc;
-    if(!options.empty()) {
-        crc = crc32(options.data(), options.size());
-        oss << '.' << std::hex << std::setfill('0') << std::setw(8) << crc;;
-    }
     return oss.str();
-}
-
-std::string add_build_options(const std::string &baseName, const char *options)
-{
-    if (options == 0 || options[0] == 0)
-        return get_file_name(baseName, 0, "");
-
-    bool equal = false;
-    int i = 0;
-
-    do
-    {
-        i++;
-        std::string fileName = gCompilationCachePath + slash + get_file_name(baseName, i, ".options");
-        long fileSize = get_file_size(fileName);
-        if (fileSize == 0)
-            break;
-        //if(fileSize == strlen(options))
-        {
-            std::vector<char> options2 = get_file_content(fileName);
-            options2.push_back(0); //terminate string
-            equal = strcmp(options, &options2[0]) == 0;
-        }
-    } while (!equal);
-    if (equal)
-        return get_file_name(baseName, i, "");
-
-    std::string fileName = gCompilationCachePath + slash + get_file_name(baseName, i, ".options");
-    std::ofstream ofs(fileName.c_str(), std::ios::binary);
-    if (!ofs.good())
-    {
-        log_info("OfflineCompiler: can't create options: %s\n", fileName.c_str());
-        return "";
-    }
-    // write data as a block:
-    ofs.write(options, strlen(options));
-    log_info("OfflineCompiler: options added: %s\n", fileName.c_str());
-    return get_file_name(baseName, i, "");
 }
 
 static std::string get_offline_compilation_file_type_str(const CompilationMode compilationMode)
@@ -236,13 +154,124 @@ static std::string get_unique_filename_prefix(unsigned int numKernelLines,
                                               const char *buildOptions)
 {
     std::string kernel = get_kernel_content(numKernelLines, kernelProgram);
+    std::string kernelName = get_kernel_name(kernel);
+    cl_uint kernelCrc = crc32(kernel.data(), kernel.size());
+    std::ostringstream oss;
+    oss << kernelName <<  std::hex << std::setfill('0') << std::setw(8) << kernelCrc;
+    if(buildOptions) {
+        cl_uint bOptionsCrc = crc32(buildOptions, strlen(buildOptions));
+        oss << '.' << std::hex << std::setfill('0') << std::setw(8) << bOptionsCrc;
+    }
+    return oss.str();
+}
 
-    std::string bOptions;
-    bOptions += buildOptions ? std::string(buildOptions) : "";
 
-    std::string kernelName = get_kernel_name(kernel, bOptions);
-    kernelName = add_build_options(kernelName, buildOptions);
-    return kernelName;
+static std::string 
+get_cl_build_options_filename_with_path(const std::string& filePath,
+                                        const std::string& fileNamePrefix) {
+    return filePath + slash + fileNamePrefix + ".options";
+}
+
+static std::string 
+get_cl_source_filename_with_path(const std::string& filePath,
+                                 const std::string& fileNamePrefix) {
+    return filePath + slash + fileNamePrefix + ".cl";
+}
+
+static std::string 
+get_binary_filename_with_path(CompilationMode mode,
+                              cl_uint deviceAddrSpaceSize,
+                              const std::string& filePath,
+                              const std::string& fileNamePrefix) {
+    std::string binaryFilename = filePath + slash + fileNamePrefix;
+    if(kSpir_v == mode) {
+        std::ostringstream extension;
+        extension << ".spv" << deviceAddrSpaceSize;
+        binaryFilename += extension.str();
+    }
+    return binaryFilename;
+}
+
+static bool file_exist_on_disk(const std::string& filePath,
+                               const std::string& fileName) {
+    std::string fileNameWithPath = filePath + slash + fileName;
+    bool exist = false;
+    std::ifstream ifs;
+
+    ifs.open(fileNameWithPath.c_str(), std::ios::binary);
+    if(ifs.good())
+        exist = true;
+    ifs.close();
+    return exist;
+}
+
+static bool should_save_kernel_source_to_disk(CompilationMode mode,
+                                              CompilationCacheMode cacheMode,
+                                              const std::string& binaryPath, 
+                                              const std::string& binaryName)
+{
+    bool saveToDisk = false;
+    if(cacheMode == kCacheModeDumpCl ||
+       (cacheMode == kCacheModeOverwrite && mode != kOnline)) {
+        saveToDisk = true;
+    }
+    if(cacheMode == kCacheModeCompileIfAbsent && mode != kOnline) {
+        saveToDisk = !file_exist_on_disk(binaryPath, binaryName);
+    }
+    return saveToDisk;
+}
+
+static int save_kernel_build_options_to_disk(const std::string& path,
+                                             const std::string& prefix,
+                                             const char *buildOptions) {
+    std::string filename = get_cl_build_options_filename_with_path(path, prefix);
+    std::ofstream ofs(filename.c_str(), std::ios::binary);
+    if (!ofs.good())
+    {
+        log_info("Can't save kernel build options: %s\n", filename.c_str());
+        return -1;
+    }
+    ofs.write(buildOptions, strlen(buildOptions));
+    ofs.close();
+    log_info("Saved kernel build options to file: %s\n", filename.c_str());
+    return CL_SUCCESS;
+}
+
+static int save_kernel_source_to_disk(const std::string& path,
+                                      const std::string& prefix,
+                                      const std::string& source) {
+    std::string filename = get_cl_source_filename_with_path(path, prefix);
+    std::ofstream ofs(filename.c_str(), std::ios::binary);
+    if (!ofs.good())
+    {
+        log_info("Can't save kernel source: %s\n", filename.c_str());
+        return -1;
+    }
+    ofs.write(source.c_str(), source.size());
+    ofs.close();
+    log_info("Saved kernel source to file: %s\n", filename.c_str());
+    return CL_SUCCESS;
+}
+
+static int save_kernel_source_and_options_to_disk(unsigned int numKernelLines,
+                                                  const char *const *kernelProgram,
+                                                  const char *buildOptions)
+{
+    int error;
+
+    std::string kernel = get_kernel_content(numKernelLines, kernelProgram);
+    std::string kernelNamePrefix = get_unique_filename_prefix(numKernelLines,
+                                                             kernelProgram,
+                                                             buildOptions);
+
+    // save kernel source to disk
+    error = save_kernel_source_to_disk(gCompilationCachePath, kernelNamePrefix, kernel);
+    
+    // save kernel build options to disk if exists
+    if (buildOptions != NULL)
+        error |= save_kernel_build_options_to_disk(gCompilationCachePath, kernelNamePrefix, buildOptions);
+
+    return error;
 }
 
 static std::string get_khronos_compiler_command(const cl_uint device_address_space_size,
@@ -371,8 +400,7 @@ static std::string get_offline_compilation_command(const cl_uint device_address_
     return scriptToRunString;
 }
 
-static int invoke_offline_compiler(cl_context context,
-                                   const cl_uint device_address_space_size,
+static int invoke_offline_compiler(const cl_uint device_address_space_size,
                                    const CompilationMode compilationMode,
                                    const std::string &bOptions,
                                    const std::string &sourceFilename,
@@ -451,107 +479,43 @@ static cl_int get_first_device_address_bits(const cl_context context, cl_uint &d
 }
 
 static int get_offline_compiler_output(std::ifstream &ifs,
-                                       cl_context context,
-                                       const std::string &kernel,
+                                       cl_uint deviceAddrSpaceSize,
                                        const bool openclCXX,
                                        const CompilationMode compilationMode,
                                        const std::string &bOptions,
-                                       const std::string &kernelName)
+                                       const std::string &kernelPath,
+                                       const std::string &kernelNamePrefix)
 {
-    if(kCacheModeDumpCl == gCompilationCacheMode) {
-        return -1;
-    }
+    std::string sourceFilename = get_cl_source_filename_with_path(kernelPath, kernelNamePrefix);
+    std::string outputFilename = get_binary_filename_with_path(compilationMode,
+                                                               deviceAddrSpaceSize,
+                                                               kernelPath,
+                                                               kernelNamePrefix);
 
-    std::string sourceFilename = gCompilationCachePath + slash + kernelName + ".cl";
-
-    // Get device CL_DEVICE_ADDRESS_BITS
-    cl_uint device_address_space_size = 0;
-    int error = get_first_device_address_bits(context, device_address_space_size);
-    if (error != CL_SUCCESS)
-        return error;
-
-    std::string outputFilename = gCompilationCachePath + slash + kernelName;
-    if (compilationMode == kSpir_v)
-    {
-        std::ostringstream extension;
-        extension << ".spv" << device_address_space_size;
-        outputFilename += extension.str();
-    }
-
-    // try to read cached output file when test is run with gCompilationCacheMode != kCacheModeOverwrite
     ifs.open(outputFilename.c_str(), std::ios::binary);
-
-    if (gCompilationCacheMode == kCacheModeOverwrite || !ifs.good())
-    {
+    if(!ifs.good()) {
         std::string file_type = get_offline_compilation_file_type_str(compilationMode);
-
-        if (gCompilationCacheMode == kCacheModeForceRead)
-        {
+        if (gCompilationCacheMode == kCacheModeForceRead) {
             log_info("OfflineCompiler: can't open cached %s file: %s\n",
                      file_type.c_str(), outputFilename.c_str());
             return -1;
         }
+        else {
+            int error = invoke_offline_compiler(deviceAddrSpaceSize, compilationMode,
+                                                bOptions, sourceFilename, outputFilename, openclCXX);
+            if (error != CL_SUCCESS)
+                return error;
 
-        ifs.close();
-
-        if (gCompilationCacheMode != kCacheModeOverwrite)
-            log_info("OfflineCompiler: can't find cached %s file: %s\n",
-                     file_type.c_str(), outputFilename.c_str());
-
-        std::ofstream ofs(sourceFilename.c_str(), std::ios::binary);
-        if (!ofs.good())
-        {
-            log_info("OfflineCompiler: can't create source file: %s\n", sourceFilename.c_str());
-            return -1;
-        }
-
-        // write source to input file
-        ofs.write(kernel.c_str(), kernel.size());
-        ofs.close();
-
-        error = invoke_offline_compiler(context, device_address_space_size, compilationMode,
-                                        bOptions, sourceFilename, outputFilename, openclCXX);
-        if (error != CL_SUCCESS)
-            return error;
-
-        // read output file
-        ifs.open(outputFilename.c_str(), std::ios::binary);
-        if (!ifs.good())
-        {
-            log_info("OfflineCompiler: can't read generated %s file: %s\n",
-                     file_type.c_str(), outputFilename.c_str());
-            return -1;
+            // read output file
+            ifs.open(outputFilename.c_str(), std::ios::binary);
+            if (!ifs.good())
+            {
+                log_info("OfflineCompiler: can't read generated %s file: %s\n",
+                         file_type.c_str(), outputFilename.c_str());
+                return -1;
+            }
         }
     }
-
-    return CL_SUCCESS;
-}
-
-static int dump_single_kernel_to_disk(unsigned int numKernelLines,
-                                      const char *const *kernelProgram,
-                                      const char *buildOptions)
-{
-    int error;
-
-    std::string kernel = get_kernel_content(numKernelLines, kernelProgram);
-    std::string kernelName = get_unique_filename_prefix(numKernelLines,
-                                                        kernelProgram,
-                                                        buildOptions);
-    std::string filename = gCompilationCachePath + slash + kernelName + ".cl";
-
-    std::ofstream ofs(filename.c_str(), std::ios::binary);
-    if (!ofs.good())
-    {
-        log_info("Can't save kernel source: %s\n", filename.c_str());
-        return -1;
-    }
-
-    // write source to input file
-    ofs.write(kernel.c_str(), kernel.size());
-    ofs.close();
-
-    log_info("Saved kernel source to file: %s\n", filename.c_str());
-
     return CL_SUCCESS;
 }
 
@@ -563,8 +527,16 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
                                                               const bool openclCXX,
                                                               CompilationMode compilationMode)
 {
+    if(kCacheModeDumpCl == gCompilationCacheMode) {
+        return -1;
+    }
+
+    // Get device CL_DEVICE_ADDRESS_BITS
     int error;
-    std::string kernel = get_kernel_content(numKernelLines, kernelProgram);
+    cl_uint device_address_space_size = 0;
+    error = get_first_device_address_bits(context, device_address_space_size);
+    if (error != CL_SUCCESS)
+        return error;
 
     // set build options
     std::string bOptions;
@@ -574,8 +546,9 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
                                                         kernelProgram,
                                                         buildOptions);
 
+
     std::ifstream ifs;
-    error = get_offline_compiler_output(ifs, context, kernel, openclCXX, compilationMode, bOptions, kernelName);
+    error = get_offline_compiler_output(ifs, device_address_space_size, openclCXX, compilationMode, bOptions, gCompilationCachePath, kernelName);
     if (error != CL_SUCCESS)
         return error;
 
@@ -648,9 +621,17 @@ static int create_single_kernel_helper_create_program(cl_context context,
                                                       const bool openclCXX,
                                                       CompilationMode compilationMode)
 {
-    if(kCacheModeDumpCl == gCompilationCacheMode)
+    std::string filePrefix = get_unique_filename_prefix(numKernelLines,
+                                                        kernelProgram,
+                                                        buildOptions);
+    bool shouldSaveToDisk = should_save_kernel_source_to_disk(compilationMode, 
+                                                              gCompilationCacheMode,
+                                                              gCompilationCachePath,
+                                                              filePrefix);
+
+    if(shouldSaveToDisk)
     {
-        if(CL_SUCCESS != dump_single_kernel_to_disk(numKernelLines, kernelProgram, buildOptions))
+        if(CL_SUCCESS != save_kernel_source_and_options_to_disk(numKernelLines, kernelProgram, buildOptions))
         {
             log_error("Unable to dump kernel source to disk");
             return -1;
