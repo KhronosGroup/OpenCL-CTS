@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "wrappers.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 
 const char* CDeviceWrapper::WINDOW_TITLE = "cl_khr_dx9_media_sharing";
 const int CDeviceWrapper::WINDOW_WIDTH = 256;

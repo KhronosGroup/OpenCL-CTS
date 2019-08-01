@@ -15,8 +15,8 @@
 //
 #include "utils.h"
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/rounding_mode.h"
+#include "harness/errorHelpers.h"
+#include "harness/rounding_mode.h"
 
 #include <math.h>
 

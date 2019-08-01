@@ -29,8 +29,8 @@
 #include <sys/param.h>
 #endif
 
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/compat.h"
+#include "harness/errorHelpers.h"
 
 #if defined (_WIN32)
 #define MAX(x,y) ((x>y)?x:y);

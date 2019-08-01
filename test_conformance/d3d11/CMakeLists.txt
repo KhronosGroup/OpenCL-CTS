@@ -11,8 +11,7 @@ set(D3D11_LIB_DIR $ENV{NV_TOOLS}/sdk/DirectX_Aug2009/Lib/x64)
 endif(${ARCH} STREQUAL "x86_64")
 
 list(APPEND CLConform_INCLUDE_DIR ${D3D11_INCLUDE_DIR})
-include_directories (${CLConform_SOURCE_DIR}/test_common/harness
-                     ${CLConform_INCLUDE_DIR} )
+include_directories (${CLConform_INCLUDE_DIR})
 link_directories(${CL_LIB_DIR}, ${D3D11_LIB_DIR})
 
 list(APPEND CLConform_LIBRARIES d3d11 dxgi)

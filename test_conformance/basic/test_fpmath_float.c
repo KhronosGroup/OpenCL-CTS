@@ -24,7 +24,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "../../test_common/harness/rounding_mode.h"
+#include "harness/rounding_mode.h"
 
 #include "procs.h"
 

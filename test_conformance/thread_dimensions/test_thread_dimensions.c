@@ -27,7 +27,7 @@
 
 #include "procs.h"
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #define ITERATIONS 4
 #define DEBUG 0

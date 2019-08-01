@@ -18,7 +18,7 @@
 #include "allocation_functions.h"
 #include "allocation_fill.h"
 #include "allocation_execute.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #include <time.h>
 
 cl_device_id g_device_id;

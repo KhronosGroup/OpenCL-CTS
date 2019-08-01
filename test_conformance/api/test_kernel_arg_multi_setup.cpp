@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/conversions.h"
 
 // This test is designed to stress passing multiple vector parameters to kernels and verifying access between them all
 

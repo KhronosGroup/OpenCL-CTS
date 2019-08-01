@@ -28,8 +28,8 @@
 #endif
 
 #include "procs.h"
-#include "../../test_common/gl/setup.h"
-#include "../../test_common/harness/testHarness.h"
+#include "gl/setup.h"
+#include "harness/testHarness.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>

@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/threadTesting.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/threadTesting.h"
+#include "harness/typeWrappers.h"
 
 extern int      create_program_and_kernel(const char *source, const char *kernel_name, cl_program *program_ret, cl_kernel *kernel_ret);
 

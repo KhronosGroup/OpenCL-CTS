@@ -27,8 +27,8 @@
 
 
 #include "procs.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
 
 const cl_mem_flags flag_set[] = {
   CL_MEM_ALLOC_HOST_PTR,

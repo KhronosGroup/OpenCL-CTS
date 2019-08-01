@@ -20,8 +20,8 @@
 #include <string.h>
 #include <float.h>
 
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/compat.h"
+#include "harness/mt19937.h"
 
 static inline cl_ulong random64( MTdata d );
 

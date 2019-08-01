@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 const char *write_kernels[] = {
     "__kernel void write_up(__global int *dst, int length)\n"

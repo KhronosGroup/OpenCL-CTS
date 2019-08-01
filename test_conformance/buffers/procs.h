@@ -16,12 +16,12 @@
 #ifndef __PROCS_H__
 #define __PROCS_H__
 
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/mt19937.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/kernelHelpers.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/mt19937.h"
+#include "harness/conversions.h"
 
 #ifndef __APPLE__
 #include <CL/cl.h>

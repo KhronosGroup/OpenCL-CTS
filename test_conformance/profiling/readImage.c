@@ -26,8 +26,8 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
 
 //--- the code for the kernel executables
 static const char *readKernelCode[] = {

@@ -16,9 +16,9 @@
 #ifndef _testBase_h
 #define _testBase_h
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/clImageHelper.h"
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
+#include "harness/clImageHelper.h"
 
 #include "image_helpers.h"
 

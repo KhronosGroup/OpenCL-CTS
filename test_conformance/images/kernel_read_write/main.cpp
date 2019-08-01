@@ -29,7 +29,7 @@
 #endif
 
 #include "../testBase.h"
-#include "../../../test_common/harness/fpcontrol.h"
+#include "harness/fpcontrol.h"
 
 #if defined(__PPC__)
 // Global varaiable used to hold the FPU control register state. The FPSCR register can not

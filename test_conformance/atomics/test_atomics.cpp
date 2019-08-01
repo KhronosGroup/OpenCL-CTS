@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/conversions.h"
 #ifndef _WIN32
 #include <unistd.h>
 #endif

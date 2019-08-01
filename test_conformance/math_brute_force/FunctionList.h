@@ -27,8 +27,8 @@
     #include <CL/cl.h>
 #endif
 
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/compat.h"
+#include "harness/mt19937.h"
 
 #ifdef __cplusplus
 extern "C" {

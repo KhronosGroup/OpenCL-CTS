@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 #include "procs.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/errorHelpers.h"
 
 
 
