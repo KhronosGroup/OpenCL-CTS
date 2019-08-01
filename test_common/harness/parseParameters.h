@@ -30,7 +30,8 @@ enum CompilationCacheMode
 {
     kCacheModeCompileIfAbsent = 0,
     kCacheModeForceRead,
-    kCacheModeOverwrite
+    kCacheModeOverwrite,
+    kCacheModeDumpCl
 };
 
 extern CompilationMode gCompilationMode;
