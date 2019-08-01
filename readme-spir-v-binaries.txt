@@ -1,7 +1,6 @@
-To run the 2.2 conformance tests test suite for the C++ features you need
-SPIR-V binaries.
+To run the conformance tests you need SPIR-V binaries.
 
-If you are using a conformance package then the binaries are included in the 
+If you are using a conformance package then the binaries are included in the
 package. If you are using conformance tests from gitlab repositories then the
 binaries need to be picked up from Khronos SVN URL mentioned below:
 

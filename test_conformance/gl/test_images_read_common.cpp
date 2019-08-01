@@ -253,7 +253,7 @@ int test_cl_image_read( cl_context context, cl_command_queue queue,
 
   programPtr = kernelSource;
   if( create_single_kernel_helper( context, &program, &kernel, 1,
-    (const char **)&programPtr, "sample_test" ) )
+    (const char **)&programPtr, "sample_test", "-cl-std=CL2.0" ) )
   {
     return -1;
   }

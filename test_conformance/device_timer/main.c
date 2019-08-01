@@ -26,8 +26,8 @@
 #include "procs.h"
 
 test_definition test_list[] = {
-    ADD_TEST( timer_resolution_queries ),
-    ADD_TEST( device_and_host_timers ),
+    ADD_TEST_VERSION( timer_resolution_queries, Version(2, 1) ),
+    ADD_TEST_VERSION( device_and_host_timers, Version(2, 1) ),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

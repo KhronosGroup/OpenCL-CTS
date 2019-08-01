@@ -120,6 +120,9 @@ extern int get_device_version( cl_device_id id, size_t* major, size_t* minor);
 /* Helper to obtain the biggest allowed work group size for all the devices in a given group */
 extern int get_max_allowed_work_group_size( cl_context context, cl_kernel kernel, size_t *outSize, size_t *outLimits );
 
+/* Helper to obtain the biggest allowed 1D work group size on a given device */
+extern int get_max_allowed_1d_work_group_size_on_device( cl_device_id device, cl_kernel kernel, size_t *outSize );
+
 /* Helper to determine if an extension is supported by a device */
 extern int is_extension_available( cl_device_id device, const char *extensionName );
 
@@ -161,6 +164,13 @@ cl_device_fp_config get_default_rounding_mode( cl_device_id device );
     {    \
         log_info( "\n\tNote: device does not support 3D images. Skipping test...\n" );    \
         return 0;    \
+    }
+
+#define PASSIVE_REQUIRE_FP16_SUPPORT(device)                            \
+    if (!is_extension_available(device, "cl_khr_fp16"))                 \
+    {                                                                   \
+        log_info("\n\tNote: device does not support fp16. Skipping test...\n"); \
+        return 0;                                                       \
     }
 
 /* Prints out the standard device header for all tests given the device to print for */

@@ -205,6 +205,12 @@ int test_atomic_function(cl_device_id deviceID, cl_context context, cl_command_q
         error = clGetKernelWorkGroupInfo( kernel, deviceID, CL_KERNEL_WORK_GROUP_SIZE, sizeof( workSize ), &workSize, NULL );
         test_error( error, "Unable to obtain max work group size for device and kernel combo" );
 
+        // "workSize" is limited to that of the first dimension as only a 1DRange is executed.
+        if( maxSizes[0] < workSize )
+        {
+            workSize = maxSizes[0];
+        }
+
         threadSize = groupSize = workSize;
     }
 

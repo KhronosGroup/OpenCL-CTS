@@ -227,7 +227,7 @@ static std::string get_offline_compilation_file_type_str(const CompilationMode c
     }
 }
 
-static std::string get_offline_compilation_command(const cl_uint device_address_space_size,
+static std::string get_khronos_compiler_command(const cl_uint device_address_space_size,
                                                    const bool openclCXX,
                                                    const std::string &bOptions,
                                                    const std::string &sourceFilename,
@@ -261,8 +261,8 @@ static std::string get_offline_compilation_command(const cl_uint device_address_
         compilerOptions += " -include opencl.h";
     }
 
-#ifdef CL_OFFLINE_COMPILER_OPTIONS
-    compilerOptions += STRINGIFY_VALUE(CL_OFFLINE_COMPILER_OPTIONS);
+#ifdef KHRONOS_OFFLINE_COMPILER_OPTIONS
+    compilerOptions += STRINGIFY_VALUE(KHRONOS_OFFLINE_COMPILER_OPTIONS);
 #endif
 
     // Add build options passed to this function
@@ -270,21 +270,113 @@ static std::string get_offline_compilation_command(const cl_uint device_address_
     compilerOptions +=
         " " + sourceFilename +
         " -o " + outputFilename;
-    std::string runString = STRINGIFY_VALUE(CL_OFFLINE_COMPILER) + compilerOptions;
+    std::string runString = STRINGIFY_VALUE(KHRONOS_OFFLINE_COMPILER) + compilerOptions;
 
     return runString;
 }
 
+static std::string get_offline_compilation_command(const cl_uint device_address_space_size,
+                                                   const CompilationMode compilationMode,
+                                                   const std::string &bOptions,
+                                                   const std::string &sourceFilename,
+                                                   const std::string &outputFilename)
+{
+    std::ostringstream size_t_width_stream;
+    size_t_width_stream << device_address_space_size;
+    std::string size_t_width_str = size_t_width_stream.str();
+
+    // set output type and default script
+    std::string outputTypeStr;
+    std::string defaultScript;
+    if (compilationMode == kBinary)
+    {
+        outputTypeStr = "binary";
+        #if defined(_WIN32)
+        defaultScript = "..\\build_script_binary.py ";
+        #else
+        defaultScript = "../build_script_binary.py ";
+        #endif
+    }
+    else if (compilationMode == kSpir_v)
+    {
+        outputTypeStr = "spir_v";
+        #if defined(_WIN32)
+        defaultScript = "..\\build_script_spirv.py ";
+        #else
+        defaultScript = "../build_script_spirv.py ";
+        #endif
+    }
+
+    // set script arguments
+    std::string scriptArgs = sourceFilename + " " + outputFilename + " " + size_t_width_str + " " + outputTypeStr;
+
+    if (!bOptions.empty())
+    {
+        //search for 2.0 build options
+        std::string oclVersion;
+        std::string buildOptions20 = "-cl-std=CL2.0";
+        std::size_t found = bOptions.find(buildOptions20);
+
+        if (found != std::string::npos)
+            oclVersion = "20";
+        else
+            oclVersion = "12";
+
+        std::string bOptionsWRemovedStd20 = bOptions;
+
+        std::string::size_type i = bOptions.find(buildOptions20);
+
+        if (i != std::string::npos)
+            bOptionsWRemovedStd20.erase(i, buildOptions20.length());
+
+        //remove space before -cl-std=CL2.0 if it was first build option
+        size_t spacePos = bOptionsWRemovedStd20.find_last_of(" \t\r\n", i);
+        if (spacePos != std::string::npos && i == 0)
+            bOptionsWRemovedStd20.erase(spacePos, sizeof(char));
+
+        //remove space after -cl-std=CL2.0
+        spacePos = bOptionsWRemovedStd20.find_first_of(" \t\r\n", i - 1);
+        if (spacePos != std::string::npos)
+            bOptionsWRemovedStd20.erase(spacePos, sizeof(char));
+
+        if (!bOptionsWRemovedStd20.empty())
+            scriptArgs += " " + oclVersion + " \"" + bOptionsWRemovedStd20 + "\"";
+        else
+            scriptArgs += " " + oclVersion;
+    }
+    else
+        scriptArgs += " 12";
+
+    // set script command line
+    std::string scriptToRunString = defaultScript + scriptArgs;
+
+    return scriptToRunString;
+}
+
 static int invoke_offline_compiler(cl_context context,
                                    const cl_uint device_address_space_size,
-                                   const bool openclCXX,
+                                   const CompilationMode compilationMode,
                                    const std::string &bOptions,
                                    const std::string &sourceFilename,
-                                   const std::string &outputFilename)
+                                   const std::string &outputFilename,
+                                   const bool openclCXX)
 {
-    std::string runString =
-        get_offline_compilation_command(device_address_space_size, openclCXX, bOptions,
+    std::string runString;
+    if (openclCXX)
+    {
+#ifndef KHRONOS_OFFLINE_COMPILER
+        log_error("CL C++ compilation is not possible: KHRONOS_OFFLINE_COMPILER was not defined.\n");
+        return CL_INVALID_OPERATION;
+#else
+        runString = get_khronos_compiler_command(device_address_space_size, openclCXX, bOptions,
                                         sourceFilename, outputFilename);
+#endif
+    }
+    else
+    {
+        runString = get_offline_compilation_command(device_address_space_size, compilationMode, bOptions,
+                                        sourceFilename, outputFilename);
+    }
 
     // execute script
     log_info("Executing command: %s\n", runString.c_str());
@@ -395,8 +487,8 @@ static int get_offline_compiler_output(std::ifstream &ifs,
         ofs.write(kernel.c_str(), kernel.size());
         ofs.close();
 
-        error = invoke_offline_compiler(context, device_address_space_size, openclCXX,
-                                        bOptions, sourceFilename, outputFilename);
+        error = invoke_offline_compiler(context, device_address_space_size, compilationMode,
+                                        bOptions, sourceFilename, outputFilename, openclCXX);
         if (error != CL_SUCCESS)
             return error;
 
@@ -520,13 +612,9 @@ static int create_single_kernel_helper_create_program(cl_context context,
     }
     else
     {
-#ifdef CL_OFFLINE_COMPILER
         return create_single_kernel_helper_create_program_offline(context, outProgram, numKernelLines,
                                                                   kernelProgram, buildOptions,
                                                                   openclCXX, compilationMode);
-#endif
-        log_error("Offline compilation is not possible: CL_OFFLINE_COMPILER was not defined.\n");
-        return -1;
     }
 }
 
@@ -876,6 +964,46 @@ int get_max_allowed_work_group_size( cl_context context, cl_kernel kernel, size_
     }
 
     *outMaxSize = (unsigned int)maxCommonSize;
+    return 0;
+}
+
+
+extern int get_max_allowed_1d_work_group_size_on_device( cl_device_id device, cl_kernel kernel, size_t *outSize )
+{
+    cl_uint      maxDim;
+    size_t       maxWgSize;
+    size_t       *maxWgSizePerDim;
+    int          error;
+
+    error = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof( size_t ), &maxWgSize, NULL );
+    test_error( error, "clGetKernelWorkGroupInfo CL_KERNEL_WORK_GROUP_SIZE failed" );
+
+    error = clGetDeviceInfo( device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof( cl_uint ), &maxDim, NULL );
+    test_error( error, "clGetDeviceInfo CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS failed" );
+    maxWgSizePerDim = (size_t*)malloc( maxDim * sizeof( size_t ) );
+    if( !maxWgSizePerDim )
+    {
+        log_error( "Unable to allocate maxWgSizePerDim\n" );
+        return -1;
+    }
+
+    error = clGetDeviceInfo( device, CL_DEVICE_MAX_WORK_ITEM_SIZES, maxDim * sizeof( size_t ), maxWgSizePerDim, NULL );
+    if( error != CL_SUCCESS)
+    {
+        log_error( "clGetDeviceInfo CL_DEVICE_MAX_WORK_ITEM_SIZES failed\n" );
+        free( maxWgSizePerDim );
+        return error;
+    }
+
+    // "maxWgSize" is limited to that of the first dimension.
+    if( maxWgSize > maxWgSizePerDim[0] )
+    {
+        maxWgSize = maxWgSizePerDim[0];
+    }
+
+    free( maxWgSizePerDim );
+
+    *outSize = maxWgSize;
     return 0;
 }
 

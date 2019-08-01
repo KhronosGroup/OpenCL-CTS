@@ -265,7 +265,7 @@ test_definition test_list[] = {
     ADD_TEST( svm_cross_buffer_pointers_coarse_grain ),
     ADD_TEST( svm_pointer_passing ),
     ADD_TEST( svm_enqueue_api ),
-    ADD_TEST( svm_migrate ),
+    ADD_TEST_VERSION( svm_migrate, Version(2, 1)),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
