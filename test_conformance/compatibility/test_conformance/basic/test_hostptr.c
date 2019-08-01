@@ -223,7 +223,7 @@ test_hostptr(cl_device_id device, cl_context context, cl_command_queue queue, in
         log_info("Mapping the CL_MEM_USE_HOST_PTR image with clEnqueueMapImage...\n");
         size_t row_pitch;
         lock_buffer = clEnqueueMapImage(queue, streams[5], CL_TRUE,
-                                        0, origin, region,
+                                        CL_MAP_READ, origin, region,
                                         &row_pitch, NULL,
                                         0, NULL, NULL, &err);
         test_error(err, "clEnqueueMapImage failed");

@@ -65,6 +65,9 @@ set(CSV_FILES
     opencl_conformance_tests_full_no_math_or_conversions.csv
     opencl_conformance_tests_math.csv
     opencl_conformance_tests_quick.csv
+    opencl_conformance_tests_20_full.csv
+    opencl_conformance_tests_20_full_no_math_or_conversions.csv
+    opencl_conformance_tests_20_quick.csv
 )
 set(PY_FILES
     run_conformance.py

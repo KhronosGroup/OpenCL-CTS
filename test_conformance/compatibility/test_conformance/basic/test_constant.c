@@ -110,14 +110,20 @@ test_constant(cl_device_id device, cl_context context, cl_command_queue queue, i
     test_error( err, "Unable to get max constant buffer size" );
 
   log_info("Device reports CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE %llu bytes.\n", maxSize);
+  
+  // Limit test buffer size to 1/4 of CL_DEVICE_GLOBAL_MEM_SIZE
   err = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(maxGlobalSize), &maxGlobalSize, 0);
   test_error(err, "Unable to get CL_DEVICE_GLOBAL_MEM_SIZE");
+
   if (maxSize > maxGlobalSize / 4)
     maxSize = maxGlobalSize / 4;
+
   err = clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE , sizeof(maxAllocSize), &maxAllocSize, 0);
   test_error(err, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE ");
+
   if (maxSize > maxAllocSize)
     maxSize = maxAllocSize;
+  
   maxSize/=4;
   num_ints = (size_t)maxSize/sizeof(cl_int);
   num_floats = (size_t)maxSize/sizeof(cl_float);
