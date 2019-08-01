@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../../test_common/harness/compat.h"
-#include "../../../test_common/harness/parseParameters.h"
+#include "../harness/compat.h"
+#include "../harness/parseParameters.h"
 
 #include <stdio.h>
 #include <string.h>

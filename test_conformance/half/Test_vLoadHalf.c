@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/compat.h"
+#include "harness/testHarness.h"
 
 #include <string.h>
 #include "cl_utils.h"

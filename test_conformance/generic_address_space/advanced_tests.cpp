@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
 #include "base.h"
 
 #include <string>

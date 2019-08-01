@@ -18,8 +18,8 @@
 #include "allocation_functions.h"
 #include "allocation_fill.h"
 #include "allocation_execute.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 #include <time.h>
 
 typedef long long unsigned llu;

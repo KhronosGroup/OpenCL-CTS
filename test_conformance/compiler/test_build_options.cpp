@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/os_helpers.h"
+#include "harness/os_helpers.h"
 
 const char *preprocessor_test_kernel[] = {
 "__kernel void sample_test(__global int *dst)\n"

@@ -16,8 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
 
 #include "utils.h"
 

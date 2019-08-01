@@ -15,7 +15,7 @@
 //
 #include "procs.h"
 #include "tools.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #include "TestNonUniformWorkGroup.h"
 
 test_definition test_list[] = {

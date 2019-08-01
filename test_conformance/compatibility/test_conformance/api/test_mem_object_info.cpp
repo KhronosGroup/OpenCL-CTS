@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/typeWrappers.h"
+#include "harness/testHarness.h"
 
 extern cl_uint gRandomSeed;
 

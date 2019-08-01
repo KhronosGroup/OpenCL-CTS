@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/imageHelpers.h"
+#include "harness/imageHelpers.h"
 #include <stdlib.h>
 #include <ctype.h>
 

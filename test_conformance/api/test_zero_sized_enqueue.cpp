@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
 
 const char *zero_sized_enqueue_test_kernel[] = {
 "__kernel void foo_kernel(__global float *src, __global int *dst)\n"

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +22,7 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 
 
 static int verify_copy_buffer(int *inptr, int *outptr, int n)

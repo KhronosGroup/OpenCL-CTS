@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/conversions.h"
 
 static const int vector_sizes[] = {1, 2, 3, 4, 8, 16};
 #define NUM_VECTOR_SIZES 6

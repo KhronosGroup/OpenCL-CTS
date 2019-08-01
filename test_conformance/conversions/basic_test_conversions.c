@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include "basic_test_conversions.h"
 #include <limits.h>
 #include <string.h>
 
-#include "../../test_common/harness/mt19937.h"
+#include "harness/mt19937.h"
 
 #if defined( __arm__ ) && defined( __GNUC__ )
 #include "fplib.h"

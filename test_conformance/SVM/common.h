@@ -16,11 +16,11 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/compat.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
 
 #if (defined(_WIN32) || defined(_WIN64)) && defined(_MSC_VER)
     #include <windows.h>

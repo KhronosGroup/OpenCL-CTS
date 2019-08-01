@@ -17,7 +17,7 @@
 
 #include "testBase.h"
 #include "setup.h"
-#include "../../test_common/harness/genericThread.h"
+#include "harness/genericThread.h"
 
 #ifndef GLsync
 // For OpenGL before 3.2, we look for the ARB_sync extension and try to use that

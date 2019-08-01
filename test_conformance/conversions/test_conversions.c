@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/rounding_mode.h"
-#include "../../test_common/harness/ThreadPool.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/compat.h"
+#include "harness/rounding_mode.h"
+#include "harness/ThreadPool.h"
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
+#include "harness/parseParameters.h"
 #if !defined(_WIN32) && !defined(__ANDROID__)
 #include <sys/sysctl.h>
 #endif
@@ -54,7 +54,7 @@
 
 #if (defined(_WIN32) && defined (_MSC_VER))
 // need for _controlfp_s and rouinding modes in RoundingMode
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #endif
 
 #pragma mark -

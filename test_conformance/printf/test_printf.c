@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <string.h>
 #include <errno.h>
@@ -37,11 +37,11 @@
 #define streamDup2(fd1,fd2) _dup2(fd1,fd2)
 #endif
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/mt19937.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/mt19937.h"
+#include "harness/parseParameters.h"
 
 typedef  unsigned int uint32_t;
 

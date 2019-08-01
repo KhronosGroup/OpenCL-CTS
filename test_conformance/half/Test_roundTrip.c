@@ -16,7 +16,7 @@
 #include <string.h>
 #include "cl_utils.h"
 #include "tests.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {

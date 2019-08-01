@@ -20,7 +20,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #endif
-#include "../../test_common/harness/conversions.h"
+#include "harness/conversions.h"
 
 extern cl_uint gRandomSeed;
 
