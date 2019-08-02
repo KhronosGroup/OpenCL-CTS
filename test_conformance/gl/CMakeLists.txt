@@ -1,13 +1,10 @@
 if(WIN32)
 # Windows MSVC/Intel compiler hits: 
-# - add x64/x86 binaries with glew and glut/freeglut libraries (.lib) to the directory lib/x64 or lib/x86. If names are different then modify list CLConform_LIBRARIES accordingly
+# - dwonload free libraries package glew and glut/freeglut from the Internet
+# - add x64/x86 binaries with glew and glut/freeglut libraries (.lib) to the directory lib/x64 or lib/x86.
+#   Include folder libs as cmake argument -DCLConform_GL_LIBRARIES_DIR=lib\x64 while solution generation 
 # - GL headers files should be added to project source directory and GL subdirectory
 # - Add .dll files: glut glew to the test binary location.
-    if(CMAKE_CL_64)
-        link_directories("../../lib/x64")
-    else(CMAKE_CL_64)
-        link_directories("../../lib/x86")
-    endif(CMAKE_CL_64)
     list(APPEND CLConform_LIBRARIES opengl32 glut32 glew32 glu32)
 else(WIN32)
     list(APPEND CLConform_LIBRARIES  GL glut GLEW GLU)
