@@ -117,15 +117,15 @@ typedef long long           int64_t;
     #include <math.h>
 #endif
 
+#ifndef M_PI
+    #define M_PI    3.14159265358979323846264338327950288
+#endif
+
 #if defined( _MSC_VER )
 
     #ifdef __cplusplus
         extern "C" {
     #endif
-
-#ifndef M_PI
-    #define M_PI    3.14159265358979323846264338327950288
-#endif
 
         #ifndef NAN
             #define NAN  (INFINITY - INFINITY)
