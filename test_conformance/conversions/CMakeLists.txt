@@ -43,10 +43,6 @@ set_source_files_properties(
 endif()
 endif()
 
-set_source_files_properties(
-        Sleep.c test_conversions.c basic_test_conversions.c
-        COMPILE_FLAGS -std=c99)
-
 if(NOT MSVC)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
 set_source_files_properties(
