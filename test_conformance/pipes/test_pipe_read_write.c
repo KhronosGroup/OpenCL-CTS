@@ -434,7 +434,7 @@ int test_pipe_readwrite( cl_device_id deviceID, cl_context context, cl_command_q
     cl_int      err;
     int         i, ii;
     size_t      ptrSizes[5];
-    int         total_errors = 0;
+    int         total_errors = 0, compilation_count = 0;
     cl_event    producer_sync_event[5];
     cl_event    consumer_sync_event[5];
     char        *sourceCode[5];
@@ -513,12 +513,13 @@ int test_pipe_readwrite( cl_device_id deviceID, cl_context context, cl_command_q
         // Create producer kernel
         err = create_single_kernel_helper_with_build_options(context, &program[i], &kernel[ii], 1, (const char**)&sourceCode[i], kernelName[ii], "-cl-std=CL2.0");
         if(err){
+            compilation_count++;
             clReleaseMemObject(buffers[ii]);
             clReleaseMemObject(buffers[ii+1]);
             clReleaseMemObject(pipes[i]);
             align_free( outptr[i] );
             print_error(err, "Error creating program\n");
-            return -1;
+            continue;
         }
         //Create consumer kernel
         kernel[ii + 1] = clCreateKernel(program[i], kernelName[ii + 1], &err);
@@ -662,7 +663,9 @@ int test_pipe_readwrite( cl_device_id deviceID, cl_context context, cl_command_q
         align_free(outptr[i]);
 
     }
-
+    if(compilation_count) {
+        return -1;
+    }
     return total_errors;
 }
 

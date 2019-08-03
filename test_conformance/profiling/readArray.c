@@ -625,7 +625,7 @@ int test_stream_read( cl_device_id device, cl_context context, cl_command_queue 
 #ifdef USE_LOCAL_THREADS
     size_t            localThreads[1];
 #endif
-    int                err, err_count = 0;
+    int                err, err_count = 0, compile_count = 0;
     int                i;
     size_t            ptrSizes[5];
 
@@ -660,10 +660,11 @@ int test_stream_read( cl_device_id device, cl_context context, cl_command_queue 
         }
         err = create_single_kernel_helper( context, &program[i], &kernel[i], 1, &kernelCode[i], kernelName[i] );
         if( err ){
+            compile_count++;
             log_error( " Error creating program for %s\n", type );
             clReleaseMemObject(streams[i]);
             free( outptr[i] );
-            return -1;
+            continue;
         }
 
         err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&streams[i] );
@@ -768,6 +769,9 @@ int test_stream_read( cl_device_id device, cl_context context, cl_command_queue 
         free( outptr[i] );
     }
 
+    if(compile_count) {
+        return -1;
+    }
     return err_count;
 
 }    // end test_stream_read()

@@ -577,12 +577,9 @@ test_work_group_scan_exclusive_add(cl_device_id device, cl_context context, cl_c
     int err;
 
     err = test_work_group_scan_exclusive_add_int(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_scan_exclusive_add_uint(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_scan_exclusive_add_long(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_scan_exclusive_add_ulong(device, context, queue, n_elems);
+    err |= test_work_group_scan_exclusive_add_uint(device, context, queue, n_elems);
+    err |= test_work_group_scan_exclusive_add_long(device, context, queue, n_elems);
+    err |= test_work_group_scan_exclusive_add_ulong(device, context, queue, n_elems);
     return err;
 }
 

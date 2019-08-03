@@ -184,7 +184,7 @@ static const size_t  kSizes[8] = { 1, 1, 2, 2, 4, 4, 8, 8 };
 int test_integer_add_sat(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
 {
     cl_int *input_ptr[2], *output_ptr, *p;
-    int err;
+    int err, compile_count = 0;;
     int i;
     cl_uint vectorSize;
     cl_uint type;
@@ -299,9 +299,11 @@ int test_integer_add_sat(cl_device_id device, cl_context context, cl_command_que
             {
                 err = create_single_kernel_helper(context, &program, &kernel, sizeof( sourceV3 ) / sizeof( sourceV3[0] ), sourceV3, kernelName );
             }
-            if (err)
-                return -1;
-
+            if (err) {
+                compile_count++;
+                log_error("Failed to compile %s", kernelName);
+                continue;
+            }
             err  = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
             err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
             err |= clSetKernelArg(kernel, 2, sizeof streams[2], &streams[2]);
@@ -365,7 +367,10 @@ int test_integer_add_sat(cl_device_id device, cl_context context, cl_command_que
         log_info("Failed on %d types\n", fail_count);
         return -1;
     }
-
+    if(compile_count) {
+        log_info("Failed to compile %d kernels\n", compile_count);
+        return -1;
+    }
     log_info("ADD_SAT test passed\n");
 
     free(input_ptr[0]);

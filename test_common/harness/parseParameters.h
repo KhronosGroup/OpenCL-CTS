@@ -19,6 +19,11 @@
 #include "compat.h"
 #include <string>
 
+enum ExecutionMode
+{
+    kExecute = 0,
+    kGenerate ,
+};
 enum CompilationMode
 {
     kOnline = 0,
@@ -36,6 +41,7 @@ enum CompilationCacheMode
 extern CompilationMode gCompilationMode;
 extern CompilationCacheMode gCompilationCacheMode;
 extern std::string gCompilationCachePath;
+extern ExecutionMode gExecutionMode;
 
 extern int parseCustomParam (int argc, const char *argv[], const char *ignore = 0 );
 

@@ -148,21 +148,11 @@ test_sign(cl_device_id device, cl_context context, cl_command_queue queue, int n
   }
 
   err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &sign_kernel_code, "test_sign" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &sign2_kernel_code, "test_sign2" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &sign4_kernel_code, "test_sign4" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &sign8_kernel_code, "test_sign8" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &sign16_kernel_code, "test_sign16" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &sign3_kernel_code, "test_sign3" );
+  err |= create_single_kernel_helper( context, &program[1], &kernel[1], 1, &sign2_kernel_code, "test_sign2" );
+  err |= create_single_kernel_helper( context, &program[2], &kernel[2], 1, &sign4_kernel_code, "test_sign4" );
+  err |= create_single_kernel_helper( context, &program[3], &kernel[3], 1, &sign8_kernel_code, "test_sign8" );
+  err |= create_single_kernel_helper( context, &program[4], &kernel[4], 1, &sign16_kernel_code, "test_sign16" );
+  err |= create_single_kernel_helper( context, &program[5], &kernel[5], 1, &sign3_kernel_code, "test_sign3" );
   if (err)
     return -1;
 
@@ -361,21 +351,11 @@ test_sign_double(cl_device_id device, cl_context context, cl_command_queue queue
   }
 
   err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &sign_kernel_code_double, "test_sign_double" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &sign2_kernel_code_double, "test_sign2_double" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &sign4_kernel_code_double, "test_sign4_double" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &sign8_kernel_code_double, "test_sign8_double" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &sign16_kernel_code_double, "test_sign16_double" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &sign3_kernel_code_double, "test_sign3_double" );
+  err |= create_single_kernel_helper( context, &program[1], &kernel[1], 1, &sign2_kernel_code_double, "test_sign2_double" );
+  err |= create_single_kernel_helper( context, &program[2], &kernel[2], 1, &sign4_kernel_code_double, "test_sign4_double" );
+  err |= create_single_kernel_helper( context, &program[3], &kernel[3], 1, &sign8_kernel_code_double, "test_sign8_double" );
+  err |= create_single_kernel_helper( context, &program[4], &kernel[4], 1, &sign16_kernel_code_double, "test_sign16_double" );
+  err |= create_single_kernel_helper( context, &program[5], &kernel[5], 1, &sign3_kernel_code_double, "test_sign3_double" );
   if (err)
     return -1;
 

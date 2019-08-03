@@ -514,9 +514,7 @@ test_work_group_broadcast(cl_device_id device, cl_context context, cl_command_qu
     int err;
 
     err = test_work_group_broadcast_1D(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_broadcast_2D(device, context, queue, n_elems);
-    if (err) return err;
+    err |= test_work_group_broadcast_2D(device, context, queue, n_elems);
     return err;
 }
 

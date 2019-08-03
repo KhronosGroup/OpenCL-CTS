@@ -38,7 +38,7 @@
 
 int test_step_internal(cl_device_id deviceID, cl_context context, cl_command_queue queue, const char * pattern, const char * testName)
 {
-    int err;
+    int err, compile_count = 0;
     int typeIdx, vecSizeIdx;
 
     char tempBuffer[2048];
@@ -112,11 +112,10 @@ int test_step_internal(cl_device_id deviceID, cl_context context, cl_command_que
             err = clStateMakeProgram(pClState, srcBuffer, testName );
             if (err)
             {
+                compile_count++;
                 vlog_error("%s: Error compiling \"\n%s\n\"",
                            testName, srcBuffer);
-                destroyBufferStruct(pBuffers, pClState);
-                destroyClState(pClState);
-                return -1;
+                continue;
             }
 
             err = pushArgs(pBuffers, pClState);
@@ -180,7 +179,10 @@ int test_step_internal(cl_device_id deviceID, cl_context context, cl_command_que
 
     destroyClState(pClState);
 
-
+    if(compile_count) {
+        log_info("Failed to compile %d kernels\n", compile_count);
+        return -1;
+    }
     // vlog_error("%s : implementation incomplete : FAIL\n", testName);
     return 0; // -1; // fails on account of not being written.
 }

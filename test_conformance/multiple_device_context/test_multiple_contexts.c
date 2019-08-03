@@ -402,7 +402,7 @@ int test_context_multiple_contexts_same_device(cl_device_id deviceID, size_t max
 {
     size_t i, j;
     cl_int err = CL_SUCCESS;
-
+    int test_item_failures = 0;
     //Figure out how many of these we can make before the first failure
     TestItem *list = NULL;
 
@@ -410,8 +410,10 @@ int test_context_multiple_contexts_same_device(cl_device_id deviceID, size_t max
     {
         // create a context and accompanying objects
         TestItem *current = CreateTestItem( deviceID, NULL /*no error reporting*/ );
-        if( NULL == current )
-            break;
+        if( NULL == current ) {
+            test_item_failures++;
+            continue;
+        }
 
         // Attempt to use it
         cl_int failed = UseTestItem( current, NULL );
@@ -425,6 +427,11 @@ int test_context_multiple_contexts_same_device(cl_device_id deviceID, size_t max
         // Add the successful test item to the list
         current->next = list;
         list = current;
+    }
+    if(test_item_failures) {
+        log_error( "FAILURE: could not compile %ld of programs!\n", test_item_failures );
+        err = -1;
+        goto exit;
     }
 
     // Check to make sure we made the minimum amount

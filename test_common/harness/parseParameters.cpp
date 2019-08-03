@@ -30,6 +30,7 @@ using namespace std;
 CompilationMode      gCompilationMode = kOnline;
 CompilationCacheMode gCompilationCacheMode = kCacheModeCompileIfAbsent;
 std::string          gCompilationCachePath = ".";
+ExecutionMode        gExecutionMode = kExecute;
 
 void helpInfo ()
 {
@@ -47,6 +48,8 @@ void helpInfo ()
              "                                 force-read      Force reading from the cache\n"
              "                                 overwrite       Disable reading from the cache\n"
              "        --compilation-cache-path <path>   Path for offline compiler output and CL source\n"
+             "        --generate-sources-only Use this flag to dump the .cl and build options files used by the test.\n"
+             "                                This feature is still under development (Beta)"
              "\n");
 }
 
@@ -158,6 +161,12 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
                 return -1;
             }
         }
+        else if (!strcmp(argv[i], "--generate-sources-only"))
+        {
+            delArg++;
+            log_info("Generating sources only\n");
+            gExecutionMode = kGenerate;
+        }
 
         //cleaning parameters from argv tab
         for (int j = i; j < argc - delArg; j++)
@@ -172,6 +181,11 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
         return -1;
     }
 
+    if (gExecutionMode == kGenerate && (gCompilationCacheMode != kCacheModeOverwrite || gCompilationMode == kOnline))
+    {
+        log_error("Compilation cache mode can only be overwrite when in generate sources only mode.\n");
+        return -1;
+    }
     return argc;
 }
 

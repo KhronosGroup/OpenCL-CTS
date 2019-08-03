@@ -123,7 +123,7 @@ test_clamp(cl_device_id device, cl_context context, cl_command_queue queue, int 
     cl_kernel   *kernel;
     size_t threads[1];
     int num_elements;
-    int err;
+    int err, warnings = 0;
     int i, j;
     MTdata d;
 
@@ -199,7 +199,7 @@ test_clamp(cl_device_id device, cl_context context, cl_command_queue queue, int 
     for( i = 0; i < kTotalVecCount; i++ )
     {
         err = create_single_kernel_helper( context, &program[ i ], &kernel[ i ], 1, &clamp_float_codes[ i ], "test_clamp" );
-        test_error( err, "Unable to create kernel" );
+        test_failure_warning(CL_SUCCESS, err, "Unable to create kernel" );
 
         log_info("Just made a program for float, i=%d, size=%d, in slot %d\n", i, g_arrVecSizes[i], i);
         fflush(stdout);
@@ -208,8 +208,12 @@ test_clamp(cl_device_id device, cl_context context, cl_command_queue queue, int 
         err = create_single_kernel_helper( context, &program[ kTotalVecCount + i ], &kernel[ kTotalVecCount + i ], 1, &clamp_double_codes[ i ], "test_clamp" );
         log_info("Just made a program for double, i=%d, size=%d, in slot %d\n", i, g_arrVecSizes[i], kTotalVecCount+i);
         fflush(stdout);
-        test_error( err, "Unable to create kernel" );
+        test_failure_warning(CL_SUCCESS, err, "Unable to create kernel" );
         }
+    }
+    if(warnings > 0) 
+    {
+        return -1;
     }
 
     for( i = 0; i < kTotalVecCount; i++ )
