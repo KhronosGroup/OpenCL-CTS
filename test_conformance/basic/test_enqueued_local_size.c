@@ -91,8 +91,14 @@ test_enqueued_local_size(cl_device_id device, cl_context context, cl_command_que
 
     globalsize[0] = (size_t)num_elements;
     globalsize[1] = (size_t)num_elements;
-    localsize[0] = 16;
-    localsize[1] = 11;
+
+    size_t max_wgs;
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_wgs), &max_wgs, NULL);
+    test_error( err, "clGetDeviceInfo failed.");
+
+    localsize[0] = MIN(16, max_wgs);
+    localsize[1] = MIN(11, max_wgs / localsize[0]);
+
     err = clEnqueueNDRangeKernel(queue, kernel[1], 2, NULL, globalsize, localsize, 0, NULL, NULL);
     test_error( err, "clEnqueueNDRangeKernel failed.");
 
