@@ -866,7 +866,7 @@ int test_write_image_formats( cl_device_id device, cl_context context, cl_comman
 
         if( retCode != 0 )
         {
-            gTestFailure++;
+            gFailCount++;
             log_error( "FAILED: " );
             print_write_header( &imageFormat, true );
             log_info( "\n" );

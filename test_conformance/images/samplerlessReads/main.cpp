@@ -178,19 +178,6 @@ int main(int argc, const char *argv[])
     // Restore FP state before leaving
     RestoreFPState(&oldMode);
 
-    if (gTestFailure == 0) {
-        if (gTestCount > 1)
-            log_info("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-        else
-            log_info("PASSED sub-test.\n");
-    }
-    else if (gTestFailure > 0) {
-        if (gTestCount > 1)
-            log_error("FAILED %d of %d sub-tests.\n", gTestFailure, gTestCount);
-        else
-            log_error("FAILED sub-test.\n");
-    }
-
     free(argList);
     return ret;
 }

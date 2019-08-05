@@ -171,7 +171,7 @@ int test_read_image_type( cl_device_id device, cl_context context, cl_command_qu
 
     if ( ret != 0 )
     {
-        gTestFailure++;
+        gFailCount++;
         log_error( "FAILED: " );
         print_read_header( format, imageSampler, true );
         log_info( "\n" );

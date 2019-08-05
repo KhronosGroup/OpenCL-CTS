@@ -123,11 +123,6 @@ exit:
         }
     }
 
-    if(gFailCount > 0)
-    {
-        vlog_error("FAILED %d sub-tests.\n", gFailCount);
-    }
-
     ReleaseCL();
     return error;
 }
