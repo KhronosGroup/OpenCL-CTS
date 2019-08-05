@@ -33,10 +33,6 @@ int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue qu
     memset( min_time, -1, sizeof( min_time ) );
     memset( min_double_time, -1, sizeof( min_double_time ) );
 
-    vlog( "Testing roundTrip\n" );
-    fflush( stdout );
-
-
     for( vectorSize = kMinVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
     {
         const char *source[] = {
@@ -300,7 +296,7 @@ int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue qu
         }
     }
 
-    vlog( "\tPassed\n" );
+    vlog( "\n" );
 
     loopCount = 100;
     if( gReportTimes )

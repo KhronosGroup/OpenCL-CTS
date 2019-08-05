@@ -73,8 +73,6 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
 
     memset( min_time, -1, sizeof( min_time ) );
 
-    vlog( "Testing vload%s_half\n", aligned ? "a" : "" );
-    fflush( stdout );
     const char *vector_size_names[]   = {"1", "2", "4", "8", "16", "3"};
 
     int minVectorSize = kMinVectorSize;
@@ -590,7 +588,7 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
         }
     }
 
-    vlog( "\tPassed\n" );
+    vlog( "\n" );
 
     if( gReportTimes )
     {
