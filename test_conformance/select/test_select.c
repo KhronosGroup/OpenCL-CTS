@@ -58,6 +58,8 @@ static int doTest(cl_command_queue queue, cl_context context,
 
 static void printUsage( void );
 
+static void TestFinishAtExit(void);
+
 //-----------------------------------------
 // Definitions and initializations
 //-----------------------------------------
@@ -573,8 +575,17 @@ test_definition test_list[] = {
 
 const int test_num = ARRAY_SIZE( test_list );
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
+    test_start();
+    atexit(TestFinishAtExit);
+
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        return EXIT_FAILURE;
+    }
+
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 
     if( NULL == argList )
@@ -652,4 +663,9 @@ static void printUsage( void )
     {
         log_info( "\t%s\n", test_list[i].name );
     }
+}
+
+static void TestFinishAtExit(void)
+{
+    test_finish();
 }
