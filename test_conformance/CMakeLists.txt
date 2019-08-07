@@ -1,6 +1,8 @@
 # Remember current source directory (`test_conformance').
 set( CLConf_Install_Base_Dir "${CMAKE_CURRENT_SOURCE_DIR}" )
 
+set(HARNESS_LIB harness)
+
 add_subdirectory( allocations )
 add_subdirectory( api )
 add_subdirectory( atomics )
