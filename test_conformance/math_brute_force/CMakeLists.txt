@@ -19,15 +19,6 @@ set(${MODULE_NAME}_SOURCES
     unary_two_results.c
     unary_two_results_i.c
     unary_u.c
-    ../../test_common/harness/rounding_mode.c
-    ../../test_common/harness/ThreadPool.c
-    ../../test_common/harness/mt19937.c
-    ../../test_common/harness/msvc9.c
-    ../../test_common/harness/parseParameters.cpp
-    ../../test_common/harness/kernelHelpers.c
-    ../../test_common/harness/errorHelpers.c
-    ../../test_common/harness/testHarness.c
-    ../../test_common/harness/crc32.c
 )
 
 
@@ -49,11 +40,6 @@ set_source_files_properties(
     unary_two_results_i.c unary_u.c
     COMPILE_FLAGS -msse2    )
 endif(NOT ANDROID)
-
-set_source_files_properties(
-    ${MODULE_NAME}_SOURCES
-    ../../test_common/harness/crc32.c
-    PROPERTIES LANGUAGE CXX)
 
 if (NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
 set_source_files_properties(

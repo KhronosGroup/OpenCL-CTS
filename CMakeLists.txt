@@ -170,6 +170,7 @@ elseif (CMAKE_BUILD_TYPE STREQUAL "debug")
 endif(CMAKE_BUILD_TYPE STREQUAL "release")
 
 
+add_subdirectory(test_common)
 add_subdirectory(test_conformance)
 
 set (PY_PATH   "${CLConform_SOURCE_DIR}/test_conformance/*.py")
