@@ -353,7 +353,7 @@ static std::string get_offline_compilation_command(const cl_uint device_address_
     return scriptToRunString;
 }
 
-static int invoke_offline_compiler(cl_context context,
+static int invoke_offline_compiler(const cl_device_id device,
                                    const cl_uint device_address_space_size,
                                    const CompilationMode compilationMode,
                                    const std::string &bOptions,
@@ -411,16 +411,9 @@ static cl_int get_first_device_id(const cl_context context, cl_device_id &device
     return CL_SUCCESS;
 }
 
-static cl_int get_first_device_address_bits(const cl_context context, cl_uint &device_address_space_size)
+static cl_int get_device_address_bits(const cl_device_id device, cl_uint &device_address_space_size)
 {
-    cl_device_id device;
-    cl_int error = get_first_device_id(context, device);
-    if (error != CL_SUCCESS)
-    {
-        return error;
-    }
-
-    error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &device_address_space_size, NULL);
+    cl_int error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &device_address_space_size, NULL);
     test_error(error, "Unable to obtain device address bits");
 
     if (device_address_space_size != 32 && device_address_space_size != 64)
@@ -434,6 +427,7 @@ static cl_int get_first_device_address_bits(const cl_context context, cl_uint &d
 
 static int get_offline_compiler_output(std::ifstream &ifs,
                                        cl_context context,
+                                       cl_device_id device,
                                        const std::string &kernel,
                                        const bool openclCXX,
                                        const CompilationMode compilationMode,
@@ -444,7 +438,7 @@ static int get_offline_compiler_output(std::ifstream &ifs,
 
     // Get device CL_DEVICE_ADDRESS_BITS
     cl_uint device_address_space_size = 0;
-    int error = get_first_device_address_bits(context, device_address_space_size);
+    int error = get_device_address_bits(device, device_address_space_size);
     if (error != CL_SUCCESS)
         return error;
 
@@ -487,7 +481,7 @@ static int get_offline_compiler_output(std::ifstream &ifs,
         ofs.write(kernel.c_str(), kernel.size());
         ofs.close();
 
-        error = invoke_offline_compiler(context, device_address_space_size, compilationMode,
+        error = invoke_offline_compiler(device, device_address_space_size, compilationMode,
                                         bOptions, sourceFilename, outputFilename, openclCXX);
         if (error != CL_SUCCESS)
             return error;
@@ -506,6 +500,7 @@ static int get_offline_compiler_output(std::ifstream &ifs,
 }
 
 static int create_single_kernel_helper_create_program_offline(cl_context context,
+                                                              cl_device_id device,
                                                               cl_program *outProgram,
                                                               unsigned int numKernelLines,
                                                               const char *const *kernelProgram,
@@ -523,8 +518,14 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
 
     kernelName = add_build_options(kernelName, buildOptions);
 
+    if (device == NULL)
+    {
+        error = get_first_device_id(context, device);
+        test_error(error, "Failed to get device ID for first device");
+    }
+
     std::ifstream ifs;
-    error = get_offline_compiler_output(ifs, context, kernel, openclCXX, compilationMode, bOptions, kernelName);
+    error = get_offline_compiler_output(ifs, context, device, kernel, openclCXX, compilationMode, bOptions, kernelName);
     if (error != CL_SUCCESS)
         return error;
 
@@ -551,10 +552,6 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
 
         ifs.read((char *)&modifiedKernelBuf[0], length);
         ifs.close();
-
-        cl_device_id device;
-        error = get_first_device_id(context, device);
-        test_error(error, "Failed to get device ID");
 
         size_t lengths = modifiedKernelBuf.size();
         const unsigned char *binaries = { &modifiedKernelBuf[0] };
@@ -590,6 +587,7 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
 }
 
 static int create_single_kernel_helper_create_program(cl_context context,
+                                                      cl_device_id device,
                                                       cl_program *outProgram,
                                                       unsigned int numKernelLines,
                                                       const char **kernelProgram,
@@ -612,9 +610,10 @@ static int create_single_kernel_helper_create_program(cl_context context,
     }
     else
     {
-        return create_single_kernel_helper_create_program_offline(context, outProgram, numKernelLines,
-                                                                  kernelProgram, buildOptions,
-                                                                  openclCXX, compilationMode);
+        return create_single_kernel_helper_create_program_offline(context, device, outProgram,
+                                                                  numKernelLines, kernelProgram,
+                                                                  buildOptions, openclCXX,
+                                                                  compilationMode);
     }
 }
 
@@ -625,9 +624,24 @@ int create_single_kernel_helper_create_program(cl_context context,
                                                const char *buildOptions,
                                                const bool openclCXX)
 {
-    return create_single_kernel_helper_create_program(context, outProgram, numKernelLines,
-                                                      kernelProgram, buildOptions,
-                                                      openclCXX, gCompilationMode);
+    return create_single_kernel_helper_create_program(context, NULL, outProgram,
+                                                      numKernelLines, kernelProgram,
+                                                      buildOptions, openclCXX,
+                                                      gCompilationMode);
+}
+
+int create_single_kernel_helper_create_program_for_device(cl_context context,
+                                                          cl_device_id device,
+                                                          cl_program *outProgram,
+                                                          unsigned int numKernelLines,
+                                                          const char **kernelProgram,
+                                                          const char *buildOptions,
+                                                          const bool openclCXX)
+{
+    return create_single_kernel_helper_create_program(context, device, outProgram,
+                                                      numKernelLines, kernelProgram,
+                                                      buildOptions, openclCXX,
+                                                      gCompilationMode);
 }
 
 int create_single_kernel_helper_with_build_options(cl_context context,
@@ -728,7 +742,7 @@ int create_openclcpp_program(cl_context context,
 {
     // Create program
     return create_single_kernel_helper_create_program(
-        context, outProgram, numKernelLines, kernelProgram, buildOptions, true, kSpir_v
+        context, NULL, outProgram, numKernelLines, kernelProgram, buildOptions, true, kSpir_v
     );
 }
 
