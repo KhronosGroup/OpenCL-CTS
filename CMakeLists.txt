@@ -5,6 +5,11 @@ set(CLConform_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 project(CLConform${CONFORMANCE_SUFFIX})
 
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if(CMAKE_BUILD_TYPE STREQUAL "release")
     set (BUILD_FLAVOR "release")
 else(CMAKE_BUILD_TYPE STREQUAL "release")
@@ -127,11 +132,11 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
     # to falsely fail. -ffloat-store also works, but WG suggested
     # that sse would be better.
     if(CMAKE_ARM_COMPILER OR ANDROID)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wno-narrowing")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wno-narrowing")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
     else(CMAKE_ARM_COMPILER OR ANDROID)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -msse -mfpmath=sse -Wno-narrowing")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -mfpmath=sse -std=gnu++11 -Wno-narrowing")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -mfpmath=sse -Wno-narrowing")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -mfpmath=sse -Wno-narrowing")
     endif(CMAKE_ARM_COMPILER OR ANDROID)
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D__SSE__")
