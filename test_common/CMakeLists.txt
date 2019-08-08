@@ -18,6 +18,7 @@ set(HARNESS_SOURCES
     harness/genericThread.cpp
     harness/imageHelpers.cpp
     harness/kernelHelpers.c
+    harness/deviceInfo.cpp
     harness/os_helpers.cpp
     harness/parseParameters.cpp
     harness/testHarness.c

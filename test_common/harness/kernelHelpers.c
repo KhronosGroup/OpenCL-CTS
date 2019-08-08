@@ -15,6 +15,7 @@
 //
 #include "crc32.h"
 #include "kernelHelpers.h"
+#include "deviceInfo.h"
 #include "errorHelpers.h"
 #include "imageHelpers.h"
 #include "typeWrappers.h"
@@ -1116,66 +1117,6 @@ int get_max_common_3D_work_group_size( cl_context context, cl_kernel kernel,
   }
 
     return 0;
-}
-
-/* Helper to allocate and return a buffer containing device information for the specified device info parameter */
-static void *alloc_and_get_device_info( cl_device_id device, cl_device_info param_name, const char *param_description )
-{
-    void *buffer;
-    size_t size = 0;
-    int err;
-
-    if(( err = clGetDeviceInfo(device, param_name, 0, NULL, &size) ))
-    {
-        log_error( "Error: failed to determine size of device %s at %s:%d (err = %d)\n",
-                   param_description, __FILE__, __LINE__, err );
-        return NULL;
-    }
-
-    if( 0 == size )
-        return NULL;
-
-    buffer = malloc( size );
-
-    if( NULL == buffer )
-    {
-        log_error( "Error: unable to allocate %zu byte buffer for device %s at %s:%d (err = %d)\n",
-                   size, param_description, __FILE__, __LINE__,  err );
-        return NULL;
-    }
-
-    if(( err = clGetDeviceInfo(device, param_name, size, buffer, NULL) ))
-    {
-        free(buffer);
-        log_error( "Error: failed to obtain device %s at %s:%d (err = %d)\n",
-                   param_description, __FILE__, __LINE__, err );
-        return NULL;
-    }
-
-    return buffer;
-}
-
-/* Helper to return a newly allocated C string containing the supported extensions list for a device */
-static char *alloc_and_get_device_extensions_string( cl_device_id device )
-{
-    return (char *) alloc_and_get_device_info( device, CL_DEVICE_EXTENSIONS, "extensions string" );
-}
-
-/* Helper to determine if an extension is supported by a device */
-int is_extension_available( cl_device_id device, const char *extensionName )
-{
-    char *extString = alloc_and_get_device_extensions_string( device );
-
-    if( NULL == extString )
-    {
-        /* An error message will have already been printed by alloc_and_get_device_info(),
-         * so we can just return, here. */
-        return 0;
-    }
-
-    BufferOwningPtr<char> extStringBuf(extString);
-
-    return strstr( extString, extensionName ) != NULL;
 }
 
 /* Helper to determine if a device supports an image format */
