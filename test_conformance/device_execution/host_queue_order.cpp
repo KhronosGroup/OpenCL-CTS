@@ -178,6 +178,9 @@ int test_host_queue_order(cl_device_id device, cl_context context, cl_command_qu
 
     if((k = check_kernel_results(result, num)) >= 0 && check_error(-1, "'%s' results validation failed: [%d] returned %d expected 0", "test_host_queue_order", k, result[k])) res = -1;
 
+    clReleaseEvent(kernel_event);
+    clReleaseEvent(event1);
+
     return res;
 }
 
