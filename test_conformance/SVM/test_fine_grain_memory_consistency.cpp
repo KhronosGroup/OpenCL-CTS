@@ -113,6 +113,7 @@ int launch_kernels_and_verify(clContextWrapper &context, clCommandQueueWrapper* 
     }
   }
 
+  clReleaseEvent(done);
   clSVMFree(context, pInputImage);
   clSVMFree(context, pNodes);
   clSVMFree(context, pNumNodes);
