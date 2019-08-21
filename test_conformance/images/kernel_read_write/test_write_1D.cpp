@@ -19,7 +19,6 @@
 #include <sys/mman.h>
 #endif
 
-#define MAX_ERR 0.005f
 
 extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding, gTestMipmaps;
 extern cl_filter_mode    gFilterModeToSkip;
@@ -307,7 +306,7 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
             int numTries = 5;
             {
                 char *resultPtr = (char *)resultValues;
-                for( size_t x = 0, i = 0; x < width_lod; x++, i++ )
+                for( size_t i = 0; i < width_lod; i++ )
                 {
                     char resultBuffer[ 16 ]; // Largest format would be 4 channels * 4 bytes (32 bits) each
 
@@ -358,26 +357,35 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
                     else if( imageInfo->format->image_channel_data_type == CL_FLOAT )
                     {
                         // Compare floats
-                        float *expected = (float *)resultBuffer;
-                        float *actual = (float *)resultPtr;
-                        float err = 0.f;
-                        for( unsigned int j = 0; j < get_format_channel_count( imageInfo->format ); j++ )
-                            err += ( expected[ j ] != 0 ) ? fabsf( ( expected[ j ] - actual[ j ] ) / expected[ j ] ) : fabsf( expected[ j ] - actual[ j ] );
-
-                        err /= (float)get_format_channel_count( imageInfo->format );
-                        if( err > MAX_ERR )
+                        if( memcmp( resultBuffer, resultPtr, 4 * get_format_channel_count( imageInfo->format ) ) != 0 )
                         {
-                            unsigned int *e = (unsigned int *)expected;
-                            unsigned int *a = (unsigned int *)actual;
-                            log_error( "ERROR: Sample %ld (%ld) did not validate! (%s)\n", i, x, mem_flag_names[mem_flag_index] );
-                            log_error( "       Error: %g\n", err );
-                            log_error( "       Expected: %a %a %a %a\n", expected[ 0 ], expected[ 1 ], expected[ 2 ], expected[ 3 ] );
-                            log_error( "       Expected: %08x %08x %08x %08x\n", e[ 0 ], e[ 1 ], e[ 2 ], e[ 3 ] );
-                            log_error( "       Actual:   %a %a %a %a\n", actual[ 0 ], actual[ 1 ], actual[ 2 ], actual[ 3 ] );
-                            log_error( "       Actual:   %08x %08x %08x %08x\n", a[ 0 ], a[ 1 ], a[ 2 ], a[ 3 ] );
-                            totalErrors++;
-                            if( ( --numTries ) == 0 )
-                                return 1;
+                            float *expected = (float *)resultBuffer;
+                            float *actual = (float *)resultPtr;
+                            int err_cnt = 0;
+
+                            // 8.3.3 Fix up cases where we have NaNs or flushed denorms; "all other values must be preserved"
+                            for( size_t j = 0; j < get_format_channel_count( imageInfo->format ); j++ )
+                            {
+                                if( isnan( expected[j] ) && isnan( actual[j] ) )
+                                    continue;
+                                if( IsFloatSubnormal( expected[j] ) && actual[j] == 0.0f )
+                                    continue;
+                                err_cnt++;
+                            }
+
+                            if( err_cnt )
+                            {
+                                unsigned int *e = (unsigned int *)expected;
+                                unsigned int *a = (unsigned int *)actual;
+                                log_error( "ERROR: Sample %ld did not validate! (%s)\n", i, mem_flag_names[mem_flag_index] );
+                                log_error( "       Expected: %a %a %a %a\n", expected[ 0 ], expected[ 1 ], expected[ 2 ], expected[ 3 ] );
+                                log_error( "       Expected: %08x %08x %08x %08x\n", e[ 0 ], e[ 1 ], e[ 2 ], e[ 3 ] );
+                                log_error( "       Actual:   %a %a %a %a\n", actual[ 0 ], actual[ 1 ], actual[ 2 ], actual[ 3 ] );
+                                log_error( "       Actual:   %08x %08x %08x %08x\n", a[ 0 ], a[ 1 ], a[ 2 ], a[ 3 ] );
+                                totalErrors++;
+                                if( ( --numTries ) == 0 )
+                                    return 1;
+                            }
                         }
                     }
                     else if( imageInfo->format->image_channel_data_type == CL_HALF_FLOAT )
@@ -389,19 +397,20 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
                             cl_ushort *a = (cl_ushort *)resultPtr;
                             int err_cnt = 0;
 
-                            //Fix up cases where we have NaNs
+                            // 8.3.2 Fix up cases where we have NaNs or generated half denormals
                             for( size_t j = 0; j < get_format_channel_count( imageInfo->format ); j++ )
                             {
-                                if( is_half_nan( e[j] ) && is_half_nan(a[j]) )
+                                if( is_half_nan( e[j] ) && is_half_nan( a[j] ) )
                                     continue;
-                                if( e[j] != a[j] )
-                                    err_cnt++;
+                                if( IsHalfSubnormal( e[j] ) && is_half_zero( a[j] ) )
+                                    continue;
+                                err_cnt++;
                             }
 
                             if( err_cnt )
                             {
                                 totalErrors++;
-                                log_error( "ERROR: Sample %ld (%ld) did not validate! (%s)\n", i, x, mem_flag_names[mem_flag_index] );
+                                log_error( "ERROR: Sample %ld did not validate! (%s)\n", i, mem_flag_names[mem_flag_index] );
                                 log_error( "    Expected: 0x%04x 0x%04x 0x%04x 0x%04x\n", e[0], e[1], e[2], e[3] );
                                 log_error( "    Actual:   0x%04x 0x%04x 0x%04x 0x%04x\n", a[0], a[1], a[2], a[3] );
                                 if( inputType == kFloat )
@@ -469,7 +478,7 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
                                     log_error( "       Rounding mode of device appears to be %s\n", deviceRounding );
                                     return 1;
                                 }
-                                log_error( "ERROR: Sample %d (%d) did not validate!\n", (int)i, (int)x );
+                                log_error( "ERROR: Sample %d did not validate!\n", (int)i );
                                 switch(imageInfo->format->image_channel_data_type)
                                 {
                                     case CL_UNORM_INT8:

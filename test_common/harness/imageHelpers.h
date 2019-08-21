@@ -631,7 +631,14 @@ protected:
 
 extern int  DetectFloatToHalfRoundingMode( cl_command_queue );  // Returns CL_SUCCESS on success
 
-int inline is_half_nan( cl_ushort half ){ return (half & 0x7fff) > 0x7c00; }
+// sign bit: don't care, exponent: maximum value, significand: non-zero
+int inline is_half_nan( cl_ushort half ){ return ( half & 0x7fff ) > 0x7c00; }
+
+// sign bit: don't care, exponent: zero, significand: non-zero
+int inline is_half_denorm( cl_ushort half ){ return ( ( half & 0x7c00 ) == 0 ) && ( ( half & 0x03ff ) > 0 ); }
+
+// sign bit: don't care, exponent: zero, significand: zero
+int inline is_half_zero( cl_ushort half ){ return ( half & 0x7fff ) == 0; }
 
 cl_ushort convert_float_to_half( cl_float f );
 cl_float  convert_half_to_float( cl_ushort h );
