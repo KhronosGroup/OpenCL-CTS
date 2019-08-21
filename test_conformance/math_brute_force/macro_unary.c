@@ -552,6 +552,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
     }
 
 exit:
+    cl_int ret = error;
     for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
     {
         if( (error = clEnqueueUnmapMemObject( tinfo->tQueue, tinfo->outBuf[j], out[j], 0, NULL, NULL)) )
@@ -562,7 +563,10 @@ exit:
     }
 
     if( (error = clFlush(tinfo->tQueue) ))
+    {
         vlog( "clFlush 3 failed\n" );
+        return error;
+    }
 
 
     if( 0 == ( base & 0x0fffffff) )
@@ -571,7 +575,7 @@ exit:
         fflush(stdout);
     }
 
-    return error;
+    return ret;
 }
 
 static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data );
