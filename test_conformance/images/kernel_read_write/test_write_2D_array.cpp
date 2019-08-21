@@ -72,7 +72,6 @@ int test_write_image_2D_array( cl_device_id device, cl_context context, cl_comma
         int error;
         size_t threads[3];
         bool verifyRounding = false;
-        int totalErrors = 0;
         int forceCorrectlyRoundedWrites = 0;
 
 #if defined( __APPLE__ )
