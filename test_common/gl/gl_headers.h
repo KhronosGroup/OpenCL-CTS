@@ -30,9 +30,8 @@
 #ifdef _WIN32
     #include <windows.h>
 #endif
-     #include <GL/glew.h>
+    #include <GL/glew.h>
     #include <GL/gl.h>
-     #include <GL/glext.h>
 #ifdef _WIN32
     #include <GL/glut.h>
 #else
