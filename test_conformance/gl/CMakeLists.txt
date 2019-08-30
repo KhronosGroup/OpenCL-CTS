@@ -7,7 +7,7 @@ if(WIN32)
 #   Include folder libs as cmake argument -DCLConform_GL_LIBRARIES_DIR=lib\x64 while solution generation 
 # - GL headers files should be added to project source directory and GL subdirectory
 # - Add .dll files: glut glew to the test binary location.
-    list(APPEND CLConform_LIBRARIES  glut32 opengl32 glu32)
+    list(APPEND CLConform_LIBRARIES opengl32 freeglut glew32)
 else(WIN32)
     list(APPEND CLConform_LIBRARIES  GL glut GLEW GLU)
 endif(WIN32)
