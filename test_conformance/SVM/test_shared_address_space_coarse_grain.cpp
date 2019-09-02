@@ -113,6 +113,48 @@ cl_int create_linked_lists_on_device(int ci, cl_command_queue cmdq, cl_mem alloc
   return error;
 }
 
+// According to OpenCL 2.2 section 4.2 and 5.6.1, coarse-grain SVM memory
+// consistency is guaranteed at synchronization points and the host must call
+// clEnqueueSVMMap/clEnqueueSVMUnmap or clEnqueueMapBuffer/clEnqueueUnmapMemObject
+// to update regions of the SVM buffer with the latest runtime view of the data
+// as seen by the command with which the map operation synchronizes.
+//
+// This function synchnorizes coarse-grain SVM buffers between two devices.
+// It first sync with commit queue(qc) and then sync with verify queue(qv).
+cl_int sync_coarse_grain_buffer_on_devices(cl_command_queue qc, cl_command_queue qv, cl_mem nodes, Node *pNodes, cl_mem nodes2, cl_int ListLength, size_t numLists)
+{
+  cl_int error = CL_SUCCESS;
+  for (int i = 0; i < 2; i++)
+  {
+    cl_command_queue cmdq = (i == 0) ? qc : qv;
+    cl_map_flags map_flags = (i == 0) ? CL_MAP_READ : CL_MAP_WRITE;
+    if (nodes)
+    {
+      Node *buffer = (Node*) clEnqueueMapBuffer(cmdq, nodes, CL_TRUE, map_flags, 0, sizeof(Node)*ListLength*numLists, 0, NULL,NULL, &error);
+      test_error2(error, buffer, "clEnqMapBuffer failed");
+      error = clEnqueueUnmapMemObject(cmdq, nodes, buffer, 0,NULL,NULL);
+      test_error(error, "clEnqueueUnmapMemObject failed.");
+    }
+    else
+    {
+      error = clEnqueueSVMMap(cmdq, CL_TRUE, map_flags, pNodes, sizeof(Node)*ListLength*numLists, 0, NULL,NULL);
+      test_error2(error, pNodes, "clEnqueueSVMMap failed");
+      error = clEnqueueSVMUnmap(cmdq, pNodes, 0, NULL, NULL);
+      test_error(error, "clEnqueueSVMUnmap failed.");
+    }
+    if (nodes2)
+    {
+      Node *buffer = (Node*) clEnqueueMapBuffer(cmdq, nodes2, CL_TRUE, map_flags, 0, sizeof(Node)*ListLength*numLists, 0, NULL,NULL, &error);
+      test_error2(error, buffer, "clEnqMapBuffer failed");
+      error = clEnqueueUnmapMemObject(cmdq, nodes2, buffer, 0,NULL,NULL);
+      test_error(error, "clEnqueueUnmapMemObject failed.");
+    }
+    error = clFinish(cmdq);
+    test_error(error, "clFinish failed");
+  }
+  return error;
+}
+
 cl_int verify_linked_lists_on_device(int vi, cl_command_queue cmdq,cl_mem num_correct, cl_kernel kernel_verify_lists, cl_int ListLength, size_t numLists  )
 {
   cl_int error = CL_SUCCESS;
@@ -250,6 +292,13 @@ int shared_address_space_coarse_grain(cl_device_id deviceID, cl_context context2
         {
           error = create_linked_lists_on_device(ci, queues[ci], allocator, kernel_create_lists, numLists);
           if(error) return -1;
+          // If ci and vi is the same device, sync is unnecessary.
+          // If vi is host, sync is done in verify_linked_lists_on_host.
+          if (ci != vi && vi != num_devices)
+          {
+            error = sync_coarse_grain_buffer_on_devices(queues[ci], queues[vi], nodes, pNodes, NULL, ListLength, numLists);
+            if(error) return -1;
+          }
         }
 
         if(vi == num_devices)

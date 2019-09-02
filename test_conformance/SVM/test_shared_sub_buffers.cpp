@@ -219,6 +219,13 @@ int test_svm_shared_sub_buffers(cl_device_id deviceID, cl_context context2, cl_c
         {
           error = create_linked_lists_on_device(ci, queues[ci], allocator, kernel_create_lists, numLists);
           if(error) return -1;
+          // If ci and vi is the same device, sync is unnecessary.
+          // If vi is host, sync is done in verify_linked_lists_on_host_sb.
+          if (ci != vi && vi != num_devices)
+          {
+            error = sync_coarse_grain_buffer_on_devices(queues[ci], queues[vi], nodes, pNodes, nodes2, ListLength, numLists);
+            if(error) return -1;
+          }
         }
 
         if(vi == num_devices)

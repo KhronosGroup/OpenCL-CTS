@@ -80,6 +80,8 @@ extern cl_int        verify_linked_lists_on_device(int qi, cl_command_queue q, c
 extern cl_int create_linked_lists_on_device_no_map(int qi, cl_command_queue q, size_t *pAllocator,   cl_kernel k, size_t numLists  );
 extern cl_int verify_linked_lists_on_device_no_map(int qi, cl_command_queue q, cl_int *pNum_correct, cl_kernel k, cl_int ListLength, size_t numLists  );
 
+extern cl_int sync_coarse_grain_buffer_on_devices(cl_command_queue qc, cl_command_queue qv, cl_mem nodes, Node *pNodes, cl_mem nodes2, cl_int ListLength, size_t numLists);
+
 extern int    test_svm_byte_granularity(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int    test_svm_set_kernel_exec_info_svm_ptrs(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int    test_svm_fine_grain_memory_consistency(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
