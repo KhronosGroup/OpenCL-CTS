@@ -828,19 +828,6 @@ int test_write_image_formats( cl_device_id device, cl_context context, cl_comman
         if( filterFlags[ i ] )
             continue;
 
-        if (is_sRGBA_order(imageFormat.image_channel_order))
-        {
-            if( !is_extension_available( device, "cl_khr_srgb_image_writes" ))
-            {
-                log_missing_feature( "-----------------------------------------------------\n" );
-                log_missing_feature( "WARNING!!! sRGB formats are shown in the supported write-format list.\n");
-                log_missing_feature( "However the extension cl_khr_srgb_image_writes is not available.\n");
-                log_missing_feature( "Please make sure the extension is officially supported by the device .\n");
-                log_missing_feature( "-----------------------------------------------------\n\n" );
-                continue;
-            }
-        }
-
         gTestCount++;
 
         print_write_header( &imageFormat, false );
