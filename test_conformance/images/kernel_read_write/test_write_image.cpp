@@ -88,7 +88,6 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
         int error;
         size_t threads[2];
         bool verifyRounding = false;
-        int totalErrors = 0;
         int forceCorrectlyRoundedWrites = 0;
 
 #if defined( __APPLE__ )
