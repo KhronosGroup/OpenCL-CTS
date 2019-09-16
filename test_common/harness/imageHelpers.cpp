@@ -3287,6 +3287,7 @@ char *create_random_image_data( ExplicitType dataType, image_descriptor *imageIn
                     }
                     break;
             }
+            break;
         }
 
         case kInt:
