@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../../test_common/harness/compat.h"
+#include "../harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -24,8 +24,8 @@
 #endif
 
 #include "../testBase.h"
-#include "../../../test_common/harness/fpcontrol.h"
-#include "../../../test_common/harness/parseParameters.h"
+#include "../harness/fpcontrol.h"
+#include "../harness/parseParameters.h"
 
 #include <vector>
 
@@ -442,18 +442,6 @@ int main(int argc, const char *argv[])
 
     // Restore FP state before leaving
     RestoreFPState(&oldMode);
-
-    if (gTestFailure == 0) {
-        if (gTestCount > 1)
-            log_info("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-        else
-            log_info("PASSED sub-test.\n");
-    } else if (gTestFailure > 0) {
-        if (gTestCount > 1)
-            log_error("FAILED %d of %d sub-tests.\n", gTestFailure, gTestCount);
-        else
-            log_error("FAILED sub-test.\n");
-    }
 
     free(argList);
     return ret;

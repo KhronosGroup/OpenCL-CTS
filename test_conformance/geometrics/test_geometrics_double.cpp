@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
+#include "harness/errorHelpers.h"
 
 const char *crossKernelSource_double =
 "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"

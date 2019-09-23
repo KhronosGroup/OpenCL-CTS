@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -22,8 +22,8 @@
 
 
 #include "procs.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
 
 #define DECLARE_S2V_IDENT_KERNEL(srctype,dsttype,size) \
 "__kernel void test_conversion(__global " srctype " *sourceValues, __global " dsttype #size " *destValues )\n"        \

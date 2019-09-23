@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/os_helpers.h"
+#include "harness/os_helpers.h"
 
 extern cl_uint gRandomSeed;
 

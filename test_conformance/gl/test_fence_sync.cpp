@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/gl/setup.h"
-#include "../../test_common/harness/genericThread.h"
+#include "gl/setup.h"
+#include "harness/genericThread.h"
 
 #if defined( __APPLE__ )
 #include <OpenGL/glu.h>

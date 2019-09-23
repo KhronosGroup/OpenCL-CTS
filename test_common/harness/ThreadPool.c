@@ -446,6 +446,7 @@ void ThreadPool_Init(void)
     // Check for manual override of multithreading code. We add this for better debuggability.
     if( getenv( "CL_TEST_SINGLE_THREADED" ) )
     {
+        log_error("ERROR: CL_TEST_SINGLE_THREADED is set in the environment. Running single threaded.\n*** TEST IS INVALID! ***\n");
         gThreadCount = 1;
         return;
     }

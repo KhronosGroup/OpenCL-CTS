@@ -64,6 +64,8 @@ typedef enum test_status
     TEST_SKIP = 2,
 } test_status;
 
+extern int gFailCount;
+extern int gTestCount;
 extern cl_uint gReSeed;
 extern cl_uint gRandomSeed;
 

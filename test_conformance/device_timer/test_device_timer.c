@@ -15,8 +15,8 @@
 //
 #include <stdio.h>
 #include <CL/cl.h>
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/compat.h"
+#include "harness/errorHelpers.h"
+#include "harness/compat.h"
 
 #if !defined(_WIN32)
     #include "unistd.h" // For "sleep"

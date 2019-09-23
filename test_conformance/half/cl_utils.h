@@ -16,8 +16,8 @@
 #ifndef CL_UTILS_H
 #define  CL_UTILS_H
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/compat.h"
+#include "harness/testHarness.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 
@@ -29,9 +29,9 @@
 #ifdef __MINGW32__
 #define __mingw_printf printf
 #endif
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 
-#include "../../test_common/harness/ThreadPool.h"
+#include "harness/ThreadPool.h"
 
 
 
@@ -66,7 +66,6 @@ extern uint32_t        gDeviceFrequency;
 extern uint32_t        gComputeDevices;
 extern size_t          gMaxThreadGroupSize;
 extern size_t          gWorkGroupSize;
-extern int             gFailCount;
 extern int             gTestDouble;
 extern int             gReportTimes;
 

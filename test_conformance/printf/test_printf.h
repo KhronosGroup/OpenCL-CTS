@@ -16,7 +16,7 @@
 #ifndef TESTPRINTF_INCLUDED_H
 #define TESTPRINTF_INCLUDED_H
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>

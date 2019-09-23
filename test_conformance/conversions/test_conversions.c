@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/rounding_mode.h"
-#include "../../test_common/harness/ThreadPool.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/compat.h"
+#include "harness/rounding_mode.h"
+#include "harness/ThreadPool.h"
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
+#include "harness/parseParameters.h"
 #if !defined(_WIN32) && !defined(__ANDROID__)
 #include <sys/sysctl.h>
 #endif
@@ -54,7 +54,7 @@
 
 #if (defined(_WIN32) && defined (_MSC_VER))
 // need for _controlfp_s and rouinding modes in RoundingMode
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #endif
 
 #pragma mark -
@@ -78,8 +78,6 @@ int             argCount = 0;
 cl_context      gContext = NULL;
 cl_command_queue      gQueue = NULL;
 char            appName[64] = "ctest";
-int             gTestCount = 0;
-int             gFailCount = 0;
 int             gStartTestNumber = -1;
 int             gEndTestNumber = 0;
 #if defined( __APPLE__ )
@@ -326,12 +324,6 @@ int main (int argc, const char **argv )
     error = clFinish(gQueue);
     if (error)
         vlog_error("clFinish failed: %d\n", error);
-
-    if (gFailCount == 0 && gTestCount >= 0) {
-        vlog("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-    } else if (gFailCount > 0) {
-        vlog_error("FAILED %d of %d sub-tests.\n", gFailCount, gTestCount);
-    }
 
     clReleaseMemObject(gInBuffer);
 

@@ -37,6 +37,7 @@ enum CompilationCacheMode
 extern CompilationMode gCompilationMode;
 extern CompilationCacheMode gCompilationCacheMode;
 extern std::string gCompilationCachePath;
+extern std::string gCompilationProgram;
 
 extern int parseCustomParam (int argc, const char *argv[], const char *ignore = 0 );
 

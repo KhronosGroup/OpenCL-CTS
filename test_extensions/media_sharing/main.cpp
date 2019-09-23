@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #include "utils.h"
 #include "procs.h"
 

@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "../../test_common/harness/rounding_mode.h"
+#include "harness/rounding_mode.h"
 
 #include "procs.h"
 
@@ -91,8 +91,14 @@ test_enqueued_local_size(cl_device_id device, cl_context context, cl_command_que
 
     globalsize[0] = (size_t)num_elements;
     globalsize[1] = (size_t)num_elements;
-    localsize[0] = 16;
-    localsize[1] = 11;
+
+    size_t max_wgs;
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_wgs), &max_wgs, NULL);
+    test_error( err, "clGetDeviceInfo failed.");
+
+    localsize[0] = MIN(16, max_wgs);
+    localsize[1] = MIN(11, max_wgs / localsize[0]);
+
     err = clEnqueueNDRangeKernel(queue, kernel[1], 2, NULL, globalsize, localsize, 0, NULL, NULL);
     test_error( err, "clEnqueueNDRangeKernel failed.");
 

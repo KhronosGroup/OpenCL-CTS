@@ -17,7 +17,7 @@
 #define __EXCEPTIONS_H
 
 #include <stdexcept>
-#include "../../test_common/miniz/miniz.h"
+#include "miniz/miniz.h"
 
 namespace Exceptions
 {

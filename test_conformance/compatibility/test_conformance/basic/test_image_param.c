@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -22,9 +22,9 @@
 
 
 #include "procs.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/imageHelpers.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/imageHelpers.h"
+#include "harness/conversions.h"
 
 
 static const char *param_kernel[] = {

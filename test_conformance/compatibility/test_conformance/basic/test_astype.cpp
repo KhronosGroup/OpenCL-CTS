@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,8 +24,8 @@
 
 
 #include "procs.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
 
 
 static const char *astype_kernel_pattern =

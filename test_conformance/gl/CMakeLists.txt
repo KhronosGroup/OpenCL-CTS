@@ -23,17 +23,6 @@ set (GL_SOURCES
     test_fence_sync.cpp
     helpers.cpp
     ../../test_common/gl/helpers.cpp
-    ../../test_common/harness/genericThread.cpp
-    ../../test_common/harness/errorHelpers.c
-    ../../test_common/harness/threadTesting.c
-    ../../test_common/harness/testHarness.c
-    ../../test_common/harness/kernelHelpers.c
-    ../../test_common/harness/mt19937.c
-    ../../test_common/harness/conversions.c
-    ../../test_common/harness/msvc9.c
-    ../../test_common/harness/parseParameters.cpp
-    ../../test_common/harness/crc32.c
-    ../../test_common/harness/imageHelpers.cpp
     )
 
 if (WIN32)
@@ -74,5 +63,5 @@ set_source_files_properties(
 target_include_directories(conformance_test_gl
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-TARGET_LINK_LIBRARIES(conformance_test_gl
+TARGET_LINK_LIBRARIES(conformance_test_gl harness
         ${CLConform_LIBRARIES})

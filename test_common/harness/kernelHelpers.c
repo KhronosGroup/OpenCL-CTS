@@ -15,6 +15,7 @@
 //
 #include "crc32.h"
 #include "kernelHelpers.h"
+#include "deviceInfo.h"
 #include "errorHelpers.h"
 #include "imageHelpers.h"
 #include "typeWrappers.h"
@@ -37,6 +38,19 @@ std::string slash = "\\";
 #else
 std::string slash = "/";
 #endif
+
+static cl_int get_first_device_id(const cl_context context, cl_device_id &device);
+
+long get_file_size(const std::string &fileName)
+{
+    std::ifstream ifs(fileName.c_str(), std::ios::binary);
+    if (!ifs.good())
+        return 0;
+    // get length of file:
+    ifs.seekg(0, std::ios::end);
+    std::ios::pos_type length = ifs.tellg();
+    return static_cast<long>(length);
+}
 
 static std::string get_kernel_content(unsigned int numKernelLines, const char *const *kernelProgram)
 {
@@ -140,6 +154,9 @@ static std::string get_offline_compilation_file_type_str(const CompilationMode c
     switch (compilationMode)
     {
         default:
+            assert(0 && "Invalid compilation mode");
+            abort();
+        case kOnline:
             assert(0 && "Invalid compilation mode for offline compilation");
             abort();
         case kBinary:
@@ -274,6 +291,23 @@ static int save_kernel_source_and_options_to_disk(unsigned int numKernelLines,
     return error;
 }
 
+static std::string get_compilation_mode_str(const CompilationMode compilationMode)
+{
+    switch (compilationMode)
+    {
+        default:
+            assert(0 && "Invalid compilation mode");
+            abort();
+        case kOnline:
+            return "online";
+        case kBinary:
+            return "binary";
+        case kSpir_v:
+            return "spir-v";
+    }
+}
+
+#ifdef KHRONOS_OFFLINE_COMPILER
 static std::string get_khronos_compiler_command(const cl_uint device_address_space_size,
                                                 const bool openclCXX,
                                                 const std::string &bOptions,
@@ -321,83 +355,120 @@ static std::string get_khronos_compiler_command(const cl_uint device_address_spa
 
     return runString;
 }
+#endif // KHRONOS_OFFLINE_COMPILER
+
+static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint device_address_space_size,
+                                     const CompilationMode compilationMode, std::string &clDeviceInfo)
+{
+    char *extensionsString = alloc_and_get_device_extensions_string(device);
+    if ( NULL == extensionsString )
+    {
+        /* An error message will have already been printed by alloc_and_get_device_info(),
+         * so we can just return, here. */
+        return -1;
+    }
+
+    BufferOwningPtr<char> extensionsStringBuf(extensionsString);
+
+    char *versionString = alloc_and_get_device_version_string(device);
+    if ( NULL == versionString )
+    {
+        /* An error message will have already been printed by alloc_and_get_device_info(),
+         * so we can just return, here. */
+        return -1;
+    }
+
+    BufferOwningPtr<char> versionStringBuf(versionString);
+
+    std::ostringstream clDeviceInfoStream;
+    std::string file_type = get_offline_compilation_file_type_str(compilationMode);
+    clDeviceInfoStream << "# OpenCL device info affecting " << file_type << " offline compilation:" << std::endl
+                       << "CL_DEVICE_ADDRESS_BITS=" << device_address_space_size << std::endl
+                       << "CL_DEVICE_EXTENSIONS=\"" << extensionsString << "\"" << std::endl;
+    /* We only need the device's supported IL version(s) when compiling IL
+     * that will be loaded with clCreateProgramWithIL() */
+    if (compilationMode == kSpir_v)
+    {
+        char *ilVersionString = alloc_and_get_device_il_version_string(device);
+        if ( NULL == ilVersionString )
+        {
+            /* An error message will have already been printed by alloc_and_get_device_info(),
+             * so we can just return, here. */
+            return -1;
+        }
+
+        BufferOwningPtr<char> versionStringBuf(ilVersionString);
+
+        clDeviceInfoStream << "CL_DEVICE_IL_VERSION=\"" << ilVersionString << "\"" << std::endl;
+    }
+    clDeviceInfoStream << "CL_DEVICE_VERSION=\"" << versionString << "\"" << std::endl;
+
+    clDeviceInfo = clDeviceInfoStream.str();
+    return CL_SUCCESS;
+}
+
+static int write_cl_device_info(const cl_device_id device, const cl_uint device_address_space_size,
+                                const CompilationMode compilationMode, std::string &clDeviceInfoFilename)
+{
+    std::string clDeviceInfo;
+    int error = get_cl_device_info_str(device, device_address_space_size, compilationMode, clDeviceInfo);
+    if (error != CL_SUCCESS)
+    {
+        return error;
+    }
+
+    cl_uint crc = crc32(clDeviceInfo.data(), clDeviceInfo.size());
+
+    /* Get the filename for the clDeviceInfo file.
+     * Note: the file includes the hash on its content, so it is usually unnecessary to delete it. */
+    std::ostringstream clDeviceInfoFilenameStream;
+    clDeviceInfoFilenameStream << gCompilationCachePath << slash << "clDeviceInfo-";
+    clDeviceInfoFilenameStream << std::hex << std::setfill('0') << std::setw(8) << crc << ".txt";
+
+    clDeviceInfoFilename = clDeviceInfoFilenameStream.str();
+
+    if ((size_t) get_file_size(clDeviceInfoFilename) == clDeviceInfo.size())
+    {
+        /* The CL device info file has already been created.
+         * Nothing to do. */
+        return 0;
+    }
+
+    /* The file does not exist or its length is not as expected.  Create/overwrite it. */
+    std::ofstream ofs(clDeviceInfoFilename);
+    if (!ofs.good())
+    {
+        log_info("OfflineCompiler: can't create CL device info file: %s\n", clDeviceInfoFilename.c_str());
+        return -1;
+    }
+    ofs << clDeviceInfo;
+    ofs.close();
+
+    return CL_SUCCESS;
+}
 
 static std::string get_offline_compilation_command(const cl_uint device_address_space_size,
                                                    const CompilationMode compilationMode,
                                                    const std::string &bOptions,
                                                    const std::string &sourceFilename,
-                                                   const std::string &outputFilename)
+                                                   const std::string &outputFilename,
+                                                   const std::string &clDeviceInfoFilename)
 {
-    std::ostringstream size_t_width_stream;
-    size_t_width_stream << device_address_space_size;
-    std::string size_t_width_str = size_t_width_stream.str();
+    std::ostringstream wrapperOptions;
 
-    // set output type and default script
-    std::string outputTypeStr;
-    std::string defaultScript;
-    if (compilationMode == kBinary)
+    wrapperOptions << gCompilationProgram
+                   << " --mode=" << get_compilation_mode_str(compilationMode)
+                   << " --source=" << sourceFilename
+                   << " --output=" << outputFilename
+                   << " --cl-device-info=" << clDeviceInfoFilename;
+
+    if (bOptions != "")
     {
-        outputTypeStr = "binary";
-        #if defined(_WIN32)
-        defaultScript = "..\\build_script_binary.py ";
-        #else
-        defaultScript = "../build_script_binary.py ";
-        #endif
-    }
-    else if (compilationMode == kSpir_v)
-    {
-        outputTypeStr = "spir_v";
-        #if defined(_WIN32)
-        defaultScript = "..\\build_script_spirv.py ";
-        #else
-        defaultScript = "../build_script_spirv.py ";
-        #endif
+        // Add build options passed to this function
+        wrapperOptions << " -- " << bOptions;
     }
 
-    // set script arguments
-    std::string scriptArgs = sourceFilename + " " + outputFilename + " " + size_t_width_str + " " + outputTypeStr;
-
-    if (!bOptions.empty())
-    {
-        //search for 2.0 build options
-        std::string oclVersion;
-        std::string buildOptions20 = "-cl-std=CL2.0";
-        std::size_t found = bOptions.find(buildOptions20);
-
-        if (found != std::string::npos)
-            oclVersion = "20";
-        else
-            oclVersion = "12";
-
-        std::string bOptionsWRemovedStd20 = bOptions;
-
-        std::string::size_type i = bOptions.find(buildOptions20);
-
-        if (i != std::string::npos)
-            bOptionsWRemovedStd20.erase(i, buildOptions20.length());
-
-        //remove space before -cl-std=CL2.0 if it was first build option
-        size_t spacePos = bOptionsWRemovedStd20.find_last_of(" \t\r\n", i);
-        if (spacePos != std::string::npos && i == 0)
-            bOptionsWRemovedStd20.erase(spacePos, sizeof(char));
-
-        //remove space after -cl-std=CL2.0
-        spacePos = bOptionsWRemovedStd20.find_first_of(" \t\r\n", i - 1);
-        if (spacePos != std::string::npos)
-            bOptionsWRemovedStd20.erase(spacePos, sizeof(char));
-
-        if (!bOptionsWRemovedStd20.empty())
-            scriptArgs += " " + oclVersion + " \"" + bOptionsWRemovedStd20 + "\"";
-        else
-            scriptArgs += " " + oclVersion;
-    }
-    else
-        scriptArgs += " 12";
-
-    // set script command line
-    std::string scriptToRunString = defaultScript + scriptArgs;
-
-    return scriptToRunString;
+    return wrapperOptions.str();
 }
 
 static int invoke_offline_compiler(const cl_uint device_address_space_size,
@@ -414,14 +485,34 @@ static int invoke_offline_compiler(const cl_uint device_address_space_size,
         log_error("CL C++ compilation is not possible: KHRONOS_OFFLINE_COMPILER was not defined.\n");
         return CL_INVALID_OPERATION;
 #else
+        if (compilationMode != kSpir_v)
+        {
+            log_error("Compilation mode must be SPIR-V for Khronos compiler");
+            return -1;
+        }
         runString = get_khronos_compiler_command(device_address_space_size, openclCXX, bOptions,
-                                        sourceFilename, outputFilename);
+                                                 sourceFilename, outputFilename);
 #endif
     }
     else
     {
+        std::string clDeviceInfoFilename;
+
+        // See cl_offline_compiler-interface.txt for a description of the
+        // format of the CL device information file generated below, and
+        // the internal command line interface for invoking the offline
+        // compiler.
+
+        cl_int err = write_cl_device_info(device, device_address_space_size, compilationMode,
+                                          clDeviceInfoFilename);
+        if (err != CL_SUCCESS)
+        {
+            log_error("Failed writing CL device info file\n");
+            return err;
+        }
+
         runString = get_offline_compilation_command(device_address_space_size, compilationMode, bOptions,
-                                        sourceFilename, outputFilename);
+                                                    sourceFilename, outputFilename, clDeviceInfoFilename);
     }
 
     // execute script
@@ -457,16 +548,9 @@ static cl_int get_first_device_id(const cl_context context, cl_device_id &device
     return CL_SUCCESS;
 }
 
-static cl_int get_first_device_address_bits(const cl_context context, cl_uint &device_address_space_size)
+static cl_int get_device_address_bits(const cl_device_id device, cl_uint &device_address_space_size)
 {
-    cl_device_id device;
-    cl_int error = get_first_device_id(context, device);
-    if (error != CL_SUCCESS)
-    {
-        return error;
-    }
-
-    error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &device_address_space_size, NULL);
+    cl_int error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &device_address_space_size, NULL);
     test_error(error, "Unable to obtain device address bits");
 
     if (device_address_space_size != 32 && device_address_space_size != 64)
@@ -494,7 +578,7 @@ static int get_offline_compiler_output(std::ifstream &ifs,
 
     ifs.open(outputFilename.c_str(), std::ios::binary);
     if(!ifs.good()) {
-        std::string file_type = get_offline_compilation_file_type_str(compilationMode);
+       std::string file_type = get_offline_compilation_file_type_str(compilationMode);
         if (gCompilationCacheMode == kCacheModeForceRead) {
             log_info("OfflineCompiler: can't open cached %s file: %s\n",
                      file_type.c_str(), outputFilename.c_str());
@@ -514,12 +598,13 @@ static int get_offline_compiler_output(std::ifstream &ifs,
                          file_type.c_str(), outputFilename.c_str());
                 return -1;
             }
-        }
+       }
     }
     return CL_SUCCESS;
 }
 
 static int create_single_kernel_helper_create_program_offline(cl_context context,
+                                                              cl_device_id device,
                                                               cl_program *outProgram,
                                                               unsigned int numKernelLines,
                                                               const char *const *kernelProgram,
@@ -547,10 +632,16 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
                                                         buildOptions);
 
 
+    if (device == NULL)
+    {
+        error = get_first_device_id(context, device);
+        test_error(error, "Failed to get device ID for first device");
+    }
+
     std::ifstream ifs;
     error = get_offline_compiler_output(ifs, device_address_space_size, openclCXX, compilationMode, bOptions, gCompilationCachePath, kernelName);
     if (error != CL_SUCCESS)
-        return error;
+      return error;
 
     // -----------------------------------------------------------------------------------
     // ------------- ONLY FOR OPENCL 22 CONFORMANCE TEST 22 DEVELOPMENT ------------------
@@ -575,10 +666,6 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
 
         ifs.read((char *)&modifiedKernelBuf[0], length);
         ifs.close();
-
-        cl_device_id device;
-        error = get_first_device_id(context, device);
-        test_error(error, "Failed to get device ID");
 
         size_t lengths = modifiedKernelBuf.size();
         const unsigned char *binaries = { &modifiedKernelBuf[0] };
@@ -614,6 +701,7 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
 }
 
 static int create_single_kernel_helper_create_program(cl_context context,
+                                                      cl_device_id device,
                                                       cl_program *outProgram,
                                                       unsigned int numKernelLines,
                                                       const char **kernelProgram,
@@ -652,9 +740,10 @@ static int create_single_kernel_helper_create_program(cl_context context,
     }
     else
     {
-        return create_single_kernel_helper_create_program_offline(context, outProgram, numKernelLines,
-                                                                  kernelProgram, buildOptions,
-                                                                  openclCXX, compilationMode);
+        return create_single_kernel_helper_create_program_offline(context, device, outProgram,
+                                                                  numKernelLines, kernelProgram,
+                                                                  buildOptions, openclCXX,
+                                                                  compilationMode);
     }
 }
 
@@ -665,9 +754,24 @@ int create_single_kernel_helper_create_program(cl_context context,
                                                const char *buildOptions,
                                                const bool openclCXX)
 {
-    return create_single_kernel_helper_create_program(context, outProgram, numKernelLines,
-                                                      kernelProgram, buildOptions,
-                                                      openclCXX, gCompilationMode);
+    return create_single_kernel_helper_create_program(context, NULL, outProgram,
+                                                      numKernelLines, kernelProgram,
+                                                      buildOptions, openclCXX,
+                                                      gCompilationMode);
+}
+
+int create_single_kernel_helper_create_program_for_device(cl_context context,
+                                                          cl_device_id device,
+                                                          cl_program *outProgram,
+                                                          unsigned int numKernelLines,
+                                                          const char **kernelProgram,
+                                                          const char *buildOptions,
+                                                          const bool openclCXX)
+{
+    return create_single_kernel_helper_create_program(context, device, outProgram,
+                                                      numKernelLines, kernelProgram,
+                                                      buildOptions, openclCXX,
+                                                      gCompilationMode);
 }
 
 int create_single_kernel_helper_with_build_options(cl_context context,
@@ -768,7 +872,7 @@ int create_openclcpp_program(cl_context context,
 {
     // Create program
     return create_single_kernel_helper_create_program(
-        context, outProgram, numKernelLines, kernelProgram, buildOptions, true, kSpir_v
+        context, NULL, outProgram, numKernelLines, kernelProgram, buildOptions, true, kSpir_v
     );
 }
 
@@ -1142,66 +1246,6 @@ int get_max_common_3D_work_group_size( cl_context context, cl_kernel kernel,
   }
 
     return 0;
-}
-
-/* Helper to allocate and return a buffer containing device information for the specified device info parameter */
-static void *alloc_and_get_device_info( cl_device_id device, cl_device_info param_name, const char *param_description )
-{
-    void *buffer;
-    size_t size = 0;
-    int err;
-
-    if(( err = clGetDeviceInfo(device, param_name, 0, NULL, &size) ))
-    {
-        log_error( "Error: failed to determine size of device %s at %s:%d (err = %d)\n",
-                   param_description, __FILE__, __LINE__, err );
-        return NULL;
-    }
-
-    if( 0 == size )
-        return NULL;
-
-    buffer = malloc( size );
-
-    if( NULL == buffer )
-    {
-        log_error( "Error: unable to allocate %zu byte buffer for device %s at %s:%d (err = %d)\n",
-                   size, param_description, __FILE__, __LINE__,  err );
-        return NULL;
-    }
-
-    if(( err = clGetDeviceInfo(device, param_name, size, buffer, NULL) ))
-    {
-        free(buffer);
-        log_error( "Error: failed to obtain device %s at %s:%d (err = %d)\n",
-                   param_description, __FILE__, __LINE__, err );
-        return NULL;
-    }
-
-    return buffer;
-}
-
-/* Helper to return a newly allocated C string containing the supported extensions list for a device */
-static char *alloc_and_get_device_extensions_string( cl_device_id device )
-{
-    return (char *) alloc_and_get_device_info( device, CL_DEVICE_EXTENSIONS, "extensions string" );
-}
-
-/* Helper to determine if an extension is supported by a device */
-int is_extension_available( cl_device_id device, const char *extensionName )
-{
-    char *extString = alloc_and_get_device_extensions_string( device );
-
-    if( NULL == extString )
-    {
-        /* An error message will have already been printed by alloc_and_get_device_info(),
-         * so we can just return, here. */
-        return 0;
-    }
-
-    BufferOwningPtr<char> extStringBuf(extString);
-
-    return strstr( extString, extensionName ) != NULL;
 }
 
 /* Helper to determine if a device supports an image format */

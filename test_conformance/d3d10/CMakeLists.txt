@@ -25,15 +25,6 @@ set(D3D10_SOURCES
     misc.cpp
     main.cpp
     harness.cpp
-    ../../test_common/harness/errorHelpers.c
-    ../../test_common/harness/threadTesting.c
-    ../../test_common/harness/testHarness.c
-    ../../test_common/harness/kernelHelpers.c
-    ../../test_common/harness/mt19937.c
-    ../../test_common/harness/conversions.c
-    ../../test_common/harness/msvc9.c
-    ../../test_common/harness/parseParameters.cpp
-    ../../test_common/harness/crc32.c
 )
 
 add_executable(conformance_test_d3d10
@@ -43,7 +34,7 @@ set_source_files_properties(
     ${D3D10_SOURCES}
     PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_d3d10
+TARGET_LINK_LIBRARIES(conformance_test_d3d10 harness
     ${CLConform_LIBRARIES})
 
 endif(WIN32)

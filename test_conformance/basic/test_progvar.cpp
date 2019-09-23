@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 // Bug: Missing in spec: atomic_intptr_t is always supported if device is 32-bits.
 // Bug: Missing in spec: CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE
@@ -45,9 +45,9 @@
 #include <cassert>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/typeWrappers.h"
+#include "harness/errorHelpers.h"
+#include "harness/mt19937.h"
 #include "procs.h"
 
 

@@ -16,11 +16,13 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/compat.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
+#include <vector>
+#include <string>
 
 #if (defined(_WIN32) || defined(_WIN64)) && defined(_MSC_VER)
     #include <windows.h>
@@ -94,7 +96,7 @@ extern int    test_svm_shared_sub_buffers(cl_device_id deviceID, cl_context cont
 extern int    test_svm_enqueue_api(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int    test_svm_migrate(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeString, cl_context* context, cl_program *program, cl_command_queue *queues, cl_uint *num_devices, cl_device_svm_capabilities required_svm_caps);
+extern cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeString, cl_context* context, cl_program *program, cl_command_queue *queues, cl_uint *num_devices, cl_device_svm_capabilities required_svm_caps, std::vector<std::string> extensions_list = std::vector<std::string>());
 
 extern const char *linked_list_create_and_verify_kernels[];
 

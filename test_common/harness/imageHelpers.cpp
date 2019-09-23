@@ -22,8 +22,6 @@
 #include <malloc.h>
 #endif
 
-int gTestCount = 0;
-int gTestFailure = 0;
 RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
 
 static cl_ushort float2half_rte( float f );
@@ -3289,6 +3287,7 @@ char *create_random_image_data( ExplicitType dataType, image_descriptor *imageIn
                     }
                     break;
             }
+            break;
         }
 
         case kInt:
@@ -3719,8 +3718,6 @@ bool check_minimum_supported( cl_image_format *formatList, unsigned int numForma
         {
             log_error( "ERROR: Format required by OpenCL 1.0 is not supported: " );
             print_header( &formatsToTest[ i ], true );
-            gTestCount++;
-            gTestFailure++;
             passed = false;
         }
     }

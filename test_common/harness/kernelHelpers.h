@@ -37,6 +37,8 @@
     #include <CL/opencl.h>
 #endif
 
+#include "deviceInfo.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -89,6 +91,14 @@ extern int create_single_kernel_helper_create_program(cl_context context,
                                                       const char *buildOptions = NULL,
                                                       const bool openclCXX = false);
                                                       
+extern int create_single_kernel_helper_create_program_for_device(cl_context context,
+                                                                 cl_device_id device,
+                                                                 cl_program *outProgram,
+                                                                 unsigned int numKernelLines,
+                                                                 const char **kernelProgram,
+                                                                 const char *buildOptions = NULL,
+                                                                 const bool openclCXX = false);
+
 /* Creates OpenCL C++ program. This one must be used for creating OpenCL C++ program. */
 extern int create_openclcpp_program(cl_context context, 
                                     cl_program *outProgram,
@@ -122,9 +132,6 @@ extern int get_max_allowed_work_group_size( cl_context context, cl_kernel kernel
 
 /* Helper to obtain the biggest allowed 1D work group size on a given device */
 extern int get_max_allowed_1d_work_group_size_on_device( cl_device_id device, cl_kernel kernel, size_t *outSize );
-
-/* Helper to determine if an extension is supported by a device */
-extern int is_extension_available( cl_device_id device, const char *extensionName );
 
 /* Helper to determine if a device supports an image format */
 extern int is_image_format_supported( cl_context context, cl_mem_flags flags, cl_mem_object_type image_type, const cl_image_format *fmt );

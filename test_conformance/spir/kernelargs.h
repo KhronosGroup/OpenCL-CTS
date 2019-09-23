@@ -29,7 +29,7 @@
 #include <vector>
 #include <iostream>
 
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/typeWrappers.h"
 
 #include "exceptions.h"
 

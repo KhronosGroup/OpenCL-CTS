@@ -15,7 +15,7 @@
 //
 #include "setup.h"
 #include "testBase.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 #include <assert.h>
 
 #include <CL/cl.h>

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../../test_common/harness/compat.h"
+#include "../harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -24,7 +24,7 @@
 #endif
 
 #include "../testBase.h"
-#include "../../../test_common/harness/testHarness.h"
+#include "../harness/testHarness.h"
 
 bool gDebugTrace;
 bool gTestSmallImages;
@@ -177,21 +177,7 @@ int main(int argc, const char *argv[])
 
     int ret = runTestHarness( argCount, argList, test_num, test_list, true, false, 0 );
 
-    if (gTestFailure == 0) {
-        if (gTestCount > 1)
-            log_info("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-        else
-            log_info("PASSED sub-test.\n");
-    } else if (gTestFailure > 0) {
-        if (gTestCount > 1)
-            log_error("FAILED %d of %d sub-tests.\n", gTestFailure, gTestCount);
-        else
-            log_error("FAILED sub-test.\n");
-    }
-
-    // Clean up
     free(argList);
-
     return ret;
 }
 

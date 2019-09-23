@@ -23,9 +23,9 @@
 #include "FunctionList.h"
 #include "Sleep.h"
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/parseParameters.h"
 
 #if defined( __APPLE__ )
     #include <sys/sysctl.h>
@@ -43,7 +43,7 @@
 #include <sys/param.h>
 #endif
 
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 #define kPageSize           4096
 #define DOUBLE_REQUIRED_FEATURES    ( CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM  )
@@ -54,8 +54,6 @@ char            appName[ MAXPATHLEN ] = "";
 cl_device_id    gDevice = NULL;
 cl_context      gContext = NULL;
 cl_command_queue gQueue = NULL;
-int             gTestCount = 0;
-int             gFailCount = 0;
 static int32_t  gStartTestNumber;
 static int32_t  gEndTestNumber;
 int             gSkipCorrectnessTesting = 0;
@@ -882,21 +880,6 @@ int main (int argc, const char * argv[])
     int error_code = clFinish(gQueue);
     if (error_code)
         vlog_error("clFinish failed:%d\n", error_code);
-
-    if (gFailCount == 0)
-    {
-        if (gTestCount > 1)
-            vlog("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-        else
-            vlog("PASSED sub-test.\n");
-    }
-    else if (gFailCount > 0)
-    {
-        if (gTestCount > 1)
-            vlog_error("FAILED %d of %d sub-tests.\n", gFailCount, gTestCount);
-        else
-            vlog_error("FAILED sub-test.\n");
-    }
 
     ReleaseCL();
 

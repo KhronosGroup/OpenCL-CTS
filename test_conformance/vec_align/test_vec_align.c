@@ -16,9 +16,9 @@
 #include "testBase.h"
 
 
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/testHarness.h"
 
 #include "structs.h"
 
