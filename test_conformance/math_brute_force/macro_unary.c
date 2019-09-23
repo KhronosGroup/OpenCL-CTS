@@ -396,6 +396,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
     int     ftz = job->ftz;
     cl_uint j, k;
     cl_int error = CL_SUCCESS;
+    cl_int ret   = CL_SUCCESS;
     const char *name = job->f->name;
 
     int signbit_test = 0;
@@ -564,6 +565,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
     }
 
 exit:
+    ret = error;
     for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
     {
         if( (error = clEnqueueUnmapMemObject( tinfo->tQueue, tinfo->outBuf[j], out[j], 0, NULL, NULL)) )
@@ -574,7 +576,10 @@ exit:
     }
 
     if( (error = clFlush(tinfo->tQueue) ))
+    {
         vlog( "clFlush 3 failed\n" );
+        return error;
+    }
 
 
     if( 0 == ( base & 0x0fffffff) )
@@ -589,7 +594,7 @@ exit:
        fflush(stdout);
     }
 
-    return error;
+    return ret;
 }
 
 static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data );
