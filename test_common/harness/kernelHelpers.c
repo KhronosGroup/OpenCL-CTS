@@ -471,7 +471,8 @@ static std::string get_offline_compilation_command(const cl_uint device_address_
     return wrapperOptions.str();
 }
 
-static int invoke_offline_compiler(const cl_uint device_address_space_size,
+static int invoke_offline_compiler(const cl_device_id device,
+                                   const cl_uint device_address_space_size,
                                    const CompilationMode compilationMode,
                                    const std::string &bOptions,
                                    const std::string &sourceFilename,
@@ -563,6 +564,7 @@ static cl_int get_device_address_bits(const cl_device_id device, cl_uint &device
 }
 
 static int get_offline_compiler_output(std::ifstream &ifs,
+                                       const cl_device_id device,
                                        cl_uint deviceAddrSpaceSize,
                                        const bool openclCXX,
                                        const CompilationMode compilationMode,
@@ -585,7 +587,7 @@ static int get_offline_compiler_output(std::ifstream &ifs,
             return -1;
         }
         else {
-            int error = invoke_offline_compiler(deviceAddrSpaceSize, compilationMode,
+            int error = invoke_offline_compiler(device, deviceAddrSpaceSize, compilationMode,
                                                 bOptions, sourceFilename, outputFilename, openclCXX);
             if (error != CL_SUCCESS)
                 return error;
@@ -619,7 +621,7 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
     // Get device CL_DEVICE_ADDRESS_BITS
     int error;
     cl_uint device_address_space_size = 0;
-    error = get_first_device_address_bits(context, device_address_space_size);
+    error = get_device_address_bits(device, device_address_space_size);
     if (error != CL_SUCCESS)
         return error;
 
@@ -639,7 +641,7 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
     }
 
     std::ifstream ifs;
-    error = get_offline_compiler_output(ifs, device_address_space_size, openclCXX, compilationMode, bOptions, gCompilationCachePath, kernelName);
+    error = get_offline_compiler_output(ifs, device, device_address_space_size, openclCXX, compilationMode, bOptions, gCompilationCachePath, kernelName);
     if (error != CL_SUCCESS)
       return error;
 
