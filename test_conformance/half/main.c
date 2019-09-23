@@ -26,9 +26,9 @@
 #include <sys/param.h>
 #endif
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/mingw_compat.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/mingw_compat.h"
+#include "harness/parseParameters.h"
 #if defined (__MINGW32__)
 #include <sys/param.h>
 #endif
@@ -39,7 +39,7 @@
 const char **   argList = NULL;
 size_t          argCount = 0;
 char            appName[64] = "ctest";
-const char *addressSpaceNames[] = {"global", "private", "local", "constant"};
+const char *addressSpaceNames[AS_NumAddressSpaces] = {"global", "private", "local", "constant"};
 
 #pragma mark -
 #pragma mark Declarations
@@ -121,11 +121,6 @@ exit:
         {
             vlog_error("clFinish failed: %d\n", flush_error);
         }
-    }
-
-    if(gFailCount > 0)
-    {
-        vlog_error("FAILED %d sub-tests.\n", gFailCount);
     }
 
     ReleaseCL();

@@ -27,9 +27,12 @@
 
 using namespace std;
 
+#define DEFAULT_COMPILATION_PROGRAM "cl_offline_compiler"
+
 CompilationMode      gCompilationMode = kOnline;
 CompilationCacheMode gCompilationCacheMode = kCacheModeCompileIfAbsent;
 std::string          gCompilationCachePath = ".";
+std::string          gCompilationProgram = DEFAULT_COMPILATION_PROGRAM;
 
 void helpInfo ()
 {
@@ -47,6 +50,8 @@ void helpInfo ()
              "                                 force-read      Force reading from the cache\n"
              "                                 overwrite       Disable reading from the cache\n"
              "        --compilation-cache-path <path>   Path for offline compiler output and CL source\n"
+             "        --compilation-program <prog>      Program to use for offline compilation,\n"
+             "                                          defaults to " DEFAULT_COMPILATION_PROGRAM "\n"
              "\n");
 }
 
@@ -155,6 +160,20 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
             else
             {
                 log_error("Path argument for --compilation-cache-path was not specified.\n");
+                return -1;
+            }
+        }
+        else if (!strcmp(argv[i], "--compilation-program"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                gCompilationProgram = argv[i + 1];
+            }
+            else
+            {
+                log_error("Program argument for --compilation-program was not specified.\n");
                 return -1;
             }
         }

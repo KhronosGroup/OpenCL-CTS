@@ -15,8 +15,8 @@ or Khronos Conformance Test Source License Agreement as executed between Khronos
 #ifndef _testBase_h
 #define _testBase_h
 
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/rounding_mode.h"
+#include "harness/compat.h"
+#include "harness/rounding_mode.h"
 
 #include <stdio.h>
 #include <string.h>

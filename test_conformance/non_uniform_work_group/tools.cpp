@@ -15,7 +15,7 @@
 //
 #include "tools.h"
 #include <sstream>
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 
 PrimeNumbersCollection PrimeNumbers::primeNumbers;
 // Method generates prime numbers using Sieve of Eratosthenes algorithm

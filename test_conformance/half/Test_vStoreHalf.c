@@ -13,15 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/compat.h"
+#include "harness/kernelHelpers.h"
+#include "harness/testHarness.h"
 
 #include <string.h>
 #include "cl_utils.h"
 #include "tests.h"
-
-extern const char *addressSpaceNames[];
 
 typedef struct ComputeReferenceInfoF_
 {
@@ -695,9 +693,6 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
     uint64_t min_double_time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
     memset( min_double_time, -1, sizeof( min_double_time ) );
 
-    vlog( "Testing vstore_half%s\n", roundName );
-    fflush( stdout );
-
     bool aligned= false;
 
     for( vectorSize = kMinVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
@@ -1288,22 +1283,6 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
         }
     }
 
-    if( 0 == gFailCount )
-    {
-        if( gWimpyMode )
-        {
-            vlog( "\tfloat: Wimp Passed\n" );
-            if( gTestDouble )
-                vlog( "\tdouble: Wimp Passed\n" );
-        }
-        else
-        {
-            vlog( "\tfloat Passed\n" );
-            if( gTestDouble )
-                vlog( "\tdouble Passed\n" );
-        }
-    }
-
     if( gReportTimes )
     {
         for( vectorSize = kMinVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
@@ -1357,9 +1336,6 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
     memset( min_double_time, -1, sizeof( min_double_time ) );
 
     bool aligned = true;
-
-    vlog( "Testing vstorea_half%s\n", roundName );
-    fflush( stdout );
 
     int minVectorSize = kMinVectorSize;
     // There is no aligned scalar vstorea_half
@@ -1891,20 +1867,6 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
                     min_double_time[ vectorSize ] = bestTime;
             }
         }
-    }
-
-    if( gWimpyMode )
-    {
-        vlog( "\tfloat: Wimp Passed\n" );
-
-        if( gTestDouble )
-            vlog( "\tdouble: Wimp Passed\n" );
-    }
-    else
-    {
-        vlog( "\tfloat Passed\n" );
-        if( gTestDouble )
-            vlog( "\tdouble Passed\n" );
     }
 
     if( gReportTimes )

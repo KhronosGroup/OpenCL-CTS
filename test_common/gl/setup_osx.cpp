@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "setup.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 #include <OpenGL/CGLDevice.h>
 
 class OSXGLEnvironment : public GLEnvironment

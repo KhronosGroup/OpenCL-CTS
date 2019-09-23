@@ -204,7 +204,7 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
 
                 if (test_return)
                 {
-                    gTestFailure++;
+                    gFailCount++;
                     log_error( "FAILED: " );
                     print_header( &formatList[ i ], true );
                     log_info( "\n" );
@@ -250,7 +250,7 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
                     test_return = test_fill_image_set_3D( device, context, queue, &formatList[ i ], kInt );
 
                 if (test_return) {
-                    gTestFailure++;
+                    gFailCount++;
                     log_error( "FAILED: " );
                     print_header( &formatList[ i ], true );
                     log_info( "\n" );
@@ -297,7 +297,7 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
                     test_return = test_fill_image_set_3D( device, context, queue, &formatList[ i ], kUInt );
 
                 if (test_return) {
-                    gTestFailure++;
+                    gFailCount++;
                     log_error( "FAILED: " );
                     print_header( &formatList[ i ], true );
                     log_info( "\n" );

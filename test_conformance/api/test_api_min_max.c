@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/typeWrappers.h"
+#include "harness/testHarness.h"
 #include <ctype.h>
 #include <string.h>
 
@@ -1358,6 +1358,13 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
         size_t sizeToAllocate = ((size_t)currentSize/sizeof( cl_int ))*sizeof(cl_int);
         size_t numberOfInts = sizeToAllocate/sizeof(cl_int);
         constantData = (cl_int *)malloc( sizeToAllocate);
+        if (constantData == NULL)
+        {
+            log_error("Failed to allocate memory for constantData!\n");
+            free_mtdata(d);
+            return EXIT_FAILURE;
+        }
+
         for(i=0; i<(int)(numberOfInts); i++)
             constantData[i] = (int)genrand_int32(d);
 
@@ -1411,6 +1418,14 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
         allocPassed = 1;
 
         resultData = (cl_int *)malloc(sizeToAllocate);
+        if (resultData == NULL)
+        {
+            log_error("Failed to allocate memory for resultData!\n");
+            free(constantData);
+            free_mtdata(d);
+            return EXIT_FAILURE;
+        }
+
         error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, sizeToAllocate, resultData, 0, NULL, NULL);
         test_error( error, "clEnqueueReadBuffer failed");
 

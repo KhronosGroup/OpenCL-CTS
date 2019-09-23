@@ -19,7 +19,7 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/clImageHelper.h"
+#include "harness/clImageHelper.h"
 
 static const char* rw_kernel_code =
 "kernel void test_rw_images(read_write image2d_t src_image) {\n"

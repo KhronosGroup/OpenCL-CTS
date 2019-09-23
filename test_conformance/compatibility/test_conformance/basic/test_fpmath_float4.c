@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -22,7 +22,7 @@
 
 
 #include "procs.h"
-#include "../../test_common/harness/rounding_mode.h"
+#include "harness/rounding_mode.h"
 
 const char *fpadd4_kernel_code =
 "__kernel void test_fpadd4(__global float4 *srcA, __global float4 *srcB, __global float4 *dst)\n"

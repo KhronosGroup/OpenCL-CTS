@@ -15,8 +15,8 @@
 //
 #include "procs.h"
 #include "subhelpers.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
 
 static const char * any_source =
 "__kernel void test_any(const __global Type *in, __global int2 *xy, __global Type *out)\n"

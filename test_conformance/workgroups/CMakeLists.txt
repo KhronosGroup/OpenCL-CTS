@@ -14,14 +14,6 @@ set(${MODULE_NAME}_SOURCES
     test_wg_scan_inclusive_add.c
     test_wg_scan_inclusive_min.c
     test_wg_scan_inclusive_max.c
-    ../../test_common/harness/errorHelpers.c
-    ../../test_common/harness/testHarness.c
-    ../../test_common/harness/kernelHelpers.c
-    ../../test_common/harness/mt19937.c
-    ../../test_common/harness/msvc9.c
-    ../../test_common/harness/conversions.c
-    ../../test_common/harness/parseParameters.cpp
-    ../../test_common/harness/crc32.c
 )
 
 include(../CMakeCommon.txt)

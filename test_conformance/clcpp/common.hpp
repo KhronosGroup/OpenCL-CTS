@@ -24,13 +24,13 @@
 #include <sys/stat.h>
 
 // harness framework
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
+#include "harness/compat.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
 
 // autotest
-#include "../../test_common/autotest/autotest.hpp"
+#include "autotest/autotest.hpp"
 
 // utils_common
 #include "utils_common/is_vector_type.hpp"

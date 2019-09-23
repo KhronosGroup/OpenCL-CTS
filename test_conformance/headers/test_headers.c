@@ -19,8 +19,8 @@
     #include <CL/cl_platform.h>
 #endif
 #include <stdio.h>
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/testHarness.h"
 
 
 int test_char( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );

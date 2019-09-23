@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/kernelHelpers.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/conversions.h"
+#include "harness/mt19937.h"
 
 extern const int kVectorSizeCount;
 

@@ -16,9 +16,9 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/ThreadPool.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
+#include "harness/ThreadPool.h"
 
 #include "host_atomics.h"
 

@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
 #include "procs.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/testHarness.h"
+#include "harness/mt19937.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>

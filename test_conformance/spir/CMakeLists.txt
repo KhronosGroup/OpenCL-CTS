@@ -9,16 +9,8 @@ set (SPIR_SOURCES
     run_build_test.cpp
     run_services.cpp
     kernelargs.cpp
-    ../../test_common/harness/parseParameters.cpp
     ../math_brute_force/FunctionList.c
-    ../../test_common/harness/errorHelpers.c
-    ../../test_common/harness/kernelHelpers.c
-    ../../test_common/harness/mt19937.c
-    ../../test_common/harness/msvc9.c
-    ../../test_common/harness/os_helpers.cpp
-    ../../test_common/harness/testHarness.c
-    ../../test_common/miniz/miniz.c
-    ../../test_common/harness/crc32.c)
+)
 
 add_executable(${SPIR_OUT}
     ${SPIR_SOURCES})
@@ -36,7 +28,7 @@ elseif(MSVC)
        COMPILE_FLAGS "/GR /EHs /EHc")
 endif()
 
-TARGET_LINK_LIBRARIES(${SPIR_OUT}
+TARGET_LINK_LIBRARIES(${SPIR_OUT} harness
     ${CLConform_LIBRARIES})
 
 

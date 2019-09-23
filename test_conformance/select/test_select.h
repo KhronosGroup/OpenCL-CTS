@@ -16,7 +16,7 @@
 #ifndef TESTSELECTS_INCLUDED_H
 #define TESTSELECTS_INCLUDED_H
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>

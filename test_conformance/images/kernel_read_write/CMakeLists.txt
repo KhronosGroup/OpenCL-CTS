@@ -13,17 +13,6 @@ set(${MODULE_NAME}_SOURCES
     test_write_1D_array.cpp
     test_write_2D_array.cpp
     test_write_3D.cpp
-    ../../../test_common/harness/errorHelpers.c
-    ../../../test_common/harness/threadTesting.c
-    ../../../test_common/harness/kernelHelpers.c
-    ../../../test_common/harness/imageHelpers.cpp
-    ../../../test_common/harness/mt19937.c
-    ../../../test_common/harness/conversions.c
-    ../../../test_common/harness/testHarness.c
-    ../../../test_common/harness/typeWrappers.cpp
-    ../../../test_common/harness/msvc9.c
-    ../../../test_common/harness/parseParameters.cpp
-    ../../../test_common/harness/crc32.c
 )
 
 include(../../CMakeCommon.txt)

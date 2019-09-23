@@ -23,7 +23,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../test_common/harness/kernelHelpers.h"
+#include "harness/kernelHelpers.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // ATF performance framework.

@@ -13,14 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/compat.h"
+#include "harness/testHarness.h"
 
 #include <string.h>
 #include "cl_utils.h"
 #include "tests.h"
-
-extern const char *addressSpaceNames[];
 
 static inline float half2float( cl_ushort us )
 {
@@ -65,16 +63,14 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
 {
     cl_int error;
     int vectorSize;
-    cl_program  programs[kVectorSizeCount+kStrangeVectorSizeCount][4] = {{0}};
-    cl_kernel   kernels[kVectorSizeCount+kStrangeVectorSizeCount][4] = {{0}};
+    cl_program  programs[kVectorSizeCount+kStrangeVectorSizeCount][AS_NumAddressSpaces] = {{0}};
+    cl_kernel   kernels[kVectorSizeCount+kStrangeVectorSizeCount][AS_NumAddressSpaces] = {{0}};
     uint64_t time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
     uint64_t min_time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
     size_t q;
 
     memset( min_time, -1, sizeof( min_time ) );
 
-    vlog( "Testing vload%s_half\n", aligned ? "a" : "" );
-    fflush( stdout );
     const char *vector_size_names[]   = {"1", "2", "4", "8", "16", "3"};
 
     int minVectorSize = kMinVectorSize;
@@ -301,8 +297,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
 
 
         if(g_arrVecSizes[vectorSize] != 3) {
-            programs[vectorSize][0] = MakeProgram( device, source, sizeof( source) / sizeof( source[0])  );
-            if( NULL == programs[ vectorSize ][0] ) {
+            programs[vectorSize][AS_Global] = MakeProgram( device, source, sizeof( source) / sizeof( source[0])  );
+            if( NULL == programs[ vectorSize ][AS_Global] ) {
                 gFailCount++;
                 vlog_error( "\t\tFAILED -- Failed to create program.\n" );
                 for ( q= 0; q < sizeof( source) / sizeof( source[0]); q++)
@@ -311,8 +307,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
             } else {
             }
         } else if(aligned) {
-            programs[vectorSize][0] = MakeProgram( device, sourceV3aligned, sizeof( sourceV3aligned) / sizeof( sourceV3aligned[0])  );
-            if( NULL == programs[ vectorSize ][0] ) {
+            programs[vectorSize][AS_Global] = MakeProgram( device, sourceV3aligned, sizeof( sourceV3aligned) / sizeof( sourceV3aligned[0])  );
+            if( NULL == programs[ vectorSize ][AS_Global] ) {
                 gFailCount++;
                 vlog_error( "\t\tFAILED -- Failed to create program.\n" );
                 for ( q= 0; q < sizeof( sourceV3aligned) / sizeof( sourceV3aligned[0]); q++)
@@ -321,8 +317,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
             } else {
             }
         } else {
-            programs[vectorSize][0] = MakeProgram( device, sourceV3, sizeof( sourceV3) / sizeof( sourceV3[0])  );
-            if( NULL == programs[ vectorSize ][0] ) {
+            programs[vectorSize][AS_Global] = MakeProgram( device, sourceV3, sizeof( sourceV3) / sizeof( sourceV3[0])  );
+            if( NULL == programs[ vectorSize ][AS_Global] ) {
                 gFailCount++;
                 vlog_error( "\t\tFAILED -- Failed to create program.\n" );
                 for ( q= 0; q < sizeof( sourceV3) / sizeof( sourceV3[0]); q++)
@@ -331,8 +327,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
             }
         }
 
-        kernels[ vectorSize ][0] = clCreateKernel( programs[ vectorSize ][0], "test", &error );
-        if( NULL == kernels[vectorSize][0] )
+        kernels[ vectorSize ][AS_Global] = clCreateKernel( programs[ vectorSize ][AS_Global], "test", &error );
+        if( NULL == kernels[vectorSize][AS_Global] )
         {
             gFailCount++;
             vlog_error( "\t\tFAILED -- Failed to create kernel. (%d)\n", error );
@@ -356,8 +352,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
             source_ptr = source_private2;
             source_size = sizeof( source_private2) / sizeof( source_private2[0]);
         }
-        programs[vectorSize][1] = MakeProgram( device, source_ptr, source_size );
-        if( NULL == programs[ vectorSize ][1] )
+        programs[vectorSize][AS_Private] = MakeProgram( device, source_ptr, source_size );
+        if( NULL == programs[ vectorSize ][AS_Private] )
         {
             gFailCount++;
             vlog_error( "\t\tFAILED -- Failed to create private program.\n" );
@@ -366,8 +362,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
             return -1;
         }
 
-        kernels[ vectorSize ][1] = clCreateKernel( programs[ vectorSize ][1], "test", &error );
-        if( NULL == kernels[vectorSize][1] )
+        kernels[ vectorSize ][AS_Private] = clCreateKernel( programs[ vectorSize ][AS_Private], "test", &error );
+        if( NULL == kernels[vectorSize][AS_Private] )
         {
             gFailCount++;
             vlog_error( "\t\tFAILED -- Failed to create private kernel. (%d)\n", error );
@@ -389,8 +385,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
             source_ptr = source_local2;
             source_size = sizeof( source_local2) / sizeof( source_local2[0]);
         }
-        programs[vectorSize][2] = MakeProgram( device, source_ptr, source_size );
-        if( NULL == programs[ vectorSize ][2] )
+        programs[vectorSize][AS_Local] = MakeProgram( device, source_ptr, source_size );
+        if( NULL == programs[ vectorSize ][AS_Local] )
         {
             gFailCount++;
             vlog_error( "\t\tFAILED -- Failed to create local program.\n" );
@@ -399,8 +395,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
             return -1;
         }
 
-        kernels[ vectorSize ][2] = clCreateKernel( programs[ vectorSize ][2], "test", &error );
-        if( NULL == kernels[vectorSize][2] )
+        kernels[ vectorSize ][AS_Local] = clCreateKernel( programs[ vectorSize ][AS_Local], "test", &error );
+        if( NULL == kernels[vectorSize][AS_Local] )
         {
             gFailCount++;
             vlog_error( "\t\tFAILED -- Failed to create local kernel. (%d)\n", error );
@@ -409,8 +405,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
 
         if(g_arrVecSizes[vectorSize] == 3) {
             if(aligned) {
-                programs[vectorSize][3] = MakeProgram( device, source_constantV3aligned, sizeof(source_constantV3aligned) / sizeof( source_constantV3aligned[0])  );
-                if( NULL == programs[ vectorSize ][3] )
+                programs[vectorSize][AS_Constant] = MakeProgram( device, source_constantV3aligned, sizeof(source_constantV3aligned) / sizeof( source_constantV3aligned[0])  );
+                if( NULL == programs[ vectorSize ][AS_Constant] )
                 {
                     gFailCount++;
                     vlog_error( "\t\tFAILED -- Failed to create constant program.\n" );
@@ -419,8 +415,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
                     return -1;
                 }
             } else {
-                programs[vectorSize][3] = MakeProgram( device, source_constantV3, sizeof(source_constantV3) / sizeof( source_constantV3[0])  );
-                if( NULL == programs[ vectorSize ][3] )
+                programs[vectorSize][AS_Constant] = MakeProgram( device, source_constantV3, sizeof(source_constantV3) / sizeof( source_constantV3[0])  );
+                if( NULL == programs[ vectorSize ][AS_Constant] )
                 {
                     gFailCount++;
                     vlog_error( "\t\tFAILED -- Failed to create constant program.\n" );
@@ -430,8 +426,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
                 }
             }
         } else {
-            programs[vectorSize][3] = MakeProgram( device, source_constant, sizeof(source_constant) / sizeof( source_constant[0])  );
-            if( NULL == programs[ vectorSize ][3] )
+            programs[vectorSize][AS_Constant] = MakeProgram( device, source_constant, sizeof(source_constant) / sizeof( source_constant[0])  );
+            if( NULL == programs[ vectorSize ][AS_Constant] )
             {
                 gFailCount++;
                 vlog_error( "\t\tFAILED -- Failed to create constant program.\n" );
@@ -441,8 +437,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
             }
         }
 
-        kernels[ vectorSize ][3] = clCreateKernel( programs[ vectorSize ][3], "test", &error );
-        if( NULL == kernels[vectorSize][3] )
+        kernels[ vectorSize ][AS_Constant] = clCreateKernel( programs[ vectorSize ][AS_Constant], "test", &error );
+        if( NULL == kernels[vectorSize][AS_Constant] )
         {
             gFailCount++;
             vlog_error( "\t\tFAILED -- Failed to create constant kernel. (%d)\n", error );
@@ -493,7 +489,7 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
         for( vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
         { // here we loop through vector sizes, 3 is last
 
-            for ( addressSpace = 0; addressSpace < 4; addressSpace++) {
+            for ( addressSpace = 0; addressSpace < AS_NumAddressSpaces; addressSpace++) {
                 uint32_t pattern = 0x7fffdead;
 
                 /*
@@ -590,7 +586,7 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
         }
     }
 
-    vlog( "\tPassed\n" );
+    vlog( "\n" );
 
     if( gReportTimes )
     {
@@ -606,7 +602,7 @@ exit:
     //clean up
     for( vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
     {
-        for ( addressSpace = 0; addressSpace < 3; addressSpace++) {
+        for ( addressSpace = 0; addressSpace < AS_NumAddressSpaces; addressSpace++) {
             clReleaseKernel( kernels[ vectorSize ][addressSpace] );
             clReleaseProgram( programs[ vectorSize ][addressSpace] );
         }

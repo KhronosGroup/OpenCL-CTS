@@ -40,6 +40,8 @@
 
 int gTestsPassed = 0;
 int gTestsFailed = 0;
+int gFailCount;
+int gTestCount;
 cl_uint gRandomSeed = 0;
 cl_uint gReSeed = 0;
 
@@ -568,6 +570,37 @@ static int saveResultsToJson( const char *fileName, const char *suiteName, test_
     return ret;
 }
 
+static void print_results( int failed, int count, const char* name )
+{
+    if( count < failed )
+    {
+        count = failed;
+    }
+
+    if( failed == 0 )
+    {
+        if( count > 1 )
+        {
+            log_info( "PASSED %d of %d %ss.\n", count, count, name );
+        }
+        else
+        {
+            log_info( "PASSED %s.\n", name );
+        }
+    }
+    else if( failed > 0 )
+    {
+        if( count > 1 )
+        {
+            log_error( "FAILED %d of %d %ss.\n", failed, count, name );
+        }
+        else
+        {
+            log_error( "FAILED %s.\n", name );
+        }
+    }
+}
+
 int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id device, int testNum,
                                   test_definition testList[], int forceNoContextCreation,
                                   cl_command_queue_properties queueProps, int num_elements )
@@ -617,28 +650,8 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
         callTestFunctions( testList, selectedTestList, resultTestList, testNum, device,
                            forceNoContextCreation, num_elements, queueProps );
 
-        if( gTestsFailed == 0 )
-        {
-            if( gTestsPassed > 1 )
-            {
-                log_info("PASSED %d of %d tests.\n", gTestsPassed, gTestsPassed);
-            }
-            else if( gTestsPassed > 0 )
-            {
-                log_info("PASSED test.\n");
-            }
-        }
-        else if( gTestsFailed > 0 )
-        {
-            if( gTestsFailed+gTestsPassed > 1 )
-            {
-                log_error("FAILED %d of %d tests.\n", gTestsFailed, gTestsFailed+gTestsPassed);
-            }
-            else
-            {
-                log_error("FAILED test.\n");
-            }
-        }
+        print_results( gFailCount, gTestCount, "sub-test" );
+        print_results( gTestsFailed, gTestsFailed + gTestsPassed, "test" );
 
         char *filename = getenv( "CL_CONFORMANCE_RESULTS_FILENAME" );
         if( filename != NULL )

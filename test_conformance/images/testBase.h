@@ -16,11 +16,11 @@
 #ifndef _testBase_h
 #define _testBase_h
 
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/clImageHelper.h"
-#include "../../test_common/harness/imageHelpers.h"
+#include "harness/compat.h"
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
+#include "harness/clImageHelper.h"
+#include "harness/imageHelpers.h"
 
 // Amount to offset pixels for checking normalized reads
 #define NORM_OFFSET 0.1f

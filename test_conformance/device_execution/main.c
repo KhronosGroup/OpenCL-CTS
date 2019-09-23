@@ -20,8 +20,8 @@
 #include <stdbool.h>
 #endif
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 #include "utils.h"
 #include "procs.h"
 

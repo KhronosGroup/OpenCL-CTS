@@ -96,6 +96,7 @@ int test_svm_fine_grain_sync_buffers(cl_device_id deviceID, cl_context c, cl_com
     }
   } while (status != CL_COMPLETE || AtomicLoadExplicit(&pTargetLocations[i], memory_order_relaxed) != -1);
 
+  clReleaseEvent(done);
   clSVMFree(context, pInputImage);
   clSVMFree(context, pNumTargetsFound);
   clSVMFree(context, pTargetLocations);

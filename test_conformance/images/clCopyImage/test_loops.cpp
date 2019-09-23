@@ -243,7 +243,7 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
             test_return = test_copy_image_set_3D_2D_array( device, context, queue, &formatList[ i ], false);
 
         if (test_return) {
-            gTestFailure++;
+            gFailCount++;
             log_error( "FAILED: " );
             print_header( &formatList[ i ], true );
             log_info( "\n" );
