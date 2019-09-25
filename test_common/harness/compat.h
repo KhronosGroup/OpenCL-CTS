@@ -151,83 +151,83 @@ typedef long long           int64_t;
         #define     isinf( _x)      ((_x) == INFINITY || (_x) == -INFINITY)
     #endif
         
-#if ! defined( __INTEL_COMPILER )
+    #if _MSC_VER < 1900 && ! defined( __INTEL_COMPILER )
 
-double rint( double x);
-float  rintf( float x);
-long double rintl( long double x);
+        double rint( double x);
+        float  rintf( float x);
+        long double rintl( long double x);
 
-float cbrtf( float );
-double cbrt( double );
+        float cbrtf( float );
+        double cbrt( double );
 
-int    ilogb( double x);
-int    ilogbf (float x);
-int    ilogbl(long double x);
+        int    ilogb( double x);
+        int    ilogbf (float x);
+        int    ilogbl(long double x);
 
-double fmax(double x, double y);
-double fmin(double x, double y);
-float  fmaxf( float x, float y );
-float  fminf(float x, float y);
+        double fmax(double x, double y);
+        double fmin(double x, double y);
+        float  fmaxf( float x, float y );
+        float  fminf(float x, float y);
 
-double      log2(double x);
-long double log2l(long double x);
+        double      log2(double x);
+        long double log2l(long double x);
 
-double      exp2(double x);
-long double exp2l(long double x);
+        double      exp2(double x);
+        long double exp2l(long double x);
 
-double      fdim(double x, double y);
-float       fdimf(float x, float y);
-long double fdiml(long double x, long double y);
+        double      fdim(double x, double y);
+        float       fdimf(float x, float y);
+        long double fdiml(long double x, long double y);
 
-double      remquo( double x, double y, int *quo);
-float       remquof( float x, float y, int *quo);
-long double remquol( long double x, long double y, int *quo);
+        double      remquo( double x, double y, int *quo);
+        float       remquof( float x, float y, int *quo);
+        long double remquol( long double x, long double y, int *quo);
 
-long double scalblnl(long double x, long n);
+        long double scalblnl(long double x, long n);
 
-float hypotf(float x, float y);
-long double hypotl(long double x, long double y) ;
-double lgamma(double x);
-float  lgammaf(float x);
+        float hypotf(float x, float y);
+        long double hypotl(long double x, long double y) ;
+        double lgamma(double x);
+        float  lgammaf(float x);
 
-double trunc(double x);
-float  truncf(float x);
+        double trunc(double x);
+        float  truncf(float x);
 
-double log1p(double x);
-float  log1pf(float x);
-long double log1pl(long double x);
+        double log1p(double x);
+        float  log1pf(float x);
+        long double log1pl(long double x);
 
-double copysign(double x, double y);
-float  copysignf(float x, float y);
-long double copysignl(long double x, long double y);
+        double copysign(double x, double y);
+        float  copysignf(float x, float y);
+        long double copysignl(long double x, long double y);
 
-long lround(double x);
-long lroundf(float x);
-//long lroundl(long double x)
+        long lround(double x);
+        long lroundf(float x);
+        //long lroundl(long double x)
 
-double round(double x);
-float  roundf(float x);
-long double roundl(long double x);
+        double round(double x);
+        float  roundf(float x);
+        long double roundl(long double x);
 
         int cf_signbit(double x);
         int cf_signbitf(float x);
 
-// Added in _MSC_VER == 1800 (Visual Studio 2013)
-#if _MSC_VER < 1800
-        static int signbit(double x) { return  cf_signbit(x); }
-#endif
+        // Added in _MSC_VER == 1800 (Visual Studio 2013)
+        #if _MSC_VER < 1800
+                static int signbit(double x) { return  cf_signbit(x); }
+        #endif
         static int signbitf(float x) { return cf_signbitf(x); }
 
-long int lrint (double flt);
-long int lrintf (float flt);
+        long int lrint (double flt);
+        long int lrintf (float flt);
 
-float   int2float (int32_t ix);
-int32_t float2int (float   fx);
+        float   int2float (int32_t ix);
+        int32_t float2int (float   fx);
 
-    #endif
+    #endif // _MSC_VER < 1900 && ! defined( __INTEL_COMPILER )
 
-    #if ! defined( __INTEL_COMPILER ) || __INTEL_COMPILER < 1300
-        // These functions appeared in Intel C v13.
+    #if _MSC_VER < 1900 && ( ! defined( __INTEL_COMPILER ) || __INTEL_COMPILER < 1300 )
+        // These functions appeared in Intel C v13 and Visual Studio 2015
         float  nanf( const char* str);
         double nan( const char* str);
         long double nanl( const char* str);
