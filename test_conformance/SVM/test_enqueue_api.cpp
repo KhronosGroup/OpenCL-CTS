@@ -126,6 +126,7 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
 
  std::vector<TestType> testTypes;
 
+ testTypes.push_back(TestType(host, host));
  testTypes.push_back(TestType(host, svm));
  testTypes.push_back(TestType(svm, host));
  testTypes.push_back(TestType(svm, svm));
