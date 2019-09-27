@@ -40,7 +40,7 @@ const char *barrier_kernel_code =
 "        tmp_sum[tid] += a[i];\n"
 "     \n"
 "     // updated to work for any workgroup size \n"
-"    for (i=hadd(lsize,1); lsize>1; i = hadd(i,1))\n"
+"    for (i=(lsize+1)/2; lsize>1; i = (i+1)/2)\n"
 "    {\n"
 "        barrier(CLK_GLOBAL_MEM_FENCE);\n"
 "        if (tid + i < lsize)\n"
