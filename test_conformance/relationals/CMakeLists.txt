@@ -1,4 +1,4 @@
-add_executable(conformance_test_relationals 
+add_executable(test_relationals 
         main.c
 	test_relationals.cpp
     test_comparisons_float.cpp
@@ -33,10 +33,10 @@ set_source_files_properties(
     ../../test_common/harness/msvc9.c
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_relationals
+TARGET_LINK_LIBRARIES(test_relationals
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_relationals)
-install(TARGETS conformance_test_relationals
+add_dependencies(OpenCLCTS test_relationals)
+install(TARGETS test_relationals
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

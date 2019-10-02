@@ -1,4 +1,4 @@
-add_executable(conformance_test_vecstep
+add_executable(test_vecstep
 	globals.c
         test_step.c
         main.c
@@ -29,10 +29,10 @@ set_source_files_properties(
         ../../test_common/harness/errorHelpers.c
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_vecstep
+TARGET_LINK_LIBRARIES(test_vecstep
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_vecstep)
-install(TARGETS conformance_test_vecstep
+add_dependencies(OpenCLCTS test_vecstep)
+install(TARGETS test_vecstep
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

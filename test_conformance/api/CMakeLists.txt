@@ -1,4 +1,4 @@
-add_executable(conformance_test_api
+add_executable(test_api
    main.c
    test_retain_program.c
    test_queries.cpp
@@ -62,10 +62,10 @@ set_source_files_properties(
    ../../test_common/harness/conversions.c
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_api
+TARGET_LINK_LIBRARIES(test_api
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_api)
-install(TARGETS conformance_test_api
+add_dependencies(OpenCLCTS test_api)
+install(TARGETS test_api
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

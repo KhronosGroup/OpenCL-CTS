@@ -1,4 +1,4 @@
-add_executable(conformance_test_compiler    
+add_executable(test_compiler    
 	main.c
 	test_build_helpers.c
 	test_compile.c
@@ -36,20 +36,20 @@ set_source_files_properties(
 	../../test_common/harness/conversions.c
     PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_compiler
+TARGET_LINK_LIBRARIES(test_compiler
         ${CLConform_LIBRARIES})
 
 # Need to copy the test include folders to sit beside the executable
-add_custom_command(TARGET conformance_test_compiler POST_BUILD
+add_custom_command(TARGET test_compiler POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/includeTestDirectory"
-		"$<TARGET_FILE_DIR:conformance_test_compiler>/includeTestDirectory"
+		"$<TARGET_FILE_DIR:test_compiler>/includeTestDirectory"
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/secondIncludeTestDirectory"
-		"$<TARGET_FILE_DIR:conformance_test_compiler>/secondIncludeTestDirectory")
+		"$<TARGET_FILE_DIR:test_compiler>/secondIncludeTestDirectory")
 
-add_dependencies(OpenCLCTS conformance_test_compiler)
-install(TARGETS conformance_test_compiler
+add_dependencies(OpenCLCTS test_compiler)
+install(TARGETS test_compiler
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)
 

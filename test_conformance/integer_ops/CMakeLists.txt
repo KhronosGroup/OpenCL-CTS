@@ -1,4 +1,4 @@
-add_executable(conformance_test_integer_ops
+add_executable(test_integer_ops
 	main.c
 	test_popcount.c
 	test_int_basic_ops.c
@@ -64,10 +64,10 @@ set_source_files_properties(
 endif()
 endif (NOT CMAKE_CL_64 AND NOT MSVC)
 
-TARGET_LINK_LIBRARIES(conformance_test_integer_ops
+TARGET_LINK_LIBRARIES(test_integer_ops
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_integer_ops)
-install(TARGETS conformance_test_integer_ops
+add_dependencies(OpenCLCTS test_integer_ops)
+install(TARGETS test_integer_ops
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

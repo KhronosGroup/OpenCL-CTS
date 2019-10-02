@@ -5,7 +5,7 @@
 # #########################################
 # Basic Information on the compute device
 # #########################################
-Compute Info,computeinfo/computeinfo
+Compute Info,computeinfo/test_computeinfo
 
 # #########################################
 # Basic operation tests
@@ -86,7 +86,7 @@ OpenCL-GL Sharing,gl/test_gl
 # Thorough math and conversions tests
 # #########################################
 Select,select/test_select
-Contractions,contractions/contractions
+Contractions,contractions/test_contractions
 Integer Ops,integer_ops/test_integer_ops
-Half Ops,half/Test_half
+Half Ops,half/test_half
 

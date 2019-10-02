@@ -1,4 +1,4 @@
-add_executable(conformance_test_cl_fill_images
+add_executable(test_cl_fill_images
 	main.cpp
 	test_fill_generic.cpp
 	test_fill_1D.cpp
@@ -39,10 +39,10 @@ set_source_files_properties(
 	../../../test_common/harness/msvc9.c
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_cl_fill_images
+TARGET_LINK_LIBRARIES(test_cl_fill_images
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_cl_fill_images)
-install(TARGETS conformance_test_cl_fill_images
+add_dependencies(OpenCLCTS test_cl_fill_images)
+install(TARGETS test_cl_fill_images
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

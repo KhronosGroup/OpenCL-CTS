@@ -1,4 +1,4 @@
-add_executable(conformance_test_bruteforce
+add_executable(test_bruteforce
     FunctionList.c
     Sleep.c
     binary.c
@@ -70,10 +70,10 @@ set_source_files_properties(
 endif()
 endif(NOT CMAKE_CL_64 AND NOT MSVC)
 
-TARGET_LINK_LIBRARIES(conformance_test_bruteforce
+TARGET_LINK_LIBRARIES(test_bruteforce
     ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_bruteforce)
-install(TARGETS conformance_test_bruteforce
+add_dependencies(OpenCLCTS test_bruteforce)
+install(TARGETS test_bruteforce
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

@@ -1,4 +1,4 @@
-add_executable(conformance_test_profiling
+add_executable(test_profiling
         main.c readArray.c writeArray.c readImage.c writeImage.c copy.c
         execute.c execute_multipass.c
         ../../test_common/harness/testHarness.c
@@ -27,10 +27,10 @@ set_source_files_properties(
     ../../test_common/harness/msvc9.c
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_profiling
+TARGET_LINK_LIBRARIES(test_profiling
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_profiling)
-install(TARGETS conformance_test_profiling
+add_dependencies(OpenCLCTS test_profiling)
+install(TARGETS test_profiling
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

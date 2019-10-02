@@ -1,4 +1,4 @@
-add_executable(conformance_test_select
+add_executable(test_select
         test_select.c
         util_select.c
         ../../test_common/harness/mt19937.c
@@ -24,10 +24,10 @@ set_source_files_properties(
         ../../test_common/harness/testHarness.c
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_select
+TARGET_LINK_LIBRARIES(test_select
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_select)
-install(TARGETS conformance_test_select
+add_dependencies(OpenCLCTS test_select)
+install(TARGETS test_select
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

@@ -1,4 +1,4 @@
-add_executable(conformance_test_kernel_image_methods
+add_executable(test_kernel_image_methods
 	main.cpp
 	test_1D.cpp
 	test_1D_array.cpp
@@ -38,10 +38,10 @@ set_source_files_properties(
 	../../../test_common/harness/typeWrappers.cpp
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_kernel_image_methods
+TARGET_LINK_LIBRARIES(test_kernel_image_methods
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_kernel_image_methods)
-install(TARGETS conformance_test_kernel_image_methods
+add_dependencies(OpenCLCTS test_kernel_image_methods)
+install(TARGETS test_kernel_image_methods
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

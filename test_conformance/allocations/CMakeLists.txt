@@ -1,4 +1,4 @@
-add_executable(conformance_test_allocations
+add_executable(test_allocations
         main.cpp
         allocation_execute.cpp
         allocation_fill.cpp
@@ -26,10 +26,10 @@ set_source_files_properties(
         ../../test_common/harness/msvc9.c
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_allocations
+TARGET_LINK_LIBRARIES(test_allocations
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_allocations)
-install(TARGETS conformance_test_allocations
+add_dependencies(OpenCLCTS test_allocations)
+install(TARGETS test_allocations
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)
