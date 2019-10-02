@@ -220,7 +220,7 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
 
       //event info verification for new SVM commands
       cl_command_type commandType;
-      for (auto check_event : eventMemFillList) {
+      for (auto &check_event : eventMemFillList) {
           error = clGetEventInfo(check_event, CL_EVENT_COMMAND_TYPE, sizeof(cl_command_type), &commandType, NULL);
           test_error(error, "clGetEventInfo failed");
           if (commandType != CL_COMMAND_SVM_MEMFILL)
