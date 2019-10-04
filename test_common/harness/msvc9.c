@@ -24,7 +24,7 @@
 
 #include <windows.h>
 
-#if ! defined( __INTEL_COMPILER )
+#if _MSC_VER < 1900 && ! defined( __INTEL_COMPILER )
 
 ///////////////////////////////////////////////////////////////////
 //
@@ -275,6 +275,8 @@ int SIGNBIT_DP64(double x )
     return((hx>>31));
 }
 #endif
+
+#if _MSC_VER < 1900
 
 /* fmax(x, y) returns the larger (more positive) of x and y.
    NaNs are treated as missing values: if one argument is NaN,
@@ -560,6 +562,7 @@ long int lrintf (float x)
     return (long int) x;
 }
 
+#endif // _MSC_VER < 1900
 
 ///////////////////////////////////////////////////////////////////
 //
@@ -589,20 +592,7 @@ int feclearexcept(int excepts)
 
 #endif // __INTEL_COMPILER
 
-#if ! defined( __INTEL_COMPILER ) || __INTEL_COMPILER < 1300
-
-float make_nan()
-{
-/* This is the IEEE 754 single-precision format:
-    unsigned int mantissa:  22;
-    unsigned int quiet_nan:  1;
-    unsigned int exponent:   8;
-    unsigned int negative:   1;
-*/
-     //const static unsigned
-     static const int32_t _nan = 0x7fc00000;
-     return *(const float*)(&_nan);
-}
+#if _MSC_VER < 1900 && ( ! defined( __INTEL_COMPILER ) || __INTEL_COMPILER < 1300 )
 
 float nanf( const char* str)
 {
