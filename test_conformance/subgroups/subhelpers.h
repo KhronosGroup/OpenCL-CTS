@@ -318,6 +318,10 @@ static int run_kernel(cl_context context, cl_command_queue queue,
                                  NULL);
     test_error(error, "clEnqueueWriteBuffer failed");
 
+    error = clEnqueueWriteBuffer(queue, xy, CL_FALSE, 0, msize, mdata, 0, NULL,
+                                 NULL);
+    test_error(error, "clEnqueueWriteBuffer failed");
+
     error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, &local, 0,
                                    NULL, NULL);
     test_error(error, "clEnqueueNDRangeKernel failed");
@@ -354,7 +358,7 @@ struct test
         clProgramWrapper program;
         clKernelWrapper kernel;
         cl_platform_id platform;
-        cl_int sgmap[2 * GSIZE];
+        cl_int sgmap[4 * GSIZE];
         Ty mapin[LSIZE];
         Ty mapout[LSIZE];
 
@@ -452,18 +456,18 @@ struct test
         memset(&idata[0], 0, input_array_size * sizeof(Ty));
         error = run_kernel(context, queue, kernel, global, local, &idata[0],
                            input_array_size * sizeof(Ty), sgmap,
-                           global * sizeof(cl_int) * 2, &odata[0],
+                           global * sizeof(cl_int4), &odata[0],
                            output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
         if (error) return error;
 
         // Generate the desired input for the kernel
         Fns::gen(&idata[0], mapin, sgmap, subgroup_size, (int)local,
                  (int)global / (int)local);
-
         error = run_kernel(context, queue, kernel, global, local, &idata[0],
                            input_array_size * sizeof(Ty), sgmap,
-                           global * sizeof(cl_int) * 2, &odata[0],
+                           global * sizeof(cl_int4), &odata[0],
                            output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
+
         if (error) return error;
 
 

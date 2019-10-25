@@ -19,7 +19,7 @@
 #include "harness/typeWrappers.h"
 
 static const char *any_source = "__kernel void test_any(const __global Type "
-                                "*in, __global int2 *xy, __global Type *out)\n"
+                                "*in, __global int4 *xy, __global Type *out)\n"
                                 "{\n"
                                 "    int gid = get_global_id(0);\n"
                                 "    XY(xy,gid);\n"
@@ -27,7 +27,7 @@ static const char *any_source = "__kernel void test_any(const __global Type "
                                 "}\n";
 
 static const char *all_source = "__kernel void test_all(const __global Type "
-                                "*in, __global int2 *xy, __global Type *out)\n"
+                                "*in, __global int4 *xy, __global Type *out)\n"
                                 "{\n"
                                 "    int gid = get_global_id(0);\n"
                                 "    XY(xy,gid);\n"
@@ -35,18 +35,17 @@ static const char *all_source = "__kernel void test_all(const __global Type "
                                 "}\n";
 
 static const char *bcast_source =
-    "__kernel void test_bcast(const __global Type *in, __global int2 *xy, "
+    "__kernel void test_bcast(const __global Type *in, __global int4 *xy, "
     "__global Type *out)\n"
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
     "    Type x = in[gid];\n"
-    "    size_t loid = (size_t)((int)x % 100);\n"
-    "    out[gid] = sub_group_broadcast(x, loid);\n"
+    "    out[gid] = sub_group_broadcast(x, xy[gid].z);\n"
     "}\n";
 
 static const char *redadd_source =
-    "__kernel void test_redadd(const __global Type *in, __global int2 *xy, "
+    "__kernel void test_redadd(const __global Type *in, __global int4 *xy, "
     "__global Type *out)\n"
     "{\n"
     "    int gid = get_global_id(0);\n"
@@ -55,7 +54,7 @@ static const char *redadd_source =
     "}\n";
 
 static const char *redmax_source =
-    "__kernel void test_redmax(const __global Type *in, __global int2 *xy, "
+    "__kernel void test_redmax(const __global Type *in, __global int4 *xy, "
     "__global Type *out)\n"
     "{\n"
     "    int gid = get_global_id(0);\n"
@@ -64,7 +63,7 @@ static const char *redmax_source =
     "}\n";
 
 static const char *redmin_source =
-    "__kernel void test_redmin(const __global Type *in, __global int2 *xy, "
+    "__kernel void test_redmin(const __global Type *in, __global int4 *xy, "
     "__global Type *out)\n"
     "{\n"
     "    int gid = get_global_id(0);\n"
@@ -73,7 +72,7 @@ static const char *redmin_source =
     "}\n";
 
 static const char *scinadd_source =
-    "__kernel void test_scinadd(const __global Type *in, __global int2 *xy, "
+    "__kernel void test_scinadd(const __global Type *in, __global int4 *xy, "
     "__global Type *out)\n"
     "{\n"
     "    int gid = get_global_id(0);\n"
@@ -82,7 +81,7 @@ static const char *scinadd_source =
     "}\n";
 
 static const char *scinmax_source =
-    "__kernel void test_scinmax(const __global Type *in, __global int2 *xy, "
+    "__kernel void test_scinmax(const __global Type *in, __global int4 *xy, "
     "__global Type *out)\n"
     "{\n"
     "    int gid = get_global_id(0);\n"
@@ -91,7 +90,7 @@ static const char *scinmax_source =
     "}\n";
 
 static const char *scinmin_source =
-    "__kernel void test_scinmin(const __global Type *in, __global int2 *xy, "
+    "__kernel void test_scinmin(const __global Type *in, __global int4 *xy, "
     "__global Type *out)\n"
     "{\n"
     "    int gid = get_global_id(0);\n"
@@ -100,7 +99,7 @@ static const char *scinmin_source =
     "}\n";
 
 static const char *scexadd_source =
-    "__kernel void test_scexadd(const __global Type *in, __global int2 *xy, "
+    "__kernel void test_scexadd(const __global Type *in, __global int4 *xy, "
     "__global Type *out)\n"
     "{\n"
     "    int gid = get_global_id(0);\n"
@@ -109,7 +108,7 @@ static const char *scexadd_source =
     "}\n";
 
 static const char *scexmax_source =
-    "__kernel void test_scexmax(const __global Type *in, __global int2 *xy, "
+    "__kernel void test_scexmax(const __global Type *in, __global int4 *xy, "
     "__global Type *out)\n"
     "{\n"
     "    int gid = get_global_id(0);\n"
@@ -118,7 +117,7 @@ static const char *scexmax_source =
     "}\n";
 
 static const char *scexmin_source =
-    "__kernel void test_scexmin(const __global Type *in, __global int2 *xy, "
+    "__kernel void test_scexmin(const __global Type *in, __global int4 *xy, "
     "__global Type *out)\n"
     "{\n"
     "    int gid = get_global_id(0);\n"
@@ -161,12 +160,12 @@ template <int Which> struct AA
             // Now map into work group using map from device
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
+                i = m[4 * j + 1] * ns + m[4 * j];
                 x[j] = t[i];
             }
 
             x += nw;
-            m += 2 * nw;
+            m += 4 * nw;
         }
     }
 
@@ -184,7 +183,7 @@ template <int Which> struct AA
             // Map to array indexed to array indexed by local ID and sub group
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
+                i = m[4 * j + 1] * ns + m[4 * j];
                 mx[i] = x[j];
                 my[i] = y[j];
             }
@@ -222,7 +221,7 @@ template <int Which> struct AA
 
             x += nw;
             y += nw;
-            m += 2 * nw;
+            m += 4 * nw;
         }
 
         return 0;
@@ -253,12 +252,12 @@ template <typename Ty, int Which> struct RED
             // Now map into work group using map from device
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
+                i = m[4 * j + 1] * ns + m[4 * j];
                 x[j] = t[i];
             }
 
             x += nw;
-            m += 2 * nw;
+            m += 4 * nw;
         }
     }
 
@@ -278,7 +277,7 @@ template <typename Ty, int Which> struct RED
             // Map to array indexed to array indexed by local ID and sub group
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
+                i = m[4 * j + 1] * ns + m[4 * j];
                 mx[i] = x[j];
                 my[i] = y[j];
             }
@@ -328,7 +327,7 @@ template <typename Ty, int Which> struct RED
 
             x += nw;
             y += nw;
-            m += 2 * nw;
+            m += 4 * nw;
         }
 
         return 0;
@@ -360,14 +359,15 @@ template <typename Ty, int Which> struct SCIN
             // Now map into work group using map from device
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
+                i = m[4 * j + 1] * ns + m[4 * j];
                 x[j] = t[i];
             }
 
             x += nw;
-            m += 2 * nw;
+            m += 4 * nw;
         }
     }
+
 
     static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int ns, int nw,
                    int ng)
@@ -385,7 +385,7 @@ template <typename Ty, int Which> struct SCIN
             // Map to array indexed to array indexed by local ID and sub group
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
+                i = m[4 * j + 1] * ns + m[4 * j];
                 mx[i] = x[j];
                 my[i] = y[j];
             }
@@ -428,7 +428,7 @@ template <typename Ty, int Which> struct SCIN
 
             x += nw;
             y += nw;
-            m += 2 * nw;
+            m += 4 * nw;
         }
 
         return 0;
@@ -459,12 +459,12 @@ template <typename Ty, int Which> struct SCEX
             // Now map into work group using map from device
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
+                i = m[4 * j + 1] * ns + m[4 * j];
                 x[j] = t[i];
             }
 
             x += nw;
-            m += 2 * nw;
+            m += 4 * nw;
         }
     }
 
@@ -484,7 +484,7 @@ template <typename Ty, int Which> struct SCEX
             // Map to array indexed to array indexed by local ID and sub group
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
+                i = m[4 * j + 1] * ns + m[4 * j];
                 mx[i] = x[j];
                 my[i] = y[j];
             }
@@ -528,7 +528,7 @@ template <typename Ty, int Which> struct SCEX
 
             x += nw;
             y += nw;
-            m += 2 * nw;
+            m += 4 * nw;
         }
 
         return 0;
@@ -555,20 +555,29 @@ template <typename Ty> struct BC
                     % (d > n ? n : d);
 
                 for (i = 0; i < n; ++i)
-                    t[ii + i] = (Ty)((int)(genrand_int32(gMTdata) & 0x7fffffff)
-                                         % 100 * 100
-                                     + l);
+                {
+                    int midx = 4 * ii + 4 * i + 2;
+                    m[midx] = (cl_int)l; // third eleement in the table
+                    cl_uint number;
+                    number =
+                        (int)(genrand_int32(gMTdata)
+                              & 0x7fffffff); // be sure value is no more than
+                                             // about 10000 plus number above l
+                                             // (from 0 to 100)
+                    t[ii + i] = number;
+                }
             }
-
             // Now map into work group using map from device
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
+                i = m[4 * j + 1] * ns
+                    + m[4 * j]; // take number of subgroup plus take work item
+                                // id in subgroup
                 x[j] = t[i];
             }
 
             x += nw;
-            m += 2 * nw;
+            m += 4 * nw; // have to move becase read 2 elements above
         }
     }
 
@@ -586,7 +595,7 @@ template <typename Ty> struct BC
             // Map to array indexed to array indexed by local ID and sub group
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
+                i = m[4 * j + 1] * ns + m[4 * j];
                 mx[i] = x[j];
                 my[i] = y[j];
             }
@@ -595,7 +604,8 @@ template <typename Ty> struct BC
             {
                 ii = j * ns;
                 n = ii + ns > nw ? nw - ii : ns;
-                l = (int)mx[ii] % 100;
+                int midx = 4 * ii + 2;
+                l = (int)m[midx];
                 tr = mx[ii + l];
 
                 // Check result
@@ -614,7 +624,7 @@ template <typename Ty> struct BC
 
             x += nw;
             y += nw;
-            m += 2 * nw;
+            m += 4 * nw;
         }
 
         return 0;

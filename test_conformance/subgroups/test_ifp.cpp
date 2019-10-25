@@ -46,7 +46,7 @@ static const char *ifp_source =
     "#define INST_COUNT 0x3\n"
     "\n"
     "__kernel void\n"
-    "test_ifp(const __global int *in, __global int2 *xy, __global int *out)\n"
+    "test_ifp(const __global int *in, __global int4 *xy, __global int *out)\n"
     "{\n"
     "    __local atomic_int loc[NUM_LOC];\n"
     "\n"
