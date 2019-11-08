@@ -1,7 +1,7 @@
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos SPIR-V Tools Assembler; 0
-; Bound: 17
+; Bound: 16
 ; Schema: 0
                OpCapability Addresses
                OpCapability Linkage
@@ -17,18 +17,17 @@
      %v3uint = OpTypeVector %uint 3
 %_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
        %void = OpTypeVoid
-     %uint_0 = OpTypeInt 32 0
-%_ptr_CrossWorkgroup_uint_0 = OpTypePointer CrossWorkgroup %uint_0
-         %10 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint_0
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+          %9 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
 %gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
-          %1 = OpFunction %void None %10
-         %in = OpFunctionParameter %_ptr_CrossWorkgroup_uint_0
-         %11 = OpLabel
-         %12 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
-         %13 = OpCompositeExtract %uint %12 0
-         %14 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint_0 %in %13
-         %15 = OpLoad %uint_0 %14
-         %16 = OpNot %uint_0 %15
-               OpStore %14 %16
+          %1 = OpFunction %void None %9
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %10 = OpLabel
+         %11 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %12 = OpCompositeExtract %uint %11 0
+         %13 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %in %12
+         %14 = OpLoad %uint %13
+         %15 = OpNot %uint %14
+               OpStore %13 %15
                OpReturn
                OpFunctionEnd

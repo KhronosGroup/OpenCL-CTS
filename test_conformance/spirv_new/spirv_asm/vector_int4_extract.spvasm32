@@ -1,7 +1,7 @@
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos SPIR-V Tools Assembler; 0
-; Bound: 23
+; Bound: 21
 ; Schema: 0
                OpCapability Addresses
                OpCapability Linkage
@@ -17,25 +17,23 @@
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
 %_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
-     %uint_0 = OpTypeInt 32 0
        %void = OpTypeVoid
-     %uint_1 = OpTypeInt 32 0
-   %v4uint_1 = OpTypeVector %uint_1 4
-%_ptr_CrossWorkgroup_uint_1 = OpTypePointer CrossWorkgroup %uint_1
-%_ptr_CrossWorkgroup_v4uint_1 = OpTypePointer CrossWorkgroup %v4uint_1
-         %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_v4uint_1 %_ptr_CrossWorkgroup_uint_1 %uint_0
+     %v4uint = OpTypeVector %uint 4
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+%_ptr_CrossWorkgroup_v4uint = OpTypePointer CrossWorkgroup %v4uint
+         %12 = OpTypeFunction %void %_ptr_CrossWorkgroup_v4uint %_ptr_CrossWorkgroup_uint %uint
 %gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
-          %1 = OpFunction %void None %14
-         %in = OpFunctionParameter %_ptr_CrossWorkgroup_v4uint_1
-          %4 = OpFunctionParameter %_ptr_CrossWorkgroup_uint_1
-         %15 = OpFunctionParameter %uint_0
-         %16 = OpLabel
-         %17 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
-         %18 = OpCompositeExtract %uint %17 0
-         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4uint_1 %in %18
-         %20 = OpLoad %v4uint_1 %19
-         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint_1 %4 %18
-         %22 = OpVectorExtractDynamic %uint_1 %20 %15
-               OpStore %21 %22
+          %1 = OpFunction %void None %12
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_v4uint
+          %4 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %13 = OpFunctionParameter %uint
+         %14 = OpLabel
+         %15 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %16 = OpCompositeExtract %uint %15 0
+         %17 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4uint %in %16
+         %18 = OpLoad %v4uint %17
+         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %4 %16
+         %20 = OpVectorExtractDynamic %uint %18 %13
+               OpStore %19 %20
                OpReturn
                OpFunctionEnd
