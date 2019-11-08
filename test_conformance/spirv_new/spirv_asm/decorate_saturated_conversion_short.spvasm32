@@ -1,0 +1,46 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 25
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int16
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %1 "decorate_saturated_conversion_short"
+               OpName %res "res"
+               OpName %lhs "lhs"
+               OpName %rhs "rhs"
+               OpName %entry "entry"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpDecorate %7 SaturatedConversion
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+     %ushort = OpTypeInt 16 0
+%_ptr_CrossWorkgroup_ushort = OpTypePointer CrossWorkgroup %ushort
+      %float = OpTypeFloat 32
+%_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
+         %16 = OpTypeFunction %void %_ptr_CrossWorkgroup_ushort %_ptr_CrossWorkgroup_float %_ptr_CrossWorkgroup_float
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %1 = OpFunction %void None %16
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_ushort
+        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
+        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
+      %entry = OpLabel
+         %17 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %18 = OpCompositeExtract %uint %17 0
+         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %lhs %18
+         %20 = OpLoad %float %19 Aligned 4
+         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %rhs %18
+         %22 = OpLoad %float %21 Aligned 4
+         %23 = OpFMul %float %20 %22
+          %7 = OpConvertFToS %ushort %23
+         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ushort %res %18
+               OpStore %24 %7
+               OpReturn
+               OpFunctionEnd

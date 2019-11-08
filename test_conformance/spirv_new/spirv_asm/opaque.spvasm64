@@ -1,0 +1,44 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 25
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %1 "opaque"
+               OpName %in "in"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %in FuncParamAttr NoCapture
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpDecorate %4 LinkageAttributes "opaque_store" Import
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+   %ulong_32 = OpConstant %ulong 32
+%float_3_14159274 = OpConstant %float 3.14159274
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+%Opaque_opaque_t = OpTypeOpaque "opaque_t"
+%_ptr_CrossWorkgroup_Opaque_opaque_t = OpTypePointer CrossWorkgroup %Opaque_opaque_t
+         %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_Opaque_opaque_t
+         %15 = OpTypeFunction %void %_ptr_CrossWorkgroup_Opaque_opaque_t %ulong %float
+          %4 = OpFunction %void None %15
+         %16 = OpFunctionParameter %_ptr_CrossWorkgroup_Opaque_opaque_t
+         %17 = OpFunctionParameter %ulong
+         %18 = OpFunctionParameter %float
+               OpFunctionEnd
+          %1 = OpFunction %void None %14
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_Opaque_opaque_t
+         %19 = OpLabel
+         %20 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %21 = OpCompositeExtract %ulong %20 0
+         %22 = OpShiftLeftLogical %ulong %21 %ulong_32
+         %23 = OpShiftRightArithmetic %ulong %22 %ulong_32
+         %24 = OpFunctionCall %void %4 %in %23 %float_3_14159274
+               OpReturn
+               OpFunctionEnd

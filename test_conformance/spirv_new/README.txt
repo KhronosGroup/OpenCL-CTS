@@ -1,7 +1,7 @@
 test_conformance/spirv_new README
 ==================================
 
-The text versions of the spirv files are present in `conformance-tests/test_conformance/spriv_new/spirv_txt`.
+The text versions of the spirv files are present in `conformance-tests/test_conformance/spriv_new/spirv_asm`.
 These text files have been used to generate the binaries in `spirv_bin` using the assembler from `spirv-tools`.
 
 The absolute path to `spirv_bin` needs to be passed after `-ILPath` token for the test to find the SPIRV binaries.

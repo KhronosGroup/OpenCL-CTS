@@ -1,0 +1,44 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 23
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %1 "decorate_restrict"
+               OpName %res "res"
+               OpName %lhs "lhs"
+               OpName %rhs "rhs"
+               OpName %entry "entry"
+               OpDecorate %6 Restrict
+          %6 = OpDecorationGroup
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpGroupDecorate %6 %res %lhs %rhs
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+     %uint_0 = OpTypeInt 32 0
+%_ptr_CrossWorkgroup_uint_0 = OpTypePointer CrossWorkgroup %uint_0
+         %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint_0 %_ptr_CrossWorkgroup_uint_0 %_ptr_CrossWorkgroup_uint_0
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %1 = OpFunction %void None %14
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_uint_0
+        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint_0
+        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint_0
+      %entry = OpLabel
+         %15 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %16 = OpCompositeExtract %uint %15 0
+         %17 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint_0 %lhs %16
+         %18 = OpLoad %uint_0 %17 Aligned 4
+         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint_0 %rhs %16
+         %20 = OpLoad %uint_0 %19 Aligned 4
+         %21 = OpIAdd %uint_0 %18 %20
+         %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint_0 %res %16
+               OpStore %22 %21 Aligned 4
+               OpReturn
+               OpFunctionEnd

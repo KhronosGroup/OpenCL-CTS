@@ -1,0 +1,40 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 22
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %1 "opaque"
+               OpName %in "in"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %in FuncParamAttr NoCapture
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpDecorate %4 LinkageAttributes "opaque_store" Import
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+%Opaque_opaque_t = OpTypeOpaque "opaque_t"
+%_ptr_CrossWorkgroup_Opaque_opaque_t = OpTypePointer CrossWorkgroup %Opaque_opaque_t
+%float_3_14159274 = OpConstant %float 3.14159274
+         %13 = OpTypeFunction %void %_ptr_CrossWorkgroup_Opaque_opaque_t
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+         %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_Opaque_opaque_t %uint %float
+          %4 = OpFunction %void None %14
+         %15 = OpFunctionParameter %_ptr_CrossWorkgroup_Opaque_opaque_t
+         %16 = OpFunctionParameter %uint
+         %17 = OpFunctionParameter %float
+               OpFunctionEnd
+          %1 = OpFunction %void None %13
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_Opaque_opaque_t
+         %18 = OpLabel
+         %19 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %20 = OpCompositeExtract %uint %19 0
+         %21 = OpFunctionCall %void %4 %in %20 %float_3_14159274
+               OpReturn
+               OpFunctionEnd

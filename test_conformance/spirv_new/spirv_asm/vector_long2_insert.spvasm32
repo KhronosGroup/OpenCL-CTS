@@ -1,0 +1,43 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 24
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %1 "vector_long2_insert"
+               OpName %in "in"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %in FuncParamAttr NoCapture
+               OpDecorate %4 FuncParamAttr NoCapture
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+     %uint_0 = OpTypeInt 32 0
+       %void = OpTypeVoid
+      %ulong = OpTypeInt 64 0
+    %v2ulong = OpTypeVector %ulong 2
+%_ptr_CrossWorkgroup_ulong = OpTypePointer CrossWorkgroup %ulong
+%_ptr_CrossWorkgroup_v2ulong = OpTypePointer CrossWorkgroup %v2ulong
+         %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_ulong %_ptr_CrossWorkgroup_v2ulong %uint_0
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %1 = OpFunction %void None %14
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_ulong
+          %4 = OpFunctionParameter %_ptr_CrossWorkgroup_v2ulong
+         %15 = OpFunctionParameter %uint_0
+         %16 = OpLabel
+         %17 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %18 = OpCompositeExtract %uint %17 0
+         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ulong %in %18
+         %20 = OpLoad %ulong %19
+         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v2ulong %4 %18
+         %22 = OpLoad %v2ulong %21
+         %23 = OpVectorInsertDynamic %v2ulong %22 %20 %15
+               OpStore %21 %23
+               OpReturn
+               OpFunctionEnd
