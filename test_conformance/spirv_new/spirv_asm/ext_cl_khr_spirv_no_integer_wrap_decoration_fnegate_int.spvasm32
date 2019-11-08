@@ -6,11 +6,11 @@
                OpCapability Addresses
                OpCapability Linkage
                OpCapability Kernel
+               OpExtension "SPV_KHR_no_integer_wrap_decoration"
           %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %2 "fmath_cl"
                OpSource OpenCL_C 200000
-               OpExtension "SPV_KHR_no_integer_wrap_decoration"
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
                OpName %out "out"
                OpName %lhs "lhs"
