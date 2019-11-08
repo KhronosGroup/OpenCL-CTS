@@ -38,39 +38,39 @@
         %rep = OpFunctionParameter %uint
         %num = OpFunctionParameter %uint
          %20 = OpLabel
-         %21 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
-         %22 = OpCompositeExtract %ulong %21 0
-         %23 = OpShiftLeftLogical %ulong %22 %ulong_32
-         %24 = OpShiftRightArithmetic %ulong %23 %ulong_32
-         %25 = OpSConvert %uint %24
-         %26 = OpVariable %_ptr_Function_uint Function
-         %27 = OpVariable %_ptr_Function_uint Function
-               OpStore %26 %uint_0 Aligned 4
-               OpStore %27 %uint_0 Aligned 4
+         %21 = OpVariable %_ptr_Function_uint Function
+         %22 = OpVariable %_ptr_Function_uint Function
+         %23 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %24 = OpCompositeExtract %ulong %23 0
+         %25 = OpShiftLeftLogical %ulong %24 %ulong_32
+         %26 = OpShiftRightArithmetic %ulong %25 %ulong_32
+         %27 = OpSConvert %uint %26
+               OpStore %21 %uint_0 Aligned 4
+               OpStore %22 %uint_0 Aligned 4
                OpBranch %28
          %28 = OpLabel
-         %29 = OpLoad %uint %27
+         %29 = OpLoad %uint %22
          %30 = OpSLessThan %bool %29 %rep
                OpLoopMerge %31 %32 Unroll
                OpBranchConditional %30 %33 %31
          %33 = OpLabel
-         %34 = OpLoad %uint %27
+         %34 = OpLoad %uint %22
          %35 = OpIMul %uint %34 %num
-         %36 = OpIAdd %uint %25 %35
+         %36 = OpIAdd %uint %27 %35
          %37 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %in %36
          %38 = OpLoad %uint %37
-         %39 = OpLoad %uint %26
+         %39 = OpLoad %uint %21
          %40 = OpIAdd %uint %39 %38
-               OpStore %26 %40 Aligned 4
+               OpStore %21 %40 Aligned 4
                OpBranch %32
          %32 = OpLabel
-         %41 = OpLoad %uint %27
+         %41 = OpLoad %uint %22
          %42 = OpIAdd %uint %41 %uint_1
-               OpStore %27 %42
+               OpStore %22 %42
                OpBranch %28
          %31 = OpLabel
-         %43 = OpLoad %uint %26
-         %44 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %24
+         %43 = OpLoad %uint %21
+         %44 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %26
                OpStore %44 %43 Aligned 4
                OpReturn
                OpFunctionEnd

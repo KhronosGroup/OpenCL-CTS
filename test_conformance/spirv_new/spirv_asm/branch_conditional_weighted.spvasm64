@@ -35,29 +35,29 @@
         %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint
         %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint
          %18 = OpLabel
-         %19 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
-         %20 = OpCompositeExtract %ulong %19 0
-         %21 = OpShiftLeftLogical %ulong %20 %ulong_32
-         %22 = OpShiftRightArithmetic %ulong %21 %ulong_32
-         %23 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %lhs %22
-         %24 = OpLoad %uint %23 Aligned 4
-         %25 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %rhs %22
-         %26 = OpLoad %uint %25 Aligned 4
-         %27 = OpVariable %_ptr_Function_uint Function
-               OpStore %27 %uint_0
-         %28 = OpSLessThan %bool %24 %26
+         %19 = OpVariable %_ptr_Function_uint Function
+         %20 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %21 = OpCompositeExtract %ulong %20 0
+         %22 = OpShiftLeftLogical %ulong %21 %ulong_32
+         %23 = OpShiftRightArithmetic %ulong %22 %ulong_32
+         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %lhs %23
+         %25 = OpLoad %uint %24 Aligned 4
+         %26 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %rhs %23
+         %27 = OpLoad %uint %26 Aligned 4
+               OpStore %19 %uint_0
+         %28 = OpSLessThan %bool %25 %27
                OpBranchConditional %28 %29 %30 4 6
          %29 = OpLabel
-         %31 = OpISub %uint %26 %24
-               OpStore %27 %31
+         %31 = OpISub %uint %27 %25
+               OpStore %19 %31
                OpBranch %32
          %30 = OpLabel
-         %33 = OpISub %uint %24 %26
-               OpStore %27 %33
+         %33 = OpISub %uint %25 %27
+               OpStore %19 %33
                OpBranch %32
          %32 = OpLabel
-         %34 = OpLoad %uint %27
-         %35 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %22
+         %34 = OpLoad %uint %19
+         %35 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %23
                OpStore %35 %34 Aligned 4
                OpReturn
                OpFunctionEnd

@@ -32,27 +32,27 @@
         %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint
         %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint
          %16 = OpLabel
-         %17 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
-         %18 = OpCompositeExtract %uint %17 0
-         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %lhs %18
-         %20 = OpLoad %uint %19 Aligned 4
-         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %rhs %18
-         %22 = OpLoad %uint %21 Aligned 4
-         %23 = OpVariable %_ptr_Function_uint Function
-         %24 = OpSLessThan %bool %20 %22
+         %17 = OpVariable %_ptr_Function_uint Function
+         %18 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %19 = OpCompositeExtract %uint %18 0
+         %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %lhs %19
+         %21 = OpLoad %uint %20 Aligned 4
+         %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %rhs %19
+         %23 = OpLoad %uint %22 Aligned 4
+         %24 = OpSLessThan %bool %21 %23
                OpSelectionMerge %25 Flatten
                OpBranchConditional %24 %26 %27
          %26 = OpLabel
-         %28 = OpISub %uint %22 %20
-               OpStore %23 %28
+         %28 = OpISub %uint %23 %21
+               OpStore %17 %28
                OpBranch %25
          %27 = OpLabel
-         %29 = OpISub %uint %20 %22
-               OpStore %23 %29
+         %29 = OpISub %uint %21 %23
+               OpStore %17 %29
                OpBranch %25
          %25 = OpLabel
-         %30 = OpLoad %uint %23
-         %31 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %18
+         %30 = OpLoad %uint %17
+         %31 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %19
                OpStore %31 %30 Aligned 4
                OpReturn
                OpFunctionEnd
