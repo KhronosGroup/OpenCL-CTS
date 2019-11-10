@@ -119,7 +119,7 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     /* Create work queues */
     for( i = 0; i < queueCount; i++ )
     {
-        queues[i] = clCreateCommandQueueWithProperties( context, devices[ i % deviceCount ], 0, &error );
+        queues[i] = clCreateCommandQueue( context, devices[ i % deviceCount ], 0, &error );
     if (error != CL_SUCCESS || queues[i] == NULL) {
       log_info("Could not create queue[%d].\n", (int)i);
       queueCount = i;
