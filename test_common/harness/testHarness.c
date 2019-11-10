@@ -695,28 +695,7 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
     cl_int error;
     cl_context context = NULL;
     cl_command_queue queue = NULL;
-    const cl_command_queue_properties cmd_queueProps = (queueProps)?CL_QUEUE_PROPERTIES:0;
-    cl_command_queue_properties queueCreateProps[] = {cmd_queueProps, queueProps, 0};
 
-    /* Create a context to work with, unless we're told not to */
-    if( !forceNoContextCreation )
-    {
-        context = clCreateContext(NULL, 1, &deviceToUse, notify_callback, NULL, &error );
-        if (!context)
-        {
-            print_error( error, "Unable to create testing context" );
-            return TEST_FAIL;
-        }
-
-        queue = clCreateCommandQueueWithProperties( context, deviceToUse, &queueCreateProps[0], &error );
-        if( queue == NULL )
-        {
-            print_error( error, "Unable to create testing command queue" );
-            return TEST_FAIL;
-        }
-    }
-
-    /* Run the test and print the result */
     log_info( "%s...\n", test.name );
     fflush( stdout );
 
@@ -728,6 +707,32 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
         return TEST_SKIP;
     }
 
+    /* Create a context to work with, unless we're told not to */
+    if( !forceNoContextCreation )
+    {
+        context = clCreateContext(NULL, 1, &deviceToUse, notify_callback, NULL, &error );
+        if (!context)
+        {
+            print_error( error, "Unable to create testing context" );
+            return TEST_FAIL;
+        }
+
+        if (device_version < Version(2, 0)) {
+            queue = clCreateCommandQueue(context, deviceToUse, queueProps, &error);
+        } else {
+            const cl_command_queue_properties cmd_queueProps = (queueProps)?CL_QUEUE_PROPERTIES:0;
+            cl_command_queue_properties queueCreateProps[] = {cmd_queueProps, queueProps, 0};
+            queue = clCreateCommandQueueWithProperties( context, deviceToUse, &queueCreateProps[0], &error );
+        }
+
+        if( queue == NULL )
+        {
+            print_error( error, "Unable to create testing command queue" );
+            return TEST_FAIL;
+        }
+    }
+
+    /* Run the test and print the result */
     error = check_functions_for_offline_compiler(test.name, deviceToUse);
     test_missing_support_offline_cmpiler(error, test.name);
 
