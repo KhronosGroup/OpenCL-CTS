@@ -51,6 +51,7 @@ cl_int cImage_check_mem_host_no_access<T>:: verify_RW_Image()
                           &color,
                           img_orig, img_region,
                           0, NULL, &event);
+  test_error(err, "clEnqueueFillImage error");
 
   if (!this->m_blocking) {
     err = clWaitForEvents(1, &event);
