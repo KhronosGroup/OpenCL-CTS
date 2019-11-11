@@ -134,7 +134,7 @@ int test_get_image_info_single( cl_device_id device, image_descriptor *imageInfo
 
   size_t outSlicePitch;
   error = clGetImageInfo( image, CL_IMAGE_SLICE_PITCH, sizeof( outSlicePitch ), &outSlicePitch, NULL );
-  test_error( error, "Unable to get image info (row pitch)" );
+  test_error( error, "Unable to get image info (slice pitch)" );
     if( imageInfo->type == CL_MEM_OBJECT_IMAGE1D && outSlicePitch != 0 )
     {
         log_error( "ERROR: slice pitch returned is invalid! (expected %d, got %d)\n",

@@ -389,7 +389,7 @@ int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_q
     // extensions can support double but may not support cl_khr_fp64, which implies math library support.
 
     cl_uint baseAddrAlign;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, baseAddrAlign, "base address alignment", "%d bytes", int )
+    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, baseAddrAlign, "base address alignment", "%d bits", int )
 
     cl_uint maxDataAlign;
     TEST_DEVICE_PARAM( deviceID, CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE, maxDataAlign, "min data type alignment", "%d bytes", int )
