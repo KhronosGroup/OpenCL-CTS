@@ -118,7 +118,7 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
     }
 
     // Create a queue
-    item->q = clCreateCommandQueueWithProperties( item->c, deviceID, 0, &error);
+    item->q = clCreateCommandQueue( item->c, deviceID, 0, &error);
     if( item->q == NULL || error != CL_SUCCESS)
     {
         if (err) {

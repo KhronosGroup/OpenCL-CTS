@@ -1093,7 +1093,7 @@ test_status InitCL( cl_device_id device )
     gContext = clCreateContext(props, 1, &device, notify_callback, NULL, NULL);
     checkNull(gContext, "clCreateContext");
 
-    gQueue = clCreateCommandQueueWithProperties(gContext, device, 0, NULL);
+    gQueue = clCreateCommandQueue(gContext, device, 0, NULL);
     checkNull(gQueue, "clCreateCommandQueue");
 
     releaseOutputStream(gFd);

@@ -332,7 +332,7 @@ int TestFunc_Float_Float_Float_common(const Func *f, MTdata d, int isNextafter)
                 goto exit;
             }
         }
-        test_info.tinfo[i].tQueue = clCreateCommandQueueWithProperties(gContext, gDevice, 0, &error);
+        test_info.tinfo[i].tQueue = clCreateCommandQueue(gContext, gDevice, 0, &error);
         if( NULL == test_info.tinfo[i].tQueue || error )
         {
             vlog_error( "clCreateCommandQueue failed. (%d)\n", error );
@@ -1065,7 +1065,7 @@ int TestFunc_Double_Double_Double_common(const Func *f, MTdata d, int isNextafte
                 goto exit;
             }
         }
-        test_info.tinfo[i].tQueue = clCreateCommandQueueWithProperties(gContext, gDevice, 0, &error);
+        test_info.tinfo[i].tQueue = clCreateCommandQueue(gContext, gDevice, 0, &error);
         if( NULL == test_info.tinfo[i].tQueue || error )
         {
             vlog_error( "clCreateCommandQueue failed. (%d)\n", error );

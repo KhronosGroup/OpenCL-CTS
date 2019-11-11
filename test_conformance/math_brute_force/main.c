@@ -1371,7 +1371,7 @@ test_status InitCL( cl_device_id device )
         return TEST_FAIL;
     }
 
-    gQueue = clCreateCommandQueueWithProperties(gContext, gDevice, 0, &error);
+    gQueue = clCreateCommandQueue(gContext, gDevice, 0, &error);
     if( NULL == gQueue || error )
     {
         vlog_error( "clCreateCommandQueue failed. (%d)\n", error );
