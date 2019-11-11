@@ -194,8 +194,8 @@ int test_image_type( cl_device_id device, cl_mem_object_type imageType, cl_mem_f
         ret += test_return;
     }
 
-    delete filterFlags;
-    delete formatList;
+    delete[] filterFlags;
+    delete[] formatList;
 
     return ret;
 }
