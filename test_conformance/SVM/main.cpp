@@ -262,19 +262,19 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
 }
 
 test_definition test_list[] = {
-    ADD_TEST( svm_byte_granularity ),
-    ADD_TEST( svm_set_kernel_exec_info_svm_ptrs ),
-    ADD_TEST( svm_fine_grain_memory_consistency ),
-    ADD_TEST( svm_fine_grain_sync_buffers ),
-    ADD_TEST( svm_shared_address_space_fine_grain ),
-    ADD_TEST( svm_shared_sub_buffers ),
-    ADD_TEST( svm_shared_address_space_fine_grain_buffers ),
-    ADD_TEST( svm_allocate_shared_buffer ),
-    ADD_TEST( svm_shared_address_space_coarse_grain_old_api ),
-    ADD_TEST( svm_shared_address_space_coarse_grain_new_api ),
-    ADD_TEST( svm_cross_buffer_pointers_coarse_grain ),
-    ADD_TEST( svm_pointer_passing ),
-    ADD_TEST( svm_enqueue_api ),
+    ADD_TEST_VERSION( svm_byte_granularity, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_set_kernel_exec_info_svm_ptrs, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_fine_grain_memory_consistency, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_fine_grain_sync_buffers, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_shared_address_space_fine_grain, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_shared_sub_buffers, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_shared_address_space_fine_grain_buffers, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_allocate_shared_buffer, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_shared_address_space_coarse_grain_old_api, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_shared_address_space_coarse_grain_new_api, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_cross_buffer_pointers_coarse_grain, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_pointer_passing, Version(2, 0) ),
+    ADD_TEST_VERSION( svm_enqueue_api, Version(2, 0) ),
     ADD_TEST_VERSION( svm_migrate, Version(2, 1)),
 };
 
