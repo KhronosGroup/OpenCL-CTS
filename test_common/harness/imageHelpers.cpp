@@ -1808,7 +1808,7 @@ static inline void  check_for_denorms(float a[4], int *containsDenorms )
     {
         for( int i = 0; i < 4; i++ )
         {
-            if( fabsf(a[i]) < FLT_MIN )
+            if( IsFloatSubnormal( a[i] ) )
                 a[i] = copysignf( 0.0f, a[i] );
         }
     }
@@ -1816,7 +1816,7 @@ static inline void  check_for_denorms(float a[4], int *containsDenorms )
     {
         for( int i = 0; i < 4; i++ )
         {
-            if( fabs(a[i]) < FLT_MIN )
+            if( IsFloatSubnormal( a[i] ) )
             {
                 *containsDenorms = 1;
                 break;

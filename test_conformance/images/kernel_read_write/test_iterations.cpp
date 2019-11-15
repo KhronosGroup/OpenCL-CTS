@@ -1151,6 +1151,26 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues, double
     return 0;
 }
 
+bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo )
+{
+    bool pass = true;
+    // Compare floats
+    if( memcmp( expected, actual, 4 * get_format_channel_count( imageInfo->format ) ) != 0 )
+    {
+        // 8.3.3 Fix up cases where we have NaNs or flushed denorms; "all other values must be preserved"
+        for ( size_t j = 0; j < get_format_channel_count( imageInfo->format ); j++ )
+        {
+            if ( isnan( expected[j] ) && isnan( actual[j] ) )
+                continue;
+            if ( IsFloatSubnormal( expected[j] ) && actual[j] == 0.0f )
+                continue;
+            pass = false;
+            break;
+        }
+    }
+    return pass;
+}
+
 int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel kernel,
                         image_descriptor *imageInfo, image_sampler_data *imageSampler,
                        bool useFloatCoords, ExplicitType outputType, MTdata d )
