@@ -177,6 +177,7 @@ endif(CMAKE_BUILD_TYPE STREQUAL "release")
 
 add_subdirectory(test_common)
 add_subdirectory(test_conformance)
+add_subdirectory(test_extensions)
 
 set (PY_PATH   "${CLConform_SOURCE_DIR}/test_conformance/*.py")
 set (CSV_PATH  "${CLConform_SOURCE_DIR}/test_conformance/*.csv")
@@ -220,4 +221,3 @@ if(MSVC)
 endif(MSVC)
 
 set_property(TARGET COPY_FILES${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
-add_subdirectory( "test_extensions" )

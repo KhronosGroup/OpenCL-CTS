@@ -17,8 +17,9 @@ link_directories(${CL_LIB_DIR}, ${D3D11_LIB_DIR})
 
 list(APPEND CLConform_LIBRARIES d3d11 dxgi)
 
+set(MODULE_NAME D3D11)
 
-set(D3D11_SOURCES
+set(${MODULE_NAME}_SOURCES
     buffer.cpp
     texture2d.cpp
     texture3d.cpp
@@ -27,14 +28,10 @@ set(D3D11_SOURCES
     harness.cpp
 )
 
-add_executable(conformance_test_d3d11
-    ${D3D11_SOURCES})
-
 set_source_files_properties(
-    ${D3D11_SOURCES}
+    ${MODULE_NAME}_SOURCES
     PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_d3d11 harness
-    ${CLConform_LIBRARIES})
-
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include(../CMakeCommon.txt)
 endif(WIN32)
