@@ -47,8 +47,9 @@ void helpInfo ()
              "        --compilation-cache-mode <cache-mode>  Specify a compilation caching mode:\n"
              "                                 compile-if-absent  Read from cache if already populated, or\n"
              "                                                    else perform offline compilation (default)\n"
-             "                                 force-read      Force reading from the cache\n"
-             "                                 overwrite       Disable reading from the cache\n"
+             "                                 force-read        Force reading from the cache\n"
+             "                                 overwrite         Disable reading from the cache\n"
+             "                                 dump-cl-files     Dumps the .cl and build .options files used by the test suite\n"
              "        --compilation-cache-path <path>   Path for offline compiler output and CL source\n"
              "        --compilation-program <prog>      Program to use for offline compilation,\n"
              "                                          defaults to " DEFAULT_COMPILATION_PROGRAM "\n"
@@ -135,6 +136,10 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
                 {
                     gCompilationCacheMode = kCacheModeOverwrite;
                 }
+                else if (!strcmp(mode, "dump-cl-files"))
+                {
+                    gCompilationCacheMode = kCacheModeDumpCl;
+                }
                 else
                 {
                     log_error("Compilation cache mode not recognized: %s\n", mode);
@@ -185,7 +190,8 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
         i -= delArg;
     }
 
-    if (gCompilationCacheMode != kCacheModeCompileIfAbsent && gCompilationMode == kOnline)
+    if ((gCompilationCacheMode == kCacheModeForceRead || gCompilationCacheMode == kCacheModeOverwrite)
+         && gCompilationMode == kOnline)
     {
         log_error("Compilation cache mode can only be specified when using an offline compilation mode.\n");
         return -1;
