@@ -86,16 +86,7 @@ test_definition test_list[] = {
     ADD_TEST( min_max_device_version ),
     ADD_TEST( min_max_language_version ),
 
-    ADD_TEST( kernel_arg_changes ),
-    ADD_TEST( kernel_arg_multi_setup_random ),
-
-    ADD_TEST( native_kernel ),
-
     ADD_TEST( create_context_from_type ),
-
-    ADD_TEST( platform_extensions ),
-    ADD_TEST( get_platform_ids ),
-    ADD_TEST( bool_type ),
 
     ADD_TEST( repeated_setup_cleanup ),
 
@@ -103,9 +94,7 @@ test_definition test_list[] = {
     ADD_TEST( retain_queue_multiple ),
     ADD_TEST( retain_mem_object_single ),
     ADD_TEST( retain_mem_object_multiple ),
-    ADD_TEST( min_data_type_align_size_alignment ),
 
-    ADD_TEST( mem_object_destructor_callback ),
     ADD_TEST( null_buffer_arg ),
     ADD_TEST( get_buffer_info ),
     ADD_TEST( get_image2d_info ),

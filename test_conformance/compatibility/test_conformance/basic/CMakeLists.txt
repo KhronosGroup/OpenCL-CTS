@@ -26,8 +26,6 @@ set(${MODULE_NAME}_SOURCES
     test_barrier.c
     test_basic_parameter_types.c
     test_arrayreadwrite.c
-    test_arraycopy.c
-    test_imagearraycopy.c
     test_imagearraycopy3d.c
     test_imagecopy.c
     test_imagerandomcopy.c
@@ -39,16 +37,11 @@ set(${MODULE_NAME}_SOURCES
     test_astype.cpp
     test_async_copy.cpp
     test_sizeof.c
-    test_vector_creation.cpp
     test_vec_type_hint.c
-    test_numeric_constants.cpp
     test_constant_source.cpp
     test_bufferreadwriterect.c
     test_async_strided_copy.cpp
-    test_preprocessors.cpp
     test_kernel_memory_alignment.cpp
-    test_global_work_offsets.cpp
-    test_kernel_call_kernel_function.cpp
     test_local_kernel_scope.cpp
 )
 
