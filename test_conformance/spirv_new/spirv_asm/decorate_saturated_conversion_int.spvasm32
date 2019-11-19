@@ -1,0 +1,45 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 24
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Float64
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %1 "decorate_saturated_conversion_int"
+               OpName %res "res"
+               OpName %lhs "lhs"
+               OpName %rhs "rhs"
+               OpName %entry "entry"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpDecorate %7 SaturatedConversion
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+     %double = OpTypeFloat 64
+%_ptr_CrossWorkgroup_double = OpTypePointer CrossWorkgroup %double
+         %15 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_double %_ptr_CrossWorkgroup_double
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %1 = OpFunction %void None %15
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_double
+        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_double
+      %entry = OpLabel
+         %16 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %17 = OpCompositeExtract %uint %16 0
+         %18 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_double %lhs %17
+         %19 = OpLoad %double %18
+         %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_double %rhs %17
+         %21 = OpLoad %double %20
+         %22 = OpFMul %double %19 %21
+          %7 = OpConvertFToS %uint %22
+         %23 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %17
+               OpStore %23 %7
+               OpReturn
+               OpFunctionEnd

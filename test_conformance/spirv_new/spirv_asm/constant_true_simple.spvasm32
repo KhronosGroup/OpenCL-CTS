@@ -1,0 +1,36 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 19
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %1 "constant_true_simple"
+               OpName %in "in"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %in FuncParamAttr NoCapture
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+         %10 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
+       %true = OpConstantTrue %bool
+     %uint_1 = OpConstant %uint 1
+     %uint_0 = OpConstant %uint 0
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %1 = OpFunction %void None %10
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %14 = OpLabel
+         %15 = OpSelect %uint %true %uint_1 %uint_0
+         %16 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %17 = OpCompositeExtract %uint %16 0
+         %18 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %in %17
+               OpStore %18 %15 Aligned 4
+               OpReturn
+               OpFunctionEnd

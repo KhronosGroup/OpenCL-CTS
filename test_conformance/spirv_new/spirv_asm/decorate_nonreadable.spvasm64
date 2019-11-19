@@ -1,0 +1,79 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 38
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpCapability ImageBasic
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %2 "decorate_nonreadable"
+               OpSource OpenCL_C 100000
+               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %__spirv_BuiltInGlobalSize "__spirv_BuiltInGlobalSize"
+               OpName %dst "dst"
+               OpName %src "src"
+               OpName %entry "entry"
+               OpName %call "call"
+               OpName %conv "conv"
+               OpName %call1 "call1"
+               OpName %conv2 "conv2"
+               OpName %conv3 "conv3"
+               OpName %call4 "call4"
+               OpName %mul "mul"
+               OpName %add "add"
+               OpName %vecinit "vecinit"
+               OpName %vecinit7 "vecinit7"
+               OpName %sext "sext"
+               OpName %idxprom "idxprom"
+               OpName %arrayidx "arrayidx"
+               OpDecorate %dst NonReadable
+               OpDecorate %21 Constant
+         %21 = OpDecorationGroup
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalSize BuiltIn GlobalSize
+               OpDecorate %src FuncParamAttr NoCapture
+               OpDecorate %__spirv_BuiltInGlobalSize LinkageAttributes "__spirv_BuiltInGlobalSize" Import
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpGroupDecorate %21 %__spirv_BuiltInGlobalInvocationId %__spirv_BuiltInGlobalSize
+      %ulong = OpTypeInt 64 0
+       %uint = OpTypeInt 32 0
+   %ulong_32 = OpConstant %ulong 32
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+       %void = OpTypeVoid
+         %28 = OpTypeImage %void 2D 0 0 0 0 Unknown WriteOnly
+     %v4uint = OpTypeVector %uint 4
+%_ptr_CrossWorkgroup_v4uint = OpTypePointer CrossWorkgroup %v4uint
+         %31 = OpTypeFunction %void %28 %_ptr_CrossWorkgroup_v4uint
+     %v2uint = OpTypeVector %uint 2
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+%__spirv_BuiltInGlobalSize = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+          %2 = OpFunction %void None %31
+        %dst = OpFunctionParameter %28
+        %src = OpFunctionParameter %_ptr_CrossWorkgroup_v4uint
+      %entry = OpLabel
+         %33 = OpUndef %v2uint
+         %34 = OpLoad %v3ulong %__spirv_BuiltInGlobalInvocationId Aligned 0
+       %call = OpCompositeExtract %ulong %34 0
+       %conv = OpUConvert %uint %call
+         %35 = OpLoad %v3ulong %__spirv_BuiltInGlobalInvocationId Aligned 0
+      %call1 = OpCompositeExtract %ulong %35 1
+      %conv2 = OpUConvert %uint %call1
+      %conv3 = OpSConvert %ulong %conv2
+         %36 = OpLoad %v3ulong %__spirv_BuiltInGlobalSize Aligned 0
+      %call4 = OpCompositeExtract %ulong %36 0
+        %mul = OpIMul %ulong %conv3 %call4
+        %add = OpIAdd %ulong %mul %call
+    %vecinit = OpCompositeInsert %v2uint %conv2 %33 0
+   %vecinit7 = OpCompositeInsert %v2uint %conv %vecinit 1
+       %sext = OpShiftLeftLogical %ulong %add %ulong_32
+    %idxprom = OpShiftRightArithmetic %ulong %sext %ulong_32
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4uint %src %idxprom
+         %37 = OpLoad %v4uint %arrayidx Aligned 16
+               OpImageWrite %dst %vecinit7 %37
+               OpReturn
+               OpFunctionEnd

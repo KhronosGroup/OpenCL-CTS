@@ -1,0 +1,46 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 24
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Float16
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %2 "fmath_spv"
+               OpName %res "res"
+               OpName %lhs "lhs"
+               OpName %rhs "rhs"
+               OpName %entry "entry"
+               OpDecorate %7 FuncParamAttr NoCapture
+          %7 = OpDecorationGroup
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpGroupDecorate %7 %res %lhs %rhs
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+       %half = OpTypeFloat 16
+%_ptr_CrossWorkgroup_half = OpTypePointer CrossWorkgroup %half
+         %15 = OpTypeFunction %void %_ptr_CrossWorkgroup_half %_ptr_CrossWorkgroup_half %_ptr_CrossWorkgroup_half
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %2 = OpFunction %void None %15
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_half
+        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_half
+        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_half
+      %entry = OpLabel
+         %16 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %17 = OpCompositeExtract %uint %16 0
+         %18 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_half %lhs %17
+         %19 = OpLoad %half %18
+         %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_half %rhs %17
+         %21 = OpLoad %half %20
+         %22 = OpFRem %half %19 %21
+         %23 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_half %res %17
+               OpStore %23 %22
+               OpReturn
+               OpFunctionEnd

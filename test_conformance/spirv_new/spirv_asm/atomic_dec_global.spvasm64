@@ -1,0 +1,42 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 22
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %1 "atomic_dec_global"
+               OpName %__spirv_GlobalInvocationId "__spirv_GlobalInvocationId"
+               OpName %val "val"
+               OpName %counter "counter"
+               OpDecorate %__spirv_GlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_GlobalInvocationId Constant
+               OpDecorate %val FuncParamAttr NoCapture
+               OpDecorate %__spirv_GlobalInvocationId LinkageAttributes "__spirv_GlobalInvocationId" Import
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+         %11 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint
+     %uint_1 = OpConstant %uint 1
+   %uint_512 = OpConstant %uint 512
+   %ulong_32 = OpConstant %ulong 32
+%__spirv_GlobalInvocationId = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+          %1 = OpFunction %void None %11
+        %val = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+    %counter = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %15 = OpLabel
+         %16 = OpLoad %v3ulong %__spirv_GlobalInvocationId Aligned 0
+         %17 = OpCompositeExtract %ulong %16 0
+         %18 = OpShiftLeftLogical %ulong %17 %ulong_32
+         %19 = OpShiftRightArithmetic %ulong %18 %ulong_32
+         %20 = OpAtomicIDecrement %uint %counter %uint_1 %uint_512
+         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %val %19
+               OpStore %21 %20 Aligned 4
+               OpReturn
+               OpFunctionEnd
