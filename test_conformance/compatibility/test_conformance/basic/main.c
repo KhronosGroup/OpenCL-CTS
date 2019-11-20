@@ -71,8 +71,6 @@ test_definition test_list[] = {
     ADD_TEST( readimage3d_fp32 ),
     ADD_TEST( bufferreadwriterect ),
     ADD_TEST( arrayreadwrite ),
-    ADD_TEST( arraycopy ),
-    ADD_TEST( imagearraycopy ),
     ADD_TEST( imagearraycopy3d ),
     ADD_TEST( imagecopy ),
     ADD_TEST( imagecopy3d ),
@@ -120,22 +118,12 @@ test_definition test_list[] = {
     ADD_TEST( async_strided_copy_local_to_global ),
     ADD_TEST( prefetch ),
 
-    ADD_TEST( kernel_call_kernel_function ),
-    ADD_TEST( host_numeric_constants ),
-    ADD_TEST( kernel_numeric_constants ),
-    ADD_TEST( kernel_limit_constants ),
-    ADD_TEST( kernel_preprocessor_macros ),
-
     ADD_TEST( parameter_types ),
-    ADD_TEST( vector_creation ),
     ADD_TEST( vec_type_hint ),
     ADD_TEST( kernel_memory_alignment_local ),
     ADD_TEST( kernel_memory_alignment_global ),
     ADD_TEST( kernel_memory_alignment_constant ),
     ADD_TEST( kernel_memory_alignment_private ),
-
-    ADD_TEST( global_work_offsets ),
-    ADD_TEST( get_global_offset ),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
