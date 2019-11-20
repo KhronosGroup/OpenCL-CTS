@@ -36,27 +36,9 @@ test_definition test_list[] = {
     ADD_TEST( get_command_queue_info ),
     ADD_TEST( get_context_info ),
     ADD_TEST( get_device_info ),
-    ADD_TEST( enqueue_task ),
-    ADD_TEST( binary_get ),
-    ADD_TEST( binary_create ),
     ADD_TEST( kernel_required_group_size ),
 
-    ADD_TEST( release_kernel_order ),
-    ADD_TEST( release_during_execute ),
-
-    ADD_TEST( load_single_kernel ),
-    ADD_TEST( load_two_kernels ),
-    ADD_TEST( load_two_kernels_in_one ),
-    ADD_TEST( load_two_kernels_manually ),
-    ADD_TEST( get_program_info_kernel_names ),
     ADD_TEST( get_kernel_arg_info ),
-    ADD_TEST( create_kernels_in_program ),
-    ADD_TEST( get_kernel_info ),
-    ADD_TEST( execute_kernel_local_sizes ),
-    ADD_TEST( set_kernel_arg_by_index ),
-    ADD_TEST( set_kernel_arg_constant ),
-    ADD_TEST( set_kernel_arg_struct_array ),
-    ADD_TEST( kernel_global_constant ),
 
     ADD_TEST( min_max_thread_dimensions ),
     ADD_TEST( min_max_work_items_sizes ),
@@ -86,16 +68,6 @@ test_definition test_list[] = {
     ADD_TEST( min_max_device_version ),
     ADD_TEST( min_max_language_version ),
 
-    ADD_TEST( create_context_from_type ),
-
-    ADD_TEST( repeated_setup_cleanup ),
-
-    ADD_TEST( retain_queue_single ),
-    ADD_TEST( retain_queue_multiple ),
-    ADD_TEST( retain_mem_object_single ),
-    ADD_TEST( retain_mem_object_multiple ),
-
-    ADD_TEST( null_buffer_arg ),
     ADD_TEST( get_buffer_info ),
     ADD_TEST( get_image2d_info ),
     ADD_TEST( get_image3d_info ),
