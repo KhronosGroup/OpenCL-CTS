@@ -26,6 +26,7 @@ extern int gtestTypesToRun;
 extern bool gDeviceLt20;
 
 extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
+extern bool validate_half_write_results( cl_ushort *expected, cl_ushort *actual, image_descriptor *imageInfo );
 
 const char *readwrite1DArrayKernelSourcePattern =
 "__kernel void sample_kernel( __global %s4 *input, read_write image1d_array_t output %s)\n"
@@ -395,38 +396,22 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
                     }
                     else if( imageInfo->format->image_channel_data_type == CL_HALF_FLOAT )
                     {
-
-                        // Compare half floats
-                        if( memcmp( resultBuffer, resultPtr, 2 * get_format_channel_count( imageInfo->format ) ) != 0 )
+                        cl_ushort *e = (cl_ushort *)resultBuffer;
+                        cl_ushort *a = (cl_ushort *)resultPtr;
+                        if( !validate_half_write_results( e, a, imageInfo ) )
                         {
-                            cl_ushort *e = (cl_ushort *)resultBuffer;
-                            cl_ushort *a = (cl_ushort *)resultPtr;
-                            int err_cnt = 0;
-
-                            //Fix up cases where we have NaNs
-                            for( size_t j = 0; j < get_format_channel_count( imageInfo->format ); j++ )
+                            totalErrors++;
+                            log_error( "ERROR: Sample %ld (%ld,%ld) did not validate! (%s)\n", i, x, y, mem_flag_names[ mem_flag_index ] );
+                            log_error( "    Expected: 0x%04x 0x%04x 0x%04x 0x%04x\n", e[ 0 ], e[ 1 ], e[ 2 ], e[ 3 ] );
+                            log_error( "    Actual:   0x%04x 0x%04x 0x%04x 0x%04x\n", a[ 0 ], a[ 1 ], a[ 2 ], a[ 3 ] );
+                            if( inputType == kFloat )
                             {
-                                if( is_half_nan( e[j] ) && is_half_nan(a[j]) )
-                                    continue;
-                                if( e[j] != a[j] )
-                                    err_cnt++;
+                                float *p = (float *)(char *)imagePtr;
+                                log_error( "    Source: %a %a %a %a\n", p[ 0 ], p[ 1 ], p[ 2 ], p[ 3 ] );
+                                log_error( "          : %12.24f %12.24f %12.24f %12.24f\n", p[ 0 ], p[ 1 ], p[ 2 ], p[ 3 ] );
                             }
-
-                            if( err_cnt )
-                            {
-                                totalErrors++;
-                                log_error( "ERROR: Sample %ld (%ld,%ld) did not validate! (%s)\n", i, x, y, mem_flag_names[mem_flag_index] );
-                                log_error( "    Expected: 0x%04x 0x%04x 0x%04x 0x%04x\n", e[0], e[1], e[2], e[3] );
-                                log_error( "    Actual:   0x%04x 0x%04x 0x%04x 0x%04x\n", a[0], a[1], a[2], a[3] );
-                                if( inputType == kFloat )
-                                {
-                                    float *p = (float *)(char *)imagePtr;
-                                    log_error( "    Source: %a %a %a %a\n", p[ 0 ], p[ 1 ], p[ 2 ], p[ 3 ] );
-                                    log_error( "          : %12.24f %12.24f %12.24f %12.24f\n", p[ 0 ], p[ 1 ], p[ 2 ], p[ 3 ] );
-                                }
-                                if( ( --numTries ) == 0 )
-                                    return 1;
-                            }
+                            if( ( --numTries ) == 0 )
+                                return 1;
                         }
                     }
                     else

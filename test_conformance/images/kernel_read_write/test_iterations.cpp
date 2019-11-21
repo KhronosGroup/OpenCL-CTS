@@ -1171,6 +1171,25 @@ bool validate_float_write_results( float *expected, float *actual, image_descrip
     return pass;
 }
 
+bool validate_half_write_results( cl_ushort *expected, cl_ushort *actual, image_descriptor *imageInfo )
+{
+    bool pass = true;
+    // Compare half floats
+    if (memcmp(expected, actual, 2 * get_format_channel_count(imageInfo->format)) != 0) {
+
+        // 8.3.2 Fix up cases where we have NaNs or generated half denormals
+        for ( size_t j = 0; j < get_format_channel_count( imageInfo->format ); j++ ) {
+            if ( is_half_nan( expected[j] ) && is_half_nan( actual[j] ) )
+                continue;
+            if ( is_half_denorm( expected[j] ) && is_half_zero( actual[j] ) )
+                continue;
+            pass = false;
+            break;
+        }
+    }
+    return pass;
+}
+
 int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel kernel,
                         image_descriptor *imageInfo, image_sampler_data *imageSampler,
                        bool useFloatCoords, ExplicitType outputType, MTdata d )
