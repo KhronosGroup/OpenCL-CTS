@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -44,6 +44,7 @@ bool gTestMaxImages;
 bool gTestRounding;
 bool gTestImage2DFromBuffer;
 bool gTestMipmaps;
+bool gDeviceLt20 = false;
 cl_filter_mode    gFilterModeToUse = (cl_filter_mode)-1;
 // Default is CL_MEM_USE_HOST_PTR for the test
 cl_mem_flags    gMemFlagsToUse = CL_MEM_USE_HOST_PTR;
@@ -118,6 +119,12 @@ static int doTest( cl_device_id device, cl_context context, cl_command_queue que
     bool            tDisableOffsets = false;
     bool            tNormalizedModeToUse = false;
     cl_filter_mode  tFilterModeToUse = (cl_filter_mode)-1;
+    size_t major = 0;
+    size_t minor = 0;
+    int error = get_device_version(device, &major, &minor);
+    if (major < 2) {
+        gDeviceLt20 = true;
+    }
 
     if( testTypesToRun & kReadTests )
     {
@@ -171,6 +178,13 @@ static int doTest( cl_device_id device, cl_context context, cl_command_queue que
                 gMemFlagsToUse = saved_gMemFlagsToUse;
                 gEnablePitch = saved_gEnablePitch;
             }
+        }
+    }
+
+    if (testTypesToRun & kReadWriteTests) {
+        if (gDeviceLt20)  {
+            log_info("TEST skipped, Opencl 2.0 + requried for this test");
+            return ret;
         }
     }
 

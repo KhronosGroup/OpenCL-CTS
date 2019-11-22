@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,6 +20,7 @@ extern cl_channel_type      gChannelTypeToUse;
 extern cl_channel_order     gChannelOrderToUse;
 
 extern bool                 gDebugTrace;
+extern bool                 gDeviceLt20;
 
 extern bool                 gTestReadWrite;
 
@@ -209,6 +210,17 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
     cl_image_format *formatList;
     bool *filterFlags;
     unsigned int numFormats;
+    size_t major = 0;
+    size_t minor = 0;
+    int error = get_device_version(device, &major, &minor);
+    if (major < 2) {
+        gDeviceLt20 = true;
+    }
+
+    if (gDeviceLt20 && gTestReadWrite) {
+        log_info("TEST skipped, Opencl 2.0 + requried for this test");
+        return ret;
+    }
 
     // This flag is only for querying the list of supported formats
     // The flag for creating image will be set explicitly in test functions

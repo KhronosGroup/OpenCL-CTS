@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,7 @@ extern cl_addressing_mode gAddressModeToUse;
 extern int                gTypesToTest;
 extern int                gNormalizedModeToUse;
 extern cl_channel_type      gChannelTypeToUse;
-
+extern bool gDeviceLt20;
 
 extern bool gDebugTrace;
 
@@ -199,14 +199,20 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
 int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type imageType )
 {
     int version_check;
-  if ((version_check = check_opencl_version(device,1,2))) {
-    switch (imageType) {
-      case CL_MEM_OBJECT_IMAGE1D:
-        test_missing_feature(version_check, "image_1D");
-      case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-        test_missing_feature(version_check, "image_1D_array");
-      case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-        test_missing_feature(version_check, "image_2D_array");
+    size_t major = 0;
+    size_t minor = 0;
+    int error = get_device_version(device, &major, &minor);
+    if (major < 2) {
+        gDeviceLt20 = true;
+    }
+    if ((version_check = check_opencl_version(device,1,2))) {
+        switch (imageType) {
+            case CL_MEM_OBJECT_IMAGE1D:
+            test_missing_feature(version_check, "image_1D");
+            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            test_missing_feature(version_check, "image_1D_array");
+            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            test_missing_feature(version_check, "image_2D_array");
     }
   }
 
