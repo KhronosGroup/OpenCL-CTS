@@ -148,8 +148,8 @@ test_definition test_list[] = {
     ADD_TEST_VERSION( local_linear_id, Version(2, 0) ),
     ADD_TEST_VERSION( enqueued_local_size, Version(2, 0) ),
 
-    ADD_TEST_VERSION( simple_read_image_pitch, Version(2, 0) ),
-    ADD_TEST_VERSION( simple_write_image_pitch, Version(2, 0) ),
+    ADD_TEST( simple_read_image_pitch ),
+    ADD_TEST( simple_write_image_pitch ),
 
 #if defined( __APPLE__ )
     ADD_TEST( queue_priority ),
