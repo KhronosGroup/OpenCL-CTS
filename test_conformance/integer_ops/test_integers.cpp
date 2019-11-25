@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -47,9 +47,9 @@ static void patchup_divide_results( void *outData, const void *inDataA, const vo
 bool verify_integer_divideAssign( void *source, void *destination, ExplicitType vecType );
 bool verify_integer_moduloAssign( void *source, void *destination, ExplicitType vecType );
 
-int test_single_param_integer_kernel(cl_command_queue queue, cl_context context, const char *fnName,
+int test_single_param_integer_kernel(cl_device_id deviceID, cl_command_queue queue, cl_context context, const char *fnName,
                                   ExplicitType vecType, size_t vecSize, singleParamIntegerVerifyFn verifyFn,
-                                     MTdata d, bool useOpKernel = false )
+                                     MTdata d, bool useOpKernel = false)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -85,10 +85,23 @@ int test_single_param_integer_kernel(cl_command_queue queue, cl_context context,
                 sizeName );
 
     bool isOpenCL20Function = (strcmp(fnName,"ctz") == 0)? true: false;
+    size_t major = 0;
+    size_t minor = 0;
+    bool deviceLt20 = false;
+    error = get_device_version(deviceID, &major, &minor);
+    if (error != CL_SUCCESS)
+    {
+        vlog_error("\t\tFAILED -- Failed to get devcie version. (%d)\n", error);
+        return error;
+    }
+
+    if (major < 2) {
+        deviceLt20 = true;
+    }
 
     /* Create kernels */
     programPtr = kernelSource;
-    if( create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, (const char **)&programPtr, "sample_test", isOpenCL20Function ? "-cl-std=CL2.0": "" ) )
+    if( create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, (const char **)&programPtr, "sample_test", isOpenCL20Function && deviceLt20 == false ? "-cl-std=CL2.0": "" ) )
     {
         log_error("The program we attempted to compile was: \n%s\n", kernelSource);
         return -1;
@@ -223,7 +236,7 @@ int test_single_param_integer_kernel(cl_command_queue queue, cl_context context,
     return 0;
 }
 
-int test_single_param_integer_fn( cl_command_queue queue, cl_context context, const char *fnName, singleParamIntegerVerifyFn verifyFn, bool useOpKernel = false )
+int test_single_param_integer_fn(cl_device_id deviceID, cl_command_queue queue, cl_context context, const char *fnName, singleParamIntegerVerifyFn verifyFn, bool useOpKernel = false )
 {
     ExplicitType types[] = { kChar, kUChar, kShort, kUShort, kInt, kUInt, kLong, kULong, kNumExplicitTypes };
     unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 }; // TODO 3 not tested
@@ -238,7 +251,7 @@ int test_single_param_integer_fn( cl_command_queue queue, cl_context context, co
 
         for( index = 0; vecSizes[ index ] != 0; index++ )
         {
-            if( test_single_param_integer_kernel(queue, context, fnName, types[ typeIndex ], vecSizes[ index ], verifyFn, seed, useOpKernel ) != 0 )
+            if( test_single_param_integer_kernel(deviceID, queue, context, fnName, types[ typeIndex ], vecSizes[ index ], verifyFn, seed, useOpKernel ) != 0 )
             {
                 log_error( "   Vector %s%d FAILED\n", get_explicit_type_name( types[ typeIndex ] ), vecSizes[ index ] );
                 retVal = -1;
@@ -338,7 +351,7 @@ bool verify_integer_clz( void *source, void *destination, ExplicitType vecType )
 
 int test_integer_clz(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_single_param_integer_fn( queue, context, "clz", verify_integer_clz );
+    return test_single_param_integer_fn( deviceID, queue, context, "clz", verify_integer_clz );
 }
 
 
@@ -432,7 +445,7 @@ bool verify_integer_ctz( void *source, void *destination, ExplicitType vecType )
 
 int test_integer_ctz(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-  return test_single_param_integer_fn( queue, context, "ctz", verify_integer_ctz );
+  return test_single_param_integer_fn( deviceID, queue, context, "ctz", verify_integer_ctz );
 }
 
 #define OP_CASE( op, sizeName, size ) \
@@ -466,7 +479,7 @@ int test_integer_ctz(cl_device_id deviceID, cl_context context, cl_command_queue
     }    \
     int test_integer_##opName##Assign(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)    \
     {    \
-        return test_single_param_integer_fn( queue, context, #op, verify_integer_##opName##Assign, true ); \
+        return test_single_param_integer_fn( deviceID, queue, context, #op, verify_integer_##opName##Assign, true ); \
     }
 
 OP_TEST( +, add )
@@ -523,7 +536,7 @@ OP_TEST( &, and )
     }    \
     int test_integer_##opName##Assign(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)    \
     {    \
-        return test_single_param_integer_fn( queue, context, #op, verify_integer_##opName##Assign, true ); \
+        return test_single_param_integer_fn( deviceID, queue, context, #op, verify_integer_##opName##Assign, true ); \
     }
 
 OP_TEST_GUARD( /, divide )

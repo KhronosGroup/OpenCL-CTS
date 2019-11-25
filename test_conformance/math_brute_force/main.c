@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1705,9 +1705,19 @@ int IsTininessDetectedBeforeRounding( void )
 int MakeKernel( const char **c, cl_uint count, const char *name, cl_kernel *k, cl_program *p )
 {
     int error = 0;
-    char options[200];
+    char options[200] = "";
+    size_t major = 0;
+    size_t minor = 0;
 
-    strcpy(options, "-cl-std=CL2.0");
+    error = get_device_version(gDevice, &major, &minor);
+    if (error != CL_SUCCESS)
+    {
+        vlog_error("\t\tFAILED -- Failed to get devcie version. (%d)\n", error);
+        return error;
+    }
+    if (major >= 2) {
+        strcpy(options, "-cl-std=CL2.0");
+    }
 
     if( gForceFTZ )
     {
@@ -1745,9 +1755,18 @@ int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel
 {
     int error = 0;
     cl_uint i;
-    char options[200];
-
-    strcpy(options, "-cl-std=CL2.0");
+    char options[200] = "";
+    size_t major = 0;
+    size_t minor = 0;
+    error = get_device_version(gDevice, &major, &minor);
+    if (error != CL_SUCCESS)
+    {
+        vlog_error("\t\tFAILED -- Failed to get devcie version. (%d)\n", error);
+        return error;
+    }
+    if (major >= 2) {
+        strcpy(options, "-cl-std=CL2.0");
+    }
 
     if (gForceFTZ)
     {
