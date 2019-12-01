@@ -239,13 +239,8 @@ int test_image_param(cl_device_id device, cl_context context, cl_command_queue q
     test_error( error, "Unable to create testing kernel" );
 
     // Also create a sampler to use for all the runs
-    cl_sampler_properties properties[] = {
-        CL_SAMPLER_NORMALIZED_COORDS, CL_FALSE,
-        CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_CLAMP_TO_EDGE,
-        CL_SAMPLER_FILTER_MODE, CL_FILTER_NEAREST,
-        0 };
-    clSamplerWrapper sampler = clCreateSamplerWithProperties(context, properties, &error);
-    test_error(error, "clCreateSamplerWithProperties failed");
+    clSamplerWrapper sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &error );
+    test_error( error, "clCreateSampler failed" );
 
     // Set up the arguments for each and queue
     for( i = 0, idx = 0; i < numSizes; i++ )
