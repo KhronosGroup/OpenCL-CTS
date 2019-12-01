@@ -33,8 +33,10 @@ bool gTestRounding = false;
 
 test_definition test_list[] = {
     ADD_TEST( get_platform_info ),
-    ADD_TEST( get_sampler_info ),
-    ADD_TEST( get_command_queue_info ),
+    ADD_TEST_VERSION( get_sampler_info, Version(2, 0) ),
+    ADD_TEST( get_sampler_info_compatibility ),
+    ADD_TEST_VERSION( get_command_queue_info, Version(2, 0) ),
+    ADD_TEST( get_command_queue_info_compatibility ),
     ADD_TEST( get_context_info ),
     ADD_TEST( get_device_info ),
     ADD_TEST( enqueue_task ),

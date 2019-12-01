@@ -31,13 +31,6 @@ cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 bool gTestRounding = false;
 
 test_definition test_list[] = {
-    ADD_TEST( get_platform_info ),
-    ADD_TEST( get_sampler_info ),
-    ADD_TEST( get_command_queue_info ),
-    ADD_TEST( get_context_info ),
-    ADD_TEST( get_device_info ),
-    ADD_TEST( kernel_required_group_size ),
-
     ADD_TEST( get_kernel_arg_info ),
 
     ADD_TEST( min_max_thread_dimensions ),

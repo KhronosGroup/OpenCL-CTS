@@ -6,6 +6,7 @@ set(${MODULE_NAME}_SOURCES
          test_retain.cpp
          test_retain_program.c
          test_queries.cpp
+         test_queries_compatibility.cpp
          test_create_kernels.c
          test_kernels.c
          test_api_min_max.c
