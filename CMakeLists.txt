@@ -123,6 +123,11 @@ else(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
     message(FATAL_ERROR "Either install OpenCL or pass -DCL_INCLUDE_DIR, -DCL_LIB_DIR and -DCL_LIBCLCXX_DIR")
 endif(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
 
+# CLConform_GL_LIBRARIES_DIR - path to OpenGL libraries
+if(GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
+    link_directories(${CLConform_GL_LIBRARIES_DIR})
+endif (GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
+
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
