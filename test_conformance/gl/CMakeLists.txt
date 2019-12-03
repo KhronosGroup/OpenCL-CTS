@@ -1,7 +1,13 @@
 if(WIN32)
-list(APPEND CLConform_LIBRARIES  glut32 opengl32 glu32 )
+# Windows MSVC/Intel compiler hits: 
+# - dwonload free libraries package glew and glut/freeglut from the Internet
+# - add x64/x86 binaries with glew and glut/freeglut libraries (.lib) to the directory lib/x64 or lib/x86.
+#   Include folder libs as cmake argument -DCLConform_GL_LIBRARIES_DIR=lib\x64 while solution generation 
+# - GL headers files should be added to project source directory and GL subdirectory
+# - Add .dll files: glut glew to the test binary location.
+    list(APPEND CLConform_LIBRARIES opengl32 freeglut glew32)
 else(WIN32)
-list(APPEND CLConform_LIBRARIES  GL glut GLEW GLU)
+    list(APPEND CLConform_LIBRARIES  GL glut GLEW GLU)
 endif(WIN32)
 
 set (GL_SOURCES
@@ -29,7 +35,7 @@ set (GL_SOURCES
     ../../test_common/harness/mt19937.c
     ../../test_common/harness/testHarness.c
     ../../test_common/harness/threadTesting.c 
-    ../../test_common/harness/imageHelpers.cpp
+    ../../test_common/harness/msvc9.c 
     )
 
 if (WIN32)
@@ -49,13 +55,6 @@ if(MINGW)
     include_directories("./GLEW/")
 endif(MINGW)
 
-if (MSVC)
-    if(CMAKE_CL_64)
-    list(APPEND CLConform_LIBRARIES glew64)
-    else(CMAKE_CL_64)
-    list(APPEND CLConform_LIBRARIES glew32)
-    endif(CMAKE_CL_64)
-endif(MSVC)
 
 add_executable(conformance_test_gl
         ${GL_SOURCES} ${GLUT_SOURCES})

@@ -4,6 +4,11 @@ option(D3D10_IS_SUPPORTED "Run DirectX 10 interop tests" OFF)
 option(D3D11_IS_SUPPORTED "Run DirectX 11 interop tests" OFF)
 option(GL_IS_SUPPORTED "Run OpenGL interop tests" OFF)
 
+# CLConform_GL_LIBRARIES_DIR - path to OpenGL libraries
+if(GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
+    link_directories(${CLConform_GL_LIBRARIES_DIR})
+endif (GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
+
 if(MSVC)
   # The CTS will not link on MSVC 32-bit builds. To workaround this, add the
   # /LARGEADDRESSAWARE option as a linker flag. This is automatically set for
