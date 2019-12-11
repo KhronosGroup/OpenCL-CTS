@@ -2,7 +2,6 @@ set(MODULE_NAME COMPATIBILITY_API)
 
 set(${MODULE_NAME}_SOURCES
          main.c
-         test_queries.cpp
          test_api_min_max.c
          test_mem_object_info.cpp
          test_kernel_arg_info.c
