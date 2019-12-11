@@ -113,13 +113,8 @@ int test_readimage3d_int16(cl_device_id device, cl_context context, cl_command_q
   if (err)
     return -1;
 
-  cl_sampler_properties properties[] = {
-    CL_SAMPLER_NORMALIZED_COORDS, CL_FALSE,
-    CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_CLAMP_TO_EDGE,
-    CL_SAMPLER_FILTER_MODE, CL_FILTER_NEAREST,
-    0 };
-  cl_sampler sampler = clCreateSamplerWithProperties(context, properties, &err);
-  test_error(err, "clCreateSamplerWithProperties failed");
+  cl_sampler sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
+  test_error(err, "clCreateSampler failed");
 
   err  = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
   err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);

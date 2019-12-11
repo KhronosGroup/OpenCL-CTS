@@ -33,25 +33,10 @@ bool gTestRounding = false;
 test_definition test_list[] = {
     ADD_TEST( sizeof ),
     ADD_TEST( readimage ),
-    ADD_TEST( readimage_int16 ),
-    ADD_TEST( readimage_fp32 ),
     ADD_TEST( writeimage ),
-    ADD_TEST( mri_one ),
 
-    ADD_TEST( mri_multiple ),
-    ADD_TEST( image_r8 ),
-    ADD_TEST( readimage3d ),
-    ADD_TEST( readimage3d_int16 ),
-    ADD_TEST( readimage3d_fp32 ),
     ADD_TEST( bufferreadwriterect ),
     ADD_TEST( imagearraycopy3d ),
-    ADD_TEST( imagenpot ),
-
-    ADD_TEST( imagedim_pow2 ),
-    ADD_TEST( imagedim_non_pow2 ),
-    ADD_TEST( image_param ),
-    ADD_TEST( image_multipass_integer_coord ),
-    ADD_TEST( image_multipass_float_coord ),
 
     ADD_TEST( async_copy_global_to_local ),
     ADD_TEST( async_copy_local_to_global ),
