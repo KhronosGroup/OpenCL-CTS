@@ -621,6 +621,11 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
     // Get device CL_DEVICE_ADDRESS_BITS
     int error;
     cl_uint device_address_space_size = 0;
+    if (device == NULL)
+    {
+        error = get_first_device_id(context, device);
+        test_error(error, "Failed to get device ID for first device");
+    }
     error = get_device_address_bits(device, device_address_space_size);
     if (error != CL_SUCCESS)
         return error;
@@ -634,11 +639,6 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
                                                         buildOptions);
 
 
-    if (device == NULL)
-    {
-        error = get_first_device_id(context, device);
-        test_error(error, "Failed to get device ID for first device");
-    }
 
     std::ifstream ifs;
     error = get_offline_compiler_output(ifs, device, device_address_space_size, openclCXX, compilationMode, bOptions, gCompilationCachePath, kernelName);
