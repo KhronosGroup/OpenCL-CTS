@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum
 {
