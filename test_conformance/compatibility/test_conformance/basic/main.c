@@ -36,7 +36,6 @@ test_definition test_list[] = {
     ADD_TEST( writeimage ),
 
     ADD_TEST( bufferreadwriterect ),
-    ADD_TEST( imagearraycopy3d ),
 
     ADD_TEST( async_copy_global_to_local ),
     ADD_TEST( async_copy_local_to_global ),
