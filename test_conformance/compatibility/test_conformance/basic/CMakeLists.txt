@@ -4,7 +4,6 @@ set(${MODULE_NAME}_SOURCES
     main.c
     test_readimage.c
     test_writeimage.c
-    test_imagearraycopy3d.c
     test_async_copy.cpp
     test_sizeof.c
     test_bufferreadwriterect.c
