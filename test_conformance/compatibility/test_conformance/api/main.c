@@ -39,7 +39,6 @@ test_definition test_list[] = {
     ADD_TEST( get_image1d_info ),
     ADD_TEST( get_image1d_array_info ),
     ADD_TEST( get_image2d_array_info ),
-    ADD_TEST( queue_properties ),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
