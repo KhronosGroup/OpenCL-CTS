@@ -31,8 +31,6 @@ cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 bool gTestRounding = false;
 
 test_definition test_list[] = {
-    ADD_TEST( get_kernel_arg_info ),
-
     ADD_TEST( get_buffer_info ),
     ADD_TEST( get_image2d_info ),
     ADD_TEST( get_image3d_info ),

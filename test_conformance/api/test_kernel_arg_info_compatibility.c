@@ -30,7 +30,7 @@
 
 typedef char const * kernel_args_t[];
 
-kernel_args_t required_kernel_args = {
+static kernel_args_t required_kernel_args = {
     "typedef float4 typedef_type;\n"
     "\n"
     "typedef struct struct_type {\n"
@@ -1857,7 +1857,7 @@ kernel_args_t required_kernel_args = {
     "\n"
 };
 
-const char * required_arg_info[][72] = {
+static const char * required_arg_info[][72] = {
   // The minimum value of CL_DEVICE_MAX_CONSTANT_ARGS is 4
     {
         "constant_scalar_p0",
@@ -4038,7 +4038,7 @@ const char * required_arg_info[][72] = {
 };
 
 // Support for optional image data type
-const char * image_kernel_args[] = {
+static const char * image_kernel_args[] = {
     "#pragma OPENCL EXTENSION cl_khr_3d_image_writes: enable\n"
     "kernel void image_d(read_only image2d_t image2d_td0,\n"
     "                    write_only image2d_t image2d_td1,\n"
@@ -4057,7 +4057,7 @@ const char * image_kernel_args[] = {
     "\n"
 };
 
-const char * image_arg_info[][67] = {
+static const char * image_arg_info[][67] = {
     {
         "image_d",
         (const char *)CL_KERNEL_ARG_ADDRESS_GLOBAL, (const char *)CL_KERNEL_ARG_ACCESS_READ_ONLY, (const char *)(CL_KERNEL_ARG_TYPE_NONE), "image2d_t", "image2d_td0",
@@ -4078,7 +4078,7 @@ const char * image_arg_info[][67] = {
 };
 
 // Support for optional double data type
-const char * double_kernel_args[] = {
+static const char * double_kernel_args[] = {
     "kernel void double_scalar_p(constant double*constantdoublep,\n"
     "                            constant double *restrict constantdoublerestrictp,\n"
     "                            global double*globaldoublep,\n"
@@ -4249,7 +4249,7 @@ const char * double_kernel_args[] = {
     "\n"
 };
 
-const char * double_arg_info[][77] = {
+static const char * double_arg_info[][77] = {
     {
         "double_scalar_p",
         (const char *)CL_KERNEL_ARG_ADDRESS_CONSTANT, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "double*", "constantdoublep",
@@ -4458,7 +4458,7 @@ const char * double_arg_info[][77] = {
 
 
 // Support for optional half data type
-const char * half_kernel_args[] = {
+static const char * half_kernel_args[] = {
     "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
     "\n"
     "kernel void half_scalar_p(constant half*constanthalfp,\n"
@@ -4631,7 +4631,7 @@ const char * half_kernel_args[] = {
     "\n"
 };
 
-const char * half_arg_info[][77] = {
+static const char * half_arg_info[][77] = {
     {
         "half_scalar_p",
         (const char *)CL_KERNEL_ARG_ADDRESS_CONSTANT, (const char *)CL_KERNEL_ARG_ACCESS_NONE, (const char *)(CL_KERNEL_ARG_TYPE_CONST), "half*", "constanthalfp",
@@ -5079,7 +5079,7 @@ int test(cl_device_id deviceID, cl_context context, kernel_args_t kernel_args, c
 }
 
 
-int    test_get_kernel_arg_info( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_get_kernel_arg_info_compatibility( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
