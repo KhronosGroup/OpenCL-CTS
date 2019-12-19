@@ -210,10 +210,8 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
     cl_image_format *formatList;
     bool *filterFlags;
     unsigned int numFormats;
-    size_t major = 0;
-    size_t minor = 0;
-    int error = get_device_version(device, &major, &minor);
-    if (major < 2) {
+    auto version = get_device_cl_version(device);
+    if (version < Version(2, 0)) {
         gDeviceLt20 = true;
     }
 

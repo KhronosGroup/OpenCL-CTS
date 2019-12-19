@@ -119,10 +119,8 @@ static int doTest( cl_device_id device, cl_context context, cl_command_queue que
     bool            tDisableOffsets = false;
     bool            tNormalizedModeToUse = false;
     cl_filter_mode  tFilterModeToUse = (cl_filter_mode)-1;
-    size_t major = 0;
-    size_t minor = 0;
-    int error = get_device_version(device, &major, &minor);
-    if (major < 2) {
+    auto version = get_device_cl_version(device);
+    if (version < Version(2, 0)) {
         gDeviceLt20 = true;
     }
 
