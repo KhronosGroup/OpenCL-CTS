@@ -47,9 +47,11 @@
 
 #define kPageSize           4096
 #define DOUBLE_REQUIRED_FEATURES    ( CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM  )
+#define HALF_REQUIRED_FEATURES    ( CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM  )
 
 const char      **gTestNames = NULL;
 unsigned int    gTestNameCount = 0;
+bool            gTestRounding = false;
 char            appName[ MAXPATHLEN ] = "";
 cl_device_id    gDevice = NULL;
 cl_context      gContext = NULL;
@@ -68,6 +70,7 @@ int             gReportAverageTimes = 0;
 int             gForceFTZ = 0;
 int             gWimpyMode = 0;
 int             gHasDouble = 0;
+int             gHasHalf = 0;
 int             gTestFloat = 1;
 //This flag should be 'ON' by default and it can be changed through the command line arguments.
 volatile int             gTestFastRelaxed = 1;
@@ -103,9 +106,11 @@ uint32_t        gDeviceFrequency = 0;
 static MTdata   gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
 cl_device_fp_config gDoubleCapabilities = 0;
+cl_device_fp_config gHalfCapabilities = 0;
 int             gWimpyReductionFactor = 32;
 int             gWimpyBufferSize = BUFFER_SIZE;
 int             gVerboseBruteForce = 0;
+
 #if defined( __APPLE__ )
 int             gHasBasicDouble = 0;
 char*           gBasicDoubleFuncs[] = {
@@ -253,9 +258,32 @@ int doTest( const char* name )
                     return error;
                 }
             }
+    
+        }
+
+        if (gHasHalf && NULL != func_data->vtbl_ptr->HalfTestFunc)
+        {
+            //Disable fast-relaxed-math for half precision floating-point
+            int testFastRelaxedTmp = gTestFastRelaxed;
+            gTestFastRelaxed = 0;
+
+            gTestCount++;
+            vlog("%3d: ", gTestCount);
+            if (func_data->vtbl_ptr->HalfTestFunc(func_data, gMTdata))
+            {
+                gFailCount++;
+                error++;
+                if (gStopOnError)
+                {
+                    gTestFastRelaxed = testFastRelaxedTmp;
+                    gSkipRestOfTests = true;
+                    return error;
+                }
+            }
 
             //Re-enable testing fast-relaxed-math mode
             gTestFastRelaxed = testFastRelaxedTmp;
+
         }
 
 #if defined( __APPLE__ )
@@ -960,6 +988,10 @@ static int ParseArgs( int argc, const char **argv )
                         gTestFloat ^= 1;
                         break;
 
+                    case 'g':
+                        gHasHalf ^= 1;
+                        break;
+
                     case 'h':
                         PrintUsage();
                         return -1;
@@ -1211,6 +1243,7 @@ static void PrintUsage( void )
     vlog( "\t\t-a\tReport average times instead of best times\n" );
     vlog( "\t\t-c\tToggle test fp correctly rounded divide and sqrt (Default: off)\n");
     vlog( "\t\t-d\tToggle double precision testing. (Default: on iff khr_fp_64 on)\n" );
+    vlog( "\t\t-g\tToggle half precision testing. (Default: on if khr_fp_16 on)\n");
     vlog( "\t\t-f\tToggle float precision testing. (Default: on)\n" );
     vlog( "\t\t-r\tToggle fast relaxed math precision testing. (Default: on)\n" );
     vlog( "\t\t-e\tToggle test as derived implementations for fast relaxed math precision. (Default: on)\n" );
@@ -1349,6 +1382,44 @@ test_status InitCL( cl_device_id device )
 #endif
                 }
 #endif /* __APPLE__ */
+
+                gFloatToHalfRoundingMode = kRoundToNearestEven;
+                if (strstr(ext, "cl_khr_fp16"))
+                {
+                    gHasHalf ^= 1;
+
+#if defined( CL_DEVICE_HALF_FP_CONFIG )
+                    if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_HALF_FP_CONFIG, sizeof(gHalfCapabilities), &gHalfCapabilities, NULL)))
+                    {
+                        vlog_error("ERROR: Unable to get device CL_DEVICE_HALF_FP_CONFIG. (%d)\n", error);
+                        return TEST_FAIL;
+                    }
+
+                    if (HALF_REQUIRED_FEATURES != (gHalfCapabilities & HALF_REQUIRED_FEATURES))
+                    {
+                        char list[300] = "";
+                        if (0 == (gHalfCapabilities & CL_FP_FMA))
+                            strncat(list, "CL_FP_FMA, ", sizeof(list) - 1);
+                        if (0 == (gHalfCapabilities & CL_FP_ROUND_TO_NEAREST))
+                            strncat(list, "CL_FP_ROUND_TO_NEAREST, ", sizeof(list) - 1);
+                        if (0 == (gHalfCapabilities & CL_FP_ROUND_TO_ZERO))
+                            strncat(list, "CL_FP_ROUND_TO_ZERO, ", sizeof(list) - 1);
+                        if (0 == (gHalfCapabilities & CL_FP_ROUND_TO_INF))
+                            strncat(list, "CL_FP_ROUND_TO_INF, ", sizeof(list) - 1);
+                        if (0 == (gHalfCapabilities & CL_FP_INF_NAN))
+                            strncat(list, "CL_FP_INF_NAN, ", sizeof(list) - 1);
+                        if (0 == (gHalfCapabilities & CL_FP_DENORM))
+                            strncat(list, "CL_FP_DENORM, ", sizeof(list) - 1);
+                        vlog_error("ERROR: required half features are missing: %s\n", list);
+
+                        free(ext);
+                        return TEST_FAIL;
+                    }
+#else
+                    vlog_error("FAIL: device says it supports cl_khr_fp64 but CL_DEVICE_DOUBLE_FP_CONFIG is not in the headers!\n");
+                    return TEST_FAIL;
+#endif
+                }
             }
             free(ext);
         }
@@ -1529,6 +1600,8 @@ test_status InitCL( cl_device_id device )
 #if defined( __APPLE__ )
     vlog( "\tTesting basic double precision? %s\n", no_yes[0 != gHasBasicDouble] );
 #endif
+
+    vlog("\tTesting half precision? %s\n", no_yes[0 != gHasHalf]);
 
     vlog( "\tIs Embedded? %s\n", no_yes[0 != gIsEmbedded] );
     if( gIsEmbedded )

@@ -25,7 +25,7 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata);
     extern "C"
 #endif
 
-const vtbl _binary_operator = { "binaryOperator", TestFunc_Float_Float_Float_Operator, TestFunc_Double_Double_Double_Operator };
+const vtbl _binary_operator = { "binaryOperator", TestFunc_Float_Float_Float_Operator, TestFunc_Double_Double_Double_Operator, NULL };
 
 static int BuildKernel( const char *name, const char *operator_symbol, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
 static int BuildKernelDouble( const char *name, const char *operator_symbol, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );

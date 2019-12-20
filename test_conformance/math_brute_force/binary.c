@@ -20,23 +20,60 @@
 
 int TestFunc_Float_Float_Float(const Func *f, MTdata);
 int TestFunc_Double_Double_Double(const Func *f, MTdata);
+int TestFunc_Half_Half_Half(const Func *f, MTdata);
 int TestFunc_Float_Float_Float_nextafter(const Func *f, MTdata);
 int TestFunc_Double_Double_Double_nextafter(const Func *f, MTdata);
+int TestFunc_Half_Half_Half_nextafter(const Func *f, MTdata);
 int TestFunc_Float_Float_Float_common(const Func *f, MTdata, int isNextafter);
 int TestFunc_Double_Double_Double_common(const Func *f, MTdata, int isNextafter);
+int TestFunc_Half_Half_Half_common(const Func *f, MTdata, int isNextafter);
 
 const float twoToMinus126 = MAKE_HEX_FLOAT(0x1p-126f, 1, -126);
 const double twoToMinus1022 = MAKE_HEX_DOUBLE(0x1p-1022, 1, -1022);
 
-#if defined( __cplusplus )
-    extern "C"
-#endif
-const vtbl _binary = { "binary", TestFunc_Float_Float_Float, TestFunc_Double_Double_Double };
+float reference_nextafterh(float xx, float yy)
+{
+    cl_half tmp_a = convert_float_to_half(xx);
+    cl_half tmp_b = convert_float_to_half(yy);
+    float x = convert_half_to_float(tmp_a);
+    float y = convert_half_to_float(tmp_b);
+
+    // take care of nans
+    if( x != x )
+        return x;
+
+    if( y != y )
+        return y;
+
+    if( x == y )
+        return y;
+
+    int32f_t a, b;
+
+    short a_h = convert_float_to_half(x);
+    short b_h = convert_float_to_half(y);
+    short c_h = 0;
+
+    if( a_h & 0x8000 )
+        a_h = 0x8000 - a_h;
+    if(b_h & 0x8000 )
+        b_h = 0x8000 - b_h;
+
+    a_h += (a_h < b_h) ? 1 : -1;
+    a_h = (a_h < 0) ? (cl_short) 0x8000 - a_h : a_h;
+
+    return convert_half_to_float(a_h);	
+}
 
 #if defined( __cplusplus )
     extern "C"
 #endif
-const vtbl _binary_nextafter = { "binary_nextafter", TestFunc_Float_Float_Float_nextafter, TestFunc_Double_Double_Double_nextafter };
+const vtbl _binary = { "binary", TestFunc_Float_Float_Float, TestFunc_Double_Double_Double, TestFunc_Half_Half_Half };
+
+#if defined( __cplusplus )
+    extern "C"
+#endif
+const vtbl _binary_nextafter = { "binary_nextafter", TestFunc_Float_Float_Float_nextafter, TestFunc_Double_Double_Double_nextafter, TestFunc_Half_Half_Half_nextafter };
 
 static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
 
@@ -168,6 +205,72 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_c
     return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);
 }
 
+static int BuildKernelHalf( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p )
+{
+    const char *c[] = {     "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n",
+                            "__kernel void math_kernel", sizeNames[vectorSize], "( __global half", sizeNames[vectorSize], "* out, __global half", sizeNames[vectorSize], "* in1, __global half", sizeNames[vectorSize], "* in2 )\n"
+                            "{\n"
+                            "   int i = get_global_id(0);\n"
+                            "   out[i] = ", name, "( in1[i], in2[i] );\n"
+                            "}\n"
+    };
+
+    const char *c3[] = {    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n",
+                            "__kernel void math_kernel", sizeNames[vectorSize], "( __global half* out, __global half* in, __global half* in2)\n"
+                            "{\n"
+                            "   size_t i = get_global_id(0);\n"
+                            "   if( i + 1 < get_global_size(0) )\n"
+                            "   {\n"
+                            "       half3 d0 = vload3( 0, in + 3 * i );\n"
+                            "       half3 d1 = vload3( 0, in2 + 3 * i );\n"
+                            "       d0 = ", name, "( d0, d1 );\n"
+                            "       vstore3( d0, 0, out + 3*i );\n"
+                            "   }\n"
+                            "   else\n"
+                            "   {\n"
+                            "       size_t parity = i & 1;   // Figure out how many elements are left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two buffer size \n"
+                            "       half3 d0, d1;\n"
+                            "       switch( parity )\n"
+                            "       {\n"
+                            "           case 1:\n"
+                            "               d0 = (half3)( in[3*i], NAN, NAN ); \n"
+                            "               d1 = (half3)( in2[3*i], NAN, NAN ); \n"
+                            "               break;\n"
+                            "           case 0:\n"
+                            "               d0 = (half3)( in[3*i], in[3*i+1], NAN ); \n"
+                            "               d1 = (half3)( in2[3*i], in2[3*i+1], NAN ); \n"
+                            "               break;\n"
+                            "       }\n"
+                            "       d0 = ", name, "( d0, d1 );\n"
+                            "       switch( parity )\n"
+                            "       {\n"
+                            "           case 0:\n"
+                            "               out[3*i+1] = d0.y; \n"
+                            "               // fall through\n"
+                            "           case 1:\n"
+                            "               out[3*i] = d0.x; \n"
+                            "               break;\n"
+                            "       }\n"
+                            "   }\n"
+                            "}\n"
+    };
+
+    const char **kern = c;
+    size_t kernSize = sizeof(c) / sizeof(c[0]);
+
+    if (sizeValues[vectorSize] == 3)
+    {
+        kern = c3;
+        kernSize = sizeof(c3) / sizeof(c3[0]);
+    }
+
+    char testName[32];
+    snprintf(testName, sizeof(testName) - 1, "math_kernel%s", sizeNames[vectorSize]);
+
+    return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p);
+}
+
+
 // A table of more difficult cases to get right
 static const float specialValuesFloat[] = {
     -NAN, -INFINITY, -FLT_MAX, MAKE_HEX_FLOAT(-0x1.000002p64f, -0x1000002L, 40), MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64), MAKE_HEX_FLOAT(-0x1.fffffep63f, -0x1fffffeL, 39),  MAKE_HEX_FLOAT(-0x1.000002p63f, -0x1000002L, 39), MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63), MAKE_HEX_FLOAT(-0x1.fffffep62f, -0x1fffffeL, 38),
@@ -212,6 +315,13 @@ static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, vo
     return BuildKernelDouble( info->nameInCode, i, info->kernel_count, info->kernels[i], info->programs + i );
 }
 
+static cl_int BuildKernel_HalfFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p );
+static cl_int BuildKernel_HalfFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p )
+{
+    BuildKernelInfo *info = (BuildKernelInfo*) p;
+    cl_uint i = info->offset + job_id;
+    return BuildKernelHalf( info->nameInCode, i, info->kernel_count, info->kernels[i], info->programs + i );
+}
 //Thread specific data for a worker thread
 typedef struct ThreadInfo
 {
@@ -1052,7 +1162,7 @@ int TestFunc_Double_Double_Double_common(const Func *f, MTdata d, int isNextafte
         test_info.tinfo[i].inBuf2 = clCreateSubBuffer( gInBuffer2, CL_MEM_READ_ONLY, CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
         if( error || NULL == test_info.tinfo[i].inBuf)
         {
-            vlog_error( "Error: Unable to create sub-buffer of gInBuffer for region {%zd, %zd}\n", region.origin, region.size );
+            vlog_error( "Error: Unable to create sub-buffer of gInBuffer2 for region {%zd, %zd}\n", region.origin, region.size );
             goto exit;
         }
 
@@ -1061,7 +1171,7 @@ int TestFunc_Double_Double_Double_common(const Func *f, MTdata d, int isNextafte
             test_info.tinfo[i].outBuf[j] = clCreateSubBuffer( gOutBuffer[j], CL_MEM_WRITE_ONLY, CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
             if( error || NULL == test_info.tinfo[i].outBuf[j] )
             {
-                vlog_error( "Error: Unable to create sub-buffer of gInBuffer for region {%zd, %zd}\n", region.origin, region.size );
+                vlog_error( "Error: Unable to create sub-buffer of gOutBuffer for region {%zd, %zd}\n", region.origin, region.size );
                 goto exit;
             }
         }
@@ -1536,6 +1646,665 @@ exit:
 
 }
 
+// A table of more difficult cases to get right
+static const cl_half specialValuesHalf[] = {
+   0xffff,0x0000,0x0001
+};
+
+static size_t specialValuesHalfCount = sizeof( specialValuesHalf ) / sizeof( specialValuesHalf[0] );
+
+static cl_int TestHalf( cl_uint job_id, cl_uint thread_id, void *p );
+
+int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter)
+{
+    TestInfo    test_info;
+    cl_int      error;
+    size_t      i, j;
+    float       maxError = 0.0f;
+    double      maxErrorVal = 0.0;
+    double      maxErrorVal2 = 0.0;
+
+    logFunctionInfo(f->name,sizeof(cl_half),gTestFastRelaxed);
+
+    // Init test_info
+    memset( &test_info, 0, sizeof( test_info ) );
+    test_info.threadCount = GetThreadCount();
+    test_info.subBufferSize = BUFFER_SIZE / (sizeof( cl_half) * RoundUpToNextPowerOfTwo(test_info.threadCount));
+    test_info.scale = 1;
+
+
+    if (gWimpyMode){
+        test_info.subBufferSize = gWimpyBufferSize / (sizeof( cl_half) * RoundUpToNextPowerOfTwo(test_info.threadCount));
+        test_info.scale =  (cl_uint) sizeof(cl_half) * 2 * gWimpyReductionFactor;
+    }
+    test_info.step = (cl_uint) test_info.subBufferSize * test_info.scale;
+    if (test_info.step / test_info.subBufferSize != test_info.scale)
+    {
+        //there was overflow
+        test_info.jobCount = 1;
+    }
+    else
+    {
+        test_info.jobCount = (cl_uint)((1ULL << 32) / test_info.step);
+    }
+
+    test_info.f = f;
+    test_info.ulps = f->half_ulps;
+    test_info.ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
+
+    test_info.isFDim = 0 == strcmp( "fdim", f->nameInCode );
+    test_info.skipNanInf = test_info.isFDim  && ! gInfNanSupport;
+    test_info.isNextafter = isNextafter;
+    // cl_kernels aren't thread safe, so we make one for each vector size for every thread
+    for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
+    {
+        size_t array_size = test_info.threadCount * sizeof( cl_kernel );
+        test_info.k[i] = (cl_kernel*)malloc( array_size );
+        if( NULL == test_info.k[i] )
+        {
+            vlog_error( "Error: Unable to allocate storage for kernels!\n" );
+            error = CL_OUT_OF_HOST_MEMORY;
+            goto exit;
+        }
+        memset( test_info.k[i], 0, array_size );
+    }
+    test_info.tinfo = (ThreadInfo*)malloc( test_info.threadCount * sizeof(*test_info.tinfo) );
+    if( NULL == test_info.tinfo )
+    {
+        vlog_error( "Error: Unable to allocate storage for thread specific data.\n" );
+        error = CL_OUT_OF_HOST_MEMORY;
+        goto exit;
+    }
+    memset( test_info.tinfo, 0, test_info.threadCount * sizeof(*test_info.tinfo) );
+    for( i = 0; i < test_info.threadCount; i++ )
+    {
+        cl_buffer_region region = { i * test_info.subBufferSize * sizeof( cl_half), test_info.subBufferSize * sizeof( cl_half) };
+        test_info.tinfo[i].inBuf = clCreateSubBuffer( gInBuffer, CL_MEM_READ_ONLY, CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
+        if( error || NULL == test_info.tinfo[i].inBuf)
+        {
+            vlog_error( "Error: Unable to create sub-buffer of gInBuffer for region {%zd, %zd}\n", region.origin, region.size );
+            goto exit;
+        }
+        test_info.tinfo[i].inBuf2 = clCreateSubBuffer( gInBuffer2, CL_MEM_READ_ONLY, CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
+        if( error || NULL == test_info.tinfo[i].inBuf)
+        {
+            vlog_error( "Error: Unable to create sub-buffer of gInBuffer2 for region {%zd, %zd}\n", region.origin, region.size );
+            goto exit;
+        }
+
+        for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
+        {
+            test_info.tinfo[i].outBuf[j] = clCreateSubBuffer( gOutBuffer[j], CL_MEM_WRITE_ONLY, CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
+            if( error || NULL == test_info.tinfo[i].outBuf[j] )
+            {
+                vlog_error( "Error: Unable to create sub-buffer of gOutBuffer for region {%zd, %zd}\n", region.origin, region.size );
+                goto exit;
+            }
+        }
+        test_info.tinfo[i].tQueue = clCreateCommandQueueWithProperties(gContext, gDevice, 0, &error);
+        if( NULL == test_info.tinfo[i].tQueue || error )
+        {
+            vlog_error( "clCreateCommandQueue failed. (%d)\n", error );
+            goto exit;
+        }
+        test_info.tinfo[i].d = init_genrand(genrand_int32(d));
+    }
+
+
+    // Init the kernels
+    {
+        BuildKernelInfo build_info = { gMinVectorSizeIndex, test_info.threadCount, test_info.k, test_info.programs, f->nameInCode };
+        if( (error = ThreadPool_Do( BuildKernel_HalfFn, gMaxVectorSizeIndex - gMinVectorSizeIndex, &build_info ) ))
+            goto exit;
+    }
+
+    if( !gSkipCorrectnessTesting )
+    {
+        error = ThreadPool_Do( TestHalf, test_info.jobCount, &test_info );
+
+        // Accumulate the arithmetic errors
+        for( i = 0; i < test_info.threadCount; i++ )
+        {
+            if( test_info.tinfo[i].maxError > maxError )
+            {
+                maxError = test_info.tinfo[i].maxError;
+                maxErrorVal = test_info.tinfo[i].maxErrorValue;
+                maxErrorVal2 = test_info.tinfo[i].maxErrorValue2;
+            }
+        }
+
+        if( error )
+            goto exit;
+
+        if( gWimpyMode )
+            vlog( "Wimp pass" );
+        else
+            vlog( "passed" );
+    }
+
+    if( gMeasureTimes )
+    {
+        //Init input arrays
+        cl_half *p = (cl_half *)gIn;
+        cl_half *p2 = (cl_half *)gIn2;
+        for( j = 0; j < BUFFER_SIZE / sizeof( cl_half ); j++ )
+        {
+            p[j] = (cl_half)genrand_int32(d);
+            p2[j] = (cl_half)genrand_int32(d);
+        }
+
+        if( (error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0, BUFFER_SIZE, gIn, 0, NULL, NULL) ))
+        {
+            vlog_error( "\n*** Error %d in clEnqueueWriteBuffer ***\n", error );
+            return error;
+        }
+        if( (error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0, BUFFER_SIZE, gIn2, 0, NULL, NULL) ))
+        {
+            vlog_error( "\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error );
+            return error;
+        }
+
+
+        // Run the kernels
+        for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
+        {
+            size_t vectorSize = sizeof(cl_half ) * sizeValues[j];
+            size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;    // BUFFER_SIZE / vectorSize  rounded up
+            if( ( error = clSetKernelArg( test_info.k[j][0], 0, sizeof( gOutBuffer[j] ), &gOutBuffer[j] ) )) { LogBuildError(test_info.programs[j]); goto exit; }
+            if( ( error = clSetKernelArg( test_info.k[j][0], 1, sizeof( gInBuffer ), &gInBuffer ) )) { LogBuildError(test_info.programs[j]); goto exit; }
+            if( ( error = clSetKernelArg( test_info.k[j][0], 2, sizeof( gInBuffer2 ), &gInBuffer2 ) )) { LogBuildError(test_info.programs[j]); goto exit; }
+
+            double sum = 0.0;
+            double bestTime = INFINITY;
+            for( i = 0; i < PERF_LOOP_COUNT; i++ )
+            {
+                uint64_t startTime = GetTime();
+                if( (error = clEnqueueNDRangeKernel(gQueue, test_info.k[j][0], 1, NULL, &localCount, NULL, 0, NULL, NULL)) )
+                {
+                    vlog_error( "FAILED -- could not execute kernel\n" );
+                    goto exit;
+                }
+
+                // Make sure OpenCL is done
+                if( (error = clFinish(gQueue) ) )
+                {
+                    vlog_error( "Error %d at clFinish\n", error );
+                    goto exit;
+                }
+
+                uint64_t endTime = GetTime();
+                double time = SubtractTime( endTime, startTime );
+                sum += time;
+                if( time < bestTime )
+                    bestTime = time;
+            }
+
+            if( gReportAverageTimes )
+                bestTime = sum / PERF_LOOP_COUNT;
+            double clocksPerOp = bestTime * (double) gDeviceFrequency * gComputeDevices * gSimdSize * 1e6 / (BUFFER_SIZE / sizeof( cl_half ) );
+            vlog_perf( clocksPerOp, LOWER_IS_BETTER, "clocks / element", "%sH%s", f->name, sizeNames[j] );
+        }
+    }
+
+    if( ! gSkipCorrectnessTesting )
+       vlog( "\t%8.2f @ {%a, %a}", maxError, maxErrorVal, maxErrorVal2 );
+    vlog( "\n" );
+
+
+exit:
+    // Release
+    for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
+    {
+        clReleaseProgram(test_info.programs[i]);
+        if( test_info.k[i] )
+        {
+            for( j = 0; j < test_info.threadCount; j++ )
+                clReleaseKernel(test_info.k[i][j]);
+
+            free( test_info.k[i] );
+        }
+    }
+    if( test_info.tinfo )
+    {
+        for( i = 0; i < test_info.threadCount; i++ )
+        {
+            free_mtdata( test_info.tinfo[i].d );
+            clReleaseMemObject(test_info.tinfo[i].inBuf);
+            clReleaseMemObject(test_info.tinfo[i].inBuf2);
+            for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
+                clReleaseMemObject(test_info.tinfo[i].outBuf[j]);
+            clReleaseCommandQueue(test_info.tinfo[i].tQueue);
+        }
+
+        free( test_info.tinfo );
+    }
+
+    return error;
+}
+
+static cl_int TestHalf( cl_uint job_id, cl_uint thread_id, void *data  )
+{
+    const TestInfo *job = (const TestInfo *) data;
+    size_t      buffer_elements = job->subBufferSize;
+    size_t      buffer_size = buffer_elements * sizeof( cl_half );
+    cl_uint     base = job_id * (cl_uint) job->step;
+    ThreadInfo  *tinfo = job->tinfo + thread_id;
+    float       ulps = job->ulps;
+    fptr        func = job->f->func;
+    int         ftz = job->ftz;
+    MTdata      d = tinfo->d;
+    cl_uint     j, k;
+    cl_int      error;
+    const char  *name = job->f->name;
+
+    int         isFDim = job->isFDim;
+    int         skipNanInf = job->skipNanInf;
+    int         isNextafter = job->isNextafter;
+    cl_ushort   *t;
+    cl_half     *r;
+    float       *s = 0, *s2 = 0;
+
+    RoundingMode oldRoundMode;
+    cl_int copysign_test = 0;
+
+    // start the map of the output arrays
+    cl_event e[ VECTOR_SIZE_COUNT ];
+    cl_ushort  *out[ VECTOR_SIZE_COUNT ];
+    for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
+    {
+        out[j] = (cl_ushort*) clEnqueueMapBuffer( tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0, buffer_size, 0, NULL, e + j, &error);
+        if( error || NULL == out[j])
+        {
+            vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
+            return error;
+        }
+    }
+
+    // Get that moving
+    if( (error = clFlush(tinfo->tQueue) ))
+        vlog( "clFlush failed\n" );
+
+    //Init input array
+    cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
+    cl_ushort *p2 = (cl_ushort *)gIn2 + thread_id * buffer_elements;
+    j = 0;
+    int totalSpecialValueCount = specialValuesHalfCount * specialValuesHalfCount;
+    int indx = (totalSpecialValueCount - 1) / buffer_elements;
+
+    if( job_id <= (cl_uint)indx )
+    { // test edge cases
+        uint32_t x, y;
+
+    x = (job_id * buffer_elements) % specialValuesHalfCount;
+    y = (job_id * buffer_elements) / specialValuesHalfCount;
+
+        for( ; j < buffer_elements; j++ )
+        {
+            p[j] = specialValuesHalf[x];
+            p2[j] = specialValuesHalf[y];
+            if( ++x >= specialValuesHalfCount )
+            {
+                x = 0;
+                y++;
+                if( y >= specialValuesHalfCount )
+                    break;
+            }
+        }
+    }
+
+    //Init any remaining values.
+    for( ; j < buffer_elements; j++ )
+    {
+        p[j] = (cl_ushort)genrand_int32(d);
+        p2[j] = (cl_ushort)genrand_int32(d);
+    }
+
+    if( (error = clEnqueueWriteBuffer( tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0, buffer_size, p, 0, NULL, NULL) ))
+    {
+        vlog_error( "Error: clEnqueueWriteBuffer failed! err: %d\n", error );
+        goto exit;
+    }
+
+    if( (error = clEnqueueWriteBuffer( tinfo->tQueue, tinfo->inBuf2, CL_FALSE, 0, buffer_size, p2, 0, NULL, NULL) ))
+    {
+        vlog_error( "Error: clEnqueueWriteBuffer failed! err: %d\n", error );
+        goto exit;
+    }
+
+    for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
+    {
+        //Wait for the map to finish
+        if( (error = clWaitForEvents(1, e + j) ))
+        {
+            vlog_error( "Error: clWaitForEvents failed! err: %d\n", error );
+            goto exit;
+        }
+        if( (error = clReleaseEvent( e[j] ) ))
+        {
+            vlog_error( "Error: clReleaseEvent failed! err: %d\n", error );
+            goto exit;
+        }
+
+        // Fill the result buffer with garbage, so that old results don't carry over
+        uint16_t pattern = 0xdead;
+        memset_pattern4(out[j], &pattern, buffer_size);
+        if( (error = clEnqueueUnmapMemObject( tinfo->tQueue, tinfo->outBuf[j], out[j], 0, NULL, NULL) ))
+        {
+            vlog_error( "Error: clEnqueueMapBuffer failed! err: %d\n", error );
+            goto exit;
+        }
+
+        // run the kernel
+        size_t vectorCount = (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
+        cl_kernel kernel = job->k[j][thread_id];  //each worker thread has its own copy of the cl_kernel
+        cl_program program = job->programs[j];
+
+        if( ( error = clSetKernelArg( kernel, 0, sizeof( tinfo->outBuf[j] ), &tinfo->outBuf[j] ))){ LogBuildError(program); return error; }
+        if( ( error = clSetKernelArg( kernel, 1, sizeof( tinfo->inBuf ), &tinfo->inBuf ) )) { LogBuildError(program); return error; }
+        if( ( error = clSetKernelArg( kernel, 2, sizeof( tinfo->inBuf2 ), &tinfo->inBuf2 ) )) { LogBuildError(program); return error; }
+
+        if( (error = clEnqueueNDRangeKernel(tinfo->tQueue, kernel, 1, NULL, &vectorCount, NULL, 0, NULL, NULL)))
+        {
+            vlog_error( "FAILED -- could not execute kernel\n" );
+            goto exit;
+        }
+    }
+
+    // Get that moving
+    if( (error = clFlush(tinfo->tQueue) ))
+        vlog( "clFlush 2 failed\n" );
+
+    if( gSkipCorrectnessTesting )
+    {
+        return CL_SUCCESS;
+    }
+
+    FPU_mode_type oldMode;
+    oldRoundMode = kRoundToNearestEven;
+    if( isFDim )
+    {
+        //Calculate the correctly rounded reference result
+        memset( &oldMode, 0, sizeof( oldMode ) );
+        if( ftz )
+            ForceFTZ( &oldMode );
+
+        // Set the rounding mode to match the device
+        if (gIsInRTZMode)
+            oldRoundMode = set_round(kRoundTowardZero, kfloat);        
+    }
+
+    if(!strcmp(name, "copysign"))
+        copysign_test = 1;
+
+#define ref_func(s, s2) (copysign_test ? func.f_ff_f( s, s2 ) : func.f_ff( s, s2 ))	
+
+    //Calculate the correctly rounded reference result
+    r = (cl_half *)gOut_Ref  + thread_id * buffer_elements;
+    t = (cl_ushort *)r;
+    s = (float*)malloc(buffer_elements * sizeof(float));
+    s2 = (float*)malloc(buffer_elements * sizeof(float));
+    for( j = 0; j < buffer_elements; j++ )
+        for( j = 0; j < buffer_elements; j++ )
+        {
+            s[j] = convert_half_to_float(p[j]);
+            s2[j] = convert_half_to_float(p2[j]);
+            if (isNextafter) r[j] = convert_float_to_half(reference_nextafterh(s[j], s2[j]));
+            else r[j] = convert_float_to_half(ref_func(s[j], s2[j]));
+        }
+
+    if( isFDim && ftz )
+        RestoreFPState( &oldMode );
+    // Read the data back -- no need to wait for the first N-1 buffers. This is an in order queue.
+    for( j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++ )
+    {
+        out[j] = (cl_ushort*) clEnqueueMapBuffer( tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_READ, 0, buffer_size, 0, NULL, NULL, &error);
+        if( error || NULL == out[j] )
+        {
+            vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
+            goto exit;
+        }
+    }
+
+    // Wait for the last buffer
+    out[j] = (cl_ushort*) clEnqueueMapBuffer( tinfo->tQueue, tinfo->outBuf[j], CL_TRUE, CL_MAP_READ, 0, buffer_size, 0, NULL, NULL, &error);
+    if( error || NULL == out[j] )
+    {
+        vlog_error( "Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error );
+        goto exit;
+    }
+
+    //Verify data
+    
+    for( j = 0; j < buffer_elements; j++ )
+    {
+        for( k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++ )
+        {
+            cl_ushort *q = out[k];
+
+            // If we aren't getting the correctly rounded result
+            if( t[j] != q[j] )
+            {
+                double correct;
+                if (isNextafter) correct = reference_nextafterh(s[j], s2[j]);
+                else correct = ref_func( s[j], s2[j] );
+                
+                float test = convert_half_to_float(q[j]);
+
+                // Per section 10 paragraph 6, accept any result if an input or output is a infinity or NaN or overflow
+                if ( skipNanInf) 
+                {
+                    // Note: no double rounding here.  Reference functions calculate in single precision.                         
+                    if( IsFloatInfinity(correct) || IsFloatNaN(correct)     ||
+                        IsFloatInfinity(s2[j])   || IsFloatNaN(s2[j])       ||
+                        IsFloatInfinity(s[j])    || IsFloatNaN(s[j])        )
+                        continue;                            
+                }
+                float err = Ulp_Error_Half( q[j], correct );
+                int fail = ! (fabsf(err) <= ulps);
+
+                if( fail && ftz )
+                {
+                    // retry per section 6.5.3.2
+                    if( IsHalfSubnormal (convert_float_to_half(correct) ) )
+                    {
+                        fail = fail && ( test != 0.0f );
+                        if( ! fail )
+                            err = 0.0f;
+                    }
+
+                    if( IsHalfSubnormal( p[j] ) )
+                    {
+                        double correct2, correct3;
+                        float err2, err3;
+                            if (isNextafter) correct2 = reference_nextafterh(0.0, s2[j]);
+                            else correct2 = ref_func( 0.0, s2[j] );
+                            if (isNextafter) correct3 = reference_nextafterh(-0.0, s2[j]);
+                            else correct3 = ref_func( -0.0, s2[j] );
+                        if( skipNanInf )
+                        {
+                            // Note: no double rounding here.  Reference functions calculate in single precision.                         
+                            if( IsFloatInfinity(correct2) || IsFloatNaN(correct2)   ||
+                                IsFloatInfinity(correct3) || IsFloatNaN(correct3)    )
+                                continue;
+                    }
+
+                            err2 = Ulp_Error_Half( q[j], correct2 );
+                            err3 = Ulp_Error_Half( q[j], correct3 );
+                            fail =  fail && ((!(fabsf(err2) <= ulps)) && (!(fabsf(err3) <= ulps)));
+                            if( fabsf( err2 ) < fabsf(err ) )
+                                err = err2;
+                            if( fabsf( err3 ) < fabsf(err ) )
+                                err = err3;
+
+                            // retry per section 6.5.3.4
+                            if( IsHalfSubnormal (convert_float_to_half(correct2) ) || IsHalfSubnormal (convert_float_to_half(correct3) ) )
+                            {
+                                fail = fail && ( test != 0.0f);
+                                if( ! fail )
+                                    err = 0.0f;
+                            }
+
+                            // allow to omit denorm values for platforms with no denorm support for nextafter
+                            if (fail && (isNextafter) && (correct <= convert_half_to_float(0x3FF)) && (correct >= convert_half_to_float(0x83FF)))
+                            {
+                                fail = fail && (q[j] != p[j]);
+                                if (!fail)
+                                    err = 0.0f;
+                            }
+
+                            //try with both args as zero
+                            if( IsHalfSubnormal( p2[j] )  )
+                            {
+                                double correct4, correct5;
+                                float err4, err5; 
+
+                                if (isNextafter) correct2 = reference_nextafterh(0.0, 0.0);
+                                else correct2 = ref_func( 0.0, 0.0 );
+                                if (isNextafter) correct3 = reference_nextafterh(-0.0, 0.0);
+                                else correct3 = ref_func( -0.0, 0.0 );
+                                if (isNextafter) correct4 = reference_nextafterh(0.0, -0.0);
+                                else correct4 = ref_func( 0.0, -0.0 );
+                                if (isNextafter) correct5 = reference_nextafterh(-0.0, -0.0);
+                                else correct5 = ref_func( -0.0, -0.0 );
+
+                                // Per section 10 paragraph 6, accept any result if an input or output is a infinity or NaN or overflow
+                                if( skipNanInf )
+                                {
+                                    // Note: no double rounding here.  Reference functions calculate in single precision.                         
+                                    if( IsFloatInfinity(correct2) || IsFloatNaN(correct2)   ||
+                                        IsFloatInfinity(correct3) || IsFloatNaN(correct3)   ||
+                                        IsFloatInfinity(correct4) || IsFloatNaN(correct4)   ||
+                                        IsFloatInfinity(correct5) || IsFloatNaN(correct5)    )
+                                        continue;
+                                }
+                                err2 = Ulp_Error_Half( q[j], correct2 );
+                                err3 = Ulp_Error_Half( q[j], correct3 );
+                                err4 = Ulp_Error_Half( q[j], correct4 );
+                                err5 = Ulp_Error_Half( q[j], correct5 );
+                                fail =  fail && ((!(fabsf(err2) <= ulps)) && (!(fabsf(err3) <= ulps)) &&
+                                                 (!(fabsf(err4) <= ulps)) && (!(fabsf(err5) <= ulps)));
+                                if( fabsf( err2 ) < fabsf(err ) )
+                                    err = err2;
+                                if( fabsf( err3 ) < fabsf(err ) )
+                                    err = err3;
+                                if( fabsf( err4 ) < fabsf(err ) )
+                                    err = err4;
+                                if( fabsf( err5 ) < fabsf(err ) )
+                                    err = err5;
+
+                                // retry per section 6.5.3.4
+                                if( IsHalfSubnormal (convert_float_to_half(correct2) ) || IsHalfSubnormal (convert_float_to_half(correct3) ) ||
+                                    IsHalfSubnormal (convert_float_to_half(correct4) ) || IsHalfSubnormal (convert_float_to_half(correct5) ) )
+                                {
+                                    fail = fail && ( test != 0.0f);
+                                    if( ! fail )
+                                        err = 0.0f;
+                                }
+
+                                // allow to omit denorm values for platforms with no denorm support for nextafter
+                                if (fail && (isNextafter) && (correct <= convert_half_to_float(0x3FF)) && (correct >= convert_half_to_float(0x83FF)))
+                                {
+                                    fail = fail && (q[j] != p2[j]);
+                                    if (!fail)
+                                        err = 0.0f;
+                                }
+                            }
+                        }
+                        else if(IsHalfSubnormal(p2[j]) )
+                        {
+                            double correct2, correct3;
+                            float err2, err3;
+
+                            if (isNextafter) correct2 = reference_nextafterh(s[j], 0.0);
+                            else correct2 = ref_func( s[j], 0.0 );
+                            if (isNextafter) correct3 = reference_nextafterh(s[j], -0.0);
+                            else correct3 = ref_func( s[j], -0.0 );
+                            if ( skipNanInf) 
+                            {
+                                // Note: no double rounding here.  Reference functions calculate in single precision.                         
+                                if( IsFloatInfinity(correct) || IsFloatNaN(correct)     ||
+                                    IsFloatInfinity(correct2)|| IsFloatNaN(correct2)    )
+                                    continue;                            
+                            }
+
+                            err2 = Ulp_Error_Half( q[j], correct2 );
+                            err3 = Ulp_Error_Half( q[j], correct3 );
+                            fail =  fail && ((!(fabsf(err2) <= ulps)) && (!(fabsf(err3) <= ulps)));
+                            if( fabsf( err2 ) < fabsf(err ) )
+                                err = err2;
+                            if( fabsf( err3 ) < fabsf(err ) )
+                                err = err3;
+
+                            // retry per section 6.5.3.4
+                            if( IsHalfSubnormal (convert_float_to_half(correct2) ) || IsHalfSubnormal (convert_float_to_half(correct3) ) )
+                            {
+                                fail = fail && ( test != 0.0f);
+                                if( ! fail )
+                                    err = 0.0f;
+                            }
+
+                            // allow to omit denorm values for platforms with no denorm support for nextafter
+                            if (fail && (isNextafter) && (correct <= convert_half_to_float(0x3FF)) && (correct >= convert_half_to_float(0x83FF)))
+                            {
+                                fail = fail && (q[j] != p2[j]);
+                                if (!fail)
+                                    err = 0.0f;
+                        }
+                    }
+                }
+
+                if( fabsf(err ) > tinfo->maxError )
+                {
+                    tinfo->maxError = fabsf(err);
+                    tinfo->maxErrorValue = s[j];
+                    tinfo->maxErrorValue2 = s2[j];
+                }
+                if( fail )
+                {
+                    vlog_error( "\nERROR: %s%s: %f ulp error at {%a (0x%0.4x), %a (0x%0.4x)}\nExpected: %a  (half 0x%0.4x) \nActual: %a (half 0x%0.4x) at index: %d\n",
+                                name, sizeNames[k], err, s[j], p[j], s2[j], p2[j], convert_half_to_float(r[j]), r[j], test, q[j], j );
+                    error = -1;
+                    goto exit;
+                }
+            }
+        }
+    }
+
+    if (isFDim && gIsInRTZMode) 
+        (void)set_round(oldRoundMode, kfloat);
+
+    for( j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++ )
+    {
+        if( (error = clEnqueueUnmapMemObject( tinfo->tQueue, tinfo->outBuf[j], out[j], 0, NULL, NULL)) )
+        {
+            vlog_error( "Error: clEnqueueUnmapMemObject %d failed 2! err: %d\n", j, error );
+            return error;
+        }
+    }
+
+    if( (error = clFlush(tinfo->tQueue) ))
+        vlog( "clFlush 3 failed\n" );
+
+
+    if( 0 == ( base & 0x0fffffff) )
+    {
+        if (gVerboseBruteForce)
+        {
+            vlog("base:%14u step:%10u scale:%10zu buf_elements:%10u ulps:%5.3f ThreadCount:%2u\n", base, job->step, job->scale, buffer_elements,  job->ulps, job->threadCount);
+        } else
+        {
+            vlog("." );
+        }
+        fflush(stdout);
+    }
+exit:
+    if( s )
+        free(s);
+    if (s2)
+        free(s2);
+    return error;
+
+}
 int TestFunc_Float_Float_Float(const Func *f, MTdata d)
 {
     return TestFunc_Float_Float_Float_common(f, d, 0);
@@ -1544,6 +2313,11 @@ int TestFunc_Float_Float_Float(const Func *f, MTdata d)
 int TestFunc_Double_Double_Double(const Func *f, MTdata d)
 {
     return TestFunc_Double_Double_Double_common(f, d, 0);
+}
+
+int TestFunc_Half_Half_Half(const Func *f, MTdata d)
+{
+    return TestFunc_Half_Half_Half_common(f, d, 0);
 }
 
 int TestFunc_Float_Float_Float_nextafter(const Func *f, MTdata d)
@@ -1556,3 +2330,7 @@ int TestFunc_Double_Double_Double_nextafter(const Func *f, MTdata d)
     return TestFunc_Double_Double_Double_common(f, d, 1);
 }
 
+int TestFunc_Half_Half_Half_nextafter(const Func *f, MTdata d)
+{
+    return TestFunc_Half_Half_Half_common(f, d, 1);
+}

@@ -27,10 +27,10 @@
 // Only use ulps information in spir test
 #ifdef FUNCTION_LIST_ULPS_ONLY
 
-#define ENTRY(      _name, _ulp, _embedded_ulp, _rmode, _type )                 { STRINGIFY(_name), STRINGIFY(_name),                 {NULL}, {NULL}, {NULL}, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
-#define ENTRY_EXT(  _name, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, _type )   { STRINGIFY(_name), STRINGIFY(_name),                 {NULL}, {NULL}, {NULL}, _ulp, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, RELAXED_ON,  _type }
-#define HALF_ENTRY( _name, _ulp, _embedded_ulp, _rmode, _type )                 { "half_" STRINGIFY(_name), "half_" STRINGIFY(_name), {NULL}, {NULL}, {NULL}, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
-#define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _rmode, _type)    { STRINGIFY(_name), _operator,                        {NULL}, {NULL}, {NULL}, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
+#define ENTRY(      _name, _ulp, _embedded_ulp, _rmode, _type )                 { STRINGIFY(_name), STRINGIFY(_name),                 {NULL}, {NULL}, {NULL}, _ulp, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
+#define ENTRY_EXT(  _name, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, _type )   { STRINGIFY(_name), STRINGIFY(_name),                 {NULL}, {NULL}, {NULL}, _ulp, _ulp, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, RELAXED_ON,  _type }
+#define HALF_ENTRY( _name, _ulp, _embedded_ulp, _rmode, _type )                 { "half_" STRINGIFY(_name), "half_" STRINGIFY(_name), {NULL}, {NULL}, {NULL}, _ulp, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
+#define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _rmode, _type)    { STRINGIFY(_name), _operator,                        {NULL}, {NULL}, {NULL}, _ulp, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
 #define unaryF                NULL
 #define i_unaryF              NULL
 #define unaryF_u              NULL
@@ -54,10 +54,10 @@
 
 #else // FUNCTION_LIST_ULPS_ONLY
 
-#define ENTRY(      _name, _ulp, _embedded_ulp, _rmode, _type )                 { STRINGIFY(_name), STRINGIFY(_name),                 {(void*)reference_##_name}, {(void*)reference_##_name##l}, {(void*)reference_##_name},           _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
-#define ENTRY_EXT(  _name, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, _type )   { STRINGIFY(_name), STRINGIFY(_name),                 {(void*)reference_##_name}, {(void*)reference_##_name##l}, {(void*)reference_##relaxed_##_name}, _ulp, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, RELAXED_ON,  _type }
-#define HALF_ENTRY( _name, _ulp, _embedded_ulp, _rmode, _type )                 { "half_" STRINGIFY(_name), "half_" STRINGIFY(_name), {(void*)reference_##_name}, {NULL}, {NULL},                   _ulp, _ulp, _embedded_ulp, INFINITY, _rmode, RELAXED_OFF, _type }
-#define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _rmode, _type)    { STRINGIFY(_name), _operator,                        {(void*)reference_##_name}, {(void*)reference_##_name##l}, {NULL},                               _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
+#define ENTRY(      _name, _ulp, _embedded_ulp, _rmode, _type )                 { STRINGIFY(_name), STRINGIFY(_name),                 {(void*)reference_##_name}, {(void*)reference_##_name##l}, {(void*)reference_##_name},           _ulp, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
+#define ENTRY_EXT(  _name, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, _type )   { STRINGIFY(_name), STRINGIFY(_name),                 {(void*)reference_##_name}, {(void*)reference_##_name##l}, {(void*)reference_##relaxed_##_name}, _ulp, _ulp, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, RELAXED_ON,  _type }
+#define HALF_ENTRY( _name, _ulp, _embedded_ulp, _rmode, _type )                 { "half_" STRINGIFY(_name), "half_" STRINGIFY(_name), {NULL}, {NULL}, {NULL}, _ulp, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
+#define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _rmode, _type)    { STRINGIFY(_name), _operator,                        {(void*)reference_##_name}, {(void*)reference_##_name##l}, {NULL},                               _ulp, _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
 
 #if defined( __cplusplus )
     extern "C" {
@@ -175,8 +175,8 @@ const Func  functionList[] = {
                                     ENTRY_EXT( sincos,            4.0f,         4.0f,  0.00048828125f,     FTZ_OFF,    unaryF_two_results), //relaxed ulp 2^-11
                                     ENTRY( sinh,                  4.0f,         4.0f,         FTZ_OFF,     unaryF),
                                     ENTRY( sinpi,                 4.0f,         4.0f,         FTZ_OFF,     unaryF),
-                                    { "sqrt", "sqrt",     {(void*)reference_sqrt}, {(void*)reference_sqrtl}, {NULL}, 3.0f, 0.0f,    4.0f, INFINITY, FTZ_OFF, RELAXED_OFF, unaryF },
-                                    { "sqrt_cr", "sqrt",  {(void*)reference_sqrt}, {(void*)reference_sqrtl}, {NULL}, 0.0f, 0.0f,    0.0f, INFINITY, FTZ_OFF, RELAXED_OFF, unaryF },
+                                    { "sqrt", "sqrt",     {(void*)reference_sqrt}, {(void*)reference_sqrtl}, {NULL}, 3.0f, 0.0f, 0.0f,    4.0f, INFINITY, FTZ_OFF, RELAXED_OFF, unaryF },
+                                    { "sqrt_cr", "sqrt",  {(void*)reference_sqrt}, {(void*)reference_sqrtl}, {NULL}, 0.0f, 0.0f, 0.0f,   0.0f, INFINITY, FTZ_OFF, RELAXED_OFF, unaryF },
                                     ENTRY_EXT( tan,               5.0f,         5.0f,         8192.0f,    FTZ_OFF,     unaryF), //in derived mode it the ulp error is calculated as sin/cos and in non-derived mode it is the same as half_tan.
                                     ENTRY( tanh,                  5.0f,         5.0f,         FTZ_OFF,     unaryF),
                                     ENTRY( tanpi,                 6.0f,         6.0f,         FTZ_OFF,     unaryF),
@@ -201,8 +201,8 @@ const Func  functionList[] = {
                                     // basic operations
                                     OPERATOR_ENTRY( add, "+",         0.0f,         0.0f,     FTZ_OFF,     binaryOperatorF),
                                     OPERATOR_ENTRY( subtract, "-",     0.0f,         0.0f,     FTZ_OFF,     binaryOperatorF),
-                                    { "divide", "/",  {(void*)reference_divide}, {(void*)reference_dividel}, {(void*)reference_relaxed_divide}, 2.5f, 0.0f,         3.0f, 2.5f, FTZ_OFF, RELAXED_ON, binaryOperatorF },
-                                    { "divide_cr", "/",  {(void*)reference_divide}, {(void*)reference_dividel}, {(void*)reference_relaxed_divide}, 0.0f, 0.0f,         0.0f, 0.f, FTZ_OFF, RELAXED_OFF, binaryOperatorF },
+                                    { "divide", "/",  {(void*)reference_divide}, {(void*)reference_dividel}, {(void*)reference_relaxed_divide}, 2.5f, 0.0f, 0.0f,         3.0f, 2.5f, FTZ_OFF, RELAXED_ON, binaryOperatorF },
+                                    { "divide_cr", "/",  {(void*)reference_divide}, {(void*)reference_dividel}, {(void*)reference_relaxed_divide}, 0.0f, 0.0f, 0.0f,         0.0f, 0.f, FTZ_OFF, RELAXED_OFF, binaryOperatorF },
                                     OPERATOR_ENTRY( multiply, "*",     0.0f,         0.0f,     FTZ_OFF,     binaryOperatorF),
                                     OPERATOR_ENTRY( assignment, "", 0.0f,       0.0f,     FTZ_OFF,     unaryF),        // A simple copy operation
                                     OPERATOR_ENTRY( not, "!",       0.0f,       0.0f,   FTZ_OFF,    macro_unaryF),

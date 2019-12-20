@@ -20,14 +20,16 @@
 
 int TestFunc_mad(const Func *f, MTdata);
 int TestFunc_mad_Double(const Func *f, MTdata);
+int TestFunc_mad_Half(const Func *f, MTdata);
 
 #if defined( __cplusplus)
     extern "C"
 #endif
-const vtbl _mad_tbl = { "ternary", TestFunc_mad, TestFunc_mad_Double };
+const vtbl _mad_tbl = { "ternary", TestFunc_mad, TestFunc_mad_Double, TestFunc_mad_Half };
 
 static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_program *p );
 static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl_program *p );
+static int BuildKernelHalf( const char *name, int vectorSize, cl_kernel *k, cl_program *p );
 
 static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_program *p )
 {
@@ -163,6 +165,74 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl
     return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);
 }
 
+static int BuildKernelHalf( const char *name, int vectorSize, cl_kernel *k, cl_program *p )
+{
+    const char *c[] = {
+                            "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n",
+                            "__kernel void math_kernel", sizeNames[vectorSize], "( __global half", sizeNames[vectorSize], "* out, __global half", sizeNames[vectorSize], "* in1, __global half", sizeNames[vectorSize], "* in2,  __global half", sizeNames[vectorSize], "* in3 )\n"
+                            "{\n"
+                            "   int i = get_global_id(0);\n"
+                            "   out[i] = ", name, "( in1[i], in2[i], in3[i] );\n"
+                            "}\n"
+    };
+    const char *c3[] = {    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n",
+                            "__kernel void math_kernel", sizeNames[vectorSize], "( __global half* out, __global half* in, __global half* in2, __global half* in3)\n"
+                            "{\n"
+                            "   size_t i = get_global_id(0);\n"
+                            "   if( i + 1 < get_global_size(0) )\n"
+                            "   {\n"
+                            "       half3 d0 = vload3( 0, in + 3 * i );\n"
+                            "       half3 d1 = vload3( 0, in2 + 3 * i );\n"
+                            "       half3 d2 = vload3( 0, in3 + 3 * i );\n"
+                            "       d0 = ", name, "( d0, d1, d2 );\n"
+                            "       vstore3( d0, 0, out + 3*i );\n"
+                            "   }\n"
+                            "   else\n"
+                            "   {\n"
+                            "       size_t parity = i & 1;   // Figure out how many elements are left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two buffer size \n"
+                            "       half3 d0, d1, d2;\n"
+                            "       switch( parity )\n"
+                            "       {\n"
+                            "           case 1:\n"
+                            "               d0 = (half3)( in[3*i], NAN, NAN ); \n"
+                            "               d1 = (half3)( in2[3*i], NAN, NAN ); \n"
+                            "               d2 = (half3)( in3[3*i], NAN, NAN ); \n"
+                            "               break;\n"
+                            "           case 0:\n"
+                            "               d0 = (half3)( in[3*i], in[3*i+1], NAN ); \n"
+                            "               d1 = (half3)( in2[3*i], in2[3*i+1], NAN ); \n"
+                            "               d2 = (half3)( in3[3*i], in3[3*i+1], NAN ); \n"
+                            "               break;\n"
+                            "       }\n"
+                            "       d0 = ", name, "( d0, d1, d2 );\n"
+                            "       switch( parity )\n"
+                            "       {\n"
+                            "           case 0:\n"
+                            "               out[3*i+1] = d0.y; \n"
+                            "               // fall through\n"
+                            "           case 1:\n"
+                            "               out[3*i] = d0.x; \n"
+                            "               break;\n"
+                            "       }\n"
+                            "   }\n"
+                            "}\n"
+    };
+
+    const char **kern = c;
+    size_t kernSize = sizeof(c) / sizeof(c[0]);
+
+    if (sizeValues[vectorSize] == 3)
+    {
+        kern = c3;
+        kernSize = sizeof(c3) / sizeof(c3[0]);
+    }
+
+    char testName[32];
+    snprintf(testName, sizeof(testName) - 1, "math_kernel%s", sizeNames[vectorSize]);
+
+    return MakeKernel(kern, (cl_uint)kernSize, testName, k, p);
+}
+
 typedef struct BuildKernelInfo
 {
     cl_uint     offset;            // the first vector size to build
@@ -185,6 +255,14 @@ static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, vo
     BuildKernelInfo *info = (BuildKernelInfo*) p;
     cl_uint i = info->offset + job_id;
     return BuildKernelDouble( info->nameInCode, i, info->kernels + i, info->programs + i );
+}
+
+static cl_int BuildKernel_HalfFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p );
+static cl_int BuildKernel_HalfFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p )
+{
+    BuildKernelInfo *info = (BuildKernelInfo*) p;
+    cl_uint i = info->offset + job_id;
+    return BuildKernelHalf( info->nameInCode, i, info->kernels + i, info->programs + i );
 }
 
 int TestFunc_mad(const Func *f, MTdata d)
@@ -1127,5 +1205,209 @@ exit:
     return error;
 }
 
+int TestFunc_mad_Half(const Func *f, MTdata d)
+{
+    uint64_t i;
+    uint32_t j, k;
+    int error;
+    cl_program programs[VECTOR_SIZE_COUNT];
+    cl_kernel kernels[VECTOR_SIZE_COUNT];
+    float maxError = 0.0f;
+    //    int ftz = f->ftz || gForceFTZ;
+    float maxErrorVal = 0.0f;
+    float maxErrorVal2 = 0.0f;
+    float maxErrorVal3 = 0.0f;
+    size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
+
+    logFunctionInfo(f->name, sizeof(cl_half), gTestFastRelaxed);
+    uint64_t step = bufferSize / sizeof(cl_half);
+    if (gWimpyMode)
+    {
+        step = (1ULL << 32) * gWimpyReductionFactor / (512);
+    }
+    // Init the kernels
+    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs, f->nameInCode };
+    if ((error = ThreadPool_Do(BuildKernel_HalfFn,
+        gMaxVectorSizeIndex - gMinVectorSizeIndex,
+        &build_info)))
+    {
+        return error;
+    }
+    for (i = 0; i < (1ULL << 32); i += step)
+    {
+        //Init input array
+        cl_ushort *p = (cl_ushort *)gIn;
+        cl_ushort *p2 = (cl_ushort *)gIn2;
+        cl_ushort *p3 = (cl_ushort *)gIn3;
+        for (j = 0; j < bufferSize / sizeof(cl_ushort); j++)
+        {
+            p[j] = (cl_ushort)genrand_int32(d);
+            p2[j] = (cl_ushort)genrand_int32(d);
+            p3[j] = (cl_ushort)genrand_int32(d);
+        }
+        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0, bufferSize, gIn, 0, NULL, NULL)))
+        {
+            vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
+            return error;
+        }
+        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0, bufferSize, gIn2, 0, NULL, NULL)))
+        {
+            vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
+            return error;
+        }
+        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer3, CL_FALSE, 0, bufferSize, gIn3, 0, NULL, NULL)))
+        {
+            vlog_error("\n*** Error %d in clEnqueueWriteBuffer3 ***\n", error);
+            return error;
+        }
+
+        // write garbage into output arrays
+        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        {
+            uint16_t pattern = 0xdead;
+            memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
+            if( (error = clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0, BUFFER_SIZE, gOut[j], 0, NULL, NULL) ))
+            {
+                vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n", error, j);
+                goto exit;
+            }
+        }
+
+        // Run the kernels
+        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        {
+            size_t vectorSize = sizeof(cl_half) * sizeValues[j];
+            size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;    // bufferSize / vectorSize  rounded up
+            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]), &gOutBuffer[j]))) { LogBuildError(programs[j]); goto exit; }
+            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gInBuffer), &gInBuffer))) { LogBuildError(programs[j]); goto exit; }
+            if ((error = clSetKernelArg(kernels[j], 2, sizeof(gInBuffer2), &gInBuffer2))) { LogBuildError(programs[j]); goto exit; }
+            if ((error = clSetKernelArg(kernels[j], 3, sizeof(gInBuffer3), &gInBuffer3))) { LogBuildError(programs[j]); goto exit; }
+
+            if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL, &localCount, NULL, 0, NULL, NULL)))
+            {
+                vlog_error("FAILED -- could not execute kernel\n");
+                goto exit;
+            }
+        }
+
+        // Get that moving
+        if ((error = clFlush(gQueue)))
+            vlog("clFlush failed\n");
+
+        // Read the data back
+        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        {
+            if ((error = clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0, bufferSize, gOut[j], 0, NULL, NULL)))
+            {
+                vlog_error("ReadArray failed %d\n", error);
+                goto exit;
+            }
+        }
+
+        if (gSkipCorrectnessTesting)
+            break;
+
+        //Verify data - no verification possible. MAD is a random number generator.
+
+        if (0 == (i & 0x0fffffff))
+        {
+            vlog(".");
+            fflush(stdout);
+        }
+    }
+
+    if (!gSkipCorrectnessTesting)
+    {
+        if (gWimpyMode)
+            vlog("Wimp pass");
+        else
+            vlog("pass");
+    }
+
+    if (gMeasureTimes)
+    {
+        //Init input array
+        cl_half *p = (cl_half *)gIn;
+        cl_ushort *p2 = (cl_half *)gIn2;
+        cl_half *p3 = (cl_half *)gIn3;
+        for (j = 0; j < bufferSize / sizeof(cl_half); j++)
+        {
+            p[j] = (cl_half)genrand_int32(d);
+            p2[j] = (cl_half)genrand_int32(d);
+            p3[j] = (cl_half)genrand_int32(d);
+        }
+        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0, bufferSize, gIn, 0, NULL, NULL)))
+        {
+            vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
+            return error;
+        }
+        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0, bufferSize, gIn2, 0, NULL, NULL)))
+        {
+            vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
+            return error;
+        }
+        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer3, CL_FALSE, 0, bufferSize, gIn3, 0, NULL, NULL)))
+        {
+            vlog_error("\n*** Error %d in clEnqueueWriteBuffer3 ***\n", error);
+            return error;
+        }
+
+
+        // Run the kernels
+        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        {
+            size_t vectorSize = sizeof(cl_half) * sizeValues[j];
+            size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;    // bufferSize / vectorSize  rounded up
+            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]), &gOutBuffer[j]))) { LogBuildError(programs[j]); goto exit; }
+            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gInBuffer), &gInBuffer))) { LogBuildError(programs[j]); goto exit; }
+            if ((error = clSetKernelArg(kernels[j], 2, sizeof(gInBuffer2), &gInBuffer2))) { LogBuildError(programs[j]); goto exit; }
+            if ((error = clSetKernelArg(kernels[j], 3, sizeof(gInBuffer3), &gInBuffer3))) { LogBuildError(programs[j]); goto exit; }
+
+            double sum = 0.0;
+            double bestTime = INFINITY;
+            for (k = 0; k < PERF_LOOP_COUNT; k++)
+            {
+                uint64_t startTime = GetTime();
+                if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL, &localCount, NULL, 0, NULL, NULL)))
+                {
+                    vlog_error("FAILED -- could not execute kernel\n");
+                    goto exit;
+                }
+
+                // Make sure OpenCL is done
+                if ((error = clFinish(gQueue)))
+                {
+                    vlog_error("Error %d at clFinish\n", error);
+                    goto exit;
+                }
+
+                uint64_t endTime = GetTime();
+                double time = SubtractTime(endTime, startTime);
+                sum += time;
+                if (time < bestTime)
+                    bestTime = time;
+            }
+
+            if (gReportAverageTimes)
+                bestTime = sum / PERF_LOOP_COUNT;
+            double clocksPerOp = bestTime * (double)gDeviceFrequency * gComputeDevices * gSimdSize * 1e6 / (bufferSize / sizeof(cl_half));
+            vlog_perf(clocksPerOp, LOWER_IS_BETTER, "clocks / element", "%sD%s", f->name, sizeNames[j]);
+        }
+    }
+
+    if (!gSkipCorrectnessTesting)
+        vlog("\t%8.2f @ {%a, %a, %a}", maxError, maxErrorVal, maxErrorVal2, maxErrorVal3);
+    vlog("\n");
+
+exit:
+    // Release
+    for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+    {
+        clReleaseKernel(kernels[k]);
+        clReleaseProgram(programs[k]);
+    }
+
+    return error;
+}
 
 
