@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,7 +25,7 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool                 gDebugTrace, gTestSmallImages, gTestMaxImages, gTestRounding;
+extern bool                 gDebugTrace, gTestSmallImages, gTestMaxImages, gTestRounding, gDeviceLt20;
 extern cl_device_type       gDeviceType;
 
 #define MAX_TRIES   1
@@ -256,7 +256,7 @@ int test_read_image_set_1D_buffer( cl_device_id device, cl_context context, cl_c
              readFormat );
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", "-cl-std=CL2.0" );
+    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0" );
     test_error( error, "Unable to create testing kernel" );
 
     if ( gTestSmallImages )

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,6 +26,7 @@ extern bool gDebugTrace;
 extern bool gTestMipmaps;
 
 extern int  gtestTypesToRun;
+extern bool gDeviceLt20;
 
 extern int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue,  cl_image_format *format, image_sampler_data *imageSampler,
                                   bool floatCoords, ExplicitType outputType );

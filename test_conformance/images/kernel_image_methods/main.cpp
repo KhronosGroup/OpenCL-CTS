@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,6 +31,8 @@ bool gTestSmallImages;
 bool gTestMaxImages;
 bool gTestRounding;
 int  gTypesToTest;
+bool gDeviceLt20 = false;
+
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
 cl_device_type    gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
@@ -81,7 +83,7 @@ int main(int argc, const char *argv[])
         test_finish();
         return -1;
     }
-  
+
     checkDeviceTypeOverride( &gDeviceType );
 
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
