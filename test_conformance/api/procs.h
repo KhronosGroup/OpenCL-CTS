@@ -107,6 +107,7 @@ extern int      test_get_image1d_info( cl_device_id deviceID, cl_context context
 extern int      test_get_image1d_array_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements );
 extern int      test_get_image2d_array_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements );
 extern int      test_get_kernel_arg_info( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+extern int      test_get_kernel_arg_info_compatibility( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 extern int      test_queue_hint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

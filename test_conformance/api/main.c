@@ -53,6 +53,7 @@ test_definition test_list[] = {
     ADD_TEST( load_two_kernels_manually ),
     ADD_TEST( get_program_info_kernel_names ),
     ADD_TEST( get_kernel_arg_info ),
+    ADD_TEST( get_kernel_arg_info_compatibility ),
     ADD_TEST( create_kernels_in_program ),
     ADD_TEST( get_kernel_info ),
     ADD_TEST( execute_kernel_local_sizes ),
