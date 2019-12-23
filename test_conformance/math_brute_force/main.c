@@ -110,6 +110,7 @@ cl_device_fp_config gHalfCapabilities = 0;
 int             gWimpyReductionFactor = 32;
 int             gWimpyBufferSize = BUFFER_SIZE;
 int             gVerboseBruteForce = 0;
+cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
 #if defined( __APPLE__ )
 int             gHasBasicDouble = 0;
