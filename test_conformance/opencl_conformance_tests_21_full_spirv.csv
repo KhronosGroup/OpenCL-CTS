@@ -94,7 +94,6 @@ Half Ops,half/Test_half -offlineCompiler spir_v cache .
 # Compatibility with Previous Versions
 # #########################################
 Basic 1.2,compatibility/test_conformance/basic/test_basic
-API 1.2,compatibility/test_conformance/api/test_api
 
 #####################################
 # OpenCL 2.0 tests
