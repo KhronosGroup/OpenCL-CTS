@@ -36,12 +36,6 @@ test_definition test_list[] = {
     ADD_TEST( writeimage ),
 
     ADD_TEST( bufferreadwriterect ),
-
-    ADD_TEST( async_copy_global_to_local ),
-    ADD_TEST( async_copy_local_to_global ),
-    ADD_TEST( async_strided_copy_global_to_local ),
-    ADD_TEST( async_strided_copy_local_to_global ),
-    ADD_TEST( prefetch ),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
