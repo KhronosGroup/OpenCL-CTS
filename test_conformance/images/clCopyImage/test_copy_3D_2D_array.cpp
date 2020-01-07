@@ -320,7 +320,7 @@ int test_copy_image_set_3D_2D_array(cl_device_id device, cl_context context, cl_
         size_t sizes2Darray[100][3];
 
         // Try to allocate a bit smaller images because we need the 3D ones as well for the copy.
-        get_max_sizes(&numbeOfSizes, 100, sizes2Darray, maxWidth, maxHeight, maxDepth, maxArraySize, maxAllocSize/2, memSize/2, CL_MEM_OBJECT_IMAGE3D, srcImageInfo.format);
+        get_max_sizes(&numbeOfSizes, 100, sizes2Darray, maxWidth, maxHeight, maxDepth, maxArraySize, maxAllocSize/2, memSize/2, CL_MEM_OBJECT_IMAGE2D_ARRAY, srcImageInfo.format);
         get_max_sizes(&numbeOfSizes, 100, sizes3D, max3DWidth, max3DHeight, maxDepth, maxArraySize, maxAllocSize/2, memSize/2, CL_MEM_OBJECT_IMAGE3D, dstImageInfo.format);
 
         for( size_t idx = 0; idx < numbeOfSizes; idx++ )
