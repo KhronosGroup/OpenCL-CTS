@@ -455,15 +455,13 @@ void TestNonUniformWorkGroup::enableStrictMode(bool state) {
 int TestNonUniformWorkGroup::prepareDevice () {
   int err;
   cl_uint device_max_dimensions;
+  cl_uint i;
 
   if (_globalSize[0] == 0)
   {
     log_error("Some arguments passed into constructor were wrong.\n");
     return -1;
   }
-
-  if(_localSize_IsNull == false)
-    calculateExpectedValues();
 
   err = clGetDeviceInfo(_device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
     sizeof(device_max_dimensions), &device_max_dimensions, NULL);
@@ -473,6 +471,16 @@ int TestNonUniformWorkGroup::prepareDevice () {
     sizeof(_maxWorkItemSizes), _maxWorkItemSizes, NULL);
 
   test_error(err, "clGetDeviceInfo failed");
+
+  // Trim the local size to the limitations of what the device supports in each dimension.
+  for (i = 0; i < _dims; i++) {
+    if(_enqueuedLocalSize[i] > _maxWorkItemSizes[i]) {
+      _enqueuedLocalSize[i] = _maxWorkItemSizes[i];
+    }
+  }
+
+  if(_localSize_IsNull == false)
+    calculateExpectedValues();
 
   std::string buildOptions = BUILD_CL_STD_2_0;
   if(_reqdWorkGroupSize[0] != 0 && _reqdWorkGroupSize[1] != 0 && _reqdWorkGroupSize[2] != 0) {

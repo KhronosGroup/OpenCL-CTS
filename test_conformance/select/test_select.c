@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -27,10 +27,10 @@
 #include <limits.h>
 #include "test_select.h"
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/mt19937.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
+#include "harness/mt19937.h"
+#include "harness/parseParameters.h"
 
 
 //-----------------------------------------
@@ -57,6 +57,8 @@ static int doTest(cl_command_queue queue, cl_context context,
 
 
 static void printUsage( void );
+
+static void TestFinishAtExit(void);
 
 //-----------------------------------------
 // Definitions and initializations
@@ -340,6 +342,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         programs[vecsize] = makeSelectProgram(&kernels[vecsize], context, stype, cmptype, element_count[vecsize] );
         if (!programs[vecsize] || !kernels[vecsize]) {
             ++s_test_fail;
+            ++s_test_cnt;
             return -1;
         }
     }
@@ -573,8 +576,17 @@ test_definition test_list[] = {
 
 const int test_num = ARRAY_SIZE( test_list );
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
+    test_start();
+    atexit(TestFinishAtExit);
+
+    argc = parseCustomParam(argc, argv);
+    if (argc == -1)
+    {
+        return EXIT_FAILURE;
+    }
+
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 
     if( NULL == argList )
@@ -652,4 +664,9 @@ static void printUsage( void )
     {
         log_info( "\t%s\n", test_list[i].name );
     }
+}
+
+static void TestFinishAtExit(void)
+{
+    test_finish();
 }

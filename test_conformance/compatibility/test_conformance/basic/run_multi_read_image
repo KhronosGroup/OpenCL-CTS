@@ -1,4 +1,0 @@
-#!/bin/sh
-cd `dirname $0`
-./test_basic mri_one mri_multiple
-

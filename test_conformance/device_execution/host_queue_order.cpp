@@ -15,8 +15,8 @@
 //
 #include <stdio.h>
 #include <string.h>
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
 
 #include <vector>
 
@@ -37,7 +37,7 @@ static const char* enqueue_block_first_kernel[] =
     NL, "    for(int i = 1 ; i < tid ; i++)"
     NL, "    {"
     NL, "      for(int j = 0 ; j < num ; j++)"
-    NL, "        atomic_add(res+tid, convert_int_rte(sqrt((float)i*i) / i));"
+    NL, "        atomic_add(res+tid, 1);"
     NL, "    }"
     NL, "}"
     NL, ""
@@ -177,6 +177,9 @@ int test_host_queue_order(cl_device_id device, cl_context context, cl_command_qu
     if(check_error(status, "Kernel execution status %d", status)) return status;
 
     if((k = check_kernel_results(result, num)) >= 0 && check_error(-1, "'%s' results validation failed: [%d] returned %d expected 0", "test_host_queue_order", k, result[k])) res = -1;
+
+    clReleaseEvent(kernel_event);
+    clReleaseEvent(event1);
 
     return res;
 }

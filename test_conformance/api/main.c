@@ -13,19 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <string.h>
 #include "procs.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
 
-// FIXME: To use certain functions in ../../test_common/harness/imageHelpers.h
+// FIXME: To use certain functions in harness/imageHelpers.h
 // (for example, generate_random_image_data()), the tests are required to declare
 // the following variables (<rdar://problem/11111245>):
 cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
@@ -33,8 +33,10 @@ bool gTestRounding = false;
 
 test_definition test_list[] = {
     ADD_TEST( get_platform_info ),
-    ADD_TEST( get_sampler_info ),
-    ADD_TEST( get_command_queue_info ),
+    ADD_TEST_VERSION( get_sampler_info, Version(2, 0) ),
+    ADD_TEST( get_sampler_info_compatibility ),
+    ADD_TEST_VERSION( get_command_queue_info, Version(2, 0) ),
+    ADD_TEST( get_command_queue_info_compatibility ),
     ADD_TEST( get_context_info ),
     ADD_TEST( get_device_info ),
     ADD_TEST( enqueue_task ),
@@ -51,6 +53,7 @@ test_definition test_list[] = {
     ADD_TEST( load_two_kernels_manually ),
     ADD_TEST( get_program_info_kernel_names ),
     ADD_TEST( get_kernel_arg_info ),
+    ADD_TEST( get_kernel_arg_info_compatibility ),
     ADD_TEST( create_kernels_in_program ),
     ADD_TEST( get_kernel_info ),
     ADD_TEST( execute_kernel_local_sizes ),
@@ -115,9 +118,10 @@ test_definition test_list[] = {
     ADD_TEST( get_image1d_array_info ),
     ADD_TEST( get_image2d_array_info ),
     ADD_TEST( queue_hint ),
-    ADD_TEST( sub_group_dispatch ),
-    ADD_TEST( clone_kernel ),
-    ADD_TEST( zero_sized_enqueue ),
+    ADD_TEST( queue_properties ),
+    ADD_TEST_VERSION( sub_group_dispatch, Version(2, 1) ),
+    ADD_TEST_VERSION( clone_kernel, Version(2, 1) ),
+    ADD_TEST_VERSION( zero_sized_enqueue, Version(2, 1) ),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -170,6 +170,7 @@ test_work_group_scan_exclusive_max_int(cl_device_id device, cl_context context, 
     void         *values[2];
     size_t       threads[1];
     size_t       wg_size[1];
+    size_t       wg_sizes_per_dimension[3];
     size_t       num_elements;
     int          err;
     int          i;
@@ -182,6 +183,14 @@ test_work_group_scan_exclusive_max_int(cl_device_id device, cl_context context, 
     err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
     if (err)
         return -1;
+
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t) * 3, wg_sizes_per_dimension, NULL);
+    if (err)
+        return -1;
+    if(wg_sizes_per_dimension[0] < wg_size[0])
+    {
+        wg_size[0] = wg_sizes_per_dimension[0];
+    }
 
     num_elements = n_elems;
 
@@ -271,6 +280,7 @@ test_work_group_scan_exclusive_max_uint(cl_device_id device, cl_context context,
     void         *values[2];
     size_t       threads[1];
     size_t       wg_size[1];
+    size_t       wg_sizes_per_dimension[3];
     size_t       num_elements;
     int          err;
     int          i;
@@ -283,6 +293,14 @@ test_work_group_scan_exclusive_max_uint(cl_device_id device, cl_context context,
     err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
     if (err)
         return -1;
+
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t) * 3, wg_sizes_per_dimension, NULL);
+    if (err)
+        return -1;
+    if(wg_sizes_per_dimension[0] < wg_size[0])
+    {
+        wg_size[0] = wg_sizes_per_dimension[0];
+    }
 
     num_elements = n_elems;
 
@@ -371,6 +389,7 @@ test_work_group_scan_exclusive_max_long(cl_device_id device, cl_context context,
     void         *values[2];
     size_t       threads[1];
     size_t       wg_size[1];
+    size_t       wg_sizes_per_dimension[3];
     size_t       num_elements;
     int          err;
     int          i;
@@ -383,6 +402,14 @@ test_work_group_scan_exclusive_max_long(cl_device_id device, cl_context context,
     err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
     if (err)
         return -1;
+
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t) * 3, wg_sizes_per_dimension, NULL);
+    if (err)
+        return -1;
+    if(wg_sizes_per_dimension[0] < wg_size[0])
+    {
+        wg_size[0] = wg_sizes_per_dimension[0];
+    }
 
     num_elements = n_elems;
 
@@ -472,6 +499,7 @@ test_work_group_scan_exclusive_max_ulong(cl_device_id device, cl_context context
     void         *values[2];
     size_t       threads[1];
     size_t       wg_size[1];
+    size_t       wg_sizes_per_dimension[3];
     size_t       num_elements;
     int          err;
     int          i;
@@ -484,6 +512,14 @@ test_work_group_scan_exclusive_max_ulong(cl_device_id device, cl_context context
     err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
     if (err)
         return -1;
+
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t) * 3, wg_sizes_per_dimension, NULL);
+    if (err)
+        return -1;
+    if(wg_sizes_per_dimension[0] < wg_size[0])
+    {
+        wg_size[0] = wg_sizes_per_dimension[0];
+    }
 
     num_elements = n_elems;
 

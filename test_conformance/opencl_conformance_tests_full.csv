@@ -94,7 +94,6 @@ Half Ops,half/test_half
 # Compatibility with Previous Versions
 # #########################################
 Basic 1.2,compatibility/test_conformance/basic/test_basic
-API 1.2,compatibility/test_conformance/api/test_api
 
 #####################################
 # OpenCL 2.0 tests
@@ -106,6 +105,12 @@ Non Uniform Work Groups,non_uniform_work_group/test_non_uniform_work_group
 Pipes,pipes/test_pipes
 SVM,SVM/test_SVM
 Workgroups,workgroups/test_workgroups
+
+#####################################
+# OpenCL 2.1 tests
+#####################################
+Device timer,device_timer/test_device_timer
+SPIRV new,spirv_new/test_spirv_new -ILPath spirv_bin
 
 #########################################
 # Extensions

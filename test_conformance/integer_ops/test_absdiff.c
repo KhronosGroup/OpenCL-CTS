@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -362,7 +362,6 @@ int test_integer_abs_diff(cl_device_id device, cl_context context, cl_command_qu
         log_info("Failed on %d types\n", fail_count);
         return -1;
     }
-    log_info("ABS_DIFF test passed\n");
 
     free(input_ptr[0]);
     free(input_ptr[1]);

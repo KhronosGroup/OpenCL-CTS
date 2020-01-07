@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -177,9 +177,9 @@ test_work_group_scan_inclusive_add_int(cl_device_id device, cl_context context, 
     if (err)
         return -1;
 
-    err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
-    if (err)
-        return -1;
+    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
+    err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
+    test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
 
     num_elements = n_elems;
 
@@ -278,9 +278,9 @@ test_work_group_scan_inclusive_add_uint(cl_device_id device, cl_context context,
     if (err)
         return -1;
 
-    err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
-    if (err)
-        return -1;
+    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
+    err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
+    test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
 
     num_elements = n_elems;
 
@@ -378,9 +378,9 @@ test_work_group_scan_inclusive_add_long(cl_device_id device, cl_context context,
     if (err)
         return -1;
 
-    err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
-    if (err)
-        return -1;
+    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
+    err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
+    test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
 
     num_elements = n_elems;
 
@@ -479,9 +479,9 @@ test_work_group_scan_inclusive_add_ulong(cl_device_id device, cl_context context
     if (err)
         return -1;
 
-    err = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), wg_size, NULL);
-    if (err)
-        return -1;
+    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
+    err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
+    test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
 
     num_elements = n_elems;
 

@@ -1,0 +1,80 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 40
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability ImageBasic
+               OpCapability LiteralSampler
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %2 "decorate_coherent"
+               OpName %sampler "sampler"
+               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %__spirv_BuiltInGlobalSize "__spirv_BuiltInGlobalSize"
+               OpName %dst "dst"
+               OpName %src "src"
+               OpName %entry "entry"
+               OpName %call "call"
+               OpName %call1 "call1"
+               OpName %call2 "call2"
+               OpName %mul "mul"
+               OpName %add "add"
+               OpName %vecinit "vecinit"
+               OpName %vecinit6 "vecinit6"
+               OpName %TempSampledImage "TempSampledImage"
+               OpName %call7_old "call7.old"
+               OpName %arrayidx "arrayidx"
+               OpDecorate %src Coherent
+               OpDecorate %19 Constant
+         %19 = OpDecorationGroup
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalSize BuiltIn GlobalSize
+               OpDecorate %dst FuncParamAttr NoCapture
+               OpDecorate %sampler LinkageAttributes "sampler" Export
+               OpDecorate %__spirv_BuiltInGlobalSize LinkageAttributes "__spirv_BuiltInGlobalSize" Import
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpDecorate %sampler Alignment 4
+               OpGroupDecorate %19 %sampler %__spirv_BuiltInGlobalInvocationId %__spirv_BuiltInGlobalSize
+       %uint = OpTypeInt 32 0
+    %uint_16 = OpConstant %uint 16
+%_ptr_UniformConstant_uint = OpTypePointer UniformConstant %uint
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+     %v4uint = OpTypeVector %uint 4
+%_ptr_CrossWorkgroup_v4uint = OpTypePointer CrossWorkgroup %v4uint
+         %28 = OpTypeImage %void 2D 0 0 0 0 Unknown ReadOnly
+         %29 = OpTypeFunction %void %_ptr_CrossWorkgroup_v4uint %28
+     %v2uint = OpTypeVector %uint 2
+         %31 = OpTypeSampler
+         %32 = OpTypeSampledImage %28
+      %float = OpTypeFloat 32
+         %34 = OpConstantSampler %31 None 0 Nearest
+    %float_0 = OpConstant %float 0
+    %sampler = OpVariable %_ptr_UniformConstant_uint UniformConstant %uint_16
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+%__spirv_BuiltInGlobalSize = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %2 = OpFunction %void None %29
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_v4uint
+        %src = OpFunctionParameter %28
+      %entry = OpLabel
+         %36 = OpUndef %v2uint
+         %37 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 0
+       %call = OpCompositeExtract %uint %37 0
+         %38 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 0
+      %call1 = OpCompositeExtract %uint %38 1
+         %39 = OpLoad %v3uint %__spirv_BuiltInGlobalSize Aligned 0
+      %call2 = OpCompositeExtract %uint %39 0
+        %mul = OpIMul %uint %call2 %call1
+        %add = OpIAdd %uint %mul %call
+    %vecinit = OpCompositeInsert %v2uint %call1 %36 0
+   %vecinit6 = OpCompositeInsert %v2uint %call %vecinit 1
+%TempSampledImage = OpSampledImage %32 %src %34
+  %call7_old = OpImageSampleExplicitLod %v4uint %TempSampledImage %vecinit6 Lod %float_0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4uint %dst %add
+               OpStore %arrayidx %call7_old Aligned 16
+               OpReturn
+               OpFunctionEnd

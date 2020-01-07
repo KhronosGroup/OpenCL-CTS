@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/clImageHelper.h"
-#include "../../test_common/harness/imageHelpers.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/clImageHelper.h"
+#include "harness/imageHelpers.h"
 extern float    calculate_ulperror(float a, float b);
 
 extern int        test_load_single_kernel(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
@@ -33,7 +33,9 @@ extern int        test_bool_type(cl_device_id deviceID, cl_context context, cl_c
 extern int        test_platform_extensions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_get_platform_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_get_sampler_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_get_sampler_info_compatibility(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_get_command_queue_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int        test_get_command_queue_info_compatibility(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_get_context_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_kernel_required_group_size(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
@@ -105,7 +107,9 @@ extern int      test_get_image1d_info( cl_device_id deviceID, cl_context context
 extern int      test_get_image1d_array_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements );
 extern int      test_get_image2d_array_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements );
 extern int      test_get_kernel_arg_info( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+extern int      test_get_kernel_arg_info_compatibility( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
 extern int      test_queue_hint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_zero_sized_enqueue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_queue_properties( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );

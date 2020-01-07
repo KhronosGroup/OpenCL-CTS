@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/testHarness.h"
 
 // #define USE_NEW_SYNTAX    1
 // The number of shuffles to test per test

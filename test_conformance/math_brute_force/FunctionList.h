@@ -16,7 +16,7 @@
 #ifndef FUNCTIONLIST_H
 #define FUNCTIONLIST_H
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #ifndef WIN32
 #include <unistd.h>
@@ -28,7 +28,7 @@
     #include <CL/cl.h>
 #endif
 
-#include "../../test_common/harness/mt19937.h"
+#include "harness/mt19937.h"
 
 #ifdef __cplusplus
 extern "C" {

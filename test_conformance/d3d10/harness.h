@@ -40,7 +40,7 @@ typedef unsigned char UINT8;
 #include <CL/cl_d3d10.h>
 #include <stdio.h>
 #include "errorHelpers.h"
-#include "../test_common/harness/kernelHelpers.h"
+#include "kernelHelpers.h"
 
 // #define log_info(...) printf(__VA_ARGS__)
 // #define log_error(...) printf(__VA_ARGS__)

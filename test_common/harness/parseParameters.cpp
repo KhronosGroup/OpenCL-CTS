@@ -27,105 +27,177 @@
 
 using namespace std;
 
-bool             gOfflineCompiler = false;
-bool             gForceSpirVCache = false;
-bool             gForceSpirVGenerate = false;
-std::string      gSpirVPath = ".";
-OfflineCompilerOutputType gOfflineCompilerOutputType;
+#define DEFAULT_COMPILATION_PROGRAM "cl_offline_compiler"
+
+CompilationMode      gCompilationMode = kOnline;
+CompilationCacheMode gCompilationCacheMode = kCacheModeCompileIfAbsent;
+std::string          gCompilationCachePath = ".";
+std::string          gCompilationProgram = DEFAULT_COMPILATION_PROGRAM;
 
 void helpInfo ()
 {
-  log_info("  '-offlineCompiler <output_type:binary|source|spir_v>': use offline compiler\n");
-  log_info("  '                  output_type binary - \"../build_script_binary.py\" is invoked\n");
-  log_info("  '                  output_type source - \"../build_script_source.py\"  is invoked\n");
-  log_info("  '                  output_type spir_v <mode:generate|cache> - \"../cl_build_script_spir_v.py\" is invoked, optional modes: generate, cache\n");
-  log_info("  '                                     mode generate <path> - force binary generation\n");
-  log_info("  '                                     mode cache <path> - force reading binary files from cache\n");
-  log_info("\n");
+    log_info("Common options:\n"
+             "        -h, --help                  This help\n"
+             "        --compilation-mode <mode>   Specify a compilation mode.  Mode can be:\n"
+             "                           online     Use online compilation (default)\n"
+             "                           binary     Use binary offline compilation\n"
+             "                           spir-v     Use SPIR-V offline compilation\n"
+             "\n"
+             "    For offline compilation (binary and spir-v modes) only:\n"
+             "        --compilation-cache-mode <cache-mode>  Specify a compilation caching mode:\n"
+             "                                 compile-if-absent  Read from cache if already populated, or\n"
+             "                                                    else perform offline compilation (default)\n"
+             "                                 force-read        Force reading from the cache\n"
+             "                                 overwrite         Disable reading from the cache\n"
+             "                                 dump-cl-files     Dumps the .cl and build .options files used by the test suite\n"
+             "        --compilation-cache-path <path>   Path for offline compiler output and CL source\n"
+             "        --compilation-program <prog>      Program to use for offline compilation,\n"
+             "                                          defaults to " DEFAULT_COMPILATION_PROGRAM "\n"
+             "\n");
 }
 
 int parseCustomParam (int argc, const char *argv[], const char *ignore)
 {
-  int delArg = 0;
+    int delArg = 0;
 
-  for (int i=1; i<argc; i++)
-  {
-    if(ignore != 0)
+    for (int i=1; i<argc; i++)
     {
-      // skip parameters that require special/different treatment in application
-      // (generic interpretation and parameter removal will not be performed)
-      const char * ptr = strstr(ignore, argv[i]);
-      if(ptr != 0 &&
-        (ptr == ignore || ptr[-1] == ' ') && //first on list or ' ' before
-        (ptr[strlen(argv[i])] == 0 || ptr[strlen(argv[i])] == ' ')) // last on list or ' ' after
-        continue;
-    }
-    if (i < 0) i = 0;
-	  delArg = 0;
-	  if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
-	  	  helpInfo ();
-
-    else if (!strcmp(argv[i], "-offlineCompiler"))
-    {
-        log_info(" Offline Compiler enabled\n");
-        delArg = 1;
-        if ((i + 1) < argc)
+        if(ignore != 0)
         {
-            gOfflineCompiler = true;
+            // skip parameters that require special/different treatment in application
+            // (generic interpretation and parameter removal will not be performed)
+            const char * ptr = strstr(ignore, argv[i]);
+            if(ptr != 0 &&
+               (ptr == ignore || ptr[-1] == ' ') && //first on list or ' ' before
+               (ptr[strlen(argv[i])] == 0 || ptr[strlen(argv[i])] == ' ')) // last on list or ' ' after
+                continue;
+        }
 
-            if (!strcmp(argv[i + 1], "binary"))
+        delArg = 0;
+
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+        {
+            // Note: we don't increment delArg to delete this argument,
+            // to allow the caller's argument parsing routine to see the
+            // option and print its own help.
+            helpInfo ();
+        }
+        else if (!strcmp(argv[i], "--compilation-mode"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
             {
-                gOfflineCompilerOutputType = kBinary;
                 delArg++;
-            }
-            else if (!strcmp(argv[i + 1], "source"))
-            {
-                gOfflineCompilerOutputType = kSource;
-                delArg++;
-            }
-            else if (!strcmp(argv[i + 1], "spir_v"))
-            {
-                gOfflineCompilerOutputType = kSpir_v;
-                delArg++;
-                if ((i + 3) < argc)
+                const char *mode = argv[i + 1];
+
+                if (!strcmp(mode, "online"))
                 {
-                    if (!strcmp(argv[i + 2], "cache"))
-                    {
-                        gForceSpirVCache = true;
-                        gSpirVPath = argv[i + 3];
-                        log_info(" SpirV reading from cache enabled.\n");
-                        delArg += 2;
-                    }
-                    else if (!strcmp(argv[i + 2], "generate"))
-                    {
-                        gForceSpirVGenerate = true;
-                        gSpirVPath = argv[i + 3];
-                        log_info(" SpirV force generate binaries enabled.\n");
-                        delArg += 2;
-                    }
+                    gCompilationMode = kOnline;
                 }
+                else if (!strcmp(mode, "binary"))
+                {
+                    gCompilationMode = kBinary;
+                }
+                else if (!strcmp(mode, "spir-v"))
+                {
+                    gCompilationMode = kSpir_v;
+                }
+                else
+                {
+                    log_error("Compilation mode not recognized: %s\n", mode);
+                    return -1;
+                }
+                log_info("Compilation mode specified: %s\n", mode);
             }
             else
             {
-                log_error(" Offline Compiler output type not supported: %s\n", argv[i + 1]);
+                log_error("Compilation mode parameters are incorrect. Usage:\n"
+                          "  --compilation-mode <online|binary|spir-v>\n");
                 return -1;
             }
         }
-        else
+        else if (!strcmp(argv[i], "--compilation-cache-mode"))
         {
-            log_error(" Offline Compiler parameters are incorrect. Usage:\n");
-            log_error("       -offlineCompiler <input> <output> <output_type:binary | source | spir_v>\n");
-            return -1;
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                const char *mode = argv[i + 1];
+
+                if (!strcmp(mode, "compile-if-absent"))
+                {
+                    gCompilationCacheMode = kCacheModeCompileIfAbsent;
+                }
+                else if (!strcmp(mode, "force-read"))
+                {
+                    gCompilationCacheMode = kCacheModeForceRead;
+                }
+                else if (!strcmp(mode, "overwrite"))
+                {
+                    gCompilationCacheMode = kCacheModeOverwrite;
+                }
+                else if (!strcmp(mode, "dump-cl-files"))
+                {
+                    gCompilationCacheMode = kCacheModeDumpCl;
+                }
+                else
+                {
+                    log_error("Compilation cache mode not recognized: %s\n", mode);
+                    return -1;
+                }
+                log_info("Compilation cache mode specified: %s\n", mode);
+            }
+            else
+            {
+                log_error("Compilation cache mode parameters are incorrect. Usage:\n"
+                          "  --compilation-cache-mode <compile-if-absent|force-read|overwrite>\n");
+                return -1;
+            }
         }
+        else if (!strcmp(argv[i], "--compilation-cache-path"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                gCompilationCachePath = argv[i + 1];
+            }
+            else
+            {
+                log_error("Path argument for --compilation-cache-path was not specified.\n");
+                return -1;
+            }
+        }
+        else if (!strcmp(argv[i], "--compilation-program"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                gCompilationProgram = argv[i + 1];
+            }
+            else
+            {
+                log_error("Program argument for --compilation-program was not specified.\n");
+                return -1;
+            }
+        }
+
+        //cleaning parameters from argv tab
+        for (int j = i; j < argc - delArg; j++)
+            argv[j] = argv[j + delArg];
+        argc -= delArg;
+        i -= delArg;
     }
 
-    //cleaning parameters from argv tab
-	  for (int j=i; j<argc-delArg; j++)
-		  argv[j] = argv[j+delArg];
-	  argc -= delArg ;
-	  i -= delArg;
-  }
-  return argc;
+    if ((gCompilationCacheMode == kCacheModeForceRead || gCompilationCacheMode == kCacheModeOverwrite)
+         && gCompilationMode == kOnline)
+    {
+        log_error("Compilation cache mode can only be specified when using an offline compilation mode.\n");
+        return -1;
+    }
+
+    return argc;
 }
 
 bool is_power_of_two(int number)

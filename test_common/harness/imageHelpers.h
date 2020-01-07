@@ -40,8 +40,6 @@
 #include "rounding_mode.h"
 #include "clImageHelper.h"
 
-extern int gTestCount;
-extern int gTestFailure;
 extern cl_device_type gDeviceType;
 
 // Number of iterations per image format to test if not testing max images, rounding, or small images

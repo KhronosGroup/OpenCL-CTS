@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +24,7 @@
 
 
 
-cl_int get_type_size( cl_context context, cl_command_queue queue, const char *type, cl_ulong *size  )
+cl_int get_type_size( cl_context context, cl_command_queue queue, const char *type, cl_ulong *size, cl_device_id device  )
 {
     const char *sizeof_kernel_code[4] =
     {
@@ -49,8 +49,15 @@ cl_int get_type_size( cl_context context, cl_command_queue queue, const char *ty
     {
         sizeof_kernel_code[0] = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
     }
+    size_t major = 0;
+    size_t minor = 0;
+    bool deviceLt20 = false;
+    int error = get_device_version(device, &major, &minor);
+    if (major < 2) {
+        deviceLt20 = true;
+    }
 
-    cl_int err = create_single_kernel_helper_with_build_options(context, &p, &k, 4, sizeof_kernel_code, "test_sizeof", "-cl-std=CL2.0");
+    cl_int err = create_single_kernel_helper_with_build_options(context, &p, &k, 4, sizeof_kernel_code, "test_sizeof", deviceLt20 ? "" : "-cl-std=CL2.0");
     if( err )
         return err;
 
@@ -180,7 +187,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
         }
 
         test = CL_ULONG_MAX;
-        err = get_type_size( context, queue, scalar_table[i].name, &test  );
+        err = get_type_size( context, queue, scalar_table[i].name, &test, device);
         if( err )
             return err;
         if( test != scalar_table[i].size )
@@ -215,7 +222,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
             sprintf( name, "%s%ld", vector_table[i].name, j );
 
             test = CL_ULONG_MAX;
-            err = get_type_size( context, queue, name, &test  );
+            err = get_type_size( context, queue, name, &test, device  );
             if( err )
                 return err;
             if( test != j * vector_table[i].size )
@@ -237,7 +244,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
     for( i = 0; i < sizeof( ptr_table ) / sizeof( ptr_table[0] ); i++ )
     {
         test = CL_ULONG_MAX;
-        err = get_type_size( context, queue, ptr_table[i], &test  );
+        err = get_type_size( context, queue, ptr_table[i], &test, device );
         if( err )
             return err;
         if( test != ptr_size )
@@ -250,7 +257,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
 
     // Check that intptr_t is large enough
     test = CL_ULONG_MAX;
-    err = get_type_size( context, queue, "intptr_t", &test  );
+    err = get_type_size( context, queue, "intptr_t", &test, device );
     if( err )
         return err;
     if( test < ptr_size )
@@ -267,7 +274,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
 
     // Check that uintptr_t is large enough
     test = CL_ULONG_MAX;
-    err = get_type_size( context, queue, "uintptr_t", &test  );
+    err = get_type_size( context, queue, "uintptr_t", &test, device );
     if( err )
         return err;
     if( test < ptr_size )
@@ -308,7 +315,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
         }
 
         test = CL_ULONG_MAX;
-        err = get_type_size( context, queue, other_types[i], &test  );
+        err = get_type_size( context, queue, other_types[i], &test, device );
         if( err )
             return err;
         if( ! IsPowerOfTwo( test ) )
@@ -326,7 +333,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
     {
         log_info( "\tcl_khr_fp64:" );
         test = CL_ULONG_MAX;
-        err = get_type_size( context, queue, "double", &test  );
+        err = get_type_size( context, queue, "double", &test, device );
         if( err )
             return err;
         if( test != 8 )
@@ -343,7 +350,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
             sprintf( name, "double%ld", j );
 
             test = CL_ULONG_MAX;
-            err = get_type_size( context, queue, name, &test  );
+            err = get_type_size( context, queue, name, &test, device );
             if( err )
                 return err;
             if( test != 8*j )
@@ -361,7 +368,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
     {
         log_info( "\tcl_khr_fp16:" );
         test = CL_ULONG_MAX;
-        err = get_type_size( context, queue, "half", &test  );
+        err = get_type_size( context, queue, "half", &test, device );
         if( err )
             return err;
         if( test != 2 )
@@ -378,7 +385,7 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
             sprintf( name, "half%ld", j );
 
             test = CL_ULONG_MAX;
-            err = get_type_size( context, queue, name, &test  );
+            err = get_type_size( context, queue, name, &test, device );
             if( err )
                 return err;
             if( test != 2*j )

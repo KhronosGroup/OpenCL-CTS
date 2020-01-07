@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 #include "reference_math.h"
 #include <limits.h>
 
@@ -2957,8 +2957,11 @@ int reference_isnormall( long double x){ return 0 != isnormal( (double) x ); }
 int reference_isnotequall( long double x, long double y){ return x != y; }
 int reference_isorderedl( long double x, long double y){ return x == x && y == y; }
 int reference_isunorderedl( long double x, long double y){ return isnan(x) || isnan( y ); }
+#if defined( __INTEL_COMPILER )
+int reference_signbitl( long double x){ return 0 != signbitl( x ); }
+#else
 int reference_signbitl( long double x){ return 0 != signbit( x ); }
-
+#endif
 long double reference_copysignl( long double x, long double y);
 long double reference_roundl( long double x );
 long double reference_cbrtl(long double x);

@@ -20,7 +20,7 @@
 
 #include "errorHelpers.h"
 
-extern bool gOfflineCompiler;
+#include "parseParameters.h"
 
 const char    *IGetErrorString( int clErrorCode )
 {
@@ -800,7 +800,7 @@ int check_opencl_version(cl_device_id device, cl_uint requestedMajorVersion, cl_
 
 int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device)
 {
-    if(gOfflineCompiler)
+    if (gCompilationMode != kOnline)
     {
         int nNotRequiredWithOfflineCompiler = sizeof(subtests_to_skip_with_offline_compiler)/sizeof(char *);
         size_t i;

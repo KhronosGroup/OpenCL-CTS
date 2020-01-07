@@ -19,7 +19,7 @@
 #include <unistd.h>
 #endif
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 int test_release_kernel_order(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {

@@ -1,6 +1,8 @@
 # Remember current source directory (`test_conformance').
 set( CLConf_Install_Base_Dir "${CMAKE_CURRENT_SOURCE_DIR}" )
 
+set(HARNESS_LIB harness)
+
 add_subdirectory( allocations )
 add_subdirectory( api )
 add_subdirectory( atomics )
@@ -51,6 +53,8 @@ add_subdirectory( workgroups )
 add_subdirectory( pipes )
 add_subdirectory( device_timer )
 add_subdirectory( clcpp )
+add_subdirectory( spirv_new )
+add_subdirectory( spir )
 
 set(CSV_FILES
     opencl_conformance_tests_21_full_spirv.csv
@@ -63,6 +67,9 @@ set(CSV_FILES
     opencl_conformance_tests_full_no_math_or_conversions.csv
     opencl_conformance_tests_math.csv
     opencl_conformance_tests_quick.csv
+    opencl_conformance_tests_20_full.csv
+    opencl_conformance_tests_20_full_no_math_or_conversions.csv
+    opencl_conformance_tests_20_quick.csv
 )
 set(PY_FILES
     run_conformance.py

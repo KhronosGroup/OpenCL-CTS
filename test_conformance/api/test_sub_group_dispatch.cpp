@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
 
 const char *subgroup_dispatch_kernel[] = {
 "__kernel void subgroup_dispatch_kernel(__global int *output)\n"

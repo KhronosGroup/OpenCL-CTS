@@ -1,0 +1,45 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 26
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %1 "vector_long2_insert"
+               OpName %in "in"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %in FuncParamAttr NoCapture
+               OpDecorate %4 FuncParamAttr NoCapture
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+   %ulong_32 = OpConstant %ulong 32
+       %uint = OpTypeInt 32 0
+       %void = OpTypeVoid
+    %v2ulong = OpTypeVector %ulong 2
+%_ptr_CrossWorkgroup_ulong = OpTypePointer CrossWorkgroup %ulong
+%_ptr_CrossWorkgroup_v2ulong = OpTypePointer CrossWorkgroup %v2ulong
+         %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_ulong %_ptr_CrossWorkgroup_v2ulong %uint
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+          %1 = OpFunction %void None %14
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_ulong
+          %4 = OpFunctionParameter %_ptr_CrossWorkgroup_v2ulong
+         %15 = OpFunctionParameter %uint
+         %16 = OpLabel
+         %17 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %18 = OpCompositeExtract %ulong %17 0
+         %19 = OpShiftLeftLogical %ulong %18 %ulong_32
+         %20 = OpShiftRightArithmetic %ulong %19 %ulong_32
+         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ulong %in %20
+         %22 = OpLoad %ulong %21
+         %23 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v2ulong %4 %20
+         %24 = OpLoad %v2ulong %23
+         %25 = OpVectorInsertDynamic %v2ulong %24 %22 %15
+               OpStore %23 %25
+               OpReturn
+               OpFunctionEnd

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -286,13 +286,8 @@ test_image_multipass_integer_coord(cl_device_id device, cl_context context, cl_c
         clReleaseProgram(program[1]);
     }
 
-    cl_sampler_properties properties[] = {
-        CL_SAMPLER_NORMALIZED_COORDS, CL_FALSE,
-        CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_CLAMP_TO_EDGE,
-        CL_SAMPLER_FILTER_MODE, CL_FILTER_NEAREST,
-        0 };
-    cl_sampler sampler = clCreateSamplerWithProperties(context, properties, &err);
-    test_error(err, "clCreateSamplerWithProperties failed");
+    cl_sampler sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
+    test_error(err, "clCreateSampler failed");
 
     {
         size_t        threads[3] = {0, 0, 0};
@@ -532,13 +527,8 @@ test_image_multipass_float_coord(cl_device_id device, cl_context context, cl_com
         clReleaseProgram(program[1]);
     }
 
-    cl_sampler_properties properties[] = {
-        CL_SAMPLER_NORMALIZED_COORDS, CL_FALSE,
-        CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_CLAMP_TO_EDGE,
-        CL_SAMPLER_FILTER_MODE, CL_FILTER_NEAREST,
-        0 };
-    cl_sampler sampler = clCreateSamplerWithProperties(context, properties, &err);
-    test_error(err, "clCreateSamplerWithProperties failed");
+    cl_sampler sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
+    test_error(err, "clCreateSampler failed");
 
     {
         size_t        threads[3] = {0, 0, 0};

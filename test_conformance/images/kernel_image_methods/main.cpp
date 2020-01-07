@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../../test_common/harness/compat.h"
-#include "../../../test_common/harness/parseParameters.h"
+#include "../harness/compat.h"
+#include "../harness/parseParameters.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -31,6 +31,8 @@ bool gTestSmallImages;
 bool gTestMaxImages;
 bool gTestRounding;
 int  gTypesToTest;
+bool gDeviceLt20 = false;
+
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
 cl_device_type    gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
@@ -81,7 +83,7 @@ int main(int argc, const char *argv[])
         test_finish();
         return -1;
     }
-  
+
     checkDeviceTypeOverride( &gDeviceType );
 
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
@@ -134,20 +136,8 @@ int main(int argc, const char *argv[])
 
     int ret = runTestHarness( argCount, argList, test_num, test_list, true, false, 0 );
 
-  if (gTestFailure == 0) {
-    if (gTestCount > 1)
-      log_info("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-    else
-      log_info("PASSED sub-test.\n");
-  } else if (gTestFailure > 0) {
-    if (gTestCount > 1)
-      log_error("FAILED %d of %d sub-tests.\n", gTestFailure, gTestCount);
-    else
-      log_error("FAILED sub-test.\n");
-  }
-
-  free(argList);
-  return ret;
+    free(argList);
+    return ret;
 }
 
 static void printUsage( const char *execName )

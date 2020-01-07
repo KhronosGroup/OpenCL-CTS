@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -21,8 +21,8 @@
 #include <sys/stat.h>
 
 #include "procs.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/ThreadPool.h"
+#include "harness/conversions.h"
+#include "harness/ThreadPool.h"
 
 #define NUM_TESTS 23
 

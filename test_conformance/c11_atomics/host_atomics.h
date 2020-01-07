@@ -16,7 +16,7 @@
 #ifndef _HOST_ATOMICS_H_
 #define _HOST_ATOMICS_H_
 
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 #ifdef WIN32
 #include "Windows.h"

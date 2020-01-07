@@ -1,0 +1,45 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 26
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %1 "vector_float4_extract"
+               OpName %in "in"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %in FuncParamAttr NoCapture
+               OpDecorate %4 FuncParamAttr NoCapture
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+   %ulong_32 = OpConstant %ulong 32
+       %uint = OpTypeInt 32 0
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
+%_ptr_CrossWorkgroup_v4float = OpTypePointer CrossWorkgroup %v4float
+         %15 = OpTypeFunction %void %_ptr_CrossWorkgroup_v4float %_ptr_CrossWorkgroup_float %uint
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+          %1 = OpFunction %void None %15
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_v4float
+          %4 = OpFunctionParameter %_ptr_CrossWorkgroup_float
+         %16 = OpFunctionParameter %uint
+         %17 = OpLabel
+         %18 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %19 = OpCompositeExtract %ulong %18 0
+         %20 = OpShiftLeftLogical %ulong %19 %ulong_32
+         %21 = OpShiftRightArithmetic %ulong %20 %ulong_32
+         %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4float %in %21
+         %23 = OpLoad %v4float %22
+         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %4 %21
+         %25 = OpVectorExtractDynamic %float %23 %16
+               OpStore %24 %25
+               OpReturn
+               OpFunctionEnd

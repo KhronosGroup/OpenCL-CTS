@@ -117,112 +117,117 @@ typedef long long           int64_t;
     #include <math.h>
 #endif
 
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846264338327950288
+#endif
+
 #if defined( _MSC_VER )
 
     #ifdef __cplusplus
         extern "C" {
     #endif
 
-#ifndef M_PI
-    #define M_PI    3.14159265358979323846264338327950288
-#endif
+    #ifndef NAN
+        #define NAN  (INFINITY - INFINITY)
+    #endif
 
-    #if ! defined( __INTEL_COMPILER )
+    #ifndef HUGE_VALF
+        #define HUGE_VALF (float)HUGE_VAL
+    #endif
 
-        #ifndef NAN
-            #define NAN  (INFINITY - INFINITY)
-        #endif
-        #ifndef HUGE_VALF
-            #define HUGE_VALF (float)HUGE_VAL
-        #endif
-        #ifndef INFINITY
-            #define INFINITY    (FLT_MAX + FLT_MAX)
-        #endif
-        #ifndef isfinite
-            #define isfinite(x) _finite(x)
-        #endif
-        #ifndef isnan
-#define    isnan( x )       ((x) != (x))
-        #endif
-        #ifndef isinf
-#define     isinf( _x)      ((_x) == INFINITY || (_x) == -INFINITY)
-        #endif
+    #ifndef INFINITY
+        #define INFINITY    (FLT_MAX + FLT_MAX)
+    #endif
 
-double rint( double x);
-float  rintf( float x);
-long double rintl( long double x);
+    #ifndef isfinite
+        #define isfinite(x) _finite(x)
+    #endif
 
-float cbrtf( float );
-double cbrt( double );
+    #ifndef isnan
+        #define    isnan( x )       ((x) != (x))
+    #endif
 
-int    ilogb( double x);
-int    ilogbf (float x);
-int    ilogbl(long double x);
+    #ifndef isinf
+        #define     isinf( _x)      ((_x) == INFINITY || (_x) == -INFINITY)
+    #endif
+        
+    #if _MSC_VER < 1900 && ! defined( __INTEL_COMPILER )
 
-double fmax(double x, double y);
-double fmin(double x, double y);
-float  fmaxf( float x, float y );
-float  fminf(float x, float y);
+        double rint( double x);
+        float  rintf( float x);
+        long double rintl( long double x);
 
-double      log2(double x);
-long double log2l(long double x);
+        float cbrtf( float );
+        double cbrt( double );
 
-double      exp2(double x);
-long double exp2l(long double x);
+        int    ilogb( double x);
+        int    ilogbf (float x);
+        int    ilogbl(long double x);
 
-double      fdim(double x, double y);
-float       fdimf(float x, float y);
-long double fdiml(long double x, long double y);
+        double fmax(double x, double y);
+        double fmin(double x, double y);
+        float  fmaxf( float x, float y );
+        float  fminf(float x, float y);
 
-double      remquo( double x, double y, int *quo);
-float       remquof( float x, float y, int *quo);
-long double remquol( long double x, long double y, int *quo);
+        double      log2(double x);
+        long double log2l(long double x);
 
-long double scalblnl(long double x, long n);
+        double      exp2(double x);
+        long double exp2l(long double x);
 
-float hypotf(float x, float y);
-long double hypotl(long double x, long double y) ;
-double lgamma(double x);
-float  lgammaf(float x);
+        double      fdim(double x, double y);
+        float       fdimf(float x, float y);
+        long double fdiml(long double x, long double y);
 
-double trunc(double x);
-float  truncf(float x);
+        double      remquo( double x, double y, int *quo);
+        float       remquof( float x, float y, int *quo);
+        long double remquol( long double x, long double y, int *quo);
 
-double log1p(double x);
-float  log1pf(float x);
-long double log1pl(long double x);
+        long double scalblnl(long double x, long n);
 
-double copysign(double x, double y);
-float  copysignf(float x, float y);
-long double copysignl(long double x, long double y);
+        float hypotf(float x, float y);
+        long double hypotl(long double x, long double y) ;
+        double lgamma(double x);
+        float  lgammaf(float x);
 
-long lround(double x);
-long lroundf(float x);
-//long lroundl(long double x)
+        double trunc(double x);
+        float  truncf(float x);
 
-double round(double x);
-float  roundf(float x);
-long double roundl(long double x);
+        double log1p(double x);
+        float  log1pf(float x);
+        long double log1pl(long double x);
+
+        double copysign(double x, double y);
+        float  copysignf(float x, float y);
+        long double copysignl(long double x, long double y);
+
+        long lround(double x);
+        long lroundf(float x);
+        //long lroundl(long double x)
+
+        double round(double x);
+        float  roundf(float x);
+        long double roundl(long double x);
 
         int cf_signbit(double x);
         int cf_signbitf(float x);
 
-// Added in _MSC_VER == 1800 (Visual Studio 2013)
-#if _MSC_VER < 1800
-        static int signbit(double x) { return  cf_signbit(x); }
-#endif
+        // Added in _MSC_VER == 1800 (Visual Studio 2013)
+        #if _MSC_VER < 1800
+                static int signbit(double x) { return  cf_signbit(x); }
+        #endif
         static int signbitf(float x) { return cf_signbitf(x); }
 
-long int lrint (double flt);
-long int lrintf (float flt);
+        long int lrint (double flt);
+        long int lrintf (float flt);
 
-float   int2float (int32_t ix);
-int32_t float2int (float   fx);
+        float   int2float (int32_t ix);
+        int32_t float2int (float   fx);
 
-    #endif
+    #endif // _MSC_VER < 1900 && ! defined( __INTEL_COMPILER )
 
-    #if ! defined( __INTEL_COMPILER ) || __INTEL_COMPILER < 1300
-        // These functions appeared in Intel C v13.
+    #if _MSC_VER < 1900 && ( ! defined( __INTEL_COMPILER ) || __INTEL_COMPILER < 1300 )
+        // These functions appeared in Intel C v13 and Visual Studio 2015
         float  nanf( const char* str);
         double nan( const char* str);
         long double nanl( const char* str);

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <string.h>
 #include <errno.h>
@@ -37,11 +37,13 @@
 #define streamDup2(fd1,fd2) _dup2(fd1,fd2)
 #endif
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/mt19937.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/mt19937.h"
+#include "harness/parseParameters.h"
+
+#include <CL/cl_ext.h>
 
 typedef  unsigned int uint32_t;
 
@@ -157,6 +159,14 @@ static void releaseOutputStream(int fd)
 }
 
 //-----------------------------------------
+// printfCallBack
+//-----------------------------------------
+static void CL_CALLBACK printfCallBack(const char *printf_data, size_t len, size_t final, void *user_data)
+{
+    fwrite(printf_data, 1, len, stdout);
+}
+
+//-----------------------------------------
 // getAnalysisBuffer
 //-----------------------------------------
 static void getAnalysisBuffer(char* analysisBuffer)
@@ -168,7 +178,7 @@ static void getAnalysisBuffer(char* analysisBuffer)
     if(NULL == fp)
         log_error("Failed to open analysis buffer ('%s')\n", strerror(errno));
     else
-    while(fgets(analysisBuffer,ANALYSIS_BUFFER_SIZE , fp) != NULL );
+        while(fgets(analysisBuffer, ANALYSIS_BUFFER_SIZE, fp) != NULL );
     fclose(fp);
 }
 
@@ -192,21 +202,11 @@ static int isKernelPFormat(testCase* pTestCase,size_t testId)
 //-----------------------------------------
 int waitForEvent(cl_event* event)
 {
-    cl_int status = CL_SUCCESS;
-    cl_int eventStatus = CL_QUEUED;
-    while(eventStatus != CL_COMPLETE)
+    cl_int status = clWaitForEvents(1, event);
+    if(status != CL_SUCCESS)
     {
-        status = clGetEventInfo(
-            *event,
-            CL_EVENT_COMMAND_EXECUTION_STATUS,
-            sizeof(cl_int),
-            &eventStatus,
-            NULL);
-        if(status != CL_SUCCESS)
-        {
-            log_error("clGetEventInfo failed");
-            return status;
-        }
+        log_error("clWaitForEvents failed");
+        return status;
     }
 
     status = clReleaseEvent(*event);
@@ -540,7 +540,7 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
         goto exit;
     }
     //Wait until kernel finishes its execution and (thus) the output printed from the kernel
-    //is immidatly printed
+    //is immediately printed
     err = waitForEvent(&ndrEvt);
 
     releaseOutputStream(fd);
@@ -587,9 +587,9 @@ exit:
     if(clReleaseProgram(program) != CL_SUCCESS)
         log_error("clReleaseProgram failed\n");
     if(d_out)
-	    clReleaseMemObject(d_out);
+        clReleaseMemObject(d_out);
     if(d_a)
-	    clReleaseMemObject(d_a);
+        clReleaseMemObject(d_a);
     ++s_test_cnt;
     return err;
 }
@@ -1076,10 +1076,24 @@ test_status InitCL( cl_device_id device )
 
     gFd = acquireOutputStream();
 
-    gContext = clCreateContext(NULL, 1, &device, notify_callback, NULL, NULL);
+    cl_context_properties printf_properties[] =
+        {
+            CL_PRINTF_CALLBACK_ARM, (cl_context_properties)printfCallBack,
+            CL_PRINTF_BUFFERSIZE_ARM, ANALYSIS_BUFFER_SIZE,
+            0
+        };
+
+    cl_context_properties* props = NULL;
+
+    if(is_extension_available(device, "cl_arm_printf"))
+    {
+        props = printf_properties;
+    }
+
+    gContext = clCreateContext(props, 1, &device, notify_callback, NULL, NULL);
     checkNull(gContext, "clCreateContext");
 
-    gQueue = clCreateCommandQueueWithProperties(gContext, device, 0, NULL);
+    gQueue = clCreateCommandQueue(gContext, device, 0, NULL);
     checkNull(gQueue, "clCreateCommandQueue");
 
     releaseOutputStream(gFd);

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #include <iostream>
 #include <string>
 

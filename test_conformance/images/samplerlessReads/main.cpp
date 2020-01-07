@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../../test_common/harness/compat.h"
+#include "../harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -24,8 +24,8 @@
 #endif
 
 #include "../testBase.h"
-#include "../../../test_common/harness/fpcontrol.h"
-#include "../../../test_common/harness/parseParameters.h"
+#include "../harness/fpcontrol.h"
+#include "../harness/parseParameters.h"
 
 #if defined(__PPC__)
 // Global varaiable used to hold the FPU control register state. The FPSCR register can not
@@ -44,6 +44,7 @@ cl_channel_type     gChannelTypeToUse = (cl_channel_type)-1;
 cl_channel_order    gChannelOrderToUse = (cl_channel_order)-1;
 bool                gEnablePitch = false;
 cl_device_type      gDeviceType = CL_DEVICE_TYPE_DEFAULT;
+bool                gDeviceLt20 = false;
 
 #define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
@@ -177,19 +178,6 @@ int main(int argc, const char *argv[])
 
     // Restore FP state before leaving
     RestoreFPState(&oldMode);
-
-    if (gTestFailure == 0) {
-        if (gTestCount > 1)
-            log_info("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-        else
-            log_info("PASSED sub-test.\n");
-    }
-    else if (gTestFailure > 0) {
-        if (gTestCount > 1)
-            log_error("FAILED %d of %d sub-tests.\n", gTestFailure, gTestCount);
-        else
-            log_error("FAILED sub-test.\n");
-    }
 
     free(argList);
     return ret;

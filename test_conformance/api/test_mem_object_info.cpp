@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/typeWrappers.h"
+#include "harness/testHarness.h"
 
 extern cl_uint gRandomSeed;
 
@@ -497,7 +497,11 @@ int test_get_image_info( cl_device_id deviceID, cl_context context, cl_mem_objec
     imageInfo.image_width = imageInfo.image_height = imageInfo.image_depth = 1;
     imageInfo.image_array_size = 0;
     imageInfo.num_mip_levels = imageInfo.num_samples = 0;
+#ifdef CL_VERSION_2_0
     imageInfo.mem_object = NULL;
+#else
+    imageInfo.buffer = NULL;
+#endif
 
     d = init_genrand( gRandomSeed );
 

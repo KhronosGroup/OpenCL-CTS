@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 const char *context_test_kernels[] = {
     "__kernel void sample_test_1(__global int *src, __global int *dst)\n"
@@ -118,7 +118,7 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
     }
 
     // Create a queue
-    item->q = clCreateCommandQueueWithProperties( item->c, deviceID, 0, &error);
+    item->q = clCreateCommandQueue( item->c, deviceID, 0, &error);
     if( item->q == NULL || error != CL_SUCCESS)
     {
         if (err) {

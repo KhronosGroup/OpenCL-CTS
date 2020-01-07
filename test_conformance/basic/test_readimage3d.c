@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -167,13 +167,8 @@ int test_readimage3d(cl_device_id device, cl_context context, cl_command_queue q
   if (err)
     return -1;
 
-  cl_sampler_properties properties[] = {
-    CL_SAMPLER_NORMALIZED_COORDS, CL_FALSE,
-    CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_CLAMP_TO_EDGE,
-    CL_SAMPLER_FILTER_MODE, CL_FILTER_NEAREST,
-    0 };
-  cl_sampler sampler = clCreateSamplerWithProperties(context, properties, &err);
-  test_error(err, "clCreateSamplerWithProperties failed");
+  cl_sampler sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
+  test_error(err, "clCreateSampler failed");
 
   err  = clSetKernelArg(kernel[0], 0, sizeof streams[0], &streams[0]);
   err |= clSetKernelArg(kernel[0], 1, sizeof streams[2], &streams[2]);

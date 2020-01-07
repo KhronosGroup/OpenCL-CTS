@@ -1,0 +1,43 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 22
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %1 "decorate_constant"
+               OpName %res "res"
+               OpName %lhs "lhs"
+               OpName %rhs "rhs"
+               OpName %entry "entry"
+               OpDecorate %6 Constant
+          %6 = OpDecorationGroup
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpGroupDecorate %6 %res %lhs %rhs
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+         %13 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %1 = OpFunction %void None %13
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+         %14 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %15 = OpCompositeExtract %uint %14 0
+         %16 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %lhs %15
+         %17 = OpLoad %uint %16 Aligned 4
+         %18 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %rhs %15
+         %19 = OpLoad %uint %18 Aligned 4
+         %20 = OpIAdd %uint %17 %19
+         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %15
+               OpStore %21 %20 Aligned 4
+               OpReturn
+               OpFunctionEnd

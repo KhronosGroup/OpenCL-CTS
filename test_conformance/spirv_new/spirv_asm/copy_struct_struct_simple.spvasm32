@@ -1,0 +1,44 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 26
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int8
+               OpCapability Linkage
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %1 "copy_struct_struct_simple"
+               OpName %in "in"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %in FuncParamAttr NoCapture
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+     %v2uint = OpTypeVector %uint 2
+      %uchar = OpTypeInt 8 0
+ %_struct_10 = OpTypeStruct %uint %uchar
+ %_struct_11 = OpTypeStruct %v2uint %_struct_10
+%_ptr_CrossWorkgroup__struct_11 = OpTypePointer CrossWorkgroup %_struct_11
+         %13 = OpTypeFunction %void %_ptr_CrossWorkgroup__struct_11
+%uint_2100483600 = OpConstant %uint 2100483600
+  %uchar_128 = OpConstant %uchar 128
+%uint_2100480000 = OpConstant %uint 2100480000
+%uint_2100480000_0 = OpConstant %uint 2100480000
+         %18 = OpConstantComposite %_struct_10 %uint_2100483600 %uchar_128
+         %19 = OpConstantComposite %v2uint %uint_2100480000 %uint_2100480000_0
+         %20 = OpConstantComposite %_struct_11 %19 %18
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %1 = OpFunction %void None %13
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup__struct_11
+         %21 = OpLabel
+         %22 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %23 = OpCompositeExtract %uint %22 0
+         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__struct_11 %in %23
+         %25 = OpCopyObject %_struct_11 %20
+               OpStore %24 %25
+               OpReturn
+               OpFunctionEnd

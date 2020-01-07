@@ -22,9 +22,9 @@
 
 #include "test_config.h"
 #include "string.h"
-#include "../../test_common/harness/kernelHelpers.h"
+#include "harness/kernelHelpers.h"
 
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 #define HALF_MIN 1.0p-14
 
@@ -58,7 +58,6 @@ uint32_t        gDeviceFrequency = 0;
 uint32_t        gComputeDevices = 0;
 size_t          gMaxThreadGroupSize = 0;
 size_t          gWorkGroupSize = 0;
-int             gFailCount = 0;
 bool            gWimpyMode = false;
 int             gWimpyReductionFactor = 512;
 int             gTestDouble = 0;

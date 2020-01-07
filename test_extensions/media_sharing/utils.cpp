@@ -15,8 +15,8 @@
 //
 #include "utils.h"
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/rounding_mode.h"
+#include "harness/errorHelpers.h"
+#include "harness/rounding_mode.h"
 
 #include <math.h>
 
@@ -1934,4 +1934,37 @@ float convert_half_to_float( unsigned short halfValue )
 
   outFloat.bits = ( sign << 31 ) | ( exponent << 23 ) | mantissa;
   return outFloat.floatValue;
+}
+
+cl_int deviceExistForCLTest(cl_platform_id platform,
+     cl_dx9_media_adapter_type_khr media_adapters_type,
+     void *media_adapters,
+     CResult &result,
+     TSharedHandleType sharedHandle /*default SHARED_HANDLE_ENABLED*/
+     )
+{
+    cl_int _error;
+    cl_uint devicesAllNum = 0;
+    std::string sharedHandleStr = (sharedHandle == SHARED_HANDLE_ENABLED)? "yes": "no";
+    std::string adapterStr;
+    AdapterToString(media_adapters_type, adapterStr);
+
+    _error = clGetDeviceIDsFromDX9MediaAdapterKHR(platform, 1,
+        &media_adapters_type, &media_adapters, CL_PREFERRED_DEVICES_FOR_DX9_MEDIA_ADAPTER_KHR, 0, 0, &devicesAllNum);
+
+    if (_error != CL_SUCCESS)
+    {
+        if(_error != CL_DEVICE_NOT_FOUND)
+        {
+           log_error("clGetDeviceIDsFromDX9MediaAdapterKHR failed: %s\n", IGetErrorString(_error));
+           result.ResultSub(CResult::TEST_ERROR);
+        }
+        else
+        {
+          log_info("Skipping test case, device type is not supported by a device (adapter type: %s, shared handle: %s)\n", adapterStr.c_str(), sharedHandleStr.c_str());
+          result.ResultSub(CResult::TEST_NOTSUPPORTED);
+        }
+    }
+
+    return _error;
 }

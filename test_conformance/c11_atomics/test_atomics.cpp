@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
 
 #include "common.h"
 #include "host_atomics.h"
@@ -698,9 +698,9 @@ public:
     std::string memoryOrderScope = MemoryOrderScopeStr();
     std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
     return
-      "  oldValues[tid] = atomic_fetch_add"+postfix+"(&destMemory[0], tid + 3"+memoryOrderScope+");\n"+
-      "  atomic_fetch_add"+postfix+"(&destMemory[0], tid + 3"+memoryOrderScope+");\n"
-      "  atomic_fetch_add"+postfix+"(&destMemory[0], tid + 3"+memoryOrderScope+");\n"
+      "  oldValues[tid] = atomic_fetch_add"+postfix+"(&destMemory[0], ("+DataType().AddSubOperandTypeName()+")tid + 3"+memoryOrderScope+");\n"+
+      "  atomic_fetch_add"+postfix+"(&destMemory[0], ("+DataType().AddSubOperandTypeName()+")tid + 3"+memoryOrderScope+");\n"
+      "  atomic_fetch_add"+postfix+"(&destMemory[0], ("+DataType().AddSubOperandTypeName()+")tid + 3"+memoryOrderScope+");\n"
       "  atomic_fetch_add"+postfix+"(&destMemory[0], (("+DataType().AddSubOperandTypeName()+")tid + 3) << (sizeof("+DataType().AddSubOperandTypeName()+")-1)*8"+memoryOrderScope+");\n";
   }
   virtual void HostFunction(cl_uint tid, cl_uint threadCount, volatile HostAtomicType *destMemory, HostDataType *oldValues)

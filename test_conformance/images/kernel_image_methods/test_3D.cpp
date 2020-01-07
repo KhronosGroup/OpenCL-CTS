@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,7 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool            gDebugTrace, gTestSmallImages, gTestMaxImages;
+extern bool            gDebugTrace, gTestSmallImages, gTestMaxImages, gDeviceLt20;
 
 extern int test_get_image_info_single( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d );
 

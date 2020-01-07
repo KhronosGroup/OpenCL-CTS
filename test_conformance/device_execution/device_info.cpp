@@ -15,8 +15,8 @@
 //
 #include <stdio.h>
 #include <string.h>
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
 
 #include "procs.h"
 #include "utils.h"

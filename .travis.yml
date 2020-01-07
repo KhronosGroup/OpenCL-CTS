@@ -24,7 +24,6 @@ script:
   - cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers
           -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build
           -DCL_LIBCLCXX_DIR=${TOP}/libclcxx
-          -DCL_OFFLINE_COMPILER=/dummy/path/to/compiler
           -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin
           -DOPENCL_LIBRARIES="-lOpenCL -lpthread"
           ..

@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
-#include "../../test_common/harness/rounding_mode.h"
-#include "../../test_common/harness/ThreadPool.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/compat.h"
+#include "harness/rounding_mode.h"
+#include "harness/ThreadPool.h"
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
+#include "harness/parseParameters.h"
 #if !defined(_WIN32) && !defined(__ANDROID__)
 #include <sys/sysctl.h>
 #endif
@@ -54,7 +54,7 @@
 
 #if (defined(_WIN32) && defined (_MSC_VER))
 // need for _controlfp_s and rouinding modes in RoundingMode
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #endif
 
 #pragma mark -
@@ -78,8 +78,6 @@ int             argCount = 0;
 cl_context      gContext = NULL;
 cl_command_queue      gQueue = NULL;
 char            appName[64] = "ctest";
-int             gTestCount = 0;
-int             gFailCount = 0;
 int             gStartTestNumber = -1;
 int             gEndTestNumber = 0;
 #if defined( __APPLE__ )
@@ -326,12 +324,6 @@ int main (int argc, const char **argv )
     error = clFinish(gQueue);
     if (error)
         vlog_error("clFinish failed: %d\n", error);
-
-    if (gFailCount == 0 && gTestCount >= 0) {
-        vlog("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-    } else if (gFailCount > 0) {
-        vlog_error("FAILED %d of %d sub-tests.\n", gFailCount, gTestCount);
-    }
 
     clReleaseMemObject(gInBuffer);
 
@@ -703,17 +695,21 @@ test_status InitCL( cl_device_id device )
         gIsRTZ = 1;
     }
 
-    char extensions[2048] = "";
-    if( (error = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, sizeof( extensions ), extensions,  NULL ) ) )
-    {
-        vlog_error( "FAILURE: unable to get device info for CL_DEVICE_EXTENSIONS!" );
-        return TEST_FAIL;
-    }
-    else if( strstr( extensions, "cl_khr_fp64" ) )
+    else if(is_extension_available(device, "cl_khr_fp64"))
     {
         gHasDouble = 1;
     }
     gTestDouble &= gHasDouble;
+
+    //detect whether profile of the device is embedded
+    char profile[1024] = "";
+    if( (error = clGetDeviceInfo( device, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL ) ) ){}
+    else if( strstr(profile, "EMBEDDED_PROFILE" ) )
+    {
+        gIsEmbedded = 1;
+        if( !is_extension_available(device, "cles_khr_int64" ) )
+            gHasLong = 0;
+    }
 
 
     gContext = clCreateContext( NULL, 1, &device, notify_callback, NULL, &error );
@@ -723,7 +719,7 @@ test_status InitCL( cl_device_id device )
         return TEST_FAIL;
     }
 
-    gQueue = clCreateCommandQueueWithProperties(gContext, device, 0, &error);
+    gQueue = clCreateCommandQueue(gContext, device, 0, &error);
     if( NULL == gQueue || error )
     {
         vlog_error( "clCreateCommandQueue failed. (%d)\n", error );

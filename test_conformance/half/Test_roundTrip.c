@@ -16,7 +16,7 @@
 #include <string.h>
 #include "cl_utils.h"
 #include "tests.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
@@ -32,10 +32,6 @@ int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue qu
     uint64_t min_double_time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
     memset( min_time, -1, sizeof( min_time ) );
     memset( min_double_time, -1, sizeof( min_double_time ) );
-
-    vlog( "Testing roundTrip\n" );
-    fflush( stdout );
-
 
     for( vectorSize = kMinVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
     {
@@ -300,7 +296,7 @@ int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue qu
         }
     }
 
-    vlog( "\tPassed\n" );
+    vlog( "\n" );
 
     loopCount = 100;
     if( gReportTimes )

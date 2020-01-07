@@ -15,12 +15,14 @@
 //
 #include "crc32.h"
 #include "kernelHelpers.h"
+#include "deviceInfo.h"
 #include "errorHelpers.h"
 #include "imageHelpers.h"
 #include "typeWrappers.h"
 #include "testHarness.h"
 #include "parseParameters.h"
 
+#include <cassert>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -37,12 +39,7 @@ std::string slash = "\\";
 std::string slash = "/";
 #endif
 
-std::string get_file_name(const std::string &baseName, int index, const std::string &extension)
-{
-    std::ostringstream fileName;
-    fileName << baseName << "." << index << extension;
-    return fileName.str();
-}
+static cl_int get_first_device_id(const cl_context context, cl_device_id &device);
 
 long get_file_size(const std::string &fileName)
 {
@@ -55,29 +52,20 @@ long get_file_size(const std::string &fileName)
     return static_cast<long>(length);
 }
 
-std::vector<char> get_file_content(const std::string &fileName)
+static std::string get_kernel_content(unsigned int numKernelLines, const char *const *kernelProgram)
 {
-    std::ifstream ifs(fileName.c_str(), std::ios::binary);
-    if (!ifs.good())
-        return std::vector<char>(0);
-    // get length of file:
-    ifs.seekg(0, std::ios::end);
-    std::ios::pos_type length = ifs.tellg();
-    ifs.seekg(0, std::ios::beg);
+    std::string kernel;
+    for (size_t i = 0; i < numKernelLines; ++i)
+    {
+        std::string chunk(kernelProgram[i], 0, std::string::npos);
+        kernel += chunk;
+    }
 
-    // allocate memory:
-    std::vector<char> content(static_cast<size_t>(length));
-
-    // read data as a block:
-    ifs.read(&content[0], length);
-    return content;
+    return kernel;
 }
 
 std::string get_kernel_name(const std::string &source)
 {
-    // Count CRC
-    cl_uint crc = crc32(source.data(), source.size());
-
     // Create list of kernel names
     std::string kernelsList;
     size_t kPos = source.find("kernel");
@@ -158,46 +146,607 @@ std::string get_kernel_name(const std::string &source)
         }
         oss << kernelsList;
     }
-    oss << std::hex << std::setfill('0') << std::setw(8) << crc;
     return oss.str();
 }
 
-std::string add_build_options(const std::string &baseName, const char *options)
+static std::string get_offline_compilation_file_type_str(const CompilationMode compilationMode)
 {
-    if (options == 0 || options[0] == 0)
-        return get_file_name(baseName, 0, "");
-
-    bool equal = false;
-    int i = 0;
-
-    do
+    switch (compilationMode)
     {
-        i++;
-        std::string fileName = gSpirVPath + slash + get_file_name(baseName, i, ".options");
-        long fileSize = get_file_size(fileName);
-        if (fileSize == 0)
-            break;
-        //if(fileSize == strlen(options))
-        {
-            std::vector<char> options2 = get_file_content(fileName);
-            options2.push_back(0); //terminate string
-            equal = strcmp(options, &options2[0]) == 0;
-        }
-    } while (!equal);
-    if (equal)
-        return get_file_name(baseName, i, "");
+        default:
+            assert(0 && "Invalid compilation mode");
+            abort();
+        case kOnline:
+            assert(0 && "Invalid compilation mode for offline compilation");
+            abort();
+        case kBinary:
+            return "binary";
+        case kSpir_v:
+            return "SPIR-V";
+    }
+}
 
-    std::string fileName = gSpirVPath + slash + get_file_name(baseName, i, ".options");
-    std::ofstream ofs(fileName.c_str(), std::ios::binary);
+static std::string get_unique_filename_prefix(unsigned int numKernelLines,
+                                              const char *const *kernelProgram,
+                                              const char *buildOptions)
+{
+    std::string kernel = get_kernel_content(numKernelLines, kernelProgram);
+    std::string kernelName = get_kernel_name(kernel);
+    cl_uint kernelCrc = crc32(kernel.data(), kernel.size());
+    std::ostringstream oss;
+    oss << kernelName <<  std::hex << std::setfill('0') << std::setw(8) << kernelCrc;
+    if(buildOptions) {
+        cl_uint bOptionsCrc = crc32(buildOptions, strlen(buildOptions));
+        oss << '.' << std::hex << std::setfill('0') << std::setw(8) << bOptionsCrc;
+    }
+    return oss.str();
+}
+
+
+static std::string 
+get_cl_build_options_filename_with_path(const std::string& filePath,
+                                        const std::string& fileNamePrefix) {
+    return filePath + slash + fileNamePrefix + ".options";
+}
+
+static std::string 
+get_cl_source_filename_with_path(const std::string& filePath,
+                                 const std::string& fileNamePrefix) {
+    return filePath + slash + fileNamePrefix + ".cl";
+}
+
+static std::string 
+get_binary_filename_with_path(CompilationMode mode,
+                              cl_uint deviceAddrSpaceSize,
+                              const std::string& filePath,
+                              const std::string& fileNamePrefix) {
+    std::string binaryFilename = filePath + slash + fileNamePrefix;
+    if(kSpir_v == mode) {
+        std::ostringstream extension;
+        extension << ".spv" << deviceAddrSpaceSize;
+        binaryFilename += extension.str();
+    }
+    return binaryFilename;
+}
+
+static bool file_exist_on_disk(const std::string& filePath,
+                               const std::string& fileName) {
+    std::string fileNameWithPath = filePath + slash + fileName;
+    bool exist = false;
+    std::ifstream ifs;
+
+    ifs.open(fileNameWithPath.c_str(), std::ios::binary);
+    if(ifs.good())
+        exist = true;
+    ifs.close();
+    return exist;
+}
+
+static bool should_save_kernel_source_to_disk(CompilationMode mode,
+                                              CompilationCacheMode cacheMode,
+                                              const std::string& binaryPath, 
+                                              const std::string& binaryName)
+{
+    bool saveToDisk = false;
+    if(cacheMode == kCacheModeDumpCl ||
+       (cacheMode == kCacheModeOverwrite && mode != kOnline)) {
+        saveToDisk = true;
+    }
+    if(cacheMode == kCacheModeCompileIfAbsent && mode != kOnline) {
+        saveToDisk = !file_exist_on_disk(binaryPath, binaryName);
+    }
+    return saveToDisk;
+}
+
+static int save_kernel_build_options_to_disk(const std::string& path,
+                                             const std::string& prefix,
+                                             const char *buildOptions) {
+    std::string filename = get_cl_build_options_filename_with_path(path, prefix);
+    std::ofstream ofs(filename.c_str(), std::ios::binary);
     if (!ofs.good())
     {
-        log_info("OfflineCompiler: can't create options: %s\n", fileName.c_str());
-        return "";
+        log_info("Can't save kernel build options: %s\n", filename.c_str());
+        return -1;
     }
-    // write data as a block:
-    ofs.write(options, strlen(options));
-    log_info("OfflineCompiler: options added: %s\n", fileName.c_str());
-    return get_file_name(baseName, i, "");
+    ofs.write(buildOptions, strlen(buildOptions));
+    ofs.close();
+    log_info("Saved kernel build options to file: %s\n", filename.c_str());
+    return CL_SUCCESS;
+}
+
+static int save_kernel_source_to_disk(const std::string& path,
+                                      const std::string& prefix,
+                                      const std::string& source) {
+    std::string filename = get_cl_source_filename_with_path(path, prefix);
+    std::ofstream ofs(filename.c_str(), std::ios::binary);
+    if (!ofs.good())
+    {
+        log_info("Can't save kernel source: %s\n", filename.c_str());
+        return -1;
+    }
+    ofs.write(source.c_str(), source.size());
+    ofs.close();
+    log_info("Saved kernel source to file: %s\n", filename.c_str());
+    return CL_SUCCESS;
+}
+
+static int save_kernel_source_and_options_to_disk(unsigned int numKernelLines,
+                                                  const char *const *kernelProgram,
+                                                  const char *buildOptions)
+{
+    int error;
+
+    std::string kernel = get_kernel_content(numKernelLines, kernelProgram);
+    std::string kernelNamePrefix = get_unique_filename_prefix(numKernelLines,
+                                                             kernelProgram,
+                                                             buildOptions);
+
+    // save kernel source to disk
+    error = save_kernel_source_to_disk(gCompilationCachePath, kernelNamePrefix, kernel);
+    
+    // save kernel build options to disk if exists
+    if (buildOptions != NULL)
+        error |= save_kernel_build_options_to_disk(gCompilationCachePath, kernelNamePrefix, buildOptions);
+
+    return error;
+}
+
+static std::string get_compilation_mode_str(const CompilationMode compilationMode)
+{
+    switch (compilationMode)
+    {
+        default:
+            assert(0 && "Invalid compilation mode");
+            abort();
+        case kOnline:
+            return "online";
+        case kBinary:
+            return "binary";
+        case kSpir_v:
+            return "spir-v";
+    }
+}
+
+#ifdef KHRONOS_OFFLINE_COMPILER
+static std::string get_khronos_compiler_command(const cl_uint device_address_space_size,
+                                                const bool openclCXX,
+                                                const std::string &bOptions,
+                                                const std::string &sourceFilename,
+                                                const std::string &outputFilename)
+{
+    // Set compiler options
+    // Emit SPIR-V
+    std::string compilerOptions = " -cc1 -emit-spirv";
+    // <triple>: for 32 bit SPIR-V use spir-unknown-unknown, for 64 bit SPIR-V use spir64-unknown-unknown.
+    if(device_address_space_size == 32)
+    {
+        compilerOptions += " -triple=spir-unknown-unknown";
+    }
+    else
+    {
+        compilerOptions += " -triple=spir64-unknown-unknown";
+    }
+    // Set OpenCL C++ flag required by SPIR-V-ready clang (compiler provided by Khronos)
+    if(openclCXX)
+    {
+        compilerOptions = compilerOptions + " -cl-std=c++";
+    }
+    // Set correct includes
+    if(openclCXX)
+    {
+        compilerOptions += " -I ";
+        compilerOptions += STRINGIFY_VALUE(CL_LIBCLCXX_DIR);
+    }
+    else
+    {
+        compilerOptions += " -include opencl.h";
+    }
+
+#ifdef KHRONOS_OFFLINE_COMPILER_OPTIONS
+    compilerOptions += STRINGIFY_VALUE(KHRONOS_OFFLINE_COMPILER_OPTIONS);
+#endif
+
+    // Add build options passed to this function
+    compilerOptions += " " + bOptions;
+    compilerOptions +=
+        " " + sourceFilename +
+        " -o " + outputFilename;
+    std::string runString = STRINGIFY_VALUE(KHRONOS_OFFLINE_COMPILER) + compilerOptions;
+
+    return runString;
+}
+#endif // KHRONOS_OFFLINE_COMPILER
+
+static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint device_address_space_size,
+                                     const CompilationMode compilationMode, std::string &clDeviceInfo)
+{
+    char *extensionsString = alloc_and_get_device_extensions_string(device);
+    if ( NULL == extensionsString )
+    {
+        /* An error message will have already been printed by alloc_and_get_device_info(),
+         * so we can just return, here. */
+        return -1;
+    }
+
+    BufferOwningPtr<char> extensionsStringBuf(extensionsString);
+
+    char *versionString = alloc_and_get_device_version_string(device);
+    if ( NULL == versionString )
+    {
+        /* An error message will have already been printed by alloc_and_get_device_info(),
+         * so we can just return, here. */
+        return -1;
+    }
+
+    BufferOwningPtr<char> versionStringBuf(versionString);
+
+    std::ostringstream clDeviceInfoStream;
+    std::string file_type = get_offline_compilation_file_type_str(compilationMode);
+    clDeviceInfoStream << "# OpenCL device info affecting " << file_type << " offline compilation:" << std::endl
+                       << "CL_DEVICE_ADDRESS_BITS=" << device_address_space_size << std::endl
+                       << "CL_DEVICE_EXTENSIONS=\"" << extensionsString << "\"" << std::endl;
+    /* We only need the device's supported IL version(s) when compiling IL
+     * that will be loaded with clCreateProgramWithIL() */
+    if (compilationMode == kSpir_v)
+    {
+        char *ilVersionString = alloc_and_get_device_il_version_string(device);
+        if ( NULL == ilVersionString )
+        {
+            /* An error message will have already been printed by alloc_and_get_device_info(),
+             * so we can just return, here. */
+            return -1;
+        }
+
+        BufferOwningPtr<char> versionStringBuf(ilVersionString);
+
+        clDeviceInfoStream << "CL_DEVICE_IL_VERSION=\"" << ilVersionString << "\"" << std::endl;
+    }
+    clDeviceInfoStream << "CL_DEVICE_VERSION=\"" << versionString << "\"" << std::endl;
+
+    clDeviceInfo = clDeviceInfoStream.str();
+    return CL_SUCCESS;
+}
+
+static int write_cl_device_info(const cl_device_id device, const cl_uint device_address_space_size,
+                                const CompilationMode compilationMode, std::string &clDeviceInfoFilename)
+{
+    std::string clDeviceInfo;
+    int error = get_cl_device_info_str(device, device_address_space_size, compilationMode, clDeviceInfo);
+    if (error != CL_SUCCESS)
+    {
+        return error;
+    }
+
+    cl_uint crc = crc32(clDeviceInfo.data(), clDeviceInfo.size());
+
+    /* Get the filename for the clDeviceInfo file.
+     * Note: the file includes the hash on its content, so it is usually unnecessary to delete it. */
+    std::ostringstream clDeviceInfoFilenameStream;
+    clDeviceInfoFilenameStream << gCompilationCachePath << slash << "clDeviceInfo-";
+    clDeviceInfoFilenameStream << std::hex << std::setfill('0') << std::setw(8) << crc << ".txt";
+
+    clDeviceInfoFilename = clDeviceInfoFilenameStream.str();
+
+    if ((size_t) get_file_size(clDeviceInfoFilename) == clDeviceInfo.size())
+    {
+        /* The CL device info file has already been created.
+         * Nothing to do. */
+        return 0;
+    }
+
+    /* The file does not exist or its length is not as expected.  Create/overwrite it. */
+    std::ofstream ofs(clDeviceInfoFilename);
+    if (!ofs.good())
+    {
+        log_info("OfflineCompiler: can't create CL device info file: %s\n", clDeviceInfoFilename.c_str());
+        return -1;
+    }
+    ofs << clDeviceInfo;
+    ofs.close();
+
+    return CL_SUCCESS;
+}
+
+static std::string get_offline_compilation_command(const cl_uint device_address_space_size,
+                                                   const CompilationMode compilationMode,
+                                                   const std::string &bOptions,
+                                                   const std::string &sourceFilename,
+                                                   const std::string &outputFilename,
+                                                   const std::string &clDeviceInfoFilename)
+{
+    std::ostringstream wrapperOptions;
+
+    wrapperOptions << gCompilationProgram
+                   << " --mode=" << get_compilation_mode_str(compilationMode)
+                   << " --source=" << sourceFilename
+                   << " --output=" << outputFilename
+                   << " --cl-device-info=" << clDeviceInfoFilename;
+
+    if (bOptions != "")
+    {
+        // Add build options passed to this function
+        wrapperOptions << " -- " << bOptions;
+    }
+
+    return wrapperOptions.str();
+}
+
+static int invoke_offline_compiler(const cl_device_id device,
+                                   const cl_uint device_address_space_size,
+                                   const CompilationMode compilationMode,
+                                   const std::string &bOptions,
+                                   const std::string &sourceFilename,
+                                   const std::string &outputFilename,
+                                   const bool openclCXX)
+{
+    std::string runString;
+    if (openclCXX)
+    {
+#ifndef KHRONOS_OFFLINE_COMPILER
+        log_error("CL C++ compilation is not possible: KHRONOS_OFFLINE_COMPILER was not defined.\n");
+        return CL_INVALID_OPERATION;
+#else
+        if (compilationMode != kSpir_v)
+        {
+            log_error("Compilation mode must be SPIR-V for Khronos compiler");
+            return -1;
+        }
+        runString = get_khronos_compiler_command(device_address_space_size, openclCXX, bOptions,
+                                                 sourceFilename, outputFilename);
+#endif
+    }
+    else
+    {
+        std::string clDeviceInfoFilename;
+
+        // See cl_offline_compiler-interface.txt for a description of the
+        // format of the CL device information file generated below, and
+        // the internal command line interface for invoking the offline
+        // compiler.
+
+        cl_int err = write_cl_device_info(device, device_address_space_size, compilationMode,
+                                          clDeviceInfoFilename);
+        if (err != CL_SUCCESS)
+        {
+            log_error("Failed writing CL device info file\n");
+            return err;
+        }
+
+        runString = get_offline_compilation_command(device_address_space_size, compilationMode, bOptions,
+                                                    sourceFilename, outputFilename, clDeviceInfoFilename);
+    }
+
+    // execute script
+    log_info("Executing command: %s\n", runString.c_str());
+    fflush(stdout);
+    int returnCode = system(runString.c_str());
+    if (returnCode != 0)
+    {
+        log_error("ERROR: Command finished with error: 0x%x\n", returnCode);
+        return CL_COMPILE_PROGRAM_FAILURE;
+    }
+
+    return CL_SUCCESS;
+}
+
+static cl_int get_first_device_id(const cl_context context, cl_device_id &device)
+{
+    cl_uint numDevices = 0;
+    cl_int error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDevices, NULL);
+    test_error(error, "clGetContextInfo failed getting CL_CONTEXT_NUM_DEVICES");
+
+    if (numDevices == 0)
+    {
+        log_error("ERROR: No CL devices found\n");
+        return -1;
+    }
+
+    std::vector<cl_device_id> devices(numDevices, 0);
+    error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], NULL);
+    test_error(error, "clGetContextInfo failed getting CL_CONTEXT_DEVICES");
+
+    device = devices[0];
+    return CL_SUCCESS;
+}
+
+static cl_int get_device_address_bits(const cl_device_id device, cl_uint &device_address_space_size)
+{
+    cl_int error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &device_address_space_size, NULL);
+    test_error(error, "Unable to obtain device address bits");
+
+    if (device_address_space_size != 32 && device_address_space_size != 64)
+    {
+        log_error("ERROR: Unexpected number of device address bits: %u\n", device_address_space_size);
+        return -1;
+    }
+
+    return CL_SUCCESS;
+}
+
+static int get_offline_compiler_output(std::ifstream &ifs,
+                                       const cl_device_id device,
+                                       cl_uint deviceAddrSpaceSize,
+                                       const bool openclCXX,
+                                       const CompilationMode compilationMode,
+                                       const std::string &bOptions,
+                                       const std::string &kernelPath,
+                                       const std::string &kernelNamePrefix)
+{
+    std::string sourceFilename = get_cl_source_filename_with_path(kernelPath, kernelNamePrefix);
+    std::string outputFilename = get_binary_filename_with_path(compilationMode,
+                                                               deviceAddrSpaceSize,
+                                                               kernelPath,
+                                                               kernelNamePrefix);
+
+    ifs.open(outputFilename.c_str(), std::ios::binary);
+    if(!ifs.good()) {
+       std::string file_type = get_offline_compilation_file_type_str(compilationMode);
+        if (gCompilationCacheMode == kCacheModeForceRead) {
+            log_info("OfflineCompiler: can't open cached %s file: %s\n",
+                     file_type.c_str(), outputFilename.c_str());
+            return -1;
+        }
+        else {
+            int error = invoke_offline_compiler(device, deviceAddrSpaceSize, compilationMode,
+                                                bOptions, sourceFilename, outputFilename, openclCXX);
+            if (error != CL_SUCCESS)
+                return error;
+
+            // read output file
+            ifs.open(outputFilename.c_str(), std::ios::binary);
+            if (!ifs.good())
+            {
+                log_info("OfflineCompiler: can't read generated %s file: %s\n",
+                         file_type.c_str(), outputFilename.c_str());
+                return -1;
+            }
+       }
+    }
+    return CL_SUCCESS;
+}
+
+static int create_single_kernel_helper_create_program_offline(cl_context context,
+                                                              cl_device_id device,
+                                                              cl_program *outProgram,
+                                                              unsigned int numKernelLines,
+                                                              const char *const *kernelProgram,
+                                                              const char *buildOptions,
+                                                              const bool openclCXX,
+                                                              CompilationMode compilationMode)
+{
+    if(kCacheModeDumpCl == gCompilationCacheMode) {
+        return -1;
+    }
+
+    // Get device CL_DEVICE_ADDRESS_BITS
+    int error;
+    cl_uint device_address_space_size = 0;
+    if (device == NULL)
+    {
+        error = get_first_device_id(context, device);
+        test_error(error, "Failed to get device ID for first device");
+    }
+    error = get_device_address_bits(device, device_address_space_size);
+    if (error != CL_SUCCESS)
+        return error;
+
+    // set build options
+    std::string bOptions;
+    bOptions += buildOptions ? std::string(buildOptions) : "";
+
+    std::string kernelName = get_unique_filename_prefix(numKernelLines,
+                                                        kernelProgram,
+                                                        buildOptions);
+
+
+
+    std::ifstream ifs;
+    error = get_offline_compiler_output(ifs, device, device_address_space_size, openclCXX, compilationMode, bOptions, gCompilationCachePath, kernelName);
+    if (error != CL_SUCCESS)
+      return error;
+
+    // -----------------------------------------------------------------------------------
+    // ------------- ONLY FOR OPENCL 22 CONFORMANCE TEST 22 DEVELOPMENT ------------------
+    // -----------------------------------------------------------------------------------
+    // Only OpenCL C++ to SPIR-V compilation
+    #if defined(DEVELOPMENT) && defined(ONLY_SPIRV_COMPILATION)
+    if(openclCXX)
+    {
+        return CL_SUCCESS;
+    }
+    #endif
+
+    ifs.seekg(0, ifs.end);
+    int length = ifs.tellg();
+    ifs.seekg(0, ifs.beg);
+
+    //treat modifiedProgram as input for clCreateProgramWithBinary
+    if (compilationMode == kBinary)
+    {
+        // read binary from file:
+        std::vector<unsigned char> modifiedKernelBuf(length);
+
+        ifs.read((char *)&modifiedKernelBuf[0], length);
+        ifs.close();
+
+        size_t lengths = modifiedKernelBuf.size();
+        const unsigned char *binaries = { &modifiedKernelBuf[0] };
+        log_info("offlineCompiler: clCreateProgramWithSource replaced with clCreateProgramWithBinary\n");
+        *outProgram = clCreateProgramWithBinary(context, 1, &device, &lengths, &binaries, NULL, &error);
+        if (*outProgram == NULL || error != CL_SUCCESS)
+        {
+            print_error(error, "clCreateProgramWithBinary failed");
+            return error;
+        }
+    }
+    //treat modifiedProgram as input for clCreateProgramWithIL
+    else if (compilationMode == kSpir_v)
+    {
+        // read spir-v from file:
+        std::vector<unsigned char> modifiedKernelBuf(length);
+
+        ifs.read((char *)&modifiedKernelBuf[0], length);
+        ifs.close();
+
+        size_t length = modifiedKernelBuf.size();
+        log_info("offlineCompiler: clCreateProgramWithSource replaced with clCreateProgramWithIL\n");
+
+        *outProgram = clCreateProgramWithIL(context, &modifiedKernelBuf[0], length, &error);
+        if (*outProgram == NULL || error != CL_SUCCESS)
+        {
+            print_error(error, "clCreateProgramWithIL failed");
+            return error;
+        }
+    }
+
+    return CL_SUCCESS;
+}
+
+static int create_single_kernel_helper_create_program(cl_context context,
+                                                      cl_device_id device,
+                                                      cl_program *outProgram,
+                                                      unsigned int numKernelLines,
+                                                      const char **kernelProgram,
+                                                      const char *buildOptions,
+                                                      const bool openclCXX,
+                                                      CompilationMode compilationMode)
+{
+    std::string filePrefix = get_unique_filename_prefix(numKernelLines,
+                                                        kernelProgram,
+                                                        buildOptions);
+    bool shouldSaveToDisk = should_save_kernel_source_to_disk(compilationMode, 
+                                                              gCompilationCacheMode,
+                                                              gCompilationCachePath,
+                                                              filePrefix);
+
+    if(shouldSaveToDisk)
+    {
+        if(CL_SUCCESS != save_kernel_source_and_options_to_disk(numKernelLines, kernelProgram, buildOptions))
+        {
+            log_error("Unable to dump kernel source to disk");
+            return -1;
+        }
+    }
+    if (compilationMode == kOnline)
+    {
+        int error = CL_SUCCESS;
+
+        /* Create the program object from source */
+        *outProgram = clCreateProgramWithSource(context, numKernelLines, kernelProgram, NULL, &error);
+        if (*outProgram == NULL || error != CL_SUCCESS)
+        {
+            print_error(error, "clCreateProgramWithSource failed");
+            return error;
+        }
+        return CL_SUCCESS;
+    }
+    else
+    {
+        return create_single_kernel_helper_create_program_offline(context, device, outProgram,
+                                                                  numKernelLines, kernelProgram,
+                                                                  buildOptions, openclCXX,
+                                                                  compilationMode);
+    }
 }
 
 int create_single_kernel_helper_create_program(cl_context context,
@@ -207,257 +756,24 @@ int create_single_kernel_helper_create_program(cl_context context,
                                                const char *buildOptions,
                                                const bool openclCXX)
 {
-    int error = CL_SUCCESS;
-    std::string modifiedKernelStr;
-    const char* modifiedKernelCode;
+    return create_single_kernel_helper_create_program(context, NULL, outProgram,
+                                                      numKernelLines, kernelProgram,
+                                                      buildOptions, openclCXX,
+                                                      gCompilationMode);
+}
 
-    if (gOfflineCompiler)
-    {
-        #ifndef CL_OFFLINE_COMPILER
-            log_error("Offline compilation is not possible: CL_OFFLINE_COMPILER was not defined.\n");
-            return -1;
-        #endif // !CL_OFFLINE_COMPILER
-
-        std::string kernel;
-        for (size_t i = 0; i < numKernelLines; ++i)
-        {
-            std::string chunk(kernelProgram[i], 0, std::string::npos);
-            kernel += chunk;
-        }
-
-        std::string kernelName = get_kernel_name(kernel);
-
-        // set build options
-        std::string bOptions;
-        bOptions += buildOptions ? std::string(buildOptions) : "";
-
-        kernelName = add_build_options(kernelName, buildOptions);
-
-        std::string gOfflineCompilerInput = gSpirVPath + slash + kernelName + ".cl";
-        std::string gOfflineCompilerOutput = gSpirVPath + slash + kernelName;
-
-        // Get device CL_DEVICE_ADDRESS_BITS
-        cl_uint device_address_space_size = 0;
-        if (gOfflineCompilerOutputType == kSpir_v)
-        {
-            cl_device_id device;
-            cl_uint numDevices = 0;
-            cl_int error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDevices, 0);
-            if (error != CL_SUCCESS)
-            {
-                print_error(error, "clGetContextInfo failed");
-                return error;
-            }
-
-            std::vector<cl_device_id> devices(numDevices, 0);
-            error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], 0);
-            if (error != CL_SUCCESS)
-            {
-                print_error(error, "clGetContextInfo failed");
-                return error;
-            }
-
-            error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], NULL);
-            if (error != CL_SUCCESS)
-            {
-                print_error(error, "clGetContextInfo failed");
-                return error;
-            }
-
-            if ((0 == device_address_space_size) && ((error = clGetDeviceInfo(devices[0], CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &device_address_space_size, NULL))))
-            {
-                print_error(error, "Unable to obtain device address bits");
-                return -1;
-            }
-
-            if (device_address_space_size == 32)
-            {
-                gOfflineCompilerOutput += ".spv32";
-            }
-            else if (device_address_space_size == 64)
-            {
-                gOfflineCompilerOutput += ".spv64";
-            }
-        }
-
-        // try to read cached output file when test is run with gForceSpirVGenerate = false
-        std::ifstream ifs(gOfflineCompilerOutput.c_str(), std::ios::binary);
-        if (!ifs.good() || gForceSpirVGenerate)
-        {
-            if (gForceSpirVCache)
-            {
-                log_info("OfflineCompiler: can't open cached SpirV file: %s\n", gOfflineCompilerOutput.c_str());
-                return -1;
-            }
-
-            ifs.close();
-
-            if (!gForceSpirVGenerate)
-                log_info("OfflineCompiler: can't find cached SpirV file: %s\n", gOfflineCompilerOutput.c_str());
-
-            std::ofstream ofs(gOfflineCompilerInput.c_str(), std::ios::binary);
-            if (!ofs.good())
-            {
-                log_info("OfflineCompiler: can't create source file: %s\n", gOfflineCompilerInput.c_str());
-                return -1;
-            }
-
-            // write source to input file
-            ofs.write(kernel.c_str(), kernel.size());
-            ofs.close();
-
-            // Set compiler options
-            // Emit SPIR-V
-            std::string compilerOptions = " -cc1 -emit-spirv";
-            // <triple>: for 32 bit SPIR-V use spir-unknown-unknown, for 64 bit SPIR-V use spir64-unknown-unknown.
-            if(device_address_space_size == 32)
-            {
-                compilerOptions += " -triple=spir-unknown-unknown";
-            }
-            else
-            {
-                compilerOptions += " -triple=spir64-unknown-unknown";
-            }
-            // Set OpenCL C++ flag required by SPIR-V-ready clang (compiler provided by Khronos)
-            if(openclCXX)
-            {
-                compilerOptions = compilerOptions + " -cl-std=c++";
-            }
-            // Set correct includes
-            if(openclCXX)
-            {
-                compilerOptions += " -I ";
-                compilerOptions += STRINGIFY_VALUE(CL_LIBCLCXX_DIR);
-            }
-            else
-            {
-                compilerOptions += " -include opencl.h";
-            }
-
-            #ifdef CL_OFFLINE_COMPILER_OPTIONS
-            compilerOptions += STRINGIFY_VALUE(CL_OFFLINE_COMPILER_OPTIONS);
-            #endif
-
-            // Add build options passed to this function
-            compilerOptions += " " + bOptions;
-            compilerOptions +=
-                " " + gOfflineCompilerInput +
-                " -o " + gOfflineCompilerOutput;
-            std::string runString = STRINGIFY_VALUE(CL_OFFLINE_COMPILER) + compilerOptions;
-
-            // execute script
-            log_info("Executing command: %s\n", runString.c_str());
-            fflush(stdout);
-            int returnCode = system(runString.c_str());
-            if (returnCode != 0)
-            {
-                log_error("ERROR: Command finished with error: 0x%x\n", returnCode);
-                return CL_COMPILE_PROGRAM_FAILURE;
-            }
-            // read output file
-            ifs.open(gOfflineCompilerOutput.c_str(), std::ios::binary);
-            if (!ifs.good())
-            {
-                log_info("OfflineCompiler: can't read output file: %s\n", gOfflineCompilerOutput.c_str());
-                return -1;
-            }
-        }
-
-        // -----------------------------------------------------------------------------------
-        // ------------- ONLY FOR OPENCL 22 CONFORMANCE TEST 22 DEVELOPMENT ------------------
-        // -----------------------------------------------------------------------------------
-        // Only OpenCL C++ to SPIR-V compilation
-        #if defined(DEVELOPMENT) && defined(ONLY_SPIRV_COMPILATION)
-        if(openclCXX)
-        {
-            return CL_SUCCESS;
-        }
-        #endif
-
-        ifs.seekg(0, ifs.end);
-        int length = ifs.tellg();
-        ifs.seekg(0, ifs.beg);
-
-        //treat modifiedProgram as input for clCreateProgramWithSource
-        if (gOfflineCompilerOutputType == kSource)
-        {
-            // read source from file:
-            std::vector<char> modifiedKernelBuf(length);
-
-            ifs.read(&modifiedKernelBuf[0], length);
-            ifs.close();
-
-            for (int i = 0; i < length; i++)
-                modifiedKernelStr.push_back(modifiedKernelBuf[i]);
-
-            modifiedKernelCode = &modifiedKernelStr[0];
-
-            /* Create the program object from source - to be removed in the future as we will use offline compiler here */
-            *outProgram = clCreateProgramWithSource(context, numKernelLines, &modifiedKernelCode, NULL, &error);
-            if (*outProgram == NULL || error != CL_SUCCESS)
-            {
-                print_error(error, "clCreateProgramWithSource failed");
-                return error;
-            }
-        }
-        //treat modifiedProgram as input for clCreateProgramWithBinary
-        else if (gOfflineCompilerOutputType == kBinary)
-        {
-            // read binary from file:
-            std::vector<unsigned char> modifiedKernelBuf(length);
-
-            ifs.read((char *)&modifiedKernelBuf[0], length);
-            ifs.close();
-
-            cl_uint numDevices = 0;
-            cl_int error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDevices, 0);
-            test_error(error, "clGetContextInfo failed");
-
-            std::vector<cl_device_id> devices(numDevices, 0);
-            error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices*sizeof(cl_device_id), &devices[0], 0);
-            test_error(error, "clGetContextInfo failed");
-
-            size_t lengths = modifiedKernelBuf.size();
-            const unsigned char *binaries = { &modifiedKernelBuf[0] };
-            log_info("offlineCompiler: clCreateProgramWithSource replaced with clCreateProgramWithBinary\n");
-            *outProgram = clCreateProgramWithBinary(context, 1, &devices[0], &lengths, &binaries, NULL, &error);
-            if (*outProgram == NULL || error != CL_SUCCESS)
-            {
-                print_error(error, "clCreateProgramWithBinary failed");
-                return error;
-            }
-        }
-        //treat modifiedProgram as input for clCreateProgramWithIL
-        else if (gOfflineCompilerOutputType == kSpir_v)
-        {
-            // read spir-v from file:
-            std::vector<unsigned char> modifiedKernelBuf(length);
-
-            ifs.read((char *)&modifiedKernelBuf[0], length);
-            ifs.close();
-
-            size_t length = modifiedKernelBuf.size();
-            log_info("offlineCompiler: clCreateProgramWithSource replaced with clCreateProgramWithIL\n");
-
-            *outProgram = clCreateProgramWithIL(context, &modifiedKernelBuf[0], length, &error);
-            if (*outProgram == NULL || error != CL_SUCCESS)
-            {
-                print_error(error, "clCreateProgramWithIL failed");
-                return error;
-            }
-        }
-    }
-    else // gOfflineCompiler == false
-    {
-        /* Create the program object from source */
-        *outProgram = clCreateProgramWithSource(context, numKernelLines, kernelProgram, NULL, &error);
-        if (*outProgram == NULL || error != CL_SUCCESS)
-        {
-            print_error(error, "clCreateProgramWithSource failed");
-            return error;
-        }
-    }
-    return 0;
+int create_single_kernel_helper_create_program_for_device(cl_context context,
+                                                          cl_device_id device,
+                                                          cl_program *outProgram,
+                                                          unsigned int numKernelLines,
+                                                          const char **kernelProgram,
+                                                          const char *buildOptions,
+                                                          const bool openclCXX)
+{
+    return create_single_kernel_helper_create_program(context, device, outProgram,
+                                                      numKernelLines, kernelProgram,
+                                                      buildOptions, openclCXX,
+                                                      gCompilationMode);
 }
 
 int create_single_kernel_helper_with_build_options(cl_context context,
@@ -492,9 +808,9 @@ int create_single_kernel_helper(cl_context context,
     // Only OpenCL C++ to SPIR-V compilation
     #if defined(DEVELOPMENT) && defined(ONLY_SPIRV_COMPILATION)
         // Save global variable
-        bool tempgForceSpirVGenerate = gForceSpirVGenerate;
+        bool tempgCompilationCacheMode = gCompilationCacheMode;
         // Force OpenCL C++ -> SPIR-V compilation on every run
-        gForceSpirVGenerate = true;
+        gCompilationCacheMode = kCacheModeOverwrite;
     #endif
         error = create_openclcpp_program(
             context, outProgram, numKernelLines, kernelProgram, buildOptions
@@ -509,7 +825,7 @@ int create_single_kernel_helper(cl_context context,
     // -----------------------------------------------------------------------------------
     #if defined(DEVELOPMENT) && defined(ONLY_SPIRV_COMPILATION)
         // Restore global variables
-        gForceSpirVGenerate = tempgForceSpirVGenerate;
+        gCompilationCacheMode = tempgCompilationCacheMode;
         log_info("WARNING: KERNEL %s WAS ONLY COMPILED TO SPIR-V\n", kernelName);
         return error;
     #endif
@@ -556,21 +872,10 @@ int create_openclcpp_program(cl_context context,
                              const char **kernelProgram,
                              const char *buildOptions)
 {
-    // Save global variables
-    bool tempgOfflineCompiler = gOfflineCompiler;
-    OfflineCompilerOutputType tempgOfflineCompilerOutputType = gOfflineCompilerOutputType;
-    // Force offline compilation to SPIR-V
-    gOfflineCompiler = true;
-    gOfflineCompilerOutputType = OfflineCompilerOutputType::kSpir_v;
     // Create program
-    int error = create_single_kernel_helper_create_program(
-        context, outProgram, numKernelLines, kernelProgram, buildOptions, true
+    return create_single_kernel_helper_create_program(
+        context, NULL, outProgram, numKernelLines, kernelProgram, buildOptions, true, kSpir_v
     );
-    // Restore global variable
-    gOfflineCompiler = tempgOfflineCompiler;
-    gOfflineCompilerOutputType = tempgOfflineCompilerOutputType;
-    // Return result
-    return error;
 }
 
 // Builds OpenCL C/C++ program and creates
@@ -809,6 +1114,46 @@ int get_max_allowed_work_group_size( cl_context context, cl_kernel kernel, size_
 }
 
 
+extern int get_max_allowed_1d_work_group_size_on_device( cl_device_id device, cl_kernel kernel, size_t *outSize )
+{
+    cl_uint      maxDim;
+    size_t       maxWgSize;
+    size_t       *maxWgSizePerDim;
+    int          error;
+
+    error = clGetKernelWorkGroupInfo( kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof( size_t ), &maxWgSize, NULL );
+    test_error( error, "clGetKernelWorkGroupInfo CL_KERNEL_WORK_GROUP_SIZE failed" );
+
+    error = clGetDeviceInfo( device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof( cl_uint ), &maxDim, NULL );
+    test_error( error, "clGetDeviceInfo CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS failed" );
+    maxWgSizePerDim = (size_t*)malloc( maxDim * sizeof( size_t ) );
+    if( !maxWgSizePerDim )
+    {
+        log_error( "Unable to allocate maxWgSizePerDim\n" );
+        return -1;
+    }
+
+    error = clGetDeviceInfo( device, CL_DEVICE_MAX_WORK_ITEM_SIZES, maxDim * sizeof( size_t ), maxWgSizePerDim, NULL );
+    if( error != CL_SUCCESS)
+    {
+        log_error( "clGetDeviceInfo CL_DEVICE_MAX_WORK_ITEM_SIZES failed\n" );
+        free( maxWgSizePerDim );
+        return error;
+    }
+
+    // "maxWgSize" is limited to that of the first dimension.
+    if( maxWgSize > maxWgSizePerDim[0] )
+    {
+        maxWgSize = maxWgSizePerDim[0];
+    }
+
+    free( maxWgSizePerDim );
+
+    *outSize = maxWgSize;
+    return 0;
+}
+
+
 int get_max_common_work_group_size( cl_context context, cl_kernel kernel,
                                    size_t globalThreadSize, size_t *outMaxSize )
 {
@@ -903,44 +1248,6 @@ int get_max_common_3D_work_group_size( cl_context context, cl_kernel kernel,
   }
 
     return 0;
-}
-
-/* Helper to determine if an extension is supported by a device */
-int is_extension_available( cl_device_id device, const char *extensionName )
-{
-    char *extString;
-    size_t size = 0;
-    int err;
-    int result = 0;
-
-    if(( err = clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, 0, NULL, &size) ))
-    {
-        log_error( "Error: failed to determine size of device extensions string at %s:%d (err = %d)\n", __FILE__, __LINE__, err );
-        return 0;
-    }
-
-    if( 0 == size )
-        return 0;
-
-    extString = (char*) malloc( size );
-
-    if( NULL == extString )
-    {
-        log_error( "Error: unable to allocate %ld byte buffer for extension string at %s:%d (err = %d)\n", size, __FILE__, __LINE__,  err );
-        return 0;
-    }
-    BufferOwningPtr<char> extStringBuf(extString);
-
-    if(( err = clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, size, extString, NULL) ))
-    {
-        log_error( "Error: failed to obtain device extensions string at %s:%d (err = %d)\n", __FILE__, __LINE__, err );
-        return 0;
-    }
-
-    if( strstr( extString, extensionName ) )
-        result = 1;
-
-    return result;
 }
 
 /* Helper to determine if a device supports an image format */

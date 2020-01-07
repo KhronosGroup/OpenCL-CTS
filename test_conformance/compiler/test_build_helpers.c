@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 
 const char *sample_kernel_code_single_line[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
@@ -423,7 +423,7 @@ int test_get_program_source(cl_device_id deviceID, cl_context context, cl_comman
     /* Try getting the length */
     error = clGetProgramInfo( program, CL_PROGRAM_SOURCE, NULL, NULL, &length );
     test_error( error, "Unable to get program source length" );
-    if (length != strlen(sample_kernel_code_single_line[0]) + 1 && !(gOfflineCompiler && gOfflineCompilerOutputType != kSource))
+    if (length != strlen(sample_kernel_code_single_line[0]) + 1 && gCompilationMode == kOnline)
     {
         log_error( "ERROR: Length returned for program source is incorrect!\n" );
         return -1;
@@ -432,7 +432,7 @@ int test_get_program_source(cl_device_id deviceID, cl_context context, cl_comman
     /* Try normal source */
     error = clGetProgramInfo( program, CL_PROGRAM_SOURCE, sizeof( buffer ), buffer, NULL );
     test_error( error, "Unable to get program source" );
-    if (strlen(buffer) != strlen(sample_kernel_code_single_line[0]) && !(gOfflineCompiler && gOfflineCompilerOutputType != kSource))
+    if (strlen(buffer) != strlen(sample_kernel_code_single_line[0]) && gCompilationMode == kOnline)
     {
         log_error( "ERROR: Length of program source is incorrect!\n" );
         return -1;
@@ -441,12 +441,12 @@ int test_get_program_source(cl_device_id deviceID, cl_context context, cl_comman
     /* Try both at once */
     error = clGetProgramInfo( program, CL_PROGRAM_SOURCE, sizeof( buffer ), buffer, &length );
     test_error( error, "Unable to get program source" );
-    if (strlen(buffer) != strlen(sample_kernel_code_single_line[0]) && !(gOfflineCompiler && gOfflineCompilerOutputType != kSource))
+    if (strlen(buffer) != strlen(sample_kernel_code_single_line[0]) && gCompilationMode == kOnline)
     {
         log_error( "ERROR: Length of program source is incorrect!\n" );
         return -1;
     }
-    if (length != strlen(sample_kernel_code_single_line[0]) + 1 && !(gOfflineCompiler && gOfflineCompilerOutputType != kSource))
+    if (length != strlen(sample_kernel_code_single_line[0]) + 1 && gCompilationMode == kOnline)
     {
         log_error( "ERROR: Returned length of program source is incorrect!\n" );
         return -1;

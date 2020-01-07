@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2019 The Khronos Group Inc.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 
 #include "threadTesting.h"
 #include "clImageHelper.h"
+#include <string>
+#include <sstream>
 
 #include <string>
 
@@ -25,15 +27,38 @@
 extern "C" {
 #endif
 
-#define ADD_TEST(fn) {test_##fn, #fn}
-#define NOT_IMPLEMENTED_TEST(fn) {NULL, #fn}
+#define ADD_TEST(fn) {test_##fn, #fn, Version(1, 0)}
+#define ADD_TEST_VERSION(fn, ver) {test_##fn, #fn, ver}
+#define NOT_IMPLEMENTED_TEST(fn) {NULL, #fn, Version(0, 0)}
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+class Version
+{
+public:
+    Version() : m_major(0), m_minor(0) {}
+    Version(int major, int minor) : m_major(major), m_minor(minor) {}
+    bool operator>(const Version& rhs) const { return to_int() > rhs.to_int(); }
+    bool operator<(const Version& rhs) const { return to_int() < rhs.to_int(); }
+    bool operator==(const Version& rhs) const { return to_int() == rhs.to_int(); }
+    int to_int() const { return m_major * 10 + m_minor; }
+    std::string to_string() const 
+    {
+        std::stringstream ss;
+        ss << m_major << "." << m_minor;
+        return ss.str();
+    }
+
+private:
+    int m_major;
+    int m_minor;
+};
 
 typedef struct test_definition
 {
     basefn func;
     const char* name;
+    Version min_version;
 } test_definition;
 
 
@@ -44,11 +69,15 @@ typedef enum test_status
     TEST_SKIP = 2,
 } test_status;
 
+extern int gFailCount;
+extern int gTestCount;
 extern cl_uint gReSeed;
 extern cl_uint gRandomSeed;
 
 // Supply a list of functions to test here. This will allocate a CL device, create a context, all that
 // setup work, and then call each function in turn as dictatated by the passed arguments.
+// Returns EXIT_SUCCESS iff all tests succeeded or the tests were listed,
+// otherwise return EXIT_FAILURE.
 extern int runTestHarness( int argc, const char *argv[], int testNum, test_definition testList[],
                            int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps );
 
@@ -56,6 +85,8 @@ extern int runTestHarness( int argc, const char *argv[], int testNum, test_defin
 typedef test_status (*DeviceCheckFn)( cl_device_id device );
 
 // Same as runTestHarness, but also supplies a function that checks the created device for required functionality.
+// Returns EXIT_SUCCESS iff all tests succeeded or the tests were listed,
+// otherwise return EXIT_FAILURE.
 extern int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_definition testList[],
                                     int imageSupportRequired, int forceNoContextCreation,
                                     cl_command_queue_properties queueProps, DeviceCheckFn deviceCheckFn );
@@ -70,17 +101,17 @@ extern int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device
 //    testList is the data structure that contains test functions and its names
 //    selectedTestList is an array of integers (treated as bools) which tell which function is to be called,
 //       each element at index i, corresponds to the element in testList at index i
-//    resultTestList is an array of integers which contains the result of each selected test
+//    resultTestList is an array of statuses which contain the result of each selected test
 //    testNum is the number of tests in testList, selectedTestList and resultTestList
 //    contextProps are used to create a testing context for each test
 //    deviceToUse and numElementsToUse are all just passed to each test function
-extern int callTestFunctions( test_definition testList[], unsigned char selectedTestList[], int resultTestList[],
-                              int testNum, cl_device_id deviceToUse, int forceNoContextCreation, int numElementsToUse,
-                              cl_command_queue_properties queueProps );
+extern void callTestFunctions( test_definition testList[], unsigned char selectedTestList[], test_status resultTestList[],
+                               int testNum, cl_device_id deviceToUse, int forceNoContextCreation, int numElementsToUse,
+                               cl_command_queue_properties queueProps );
 
 // This function is called by callTestFunctions, once per function, to do setup, call, logging and cleanup
-extern int callSingleTestFunction( test_definition test, cl_device_id deviceToUse, int forceNoContextCreation,
-                                   int numElementsToUse, cl_command_queue_properties queueProps );
+extern test_status callSingleTestFunction( test_definition test, cl_device_id deviceToUse, int forceNoContextCreation,
+                                           int numElementsToUse, cl_command_queue_properties queueProps );
 
 ///// Miscellaneous steps
 
@@ -98,6 +129,8 @@ extern cl_device_type GetDeviceType( cl_device_id );
 // Note that returning NULL means an error was hit, but if no error was hit and the device passed in
 // is the only device available, the SAME device is returned, so check!
 extern cl_device_id GetOpposingDevice( cl_device_id device );
+
+Version get_device_cl_version(cl_device_id device);
 
 
 extern int      gFlushDenormsToZero;    // This is set to 1 if the device does not support denorms (CL_FP_DENORM)

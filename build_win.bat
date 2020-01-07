@@ -20,7 +20,7 @@ mkdir build_win
 pushd build_win
 IF NOT EXIST CLConform.sln (
    echo "Solution file not found, running Cmake"
-   cmake -G "Visual Studio 14 2015 Win64" ..\.  -DCL_OFFLINE_COMPILER=<TO_SET> -DCL_LIBCLCXX_DIR=<TO_SET> -DCL_INCLUDE_DIR=<TO_SET> -DCL_LIB_DIR=<TO_SET> -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=. -DOPENCL_LIBRARIES=OpenCL
+   cmake -G "Visual Studio 14 2015 Win64" ..\.  -DKHRONOS_OFFLINE_COMPILER=<TO_SET> -DCL_LIBCLCXX_DIR=<TO_SET> -DCL_INCLUDE_DIR=<TO_SET> -DCL_LIB_DIR=<TO_SET> -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=. -DOPENCL_LIBRARIES=OpenCL
 ) else (
    echo "Solution file found CLConform.sln "
 )

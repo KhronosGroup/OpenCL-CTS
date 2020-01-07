@@ -16,13 +16,13 @@
 #ifndef _procs_h
 #define _procs_h
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/threadTesting.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
+#include "harness/errorHelpers.h"
+#include "harness/conversions.h"
+#include "harness/threadTesting.h"
+#include "harness/typeWrappers.h"
+#include "harness/mt19937.h"
 
 extern MTdata gMTdata;
 

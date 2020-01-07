@@ -30,23 +30,23 @@
 
 #if !defined (__APPLE__)
 #include <CL/cl.h>
-#include "../../test_common/gles/gl_headers.h"
+#include "gles/gl_headers.h"
 #include <CL/cl_gl.h>
 #else
-#include "../../test_common/gl/gl_headers.h"
+#include "gl/gl_headers.h"
 #endif
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/threadTesting.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/threadTesting.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
+#include "harness/mt19937.h"
 
 #ifdef GL_ES_VERSION_2_0
-#include "../../test_common/gles/helpers.h"
+#include "gles/helpers.h"
 #else
-#include "../../test_common/gl/helpers.h"
+#include "gl/helpers.h"
 #endif
 
 extern const char *get_kernel_suffix( cl_image_format *format );

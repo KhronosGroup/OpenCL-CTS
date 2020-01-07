@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
 #include "procs.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -26,7 +26,7 @@
 
 test_definition test_list[] = {
     ADD_TEST( integer_clz ),
-    ADD_TEST( integer_ctz ),
+    ADD_TEST_VERSION( integer_ctz,  Version(2, 0)),
     ADD_TEST( integer_hadd ),
     ADD_TEST( integer_rhadd ),
     ADD_TEST( integer_mul_hi ),

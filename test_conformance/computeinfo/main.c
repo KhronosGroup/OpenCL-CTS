@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
 
 static int dump_supported_formats;
 
@@ -75,7 +75,7 @@ typedef union
     size_t                          sizet;
     size_t                          sizet_arr[3];
     cl_ulong                        ull;
-    char                            string[1024];
+    char *                          string;
     cl_device_svm_capabilities      svmCapabilities;
 } config_data;
 
@@ -324,6 +324,7 @@ int getConfigInfo(cl_device_id device, config_info* info)
 {
     int err = CL_SUCCESS;
     int size_err = 0;
+    size_t config_size_set;
     size_t config_size_ret;
     switch(info->config_type)
     {
@@ -376,7 +377,13 @@ int getConfigInfo(cl_device_id device, config_info* info)
             size_err = config_size_ret != sizeof(info->config.ull);
             break;
         case type_string:
-            err = clGetDeviceInfo(device, info->opcode, sizeof(info->config.string), &info->config.string, &config_size_ret);
+            err = clGetDeviceInfo(device, info->opcode, 0, NULL, &config_size_set);
+            info->config.string = NULL;
+            if (err == CL_SUCCESS && config_size_set > 0) {
+                info->config.string = (char*)malloc(config_size_set);
+                err = clGetDeviceInfo(device, info->opcode, config_size_set, info->config.string, &config_size_ret);
+                size_err = config_size_set != config_size_ret;
+            }
             break;
         case type_cl_device_svm_capabilities:
           err = clGetDeviceInfo(device, info->opcode, sizeof(info->config.svmCapabilities), &info->config.svmCapabilities, &config_size_ret);
@@ -524,7 +531,7 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
             log_info("\t%s == %lld\n", info->opcode_name, info->config.ull);
             break;
         case type_string:
-            log_info("\t%s == \"%s\"\n", info->opcode_name, info->config.string);
+            log_info("\t%s == \"%s\"\n", info->opcode_name, info->config.string ? info->config.string : "");
             break;
         case type_cl_device_svm_capabilities:
           log_info("\t%s == %s|%s|%s|%s\n", info->opcode_name,
@@ -598,6 +605,10 @@ int parseVersion( char const * str, version_t * version )
     version->major = 1;
     version->minor = 2;
     rc = 0;
+  } else if ( strncmp( str, "OpenCL 1.0", 10 ) == 0 && ( str[ 10 ] == 0 || str[ 10 ] == ' ' ) ) {
+    version->major = 1;
+    version->minor = 0;
+    rc = 0;
   } else if ( strncmp( str, "OpenCL 1.1", 10 ) == 0 && ( str[ 10 ] == 0 || str[ 10 ] == ' ' ) ) {
     version->major = 1;
     version->minor = 1;
@@ -609,6 +620,10 @@ int parseVersion( char const * str, version_t * version )
   } else if ( strncmp( str, "OpenCL 2.1", 10 ) == 0 && ( str[ 10 ] == 0 || str[ 10 ] == ' ' ) ) {
     version->major = 2;
     version->minor = 1;
+    rc = 0;
+  } else if ( strncmp( str, "OpenCL 2.2", 10 ) == 0 && ( str[ 10 ] == 0 || str[ 10 ] == ' ' ) ) {
+    version->major = 2;
+    version->minor = 2;
     rc = 0;
   } else {
     log_error( "ERROR: Unexpected version string: `%s'.\n", str );
@@ -679,14 +694,19 @@ int getConfigInfos( cl_device_id device )
           err = parseVersion( info.config.string, & version );
           if ( err ) {
             total_errors++;
+            free(info.config.string);
             break;
           }
         } else if ( info.opcode == CL_DEVICE_EXTENSIONS ) {
           err = parseExtensions( info.config.string, & extensions );
           if ( err ) {
             total_errors++;
+            free(info.config.string);
             break;
           }
+        }
+        if (info.config_type == type_string) {
+          free(info.config.string);
         }
       } else {
         total_errors++;

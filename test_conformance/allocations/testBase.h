@@ -16,7 +16,7 @@
 #ifndef _testBase_h
 #define _testBase_h
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,10 +28,10 @@
 #include <unistd.h>
 #endif
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/testHarness.h"
 
 
 #define MAX_NUMBER_TO_ALLOCATE 100

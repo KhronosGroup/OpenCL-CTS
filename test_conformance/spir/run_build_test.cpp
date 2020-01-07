@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -27,11 +27,11 @@
 #include <functional>
 #include <memory>
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/clImageHelper.h"
-#include "../../test_common/harness/os_helpers.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/clImageHelper.h"
+#include "harness/os_helpers.h"
 
 #include "exceptions.h"
 #include "kernelargs.h"

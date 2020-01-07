@@ -1,0 +1,66 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 31
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability ImageBasic
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %2 "decorate_nonreadable"
+               OpSource OpenCL_C 100000
+               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %__spirv_BuiltInGlobalSize "__spirv_BuiltInGlobalSize"
+               OpName %dst "dst"
+               OpName %src "src"
+               OpName %entry "entry"
+               OpName %call "call"
+               OpName %call1 "call1"
+               OpName %call2 "call2"
+               OpName %mul "mul"
+               OpName %add "add"
+               OpName %vecinit "vecinit"
+               OpName %vecinit3 "vecinit3"
+               OpName %arrayidx "arrayidx"
+               OpDecorate %dst NonReadable
+               OpDecorate %16 Constant
+         %16 = OpDecorationGroup
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalSize BuiltIn GlobalSize
+               OpDecorate %src FuncParamAttr NoCapture
+               OpDecorate %__spirv_BuiltInGlobalSize LinkageAttributes "__spirv_BuiltInGlobalSize" Import
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpGroupDecorate %16 %__spirv_BuiltInGlobalInvocationId %__spirv_BuiltInGlobalSize
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+         %21 = OpTypeImage %void 2D 0 0 0 0 Unknown WriteOnly
+     %v4uint = OpTypeVector %uint 4
+%_ptr_CrossWorkgroup_v4uint = OpTypePointer CrossWorkgroup %v4uint
+         %24 = OpTypeFunction %void %21 %_ptr_CrossWorkgroup_v4uint
+     %v2uint = OpTypeVector %uint 2
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+%__spirv_BuiltInGlobalSize = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %2 = OpFunction %void None %24
+        %dst = OpFunctionParameter %21
+        %src = OpFunctionParameter %_ptr_CrossWorkgroup_v4uint
+      %entry = OpLabel
+         %26 = OpUndef %v2uint
+         %27 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 0
+       %call = OpCompositeExtract %uint %27 0
+         %28 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId Aligned 0
+      %call1 = OpCompositeExtract %uint %28 1
+         %29 = OpLoad %v3uint %__spirv_BuiltInGlobalSize Aligned 0
+      %call2 = OpCompositeExtract %uint %29 0
+        %mul = OpIMul %uint %call2 %call1
+        %add = OpIAdd %uint %mul %call
+    %vecinit = OpCompositeInsert %v2uint %call1 %26 0
+   %vecinit3 = OpCompositeInsert %v2uint %call %vecinit 1
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4uint %src %add
+         %30 = OpLoad %v4uint %arrayidx Aligned 16
+               OpImageWrite %dst %vecinit3 %30
+               OpReturn
+               OpFunctionEnd

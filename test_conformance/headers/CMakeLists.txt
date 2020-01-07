@@ -1,11 +1,5 @@
 set(HEADERS_SOURCES
     test_headers.c
-    ../../test_common/harness/errorHelpers.c
-    ../../test_common/harness/kernelHelpers.c
-    ../../test_common/harness/testHarness.c
-    ../../test_common/harness/msvc9.c
-    ../../test_common/harness/parseParameters.cpp
-    ../../test_common/harness/crc32.c
 )
 
 set_source_files_properties(${HEADERS_SOURCES} PROPERTIES LANGUAGE CXX)
@@ -19,7 +13,7 @@ add_executable(
 
 set_property(TARGET ${HEADERS_OUT} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
 
-TARGET_LINK_LIBRARIES(${HEADERS_OUT} ${CLConform_LIBRARIES})
+TARGET_LINK_LIBRARIES(${HEADERS_OUT} harness ${CLConform_LIBRARIES})
 
 ########################################################################################
 
@@ -38,7 +32,7 @@ add_executable(
 
 set_property(TARGET ${CL_H_OUT} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
 
-TARGET_LINK_LIBRARIES(${CL_H_OUT} ${CLConform_LIBRARIES})
+TARGET_LINK_LIBRARIES(${CL_H_OUT} harness ${CLConform_LIBRARIES})
 
 ########################################################################################
 
@@ -57,7 +51,7 @@ add_executable(
 
 set_property(TARGET ${CL_PLATFORM_H_OUT} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
 
-TARGET_LINK_LIBRARIES(${CL_PLATFORM_H_OUT} ${CLConform_LIBRARIES})
+TARGET_LINK_LIBRARIES(${CL_PLATFORM_H_OUT} harness ${CLConform_LIBRARIES})
 
 ########################################################################################
 
@@ -76,7 +70,7 @@ add_executable(
 
 set_property(TARGET ${CL_GL_H_OUT} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
 
-TARGET_LINK_LIBRARIES(${CL_GL_H_OUT} ${CLConform_LIBRARIES})
+TARGET_LINK_LIBRARIES(${CL_GL_H_OUT} harness ${CLConform_LIBRARIES})
 
 ########################################################################################
 
@@ -95,7 +89,7 @@ add_executable(
 
 set_property(TARGET ${OPENCL_H_OUT} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
 
-TARGET_LINK_LIBRARIES(${OPENCL_H_OUT} ${CLConform_LIBRARIES})
+TARGET_LINK_LIBRARIES(${OPENCL_H_OUT} harness ${CLConform_LIBRARIES})
 
 ########################################################################################
 

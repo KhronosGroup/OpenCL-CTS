@@ -1,0 +1,48 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 29
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpCapability Int8
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %1 "composite_construct_struct"
+               OpName %in "in"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %in FuncParamAttr NoCapture
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+      %uchar = OpTypeInt 8 0
+ %_struct_11 = OpTypeStruct %uint %uchar
+ %_struct_12 = OpTypeStruct %v2uint %_struct_11
+%_ptr_CrossWorkgroup__struct_12 = OpTypePointer CrossWorkgroup %_struct_12
+         %14 = OpTypeFunction %void %_ptr_CrossWorkgroup__struct_12
+   %ulong_32 = OpConstant %ulong 32
+%uint_2100483600 = OpConstant %uint 2100483600
+  %uchar_128 = OpConstant %uchar 128
+%uint_2100480000 = OpConstant %uint 2100480000
+%uint_2100480000_0 = OpConstant %uint 2100480000
+         %20 = OpConstantComposite %v2uint %uint_2100480000 %uint_2100480000_0
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+          %1 = OpFunction %void None %14
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup__struct_12
+         %21 = OpLabel
+         %22 = OpCompositeConstruct %_struct_11 %uint_2100483600 %uchar_128
+         %23 = OpCompositeConstruct %_struct_12 %20 %22
+         %24 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %25 = OpCompositeExtract %ulong %24 0
+         %26 = OpShiftLeftLogical %ulong %25 %ulong_32
+         %27 = OpShiftRightArithmetic %ulong %26 %ulong_32
+         %28 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__struct_12 %in %27
+               OpStore %28 %23
+               OpReturn
+               OpFunctionEnd

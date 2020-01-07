@@ -23,7 +23,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../test_common/harness/kernelHelpers.h"
+#include "harness/kernelHelpers.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // ATF performance framework.
@@ -262,32 +262,3 @@ int test_userevents( cl_device_id deviceID, cl_context context, cl_command_queue
 
 }
 
-#if 0
-int main(int argc, char** argv)
-{
-
-  cl_int err;
-
-  test_start();
-
-  cl_device_type device_type;
-  CL_DEVICE_TYPE_ENV( device_type );
-
-  cl_device_id device_id;
-  CL_EXIT_ERROR(clGetDeviceIDs(NULL, device_type, 1, &device_id, NULL),"GetDeviceIDs");
-
-  // Create a context.
-  cl_context context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
-  CL_EXIT_ERROR(err,"CreateContext");
-
-  // Create a command queue.
-  q = clCreateCommandQueueWithProperties(context,device_id,0,&err);
-  CL_EXIT_ERROR(err,"clCreateCommandQueue failed");
-
-  int ret = test_userevents( device_type, context, queue, 0 );
-
-  test_finish();
-
-  return ret;
-}
-#endif
