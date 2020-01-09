@@ -1303,7 +1303,7 @@ exit:
 
 // A table of more difficult cases to get right
 static const cl_half specialValuesHalf[] = {
-   0xffff,0x0000,0x0001
+   0xffff, 0x0000, 0x0001, 0x7c00 /*INFINITY*/, 0xfc00 /*-INFINITY*/, 0x8000 /*-0*/, 0x7bff /*HALF_MAX*/, 0x0400 /*HALF_MIN*/
 };
 
 static size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
