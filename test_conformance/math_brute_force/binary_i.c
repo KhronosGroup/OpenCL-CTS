@@ -278,12 +278,12 @@ static const float specialValuesFloat[] = {
     MAKE_HEX_FLOAT(0x1.000002p-126f, 0x1000002L, -150), +FLT_MIN, MAKE_HEX_FLOAT(+0x0.fffffep-126f, +0x0fffffeL, -150), MAKE_HEX_FLOAT(+0x0.000ffep-126f, +0x0000ffeL, -150), MAKE_HEX_FLOAT(+0x0.0000fep-126f, +0x00000feL, -150), MAKE_HEX_FLOAT(+0x0.00000ep-126f, +0x000000eL, -150), MAKE_HEX_FLOAT(+0x0.00000cp-126f, +0x000000cL, -150), MAKE_HEX_FLOAT(+0x0.00000ap-126f, +0x000000aL, -150),
     MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150), MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150), MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150), MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150), +0.0f
 };
-static size_t specialValuesFloatCount = sizeof( specialValuesFloat ) / sizeof( specialValuesFloat[0] );
+static size_t specialValuesFloatCount = ARRAY_SIZE(specialValuesFloat);
 
 
 static const int specialValuesInt[] = { 0, 1, 2, 3, 126, 127, 128, 0x02000001, 0x04000001, 1465264071, 1488522147,
                                             -1, -2, -3, -126, -127, -128, -0x02000001, -0x04000001, -1465264071, -1488522147 };
-static size_t specialValuesIntCount = sizeof( specialValuesInt ) / sizeof( specialValuesInt[0] );
+static size_t specialValuesIntCount = ARRAY_SIZE(specialValuesInt);
 
 //Thread specific data for a worker thread
 typedef struct ThreadInfo
@@ -815,11 +815,11 @@ static const double specialValuesDouble[] = {
     MAKE_HEX_DOUBLE(+0x0.0000000000008p-1022, +0x00000000000008LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000007p-1022, +0x00000000000007LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000006p-1022, +0x00000000000006LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000005p-1022, +0x00000000000005LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000004p-1022, +0x00000000000004LL, -1074),
     MAKE_HEX_DOUBLE(+0x0.0000000000003p-1022, +0x00000000000003LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000002p-1022, +0x00000000000002LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074), +0.0,
 };
-static size_t specialValuesDoubleCount = sizeof( specialValuesDouble ) / sizeof( specialValuesDouble[0] );
+static size_t specialValuesDoubleCount = ARRAY_SIZE(specialValuesDouble);
 
 static const int specialValuesInt2[] = { 0, 1, 2, 3, 1022, 1023, 1024, INT_MIN, INT_MAX,
                                             -1, -2, -3, -1022, -1023, -11024, -INT_MAX };
-static size_t specialValuesInt2Count = sizeof( specialValuesInt ) / sizeof( specialValuesInt[0] );
+static size_t specialValuesInt2Count = ARRAY_SIZE(specialValuesInt);
 
 static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *p );
 
@@ -1312,11 +1312,11 @@ static const cl_half specialValuesHalf[] = {
    0xffff,0x0000,0x0001
 };
 
-static size_t specialValuesHalfCount = sizeof(specialValuesHalf) / sizeof(specialValuesHalf[0]);
+static size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
 
 static const int specialValuesInt3[] = { 0, 1, 2, 3, 1022, 1023, 1024, INT_MIN, INT_MAX,
                                             -1, -2, -3, -1022, -1023, -11024, -INT_MAX };
-static size_t specialValuesInt3Count = sizeof(specialValuesInt3) / sizeof(specialValuesInt3[0]);
+static size_t specialValuesInt3Count = ARRAY_SIZE(specialValuesInt3);
 
 static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *p);
 

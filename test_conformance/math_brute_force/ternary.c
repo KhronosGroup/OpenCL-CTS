@@ -207,7 +207,7 @@ static const float specialValuesFloat[] = {
     MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150), MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150), MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150), MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150), +0.0f
 };
 
-static size_t specialValuesFloatCount = sizeof( specialValuesFloat ) / sizeof( specialValuesFloat[0] );
+static size_t specialValuesFloatCount = ARRAY_SIZE(specialValuesFloat);
 
 
 int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d)
@@ -850,7 +850,7 @@ static const double specialValuesDouble[] = {
     MAKE_HEX_DOUBLE(+0x0.0000000000003p-1022, +0x00000000000003LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000002p-1022, +0x00000000000002LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074), +0.0,
 };
 
-static const size_t specialValuesDoubleCount = sizeof( specialValuesDouble ) / sizeof( specialValuesDouble[0] );
+static const size_t specialValuesDoubleCount = ARRAY_SIZE(specialValuesDouble);
 
 
 int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d)

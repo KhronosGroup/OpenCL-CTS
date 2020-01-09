@@ -269,7 +269,7 @@ static const float specialValuesFloat[] = {
     MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150), MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150), MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150), MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150), +0.0f
 };
 
-static const size_t specialValuesFloatCount = sizeof(specialValuesFloat) / sizeof(specialValuesFloat[0]);
+static const size_t specialValuesFloatCount = ARRAY_SIZE(specialValuesFloat);
 
 //Thread specific data for a worker thread
 typedef struct ThreadInfo
@@ -802,7 +802,7 @@ static const double specialValuesDouble[] = {
     MAKE_HEX_DOUBLE(+0x0.0000000000003p-1022, +0x00000000000003LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000002p-1022, +0x00000000000002LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074), +0.0,
 };
 
-static size_t specialValuesDoubleCount = sizeof( specialValuesDouble ) / sizeof( specialValuesDouble[0] );
+static size_t specialValuesDoubleCount = ARRAY_SIZE(specialValuesDouble);
 
 
 static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *p );
@@ -1306,7 +1306,7 @@ static const cl_half specialValuesHalf[] = {
    0xffff,0x0000,0x0001
 };
 
-static size_t specialValuesHalfCount = sizeof(specialValuesHalf) / sizeof(specialValuesHalf[0]);
+static size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
 
 
 static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *p);
