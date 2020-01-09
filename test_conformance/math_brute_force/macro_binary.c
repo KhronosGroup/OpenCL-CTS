@@ -1390,7 +1390,7 @@ int TestMacro_Int_Half_Half(const Func *f, MTdata d)
                 goto exit;
             }
         }
-        test_info.tinfo[i].tQueue = clCreateCommandQueueWithProperties(gContext, gDevice, 0, &error);
+        test_info.tinfo[i].tQueue = clCreateCommandQueue(gContext, gDevice, 0, &error);
         if (NULL == test_info.tinfo[i].tQueue || error)
         {
             vlog_error("clCreateCommandQueue failed. (%d)\n", error);
