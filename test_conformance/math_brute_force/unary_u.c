@@ -252,7 +252,6 @@ static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, vo
     return BuildKernelDouble( info->nameInCode, i, info->kernels + i, info->programs + i );
 }
 
-static cl_int BuildKernel_HalfFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p );
 static cl_int BuildKernel_HalfFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p )
 {
     BuildKernelInfo *info = (BuildKernelInfo*) p;
