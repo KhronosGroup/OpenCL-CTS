@@ -47,7 +47,8 @@
 
 #define kPageSize           4096
 #define DOUBLE_REQUIRED_FEATURES    ( CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM  )
-#define HALF_REQUIRED_FEATURES    ( CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM  )
+#define HALF_REQUIRED_FEATURES_1    ( CL_FP_ROUND_TO_ZERO )
+#define HALF_REQUIRED_FEATURES_2    ( CL_FP_ROUND_TO_NEAREST | CL_FP_INF_NAN )
 
 const char      **gTestNames = NULL;
 unsigned int    gTestNameCount = 0;
@@ -1395,29 +1396,22 @@ test_status InitCL( cl_device_id device )
                         vlog_error("ERROR: Unable to get device CL_DEVICE_HALF_FP_CONFIG. (%d)\n", error);
                         return TEST_FAIL;
                     }
-
-                    if (HALF_REQUIRED_FEATURES != (gHalfCapabilities & HALF_REQUIRED_FEATURES))
+                    if (HALF_REQUIRED_FEATURES_1 != (gHalfCapabilities & HALF_REQUIRED_FEATURES_1) && HALF_REQUIRED_FEATURES_2 != (gHalfCapabilities & HALF_REQUIRED_FEATURES_2))
                     {
                         char list[300] = "";
-                        if (0 == (gHalfCapabilities & CL_FP_FMA))
-                            strncat(list, "CL_FP_FMA, ", sizeof(list) - 1);
                         if (0 == (gHalfCapabilities & CL_FP_ROUND_TO_NEAREST))
                             strncat(list, "CL_FP_ROUND_TO_NEAREST, ", sizeof(list) - 1);
                         if (0 == (gHalfCapabilities & CL_FP_ROUND_TO_ZERO))
                             strncat(list, "CL_FP_ROUND_TO_ZERO, ", sizeof(list) - 1);
-                        if (0 == (gHalfCapabilities & CL_FP_ROUND_TO_INF))
-                            strncat(list, "CL_FP_ROUND_TO_INF, ", sizeof(list) - 1);
                         if (0 == (gHalfCapabilities & CL_FP_INF_NAN))
                             strncat(list, "CL_FP_INF_NAN, ", sizeof(list) - 1);
-                        if (0 == (gHalfCapabilities & CL_FP_DENORM))
-                            strncat(list, "CL_FP_DENORM, ", sizeof(list) - 1);
                         vlog_error("ERROR: required half features are missing: %s\n", list);
 
                         free(ext);
                         return TEST_FAIL;
                     }
 #else
-                    vlog_error("FAIL: device says it supports cl_khr_fp64 but CL_DEVICE_DOUBLE_FP_CONFIG is not in the headers!\n");
+                    vlog_error("FAIL: device says it supports cl_khr_fp16 but CL_DEVICE_HALF_FP_CONFIG is not in the headers!\n");
                     return TEST_FAIL;
 #endif
                 }
