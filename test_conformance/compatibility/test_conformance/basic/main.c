@@ -34,8 +34,6 @@ test_definition test_list[] = {
     ADD_TEST( sizeof ),
     ADD_TEST( readimage ),
     ADD_TEST( writeimage ),
-
-    ADD_TEST( bufferreadwriterect ),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
