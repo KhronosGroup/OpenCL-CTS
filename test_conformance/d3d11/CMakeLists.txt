@@ -32,18 +32,18 @@ set(D3D11_SOURCES
     ../../test_common/harness/conversions.c
     ../../test_common/harness/msvc9.c)
 
-add_executable(conformance_test_d3d11
+add_executable(test_d3d11
     ${D3D11_SOURCES})
 
 set_source_files_properties(
     ${D3D11_SOURCES}
     PROPERTIES LANGUAGE CXX)
         
-TARGET_LINK_LIBRARIES(conformance_test_d3d11
+TARGET_LINK_LIBRARIES(test_d3d11
     ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_d3d11)
-install(TARGETS conformance_test_d3d11
+add_dependencies(OpenCLCTS test_d3d11)
+install(TARGETS test_d3d11
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)
 

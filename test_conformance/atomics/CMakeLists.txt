@@ -1,4 +1,4 @@
-add_executable(conformance_test_atomics
+add_executable(test_atomics
         main.c
         test_atomics.cpp
         test_indexed_cases.c
@@ -24,10 +24,10 @@ set_source_files_properties(
         ../../test_common/harness/msvc9.c
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_atomics
+TARGET_LINK_LIBRARIES(test_atomics
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_atomics)
-install(TARGETS conformance_test_atomics
+add_dependencies(OpenCLCTS test_atomics)
+install(TARGETS test_atomics
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

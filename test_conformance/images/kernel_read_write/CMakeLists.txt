@@ -1,4 +1,4 @@
-add_executable(conformance_test_image_streams
+add_executable(test_image_streams
 	main.cpp
 	test_iterations.cpp
 	../image_helpers.cpp 
@@ -48,10 +48,10 @@ set_source_files_properties(
 	../../../test_common/harness/typeWrappers.cpp
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_image_streams
+TARGET_LINK_LIBRARIES(test_image_streams
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_image_streams)
-install(TARGETS conformance_test_image_streams
+add_dependencies(OpenCLCTS test_image_streams)
+install(TARGETS test_image_streams
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

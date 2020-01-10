@@ -94,3 +94,13 @@ add_subdirectory(vec_step)
 
 # Add any extension folders
 add_subdirectory(spir)
+
+# Copy all csv files
+FILE(GLOB CSV_FILES
+ 	 "${CMAKE_CURRENT_SOURCE_DIR}/*.csv"
+)
+FILE(COPY ${CSV_FILES} DESTINATION "${CMAKE_BINARY_DIR}")
+
+# Copy test runner
+FILE(COPY "${CMAKE_CURRENT_SOURCE_DIR}/run_conformance.py" DESTINATION "${CMAKE_BINARY_DIR}")
+

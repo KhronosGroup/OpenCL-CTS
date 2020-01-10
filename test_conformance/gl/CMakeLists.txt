@@ -56,7 +56,7 @@ if(MINGW)
 endif(MINGW)
 
 
-add_executable(conformance_test_gl
+add_executable(test_gl
         ${GL_SOURCES} ${GLUT_SOURCES})
 
 set_source_files_properties(
@@ -66,13 +66,13 @@ set_source_files_properties(
 # Add the current folder to the include path, so that
 # test_common/gl/setup_x11.cpp can find testBase.h which is located in this
 # folder.
-target_include_directories(conformance_test_gl
+target_include_directories(test_gl
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-TARGET_LINK_LIBRARIES(conformance_test_gl
+TARGET_LINK_LIBRARIES(test_gl
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_gl)
-install(TARGETS conformance_test_gl
+add_dependencies(OpenCLCTS test_gl)
+install(TARGETS test_gl
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

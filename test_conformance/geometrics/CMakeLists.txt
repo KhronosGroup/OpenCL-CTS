@@ -4,7 +4,7 @@ set(CMAKE_C_FLAGS_RELEASE "/Od /Ob0")
 set(CMAKE_CXX_FLAGS_RELEASE "/Od /Ob0")
 endif(MSVC)
 
-add_executable(conformance_test_geometrics
+add_executable(test_geometrics
         main.c
 	test_geometrics_double.cpp
 	test_geometrics.cpp
@@ -28,10 +28,10 @@ set_source_files_properties(
     ../../test_common/harness/msvc9.c    
     PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_geometrics
+TARGET_LINK_LIBRARIES(test_geometrics
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_geometrics)
-install(TARGETS conformance_test_geometrics
+add_dependencies(OpenCLCTS test_geometrics)
+install(TARGETS test_geometrics
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

@@ -1,4 +1,4 @@
-add_executable(conformance_test_device_partition
+add_executable(test_device_partition
 	main.c
 	test_device_partition.cpp
 	../../test_common/harness/errorHelpers.c
@@ -26,10 +26,10 @@ set_source_files_properties(
 	../../test_common/harness/msvc9.c
         PROPERTIES LANGUAGE CXX)
 
-target_link_libraries(conformance_test_device_partition
+target_link_libraries(test_device_partition
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_device_partition)
-install(TARGETS conformance_test_device_partition
+add_dependencies(OpenCLCTS test_device_partition)
+install(TARGETS test_device_partition
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

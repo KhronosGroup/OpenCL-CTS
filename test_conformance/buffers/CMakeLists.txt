@@ -1,4 +1,4 @@
-add_executable(conformance_test_buffers
+add_executable(test_buffers
 	main.c test_buffer_copy.c test_buffer_read.c test_buffer_write.c
 	test_buffer_mem.c array_info.c test_buffer_map.c
 	test_sub_buffers.cpp test_buffer_fill.c
@@ -27,10 +27,10 @@ set_source_files_properties(
 	../../test_common/harness/typeWrappers.cpp
     PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_buffers
+TARGET_LINK_LIBRARIES(test_buffers
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_buffers)
-install(TARGETS conformance_test_buffers
+add_dependencies(OpenCLCTS test_buffers)
+install(TARGETS test_buffers
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

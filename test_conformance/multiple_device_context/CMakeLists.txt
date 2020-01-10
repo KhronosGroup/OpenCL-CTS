@@ -1,4 +1,4 @@
-add_executable(conformance_test_multiples
+add_executable(test_multiples
         main.c
 	test_multiple_contexts.c
 	test_multiple_devices.cpp
@@ -30,10 +30,10 @@ set_source_files_properties(
     ../../test_common/harness/msvc9.c
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_multiples
+TARGET_LINK_LIBRARIES(test_multiples
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_multiples)
-install(TARGETS conformance_test_multiples
+add_dependencies(OpenCLCTS test_multiples)
+install(TARGETS test_multiples
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

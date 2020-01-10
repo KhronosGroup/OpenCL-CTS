@@ -1,4 +1,4 @@
-add_executable(conformance_test_basic
+add_executable(test_basic
         main.c
 	test_fpmath_float.c test_fpmath_float2.c test_fpmath_float4.c
 	test_intmath_int.c test_intmath_int2.c test_intmath_int4.c
@@ -117,10 +117,10 @@ set_source_files_properties(
   	../../test_common/harness/rounding_mode.c
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_basic
+TARGET_LINK_LIBRARIES(test_basic
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_basic)
-install(TARGETS conformance_test_basic
+add_dependencies(OpenCLCTS test_basic)
+install(TARGETS test_basic
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

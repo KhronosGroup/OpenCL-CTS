@@ -1,4 +1,4 @@
-add_executable(conformance_test_contractions
+add_executable(test_contractions
         contractions.c
         ../../test_common/harness/mt19937.c
         ../../test_common/harness/msvc9.c
@@ -26,10 +26,10 @@ set_source_files_properties(
         PROPERTIES LANGUAGE CXX)
 endif(WIN32)
 
-TARGET_LINK_LIBRARIES(conformance_test_contractions
+TARGET_LINK_LIBRARIES(test_contractions
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_contractions)
-install(TARGETS conformance_test_contractions
+add_dependencies(OpenCLCTS test_contractions)
+install(TARGETS test_contractions
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)

@@ -1,4 +1,4 @@
-add_executable(conformance_test_cl_get_info
+add_executable(test_cl_get_info
 	main.cpp
 	test_1D.cpp
 	test_2D.cpp
@@ -36,10 +36,10 @@ set_source_files_properties(
 	../../../test_common/harness/typeWrappers.cpp
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_cl_get_info
+TARGET_LINK_LIBRARIES(test_cl_get_info
         ${CLConform_LIBRARIES})
 
-add_dependencies(OpenCLCTS conformance_test_cl_get_info)
-install(TARGETS conformance_test_cl_get_info
+add_dependencies(OpenCLCTS test_cl_get_info)
+install(TARGETS test_cl_get_info
     DESTINATION "${CLConf_OUT_DIR}"
     COMPONENT OpenCLCTS)
