@@ -18,10 +18,6 @@
 #include "test_printf.h"
 
 
-#if defined (_WIN32)
-#define strtoull _strtoi64
-#endif
-
 const char* strType[] = {"int","float","octal","unsigned","hexadecimal","char","string","vector","address space"};
 
 
