@@ -4,7 +4,6 @@ set(${MODULE_NAME}_SOURCES
     main.c
     test_readimage.c
     test_writeimage.c
-    test_sizeof.c
 )
 
 set(${MODULE_NAME}_LIBS harness-compat)
