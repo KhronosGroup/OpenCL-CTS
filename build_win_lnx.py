@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import argparse
 import os
 import shutil
@@ -27,40 +28,39 @@ root_dir = os.getcwd()
 
 def run():
     args = process_command_line()
-    compiler = args.compiler
-    msvc_version = args.msvc_version
-    bitness = args.bitness
     skip_clone = args.skip_clone
     skip_icd = args.skip_icd
     skip_cts = args.skip_cts
     build_target = args.build_target
-    icd_solution_cmd_win = 'cmake .. -DOPENCL_ICD_LOADER_HEADERS_DIR=..\..\OpenCL-Headers'
-    icd_solution_cmd_win_x64_msvc_2017 = icd_solution_cmd_win + ' -G "Visual Studio 15 2017" -A x64'
-    icd_solution_cmd_win_x64_msvc_2019 = icd_solution_cmd_win + ' -G "Visual Studio 16 2019" -A x64'
-    icd_solution_cmd_win_x86_msvc_2017 = icd_solution_cmd_win + ' -G "Visual Studio 15 2017"'
-    icd_solution_cmd_win_x86_msvc_2019 = icd_solution_cmd_win + ' -G "Visual Studio 16 2019"'
-    icd_solution_cmd_linux = 'cmake -DOPENCL_ICD_LOADER_HEADERS_DIR=../OpenCL-Headers/ ..'
-    build_icd_cmd = 'cmake --build . --target ALL_BUILD --config Release -- /m'
-    build_cts_cmd = 'cmake --build . --target '+build_target+' --config Release -- /m'
 
-    cts_solution_cmd_win = 'cmake ..\. -DCMAKE_BUILD_TYPE=release -DCL_INCLUDE_DIR=..\OpenCL-Headers -DCL_LIB_DIR=..\OpenCL-ICD-Loader\\build\\Release\\ -DCL_LIBCLCXX_DIR=..\libclcxx\\include -DCL_OFFLINE_COMPILER=..\\dummy\\path\\to\\compiler -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin -DOPENCL_LIBRARIES=OpenCL -DD3D10_IS_SUPPORTED=ON -DD3D11_IS_SUPPORTED=ON'
-
-    cts_solution_cmd_win_x64_msvc_2017 = cts_solution_cmd_win + ' -G "Visual Studio 15 2017" -A x64 -DCMAKE_CL_64=ON -DARCH=x86_64'
-    cts_solution_cmd_win_x64_icc_2017 = cts_solution_cmd_win_x64_msvc_2017 + ' -T"Intel C++ Compiler 19.0"'
-
-    cts_solution_cmd_win_x64_msvc_2019 = cts_solution_cmd_win + ' -G "Visual Studio 16 2019" -A x64 -DCMAKE_CL_64=ON -DARCH=x86_64'
-    cts_solution_cmd_win_x64_icc_2019 = cts_solution_cmd_win_x64_msvc_2019 + ' -T"Intel C++ Compiler 19.0"'
-
-    cts_solution_cmd_win_x86_msvc_2017 = cts_solution_cmd_win + ' -G "Visual Studio 15 2017" -DCMAKE_CL_64=OFF -DARCH=i686'
-    cts_solution_cmd_win_x86_icc_2017 = cts_solution_cmd_win_x86_msvc_2017 + ' -T"Intel C++ Compiler 19.0"'
-
-    cts_solution_cmd_win_x86_msvc_2019 = cts_solution_cmd_win + ' -G "Visual Studio 16 2019" -DCMAKE_CL_64=OFF -DARCH=i686'
-    cts_solution_cmd_win_x86_icc_2019 = cts_solution_cmd_win_x86_msvc_2019 + ' -T"Intel C++ Compiler 19.0"'
-
-    cts_solution_cmd_linux = 'cmake -DCL_INCLUDE_DIR=../OpenCL-Headers -DCL_LIB_DIR=../OpenCL-ICD-Loader/build -DCL_LIBCLCXX_DIR=../libclcxx -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin -DOPENCL_LIBRARIES="-lOpenCL -lpthread" ..'
 
     if platform == "win32":
         print("Windows operating system")
+        msvc_version = args.msvc_version
+        bitness = args.bitness
+        compiler = args.compiler
+        build_icd_cmd = 'cmake --build . --target ALL_BUILD --config Release -- /m'
+        build_cts_cmd = 'cmake --build . --target ' + build_target + ' --config Release -- /m'
+        icd_solution_cmd_win = 'cmake .. -DOPENCL_ICD_LOADER_HEADERS_DIR=..\..\OpenCL-Headers'
+        icd_solution_cmd_win_x64_msvc_2017 = icd_solution_cmd_win + ' -G "Visual Studio 15 2017" -A x64'
+        icd_solution_cmd_win_x64_msvc_2019 = icd_solution_cmd_win + ' -G "Visual Studio 16 2019" -A x64'
+        icd_solution_cmd_win_x86_msvc_2017 = icd_solution_cmd_win + ' -G "Visual Studio 15 2017"'
+        icd_solution_cmd_win_x86_msvc_2019 = icd_solution_cmd_win + ' -G "Visual Studio 16 2019"'
+
+        cts_solution_cmd_win = 'cmake ..\. -DCMAKE_BUILD_TYPE=release -DCL_INCLUDE_DIR=..\OpenCL-Headers -DCL_LIB_DIR=..\OpenCL-ICD-Loader\\build\\Release\\ -DCL_LIBCLCXX_DIR=..\libclcxx\\include -DCL_OFFLINE_COMPILER=..\\dummy\\path\\to\\compiler -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin -DOPENCL_LIBRARIES=OpenCL -DD3D10_IS_SUPPORTED=ON -DD3D11_IS_SUPPORTED=ON'
+
+        cts_solution_cmd_win_x64_msvc_2017 = cts_solution_cmd_win + ' -G "Visual Studio 15 2017" -A x64 -DCMAKE_CL_64=ON -DARCH=x86_64'
+        cts_solution_cmd_win_x64_icc_2017 = cts_solution_cmd_win_x64_msvc_2017 + ' -T"Intel C++ Compiler 19.0"'
+
+        cts_solution_cmd_win_x64_msvc_2019 = cts_solution_cmd_win + ' -G "Visual Studio 16 2019" -A x64 -DCMAKE_CL_64=ON -DARCH=x86_64'
+        cts_solution_cmd_win_x64_icc_2019 = cts_solution_cmd_win_x64_msvc_2019 + ' -T"Intel C++ Compiler 19.0"'
+
+        cts_solution_cmd_win_x86_msvc_2017 = cts_solution_cmd_win + ' -G "Visual Studio 15 2017" -DCMAKE_CL_64=OFF -DARCH=i686'
+        cts_solution_cmd_win_x86_icc_2017 = cts_solution_cmd_win_x86_msvc_2017 + ' -T"Intel C++ Compiler 19.0"'
+
+        cts_solution_cmd_win_x86_msvc_2019 = cts_solution_cmd_win + ' -G "Visual Studio 16 2019" -DCMAKE_CL_64=OFF -DARCH=i686'
+        cts_solution_cmd_win_x86_icc_2019 = cts_solution_cmd_win_x86_msvc_2019 + ' -T"Intel C++ Compiler 19.0"'
+
         if bitness == "x64" and msvc_version == "2017":
             icd_cmd = icd_solution_cmd_win_x64_msvc_2017
             if compiler == "msvc":
@@ -90,10 +90,13 @@ def run():
         print("Linux operating system")
         compiler = "gcc"
         msvc_version = "NA"
+        bitness = "x64"
+        build_icd_cmd = 'cmake --build . --target all --config Release -- -j4'
+        build_cts_cmd = 'cmake --build . --target ' + build_target + ' --config Release -- -j4'
+        icd_solution_cmd_linux = 'cmake -DOPENCL_ICD_LOADER_HEADERS_DIR=../OpenCL-Headers/ ..'
+        cts_solution_cmd_linux = 'cmake -DCL_INCLUDE_DIR=../OpenCL-Headers -DCL_LIB_DIR=../OpenCL-ICD-Loader/build -DCL_LIBCLCXX_DIR=../libclcxx -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin -DOPENCL_LIBRARIES="-lOpenCL -lpthread" ..'
         icd_cmd = icd_solution_cmd_linux
         cts_cmd = cts_solution_cmd_linux
-        build_icd_cmd = 'make -j4'
-        build_cts_cmd = 'make -j4'
     else:
         print("Not supported operating system ", platform)
         return
@@ -111,9 +114,10 @@ def run():
         build_project('OpenCL-CTS', cts_cmd, build_cts_cmd)
 
     print("+++ Summary +++")
-    print("MSVC version:\t ", msvc_version)
-    print("Compiler:\t ", compiler)
-    print("Bitness:\t ", bitness)
+    if platform == "win32":
+        print("MSVC version:\t ", msvc_version)
+        print("Compiler:\t ", compiler)
+        print("Bitness:\t ", bitness)
     print("Operating system:\t ", platform)
     print("ICD solution cmd: \n", icd_cmd)
     print("ICD build cmd: \n", build_icd_cmd)
@@ -130,17 +134,21 @@ def clean_path(path):
 
 
 def process_command_line():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--msvc_version', default="2017", choices=['2017', '2019'],
+    parser = argparse.ArgumentParser(description='Build opensource conformance test suite on Windows/Linux OS')
+    if platform == "win32":
+        parser.add_argument('--msvc_version', default="2017", choices=['2017', '2019'],
                         help='choose msvc version')
-    parser.add_argument('--compiler', default="msvc", choices=['msvc', 'icc'],
+        parser.add_argument('--compiler', default="msvc", choices=['msvc', 'icc'],
                         help='choose compiler')
-    parser.add_argument('--bitness', default="x64", choices=['x64', 'x86'],
+        parser.add_argument('--bitness', default="x64", choices=['x64', 'x86'],
                         help='choose bitness')
+        parser.add_argument('--build_target', default="ALL_BUILD", help='target to build')
+    elif platform[:5] == "linux":
+        parser.add_argument('--build_target', default="all", help='target to build')
     parser.add_argument('--skip_clone', action='store_true',  help='skip cloning repositories')
     parser.add_argument('--skip_icd', action='store_true',  help='skip building ICD project')
     parser.add_argument('--skip_cts', action='store_true', help='skip building CTS project')
-    parser.add_argument('--build_target', default="ALL_BUILD", help='target to build (only Windows)')
+
     return parser.parse_args()
 
 
