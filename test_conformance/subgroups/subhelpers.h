@@ -23,6 +23,7 @@
 #include <limits>
 #include <vector>
 
+#define NON_UNIFORM 4
 // Some template helpers
 template <typename Ty> struct TypeName;
 template <> struct TypeName<cl_half> { static const char * val() { return "half"; } };
@@ -222,6 +223,7 @@ struct test {
         error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform), (void *)&platform, NULL);
         test_error(error, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
 
+        build_kernel_code += "#define NON_UNIFORM "+ std::to_string(NON_UNIFORM) +" \n";
         build_kernel_code += "#define XY(M,I) M[I].x = get_sub_group_local_id(); M[I].y = get_sub_group_id();\n";
         kstrings[0] = build_kernel_code.c_str();
         kstrings[1] = TypeDef<Ty>::val();
