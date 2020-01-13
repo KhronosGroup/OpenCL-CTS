@@ -180,7 +180,7 @@ run_kernel(cl_context context, cl_command_queue queue, cl_kernel kernel, size_t 
 template <typename Ty, typename Fns, size_t GSIZE, size_t LSIZE, size_t TSIZE=0>
 struct test {
     static int
-    run(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements, const char *kname, const char *src, int dynscl=0)
+    run(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements, const char *kname, const char *src, int dynscl = 0, std::vector<std::string> required_extensions = {})
     {
         size_t tmp;
         int error;
@@ -197,14 +197,33 @@ struct test {
         Ty mapout[LSIZE];
 
     // Make sure a test of type Ty is supported by the device
-        if (!TypeCheck<Ty>::val(device))
-            return 0;
+        std::string build_kernel_code = "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
 
+        if (!TypeCheck<Ty>::val(device)) {
+            log_info("Data type not supported : %s\n", TypeName<Ty>::val());
+            return 0;
+        }
+        else {
+            if (strstr(TypeDef<Ty>::val(), "double")) {
+                build_kernel_code += "#pragma OPENCL EXTENSION cl_khr_fp64: enable\n";
+            }
+            else if (strstr(TypeDef<Ty>::val(), "half")) {
+                build_kernel_code += "#pragma OPENCL EXTENSION cl_khr_fp16: enable\n";
+            }
+        }
+
+        for (std::string extension : required_extensions) {
+            if (!is_extension_available(device, extension.c_str())) {
+                log_info("The extension %s not supported on this device. SKIP testing - kernel %s data type %s\n", extension.c_str(), kname, TypeName<Ty>::val());
+                return 0;
+            }
+            build_kernel_code += "#pragma OPENCL EXTENSION " + extension + ": enable\n";
+        }
         error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform), (void *)&platform, NULL);
         test_error(error, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
 
-        kstrings[0] = "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n"
-                  "#define XY(M,I) M[I].x = get_sub_group_local_id(); M[I].y = get_sub_group_id();\n";
+        build_kernel_code += "#define XY(M,I) M[I].x = get_sub_group_local_id(); M[I].y = get_sub_group_id();\n";
+        kstrings[0] = build_kernel_code.c_str();
         kstrings[1] = TypeDef<Ty>::val();
         kstrings[2] = src;
         error = create_single_kernel_helper_with_build_options(context, &program, &kernel, 3, kstrings, kname, "-cl-std=CL2.0");
