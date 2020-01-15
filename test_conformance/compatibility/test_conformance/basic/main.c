@@ -31,7 +31,6 @@ cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 bool gTestRounding = false;
 
 test_definition test_list[] = {
-    ADD_TEST( sizeof ),
     ADD_TEST( readimage ),
     ADD_TEST( writeimage ),
 };

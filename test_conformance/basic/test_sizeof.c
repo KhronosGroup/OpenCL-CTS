@@ -141,7 +141,7 @@ const size_table  vector_table[] =
 
 const char  *ptr_table[] =
 {
-    "void*",
+    "global void*",
     "size_t",
     "sizeof(int)",      // check return type of sizeof
     "ptrdiff_t"
