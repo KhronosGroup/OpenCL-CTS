@@ -92,11 +92,6 @@ Contractions,contractions/contractions
 Integer Ops,integer_ops/test_integer_ops
 Half Ops,half/test_half
 
-# #########################################
-# Compatibility with Previous Versions
-# #########################################
-Basic 1.2,compatibility/test_conformance/basic/test_basic
-
 #####################################
 # OpenCL 2.0 tests
 #####################################

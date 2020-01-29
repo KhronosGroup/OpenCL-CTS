@@ -90,11 +90,6 @@ Math,math_brute_force/bruteforce -offlineCompiler spir_v cache .
 Integer Ops,integer_ops/test_integer_ops -offlineCompiler spir_v cache .
 Half Ops,half/Test_half -offlineCompiler spir_v cache .
 
-# #########################################
-# Compatibility with Previous Versions
-# #########################################
-Basic 1.2,compatibility/test_conformance/basic/test_basic
-
 #####################################
 # OpenCL 2.0 tests
 #####################################
