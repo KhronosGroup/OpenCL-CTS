@@ -198,10 +198,10 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
         }
       }
       clEventWrapper eventUnmap[2];
-      error = clEnqueueSVMUnmap(queue, srcBuffer, 0, 0, &eventUnmap[0]);
+      error = clEnqueueSVMUnmap(queue, srcBuffer, 0, nullptr, &eventUnmap[0]);
       test_error(error, "clEnqueueSVMUnmap srcBuffer failed");
 
-      error = clEnqueueSVMUnmap(queue, dstBuffer, 0, 0, &eventUnmap[1]);
+      error = clEnqueueSVMUnmap(queue, dstBuffer, 0, nullptr, &eventUnmap[1]);
       test_error(error, "clEnqueueSVMUnmap dstBuffer failed");
 
       error = clEnqueueSVMMemFill(queue, srcBuffer, &fillData1[0], typeSizes[i], data_size / 2, 0, 0, 0);
