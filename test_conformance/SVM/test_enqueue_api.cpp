@@ -140,22 +140,22 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
       std::vector<cl_uchar> fillData0(typeSizes[i]), fillData1(typeSizes[i]);
       generate_data(fillData0, typeSizes[i], seed);
       generate_data(fillData1, typeSizes[i], seed);
-
-      std::vector<cl_uchar> srcHostData(elementNum * typeSizes[i], 0);
-      std::vector<cl_uchar> dstHostData(elementNum * typeSizes[i], 0);
+      size_t data_size = elementNum * typeSizes[i];
+      std::vector<cl_uchar> srcHostData(data_size, 0);
+      std::vector<cl_uchar> dstHostData(data_size, 0);
       generate_data(srcHostData, srcHostData.size(), seed);
       generate_data(dstHostData, dstHostData.size(), seed);
 
-      cl_uchar *srcBuffer = (cl_uchar *)clSVMAlloc(context, CL_MEM_READ_WRITE, elementNum * typeSizes[i], 0);
-      cl_uchar *dstBuffer = (cl_uchar *)clSVMAlloc(context, CL_MEM_READ_WRITE, elementNum * typeSizes[i], 0);
+      cl_uchar *srcBuffer = (cl_uchar *)clSVMAlloc(context, CL_MEM_READ_WRITE, data_size, 0);
+      cl_uchar *dstBuffer = (cl_uchar *)clSVMAlloc(context, CL_MEM_READ_WRITE, data_size, 0);
 
       clEventWrapper userEvent = clCreateUserEvent(context, &error);
       test_error(error, "clCreateUserEvent failed");
       clEventWrapper eventMemFillList[2];
 
-      error = clEnqueueSVMMemFill(queue, srcBuffer, &fillData0[0], typeSizes[i], elementNum * typeSizes[i], 1, &userEvent, &eventMemFillList[0]);
+      error = clEnqueueSVMMemFill(queue, srcBuffer, &fillData0[0], typeSizes[i], data_size, 1, &userEvent, &eventMemFillList[0]);
       test_error(error, "clEnqueueSVMMemFill failed");
-      error = clEnqueueSVMMemFill(queue, dstBuffer, &fillData1[0], typeSizes[i], elementNum * typeSizes[i], 1, &userEvent, &eventMemFillList[1]);
+      error = clEnqueueSVMMemFill(queue, dstBuffer, &fillData1[0], typeSizes[i], data_size, 1, &userEvent, &eventMemFillList[1]);
       test_error(error, "clEnqueueSVMMemFill failed");
 
       error = clSetUserEventStatus(userEvent, CL_COMPLETE);
@@ -174,39 +174,46 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
         dst_ptr = dstBuffer;
       }
       clEventWrapper eventMemcpy;
-      error = clEnqueueSVMMemcpy(queue, CL_FALSE, dst_ptr, src_ptr, elementNum * typeSizes[i], 2, &eventMemFillList[0], &eventMemcpy);
+      error = clEnqueueSVMMemcpy(queue, CL_FALSE, dst_ptr, src_ptr, data_size, 2, &eventMemFillList[0], &eventMemcpy);
       test_error(error, "clEnqueueSVMMemcpy failed");
 
-      clEventWrapper eventMap;
-      error = clEnqueueSVMMap(queue, CL_FALSE, CL_MAP_READ | CL_MAP_WRITE, dstBuffer, elementNum * typeSizes[i], 1, &eventMemcpy, &eventMap);
-      test_error(error, "clEnqueueSVMMap failed");
+      //coarse grain only supported. Synchronization required using map
+      clEventWrapper eventMap[2];
 
-      error = clWaitForEvents(1, &eventMap);
+      error = clEnqueueSVMMap(queue, CL_FALSE, CL_MAP_READ, srcBuffer, data_size, 1, &eventMemcpy, &eventMap[0]);
+      test_error(error, "clEnqueueSVMMap srcBuffer failed");
+
+      error = clEnqueueSVMMap(queue, CL_FALSE, CL_MAP_READ, dstBuffer, data_size, 1, &eventMemcpy, &eventMap[1]);
+      test_error(error, "clEnqueueSVMMap dstBuffer failed");
+
+      error = clWaitForEvents(2, &eventMap[0]);
       test_error(error, "clWaitForEvents failed");
 
       //data verification
-      for (size_t j = 0; j < elementNum * typeSizes[i]; ++j)
+      for (size_t j = 0; j < data_size; ++j)
       {
         if (dst_ptr[j] != src_ptr[j]) {
             log_error("Invalid data at index %ld, dst_ptr %d, src_ptr %d\n", j, dst_ptr[j], src_ptr[j]);
             return TEST_FAIL;
         }
       }
+      clEventWrapper eventUnmap[2];
+      error = clEnqueueSVMUnmap(queue, srcBuffer, 0, nullptr, &eventUnmap[0]);
+      test_error(error, "clEnqueueSVMUnmap srcBuffer failed");
 
-      clEventWrapper eventUnmap;
-      error = clEnqueueSVMUnmap(queue, dstBuffer, 0, 0, &eventUnmap);
-      test_error(error, "clEnqueueSVMUnmap failed");
+      error = clEnqueueSVMUnmap(queue, dstBuffer, 0, nullptr, &eventUnmap[1]);
+      test_error(error, "clEnqueueSVMUnmap dstBuffer failed");
 
-      error = clEnqueueSVMMemFill(queue, srcBuffer, &fillData1[0], typeSizes[i], elementNum * typeSizes[i] / 2, 0, 0, 0);
+      error = clEnqueueSVMMemFill(queue, srcBuffer, &fillData1[0], typeSizes[i], data_size / 2, 0, 0, 0);
       test_error(error, "clEnqueueSVMMemFill failed");
 
-      error = clEnqueueSVMMemFill(queue, dstBuffer + elementNum * typeSizes[i] / 2, &fillData1[0], typeSizes[i], elementNum * typeSizes[i] / 2, 0, 0, 0);
+      error = clEnqueueSVMMemFill(queue, dstBuffer + data_size / 2, &fillData1[0], typeSizes[i], data_size / 2, 0, 0, 0);
       test_error(error, "clEnqueueSVMMemFill failed");
 
-      error = clEnqueueSVMMemcpy(queue, CL_FALSE, dstBuffer, srcBuffer, elementNum * typeSizes[i] / 2, 0, 0, 0);
+      error = clEnqueueSVMMemcpy(queue, CL_FALSE, dstBuffer, srcBuffer, data_size / 2, 0, 0, 0);
       test_error(error, "clEnqueueSVMMemcpy failed");
 
-      error = clEnqueueSVMMemcpy(queue, CL_TRUE, dstBuffer + elementNum * typeSizes[i] / 2, srcBuffer + elementNum * typeSizes[i] / 2, elementNum * typeSizes[i] / 2, 0, 0, 0);
+      error = clEnqueueSVMMemcpy(queue, CL_TRUE, dstBuffer + data_size / 2, srcBuffer + data_size / 2, data_size / 2, 0, 0, 0);
       test_error(error, "clEnqueueSVMMemcpy failed");
 
       void *ptrs[] = { (void *)srcBuffer, (void *)dstBuffer };
@@ -237,23 +244,23 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
         log_error("Invalid command type returned for clEnqueueSVMMemcpy\n");
         return TEST_FAIL;
       }
+      for (size_t map_id = 0; map_id < ARRAY_SIZE(eventMap); map_id++) {
+          error = clGetEventInfo(eventMap[map_id], CL_EVENT_COMMAND_TYPE, sizeof(cl_command_type), &commandType, NULL);
+          test_error(error, "clGetEventInfo failed");
+          if (commandType != CL_COMMAND_SVM_MAP)
+          {
+              log_error("Invalid command type returned for clEnqueueSVMMap\n");
+              return TEST_FAIL;
+          }
 
-      error = clGetEventInfo(eventMap, CL_EVENT_COMMAND_TYPE, sizeof(cl_command_type), &commandType, NULL);
-      test_error(error, "clGetEventInfo failed");
-      if (commandType != CL_COMMAND_SVM_MAP)
-      {
-        log_error("Invalid command type returned for clEnqueueSVMMap\n");
-        return TEST_FAIL;
+          error = clGetEventInfo(eventUnmap[map_id], CL_EVENT_COMMAND_TYPE, sizeof(cl_command_type), &commandType, NULL);
+          test_error(error, "clGetEventInfo failed");
+          if (commandType != CL_COMMAND_SVM_UNMAP)
+          {
+              log_error("Invalid command type returned for clEnqueueSVMUnmap\n");
+              return TEST_FAIL;
+          }
       }
-
-      error = clGetEventInfo(eventUnmap, CL_EVENT_COMMAND_TYPE, sizeof(cl_command_type), &commandType, NULL);
-      test_error(error, "clGetEventInfo failed");
-      if (commandType != CL_COMMAND_SVM_UNMAP)
-      {
-        log_error("Invalid command type returned for clEnqueueSVMUnmap\n");
-        return TEST_FAIL;
-      }
-
       error = clGetEventInfo(eventFree, CL_EVENT_COMMAND_TYPE, sizeof(cl_command_type), &commandType, NULL);
       test_error(error, "clGetEventInfo failed");
       if (commandType != CL_COMMAND_SVM_FREE)
