@@ -114,7 +114,6 @@ endif(KHRONOS_OFFLINE_COMPILER)
 # CL_INCLUDE_DIR - path to dir with OpenCL headers
 # CL_LIBCLCXX_DIR - path to dir with OpenCL library
 if(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
-    set(OPENCL_INCLUDE_DIR ${CL_INCLUDE_DIR})
     link_directories(${CL_LIB_DIR})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCL_LIBCLCXX_DIR=${CL_LIBCLCXX_DIR}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCL_LIBCLCXX_DIR=${CL_LIBCLCXX_DIR}")
@@ -167,7 +166,7 @@ if(APPLE)
     list(APPEND CLConform_LIBRARIES ${iokit})
 endif(APPLE)
 
-include_directories(SYSTEM ${OPENCL_INCLUDE_DIR})
+include_directories(SYSTEM ${CL_INCLUDE_DIR})
 include_directories(${CLConform_SOURCE_DIR}/test_common/harness
                     ${CLConform_SOURCE_DIR}/test_common/gles
                     ${CLConform_SOURCE_DIR}/test_common/gl
