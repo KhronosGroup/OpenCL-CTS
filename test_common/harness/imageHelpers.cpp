@@ -27,6 +27,8 @@ RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
 static cl_ushort float2half_rte( float f );
 static cl_ushort float2half_rtz( float f );
 
+cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
+
 double
 sRGBmap(float fc)
 {
