@@ -26,7 +26,6 @@
 #define MAX_HALF_LINEAR_ERR 0.3f
 
 extern bool                 gDebugTrace, gTestSmallImages, gTestMaxImages, gTestRounding, gDeviceLt20;
-extern cl_device_type       gDeviceType;
 
 #define MAX_TRIES   1
 #define MAX_CLAMPED 1

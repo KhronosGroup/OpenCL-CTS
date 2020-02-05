@@ -775,7 +775,6 @@ float get_max_relative_error( cl_image_format *format, image_sampler_data *sampl
     {
         if( sampler->filter_mode != CL_FILTER_NEAREST )
         {
-            extern cl_device_type   gDeviceType;
             // The maximum
             if( gDeviceType == CL_DEVICE_TYPE_GPU )
                 maxError += MAKE_HEX_FLOAT(0x1.0p-4f, 0x1L, -4);              // Some GPUs ain't so accurate
