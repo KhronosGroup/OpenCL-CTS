@@ -34,7 +34,6 @@ bool gTestMipmaps;
 int  gTypesToTest;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
 bool            gEnablePitch = false;
-cl_device_type    gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
 #define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 

@@ -23,7 +23,6 @@
 // FIXME: To use certain functions in harness/imageHelpers.h
 // (for example, generate_random_image_data()), the tests are required to declare
 // the following variables (<rdar://problem/11111245>):
-cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 bool gTestRounding = false;
 
 test_definition test_list[] = {

@@ -34,7 +34,6 @@ int  gTypesToTest;
 bool gDeviceLt20 = false;
 
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
-cl_device_type    gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
 extern int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type imageType );
 

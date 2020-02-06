@@ -22,7 +22,6 @@
 // FIXME: To use certain functions in test_common/harness/imageHelpers.h
 // (for example, generate_random_image_data()), the tests are required to declare
 // the following variable (hangover from code specific to Apple's implementation):
-cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
 int main(int argc, const char *argv[])
 {

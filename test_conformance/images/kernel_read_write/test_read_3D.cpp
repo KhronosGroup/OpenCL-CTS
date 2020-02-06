@@ -20,7 +20,6 @@
 #define MAX_HALF_LINEAR_ERR 0.3f
 
 extern bool            gDebugTrace, gExtraValidateInfo, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding, gTestMipmaps;
-extern cl_device_type    gDeviceType;
 extern bool            gUseKernelSamplers;
 extern cl_filter_mode    gFilterModeToUse;
 extern cl_addressing_mode    gAddressModeToUse;
