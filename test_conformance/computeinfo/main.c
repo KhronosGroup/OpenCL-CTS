@@ -109,15 +109,17 @@ typedef struct
     const char*           opcode_name;
     int                   config_type;
     config_data           config;
+    bool                  images_support_required;
 } config_info;
 
-#define CONFIG_INFO( major, minor, opcode, type ) { { major, minor }, opcode, #opcode, type_ ## type, { 0 } }
+#define CONFIG_INFO( major, minor, opcode, type ) { { major, minor }, opcode, #opcode, type_ ## type, { 0 }, false }
+#define CONFIG_INFO_IMAGE( major, minor, opcode, type, images_support_required) { { major, minor }, opcode, #opcode, type_ ## type, { 0 }, images_support_required }
 
 config_info image_buffer_config_infos[] =
 {
 #ifdef CL_DEVICE_IMAGE_PITCH_ALIGNMENT
-    CONFIG_INFO( 1, 2, CL_DEVICE_IMAGE_PITCH_ALIGNMENT, cl_uint),
-    CONFIG_INFO( 1, 2, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT, cl_uint),
+    CONFIG_INFO_IMAGE( 1, 2, CL_DEVICE_IMAGE_PITCH_ALIGNMENT, cl_uint, true),
+    CONFIG_INFO_IMAGE( 1, 2, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT, cl_uint, true),
 #endif
 };
 
@@ -151,22 +153,22 @@ config_info config_infos[] =
 
     CONFIG_INFO( 1, 1, CL_DEVICE_MAX_CLOCK_FREQUENCY, cl_uint),
     CONFIG_INFO( 1, 1, CL_DEVICE_ADDRESS_BITS, cl_uint),
-    CONFIG_INFO( 1, 1, CL_DEVICE_MAX_READ_IMAGE_ARGS, cl_uint),
-    CONFIG_INFO( 1, 1, CL_DEVICE_MAX_WRITE_IMAGE_ARGS, cl_uint),
-    CONFIG_INFO( 2, 0, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS, cl_uint),
+    CONFIG_INFO_IMAGE( 1, 1, CL_DEVICE_MAX_READ_IMAGE_ARGS, cl_uint, true),
+    CONFIG_INFO_IMAGE( 1, 1, CL_DEVICE_MAX_WRITE_IMAGE_ARGS, cl_uint, true),
+    CONFIG_INFO_IMAGE( 2, 0, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS, cl_uint, true),
     CONFIG_INFO( 1, 1, CL_DEVICE_MAX_MEM_ALLOC_SIZE, cl_ulong),
-    CONFIG_INFO( 1, 1, CL_DEVICE_IMAGE2D_MAX_WIDTH, size_t),
-    CONFIG_INFO( 1, 1, CL_DEVICE_IMAGE2D_MAX_HEIGHT, size_t),
-    CONFIG_INFO( 1, 1, CL_DEVICE_IMAGE3D_MAX_WIDTH, size_t),
-    CONFIG_INFO( 1, 1, CL_DEVICE_IMAGE3D_MAX_HEIGHT, size_t),
-    CONFIG_INFO( 1, 1, CL_DEVICE_IMAGE3D_MAX_DEPTH, size_t),
-    CONFIG_INFO( 1, 2, CL_DEVICE_IMAGE_MAX_ARRAY_SIZE, size_t),
-    CONFIG_INFO( 1, 2, CL_DEVICE_IMAGE_MAX_BUFFER_SIZE, size_t),
+    CONFIG_INFO_IMAGE( 1, 1, CL_DEVICE_IMAGE2D_MAX_WIDTH, size_t, true),
+    CONFIG_INFO_IMAGE( 1, 1, CL_DEVICE_IMAGE2D_MAX_HEIGHT, size_t, true),
+    CONFIG_INFO_IMAGE( 1, 1, CL_DEVICE_IMAGE3D_MAX_WIDTH, size_t, true),
+    CONFIG_INFO_IMAGE( 1, 1, CL_DEVICE_IMAGE3D_MAX_HEIGHT, size_t, true),
+    CONFIG_INFO_IMAGE( 1, 1, CL_DEVICE_IMAGE3D_MAX_DEPTH, size_t, true),
+    CONFIG_INFO_IMAGE( 1, 2, CL_DEVICE_IMAGE_MAX_ARRAY_SIZE, size_t, true),
+    CONFIG_INFO_IMAGE( 1, 2, CL_DEVICE_IMAGE_MAX_BUFFER_SIZE, size_t, true),
     CONFIG_INFO( 1, 1, CL_DEVICE_IMAGE_SUPPORT, cl_uint),
     CONFIG_INFO( 1, 1, CL_DEVICE_MAX_PARAMETER_SIZE, size_t),
-    CONFIG_INFO( 1, 1, CL_DEVICE_MAX_SAMPLERS, cl_uint),
-    CONFIG_INFO( 2, 0, CL_DEVICE_IMAGE_PITCH_ALIGNMENT, cl_uint),
-    CONFIG_INFO( 2, 0, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT, cl_uint),
+    CONFIG_INFO_IMAGE( 1, 1, CL_DEVICE_MAX_SAMPLERS, cl_uint, true),
+    CONFIG_INFO_IMAGE( 2, 0, CL_DEVICE_IMAGE_PITCH_ALIGNMENT, cl_uint, true),
+    CONFIG_INFO_IMAGE( 2, 0, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT, cl_uint, true),
 
     CONFIG_INFO( 1, 1, CL_DEVICE_MEM_BASE_ADDR_ALIGN, cl_uint),
     CONFIG_INFO( 1, 1, CL_DEVICE_SINGLE_FP_CONFIG, cl_device_fp_config),
@@ -669,8 +671,16 @@ int getConfigInfos( cl_device_id device )
   version_t       version = { 0, 0 }; // Version of the device. Will get real value on the first loop iteration.
   version_t const ver11   = { 1, 1 }; // Version 1.1.
   extensions_t    extensions = { 0 };
+  cl_bool         images_support = true;
   int             get;                // Boolean flag: true = get property, false = skip it.
   int             err;
+
+  // Capabilities describing images support requires CL_DEVICE_IMAGE_SUPPORT to be true
+  err = clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT, sizeof(cl_bool), &images_support, NULL);
+  if ( err ) {
+    total_errors++;
+  }
+
   for ( onConfigInfo = 0; onConfigInfo < sizeof(config_infos) / sizeof(config_infos[0]); onConfigInfo++) {
     config_info info = config_infos[ onConfigInfo ];
     // Get a property only if device version is equal or greater than property version.
@@ -686,6 +696,9 @@ int getConfigInfos( cl_device_id device )
       // CL_DEVICE_HALF_FP_CONFIG should be reported only when cl_khr_fp16 extension is available
       get = extensions.cl_khr_fp16;
     };
+    if ( info.images_support_required ) {
+        get = images_support;
+    }
     if ( get ) {
       err = getConfigInfo(device, & info);
       if ( ! err ) {
@@ -716,7 +729,7 @@ int getConfigInfos( cl_device_id device )
     }
   }
 
-  if (is_extension_available(device, "cl_khr_image2d_from_buffer")){
+  if (is_extension_available(device, "cl_khr_image2d_from_buffer") && images_support){
     for ( onConfigInfo = 0; onConfigInfo < sizeof(image_buffer_config_infos) / sizeof(image_buffer_config_infos[0]); onConfigInfo++) {
       config_info info = image_buffer_config_infos[ onConfigInfo ];
       get = ( vercmp( version, info.version ) >= 0 );
@@ -732,7 +745,12 @@ int getConfigInfos( cl_device_id device )
     }
   }
 
-  total_errors += getImageInfo(device);
+  if (images_support) {
+    total_errors += getImageInfo(device);
+  }
+  else {
+    log_info("\tSkipped getting supported image formats.\n");
+  }
 
   return total_errors;
 }
