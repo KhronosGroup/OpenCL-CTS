@@ -58,19 +58,6 @@ Images (Samplerless max size),images/samplerlessReads/test_samplerless_reads max
 Mem (Host Flags),mem_host_flags/test_mem_host_flags
 
 # #########################################
-# Headers
-# #########################################
-Headers (cl_typen), headers/test_headers
-Headers (cl.h standalone), headers/test_cl_h
-Headers (cl_platform.h standalone), headers/test_cl_platform_h
-Headers (cl_gl.h standalone), headers/test_cl_gl_h
-Headers (opencl.h standalone), headers/test_opencl_h
-Headers (cl.h standalone C99), headers/test_cl_h_c99
-Headers (cl_platform.h standalone C99), headers/test_cl_platform_h_c99
-Headers (cl_gl.h standalone C99), headers/test_cl_gl_h_c99
-Headers (opencl.h standalone C99), headers/test_opencl_h_c99
-
-# #########################################
 # CPU is required to pass linear and normalized image filtering
 # #########################################
 CL_DEVICE_TYPE_CPU, Images (Kernel CL_FILTER_LINEAR),images/kernel_read_write/test_image_streams CL_FILTER_LINEAR
