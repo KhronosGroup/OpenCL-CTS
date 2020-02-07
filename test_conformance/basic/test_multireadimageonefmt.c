@@ -147,13 +147,8 @@ int test_mri_one(cl_device_id device, cl_context context, cl_command_queue queue
     if (err)
         return -1;
 
-  cl_sampler_properties properties[] = {
-    CL_SAMPLER_NORMALIZED_COORDS, CL_FALSE,
-    CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_CLAMP_TO_EDGE,
-    CL_SAMPLER_FILTER_MODE, CL_FILTER_NEAREST,
-    0 };
-  cl_sampler sampler = clCreateSamplerWithProperties(context, properties, &err);
-  test_error(err, "clCreateSamplerWithProperties failed");
+  cl_sampler sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
+  test_error(err, "clCreateSampler failed");
 
   err  = clSetKernelArg(kernel, 0, sizeof i, &i);
   err |= clSetKernelArg(kernel, 1, sizeof err, &err);

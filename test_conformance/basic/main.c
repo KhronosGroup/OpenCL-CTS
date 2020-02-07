@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,7 +28,6 @@
 // FIXME: To use certain functions in harness/imageHelpers.h
 // (for example, generate_random_image_data()), the tests are required to declare
 // the following variables (<rdar://problem/11111245>):
-cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 bool gTestRounding = false;
 
 test_definition test_list[] = {
@@ -63,7 +62,7 @@ test_definition test_list[] = {
     ADD_TEST( mri_multiple ),
     ADD_TEST( image_r8 ),
     ADD_TEST( barrier ),
-    ADD_TEST( wg_barrier ),
+    ADD_TEST_VERSION( wg_barrier, Version(2, 0) ),
     ADD_TEST( int2float ),
     ADD_TEST( float2int ),
     ADD_TEST( imagereadwrite ),
@@ -136,17 +135,17 @@ test_definition test_list[] = {
     ADD_TEST( kernel_memory_alignment_constant ),
     ADD_TEST( kernel_memory_alignment_private ),
 
-    ADD_TEST( progvar_prog_scope_misc ),
-    ADD_TEST( progvar_prog_scope_uninit ),
-    ADD_TEST( progvar_prog_scope_init ),
-    ADD_TEST( progvar_func_scope ),
+    ADD_TEST_VERSION( progvar_prog_scope_misc, Version(2, 0) ),
+    ADD_TEST_VERSION( progvar_prog_scope_uninit, Version(2, 0) ),
+    ADD_TEST_VERSION( progvar_prog_scope_init, Version(2, 0) ),
+    ADD_TEST_VERSION( progvar_func_scope, Version(2, 0) ),
 
     ADD_TEST( global_work_offsets ),
     ADD_TEST( get_global_offset ),
 
-    ADD_TEST( global_linear_id ),
-    ADD_TEST( local_linear_id ),
-    ADD_TEST( enqueued_local_size ),
+    ADD_TEST_VERSION( global_linear_id, Version(2, 0) ),
+    ADD_TEST_VERSION( local_linear_id, Version(2, 0) ),
+    ADD_TEST_VERSION( enqueued_local_size, Version(2, 0) ),
 
     ADD_TEST( simple_read_image_pitch ),
     ADD_TEST( simple_write_image_pitch ),
@@ -155,8 +154,8 @@ test_definition test_list[] = {
     ADD_TEST( queue_priority ),
 #endif
 
-    ADD_TEST( get_linear_ids ),
-    ADD_TEST( rw_image_access_qualifier ),
+    ADD_TEST_VERSION( get_linear_ids, Version(2, 0) ),
+    ADD_TEST_VERSION( rw_image_access_qualifier, Version(2, 0) ),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

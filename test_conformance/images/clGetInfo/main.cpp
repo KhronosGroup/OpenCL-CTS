@@ -31,7 +31,6 @@ bool gTestMaxImages;
 bool gTestRounding;
 int  gTypesToTest;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
-cl_device_type    gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
 extern int test_image_set( cl_device_id device, cl_context context, cl_mem_object_type image_type );
 static void printUsage( const char *execName );

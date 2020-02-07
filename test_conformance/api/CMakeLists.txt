@@ -6,6 +6,7 @@ set(${MODULE_NAME}_SOURCES
          test_retain.cpp
          test_retain_program.c
          test_queries.cpp
+         test_queries_compatibility.cpp
          test_create_kernels.c
          test_kernels.c
          test_api_min_max.c
@@ -18,9 +19,11 @@ set(${MODULE_NAME}_SOURCES
          test_device_min_data_type_align_size_alignment.cpp
          test_platform.cpp
          test_kernel_arg_info.c
+         test_kernel_arg_info_compatibility.c
          test_null_buffer_arg.c
          test_mem_object_info.cpp
          test_queue_hint.cpp
+         test_queue_properties.cpp
          test_sub_group_dispatch.cpp
          test_clone_kernel.cpp
          test_zero_sized_enqueue.cpp

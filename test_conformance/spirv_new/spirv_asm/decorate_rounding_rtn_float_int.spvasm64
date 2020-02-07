@@ -1,0 +1,44 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 24
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %1 "decorate_rounding_rtn_float_int"
+               OpName %res "res"
+               OpName %in "in"
+               OpName %entry "entry"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpDecorate %6 FPRoundingMode RTN
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+      %float = OpTypeFloat 32
+%_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
+         %15 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_float
+   %ulong_32 = OpConstant %ulong 32
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+          %1 = OpFunction %void None %15
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_float
+      %entry = OpLabel
+         %17 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %18 = OpCompositeExtract %ulong %17 0
+         %19 = OpShiftLeftLogical %ulong %18 %ulong_32
+         %20 = OpShiftRightArithmetic %ulong %19 %ulong_32
+         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %in %20
+         %22 = OpLoad %float %21 Aligned 4
+          %6 = OpConvertFToS %uint %22
+         %23 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %20
+               OpStore %23 %6
+               OpReturn
+               OpFunctionEnd

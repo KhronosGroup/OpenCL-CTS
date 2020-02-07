@@ -1,0 +1,45 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 24
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %2 "fmath_spv"
+               OpName %res "res"
+               OpName %lhs "lhs"
+               OpName %rhs "rhs"
+               OpName %entry "entry"
+               OpDecorate %7 FuncParamAttr NoCapture
+          %7 = OpDecorationGroup
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpGroupDecorate %7 %res %lhs %rhs
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+%_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
+         %15 = OpTypeFunction %void %_ptr_CrossWorkgroup_float %_ptr_CrossWorkgroup_float %_ptr_CrossWorkgroup_float
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %2 = OpFunction %void None %15
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_float
+        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
+        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
+      %entry = OpLabel
+         %16 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %17 = OpCompositeExtract %uint %16 0
+         %18 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %lhs %17
+         %19 = OpLoad %float %18 Aligned 4
+         %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %rhs %17
+         %21 = OpLoad %float %20 Aligned 4
+         %22 = OpFMod %float %19 %21
+         %23 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %res %17
+               OpStore %23 %22 Aligned 4
+               OpReturn
+               OpFunctionEnd

@@ -1,0 +1,47 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 25
+; Schema: 0
+               OpCapability Float64
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %2 "fmath_spv"
+               OpName %res "res"
+               OpName %lhs "lhs"
+               OpName %rhs "rhs"
+               OpName %entry "entry"
+               OpDecorate %7 FuncParamAttr NoCapture
+          %7 = OpDecorationGroup
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpGroupDecorate %7 %res %lhs %rhs
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+       %void = OpTypeVoid
+     %double = OpTypeFloat 64
+   %v2double = OpTypeVector %double 2
+%_ptr_CrossWorkgroup_v2double = OpTypePointer CrossWorkgroup %v2double
+         %16 = OpTypeFunction %void %_ptr_CrossWorkgroup_v2double %_ptr_CrossWorkgroup_v2double %_ptr_CrossWorkgroup_v2double
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+          %2 = OpFunction %void None %16
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_v2double
+        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_v2double
+        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_v2double
+      %entry = OpLabel
+         %17 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %18 = OpCompositeExtract %uint %17 0
+         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v2double %lhs %18
+         %20 = OpLoad %v2double %19 Aligned 16
+         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v2double %rhs %18
+         %22 = OpLoad %v2double %21 Aligned 16
+         %23 = OpFAdd %v2double %20 %22
+         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v2double %res %18
+               OpStore %24 %23 Aligned 16
+               OpReturn
+               OpFunctionEnd

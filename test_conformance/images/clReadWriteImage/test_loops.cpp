@@ -204,8 +204,8 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
         ret += test_return;
     }
 
-    delete filterFlags;
-    delete formatList;
+    delete[] filterFlags;
+    delete[] formatList;
 
     return ret;
 }

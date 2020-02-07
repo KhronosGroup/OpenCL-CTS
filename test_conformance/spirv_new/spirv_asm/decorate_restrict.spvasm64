@@ -1,0 +1,48 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 26
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %1 "decorate_restrict"
+               OpName %res "res"
+               OpName %lhs "lhs"
+               OpName %rhs "rhs"
+               OpName %entry "entry"
+               OpDecorate %6 Restrict
+          %6 = OpDecorationGroup
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpGroupDecorate %6 %res %lhs %rhs
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+         %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint
+   %ulong_32 = OpConstant %ulong 32
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+          %1 = OpFunction %void None %14
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+         %16 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %17 = OpCompositeExtract %ulong %16 0
+         %18 = OpShiftLeftLogical %ulong %17 %ulong_32
+         %19 = OpShiftRightArithmetic %ulong %18 %ulong_32
+         %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %lhs %19
+         %21 = OpLoad %uint %20 Aligned 4
+         %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %rhs %19
+         %23 = OpLoad %uint %22 Aligned 4
+         %24 = OpIAdd %uint %21 %23
+         %25 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %19
+               OpStore %25 %24 Aligned 4
+               OpReturn
+               OpFunctionEnd

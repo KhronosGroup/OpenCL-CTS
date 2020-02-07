@@ -27,6 +27,8 @@ RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
 static cl_ushort float2half_rte( float f );
 static cl_ushort float2half_rtz( float f );
 
+cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
+
 double
 sRGBmap(float fc)
 {
@@ -773,7 +775,6 @@ float get_max_relative_error( cl_image_format *format, image_sampler_data *sampl
     {
         if( sampler->filter_mode != CL_FILTER_NEAREST )
         {
-            extern cl_device_type   gDeviceType;
             // The maximum
             if( gDeviceType == CL_DEVICE_TYPE_GPU )
                 maxError += MAKE_HEX_FLOAT(0x1.0p-4f, 0x1L, -4);              // Some GPUs ain't so accurate
@@ -1808,7 +1809,7 @@ static inline void  check_for_denorms(float a[4], int *containsDenorms )
     {
         for( int i = 0; i < 4; i++ )
         {
-            if( fabsf(a[i]) < FLT_MIN )
+            if( IsFloatSubnormal( a[i] ) )
                 a[i] = copysignf( 0.0f, a[i] );
         }
     }
@@ -1816,7 +1817,7 @@ static inline void  check_for_denorms(float a[4], int *containsDenorms )
     {
         for( int i = 0; i < 4; i++ )
         {
-            if( fabs(a[i]) < FLT_MIN )
+            if( IsFloatSubnormal( a[i] ) )
             {
                 *containsDenorms = 1;
                 break;

@@ -114,7 +114,6 @@ endif(KHRONOS_OFFLINE_COMPILER)
 # CL_INCLUDE_DIR - path to dir with OpenCL headers
 # CL_LIBCLCXX_DIR - path to dir with OpenCL library
 if(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
-    set(OPENCL_INCLUDE_DIR ${CL_INCLUDE_DIR})
     link_directories(${CL_LIB_DIR})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCL_LIBCLCXX_DIR=${CL_LIBCLCXX_DIR}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCL_LIBCLCXX_DIR=${CL_LIBCLCXX_DIR}")
@@ -122,6 +121,11 @@ else(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
     message(STATUS "OpenCL hasn't been found!")
     message(FATAL_ERROR "Either install OpenCL or pass -DCL_INCLUDE_DIR, -DCL_LIB_DIR and -DCL_LIBCLCXX_DIR")
 endif(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
+
+# CLConform_GL_LIBRARIES_DIR - path to OpenGL libraries
+if(GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
+    link_directories(${CLConform_GL_LIBRARIES_DIR})
+endif (GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
 
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
@@ -162,7 +166,7 @@ if(APPLE)
     list(APPEND CLConform_LIBRARIES ${iokit})
 endif(APPLE)
 
-include_directories(SYSTEM ${OPENCL_INCLUDE_DIR})
+include_directories(SYSTEM ${CL_INCLUDE_DIR})
 include_directories(${CLConform_SOURCE_DIR}/test_common/harness
                     ${CLConform_SOURCE_DIR}/test_common/gles
                     ${CLConform_SOURCE_DIR}/test_common/gl
@@ -177,6 +181,7 @@ endif(CMAKE_BUILD_TYPE STREQUAL "release")
 
 add_subdirectory(test_common)
 add_subdirectory(test_conformance)
+add_subdirectory(test_extensions)
 
 set (PY_PATH   "${CLConform_SOURCE_DIR}/test_conformance/*.py")
 set (CSV_PATH  "${CLConform_SOURCE_DIR}/test_conformance/*.csv")
@@ -220,4 +225,3 @@ if(MSVC)
 endif(MSVC)
 
 set_property(TARGET COPY_FILES${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
-add_subdirectory( "test_extensions" )

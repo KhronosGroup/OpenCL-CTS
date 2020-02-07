@@ -1,0 +1,41 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 23
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %1 "constant_int3_simple"
+               OpName %in "in"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %in FuncParamAttr NoCapture
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_CrossWorkgroup_v3uint = OpTypePointer CrossWorkgroup %v3uint
+         %11 = OpTypeFunction %void %_ptr_CrossWorkgroup_v3uint
+   %ulong_32 = OpConstant %ulong 32
+   %uint_123 = OpConstant %uint 123
+   %uint_122 = OpConstant %uint 122
+   %uint_121 = OpConstant %uint 121
+         %16 = OpConstantComposite %v3uint %uint_123 %uint_122 %uint_121
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+          %1 = OpFunction %void None %11
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_v3uint
+         %17 = OpLabel
+         %18 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %19 = OpCompositeExtract %ulong %18 0
+         %20 = OpShiftLeftLogical %ulong %19 %ulong_32
+         %21 = OpShiftRightArithmetic %ulong %20 %ulong_32
+         %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v3uint %in %21
+               OpStore %22 %16 Aligned 16
+               OpReturn
+               OpFunctionEnd

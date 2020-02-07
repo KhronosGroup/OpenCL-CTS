@@ -521,11 +521,11 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
             log_info("\t%s == %u\n", info->opcode_name, info->config.uint);
             break;
         case type_size_t_arr:
-            log_info("\t%s == %d %d %d\n", info->opcode_name, info->config.sizet_arr[0],
+            log_info("\t%s == %zu %zu %zu\n", info->opcode_name, info->config.sizet_arr[0],
                      info->config.sizet_arr[1], info->config.sizet_arr[2]);
             break;
         case type_size_t:
-            log_info("\t%s == %ld\n", info->opcode_name, info->config.sizet);
+            log_info("\t%s == %zu\n", info->opcode_name, info->config.sizet);
             break;
         case type_cl_ulong:
             log_info("\t%s == %lld\n", info->opcode_name, info->config.ull);
@@ -573,7 +573,7 @@ void print_platform_string_selector( cl_platform_id platform, const char *select
     value = (char*) malloc( size );
     if( NULL == value )
     {
-        log_error( "Internal test failure:  Unable to allocate %ld bytes\n", size );
+        log_error( "Internal test failure:  Unable to allocate %zu bytes\n", size );
         exit(-1);
     }
 

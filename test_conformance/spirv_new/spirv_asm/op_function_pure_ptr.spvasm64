@@ -1,0 +1,56 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 34
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %1 "op_function_pure_ptr"
+               OpName %in "in"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %in FuncParamAttr NoCapture
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+%_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
+         %10 = OpTypeFunction %void %_ptr_CrossWorkgroup_float
+   %ulong_32 = OpConstant %ulong 32
+         %12 = OpTypeFunction %float %_ptr_CrossWorkgroup_float %ulong
+         %13 = OpTypeFunction %void %_ptr_CrossWorkgroup_float %ulong %float
+%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+         %14 = OpFunction %float Pure %12
+         %15 = OpFunctionParameter %_ptr_CrossWorkgroup_float
+         %16 = OpFunctionParameter %ulong
+         %17 = OpLabel
+         %18 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %15 %16
+         %19 = OpLoad %float %18
+         %20 = OpFNegate %float %19
+               OpReturnValue %20
+               OpFunctionEnd
+         %21 = OpFunction %void None %13
+         %22 = OpFunctionParameter %_ptr_CrossWorkgroup_float
+         %23 = OpFunctionParameter %ulong
+         %24 = OpFunctionParameter %float
+         %25 = OpLabel
+         %26 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %22 %23
+               OpStore %26 %24
+               OpReturn
+               OpFunctionEnd
+          %1 = OpFunction %void None %10
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_float
+         %27 = OpLabel
+         %28 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %29 = OpCompositeExtract %ulong %28 0
+         %30 = OpShiftLeftLogical %ulong %29 %ulong_32
+         %31 = OpShiftRightArithmetic %ulong %30 %ulong_32
+         %32 = OpFunctionCall %float %14 %in %31
+         %33 = OpFunctionCall %void %21 %in %31 %32
+               OpReturn
+               OpFunctionEnd

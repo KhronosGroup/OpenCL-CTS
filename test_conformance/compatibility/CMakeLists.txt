@@ -1,2 +1,0 @@
-add_subdirectory(test_common)
-add_subdirectory(test_conformance)

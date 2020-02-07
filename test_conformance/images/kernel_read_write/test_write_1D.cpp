@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,13 +19,14 @@
 #include <sys/mman.h>
 #endif
 
-#define MAX_ERR 0.005f
-
 extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding, gTestMipmaps;
 extern cl_filter_mode    gFilterModeToSkip;
 extern cl_mem_flags gMemFlagsToUse;
 
 extern int gtestTypesToRun;
+extern bool gDeviceLt20;
+
+extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
 
 const char *readwrite1DKernelSourcePattern =
 "__kernel void sample_kernel( __global %s4 *input, read_write image1d_t output %s)\n"
@@ -306,7 +307,7 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
             int numTries = 5;
             {
                 char *resultPtr = (char *)resultValues;
-                for( size_t x = 0, i = 0; x < width_lod; x++, i++ )
+                for( size_t x = 0, i = 0; i < width_lod; x++, i++ )
                 {
                     char resultBuffer[ 16 ]; // Largest format would be 4 channels * 4 bytes (32 bits) each
 
@@ -356,20 +357,14 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
                     }
                     else if( imageInfo->format->image_channel_data_type == CL_FLOAT )
                     {
-                        // Compare floats
                         float *expected = (float *)resultBuffer;
                         float *actual = (float *)resultPtr;
-                        float err = 0.f;
-                        for( unsigned int j = 0; j < get_format_channel_count( imageInfo->format ); j++ )
-                            err += ( expected[ j ] != 0 ) ? fabsf( ( expected[ j ] - actual[ j ] ) / expected[ j ] ) : fabsf( expected[ j ] - actual[ j ] );
 
-                        err /= (float)get_format_channel_count( imageInfo->format );
-                        if( err > MAX_ERR )
+                        if( !validate_float_write_results( expected, actual, imageInfo ) )
                         {
-                            unsigned int *e = (unsigned int *)expected;
-                            unsigned int *a = (unsigned int *)actual;
-                            log_error( "ERROR: Sample %ld (%ld) did not validate! (%s)\n", i, x, mem_flag_names[mem_flag_index] );
-                            log_error( "       Error: %g\n", err );
+                            unsigned int *e = (unsigned int *)resultBuffer;
+                            unsigned int *a = (unsigned int *)resultPtr;
+                            log_error( "ERROR: Sample %ld did not validate! (%s)\n", i, mem_flag_names[ mem_flag_index ] );
                             log_error( "       Expected: %a %a %a %a\n", expected[ 0 ], expected[ 1 ], expected[ 2 ], expected[ 3 ] );
                             log_error( "       Expected: %08x %08x %08x %08x\n", e[ 0 ], e[ 1 ], e[ 2 ], e[ 3 ] );
                             log_error( "       Actual:   %a %a %a %a\n", actual[ 0 ], actual[ 1 ], actual[ 2 ], actual[ 3 ] );
@@ -532,7 +527,6 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
     return totalErrors;
 }
 
-
 int test_write_image_1D_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d )
 {
     char programSrc[10240];
@@ -591,7 +585,7 @@ int test_write_image_1D_set( cl_device_id device, cl_context context, cl_command
              gTestMipmaps ? ", lod" :"" );
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", "-cl-std=CL2.0" );
+    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0");
     test_error( error, "Unable to create testing kernel" );
 
     // Run tests

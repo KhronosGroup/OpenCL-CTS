@@ -16,6 +16,8 @@
 #ifndef TESTS_H
 #define TESTS_H
 
+#include <CL/cl.h>
+
 typedef enum
 {
 	AS_Global,

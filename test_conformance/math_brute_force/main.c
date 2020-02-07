@@ -1371,7 +1371,7 @@ test_status InitCL( cl_device_id device )
         return TEST_FAIL;
     }
 
-    gQueue = clCreateCommandQueueWithProperties(gContext, gDevice, 0, &error);
+    gQueue = clCreateCommandQueue(gContext, gDevice, 0, &error);
     if( NULL == gQueue || error )
     {
         vlog_error( "clCreateCommandQueue failed. (%d)\n", error );
@@ -1705,9 +1705,7 @@ int IsTininessDetectedBeforeRounding( void )
 int MakeKernel( const char **c, cl_uint count, const char *name, cl_kernel *k, cl_program *p )
 {
     int error = 0;
-    char options[200];
-
-    strcpy(options, "-cl-std=CL2.0");
+    char options[200] = "";
 
     if( gForceFTZ )
     {
@@ -1745,9 +1743,7 @@ int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel
 {
     int error = 0;
     cl_uint i;
-    char options[200];
-
-    strcpy(options, "-cl-std=CL2.0");
+    char options[200] = "";
 
     if (gForceFTZ)
     {
