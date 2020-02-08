@@ -280,8 +280,25 @@ test_definition test_list[] = {
 
 const int test_num = ARRAY_SIZE( test_list );
 
+test_status InitCL(cl_device_id device) {
+  int error;
+  cl_device_svm_capabilities svm_caps;
+  error = clGetDeviceInfo(device, CL_DEVICE_SVM_CAPABILITIES,
+                          sizeof(svm_caps), &svm_caps, NULL);
+  if (error != CL_SUCCESS) {
+    print_error(error, "Unable to get svm capabilities");
+    return TEST_FAIL;
+  }
+
+  if (svm_caps == 0) {
+    return TEST_SKIP;
+  }
+
+  return TEST_PASS;
+}
+
 int main(int argc, const char *argv[])
 {
-  return runTestHarness( argc, argv, test_num, test_list, false, true, 0 );
+  return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, true, 0, InitCL);
 }
 
