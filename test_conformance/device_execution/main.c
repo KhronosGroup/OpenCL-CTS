@@ -28,6 +28,23 @@
 std::string gKernelName;
 int gWimpyMode = 0;
 
+test_status InitCL(cl_device_id device) {
+  int error;
+  cl_uint max_queues_size;
+  error = clGetDeviceInfo(device, CL_DEVICE_MAX_ON_DEVICE_QUEUES,
+                          sizeof(max_queues_size), &max_queues_size, NULL);
+  if (error != CL_SUCCESS) {
+    print_error(error, "Unable to get max queues on device");
+    return TEST_FAIL;
+  }
+
+  if (max_queues_size == 0) {
+    return TEST_SKIP;
+  }
+
+  return TEST_PASS;
+}
+
 test_definition test_list[] = {
 #ifdef CL_VERSION_2_0
     ADD_TEST( device_info ),
@@ -76,5 +93,5 @@ int main(int argc, const char *argv[])
       }
     }
 
-    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, false, 0, NULL);
+    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, false, 0, InitCL);
 }
