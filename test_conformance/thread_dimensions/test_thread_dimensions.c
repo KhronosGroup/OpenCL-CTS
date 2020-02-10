@@ -33,8 +33,6 @@ int limit_size = 0;
 static int
 get_maximums(cl_kernel kernel, cl_context context,
              size_t *max_workgroup_size_result,
-             size_t *max_width_result,
-             size_t *max_height_result,
              cl_ulong *max_allcoation_result,
              cl_ulong *max_physical_result) {
     int err = 0;
@@ -63,13 +61,9 @@ get_maximums(cl_kernel kernel, cl_context context,
         return -1;
     }
 
-    // Iterate over them and find the maximum local workgroup size and image size
+    // Iterate over them and find the maximum local workgroup size
     size_t max_workgroup_size = 0;
     size_t current_workgroup_size = 0;
-    size_t max_width = 0;
-    size_t current_width = 0;
-    size_t max_height = 0;
-    size_t current_height = 0;
     cl_ulong max_allocation = 0;
     cl_ulong current_allocation = 0;
     cl_ulong max_physical = 0;
@@ -87,30 +81,6 @@ get_maximums(cl_kernel kernel, cl_context context,
             max_workgroup_size = current_workgroup_size;
         else if (current_workgroup_size < max_workgroup_size)
             max_workgroup_size = current_workgroup_size;
-
-        // Max image width for this device
-        err = clGetDeviceInfo(devices[i], CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof(current_width), &current_width, NULL);
-        if(err != CL_SUCCESS)
-        {
-            log_error("clGetDeviceConfigInfo(CL_DEVICE_IMAGE2D_MAX_WIDTH) failed (%d) for device %d.\n", err, i);
-            return -10;
-        }
-        if (max_width == 0)
-            max_width = current_width;
-        else if (current_width < max_width)
-            max_width = current_width;
-
-        // Max image height for this device
-        err = clGetDeviceInfo(devices[i], CL_DEVICE_IMAGE2D_MAX_HEIGHT, sizeof(current_height), &current_height, NULL);
-        if(err != CL_SUCCESS)
-        {
-            log_error("clGetDeviceConfigInfo(CL_DEVICE_IMAGE2D_MAX_HEIGHT) failed (%d) for device %d.\n", err, i);
-            return -10;
-        }
-        if (max_height == 0)
-            max_height = current_height;
-        else if (current_height < max_height)
-            max_height = current_height;
 
         // Get the maximum allocation size
         err = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(current_allocation), &current_allocation, NULL);
@@ -138,11 +108,9 @@ get_maximums(cl_kernel kernel, cl_context context,
     }
     free(devices);
 
-    log_info("Device maximums: max local workgroup size:%d, max width: %d, max height: %d, max allocation size: %g MB, max physical memory %gMB\n",
-             (int)max_workgroup_size, (int)max_width, (int)max_height, (double)(max_allocation/1024.0/1024.0), (double)(max_physical/1024.0/1024.0));
+    log_info("Device maximums: max local workgroup size:%d, max allocation size: %g MB, max physical memory %gMB\n",
+             (int)max_workgroup_size, (double)(max_allocation/1024.0/1024.0), (double)(max_physical/1024.0/1024.0));
     *max_workgroup_size_result = max_workgroup_size;
-    *max_width_result = max_width;
-    *max_height_result = max_height;
     *max_allcoation_result = max_allocation;
     *max_physical_result = max_physical;
     return 0;
@@ -554,17 +522,15 @@ test_thread_dimensions(cl_device_id device, cl_context context, cl_command_queue
 
     // Get the maximum sizes supported by this device
     size_t max_workgroup_size = 0;
-    size_t max_width = 0;
-    size_t max_height = 0;
     cl_ulong max_allocation = 0;
     cl_ulong max_physical = 0;
     int found_size = 0;
 
     err = get_maximums(kernel, context,
-                       &max_workgroup_size, &max_width, &max_height, &max_allocation, &max_physical);
+                       &max_workgroup_size, &max_allocation, &max_physical);
 
     err = get_maximums(clear_memory_kernel, context,
-                       &max_workgroup_size_for_clear_kernel, &max_width, &max_height, &max_allocation, &max_physical);
+                       &max_workgroup_size_for_clear_kernel, &max_allocation, &max_physical);
 
     // Make sure we don't try to allocate more than half the physical memory present.
     if (max_allocation > (max_physical/2)) {
