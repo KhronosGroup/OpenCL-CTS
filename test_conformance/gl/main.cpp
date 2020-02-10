@@ -153,7 +153,6 @@ test_definition test_list32[] = {
 const int test_num = ARRAY_SIZE( test_list );
 const int test_num32 = ARRAY_SIZE( test_list32 );
 
-cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 bool gTestRounding = true;
 
 int main(int argc, const char *argv[])
