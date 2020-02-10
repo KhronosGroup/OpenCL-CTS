@@ -48,37 +48,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // CL error checking.
 
-#define CL_DEVICE_TYPE_ENV_MUST_BE( bitfield_ )\
-{\
-cl_device_type device_type = CL_DEVICE_TYPE_DEFAULT;\
-const char* device_env = getenv("CL_DEVICE_TYPE");\
-if (device_env != NULL) {\
-if (!strcmp( device_env, "gpu" ) || !strcmp( device_env, "CL_DEVICE_TYPE_GPU" ))\
-device_type = CL_DEVICE_TYPE_GPU;\
-else if(!strcmp( device_env, "cpu" ) || !strcmp( device_env, "CL_DEVICE_TYPE_CPU" ))\
-device_type = CL_DEVICE_TYPE_CPU;\
-else if(!strcmp( device_env, "default" ) || !strcmp( device_env, "CL_DEVICE_TYPE_DEFAULT" ))\
-device_type = CL_DEVICE_TYPE_DEFAULT;\
-if (!(device_type & bitfield_)) {\
-log_error( "CL_DEVICE_TYPE environment variable \"%s\" must be \"%s\".", device_env, #bitfield_ );\
-abort();\
-}\
-}\
-}\
-
-#define CL_DEVICE_TYPE_ENV( device_type_ )\
-{\
-const char* device_env = getenv("CL_DEVICE_TYPE");\
-if (device_env != NULL) {\
-if (!strcmp( device_env, "gpu" ) || !strcmp( device_env, "CL_DEVICE_TYPE_GPU" ))\
-device_type_ = CL_DEVICE_TYPE_GPU;\
-else if(!strcmp( device_env, "cpu" ) || !strcmp( device_env, "CL_DEVICE_TYPE_CPU" ))\
-device_type_ = CL_DEVICE_TYPE_CPU;\
-else if(!strcmp( device_env, "default" ) || !strcmp( device_env, "CL_DEVICE_TYPE_DEFAULT" ))\
-device_type_ = CL_DEVICE_TYPE_DEFAULT;\
-}\
-}
-
 #if defined(_MSC_VER)
 #define CL_EXIT_ERROR(cmd,...) \
 { \
