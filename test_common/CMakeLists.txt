@@ -16,6 +16,8 @@ set(HARNESS_SOURCES
     harness/parseParameters.cpp
     harness/testHarness.cpp
     harness/ThreadPool.cpp
+    harness/feature.cpp
+    harness/version.cpp
     miniz/miniz.c
 )
 

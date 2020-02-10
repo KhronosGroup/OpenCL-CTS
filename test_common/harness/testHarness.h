@@ -18,58 +18,36 @@
 
 #include "threadTesting.h"
 #include "clImageHelper.h"
-#include <string>
-#include <sstream>
+#include "feature.h"
+#include "version.h"
 
-#include <string>
-
-class Version
-{
-public:
-    Version() : m_major(0), m_minor(0) {}
-    Version(int major, int minor) : m_major(major), m_minor(minor) {}
-    bool operator>(const Version& rhs) const { return to_int() > rhs.to_int(); }
-    bool operator<(const Version& rhs) const { return to_int() < rhs.to_int(); }
-    bool operator<=(const Version& rhs) const { return to_int() <= rhs.to_int(); }
-    bool operator>=(const Version& rhs) const { return to_int() >= rhs.to_int(); }
-    bool operator==(const Version& rhs) const { return to_int() == rhs.to_int(); }
-    int to_int() const { return m_major * 10 + m_minor; }
-    std::string to_string() const 
-    {
-        std::stringstream ss;
-        ss << m_major << "." << m_minor;
-        return ss.str();
+#define ADD_TEST_FEATURE(fn, feat)                                             \
+    {                                                                          \
+        test_##fn, #fn, Version(1, 0), feat                                    \
     }
-
-private:
-    int m_major;
-    int m_minor;
-};
-
-Version get_device_cl_version(cl_device_id device);
 
 #define ADD_TEST(fn)                                                           \
     {                                                                          \
-        test_##fn, #fn, Version(1, 0)                                          \
+        test_##fn, #fn, Version(1, 0), F_true                                  \
     }
 #define ADD_TEST_VERSION(fn, ver)                                              \
     {                                                                          \
-        test_##fn, #fn, ver                                                    \
+        test_##fn, #fn, ver, F_true                                            \
     }
 #define NOT_IMPLEMENTED_TEST(fn)                                               \
     {                                                                          \
-        NULL, #fn, Version(0, 0)                                               \
+        NULL, #fn, Version(0, 0), F_true                                       \
     }
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-typedef struct test_definition
+struct test_definition
 {
     basefn func;
     const char* name;
     Version min_version;
-} test_definition;
-
+    const feature &required_feature;
+};
 
 typedef enum test_status
 {
