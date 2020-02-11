@@ -16,16 +16,7 @@ else(CMAKE_BUILD_TYPE STREQUAL "release")
     set (BUILD_FLAVOR "debug")
 endif(CMAKE_BUILD_TYPE STREQUAL "release")
 
-set(CLConform_VERSION_MAJOR "2")
-set(CLConform_VERSION_MINOR "2")
-set(CLConform_VERSION_MICRO "0")
-set(CLConform_VERSION_EXTRA "")
-set(CLConform_VERSION "${CLConform_VERSION_MAJOR}.${CLConform_VERSION_MINOR}")
-set(CLConform_VERSION_FULL
-    "${CLConform_VERSION}.${CLConform_VERSION_MICRO}${CLConform_VERSION_EXTRA}")
-
 add_definitions(-DCL_TARGET_OPENCL_VERSION=220)
-
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_1_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_0_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)
