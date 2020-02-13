@@ -41,6 +41,7 @@
 #include "harness/kernelHelpers.h"
 #include "harness/rounding_mode.h"
 #include "harness/fpcontrol.h"
+#include "harness/testHarness.h"
 #if defined( __APPLE__ )
 #include <sys/sysctl.h>
 #endif
@@ -103,7 +104,6 @@ double              *correct_double[8];
 
 
 static int ParseArgs( int argc, const char **argv );
-static void PrintArch( void );
 static void PrintUsage( void );
 static int InitCL( void );
 static void ReleaseCL( void );
@@ -380,63 +380,6 @@ static int ParseArgs( int argc, const char **argv )
     return 0;
 }
 
-static void PrintArch( void )
-{
-    vlog( "\nHost info:\n" );
-    vlog( "\tsizeof( void*) = %ld\n", sizeof( void *) );
-#if defined( __ppc__ )
-    vlog( "\tARCH:\tppc\n" );
-#elif defined( __ppc64__ )
-    vlog( "\tARCH:\tppc64\n" );
-#elif defined( __PPC__ )
-    vlog( "ARCH:\tppc\n" );
-#elif defined( __i386__ )
-    vlog( "\tARCH:\ti386\n" );
-#elif defined( __x86_64__ )
-    vlog( "\tARCH:\tx86_64\n" );
-#elif defined( __arm__ )
-    vlog( "\tARCH:\tarm\n" );
-#elif defined( __aarch64__ )
-    vlog( "\tARCH:\taarch64\n" );
-#else
-    vlog( "\tARCH:\tunknown\n" );
-#endif
-
-#if defined( __APPLE__ )
-    int type = 0;
-    size_t typeSize = sizeof( type );
-    sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
-    vlog( "\tcpu type:\t%d\n", type );
-    typeSize = sizeof( type );
-    sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
-    vlog( "\tcpu subtype:\t%d\n", type );
-
-#elif defined( __linux__ )
-    int _sysctl(struct __sysctl_args *args );
-#define OSNAMESZ 100
-
-    struct __sysctl_args args;
-    char osname[OSNAMESZ];
-    size_t osnamelth;
-    int name[] = { CTL_KERN, KERN_OSTYPE };
-    memset(&args, 0, sizeof(struct __sysctl_args));
-    args.name = name;
-    args.nlen = sizeof(name)/sizeof(name[0]);
-    args.oldval = osname;
-    args.oldlenp = &osnamelth;
-
-    osnamelth = sizeof(osname);
-
-    if (syscall(SYS__sysctl, &args) == -1) {
-        vlog( "_sysctl error\n" );
-    }
-    else {
-        vlog("this machine is running %*s\n", osnamelth, osname);
-    }
-
-#endif
-}
-
 static void PrintUsage( void )
 {
     vlog( "%s [-z]: <optional: math function names>\n", appName );
@@ -448,11 +391,6 @@ static void PrintUsage( void )
 
 const char *sizeNames[] = { "float", "float2", "float4", "float8", "float16" };
 const char *sizeNames_double[] = { "double", "double2", "double4", "double8", "double16" };
-
-static void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
-{
-    vlog( "%s\n", errinfo );
-}
 
 static int InitCL( void )
 {

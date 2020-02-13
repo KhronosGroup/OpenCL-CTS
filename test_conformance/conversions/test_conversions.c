@@ -17,6 +17,8 @@
 #include "harness/rounding_mode.h"
 #include "harness/ThreadPool.h"
 #include "harness/parseParameters.h"
+#include "harness/testHarness.h"
+
 #if defined (_WIN32)
 #define MAX(x,y) ((x>y)?x:y);
 #define MIN(x,y) ((x<y)?x:y);
@@ -111,8 +113,6 @@ int             gMultithread = 1;
 int             gIsRTZ = 0;
 uint32_t        gSimdSize = 1;
 int             gHasDouble = 0;
-int                   gIsEmbedded = 0;
-int             gHasLong = 1;
 int             gTestDouble = 1;
 cl_uint         choosen_device_index = 0;
 const char *    sizeNames[] = { "", "", "2", "3", "4", "8", "16" };
@@ -125,7 +125,6 @@ int             gMaxVectorSize = sizeof(vectorSizes) / sizeof( vectorSizes[0] );
 
 static int ParseArgs( int argc, const char **argv );
 static void PrintUsage( void );
-static void PrintArch(void);
 static int InitCL( void );
 static int GetTestCase( const char *name, Type *outType, Type *inType, SaturationMode *sat, RoundingMode *round );
 static int DoTest( Type outType, Type inType, SaturationMode sat, RoundingMode round, MTdata d );
@@ -548,69 +547,6 @@ static void PrintUsage( void )
     vlog( "You may also pass the number of the test on which to start.\nA second number can be then passed to indicate how many tests to run\n\n" );
 }
 
-static void PrintArch( void )
-{
-    vlog( "sizeof( void*) = %ld\n", sizeof( void *) );
-#if defined( __ppc__ )
-    vlog( "ARCH:\tppc\n" );
-#elif defined( __ppc64__ )
-    vlog( "ARCH:\tppc64\n" );
-#elif defined( __PPC__ )
-    vlog( "ARCH:\tppc\n" );
-#elif defined( __i386__ )
-    vlog( "ARCH:\ti386\n" );
-#elif defined( __x86_64__ )
-    vlog( "ARCH:\tx86_64\n" );
-#elif defined( __arm__ )
-    vlog( "ARCH:\tarm\n" );
-#elif defined( __aarch64__ )
-    vlog( "ARCH:\taarch64\n" );
-#elif defined (_WIN32)
-    vlog( "ARCH:\tWindows\n" );
-#else
-#error unknown arch
-#endif
-
-#if defined( __APPLE__ )
-
-    int type = 0;
-    size_t typeSize = sizeof( type );
-    sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
-    vlog( "cpu type:\t%d\n", type );
-    typeSize = sizeof( type );
-    sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
-    vlog( "cpu subtype:\t%d\n", type );
-
-#elif defined( __linux__ )
-#define OSNAMESZ 100
-    int _sysctl(struct __sysctl_args *args );
-
-    struct __sysctl_args args;
-    char osname[OSNAMESZ];
-    size_t osnamelth;
-    int name[] = { CTL_KERN, KERN_OSTYPE };
-    memset(&args, 0, sizeof(struct __sysctl_args));
-    args.name = name;
-    args.nlen = sizeof(name)/sizeof(name[0]);
-    args.oldval = osname;
-    args.oldlenp = &osnamelth;
-
-    osnamelth = sizeof(osname);
-
-    if (syscall(SYS__sysctl, &args) == -1) {
-        vlog( "_sysctl error\n" );
-    }
-    else {
-        vlog("this machine is running %*s\n", osnamelth, osname);
-    }
-
-#endif
-}
-
-
-
-
-
 static int GetTestCase( const char *name, Type *outType, Type *inType, SaturationMode *sat, RoundingMode *round )
 {
     int i;
@@ -671,11 +607,6 @@ static int GetTestCase( const char *name, Type *outType, Type *inType, Saturatio
 
 #pragma mark -
 #pragma mark OpenCL
-
-static void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
-{
-    vlog( "%s\n", errinfo );
-}
 
 static int InitCL( void )
 {
@@ -910,27 +841,6 @@ static int RunKernel( cl_kernel kernel, void *inBuf, void *outBuf, size_t blockC
 
     return 0;
 }
-
-#if ! defined( __APPLE__ )
-static void memset_pattern4(void *dest, const void *src_pattern, size_t bytes );
-static void memset_pattern4(void *dest, const void *src_pattern, size_t bytes )
-{
-    uint32_t pat = ((uint32_t*) src_pattern)[0];
-    size_t count = bytes / 4;
-    size_t i;
-    uint32_t *d = (uint32_t *)dest;
-
-    for( i = 0; i < count; i++ )
-        d[i] = pat;
-
-    d += i;
-
-    bytes &= 3;
-    if( bytes )
-        memcpy( d, src_pattern, bytes );
-}
-
-#endif
 
 #if defined( __APPLE__ )
 #include <mach/mach_time.h>

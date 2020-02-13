@@ -14,6 +14,9 @@ add_executable(test_bruteforce
     ../../test_common/harness/ThreadPool.c
     ../../test_common/harness/mt19937.c
     ../../test_common/harness/msvc9.c
+    ../../test_common/harness/testHarness.c
+    ../../test_common/harness/kernelHelpers.c
+    ../../test_common/harness/errorHelpers.c
 )
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND NOT MSVC)
@@ -47,6 +50,9 @@ set_source_files_properties(
     ../../test_common/harness/ThreadPool.c
     ../../test_common/harness/msvc9.c
     ../../test_common/harness/mt19937.c
+    ../../test_common/harness/testHarness.c
+    ../../test_common/harness/kernelHelpers.c
+    ../../test_common/harness/errorHelpers.c
 	PROPERTIES LANGUAGE CXX)
 endif(MSVC)
 
@@ -66,6 +72,9 @@ set_source_files_properties(
     ../../test_common/harness/rounding_mode.c
     ../../test_common/harness/ThreadPool.c
     ../../test_common/harness/msvc9.c
+    ../../test_common/harness/testHarness.c
+    ../../test_common/harness/kernelHelpers.c
+    ../../test_common/harness/errorHelpers.c
 	COMPILE_FLAGS -march=i686)
 endif()
 endif(NOT CMAKE_CL_64 AND NOT MSVC)

@@ -16,6 +16,10 @@
 #include "testHarness.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <sys/utsname.h>
+
 
 #if !defined(_WIN32)
 #include <stdbool.h>
@@ -809,4 +813,52 @@ cl_device_id GetOpposingDevice( cl_device_id device )
     return NULL;
 }
 
+
+void PrintArch( void )
+{
+    vlog( "\nHost info:\n" );
+    vlog( "\tsizeof( void*) = %ld\n", sizeof( void *) );
+#if defined( __ppc__ )
+    vlog( "\tARCH:\tppc\n" );
+#elif defined( __ppc64__ )
+    vlog( "\tARCH:\tppc64\n" );
+#elif defined( __PPC__ )
+    vlog( "ARCH:\tppc\n" );
+#elif defined( __i386__ )
+    vlog( "\tARCH:\ti386\n" );
+#elif defined( __x86_64__ )
+    vlog( "\tARCH:\tx86_64\n" );
+#elif defined( __arm__ )
+    vlog( "\tARCH:\tarm\n" );
+#elif defined( __aarch64__ )
+    vlog( "\tARCH:\taarch64\n" );
+#else
+    vlog( "\tARCH:\tunknown\n" );
+#endif
+
+#if defined( __APPLE__ )
+    int type = 0;
+    size_t typeSize = sizeof( type );
+    sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
+    vlog( "\tcpu type:\t%d\n", type );
+    typeSize = sizeof( type );
+    sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
+    vlog( "\tcpu subtype:\t%d\n", type );
+
+#elif defined( __linux__ ) // && !defined(__aarch64__)
+   struct utsname buffer;
+
+   if (uname(&buffer) != 0) {
+      vlog("uname");
+   }
+   else {
+      vlog("system name = %s\n", buffer.sysname);
+      vlog("node name   = %s\n", buffer.nodename);
+      vlog("release     = %s\n", buffer.release);
+      vlog("version     = %s\n", buffer.version);
+      vlog("machine     = %s\n", buffer.machine);
+   }
+
+#endif
+}
 

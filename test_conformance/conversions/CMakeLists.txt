@@ -16,6 +16,8 @@ add_executable(conformance_test_conversions
         ../../test_common/harness/mingw_compat.c
         ../../test_common/harness/errorHelpers.c
         ../../test_common/harness/parseParameters.cpp
+        ../../test_common/harness/testHarness.c
+        ../../test_common/harness/kernelHelpers.c
 )
 
 set_source_files_properties(
@@ -26,6 +28,8 @@ set_source_files_properties(
         ../../test_common/harness/mingw_compat.c
         ../../test_common/harness/msvc9.c
         ../../test_common/harness/errorHelpers.c
+        ../../test_common/harness/testHarness.c
+        ../../test_common/harness/kernelHelpers.c
         PROPERTIES LANGUAGE CXX)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86$)|(X86$)")
@@ -39,6 +43,8 @@ set_source_files_properties(
         ../../test_common/harness/mingw_compat.c
         ../../test_common/harness/msvc9.c
         ../../test_common/harness/errorHelpers.c
+        ../../test_common/harness/testHarness.c
+        ../../test_common/harness/kernelHelpers.c
         COMPILE_FLAGS -march=i686)
 endif()
 endif()

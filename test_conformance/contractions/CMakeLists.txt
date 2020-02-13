@@ -6,6 +6,7 @@ add_executable(test_contractions
         ../../test_common/harness/errorHelpers.c
         ../../test_common/harness/rounding_mode.c
         ../../test_common/harness/kernelHelpers.c
+        ../../test_common/harness/testHarness.c
 )
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND NOT MSVC)
@@ -23,6 +24,7 @@ set_source_files_properties(
         ../../test_common/harness/errorHelpers.c
         ../../test_common/harness/rounding_mode.c
         ../../test_common/harness/kernelHelpers.c
+        ../../test_common/harness/testHarness.c
         PROPERTIES LANGUAGE CXX)
 endif(WIN32)
 

@@ -25,6 +25,7 @@
 #include "Utility.h"
 #include "FunctionList.h"
 #include "Sleep.h"
+#include "harness/testHarness.h"
 
 #if defined( __APPLE__ )
     #include <sys/sysctl.h>
@@ -72,8 +73,6 @@ int             gDeviceILogb0 = 1;
 int             gDeviceILogbNaN = 1;
 int             gCheckTininessBeforeRounding = 1;
 int             gIsInRTZMode = 0;
-int                gInfNanSupport = 1;
-int             gIsEmbedded = 0;
 uint32_t        gMaxVectorSizeIndex = VECTOR_SIZE_COUNT;
 uint32_t        gMinVectorSizeIndex = 0;
 const char      *method[] = { "Best", "Average" };
@@ -93,7 +92,6 @@ uint32_t        gComputeDevices = 0;
 uint32_t        gSimdSize = 1;
 uint32_t        gDeviceFrequency = 0;
 cl_uint         choosen_device_index = 0;
-cl_uint         gRandomSeed = 0;
 cl_device_fp_config gFloatCapabilities = 0;
 cl_device_fp_config gDoubleCapabilities = 0;
 
@@ -116,7 +114,6 @@ size_t          gNumBasicDoubleFuncs = sizeof(gBasicDoubleFuncs)/sizeof(char*);
 #endif
 
 static int ParseArgs( int argc, const char **argv );
-static void PrintArch( void );
 static void PrintUsage( void );
 static int InitCL( void );
 static void ReleaseCL( void );
@@ -574,64 +571,6 @@ static int ParseArgs( int argc, const char **argv )
     return 0;
 }
 
-static void PrintArch( void )
-{
-    vlog( "\nHost info:\n" );
-    vlog( "\tsizeof( void*) = %ld\n", sizeof( void *) );
-    #if defined( __ppc__ )
-        vlog( "\tARCH:\tppc\n" );
-    #elif defined( __ppc64__ )
-        vlog( "\tARCH:\tppc64\n" );
-    #elif defined( __PPC__ )
-                vlog( "ARCH:\tppc\n" );
-    #elif defined( __i386__ )
-        vlog( "\tARCH:\ti386\n" );
-    #elif defined( __x86_64__ )
-        vlog( "\tARCH:\tx86_64\n" );
-    #elif defined( __arm__ )
-        vlog( "\tARCH:\tarm\n" );
-    #elif defined( __aarch64__ )
-        vlog( "\tARCH:\taarch64\n" );
-    #else
-        vlog( "\tARCH:\tunknown\n" );
-    #endif
-
-#if defined( __APPLE__ )
-    int type = 0;
-    size_t typeSize = sizeof( type );
-    sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
-    vlog( "\tcpu type:\t%d\n", type );
-    typeSize = sizeof( type );
-    sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
-    vlog( "\tcpu subtype:\t%d\n", type );
-
-#elif defined( __linux__ )
-        int _sysctl(struct __sysctl_args *args );
-        #define OSNAMESZ 100
-
-        struct __sysctl_args args;
-        char osname[OSNAMESZ];
-        size_t osnamelth;
-        int name[] = { CTL_KERN, KERN_OSTYPE };
-        memset(&args, 0, sizeof(struct __sysctl_args));
-        args.name = name;
-        args.nlen = sizeof(name)/sizeof(name[0]);
-        args.oldval = osname;
-        args.oldlenp = &osnamelth;
-
-        osnamelth = sizeof(osname);
-
-        if (syscall(SYS__sysctl, &args) == -1) {
-           vlog( "_sysctl error\n" );
-        }
-        else {
-           vlog("this machine is running %*s\n", osnamelth, osname);
-        }
-
-
-#endif
-}
-
 static void PrintUsage( void )
 {
     vlog( "%s [-acglstz]: <optional: math function names>\n", appName );
@@ -657,10 +596,12 @@ static void PrintUsage( void )
     vlog( "\n" );
 }
 
+#if 0
 static void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data)
 {
     vlog( "%s  (%p, %ld, %p)\n", errinfo, private_info, cb, user_data );
 }
+#endif
 
 static void * align_malloc(size_t size, size_t alignment)
 {
@@ -1311,218 +1252,6 @@ static int IsInRTZMode( void )
 const char *sizeNames[ VECTOR_SIZE_COUNT] = { "", "2", "3", "4", "8", "16" };
 const int  sizeValues[ VECTOR_SIZE_COUNT] = { 1, 2, 3, 4, 8, 16 };
 
-float Ulp_Error_Double( double test, long double reference )
-{
-//Check for Non-power-of-two and NaN
-
-  // Note: This function presumes that someone has already tested whether the result is correctly,
-  // rounded before calling this function.  That test:
-  //
-  //    if( (float) reference == test )
-  //        return 0.0f;
-  //
-  // would ensure that cases like fabs(reference) > FLT_MAX are weeded out before we get here.
-  // Otherwise, we'll return inf ulp error here, for what are otherwise correctly rounded
-  // results.
-
-  // Deal with long double = double
-  // On most systems long double is a higher precision type than double. They provide either
-  // a 80-bit or greater floating point type, or they provide a head-tail double double format.
-  // That is sufficient to represent the accuracy of a floating point result to many more bits
-  // than double and we can calculate sub-ulp errors. This is the standard system for which this
-  // test suite is designed.
-  //
-  // On some systems double and long double are the same thing. Then we run into a problem,
-  // because our representation of the infinitely precise result (passed in as reference above)
-  // can be off by as much as a half double precision ulp itself.  In this case, we inflate the
-  // reported error by half an ulp to take this into account.  A more correct and permanent fix
-  // would be to undertake refactoring the reference code to return results in this format:
-  //
-  //    typedef struct DoubleReference
-  //    { // true value = correctlyRoundedResult + ulps * ulp(correctlyRoundedResult)        (infinitely precise)
-  //        double  correctlyRoundedResult;     // as best we can
-  //        double  ulps;                       // plus a fractional amount to account for the difference
-  //    }DoubleReference;                       //     between infinitely precise result and correctlyRoundedResult, in units of ulps.
-  //
-  // This would provide a useful higher-than-double precision format for everyone that we can use,
-  // and would solve a few problems with representing absolute errors below DBL_MIN and over DBL_MAX for systems
-  // that use a head to tail double double for long double.
-
-    int x;
-    long double testVal = test;
-
-    // First, handle special reference values
-    if (isinf(reference))
-    {
-    if (reference == testVal)
-        return 0.0f;
-
-    return INFINITY;
-    }
-
-    if (isnan(reference))
-    {
-    if (isnan(testVal))
-        return 0.0f;
-
-    return INFINITY;
-    }
-
-    if ( 0.0L != reference && 0.5L != frexpl(reference, &x) )
-    { // Non-zero and Non-power of two
-
-       // allow correctly rounded results to pass through unmolested. (We might add error to it below.)
-       // There is something of a performance optimization here.
-        if( testVal == reference )
-            return 0.0f;
-
-        // The unbiased exponent of the ulp unit place
-        int ulp_exp = DBL_MANT_DIG - 1 - MAX( ilogbl( reference), DBL_MIN_EXP-1 );
-
-        // Scale the exponent of the error
-        float result = (float) scalbnl( testVal - reference, ulp_exp );
-
-        // account for rounding error in reference result on systems that do not have a higher precision floating point type (see above)
-        if( sizeof(long double) == sizeof( double ) )
-            result += copysignf( 0.5f, result);
-
-        return result;
-    }
-
-    // reference is a normal power of two or a zero
-    // The unbiased exponent of the ulp unit place
-    int ulp_exp =  DBL_MANT_DIG - 1 - MAX( ilogbl( reference) - 1, DBL_MIN_EXP-1 );
-
-   // allow correctly rounded results to pass through unmolested. (We might add error to it below.)
-   // There is something of a performance optimization here too.
-    if( testVal == reference )
-        return 0.0f;
-
-    // Scale the exponent of the error
-    float result = (float) scalbnl( testVal - reference, ulp_exp );
-
-    // account for rounding error in reference result on systems that do not have a higher precision floating point type (see above)
-    if( sizeof(long double) == sizeof( double ) )
-        result += copysignf( 0.5f, result);
-
-    return result;
-}
-
-
-float Ulp_Error( float test, double reference )
-{
-    union{ double d; uint64_t u; }u;     u.d = reference;
-    double testVal = test;
-
-  // Note: This function presumes that someone has already tested whether the result is correctly,
-  // rounded before calling this function.  That test:
-  //
-  //    if( (float) reference == test )
-  //        return 0.0f;
-  //
-  // would ensure that cases like fabs(reference) > FLT_MAX are weeded out before we get here.
-  // Otherwise, we'll return inf ulp error here, for what are otherwise correctly rounded
-  // results.
-
-
-    if( isinf( reference ) )
-    {
-        if( testVal == reference )
-            return 0.0f;
-
-        return (float) (testVal - reference );
-    }
-
-    if( isinf( testVal) )
-    { // infinite test value, but finite (but possibly overflowing in float) reference.
-      //
-      // The function probably overflowed prematurely here. Formally, the spec says this is
-      // an infinite ulp error and should not be tolerated. Unfortunately, this would mean
-      // that the internal precision of some half_pow implementations would have to be 29+ bits
-      // at half_powr( 0x1.fffffep+31, 4) to correctly determine that 4*log2( 0x1.fffffep+31 )
-      // is not exactly 128.0. You might represent this for example as 4*(32 - ~2**-24), which
-      // after rounding to single is 4*32 = 128, which will ultimately result in premature
-      // overflow, even though a good faith representation would be correct to within 2**-29
-      // interally.
-
-      // In the interest of not requiring the implementation go to extraordinary lengths to
-      // deliver a half precision function, we allow premature overflow within the limit
-      // of the allowed ulp error. Towards, that end, we "pretend" the test value is actually
-      // 2**128, the next value that would appear in the number line if float had sufficient range.
-        testVal = copysign( MAKE_HEX_DOUBLE(0x1.0p128, 0x1LL, 128), testVal );
-
-      // Note that the same hack may not work in long double, which is not guaranteed to have
-      // more range than double.  It is not clear that premature overflow should be tolerated for
-      // double.
-    }
-
-    if( u.u & 0x000fffffffffffffULL )
-    { // Non-power of two and NaN
-        if( isnan( reference ) && isnan( test ) )
-            return 0.0f;    // if we are expecting a NaN, any NaN is fine
-
-        // The unbiased exponent of the ulp unit place
-        int ulp_exp = FLT_MANT_DIG - 1 - MAX( ilogb( reference), FLT_MIN_EXP-1 );
-
-        // Scale the exponent of the error
-        return (float) scalbn( testVal - reference, ulp_exp );
-    }
-
-    // reference is a normal power of two or a zero
-    // The unbiased exponent of the ulp unit place
-    int ulp_exp =  FLT_MANT_DIG - 1 - MAX( ilogb( reference) - 1, FLT_MIN_EXP-1 );
-
-    // Scale the exponent of the error
-    return (float) scalbn( testVal - reference, ulp_exp );
-}
-
-/*
-#define HALF_MIN_EXP    -13
-#define HALF_MANT_DIG    11
-float Ulp_Error_Half( float test, double reference )
-{
-    union{ double d; uint64_t u; }u;     u.d = reference;
-
-  // Note: This function presumes that someone has already tested whether the result is correctly,
-  // rounded before calling this function.  That test:
-  //
-  //    if( (float) reference == test )
-  //        return 0.0f;
-  //
-  // would ensure that cases like fabs(reference) > FLT_MAX are weeded out before we get here.
-  // Otherwise, we'll return inf ulp error here, for what are otherwise correctly rounded
-  // results.
-
-    double testVal = test;
-    if( u.u & 0x000fffffffffffffULL )
-    { // Non-power of two and NaN
-        if( isnan( reference ) && isnan( test ) )
-            return 0.0f;    // if we are expecting a NaN, any NaN is fine
-
-        // The unbiased exponent of the ulp unit place
-        int ulp_exp = HALF_MANT_DIG - 1 - MAX( ilogb( reference), HALF_MIN_EXP-1 );
-
-        // Scale the exponent of the error
-        return (float) scalbn( testVal - reference, ulp_exp );
-    }
-
-    if( isinf( reference ) )
-    {
-        if( (double) test == reference )
-            return 0.0f;
-
-        return (float) (testVal - reference );
-    }
-
-    // reference is a normal power of two or a zero
-    int ulp_exp =  HALF_MANT_DIG - 1 - MAX( ilogb( reference) - 1, HALF_MIN_EXP-1 );
-
-    // Scale the exponent of the error
-    return (float) scalbn( testVal - reference, ulp_exp );
-}
-*/
-
-
 #if defined( __APPLE__ )
     #include <mach/mach_time.h>
 #endif
@@ -1577,25 +1306,6 @@ cl_uint RoundUpToNextPowerOfTwo( cl_uint x )
 
     return x+x;
 }
-
-#if !defined( __APPLE__ )
-void memset_pattern4(void *dest, const void *src_pattern, size_t bytes )
-{
-  uint32_t pat = ((uint32_t*) src_pattern)[0];
-  size_t count = bytes / 4;
-  size_t i;
-  uint32_t *d = (uint32_t*)dest;
-
-  for( i = 0; i < count; i++ )
-    d[i] = pat;
-
-  d += i;
-
-  bytes &= 3;
-  if( bytes )
-    memcpy( d, src_pattern, bytes );
-}
-#endif
 
 void TestFinishAtExit(void) {
   test_finish();
