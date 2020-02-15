@@ -38,7 +38,6 @@ bool                gTestReadWrite;
 bool                gDebugTrace;
 bool                gTestMaxImages;
 bool                gTestSmallImages;
-bool                gTestRounding;
 int                 gTypesToTest;
 cl_channel_type     gChannelTypeToUse = (cl_channel_type)-1;
 cl_channel_order    gChannelOrderToUse = (cl_channel_order)-1;

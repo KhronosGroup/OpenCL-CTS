@@ -41,7 +41,6 @@ bool gExtraValidateInfo;
 bool gDisableOffsets;
 bool gTestSmallImages;
 bool gTestMaxImages;
-bool gTestRounding;
 bool gTestImage2DFromBuffer;
 bool gTestMipmaps;
 bool gDeviceLt20 = false;

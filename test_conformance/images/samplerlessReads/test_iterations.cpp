@@ -25,7 +25,7 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool                 gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding, gDeviceLt20;
+extern bool                 gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gDeviceLt20;
 extern bool                 gTestReadWrite;
 
 #define MAX_TRIES   1

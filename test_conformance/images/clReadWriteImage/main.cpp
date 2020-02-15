@@ -29,7 +29,6 @@ bool gDebugTrace;
 bool gTestSmallImages;
 bool gTestMaxImages;
 bool gUseRamp;
-bool gTestRounding;
 bool gTestMipmaps;
 int  gTypesToTest;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;

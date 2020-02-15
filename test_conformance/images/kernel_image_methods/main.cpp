@@ -29,7 +29,6 @@
 bool gDebugTrace;
 bool gTestSmallImages;
 bool gTestMaxImages;
-bool gTestRounding;
 int  gTypesToTest;
 bool gDeviceLt20 = false;
 

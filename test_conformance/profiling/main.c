@@ -23,7 +23,6 @@
 // FIXME: To use certain functions in harness/imageHelpers.h
 // (for example, generate_random_image_data()), the tests are required to declare
 // the following variables (<rdar://problem/11111245>):
-bool gTestRounding = false;
 
 test_definition test_list[] = {
     ADD_TEST( read_array_int ),

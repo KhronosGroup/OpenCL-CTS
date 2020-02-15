@@ -18,7 +18,7 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gEnablePitch, gTestRounding, gTestMipmaps;
+extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gEnablePitch, gTestMipmaps;
 extern cl_filter_mode    gFilterModeToUse;
 extern cl_addressing_mode    gAddressModeToUse;
 

@@ -30,7 +30,7 @@ bool gDebugTrace;
 bool gTestSmallImages;
 bool gTestMaxImages;
 bool gUseRamp;
-bool gTestRounding;
+//bool gTestRounding;
 bool gEnablePitch;
 bool gTestMipmaps;
 int gTypesToTest;
