@@ -95,7 +95,6 @@ extern cl_device_fp_config gDoubleCapabilities;
 
 float Abs_Error( float test, double reference );
 float Ulp_Error( float test, double reference );
-//float Ulp_Error_Half( float test, double reference );
 float Bruteforce_Ulp_Error_Double( double test, long double reference );
 
 uint64_t GetTime( void );

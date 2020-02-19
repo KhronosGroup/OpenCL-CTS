@@ -307,8 +307,6 @@ const char *GetQueuePropertyName(cl_command_queue_properties property)
 #define scalbnl(_a, _i )    ldexpl( _a, _i )
 #endif
 
-static float Ulp_Error_Half_Float( float test, double reference );
-
 // taken from math tests
 #define HALF_MIN_EXP    -13
 #define HALF_MANT_DIG    11
@@ -327,6 +325,24 @@ static float Ulp_Error_Half_Float( float test, double reference )
     // results.
 
     double testVal = test;
+
+    if( isinf( reference ) )
+    {
+        if( testVal == reference )
+            return 0.0f;
+
+        return (float) (testVal - reference );
+    }
+
+    if( isinf( testVal ) )
+    {
+        // Allow overflow within the limit of the allowed ulp error. Towards that
+        // end we pretend the test value is actually 2**16, the next value that
+        // would appear in the number line if half had sufficient range.
+        testVal = copysign(65536.0, testVal);
+    }
+
+
     if( u.u & 0x000fffffffffffffULL )
     { // Non-power of two and NaN
         if( isnan( reference ) && isnan( test ) )
@@ -337,14 +353,6 @@ static float Ulp_Error_Half_Float( float test, double reference )
 
         // Scale the exponent of the error
         return (float) scalbn( testVal - reference, ulp_exp );
-    }
-
-    if( isinf( reference ) )
-    {
-        if( (double) test == reference )
-            return 0.0f;
-
-        return (float) (testVal - reference );
     }
 
     // reference is a normal power of two or a zero
