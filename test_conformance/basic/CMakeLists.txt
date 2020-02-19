@@ -38,6 +38,9 @@ set(${MODULE_NAME}_SOURCES
     test_work_item_functions.cpp
     test_astype.cpp
     test_async_copy.cpp
+    test_async_copy2D.cpp
+    test_async_copy3D.cpp
+    test_async_copy_fence.cpp
     test_sizeof.c
     test_vector_creation.cpp
     test_vec_type_hint.c
