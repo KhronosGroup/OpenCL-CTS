@@ -153,8 +153,6 @@ test_definition test_list32[] = {
 const int test_num = ARRAY_SIZE( test_list );
 const int test_num32 = ARRAY_SIZE( test_list32 );
 
-cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-
 int main(int argc, const char *argv[])
 {
   gTestRounding = true;
@@ -170,7 +168,6 @@ int main(int argc, const char *argv[])
   }	
 
   cl_device_type requestedDeviceType = CL_DEVICE_TYPE_DEFAULT;
-  checkDeviceTypeOverride(&requestedDeviceType);
 
   /* Do we have a CPU/GPU specification? */
   if( argc > 1 )
