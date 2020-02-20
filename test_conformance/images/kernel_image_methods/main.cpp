@@ -82,8 +82,6 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    checkDeviceTypeOverride( &gDeviceType );
-
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 
     if( NULL == argList )

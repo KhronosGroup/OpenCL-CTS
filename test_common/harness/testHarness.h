@@ -115,10 +115,6 @@ extern test_status callSingleTestFunction( test_definition test, cl_device_id de
 
 ///// Miscellaneous steps
 
-// Given a pre-existing device type choice, check the environment for an override, then print what
-// choice was made and how (and return the overridden choice, if there is one)
-extern void checkDeviceTypeOverride( cl_device_type *inOutType );
-
 // standard callback function for context pfn_notify
 extern void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data);
 
