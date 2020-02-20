@@ -1,6 +1,6 @@
 set(MODULE_NAME CONVERSIONS)
 
-# VS2005 AMD64 WAR (basic_test_conversions.c causes internal compiler error)
+# VS2005 AMD64 WAR (basic_test_conversions.cpp causes internal compiler error)
 if(MSVC)
 set(CMAKE_C_FLAGS_RELEASE "/Od /Ob0")
 set(CMAKE_CXX_FLAGS_RELEASE "/Od /Ob0")
@@ -10,18 +10,12 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O0")
 endif(MSVC)
 
 set (${MODULE_NAME}_SOURCES
-      Sleep.c test_conversions.c basic_test_conversions.c
+      Sleep.cpp test_conversions.cpp basic_test_conversions.cpp
 )
 
 if(ANDROID)
     list(APPEND CONVERSIONS_SOURCES fplib.c)
 endif(ANDROID)
-
-if(WIN32)
-set_source_files_properties(
-    ${MODULE_NAME}_SOURCES
-        PROPERTIES LANGUAGE CXX)
-endif(WIN32)
 
 if(NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
 # -march is needed for CPU atomics, default arch on gcc is i386
@@ -33,7 +27,7 @@ endif(NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
 
 if(NOT ANDROID)
 set_source_files_properties(
-        Sleep.c test_conversions.c basic_test_conversions.c
+        Sleep.cpp test_conversions.cpp basic_test_conversions.cpp
         COMPILE_FLAGS -msse2)
 endif(NOT ANDROID)
 
