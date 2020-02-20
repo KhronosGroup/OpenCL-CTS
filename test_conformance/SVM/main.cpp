@@ -240,7 +240,7 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
     return 1; // 1 indicates do not execute, but counts as passing.
   }
 
-  cl_context_properties context_properties[3] = {CL_CONTEXT_PLATFORM, (cl_context_properties)platform_id, NULL };
+  cl_context_properties context_properties[3] = {CL_CONTEXT_PLATFORM, (cl_context_properties)platform_id, 0 };
   *context = clCreateContext(context_properties, *num_devices, &devices[0], NULL, NULL, &error);
   test_error(error, "Unable to create context" );
 

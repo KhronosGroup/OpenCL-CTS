@@ -59,6 +59,6 @@ static test_status checkSubGroupsExtension(cl_device_id device)
 int main(int argc, const char *argv[])
 {
     gMTdata = init_genrand(0);
-    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, false, NULL, checkSubGroupsExtension);
+    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, false, 0, checkSubGroupsExtension);
 }
 

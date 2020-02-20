@@ -111,7 +111,7 @@ int test_get_kernel_info(cl_device_id deviceID, cl_context context, cl_command_q
         return -1;
     }
 
-    error = clGetKernelInfo( kernel, CL_KERNEL_FUNCTION_NAME, NULL, 0, &paramSize );
+    error = clGetKernelInfo( kernel, CL_KERNEL_FUNCTION_NAME, 0, NULL, &paramSize );
     test_error( error, "Unable to get kernel function name param size" );
     if( paramSize != strlen( "sample_test" ) + 1 )
     {
@@ -157,7 +157,7 @@ int test_get_kernel_info(cl_device_id deviceID, cl_context context, cl_command_q
     test_error( error, "Unable to get kernel reference count" );
 
 
-    error = clGetKernelInfo( kernel, CL_KERNEL_PROGRAM, NULL, 0, &paramSize );
+    error = clGetKernelInfo( kernel, CL_KERNEL_PROGRAM, 0, NULL, &paramSize );
     test_error( error, "Unable to get kernel program param size" );
     if( paramSize != sizeof( testProgram ) )
     {

@@ -250,9 +250,9 @@ static int kernelFilter( cl_device_id device, cl_context context, cl_command_que
     }
 
 #ifdef USE_LOCAL_THREADS
-    err = clEnqueueNDRangeKernel( queue, kernel[0], 2, NULL, threads, localThreads, NULL, 0, &executeEvent );
+    err = clEnqueueNDRangeKernel( queue, kernel[0], 2, NULL, threads, localThreads, 0, NULL, &executeEvent );
 #else
-    err = clEnqueueNDRangeKernel( queue, kernel[0], 2, NULL, threads, NULL, NULL, 0, &executeEvent );
+    err = clEnqueueNDRangeKernel( queue, kernel[0], 2, NULL, threads, NULL, 0, NULL, &executeEvent );
 #endif
 
     if( err != CL_SUCCESS ){

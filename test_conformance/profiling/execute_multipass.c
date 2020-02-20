@@ -160,7 +160,7 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
         return -1;
     }
 
-    err = clEnqueueNDRangeKernel( queue, kernel[0], 3, NULL, threads, localThreads, NULL, 0, &executeEvent );
+    err = clEnqueueNDRangeKernel( queue, kernel[0], 3, NULL, threads, localThreads, 0, NULL, &executeEvent );
 
     if( err != CL_SUCCESS ){
         print_error( err, "clEnqueueNDRangeKernel failed\n" );

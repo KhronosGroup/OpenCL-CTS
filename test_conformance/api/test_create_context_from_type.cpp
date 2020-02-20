@@ -58,7 +58,7 @@ int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_
     cl_context_properties properties[3] = {
       (cl_context_properties)CL_CONTEXT_PLATFORM,
       (cl_context_properties)platform,
-      NULL
+      0
     };
 
     context_to_test = clCreateContextFromType(properties, type, notify_callback, NULL, &error);
@@ -68,7 +68,7 @@ int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_
         return -1;
     }
 
-    queue_to_test = clCreateCommandQueue(context_to_test, deviceID, NULL, &error);
+    queue_to_test = clCreateCommandQueue(context_to_test, deviceID, 0, &error);
     test_error(error, "clCreateCommandQueue failed");
     if (queue_to_test == NULL) {
         log_error("clCreateCommandQueue returned NULL, but error was CL_SUCCESS.");

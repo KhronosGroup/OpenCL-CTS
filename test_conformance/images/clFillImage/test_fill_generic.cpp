@@ -431,7 +431,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     if (error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to map image for verification: %s\n", IGetErrorString( error ) );
-        return NULL;
+        return -1;
     }
 
     // Verify scanline by scanline, since the pitches are different
@@ -560,7 +560,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     if (error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to unmap image after verify: %s\n", IGetErrorString( error ) );
-        return NULL;
+        return -1;
     }
 
     imgHost.reset(0x0);

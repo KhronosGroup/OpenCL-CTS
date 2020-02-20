@@ -84,7 +84,7 @@ int test_load_program_source(cl_device_id deviceID, cl_context context, cl_comma
     test_error( error, "Unable to create reference program" );
 
     /* Now get the source and compare against our original */
-    error = clGetProgramInfo( program, CL_PROGRAM_SOURCE, NULL, NULL, &length );
+    error = clGetProgramInfo( program, CL_PROGRAM_SOURCE, 0, NULL, &length );
     test_error( error, "Unable to get length of first program source" );
 
     // Note: according to spec section 5.4.5, the length returned should include the null terminator
@@ -366,7 +366,7 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
     test_error( error, "Unable to get instance count" );
 
     /* While we're at it, test the sizes of programInfo too */
-    error = clGetProgramInfo( program, CL_PROGRAM_DEVICES, NULL, NULL, &paramSize );
+    error = clGetProgramInfo( program, CL_PROGRAM_DEVICES, 0, NULL, &paramSize );
     test_error( error, "Unable to get device param size" );
     if( paramSize != sizeof( cl_device_id ) )
     {
@@ -374,7 +374,7 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
         return -1;
     }
 
-    error = clGetProgramInfo( program, CL_PROGRAM_CONTEXT, NULL, NULL, &paramSize );
+    error = clGetProgramInfo( program, CL_PROGRAM_CONTEXT, 0, NULL, &paramSize );
     test_error( error, "Unable to get context param size" );
     if( paramSize != sizeof( cl_context ) )
     {
@@ -382,7 +382,7 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
         return -1;
     }
 
-    error = clGetProgramInfo( program, CL_PROGRAM_REFERENCE_COUNT, NULL, NULL, &paramSize );
+    error = clGetProgramInfo( program, CL_PROGRAM_REFERENCE_COUNT, 0, NULL, &paramSize );
     test_error( error, "Unable to get instance param size" );
     if( paramSize != sizeof( cl_uint ) )
     {
@@ -390,7 +390,7 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
         return -1;
     }
 
-    error = clGetProgramInfo( program, CL_PROGRAM_NUM_DEVICES, NULL, NULL, &paramSize );
+    error = clGetProgramInfo( program, CL_PROGRAM_NUM_DEVICES, 0, NULL, &paramSize );
     test_error( error, "Unable to get device count param size" );
     if( paramSize != sizeof( cl_uint ) )
     {
@@ -421,7 +421,7 @@ int test_get_program_source(cl_device_id deviceID, cl_context context, cl_comman
     }
 
     /* Try getting the length */
-    error = clGetProgramInfo( program, CL_PROGRAM_SOURCE, NULL, NULL, &length );
+    error = clGetProgramInfo( program, CL_PROGRAM_SOURCE, 0, NULL, &length );
     test_error( error, "Unable to get program source length" );
     if (length != strlen(sample_kernel_code_single_line[0]) + 1 && gCompilationMode == kOnline)
     {
@@ -556,7 +556,7 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
         return -1;
     }
 
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_OPTIONS, NULL, NULL, &length );
+    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_OPTIONS, 0, NULL, &length );
     test_error( error, "Unable to get program build options" );
 
     buffer = (char*)malloc(length);
