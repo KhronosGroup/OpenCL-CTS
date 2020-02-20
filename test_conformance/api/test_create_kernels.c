@@ -521,7 +521,7 @@ int test_repeated_setup_cleanup(cl_device_id deviceID, cl_context context, cl_co
         local_context = clCreateContext(NULL, 1, &deviceID, notify_callback, NULL, &error);
         test_error( error, "clCreateContext failed");
 
-        local_queue = clCreateCommandQueueWithProperties(local_context, deviceID, 0, &error);
+        local_queue = clCreateCommandQueue(local_context, deviceID, 0, &error);
         test_error( error, "clCreateCommandQueue failed");
 
         error = create_single_kernel_helper(local_context, &local_program, NULL, 1, &repeate_test_kernel, NULL);

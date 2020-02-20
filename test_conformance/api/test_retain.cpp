@@ -38,7 +38,7 @@ int test_retain_queue_single(cl_device_id deviceID, cl_context context, cl_comma
 
 
     /* Create a test queue */
-    queue = clCreateCommandQueueWithProperties( context, deviceID, 0, &err );
+    queue = clCreateCommandQueue( context, deviceID, 0, &err );
     test_error( err, "Unable to create command queue to test with" );
 
     /* Test the instance count */
@@ -70,7 +70,7 @@ int test_retain_queue_multiple(cl_device_id deviceID, cl_context context, cl_com
 
 
     /* Create a test program */
-    queue = clCreateCommandQueueWithProperties( context, deviceID, 0, &err );
+    queue = clCreateCommandQueue( context, deviceID, 0, &err );
     test_error( err, "Unable to create command queue to test with" );
 
     /* Increment 9 times, which should bring the count to 10 */

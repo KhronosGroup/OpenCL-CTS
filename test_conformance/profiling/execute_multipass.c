@@ -115,14 +115,9 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     if( localThreads[1] > threads[1] )
         localThreads[1] = threads[1];
 
-    cl_sampler_properties properties[] = {
-        CL_SAMPLER_NORMALIZED_COORDS, CL_FALSE,
-        CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_CLAMP_TO_EDGE,
-        CL_SAMPLER_FILTER_MODE, CL_FILTER_NEAREST,
-        0 };
-    cl_sampler sampler = clCreateSamplerWithProperties( context, properties, &err );
+    cl_sampler sampler = clCreateSampler( context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err );
     if( err ){
-        log_error( " clCreateSamplerWithProperties failed.\n" );
+        log_error( " clCreateSampler failed.\n" );
         return -1;
     }
 

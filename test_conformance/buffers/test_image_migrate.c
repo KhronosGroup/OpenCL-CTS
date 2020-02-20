@@ -112,14 +112,6 @@ static cl_int restoreImage(cl_command_queue *queues, cl_mem *mem_objects, cl_uin
   return CL_SUCCESS;
 }
 
-// Declaration moved out of protected scope/goto
-cl_sampler_properties properties[] = {
-  CL_SAMPLER_NORMALIZED_COORDS, CL_FALSE,
-  CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_CLAMP,
-  CL_SAMPLER_FILTER_MODE, CL_FILTER_NEAREST,
-  0
-};
-
 int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
   int failed = 0;
@@ -244,7 +236,7 @@ int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_que
       // Create a command queue for each sub-device
       for (i=0; i<num_devices; i++) {
         if (devices[i]) {
-          if ((queues[i] = clCreateCommandQueueWithProperties(ctx, devices[i], 0, &err)) == NULL) {
+          if ((queues[i] = clCreateCommandQueue(ctx, devices[i], 0, &err)) == NULL) {
             print_error(err, "Failed creating command queues.");
             failed = 1;
             goto cleanup;
@@ -266,7 +258,7 @@ int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_que
     }
 
     // Create sampler.
-    sampler = clCreateSamplerWithProperties(ctx, properties, &err );
+    sampler = clCreateSampler(ctx, CL_FALSE, CL_ADDRESS_CLAMP, CL_FILTER_NEAREST, &err );
     if ((err != CL_SUCCESS) || !sampler) {
       print_error(err, "Failed to create a sampler.");
       failed = 1;

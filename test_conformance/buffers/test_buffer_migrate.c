@@ -203,7 +203,7 @@ int test_buffer_migrate(cl_device_id deviceID, cl_context context, cl_command_qu
       // Create a command queue for each sub-device
       for (i=0; i<num_devices; i++) {
         if (devices[i]) {
-          if ((queues[i] = clCreateCommandQueueWithProperties(ctx, devices[i], 0, &err)) == NULL) {
+          if ((queues[i] = clCreateCommandQueue(ctx, devices[i], 0, &err)) == NULL) {
             print_error(err, "Failed creating command queues.");
             failed = 1;
             goto cleanup;

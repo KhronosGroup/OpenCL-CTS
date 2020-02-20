@@ -68,7 +68,7 @@ int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_
         return -1;
     }
 
-    queue_to_test = clCreateCommandQueueWithProperties(context_to_test, deviceID, NULL, &error);
+    queue_to_test = clCreateCommandQueue(context_to_test, deviceID, NULL, &error);
     test_error(error, "clCreateCommandQueue failed");
     if (queue_to_test == NULL) {
         log_error("clCreateCommandQueue returned NULL, but error was CL_SUCCESS.");
