@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2017-2019 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -876,8 +876,11 @@ int test_computeinfo( cl_device_id deviceID, cl_context context, cl_command_queu
     return total_errors;
 }
 
+extern int test_extended_versioning(cl_device_id, cl_context, cl_command_queue, int);
+
 test_definition test_list[] = {
     ADD_TEST( computeinfo ),
+    ADD_TEST( extended_versioning ),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
