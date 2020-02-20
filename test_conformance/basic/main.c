@@ -25,11 +25,6 @@
 #include "harness/testHarness.h"
 #include "procs.h"
 
-// FIXME: To use certain functions in harness/imageHelpers.h
-// (for example, generate_random_image_data()), the tests are required to declare
-// the following variables (<rdar://problem/11111245>):
-bool gTestRounding = false;
-
 test_definition test_list[] = {
     ADD_TEST( hostptr ),
     ADD_TEST( fpmath_float ),

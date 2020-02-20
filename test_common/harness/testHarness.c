@@ -26,6 +26,7 @@
 #include "kernelHelpers.h"
 #include "fpcontrol.h"
 #include "typeWrappers.h"
+#include "imageHelpers.h"
 #include "parseParameters.h"
 
 #if !defined(_WIN32)
@@ -234,16 +235,18 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
         }
     }
 
-    switch( device_type )
-    {
-        case CL_DEVICE_TYPE_GPU:            log_info( "Requesting GPU device " ); break;
-        case CL_DEVICE_TYPE_CPU:            log_info( "Requesting CPU device " ); break;
-        case CL_DEVICE_TYPE_ACCELERATOR:    log_info( "Requesting Accelerator device " ); break;
-        case CL_DEVICE_TYPE_DEFAULT:        log_info( "Requesting Default device " ); break;
-        default:                            log_error( "Requesting unknown device "); return EXIT_FAILURE;
-    }
-    log_info( based_on_env_var ? "based on environment variable " : "based on command line " );
-    log_info( "for platform index %d and device index %d\n", choosen_platform_index, choosen_device_index);
+ 	gDeviceType = device_type;
+
+	switch (device_type)
+	{
+	case CL_DEVICE_TYPE_GPU:            log_info("Requesting GPU device "); break;
+	case CL_DEVICE_TYPE_CPU:            log_info("Requesting CPU device "); break;
+	case CL_DEVICE_TYPE_ACCELERATOR:    log_info("Requesting Accelerator device "); break;
+	case CL_DEVICE_TYPE_DEFAULT:        log_info("Requesting Default device "); break;
+	default:                            log_error("Requesting unknown device "); return EXIT_FAILURE;
+	}
+	log_info(based_on_env_var ? "based on environment variable " : "based on command line ");
+	log_info("for platform index %d and device index %d\n", choosen_platform_index, choosen_device_index);
 
 #if defined( __APPLE__ )
 #if defined( __i386__ ) || defined( __x86_64__ )

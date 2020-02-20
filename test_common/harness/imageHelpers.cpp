@@ -28,7 +28,7 @@ static cl_ushort float2half_rte( float f );
 static cl_ushort float2half_rtz( float f );
 
 cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-
+bool gTestRounding = false;
 double
 sRGBmap(float fc)
 {
@@ -1186,7 +1186,6 @@ cl_ulong get_image_size_mb( image_descriptor const *imageInfo )
 }
 
 
-extern bool gTestRounding;
 uint64_t gRoundingStartValue = 0;
 
 

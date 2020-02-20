@@ -43,12 +43,9 @@ test_definition test_list[] = {
 
 const int test_num = ARRAY_SIZE( test_list );
 
-cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-bool gTestRounding = true;
-
 int main(int argc, const char *argv[])
 {
     log_info("1st part, non gl-sharing objects...\n");
-
+    gTestRounding = true;
     return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
 }
