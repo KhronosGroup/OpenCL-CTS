@@ -51,7 +51,7 @@ static test_status checkSubGroupsExtension(cl_device_id device)
         return TEST_FAIL;
     }
 
-    if (max_sub_groups == 0) {
+    if ((max_sub_groups == 0) && (version > Version(2,2))) {
         return TEST_SKIP;
     }
 
