@@ -594,42 +594,6 @@ exit:
     return err;
 }
 
-//-----------------------------------------
-// printArch
-//-----------------------------------------
-static void printArch( void )
-{
-    log_info( "sizeof( void*) = %d\n", (int) sizeof( void *) );
-
-#if defined( __APPLE__ )
-
-#if defined( __ppc__ )
-    log_info( "ARCH:\tppc\n" );
-#elif defined( __ppc64__ )
-    log_info( "ARCH:\tppc64\n" );
-#elif defined( __i386__ )
-    log_info( "ARCH:\ti386\n" );
-#elif defined( __x86_64__ )
-    log_info( "ARCH:\tx86_64\n" );
-#elif defined( __arm__ )
-    log_info( "ARCH:\tarm\n" );
-#elif defined( __aarch64__ )
-    log_info( "ARCH:\taarch64\n" );
-#else
-#error unknown arch
-#endif
-
-    int type = 0;
-    size_t typeSize = sizeof( type );
-    sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
-    log_info( "cpu type:\t%d\n", type );
-    typeSize = sizeof( type );
-    sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
-    log_info( "cpu subtype:\t%d\n", type );
-
-#endif
-}
-
 
 int test_int_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -1063,7 +1027,8 @@ test_status InitCL( cl_device_id device )
 
     printDeviceHeader( device );
 
-    printArch();
+    PrintArch();
+
 
     err = check_opencl_version(device,1,2);
     if( err != CL_SUCCESS ) {

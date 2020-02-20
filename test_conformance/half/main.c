@@ -47,7 +47,6 @@ const char *addressSpaceNames[AS_NumAddressSpaces] = {"global", "private", "loca
 
 static int ParseArgs( int argc, const char **argv );
 static void PrintUsage( void );
-static void PrintArch(void);
 
 
 int g_arrVecSizes[kVectorSizeCount+kStrangeVectorSizeCount];
@@ -251,33 +250,3 @@ static void PrintUsage( void )
     }
 }
 
-static void PrintArch( void )
-{
-    vlog( "sizeof( void*) = %ld\n", sizeof( void *) );
-
-#if defined( __APPLE__ )
-#if defined( __ppc__ )
-    vlog( "ARCH:\tppc\n" );
-#elif defined( __ppc64__ )
-    vlog( "ARCH:\tppc64\n" );
-#elif defined( __i386__ )
-    vlog( "ARCH:\ti386\n" );
-#elif defined( __x86_64__ )
-    vlog( "ARCH:\tx86_64\n" );
-#elif defined( __arm__ )
-    vlog( "ARCH:\tarm\n" );
-#elif defined( __aarch64__ )
-    vlog( "\tARCH:\taarch64\n" );
-#else
-#error unknown arch
-#endif
-
-    int type = 0;
-    size_t typeSize = sizeof( type );
-    sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
-    vlog( "cpu type:\t%d\n", type );
-    typeSize = sizeof( type );
-    sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
-    vlog( "cpu subtype:\t%d\n", type );
-#endif
-}
