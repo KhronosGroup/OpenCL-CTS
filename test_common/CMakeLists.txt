@@ -4,7 +4,7 @@ set(HARNESS_COMMON_SOURCES
     harness/typeWrappers.cpp
     harness/mt19937.c
     harness/conversions.cpp
-    harness/rounding_mode.c
+    harness/rounding_mode.cpp
     harness/msvc9.c
 )
 
