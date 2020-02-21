@@ -172,7 +172,7 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command
 
     if (!(flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) && !(flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR)) {
       size_t write_origin[3]={0,0,0}, write_region[3]={imageSize, imageSize, 1};
-      error = clEnqueueWriteImage(queue, memObject, CL_TRUE, write_origin, write_region, NULL, NULL, initialData, 0, NULL, NULL);
+      error = clEnqueueWriteImage(queue, memObject, CL_TRUE, write_origin, write_region, 0, 0, initialData, 0, NULL, NULL);
       test_error( error, "Unable to write to testing buffer" );
     }
 

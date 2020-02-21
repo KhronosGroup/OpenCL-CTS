@@ -109,7 +109,7 @@ int test_queue_properties(cl_device_id deviceID, cl_context context, cl_command_
     clKernelWrapper kernel;
     size_t strSize;
     std::string strExt(0, '\0');
-    cl_queue_properties_khr device_props = NULL;
+    cl_queue_properties_khr device_props = 0;
     cl_queue_properties_khr queue_prop_def[] = { CL_QUEUE_PROPERTIES, 0, 0 };
 
     // Query extension
