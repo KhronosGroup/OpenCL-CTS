@@ -28,6 +28,8 @@
 #include "typeWrappers.h"
 #include "imageHelpers.h"
 #include "parseParameters.h"
+#include <sys/utsname.h>
+#include <sys/sysctl.h>
 
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -944,4 +946,53 @@ Version get_device_cl_version(cl_device_id device)
         return Version(2, 2);
 
     throw std::runtime_error(std::string("Unknown OpenCL version: ") + str.data());
+}
+
+void PrintArch( void )
+{
+    vlog( "sizeof( void*) = %ld\n", sizeof( void *) );
+#if defined( __ppc__ )
+    vlog( "ARCH:\tppc\n" );
+#elif defined( __ppc64__ )   
+    vlog( "ARCH:\tppc64\n" );
+#elif defined( __PPC__ )   
+    vlog( "ARCH:\tppc\n" );
+#elif defined( __i386__ )   
+    vlog( "ARCH:\ti386\n" );
+#elif defined( __x86_64__ )   
+    vlog( "ARCH:\tx86_64\n" );
+#elif defined( __arm__ )   
+    vlog( "ARCH:\tarm\n" );
+#elif defined(__aarch64__)
+    vlog( "ARCH:\taarch64\n" );
+#elif defined (_WIN32)
+    vlog( "ARCH:\tWindows\n" );
+#else
+#error unknown arch
+#endif
+
+#if defined( __APPLE__ )
+
+    int type = 0;
+    size_t typeSize = sizeof( type );
+    sysctlbyname( "hw.cputype", &type, &typeSize, NULL, 0 );
+    vlog( "cpu type:\t%d\n", type );
+    typeSize = sizeof( type );
+    sysctlbyname( "hw.cpusubtype", &type, &typeSize, NULL, 0 );
+    vlog( "cpu subtype:\t%d\n", type );
+
+#elif defined( __linux__ )
+    struct utsname buffer;
+ 
+    if (uname(&buffer) != 0) {
+       vlog("uname error");
+    }
+    else {
+       vlog("system name = %s\n", buffer.sysname);
+       vlog("node name   = %s\n", buffer.nodename);
+       vlog("release     = %s\n", buffer.release);
+       vlog("version     = %s\n", buffer.version);
+       vlog("machine     = %s\n", buffer.machine);
+    }
+#endif
 }

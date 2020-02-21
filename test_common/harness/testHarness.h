@@ -146,6 +146,8 @@ extern int      gIsOpenCL_C_1_0_Device; // This is set to 1 if the device suppor
 #ifdef __cplusplus
 }
 #endif
+extern void PrintArch(void);
+
 
 #endif // _testHarness_h
 
