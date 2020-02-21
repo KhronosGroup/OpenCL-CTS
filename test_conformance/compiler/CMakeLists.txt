@@ -1,15 +1,15 @@
 set(MODULE_NAME COMPILER)
 
 set(${MODULE_NAME}_SOURCES
-    main.c
-    test_build_helpers.c
-    test_compile.c
-    test_async_build.c
+    main.cpp
+    test_build_helpers.cpp
+    test_compile.cpp
+    test_async_build.cpp
     test_build_options.cpp
-    test_preprocessor.c
-    test_image_macro.c
+    test_preprocessor.cpp
+    test_image_macro.cpp
     test_compiler_defines_for_extensions.cpp
-    test_pragma_unroll.c
+    test_pragma_unroll.cpp
 )
 
 include(../CMakeCommon.txt)

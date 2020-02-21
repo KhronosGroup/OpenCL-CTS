@@ -1,7 +1,7 @@
 set(MODULE_NAME RELATIONALS)
 
 set(${MODULE_NAME}_SOURCES
-    main.c
+    main.cpp
     test_relationals.cpp
     test_comparisons_float.cpp
     test_comparisons_double.cpp

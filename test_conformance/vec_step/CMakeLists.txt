@@ -1,11 +1,11 @@
 set(MODULE_NAME VECSTEP)
 
 set(${MODULE_NAME}_SOURCES
-    globals.c
-        test_step.c
-        main.c
-        structs.c
-        type_replacer.c
+    globals.cpp
+        test_step.cpp
+        main.cpp
+        structs.cpp
+        type_replacer.cpp
 )
 
 set_source_files_properties(

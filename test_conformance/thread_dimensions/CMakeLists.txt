@@ -1,8 +1,8 @@
 set(MODULE_NAME THREAD_DIMENSIONS)
 
 set(${MODULE_NAME}_SOURCES
-        main.c
-    test_thread_dimensions.c
+        main.cpp
+    test_thread_dimensions.cpp
 )
 
 set_source_files_properties(

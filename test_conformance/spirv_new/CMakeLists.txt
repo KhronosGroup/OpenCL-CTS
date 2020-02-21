@@ -17,8 +17,8 @@ set(CMAKE_CXX_STANDARD 11)
 file(GLOB SPIRV_NEW_SOURCES "*.cpp")
 
 set(TEST_HARNESS_SOURCES
-  ../../test_conformance/math_brute_force/reference_math.c
-  ../../test_conformance/math_brute_force/Utility.c
+  ../../test_conformance/math_brute_force/reference_math.cpp
+  ../../test_conformance/math_brute_force/Utility.cpp
   )
 
 set(${MODULE_NAME}_SOURCES ${SPIRV_NEW_SOURCES} ${TEST_HARNESS_SOURCES})
