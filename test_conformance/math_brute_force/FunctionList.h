@@ -74,6 +74,7 @@ typedef struct vtbl
     const char  *type_name;
     int         (*TestFunc)( const struct Func *, MTdata );
     int         (*DoubleTestFunc)( const struct Func *, MTdata);        // may be NULL if function is single precision only
+    int         (*HalfTestFunc)(const struct Func *, MTdata);        // may be NULL if function is single precision only
 }vtbl;
 
 typedef struct Func
@@ -85,6 +86,7 @@ typedef struct Func
   fptr            rfunc;
   float           float_ulps;
   float           double_ulps;
+  float           half_ulps;
   float           float_embedded_ulps;
   float           relaxed_error;
   int             ftz;

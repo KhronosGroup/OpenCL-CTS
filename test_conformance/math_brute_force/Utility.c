@@ -166,4 +166,3 @@ void logFunctionInfo(const char *fname, unsigned int float_size, unsigned int is
     }
     vlog("%15s %4s %4s",fname, fpSizeStr, fpFastRelaxedStr);
 }
-

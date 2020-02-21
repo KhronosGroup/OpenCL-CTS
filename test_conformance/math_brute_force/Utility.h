@@ -68,6 +68,7 @@ extern volatile int     gTestFastRelaxed;
 extern int              gFastRelaxedDerived;
 extern int              gWimpyMode;
 extern int              gHasDouble;
+extern int              gHasHalf;
 extern int              gIsInRTZMode;
 extern int              gInfNanSupport;
 extern int              gIsEmbedded;
@@ -77,6 +78,8 @@ extern uint32_t         gMinVectorSizeIndex;
 extern uint32_t         gDeviceFrequency;
 extern cl_device_fp_config gFloatCapabilities;
 extern cl_device_fp_config gDoubleCapabilities;
+extern cl_device_fp_config gHalfCapabilities;
+extern RoundingMode gFloatToHalfRoundingMode;
 
 #define LOWER_IS_BETTER     0
 #define HIGHER_IS_BETTER    1
@@ -187,6 +190,12 @@ static inline int IsDoubleResultSubnormal( long double x, float ulps )
     return x < MAKE_HEX_LONG( 0x1.0p-1022, 0x1, -1022 );
 }
 
+static inline int IsHalfSubnormal(cl_half x)
+{
+    x &= 0x7fffU;
+    return (x - 1U) < 0x03ffU;
+}
+
 static inline int IsFloatInfinity(double x)
 {
   union { cl_float d; cl_uint u; } u;
@@ -269,6 +278,11 @@ int compareFloats(float x, float y);
 int compareDoubles(double x, double y);
 
 void logFunctionInfo(const char *fname, unsigned int float_size, unsigned int isFastRelaxed);
+
+cl_half convert_float_to_half(float f);
+float convert_half_to_float(cl_half halfValue);
+cl_half float2half_rte(float f);
+cl_half float2half_rtz(float f);
 
 #endif /* UTILITY_H */
 
