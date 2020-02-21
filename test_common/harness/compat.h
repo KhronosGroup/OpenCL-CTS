@@ -259,6 +259,16 @@ typedef long long           int64_t;
 
 
 //
+// string.h
+//
+
+#if defined(_MSC_VER)
+    #define strtok_r strtok_s
+#endif
+
+
+
+//
 // unistd.h
 //
 
