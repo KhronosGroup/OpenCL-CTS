@@ -48,7 +48,10 @@ int find_good_image_size(cl_device_id device_id, size_t size_to_allocate, size_t
 
   num_pixels = size_to_allocate / (sizeof(cl_uint)*4);
 
-  if (num_pixels > (max_width*max_height)) {
+  // Use a 64-bit variable to avoid overflow in 32-bit architectures
+  long long unsigned max_pixels = (long long unsigned)max_width * max_height;
+
+  if (num_pixels > max_pixels) {
     if(NULL != max_size) {
       *max_size = max_width * max_height * sizeof(cl_uint) * 4;
     }
