@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../testBase.h"
+#include "test_common.h"
 #include <float.h>
 
 #define MAX_ERR 0.005f
@@ -490,17 +490,8 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
     test_error( error, "Unable to create result buffer" );
 
     // Create sampler to use
-    cl_sampler_properties properties[] = {
-        CL_SAMPLER_NORMALIZED_COORDS, imageSampler->normalized_coords,
-        CL_SAMPLER_ADDRESSING_MODE, imageSampler->addressing_mode,
-        CL_SAMPLER_FILTER_MODE, imageSampler->filter_mode,
-        0, 0, 0 };
-    if (gTestMipmaps) {
-        properties[6] = CL_SAMPLER_MIP_FILTER_MODE;
-        properties[7] = imageSampler->filter_mode;
-    }
-    actualSampler = clCreateSamplerWithProperties(context, properties, &error );
-    test_error( error, "Unable to create image sampler" );
+    actualSampler = create_sampler(context, imageSampler, gTestMipmaps, &error);
+    test_error(error, "Unable to create image sampler");
 
     // Set arguments
     int idx = 0;

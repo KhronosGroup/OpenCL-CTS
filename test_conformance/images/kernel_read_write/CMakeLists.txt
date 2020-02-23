@@ -2,6 +2,7 @@ set(MODULE_NAME IMAGE_STREAMS)
 
 set(${MODULE_NAME}_SOURCES
     main.cpp
+    test_common.cpp
     test_iterations.cpp
     test_loops.cpp
     test_read_1D.cpp
