@@ -3,10 +3,6 @@ os:
 
 shallow_clone: true
 
-branches:
-  except:
-    - gh-pages
-
 platform:
   - Win32
   - x64
