@@ -28,10 +28,10 @@
 #include "typeWrappers.h"
 #include "imageHelpers.h"
 #include "parseParameters.h"
-#include <sys/utsname.h>
-#include <sys/sysctl.h>
 
 #if !defined(_WIN32)
+#include <sys/utsname.h>
+#include <sys/sysctl.h>
 #include <unistd.h>
 #endif
 
