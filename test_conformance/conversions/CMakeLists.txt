@@ -25,10 +25,4 @@ set_source_files_properties(
         COMPILE_FLAGS -march=i686)
 endif(NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
 
-if(NOT ANDROID AND NOT CMAKE_ARM_COMPILER)
-set_source_files_properties(
-        Sleep.cpp test_conversions.cpp basic_test_conversions.cpp
-        COMPILE_FLAGS -msse2)
-endif()
-
 include(../CMakeCommon.txt)
