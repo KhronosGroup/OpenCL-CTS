@@ -121,6 +121,10 @@ endif (GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
+    set(CMAKE_ARM_COMPILER)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float
