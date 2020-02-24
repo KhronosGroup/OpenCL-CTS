@@ -22,7 +22,7 @@ set(${MODULE_NAME}_SOURCES
 )
 
 
-if (NOT ANDROID)
+if (NOT ANDROID AND NOT CMAKE_ARM_COMPILER)
 set_source_files_properties(
     FunctionList.cpp
     Sleep.cpp
@@ -39,7 +39,7 @@ set_source_files_properties(
     ternary.cpp     unary.cpp     unary_two_results.cpp
     unary_two_results_i.cpp unary_u.cpp
     COMPILE_FLAGS -msse2    )
-endif(NOT ANDROID)
+endif()
 
 if (NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
 set_source_files_properties(
