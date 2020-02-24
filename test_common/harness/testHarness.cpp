@@ -788,48 +788,6 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
     return status;
 }
 
-void checkDeviceTypeOverride( cl_device_type *inOutType )
-{
-    /* Check if we are forced to CPU mode */
-    char *force_cpu = getenv( "CL_DEVICE_TYPE" );
-    if( force_cpu != NULL )
-    {
-        if( strcmp( force_cpu, "gpu" ) == 0 || strcmp( force_cpu, "CL_DEVICE_TYPE_GPU" ) == 0 )
-            *inOutType = CL_DEVICE_TYPE_GPU;
-        else if( strcmp( force_cpu, "cpu" ) == 0 || strcmp( force_cpu, "CL_DEVICE_TYPE_CPU" ) == 0 )
-            *inOutType = CL_DEVICE_TYPE_CPU;
-        else if( strcmp( force_cpu, "accelerator" ) == 0 || strcmp( force_cpu, "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
-            *inOutType = CL_DEVICE_TYPE_ACCELERATOR;
-        else if( strcmp( force_cpu, "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
-            *inOutType = CL_DEVICE_TYPE_DEFAULT;
-    }
-
-    switch( *inOutType )
-    {
-        case CL_DEVICE_TYPE_GPU:            log_info( "Requesting GPU device " ); break;
-        case CL_DEVICE_TYPE_CPU:            log_info( "Requesting CPU device " ); break;
-        case CL_DEVICE_TYPE_ACCELERATOR:    log_info( "Requesting Accelerator device " ); break;
-        case CL_DEVICE_TYPE_DEFAULT:        log_info( "Requesting Default device " ); break;
-        default: break;
-    }
-    log_info( force_cpu != NULL ? "based on environment variable\n" : "based on command line\n" );
-
-#if defined( __APPLE__ )
-    {
-        // report on any unusual library search path indirection
-        char *libSearchPath = getenv( "DYLD_LIBRARY_PATH");
-        if( libSearchPath )
-            log_info( "*** DYLD_LIBRARY_PATH = \"%s\"\n", libSearchPath );
-
-        // report on any unusual framework search path indirection
-        char *frameworkSearchPath = getenv( "DYLD_FRAMEWORK_PATH");
-        if( libSearchPath )
-            log_info( "*** DYLD_FRAMEWORK_PATH = \"%s\"\n", frameworkSearchPath );
-    }
-#endif
-
-}
-
 #if ! defined( __APPLE__ )
 void memset_pattern4(void *dest, const void *src_pattern, size_t bytes )
 {

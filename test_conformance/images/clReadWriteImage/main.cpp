@@ -75,8 +75,6 @@ int main(int argc, const char *argv[])
 {
     cl_channel_type chanType;
 
-    checkDeviceTypeOverride( &gDeviceType );
-
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 
     if( NULL == argList )
