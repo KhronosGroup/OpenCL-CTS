@@ -2,7 +2,7 @@
 set(HARNESS_COMMON_SOURCES
     harness/threadTesting.cpp
     harness/typeWrappers.cpp
-    harness/mt19937.c
+    harness/mt19937.cpp
     harness/conversions.cpp
     harness/rounding_mode.cpp
     harness/msvc9.c
