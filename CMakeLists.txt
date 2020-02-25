@@ -174,8 +174,6 @@ add_subdirectory(test_common)
 add_subdirectory(test_conformance)
 add_subdirectory(test_extensions)
 
-set (PY_PATH   "${CLConform_SOURCE_DIR}/test_conformance/*.py")
-set (CSV_PATH  "${CLConform_SOURCE_DIR}/test_conformance/*.csv")
 # Support both VS2008 and VS2012.
 set (DLL_FILES "${VS_BUILD_DIR}/Debug/*.dll")
 set (DST_DIR   "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/")
@@ -194,8 +192,6 @@ set_property(TARGET COPY_DLL${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${
 
 if(WIN32)
   add_custom_target( COPY_FILES${CONFORMANCE_SUFFIX} ALL
-                     COMMAND ${COPY} ${PY_PATH} ${DST_DIR}
-                     COMMAND ${COPY} ${CSV_PATH} ${DST_DIR}
                      COMMAND ${COPY} ${DLL_FILES} ${DST_DIR}
                      COMMENT "Copying other files to output folder..." )
 else(WIN32)
