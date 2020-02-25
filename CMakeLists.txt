@@ -122,17 +122,16 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float
     # to falsely fail. -ffloat-store also works, but WG suggested
     # that sse would be better.
-    if(CMAKE_ARM_COMPILER OR ANDROID)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
-    else(CMAKE_ARM_COMPILER OR ANDROID)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -mfpmath=sse -Wno-narrowing")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -mfpmath=sse -Wno-narrowing")
-    endif(CMAKE_ARM_COMPILER OR ANDROID)
+	if(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*" OR CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2 -mfpmath=sse")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -mfpmath=sse")
+    endif()
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D__SSE__")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
