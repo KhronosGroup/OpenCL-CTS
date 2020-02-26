@@ -1234,13 +1234,7 @@ char * generate_random_image_data( image_descriptor *imageInfo, BufferOwningPtr<
     }
 #else
     P.reset( NULL ); // Free already allocated memory first, then try to allocate new block.
-#if defined (_WIN32) && defined(_MSC_VER)
-    char *data = (char *)_aligned_malloc(allocSize, get_pixel_size(imageInfo->format));
-#elif defined(__MINGW32__)
-    char *data = (char *)__mingw_aligned_malloc(allocSize, get_pixel_size(imageInfo->format));
-#else
-    char *data = (char *)memalign(get_pixel_size(imageInfo->format), allocSize);
-#endif
+    char *data = (char *)align_malloc(allocSize, get_pixel_size(imageInfo->format));
     P.reset(data,NULL,0,allocSize, true);
 #endif
 
@@ -3163,14 +3157,7 @@ char *create_random_image_data( ExplicitType dataType, image_descriptor *imageIn
       P.reset(data);
     }
 #else
-#if defined (_WIN32) && defined(_MSC_VER)
-    char *data = (char *)_aligned_malloc(allocSize, get_pixel_size(imageInfo->format));
-#elif defined(__MINGW32__)
-        char *data = (char *)__mingw_aligned_malloc(allocSize, get_pixel_size(imageInfo->format));
-#else
-    char *data = (char *)memalign(get_pixel_size(imageInfo->format), allocSize);
-#endif
-
+    char *data = (char *)align_malloc(allocSize, get_pixel_size(imageInfo->format));
     P.reset(data,NULL,0,allocSize,true);
 #endif
 
