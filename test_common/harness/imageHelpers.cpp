@@ -3829,7 +3829,7 @@ bool check_minimum_supported(cl_image_format *formatList,
 		if (bDepth)
 		{
 			memcpy(readFormatsToSupport + uiReadOffset,
-			       &fullProfReadOrWriteDepthFormats,
+			       fullProfReadOrWriteDepthFormats,
 			       sizeof(fullProfReadOrWriteDepthFormats));
 			uiReadOffset += sizeof(fullProfReadOrWriteDepthFormats) / sizeof(fullProfReadOrWriteDepthFormats[0]);
 
@@ -3842,7 +3842,7 @@ bool check_minimum_supported(cl_image_format *formatList,
 		if (bsRGBA)
 		{
 			memcpy(readFormatsToSupport + uiReadOffset,
-			       &fullProfSRGBFormats,
+			       fullProfSRGBFormats,
 			       sizeof(fullProfSRGBFormats));
 			uiReadOffset += sizeof(fullProfSRGBFormats) / sizeof(fullProfSRGBFormats[0]);
 
