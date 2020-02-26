@@ -26,14 +26,50 @@
 #include "procs.h"
 
 test_definition test_list[] = {
-    ADD_TEST_VERSION( timer_resolution_queries, Version(2, 1) ),
-    ADD_TEST_VERSION( device_and_host_timers, Version(2, 1) ),
+    ADD_TEST( timer_resolution_queries ),
+    ADD_TEST( device_and_host_timers ),
 };
+
+test_status InitCL(cl_device_id device) {
+	auto version = get_device_cl_version(device);
+	cl_platform_id platform;
+	cl_ulong timer_res;
+	cl_int error;
+
+	if (version < Version(2, 1))
+	{
+		return TEST_SKIP;
+	}
+
+	error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
+	                        sizeof(platform), &platform, NULL);
+	if (error != CL_SUCCESS)
+	{
+		print_error(error, "Unable to get device platform");
+		return TEST_FAIL;
+	}
+
+	error = clGetPlatformInfo(platform, CL_PLATFORM_HOST_TIMER_RESOLUTION,
+	                          sizeof(timer_res), &timer_res, NULL);
+	if (error != CL_SUCCESS)
+	{
+		print_error(error, "Unable to get host timer capabilities");
+		return TEST_FAIL;
+	}
+
+	if ((timer_res == 0) && (version > Version(2,2)))
+	{
+		return TEST_SKIP;
+	}
+
+	return TEST_PASS;
+}
+
 
 const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
+    return runTestHarnessWithCheck( argc, argv, test_num, test_list, false, false, 0, InitCL );
 }
 
