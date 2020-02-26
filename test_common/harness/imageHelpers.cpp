@@ -3671,45 +3671,201 @@ bool find_format( cl_image_format *formatList, unsigned int numFormats, cl_image
     return false;
 }
 
-bool check_minimum_supported( cl_image_format *formatList, unsigned int numFormats, cl_mem_flags flags )
+bool check_minimum_supported(cl_image_format *formatList,
+                             unsigned int numFormats,
+                             cl_mem_flags flags,
+                             cl_mem_object_type image_type,
+                             cl_device_id device)
 {
-    cl_image_format readFormatsToSupport[] = { { CL_RGBA, CL_UNORM_INT8 },
-        { CL_RGBA, CL_UNORM_INT16 },
-        { CL_RGBA, CL_SIGNED_INT8 },
-        { CL_RGBA, CL_SIGNED_INT16 },
-        { CL_RGBA, CL_SIGNED_INT32 },
-        { CL_RGBA, CL_UNSIGNED_INT8 },
-        { CL_RGBA, CL_UNSIGNED_INT16 },
-        { CL_RGBA, CL_UNSIGNED_INT32 },
-        { CL_RGBA, CL_HALF_FLOAT },
-        { CL_RGBA, CL_FLOAT },
-        { CL_BGRA, CL_UNORM_INT8} };
+	bool passed = true;
+	bool bDepth = false;
+	bool bsRGBA = false;
 
-    cl_image_format writeFormatsToSupport[] = { { CL_RGBA, CL_UNORM_INT8 },
-        { CL_RGBA, CL_UNORM_INT16 },
-        { CL_RGBA, CL_SIGNED_INT8 },
-        { CL_RGBA, CL_SIGNED_INT16 },
-        { CL_RGBA, CL_SIGNED_INT32 },
-        { CL_RGBA, CL_UNSIGNED_INT8 },
-        { CL_RGBA, CL_UNSIGNED_INT16 },
-        { CL_RGBA, CL_UNSIGNED_INT32 },
-        { CL_RGBA, CL_HALF_FLOAT },
-        { CL_RGBA, CL_FLOAT },
-        { CL_BGRA, CL_UNORM_INT8} };
+	// Required embedded formats.
+	cl_image_format embeddedProfReadOrWriteFormats[] =
+	{
+		{ CL_RGBA, CL_UNORM_INT8 },
+		{ CL_RGBA, CL_UNORM_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT8 },
+		{ CL_RGBA, CL_SIGNED_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT32 },
+		{ CL_RGBA, CL_UNSIGNED_INT8 },
+		{ CL_RGBA, CL_UNSIGNED_INT16 },
+		{ CL_RGBA, CL_UNSIGNED_INT32 },
+		{ CL_RGBA, CL_HALF_FLOAT },
+		{ CL_RGBA, CL_FLOAT },
+	};
+
+	/*
+		Required full profile formats.
+		This array does not contain any full profile
+		formats that have restrictions on when they
+		are required.
+	*/
+	cl_image_format fullProfReadOrWriteFormats[] =
+	{
+		{ CL_R, CL_UNORM_INT8 },
+		{ CL_R, CL_UNORM_INT16 },
+		{ CL_R, CL_SNORM_INT8 },
+		{ CL_R, CL_SNORM_INT16 },
+		{ CL_R, CL_SIGNED_INT8 },
+		{ CL_R, CL_SIGNED_INT16 },
+		{ CL_R, CL_SIGNED_INT32 },
+		{ CL_R, CL_UNSIGNED_INT8 },
+		{ CL_R, CL_UNSIGNED_INT16 },
+		{ CL_R, CL_UNSIGNED_INT32 },
+		{ CL_R, CL_HALF_FLOAT },
+		{ CL_R, CL_FLOAT },
+		{ CL_RG, CL_UNORM_INT8 },
+		{ CL_RG, CL_UNORM_INT16 },
+		{ CL_RG, CL_SNORM_INT8 },
+		{ CL_RG, CL_SNORM_INT16 },
+		{ CL_RG, CL_SIGNED_INT8 },
+		{ CL_RG, CL_SIGNED_INT16 },
+		{ CL_RG, CL_SIGNED_INT32 },
+		{ CL_RG, CL_UNSIGNED_INT8 },
+		{ CL_RG, CL_UNSIGNED_INT16 },
+		{ CL_RG, CL_UNSIGNED_INT32 },
+		{ CL_RG, CL_HALF_FLOAT },
+		{ CL_RG, CL_FLOAT },
+		{ CL_RGBA, CL_SNORM_INT8 },
+		{ CL_RGBA, CL_SNORM_INT16 },
+		{ CL_RGBA, CL_UNORM_INT8 },
+		{ CL_RGBA, CL_UNORM_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT8 },
+		{ CL_RGBA, CL_SIGNED_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT32 },
+		{ CL_RGBA, CL_UNSIGNED_INT8 },
+		{ CL_RGBA, CL_UNSIGNED_INT16 },
+		{ CL_RGBA, CL_UNSIGNED_INT32 },
+		{ CL_RGBA, CL_HALF_FLOAT },
+		{ CL_RGBA, CL_FLOAT },
+		{ CL_BGRA, CL_UNORM_INT8 },
+	};
+
+	cl_image_format fullProfReadOrWriteDepthFormats[] =
+	{
+		{ CL_DEPTH, CL_UNORM_INT16 },
+		{ CL_DEPTH, CL_FLOAT },
+	};
+
+	cl_image_format fullProfSRGBFormats[] =
+	{
+		{ CL_sRGBA, CL_UNORM_INT8 },
+	};
+
+	size_t uiTotalFormatSize = 0;
+	// Build the size of the format buffer
+	if (gIsEmbedded)
+	{
+		uiTotalFormatSize += sizeof(embeddedProfReadOrWriteFormats);
+	}
+	else
+	{
+		uiTotalFormatSize += sizeof(fullProfReadOrWriteFormats);
+
+		// Depth images are only required for 2DArray and 2D images
+		if (image_type == CL_MEM_OBJECT_IMAGE2D_ARRAY || image_type == CL_MEM_OBJECT_IMAGE2D)
+		{
+			uiTotalFormatSize += sizeof(fullProfReadOrWriteDepthFormats);
+			bDepth = true;
+		}
+
+		// sRGB writes not required for 1DImage Buffers
+		if (image_type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
+		{
+			if (flags == CL_MEM_WRITE_ONLY)
+			{
+				// sRGB writes are only required with the cl_khr_srgb_image_writes extension
+				if (is_extension_available(device, "cl_khr_srgb_image_writes"))
+				{
+					uiTotalFormatSize += sizeof(fullProfSRGBFormats);
+					bsRGBA = true;
+				}
+			}
+			else
+			{
+				uiTotalFormatSize += sizeof(fullProfSRGBFormats);
+				bsRGBA = true;
+			}
+		}
+	}
+
+	cl_image_format *readFormatsToSupport = (cl_image_format*)malloc(uiTotalFormatSize);
+	cl_image_format *writeFormatsToSupport = (cl_image_format*)malloc(uiTotalFormatSize);
+
+	if (readFormatsToSupport == NULL || writeFormatsToSupport == NULL)
+	{
+		passed = false;
+		goto exit;
+	}
+
+	// Copy all required formats for the device profile and image type
+	if (gIsEmbedded)
+	{
+		memcpy(readFormatsToSupport,
+		       embeddedProfReadOrWriteFormats,
+		       sizeof(embeddedProfReadOrWriteFormats));
+
+		memcpy(writeFormatsToSupport,
+		       embeddedProfReadOrWriteFormats,
+		       sizeof(embeddedProfReadOrWriteFormats));
+	}
+	else
+	{
+		size_t uiReadOffset = 0;
+		size_t uiWriteOffset = 0;
+
+		memcpy(readFormatsToSupport + uiReadOffset,
+		       fullProfReadOrWriteFormats,
+		       sizeof(fullProfReadOrWriteFormats));
+		uiReadOffset += sizeof(fullProfReadOrWriteFormats) / sizeof(fullProfReadOrWriteFormats[0]);
+
+		memcpy(writeFormatsToSupport + uiWriteOffset,
+		       fullProfReadOrWriteFormats,
+		       sizeof(fullProfReadOrWriteFormats));
+		uiWriteOffset += sizeof(fullProfReadOrWriteFormats) / sizeof(fullProfReadOrWriteFormats[0]);
+
+		if (bDepth)
+		{
+			memcpy(readFormatsToSupport + uiReadOffset,
+			       &fullProfReadOrWriteDepthFormats,
+			       sizeof(fullProfReadOrWriteDepthFormats));
+			uiReadOffset += sizeof(fullProfReadOrWriteDepthFormats) / sizeof(fullProfReadOrWriteDepthFormats[0]);
+
+			memcpy(writeFormatsToSupport + uiWriteOffset,
+			       fullProfReadOrWriteDepthFormats,
+			       sizeof(fullProfReadOrWriteDepthFormats));
+			uiWriteOffset += sizeof(fullProfReadOrWriteDepthFormats) / sizeof(fullProfReadOrWriteDepthFormats[0]);
+		}
+
+		if (bsRGBA)
+		{
+			memcpy(readFormatsToSupport + uiReadOffset,
+			       &fullProfSRGBFormats,
+			       sizeof(fullProfSRGBFormats));
+			uiReadOffset += sizeof(fullProfSRGBFormats) / sizeof(fullProfSRGBFormats[0]);
+
+			memcpy(writeFormatsToSupport + uiWriteOffset,
+			       fullProfSRGBFormats,
+			       sizeof(fullProfSRGBFormats));
+			uiWriteOffset += sizeof(fullProfSRGBFormats) / sizeof(fullProfSRGBFormats[0]);
+		}
+	}
 
     cl_image_format *formatsToTest;
     unsigned int testCount;
-    bool passed = true;
 
+	// Work out the number of elements in the format array
     if( flags == CL_MEM_READ_ONLY )
     {
         formatsToTest = readFormatsToSupport;
-        testCount = sizeof( readFormatsToSupport ) / sizeof( readFormatsToSupport[ 0 ] );
+        testCount = uiTotalFormatSize / sizeof( readFormatsToSupport[ 0 ] );
     }
     else
     {
         formatsToTest = writeFormatsToSupport;
-        testCount = sizeof( writeFormatsToSupport ) / sizeof( writeFormatsToSupport[ 0 ] );
+        testCount = uiTotalFormatSize / sizeof( writeFormatsToSupport[ 0 ] );
     }
 
     for( unsigned int i = 0; i < testCount; i++ )
@@ -3721,6 +3877,11 @@ bool check_minimum_supported( cl_image_format *formatList, unsigned int numForma
             passed = false;
         }
     }
+
+exit:
+	free(readFormatsToSupport);
+	free(writeFormatsToSupport);
+
     return passed;
 }
 

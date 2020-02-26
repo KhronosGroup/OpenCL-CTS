@@ -147,7 +147,7 @@ int test_image_type( cl_device_id device, cl_context context, cl_mem_object_type
         log_info("No requirement for 3D write in OpenCL 1.2. Not checking formats.\n");
     } else {
         log_info("Checking for required OpenCL 1.2 formats.\n");
-        if (check_minimum_supported( formatList, numFormats, flags ) == false) {
+        if (check_minimum_supported( formatList, numFormats, flags, image_type, device ) == false) {
             ret++;
         } else {
             log_info("All required formats present.\n");

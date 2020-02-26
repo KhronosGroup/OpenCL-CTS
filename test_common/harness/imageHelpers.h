@@ -71,7 +71,11 @@ extern void print_read_header( cl_image_format *format, image_sampler_data *samp
 extern void print_write_header( cl_image_format *format, bool err);
 extern void print_header( cl_image_format *format, bool err );
 extern bool find_format( cl_image_format *formatList, unsigned int numFormats, cl_image_format *formatToFind );
-extern bool check_minimum_supported( cl_image_format *formatList, unsigned int numFormats, cl_mem_flags flags );
+extern bool check_minimum_supported(cl_image_format *formatList,
+                                    unsigned int numFormats,
+                                    cl_mem_flags flags,
+                                    cl_mem_object_type image_type,
+                                    cl_device_id device);
 
 extern size_t get_format_type_size( const cl_image_format *format );
 extern size_t get_channel_data_type_size( cl_channel_type channelType );
