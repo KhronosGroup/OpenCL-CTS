@@ -15,11 +15,6 @@ set (SPIR_SOURCES
 add_executable(${SPIR_OUT}
     ${SPIR_SOURCES})
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" AND NOT MSVC)
-set_source_files_properties(
-        COMPILE_FLAGS -msse2)
-endif()
-
 if(UNIX)
     set_target_properties(${SPIR_OUT} PROPERTIES
        COMPILE_FLAGS "-fexceptions -frtti")
@@ -69,4 +64,3 @@ foreach(input_file ${SPIR_FILES})
     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${input_file}" "$<TARGET_FILE_DIR:${SPIR_OUT}>/"
 )
 endforeach(input_file)
-

@@ -1,0 +1,41 @@
+os:
+  - Visual Studio 2017
+
+shallow_clone: true
+
+platform:
+  - Win32
+  - x64
+
+configuration:
+  - Release
+
+before_build:
+  # Setup environment:
+  - ps: $env:TOP = $env:APPVEYOR_BUILD_FOLDER
+  - ps: $env:TOP
+  - echo %TOP%
+  # Get the OpenCL Headers:
+  - git clone --depth=1 https://github.com/KhronosGroup/OpenCL-Headers OpenCL-Headers
+  # Get and build the OpenCL ICD Loader:
+  - git clone --depth=1 https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+  - ps: cd OpenCL-ICD-Loader
+  - ps: mkdir build
+  - ps: cd build
+  - cmake -A%PLATFORM% -DOPENCL_ICD_LOADER_HEADERS_DIR=%TOP%/OpenCL-Headers/ ..
+  - cmake --build . --config %CONFIGURATION%
+  - ps: cd $env:TOP
+  # Get the libclcxx standard library:
+  - git clone --depth=1 https://github.com/KhronosGroup/libclcxx.git libclcxx
+  # Generate the CTS solution file:
+  - cmake -DCL_INCLUDE_DIR=%TOP%/OpenCL-Headers
+          -DCL_LIB_DIR=%TOP%/OpenCL-ICD-Loader/build
+          -DCL_LIBCLCXX_DIR=%TOP%/libclcxx
+          -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin
+          -DOPENCL_LIBRARIES="OpenCL"
+          -H. -Bbuild_win -A%PLATFORM%
+
+build:
+  project: build_win\CLConform.sln
+  parallel: true
+  verbosity: normal
