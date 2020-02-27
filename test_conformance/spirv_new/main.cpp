@@ -213,5 +213,5 @@ int main(int argc, const char *argv[])
     return runTestHarnessWithCheck(argc, argv,
                           spirvTestsRegistry::getInstance().getNumTests(),
                           spirvTestsRegistry::getInstance().getTestDefinitions(),
-                          false, false, 0, checkAddressWidth);
+                          false, 0, checkAddressWidth);
 }

@@ -966,7 +966,7 @@ int main(int argc, const char* argv[])
         return -1;
     }
 
-    int err = runTestHarnessWithCheck( argCount, argList, test_num, test_list, false, true, 0, InitCL );
+    int err = runTestHarnessWithCheck( argCount, argList, test_num, test_list, true, 0, InitCL );
 
     if(gQueue)
     {

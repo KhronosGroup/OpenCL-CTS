@@ -304,6 +304,6 @@ test_status InitCL(cl_device_id device) {
 
 int main(int argc, const char *argv[])
 {
-  return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, true, 0, InitCL);
+  return runTestHarnessWithCheck(argc, argv, test_num, test_list, true, 0, InitCL);
 }
 

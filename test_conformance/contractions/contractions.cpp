@@ -331,7 +331,7 @@ int main( int argc, const char **argv )
 
     if( !error )
     {
-        error = runTestHarnessWithCheck( gArgCount, gArgList, test_num, test_list, false, true, 0, InitCL );
+        error = runTestHarnessWithCheck( gArgCount, gArgList, test_num, test_list, true, 0, InitCL );
     }
 
     if( gQueue )
