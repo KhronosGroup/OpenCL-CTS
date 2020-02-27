@@ -3819,24 +3819,24 @@ bool check_minimum_supported(cl_image_format *formatList,
 		memcpy(readFormatsToSupport + uiReadOffset,
 		       fullProfReadOrWriteFormats,
 		       sizeof(fullProfReadOrWriteFormats));
-		uiReadOffset += sizeof(fullProfReadOrWriteFormats) / sizeof(fullProfReadOrWriteFormats[0]);
+		uiReadOffset += ARRAY_SIZE(fullProfReadOrWriteFormats);
 
 		memcpy(writeFormatsToSupport + uiWriteOffset,
 		       fullProfReadOrWriteFormats,
 		       sizeof(fullProfReadOrWriteFormats));
-		uiWriteOffset += sizeof(fullProfReadOrWriteFormats) / sizeof(fullProfReadOrWriteFormats[0]);
+		uiWriteOffset += ARRAY_SIZE(fullProfReadOrWriteFormats);
 
 		if (bDepth)
 		{
 			memcpy(readFormatsToSupport + uiReadOffset,
 			       fullProfReadOrWriteDepthFormats,
 			       sizeof(fullProfReadOrWriteDepthFormats));
-			uiReadOffset += sizeof(fullProfReadOrWriteDepthFormats) / sizeof(fullProfReadOrWriteDepthFormats[0]);
+			uiReadOffset += ARRAY_SIZE(fullProfReadOrWriteDepthFormats);
 
 			memcpy(writeFormatsToSupport + uiWriteOffset,
 			       fullProfReadOrWriteDepthFormats,
 			       sizeof(fullProfReadOrWriteDepthFormats));
-			uiWriteOffset += sizeof(fullProfReadOrWriteDepthFormats) / sizeof(fullProfReadOrWriteDepthFormats[0]);
+			uiWriteOffset += ARRAY_SIZE(fullProfReadOrWriteDepthFormats);
 		}
 
 		if (bsRGBA)
@@ -3844,12 +3844,12 @@ bool check_minimum_supported(cl_image_format *formatList,
 			memcpy(readFormatsToSupport + uiReadOffset,
 			       fullProfSRGBFormats,
 			       sizeof(fullProfSRGBFormats));
-			uiReadOffset += sizeof(fullProfSRGBFormats) / sizeof(fullProfSRGBFormats[0]);
+			uiReadOffset += ARRAY_SIZE(fullProfSRGBFormats);
 
 			memcpy(writeFormatsToSupport + uiWriteOffset,
 			       fullProfSRGBFormats,
 			       sizeof(fullProfSRGBFormats));
-			uiWriteOffset += sizeof(fullProfSRGBFormats) / sizeof(fullProfSRGBFormats[0]);
+			uiWriteOffset += ARRAY_SIZE(fullProfSRGBFormats);
 		}
 	}
 
