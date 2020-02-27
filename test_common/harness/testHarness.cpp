@@ -60,12 +60,12 @@ int     gHasLong = 1;
 int runTestHarness( int argc, const char *argv[], int testNum, test_definition testList[],
                     int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps )
 {
-    return runTestHarnessWithCheck( argc, argv, testNum, testList, imageSupportRequired, forceNoContextCreation, queueProps,
+    return runTestHarnessWithCheck( argc, argv, testNum, testList, forceNoContextCreation, queueProps,
                           ( imageSupportRequired ) ? verifyImageSupport : NULL );
 }
 
 int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_definition testList[],
-                             int imageSupportRequired, int forceNoContextCreation, cl_command_queue_properties queueProps,
+                             int forceNoContextCreation, cl_command_queue_properties queueProps,
                              DeviceCheckFn deviceCheckFn )
 {
     test_start();
