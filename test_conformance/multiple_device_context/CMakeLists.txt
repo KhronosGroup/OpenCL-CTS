@@ -6,8 +6,4 @@ set(${MODULE_NAME}_SOURCES
     test_multiple_devices.cpp
 )
 
-
-set_source_files_properties(
-        COMPILE_FLAGS -msse2)
-
 include(../CMakeCommon.txt)
