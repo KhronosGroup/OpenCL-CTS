@@ -3678,8 +3678,8 @@ bool check_minimum_supported(cl_image_format *formatList,
                              cl_device_id device)
 {
 	bool passed = true;
-	bool bDepth = false;
-	bool bsRGBA = false;
+	bool device_requires_depth_images = false;
+	bool device_requires_sRGB_images = false;
 
 	// Required embedded formats.
 	static cl_image_format embeddedProfReadOrWriteFormats[] =
@@ -3768,7 +3768,7 @@ bool check_minimum_supported(cl_image_format *formatList,
 		if (image_type == CL_MEM_OBJECT_IMAGE2D_ARRAY || image_type == CL_MEM_OBJECT_IMAGE2D)
 		{
 			uiTotalFormatSize += sizeof(fullProfReadOrWriteDepthFormats);
-			bDepth = true;
+			device_requires_depth_images = true;
 		}
 
 		// sRGB writes not required for 1DImage Buffers
@@ -3780,13 +3780,13 @@ bool check_minimum_supported(cl_image_format *formatList,
 				if (is_extension_available(device, "cl_khr_srgb_image_writes"))
 				{
 					uiTotalFormatSize += sizeof(fullProfSRGBFormats);
-					bsRGBA = true;
+					device_requires_sRGB_images = true;
 				}
 			}
 			else
 			{
 				uiTotalFormatSize += sizeof(fullProfSRGBFormats);
-				bsRGBA = true;
+				device_requires_sRGB_images = true;
 			}
 		}
 	}
@@ -3826,7 +3826,7 @@ bool check_minimum_supported(cl_image_format *formatList,
 		       sizeof(fullProfReadOrWriteFormats));
 		uiWriteOffset += ARRAY_SIZE(fullProfReadOrWriteFormats);
 
-		if (bDepth)
+		if (device_requires_depth_images)
 		{
 			memcpy(readFormatsToSupport + uiReadOffset,
 			       fullProfReadOrWriteDepthFormats,
@@ -3839,7 +3839,7 @@ bool check_minimum_supported(cl_image_format *formatList,
 			uiWriteOffset += ARRAY_SIZE(fullProfReadOrWriteDepthFormats);
 		}
 
-		if (bsRGBA)
+		if (device_requires_sRGB_images)
 		{
 			memcpy(readFormatsToSupport + uiReadOffset,
 			       fullProfSRGBFormats,
