@@ -316,7 +316,7 @@ int main (int argc, const char **argv )
     gMTdata = init_genrand( seed );
 
     const char* arg[] = {argv[0]};
-    int ret = runTestHarnessWithCheck( 1, arg, test_num, test_list, false, true, 0, InitCL );
+    int ret = runTestHarnessWithCheck( 1, arg, test_num, test_list, true, 0, InitCL );
 
     free_mtdata( gMTdata );
 

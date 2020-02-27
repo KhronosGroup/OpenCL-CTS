@@ -8,7 +8,4 @@ set(${MODULE_NAME}_SOURCES
         type_replacer.cpp
 )
 
-set_source_files_properties(
-        COMPILE_FLAGS -msse2)
-
 include(../CMakeCommon.txt)

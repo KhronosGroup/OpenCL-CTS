@@ -88,8 +88,8 @@ typedef test_status (*DeviceCheckFn)( cl_device_id device );
 // Returns EXIT_SUCCESS iff all tests succeeded or the tests were listed,
 // otherwise return EXIT_FAILURE.
 extern int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_definition testList[],
-                                    int imageSupportRequired, int forceNoContextCreation,
-                                    cl_command_queue_properties queueProps, DeviceCheckFn deviceCheckFn );
+                                    int forceNoContextCreation, cl_command_queue_properties queueProps,
+                                    DeviceCheckFn deviceCheckFn );
 
 // The command line parser used by runTestHarness to break up parameters into calls to callTestFunctions
 extern int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id device, int testNum,
