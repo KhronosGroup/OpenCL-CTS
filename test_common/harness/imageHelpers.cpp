@@ -3741,6 +3741,7 @@ bool check_minimum_supported(cl_image_format *formatList,
 		{ CL_RGBA, CL_HALF_FLOAT },
 		{ CL_RGBA, CL_FLOAT },
 		{ CL_BGRA, CL_UNORM_INT8 },
+		{ CL_sRGBA, CL_UNORM_INT8 },
 	};
 
 	static cl_image_format fullProfReadOrWriteDepthFormats[] =
@@ -3751,7 +3752,6 @@ bool check_minimum_supported(cl_image_format *formatList,
 
 	static cl_image_format fullProfSRGBFormats[] =
 	{
-		{ CL_sRGBA, CL_UNORM_INT8 },
 	};
 
 	size_t uiTotalFormatSize = 0;
