@@ -1033,7 +1033,6 @@ test_status InitCL( cl_device_id device )
     err = check_opencl_version(device,1,2);
     if( err != CL_SUCCESS ) {
       print_missing_feature(err,"printf");
-      test_finish();
       return TEST_FAIL;
     }
 

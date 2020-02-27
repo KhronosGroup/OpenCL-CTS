@@ -95,7 +95,6 @@ int main (int argc, const char **argv )
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
     {
-        test_finish();
         return -1;
     }
 

@@ -132,7 +132,6 @@ test_fpmath_float2(cl_device_id device, cl_context context, cl_command_queue que
     err = clGetDeviceInfo( device, CL_DEVICE_SINGLE_FP_CONFIG, sizeof( single_config ), &single_config, NULL );
     if (err) {
       log_error("clGetDeviceInfo for CL_DEVICE_SINGLE_FP_CONFIG failed: %d", err);
-      test_finish();
       return -1;
     }
     //If we only support rtz mode
@@ -144,13 +143,11 @@ test_fpmath_float2(cl_device_id device, cl_context context, cl_command_queue que
         if( err )
         {
             log_error("clGetDeviceInfo for CL_DEVICE_PROFILE failed: %d", err);
-              test_finish();
               return -1;
         }
         if( 0 != strcmp( profile, "EMBEDDED_PROFILE"))
         {
             log_error( "FAILURE:  Device doesn't support CL_FP_ROUND_TO_NEAREST and isn't EMBEDDED_PROFILE\n" );
-            test_finish();
             return -1;
         }
 

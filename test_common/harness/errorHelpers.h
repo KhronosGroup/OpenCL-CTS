@@ -31,47 +31,29 @@ extern "C" {
 #define LOWER_IS_BETTER     0
 #define HIGHER_IS_BETTER    1
 
-// If USE_ATF is defined, all log_error and log_info calls can be routed to test library
-// functions as described below. This is helpful for integration into an automated testing
-// system.
-#if USE_ATF
-// export BUILD_WITH_ATF=1
-    #include <ATF/ATF.h>
-    #define test_start() ATFTestStart()
-    #define log_info ATFLogInfo
-    #define log_error ATFLogError
-    #define log_missing_feature ATFLogMissingFeature
-    #define log_perf(_number, _higherBetter, _numType, _format, ...) ATFLogPerformanceNumber(_number, _higherBetter, _numType, _format, ##__VA_ARGS__)
-    #define test_finish() ATFTestFinish()
-    #define vlog_perf(_number, _higherBetter, _numType, _format, ...) ATFLogPerformanceNumber(_number, _higherBetter, _numType, _format,##__VA_ARGS__)
-    #define vlog ATFLogInfo
-    #define vlog_error ATFLogError
-#else
-    #include <stdio.h>
-    #define test_start()
-    #define log_info printf
-    #define log_error printf
-    #define log_missing_feature printf
-    #define log_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,        \
-                        _higherBetter?"higher is better":"lower is better", _number )
-    #define test_finish()
-    #define vlog_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,    \
-                        _higherBetter?"higher is better":"lower is better" , _number)
-    #ifdef _WIN32
-        #ifdef __MINGW32__
-            // Use __mingw_printf since it supports "%a" format specifier
-            #define vlog __mingw_printf
-            #define vlog_error __mingw_printf
-        #else
-            // Use home-baked function that treats "%a" as "%f"
-        static int vlog_win32(const char *format, ...);
-        #define vlog vlog_win32
-        #define vlog_error vlog_win32
-        #endif
+#include <stdio.h>
+#define test_start()
+#define log_info printf
+#define log_error printf
+#define log_missing_feature printf
+#define log_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,        \
+                    _higherBetter?"higher is better":"lower is better", _number )
+#define vlog_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,    \
+                    _higherBetter?"higher is better":"lower is better" , _number)
+#ifdef _WIN32
+    #ifdef __MINGW32__
+        // Use __mingw_printf since it supports "%a" format specifier
+        #define vlog __mingw_printf
+        #define vlog_error __mingw_printf
     #else
-        #define vlog_error printf
-        #define vlog printf
+        // Use home-baked function that treats "%a" as "%f"
+    static int vlog_win32(const char *format, ...);
+    #define vlog vlog_win32
+    #define vlog_error vlog_win32
     #endif
+#else
+    #define vlog_error printf
+    #define vlog printf
 #endif
 
 #define ct_assert(b)          ct_assert_i(b, __LINE__)

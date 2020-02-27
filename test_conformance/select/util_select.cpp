@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/errorHelpers.h"
 
 #include <stdio.h>
 #include "test_select.h"

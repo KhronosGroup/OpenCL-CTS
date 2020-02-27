@@ -139,7 +139,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
     {
-        test_finish();
         return EXIT_FAILURE;
     }
 
@@ -164,7 +163,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
         {
             log_info( "\t%s\n", testList[i].name );
         }
-        test_finish();
         return EXIT_SUCCESS;
     }
 
@@ -291,14 +289,12 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     err = clGetPlatformIDs(0, NULL, &num_platforms);
     if (err) {
         print_error(err, "clGetPlatformIDs failed");
-        test_finish();
         return EXIT_FAILURE;
     }
 
     platforms = (cl_platform_id *) malloc( num_platforms * sizeof( cl_platform_id ) );
     if (!platforms || choosen_platform_index >= num_platforms) {
         log_error( "platform index out of range -- choosen_platform_index (%d) >= num_platforms (%d)\n", choosen_platform_index, num_platforms );
-        test_finish();
         return EXIT_FAILURE;
     }
     BufferOwningPtr<cl_platform_id> platformsBuf(platforms);
@@ -306,7 +302,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     err = clGetPlatformIDs(num_platforms, platforms, NULL);
     if (err) {
         print_error(err, "clGetPlatformIDs failed");
-        test_finish();
         return EXIT_FAILURE;
     }
 
@@ -314,14 +309,12 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     err = clGetDeviceIDs(platforms[choosen_platform_index],  device_type, 0, NULL, &num_devices );
     if (err) {
         print_error(err, "clGetDeviceIDs failed");
-        test_finish();
         return EXIT_FAILURE;
     }
 
     devices = (cl_device_id *) malloc( num_devices * sizeof( cl_device_id ) );
     if (!devices || choosen_device_index >= num_devices) {
         log_error( "device index out of range -- choosen_device_index (%d) >= num_devices (%d)\n", choosen_device_index, num_devices );
-        test_finish();
         return EXIT_FAILURE;
     }
     BufferOwningPtr<cl_device_id> devicesBuf(devices);
@@ -331,7 +324,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     err = clGetDeviceIDs(platforms[choosen_platform_index],  device_type, num_devices, devices, NULL );
     if (err) {
         print_error(err, "clGetDeviceIDs failed");
-        test_finish();
         return EXIT_FAILURE;
     }
 
@@ -339,7 +331,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
 
     if( printDeviceHeader( device ) != CL_SUCCESS )
     {
-        test_finish();
         return EXIT_FAILURE;
     }
 
@@ -347,7 +338,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     err = clGetDeviceInfo( device, CL_DEVICE_SINGLE_FP_CONFIG, sizeof( fpconfig ), &fpconfig, NULL );
     if (err) {
         print_error(err, "clGetDeviceInfo for CL_DEVICE_SINGLE_FP_CONFIG failed");
-        test_finish();
         return EXIT_FAILURE;
     }
 
@@ -361,7 +351,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     if (err)
     {
         print_error(err, "clGetDeviceInfo for CL_DEVICE_PROFILE failed\n" );
-        test_finish();
         return EXIT_FAILURE;
     }
     gIsEmbedded = NULL != strstr(profile, "EMBEDDED_PROFILE");
@@ -372,7 +361,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     if (err)
     {
         print_error(err, "clGetDeviceInfo for CL_DEVICE_SINGLE_FP_CONFIG failed\n");
-        test_finish();
         return EXIT_FAILURE;
     }
 
@@ -388,14 +376,12 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
         if( (err = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, 0, NULL, &extensionsStringSize ) ))
         {
             print_error( err, "Unable to get extensions string size for embedded device" );
-            test_finish();
             return EXIT_FAILURE;
         }
         char *extensions_string = (char*) malloc(extensionsStringSize);
         if( NULL == extensions_string )
         {
             print_error( CL_OUT_OF_HOST_MEMORY, "Unable to allocate storage for extensions string for embedded device" );
-            test_finish();
             return EXIT_FAILURE;
         }
         BufferOwningPtr<char> extensions_stringBuf(extensions_string);
@@ -403,14 +389,12 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
         if( (err = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, extensionsStringSize, extensions_string, NULL ) ))
         {
             print_error( err, "Unable to get extensions string for embedded device" );
-            test_finish();
             return EXIT_FAILURE;
         }
 
         if( extensions_string[extensionsStringSize-1] != '\0' )
         {
             log_error( "FAILURE: extensions string for embedded device is not NUL terminated" );
-            test_finish();
             return EXIT_FAILURE;
         }
 
@@ -427,7 +411,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
         if( (err = clGetDeviceInfo( device, CL_DEVICE_OPENCL_C_VERSION, sizeof(c_version), c_version, NULL )) )
         {
             log_error( "FAILURE: unable to get CL_DEVICE_OPENCL_C_VERSION on 1.0 device. (%d)\n", err );
-            test_finish();
             return EXIT_FAILURE;
         }
 
@@ -444,7 +427,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     if( (err = clGetDeviceInfo( device, CL_DEVICE_ADDRESS_BITS, sizeof( device_address_bits ), &device_address_bits, NULL ) ))
     {
         print_error( err, "Unable to obtain device address bits" );
-        test_finish();
         return EXIT_FAILURE;
     }
     if( device_address_bits )
@@ -452,7 +434,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
     else
     {
         log_error("Invalid device address bit size returned by device.\n");
-        test_finish();
         return EXIT_FAILURE;
     }
 
@@ -667,8 +648,6 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
             ret = saveResultsToJson( filename, argv[0], testList, selectedTestList, resultTestList, testNum );
         }
     }
-
-    test_finish();
 
     free( selectedTestList );
     free( resultTestList );

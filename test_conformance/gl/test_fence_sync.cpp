@@ -669,7 +669,6 @@ int test_fence_sync( cl_device_id device, cl_context context, cl_command_queue q
     if( err != CL_SUCCESS )
     {
       print_error( err, "Unable to get device count from context" );
-      test_finish();
       return -1;
     }
     vs_count = (GLint)device_cb / sizeof(cl_device_id);

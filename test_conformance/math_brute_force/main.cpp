@@ -133,7 +133,6 @@ static void ReleaseCL( void );
 static int InitILogbConstants( void );
 static int IsTininessDetectedBeforeRounding( void );
 static int IsInRTZMode( void );         //expensive. Please check gIsInRTZMode global instead.
-static void TestFinishAtExit(void);
 
 
 int doTest( const char* name )
@@ -816,7 +815,6 @@ int main (int argc, const char * argv[])
     {
         return -1;
     }
-    atexit(TestFinishAtExit);
 
 #if defined( __APPLE__ )
     struct timeval startTime;
@@ -1991,9 +1989,5 @@ cl_uint RoundUpToNextPowerOfTwo( cl_uint x )
         x &= x-1;
 
     return x+x;
-}
-
-void TestFinishAtExit(void) {
-  test_finish();
 }
 

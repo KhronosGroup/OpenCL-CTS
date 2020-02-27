@@ -275,7 +275,6 @@ int allocate_size(cl_context context, cl_command_queue *queue, cl_device_id devi
     // Otherwise we succeeded
     if (result != SUCCEEDED) {
       log_error("Test logic error.");
-      test_finish();
       exit(-1);
     }
     amount_allocated += allocation_this_time;
