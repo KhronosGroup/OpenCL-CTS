@@ -21,6 +21,9 @@
 #if !defined (_WIN32) && !defined(__APPLE__)
 #include <malloc.h>
 #endif
+#include <vector>
+#include <algorithm>
+#include <iterator>
 
 RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
 
@@ -3682,7 +3685,7 @@ bool check_minimum_supported(cl_image_format *formatList,
 	bool device_requires_sRGB_images = false;
 
 	// Required embedded formats.
-	static cl_image_format embeddedProfReadOrWriteFormats[] =
+	static std::vector<cl_image_format> embeddedProfReadOrWriteFormats
 	{
 		{ CL_RGBA, CL_UNORM_INT8 },
 		{ CL_RGBA, CL_UNORM_INT16 },
@@ -3702,7 +3705,7 @@ bool check_minimum_supported(cl_image_format *formatList,
 		formats that have restrictions on when they
 		are required.
 	*/
-	static cl_image_format fullProfReadOrWriteFormats[] =
+	static std::vector<cl_image_format> fullProfReadOrWriteFormats
 	{
 		{ CL_R, CL_UNORM_INT8 },
 		{ CL_R, CL_UNORM_INT16 },
@@ -3744,30 +3747,21 @@ bool check_minimum_supported(cl_image_format *formatList,
 		{ CL_sRGBA, CL_UNORM_INT8 },
 	};
 
-	static cl_image_format fullProfReadOrWriteDepthFormats[] =
+	static std::vector<cl_image_format> fullProfReadOrWriteDepthFormats
 	{
 		{ CL_DEPTH, CL_UNORM_INT16 },
 		{ CL_DEPTH, CL_FLOAT },
 	};
 
-	static cl_image_format fullProfSRGBFormats[] =
+	static std::vector<cl_image_format> fullProfSRGBFormats
 	{
 	};
 
-	size_t uiTotalFormatSize = 0;
-	// Build the size of the format buffer
-	if (gIsEmbedded)
+	if (!gIsEmbedded)
 	{
-		uiTotalFormatSize += sizeof(embeddedProfReadOrWriteFormats);
-	}
-	else
-	{
-		uiTotalFormatSize += sizeof(fullProfReadOrWriteFormats);
-
 		// Depth images are only required for 2DArray and 2D images
 		if (image_type == CL_MEM_OBJECT_IMAGE2D_ARRAY || image_type == CL_MEM_OBJECT_IMAGE2D)
 		{
-			uiTotalFormatSize += sizeof(fullProfReadOrWriteDepthFormats);
 			device_requires_depth_images = true;
 		}
 
@@ -3779,108 +3773,73 @@ bool check_minimum_supported(cl_image_format *formatList,
 				// sRGB writes are only required with the cl_khr_srgb_image_writes extension
 				if (is_extension_available(device, "cl_khr_srgb_image_writes"))
 				{
-					uiTotalFormatSize += sizeof(fullProfSRGBFormats);
 					device_requires_sRGB_images = true;
 				}
 			}
 			else
 			{
-				uiTotalFormatSize += sizeof(fullProfSRGBFormats);
 				device_requires_sRGB_images = true;
 			}
 		}
 	}
 
-	cl_image_format *readFormatsToSupport = (cl_image_format*)malloc(uiTotalFormatSize);
-	cl_image_format *writeFormatsToSupport = (cl_image_format*)malloc(uiTotalFormatSize);
-
-	if (readFormatsToSupport == NULL || writeFormatsToSupport == NULL)
-	{
-		passed = false;
-		goto exit;
-	}
+	std::vector<cl_image_format> readFormatsToSupport;
+	std::vector<cl_image_format> writeFormatsToSupport;
 
 	// Copy all required formats for the device profile and image type
 	if (gIsEmbedded)
 	{
-		memcpy(readFormatsToSupport,
-		       embeddedProfReadOrWriteFormats,
-		       sizeof(embeddedProfReadOrWriteFormats));
+		copy(embeddedProfReadOrWriteFormats.begin(),
+		     embeddedProfReadOrWriteFormats.end(),
+		      back_inserter(readFormatsToSupport));
 
-		memcpy(writeFormatsToSupport,
-		       embeddedProfReadOrWriteFormats,
-		       sizeof(embeddedProfReadOrWriteFormats));
+		copy(embeddedProfReadOrWriteFormats.begin(),
+		     embeddedProfReadOrWriteFormats.end(),
+		      back_inserter(writeFormatsToSupport));
 	}
 	else
 	{
-		size_t uiReadOffset = 0;
-		size_t uiWriteOffset = 0;
+		copy(fullProfReadOrWriteFormats.begin(),
+		     fullProfReadOrWriteFormats.end(),
+			 back_inserter(readFormatsToSupport));
 
-		memcpy(readFormatsToSupport + uiReadOffset,
-		       fullProfReadOrWriteFormats,
-		       sizeof(fullProfReadOrWriteFormats));
-		uiReadOffset += ARRAY_SIZE(fullProfReadOrWriteFormats);
-
-		memcpy(writeFormatsToSupport + uiWriteOffset,
-		       fullProfReadOrWriteFormats,
-		       sizeof(fullProfReadOrWriteFormats));
-		uiWriteOffset += ARRAY_SIZE(fullProfReadOrWriteFormats);
+		copy(fullProfReadOrWriteFormats.begin(),
+		     fullProfReadOrWriteFormats.end(),
+		     back_inserter(writeFormatsToSupport));
 
 		if (device_requires_depth_images)
 		{
-			memcpy(readFormatsToSupport + uiReadOffset,
-			       fullProfReadOrWriteDepthFormats,
-			       sizeof(fullProfReadOrWriteDepthFormats));
-			uiReadOffset += ARRAY_SIZE(fullProfReadOrWriteDepthFormats);
+			copy(fullProfReadOrWriteDepthFormats.begin(),
+			     fullProfReadOrWriteDepthFormats.end(),
+			     back_inserter(readFormatsToSupport));
 
-			memcpy(writeFormatsToSupport + uiWriteOffset,
-			       fullProfReadOrWriteDepthFormats,
-			       sizeof(fullProfReadOrWriteDepthFormats));
-			uiWriteOffset += ARRAY_SIZE(fullProfReadOrWriteDepthFormats);
+			copy(fullProfReadOrWriteDepthFormats.begin(),
+			     fullProfReadOrWriteDepthFormats.end(),
+			     back_inserter(writeFormatsToSupport));
 		}
 
 		if (device_requires_sRGB_images)
 		{
-			memcpy(readFormatsToSupport + uiReadOffset,
-			       fullProfSRGBFormats,
-			       sizeof(fullProfSRGBFormats));
-			uiReadOffset += ARRAY_SIZE(fullProfSRGBFormats);
+			copy(fullProfSRGBFormats.begin(),
+			     fullProfSRGBFormats.end(),
+			     back_inserter(readFormatsToSupport));
 
-			memcpy(writeFormatsToSupport + uiWriteOffset,
-			       fullProfSRGBFormats,
-			       sizeof(fullProfSRGBFormats));
-			uiWriteOffset += ARRAY_SIZE(fullProfSRGBFormats);
+			copy(fullProfSRGBFormats.begin(),
+			     fullProfSRGBFormats.end(),
+			     back_inserter(writeFormatsToSupport));
 		}
 	}
 
-    cl_image_format *formatsToTest;
-    unsigned int testCount;
-
-	// Work out the number of elements in the format array
-    if( flags == CL_MEM_READ_ONLY )
+    std::vector<cl_image_format> &formatsToTest = (flags == CL_MEM_READ_ONLY) ? readFormatsToSupport : writeFormatsToSupport;
+    for (auto &format: formatsToTest)
     {
-        formatsToTest = readFormatsToSupport;
-        testCount = uiTotalFormatSize / sizeof( readFormatsToSupport[ 0 ] );
-    }
-    else
-    {
-        formatsToTest = writeFormatsToSupport;
-        testCount = uiTotalFormatSize / sizeof( writeFormatsToSupport[ 0 ] );
-    }
-
-    for( unsigned int i = 0; i < testCount; i++ )
-    {
-        if( !find_format( formatList, numFormats, &formatsToTest[ i ] ) )
+        if( !find_format( formatList, numFormats, &format ) )
         {
             log_error( "ERROR: Format required by OpenCL 1.0 is not supported: " );
-            print_header( &formatsToTest[ i ], true );
+            print_header( &format, true );
             passed = false;
         }
     }
-
-exit:
-	free(readFormatsToSupport);
-	free(writeFormatsToSupport);
 
     return passed;
 }
