@@ -3682,7 +3682,7 @@ bool check_minimum_supported(cl_image_format *formatList,
 	bool bsRGBA = false;
 
 	// Required embedded formats.
-	cl_image_format embeddedProfReadOrWriteFormats[] =
+	static cl_image_format embeddedProfReadOrWriteFormats[] =
 	{
 		{ CL_RGBA, CL_UNORM_INT8 },
 		{ CL_RGBA, CL_UNORM_INT16 },
@@ -3702,7 +3702,7 @@ bool check_minimum_supported(cl_image_format *formatList,
 		formats that have restrictions on when they
 		are required.
 	*/
-	cl_image_format fullProfReadOrWriteFormats[] =
+	static cl_image_format fullProfReadOrWriteFormats[] =
 	{
 		{ CL_R, CL_UNORM_INT8 },
 		{ CL_R, CL_UNORM_INT16 },
@@ -3743,13 +3743,13 @@ bool check_minimum_supported(cl_image_format *formatList,
 		{ CL_BGRA, CL_UNORM_INT8 },
 	};
 
-	cl_image_format fullProfReadOrWriteDepthFormats[] =
+	static cl_image_format fullProfReadOrWriteDepthFormats[] =
 	{
 		{ CL_DEPTH, CL_UNORM_INT16 },
 		{ CL_DEPTH, CL_FLOAT },
 	};
 
-	cl_image_format fullProfSRGBFormats[] =
+	static cl_image_format fullProfSRGBFormats[] =
 	{
 		{ CL_sRGBA, CL_UNORM_INT8 },
 	};
