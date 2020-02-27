@@ -28,6 +28,10 @@
 
 #include <vector>
 
+#if defined(__ANDROID__)
+#include <android/api-level.h>
+#endif
+
 #define CHECK_PTR( ptr )    \
     if ( (ptr) == NULL ) {  \
         abort();            \
@@ -187,7 +191,7 @@ int const _count = 8;               // How many times we will try to double buff
 
         */
 
-        #if defined(__ANDROID__) || ( ( _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600 ) && ! _GNU_SOURCE )
+        #if (defined(__ANDROID__) && __ANDROID_API__ < 23) || ( ( _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600 ) && ! _GNU_SOURCE )
 
             // XSI version of strerror_r.
             #warning Not tested!
