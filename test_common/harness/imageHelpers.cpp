@@ -24,6 +24,9 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#if !defined (_WIN32)
+#include <cmath>
+#endif
 
 RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
 
@@ -38,7 +41,7 @@ sRGBmap(float fc)
     double c = (double)fc;
 
 #if !defined (_WIN32)
-    if (isnan(c))
+    if (std::isnan(c))
         c = 0.0;
 #else
     if (_isnan(c))
