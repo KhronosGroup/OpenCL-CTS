@@ -3755,6 +3755,7 @@ bool check_minimum_supported(cl_image_format *formatList,
 
 	static std::vector<cl_image_format> fullProfSRGBFormats
 	{
+		{CL_sRGB, CL_UNORM_INT8},
 	};
 
 	if (!gIsEmbedded)
