@@ -3766,18 +3766,11 @@ bool check_minimum_supported(cl_image_format *formatList,
 			device_requires_depth_images = true;
 		}
 
-		// sRGB writes not required for 1DImage Buffers
+		// sRGB is not required for 1DImage Buffers
 		if (image_type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
 		{
-			if (flags == CL_MEM_WRITE_ONLY)
-			{
-				// sRGB writes are only required with the cl_khr_srgb_image_writes extension
-				if (is_extension_available(device, "cl_khr_srgb_image_writes"))
-				{
-					device_requires_sRGB_images = true;
-				}
-			}
-			else
+			// sRGB is only required for reading
+			if (flags == CL_MEM_READ_ONLY)
 			{
 				device_requires_sRGB_images = true;
 			}
