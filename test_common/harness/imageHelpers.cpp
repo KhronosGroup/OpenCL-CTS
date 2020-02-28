@@ -3681,8 +3681,6 @@ bool check_minimum_supported(cl_image_format *formatList,
                              cl_device_id device)
 {
 	bool passed = true;
-	bool device_requires_depth_images = false;
-	bool device_requires_sRGB_images = false;
 	std::vector<cl_image_format> readFormatsToSupport;
 	std::vector<cl_image_format> writeFormatsToSupport;
 	Version version = get_device_cl_version(device);
@@ -3781,12 +3779,50 @@ bool check_minimum_supported(cl_image_format *formatList,
 		{CL_sRGB, CL_UNORM_INT8},
 	};
 
+	// Full profile
+	if (!gIsEmbedded)
+	{
+		copy(fullProfReadOrWriteFormats.begin(),
+		     fullProfReadOrWriteFormats.end(),
+		     back_inserter(readFormatsToSupport));
+
+		copy(fullProfReadOrWriteFormats.begin(),
+		     fullProfReadOrWriteFormats.end(),
+		     back_inserter(writeFormatsToSupport));
+	}
+	// Embedded profile
+	else
+	{
+		copy(embeddedProfReadOrWriteFormats.begin(),
+		     embeddedProfReadOrWriteFormats.end(),
+		     back_inserter(readFormatsToSupport));
+
+		copy(embeddedProfReadOrWriteFormats.begin(),
+		     embeddedProfReadOrWriteFormats.end(),
+		     back_inserter(writeFormatsToSupport));
+	}
+
+	// Full profile, OpenCL 2.0, 2.1, 2.2
 	if (!gIsEmbedded && version >= Version(2, 0) && version <= Version(2, 2))
 	{
+		copy(fullProf2XReadOrWriteFormats.begin(),
+		     fullProf2XReadOrWriteFormats.end(),
+		     back_inserter(readFormatsToSupport));
+
+		copy(fullProf2XReadOrWriteFormats.begin(),
+		     fullProf2XReadOrWriteFormats.end(),
+		     back_inserter(writeFormatsToSupport));
+
 		// Depth images are only required for 2DArray and 2D images
 		if (image_type == CL_MEM_OBJECT_IMAGE2D_ARRAY || image_type == CL_MEM_OBJECT_IMAGE2D)
 		{
-			device_requires_depth_images = true;
+			copy(fullProf2XReadOrWriteDepthFormats.begin(),
+			     fullProf2XReadOrWriteDepthFormats.end(),
+			     back_inserter(readFormatsToSupport));
+
+			copy(fullProf2XReadOrWriteDepthFormats.begin(),
+			     fullProf2XReadOrWriteDepthFormats.end(),
+			     back_inserter(writeFormatsToSupport));
 		}
 
 		// sRGB is not required for 1DImage Buffers
@@ -3795,52 +3831,10 @@ bool check_minimum_supported(cl_image_format *formatList,
 			// sRGB is only required for reading
 			if (flags == CL_MEM_READ_ONLY)
 			{
-				device_requires_sRGB_images = true;
+				copy(fullProf2XSRGBFormats.begin(),
+				     fullProf2XSRGBFormats.end(),
+				     back_inserter(readFormatsToSupport));
 			}
-		}
-	}
-
-	// Copy all required formats for the device profile and image type
-	if (gIsEmbedded)
-	{
-		copy(embeddedProfReadOrWriteFormats.begin(),
-		     embeddedProfReadOrWriteFormats.end(),
-		     back_inserter(readFormatsToSupport));
-
-		copy(embeddedProfReadOrWriteFormats.begin(),
-		     embeddedProfReadOrWriteFormats.end(),
-		     back_inserter(writeFormatsToSupport));
-	}
-	else
-	{
-		copy(fullProfReadOrWriteFormats.begin(),
-		     fullProfReadOrWriteFormats.end(),
-		     back_inserter(readFormatsToSupport));
-
-		copy(fullProfReadOrWriteFormats.begin(),
-		     fullProfReadOrWriteFormats.end(),
-		     back_inserter(writeFormatsToSupport));
-
-		if (device_requires_depth_images)
-		{
-			copy(fullProf2XReadOrWriteDepthFormats.begin(),
-			     fullProf2XReadOrWriteDepthFormats.end(),
-			     back_inserter(readFormatsToSupport));
-
-			copy(fullProf2XReadOrWriteDepthFormats.begin(),
-			     fullProf2XReadOrWriteDepthFormats.end(),
-			     back_inserter(writeFormatsToSupport));
-		}
-
-		if (device_requires_sRGB_images)
-		{
-			copy(fullProf2XSRGBFormats.begin(),
-			     fullProf2XSRGBFormats.end(),
-			     back_inserter(readFormatsToSupport));
-
-			copy(fullProf2XSRGBFormats.begin(),
-			     fullProf2XSRGBFormats.end(),
-			     back_inserter(writeFormatsToSupport));
 		}
 	}
 
