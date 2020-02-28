@@ -291,7 +291,7 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
     {
         sprintf(addrSpaceArgument, "%s",allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier);
 
-        sprintf(addrSpacePAddArgument,allTestCase[testId]->_genParameters[testNum].addrSpacePAdd);
+        sprintf(addrSpacePAddArgument, "%s", allTestCase[testId]->_genParameters[testNum].addrSpacePAdd);
     }
 
     if (strlen(addrSpaceArgument) == 0)
