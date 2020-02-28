@@ -31,8 +31,11 @@
 
 #if !defined(_WIN32)
 #include <sys/utsname.h>
-#include <sys/sysctl.h>
 #include <unistd.h>
+#endif
+
+#if !defined(_WIN32) && !defined(__ANDROID__)
+#include <sys/sysctl.h>
 #endif
 
 #include <time.h>
