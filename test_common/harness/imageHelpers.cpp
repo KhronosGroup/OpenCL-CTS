@@ -3683,6 +3683,9 @@ bool check_minimum_supported(cl_image_format *formatList,
 	bool passed = true;
 	bool device_requires_depth_images = false;
 	bool device_requires_sRGB_images = false;
+	std::vector<cl_image_format> readFormatsToSupport;
+	std::vector<cl_image_format> writeFormatsToSupport;
+	Version version = get_device_cl_version(device);
 
 	// Required embedded formats.
 	static std::vector<cl_image_format> embeddedProfReadOrWriteFormats
@@ -3706,6 +3709,27 @@ bool check_minimum_supported(cl_image_format *formatList,
 		are required.
 	*/
 	static std::vector<cl_image_format> fullProfReadOrWriteFormats
+	{
+		{ CL_RGBA, CL_UNORM_INT8 },
+		{ CL_RGBA, CL_UNORM_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT8 },
+		{ CL_RGBA, CL_SIGNED_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT32 },
+		{ CL_RGBA, CL_UNSIGNED_INT8 },
+		{ CL_RGBA, CL_UNSIGNED_INT16 },
+		{ CL_RGBA, CL_UNSIGNED_INT32 },
+		{ CL_RGBA, CL_HALF_FLOAT },
+		{ CL_RGBA, CL_FLOAT },
+		{ CL_BGRA, CL_UNORM_INT8 },
+	};
+
+	/*
+		Required full profile formats specifically for 2.x.
+		This array does not contain any full profile
+		formats that have restrictions on when they
+		are required.
+	*/
+	static std::vector<cl_image_format> fullProf2XReadOrWriteFormats
 	{
 		{ CL_R, CL_UNORM_INT8 },
 		{ CL_R, CL_UNORM_INT16 },
@@ -3733,32 +3757,31 @@ bool check_minimum_supported(cl_image_format *formatList,
 		{ CL_RG, CL_FLOAT },
 		{ CL_RGBA, CL_SNORM_INT8 },
 		{ CL_RGBA, CL_SNORM_INT16 },
-		{ CL_RGBA, CL_UNORM_INT8 },
-		{ CL_RGBA, CL_UNORM_INT16 },
-		{ CL_RGBA, CL_SIGNED_INT8 },
-		{ CL_RGBA, CL_SIGNED_INT16 },
-		{ CL_RGBA, CL_SIGNED_INT32 },
-		{ CL_RGBA, CL_UNSIGNED_INT8 },
-		{ CL_RGBA, CL_UNSIGNED_INT16 },
-		{ CL_RGBA, CL_UNSIGNED_INT32 },
-		{ CL_RGBA, CL_HALF_FLOAT },
-		{ CL_RGBA, CL_FLOAT },
-		{ CL_BGRA, CL_UNORM_INT8 },
 		{ CL_sRGBA, CL_UNORM_INT8 },
 	};
 
-	static std::vector<cl_image_format> fullProfReadOrWriteDepthFormats
+	/*
+		Required full profile formats for CL_DEPTH
+		(specifically 2.x).
+		There are cases whereby the format isn't required.
+	*/
+	static std::vector<cl_image_format> fullProf2XReadOrWriteDepthFormats
 	{
 		{ CL_DEPTH, CL_UNORM_INT16 },
 		{ CL_DEPTH, CL_FLOAT },
 	};
 
-	static std::vector<cl_image_format> fullProfSRGBFormats
+	/*
+		Required full profile formats for CL_sRGB
+		(specifically 2.x).
+		There are cases whereby the format isn't required.
+	*/
+	static std::vector<cl_image_format> fullProf2XSRGBFormats
 	{
 		{CL_sRGB, CL_UNORM_INT8},
 	};
 
-	if (!gIsEmbedded)
+	if (!gIsEmbedded && version >= Version(2, 0) && version <= Version(2, 2))
 	{
 		// Depth images are only required for 2DArray and 2D images
 		if (image_type == CL_MEM_OBJECT_IMAGE2D_ARRAY || image_type == CL_MEM_OBJECT_IMAGE2D)
@@ -3777,25 +3800,22 @@ bool check_minimum_supported(cl_image_format *formatList,
 		}
 	}
 
-	std::vector<cl_image_format> readFormatsToSupport;
-	std::vector<cl_image_format> writeFormatsToSupport;
-
 	// Copy all required formats for the device profile and image type
 	if (gIsEmbedded)
 	{
 		copy(embeddedProfReadOrWriteFormats.begin(),
 		     embeddedProfReadOrWriteFormats.end(),
-		      back_inserter(readFormatsToSupport));
+		     back_inserter(readFormatsToSupport));
 
 		copy(embeddedProfReadOrWriteFormats.begin(),
 		     embeddedProfReadOrWriteFormats.end(),
-		      back_inserter(writeFormatsToSupport));
+		     back_inserter(writeFormatsToSupport));
 	}
 	else
 	{
 		copy(fullProfReadOrWriteFormats.begin(),
 		     fullProfReadOrWriteFormats.end(),
-			 back_inserter(readFormatsToSupport));
+		     back_inserter(readFormatsToSupport));
 
 		copy(fullProfReadOrWriteFormats.begin(),
 		     fullProfReadOrWriteFormats.end(),
@@ -3803,23 +3823,23 @@ bool check_minimum_supported(cl_image_format *formatList,
 
 		if (device_requires_depth_images)
 		{
-			copy(fullProfReadOrWriteDepthFormats.begin(),
-			     fullProfReadOrWriteDepthFormats.end(),
+			copy(fullProf2XReadOrWriteDepthFormats.begin(),
+			     fullProf2XReadOrWriteDepthFormats.end(),
 			     back_inserter(readFormatsToSupport));
 
-			copy(fullProfReadOrWriteDepthFormats.begin(),
-			     fullProfReadOrWriteDepthFormats.end(),
+			copy(fullProf2XReadOrWriteDepthFormats.begin(),
+			     fullProf2XReadOrWriteDepthFormats.end(),
 			     back_inserter(writeFormatsToSupport));
 		}
 
 		if (device_requires_sRGB_images)
 		{
-			copy(fullProfSRGBFormats.begin(),
-			     fullProfSRGBFormats.end(),
+			copy(fullProf2XSRGBFormats.begin(),
+			     fullProf2XSRGBFormats.end(),
 			     back_inserter(readFormatsToSupport));
 
-			copy(fullProfSRGBFormats.begin(),
-			     fullProfSRGBFormats.end(),
+			copy(fullProf2XSRGBFormats.begin(),
+			     fullProf2XSRGBFormats.end(),
 			     back_inserter(writeFormatsToSupport));
 		}
 	}
