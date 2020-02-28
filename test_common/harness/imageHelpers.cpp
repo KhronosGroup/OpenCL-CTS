@@ -3849,7 +3849,7 @@ bool check_minimum_supported(cl_image_format *formatList,
     {
         if( !find_format( formatList, numFormats, &format ) )
         {
-            log_error( "ERROR: Format required by OpenCL 1.0 is not supported: " );
+            log_error( "ERROR: Format required by OpenCL %s is not supported: ", version.to_string().c_str() );
             print_header( &format, true );
             passed = false;
         }
