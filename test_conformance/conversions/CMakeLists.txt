@@ -13,9 +13,9 @@ set (${MODULE_NAME}_SOURCES
       Sleep.cpp test_conversions.cpp basic_test_conversions.cpp
 )
 
-if(ANDROID)
-    list(APPEND CONVERSIONS_SOURCES fplib.c)
-endif(ANDROID)
+if(CMAKE_COMPILER_IS_GNUCC AND ${CLConform_TARGET_ARCH} EQUAL "ARM")
+    list(APPEND ${MODULE_NAME}_SOURCES fplib.cpp)
+endif()
 
 if(NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
 # -march is needed for CPU atomics, default arch on gcc is i386
