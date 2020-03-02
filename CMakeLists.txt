@@ -121,6 +121,18 @@ endif (GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
+    set(CLConform_TARGET_ARCH ARM)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*")
+    set(CLConform_TARGET_ARCH x86_64)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*")
+    set(CLConform_TARGET_ARCH x86)
+endif()
+
+if(NOT DEFINED CLConform_TARGET_ARCH)
+    message (FATAL_ERROR "Target architecture not recognised. Exiting.")
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
@@ -128,7 +140,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
     # avoiding excess precision problems that cause tests like int2float
     # to falsely fail. -ffloat-store also works, but WG suggested
     # that sse would be better.
-	if(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*" OR CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*")
+	if(${CLConform_TARGET_ARCH} EQUAL "x86_64" OR ${CLConform_TARGET_ARCH} EQUAL "x86")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2 -mfpmath=sse")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -mfpmath=sse")
     endif()

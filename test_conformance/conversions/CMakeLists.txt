@@ -13,7 +13,7 @@ set (${MODULE_NAME}_SOURCES
       Sleep.cpp test_conversions.cpp basic_test_conversions.cpp
 )
 
-if(CMAKE_COMPILER_IS_GNUCC AND (CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)"))
+if(CMAKE_COMPILER_IS_GNUCC AND ${CLConform_TARGET_ARCH} EQUAL "ARM")
     list(APPEND ${MODULE_NAME}_SOURCES fplib.cpp)
 endif()
 
