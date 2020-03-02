@@ -3684,8 +3684,7 @@ bool check_minimum_supported(cl_image_format *formatList,
                              cl_device_id device)
 {
 	bool passed = true;
-	std::vector<cl_image_format> readFormatsToSupport;
-	std::vector<cl_image_format> writeFormatsToSupport;
+	std::vector<cl_image_format> formatsToSupport;
 	Version version = get_device_cl_version(device);
 
 	// Required embedded formats.
@@ -3782,27 +3781,19 @@ bool check_minimum_supported(cl_image_format *formatList,
 		{CL_sRGB, CL_UNORM_INT8},
 	};
 
-	// Full profile
-	if (!gIsEmbedded)
-	{
-		copy(fullProfReadOrWriteFormats.begin(),
-		     fullProfReadOrWriteFormats.end(),
-		     back_inserter(readFormatsToSupport));
-
-		copy(fullProfReadOrWriteFormats.begin(),
-		     fullProfReadOrWriteFormats.end(),
-		     back_inserter(writeFormatsToSupport));
-	}
 	// Embedded profile
+	if (gIsEmbedded)
+	{
+		copy(embeddedProfReadOrWriteFormats.begin(),
+		     embeddedProfReadOrWriteFormats.end(),
+		     back_inserter(formatsToSupport));
+	}
+	// Full profile
 	else
 	{
-		copy(embeddedProfReadOrWriteFormats.begin(),
-		     embeddedProfReadOrWriteFormats.end(),
-		     back_inserter(readFormatsToSupport));
-
-		copy(embeddedProfReadOrWriteFormats.begin(),
-		     embeddedProfReadOrWriteFormats.end(),
-		     back_inserter(writeFormatsToSupport));
+		copy(fullProfReadOrWriteFormats.begin(),
+		     fullProfReadOrWriteFormats.end(),
+		     back_inserter(formatsToSupport));
 	}
 
 	// Full profile, OpenCL 2.0, 2.1, 2.2
@@ -3810,22 +3801,14 @@ bool check_minimum_supported(cl_image_format *formatList,
 	{
 		copy(fullProf2XReadOrWriteFormats.begin(),
 		     fullProf2XReadOrWriteFormats.end(),
-		     back_inserter(readFormatsToSupport));
-
-		copy(fullProf2XReadOrWriteFormats.begin(),
-		     fullProf2XReadOrWriteFormats.end(),
-		     back_inserter(writeFormatsToSupport));
+		     back_inserter(formatsToSupport));
 
 		// Depth images are only required for 2DArray and 2D images
 		if (image_type == CL_MEM_OBJECT_IMAGE2D_ARRAY || image_type == CL_MEM_OBJECT_IMAGE2D)
 		{
 			copy(fullProf2XReadOrWriteDepthFormats.begin(),
 			     fullProf2XReadOrWriteDepthFormats.end(),
-			     back_inserter(readFormatsToSupport));
-
-			copy(fullProf2XReadOrWriteDepthFormats.begin(),
-			     fullProf2XReadOrWriteDepthFormats.end(),
-			     back_inserter(writeFormatsToSupport));
+			     back_inserter(formatsToSupport));
 		}
 
 		// sRGB is not required for 1DImage Buffers
@@ -3836,13 +3819,12 @@ bool check_minimum_supported(cl_image_format *formatList,
 			{
 				copy(fullProf2XSRGBFormats.begin(),
 				     fullProf2XSRGBFormats.end(),
-				     back_inserter(readFormatsToSupport));
+				     back_inserter(formatsToSupport));
 			}
 		}
 	}
 
-    std::vector<cl_image_format> &formatsToTest = (flags == CL_MEM_READ_ONLY) ? readFormatsToSupport : writeFormatsToSupport;
-    for (auto &format: formatsToTest)
+    for (auto &format: formatsToSupport)
     {
         if( !find_format( formatList, numFormats, &format ) )
         {
