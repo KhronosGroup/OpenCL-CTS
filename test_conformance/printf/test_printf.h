@@ -29,21 +29,6 @@
 #include <CL/cl_platform.h>
 #endif
 
-// Enable the test to be used with ATF
-#if USE_ATF
-// export BUILD_WITH_ATF=1
-#include <ATF/ATF.h>
-#define test_start() ATFTestStart()
-#define log_info ATFLogInfo
-#define log_error ATFLogError
-#define test_finish() ATFTestFinish()
-#else
-#define test_start()
-#define log_info printf
-#define log_error printf
-#define test_finish()
-#endif // USE_ATF
-
 #define ANALYSIS_BUFFER_SIZE 256
 
 //-----------------------------------------

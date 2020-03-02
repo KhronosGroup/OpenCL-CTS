@@ -176,7 +176,6 @@ int test_queue_priority(cl_device_id device, cl_context context, cl_command_queu
   err = clGetDeviceInfo( device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof( num_compute_units ), &num_compute_units, NULL );
   if (err) {
     log_error("clGetDeviceInfo for CL_DEVICE_MAX_COMPUTE_UNITS failed: %d", err);
-    test_finish();
     return -1;
   }
 
@@ -191,7 +190,6 @@ int test_queue_priority(cl_device_id device, cl_context context, cl_command_queu
   cl_command_queue background_queue = clCreateCommandQueueWithProperties(context, device, queue_properties, &err);
   if (err) {
     log_error("clCreateCommandQueueWithPropertiesAPPLE failed: %d", err);
-    test_finish();
     return -1;
   }
 
@@ -214,7 +212,6 @@ int test_queue_priority(cl_device_id device, cl_context context, cl_command_queu
   err = clGetDeviceInfo( device, CL_DEVICE_SINGLE_FP_CONFIG, sizeof( single_config ), &single_config, NULL );
   if (err) {
     log_error("clGetDeviceInfo for CL_DEVICE_SINGLE_FP_CONFIG failed: %d", err);
-    test_finish();
     return -1;
   }
   //If we only support rtz mode
@@ -226,13 +223,11 @@ int test_queue_priority(cl_device_id device, cl_context context, cl_command_queu
     if( err )
     {
       log_error("clGetDeviceInfo for CL_DEVICE_PROFILE failed: %d", err);
-      test_finish();
       return -1;
     }
     if( 0 != strcmp( profile, "EMBEDDED_PROFILE"))
     {
       log_error( "FAILURE:  Device doesn't support CL_FP_ROUND_TO_NEAREST and isn't EMBEDDED_PROFILE\n" );
-      test_finish();
       return -1;
     }
 

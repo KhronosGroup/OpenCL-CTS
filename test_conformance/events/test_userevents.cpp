@@ -26,26 +26,6 @@
 #include "harness/kernelHelpers.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-// ATF performance framework.
-
-#if USE_ATF
-#include <ATF/ATF.h>
-#define test_start() ATFTestStart()
-#define log_perf(_number, _higherBetter, _numType, _format, ...) ATFLogPerformanceNumber(_number, _higherBetter, _numType, _format,##__VA_ARGS__)
-#define log_info ATFLogInfo
-#define log_error ATFLogError
-#define log_no_atf
-#define test_finish() ATFTestFinish()
-#else
-#define test_start()
-#define log_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType, _higherBetter?"higher is better":"lower is better" , _number)
-#define log_info(...) fprintf(stdout, ## __VA_ARGS__ )
-#define log_error(...) fprintf(stderr, ## __VA_ARGS__ )
-#define log_info_no_atf(...) log_info(## __VA_ARGS__ )
-#define test_finish()
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
 // CL error checking.
 
 #if defined(_MSC_VER)

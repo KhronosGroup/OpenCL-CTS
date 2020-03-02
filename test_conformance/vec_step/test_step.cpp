@@ -59,7 +59,6 @@ int test_step_internal(cl_device_id deviceID, cl_context context, cl_command_que
     if (err)
     {
         print_error(err, "clGetDeviceInfo for CL_DEVICE_PROFILE failed\n" );
-        test_finish();
         return -1;
     }
     gIsEmbedded = NULL != strstr(profile, "EMBEDDED_PROFILE");

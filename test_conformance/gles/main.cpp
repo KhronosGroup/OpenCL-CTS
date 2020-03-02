@@ -120,7 +120,6 @@ int main(int argc, const char *argv[])
     log_info( "Note: Any 3.2 test names must follow 2.1 test names on the command line." );
     log_info( "Use environment variables to specify desired device." );
 
-        test_finish();
         return 0;
     }
 
@@ -135,7 +134,6 @@ int main(int argc, const char *argv[])
         {
            printf("Requested device type is CL_DEVICE_TYPE_CPU\n");
            log_info("Invalid CL device type. GL tests can only run on a GPU device.\n");
-           test_finish();
            return 0;
         }
     }//for
@@ -157,12 +155,10 @@ int main(int argc, const char *argv[])
   int supported = glEnv->SupportsCLGLInterop( requestedDeviceType );
   if( supported == 0 ) {
     log_info("Test not run because GL-CL interop is not supported for any devices of the requested type.\n");
-    test_finish();
     error = 0;
     goto cleanup;
   } else if ( supported == -1 ) {
     log_error("Failed to determine if CL-GL interop is supported.\n");
-    test_finish();
     error = -1;
     goto cleanup;
   }
@@ -173,7 +169,6 @@ int main(int argc, const char *argv[])
     // At least one device supports CL-GL interop, so init the test.
     if( glEnv->Init( &argc, (char **)argv, CL_FALSE ) ) {
       log_error("Failed to initialize the GL environment for this test.\n");
-      test_finish();
       error = -1;
       goto cleanup;
     }
@@ -183,7 +178,6 @@ int main(int argc, const char *argv[])
     if( sCurrentContext == NULL )
       {
         log_error( "ERROR: Unable to obtain CL context from GL\n" );
-        test_finish();
         error = -1;
         goto cleanup;
       }
@@ -195,7 +189,6 @@ int main(int argc, const char *argv[])
     if( error != CL_SUCCESS )
       {
         print_error( error, "Unable to get device count from context" );
-        test_finish();
         error = -1;
         goto cleanup;
       }
@@ -203,7 +196,6 @@ int main(int argc, const char *argv[])
 
     if (numDevices < 1) {
       log_error("No devices found.\n");
-      test_finish();
       error = -1;
       goto cleanup;
     }
@@ -211,7 +203,6 @@ int main(int argc, const char *argv[])
     error = clGetContextInfo( sCurrentContext, CL_CONTEXT_DEVICES, sizeof( deviceIDs ), deviceIDs, NULL);
     if( error != CL_SUCCESS ) {
       print_error( error, "Unable to get device list from context" );
-      test_finish();
       error = -1;
       goto cleanup;
     }
@@ -222,7 +213,6 @@ int main(int argc, const char *argv[])
       for( size_t i = 0; i < numDevices; i++ ) {
         log_info( "\nTesting OpenGL 2.x\n" );
         if( printDeviceHeader( deviceIDs[ i ] ) != CL_SUCCESS ) {
-          test_finish();
           error = -1;
           goto cleanup;
         }
@@ -286,7 +276,6 @@ int main(int argc, const char *argv[])
     // At least one device supports CL-GL interop, so init the test.
     if( glEnv->Init( &argc, (char **)argv, CL_TRUE ) ) {
       log_error("Failed to initialize the GL environment for this test.\n");
-      test_finish();
       error = -1;
       goto cleanup;
     }
@@ -295,7 +284,6 @@ int main(int argc, const char *argv[])
     sCurrentContext = glEnv->CreateCLContext();
     if( sCurrentContext == NULL ) {
       log_error( "ERROR: Unable to obtain CL context from GL\n" );
-      test_finish();
       error = -1;
       goto cleanup;
     }
@@ -306,7 +294,6 @@ int main(int argc, const char *argv[])
     error = clGetContextInfo( sCurrentContext, CL_CONTEXT_DEVICES, 0, NULL, &numDevices);
     if( error != CL_SUCCESS ) {
       print_error( error, "Unable to get device count from context" );
-      test_finish();
       error = -1;
       goto cleanup;
     }
@@ -314,7 +301,6 @@ int main(int argc, const char *argv[])
 
     if (numDevices < 1) {
       log_error("No devices found.\n");
-      test_finish();
       error = -1;
       goto cleanup;
     }
@@ -322,7 +308,6 @@ int main(int argc, const char *argv[])
     error = clGetContextInfo( sCurrentContext, CL_CONTEXT_DEVICES, sizeof( deviceIDs ), deviceIDs, NULL);
     if( error != CL_SUCCESS ) {
       print_error( error, "Unable to get device list from context" );
-      test_finish();
       error = -1;
       goto cleanup;
     }
@@ -334,13 +319,11 @@ int main(int argc, const char *argv[])
       for( size_t i = 0; i < numDevices; i++ ) {
         log_info( "\nTesting OpenGL 3.2\n" );
         if( printDeviceHeader( deviceIDs[ i ] ) != CL_SUCCESS ) {
-          test_finish();
           error = -1;
           goto cleanup;
         }
 #ifdef GL_ES_VERSION_2_0
         log_info("Cannot test OpenGL 3.2! This test was built for OpenGL ES 2.0\n");
-        test_finish();
         error = -1;
         goto cleanup;
 #else

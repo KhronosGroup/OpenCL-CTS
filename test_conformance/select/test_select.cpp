@@ -58,8 +58,6 @@ static int doTest(cl_command_queue queue, cl_context context,
 
 static void printUsage( void );
 
-static void TestFinishAtExit(void);
-
 //-----------------------------------------
 // Definitions and initializations
 //-----------------------------------------
@@ -579,7 +577,6 @@ const int test_num = ARRAY_SIZE( test_list );
 int main(int argc, const char* argv[])
 {
     test_start();
-    atexit(TestFinishAtExit);
 
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
@@ -666,7 +663,3 @@ static void printUsage( void )
     }
 }
 
-static void TestFinishAtExit(void)
-{
-    test_finish();
-}
