@@ -491,13 +491,13 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
         if ( strcmp(fname,"sin")==0 || strcmp(fname,"cos")==0 )  //the domain of the function is [-pi,pi]
         {
           if( fabs(p_j) > M_PI )
-            p[j] = NAN;
+            ((float*)p)[j] = NAN;
         }
 
         if ( strcmp( fname, "reciprocal" ) == 0 )
         {
           if( fabs(p_j) > 0x7E800000 ) //the domain of the function is [2^-126,2^126]
-            p[j] = NAN;
+            ((float*)p)[j] = NAN;
         }
       }
     }
