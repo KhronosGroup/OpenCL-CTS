@@ -40,6 +40,8 @@ public:
     Version(int major, int minor) : m_major(major), m_minor(minor) {}
     bool operator>(const Version& rhs) const { return to_int() > rhs.to_int(); }
     bool operator<(const Version& rhs) const { return to_int() < rhs.to_int(); }
+    bool operator<=(const Version& rhs) const { return to_int() <= rhs.to_int(); }
+    bool operator>=(const Version& rhs) const { return to_int() >= rhs.to_int(); }
     bool operator==(const Version& rhs) const { return to_int() == rhs.to_int(); }
     int to_int() const { return m_major * 10 + m_minor; }
     std::string to_string() const 

@@ -21,6 +21,12 @@
 #if !defined (_WIN32) && !defined(__APPLE__)
 #include <malloc.h>
 #endif
+#include <vector>
+#include <algorithm>
+#include <iterator>
+#if !defined (_WIN32)
+#include <cmath>
+#endif
 
 RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
 
@@ -35,7 +41,7 @@ sRGBmap(float fc)
     double c = (double)fc;
 
 #if !defined (_WIN32)
-    if (isnan(c))
+    if (std::isnan(c))
         c = 0.0;
 #else
     if (_isnan(c))
@@ -3658,56 +3664,163 @@ bool find_format( cl_image_format *formatList, unsigned int numFormats, cl_image
     return false;
 }
 
-bool check_minimum_supported( cl_image_format *formatList, unsigned int numFormats, cl_mem_flags flags )
+bool check_minimum_supported(cl_image_format *formatList,
+                             unsigned int numFormats,
+                             cl_mem_flags flags,
+                             cl_mem_object_type image_type,
+                             cl_device_id device)
 {
-    cl_image_format readFormatsToSupport[] = { { CL_RGBA, CL_UNORM_INT8 },
-        { CL_RGBA, CL_UNORM_INT16 },
-        { CL_RGBA, CL_SIGNED_INT8 },
-        { CL_RGBA, CL_SIGNED_INT16 },
-        { CL_RGBA, CL_SIGNED_INT32 },
-        { CL_RGBA, CL_UNSIGNED_INT8 },
-        { CL_RGBA, CL_UNSIGNED_INT16 },
-        { CL_RGBA, CL_UNSIGNED_INT32 },
-        { CL_RGBA, CL_HALF_FLOAT },
-        { CL_RGBA, CL_FLOAT },
-        { CL_BGRA, CL_UNORM_INT8} };
+	bool passed = true;
+	std::vector<cl_image_format> formatsToSupport;
+	Version version = get_device_cl_version(device);
 
-    cl_image_format writeFormatsToSupport[] = { { CL_RGBA, CL_UNORM_INT8 },
-        { CL_RGBA, CL_UNORM_INT16 },
-        { CL_RGBA, CL_SIGNED_INT8 },
-        { CL_RGBA, CL_SIGNED_INT16 },
-        { CL_RGBA, CL_SIGNED_INT32 },
-        { CL_RGBA, CL_UNSIGNED_INT8 },
-        { CL_RGBA, CL_UNSIGNED_INT16 },
-        { CL_RGBA, CL_UNSIGNED_INT32 },
-        { CL_RGBA, CL_HALF_FLOAT },
-        { CL_RGBA, CL_FLOAT },
-        { CL_BGRA, CL_UNORM_INT8} };
+	// Required embedded formats.
+	static std::vector<cl_image_format> embeddedProfReadOrWriteFormats
+	{
+		{ CL_RGBA, CL_UNORM_INT8 },
+		{ CL_RGBA, CL_UNORM_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT8 },
+		{ CL_RGBA, CL_SIGNED_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT32 },
+		{ CL_RGBA, CL_UNSIGNED_INT8 },
+		{ CL_RGBA, CL_UNSIGNED_INT16 },
+		{ CL_RGBA, CL_UNSIGNED_INT32 },
+		{ CL_RGBA, CL_HALF_FLOAT },
+		{ CL_RGBA, CL_FLOAT },
+	};
 
-    cl_image_format *formatsToTest;
-    unsigned int testCount;
-    bool passed = true;
+	/*
+		Required full profile formats.
+		This array does not contain any full profile
+		formats that have restrictions on when they
+		are required.
+	*/
+	static std::vector<cl_image_format> fullProfReadOrWriteFormats
+	{
+		{ CL_RGBA, CL_UNORM_INT8 },
+		{ CL_RGBA, CL_UNORM_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT8 },
+		{ CL_RGBA, CL_SIGNED_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT32 },
+		{ CL_RGBA, CL_UNSIGNED_INT8 },
+		{ CL_RGBA, CL_UNSIGNED_INT16 },
+		{ CL_RGBA, CL_UNSIGNED_INT32 },
+		{ CL_RGBA, CL_HALF_FLOAT },
+		{ CL_RGBA, CL_FLOAT },
+		{ CL_BGRA, CL_UNORM_INT8 },
+	};
 
-    if( flags == CL_MEM_READ_ONLY )
+	/*
+		Required full profile formats specifically for 2.x.
+		This array does not contain any full profile
+		formats that have restrictions on when they
+		are required.
+	*/
+	static std::vector<cl_image_format> fullProf2XReadOrWriteFormats
+	{
+		{ CL_R, CL_UNORM_INT8 },
+		{ CL_R, CL_UNORM_INT16 },
+		{ CL_R, CL_SNORM_INT8 },
+		{ CL_R, CL_SNORM_INT16 },
+		{ CL_R, CL_SIGNED_INT8 },
+		{ CL_R, CL_SIGNED_INT16 },
+		{ CL_R, CL_SIGNED_INT32 },
+		{ CL_R, CL_UNSIGNED_INT8 },
+		{ CL_R, CL_UNSIGNED_INT16 },
+		{ CL_R, CL_UNSIGNED_INT32 },
+		{ CL_R, CL_HALF_FLOAT },
+		{ CL_R, CL_FLOAT },
+		{ CL_RG, CL_UNORM_INT8 },
+		{ CL_RG, CL_UNORM_INT16 },
+		{ CL_RG, CL_SNORM_INT8 },
+		{ CL_RG, CL_SNORM_INT16 },
+		{ CL_RG, CL_SIGNED_INT8 },
+		{ CL_RG, CL_SIGNED_INT16 },
+		{ CL_RG, CL_SIGNED_INT32 },
+		{ CL_RG, CL_UNSIGNED_INT8 },
+		{ CL_RG, CL_UNSIGNED_INT16 },
+		{ CL_RG, CL_UNSIGNED_INT32 },
+		{ CL_RG, CL_HALF_FLOAT },
+		{ CL_RG, CL_FLOAT },
+		{ CL_RGBA, CL_SNORM_INT8 },
+		{ CL_RGBA, CL_SNORM_INT16 },
+		{ CL_sRGBA, CL_UNORM_INT8 },
+	};
+
+	/*
+		Required full profile formats for CL_DEPTH
+		(specifically 2.x).
+		There are cases whereby the format isn't required.
+	*/
+	static std::vector<cl_image_format> fullProf2XReadOrWriteDepthFormats
+	{
+		{ CL_DEPTH, CL_UNORM_INT16 },
+		{ CL_DEPTH, CL_FLOAT },
+	};
+
+	/*
+		Required full profile formats for CL_sRGB
+		(specifically 2.x).
+		There are cases whereby the format isn't required.
+	*/
+	static std::vector<cl_image_format> fullProf2XSRGBFormats
+	{
+		{CL_sRGB, CL_UNORM_INT8},
+	};
+
+	// Embedded profile
+	if (gIsEmbedded)
+	{
+		copy(embeddedProfReadOrWriteFormats.begin(),
+		     embeddedProfReadOrWriteFormats.end(),
+		     back_inserter(formatsToSupport));
+	}
+	// Full profile
+	else
+	{
+		copy(fullProfReadOrWriteFormats.begin(),
+		     fullProfReadOrWriteFormats.end(),
+		     back_inserter(formatsToSupport));
+	}
+
+	// Full profile, OpenCL 2.0, 2.1, 2.2
+	if (!gIsEmbedded && version >= Version(2, 0) && version <= Version(2, 2))
+	{
+		copy(fullProf2XReadOrWriteFormats.begin(),
+		     fullProf2XReadOrWriteFormats.end(),
+		     back_inserter(formatsToSupport));
+
+		// Depth images are only required for 2DArray and 2D images
+		if (image_type == CL_MEM_OBJECT_IMAGE2D_ARRAY || image_type == CL_MEM_OBJECT_IMAGE2D)
+		{
+			copy(fullProf2XReadOrWriteDepthFormats.begin(),
+			     fullProf2XReadOrWriteDepthFormats.end(),
+			     back_inserter(formatsToSupport));
+		}
+
+		// sRGB is not required for 1DImage Buffers
+		if (image_type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
+		{
+			// sRGB is only required for reading
+			if (flags == CL_MEM_READ_ONLY)
+			{
+				copy(fullProf2XSRGBFormats.begin(),
+				     fullProf2XSRGBFormats.end(),
+				     back_inserter(formatsToSupport));
+			}
+		}
+	}
+
+    for (auto &format: formatsToSupport)
     {
-        formatsToTest = readFormatsToSupport;
-        testCount = sizeof( readFormatsToSupport ) / sizeof( readFormatsToSupport[ 0 ] );
-    }
-    else
-    {
-        formatsToTest = writeFormatsToSupport;
-        testCount = sizeof( writeFormatsToSupport ) / sizeof( writeFormatsToSupport[ 0 ] );
-    }
-
-    for( unsigned int i = 0; i < testCount; i++ )
-    {
-        if( !find_format( formatList, numFormats, &formatsToTest[ i ] ) )
+        if( !find_format( formatList, numFormats, &format ) )
         {
-            log_error( "ERROR: Format required by OpenCL 1.0 is not supported: " );
-            print_header( &formatsToTest[ i ], true );
+            log_error( "ERROR: Format required by OpenCL %s is not supported: ", version.to_string().c_str() );
+            print_header( &format, true );
             passed = false;
         }
     }
+
     return passed;
 }
 
