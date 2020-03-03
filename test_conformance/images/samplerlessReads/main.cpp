@@ -38,7 +38,6 @@ bool                gTestReadWrite;
 bool                gDebugTrace;
 bool                gTestMaxImages;
 bool                gTestSmallImages;
-bool                gTestRounding;
 int                 gTypesToTest;
 cl_channel_type     gChannelTypeToUse = (cl_channel_type)-1;
 cl_channel_order    gChannelOrderToUse = (cl_channel_order)-1;
@@ -93,9 +92,6 @@ int main(int argc, const char *argv[])
     {
         return -1;
     }
-
-    //Check CL_DEVICE_TYPE environment variable
-    checkDeviceTypeOverride( &gDeviceType );
 
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 

@@ -16,16 +16,7 @@ else(CMAKE_BUILD_TYPE STREQUAL "release")
     set (BUILD_FLAVOR "debug")
 endif(CMAKE_BUILD_TYPE STREQUAL "release")
 
-set(CLConform_VERSION_MAJOR "2")
-set(CLConform_VERSION_MINOR "2")
-set(CLConform_VERSION_MICRO "0")
-set(CLConform_VERSION_EXTRA "")
-set(CLConform_VERSION "${CLConform_VERSION_MAJOR}.${CLConform_VERSION_MINOR}")
-set(CLConform_VERSION_FULL
-    "${CLConform_VERSION}.${CLConform_VERSION_MICRO}${CLConform_VERSION_EXTRA}")
-
 add_definitions(-DCL_TARGET_OPENCL_VERSION=220)
-
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_1_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_0_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)
@@ -130,18 +121,31 @@ endif (GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
+    set(CLConform_TARGET_ARCH ARM)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
+    set(CLConform_TARGET_ARCH ARM64)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*")
+    set(CLConform_TARGET_ARCH x86_64)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*")
+    set(CLConform_TARGET_ARCH x86)
+endif()
+
+if(NOT DEFINED CLConform_TARGET_ARCH)
+    message (FATAL_ERROR "Target architecture not recognised. Exiting.")
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float
     # to falsely fail. -ffloat-store also works, but WG suggested
     # that sse would be better.
-    if(CMAKE_ARM_COMPILER OR ANDROID)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
-    else(CMAKE_ARM_COMPILER OR ANDROID)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -mfpmath=sse -Wno-narrowing")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -mfpmath=sse -Wno-narrowing")
-    endif(CMAKE_ARM_COMPILER OR ANDROID)
+	if(${CLConform_TARGET_ARCH} EQUAL "x86_64" OR ${CLConform_TARGET_ARCH} EQUAL "x86")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2 -mfpmath=sse")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -mfpmath=sse")
+    endif()
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D__SSE__")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
@@ -183,8 +187,6 @@ add_subdirectory(test_common)
 add_subdirectory(test_conformance)
 add_subdirectory(test_extensions)
 
-set (PY_PATH   "${CLConform_SOURCE_DIR}/test_conformance/*.py")
-set (CSV_PATH  "${CLConform_SOURCE_DIR}/test_conformance/*.csv")
 # Support both VS2008 and VS2012.
 set (DLL_FILES "${VS_BUILD_DIR}/Debug/*.dll")
 set (DST_DIR   "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/")
@@ -203,8 +205,6 @@ set_property(TARGET COPY_DLL${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${
 
 if(WIN32)
   add_custom_target( COPY_FILES${CONFORMANCE_SUFFIX} ALL
-                     COMMAND ${COPY} ${PY_PATH} ${DST_DIR}
-                     COMMAND ${COPY} ${CSV_PATH} ${DST_DIR}
                      COMMAND ${COPY} ${DLL_FILES} ${DST_DIR}
                      COMMENT "Copying other files to output folder..." )
 else(WIN32)

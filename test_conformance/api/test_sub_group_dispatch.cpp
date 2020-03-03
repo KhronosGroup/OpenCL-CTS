@@ -18,6 +18,7 @@
 #include "harness/conversions.h"
 
 const char *subgroup_dispatch_kernel[] = {
+"#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n"
 "__kernel void subgroup_dispatch_kernel(__global int *output)\n"
 "{\n"
 "    size_t size = get_num_sub_groups ();\n"

@@ -25,7 +25,7 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool                 gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding, gDeviceLt20;
+extern bool                 gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gDeviceLt20;
 extern bool                 gTestReadWrite;
 
 #define MAX_TRIES   1
@@ -117,12 +117,7 @@ int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel ke
         log_info( " - Creating kernel arguments...\n" );
 
     // Create sampler to use
-    cl_sampler_properties properties[] = {
-        CL_SAMPLER_NORMALIZED_COORDS, CL_FALSE,
-        CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_NONE,
-        CL_SAMPLER_FILTER_MODE, CL_FILTER_NEAREST,
-        0 };
-    actualSampler = clCreateSamplerWithProperties( context, properties, &error );
+    actualSampler = clCreateSampler( context, CL_FALSE, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &error );
     test_error( error, "Unable to create image sampler" );
 
     // Create results buffer

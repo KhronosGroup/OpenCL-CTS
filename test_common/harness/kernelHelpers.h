@@ -38,6 +38,7 @@
 #endif
 
 #include "deviceInfo.h"
+#include "harness/alloc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -148,10 +149,6 @@ extern int checkFor3DImageSupport( cl_device_id device );
 
 /* Checks that a given queue property is supported on the specified device. Returns 1 if supported, 0 if not or an error. */
 extern int checkDeviceForQueueSupport( cl_device_id device, cl_command_queue_properties prop );
-
-/* Helper for aligned memory allocation */
-void * align_malloc(size_t size, size_t alignment);
-void   align_free(void *);
 
 /* Helper to obtain the min alignment for a given context, i.e the max of all min alignments for devices attached to the context*/
 size_t get_min_alignment(cl_context context);

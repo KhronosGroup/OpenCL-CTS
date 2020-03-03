@@ -81,18 +81,7 @@ extern cl_device_fp_config gDoubleCapabilities;
 #define LOWER_IS_BETTER     0
 #define HIGHER_IS_BETTER    1
 
-#if USE_ATF
-
-    #include <ATF/ATF.h>
-    #define test_start()        ATFTestStart()
-    #define test_finish()       ATFTestFinish()
-    #define vlog( ... )         ATFLogInfo(__VA_ARGS__)
-    #define vlog_error( ... )   ATFLogError(__VA_ARGS__)
-    #define vlog_perf( _number, _higherIsBetter, _units, _nameFmt, ... )    ATFLogPerformanceNumber(_number, _higherIsBetter, _units, _nameFmt, __VA_ARGS__ )
-
-#else
-    #include "harness/errorHelpers.h"
-#endif
+#include "harness/errorHelpers.h"
 
 #if defined (_MSC_VER )
     //Deal with missing scalbn on windows

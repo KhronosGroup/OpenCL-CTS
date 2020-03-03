@@ -115,7 +115,7 @@ void create_context_and_queue(cl_device_id device, cl_context *out_context, cl_c
         throw Exceptions::TestError("clCreateContext failed\n", error);
     }
 
-    *out_queue = clCreateCommandQueueWithProperties( *out_context, device, 0, &error );
+    *out_queue = clCreateCommandQueue( *out_context, device, 0, &error );
     if( NULL == *out_queue || error )
     {
         throw Exceptions::TestError("clCreateCommandQueue failed\n", error);

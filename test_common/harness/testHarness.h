@@ -88,8 +88,8 @@ typedef test_status (*DeviceCheckFn)( cl_device_id device );
 // Returns EXIT_SUCCESS iff all tests succeeded or the tests were listed,
 // otherwise return EXIT_FAILURE.
 extern int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_definition testList[],
-                                    int imageSupportRequired, int forceNoContextCreation,
-                                    cl_command_queue_properties queueProps, DeviceCheckFn deviceCheckFn );
+                                    int forceNoContextCreation, cl_command_queue_properties queueProps,
+                                    DeviceCheckFn deviceCheckFn );
 
 // The command line parser used by runTestHarness to break up parameters into calls to callTestFunctions
 extern int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id device, int testNum,
@@ -114,10 +114,6 @@ extern test_status callSingleTestFunction( test_definition test, cl_device_id de
                                            int numElementsToUse, cl_command_queue_properties queueProps );
 
 ///// Miscellaneous steps
-
-// Given a pre-existing device type choice, check the environment for an override, then print what
-// choice was made and how (and return the overridden choice, if there is one)
-extern void checkDeviceTypeOverride( cl_device_type *inOutType );
 
 // standard callback function for context pfn_notify
 extern void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info, size_t cb, void *user_data);
@@ -146,6 +142,8 @@ extern int      gIsOpenCL_C_1_0_Device; // This is set to 1 if the device suppor
 #ifdef __cplusplus
 }
 #endif
+extern void PrintArch(void);
+
 
 #endif // _testHarness_h
 

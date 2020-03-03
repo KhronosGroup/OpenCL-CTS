@@ -27,22 +27,6 @@
 #include <CL/opencl.h>
 #endif
 
-// Enable the test to be used with ATF
-#if USE_ATF
-// export BUILD_WITH_ATF=1
-#include <ATF/ATF.h>
-#define test_start() ATFTestStart()
-#define log_info ATFLogInfo
-#define log_error ATFLogError
-#define test_finish() ATFTestFinish()
-#else
-#define test_start()
-#define log_info printf
-#define log_error printf
-#define test_finish()
-#endif // USE_ATF
-
-
 // Defines the set of types we support (no support for double)
 typedef enum {
     kuchar = 0,

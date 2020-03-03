@@ -1,32 +1,28 @@
 
 set(HARNESS_COMMON_SOURCES
-    harness/threadTesting.c
+    harness/threadTesting.cpp
     harness/typeWrappers.cpp
-    harness/mt19937.c
-    harness/conversions.c
-    harness/rounding_mode.c
+    harness/mt19937.cpp
+    harness/conversions.cpp
+    harness/rounding_mode.cpp
     harness/msvc9.c
 )
-
-set_source_files_properties(${HARNESS_COMMON_SOURCES} PROPERTIES LANGUAGE CXX)
 
 add_library(harness-common STATIC ${HARNESS_COMMON_SOURCES})
 
 set(HARNESS_SOURCES
     harness/crc32.c
-    harness/errorHelpers.c
+    harness/errorHelpers.cpp
     harness/genericThread.cpp
     harness/imageHelpers.cpp
-    harness/kernelHelpers.c
+    harness/kernelHelpers.cpp
     harness/deviceInfo.cpp
     harness/os_helpers.cpp
     harness/parseParameters.cpp
-    harness/testHarness.c
-    harness/ThreadPool.c
+    harness/testHarness.cpp
+    harness/ThreadPool.cpp
     miniz/miniz.c
-)    
-
-set_source_files_properties(${HARNESS_SOURCES} PROPERTIES LANGUAGE CXX)
+)
 
 add_library(harness STATIC ${HARNESS_SOURCES})
 

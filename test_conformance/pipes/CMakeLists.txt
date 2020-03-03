@@ -1,13 +1,13 @@
 set(MODULE_NAME pipes)
 
 set(${MODULE_NAME}_SOURCES
-    main.c
-    test_pipe_read_write.c
-    test_pipe_info.c
-    test_pipe_limits.c
-    test_pipe_query_functions.c
-    test_pipe_readwrite_errors.c
-    test_pipe_subgroups.c
+    main.cpp
+    test_pipe_read_write.cpp
+    test_pipe_info.cpp
+    test_pipe_limits.cpp
+    test_pipe_query_functions.cpp
+    test_pipe_readwrite_errors.cpp
+    test_pipe_subgroups.cpp
 )
 
 include(../CMakeCommon.txt)

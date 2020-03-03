@@ -19,7 +19,7 @@ cl_command_queue reset_queue(cl_context context, cl_device_id device_id, cl_comm
 {
   log_info("Invalid command queue. Releasing and recreating the command queue.\n");
   clReleaseCommandQueue(*queue);
-    *queue = clCreateCommandQueueWithProperties(context, device_id, 0, error);
+    *queue = clCreateCommandQueue(context, device_id, 0, error);
   return *queue;
 }
 

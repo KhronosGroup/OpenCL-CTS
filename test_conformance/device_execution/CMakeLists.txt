@@ -11,7 +11,7 @@ set(DEVICE_EXECUTION_SOURCES
     execute_block.cpp
     host_multi_queue.cpp
     host_queue_order.cpp
-    main.c
+    main.cpp
     nested_blocks.cpp
     utils.cpp
 )

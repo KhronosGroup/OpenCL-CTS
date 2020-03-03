@@ -41,7 +41,6 @@ bool gExtraValidateInfo;
 bool gDisableOffsets;
 bool gTestSmallImages;
 bool gTestMaxImages;
-bool gTestRounding;
 bool gTestImage2DFromBuffer;
 bool gTestMipmaps;
 bool gDeviceLt20 = false;
@@ -281,12 +280,8 @@ int main(int argc, const char *argv[])
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
     {
-        test_finish();
         return -1;
     }
-
-    //Check CL_DEVICE_TYPE environment variable
-    checkDeviceTypeOverride( &gDeviceType );
 
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 

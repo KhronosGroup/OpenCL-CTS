@@ -277,7 +277,6 @@ int main(int argc, const char *argv[])
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
     {
-        test_finish();
         return 1;
     }
 
@@ -335,7 +334,7 @@ int main(int argc, const char *argv[])
         }
     }
 
-    int ret = runTestHarnessWithCheck( argCount, argList, test_num, test_list, false, false, 0, init_cl );
+    int ret = runTestHarnessWithCheck( argCount, argList, test_num, test_list, false, 0, init_cl );
 
     free(argList);
     return ret;

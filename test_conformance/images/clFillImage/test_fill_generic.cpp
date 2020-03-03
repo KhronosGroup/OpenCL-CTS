@@ -18,7 +18,7 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool               gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gTestRounding, gEnablePitch;
+extern bool               gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gEnablePitch;
 extern cl_filter_mode     gFilterModeToUse;
 extern cl_addressing_mode gAddressModeToUse;
 extern uint64_t           gRoundingStartValue;
@@ -431,7 +431,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     if (error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to map image for verification: %s\n", IGetErrorString( error ) );
-        return NULL;
+        return -1;
     }
 
     // Verify scanline by scanline, since the pitches are different
@@ -560,7 +560,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     if (error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to unmap image after verify: %s\n", IGetErrorString( error ) );
-        return NULL;
+        return -1;
     }
 
     imgHost.reset(0x0);

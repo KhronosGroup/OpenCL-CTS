@@ -28,7 +28,6 @@
 bool gDebugTrace;
 bool gTestSmallImages;
 bool gTestMaxImages;
-bool gTestRounding;
 int  gTypesToTest;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
 
@@ -77,8 +76,6 @@ const int test_num = ARRAY_SIZE( test_list );
 int main(int argc, const char *argv[])
 {
     cl_channel_type chanType;
-
-    checkDeviceTypeOverride( &gDeviceType );
 
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 

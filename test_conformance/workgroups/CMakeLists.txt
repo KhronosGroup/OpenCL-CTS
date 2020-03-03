@@ -1,19 +1,19 @@
 set(MODULE_NAME WORKGROUPS)
 
 set(${MODULE_NAME}_SOURCES
-    main.c
-    test_wg_all.c
-    test_wg_any.c
-    test_wg_broadcast.c
-    test_wg_reduce.c
-    test_wg_reduce_max.c
-    test_wg_reduce_min.c
-    test_wg_scan_exclusive_add.c
-    test_wg_scan_exclusive_min.c
-    test_wg_scan_exclusive_max.c
-    test_wg_scan_inclusive_add.c
-    test_wg_scan_inclusive_min.c
-    test_wg_scan_inclusive_max.c
+    main.cpp
+    test_wg_all.cpp
+    test_wg_any.cpp
+    test_wg_broadcast.cpp
+    test_wg_reduce.cpp
+    test_wg_reduce_max.cpp
+    test_wg_reduce_min.cpp
+    test_wg_scan_exclusive_add.cpp
+    test_wg_scan_exclusive_min.cpp
+    test_wg_scan_exclusive_max.cpp
+    test_wg_scan_inclusive_add.cpp
+    test_wg_scan_inclusive_min.cpp
+    test_wg_scan_inclusive_max.cpp
 )
 
 include(../CMakeCommon.txt)

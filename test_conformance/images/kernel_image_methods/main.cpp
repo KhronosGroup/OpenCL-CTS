@@ -29,7 +29,6 @@
 bool gDebugTrace;
 bool gTestSmallImages;
 bool gTestMaxImages;
-bool gTestRounding;
 int  gTypesToTest;
 bool gDeviceLt20 = false;
 
@@ -79,11 +78,8 @@ int main(int argc, const char *argv[])
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
     {
-        test_finish();
         return -1;
     }
-
-    checkDeviceTypeOverride( &gDeviceType );
 
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 

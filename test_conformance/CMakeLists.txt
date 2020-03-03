@@ -54,28 +54,14 @@ add_subdirectory( clcpp )
 add_subdirectory( spirv_new )
 add_subdirectory( spir )
 
-set(CSV_FILES
-    opencl_conformance_tests_21_full_spirv.csv
-    opencl_conformance_tests_21_legacy_wimpy.csv
-    opencl_conformance_tests_22.csv
-    opencl_conformance_tests_generate_spirv.csv
-    opencl_conformance_tests_conversions.csv
-    opencl_conformance_tests_d3d.csv
-    opencl_conformance_tests_full.csv
-    opencl_conformance_tests_full_no_math_or_conversions.csv
-    opencl_conformance_tests_math.csv
-    opencl_conformance_tests_quick.csv
-    opencl_conformance_tests_20_full.csv
-    opencl_conformance_tests_20_full_no_math_or_conversions.csv
-    opencl_conformance_tests_20_quick.csv
-)
-set(PY_FILES
-    run_conformance.py
-)
+file(GLOB CSV_FILES "opencl_conformance_tests_*.csv")
+
+set(PY_FILES run_conformance.py)
 
 # Copy .csv files
 foreach(FILE ${CSV_FILES})
-    configure_file(${FILE} ${FILE} COPYONLY)
+    get_filename_component(strippedName ${FILE} NAME)
+    configure_file(${strippedName} ${strippedName} COPYONLY)
 endforeach()
 
 # Copy test run script

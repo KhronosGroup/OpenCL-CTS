@@ -1,0 +1,82 @@
+#
+# OpenCL Conformance Test Suite (full version)
+#
+
+# #########################################
+# Basic Information on the compute device
+# #########################################
+Compute Info,computeinfo/test_computeinfo
+
+# #########################################
+# Basic operation tests
+# #########################################
+Basic,basic/test_basic
+API,api/test_api
+Compiler,compiler/test_compiler
+
+# #########################################
+# Common mathematical functions
+# #########################################
+Common Functions,commonfns/test_commonfns
+Geometric Functions,geometrics/test_geometrics
+Relationals,relationals/test_relationals
+
+# #########################################
+# General operation
+# #########################################
+Thread Dimensions,thread_dimensions/test_thread_dimensions full*
+Multiple Device/Context,multiple_device_context/test_multiples
+Atomics,atomics/test_atomics
+Profiling,profiling/test_profiling
+Events,events/test_events
+Allocations (single maximum),allocations/test_allocations single 5 all
+Allocations (total maximum),allocations/test_allocations multiple 5 all 
+VecAlign, vec_align/test_vecalign
+VecStep, vec_step/test_vecstep
+Printf,printf/test_printf
+Device Partitioning,device_partition/test_device_partition
+
+# #########################################
+# Buffers and images
+# #########################################
+Buffers,buffers/test_buffers
+Images (API Info),images/clGetInfo/test_cl_get_info 
+Images (Kernel Methods),images/kernel_image_methods/test_kernel_image_methods 
+Images (Kernel),images/kernel_read_write/test_image_streams CL_FILTER_NEAREST
+Images (Kernel pitch),images/kernel_read_write/test_image_streams use_pitches CL_FILTER_NEAREST
+Images (Kernel max size),images/kernel_read_write/test_image_streams max_images CL_FILTER_NEAREST
+Images (clCopyImage),images/clCopyImage/test_cl_copy_images
+Images (clCopyImage small),images/clCopyImage/test_cl_copy_images small_images
+Images (clCopyImage max size),images/clCopyImage/test_cl_copy_images max_images 
+Images (clReadWriteImage),images/clReadWriteImage/test_cl_read_write_images 
+Images (clReadWriteImage pitch),images/clReadWriteImage/test_cl_read_write_images use_pitches 
+Images (clReadWriteImage max size),images/clReadWriteImage/test_cl_read_write_images max_images 
+Images (clFillImage),images/clFillImage/test_cl_fill_images 
+Images (clFillImage pitch),images/clFillImage/test_cl_fill_images use_pitches 
+Images (clFillImage max size),images/clFillImage/test_cl_fill_images max_images 
+Images (Samplerless),images/samplerlessReads/test_samplerless_reads 
+Images (Samplerless pitch),images/samplerlessReads/test_samplerless_reads use_pitches 
+Images (Samplerless max size),images/samplerlessReads/test_samplerless_reads max_images 
+Mem (Host Flags),mem_host_flags/test_mem_host_flags
+
+# #########################################
+# CPU is required to pass linear and normalized image filtering
+# #########################################
+CL_DEVICE_TYPE_CPU, Images (Kernel CL_FILTER_LINEAR),images/kernel_read_write/test_image_streams CL_FILTER_LINEAR
+CL_DEVICE_TYPE_CPU, Images (Kernel CL_FILTER_LINEAR pitch),images/kernel_read_write/test_image_streams use_pitches CL_FILTER_LINEAR
+CL_DEVICE_TYPE_CPU, Images (Kernel CL_FILTER_LINEAR max size),images/kernel_read_write/test_image_streams max_images CL_FILTER_LINEAR
+
+# #########################################
+# OpenGL/CL interaction
+# #########################################
+OpenCL-GL Sharing,gl/test_gl
+
+# #########################################
+# Thorough math and conversions tests
+# #########################################
+Select,select/test_select
+Conversions,conversions/test_conversions
+Contractions,contractions/test_contractions
+Math,math_brute_force/test_bruteforce
+Integer Ops,integer_ops/test_integer_ops
+Half Ops,half/test_half
