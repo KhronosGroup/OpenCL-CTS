@@ -142,7 +142,8 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
     # avoiding excess precision problems that cause tests like int2float
     # to falsely fail. -ffloat-store also works, but WG suggested
     # that sse would be better.
-	if(${CLConform_TARGET_ARCH} EQUAL "x86_64" OR ${CLConform_TARGET_ARCH} EQUAL "x86")
+    if(${CLConform_TARGET_ARCH} STREQUAL "x86_64" OR ${CLConform_TARGET_ARCH}
+            STREQUAL "x86")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2 -mfpmath=sse")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -mfpmath=sse")
     endif()
