@@ -41,20 +41,6 @@ static test_status checkSubGroupsExtension(cl_device_id device)
         return TEST_SKIP;
     }
 
-    cl_uint max_sub_groups;
-    int error;
-
-    error = clGetDeviceInfo(device, CL_DEVICE_MAX_NUM_SUB_GROUPS,
-                          sizeof(max_sub_groups), &max_sub_groups, NULL);
-    if (error != CL_SUCCESS) {
-        print_error(error, "Unable to get max number of subgroups");
-        return TEST_FAIL;
-    }
-
-    if ((max_sub_groups == 0) && (version > Version(2,2))) {
-        return TEST_SKIP;
-    }
-
     bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
 
     if ((version == Version(2, 0)) && !hasExtension) {
@@ -70,9 +56,34 @@ static test_status checkSubGroupsExtension(cl_device_id device)
     return TEST_PASS;
 }
 
+static test_status InitCL(cl_device_id device) {
+
+    auto version = get_device_cl_version(device);
+    test_status ret = TEST_PASS;
+    if (version > Version(2, 2)) {
+        cl_uint max_sub_groups;
+        int error;
+
+        error = clGetDeviceInfo(device, CL_DEVICE_MAX_NUM_SUB_GROUPS,
+                              sizeof(max_sub_groups), &max_sub_groups, NULL);
+        if (error != CL_SUCCESS) {
+            print_error(error, "Unable to get max number of subgroups");
+            return TEST_FAIL;
+        }
+
+        if (max_sub_groups == 0) {
+            ret = TEST_SKIP;
+        }
+    } else {
+        ret = checkSubGroupsExtension(device);
+    }
+    return ret;
+
+}
+
 int main(int argc, const char *argv[])
 {
     gMTdata = init_genrand(0);
-    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0, checkSubGroupsExtension);
+    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0, InitCL);
 }
 
