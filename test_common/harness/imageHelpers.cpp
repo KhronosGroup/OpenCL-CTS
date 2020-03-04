@@ -3811,6 +3811,26 @@ void build_required_image_formats(cl_mem_flags flags,
 	}
 }
 
+bool is_image_format_required(cl_image_format format,
+                              cl_mem_flags flags,
+                              cl_mem_object_type image_type,
+                              cl_device_id device)
+{
+	std::vector<cl_image_format> formatsToSupport;
+	build_required_image_formats(flags, image_type, device, formatsToSupport);
+
+	for (auto &formatItr: formatsToSupport)
+	{
+		if (formatItr.image_channel_order == format.image_channel_order &&
+		    formatItr.image_channel_data_type == format.image_channel_data_type)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool check_minimum_supported(cl_image_format *formatList,
                              unsigned int numFormats,
                              cl_mem_flags flags,

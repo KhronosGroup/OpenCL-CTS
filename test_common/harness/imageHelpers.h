@@ -76,6 +76,10 @@ extern bool check_minimum_supported(cl_image_format *formatList,
                                     cl_mem_flags flags,
                                     cl_mem_object_type image_type,
                                     cl_device_id device);
+extern bool is_image_format_required(cl_image_format format,
+                                     cl_mem_flags flags,
+                                     cl_mem_object_type image_type,
+                                     cl_device_id device);
 
 extern size_t get_format_type_size( const cl_image_format *format );
 extern size_t get_channel_data_type_size( cl_channel_type channelType );
