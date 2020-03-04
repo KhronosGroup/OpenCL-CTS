@@ -40,6 +40,9 @@ static void * align_malloc(size_t size, size_t alignment)
     if ( ptr )
         return ptr;
 #else
+    if (alignment < sizeof(void*)) {
+        alignment = sizeof(void*);
+    }
     if (0 == posix_memalign(&ptr, alignment, size))
         return ptr;
 #endif
