@@ -1,16 +1,11 @@
 
-set(HARNESS_COMMON_SOURCES
+set(HARNESS_SOURCES
     harness/threadTesting.cpp
     harness/typeWrappers.cpp
     harness/mt19937.cpp
     harness/conversions.cpp
     harness/rounding_mode.cpp
     harness/msvc9.c
-)
-
-add_library(harness-common STATIC ${HARNESS_COMMON_SOURCES})
-
-set(HARNESS_SOURCES
     harness/crc32.c
     harness/errorHelpers.cpp
     harness/genericThread.cpp
@@ -26,4 +21,3 @@ set(HARNESS_SOURCES
 
 add_library(harness STATIC ${HARNESS_SOURCES})
 
-target_link_libraries(harness harness-common)
