@@ -23,6 +23,10 @@ add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_1_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_0_APIS=1)
 
+option(USE_CL_EXPERIMENTAL "Use Experimental definitions" OFF)
+if(USE_CL_EXPERIMENTAL)
+  add_definitions(-DCL_EXPERIMENTAL)
+endif(USE_CL_EXPERIMENTAL)
 
 # Support both VS2008 and VS2012.
 set(BUILD_DIR "$ENV{ADRENO_DRIVER}/build")
