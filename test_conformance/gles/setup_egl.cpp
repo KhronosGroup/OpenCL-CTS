@@ -112,7 +112,14 @@ public:
         size_t dev_size;
         cl_int status;
 
-        status = clGetGLContextInfoKHR(properties,
+        clGetGLContextInfoKHR_fn GetGLContextInfo = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(
+                                                                                _platform, "clGetGLContextInfoKHR");
+        if (GetGLContextInfo == NULL) {
+            print_error(status, "clGetGLContextInfoKHR failed");
+            return NULL;
+        }
+
+        status = GetGLContextInfo     (properties,
                                        CL_DEVICES_FOR_GL_CONTEXT_KHR,
                                        sizeof(devices),
                                        devices,
@@ -124,7 +131,7 @@ public:
         dev_size /= sizeof(cl_device_id);
         log_info("GL _context supports %d compute devices\n", dev_size);
 
-        status = clGetGLContextInfoKHR(properties,
+        status = GetGLContextInfo     (properties,
                                        CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR,
                                        sizeof(devices),
                                        devices,

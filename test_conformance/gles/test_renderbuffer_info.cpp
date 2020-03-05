@@ -59,7 +59,9 @@ int test_renderbuffer_getinfo( cl_device_id device, cl_context context, cl_comma
 
     } formats[] = {
         { GL_RGBA8_OES,    GL_UNSIGNED_BYTE,   GL_RGBA,    GL_UNSIGNED_BYTE,    kUChar },
+#ifdef GL_ES_VERSION_3_0
         { GL_RGBA32F,      GL_FLOAT,           GL_RGBA,    GL_FLOAT,            kFloat }
+#endif
     };
 
     size_t fmtIdx, tgtIdx;

@@ -125,7 +125,9 @@ int test_renderbuffer_read( cl_device_id device, cl_context context, cl_command_
     } formats[] = {
         { GL_RGBA8_OES,    GL_UNSIGNED_BYTE,   GL_RGBA,           GL_UNSIGNED_BYTE,            kUChar },
         //{ GL_RGBA16F_QCOM, GL_HALF_FLOAT_OES,  GL_RGBA,           GL_HALF_FLOAT_OES,           kHalf  },  // Half-float not supported by ReadPixels
+#ifdef GL_ES_VERSION_3_0
         { GL_RGBA32F,      GL_FLOAT,           GL_RGBA,           GL_FLOAT,                    kFloat},
+#endif
         // XXX add others
     };
 
@@ -302,7 +304,9 @@ int test_renderbuffer_write( cl_device_id device, cl_context context, cl_command
     } formats[] = {
         { GL_RGBA8_OES,    GL_UNSIGNED_BYTE,   GL_RGBA,           GL_UNSIGNED_BYTE,            kUChar },
         //{ GL_RGBA16F_QCOM, GL_UNSIGNED_SHORT,  GL_RGBA,           GL_UNSIGNED_SHORT,           kHalf  },  // Half float not supported by ReadPixels
+#ifdef GL_ES_VERSION_3_0
         { GL_RGBA32F,      GL_FLOAT,           GL_RGBA,           GL_FLOAT,                    kFloat},
+#endif
         // XXX add others
     };
 
