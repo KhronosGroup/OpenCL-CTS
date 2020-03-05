@@ -21,7 +21,6 @@
 #if !defined (_WIN32) && !defined(__APPLE__)
 #include <malloc.h>
 #endif
-#include <vector>
 #include <algorithm>
 #include <iterator>
 #if !defined (_WIN32)
@@ -3829,30 +3828,6 @@ bool is_image_format_required(cl_image_format format,
 	}
 
 	return false;
-}
-
-bool check_minimum_supported(cl_image_format *formatList,
-                             unsigned int numFormats,
-                             cl_mem_flags flags,
-                             cl_mem_object_type image_type,
-                             cl_device_id device)
-{
-	bool passed = true;
-	Version version = get_device_cl_version(device);
-	std::vector<cl_image_format> formatsToSupport;
-	build_required_image_formats(flags, image_type, device, formatsToSupport);
-
-	for (auto &format: formatsToSupport)
-	{
-		if( !find_format( formatList, numFormats, &format ) )
-		{
-			log_error( "ERROR: Format required by OpenCL %s is not supported: ", version.to_string().c_str() );
-			print_header( &format, true );
-			passed = false;
-		}
-	}
-
-	return passed;
 }
 
 cl_uint compute_max_mip_levels( size_t width, size_t height, size_t depth)

@@ -108,6 +108,12 @@ prepare_reference(unsigned char * input_ptr, int w, int h, int d)
     return ptr;
 }
 
+struct testFormat
+{
+	const char* kernelName;
+	const char* kernelSourceString;
+	const cl_image_format img_format;
+};
 
 int test_readimage3d(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -115,21 +121,21 @@ int test_readimage3d(cl_device_id device, cl_context context, cl_command_queue q
 	cl_program program;
 	cl_kernel kernel;
 	cl_sampler sampler;
-	static cl_image_format img_format[2] =
+
+	static testFormat formatsToTest[] =
 	{
-		{CL_BGRA, CL_UNORM_INT8},
-		{CL_RGBA, CL_UNORM_INT8},
+		{
+			"test_bgra8888",
+			bgra8888_kernel_code,
+			{CL_BGRA, CL_UNORM_INT8},
+		},
+		{
+			"test_rgba8888",
+			rgba8888_kernel_code,
+			{CL_RGBA, CL_UNORM_INT8},
+		},
 	};
-	static const char* kernelName[] =
-	{
-		"test_bgra8888",
-		"test_rgba8888",
-	};
-	static const char* kernelSourceString[] =
-	{
-		bgra8888_kernel_code,
-		rgba8888_kernel_code,
-	};
+
 	unsigned char *input_ptr;
 	float *output_ptr;
 	double *ref_ptr;
@@ -144,80 +150,80 @@ int test_readimage3d(cl_device_id device, cl_context context, cl_command_queue q
 
 	PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( device )
 
-	for (uint32_t i = 0; i < 2; i++)
+	for (uint32_t i = 0; i < ARRAY_SIZE(formatsToTest); i++)
 	{
-		if (is_image_format_required(img_format[i], CL_MEM_READ_ONLY, CL_MEM_OBJECT_IMAGE3D, device))
+		if (!is_image_format_required(formatsToTest[i].img_format, CL_MEM_READ_ONLY, CL_MEM_OBJECT_IMAGE3D, device))
+			continue;
+
+		MTdata d = init_genrand( gRandomSeed );
+		input_ptr = generate_3d_image8(img_width, img_height, img_depth, d);
+		ref_ptr = prepare_reference(input_ptr, img_width, img_height, img_depth);
+		output_ptr = (float*)malloc(length);
+
+		streams[0] = create_image_3d(context, CL_MEM_READ_ONLY, &formatsToTest[i].img_format, img_width, img_height, img_depth, 0, 0, NULL, &err);
+		test_error(err, "create_image_3d failed");
+
+		streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, &err);
+		test_error(err, "clCreateBuffer failed");
+
+		sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
+		test_error(err, "clCreateSampler failed");
+
+		err = clEnqueueWriteImage(queue, streams[0], CL_TRUE, origin, region, 0, 0, input_ptr, 0, NULL, NULL);
+		test_error(err, "clEnqueueWriteImage failed");
+
+		err = create_single_kernel_helper(context, &program, &kernel, 1, &formatsToTest[i].kernelSourceString, formatsToTest[i].kernelName);
+		test_error(err, "create_single_kernel_helper failed");
+
+		err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
+		err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
+		err |= clSetKernelArg(kernel, 2, sizeof sampler, &sampler);
+		test_error(err, "clSetKernelArg failed");
+
+		threads[0] = (unsigned int)img_width;
+		threads[1] = (unsigned int)img_height;
+		threads[2] = (unsigned int)img_depth;
+
+		err = clEnqueueNDRangeKernel(queue, kernel, 3, NULL, threads, NULL, 0, NULL, NULL);
+		test_error(err, "clEnqueueNDRangeKernel failed");
+
+		err = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, length, output_ptr, 0, NULL, NULL);
+		test_error(err, "clEnqueueReadBuffer failed");
+
+		err = verify_3d_image8(ref_ptr, output_ptr, img_width, img_height, img_depth);
+		if ( err == 0 )
 		{
-			MTdata d = init_genrand( gRandomSeed );
-			input_ptr = generate_3d_image8(img_width, img_height, img_depth, d);
-			ref_ptr = prepare_reference(input_ptr, img_width, img_height, img_depth);
-			output_ptr = (float*)malloc(length);
-
-			streams[0] = create_image_3d(context, CL_MEM_READ_ONLY, &img_format[i], img_width, img_height, img_depth, 0, 0, NULL, &err);
-			test_error(err, "create_image_3d failed");
-
-			streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, &err);
-			test_error(err, "clCreateBuffer failed");
-
-			sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
-			test_error(err, "clCreateSampler failed");
-
-			err = clEnqueueWriteImage(queue, streams[0], CL_TRUE, origin, region, 0, 0, input_ptr, 0, NULL, NULL);
-			test_error(err, "clEnqueueWriteImage failed");
-
-			err = create_single_kernel_helper(context, &program, &kernel, 1, &kernelSourceString[i], kernelName[i]);
-			test_error(err, "create_single_kernel_helper failed");
-
-			err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
-			err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
-			err |= clSetKernelArg(kernel, 2, sizeof sampler, &sampler);
-			test_error(err, "clSetKernelArg failed");
-
-			threads[0] = (unsigned int)img_width;
-			threads[1] = (unsigned int)img_height;
-			threads[2] = (unsigned int)img_depth;
-
-			err = clEnqueueNDRangeKernel(queue, kernel, 3, NULL, threads, NULL, 0, NULL, NULL);
-			test_error(err, "clEnqueueNDRangeKernel failed");
-
-			err = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, length, output_ptr, 0, NULL, NULL);
-			test_error(err, "clEnqueueReadBuffer failed");
-
-			err = verify_3d_image8(ref_ptr, output_ptr, img_width, img_height, img_depth);
-			if ( err != 0 )
+			switch (i)
 			{
-				switch (i)
+				case 0:
 				{
-					case 0:
-					{
-						log_info("READ_IMAGE3D_BGRA_UNORM_INT8 test passed\n");
-						break;
-					}
-					case 1:
-					{
-						log_info("READ_IMAGE3D_RGBA_UNORM_INT8 test passed\n");
-						break;
-					}
-					default:
-					{
-						err = CL_OUT_OF_RESOURCES;
-						test_error(err, "Unhandled case");
-						break;
-					}
+					log_info("READ_IMAGE3D_BGRA_UNORM_INT8 test passed\n");
+					break;
+				}
+				case 1:
+				{
+					log_info("READ_IMAGE3D_RGBA_UNORM_INT8 test passed\n");
+					break;
+				}
+				default:
+				{
+					err = CL_OUT_OF_RESOURCES;
+					test_error(err, "Unhandled case");
+					break;
 				}
 			}
-
-			clReleaseSampler(sampler);
-			clReleaseMemObject(streams[0]);
-			clReleaseMemObject(streams[1]);
-			clReleaseKernel(kernel);
-			clReleaseProgram(program);
-			free_mtdata(d);
-			d = NULL;
-			free(input_ptr);
-			free(ref_ptr);
-			free(output_ptr);
 		}
+
+		clReleaseSampler(sampler);
+		clReleaseMemObject(streams[0]);
+		clReleaseMemObject(streams[1]);
+		clReleaseKernel(kernel);
+		clReleaseProgram(program);
+		free_mtdata(d);
+		d = NULL;
+		free(input_ptr);
+		free(ref_ptr);
+		free(output_ptr);
 	}
 
 	return err;
