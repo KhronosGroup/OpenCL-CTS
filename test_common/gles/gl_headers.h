@@ -39,7 +39,9 @@
 #define glDeleteFramebuffersEXT      glDeleteFramebuffers
 #define glBindFramebufferEXT         glBindFramebuffer
 #define glFramebufferRenderbufferEXT glFramebufferRenderbuffer
+#ifndef GL_ES_VERSION_3_0
 #define glTexImage3D                 glTexImage3DOES
+#endif
 #define glutGetProcAddress           eglGetProcAddress
 
 #define GL_FRAMEBUFFER_EXT           GL_FRAMEBUFFER
