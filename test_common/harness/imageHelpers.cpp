@@ -21,7 +21,6 @@
 #if !defined (_WIN32) && !defined(__APPLE__)
 #include <malloc.h>
 #endif
-#include <vector>
 #include <algorithm>
 #include <iterator>
 #if !defined (_WIN32)
@@ -3664,15 +3663,14 @@ bool find_format( cl_image_format *formatList, unsigned int numFormats, cl_image
     return false;
 }
 
-bool check_minimum_supported(cl_image_format *formatList,
-                             unsigned int numFormats,
-                             cl_mem_flags flags,
-                             cl_mem_object_type image_type,
-                             cl_device_id device)
+void build_required_image_formats(cl_mem_flags flags,
+                                  cl_mem_object_type image_type,
+                                  cl_device_id device,
+                                  std::vector<cl_image_format>& formatsToSupport)
 {
-	bool passed = true;
-	std::vector<cl_image_format> formatsToSupport;
 	Version version = get_device_cl_version(device);
+
+	formatsToSupport.clear();
 
 	// Required embedded formats.
 	static std::vector<cl_image_format> embeddedProfReadOrWriteFormats
@@ -3810,18 +3808,26 @@ bool check_minimum_supported(cl_image_format *formatList,
 			}
 		}
 	}
+}
 
-    for (auto &format: formatsToSupport)
-    {
-        if( !find_format( formatList, numFormats, &format ) )
-        {
-            log_error( "ERROR: Format required by OpenCL %s is not supported: ", version.to_string().c_str() );
-            print_header( &format, true );
-            passed = false;
-        }
-    }
+bool is_image_format_required(cl_image_format format,
+                              cl_mem_flags flags,
+                              cl_mem_object_type image_type,
+                              cl_device_id device)
+{
+	std::vector<cl_image_format> formatsToSupport;
+	build_required_image_formats(flags, image_type, device, formatsToSupport);
 
-    return passed;
+	for (auto &formatItr: formatsToSupport)
+	{
+		if (formatItr.image_channel_order == format.image_channel_order &&
+		    formatItr.image_channel_data_type == format.image_channel_data_type)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 cl_uint compute_max_mip_levels( size_t width, size_t height, size_t depth)

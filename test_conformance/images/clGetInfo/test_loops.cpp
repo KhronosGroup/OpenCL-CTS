@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #include "../testBase.h"
+#include "harness/imageHelpers.h"
+#include <algorithm>
+#include <iterator>
 
 extern cl_filter_mode     gFilterModeToUse;
 extern cl_addressing_mode gAddressModeToUse;
@@ -35,6 +38,30 @@ static const char *str_2d_image = "2D";
 static const char *str_3d_image = "3D";
 static const char *str_1d_image_array = "1D array";
 static const char *str_2d_image_array = "2D array";
+
+static bool check_minimum_supported(cl_image_format *formatList,
+                                    unsigned int numFormats,
+                                    cl_mem_flags flags,
+                                    cl_mem_object_type image_type,
+                                    cl_device_id device)
+{
+	bool passed = true;
+	Version version = get_device_cl_version(device);
+	std::vector<cl_image_format> formatsToSupport;
+	build_required_image_formats(flags, image_type, device, formatsToSupport);
+
+	for (auto &format: formatsToSupport)
+	{
+		if( !find_format( formatList, numFormats, &format ) )
+		{
+			log_error( "ERROR: Format required by OpenCL %s is not supported: ", version.to_string().c_str() );
+			print_header( &format, true );
+			passed = false;
+		}
+	}
+
+	return passed;
+}
 
 static const char *convert_image_type_to_string(cl_mem_object_type image_type)
 {
