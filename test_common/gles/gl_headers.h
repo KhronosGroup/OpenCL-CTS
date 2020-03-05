@@ -27,7 +27,6 @@
 #endif
 
 #include <GLES2/gl2ext.h>
-#include <GLES2/gl2extQCOM.h>
 
 // Some macros to minimize the changes in the tests from GL to GLES2
 #define glGenRenderbuffersEXT        glGenRenderbuffers
