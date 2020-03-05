@@ -108,19 +108,18 @@ prepare_reference(unsigned char * input_ptr, int w, int h, int d)
     return ptr;
 }
 
-struct testFormat
-{
-	const char* kernelName;
-	const char* kernelSourceString;
-	const cl_image_format img_format;
-};
-
 int test_readimage3d(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
 	cl_mem streams[2];
 	cl_program program;
 	cl_kernel kernel;
 	cl_sampler sampler;
+	struct testFormat
+	{
+		const char* kernelName;
+		const char* kernelSourceString;
+		const cl_image_format img_format;
+	};
 
 	static testFormat formatsToTest[] =
 	{
