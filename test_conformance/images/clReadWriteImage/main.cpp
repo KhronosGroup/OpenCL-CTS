@@ -89,16 +89,7 @@ int main(int argc, const char *argv[])
     // Parse arguments
     for( int i = 1; i < argc; i++ )
     {
-        if( strcmp( argv[i], "cpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_CPU" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_CPU;
-        else if( strcmp( argv[i], "gpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_GPU" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_GPU;
-        else if( strcmp( argv[i], "accelerator" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-        else if( strcmp( argv[i], "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-
-        else if( strcmp( argv[i], "debug_trace" ) == 0 )
+        if( strcmp( argv[i], "debug_trace" ) == 0 )
             gDebugTrace = true;
 
         else if( strcmp( argv[i], "small_images" ) == 0 )
