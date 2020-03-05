@@ -193,25 +193,9 @@ int test_readimage3d(cl_device_id device, cl_context context, cl_command_queue q
 		err = verify_3d_image8(ref_ptr, output_ptr, img_width, img_height, img_depth);
 		if ( err == 0 )
 		{
-			switch (i)
-			{
-				case 0:
-				{
-					log_info("READ_IMAGE3D_BGRA_UNORM_INT8 test passed\n");
-					break;
-				}
-				case 1:
-				{
-					log_info("READ_IMAGE3D_RGBA_UNORM_INT8 test passed\n");
-					break;
-				}
-				default:
-				{
-					err = CL_OUT_OF_RESOURCES;
-					test_error(err, "Unhandled case");
-					break;
-				}
-			}
+			log_info("READ_IMAGE3D_%s_%s test passed\n",
+			         GetChannelTypeName(formatsToTest[i].img_format.image_channel_data_type),
+			         GetChannelOrderName(formatsToTest[i].img_format.image_channel_order));
 		}
 
 		clReleaseSampler(sampler);
