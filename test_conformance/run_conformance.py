@@ -14,6 +14,7 @@ DEBUG = 0
 
 log_file_name = "opencl_conformance_results_" + time.strftime("%Y-%m-%d_%H-%M", time.localtime())+ ".log"
 process_pid = 0
+subdir = ''
 
 # The amount of time between printing a "." (if no output from test) or ":" (if output)
 #  to the screen while the tests are running.
@@ -21,11 +22,12 @@ seconds_between_status_updates = 60*60*24*7  # effectively never
 
 # Help info
 def write_help_info() :
- print("run_conformance.py test_list [CL_DEVICE_TYPE(s) to test] [partial-test-names, ...] [log=path/to/log/file/]")
+ print("run_conformance.py test_list [CL_DEVICE_TYPE(s) to test] [partial-test-names, ...] [log=path/to/log/file/] [subdir=subdir name]")
  print(" test_list - the .csv file containing the test names and commands to run the tests.")
  print(" [partial-test-names, ...] - optional partial strings to select a subset of the tests to run.")
  print(" [CL_DEVICE_TYPE(s) to test] - list of CL device types to test, default is CL_DEVICE_TYPE_DEFAULT.")
  print(" [log=path/to/log/file/] - provide a path for the test log file, default is in the current directory.")
+ print(" [subdir=subdir name] - provide a subdir for the test directory, vs will generate a configure directory. NT ONLY.")
  print("   (Note: spaces are not allowed in the log file path.")
 
 
@@ -200,6 +202,7 @@ def run_test_checking_output(current_directory, test_dir, log_file):
 def run_tests(tests) :
   global curent_directory
   global process_pid
+  global subdir
   # Run the tests
   failures = 0
   previous_test = None
@@ -207,6 +210,10 @@ def run_tests(tests) :
   for test in tests:
    # Print the name of the test we're running and the time
    (test_name, test_dir) = test
+   if (os.name == 'nt' and subdir != ''):
+     idx = test_dir.rindex(os.sep)
+     if (idx > 0):
+        test_dir = test_dir[:idx] + os.sep + subdir + test_dir[idx:]
    if (test_dir != previous_test):
     print("==========   " + test_dir)
     log_file.write("========================================================================================\n")
@@ -284,6 +291,9 @@ for arg in sys.argv:
  match = re.search("log=(\S+)", arg)
  if (match):
   log_file_name = match.group(1).rstrip('/') + os.sep + log_file_name
+ match = re.search("subdir=(\S+)", arg)
+ if (match):
+  subdir = match.group(1)
 try:
  log_file = open(log_file_name, "w")
 except IOError:
@@ -309,6 +319,8 @@ for arg in sys.argv[2:]:
  if arg in device_types:
   continue
  if re.search("log=(\S+)", arg):
+  continue
+ if re.search("subdir=(\S+)", arg):
   continue
  num_of_patterns_to_match = num_of_patterns_to_match + 1
  found_it = False
