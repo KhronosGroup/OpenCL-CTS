@@ -50,7 +50,7 @@ int test_svm_pointer_passing(cl_device_id deviceID, cl_context context2, cl_comm
   test_error(error,"clCreateKernel failed");
 
   size_t bufSize = 256;
-  char *pbuf = (char*) clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(cl_uchar)*bufSize, 0);
+  cl_uchar *pbuf = (cl_uchar*) clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(cl_uchar)*bufSize, 0);
 
   cl_int *pNumCorrect = NULL;
   pNumCorrect = (cl_int*) clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(cl_int), 0);
@@ -81,7 +81,7 @@ int test_svm_pointer_passing(cl_device_id deviceID, cl_context context2, cl_comm
       cmdq = queues[ii];
       for(int i = 0; i<(int)bufSize; i++)
       {
-        cl_uchar* pChar = &pBuf[i];
+        cl_uchar* pChar = &pbuf[i];
         error = clSetKernelArgSVMPointer(kernel_verify_char, 0, pChar); // pass a pointer to a location within the buffer
         test_error(error, "clSetKernelArg failed");
         error = clSetKernelArg(kernel_verify_char, 2, sizeof(cl_uchar), (void *) &i );  // pass the expected value at the above location.
