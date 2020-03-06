@@ -98,6 +98,7 @@ static const char *kernelpattern_image_write_1Darray_half =
 "}\n";
 
 static const char *kernelpattern_image_write_3D =
+"#pragma OPENCL EXTENSION cl_khr_3d_image_writes : enable\n"
 "__kernel void sample_test( __global %s4 *source, write_only image3d_t dest )\n"
 "{\n"
 "    int  tidX   = get_global_id(0);\n"
@@ -111,6 +112,7 @@ static const char *kernelpattern_image_write_3D =
 "}\n";
 
 static const char *kernelpattern_image_write_3D_half =
+"#pragma OPENCL EXTENSION cl_khr_3d_image_writes : enable\n"
 "__kernel void sample_test( __global half4 *source, write_only image3d_t dest )\n"
 "{\n"
 "    int  tidX   = get_global_id(0);\n"
