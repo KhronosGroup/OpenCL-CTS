@@ -220,8 +220,8 @@ endif(WIN32)
 # as required for the compiler testing.
 
 # ... For running the compiler test on the command line.
-file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/includeTestDirectory" DESTINATION ${DST_DIR})
-file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory" DESTINATION ${DST_DIR})
+file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/includeTestDirectory" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_conformance/compiler)
+file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_conformance/compiler)
 
 # ... For running the compiler test with VisualStudio.
 if(MSVC)
