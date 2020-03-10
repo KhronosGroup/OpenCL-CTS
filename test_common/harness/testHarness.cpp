@@ -67,6 +67,21 @@ int runTestHarness( int argc, const char *argv[], int testNum, test_definition t
                           ( imageSupportRequired ) ? verifyImageSupport : NULL );
 }
 
+int skip_init_info(int count) {
+    log_info("Test skipped while initialization\n");
+    log_info("SKIPPED %d of %d tests.\n", count, count);
+    return EXIT_SUCCESS;
+}
+
+int fail_init_info(int count) {
+    log_info("Test failed while initialization\n");
+    log_info("FAILED %d of %d tests.\n", count, count);
+    return EXIT_FAILURE;
+}
+void version_expected_info(const char * test_name, const char * expected_version, const char * device_version) {
+    log_info("%s skipped (requires at least version %s, but the device reports version %s)\n",
+        test_name, expected_version, device_version);
+}
 int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_definition testList[],
                              int forceNoContextCreation, cl_command_queue_properties queueProps,
                              DeviceCheckFn deviceCheckFn )
@@ -447,9 +462,9 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
             case TEST_PASS:
                 break;
             case TEST_FAIL:
-                return EXIT_FAILURE;
+                return fail_init_info(testNum);
             case TEST_SKIP:
-                return EXIT_SUCCESS;
+                return skip_init_info(testNum);
         }
     }
 
@@ -689,8 +704,7 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
     const Version device_version = get_device_cl_version(deviceToUse);
     if (test.min_version > device_version)
     {
-        log_info("%s skipped (requires at least version %s, but the device reports version %s)\n",
-                 test.name, test.min_version.to_string().c_str(), device_version.to_string().c_str());
+        version_expected_info(test.name, test.min_version.to_string().c_str(), device_version.to_string().c_str());
         return TEST_SKIP;
     }
 
@@ -936,3 +950,4 @@ void PrintArch( void )
     }
 #endif
 }
+
