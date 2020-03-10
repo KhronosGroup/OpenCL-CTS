@@ -129,6 +129,7 @@ extern cl_device_type GetDeviceType( cl_device_id );
 extern cl_device_id GetOpposingDevice( cl_device_id device );
 
 Version get_device_cl_version(cl_device_id device);
+void version_expected_info(const char * test_name, const char * expected_version, const char * device_version);
 
 
 extern int      gFlushDenormsToZero;    // This is set to 1 if the device does not support denorms (CL_FP_DENORM)

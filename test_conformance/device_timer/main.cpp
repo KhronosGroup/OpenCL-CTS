@@ -32,12 +32,14 @@ test_definition test_list[] = {
 
 test_status InitCL(cl_device_id device) {
 	auto version = get_device_cl_version(device);
+	auto expected_min_version = Version(2, 1);
 	cl_platform_id platform;
 	cl_ulong timer_res;
 	cl_int error;
 
-	if (version < Version(2, 1))
+	if (version < expected_min_version)
 	{
+		version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
 		return TEST_SKIP;
 	}
 
