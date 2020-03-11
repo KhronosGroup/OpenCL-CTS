@@ -1029,11 +1029,12 @@ test_status InitCL( cl_device_id device )
 
     PrintArch();
 
-
-    err = check_opencl_version(device,1,2);
-    if( err != CL_SUCCESS ) {
-      print_missing_feature(err,"printf");
-      return TEST_FAIL;
+    auto version = get_device_cl_version(device);
+    auto expected_min_version = Version(1, 2);
+    if (version < expected_min_version)
+    {
+        version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
+        return TEST_SKIP;
     }
 
     log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
