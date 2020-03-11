@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2017, 2020 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -332,6 +332,7 @@ static int l_copy( cl_uchar* dest, unsigned dest_idx, const cl_uchar* src, unsig
 
 static std::string conversion_functions(const TypeInfo& ti);
 static std::string global_decls(const TypeInfo& ti, bool with_init);
+static std::string global_check_function(const TypeInfo& ti);
 static std::string writer_function(const TypeInfo& ti);
 static std::string reader_function(const TypeInfo& ti);
 
@@ -747,6 +748,40 @@ static std::string global_decls(const TypeInfo& ti, bool with_init )
     return std::string(decls);
 }
 
+// Return the source code for the "global_check" function for the given type.
+// This function checks that all program-scope variables have appropriate
+// initial values when no explicit initializer is used. If all tests pass the
+// kernel writes a non-zero value to its output argument, otherwise it writes
+// zero.
+static std::string global_check_function(const TypeInfo& ti)
+{
+    const std::string type_name = ti.get_buf_elem_type();
+
+    // all() should only be used on vector inputs. For scalar comparison, the
+    // result of the equality operator can be used as a bool value.
+    const bool is_scalar = ti.num_elem() == 0; // 0 is used to represent scalar types, not 1.
+    const std::string is_equality_true = is_scalar ? "" : "all";
+
+    std::string code = "kernel void global_check(global int* out) {\n";
+    code += "  const " + type_name + " zero = ((" + type_name + ")0);\n";
+    code += "  bool status = true;\n";
+    if (ti.is_atomic()) {
+        code += "  status &= " + is_equality_true + "(atomic_load(&var) == zero);\n";
+        code += "  status &= " + is_equality_true + "(atomic_load(&g_var) == zero);\n";
+        code += "  status &= " + is_equality_true + "(atomic_load(&a_var[0]) == zero);\n";
+        code += "  status &= " + is_equality_true + "(atomic_load(&a_var[1]) == zero);\n";
+    } else {
+        code += "  status &= " + is_equality_true + "(var == zero);\n";
+        code += "  status &= " + is_equality_true + "(g_var == zero);\n";
+        code += "  status &= " + is_equality_true + "(a_var[0] == zero);\n";
+        code += "  status &= " + is_equality_true + "(a_var[1] == zero);\n";
+    }
+    code += "  status &= (p_var == NULL);\n";
+    code += "  *out = status ? 1 : 0;\n";
+    code += "}\n\n";
+
+    return code;
+}
 
 // Return the source text for the writer function for the given type.
 // For types that can't be passed as pointer-to-type as a kernel argument,
@@ -815,6 +850,39 @@ static std::string reader_function(const TypeInfo& ti)
     return result;
 }
 
+// Check that all globals where appropriately default-initialized.
+static int check_global_initialization(cl_context context, cl_program program, cl_command_queue queue)
+{
+    int status = CL_SUCCESS;
+
+    // Create a buffer on device to store a unique integer.
+    cl_int is_init_valid = 0;
+    clMemWrapper buffer(clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(is_init_valid), &is_init_valid, &status));
+    test_error_ret(status, "Failed to allocate buffer", status);
+
+    // Create, setup and invoke kernel.
+    clKernelWrapper global_check(clCreateKernel(program, "global_check", &status));
+    test_error_ret(status, "Failed to create global_check kernel", status);
+    status = clSetKernelArg(global_check, 0, sizeof(cl_mem), &buffer);
+    test_error_ret(status, "Failed to set up argument for the global_check kernel", status);
+    const cl_uint work_dim = 1;
+    const size_t global_work_offset[] = { 0 };
+    const size_t global_work_size[] = { 1 };
+    status = clEnqueueNDRangeKernel(queue, global_check, work_dim, global_work_offset, global_work_size, nullptr, 0, nullptr, nullptr);
+    test_error_ret(status, "Failed to run global_check kernel", status);
+    status = clFinish(queue);
+    test_error_ret(status, "clFinish() failed", status);
+
+    // Read back the memory buffer from the device.
+    status = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, sizeof(is_init_valid), &is_init_valid, 0, nullptr, nullptr);
+    test_error_ret(status, "Failed to read buffer from device", status);
+    if (is_init_valid == 0) {
+        log_error("Unexpected default values were detected");
+        return 1;
+    }
+
+    return CL_SUCCESS;
+}
 
 // Check write-then-read.
 static int l_write_read( cl_device_id device, cl_context context, cl_command_queue queue )
@@ -831,6 +899,7 @@ static int l_write_read( cl_device_id device, cl_context context, cl_command_que
 
     return status;
 }
+
 static int l_write_read_for_type( cl_device_id device, cl_context context, cl_command_queue queue, const TypeInfo& ti, RandomSeed& rand_state )
 {
     int err = CL_SUCCESS;
@@ -845,6 +914,7 @@ static int l_write_read_for_type( cl_device_id device, cl_context context, cl_co
       ksrc.add( l_get_int64_atomic_pragma() );
     ksrc.add( conversion_functions(ti) );
     ksrc.add( global_decls(ti,false) );
+    ksrc.add( global_check_function(ti) );
     ksrc.add( writer_function(ti) );
     ksrc.add( reader_function(ti) );
 
@@ -869,6 +939,8 @@ static int l_write_read_for_type( cl_device_id device, cl_context context, cl_co
         log_error("Error program query for global variable total size query failed: Expected at least %llu but got %llu\n", (unsigned long long)expected_used_bytes, (unsigned long long)used_bytes );
         err |= 1;
     }
+
+    err |= check_global_initialization(context, program, queue);
 
     // We need to create 5 random values of the given type,
     // and read 4 of them back.
