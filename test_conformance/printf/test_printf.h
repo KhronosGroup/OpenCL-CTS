@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <vector>
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -73,11 +74,11 @@ struct printDataGenParameters
 
 struct testCase
 {
-    unsigned int _testNum;                           //test number
-    enum Type _type;                                 //(data)type for test
-    //const char** _strPrint;                          //auxiliary data to build the code for kernel source
-    const char** _correctBuffer;                     //look-up table for correct results for printf
-    struct printDataGenParameters* _genParameters;   //auxiliary data to build the code for kernel source
+    unsigned int _testNum;                         //test number
+    enum Type _type;                               //(data)type for test
+    //const char** _strPrint;                      //auxiliary data to build the code for kernel source
+    std::vector<const char*> _correctBuffer;       //look-up table for correct results for printf
+    struct printDataGenParameters* _genParameters; //auxiliary data to build the code for kernel source
 };
 
 

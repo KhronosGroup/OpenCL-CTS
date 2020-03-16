@@ -76,8 +76,7 @@ struct printDataGenParameters printIntGenParameters[] = {
 
 //------------------------------------------------
 
-const char *correctBufferInt[] = {
-
+std::vector<const char*> correctBufferInt = {
     "   10",
 
     "10   ",
@@ -218,7 +217,7 @@ struct printDataGenParameters printFloatGenParameters[] = {
 
 //--------------------------------------------------------
 
-const char* correctBufferFloat[] = {
+std::vector<const char*> correctBufferFloat = {
 
     "10.345600",
 
@@ -315,7 +314,7 @@ struct printDataGenParameters printFloatLimitsGenParameters[] = {
 
 //--------------------------------------------------------
 
-const char* correctBufferFloatLimits[] = {
+std::vector<const char*> correctBufferFloatLimits = {
 
     "inf",
 
@@ -384,7 +383,7 @@ struct printDataGenParameters printOctalGenParameters[] = {
 
 
 
-const char* correctBufferOctal[] = {
+std::vector<const char*> correctBufferOctal = {
 
     "12",
 
@@ -450,7 +449,7 @@ struct printDataGenParameters printUnsignedGenParameters[] = {
 
 
 
-const char* correctBufferUnsigned[] = {
+std::vector<const char*> correctBufferUnsigned = {
 
     "10",
 
@@ -524,7 +523,7 @@ struct printDataGenParameters printHexadecimalGenParameters[] = {
 
 
 
-const char* correctBufferHexadecimal[] = {
+std::vector<const char*> correctBufferHexadecimal= {
 
     "0xabcdef",
 
@@ -594,7 +593,7 @@ struct printDataGenParameters printCharGenParameters[] = {
 
 //---------------------------------------------------------
 
-const char * correctBufferChar[] = {
+std::vector<const char*> correctBufferChar= {
 
     "   1",
 
@@ -661,7 +660,7 @@ struct printDataGenParameters printStringGenParameters[] = {
 
 //---------------------------------------------------------
 
-const char * correctBufferString[] = {
+std::vector<const char*> correctBufferString = {
 
     " foo",
 
@@ -734,7 +733,7 @@ struct printDataGenParameters printVectorGenParameters[]={
 
 //------------------------------------------------------------
 
-const char * correctBufferVector[] = {
+std::vector<const char*> correctBufferVector = {
 
     "1.00,2.00,3.00,4.00",
 
@@ -814,7 +813,7 @@ struct printDataGenParameters printAddrSpaceGenParameters[]={
 
 //-------------------------------------------------------------------------------
 
-const char * correctAddrSpace[] = {
+std::vector<const char*> correctAddrSpace = {
 
     "2","2","+3","-1",""
 
