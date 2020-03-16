@@ -215,17 +215,6 @@ struct printDataGenParameters printFloatGenParameters[] = {
     //(Minimum)Ten-wide,Double argument representing floating-point,in xh.hhhhpAd style,default(right)-justified
 
     {"%10.2a","9990.235"},
-
-    //Infinity (1.0/0.0)
-
-    {"%f","1.0f/0.0f"},
-
-    //NaN
-
-    {"%f","sqrt(-1.0f)"},
-
-    //NaN
-    {"%f","acospi(2.0f)"}
     };
 //--------------------------------------------------------
 
@@ -296,7 +285,66 @@ testCase testCaseFloat = {
 
 };
 
+//==============================================
 
+// float limits
+
+//==============================================
+
+
+
+//--------------------------------------------------------
+
+// [string] format |  [string] float-data representation |
+
+//--------------------------------------------------------
+
+
+struct printDataGenParameters printFloatLimitsGenParameters[] = {
+
+    //Infinity (1.0/0.0)
+
+    {"%f","1.0f/0.0f"},
+
+    //NaN
+
+    {"%f","sqrt(-1.0f)"},
+
+    //NaN
+    {"%f","acospi(2.0f)"}
+    };
+//--------------------------------------------------------
+
+//  Lookup table - [string]float-correct buffer             |
+
+//--------------------------------------------------------
+
+const char* correctBufferFloatLimits[] = {
+
+    "inf",
+
+    "-nan",
+
+    "nan"
+};
+
+//---------------------------------------------------------
+
+//Test case for float                                     |
+
+//---------------------------------------------------------
+
+testCase testCaseFloatLimits = {
+
+    sizeof(correctBufferFloatLimits)/sizeof(char*),
+
+    TYPE_FLOAT_LIMITS,
+
+    correctBufferFloatLimits,
+
+    printFloatLimitsGenParameters
+
+};
 
 //=========================================================
 
@@ -802,7 +850,7 @@ testCase testCaseAddrSpace = {
 
 //-------------------------------------------------------------------------------
 
-testCase* allTestCase[] = {&testCaseInt,&testCaseFloat,&testCaseOctal,&testCaseUnsigned,&testCaseHexadecimal,&testCaseChar,&testCaseString,&testCaseVector,&testCaseAddrSpace};
+testCase* allTestCase[] = {&testCaseInt,&testCaseFloat,&testCaseFloatLimits,&testCaseOctal,&testCaseUnsigned,&testCaseHexadecimal,&testCaseChar,&testCaseString,&testCaseVector,&testCaseAddrSpace};
 
 
 //-----------------------------------------

@@ -705,17 +705,19 @@ int test_float_17(cl_device_id deviceID, cl_context context, cl_command_queue qu
 {
     return doTest(gQueue, gContext, TYPE_FLOAT, 17, deviceID);
 }
-int test_float_18(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+
+
+int test_float_limits_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT, 18, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 0, deviceID);
 }
-int test_float_19(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_float_limits_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT, 19, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 1, deviceID);
 }
-int test_float_20(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_float_limits_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT, 20, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 2, deviceID);
 }
 
 
@@ -869,9 +871,10 @@ test_definition test_list[] = {
     ADD_TEST( float_15 ),
     ADD_TEST( float_16 ),
     ADD_TEST( float_17 ),
-    ADD_TEST( float_18 ),
-    ADD_TEST( float_19 ),
-    ADD_TEST( float_20 ),
+
+    ADD_TEST( float_limits_0 ),
+    ADD_TEST( float_limits_1 ),
+    ADD_TEST( float_limits_2 ),
 
     ADD_TEST( octal_0 ),
     ADD_TEST( octal_1 ),

@@ -42,6 +42,7 @@ enum Type
  {
      TYPE_INT,
      TYPE_FLOAT,
+     TYPE_FLOAT_LIMITS,
      TYPE_OCTAL,
      TYPE_UNSIGNED,
      TYPE_HEXADEC,
