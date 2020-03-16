@@ -392,35 +392,6 @@ int main(int argc, const char *argv[])
     if( gTypesToTest == 0 )
         gTypesToTest = kTestAllTypes;
 
-#if defined( __APPLE__ )
-#if defined( __i386__ ) || defined( __x86_64__ )
-#define    kHasSSE3                0x00000008
-#define kHasSupplementalSSE3    0x00000100
-#define    kHasSSE4_1              0x00000400
-#define    kHasSSE4_2              0x00000800
-    /* check our environment for a hint to disable SSE variants */
-    {
-        const char *env = getenv( "CL_MAX_SSE" );
-        if( env )
-        {
-            extern int _cpu_capabilities;
-            int mask = 0;
-            if( 0 == strcmp( env, "SSE4.1" ) )
-                mask = kHasSSE4_2;
-            else if( 0 == strcmp( env, "SSSE3" ) )
-                mask = kHasSSE4_2 | kHasSSE4_1;
-            else if( 0 == strcmp( env, "SSE3" ) )
-                mask = kHasSSE4_2 | kHasSSE4_1 | kHasSupplementalSSE3;
-            else if( 0 == strcmp( env, "SSE2" ) )
-                mask = kHasSSE4_2 | kHasSSE4_1 | kHasSupplementalSSE3 | kHasSSE3;
-
-            log_info( "*** Environment: CL_MAX_SSE = %s ***\n", env );
-            _cpu_capabilities &= ~mask;
-        }
-    }
-#endif
-#endif
-
     if( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
 
