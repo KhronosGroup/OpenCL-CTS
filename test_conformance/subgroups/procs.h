@@ -26,7 +26,8 @@
 
 extern MTdata gMTdata;
 
-extern int test_sub_group_info(cl_device_id device, cl_context context,
+extern bool use_core_subgroups;
+extern bool test_ifp;
                                cl_command_queue queue, int num_elements);
 extern int test_work_item_functions(cl_device_id device, cl_context context,
                                     cl_command_queue queue, int num_elements);

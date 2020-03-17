@@ -30,6 +30,8 @@ test_definition test_list[] = {
 };
 
 const int test_num = ARRAY_SIZE(test_list);
+bool use_core_subgroups = false;
+bool test_ifp = true;
 
 static test_status checkSubGroupsExtension(cl_device_id device)
 {
@@ -56,8 +58,22 @@ static test_status checkSubGroupsExtension(cl_device_id device)
 
     if ((version > expected_min_version) && !hasExtension)
     {
-        log_error("'cl_khr_subgroups' is a required extension, failing.\n");
-        return TEST_FAIL;
+        log_info("'cl_khr_subgroups' not found. Using OpenCL 2.1 core subgroups.\n");
+        use_core_subgroups = true;
+        cl_uint ifp_supported;
+        cl_uint error;
+        error = clGetDeviceInfo(device, CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
+            sizeof(ifp_supported), &ifp_supported, NULL);
+        if (error != CL_SUCCESS) {
+            print_error(error, "Unable to get CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS capability");
+            return TEST_FAIL;
+        }
+        //skip testing ifp
+        if (ifp_supported != 1) {
+            log_info("INDEPENDENT FORWARD PROGRESS not supported...\n");
+            test_ifp = false;
+        }
+        return TEST_PASS;
     }
 
     return TEST_PASS;

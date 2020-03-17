@@ -88,15 +88,34 @@ int test_sub_group_info(cl_device_id device, cl_context context,
                             (void *)&platform, NULL);
     test_error(error, "clDeviceInfo failed for CL_DEVICE_PLATFORM");
 
-    clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfoKHR_ptr;
+    if (use_core_subgroups) {
+        error = clGetKernelSubGroupInfo(kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE,
+            sizeof(local), (void *)&local, sizeof(kernel_max_subgroup_size), (void *)&kernel_max_subgroup_size, &realSize);
+        test_error(error, "clGetKernelSubGroupInfo failed for CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE");
+        log_info("The CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE for the kernel is %d.\n", (int)kernel_max_subgroup_size);
+        if (realSize != sizeof(kernel_max_subgroup_size)) {
+            log_error("ERROR: Returned size of max sub group size not valid! (Expected %d, got %d)\n", (int)sizeof(kernel_max_subgroup_size), (int)realSize);
+            return -1;
+        }
+        error = clGetKernelSubGroupInfo(kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE,
+            sizeof(local), (void *)&local, sizeof(kernel_subgroup_count), (void *)&kernel_subgroup_count, &realSize);
+        test_error(error, "clGetKernelSubGroupInfo failed for CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE");
+        log_info("The CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE for the kernel is %d.\n", (int)kernel_subgroup_count);
+
+        if (realSize != sizeof(kernel_subgroup_count)) {
+            log_error("ERROR: Returned size of sub group count not valid! (Expected %d, got %d)\n", (int)sizeof(kernel_subgroup_count), (int)realSize);
+            return -1;
+        }
+    } else {
+        clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfoKHR_ptr;
     clGetKernelSubGroupInfoKHR_ptr =
         (clGetKernelSubGroupInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(
             platform, "clGetKernelSubGroupInfoKHR");
     if (clGetKernelSubGroupInfoKHR_ptr == NULL)
     {
-        log_error("ERROR: clGetKernelSubGroupInfoKHR function not available");
-        return -1;
-    }
+            log_error("ERROR: clGetKernelSubGroupInfoKHR function not available");
+            return -1;
+        }
 
     error = clGetKernelSubGroupInfoKHR_ptr(
         kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR,
@@ -108,14 +127,13 @@ int test_sub_group_info(cl_device_id device, cl_context context,
     log_info("The CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR for the kernel "
              "is %d.\n",
              (int)kernel_max_subgroup_size);
-
     if (realSize != sizeof(kernel_max_subgroup_size))
     {
         log_error("ERROR: Returned size of max sub group size not valid! "
                   "(Expected %d, got %d)\n",
                   (int)sizeof(kernel_max_subgroup_size), (int)realSize);
-        return -1;
-    }
+            return -1;
+        }
 
     error = clGetKernelSubGroupInfoKHR_ptr(
         kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR,
@@ -133,7 +151,8 @@ int test_sub_group_info(cl_device_id device, cl_context context,
         log_error("ERROR: Returned size of sub group count not valid! "
                   "(Expected %d, got %d)\n",
                   (int)sizeof(kernel_subgroup_count), (int)realSize);
-        return -1;
+            return -1;
+        }
     }
 
     // Verify that the kernel gets the same max_subgroup_size and subgroup_count

@@ -352,7 +352,18 @@ struct test
         if (local > LSIZE) local = LSIZE;
 
         // Get the sub group info
-        clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfoKHR_ptr;
+        if (use_core_subgroups) {
+            error = clGetKernelSubGroupInfo(kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE,
+                sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
+            test_error(error, "clGetKernelSubGroupInfo failed for CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE");
+            subgroup_size = (int)tmp;
+
+            error = clGetKernelSubGroupInfo(kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE,
+                sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
+            test_error(error, "clGetKernelSubGroupInfo failed for CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE");
+            num_subgroups = (int)tmp;
+        } else {
+            clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfoKHR_ptr;
         clGetKernelSubGroupInfoKHR_ptr = (clGetKernelSubGroupInfoKHR_fn)
             clGetExtensionFunctionAddressForPlatform(
                 platform, "clGetKernelSubGroupInfoKHR");
@@ -360,8 +371,8 @@ struct test
         {
             log_error(
                 "ERROR: clGetKernelSubGroupInfoKHR function not available");
-            return -1;
-        }
+                return -1;
+            }
 
         error = clGetKernelSubGroupInfoKHR_ptr(
             kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR,
@@ -369,7 +380,7 @@ struct test
         test_error(error,
                    "clGetKernelSubGroupInfoKHR failed for "
                    "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR");
-        subgroup_size = (int)tmp;
+            subgroup_size = (int)tmp;
 
         error = clGetKernelSubGroupInfoKHR_ptr(
             kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR,
@@ -377,8 +388,8 @@ struct test
         test_error(error,
                    "clGetKernelSubGroupInfoKHR failed for "
                    "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR");
-        num_subgroups = (int)tmp;
-
+            num_subgroups = (int)tmp;
+        }
         // Make sure the number of sub groups is what we expect
         if (num_subgroups != (local + subgroup_size - 1) / subgroup_size)
         {
