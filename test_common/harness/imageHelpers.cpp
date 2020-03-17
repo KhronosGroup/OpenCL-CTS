@@ -3742,7 +3742,6 @@ void build_required_image_formats(cl_mem_flags flags,
 		{ CL_RG, CL_FLOAT },
 		{ CL_RGBA, CL_SNORM_INT8 },
 		{ CL_RGBA, CL_SNORM_INT16 },
-		{ CL_sRGBA, CL_UNORM_INT8 },
 	};
 
 	/*
@@ -3763,7 +3762,7 @@ void build_required_image_formats(cl_mem_flags flags,
 	*/
 	static std::vector<cl_image_format> fullProf2XSRGBFormats
 	{
-		{CL_sRGB, CL_UNORM_INT8},
+		{ CL_sRGBA, CL_UNORM_INT8 },
 	};
 
 	// Embedded profile
