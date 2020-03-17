@@ -17,6 +17,8 @@
 #define TESTPRINTF_INCLUDED_H
 
 #include "harness/compat.h"
+#include "harness/testHarness.h"
+#include "harness/rounding_mode.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -39,7 +41,7 @@
 //-----------------------------------------
 // Types
 //-----------------------------------------
-enum Type
+enum PrintfTestType
  {
      TYPE_INT,
      TYPE_FLOAT,
@@ -68,22 +70,39 @@ struct printDataGenParameters
     const char* addrSpacePAdd;
 };
 
+// Reference results - filled out at run-time
+static std::vector<std::string> correctBufferInt;
+static std::vector<std::string> correctBufferFloat;
+static std::vector<std::string> correctBufferOctal;
+static std::vector<std::string> correctBufferUnsigned;
+static std::vector<std::string> correctBufferHexadecimal;
+// Reference results - Compile-time known
+extern std::vector<std::string> correctBufferChar;
+extern std::vector<std::string> correctBufferString;
+extern std::vector<std::string> correctBufferFloatLimits;
+extern std::vector<std::string> correctBufferVector;
+extern std::vector<std::string> correctAddrSpace;
+
+// Helper for generating reference results
+void generateRef(const cl_device_id device);
+
 //-----------------------------------------
 //Test Case
 //-----------------------------------------
 
 struct testCase
 {
-    unsigned int _testNum;                         //test number
-    enum Type _type;                               //(data)type for test
-    //const char** _strPrint;                      //auxiliary data to build the code for kernel source
-    std::vector<const char*> _correctBuffer;       //look-up table for correct results for printf
-    struct printDataGenParameters* _genParameters; //auxiliary data to build the code for kernel source
+    enum PrintfTestType _type;                           //(data)type for test
+    std::vector<std::string>& _correctBuffer;            //look-up table for correct results for printf
+    std::vector<printDataGenParameters>& _genParameters; //auxiliary data to build the code for kernel source
+    void (*printFN)(printDataGenParameters&,
+                    char*,
+                    const size_t);                       //function pointer for generating reference results
+    Type dataType;                                       //the data type that will be printed during reference result generation (used for setting rounding mode)
 };
 
-
 extern const char* strType[];
-extern testCase* allTestCase[];
+extern std::vector<testCase*> allTestCase;
 
 size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId,cl_ulong pAddr = 0);
 

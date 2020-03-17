@@ -1066,5 +1066,8 @@ test_status InitCL( cl_device_id device )
 
     releaseOutputStream(gFd);
 
+    // Generate reference results
+    generateRef(device);
+
     return TEST_PASS;
 }
