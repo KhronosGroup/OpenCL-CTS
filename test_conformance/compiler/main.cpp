@@ -87,7 +87,7 @@ test_definition test_list[] = {
     ADD_TEST( program_binary_type ),
     ADD_TEST( compile_and_link_status_options_log ),
 
-    ADD_TEST( pragma_unroll ),
+    ADD_TEST_VERSION( pragma_unroll, Version(2, 0) ),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
