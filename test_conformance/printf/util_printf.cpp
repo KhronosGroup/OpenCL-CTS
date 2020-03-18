@@ -786,6 +786,11 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
         //Exponent always contains at least two digits
         if(strlen(exp) < 2)
             return 1;
+        //Skip leading zeros in the exponent
+        while(*exp == '0')
+            ++exp;
+        while(*eCorrectBuffer == '0')
+            ++eCorrectBuffer;
         return strcmp(eCorrectBuffer,exp);
     }
     if(!strcmp(pTestCase->_correctBuffer[testId].c_str(),"inf"))
