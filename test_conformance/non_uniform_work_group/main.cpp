@@ -46,6 +46,7 @@ test_status InitCL(cl_device_id device) {
         version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
         return TEST_SKIP;
     }
+    return TEST_PASS;
 }
 
 int main(int argc, const char *argv[])
