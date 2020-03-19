@@ -134,7 +134,7 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
 
     // Verify zero-sized ND range kernel still satisfy event wait list and correct event object
     // is returned
-    cl_event ev = NULL;
+    clEventWrapper ev = NULL;
     clEventWrapper user_ev = clCreateUserEvent(context, &error);
     test_error( error, "user event creation failed." );
     error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, ndrange30, NULL, 1, &user_ev, &ev);
