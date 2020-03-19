@@ -91,7 +91,6 @@ test_definition test_list[] = {
     ADD_TEST( image_param ),
     ADD_TEST( image_multipass_integer_coord ),
     ADD_TEST( image_multipass_float_coord ),
-    ADD_TEST( explicit_s2v_bool ),
     ADD_TEST( explicit_s2v_char ),
     ADD_TEST( explicit_s2v_uchar ),
     ADD_TEST( explicit_s2v_short ),
