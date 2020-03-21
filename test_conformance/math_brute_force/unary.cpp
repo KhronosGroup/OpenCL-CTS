@@ -506,14 +506,18 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
         float p_j = *(float *) &p[j];
         if ( strcmp(fname,"sin")==0 || strcmp(fname,"cos")==0 )  //the domain of the function is [-pi,pi]
         {
-          if( fabs(p_j) > M_PI )
-            p[j] = NAN;
+            if (fabs(p_j) > M_PI) ((float *)p)[j] = NAN;
         }
 
         if ( strcmp( fname, "reciprocal" ) == 0 )
         {
-          if( fabs(p_j) > 0x7E800000 ) //the domain of the function is [2^-126,2^126]
-            p[j] = NAN;
+            const float l_limit = HEX_FLT(+, 1, 0, -, 126);
+            const float u_limit = HEX_FLT(+, 1, 0, +, 126);
+
+            if (fabs(p_j) < l_limit
+                || fabs(p_j)
+                    > u_limit) // the domain of the function is [2^-126,2^126]
+                ((float *)p)[j] = NAN;
         }
       }
     }
