@@ -96,4 +96,30 @@ double genrand_res53( MTdata /*data*/ );
     }
 #endif
 
+#ifdef __cplusplus
+
+#include <cassert>
+
+struct MTdataHolder {
+    MTdataHolder(cl_uint seed) {
+        m_mtdata = init_genrand(seed);
+        assert(m_mtdata != nullptr);
+    }
+
+    MTdataHolder(MTdata mtdata) : m_mtdata(mtdata) {}
+
+    ~MTdataHolder() {
+        free_mtdata(m_mtdata);
+    }
+
+    operator MTdata () const {
+        return m_mtdata;
+    }
+
+private:
+    MTdata m_mtdata;
+};
+
+#endif // #ifdef __cplusplus
+
 #endif  /* MT19937_H */
