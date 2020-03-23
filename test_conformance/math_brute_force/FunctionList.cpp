@@ -202,6 +202,7 @@ const Func  functionList[] = {
                                     OPERATOR_ENTRY( add, "+",         0.0f,         0.0f,     FTZ_OFF,     binaryOperatorF),
                                     OPERATOR_ENTRY( subtract, "-",     0.0f,         0.0f,     FTZ_OFF,     binaryOperatorF),
                                     { "divide", "/",  {(void*)reference_divide}, {(void*)reference_dividel}, {(void*)reference_relaxed_divide}, 2.5f, 0.0f,         3.0f, 2.5f, FTZ_OFF, RELAXED_ON, binaryOperatorF },
+                                    { "divide_no_relaxed", "/",  {(void*)reference_divide}, {(void*)reference_dividel}, {(void*)reference_relaxed_divide}, 2.5f, 0.0f,         3.0f, 2.5f, FTZ_OFF, RELAXED_OFF, binaryOperatorF },
                                     { "divide_cr", "/",  {(void*)reference_divide}, {(void*)reference_dividel}, {(void*)reference_relaxed_divide}, 0.0f, 0.0f,         0.0f, 0.f, FTZ_OFF, RELAXED_OFF, binaryOperatorF },
                                     OPERATOR_ENTRY( multiply, "*",     0.0f,         0.0f,     FTZ_OFF,     binaryOperatorF),
                                     OPERATOR_ENTRY( assignment, "", 0.0f,       0.0f,     FTZ_OFF,     unaryF),        // A simple copy operation

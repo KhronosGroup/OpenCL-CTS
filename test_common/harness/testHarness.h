@@ -27,9 +27,10 @@
 extern "C" {
 #endif
 
-#define ADD_TEST(fn) {test_##fn, #fn, Version(1, 0)}
-#define ADD_TEST_VERSION(fn, ver) {test_##fn, #fn, ver}
-#define NOT_IMPLEMENTED_TEST(fn) {NULL, #fn, Version(0, 0)}
+#define ADD_TEST(fn) {test_##fn, #fn, Version(1, 0), Version(2, 2)}
+#define ADD_TEST_VERSION(fn, ver) {test_##fn, #fn, ver, Version(2, 2)}
+#define ADD_TEST_MAX_VERSION(fn, ver) {test_##fn, #fn, Version(1, 0), ver}
+#define NOT_IMPLEMENTED_TEST(fn) {NULL, #fn, Version(0, 0), Version(0, 0)}
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
@@ -61,6 +62,7 @@ typedef struct test_definition
     basefn func;
     const char* name;
     Version min_version;
+    Version max_version;
 } test_definition;
 
 

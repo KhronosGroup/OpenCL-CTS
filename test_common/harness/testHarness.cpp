@@ -79,7 +79,7 @@ int fail_init_info(int count) {
     return EXIT_FAILURE;
 }
 void version_expected_info(const char * test_name, const char * expected_version, const char * device_version) {
-    log_info("%s skipped (requires at least version %s, but the device reports version %s)\n",
+    log_info("%s skipped (requires version %s, but the device reports version %s)\n",
         test_name, expected_version, device_version);
 }
 int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_definition testList[],
@@ -705,6 +705,12 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
     if (test.min_version > device_version)
     {
         version_expected_info(test.name, test.min_version.to_string().c_str(), device_version.to_string().c_str());
+        return TEST_SKIP;
+    }
+
+    if(test.max_version < device_version)
+    {
+        version_expected_info(test.name, test.max_version.to_string().c_str(), device_version.to_string().c_str());
         return TEST_SKIP;
     }
 

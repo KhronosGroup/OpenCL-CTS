@@ -682,6 +682,10 @@ int test_divide( cl_device_id deviceID, cl_context context, cl_command_queue que
 {
     return doTest( "divide" );
 }
+int test_divide_no_relaxed( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+{
+    return doTest( "divide_no_relaxed" );
+}
 int test_divide_cr( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     return doTest( "divide_cr" );
@@ -795,7 +799,8 @@ test_definition test_list[] = {
     ADD_TEST( half_tan ),
     ADD_TEST( add ),
     ADD_TEST( subtract ),
-    ADD_TEST( divide ),
+    ADD_TEST_VERSION( divide, Version(2, 0) ),
+    ADD_TEST_MAX_VERSION( divide_no_relaxed, Version(1, 2) ),
     ADD_TEST( divide_cr ),
     ADD_TEST( multiply ),
     ADD_TEST( assignment ),
