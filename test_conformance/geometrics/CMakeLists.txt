@@ -8,8 +8,8 @@ set(${MODULE_NAME}_SOURCES
 
 # VS2005 optimization WAR for geom_length)
 if(MSVC)
-set(CMAKE_C_FLAGS_RELEASE "/Od /Ob0")
-set(CMAKE_CXX_FLAGS_RELEASE "/Od /Ob0")
+string(REGEX REPLACE "/O. /Ob." "/Od /Ob0" CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+string(REGEX REPLACE "/O. /Ob." "/Od /Ob0" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
 endif(MSVC)
 
 include(../CMakeCommon.txt)
