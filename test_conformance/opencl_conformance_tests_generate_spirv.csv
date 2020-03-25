@@ -49,8 +49,8 @@ OpenCL-GL Sharing,gl/test_gl -offlineCompiler spir_v generate .
 # #########################################
 Select,select/test_select -offlineCompiler spir_v generate .
 Conversions,conversions/test_conversions -w  -offlineCompiler spir_v generate .
-Contractions,contractions/contractions -offlineCompiler spir_v generate .
-Math,math_brute_force/bruteforce -w  -offlineCompiler spir_v generate .
+Contractions,contractions/test_contractions -offlineCompiler spir_v generate .
+Math,math_brute_force/test_bruteforce -w  -offlineCompiler spir_v generate .
 Integer Ops,integer_ops/test_integer_ops integer_* quick_* -offlineCompiler spir_v generate .
 Half Ops,half/test_half -w -offlineCompiler spir_v generate .
 
@@ -62,7 +62,7 @@ Execution Model,device_execution/test_device_execution -offlineCompiler spir_v g
 Generic Address Space,generic_address_space/test_generic_address_space -offlineCompiler spir_v generate .
 Non Uniform Work Groups,non_uniform_work_group/test_non_uniform_work_group -offlineCompiler spir_v generate .
 Pipes,pipes/test_pipes -offlineCompiler spir_v generate .
-SVM,SVM/test_SVM -offlineCompiler spir_v generate .
+SVM,SVM/test_svm -offlineCompiler spir_v generate .
 Workgroups,workgroups/test_workgroups -offlineCompiler spir_v generate .
 
 #########################################

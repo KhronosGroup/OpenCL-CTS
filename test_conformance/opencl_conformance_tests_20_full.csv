@@ -5,7 +5,7 @@
 # #########################################
 # Basic Information on the compute device
 # #########################################
-Compute Info,computeinfo/computeinfo
+Compute Info,computeinfo/test_computeinfo
 
 # #########################################
 # Basic operation tests
@@ -76,10 +76,10 @@ OpenCL-GL Sharing,gl/test_gl
 # #########################################
 Select,select/test_select
 Conversions,conversions/test_conversions
-Contractions,contractions/contractions
-Math,math_brute_force/bruteforce
+Contractions,contractions/test_contractions
+Math,math_brute_force/test_bruteforce
 Integer Ops,integer_ops/test_integer_ops
-Half Ops,half/Test_half
+Half Ops,half/test_half
 
 #####################################
 # OpenCL 2.0 tests
@@ -89,7 +89,7 @@ Execution Model,device_execution/test_device_execution
 Generic Address Space,generic_address_space/test_generic_address_space
 Non Uniform Work Groups,non_uniform_work_group/test_non_uniform_work_group
 Pipes,pipes/test_pipes
-SVM,SVM/test_SVM
+SVM,SVM/test_svm
 Workgroups,workgroups/test_workgroups
 
 #########################################

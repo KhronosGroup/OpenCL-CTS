@@ -75,7 +75,7 @@ OpenCL-GL Sharing,gl/test_gl
 # #########################################
 Select,select/test_select
 #Conversions,conversions/test_conversions
-Contractions,contractions/contractions
+Contractions,contractions/test_contractions
 Math,math_brute_force/test_bruteforce -w
 Integer Ops,integer_ops/test_integer_ops integer_* quick_*
 Half Ops,half/test_half -w
