@@ -59,6 +59,22 @@ int test_sub_group_info(cl_device_id device, cl_context context,
     clKernelWrapper kernel;
     clMemWrapper out;
 
+    std::string pragma_str = use_core_subgroups ? "\n" : "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
+    std::string kernel_str = pragma_str + "\n"
+        "typedef struct {\n"
+        "    uint maxSubGroupSize;\n"
+        "    uint numSubGroups;\n"
+        "} result_data;\n"
+        "\n"
+        "__kernel void query_kernel( __global result_data *outData )\n"
+        "{\n"
+        "    int gid = get_global_id( 0 );\n"
+        "    outData[gid].maxSubGroupSize = get_max_sub_group_size();\n"
+        "    outData[gid].numSubGroups = get_num_sub_groups();\n"
+        "}";
+
+    const char * query_kernel_source = kernel_str.c_str();
+
     error = create_single_kernel_helper_with_build_options(
         context, &program, &kernel, 1, &query_kernel_source, "query_kernel",
         "-cl-std=CL2.0");

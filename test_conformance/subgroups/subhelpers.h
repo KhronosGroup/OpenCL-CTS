@@ -333,7 +333,7 @@ struct test
                                 (void *)&platform, NULL);
         test_error(error, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
 
-        kstrings[0] = "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n"
+        kstrings[0] = use_core_subgroups ? "\n" : "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n"
                       "#define XY(M,I) M[I].x = get_sub_group_local_id(); "
                       "M[I].y = get_sub_group_id();\n";
         kstrings[1] = TypeDef<Ty>::val();
