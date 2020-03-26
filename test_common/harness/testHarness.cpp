@@ -253,7 +253,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
         }
     }
 
- 	gDeviceType = device_type;
+
 
 	switch (device_type)
 	{
@@ -344,6 +344,13 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
 
     device = devices[choosen_device_index];
 
+    err = clGetDeviceInfo( device, CL_DEVICE_TYPE, sizeof(gDeviceType), &gDeviceType, NULL );
+    if( err )
+    {
+        print_error( err, "Unable to get device type" );
+        return TEST_FAIL;
+    }
+    
     if( printDeviceHeader( device ) != CL_SUCCESS )
     {
         return EXIT_FAILURE;
