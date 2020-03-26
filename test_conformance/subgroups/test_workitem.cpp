@@ -198,7 +198,7 @@ int test_work_item_functions(cl_device_id device, cl_context context,
     clKernelWrapper kernel;
     clMemWrapper out;
 
-    std::string pragma_str = use_core_subgroups ? "\n" : "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
+    std::string pragma_str = gUseCoreSubgroups ? "\n" : "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
     std::string kernel_str = pragma_str + "\n"
         "\n"
         "typedef struct {\n"

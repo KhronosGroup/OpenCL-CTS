@@ -318,7 +318,7 @@ struct test
         size_t realSize;
         size_t global;
         size_t local;
-        const char *kstrings[3];
+        const char *kstrings[4];
         clProgramWrapper program;
         clKernelWrapper kernel;
         cl_platform_id platform;
@@ -333,14 +333,13 @@ struct test
                                 (void *)&platform, NULL);
         test_error(error, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
 
-        kstrings[0] = use_core_subgroups ? "\n" : "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n"
-                      "#define XY(M,I) M[I].x = get_sub_group_local_id(); "
-                      "M[I].y = get_sub_group_id();\n";
-        kstrings[1] = TypeDef<Ty>::val();
-        kstrings[2] = src;
-        error = create_single_kernel_helper_with_build_options(
-            context, &program, &kernel, 3, kstrings, kname, "-cl-std=CL2.0");
-        if (error != 0) return error;
+        kstrings[0] = gUseCoreSubgroups ? "\n" : "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
+        kstrings[1] = "#define XY(M,I) M[I].x = get_sub_group_local_id(); M[I].y = get_sub_group_id();\n";
+        kstrings[2] = TypeDef<Ty>::val();
+        kstrings[3] = src;
+        error = create_single_kernel_helper_with_build_options(context, &program, &kernel, 4, kstrings, kname, "-cl-std=CL2.0");
+        if (error != 0)
+            return error;
 
         // Determine some local dimensions to use for the test.
         global = GSIZE;
@@ -352,7 +351,7 @@ struct test
         if (local > LSIZE) local = LSIZE;
 
         // Get the sub group info
-        if (use_core_subgroups) {
+        if (gUseCoreSubgroups) {
             error = clGetKernelSubGroupInfo(kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE,
                 sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
             test_error(error, "clGetKernelSubGroupInfo failed for CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE");

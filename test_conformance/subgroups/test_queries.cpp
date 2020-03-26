@@ -59,7 +59,7 @@ int test_sub_group_info(cl_device_id device, cl_context context,
     clKernelWrapper kernel;
     clMemWrapper out;
 
-    std::string pragma_str = use_core_subgroups ? "\n" : "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
+    std::string pragma_str = gUseCoreSubgroups ? "\n" : "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
     std::string kernel_str = pragma_str + "\n"
         "typedef struct {\n"
         "    uint maxSubGroupSize;\n"
@@ -104,7 +104,7 @@ int test_sub_group_info(cl_device_id device, cl_context context,
                             (void *)&platform, NULL);
     test_error(error, "clDeviceInfo failed for CL_DEVICE_PLATFORM");
 
-    if (use_core_subgroups) {
+    if (gUseCoreSubgroups) {
         error = clGetKernelSubGroupInfo(kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE,
             sizeof(local), (void *)&local, sizeof(kernel_max_subgroup_size), (void *)&kernel_max_subgroup_size, &realSize);
         test_error(error, "clGetKernelSubGroupInfo failed for CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE");
