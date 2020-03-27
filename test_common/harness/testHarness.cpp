@@ -752,6 +752,12 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
             log_info("%s test currently not implemented\n", test.name);
             status = TEST_SKIP;
         }
+        else if (ret == TEST_SKIPPED_ITSELF)
+        {
+            /* Tests can also let us know they're not supported by the implementation */
+            log_info("%s test not supported\n", test.name);
+            status = TEST_SKIP;
+        }
         else
         {
             /* Print result */
