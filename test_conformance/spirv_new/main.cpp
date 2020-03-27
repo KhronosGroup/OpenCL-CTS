@@ -163,17 +163,24 @@ int get_program_with_il(clProgramWrapper &prog,
     return err;
 }
 
-test_status checkAddressWidth(cl_device_id id)
+test_status InitCL(cl_device_id id)
 {
-  cl_uint address_bits;
-  cl_uint err = clGetDeviceInfo(id, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &address_bits, NULL);
-  if(err != CL_SUCCESS){
+    test_status spirv_status;
+    bool force = true;
+    spirv_status = check_spirv_compilation_readiness(id, force);
+    if (spirv_status != TEST_PASS) {
+        return spirv_status;
+    }
+
+    cl_uint address_bits;
+    cl_uint err = clGetDeviceInfo(id, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &address_bits, NULL);
+    if(err != CL_SUCCESS){
     log_error("clGetDeviceInfo failed to get address bits!");
     return TEST_FAIL;
-  }
+    }
 
-  gAddrWidth = address_bits == 32 ? "32" : "64";
-  return TEST_PASS;
+    gAddrWidth = address_bits == 32 ? "32" : "64";
+    return TEST_PASS;
 }
 
 void printUsage() {
@@ -213,5 +220,5 @@ int main(int argc, const char *argv[])
     return runTestHarnessWithCheck(argc, argv,
                           spirvTestsRegistry::getInstance().getNumTests(),
                           spirvTestsRegistry::getInstance().getTestDefinitions(),
-                          false, 0, checkAddressWidth);
+                          false, 0, InitCL);
 }
