@@ -38,6 +38,7 @@ extern int test_generic_variable_gentype(cl_device_id deviceID, cl_context conte
 extern int test_builtin_functions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_generic_advanced_casting(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_generic_ptr_to_host_mem(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_generic_ptr_to_host_mem_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_max_number_of_params(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 test_definition test_list[] = {
@@ -62,6 +63,7 @@ test_definition test_list[] = {
     ADD_TEST( builtin_functions ),
     ADD_TEST( generic_advanced_casting ),
     ADD_TEST( generic_ptr_to_host_mem ),
+    ADD_TEST( generic_ptr_to_host_mem_svm ),
     ADD_TEST( max_number_of_params ),
 };
 
