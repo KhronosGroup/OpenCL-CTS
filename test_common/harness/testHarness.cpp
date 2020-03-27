@@ -78,9 +78,9 @@ int fail_init_info(int count) {
     log_info("FAILED %d of %d tests.\n", count, count);
     return EXIT_FAILURE;
 }
-void version_expected_info(const char * test_name, const char * expected_version, const char * device_version) {
-    log_info("%s skipped (requires at least version %s, but the device reports version %s)\n",
-        test_name, expected_version, device_version);
+void version_expected_info(const char * test_name, const char * api_name, const char * expected_version, const char * device_version) {
+    log_info("%s skipped (requires at least %s version %s, but the device reports %s version %s)\n",
+        test_name, api_name, expected_version, api_name, device_version);
 }
 int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_definition testList[],
                              int forceNoContextCreation, cl_command_queue_properties queueProps,
@@ -685,7 +685,7 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
     const Version device_version = get_device_cl_version(deviceToUse);
     if (test.min_version > device_version)
     {
-        version_expected_info(test.name, test.min_version.to_string().c_str(), device_version.to_string().c_str());
+        version_expected_info(test.name, "OpenCL", test.min_version.to_string().c_str(), device_version.to_string().c_str());
         return TEST_SKIP;
     }
 

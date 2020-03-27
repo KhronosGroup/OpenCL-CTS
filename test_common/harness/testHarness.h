@@ -135,7 +135,7 @@ extern cl_device_type GetDeviceType( cl_device_id );
 // is the only device available, the SAME device is returned, so check!
 extern cl_device_id GetOpposingDevice( cl_device_id device );
 
-void version_expected_info(const char * test_name, const char * expected_version, const char * device_version);
+void version_expected_info(const char * test_name, const char * api_name, const char * expected_version, const char * device_version);
 
 
 extern int      gFlushDenormsToZero;    // This is set to 1 if the device does not support denorms (CL_FP_DENORM)
