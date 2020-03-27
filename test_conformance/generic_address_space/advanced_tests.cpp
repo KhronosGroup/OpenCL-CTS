@@ -952,9 +952,14 @@ int test_generic_ptr_to_host_mem_svm(cl_device_id deviceID, cl_context context, 
 
     /* Test SVM capabilities and select matching tests */
     cl_device_svm_capabilities caps;
+    auto version = get_device_cl_version(deviceID);
+    auto expected_min_version = Version(2, 0);
 
     cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_SVM_CAPABILITIES, sizeof(caps), &caps, NULL);
     test_error(error, "clGetDeviceInfo(CL_DEVICE_SVM_CAPABILITIES) failed");
+
+    if ((version < expected_min_version) || (version > Version(2,2) && caps == 0))
+        return TEST_SKIPPED_ITSELF;
 
     if (caps & CL_DEVICE_SVM_COARSE_GRAIN_BUFFER) {
         CAdvancedTest test_global_svm_ptr(common::GLOBAL_KERNEL_FUNCTION, ARG_TYPE_COARSE_GRAINED_SVM);
