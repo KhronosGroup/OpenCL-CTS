@@ -36,4 +36,49 @@ namespace common {
         NL "        return false;"
         NL "}"
         NL;
+
+    static std::string GLOBAL_KERNEL_FUNCTION = CONFORMANCE_VERIFY_FENCE +
+        NL
+        NL "bool helperFunction(uint *ptr, uint tid) {"
+        NL "    if (!isFenceValid(get_fence(ptr)))"
+        NL "        return false;"
+        NL
+        NL "    if (*ptr != tid)"
+        NL "        return false;"
+        NL
+        NL "    return true;"
+        NL "}"
+        NL
+        NL "__kernel void testKernel(__global uint *results, __global uint *buf) {"
+        NL "    uint tid = get_global_id(0);"
+        NL
+        NL "    results[tid] = helperFunction(&buf[tid], tid);"
+        NL "}"
+        NL;
+
+    static std::string LOCAL_KERNEL_FUNCTION = CONFORMANCE_VERIFY_FENCE +
+        NL
+        NL "bool helperFunction(uint *ptr, uint tid) {"
+        NL "    if (!isFenceValid(get_fence(ptr)))"
+        NL "        return false;"
+        NL
+        NL "    if (*ptr != tid)"
+        NL "        return false;"
+        NL
+        NL "    return true;"
+        NL "}"
+        NL
+        NL "__kernel void testKernel(__global uint *results, __local uint *buf) {"
+        NL "    uint tid = get_global_id(0);"
+        NL "    if (get_local_id(0) == 0) {"
+        NL "        for (uint i = 0; i < get_local_size(0); ++i) {"
+        NL "            uint idx = get_local_size(0) * get_group_id(0) + i;"
+        NL "            buf[idx] = idx;"
+        NL "        }"
+        NL "    }"
+        NL
+        NL "    work_group_barrier(CLK_LOCAL_MEM_FENCE);"
+        NL "    results[tid] = helperFunction(&buf[tid], tid);"
+        NL "}"
+        NL;
 }

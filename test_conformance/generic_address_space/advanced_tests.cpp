@@ -947,59 +947,8 @@ int test_generic_advanced_casting(cl_device_id deviceID, cl_context context, cl_
     return test.Execute(deviceID, context, queue, num_elements);
 }
 
-int test_generic_ptr_to_host_mem(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+int test_generic_ptr_to_host_mem_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
     cl_int result = CL_SUCCESS;
-
-    const std::string GLOBAL_KERNEL_FUNCTION = common::CONFORMANCE_VERIFY_FENCE +
-        NL
-        NL "bool helperFunction(uint *ptr, uint tid) {"
-        NL "    if (!isFenceValid(get_fence(ptr)))"
-        NL "        return false;"
-        NL
-        NL "    if (*ptr != tid)"
-        NL "        return false;"
-        NL
-        NL "    return true;"
-        NL "}"
-        NL
-        NL "__kernel void testKernel(__global uint *results, __global uint *buf) {"
-        NL "    uint tid = get_global_id(0);"
-        NL
-        NL "    results[tid] = helperFunction(&buf[tid], tid);"
-        NL "}"
-        NL;
-
-    const std::string LOCAL_KERNEL_FUNCTION = common::CONFORMANCE_VERIFY_FENCE +
-        NL
-        NL "bool helperFunction(uint *ptr, uint tid) {"
-        NL "    if (!isFenceValid(get_fence(ptr)))"
-        NL "        return false;"
-        NL
-        NL "    if (*ptr != tid)"
-        NL "        return false;"
-        NL
-        NL "    return true;"
-        NL "}"
-        NL
-        NL "__kernel void testKernel(__global uint *results, __local uint *buf) {"
-        NL "    uint tid = get_global_id(0);"
-        NL "    if (get_local_id(0) == 0) {"
-        NL "        for (uint i = 0; i < get_local_size(0); ++i) {"
-        NL "            uint idx = get_local_size(0) * get_group_id(0) + i;"
-        NL "            buf[idx] = idx;"
-        NL "        }"
-        NL "    }"
-        NL
-        NL "    work_group_barrier(CLK_LOCAL_MEM_FENCE);"
-        NL "    results[tid] = helperFunction(&buf[tid], tid);"
-        NL "}"
-        NL;
-
-    CAdvancedTest test_global_ptr(GLOBAL_KERNEL_FUNCTION, ARG_TYPE_HOST_PTR);
-    result |= test_global_ptr.Execute(deviceID, context, queue, num_elements);
-
-    CAdvancedTest test_local_ptr(LOCAL_KERNEL_FUNCTION, ARG_TYPE_HOST_LOCAL);
-    result |= test_local_ptr.Execute(deviceID, context, queue, num_elements / 64);
 
     /* Test SVM capabilities and select matching tests */
     cl_device_svm_capabilities caps;
@@ -1008,24 +957,36 @@ int test_generic_ptr_to_host_mem(cl_device_id deviceID, cl_context context, cl_c
     test_error(error, "clGetDeviceInfo(CL_DEVICE_SVM_CAPABILITIES) failed");
 
     if (caps & CL_DEVICE_SVM_COARSE_GRAIN_BUFFER) {
-        CAdvancedTest test_global_svm_ptr(GLOBAL_KERNEL_FUNCTION, ARG_TYPE_COARSE_GRAINED_SVM);
+        CAdvancedTest test_global_svm_ptr(common::GLOBAL_KERNEL_FUNCTION, ARG_TYPE_COARSE_GRAINED_SVM);
         result |= test_global_svm_ptr.Execute(deviceID, context, queue, num_elements);
     }
 
     if (caps & CL_DEVICE_SVM_FINE_GRAIN_BUFFER) {
-        CAdvancedTest test_global_svm_ptr(GLOBAL_KERNEL_FUNCTION, ARG_TYPE_FINE_GRAINED_BUFFER_SVM);
+        CAdvancedTest test_global_svm_ptr(common::GLOBAL_KERNEL_FUNCTION, ARG_TYPE_FINE_GRAINED_BUFFER_SVM);
         result |= test_global_svm_ptr.Execute(deviceID, context, queue, num_elements);
     }
 
     if (caps & CL_DEVICE_SVM_FINE_GRAIN_SYSTEM) {
-        CAdvancedTest test_global_svm_ptr(GLOBAL_KERNEL_FUNCTION, ARG_TYPE_FINE_GRAINED_SYSTEM_SVM);
+        CAdvancedTest test_global_svm_ptr(common::GLOBAL_KERNEL_FUNCTION, ARG_TYPE_FINE_GRAINED_SYSTEM_SVM);
         result |= test_global_svm_ptr.Execute(deviceID, context, queue, num_elements);
     }
 
     if (caps & CL_DEVICE_SVM_ATOMICS) {
-        CAdvancedTest test_global_svm_ptr(GLOBAL_KERNEL_FUNCTION, ARG_TYPE_ATOMICS_SVM);
+        CAdvancedTest test_global_svm_ptr(common::GLOBAL_KERNEL_FUNCTION, ARG_TYPE_ATOMICS_SVM);
         result |= test_global_svm_ptr.Execute(deviceID, context, queue, num_elements);
     }
+
+    return result;
+}
+
+int test_generic_ptr_to_host_mem(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+    cl_int result = CL_SUCCESS;
+
+    CAdvancedTest test_global_ptr(common::GLOBAL_KERNEL_FUNCTION, ARG_TYPE_HOST_PTR);
+    result |= test_global_ptr.Execute(deviceID, context, queue, num_elements);
+
+    CAdvancedTest test_local_ptr(common::LOCAL_KERNEL_FUNCTION, ARG_TYPE_HOST_LOCAL);
+    result |= test_local_ptr.Execute(deviceID, context, queue, num_elements / 64);
 
     return result;
 }
