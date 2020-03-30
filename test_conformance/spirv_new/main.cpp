@@ -154,8 +154,25 @@ int get_program_with_il(clProgramWrapper &prog,
     }
 
     unsigned char *buffer = &buffer_vec[0];
-    prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
-    SPIRV_CHECK_ERROR(err, "Failed to create program with clCreateProgramWithIL");
+    if (gCoreILProgram) {
+        prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
+        SPIRV_CHECK_ERROR(err, "Failed to create program with clCreateProgramWithIL");
+    }
+    else {
+        cl_platform_id platform;
+        err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(cl_platform_id), &platform, NULL);
+        print_error(err, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
+        clCreateProgramWithILKHR_fn clCreateProgramWithILKHR = NULL;
+
+        clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)clGetExtensionFunctionAddressForPlatform(platform, "clCreateProgramWithILKHR");
+        if (clCreateProgramWithILKHR == NULL)
+        {
+            log_error("ERROR: clGetExtensionFunctionAddressForPlatform failed\n");
+            return -1;
+        }
+        prog = clCreateProgramWithILKHR(context, buffer, file_bytes, &err);
+        SPIRV_CHECK_ERROR(err, "Failed to create program with clCreateProgramWithILKHR");
+    }
 
     err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to build program");

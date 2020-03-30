@@ -57,6 +57,7 @@ int     gIsEmbedded = 0;
 int     gIsOpenCL_C_1_0_Device = 0;
 int     gIsOpenCL_1_0_Device = 0;
 int     gHasLong = 1;
+bool    gCoreILProgram = true;
 
 #define DEFAULT_NUM_ELEMENTS        0x4000
 
@@ -911,7 +912,7 @@ bool check_device_spirv_il_support(cl_device_id device) {
         return false;
     } else {
         Version spirv_version = get_device_spirv_il_version(device);
-        log_info("This device supports SPIR-V offline compilation. SPIR-V version is %s\n", spirv_version.to_string());
+        log_info("This device supports SPIR-V offline compilation. SPIR-V version is %s\n", spirv_version.to_string().c_str());
     }
     return true;
 }
@@ -949,21 +950,27 @@ test_status check_spirv_compilation_readiness(cl_device_id device, bool force)
         auto ocl_expected_min_version = Version(2, 1);
 
         if (ocl_version < ocl_expected_min_version) {
-            version_expected_info("Test", "OpenCL", ocl_expected_min_version.to_string().c_str(), ocl_version.to_string().c_str());
-            return TEST_SKIP;
+            if (is_extension_available(device, "cl_khr_il_program")) {
+                gCoreILProgram = false;
+                log_info("SPIR-V intermediate language supported in OpenCL %s by extension cl_khr_il_program.\n", ocl_version.to_string().c_str());
+            }
+            else {
+                version_expected_info("Test", "OpenCL", ocl_expected_min_version.to_string().c_str(), ocl_version.to_string().c_str());
+                return TEST_SKIP;
+            }
         }
 
         bool spirv_supported = check_device_spirv_il_support(device);
         if (ocl_version >= ocl_expected_min_version && ocl_version <= Version(2, 2)) {
             if (spirv_supported == false) {
-                log_error("SPIR-V intermediate language not supported !!! OpenCL %s requires support.\n", ocl_version.to_string());
+                log_error("SPIR-V intermediate language not supported !!! OpenCL %s requires support.\n", ocl_version.to_string().c_str());
                 return TEST_FAIL;
             }
         }
 
         if (ocl_version > Version(2, 2)) {
             if (spirv_supported == false) {
-                log_info("SPIR-V intermediate language not supported in OpenCL %s. Test skipped.\n", ocl_version.to_string());
+                log_info("SPIR-V intermediate language not supported in OpenCL %s. Test skipped.\n", ocl_version.to_string().c_str());
                 return TEST_SKIP;
             }
         }
