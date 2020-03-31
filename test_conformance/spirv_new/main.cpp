@@ -184,7 +184,7 @@ test_status InitCL(cl_device_id id)
 {
     test_status spirv_status;
     bool force = true;
-    spirv_status = check_spirv_compilation_readiness(id, force);
+    spirv_status = check_spirv_compilation_readiness(id);
     if (spirv_status != TEST_PASS) {
         return spirv_status;
     }

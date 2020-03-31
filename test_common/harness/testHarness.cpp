@@ -433,7 +433,20 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
         log_error("Invalid device address bit size returned by device.\n");
         return EXIT_FAILURE;
     }
-
+    if (gCompilationMode == kSpir_v) {
+        test_status spirv_readiness = check_spirv_compilation_readiness(device);
+        if (spirv_readiness != TEST_PASS) {
+            switch (spirv_readiness)
+            {
+            case TEST_PASS:
+                break;
+            case TEST_FAIL:
+                return fail_init_info(testNum);
+            case TEST_SKIP:
+                return skip_init_info(testNum);
+            }
+        }
+    }
 
     /* If we have a device checking function, run it */
     if( ( deviceCheckFn != NULL ) )
@@ -892,19 +905,37 @@ Version get_device_cl_version(cl_device_id device)
     throw std::runtime_error(std::string("Unknown OpenCL version: ") + str.data());
 }
 
-bool check_device_spirv_il_support(cl_device_id device) {
+bool check_device_spirv_version_reported(cl_device_id device) {
     size_t str_size;
-    cl_int err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION, 0, NULL, &str_size);
-    if (err != CL_SUCCESS) {
-        log_error("clGetDeviceInfo: cannot read CL_DEVICE_IL_VERSION size;");
-        return false;
-    }
+    cl_int err;
+    std::vector<char> str;
+    if (gCoreILProgram) {
+        err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION, 0, NULL, &str_size);
+        if (err != CL_SUCCESS) {
+            log_error("clGetDeviceInfo: cannot read CL_DEVICE_IL_VERSION size;");
+            return false;
+        }
 
-    std::vector<char> str(str_size);
-    err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION, str_size, str.data(), NULL);
-    if (err != CL_SUCCESS) {
-        log_error("clGetDeviceInfo: cannot read CL_DEVICE_IL_VERSION value;");
-        return false;
+        str.resize(str_size);
+        err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION, str_size, str.data(), NULL);
+        if (err != CL_SUCCESS) {
+            log_error("clGetDeviceInfo: cannot read CL_DEVICE_IL_VERSION value;");
+            return false;
+        }
+    }
+    else {
+        cl_int err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION_KHR, 0, NULL, &str_size);
+        if (err != CL_SUCCESS) {
+            log_error("clGetDeviceInfo: cannot read CL_DEVICE_IL_VERSION_KHR size;");
+            return false;
+        }
+
+        str.resize(str_size);
+        err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION_KHR, str_size, str.data(), NULL);
+        if (err != CL_SUCCESS) {
+            log_error("clGetDeviceInfo: cannot read CL_DEVICE_IL_VERSION_KHR value;");
+            return false;
+        }
     }
 
     if (strstr(str.data(), "SPIR-V") == NULL) {
@@ -915,17 +946,30 @@ bool check_device_spirv_il_support(cl_device_id device) {
         log_info("This device supports SPIR-V offline compilation. SPIR-V version is %s\n", spirv_version.to_string().c_str());
     }
     return true;
+
 }
 
 Version get_device_spirv_il_version(cl_device_id device)
 {
     size_t str_size;
-    cl_int err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION, 0, NULL, &str_size);
-    ASSERT_SUCCESS(err, "clGetDeviceInfo");
+    cl_int err;
+    std::vector<char> str;
+    if (gCoreILProgram) {
+        err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION, 0, NULL, &str_size);
+        ASSERT_SUCCESS(err, "clGetDeviceInfo");
 
-    std::vector<char> str(str_size);
-    err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION, str_size, str.data(), NULL);
-    ASSERT_SUCCESS(err, "clGetDeviceInfo");
+        str.resize(str_size);
+        err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION, str_size, str.data(), NULL);
+        ASSERT_SUCCESS(err, "clGetDeviceInfo");
+    }
+    else {
+        err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION_KHR, 0, NULL, &str_size);
+        ASSERT_SUCCESS(err, "clGetDeviceInfo");
+
+        str.resize(str_size);
+        err = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION_KHR, str_size, str.data(), NULL);
+        ASSERT_SUCCESS(err, "clGetDeviceInfo");
+    }
 
     if (strstr(str.data(), "SPIR-V_1.0") != NULL)
         return Version(1, 0);
@@ -943,36 +987,41 @@ Version get_device_spirv_il_version(cl_device_id device)
     throw std::runtime_error(std::string("Unknown SPIR-V version: ") + str.data());
 }
 
-test_status check_spirv_compilation_readiness(cl_device_id device, bool force)
+test_status check_spirv_compilation_readiness(cl_device_id device)
 {
-    if (gCompilationMode == kSpir_v || force) {
-        auto ocl_version = get_device_cl_version(device);
-        auto ocl_expected_min_version = Version(2, 1);
+    auto ocl_version = get_device_cl_version(device);
+    auto ocl_expected_min_version = Version(2, 1);
 
-        if (ocl_version < ocl_expected_min_version) {
-            if (is_extension_available(device, "cl_khr_il_program")) {
-                gCoreILProgram = false;
-                log_info("SPIR-V intermediate language supported in OpenCL %s by extension cl_khr_il_program.\n", ocl_version.to_string().c_str());
-            }
-            else {
-                version_expected_info("Test", "OpenCL", ocl_expected_min_version.to_string().c_str(), ocl_version.to_string().c_str());
-                return TEST_SKIP;
-            }
-        }
-
-        bool spirv_supported = check_device_spirv_il_support(device);
-        if (ocl_version >= ocl_expected_min_version && ocl_version <= Version(2, 2)) {
+    if (ocl_version < ocl_expected_min_version) {
+        if (is_extension_available(device, "cl_khr_il_program")) {
+            gCoreILProgram = false;
+            bool spirv_supported = check_device_spirv_version_reported(device);
             if (spirv_supported == false) {
                 log_error("SPIR-V intermediate language not supported !!! OpenCL %s requires support.\n", ocl_version.to_string().c_str());
                 return TEST_FAIL;
             }
-        }
-
-        if (ocl_version > Version(2, 2)) {
-            if (spirv_supported == false) {
-                log_info("SPIR-V intermediate language not supported in OpenCL %s. Test skipped.\n", ocl_version.to_string().c_str());
-                return TEST_SKIP;
+            else {
+                return TEST_PASS;
             }
+        }
+        else {
+            version_expected_info("Test", "OpenCL", ocl_expected_min_version.to_string().c_str(), ocl_version.to_string().c_str());
+            return TEST_SKIP;
+        }
+    }
+
+    bool spirv_supported = check_device_spirv_version_reported(device);
+    if (ocl_version >= ocl_expected_min_version && ocl_version <= Version(2, 2)) {
+        if (spirv_supported == false) {
+            log_error("SPIR-V intermediate language not supported !!! OpenCL %s requires support.\n", ocl_version.to_string().c_str());
+            return TEST_FAIL;
+        }
+    }
+
+    if (ocl_version > Version(2, 2)) {
+        if (spirv_supported == false) {
+            log_info("SPIR-V intermediate language not supported in OpenCL %s. Test skipped.\n", ocl_version.to_string().c_str());
+            return TEST_SKIP;
         }
     }
     return TEST_PASS;

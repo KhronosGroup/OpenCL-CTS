@@ -138,7 +138,7 @@ extern cl_device_id GetOpposingDevice( cl_device_id device );
 Version get_device_spirv_il_version(cl_device_id device);
 bool check_device_spirv_il_support(cl_device_id device);
 void version_expected_info(const char * test_name, const char * api_name, const char * expected_version, const char * device_version);
-test_status check_spirv_compilation_readiness(cl_device_id device, bool force = false);
+test_status check_spirv_compilation_readiness(cl_device_id device);
 
 
 extern int      gFlushDenormsToZero;    // This is set to 1 if the device does not support denorms (CL_FP_DENORM)

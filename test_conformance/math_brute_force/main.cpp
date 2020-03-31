@@ -1103,12 +1103,6 @@ test_status InitCL( cl_device_id device )
     }
 
     gDevice = device;
-    test_status spirv_status;
-    spirv_status = check_spirv_compilation_readiness(device);
-    if (spirv_status != TEST_PASS) {
-        return spirv_status;
-    }
-
     if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_COMPUTE_UNITS, configSize, &gComputeDevices, NULL )) )
         gComputeDevices = 1;
 
