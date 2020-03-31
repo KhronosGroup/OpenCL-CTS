@@ -1,0 +1,132 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 65
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int8
+               OpExtension "SPV_KHR_no_integer_wrap_decoration"
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %16 "spec_const_kernel" %__spirv_BuiltInGlobalInvocationId
+         %62 = OpString "kernel_arg_type.spec_const_kernel.uchar*,uint*,"
+               OpSource OpenCL_C 102000
+               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %test_value "test_value"
+               OpName %entry "entry"
+               OpName %numbers_buffer "numbers_buffer"
+               OpName %value "value"
+               OpName %entry_0 "entry"
+               OpName %if_then "if.then"
+               OpName %if_else "if.else"
+               OpName %if_end "if.end"
+               OpName %numbers_buffer_addr "numbers_buffer.addr"
+               OpName %value_addr "value.addr"
+               OpName %id "id"
+               OpName %kernel_value "kernel_value"
+               OpName %call "call"
+               OpName %call1 "call1"
+               OpName %frombool "frombool"
+               OpName %tobool "tobool"
+               OpName %arrayidx "arrayidx"
+               OpName %conv "conv"
+               OpName %add "add"
+               OpName %conv2 "conv2"
+               OpName %arrayidx3 "arrayidx3"
+               OpName %arrayidx4 "arrayidx4"
+               OpName %conv5 "conv5"
+               OpName %sub "sub"
+               OpName %conv6 "conv6"
+               OpName %arrayidx7 "arrayidx7"
+               OpDecorate %63 Alignment 4
+         %63 = OpDecorationGroup
+               OpDecorate %64 NoSignedWrap
+         %64 = OpDecorationGroup
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
+               OpDecorate %test_value FuncParamAttr Zext
+               OpDecorate %test_value LinkageAttributes "test_value" Export
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpDecorate %kernel_value Alignment 1
+               OpGroupDecorate %63 %numbers_buffer_addr %value_addr %id
+               OpGroupDecorate %64 %add %sub
+	       OpDecorate %false SpecId 101
+       %uint = OpTypeInt 32 0
+      %uchar = OpTypeInt 8 0
+    %uchar_0 = OpConstant %uchar 0
+    %uchar_1 = OpConstant %uchar 1
+     %uint_1 = OpConstant %uint 1
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %bool = OpTypeBool
+          %7 = OpTypeFunction %bool
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uchar = OpTypePointer CrossWorkgroup %uchar
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+         %15 = OpTypeFunction %void %_ptr_CrossWorkgroup_uchar %_ptr_CrossWorkgroup_uint
+%_ptr_Function__ptr_CrossWorkgroup_uchar = OpTypePointer Function %_ptr_CrossWorkgroup_uchar
+%_ptr_Function__ptr_CrossWorkgroup_uint = OpTypePointer Function %_ptr_CrossWorkgroup_uint
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Function_uchar = OpTypePointer Function %uchar
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
+      %false = OpSpecConstantFalse %bool
+ %test_value = OpFunction %bool None %7
+      %entry = OpLabel
+               OpReturnValue %false
+               OpFunctionEnd
+         %16 = OpFunction %void None %15
+%numbers_buffer = OpFunctionParameter %_ptr_CrossWorkgroup_uchar
+      %value = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+    %entry_0 = OpLabel
+%numbers_buffer_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uchar Function
+ %value_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_uint Function
+         %id = OpVariable %_ptr_Function_uint Function
+%kernel_value = OpVariable %_ptr_Function_uchar Function
+               OpStore %numbers_buffer_addr %numbers_buffer Aligned 4
+               OpStore %value_addr %value Aligned 4
+         %31 = OpBitcast %_ptr_Function_uchar %id
+               OpLifetimeStart %31 4
+         %32 = OpLoad %v3uint %__spirv_BuiltInGlobalInvocationId
+       %call = OpCompositeExtract %uint %32 0
+               OpStore %id %call Aligned 4
+               OpLifetimeStart %kernel_value 1
+      %call1 = OpFunctionCall %bool %test_value
+   %frombool = OpSelect %uchar %call1 %uchar_1 %uchar_0
+               OpStore %kernel_value %frombool Aligned 1
+         %38 = OpLoad %uchar %kernel_value Aligned 1
+     %tobool = OpINotEqual %bool %38 %uchar_0
+               OpBranchConditional %tobool %if_then %if_else
+    %if_then = OpLabel
+         %40 = OpLoad %_ptr_CrossWorkgroup_uchar %numbers_buffer_addr Aligned 4
+         %41 = OpLoad %uint %id Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %40 %41
+         %43 = OpLoad %uchar %arrayidx Aligned 1
+       %conv = OpUConvert %uint %43
+        %add = OpIAdd %uint %conv %uint_1
+      %conv2 = OpUConvert %uchar %add
+         %48 = OpLoad %_ptr_CrossWorkgroup_uchar %numbers_buffer_addr Aligned 4
+         %49 = OpLoad %uint %id Aligned 4
+  %arrayidx3 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %48 %49
+               OpStore %arrayidx3 %conv2 Aligned 1
+               OpBranch %if_end
+    %if_else = OpLabel
+         %51 = OpLoad %_ptr_CrossWorkgroup_uchar %numbers_buffer_addr Aligned 4
+         %52 = OpLoad %uint %id Aligned 4
+  %arrayidx4 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %51 %52
+         %54 = OpLoad %uchar %arrayidx4 Aligned 1
+      %conv5 = OpUConvert %uint %54
+        %sub = OpISub %uint %conv5 %uint_1
+      %conv6 = OpUConvert %uchar %sub
+         %58 = OpLoad %_ptr_CrossWorkgroup_uchar %numbers_buffer_addr Aligned 4
+         %59 = OpLoad %uint %id Aligned 4
+  %arrayidx7 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %58 %59
+               OpStore %arrayidx7 %conv6 Aligned 1
+               OpBranch %if_end
+     %if_end = OpLabel
+               OpLifetimeStop %kernel_value 1
+         %61 = OpBitcast %_ptr_Function_uchar %id
+               OpLifetimeStop %61 4
+               OpReturn
+               OpFunctionEnd

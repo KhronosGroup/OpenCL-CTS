@@ -1,0 +1,87 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 43
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpCapability Int16
+               OpCapability Int8
+               OpExtension "SPV_KHR_no_integer_wrap_decoration"
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %10 "spec_const_kernel" %__spirv_BuiltInGlobalInvocationId
+         %41 = OpString "kernel_arg_type.spec_const_kernel.ushort*,ushort*,"
+               OpSource OpenCL_C 102000
+               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
+               OpName %numbers_buffer "numbers_buffer"
+               OpName %spec_constant_value "spec_constant_value"
+               OpName %entry "entry"
+               OpName %numbers_buffer_addr "numbers_buffer.addr"
+               OpName %spec_constant_value_addr "spec_constant_value.addr"
+               OpName %id "id"
+               OpName %call "call"
+               OpName %arrayidx "arrayidx"
+               OpName %conv "conv"
+               OpName %conv1 "conv1"
+               OpName %add "add"
+               OpName %conv2 "conv2"
+               OpName %arrayidx3 "arrayidx3"
+               OpDecorate %42 Alignment 8
+         %42 = OpDecorationGroup
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpDecorate %ushort_0 SpecId 101
+               OpDecorate %add NoSignedWrap
+               OpGroupDecorate %42 %numbers_buffer_addr %spec_constant_value_addr %id
+      %ulong = OpTypeInt 64 0
+     %ushort = OpTypeInt 16 0
+      %uchar = OpTypeInt 8 0
+       %uint = OpTypeInt 32 0
+   %ushort_0 = OpSpecConstant %ushort 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_ushort = OpTypePointer CrossWorkgroup %ushort
+          %9 = OpTypeFunction %void %_ptr_CrossWorkgroup_ushort %_ptr_CrossWorkgroup_ushort
+%_ptr_Function__ptr_CrossWorkgroup_ushort = OpTypePointer Function %_ptr_CrossWorkgroup_ushort
+%_ptr_Function_ulong = OpTypePointer Function %ulong
+%_ptr_Function_uchar = OpTypePointer Function %uchar
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3ulong Input
+         %10 = OpFunction %void None %9
+%numbers_buffer = OpFunctionParameter %_ptr_CrossWorkgroup_ushort
+%spec_constant_value = OpFunctionParameter %_ptr_CrossWorkgroup_ushort
+      %entry = OpLabel
+%numbers_buffer_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_ushort Function
+%spec_constant_value_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_ushort Function
+         %id = OpVariable %_ptr_Function_ulong Function
+               OpStore %numbers_buffer_addr %numbers_buffer Aligned 8
+               OpStore %spec_constant_value_addr %spec_constant_value Aligned 8
+         %21 = OpBitcast %_ptr_Function_uchar %id
+               OpLifetimeStart %21 8
+         %22 = OpLoad %v3ulong %__spirv_BuiltInGlobalInvocationId
+       %call = OpCompositeExtract %ulong %22 0
+               OpStore %id %call Aligned 8
+         %24 = OpLoad %_ptr_CrossWorkgroup_ushort %spec_constant_value_addr Aligned 8
+               OpStore %24 %ushort_0 Aligned 2
+         %26 = OpLoad %_ptr_CrossWorkgroup_ushort %numbers_buffer_addr Aligned 8
+         %27 = OpLoad %ulong %id Aligned 8
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ushort %26 %27
+         %29 = OpLoad %ushort %arrayidx Aligned 2
+       %conv = OpUConvert %uint %29
+         %32 = OpLoad %_ptr_CrossWorkgroup_ushort %spec_constant_value_addr Aligned 8
+         %33 = OpLoad %ushort %32 Aligned 2
+      %conv1 = OpUConvert %uint %33
+        %add = OpIAdd %uint %conv %conv1
+      %conv2 = OpUConvert %ushort %add
+         %37 = OpLoad %_ptr_CrossWorkgroup_ushort %numbers_buffer_addr Aligned 8
+         %38 = OpLoad %ulong %id Aligned 8
+  %arrayidx3 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ushort %37 %38
+               OpStore %arrayidx3 %conv2 Aligned 2
+         %40 = OpBitcast %_ptr_Function_uchar %id
+               OpLifetimeStop %40 8
+               OpReturn
+               OpFunctionEnd
