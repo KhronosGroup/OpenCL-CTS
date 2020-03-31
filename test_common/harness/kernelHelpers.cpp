@@ -359,8 +359,6 @@ static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint de
     char *extensionsString = alloc_and_get_device_extensions_string(device);
     if ( NULL == extensionsString )
     {
-        /* An error message will have already been printed by alloc_and_get_device_info(),
-         * so we can just return, here. */
         return -1;
     }
 
@@ -369,8 +367,6 @@ static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint de
     char *versionString = alloc_and_get_device_version_string(device);
     if ( NULL == versionString )
     {
-        /* An error message will have already been printed by alloc_and_get_device_info(),
-         * so we can just return, here. */
         return -1;
     }
 
@@ -379,17 +375,15 @@ static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint de
     std::ostringstream clDeviceInfoStream;
     std::string file_type = get_offline_compilation_file_type_str(compilationMode);
     clDeviceInfoStream << "# OpenCL device info affecting " << file_type << " offline compilation:" << std::endl
-                       << "CL_DEVICE_ADDRESS_BITS=" << device_address_space_size << std::endl
-                       << "CL_DEVICE_EXTENSIONS=\"" << extensionsString << "\"" << std::endl;
+                    << "CL_DEVICE_ADDRESS_BITS=" << device_address_space_size << std::endl
+                    << "CL_DEVICE_EXTENSIONS=\"" << extensionsString << "\"" << std::endl;
     /* We only need the device's supported IL version(s) when compiling IL
-     * that will be loaded with clCreateProgramWithIL() */
+    * that will be loaded with clCreateProgramWithIL() */
     if (compilationMode == kSpir_v)
     {
         char *ilVersionString = alloc_and_get_device_il_version_string(device);
         if ( NULL == ilVersionString )
         {
-            /* An error message will have already been printed by alloc_and_get_device_info(),
-             * so we can just return, here. */
             return -1;
         }
 
@@ -400,6 +394,7 @@ static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint de
     clDeviceInfoStream << "CL_DEVICE_VERSION=\"" << versionString << "\"" << std::endl;
 
     clDeviceInfo = clDeviceInfoStream.str();
+
     return CL_SUCCESS;
 }
 

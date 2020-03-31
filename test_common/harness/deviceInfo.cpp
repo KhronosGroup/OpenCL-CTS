@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <stdexcept>
 #include "deviceInfo.h"
 #include "errorHelpers.h"
 #include "typeWrappers.h"
@@ -20,35 +21,23 @@
 /* Helper to allocate and return a buffer containing device information for the specified device info parameter. */
 static void *alloc_and_get_device_info( cl_device_id device, cl_device_info param_name, const char *param_description )
 {
-    void *buffer;
     size_t size = 0;
     int err;
 
     if ((err = clGetDeviceInfo(device, param_name, 0, NULL, &size)) != CL_SUCCESS)
     {
-        log_error("Error: failed to determine size of device %s at %s:%d (err = %d)\n",
-                  param_description, __FILE__, __LINE__, err);
-        return NULL;
+        throw std::runtime_error("clGetDeviceInfo failed\n");
     }
 
     if (0 == size)
         return NULL;
 
-    buffer = malloc(size);
-
-    if (NULL == buffer)
-    {
-        log_error("Error: unable to allocate %zu byte buffer for device %s at %s:%d (err = %d)\n",
-                  size, param_description, __FILE__, __LINE__,  err);
-        return NULL;
-    }
+    auto buffer = new uint8_t[size];
 
     if ((err = clGetDeviceInfo(device, param_name, size, buffer, NULL)) != CL_SUCCESS)
     {
-        free(buffer);
-        log_error( "Error: failed to obtain device %s at %s:%d (err = %d)\n",
-                   param_description, __FILE__, __LINE__, err );
-        return NULL;
+        delete [] buffer;
+        throw std::runtime_error("clGetDeviceInfo failed\n");
     }
 
     return buffer;
@@ -58,13 +47,6 @@ static void *alloc_and_get_device_info( cl_device_id device, cl_device_info para
 int is_extension_available(cl_device_id device, const char *extensionName)
 {
     char *extString = alloc_and_get_device_extensions_string(device);
-
-    if (NULL == extString)
-    {
-        /* An error message will have already been printed by alloc_and_get_device_info(),
-         * so we can just return, here. */
-        return 0;
-    }
 
     BufferOwningPtr<char> extStringBuf(extString);
 
