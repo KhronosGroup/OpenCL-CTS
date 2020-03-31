@@ -319,10 +319,11 @@ int main (int argc, const char **argv )
     int ret = runTestHarnessWithCheck( 1, arg, test_num, test_list, true, 0, InitCL );
 
     free_mtdata( gMTdata );
-
-    error = clFinish(gQueue);
-    if (error)
-        vlog_error("clFinish failed: %d\n", error);
+    if (gQueue) {
+        error = clFinish(gQueue);
+        if (error)
+            vlog_error("clFinish failed: %d\n", error);
+    }
 
     clReleaseMemObject(gInBuffer);
 

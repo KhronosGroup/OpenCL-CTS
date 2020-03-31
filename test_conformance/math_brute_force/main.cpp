@@ -816,9 +816,11 @@ int main (int argc, const char * argv[])
     free_mtdata(gMTdata);
     free(gTestNames);
 
-    int error_code = clFinish(gQueue);
-    if (error_code)
-        vlog_error("clFinish failed:%d\n", error_code);
+    if (gQueue) {
+        int error_code = clFinish(gQueue);
+        if (error_code)
+            vlog_error("clFinish failed:%d\n", error_code);
+    }
 
     ReleaseCL();
 
