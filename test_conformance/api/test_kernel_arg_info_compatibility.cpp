@@ -5103,37 +5103,7 @@ int test_get_kernel_arg_info_compatibility( cl_device_id deviceID, cl_context co
     log_info(" o Not testing image kernel arguments.\n");
   }
 
-    // Get the extensions string for the device
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, 0, NULL, &size);
-    test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS size failed");
-
-    char *extensions = (char*)malloc(sizeof(char)*(size + 1));
-    if (extensions == 0) {
-        log_error("Failed to allocate memory for extensions string.\n");
-        return -1;
-    }
-    memset( extensions, CHAR_MIN, sizeof(char)*(size+1) );
-
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, sizeof(char)*size, extensions, NULL);
-    test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS failed");
-
-    // Check to make sure the extension string is NUL terminated.
-    if( extensions[size] != CHAR_MIN )
-    {
-        test_error( -1, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS wrote past the end of the array!" );
-        return -1;
-    }
-    extensions[size] = '\0';    // set last char to NUL to avoid problems with string functions later
-
-    // test for termination with '\0'
-    size_t stringSize = strlen( extensions );
-    if( stringSize == size )
-    {
-        test_error( -1, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS is not NUL terminated!" );
-        return -1;
-    }
-
-    if (strstr(extensions, "cl_khr_fp64")) {
+    if (is_extension_available(deviceID, "cl_khr_fp64")) {
         log_info(" o Device claims extension 'cl_khr_fp64'\n");
         log_info(" o Expecting SUCCESS when testing double kernel arguments.\n");
         supports_double = 1;
@@ -5150,7 +5120,7 @@ int test_get_kernel_arg_info_compatibility( cl_device_id deviceID, cl_context co
         }
     }
 
-    if (strstr(extensions, "cl_khr_fp16")) {
+    if (is_extension_available(deviceID, "cl_khr_fp16")) {
         log_info(" o Device claims extension 'cl_khr_fp16'\n");
         log_info(" o Expecting SUCCESS when testing halfn* kernel arguments.\n");
         supports_half = 1;

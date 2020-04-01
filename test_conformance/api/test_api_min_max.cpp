@@ -1969,55 +1969,12 @@ int test_min_max_device_version(cl_device_id deviceID, cl_context context, cl_co
 
     if( major * 10 + minor >= 11 )
     {
-        char *extensions;
-        size_t extensions_size = 0;
-
         log_info( "Checking for required extensions for OpenCL 1.1 and later devices...\n" );
-
-        if( (error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, 0, NULL, &extensions_size)))
-        {
-            log_error( "ERROR: could not get extensions size.  Err # %d\n", error );
-            return -1;
-        }
-
-        if( extensions_size < 1 )
-        {
-            log_error( "ERROR: invalid extensions size.  Err # %d\n", error );
-            return -1;
-        }
-
-        extensions = (char*) malloc(extensions_size);
-        if( NULL == extensions )
-        {
-            log_error( "ERROR: cannot allocate %ld bytes to hold extension string.\n", extensions_size );
-            return -1;
-        }
-        memset( extensions, -1, extensions_size );
-
-        if( (error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, extensions_size, extensions, NULL)))
-        {
-            log_error( "ERROR: could not get extensions.  Err # %d\n", error );
-            free( extensions );
-            return -1;
-        }
-
-        if( '\0' != extensions[ extensions_size - 1 ] )
-        {
-            if( -1 == extensions[ extensions_size - 1 ] )
-                log_error( "ERROR: extensions size reported incorrectly.  Last byte is not NUL. Size too big. Reported: %ld.  Should be: %ld\n", extensions_size, strlen(extensions) + 1  );
-            else
-                log_error( "ERROR: extensions size reported incorrectly.  Last byte is not NUL. Size too small. \n" );
-
-            free( extensions );
-            return -1;
-        }
-
         for( i = 0; NULL != requiredExtensions[i]; i++ )
         {
-            if( NULL == strstr( extensions, requiredExtensions[i] ) )
+            if(!is_extension_available(deviceID, requiredExtensions[i]))
             {
                 log_error( "ERROR: Required extension for 1.1 and greater devices is not in extension string: %s\n", requiredExtensions[i] );
-                free( extensions );
                 return -1;
             }
             else
@@ -2040,18 +1997,15 @@ int test_min_max_device_version(cl_device_id deviceID, cl_context context, cl_co
 
             for( i = 0; i<numRequiredExtension20; i++ )
             {
-                if( NULL == strstr( extensions, requiredExtensions20[i] ) )
+                if(!is_extension_available(deviceID, requiredExtensions20[i]))
                 {
                     log_error( "ERROR: Required extension for 2.0 and greater devices is not in extension string: %s\n", requiredExtensions20[i] );
-                    free( extensions );
                     return -1;
                 }
                 else
                     log_info( "\t%s\n", requiredExtensions20[i] );
             }
         }
-
-        free( extensions );
     }
     else
         log_info( "WARNING: skipping required extension test -- OpenCL 1.0 device.\n" );
