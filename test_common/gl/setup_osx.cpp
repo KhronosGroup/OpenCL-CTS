@@ -92,16 +92,9 @@ class OSXGLEnvironment : public GLEnvironment
         return NULL;
       }
 
-      char extensions[8192];
       for (int i=0; i<(int)(size_out/sizeof(cl_device_id)); i++) {
-        error = clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(extensions), extensions, NULL);
-        if (error) {
-          print_error(error, "clGetDeviceInfo failed");
-          return NULL;
-        }
-
-        if (strstr(extensions, "cl_APPLE_gl_sharing") == NULL) {
-          log_error("Device %d does not supporte required extension cl_APPLE_gl_sharing.\n", i);
+        if (!is_extension_available(devices[i], "cl_APPLE_gl_sharing")) {
+          log_error("Device %d does not support required extension cl_APPLE_gl_sharing.\n", i);
           return NULL;
         }
       }
@@ -120,15 +113,8 @@ class OSXGLEnvironment : public GLEnvironment
         return -1;
       }
 
-      char extensions[8192];
       for (int i=0; i<(int)num_of_devices; i++) {
-        error = clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(extensions), extensions, NULL);
-        if (error) {
-          print_error(error, "clGetDeviceInfo failed");
-          return -1;
-        }
-
-        if (strstr(extensions, "cl_APPLE_gl_sharing") == NULL) {
+        if (!is_extension_available(devices[i], "cl_APPLE_gl_sharing")) {
           log_info("Device %d of %d does not support required extension cl_APPLE_gl_sharing.\n", i, num_of_devices);
         } else {
           log_info("Device %d of %d does support required extension cl_APPLE_gl_sharing.\n", i, num_of_devices);

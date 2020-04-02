@@ -261,28 +261,9 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     test_error( error, "clGetDeviceInfo failed." );
 
     // test double support
-    size_t ext_str_size;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, 0, NULL, &ext_str_size);
-    test_error( error, "clGetDeviceInfo failed." );
-    char* ext_str = new char[ext_str_size+1];
-
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, ext_str_size, ext_str, NULL);
-    test_error( error, "clGetDeviceInfo failed." );
-
-    ext_str[ext_str_size] = '\0';
-
-    stringstream ss;
-    ss << ext_str;
-
-    while (!ss.eof())
+    if (is_extension_available(deviceID, "cl_khr_fp64"))
     {
-        string s;
-        ss >> s;
-        if (s == "cl_khr_fp64")
-        {
-            bdouble = CL_TRUE;
-            break;
-        }
+        bdouble = CL_TRUE;
     }
 
     /* Create kernels to test with */
@@ -404,7 +385,6 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
 
     delete [] pbuf;
     delete [] pbufRes;
-    delete [] ext_str;
 
     return 0;
 }
