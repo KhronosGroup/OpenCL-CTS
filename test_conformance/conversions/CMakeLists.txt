@@ -1,14 +1,5 @@
 set(MODULE_NAME CONVERSIONS)
 
-# VS2005 AMD64 WAR (basic_test_conversions.cpp causes internal compiler error)
-if(MSVC)
-set(CMAKE_C_FLAGS_RELEASE "/Od /Ob0")
-set(CMAKE_CXX_FLAGS_RELEASE "/Od /Ob0")
-else(MSVC)
-set(CMAKE_C_FLAGS_RELEASE "-O0")
-set(CMAKE_CXX_FLAGS_RELEASE "-O0")
-endif(MSVC)
-
 set (${MODULE_NAME}_SOURCES
       Sleep.cpp test_conversions.cpp basic_test_conversions.cpp
 )

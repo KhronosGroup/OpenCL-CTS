@@ -38,6 +38,7 @@ extern int test_generic_variable_gentype(cl_device_id deviceID, cl_context conte
 extern int test_builtin_functions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_generic_advanced_casting(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_generic_ptr_to_host_mem(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_generic_ptr_to_host_mem_svm(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_max_number_of_params(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 test_definition test_list[] = {
@@ -62,6 +63,7 @@ test_definition test_list[] = {
     ADD_TEST( builtin_functions ),
     ADD_TEST( generic_advanced_casting ),
     ADD_TEST( generic_ptr_to_host_mem ),
+    ADD_TEST( generic_ptr_to_host_mem_svm ),
     ADD_TEST( max_number_of_params ),
 };
 
@@ -70,11 +72,34 @@ const int test_num = ARRAY_SIZE( test_list );
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);
     auto expected_min_version = Version(2, 0);
+
     if (version < expected_min_version)
     {
         version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
         return TEST_SKIP;
     }
+
+#ifdef CL_EXPERIMENTAL
+    if (version > Version(2,2))
+    {
+        cl_int error;
+        cl_bool support_generic;
+
+        error = clGetDeviceInfo(device, CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT,
+                                sizeof(support_generic), &support_generic, NULL);
+        if (error != CL_SUCCESS)
+        {
+            print_error(error, "Unable to get generic address space support");
+            return TEST_FAIL;
+        }
+
+        if (!support_generic)
+        {
+            return TEST_SKIP;
+        }
+    }
+#endif
+
     return TEST_PASS;
 }
 

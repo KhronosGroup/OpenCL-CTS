@@ -237,6 +237,9 @@ int test_get_command_queue_info(cl_device_id deviceID, cl_context context, cl_co
     clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_HOST_PROPERTIES, sizeof(device_props), &device_props, NULL);
     log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n", (int)device_props);
 
+    // Mask off vendor extension properties.  Only test standard OpenCL properties
+    device_props &= CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE|CL_QUEUE_PROFILING_ENABLE;
+
     queue_props[1] = device_props;
     clCommandQueueWrapper queue = clCreateCommandQueueWithProperties( context, deviceID, &queue_props[0], &error );
     test_error( error, "Unable to create command queue to test with" );

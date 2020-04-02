@@ -1761,7 +1761,16 @@ public:
     if (MemoryOrder() == MEMORY_ORDER_SEQ_CST)
       return 1;
     if (LocalMemory())
-      return 32 * 1024 / 8 / CurrentGroupSize() - 1; //32KB of local memory required by spec
+    {
+      if (gIsEmbedded)
+      {
+        if (CurrentGroupSize() > 1024)
+          CurrentGroupSize(1024);
+        return 1; //1KB of local memory required by spec. Clamp group size to 1k and allow 1 variable per thread
+      }
+      else
+        return 32 * 1024 / 8 / CurrentGroupSize() - 1; //32KB of local memory required by spec
+    }
     return 256;
   }
   virtual std::string SingleTestName()
