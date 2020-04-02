@@ -750,54 +750,6 @@ const char * subtests_to_skip_with_offline_compiler[] = {
             "kernel_preprocessor_macros",
 };
 
-int check_opencl_version_with_testname(const char *subtestname, cl_device_id device)
-{
-    int nRequiring12 = sizeof(subtests_requiring_opencl_1_2)/sizeof(char *);
-    size_t i;
-    for(i=0; i < nRequiring12; ++i) {
-        if(!strcmp(subtestname, subtests_requiring_opencl_1_2[i])) {
-            return check_opencl_version(device, 1, 2);
-        }
-    }
-    return 0;
-}
-
-int check_opencl_version(cl_device_id device, cl_uint requestedMajorVersion, cl_uint requestedMinorVersion) {
-    int error;
-    char device_version[1024];
-    cl_uint majorVersion = 0, minorVersion = 0;
-    const char * required_version_ocl_12="OpenCL 1.2 ";
-
-    memset( device_version, 0, sizeof( device_version ) );
-    error = clGetDeviceInfo( device, CL_DEVICE_VERSION, sizeof(device_version), device_version, NULL );
-    test_error(error, "unable to get CL_DEVICE_VERSION");
-
-    if ( strncmp( device_version, "OpenCL 1.2", 10 ) == 0 && ( device_version[ 10 ] == 0 || device_version[ 10 ] == ' ' ) ) {
-        majorVersion = 1;
-        minorVersion = 2;
-    } else if ( strncmp( device_version, "OpenCL 1.1", 10 ) == 0 && ( device_version[ 10 ] == 0 || device_version[ 10 ] == ' ' ) ) {
-        majorVersion = 1;
-        minorVersion = 1;
-    } else if ( strncmp( device_version, "OpenCL 2.0", 10 ) == 0 && ( device_version[ 10 ] == 0 || device_version[ 10 ] == ' ' ) ) {
-        majorVersion = 2;
-        minorVersion = 0;
-    } else if ( strncmp( device_version, "OpenCL 2.1", 10 ) == 0 && ( device_version[ 10 ] == 0 || device_version[ 10 ] == ' ' ) ) {
-        majorVersion = 2;
-        minorVersion = 1;
-    } else {
-        log_error( "ERROR: Unexpected version string: `%s'.\n", device_version );
-        return 1;
-    };
-
-    if (majorVersion >= requestedMajorVersion)
-        return 0;
-
-    if (minorVersion >= requestedMinorVersion)
-        return 0;
-
-    return 1;
-}
-
 int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device)
 {
     if (gCompilationMode != kOnline)

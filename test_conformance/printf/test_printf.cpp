@@ -1029,9 +1029,7 @@ test_status InitCL( cl_device_id device )
 
     PrintArch();
 
-
-    err = check_opencl_version(device,1,2);
-    if( err != CL_SUCCESS ) {
+    if( get_device_cl_version(device) < Version(1,2) ) {
       print_missing_feature(err,"printf");
       return TEST_FAIL;
     }
