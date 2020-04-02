@@ -41,7 +41,6 @@ const char *clone_kernel_test_img[] =
     "{\n"
     "    write_imageui (img, (int2)(0, 0), color);\n"
     "}\n"
-
 };
 
 const char *clone_kernel_test_double[] =
@@ -83,8 +82,7 @@ const char *clone_kernel_test_kernel[] = {
 "{\n"
 "    buf[0] = write_val;\n"
 "}\n"
-
- };
+};
 
 const int BUF_SIZE = 128;
 
@@ -94,19 +92,7 @@ struct structArg
     float f;
 };
 
-static unsigned char *
-generate_8888_image(int w, int h, MTdata d)
-{
-    unsigned char   *ptr = (unsigned char*)malloc(w * h * 4);
-    int             i;
-
-    for (i=0; i<w*h*4; i++)
-        ptr[i] = (unsigned char)genrand_int32( d);
-
-    return ptr;
-}
-
-int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, void* pbufRes, clMemWrapper& bufOut)
+int test_image_arg_shallow_clone(cl_context context, cl_command_queue queue, void* pbufRes, clMemWrapper& bufOut)
 {
     int error;
     cl_image_format    img_format;
@@ -139,7 +125,7 @@ int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_c
         return -1;
     }
 
-    img = clCreateImage(context, CL_MEM_READ_WRITE, &img_format, &imageDesc, NULL, &error);
+    img = clCreateImage(context, CL_MEM_READ_WRITE, &img_format, &imageDesc, nullptr, &error);
     test_error( error, "clCreateImage failed." );
 
     cl_sampler_properties properties[] = {
@@ -154,7 +140,7 @@ int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_c
     error += clSetKernelArg(kernel_write, 0, sizeof(cl_mem), &img);
     test_error( error, "clSetKernelArg failed." );
 
-    error = clEnqueueNDRangeKernel(queue, kernel_write, 1, NULL, &ndrange1, NULL, 0, NULL, NULL);
+    error = clEnqueueNDRangeKernel(queue, kernel_write, 1, nullptr, &ndrange1, nullptr, 0, nullptr, nullptr);
     test_error( error, "clEnqueueNDRangeKernel failed." );
 
     error = clSetKernelArg(kernel_read, 0, sizeof(cl_mem), &img);
@@ -166,11 +152,11 @@ int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_c
     // clone the kernel
     kernel_cloned = clCloneKernel(kernel_read, &error);
     test_error( error, "clCloneKernel failed." );
-    error = clEnqueueNDRangeKernel(queue, kernel_cloned, 1, NULL, &ndrange1, NULL, 0, NULL, NULL);
+    error = clEnqueueNDRangeKernel(queue, kernel_cloned, 1, nullptr, &ndrange1, nullptr, 0, nullptr, nullptr);
     test_error( error, "clEnqueueNDRangeKernel failed." );
 
     // read result back
-    error = clEnqueueReadBuffer(queue, bufOut, CL_TRUE, 0, 128, pbufRes, 0, NULL, NULL);
+    error = clEnqueueReadBuffer(queue, bufOut, CL_TRUE, 0, 128, pbufRes, 0, nullptr, nullptr);
     test_error( error, "clEnqueueReadBuffer failed." );
 
     if (((cl_uint*)pbufRes)[7] != color[0])
@@ -200,7 +186,7 @@ int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_c
     return 0;
 }
 
-int test_double_arg_clone(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, void* pbufRes, clMemWrapper& bufOut)
+int test_double_arg_clone(cl_context context, cl_command_queue queue, void* pbufRes, clMemWrapper& bufOut)
 {
     int error = 0;
     clProgramWrapper program;
@@ -221,11 +207,11 @@ int test_double_arg_clone(cl_device_id deviceID, cl_context context, cl_command_
     kernel_cloned = clCloneKernel(kernel, &error);
     test_error( error, "clCloneKernel failed." );
 
-    error = clEnqueueNDRangeKernel(queue, kernel_cloned, 1, NULL, &ndrange1, NULL, 0, NULL, NULL);
+    error = clEnqueueNDRangeKernel(queue, kernel_cloned, 1, nullptr, &ndrange1, nullptr, 0, nullptr, nullptr);
     test_error( error, "clEnqueueNDRangeKernel failed." );
 
     // read result back
-    error = clEnqueueReadBuffer(queue, bufOut, CL_TRUE, 0, BUF_SIZE, pbufRes, 0, NULL, NULL);
+    error = clEnqueueReadBuffer(queue, bufOut, CL_TRUE, 0, BUF_SIZE, pbufRes, 0, nullptr, nullptr);
     test_error( error, "clEnqueueReadBuffer failed." );
 
     if (abs(((cl_double*)pbufRes)[2] - d) > 0.0000001)
@@ -253,11 +239,13 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
 
     int write_val = 123;
 
-
     cl_bool bimg = CL_FALSE;
     cl_bool bdouble = CL_FALSE;
+
+    (void)num_elements;
+
     // test image support
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_IMAGE_SUPPORT, sizeof(cl_bool), &bimg, NULL);
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_IMAGE_SUPPORT, sizeof(cl_bool), &bimg, nullptr);
     test_error( error, "clGetDeviceInfo failed." );
 
     // test double support
@@ -296,31 +284,41 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     buf = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, BUF_SIZE, pbuf, &error);
     test_error( error, "clCreateBuffer failed." );
 
-    bufOut = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, BUF_SIZE, NULL, &error);
+    bufOut = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, BUF_SIZE, nullptr, &error);
     test_error( error, "clCreateBuffer failed." );
 
     error = clSetKernelArg(kernel, 0, sizeof(int), &intarg);
     error += clSetKernelArg(kernel, 1, sizeof(float), &farg);
     error += clSetKernelArg(kernel, 2, sizeof(structArg), &sa);
-    error += clSetKernelArg(kernel, 3, 128, NULL);    // local mem
+    error += clSetKernelArg(kernel, 3, 128, nullptr);    // local mem
 
     test_error( error, "clSetKernelArg failed." );
 
+    // negative test for the CL_INVALID_KERNEL return value
+    clKernelWrapper clonek = clCloneKernel(nullptr, &error);
+    test_failure_error( error, CL_INVALID_KERNEL, "clCloneKernel with an invalid source_kernel was expected to have an errcode_ret of CL_INVALID_KERNEL." );
+    if(clonek != nullptr) {
+        log_error("ERROR: clCloneKernel with an invalid source_kernel was expected to return NULL! (Got %p from %s:%d)\n", (cl_kernel)clonek, __FILE__, __LINE__ );
+    }
+
+    // There's no standard way of negative testing clCloneKernel's possible return of CL_OUT_OF_RESOURCES nor
+    // CL_OUT_OF_HOST_MEMORY.
+
     // clone the kernel
-    clKernelWrapper clonek = clCloneKernel(kernel, &error);
+    clonek = clCloneKernel(kernel, &error);
     test_error( error, "clCloneKernel failed." );
 
     // set the last arg and enqueue
     error = clSetKernelArg(clonek, 4, sizeof(cl_mem), &bufOut);
     test_error( error, "clSetKernelArg failed." );
-    error = clEnqueueNDRangeKernel(queue, clonek, 1, NULL, &ndrange1, NULL, 0, NULL, NULL);
+    error = clEnqueueNDRangeKernel(queue, clonek, 1, nullptr, &ndrange1, nullptr, 0, nullptr, nullptr);
     test_error( error, "clEnqueueNDRangeKernel failed." );
 
     // shallow clone tests for buffer
     error = clSetKernelArg(kernel_buf_write, 0, sizeof(cl_mem), &buf);
     error += clSetKernelArg(kernel_buf_write, 1, sizeof(int), &write_val);
     test_error( error, "clSetKernelArg failed." );
-    error = clEnqueueNDRangeKernel(queue, kernel_buf_write, 1, NULL, &ndrange1, NULL, 0, NULL, NULL);
+    error = clEnqueueNDRangeKernel(queue, kernel_buf_write, 1, nullptr, &ndrange1, nullptr, 0, nullptr, nullptr);
     test_error( error, "clEnqueueNDRangeKernel failed." );
 
     error = clSetKernelArg(kernel_buf_read, 0, sizeof(cl_mem), &buf);
@@ -330,11 +328,11 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     // clone the kernel
     kernel_buf_read_cloned = clCloneKernel(kernel_buf_read, &error);
     test_error( error, "clCloneKernel API call failed." );
-    error = clEnqueueNDRangeKernel(queue, kernel_buf_read_cloned, 1, NULL, &ndrange1, NULL, 0, NULL, NULL);
+    error = clEnqueueNDRangeKernel(queue, kernel_buf_read_cloned, 1, nullptr, &ndrange1, nullptr, 0, nullptr, nullptr);
     test_error( error, "clEnqueueNDRangeKernel failed." );
 
     // read result back
-    error = clEnqueueReadBuffer(queue, bufOut, CL_TRUE, 0, BUF_SIZE, pbufRes, 0, NULL, NULL);
+    error = clEnqueueReadBuffer(queue, bufOut, CL_TRUE, 0, BUF_SIZE, pbufRes, 0, nullptr, nullptr);
     test_error( error, "clEnqueueReadBuffer failed." );
 
     // Compare the results
@@ -370,13 +368,13 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
 
     if (bimg)
     {
-        error = test_image_arg_shallow_clone(deviceID, context, queue, num_elements, pbufRes, bufOut);
+        error = test_image_arg_shallow_clone(context, queue, pbufRes, bufOut);
         test_error( error, "image arg shallow clone test failed." );
     }
 
     if (bdouble)
     {
-        error = test_double_arg_clone(deviceID, context, queue, num_elements, pbufRes, bufOut);
+        error = test_double_arg_clone(context, queue, pbufRes, bufOut);
         test_error( error, "double arg clone test failed." );
     }
 
@@ -385,4 +383,3 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
 
     return 0;
 }
-
