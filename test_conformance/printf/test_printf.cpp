@@ -366,35 +366,7 @@ static bool isLongSupported(cl_device_id device_id)
 
     if(!strcmp("EMBEDDED_PROFILE",profileType.get()))
     {
-        // Device extention
-        status = clGetDeviceInfo(
-            device_id,
-            CL_DEVICE_EXTENSIONS,
-            0,
-            NULL,
-            &tempSize);
-
-        if(status != CL_SUCCESS)
-        {
-            log_error("*** clGetDeviceInfo FAILED ***\n\n");
-            return false;
-        }
-
-        std::unique_ptr<char[]> devExt(new char[tempSize]);
-        if(devExt == NULL)
-        {
-            log_error("Failed to allocate memory(devExt)");
-            return false;
-        }
-
-        status = clGetDeviceInfo(
-            device_id,
-            CL_DEVICE_EXTENSIONS,
-            sizeof(char) * tempSize,
-            devExt.get(),
-            NULL);
-
-        extSupport  = (strstr(devExt.get(),"cles_khr_int64") != NULL);
+        extSupport = is_extension_available(device_id, "cles_khr_int64");
     }
     return extSupport;
 }

@@ -67,37 +67,6 @@ void CResult::ResultSub( TTestResult result )
     _result = result;
 }
 
-bool ExtensionCheck(const std::string &extension, cl_device_id deviceID)
-{
-  std::string extensions;
-  size_t size = 0;
-  cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, 0, 0, &size);
-  if (error != CL_SUCCESS)
-  {
-    print_error(error, "clGetDeviceInfo failed\n");
-    return false;
-  }
-
-  if (size == 0)
-  {
-    print_error(error, "Invalid extension string size\n");
-    return false;
-  }
-
-  extensions.resize(size);
-  error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, size, &extensions[0], 0);
-  if (error != CL_SUCCESS)
-  {
-    print_error(error, "clGetDeviceInfo failed\n");
-    return false;
-  }
-
-  if (extensions.find(extension) != std::string::npos)
-    return true;
-
-  return false;
-}
-
 void FunctionContextCreateToString(TContextFuncType contextCreateFunction, std::string &contextFunction)
 {
   switch(contextCreateFunction)
