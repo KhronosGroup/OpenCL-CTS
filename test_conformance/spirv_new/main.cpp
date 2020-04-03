@@ -161,7 +161,7 @@ int get_program_with_il(clProgramWrapper &prog,
     else {
         cl_platform_id platform;
         err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(cl_platform_id), &platform, NULL);
-        print_error(err, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
+        SPIRV_CHECK_ERROR(err, "Failed to get platform info with clGetDeviceInfo");
         clCreateProgramWithILKHR_fn clCreateProgramWithILKHR = NULL;
 
         clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)clGetExtensionFunctionAddressForPlatform(platform, "clCreateProgramWithILKHR");
