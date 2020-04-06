@@ -1,52 +1,49 @@
 set(MODULE_NAME BASIC)
 
 set(${MODULE_NAME}_SOURCES
-    main.c
-    test_fpmath_float.c test_fpmath_float2.c test_fpmath_float4.c
-    test_intmath_int.c test_intmath_int2.c test_intmath_int4.c
-    test_intmath_long.c test_intmath_long2.c test_intmath_long4.c
-    test_hiloeo.c test_local.c test_pointercast.c
-    test_if.c test_loop.c
-    test_readimage.c test_readimage_int16.c test_readimage_fp32.c
-    test_readimage3d.c test_readimage3d_int16.c test_readimage3d_fp32.c
-    test_writeimage.c test_writeimage_int16.c test_writeimage_fp32.c
-    test_multireadimageonefmt.c test_multireadimagemultifmt.c
-    test_imagedim.c
-    test_vloadstore.c
-    test_int2float.c test_float2int.c
-    test_createkernelsinprogram.c
-    test_hostptr.c
+    main.cpp
+    test_fpmath_float.cpp test_fpmath_float2.cpp test_fpmath_float4.cpp
+    test_intmath_int.cpp test_intmath_int2.cpp test_intmath_int4.cpp
+    test_intmath_long.cpp test_intmath_long2.cpp test_intmath_long4.cpp
+    test_hiloeo.cpp test_local.cpp test_pointercast.cpp
+    test_if.cpp test_loop.cpp
+    test_readimage.cpp test_readimage_int16.cpp test_readimage_fp32.cpp
+    test_readimage3d.cpp test_readimage3d_int16.cpp test_readimage3d_fp32.cpp
+    test_writeimage.cpp test_writeimage_int16.cpp test_writeimage_fp32.cpp
+    test_multireadimageonefmt.cpp test_multireadimagemultifmt.cpp
+    test_imagedim.cpp
+    test_vloadstore.cpp
+    test_int2float.cpp test_float2int.cpp
+    test_createkernelsinprogram.cpp
+    test_hostptr.cpp
     test_explicit_s2v.cpp
-    test_constant.c
-    test_image_multipass.c
-    test_imagereadwrite.c test_imagereadwrite3d.c
-    test_image_param.c
-    test_imagenpot.c
-    test_image_r8.c
-    test_barrier.c
-    test_basic_parameter_types.c
-    test_arrayreadwrite.c
-    test_arraycopy.c
-    test_imagearraycopy.c
-    test_imagearraycopy3d.c
-    test_imagecopy.c
-    test_imagerandomcopy.c
-    test_arrayimagecopy.c
-    test_arrayimagecopy3d.c
-    test_imagecopy3d.c
+    test_constant.cpp
+    test_image_multipass.cpp
+    test_imagereadwrite.cpp test_imagereadwrite3d.cpp
+    test_image_param.cpp
+    test_imagenpot.cpp
+    test_image_r8.cpp
+    test_barrier.cpp
+    test_basic_parameter_types.cpp
+    test_arrayreadwrite.cpp
+    test_arraycopy.cpp
+    test_imagearraycopy.cpp
+    test_imagearraycopy3d.cpp
+    test_imagecopy.cpp
+    test_imagerandomcopy.cpp
+    test_arrayimagecopy.cpp
+    test_arrayimagecopy3d.cpp
+    test_imagecopy3d.cpp
     test_enqueue_map.cpp
     test_work_item_functions.cpp
     test_astype.cpp
     test_async_copy.cpp
-    test_async_copy2D.cpp
-    test_async_copy3D.cpp
-    test_async_copy_fence.cpp
-    test_sizeof.c
+    test_sizeof.cpp
     test_vector_creation.cpp
-    test_vec_type_hint.c
+    test_vec_type_hint.cpp
     test_numeric_constants.cpp
     test_constant_source.cpp
-    test_bufferreadwriterect.c
+    test_bufferreadwriterect.cpp
     test_async_strided_copy.cpp
     test_preprocessors.cpp
     test_kernel_memory_alignment.cpp
@@ -54,22 +51,22 @@ set(${MODULE_NAME}_SOURCES
     test_kernel_call_kernel_function.cpp
     test_local_kernel_scope.cpp
     test_progvar.cpp
-    test_wg_barrier.c
-    test_global_linear_id.c
-    test_local_linear_id.c
-    test_enqueued_local_size.c
-    test_simple_image_pitch.c
+    test_wg_barrier.cpp
+    test_global_linear_id.cpp
+    test_local_linear_id.cpp
+    test_enqueued_local_size.cpp
+    test_simple_image_pitch.cpp
     test_get_linear_ids.cpp
-    test_rw_image_access_qualifier.c
-    test_wg_barrier.c
-    test_enqueued_local_size.c
-    test_global_linear_id.c
-    test_local_linear_id.c
+    test_rw_image_access_qualifier.cpp
+    test_wg_barrier.cpp
+    test_enqueued_local_size.cpp
+    test_global_linear_id.cpp
+    test_local_linear_id.cpp
     test_progvar.cpp
 )
 
 if(APPLE)
-    list(APPEND ${MODULE_NAME}_SOURCES test_queue_priority.c)
+    list(APPEND ${MODULE_NAME}_SOURCES test_queue_priority.cpp)
 endif(APPLE)
 
 include(../CMakeCommon.txt)
