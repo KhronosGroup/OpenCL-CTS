@@ -115,6 +115,16 @@ extern int      test_async_copy_global_to_local(cl_device_id deviceID, cl_contex
 extern int      test_async_copy_local_to_global(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_async_strided_copy_global_to_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_async_strided_copy_local_to_global(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_async_copy_global_to_local2D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_async_copy_local_to_global2D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_async_copy_global_to_local3D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_async_copy_local_to_global3D(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_async_work_group_copy_fence_import_after_export_aliased_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_async_work_group_copy_fence_import_after_export_aliased_global(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_async_work_group_copy_fence_import_after_export_aliased_global_and_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_async_work_group_copy_fence_export_after_import_aliased_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_async_work_group_copy_fence_export_after_import_aliased_global(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int      test_async_work_group_copy_fence_export_after_import_aliased_global_and_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_prefetch(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int      test_host_numeric_constants(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
