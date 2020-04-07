@@ -95,13 +95,8 @@ int test_copy3D(cl_device_id deviceID, cl_context context, cl_command_queue queu
 
     size_t elementSize = get_explicit_type_size(vecType)*vecSize;
     log_info("Testing %s with srcLineStride = %d, dstLineStride = %d, srcPlaneStride = %d, dstPlaneStride = %d\n", vecNameString, srcLineStride, dstLineStride, srcPlaneStride, dstPlaneStride);
-    char extensions[2048] = "";
-    if( (error = clGetDeviceInfo( deviceID, CL_DEVICE_EXTENSIONS, sizeof( extensions ), extensions,  NULL ) ) )
-    {
-        vlog_error( "FAILURE: unable to get device info for CL_DEVICE_EXTENSIONS!" );
-        return -1;
-    }
-    else if( strstr( extensions, "cl_khr_extended_async_copies" ) == 0 )
+
+    if(!is_extension_available(deviceID, "cl_khr_extended_async_copies"))
     {
         log_info("Device does not support extended async copies. Skipping test.\n");
         return 0;

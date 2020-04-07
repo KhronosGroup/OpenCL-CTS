@@ -246,15 +246,10 @@ int test_copy_fence(cl_device_id deviceID, cl_context context, cl_command_queue 
 
     size_t elementSize = get_explicit_type_size(vecType)*vecSize;
     log_info("Testing %s\n", vecNameString);
-    char extensions[2048] = "";
-    if( (error = clGetDeviceInfo( deviceID, CL_DEVICE_EXTENSIONS, sizeof( extensions ), extensions,  NULL ) ) )
+    
+    if(!is_extension_available(deviceID, "cl_khr_async_work_group_copy_fence"))
     {
-        vlog_error( "FAILURE: unable to get device info for CL_DEVICE_EXTENSIONS!" );
-        return -1;
-    }
-    else if( strstr( extensions, "cl_khr_async_work_group_copy_fence" ) == 0 )
-    {
-        log_info("Device does not support async copy fence. Skipping test.\n");
+        log_info("Device does not support extended async copies fence. Skipping test.\n");
         return 0;
     }
 
