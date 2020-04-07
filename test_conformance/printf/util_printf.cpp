@@ -15,6 +15,7 @@
 //
 #include "harness/compat.h"
 #include "harness/rounding_mode.h"
+#include "harness/kernelHelpers.h"
 
 #include "test_printf.h"
 #include <assert.h>
@@ -843,35 +844,19 @@ void generateRef(const cl_device_id device)
 {
     int fd = -1;
     char _refBuffer[ANALYSIS_BUFFER_SIZE];
-    cl_device_fp_config fpConfig;
+    const cl_device_fp_config fpConfig = get_default_rounding_mode(device);
     const RoundingMode hostRound = get_round();
     RoundingMode deviceRound;
 
-    // Discover device rounding mode
-    cl_int err = clGetDeviceInfo(device,
-                                CL_DEVICE_SINGLE_FP_CONFIG,
-                                sizeof(fpConfig),
-                                &fpConfig,
-                                NULL);
-    if (err != CL_SUCCESS)
-    {
-        log_error("clGetDeviceInfo failed");
-        return;
-    }
-
     // Map device rounding to CTS rounding type
-    if (fpConfig & CL_FP_ROUND_TO_NEAREST)
+    // get_default_rounding_mode supports RNE and RTZ
+    if (fpConfig == CL_FP_ROUND_TO_NEAREST)
     {
         deviceRound = kRoundToNearestEven;
     }
-    else if (fpConfig & CL_FP_ROUND_TO_ZERO)
+    else if (fpConfig == CL_FP_ROUND_TO_ZERO)
     {
         deviceRound = kRoundTowardZero;
-    }
-    else if (fpConfig & CL_FP_ROUND_TO_INF)
-    {
-        // Can be either round up or round down
-        deviceRound = kRoundUp;
     }
     else
     {
