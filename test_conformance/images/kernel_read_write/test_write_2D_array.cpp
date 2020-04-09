@@ -27,7 +27,7 @@ extern int gtestTypesToRun;
 extern bool gDeviceLt20;
 
 extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
-extern bool validate_half_write_results( cl_ushort *expected, cl_ushort *actual, image_descriptor *imageInfo );
+extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo );
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.
@@ -417,8 +417,8 @@ int test_write_image_2D_array( cl_device_id device, cl_context context, cl_comma
                         }
                         else if( imageInfo->format->image_channel_data_type == CL_HALF_FLOAT )
                         {
-                            cl_ushort *e = (cl_ushort *)resultBuffer;
-                            cl_ushort *a = (cl_ushort *)resultPtr;
+                            cl_half *e = (cl_half *)resultBuffer;
+                            cl_half *a = (cl_half *)resultPtr;
                             if( !validate_half_write_results( e, a, imageInfo ) )
                             {
                                 totalErrors++;

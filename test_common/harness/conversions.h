@@ -117,7 +117,7 @@ static inline int IsDoubleSubnormal( double x )
 #endif
 }
 
-static inline int IsHalfSubnormal( uint16_t x )
+static inline int IsHalfSubnormal( cl_half x )
 { 
     return ( ( x & 0x7fffU ) - 1U ) < 0x03ffU; 
 }

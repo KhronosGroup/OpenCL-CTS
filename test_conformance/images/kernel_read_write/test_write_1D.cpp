@@ -27,7 +27,7 @@ extern int gtestTypesToRun;
 extern bool gDeviceLt20;
 
 extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
-extern bool validate_half_write_results( cl_ushort *expected, cl_ushort *actual, image_descriptor* imageInfo );
+extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor* imageInfo );
 
 const char *readwrite1DKernelSourcePattern =
 "__kernel void sample_kernel( __global %s4 *input, read_write image1d_t output %s)\n"
@@ -377,8 +377,8 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
                     }
                     else if( imageInfo->format->image_channel_data_type == CL_HALF_FLOAT )
                     {
-                        cl_ushort *e = (cl_ushort *)resultBuffer;
-                        cl_ushort *a = (cl_ushort *)resultPtr;
+                        cl_half *e = (cl_half *)resultBuffer;
+                        cl_half *a = (cl_half *)resultPtr;
                         if( !validate_half_write_results( e, a, imageInfo ) )
                         {
                             totalErrors++;
@@ -387,7 +387,7 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
                             log_error( "    Actual:   0x%04x 0x%04x 0x%04x 0x%04x\n", a[ 0 ], a[ 1 ], a[ 2 ], a[ 3 ] );
                             if( inputType == kFloat )
                             {
-                                float *p = (float *)(char *)imagePtr;
+                                float *p = (float *)imagePtr;
                                 log_error( "    Source: %a %a %a %a\n", p[ 0 ], p[ 1 ], p[ 2] , p[ 3] );
                                 log_error( "          : %12.24f %12.24f %12.24f %12.24f\n", p[ 0 ], p[ 1 ], p[ 2 ], p[ 3 ] );
                             }

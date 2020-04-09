@@ -31,7 +31,7 @@ extern int test_write_image_1D_array_set( cl_device_id device, cl_context contex
 extern int test_write_image_2D_array_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d );
 
 extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
-extern bool validate_half_write_results( cl_ushort *expected, cl_ushort *actual, image_descriptor *imageInfo );
+extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo );
 
 const char *writeKernelSourcePattern =
 "__kernel void sample_kernel( __global %s%s *input, write_only %s output %s)\n"
@@ -442,8 +442,8 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                     }
                     else if( imageInfo->format->image_channel_data_type == CL_HALF_FLOAT )
                     {
-                        cl_ushort *e = (cl_ushort *)resultBuffer;
-                        cl_ushort *a = (cl_ushort *)resultPtr;
+                        cl_half *e = (cl_half *)resultBuffer;
+                        cl_half *a = (cl_half *)resultPtr;
                         if( !validate_half_write_results( e, a, imageInfo ) )
                         {
                             totalErrors++;
