@@ -111,7 +111,7 @@ int test_queue_properties(cl_device_id deviceID, cl_context context, cl_command_
     cl_queue_properties_khr queue_prop_def[] = { CL_QUEUE_PROPERTIES, 0, 0 };
 
     // Query extension
-    if (is_extension_available(deviceID, "cl_khr_create_command_queue"))
+    if (!is_extension_available(deviceID, "cl_khr_create_command_queue"))
     {
         log_info("extension cl_khr_create_command_queue is not supported.\n");
         return 0;
