@@ -119,6 +119,129 @@ static inline int IsHalfSubnormal( cl_half x )
     return ( ( x & 0x7fffU ) - 1U ) < 0x03ffU; 
 }
 
+static inline float half2float(cl_ushort us)
+{
+    uint32_t u = us;
+    uint32_t sign = (u << 16) & 0x80000000;
+    int32_t exponent = (u & 0x7c00) >> 10;
+    uint32_t mantissa = (u & 0x03ff) << 13;
+    union { unsigned int u; float f; }uu;
+
+    if (exponent == 0)
+    {
+        if (mantissa == 0)
+            return sign ? -0.0f : 0.0f;
+
+        int shift = __builtin_clz(mantissa) - 8;
+        exponent -= shift - 1;
+        mantissa <<= shift;
+        mantissa &= 0x007fffff;
+    }
+    else
+        if (exponent == 31)
+        {
+            uu.u = mantissa | sign;
+            if (mantissa)
+                uu.u |= 0x7fc00000;
+            else
+                uu.u |= 0x7f800000;
+
+            return uu.f;
+        }
+
+    exponent += 127 - 15;
+    exponent <<= 23;
+
+    exponent |= mantissa;
+    uu.u = exponent | sign;
+
+    return uu.f;
+}
+
+static inline cl_ushort float2half_rte(cl_float f)
+{
+    union { cl_float f; cl_uint u; } u = { f };
+    cl_uint sign = (u.u >> 16) & 0x8000;
+    cl_float x = fabsf(f);
+
+    //Nan
+    if (x != x)
+    {
+        u.u >>= (24 - 11);
+        u.u &= 0x7fff;
+        u.u |= 0x0200;      //silence the NaN
+        return u.u | sign;
+    }
+
+    // overflow
+    if (x >= MAKE_HEX_FLOAT(0x1.ffep15f, 0x1ffeL, 3))
+        return 0x7c00 | sign;
+
+    // underflow
+    if (x <= MAKE_HEX_FLOAT(0x1.0p-25f, 0x1L, -25))
+        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
+
+    // very small
+    if (x < MAKE_HEX_FLOAT(0x1.8p-24f, 0x18L, -28))
+        return sign | 1;
+
+    // half denormal
+    if (x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14))
+    {
+        u.f = x * MAKE_HEX_FLOAT(0x1.0p-125f, 0x1L, -125);
+        return sign | u.u;
+    }
+
+    u.f *= MAKE_HEX_FLOAT(0x1.0p13f, 0x1L, 13);
+    u.u &= 0x7f800000;
+    x += u.f;
+    u.f = x - u.f;
+    u.f *= MAKE_HEX_FLOAT(0x1.0p-112f, 0x1L, -112);
+
+    return (u.u >> (24 - 11)) | sign;
+}
+
+static cl_ushort float2half_rtz(float f)
+{
+    union { float f; cl_uint u; } u = { f };
+    cl_uint sign = (u.u >> 16) & 0x8000;
+    float x = fabsf(f);
+
+    //Nan
+    if (x != x)
+    {
+        u.u >>= (24 - 11);
+        u.u &= 0x7fff;
+        u.u |= 0x0200;      //silence the NaN
+        return u.u | sign;
+    }
+
+    // overflow
+    if (x >= MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16))
+    {
+        if (x == INFINITY)
+            return 0x7c00 | sign;
+
+        return 0x7bff | sign;
+    }
+
+    // underflow
+    if (x < MAKE_HEX_FLOAT(0x1.0p-24f, 0x1L, -24))
+        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
+
+    // half denormal
+    if (x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14))
+    {
+        x *= MAKE_HEX_FLOAT(0x1.0p24f, 0x1L, 24);
+        return (cl_ushort)((int)x | sign);
+    }
+
+    u.u &= 0xFFFFE000U;
+    u.u -= 0x38000000U;
+
+    return (u.u >> (24 - 11)) | sign;
+}
+
 #endif // _conversions_h
 
 
