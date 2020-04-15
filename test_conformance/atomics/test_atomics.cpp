@@ -94,16 +94,13 @@ bool check_atomic_support( cl_device_id device, bool extended, bool isLocal, Exp
     if( isLocal )
         index += 2;
 
-    size_t major, minor;
-
-    int error = get_device_version(device, &major, &minor);
-    test_error( error, "get_device_version" );
+    Version version = get_device_cl_version(device);
 
     switch (dataType)
     {
         case kInt:
         case kUInt:
-            if( major * 10 + minor >= 11 )
+            if( version >= Version(1,1) )
                 return 1;
             break;
         case kLong:
@@ -111,7 +108,7 @@ bool check_atomic_support( cl_device_id device, bool extended, bool isLocal, Exp
             index += 4;
             break;
         case kFloat:  // this has to stay separate since the float atomics arent in the 1.0 extensions
-            return major * 10 + minor >= 11;
+            return version >= Version(1,1);
         default:
             log_error( "ERROR:  Unsupported data type (%d) in check_atomic_support\n", dataType );
             return 0;

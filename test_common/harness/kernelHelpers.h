@@ -125,9 +125,6 @@ extern int get_max_common_2D_work_group_size( cl_context context, cl_kernel kern
 /* Helper to obtain the biggest fit work group size for all the devices in a given group and for the given global thread size */
 extern int get_max_common_3D_work_group_size( cl_context context, cl_kernel kernel, size_t *globalThreadSize, size_t *outSizes );
 
-/* Helper to get major/minor number for a device */
-extern int get_device_version( cl_device_id id, size_t* major, size_t* minor);
-
 /* Helper to obtain the biggest allowed work group size for all the devices in a given group */
 extern int get_max_allowed_work_group_size( cl_context context, cl_kernel kernel, size_t *outSize, size_t *outLimits );
 

@@ -333,12 +333,9 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
     cl_program program;
     cl_kernel kernel;
 
-    size_t major = 0;
-    size_t minor = 0;
-    error = get_device_version(device, &major, &minor);
-    test_error(error, "get_device_version failed");
+    Version version = get_device_cl_version(device);
 
-    error = create_single_kernel_helper(context, &program, &kernel, 1, (const char **)&kernel_code, "test", major < 2 ? "" : "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1, (const char **)&kernel_code, "test", version < Version(2,0) ? "" : "-cl-std=CL2.0");
     test_error(error, "create_single_kernel_helper failed");
 
     data = (cl_int*)malloc(sizeof(cl_int)*(num_not_supported_extensions+num_of_supported_extensions));

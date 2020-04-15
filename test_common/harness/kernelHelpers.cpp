@@ -1032,26 +1032,6 @@ int build_program_create_kernel_helper(cl_context context,
     return 0;
 }
 
-int get_device_version( cl_device_id id, size_t* major, size_t* minor)
-{
-    cl_char buffer[ 4098 ];
-    size_t length;
-
-    // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
-    cl_int error = clGetDeviceInfo( id, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
-    test_error( error, "Unable to get device version string" );
-
-    char *p1 = (char *)buffer + strlen( "OpenCL " );
-    char *p2;
-    while( *p1 == ' ' )
-        p1++;
-    *major = strtol( p1, &p2, 10 );
-    error = *p2 != '.';
-    test_error(error, "ERROR: Version number must contain a decimal point!");
-    *minor = strtol( ++p2, NULL, 10 );
-    return error;
-}
-
 int get_max_allowed_work_group_size( cl_context context, cl_kernel kernel, size_t *outMaxSize, size_t *outLimits )
 {
     cl_device_id *devices;
