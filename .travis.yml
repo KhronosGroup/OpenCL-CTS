@@ -7,6 +7,8 @@ os:
 jobs:
   include:
   - os: linux
+    env: JOB_CHECK_FORMAT=1
+  - os: linux
     env: JOB_ARCHITECTURE=arm
   - os: linux
     env: JOB_ARCHITECTURE=aarch64
