@@ -114,7 +114,8 @@ static inline cl_ulong DoubleFromUInt( cl_uint bits )
 
 static inline int IsHalfSubnormal( uint16_t x )
 {
-    return ((x&0x7fffU)-1U) < 0x03ffU;
+    // this relies on interger overflow to exclude 0 as a subnormal
+    return ( ( x & 0x7fffU ) - 1U ) < 0x03ffU;
 }
 
 // prevent silent failures due to missing FLT_RADIX
