@@ -7,7 +7,12 @@ os:
 jobs:
   include:
   - os: linux
+    dist: bionic
     env: JOB_CHECK_FORMAT=1
+    addons:
+        apt:
+          packages:
+            - clang-format-9
   - os: linux
     env: JOB_ARCHITECTURE=arm
   - os: linux
