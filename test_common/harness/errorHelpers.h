@@ -107,8 +107,6 @@ extern int IsChannelOrderSupported( cl_channel_order order );
 extern const char *GetAddressModeName( cl_addressing_mode mode );
 
 extern const char *GetDeviceTypeName( cl_device_type type );
-int check_opencl_version_with_testname(const char *subtestname, cl_device_id device);
-int check_opencl_version(cl_device_id device, cl_uint requestedMajorVersion, cl_uint requestedMinorVersion);
 int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device);
 
 // NON-REENTRANT UNLESS YOU PROVIDE A BUFFER PTR (pass null to use static storage, but it's not reentrant then!)

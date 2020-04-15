@@ -204,7 +204,7 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
         gDeviceLt20 = true;
     }
 
-    if ((version_check = check_opencl_version(device,1,2))) {
+    if (version_check = (version < Version(1,2))) {
         switch (imageType) {
             case CL_MEM_OBJECT_IMAGE1D:
             test_missing_feature(version_check, "image_1D");

@@ -323,7 +323,7 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
         }
     }
 
-    int version_check = check_opencl_version(device,1,2);
+    int version_check = (get_device_cl_version(device) < Version(1,2));
     if (version_check != 0) {
       switch (imageType) {
         case CL_MEM_OBJECT_IMAGE1D:
