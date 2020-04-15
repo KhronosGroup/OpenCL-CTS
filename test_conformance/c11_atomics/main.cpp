@@ -105,6 +105,17 @@ test_definition test_list[] = {
 
 const int test_num = ARRAY_SIZE( test_list );
 
+test_status InitCL(cl_device_id device) {
+    auto version = get_device_cl_version(device);
+    auto expected_min_version = Version(2, 0);
+    if (version < expected_min_version)
+    {
+        version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
+        return TEST_SKIP;
+    }
+    return TEST_PASS;
+}
+
 int main(int argc, const char *argv[])
 {
   bool noCert = false;
@@ -186,5 +197,5 @@ int main(int argc, const char *argv[])
     log_info("*** Use of this mode is not sufficient to verify correctness.              ***\n");
     log_info("***                                                                        ***\n");
   }
-  return runTestHarness(argc, argv, test_num, test_list, false, false, 0);
+  return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, false, InitCL);
 }

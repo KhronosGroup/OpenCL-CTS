@@ -74,15 +74,7 @@ HarnessD3D11_ExtensionCheck()
     cl_uint num_devices_d3d11 = 0; // Number of devices supporting cl_khr_d3d11_sharing.
     for ( cl_uint i = 0; i < devices.size(); ++ i )
     {
-        std::vector< char > buffer;
-        size_t size = 0;
-        result = clGetDeviceInfo( devices[ i ], CL_DEVICE_EXTENSIONS, 0, NULL, & size );
-            NonTestRequire( result == CL_SUCCESS, "Failed to get size of extension string." );
-        buffer.resize( size );
-        result = clGetDeviceInfo( devices[ i ], CL_DEVICE_EXTENSIONS, buffer.size(), & buffer.front(), & size );
-            NonTestRequire( result == CL_SUCCESS, "Failed to get extension string." );
-        std::string extensions = std::string( " " ) + & buffer.front() + " ";
-        if ( extensions.find( " cl_khr_d3d11_sharing " ) != std::string::npos )
+        if (is_extension_available( devices[i], " cl_khr_d3d11_sharing " ))
         {
             ++ num_devices_d3d11;
         }

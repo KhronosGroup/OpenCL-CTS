@@ -107,20 +107,11 @@ int test_queue_properties(cl_device_id deviceID, cl_context context, cl_command_
 
     clProgramWrapper program;
     clKernelWrapper kernel;
-    size_t strSize;
-    std::string strExt(0, '\0');
     cl_queue_properties_khr device_props = 0;
     cl_queue_properties_khr queue_prop_def[] = { CL_QUEUE_PROPERTIES, 0, 0 };
 
     // Query extension
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, 0, NULL, &strSize);
-    test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS failed");
-    strExt.resize(strSize);
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, strExt.size(), &strExt[0], NULL);
-    test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS failed");
-    log_info("CL_DEVICE_EXTENSIONS:\n%s\n\n", strExt.c_str());
-
-    if (strExt.find("cl_khr_create_command_queue") == string::npos)
+    if (!is_extension_available(deviceID, "cl_khr_create_command_queue"))
     {
         log_info("extension cl_khr_create_command_queue is not supported.\n");
         return 0;

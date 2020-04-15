@@ -473,30 +473,7 @@ test_status InitCL( cl_device_id device )
         gForceFTZ ^= 1;
 
     // check for cl_khr_fp64
-    size_t extensions_size = 0;
-    if( (error = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, 0, NULL, &extensions_size )))
-    {
-        vlog_error( "clGetDeviceInfo(CL_DEVICE_EXTENSIONS) failed. %d\n", error );
-        return TEST_FAIL;
-    }
-    if( extensions_size )
-    {
-        char *extensions = (char*)malloc(extensions_size);
-        if( NULL == extensions )
-        {
-            vlog_error( "ERROR: Unable to allocate %ld bytes to hold extensions string\n", extensions_size );
-            return TEST_FAIL;
-        }
-
-        if( (error = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, extensions_size, extensions, NULL )))
-        {
-            vlog_error( "clGetDeviceInfo(CL_DEVICE_EXTENSIONS) failed 2. %d\n", error );
-            return TEST_FAIL;
-        }
-
-        gHasDouble = NULL != strstr( extensions, "cl_khr_fp64" );
-        free( extensions );
-    }
+    gHasDouble = is_extension_available(device, "cl_khr_fp64" );
 
     if(0 == (CL_FP_INF_NAN & floatCapabilities) )
         gSkipNanInf = 1;

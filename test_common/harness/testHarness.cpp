@@ -67,6 +67,21 @@ int runTestHarness( int argc, const char *argv[], int testNum, test_definition t
                           ( imageSupportRequired ) ? verifyImageSupport : NULL );
 }
 
+int skip_init_info(int count) {
+    log_info("Test skipped while initialization\n");
+    log_info("SKIPPED %d of %d tests.\n", count, count);
+    return EXIT_SUCCESS;
+}
+
+int fail_init_info(int count) {
+    log_info("Test failed while initialization\n");
+    log_info("FAILED %d of %d tests.\n", count, count);
+    return EXIT_FAILURE;
+}
+void version_expected_info(const char * test_name, const char * expected_version, const char * device_version) {
+    log_info("%s skipped (requires at least version %s, but the device reports version %s)\n",
+        test_name, expected_version, device_version);
+}
 int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_definition testList[],
                              int forceNoContextCreation, cl_command_queue_properties queueProps,
                              DeviceCheckFn deviceCheckFn )
@@ -238,7 +253,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
         }
     }
 
- 	gDeviceType = device_type;
+
 
 	switch (device_type)
 	{
@@ -329,6 +344,13 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
 
     device = devices[choosen_device_index];
 
+    err = clGetDeviceInfo( device, CL_DEVICE_TYPE, sizeof(gDeviceType), &gDeviceType, NULL );
+    if( err )
+    {
+        print_error( err, "Unable to get device type" );
+        return TEST_FAIL;
+    }
+    
     if( printDeviceHeader( device ) != CL_SUCCESS )
     {
         return EXIT_FAILURE;
@@ -372,33 +394,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
             gInfNanSupport = 0;
 
         // check the extensions list to see if ulong and long are supported
-        size_t extensionsStringSize = 0;
-        if( (err = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, 0, NULL, &extensionsStringSize ) ))
-        {
-            print_error( err, "Unable to get extensions string size for embedded device" );
-            return EXIT_FAILURE;
-        }
-        char *extensions_string = (char*) malloc(extensionsStringSize);
-        if( NULL == extensions_string )
-        {
-            print_error( CL_OUT_OF_HOST_MEMORY, "Unable to allocate storage for extensions string for embedded device" );
-            return EXIT_FAILURE;
-        }
-        BufferOwningPtr<char> extensions_stringBuf(extensions_string);
-
-        if( (err = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, extensionsStringSize, extensions_string, NULL ) ))
-        {
-            print_error( err, "Unable to get extensions string for embedded device" );
-            return EXIT_FAILURE;
-        }
-
-        if( extensions_string[extensionsStringSize-1] != '\0' )
-        {
-            log_error( "FAILURE: extensions string for embedded device is not NUL terminated" );
-            return EXIT_FAILURE;
-        }
-
-        if( NULL == strstr( extensions_string, "cles_khr_int64" ))
+        if( !is_extension_available(device, "cles_khr_int64" ))
             gHasLong = 0;
     }
 
@@ -447,9 +443,9 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
             case TEST_PASS:
                 break;
             case TEST_FAIL:
-                return EXIT_FAILURE;
+                return fail_init_info(testNum);
             case TEST_SKIP:
-                return EXIT_SUCCESS;
+                return skip_init_info(testNum);
         }
     }
 
@@ -689,8 +685,7 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
     const Version device_version = get_device_cl_version(deviceToUse);
     if (test.min_version > device_version)
     {
-        log_info("%s skipped (requires at least version %s, but the device reports version %s)\n",
-                 test.name, test.min_version.to_string().c_str(), device_version.to_string().c_str());
+        version_expected_info(test.name, test.min_version.to_string().c_str(), device_version.to_string().c_str());
         return TEST_SKIP;
     }
 
@@ -736,6 +731,12 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
         {
             /* Tests can also let us know they're not implemented yet */
             log_info("%s test currently not implemented\n", test.name);
+            status = TEST_SKIP;
+        }
+        else if (ret == TEST_SKIPPED_ITSELF)
+        {
+            /* Tests can also let us know they're not supported by the implementation */
+            log_info("%s test not supported\n", test.name);
             status = TEST_SKIP;
         }
         else
@@ -936,3 +937,4 @@ void PrintArch( void )
     }
 #endif
 }
+

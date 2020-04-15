@@ -76,10 +76,10 @@ OpenCL-GL Sharing,gl/test_gl -offlineCompiler spir_v cache .
 # #########################################
 Select,select/test_select -offlineCompiler spir_v cache .
 Conversions,conversions/test_conversions -offlineCompiler spir_v cache .
-Contractions,contractions/contractions -offlineCompiler spir_v cache .
-Math,math_brute_force/bruteforce -offlineCompiler spir_v cache .
+Contractions,contractions/test_contractions -offlineCompiler spir_v cache .
+Math,math_brute_force/test_bruteforce -offlineCompiler spir_v cache .
 Integer Ops,integer_ops/test_integer_ops -offlineCompiler spir_v cache .
-Half Ops,half/Test_half -offlineCompiler spir_v cache .
+Half Ops,half/test_half -offlineCompiler spir_v cache .
 
 #####################################
 # OpenCL 2.0 tests
@@ -89,7 +89,7 @@ Execution Model,device_execution/test_device_execution -offlineCompiler spir_v c
 Generic Address Space,generic_address_space/test_generic_address_space -offlineCompiler spir_v cache .
 Non Uniform Work Groups,non_uniform_work_group/test_non_uniform_work_group -offlineCompiler spir_v cache .
 Pipes,pipes/test_pipes -offlineCompiler spir_v cache .
-SVM,SVM/test_SVM -offlineCompiler spir_v cache .
+SVM,SVM/test_svm -offlineCompiler spir_v cache .
 Workgroups,workgroups/test_workgroups -offlineCompiler spir_v cache .
 
 #####################################

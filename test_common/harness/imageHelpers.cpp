@@ -15,6 +15,7 @@
 //
 #include "imageHelpers.h"
 #include <limits.h>
+#include <assert.h>
 #if defined( __APPLE__ )
 #include <sys/mman.h>
 #endif
@@ -687,6 +688,16 @@ void get_max_sizes(size_t *numberOfSizes, const int maxNumberOfSizes,
       if(x0_dim == 0 && x0 < 16)
         x0 = 16;
       double x1 = fmin(fmin(A/M/x0,maximum_sizes[x1_dim]),other_sizes[(other_size++)%num_other_sizes]);
+
+      // Valid image sizes cannot be below 1. Due to the workaround for the xo_dim where x0 is overidden to 16
+      // there might not be enough space left for x1 dimension. This could be a fractional 0.x size that when cast to
+      // integer would result in a value 0. In these cases we clamp the size to a minimum of 1.
+      if ( x1 < 1 )
+        x1 = 1;
+
+      // M and x0 cannot be '0' as they derive from clDeviceInfo calls
+      assert(x0 > 0 && M > 0);
+
       // Store the size
       sizes[(*numberOfSizes)][fixed_dim] = (size_t)M;
       sizes[(*numberOfSizes)][x0_dim]    = (size_t)x0;
@@ -3742,7 +3753,6 @@ void build_required_image_formats(cl_mem_flags flags,
 		{ CL_RG, CL_FLOAT },
 		{ CL_RGBA, CL_SNORM_INT8 },
 		{ CL_RGBA, CL_SNORM_INT16 },
-		{ CL_sRGBA, CL_UNORM_INT8 },
 	};
 
 	/*
@@ -3763,7 +3773,7 @@ void build_required_image_formats(cl_mem_flags flags,
 	*/
 	static std::vector<cl_image_format> fullProf2XSRGBFormats
 	{
-		{CL_sRGB, CL_UNORM_INT8},
+		{ CL_sRGBA, CL_UNORM_INT8 },
 	};
 
 	// Embedded profile

@@ -139,12 +139,6 @@ static const char *thread_dimension_kernel_code_atomic_long =
 "        if (error)\n"
 "                atom_or(&dst[t_address-start_address], error);\n"
 "\n"
-"}\n"
-"\n"
-"__kernel void clear_memory(__global uint *dst)\n\n"
-"{\n"
-"            dst[get_global_id(0)] = 0;\n"
-"\n"
 "}\n";
 
 static const char *thread_dimension_kernel_code_not_atomic_long =
@@ -167,12 +161,6 @@ static const char *thread_dimension_kernel_code_not_atomic_long =
 "                dst[t_address-start_address]++;\n"
 "        if (error)\n"
 "                dst[t_address-start_address]|=error;\n"
-"\n"
-"}\n"
-"\n"
-"__kernel void clear_memory(__global uint *dst)\n\n"
-"{\n"
-"            dst[get_global_id(0)] = 0;\n"
 "\n"
 "}\n";
 
@@ -199,12 +187,6 @@ static const char *thread_dimension_kernel_code_atomic_not_long =
 "       if (error)\n"
 "               atom_or(&dst[t_address-start_address], error);\n"
 "\n"
-"}\n"
-"\n"
-"__kernel void clear_memory(__global uint *dst)\n\n"
-"{\n"
-"           dst[get_global_id(0)] = 0;\n"
-"\n"
 "}\n";
 
 static const char *thread_dimension_kernel_code_not_atomic_not_long =
@@ -228,19 +210,7 @@ static const char *thread_dimension_kernel_code_not_atomic_not_long =
 "       if (error)\n"
 "               dst[t_address-start_address]|=error;\n"
 "\n"
-"}\n"
-"\n"
-"__kernel void clear_memory(__global uint *dst)\n\n"
-"{\n"
-"           dst[get_global_id(0)] = 0;\n"
-"\n"
 "}\n";
-
-
-
-static size_t max_workgroup_size_for_clear_kernel;
-cl_kernel clear_memory_kernel = 0;
-
 
 char dim_str[128];
 char *
@@ -307,31 +277,19 @@ int run_test(cl_context context, cl_command_queue queue, cl_kernel kernel, cl_me
     while (end_valid_memory_address <= last_memory_address)
     {
         int err;
-        // Clear the memory
-        //    // Manually -- much slower on the GPU
-        //    memset((void*)data, 0, memory_size);
-        //    err = clWriteArray(context, array, 0, 0, memory_size, data, NULL);
-        //    if (err != CL_SUCCESS) {
-        //      log_error("Failed to write to data array: %d\n", err);
-        //      free(data);
-        //      return -4;
-        //    }
-        // In a kernel
-        err = clSetKernelArg(clear_memory_kernel, 0, sizeof(array), &array);
+        const int fill_pattern = 0x0;
+        err = clEnqueueFillBuffer(queue, 
+                                  array, 
+                                  (void*)&fill_pattern, 
+                                  sizeof(fill_pattern), 
+                                  0, 
+                                  memory_size, 
+                                  0, 
+                                  NULL, 
+                                  NULL);
         if (err != CL_SUCCESS) {
-            print_error( err, "Failed to set args for clear_memory_kernel to clear the memory between runs");
-            return -4;
-        }
-        size_t global[3] = {1,0,0};
-        global[0] = (cl_uint)(memory_size/sizeof(cl_uint));
-        size_t local[3] = {1,0,0};
-        local[0] = max_workgroup_size_for_clear_kernel;
-        while( global[0] % local[0] ) //make sure that global[0] is evenly divided by local[0]. Will stop at 1 in worst case.
-            local[0]--;
-        err = clEnqueueNDRangeKernel(queue, clear_memory_kernel, 1, NULL, global, local, 0, NULL, NULL);
-        if (err != CL_SUCCESS) {
-            print_error( err, "Failed to execute clear_memory_kernel to clear the memory between runs");
-            return -4;
+            print_error( err, "Failed to set fill buffer.");
+            return -3;
         }
 
         cl_ulong start_valid_index = start_valid_memory_address/sizeof(cl_uint);
@@ -513,13 +471,6 @@ test_thread_dimensions(cl_device_id device, cl_context context, cl_command_queue
     err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(max_local_workgroup_size), max_local_workgroup_size, NULL);
     test_error(err, "clGetDeviceInfo failed for CL_DEVICE_MAX_WORK_ITEM_SIZES");
 
-    clear_memory_kernel = clCreateKernel(program, "clear_memory", &err);
-    if (err)
-    {
-        log_error("clCreateKernel failed: %d\n", err);
-        return -1;
-    }
-
     // Get the maximum sizes supported by this device
     size_t max_workgroup_size = 0;
     cl_ulong max_allocation = 0;
@@ -528,9 +479,6 @@ test_thread_dimensions(cl_device_id device, cl_context context, cl_command_queue
 
     err = get_maximums(kernel, context,
                        &max_workgroup_size, &max_allocation, &max_physical);
-
-    err = get_maximums(clear_memory_kernel, context,
-                       &max_workgroup_size_for_clear_kernel, &max_allocation, &max_physical);
 
     // Make sure we don't try to allocate more than half the physical memory present.
     if (max_allocation > (max_physical/2)) {
@@ -820,7 +768,6 @@ test_thread_dimensions(cl_device_id device, cl_context context, cl_command_queue
                             errors++;
                             clReleaseMemObject(array);
                             clReleaseKernel(kernel);
-                            clReleaseKernel(clear_memory_kernel);
                             clReleaseProgram(program);
                             free_mtdata(d);
                             return -1;
@@ -862,7 +809,6 @@ test_thread_dimensions(cl_device_id device, cl_context context, cl_command_queue
     free_mtdata(d);
     clReleaseMemObject(array);
     clReleaseKernel(kernel);
-    clReleaseKernel(clear_memory_kernel);
     clReleaseProgram(program);
     if (errors)
         log_error("%d total errors.\n", errors);

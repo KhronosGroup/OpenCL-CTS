@@ -95,30 +95,8 @@ test_status InitCL( cl_device_id device )
         gDeviceFrequency = 1;
 
     // Check extensions
-    size_t extSize = 0;
-    int hasDouble = 0;
-    if((error = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, 0, NULL, &extSize)))
-    {   vlog_error( "Unable to get device extension string to see if double present. (%d) \n", error ); }
-    else
-    {
-        char *ext = (char *)malloc( extSize );
-        if( NULL == ext )
-        { vlog_error( "malloc failed at %s:%d\nUnable to determine if double present.\n", __FILE__, __LINE__ ); }
-        else
-        {
-            if((error = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, extSize, ext, NULL)))
-            {    vlog_error( "Unable to get device extension string to see if double present. (%d) \n", error ); }
-            else
-            {
-                if( strstr( ext, "cl_khr_fp64" ))
-                    hasDouble = 1;
-            }
-            free(ext);
-        }
-    }
+    int hasDouble = is_extension_available(device, "cl_khr_fp64");
     gTestDouble ^= hasDouble;
-
-
 
     //detect whether profile of the device is embedded
     char profile[64] = "";

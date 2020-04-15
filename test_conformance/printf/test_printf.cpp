@@ -366,35 +366,7 @@ static bool isLongSupported(cl_device_id device_id)
 
     if(!strcmp("EMBEDDED_PROFILE",profileType.get()))
     {
-        // Device extention
-        status = clGetDeviceInfo(
-            device_id,
-            CL_DEVICE_EXTENSIONS,
-            0,
-            NULL,
-            &tempSize);
-
-        if(status != CL_SUCCESS)
-        {
-            log_error("*** clGetDeviceInfo FAILED ***\n\n");
-            return false;
-        }
-
-        std::unique_ptr<char[]> devExt(new char[tempSize]);
-        if(devExt == NULL)
-        {
-            log_error("Failed to allocate memory(devExt)");
-            return false;
-        }
-
-        status = clGetDeviceInfo(
-            device_id,
-            CL_DEVICE_EXTENSIONS,
-            sizeof(char) * tempSize,
-            devExt.get(),
-            NULL);
-
-        extSupport  = (strstr(devExt.get(),"cles_khr_int64") != NULL);
+        extSupport = is_extension_available(device_id, "cles_khr_int64");
     }
     return extSupport;
 }
@@ -705,17 +677,19 @@ int test_float_17(cl_device_id deviceID, cl_context context, cl_command_queue qu
 {
     return doTest(gQueue, gContext, TYPE_FLOAT, 17, deviceID);
 }
-int test_float_18(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+
+
+int test_float_limits_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT, 18, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 0, deviceID);
 }
-int test_float_19(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_float_limits_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT, 19, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 1, deviceID);
 }
-int test_float_20(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_float_limits_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT, 20, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 2, deviceID);
 }
 
 
@@ -869,9 +843,10 @@ test_definition test_list[] = {
     ADD_TEST( float_15 ),
     ADD_TEST( float_16 ),
     ADD_TEST( float_17 ),
-    ADD_TEST( float_18 ),
-    ADD_TEST( float_19 ),
-    ADD_TEST( float_20 ),
+
+    ADD_TEST( float_limits_0 ),
+    ADD_TEST( float_limits_1 ),
+    ADD_TEST( float_limits_2 ),
 
     ADD_TEST( octal_0 ),
     ADD_TEST( octal_1 ),
@@ -1029,9 +1004,12 @@ test_status InitCL( cl_device_id device )
 
     PrintArch();
 
-    if( get_device_cl_version(device) < Version(1,2) ) {
-      print_missing_feature(err,"printf");
-      return TEST_FAIL;
+    auto version = get_device_cl_version(device);
+    auto expected_min_version = Version(1, 2);
+    if (version < expected_min_version)
+    {
+        version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
+        return TEST_SKIP;
     }
 
     log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
@@ -1059,6 +1037,9 @@ test_status InitCL( cl_device_id device )
     checkNull(gQueue, "clCreateCommandQueue");
 
     releaseOutputStream(gFd);
+
+    // Generate reference results
+    generateRef(device);
 
     return TEST_PASS;
 }

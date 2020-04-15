@@ -91,7 +91,6 @@ extern int      test_vstore_global(cl_device_id deviceID, cl_context context, cl
 extern int      test_vstore_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_vstore_private(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int      test_explicit_s2v_bool(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_explicit_s2v_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_explicit_s2v_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_explicit_s2v_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

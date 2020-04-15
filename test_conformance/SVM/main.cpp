@@ -198,12 +198,9 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
   cl_uint num_capable_devices = 0;
   for(cl_uint i = 0; i < *num_devices; i++)
   {
-    size_t major = 0;
-    size_t minor = 0;
-    error = get_device_version(devices[i], &major, &minor);
-    test_error(error, "get_device_version failed");
+    Version version = get_device_cl_version(devices[i]);
 
-    if(device_from_harness != devices[i] && major < 2)
+    if(device_from_harness != devices[i] && version < Version(2,0))
     {
       continue;
     }
@@ -282,7 +279,9 @@ const int test_num = ARRAY_SIZE( test_list );
 
 test_status InitCL(cl_device_id device) {
   auto version = get_device_cl_version(device);
-  if (version < Version(2, 0)) {
+  auto expected_min_version = Version(2, 0);
+  if (version < expected_min_version) {
+    version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
     return TEST_SKIP;
   }
 

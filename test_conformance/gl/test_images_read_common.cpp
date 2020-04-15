@@ -253,7 +253,7 @@ int test_cl_image_read( cl_context context, cl_command_queue queue,
 
   programPtr = kernelSource;
   if( create_single_kernel_helper( context, &program, &kernel, 1,
-    (const char **)&programPtr, "sample_test", "-cl-std=CL2.0" ) )
+    (const char **)&programPtr, "sample_test", "" ) )
   {
     return -1;
   }
@@ -278,12 +278,7 @@ int test_cl_image_read( cl_context context, cl_command_queue queue,
   test_error( error, "Unable to create output buffer" );
 
   /* Assign streams and execute */
-  cl_sampler_properties properties[] = {
-    CL_SAMPLER_NORMALIZED_COORDS, CL_FALSE,
-    CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_NONE,
-    CL_SAMPLER_FILTER_MODE, CL_FILTER_NEAREST,
-    0 };
-  clSamplerWrapper sampler = clCreateSamplerWithProperties( context, properties, &error );
+  clSamplerWrapper sampler = clCreateSampler( context, CL_FALSE, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &error );
   test_error( error, "Unable to create sampler" );
 
   error = clSetKernelArg( kernel, 0, sizeof( streams[ 0 ] ), &streams[ 0 ] );

@@ -36,19 +36,21 @@ static test_status checkSubGroupsExtension(cl_device_id device)
     // The extension is optional in OpenCL 2.0 (minimum required version) and
     // required in later versions.
     auto version = get_device_cl_version(device);
+    auto expected_min_version = Version(2, 0);
 
-    if (version < Version(2, 0)) {
+    if (version < expected_min_version) {
+        version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
         return TEST_SKIP;
     }
 
     bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
 
-    if ((version == Version(2, 0)) && !hasExtension) {
+    if ((version == expected_min_version) && !hasExtension) {
         log_info("Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
         return TEST_SKIP;
     }
 
-    if ((version > Version(2, 0)) && !hasExtension) {
+    if ((version > expected_min_version) && !hasExtension) {
         log_error("'cl_khr_subgroups' is a required extension, failing.\n");
         return TEST_FAIL;
     }

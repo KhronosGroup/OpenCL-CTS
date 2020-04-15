@@ -105,6 +105,7 @@ test_definition test_list[] = {
     ADD_TEST( retain_queue_multiple ),
     ADD_TEST( retain_mem_object_single ),
     ADD_TEST( retain_mem_object_multiple ),
+    ADD_TEST( retain_mem_object_set_kernel_arg ),
     ADD_TEST( min_data_type_align_size_alignment ),
 
     ADD_TEST( mem_object_destructor_callback ),

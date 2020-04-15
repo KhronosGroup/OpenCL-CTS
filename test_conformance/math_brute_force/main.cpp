@@ -1082,40 +1082,6 @@ static int ParseArgs( int argc, const char **argv )
       gWimpyMode = 1;
     }
 
-#if defined( __APPLE__ )
-    #if defined( __i386__ ) || defined( __x86_64__ )
-        #define    kHasSSE3                0x00000008
-        #define kHasSupplementalSSE3    0x00000100
-        #define    kHasSSE4_1              0x00000400
-        #define    kHasSSE4_2              0x00000800
-        /* check our environment for a hint to disable SSE variants */
-        {
-            const char *env = getenv( "CL_MAX_SSE" );
-            if( env )
-            {
-                extern int _cpu_capabilities;
-                int mask = 0;
-                if( 0 == strcasecmp( env, "SSE4.1" ) )
-                    mask = kHasSSE4_2;
-                else if( 0 == strcasecmp( env, "SSSE3" ) )
-                    mask = kHasSSE4_2 | kHasSSE4_1;
-                else if( 0 == strcasecmp( env, "SSE3" ) )
-                    mask = kHasSSE4_2 | kHasSSE4_1 | kHasSupplementalSSE3;
-                else if( 0 == strcasecmp( env, "SSE2" ) )
-                    mask = kHasSSE4_2 | kHasSSE4_1 | kHasSupplementalSSE3 | kHasSSE3;
-                else
-                {
-                    vlog_error( "Error: Unknown CL_MAX_SSE setting: %s\n", env );
-                    return -2;
-                }
-
-                vlog( "*** Environment: CL_MAX_SSE = %s ***\n", env );
-                _cpu_capabilities &= ~mask;
-            }
-        }
-    #endif
-#endif   /* __APPLE__ */
-
     vlog( "\nTest binary built %s %s\n", __DATE__, __TIME__ );
 
     PrintArch();
@@ -1201,98 +1167,77 @@ test_status InitCL( cl_device_id device )
         gComputeDevices = 1;
 
     // Check extensions
-    size_t extSize = 0;
-    if((error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, 0, NULL, &extSize)))
-    {   vlog_error( "Unable to get device extension string to see if double present. (%d) \n", error ); }
-    else
+    if(is_extension_available(gDevice, "cl_khr_fp64"))
     {
-        char *ext = (char*) malloc( extSize );
-        if( NULL == ext )
-        { vlog_error( "malloc failed at %s:%d\nUnable to determine if double present.\n", __FILE__, __LINE__ ); }
-        else
+        gHasDouble ^= 1;
+#if defined( CL_DEVICE_DOUBLE_FP_CONFIG )
+        if( (error = clGetDeviceInfo(gDevice, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof(gDoubleCapabilities), &gDoubleCapabilities, NULL)))
         {
-            if((error = clGetDeviceInfo( gDevice, CL_DEVICE_EXTENSIONS, extSize, ext, NULL)))
-            {    vlog_error( "Unable to get device extension string to see if double present. (%d) \n", error ); }
-            else
-            {
-                if( strstr( ext, "cl_khr_fp64" ))
-                {
-                    gHasDouble ^= 1;
-
-#if defined( CL_DEVICE_DOUBLE_FP_CONFIG )
-                    if( (error = clGetDeviceInfo(gDevice, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof(gDoubleCapabilities), &gDoubleCapabilities, NULL)))
-                    {
-                        vlog_error( "ERROR: Unable to get device CL_DEVICE_DOUBLE_FP_CONFIG. (%d)\n", error );
-                        return TEST_FAIL;
-                    }
-
-                    if( DOUBLE_REQUIRED_FEATURES != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES) )
-                    {
-                        char list[300] = "";
-                        if( 0 == (gDoubleCapabilities & CL_FP_FMA) )
-                            strncat( list, "CL_FP_FMA, ", sizeof( list )-1 );
-                        if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_NEAREST) )
-                            strncat( list, "CL_FP_ROUND_TO_NEAREST, ", sizeof( list )-1 );
-                        if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_ZERO) )
-                            strncat( list, "CL_FP_ROUND_TO_ZERO, ", sizeof( list )-1 );
-                        if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_INF) )
-                            strncat( list, "CL_FP_ROUND_TO_INF, ", sizeof( list )-1 );
-                        if( 0 == (gDoubleCapabilities & CL_FP_INF_NAN) )
-                            strncat( list, "CL_FP_INF_NAN, ", sizeof( list )-1 );
-                        if( 0 == (gDoubleCapabilities & CL_FP_DENORM) )
-                            strncat( list, "CL_FP_DENORM, ", sizeof( list )-1 );
-                        vlog_error( "ERROR: required double features are missing: %s\n", list );
-
-                        free(ext);
-                        return TEST_FAIL;
-                    }
-#else
-                    vlog_error( "FAIL: device says it supports cl_khr_fp64 but CL_DEVICE_DOUBLE_FP_CONFIG is not in the headers!\n" );
-                    return TEST_FAIL;
-#endif
-                }
-#if defined( __APPLE__ )
-                else if( strstr( ext, "cl_APPLE_fp64_basic_ops" ))
-                {
-                    gHasBasicDouble ^= 1;
-
-#if defined( CL_DEVICE_DOUBLE_FP_CONFIG )
-                    if( (error = clGetDeviceInfo(gDevice, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof(gDoubleCapabilities), &gDoubleCapabilities, NULL)))
-                    {
-                        vlog_error( "ERROR: Unable to get device CL_DEVICE_DOUBLE_FP_CONFIG. (%d)\n", error );
-                        return TEST_FAIL;
-                    }
-
-                    if( DOUBLE_REQUIRED_FEATURES != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES) )
-                    {
-                        char list[300] = "";
-                        if( 0 == (gDoubleCapabilities & CL_FP_FMA) )
-                            strncat( list, "CL_FP_FMA, ", sizeof( list ) );
-                        if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_NEAREST) )
-                            strncat( list, "CL_FP_ROUND_TO_NEAREST, ", sizeof( list ) );
-                        if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_ZERO) )
-                            strncat( list, "CL_FP_ROUND_TO_ZERO, ", sizeof( list ) );
-                        if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_INF) )
-                            strncat( list, "CL_FP_ROUND_TO_INF, ", sizeof( list ) );
-                        if( 0 == (gDoubleCapabilities & CL_FP_INF_NAN) )
-                            strncat( list, "CL_FP_INF_NAN, ", sizeof( list ) );
-                        if( 0 == (gDoubleCapabilities & CL_FP_DENORM) )
-                            strncat( list, "CL_FP_DENORM, ", sizeof( list ) );
-                        vlog_error( "ERROR: required double features are missing: %s\n", list );
-
-                        free(ext);
-                        return TEST_FAIL;
-                    }
-#else
-                    vlog_error( "FAIL: device says it supports cl_khr_fp64 but CL_DEVICE_DOUBLE_FP_CONFIG is not in the headers!\n" );
-                    return TEST_FAIL;
-#endif
-                }
-#endif /* __APPLE__ */
-            }
-            free(ext);
+            vlog_error( "ERROR: Unable to get device CL_DEVICE_DOUBLE_FP_CONFIG. (%d)\n", error );
+            return TEST_FAIL;
         }
+
+        if( DOUBLE_REQUIRED_FEATURES != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES) )
+        {
+            char list[300] = "";
+            if( 0 == (gDoubleCapabilities & CL_FP_FMA) )
+                strncat( list, "CL_FP_FMA, ", sizeof( list )-1 );
+            if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_NEAREST) )
+                strncat( list, "CL_FP_ROUND_TO_NEAREST, ", sizeof( list )-1 );
+            if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_ZERO) )
+                strncat( list, "CL_FP_ROUND_TO_ZERO, ", sizeof( list )-1 );
+            if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_INF) )
+                strncat( list, "CL_FP_ROUND_TO_INF, ", sizeof( list )-1 );
+            if( 0 == (gDoubleCapabilities & CL_FP_INF_NAN) )
+                strncat( list, "CL_FP_INF_NAN, ", sizeof( list )-1 );
+            if( 0 == (gDoubleCapabilities & CL_FP_DENORM) )
+                strncat( list, "CL_FP_DENORM, ", sizeof( list )-1 );
+            vlog_error( "ERROR: required double features are missing: %s\n", list );
+
+            return TEST_FAIL;
+        }
+#else
+        vlog_error( "FAIL: device says it supports cl_khr_fp64 but CL_DEVICE_DOUBLE_FP_CONFIG is not in the headers!\n" );
+        return TEST_FAIL;
+#endif
     }
+#if defined( __APPLE__ )
+    else if(is_extension_available(gDevice, "cl_APPLE_fp64_basic_ops" ))
+    {
+        gHasBasicDouble ^= 1;
+
+#if defined( CL_DEVICE_DOUBLE_FP_CONFIG )
+        if( (error = clGetDeviceInfo(gDevice, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof(gDoubleCapabilities), &gDoubleCapabilities, NULL)))
+        {
+            vlog_error( "ERROR: Unable to get device CL_DEVICE_DOUBLE_FP_CONFIG. (%d)\n", error );
+            return TEST_FAIL;
+        }
+
+        if( DOUBLE_REQUIRED_FEATURES != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES) )
+        {
+            char list[300] = "";
+            if( 0 == (gDoubleCapabilities & CL_FP_FMA) )
+                strncat( list, "CL_FP_FMA, ", sizeof( list ) );
+            if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_NEAREST) )
+                strncat( list, "CL_FP_ROUND_TO_NEAREST, ", sizeof( list ) );
+            if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_ZERO) )
+                strncat( list, "CL_FP_ROUND_TO_ZERO, ", sizeof( list ) );
+            if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_INF) )
+                strncat( list, "CL_FP_ROUND_TO_INF, ", sizeof( list ) );
+            if( 0 == (gDoubleCapabilities & CL_FP_INF_NAN) )
+                strncat( list, "CL_FP_INF_NAN, ", sizeof( list ) );
+            if( 0 == (gDoubleCapabilities & CL_FP_DENORM) )
+                strncat( list, "CL_FP_DENORM, ", sizeof( list ) );
+            vlog_error( "ERROR: required double features are missing: %s\n", list );
+
+            return TEST_FAIL;
+        }
+#else
+        vlog_error( "FAIL: device says it supports cl_khr_fp64 but CL_DEVICE_DOUBLE_FP_CONFIG is not in the headers!\n" );
+        return TEST_FAIL;
+#endif
+    }
+#endif /* __APPLE__ */
 
     configSize = sizeof( gDeviceFrequency );
     if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY, configSize, &gDeviceFrequency, NULL )) )
