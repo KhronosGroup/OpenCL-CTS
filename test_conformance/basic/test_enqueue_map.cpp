@@ -230,7 +230,7 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command
                       (int)((q / 4) / imageSize), (int)finalData[q],
                       (int)referenceData[q]);
             return -1;
-      }
+        }
     }
   } // cl_mem_flags
 
