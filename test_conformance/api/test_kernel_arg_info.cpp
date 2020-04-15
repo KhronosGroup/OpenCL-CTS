@@ -5585,15 +5585,14 @@ const char * long_arg_info[][72] = {
 template<typename arg_info_t>
 int test(cl_device_id deviceID, cl_context context, kernel_args_t kernel_args, cl_uint lines_count, arg_info_t arg_info, size_t total_kernels_in_program) {
 
-  cl_program program;
-    cl_kernel kernel;
     const size_t max_name_len = 512;
     cl_char name[ max_name_len ];
     cl_uint arg_count, numArgs;
     size_t i, j, size;
     int error;
 
-  program = clCreateProgramWithSource( context, lines_count, kernel_args, NULL, &error );
+    clProgramWrapper program =
+    clCreateProgramWithSource(context, lines_count, kernel_args, NULL, &error);
     if ( program == NULL || error != CL_SUCCESS )
     {
         print_error( error, "Unable to create required arguments kernel program" );
@@ -5704,7 +5703,7 @@ int test(cl_device_id deviceID, cl_context context, kernel_args_t kernel_args, c
     {
         int kernel_rc = 0;
         const char* kernel_name = arg_info[ i ][ 0 ];
-        kernel = clCreateKernel( program, kernel_name, &error );
+        clKernelWrapper kernel = clCreateKernel(program, kernel_name, &error);
         if( kernel == NULL || error != CL_SUCCESS )
         {
             log_error( "ERROR: Could not get kernel: %s\n", kernel_name );
@@ -5824,8 +5823,6 @@ int test(cl_device_id deviceID, cl_context context, kernel_args_t kernel_args, c
 
 int    test_get_kernel_arg_info( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    clProgramWrapper program;
-    clKernelWrapper kernel;
     size_t size;
     int error;
 
