@@ -30,12 +30,12 @@ static std::string get_device_info_string(cl_device_id device,
     size_t size = 0;
     int err;
 
-    if ((err = clGetDeviceInfo(device, param_name, 0, NULL, &size)) != CL_SUCCESS)
+    if ((err = clGetDeviceInfo(device, param_name, 0, NULL, &size))
+        != CL_SUCCESS
+        || size == 0)
     {
         throw std::runtime_error("clGetDeviceInfo failed\n");
     }
-
-    if (0 == size) return "";
 
     std::vector<char> info(size);
 

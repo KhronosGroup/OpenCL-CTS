@@ -357,16 +357,7 @@ static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint de
                                      const CompilationMode compilationMode, std::string &clDeviceInfo)
 {
     std::string extensionsString = get_device_extensions_string(device);
-    if (extensionsString.empty())
-    {
-        return -1;
-    }
-
     std::string versionString = get_device_version_string(device);
-    if (versionString.empty())
-    {
-        return -1;
-    }
 
     std::ostringstream clDeviceInfoStream;
     std::string file_type = get_offline_compilation_file_type_str(compilationMode);
@@ -378,11 +369,6 @@ static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint de
     if (compilationMode == kSpir_v)
     {
         std::string ilVersionString = get_device_il_version_string(device);
-        if (ilVersionString.empty())
-        {
-            return -1;
-        }
-
         clDeviceInfoStream << "CL_DEVICE_IL_VERSION=\"" << ilVersionString << "\"" << std::endl;
     }
     clDeviceInfoStream << "CL_DEVICE_VERSION=\"" << versionString << "\"" << std::endl;
