@@ -356,21 +356,8 @@ static std::string get_khronos_compiler_command(const cl_uint device_address_spa
 static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint device_address_space_size,
                                      const CompilationMode compilationMode, std::string &clDeviceInfo)
 {
-    char *extensionsString = alloc_and_get_device_extensions_string(device);
-    if ( NULL == extensionsString )
-    {
-        return -1;
-    }
-
-    BufferOwningPtr<char> extensionsStringBuf(extensionsString);
-
-    char *versionString = alloc_and_get_device_version_string(device);
-    if ( NULL == versionString )
-    {
-        return -1;
-    }
-
-    BufferOwningPtr<char> versionStringBuf(versionString);
+    std::string extensionsString = get_device_extensions_string(device);
+    std::string versionString = get_device_version_string(device);
 
     std::ostringstream clDeviceInfoStream;
     std::string file_type = get_offline_compilation_file_type_str(compilationMode);
@@ -381,14 +368,7 @@ static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint de
     * that will be loaded with clCreateProgramWithIL() */
     if (compilationMode == kSpir_v)
     {
-        char *ilVersionString = alloc_and_get_device_il_version_string(device);
-        if ( NULL == ilVersionString )
-        {
-            return -1;
-        }
-
-        BufferOwningPtr<char> versionStringBuf(ilVersionString);
-
+        std::string ilVersionString = get_device_il_version_string(device);
         clDeviceInfoStream << "CL_DEVICE_IL_VERSION=\"" << ilVersionString << "\"" << std::endl;
     }
     clDeviceInfoStream << "CL_DEVICE_VERSION=\"" << versionString << "\"" << std::endl;
