@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 
@@ -51,7 +52,14 @@ static std::string get_device_info_string(cl_device_id device,
 int is_extension_available(cl_device_id device, const char *extensionName)
 {
     std::string extString = get_device_extensions_string(device);
-    return extString.find(extensionName) != std::string::npos;
+    std::istringstream ss(extString);
+    while (ss)
+    {
+        std::string found;
+        ss >> found;
+        if (found == extensionName) return true;
+    }
+    return false;
 }
 
 /* Returns a string containing the supported extensions list for a device. */
