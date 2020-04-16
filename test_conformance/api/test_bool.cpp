@@ -38,8 +38,8 @@ const char *kernel_with_bool[] = {
 int test_bool_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
 
-    cl_program program;
-    cl_kernel kernel;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
 
     int err = create_single_kernel_helper(context,
                       &program,
