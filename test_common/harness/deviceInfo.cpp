@@ -23,8 +23,8 @@
 
 /* Helper to return a string containing device information for the specified
  * device info parameter. */
-static std::string get_device_info(cl_device_id device,
-                                   cl_device_info param_name)
+static std::string get_device_info_string(cl_device_id device,
+                                          cl_device_info param_name)
 {
     size_t size = 0;
     int err;
@@ -57,17 +57,17 @@ int is_extension_available(cl_device_id device, const char *extensionName)
 /* Returns a string containing the supported extensions list for a device. */
 std::string get_device_extensions_string(cl_device_id device)
 {
-    return get_device_info(device, CL_DEVICE_EXTENSIONS);
+    return get_device_info_string(device, CL_DEVICE_EXTENSIONS);
 }
 
 /* Returns a string containing the supported IL version(s) for a device. */
 std::string get_device_il_version_string(cl_device_id device)
 {
-    return get_device_info(device, CL_DEVICE_IL_VERSION);
+    return get_device_info_string(device, CL_DEVICE_IL_VERSION);
 }
 
 /* Returns a string containing the supported OpenCL version for a device. */
 std::string get_device_version_string(cl_device_id device)
 {
-    return get_device_info(device, CL_DEVICE_VERSION);
+    return get_device_info_string(device, CL_DEVICE_VERSION);
 }
