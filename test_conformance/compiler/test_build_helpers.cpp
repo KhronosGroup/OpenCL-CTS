@@ -55,7 +55,7 @@ const char *sample_kernel_code_two_line[] = {
 "\n"
 "}\n" };
 
-size_t sample_two_line_lengths[1];
+size_t sample_two_line_lengths[2];
 
 const char *sample_kernel_code_bad_multi_line[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)",
