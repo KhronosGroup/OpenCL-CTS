@@ -256,6 +256,7 @@ int test_load_discreet_length_source(cl_device_id deviceID, cl_context context, 
     }
 
     /* Now force the length of the third line to skip the actual error */
+    static_assert(num_lines >= 3, "expected at least 3 lines in source");
     line_lengths[2] -= strlen("thisisanerror");
 
     /* Now create a program using the macro function */
