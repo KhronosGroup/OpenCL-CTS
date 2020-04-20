@@ -74,7 +74,7 @@ HarnessD3D11_ExtensionCheck()
     cl_uint num_devices_d3d11 = 0; // Number of devices supporting cl_khr_d3d11_sharing.
     for ( cl_uint i = 0; i < devices.size(); ++ i )
     {
-        if (is_extension_available( devices[i], " cl_khr_d3d11_sharing " ))
+        if (is_extension_available(devices[i], "cl_khr_d3d11_sharing"))
         {
             ++ num_devices_d3d11;
         }
