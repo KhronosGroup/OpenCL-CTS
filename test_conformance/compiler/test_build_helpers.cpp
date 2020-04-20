@@ -26,8 +26,6 @@ const char *sample_kernel_code_single_line[] = {
 "\n"
 "}\n" };
 
-size_t sample_single_line_lengths[1];
-
 const char *sample_kernel_code_multi_line[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)",
 "{",
@@ -36,8 +34,6 @@ const char *sample_kernel_code_multi_line[] = {
 "    dst[tid] = (int)src[tid];",
 "",
 "}" };
-
-size_t sample_multi_line_lengths[ 7 ];
 
 const char *sample_kernel_code_two_line[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
@@ -55,7 +51,6 @@ const char *sample_kernel_code_two_line[] = {
 "\n"
 "}\n" };
 
-size_t sample_two_line_lengths[2];
 
 const char *sample_kernel_code_bad_multi_line[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)",
@@ -66,8 +61,6 @@ const char *sample_kernel_code_bad_multi_line[] = {
 "",
 "}" };
 
-size_t sample_bad_multi_line_lengths[ 7 ];
-
 
 int test_load_program_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -76,11 +69,12 @@ int test_load_program_source(cl_device_id deviceID, cl_context context, cl_comma
     size_t length;
     char *buffer;
 
-    /* Preprocess: calc the length of each source file line */
-    sample_single_line_lengths[ 0 ] = strlen( sample_kernel_code_single_line[ 0 ] );
+    /* Preprocess: calc the length of the source file line */
+    size_t line_length = strlen(sample_kernel_code_single_line[0]);
 
     /* New OpenCL API only has one entry point, so go ahead and just try it */
-    program = clCreateProgramWithSource( context, 1, sample_kernel_code_single_line, sample_single_line_lengths, &error);
+    program = clCreateProgramWithSource(
+        context, 1, sample_kernel_code_single_line, &line_length, &error);
     test_error( error, "Unable to create reference program" );
 
     /* Now get the source and compare against our original */
@@ -88,9 +82,11 @@ int test_load_program_source(cl_device_id deviceID, cl_context context, cl_comma
     test_error( error, "Unable to get length of first program source" );
 
     // Note: according to spec section 5.4.5, the length returned should include the null terminator
-    if( length != sample_single_line_lengths[0] + 1 )
+    if (length != line_length + 1)
     {
-        log_error( "ERROR: Length of program (%ld) does not match reference length (%ld)!\n", length, sample_single_line_lengths[0] + 1  );
+        log_error("ERROR: Length of program (%ld) does not match reference "
+                  "length (%ld)!\n",
+                  length, line_length + 1);
         return -1;
     }
 
@@ -117,15 +113,19 @@ int test_load_multistring_source(cl_device_id deviceID, cl_context context, cl_c
 
     int i;
 
+    constexpr int num_lines = ARRAY_SIZE(sample_kernel_code_multi_line);
 
     /* Preprocess: calc the length of each source file line */
-    for( i = 0; i < 7; i++ )
+    size_t line_lengths[num_lines];
+    for (i = 0; i < num_lines; i++)
     {
-        sample_multi_line_lengths[ i ] = strlen( sample_kernel_code_multi_line[ i ] );
+        line_lengths[i] = strlen(sample_kernel_code_multi_line[i]);
     }
 
     /* Create another program using the macro function */
-    program = clCreateProgramWithSource( context, 7, sample_kernel_code_multi_line, sample_multi_line_lengths, &error );
+    program = clCreateProgramWithSource(context, num_lines,
+                                        sample_kernel_code_multi_line,
+                                        line_lengths, &error);
     if( program == NULL )
     {
         log_error( "ERROR: Unable to create reference program!\n" );
@@ -150,15 +150,18 @@ int test_load_two_kernel_source(cl_device_id deviceID, cl_context context, cl_co
 
     int i;
 
+    constexpr int num_lines = ARRAY_SIZE(sample_kernel_code_two_line);
 
     /* Preprocess: calc the length of each source file line */
-    for( i = 0; i < 2; i++ )
+    size_t line_lengths[num_lines];
+    for (i = 0; i < num_lines; i++)
     {
-        sample_two_line_lengths[ i ] = strlen( sample_kernel_code_two_line[ i ] );
+        line_lengths[i] = strlen(sample_kernel_code_two_line[i]);
     }
 
     /* Now create a program using the macro function */
-    program = clCreateProgramWithSource( context, 2, sample_kernel_code_two_line, sample_two_line_lengths, &error );
+    program = clCreateProgramWithSource(
+        context, num_lines, sample_kernel_code_two_line, line_lengths, &error);
     if( program == NULL )
     {
         log_error( "ERROR: Unable to create two-kernel program!\n" );
@@ -211,8 +214,11 @@ int test_load_null_terminated_multi_line_source(cl_device_id deviceID, cl_contex
     cl_program program;
 
 
+    int num_lines = ARRAY_SIZE(sample_kernel_code_multi_line);
+
     /* Now create a program using the macro function */
-    program = clCreateProgramWithSource( context, 7, sample_kernel_code_multi_line, NULL, &error );
+    program = clCreateProgramWithSource(
+        context, num_lines, sample_kernel_code_multi_line, NULL, &error);
     if( program == NULL )
     {
         log_error( "ERROR: Unable to create null-terminated program!" );
@@ -240,18 +246,22 @@ int test_load_discreet_length_source(cl_device_id deviceID, cl_context context, 
 
     int i;
 
+    constexpr int num_lines = ARRAY_SIZE(sample_kernel_code_bad_multi_line);
 
     /* Preprocess: calc the length of each source file line */
-    for( i = 0; i < 7; i++ )
+    size_t line_lengths[num_lines];
+    for (i = 0; i < num_lines; i++)
     {
-        sample_bad_multi_line_lengths[ i ] = strlen( sample_kernel_code_bad_multi_line[ i ] );
+        line_lengths[i] = strlen(sample_kernel_code_bad_multi_line[i]);
     }
 
     /* Now force the length of the third line to skip the actual error */
-    sample_bad_multi_line_lengths[2] -= strlen("thisisanerror");
+    line_lengths[2] -= strlen("thisisanerror");
 
     /* Now create a program using the macro function */
-    program = clCreateProgramWithSource( context, 7, sample_kernel_code_bad_multi_line, sample_bad_multi_line_lengths, &error );
+    program = clCreateProgramWithSource(context, num_lines,
+                                        sample_kernel_code_bad_multi_line,
+                                        line_lengths, &error);
     if( program == NULL )
     {
         log_error( "ERROR: Unable to create null-terminated program!" );
@@ -277,17 +287,23 @@ int test_load_null_terminated_partial_multi_line_source(cl_device_id deviceID, c
     cl_program program;
     int i;
 
+    constexpr int num_lines = ARRAY_SIZE(sample_kernel_code_multi_line);
+
     /* Preprocess: calc the length of each source file line */
-    for( i = 0; i < 7; i++ )
+    size_t line_lengths[num_lines];
+    for (i = 0; i < num_lines; i++)
     {
         if( i & 0x01 )
-            sample_multi_line_lengths[ i ] = 0; /* Should force for null-termination on this line only */
+            line_lengths[i] =
+                0; /* Should force for null-termination on this line only */
         else
-            sample_multi_line_lengths[ i ] = strlen( sample_kernel_code_multi_line[ i ] );
+            line_lengths[i] = strlen(sample_kernel_code_multi_line[i]);
     }
 
     /* Now create a program using the macro function */
-    program = clCreateProgramWithSource( context, 7, sample_kernel_code_multi_line, sample_multi_line_lengths, &error );
+    program = clCreateProgramWithSource(context, num_lines,
+                                        sample_kernel_code_multi_line,
+                                        line_lengths, &error);
     if( program == NULL )
     {
         log_error( "ERROR: Unable to create null-terminated program!" );
