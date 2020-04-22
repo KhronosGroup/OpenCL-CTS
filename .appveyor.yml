@@ -34,7 +34,7 @@ before_build:
           -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin
           -DOPENCL_LIBRARIES="OpenCL"
           -H. -Bbuild_win -A%PLATFORM%
-          -DD3D10_IS_SUPPORTED=ON -DD3D11_IS_SUPPORTED=ON
+          -DD3D10_IS_SUPPORTED=ON -DD3D11_IS_SUPPORTED=ON -DARCH=x86_64
 
 build:
   project: build_win\CLConform.sln
