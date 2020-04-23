@@ -10,6 +10,18 @@ platform:
 configuration:
   - Release
 
+environment:
+  matrix:
+   - SETARCH: i686
+   - SETARCH: x86_64
+
+matrix:
+  exclude:
+    - platform: Win32
+      SETARCH: x86_64
+    - platform: x64
+      SETARCH: i686
+
 before_build:
   # Setup environment:
   - ps: $env:TOP = $env:APPVEYOR_BUILD_FOLDER
@@ -34,7 +46,7 @@ before_build:
           -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin
           -DOPENCL_LIBRARIES="OpenCL"
           -H. -Bbuild_win -A%PLATFORM%
-          -DD3D10_IS_SUPPORTED=ON -DD3D11_IS_SUPPORTED=ON -DARCH=x86_64
+          -DD3D10_IS_SUPPORTED=ON -DD3D11_IS_SUPPORTED=ON -DARCH=%SETARCH%
 
 build:
   project: build_win\CLConform.sln
