@@ -143,63 +143,25 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
 
     image_sampler_data imageSampler;
 
-    /////// float tests ///////
-
-    if ( gTypesToTest & kTestFloat )
+    for (auto test : imageTestTypes)
     {
-        cl_channel_type floatFormats[] = { CL_UNORM_SHORT_565, CL_UNORM_SHORT_555, CL_UNORM_INT_101010,
-#ifdef OBSOLETE_FORAMT
-            CL_UNORM_SHORT_565_REV, CL_UNORM_SHORT_555_REV, CL_UNORM_INT_8888, CL_UNORM_INT_8888_REV, CL_UNORM_INT_101010_REV,
-#endif
-#ifdef CL_SFIXED14_APPLE
-            CL_SFIXED14_APPLE,
-#endif
-            CL_UNORM_INT8, CL_SNORM_INT8,
-            CL_UNORM_INT16, CL_SNORM_INT16, CL_FLOAT, CL_HALF_FLOAT, (cl_channel_type)-1 };
-        if ( filter_formats( formatList, filterFlags, numFormats, floatFormats ) == 0 )
+        if (gTypesToTest & test.type)
         {
-            log_info( "No formats supported for float type\n" );
-        }
-        else
-        {
-            imageSampler.filter_mode = CL_FILTER_NEAREST;
-            ret += test_read_image_formats( device, context, queue, formatList, filterFlags, numFormats, &imageSampler, kFloat, imageType );
+            if (filter_formats(formatList, filterFlags, numFormats,
+                               test.channelTypes)
+                == 0)
+            {
+                log_info("No formats supported for %s type\n", test.name);
+            }
+            else
+            {
+                imageSampler.filter_mode = CL_FILTER_NEAREST;
+                ret += test_read_image_formats(
+                    device, context, queue, formatList, filterFlags, numFormats,
+                    &imageSampler, test.explicitType, imageType);
+            }
         }
     }
-
-    /////// int tests ///////
-    if ( gTypesToTest & kTestInt )
-    {
-        cl_channel_type intFormats[] = { CL_SIGNED_INT8, CL_SIGNED_INT16, CL_SIGNED_INT32, (cl_channel_type)-1 };
-        if ( filter_formats( formatList, filterFlags, numFormats, intFormats ) == 0 )
-        {
-            log_info( "No formats supported for integer type\n" );
-        }
-        else
-        {
-            // Only filter mode we support on int is nearest
-            imageSampler.filter_mode = CL_FILTER_NEAREST;
-            ret += test_read_image_formats( device, context, queue, formatList, filterFlags, numFormats, &imageSampler, kInt, imageType );
-        }
-    }
-
-    /////// uint tests ///////
-
-    if ( gTypesToTest & kTestUInt )
-    {
-        cl_channel_type uintFormats[] = { CL_UNSIGNED_INT8, CL_UNSIGNED_INT16, CL_UNSIGNED_INT32, (cl_channel_type)-1 };
-        if ( filter_formats( formatList, filterFlags, numFormats, uintFormats ) == 0 )
-        {
-            log_info( "No formats supported for unsigned int type\n" );
-        }
-        else
-        {
-            // Only filter mode we support on uint is nearest
-            imageSampler.filter_mode = CL_FILTER_NEAREST;
-            ret += test_read_image_formats( device, context, queue, formatList, filterFlags, numFormats, &imageSampler, kUInt, imageType );
-        }
-    }
-
 
     delete[] filterFlags;
     delete[] formatList;

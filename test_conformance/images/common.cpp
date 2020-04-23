@@ -15,6 +15,49 @@
 //
 #include "common.h"
 
+cl_channel_type floatFormats[] = {
+    CL_UNORM_SHORT_565,
+    CL_UNORM_SHORT_555,
+    CL_UNORM_INT_101010,
+#ifdef OBSOLETE_FORAMT
+    CL_UNORM_SHORT_565_REV,
+    CL_UNORM_SHORT_555_REV,
+    CL_UNORM_INT_8888,
+    CL_UNORM_INT_8888_REV,
+    CL_UNORM_INT_101010_REV,
+#endif
+#ifdef CL_SFIXED14_APPLE
+    CL_SFIXED14_APPLE,
+#endif
+    CL_UNORM_INT8,
+    CL_SNORM_INT8,
+    CL_UNORM_INT16,
+    CL_SNORM_INT16,
+    CL_FLOAT,
+    CL_HALF_FLOAT,
+    (cl_channel_type)-1,
+};
+
+cl_channel_type intFormats[] = {
+    CL_SIGNED_INT8,
+    CL_SIGNED_INT16,
+    CL_SIGNED_INT32,
+    (cl_channel_type)-1,
+};
+
+cl_channel_type uintFormats[] = {
+    CL_UNSIGNED_INT8,
+    CL_UNSIGNED_INT16,
+    CL_UNSIGNED_INT32,
+    (cl_channel_type)-1,
+};
+
+std::array<ImageTestTypes, 3> imageTestTypes = { {
+    { kTestInt, kInt, intFormats, "int" },
+    { kTestUInt, kUInt, uintFormats, "uint" },
+    { kTestFloat, kFloat, floatFormats, "float" },
+} };
+
 const char *convert_image_type_to_string(cl_mem_object_type image_type)
 {
     switch (image_type)
@@ -108,7 +151,7 @@ int get_format_list(cl_context context, cl_mem_object_type imageType,
     test_error(error, "Unable to get count of supported image formats");
 
     outFormatList =
-    (outFormatCount > 0) ? new cl_image_format[outFormatCount] : NULL;
+        (outFormatCount > 0) ? new cl_image_format[outFormatCount] : NULL;
 
     error = clGetSupportedImageFormats(context, flags, imageType,
                                        outFormatCount, outFormatList, NULL);
