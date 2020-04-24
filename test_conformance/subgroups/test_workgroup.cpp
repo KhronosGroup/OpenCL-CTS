@@ -749,8 +749,10 @@ void gen_insts(cl_int *x, cl_int *p, int n)
         // One does a random amount of work, and the other waits for it
         j0 = random_in_range(0, n - 1, gMTdata);
 
-        do j1 = random_in_range(0, n - 1, gMTdata);
-        while (j1 == j0);
+        do
+        {
+            j1 = random_in_range(0, n - 1, gMTdata);
+        } while (j1 == j0);
 
         // Randomly choose a wait value and assign "instructions"
         val = random_in_range(100, 200 + 10 * NUM_LOC, gMTdata);
