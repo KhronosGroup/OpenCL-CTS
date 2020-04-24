@@ -21,23 +21,9 @@ typedef struct
     cl_uint numSubGroups;
 } result_data;
 
-static const char *query_kernel_source =
-    "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n"
-    "\n"
-    "typedef struct {\n"
-    "    uint maxSubGroupSize;\n"
-    "    uint numSubGroups;\n"
-    "} result_data;\n"
-    "\n"
-    "__kernel void query_kernel( __global result_data *outData )\n"
-    "{\n"
-    "    int gid = get_global_id( 0 );\n"
-    "    outData[gid].maxSubGroupSize = get_max_sub_group_size();\n"
-    "    outData[gid].numSubGroups = get_num_sub_groups();\n"
-    "}";
 
-int test_sub_group_info(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+int
+test_sub_group_info(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
     static const size_t gsize0 = 80;
     int i, error;
@@ -210,4 +196,23 @@ int test_sub_group_info(cl_device_id device, cl_context context,
     }
 
     return 0;
+}
+
+int
+test_sub_group_info_core(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements) {
+    gUseCoreSubgroups = true;
+    return test_sub_group_info(device, context, queue, num_elements);
+}
+
+int
+test_sub_group_info_ext(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements) {
+    gUseCoreSubgroups = false;
+    bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
+
+    if (!hasExtension) {
+        log_info("Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
+        return TEST_SKIP;
+    }
+
+    return test_sub_group_info(device, context, queue, num_elements);
 }

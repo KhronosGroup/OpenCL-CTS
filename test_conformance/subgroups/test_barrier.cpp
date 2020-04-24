@@ -139,7 +139,6 @@ template <int Which> struct BAR
     }
 };
 
-
 // Entry point from main
 int test_barrier_functions(cl_device_id device, cl_context context,
                            cl_command_queue queue, int num_elements)
@@ -156,4 +155,23 @@ int test_barrier_functions(cl_device_id device, cl_context context,
         device, context, queue, num_elements, "test_gbar", gbar_source);
 
     return error;
+}
+
+int
+test_barrier_functions_core(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements) {
+    gUseCoreSubgroups = true;
+    return test_barrier_functions(device, context, queue, num_elements);
+}
+
+int
+test_barrier_functions_ext(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements) {
+    gUseCoreSubgroups = false;
+    bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
+
+    if (!hasExtension) {
+        log_info("Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
+        return TEST_SKIP;
+    }
+
+    return test_barrier_functions(device, context, queue, num_elements);
 }

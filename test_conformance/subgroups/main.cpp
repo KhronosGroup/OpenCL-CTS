@@ -23,69 +23,50 @@
 MTdata gMTdata;
 
 test_definition test_list[] = {
-    ADD_TEST(sub_group_info),
-    ADD_TEST(work_item_functions),
-    ADD_TEST(work_group_functions),
-    ADD_TEST(barrier_functions),
+    ADD_TEST_VERSION(sub_group_info_ext, Version(2, 0)),
+    ADD_TEST_VERSION(sub_group_info_core, Version(2, 1)),
+    ADD_TEST_VERSION(work_item_functions_ext, Version(2, 0)),
+    ADD_TEST_VERSION(work_item_functions_core, Version(2, 1)),
+    ADD_TEST_VERSION(work_group_functions_ext, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_functions_core, Version(2, 1)),
+    ADD_TEST_VERSION(barrier_functions_ext, Version(2, 0)),
+    ADD_TEST_VERSION(barrier_functions_core, Version(2, 1))
 };
 
 const int test_num = ARRAY_SIZE(test_list);
 bool gUseCoreSubgroups = false;
 bool gTestIFP = true;
 
-static test_status checkSubGroupsExtension(cl_device_id device)
+static test_status checkIFPSupport(cl_device_id device)
 {
-    // The extension is optional in OpenCL 2.0 (minimum required version) and
-    // required in later versions.
-    auto version = get_device_cl_version(device);
-    auto expected_min_version = Version(2, 0);
-
-    if (version < expected_min_version)
-    {
-        version_expected_info("Test", expected_min_version.to_string().c_str(),
-                              version.to_string().c_str());
-        return TEST_SKIP;
+    cl_uint ifp_supported;
+    cl_uint error;
+    error = clGetDeviceInfo(device, CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
+        sizeof(ifp_supported), &ifp_supported, NULL);
+    if (error != CL_SUCCESS) {
+        print_error(error, "Unable to get CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS capability");
+        return TEST_FAIL;
     }
-
-    bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
-
-    if ((version == expected_min_version) && !hasExtension)
-    {
-        log_info(
-            "Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
-        return TEST_SKIP;
+    //skip testing ifp
+    if (ifp_supported != 1) {
+        log_info("INDEPENDENT FORWARD PROGRESS not supported...\n");
+        gTestIFP = false;
     }
-
-    if ((version > expected_min_version) && !hasExtension)
-    {
-        log_info("'cl_khr_subgroups' not found. Using OpenCL 2.1 core subgroups.\n");
-        gUseCoreSubgroups = true;
-        cl_uint ifp_supported;
-        cl_uint error;
-        error = clGetDeviceInfo(device, CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
-            sizeof(ifp_supported), &ifp_supported, NULL);
-        if (error != CL_SUCCESS) {
-            print_error(error, "Unable to get CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS capability");
-            return TEST_FAIL;
-        }
-        //skip testing ifp
-        if (ifp_supported != 1) {
-            log_info("INDEPENDENT FORWARD PROGRESS not supported...\n");
-            gTestIFP = false;
-        }
-        return TEST_PASS;
+    else {
+        log_info("INDEPENDENT FORWARD PROGRESS supported...\n");
     }
-
     return TEST_PASS;
 }
 
 static test_status InitCL(cl_device_id device)
 {
-
     auto version = get_device_cl_version(device);
     test_status ret = TEST_PASS;
-    if (version >= Version(3, 0))
-    {
+    ret = checkIFPSupport(device);
+    if (ret != TEST_PASS) {
+        return ret;
+    }
+    if (version > Version(2, 2)) {
         cl_uint max_sub_groups;
         int error;
 
@@ -101,10 +82,6 @@ static test_status InitCL(cl_device_id device)
         {
             ret = TEST_SKIP;
         }
-    }
-    else
-    {
-        ret = checkSubGroupsExtension(device);
     }
     return ret;
 }
