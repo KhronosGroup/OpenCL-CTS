@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,11 +30,16 @@ extern MTdata gMTdata;
 extern "C" {
 #endif
 
-extern int test_sub_group_info(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_work_item_functions(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_work_group_functions(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_barrier_functions(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_pipe_functions(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_sub_group_info(cl_device_id device, cl_context context,
+                               cl_command_queue queue, int num_elements);
+extern int test_work_item_functions(cl_device_id device, cl_context context,
+                                    cl_command_queue queue, int num_elements);
+extern int test_work_group_functions(cl_device_id device, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+extern int test_barrier_functions(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements);
+extern int test_pipe_functions(cl_device_id device, cl_context context,
+                               cl_command_queue queue, int num_elements);
 
 #ifdef __cplusplus
 }
