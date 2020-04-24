@@ -298,19 +298,23 @@ int test_work_item_functions(cl_device_id device, cl_context context,
     return 0;
 }
 
-int
-test_work_item_functions_core(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements) {
+int test_work_item_functions_core(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements)
+{
     gUseCoreSubgroups = true;
     return test_work_item_functions(device, context, queue, num_elements);
 }
 
-int
-test_work_item_functions_ext(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements) {
+int test_work_item_functions_ext(cl_device_id device, cl_context context,
+                                 cl_command_queue queue, int num_elements)
+{
     gUseCoreSubgroups = false;
     bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
 
-    if (!hasExtension) {
-        log_info("Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
+    if (!hasExtension)
+    {
+        log_info(
+            "Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
         return TEST_SKIP;
     }
 

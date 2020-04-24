@@ -28,14 +28,31 @@ extern MTdata gMTdata;
 
 extern bool gUseCoreSubgroups;
 extern bool gTestIFP;
-extern int test_sub_group_info_ext(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_sub_group_info_core(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_work_item_functions_ext(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_work_item_functions_core(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_work_group_functions_ext(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_work_group_functions_core(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_barrier_functions_ext(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_barrier_functions_core(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_pipe_functions(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_sub_group_info_ext(cl_device_id device, cl_context context,
+                                   cl_command_queue queue, int num_elements);
+extern int test_sub_group_info_core(cl_device_id device, cl_context context,
+                                    cl_command_queue queue, int num_elements);
+extern int test_work_item_functions_ext(cl_device_id device, cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
+extern int test_work_item_functions_core(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
+extern int test_work_group_functions_ext(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
+extern int test_work_group_functions_core(cl_device_id device,
+                                          cl_context context,
+                                          cl_command_queue queue,
+                                          int num_elements);
+extern int test_barrier_functions_ext(cl_device_id device, cl_context context,
+                                      cl_command_queue queue, int num_elements);
+extern int test_barrier_functions_core(cl_device_id device, cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+extern int test_pipe_functions(cl_device_id device, cl_context context,
+                               cl_command_queue queue, int num_elements);
 
 #endif /*_procs_h*/

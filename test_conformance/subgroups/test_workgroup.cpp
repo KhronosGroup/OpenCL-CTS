@@ -1045,24 +1045,31 @@ int test_work_group_functions(cl_device_id device, cl_context context,
     return error;
 }
 
-int
-test_work_group_functions_core(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements) {
+int test_work_group_functions_core(cl_device_id device, cl_context context,
+                                   cl_command_queue queue, int num_elements)
+{
     gUseCoreSubgroups = true;
     return test_work_group_functions(device, context, queue, num_elements);
 }
 
-int
-test_work_group_functions_ext(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements) {
+int test_work_group_functions_ext(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements)
+{
     gUseCoreSubgroups = false;
     bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
 
-    if (!hasExtension) {
-        log_info("Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
+    if (!hasExtension)
+    {
+        log_info(
+            "Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
         return TEST_SKIP;
     }
-    //ifp only in subgroup functions tests:
-    if (gTestIFP == false) {
-        log_info("Error reason: the extension cl_khr_subgroups requires that Independed forward progress has to be supported by device.\n");
+    // ifp only in subgroup functions tests:
+    if (gTestIFP == false)
+    {
+        log_info(
+            "Error reason: the extension cl_khr_subgroups requires that "
+            "Independed forward progress has to be supported by device.\n");
         return TEST_FAIL;
     }
     return test_work_group_functions(device, context, queue, num_elements);

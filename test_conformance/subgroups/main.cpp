@@ -41,18 +41,25 @@ static test_status checkIFPSupport(cl_device_id device)
 {
     cl_uint ifp_supported;
     cl_uint error;
-    error = clGetDeviceInfo(device, CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
-        sizeof(ifp_supported), &ifp_supported, NULL);
-    if (error != CL_SUCCESS) {
-        print_error(error, "Unable to get CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS capability");
+    error = clGetDeviceInfo(device,
+                            CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
+                            sizeof(ifp_supported), &ifp_supported, NULL);
+    if (error != CL_SUCCESS)
+    {
+        print_error(
+            error,
+            "Unable to get CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS "
+            "capability");
         return TEST_FAIL;
     }
-    //skip testing ifp
-    if (ifp_supported != 1) {
+    // skip testing ifp
+    if (ifp_supported != 1)
+    {
         log_info("INDEPENDENT FORWARD PROGRESS not supported...\n");
         gTestIFP = false;
     }
-    else {
+    else
+    {
         log_info("INDEPENDENT FORWARD PROGRESS supported...\n");
     }
     return TEST_PASS;
@@ -63,10 +70,12 @@ static test_status InitCL(cl_device_id device)
     auto version = get_device_cl_version(device);
     test_status ret = TEST_PASS;
     ret = checkIFPSupport(device);
-    if (ret != TEST_PASS) {
+    if (ret != TEST_PASS)
+    {
         return ret;
     }
-    if (version > Version(2, 2)) {
+    if (version > Version(2, 2))
+    {
         cl_uint max_sub_groups;
         int error;
 
