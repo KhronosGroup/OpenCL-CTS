@@ -52,15 +52,15 @@ public:
 
     size_t getNumTests();
 
-    void addTestClass(baseTestClass *test, const char *testName);
+    void addTestClass(baseTestClass *test, const char *testName, Version version);
     spirvTestsRegistry() {}
 };
 
 template<typename T>
-T* createAndRegister(const char *name)
+T* createAndRegister(const char *name, Version version = Version(2, 1))
 {
     T *testClass = new T();
-    spirvTestsRegistry::getInstance().addTestClass((baseTestClass *)testClass, name);
+    spirvTestsRegistry::getInstance().addTestClass((baseTestClass *)testClass, name, version);
     return testClass;
 }
 
@@ -90,6 +90,31 @@ T* createAndRegister(const char *name)
                     cl_command_queue queue,             \
                     int num_elements)
 
+#define TEST_SPIRV_FUNC_VERSION(name, version)          \
+    extern int test_##name(cl_device_id deviceID,       \
+                           cl_context context,          \
+                           cl_command_queue queue,      \
+                           int num_elements);           \
+    class test_##name##_class  : public baseTestClass   \
+    {                                                   \
+    private:                                            \
+        basefn fn;                                      \
+                                                        \
+    public:                                             \
+    test_##name##_class() : fn(test_##name)             \
+        {                                               \
+        }                                               \
+        basefn getFunction()                            \
+        {                                               \
+            return fn;                                  \
+        }                                               \
+    };                                                  \
+    test_##name##_class *var_##name =                   \
+        createAndRegister<test_##name##_class>(#name, version);  \
+    int test_##name(cl_device_id deviceID,              \
+                    cl_context context,                 \
+                    cl_command_queue queue,             \
+                    int num_elements)
 std::vector<unsigned char> readSPIRV(const char *file_name);
 
 int get_program_with_il(clProgramWrapper &prog,
