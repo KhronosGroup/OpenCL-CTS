@@ -560,7 +560,7 @@ int test_set_kernel_arg_struct_array(cl_device_id deviceID, cl_context context, 
     for( i = 0; i < 10; i++ )
     {
         image_pair[i].A = (cl_int)genrand_int32(d);
-        image_pair[i].A = (cl_int)genrand_int32(d);
+        image_pair[i].B = (cl_int)genrand_int32(d);
     }
     free_mtdata(d); d = NULL;
 
