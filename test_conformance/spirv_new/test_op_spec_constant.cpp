@@ -78,6 +78,14 @@ int test_spec_constant(cl_device_id deviceID, cl_context context,
     err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to build program");
 
+    kernel = clCreateKernel(prog, "spec_const_kernel", &err);
+    SPIRV_CHECK_ERROR(err, "Failed to create kernel");
+
+    err = clSetKernelArg(kernel, 0, sizeof(clMemWrapper), &numbers_buffer);
+    SPIRV_CHECK_ERROR(err, "Failed to set kernel argument inputs_buffer");
+    err = clSetKernelArg(kernel, 1, sizeof(clMemWrapper), &spec_buffer);
+    SPIRV_CHECK_ERROR(err, "Failed to set kernel argument spec_constant_value");
+
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue cl kernel");
     clFinish(queue);
