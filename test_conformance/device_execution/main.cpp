@@ -45,7 +45,7 @@ test_status InitCL(cl_device_id device) {
     return TEST_FAIL;
   }
 
-  if ((max_queues_size == 0) && (version > Version(2,2))) {
+  if ((max_queues_size == 0) && (version >= Version(3,0))) {
     return TEST_SKIP;
   }
 

@@ -958,7 +958,7 @@ int test_generic_ptr_to_host_mem_svm(cl_device_id deviceID, cl_context context, 
     cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_SVM_CAPABILITIES, sizeof(caps), &caps, NULL);
     test_error(error, "clGetDeviceInfo(CL_DEVICE_SVM_CAPABILITIES) failed");
 
-    if ((version < expected_min_version) || (version > Version(2,2) && caps == 0))
+    if ((version < expected_min_version) || (version >= Version(3,0) && caps == 0))
         return TEST_SKIPPED_ITSELF;
 
     if (caps & CL_DEVICE_SVM_COARSE_GRAIN_BUFFER) {

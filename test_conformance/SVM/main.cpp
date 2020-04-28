@@ -294,7 +294,7 @@ test_status InitCL(cl_device_id device) {
     return TEST_FAIL;
   }
 
-  if ((svm_caps == 0) && (version > Version(2,2))) {
+  if ((svm_caps == 0) && (version >= Version(3,0))) {
     return TEST_SKIP;
   }
 

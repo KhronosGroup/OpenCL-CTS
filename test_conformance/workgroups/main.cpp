@@ -52,7 +52,7 @@ test_status InitCL(cl_device_id device) {
     }
 #ifdef CL_EXPERIMENTAL
 
-  if(version > Version(2,2)) {
+  if(version >= Version(3,0)) {
     int error;
     cl_bool isSupported;
     error = clGetDeviceInfo(device,
