@@ -103,17 +103,17 @@ int test_spec_constant(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-#define TEST_SPEC_CONSTANT(NAME, type, value, spec_constant_value)                   \
-    TEST_SPIRV_FUNC_VERSION(op_spec_constant_##NAME##_simple, Version(2,1))          \
-    {                                                                                \
-        std::vector<type> inputs(1024, (type)value);                                 \
-        std::vector<type> references(1024, (type)value + (type)spec_constant_value); \
-        return test_spec_constant(deviceID, context, queue,                          \
-                             "op_spec_constant_" #NAME "_simple",                    \
-                             inputs,                                                 \
-                             references,                                             \
-                             (type)spec_constant_value);                             \
-    }                                                                                \
+
+#define TEST_SPEC_CONSTANT(NAME, type, value, spec_constant_value)             \
+    TEST_SPIRV_FUNC_VERSION(op_spec_constant_##NAME##_simple, Version(2, 1))   \
+    {                                                                          \
+        std::vector<type> inputs(1024, (type)value);                           \
+        std::vector<type> references(1024,                                     \
+                                     (type)value + (type)spec_constant_value); \
+        return test_spec_constant(deviceID, context, queue,                    \
+                                  "op_spec_constant_" #NAME "_simple", inputs, \
+                                  references, (type)spec_constant_value);      \
+    }
 
 //type name, type, value init, spec constant value
 TEST_SPEC_CONSTANT(int, cl_int, 20, -11)

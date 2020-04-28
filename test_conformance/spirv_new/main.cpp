@@ -74,7 +74,8 @@ size_t spirvTestsRegistry::getNumTests()
     return testDefinitions.size();
 }
 
-void spirvTestsRegistry::addTestClass(baseTestClass *test, const char *testName, Version version)
+void spirvTestsRegistry::addTestClass(baseTestClass *test, const char *testName,
+                                      Version version)
 {
 
     testClasses.push_back(test);
