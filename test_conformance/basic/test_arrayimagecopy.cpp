@@ -68,6 +68,9 @@ int test_arrayimagecopy_single_format(cl_device_id device, cl_context context, c
   err = clEnqueueReadImage( queue, image, CL_TRUE, origin, region, 0, 0, imgptr, 1, &copyevent, NULL );
   test_error(err, "clEnqueueReadBuffer failed");
 
+  err = clReleaseEvent(copyevent);
+  test_error(err, "clReleaseEvent failed");
+
   if (memcmp(bufptr, imgptr, buffer_size) != 0) {
     log_error( "ERROR: Results did not validate!\n" );
     unsigned char * inchar = (unsigned char*)bufptr;
