@@ -79,7 +79,6 @@ test_status InitCL(cl_device_id device) {
         return TEST_SKIP;
     }
 
-#ifdef CL_EXPERIMENTAL
     if (version >= Version(3,0))
     {
         cl_int error;
@@ -98,7 +97,6 @@ test_status InitCL(cl_device_id device) {
             return TEST_SKIP;
         }
     }
-#endif
 
     return TEST_PASS;
 }
