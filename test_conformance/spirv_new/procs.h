@@ -97,3 +97,7 @@ T* createAndRegister(const char *name, Version version = Version(2, 1))
         createAndRegister<test_##name##_class>(#name, version);                \
     int test_##name(cl_device_id deviceID, cl_context context,                 \
                     cl_command_queue queue, int num_elements)
+
+int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
+                        const cl_context context, const char *prog_name);
+std::vector<unsigned char> readSPIRV(const char *file_name);
