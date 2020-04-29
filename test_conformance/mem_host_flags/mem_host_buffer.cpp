@@ -127,6 +127,7 @@ int test_mem_host_read_only_buffer(cl_device_id deviceID, cl_context context,
   for (int k=0; k<2; k++)
     for (int i=0; i< 2; i++)
     {
+
       err = test_mem_host_read_only_buffer_RW(deviceID, context, queue, blocking[i],
                                               buffer_mem_flags[k], 0, _BUFFER);
       test_error(err, __FUNCTION__);
