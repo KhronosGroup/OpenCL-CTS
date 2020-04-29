@@ -57,8 +57,8 @@ public:
     spirvTestsRegistry() {}
 };
 
-template<typename T>
-T* createAndRegister(const char *name, Version version = Version(2, 1))
+template <typename T>
+T *createAndRegister(const char *name, Version version = Version(2, 1))
 {
     T *testClass = new T();
     spirvTestsRegistry::getInstance().addTestClass((baseTestClass *)testClass,
