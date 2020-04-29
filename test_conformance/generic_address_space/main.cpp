@@ -79,7 +79,7 @@ test_status InitCL(cl_device_id device) {
         return TEST_SKIP;
     }
 
-    if (version >= Version(3,0))
+    if (version >= Version(3, 0))
     {
         cl_int error;
         cl_bool support_generic;

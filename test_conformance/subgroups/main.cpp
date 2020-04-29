@@ -62,7 +62,8 @@ static test_status InitCL(cl_device_id device) {
 
     auto version = get_device_cl_version(device);
     test_status ret = TEST_PASS;
-    if (version >= Version(3, 0)) {
+    if (version >= Version(3, 0))
+    {
         cl_uint max_sub_groups;
         int error;
 
@@ -76,7 +77,9 @@ static test_status InitCL(cl_device_id device) {
         if (max_sub_groups == 0) {
             ret = TEST_SKIP;
         }
-    } else {
+    }
+    else
+    {
         ret = checkSubGroupsExtension(device);
     }
     return ret;
