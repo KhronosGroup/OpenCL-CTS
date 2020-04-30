@@ -11,6 +11,7 @@ set(${MODULE_NAME}_SOURCES
     test_compiler_defines_for_extensions.cpp
     test_pragma_unroll.cpp
     test_unload_platform_compiler.cpp
+    test_feature_macro.cpp
 )
 
 include(../CMakeCommon.txt)

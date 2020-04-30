@@ -237,3 +237,59 @@ extern int test_unload_program_binaries(cl_device_id deviceID,
                                         cl_context context,
                                         cl_command_queue queue,
                                         int num_elements);
+extern int test_feature_macro_atomic_order_acq_rel(cl_device_id deviceID,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int num_elements);
+
+extern int test_feature_macro_atomic_order_seq_cst(cl_device_id deviceID,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int num_elements);
+
+extern int test_feature_macro_atomic_scope_device(cl_device_id deviceID,
+                                                  cl_context context,
+                                                  cl_command_queue queue,
+                                                  int num_elements);
+
+extern int test_feature_macro_atomic_scope_all_devices(cl_device_id deviceID,
+                                                       cl_context context,
+                                                       cl_command_queue queue,
+                                                       int num_elements);
+
+extern int test_feature_macro_3d_image_writes(cl_device_id deviceID,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
+
+extern int test_feature_macro_device_enqueue(cl_device_id deviceID,
+                                             cl_context context,
+                                             cl_command_queue queue,
+                                             int num_elements);
+
+
+extern int test_feature_macro_generic_adress_space(cl_device_id deviceID,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int num_elements);
+
+extern int test_feature_macro_pipes(cl_device_id deviceID, cl_context context,
+                                    cl_command_queue queue, int num_elements);
+
+extern int test_feature_macro_program_scope_global_variables(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements);
+
+extern int test_feature_macro_read_write_images(cl_device_id deviceID,
+                                                cl_context context,
+                                                cl_command_queue queue,
+                                                int num_elements);
+
+extern int test_feature_macro_subgroups(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
+
+extern int test_feature_macro_work_group_collective_functions(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements);

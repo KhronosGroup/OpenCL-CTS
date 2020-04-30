@@ -98,6 +98,21 @@ test_definition test_list[] = {
     ADD_TEST(unload_build_threaded),
     ADD_TEST(unload_build_info),
     ADD_TEST(unload_program_binaries),
+    ADD_TEST_VERSION(feature_macro_atomic_order_acq_rel, Version(3, 0)),
+    ADD_TEST_VERSION(feature_macro_atomic_order_seq_cst, Version(3, 0)),
+    ADD_TEST_VERSION(feature_macro_atomic_scope_device, Version(3, 0)),
+    ADD_TEST_VERSION(feature_macro_atomic_scope_all_devices, Version(3, 0)),
+    ADD_TEST_VERSION(feature_macro_3d_image_writes, Version(3, 0)),
+    ADD_TEST_VERSION(feature_macro_device_enqueue, Version(3, 0)),
+    ADD_TEST_VERSION(feature_macro_generic_adress_space, Version(3, 0)),
+    ADD_TEST_VERSION(feature_macro_pipes, Version(3, 0)),
+    ADD_TEST_VERSION(feature_macro_program_scope_global_variables,
+                     Version(3, 0)),
+    ADD_TEST_VERSION(feature_macro_read_write_images, Version(3, 0)),
+    ADD_TEST_VERSION(feature_macro_subgroups, Version(3, 0)),
+    ADD_TEST_VERSION(feature_macro_work_group_collective_functions,
+                     Version(3, 0))
+
 };
 
 const int test_num = ARRAY_SIZE(test_list);
