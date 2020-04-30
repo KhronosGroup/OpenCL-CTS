@@ -885,6 +885,8 @@ Version get_device_cl_version(cl_device_id device)
         return Version(2, 1);
     else if (strstr(str.data(), "OpenCL 2.2") != NULL)
         return Version(2, 2);
+    else if (strstr(str.data(), "OpenCL 3.0") != NULL)
+        return Version(3, 0);
 
     throw std::runtime_error(std::string("Unknown OpenCL version: ") + str.data());
 }
