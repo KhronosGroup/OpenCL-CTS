@@ -164,18 +164,12 @@ int test_intmath(cl_device_id device, cl_context context,
     size_t datasize = sizeof(T) * num_elements * N;
 
     // Create device buffers.
-    streams[0] =
-        clCreateBuffer(context, CL_MEM_READ_WRITE, datasize, NULL, &err);
-    test_error(err, "clCreateBuffer failed");
-    streams[1] =
-        clCreateBuffer(context, CL_MEM_READ_WRITE, datasize, NULL, &err);
-    test_error(err, "clCreateBuffer failed");
-    streams[2] =
-        clCreateBuffer(context, CL_MEM_READ_WRITE, datasize, NULL, &err);
-    test_error(err, "clCreateBuffer failed");
-    streams[3] =
-        clCreateBuffer(context, CL_MEM_READ_WRITE, datasize, NULL, &err);
-    test_error(err, "clCreateBuffer failed");
+    for (int i = 0; i < ARRAY_SIZE(streams); i++)
+    {
+        streams[i] =
+            clCreateBuffer(context, CL_MEM_READ_WRITE, datasize, NULL, &err);
+        test_error(err, "clCreateBuffer failed");
+    }
 
     // Copy input data to device.
     err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, datasize,
