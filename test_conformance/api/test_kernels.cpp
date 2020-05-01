@@ -28,20 +28,6 @@ const char *sample_single_test_kernel[] = {
 "\n"
 "}\n" };
 
-const char *sample_struct_test_kernel[] = {
-"typedef struct {\n"
-"__global int *A;\n"
-"__global int *B;\n"
-"} input_pair_t;\n"
-"\n"
-"__kernel void sample_test(__global input_pair_t *src, __global int *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = src->A[tid] + src->B[tid];\n"
-"\n"
-"}\n" };
-
 const char *sample_struct_array_test_kernel[] = {
 "typedef struct {\n"
 "int A;\n"
@@ -366,88 +352,6 @@ int test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_c
             return -1;
         }
     }
-
-    return 0;
-}
-
-int test_set_kernel_arg_struct(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    int error;
-    cl_program program;
-    cl_kernel kernel;
-    void            *args[2];
-    cl_mem            outStream;
-    size_t    threads[1], localThreads[1];
-    cl_int outputData[10];
-    int i;
-    cl_int randomTestDataA[10], randomTestDataB[10];
-    MTdata  d;
-
-    struct img_pair_t
-    {
-        cl_mem streamA;
-        cl_mem streamB;
-    } image_pair;
-
-
-    /* Create a kernel to test with */
-    if( create_single_kernel_helper( context, &program, &kernel, 1, sample_struct_test_kernel, "sample_test" ) != 0 )
-    {
-        return -1;
-    }
-
-    /* Create some I/O streams */
-    d = init_genrand( gRandomSeed );
-    for( i = 0; i < 10; i++ )
-    {
-        randomTestDataA[i] = (cl_int)genrand_int32(d);
-        randomTestDataB[i] = (cl_int)genrand_int32(d);
-    }
-    free_mtdata(d); d = NULL;
-
-    image_pair.streamA = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_int) * 10, randomTestDataA, &error);
-    test_error( error, "Creating test array failed" );
-    image_pair.streamB = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_int) * 10, randomTestDataB, &error);
-    test_error( error, "Creating test array failed" );
-    outStream = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * 10, NULL, &error);
-    test_error( error, "Creating test array failed" );
-
-    /* Set the arguments */
-    args[0] = &image_pair;
-    args[1] = outStream;
-
-    error = clSetKernelArg(kernel, 0, sizeof( image_pair ), &image_pair);
-    test_error( error, "Unable to set indexed kernel arguments" );
-    error = clSetKernelArg(kernel, 1, sizeof( cl_mem ), &args[1]);
-    test_error( error, "Unable to set indexed kernel arguments" );
-
-    /* Test running the kernel and verifying it */
-    threads[0] = (size_t)10;
-
-    error = get_max_common_work_group_size( context, kernel, threads[0], &localThreads[0] );
-    test_error( error, "Unable to get work group size to use" );
-
-    error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
-    test_error( error, "Kernel execution failed" );
-
-    error = clEnqueueReadBuffer( queue, outStream, CL_TRUE, 0, sizeof(cl_int)*10, (void *)outputData, 0, NULL, NULL );
-    test_error( error, "Unable to get result data" );
-
-    for (i=0; i<10; i++)
-    {
-        if (outputData[i] != randomTestDataA[i] + randomTestDataB[i])
-        {
-            log_error( "ERROR: Data did not verify!\n" );
-            return -1;
-        }
-    }
-
-
-    clReleaseMemObject( image_pair.streamA );
-    clReleaseMemObject( image_pair.streamB );
-    clReleaseMemObject( outStream );
-    clReleaseKernel( kernel );
-    clReleaseProgram( program );
 
     return 0;
 }
