@@ -156,9 +156,9 @@ int test_intmath(cl_device_id device, cl_context context,
     MTdataHolder d(gRandomSeed);
     for (int i = 0; i < num_elements; i++)
     {
-        inputA[0] = (T)genrand_int64(d);
-        inputB[1] = (T)genrand_int64(d);
-        inputC[2] = (T)genrand_int64(d);
+        inputA[i] = (T)genrand_int64(d);
+        inputB[i] = (T)genrand_int64(d);
+        inputC[i] = (T)genrand_int64(d);
     }
 
     size_t datasize = sizeof(T) * num_elements * N;
