@@ -28,20 +28,6 @@ const char *sample_single_test_kernel[] = {
 "\n"
 "}\n" };
 
-const char *sample_struct_test_kernel[] = {
-"typedef struct {\n"
-"__global int *A;\n"
-"__global int *B;\n"
-"} input_pair_t;\n"
-"\n"
-"__kernel void sample_test(__global input_pair_t *src, __global int *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = src->A[tid] + src->B[tid];\n"
-"\n"
-"}\n" };
-
 const char *sample_struct_array_test_kernel[] = {
 "typedef struct {\n"
 "int A;\n"
@@ -387,7 +373,6 @@ int test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_c
 
     return 0;
 }
-
 
 int test_set_kernel_arg_constant(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {

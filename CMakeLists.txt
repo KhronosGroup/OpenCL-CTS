@@ -16,7 +16,7 @@ else(CMAKE_BUILD_TYPE STREQUAL "release")
     set (BUILD_FLAVOR "debug")
 endif(CMAKE_BUILD_TYPE STREQUAL "release")
 
-add_definitions(-DCL_TARGET_OPENCL_VERSION=220)
+add_definitions(-DCL_TARGET_OPENCL_VERSION=300)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_1_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_0_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)
