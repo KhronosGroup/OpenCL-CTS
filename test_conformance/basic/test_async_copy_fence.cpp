@@ -246,7 +246,7 @@ int test_copy_fence(cl_device_id deviceID, cl_context context, cl_command_queue 
 
     size_t elementSize = get_explicit_type_size(vecType)*vecSize;
     log_info("Testing %s\n", vecNameString);
-    
+
     if(!is_extension_available(deviceID, "cl_khr_async_work_group_copy_fence"))
     {
         log_info("Device does not support extended async copies fence. Skipping test.\n");
