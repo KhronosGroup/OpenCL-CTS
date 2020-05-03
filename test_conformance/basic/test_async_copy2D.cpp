@@ -158,11 +158,11 @@ int test_copy2D(cl_device_id deviceID, cl_context context, cl_command_queue queu
 
     size_t maxTotalLinesIn = (max_alloc_size / elementSize + srcStride) / (numElementsPerLine + srcStride);
     size_t maxTotalLinesOut = (max_alloc_size / elementSize + dstStride) / (numElementsPerLine + dstStride);
-    size_t maxTotalLines = std::min(maxTotalLinesIn, maxTotalLinesOut);
+    size_t maxTotalLines = (std::min)(maxTotalLinesIn, maxTotalLinesOut);
     size_t maxLocalWorkgroups = maxTotalLines / (localWorkgroupSize * lineCopiesPerWorkItem);
 
     size_t localBufferSize = localWorkgroupSize*localStorageSpacePerWorkitem - (localIsDst ? dstStride : srcStride);
-    size_t numberOfLocalWorkgroups = std::min(1111, (int) maxLocalWorkgroups);
+    size_t numberOfLocalWorkgroups = (std::min)(1111, (int) maxLocalWorkgroups);
     size_t totalLines = numberOfLocalWorkgroups*localWorkgroupSize*lineCopiesPerWorkItem;
     size_t inBufferSize = elementSize*(totalLines*numElementsPerLine + (totalLines - 1)*srcStride);
     size_t outBufferSize = elementSize*(totalLines*numElementsPerLine + (totalLines - 1)*dstStride);
