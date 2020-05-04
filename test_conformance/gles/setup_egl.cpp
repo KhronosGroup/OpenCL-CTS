@@ -163,15 +163,8 @@ public:
         }
 
         // Check all devices, search for one that supports cl_khr_gl_sharing
-        char extensions[8192];
         for (int i=0; i<(int)num_of_devices; i++) {
-            error = clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(extensions), extensions, NULL);
-            if (error) {
-                print_error(error, "clGetDeviceInfo failed");
-                return -1;
-            }
-
-            if (strstr(extensions, "cl_khr_gl_sharing ") == NULL) {
+            if (!is_extension_available(devices[i], "cl_khr_gl_sharing"){
                 log_info("Device %d of %d does not support required extension cl_khr_gl_sharing.\n", i+1, num_of_devices);
             } else {
                 log_info("Device %d of %d supports required extension cl_khr_gl_sharing.\n", i+1, num_of_devices);

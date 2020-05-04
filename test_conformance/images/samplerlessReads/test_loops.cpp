@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "../testBase.h"
+#include "../common.h"
 
 extern int                  gTypesToTest;
 extern cl_channel_type      gChannelTypeToUse;
@@ -30,113 +31,6 @@ extern int test_read_image_set_2D( cl_device_id device, cl_context context, cl_c
 extern int test_read_image_set_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
 extern int test_read_image_set_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
 extern int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
-
-static const char *str_1d_image = "1D";
-static const char *str_2d_image = "2D";
-static const char *str_3d_image = "3D";
-static const char *str_1d_image_array = "1D array";
-static const char *str_2d_image_array = "2D array";
-static const char *str_1d_image_buffer = "1D image buffer";
-
-static const char *convert_image_type_to_string(cl_mem_object_type imageType)
-{
-    const char *p;
-    switch (imageType)
-    {
-        case CL_MEM_OBJECT_IMAGE1D:
-            p = str_1d_image;
-            break;
-        case CL_MEM_OBJECT_IMAGE2D:
-            p = str_2d_image;
-            break;
-        case CL_MEM_OBJECT_IMAGE3D:
-            p = str_3d_image;
-            break;
-        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-            p = str_1d_image_array;
-            break;
-        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-            p = str_2d_image_array;
-            break;
-        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-            p = str_1d_image_buffer;
-    }
-    return p;
-}
-
-
-int filter_formats( cl_image_format *formatList, bool *filterFlags, unsigned int formatCount, cl_channel_type *channelDataTypesToFilter )
-{
-    int numSupported = 0;
-    for ( unsigned int j = 0; j < formatCount; j++ )
-    {
-        // If this format has been previously filtered, remove the filter
-        if ( filterFlags[ j ] )
-            filterFlags[ j ] = false;
-
-        // Have we already discarded the channel type via the command line?
-        if ( gChannelTypeToUse != (cl_channel_type)-1 && gChannelTypeToUse != formatList[ j ].image_channel_data_type )
-        {
-            filterFlags[ j ] = true;
-            continue;
-        }
-
-        // Have we already discarded the channel order via the command line?
-        if ( gChannelOrderToUse != (cl_channel_order)-1 && gChannelOrderToUse != formatList[ j ].image_channel_order )
-        {
-            filterFlags[ j ] = true;
-            continue;
-        }
-
-        // Is given format standard channel order and type given by spec. We don't want to test it if this is vendor extension
-        if( !IsChannelOrderSupported( formatList[ j ].image_channel_order ) || !IsChannelTypeSupported( formatList[ j ].image_channel_data_type ) )
-        {
-            filterFlags[ j ] = true;
-            continue;
-        }
-
-        // We don't filter by channel type
-        if( !channelDataTypesToFilter )
-        {
-            numSupported++;
-            continue;
-        }
-
-        // Is the format supported?
-        int i;
-        for ( i = 0; channelDataTypesToFilter[ i ] != (cl_channel_type)-1; i++ )
-        {
-            if ( formatList[ j ].image_channel_data_type == channelDataTypesToFilter[ i ] )
-            {
-                numSupported++;
-                break;
-            }
-        }
-        if ( channelDataTypesToFilter[ i ] == (cl_channel_type)-1 )
-        {
-            // Format is NOT supported, so mark it as such
-            filterFlags[ j ] = true;
-        }
-    }
-    return numSupported;
-}
-
-int get_format_list( cl_context context, cl_mem_object_type imageType, cl_image_format * &outFormatList, unsigned int &outFormatCount, cl_mem_flags flags )
-{
-    int error;
-
-    cl_image_format tempList[ 128 ];
-    error = clGetSupportedImageFormats( context, flags,
-                                        imageType, 128, tempList, &outFormatCount );
-    test_error( error, "Unable to get count of supported image formats" );
-
-    outFormatList = new cl_image_format[ outFormatCount ];
-    error = clGetSupportedImageFormats( context, flags,
-                                        imageType, outFormatCount, outFormatList, NULL );
-    test_error( error, "Unable to get list of supported image formats" );
-
-    return 0;
-}
 
 int test_read_image_type( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format,
                           image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType )

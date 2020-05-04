@@ -17,28 +17,28 @@
 #include "harness/testHarness.h"
 
 const char *context_test_kernels[] = {
-    "__kernel void sample_test_1(__global int *src, __global int *dst)\n"
+    "__kernel void sample_test_1(__global uint *src, __global uint *dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "    dst[tid] = src[tid];\n"
     "\n"
     "}\n"
 
-    "__kernel void sample_test_2(__global int *src, __global int *dst)\n"
+    "__kernel void sample_test_2(__global uint *src, __global uint *dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "    dst[tid] = src[tid] * 2;\n"
     "\n"
     "}\n"
 
-    "__kernel void sample_test_3(__global int *src, __global int *dst)\n"
+    "__kernel void sample_test_3(__global uint *src, __global uint *dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "    dst[tid] = src[tid] / 2;\n"
     "\n"
     "}\n"
 
-    "__kernel void sample_test_4(__global int *src, __global int *dst)\n"
+    "__kernel void sample_test_4(__global uint *src, __global uint *dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "    dst[tid] = src[tid] /3;\n"
@@ -46,13 +46,13 @@ const char *context_test_kernels[] = {
     "}\n"
 };
 
-int sampleAction1( int source ) { return source; }
-int sampleAction2( int source ) { return source * 2; }
-int sampleAction3( int source ) { return source / 2; }
-int sampleAction4( int source ) { return source / 3; }
+cl_uint sampleAction1(cl_uint source) { return source; }
+cl_uint sampleAction2(cl_uint source) { return source * 2; }
+cl_uint sampleAction3(cl_uint source) { return source / 2; }
+cl_uint sampleAction4(cl_uint source) { return source / 3; }
 
 
-typedef int (*sampleActionFn)( int source );
+typedef cl_uint (*sampleActionFn)(cl_uint source);
 
 sampleActionFn    sampleActions[4] = { sampleAction1, sampleAction2, sampleAction3, sampleAction4 };
 
@@ -174,12 +174,15 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
     // create some mem objects
     for( i = 0; i < BUFFER_COUNT; i++ )
     {
-        item->m[i] = clCreateBuffer( item->c, CL_MEM_READ_WRITE, TEST_SIZE * sizeof(cl_int), NULL, &error );
+        item->m[i] = clCreateBuffer(item->c, CL_MEM_READ_WRITE,
+                                    TEST_SIZE * sizeof(cl_uint), NULL, &error);
         if( NULL == item->m[i] || CL_SUCCESS != error )
         {
             if( err )
             {
-                log_error( "FAILURE: clCreateBuffer( %ld bytes ) failed in CreateTestItem: %d\n", TEST_SIZE * sizeof(cl_int), error );
+                log_error("FAILURE: clCreateBuffer( %ld bytes ) failed in "
+                          "CreateTestItem: %d\n",
+                          TEST_SIZE * sizeof(cl_uint), error);
                 *err = error;
             }
             DestroyTestItem( item );
@@ -227,7 +230,9 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
     cl_int error = CL_SUCCESS;
 
     // Fill buffer 0 with random numbers
-    cl_int *mapped = (cl_int*) clEnqueueMapBuffer( item->q, item->m[0], CL_TRUE, CL_MAP_WRITE, 0, TEST_SIZE * sizeof( cl_int ), 0, NULL, NULL, &error );
+    cl_uint *mapped = (cl_uint *)clEnqueueMapBuffer(
+        item->q, item->m[0], CL_TRUE, CL_MAP_WRITE, 0,
+        TEST_SIZE * sizeof(cl_uint), 0, NULL, NULL, &error);
     if( NULL == mapped || CL_SUCCESS != error )
     {
         if( err )
@@ -256,7 +261,9 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
     for( j = 0; j < sizeof(item->k) / sizeof( item->k[0] ); j++ )
     {
         // Fill buffer 1 with 0xdeaddead
-        mapped = (cl_int*) clEnqueueMapBuffer( item->q, item->m[1], CL_TRUE, CL_MAP_WRITE, 0, TEST_SIZE * sizeof( cl_int ), 0, NULL, NULL, &error );
+        mapped = (cl_uint *)clEnqueueMapBuffer(
+            item->q, item->m[1], CL_TRUE, CL_MAP_WRITE, 0,
+            TEST_SIZE * sizeof(cl_uint), 0, NULL, NULL, &error);
         if( NULL == mapped || CL_SUCCESS != error )
         {
             if( err )
@@ -318,7 +325,9 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
         }
 
         // Get the results back
-        mapped = (cl_int*) clEnqueueMapBuffer( item->q, item->m[1], CL_TRUE, CL_MAP_READ, 0, TEST_SIZE * sizeof( cl_int ), 0, NULL, NULL, &error );
+        mapped = (cl_uint *)clEnqueueMapBuffer(
+            item->q, item->m[1], CL_TRUE, CL_MAP_READ, 0,
+            TEST_SIZE * sizeof(cl_uint), 0, NULL, NULL, &error);
         if( NULL == mapped || CL_SUCCESS != error )
         {
             if( err )
@@ -330,7 +339,9 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
         }
 
         // Get our input data so we can check against it
-        cl_int *inputData = (cl_int*) clEnqueueMapBuffer( item->q, item->m[0], CL_TRUE, CL_MAP_READ, 0, TEST_SIZE * sizeof( cl_int ), 0, NULL, NULL, &error );
+        cl_uint *inputData = (cl_uint *)clEnqueueMapBuffer(
+            item->q, item->m[0], CL_TRUE, CL_MAP_READ, 0,
+            TEST_SIZE * sizeof(cl_uint), 0, NULL, NULL, &error);
         if( NULL == mapped || CL_SUCCESS != error )
         {
             if( err )
@@ -345,8 +356,8 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
         //Verify the results
         for( i = 0; i < TEST_SIZE; i++ )
         {
-            int expected = sampleActions[j]( inputData[i] );
-            int result = mapped[i];
+            cl_uint expected = sampleActions[j](inputData[i]);
+            cl_uint result = mapped[i];
             if( expected != result )
             {
                 log_error( "FAILURE:  Sample data at position %ld does not match expected result: *0x%8.8x vs. 0x%8.8x\n", i, expected, result );
@@ -509,7 +520,7 @@ exit:
 //  that many contexts 5 times over, then you pass.
 int test_context_multiple_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return test_context_multiple_contexts_same_device( deviceID, 200, 1 );
+    return test_context_multiple_contexts_same_device(deviceID, 200, 1);
 }
 
 int test_context_two_contexts_same_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)

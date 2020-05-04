@@ -12,6 +12,7 @@ set(${MODULE_NAME}_SOURCES
     test_copy_3D_2D_array.cpp
     test_copy_generic.cpp
     test_loops.cpp
+    ../common.cpp
 )
 
 include(../../CMakeCommon.txt)

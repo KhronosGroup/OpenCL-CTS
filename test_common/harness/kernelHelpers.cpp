@@ -356,50 +356,25 @@ static std::string get_khronos_compiler_command(const cl_uint device_address_spa
 static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint device_address_space_size,
                                      const CompilationMode compilationMode, std::string &clDeviceInfo)
 {
-    char *extensionsString = alloc_and_get_device_extensions_string(device);
-    if ( NULL == extensionsString )
-    {
-        /* An error message will have already been printed by alloc_and_get_device_info(),
-         * so we can just return, here. */
-        return -1;
-    }
-
-    BufferOwningPtr<char> extensionsStringBuf(extensionsString);
-
-    char *versionString = alloc_and_get_device_version_string(device);
-    if ( NULL == versionString )
-    {
-        /* An error message will have already been printed by alloc_and_get_device_info(),
-         * so we can just return, here. */
-        return -1;
-    }
-
-    BufferOwningPtr<char> versionStringBuf(versionString);
+    std::string extensionsString = get_device_extensions_string(device);
+    std::string versionString = get_device_version_string(device);
 
     std::ostringstream clDeviceInfoStream;
     std::string file_type = get_offline_compilation_file_type_str(compilationMode);
     clDeviceInfoStream << "# OpenCL device info affecting " << file_type << " offline compilation:" << std::endl
-                       << "CL_DEVICE_ADDRESS_BITS=" << device_address_space_size << std::endl
-                       << "CL_DEVICE_EXTENSIONS=\"" << extensionsString << "\"" << std::endl;
+                    << "CL_DEVICE_ADDRESS_BITS=" << device_address_space_size << std::endl
+                    << "CL_DEVICE_EXTENSIONS=\"" << extensionsString << "\"" << std::endl;
     /* We only need the device's supported IL version(s) when compiling IL
-     * that will be loaded with clCreateProgramWithIL() */
+    * that will be loaded with clCreateProgramWithIL() */
     if (compilationMode == kSpir_v)
     {
-        char *ilVersionString = alloc_and_get_device_il_version_string(device);
-        if ( NULL == ilVersionString )
-        {
-            /* An error message will have already been printed by alloc_and_get_device_info(),
-             * so we can just return, here. */
-            return -1;
-        }
-
-        BufferOwningPtr<char> versionStringBuf(ilVersionString);
-
+        std::string ilVersionString = get_device_il_version_string(device);
         clDeviceInfoStream << "CL_DEVICE_IL_VERSION=\"" << ilVersionString << "\"" << std::endl;
     }
     clDeviceInfoStream << "CL_DEVICE_VERSION=\"" << versionString << "\"" << std::endl;
 
     clDeviceInfo = clDeviceInfoStream.str();
+
     return CL_SUCCESS;
 }
 
@@ -1030,26 +1005,6 @@ int build_program_create_kernel_helper(cl_context context,
     }
 
     return 0;
-}
-
-int get_device_version( cl_device_id id, size_t* major, size_t* minor)
-{
-    cl_char buffer[ 4098 ];
-    size_t length;
-
-    // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
-    cl_int error = clGetDeviceInfo( id, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
-    test_error( error, "Unable to get device version string" );
-
-    char *p1 = (char *)buffer + strlen( "OpenCL " );
-    char *p2;
-    while( *p1 == ' ' )
-        p1++;
-    *major = strtol( p1, &p2, 10 );
-    error = *p2 != '.';
-    test_error(error, "ERROR: Version number must contain a decimal point!");
-    *minor = strtol( ++p2, NULL, 10 );
-    return error;
 }
 
 int get_max_allowed_work_group_size( cl_context context, cl_kernel kernel, size_t *outMaxSize, size_t *outLimits )

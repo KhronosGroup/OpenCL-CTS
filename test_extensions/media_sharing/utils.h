@@ -98,7 +98,6 @@ private:
   TTestResult _resultLast;
 };
 
-bool ExtensionCheck(const std::string &extension, cl_device_id deviceID);
 void FunctionContextCreateToString(TContextFuncType contextCreateFunction, std::string &contextFunction);
 void AdapterToString(cl_dx9_media_adapter_type_khr adapterType, std::string &adapter);
 cl_context_info AdapterTypeToContextInfo(cl_dx9_media_adapter_type_khr adapterType);

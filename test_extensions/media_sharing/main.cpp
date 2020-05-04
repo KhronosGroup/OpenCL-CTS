@@ -116,7 +116,7 @@ bool DetectPlatformAndDevice()
 
     for (size_t j = 0; j < devicesNum; ++j)
     {
-      if (ExtensionCheck("cl_khr_dx9_media_sharing", devices[j]))
+      if (is_extension_available(devices[j], "cl_khr_dx9_media_sharing"))
       {
         gPlatformIDdetected = platforms[i];
         gDeviceIDdetected = devices[j];

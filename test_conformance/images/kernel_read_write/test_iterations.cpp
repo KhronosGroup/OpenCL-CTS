@@ -1155,7 +1155,7 @@ bool validate_float_write_results( float *expected, float *actual, image_descrip
 {
     bool pass = true;
     // Compare floats
-    if( memcmp( expected, actual, 4 * get_format_channel_count( imageInfo->format ) ) != 0 )
+    if( memcmp( expected, actual, sizeof( cl_float ) * get_format_channel_count( imageInfo->format ) ) != 0 )
     {
         // 8.3.3 Fix up cases where we have NaNs or flushed denorms; "all other values must be preserved"
         for ( size_t j = 0; j < get_format_channel_count( imageInfo->format ); j++ )
@@ -1163,6 +1163,25 @@ bool validate_float_write_results( float *expected, float *actual, image_descrip
             if ( isnan( expected[j] ) && isnan( actual[j] ) )
                 continue;
             if ( IsFloatSubnormal( expected[j] ) && actual[j] == 0.0f )
+                continue;
+            pass = false;
+            break;
+        }
+    }
+    return pass;
+}
+
+bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo )
+{
+    bool pass = true;
+    // Compare half floats
+    if (memcmp(expected, actual, sizeof( cl_half ) * get_format_channel_count(imageInfo->format)) != 0) {
+
+        // 8.3.2 Fix up cases where we have NaNs or generated half denormals
+        for ( size_t j = 0; j < get_format_channel_count( imageInfo->format ); j++ ) {
+            if ( is_half_nan( expected[j] ) && is_half_nan( actual[j] ) )
+                continue;
+            if ( is_half_denorm( expected[j] ) && is_half_zero( actual[j] ) )
                 continue;
             pass = false;
             break;

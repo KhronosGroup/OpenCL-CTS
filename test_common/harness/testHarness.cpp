@@ -394,33 +394,7 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
             gInfNanSupport = 0;
 
         // check the extensions list to see if ulong and long are supported
-        size_t extensionsStringSize = 0;
-        if( (err = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, 0, NULL, &extensionsStringSize ) ))
-        {
-            print_error( err, "Unable to get extensions string size for embedded device" );
-            return EXIT_FAILURE;
-        }
-        char *extensions_string = (char*) malloc(extensionsStringSize);
-        if( NULL == extensions_string )
-        {
-            print_error( CL_OUT_OF_HOST_MEMORY, "Unable to allocate storage for extensions string for embedded device" );
-            return EXIT_FAILURE;
-        }
-        BufferOwningPtr<char> extensions_stringBuf(extensions_string);
-
-        if( (err = clGetDeviceInfo( device, CL_DEVICE_EXTENSIONS, extensionsStringSize, extensions_string, NULL ) ))
-        {
-            print_error( err, "Unable to get extensions string for embedded device" );
-            return EXIT_FAILURE;
-        }
-
-        if( extensions_string[extensionsStringSize-1] != '\0' )
-        {
-            log_error( "FAILURE: extensions string for embedded device is not NUL terminated" );
-            return EXIT_FAILURE;
-        }
-
-        if( NULL == strstr( extensions_string, "cles_khr_int64" ))
+        if( !is_extension_available(device, "cles_khr_int64" ))
             gHasLong = 0;
     }
 
@@ -911,6 +885,8 @@ Version get_device_cl_version(cl_device_id device)
         return Version(2, 1);
     else if (strstr(str.data(), "OpenCL 2.2") != NULL)
         return Version(2, 2);
+    else if (strstr(str.data(), "OpenCL 3.0") != NULL)
+        return Version(3, 0);
 
     throw std::runtime_error(std::string("Unknown OpenCL version: ") + str.data());
 }

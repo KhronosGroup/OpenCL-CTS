@@ -32,6 +32,7 @@ bool gUseRamp;
 bool gTestMipmaps;
 int  gTypesToTest;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
+cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
 bool            gEnablePitch = false;
 
 #define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
