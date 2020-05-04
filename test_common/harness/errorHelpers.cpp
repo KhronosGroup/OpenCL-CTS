@@ -326,19 +326,18 @@ static float Ulp_Error_Half_Float( float test, double reference )
 
     double testVal = test;
 
-    if( isinf( reference ) )
+    if (isinf(reference))
     {
-        if( testVal == reference )
-            return 0.0f;
+        if (testVal == reference) return 0.0f;
 
-        return (float) (testVal - reference );
+        return (float)(testVal - reference);
     }
 
-    if( isinf( testVal ) )
+    if (isinf(testVal))
     {
-        // Allow overflow within the limit of the allowed ulp error. Towards that
-        // end we pretend the test value is actually 2**16, the next value that
-        // would appear in the number line if half had sufficient range.
+        // Allow overflow within the limit of the allowed ulp error. Towards
+        // that end we pretend the test value is actually 2**16, the next value
+        // that would appear in the number line if half had sufficient range.
         testVal = copysign(65536.0, testVal);
     }
 
