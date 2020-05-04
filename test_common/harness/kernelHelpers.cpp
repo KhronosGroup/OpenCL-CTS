@@ -604,7 +604,7 @@ static int get_offline_compiler_output(
                 sourceFilename, outputFilename, openclCXX);
             if (error != CL_SUCCESS) return error;
 
-            // read output file
+            // open output file for reading
             ifs.open(outputFilename.c_str(), std::ios::binary);
             if (!ifs.good())
             {
@@ -614,6 +614,26 @@ static int get_offline_compiler_output(
             }
         }
     }
+
+    if (compilationMode == kSpir_v && !gDisableSPIRVValidation)
+    {
+        std::string runString = gSPIRVValidator + " " + outputFilename;
+
+        int returnCode = system(runString.c_str());
+        if (returnCode == -1)
+        {
+            log_error("Error: failed to invoke SPIR-V validator\n");
+            return CL_COMPILE_PROGRAM_FAILURE;
+        }
+        else if (returnCode != 0)
+        {
+            log_error(
+                "Failed to validate SPIR-V file %s: system() returned 0x%x\n",
+                outputFilename.c_str(), returnCode);
+            return CL_COMPILE_PROGRAM_FAILURE;
+        }
+    }
+
     return CL_SUCCESS;
 }
 
