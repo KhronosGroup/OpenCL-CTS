@@ -48,5 +48,6 @@ int filter_formats(cl_image_format *formatList, bool *filterFlags,
 int get_format_list(cl_context context, cl_mem_object_type imageType,
                     cl_image_format *&outFormatList,
                     unsigned int &outFormatCount, cl_mem_flags flags);
+size_t random_in_ranges(size_t minimum, size_t rangeA, size_t rangeB, MTdata d);
 
 #endif // IMAGES_COMMON_H

@@ -158,3 +158,10 @@ int get_format_list(cl_context context, cl_mem_object_type imageType,
     test_error(error, "Unable to get list of supported image formats");
     return 0;
 }
+
+size_t random_in_ranges(size_t minimum, size_t rangeA, size_t rangeB, MTdata d)
+{
+    if (rangeB < rangeA) rangeA = rangeB;
+    if (rangeA < minimum) return rangeA;
+    return (size_t)random_in_range((int)minimum, (int)rangeA - 1, d);
+}
