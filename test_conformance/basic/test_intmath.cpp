@@ -104,7 +104,7 @@ int test_intmath(cl_device_id device, cl_context context,
     {
         log_info("64-bit integers are not supported on this device. Skipping "
                  "test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Create host buffers and fill with random data.
