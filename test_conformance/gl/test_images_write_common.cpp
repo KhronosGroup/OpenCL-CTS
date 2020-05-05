@@ -813,7 +813,7 @@ int test_images_write_common(cl_device_id device, cl_context context,
             get_base_gl_target(targets[ tidx ]) == GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
         {
             bool supports_msaa;
-            error = supportsMsaa(context, &supports_msaa);
+            bool error = supportsMsaa(context, &supports_msaa);
             if( error != 0 ) return error;
             if (!supports_msaa) return 0;
         }
@@ -821,7 +821,7 @@ int test_images_write_common(cl_device_id device, cl_context context,
             formats[ fidx ].formattype == GL_DEPTH_STENCIL)
         {
             bool supports_depth;
-            error = supportsDepth(context, &supports_depth);
+            bool error = supportsDepth(context, &supports_depth);
             if( error != 0 ) return error;
             if (!supports_depth) return 0;
         }
