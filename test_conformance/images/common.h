@@ -16,11 +16,29 @@
 #ifndef IMAGES_COMMON_H
 #define IMAGES_COMMON_H
 
+#include "testBase.h"
 #include "harness/kernelHelpers.h"
 #include "harness/errorHelpers.h"
+#include "harness/conversions.h"
+
+#include <array>
 
 extern cl_channel_type gChannelTypeToUse;
 extern cl_channel_order gChannelOrderToUse;
+
+extern cl_channel_type floatFormats[];
+extern cl_channel_type intFormats[];
+extern cl_channel_type uintFormats[];
+
+struct ImageTestTypes
+{
+    TypesToTest type;
+    ExplicitType explicitType;
+    cl_channel_type *channelTypes;
+    const char *name;
+};
+
+extern std::array<ImageTestTypes, 3> imageTestTypes;
 
 const char *convert_image_type_to_string(cl_mem_object_type imageType);
 int filter_formats(cl_image_format *formatList, bool *filterFlags,
