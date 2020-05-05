@@ -104,7 +104,7 @@ int test_intmath(cl_device_id device, cl_context context,
     {
         log_info("64-bit integers are not supported on this device. Skipping "
                  "test.\n");
-        return 0;
+        return TEST_SKIP;
     }
 
     // Create host buffers and fill with random data.
@@ -180,14 +180,21 @@ int test_intmath(cl_device_id device, cl_context context,
             T r = test.ref(inputA[i], inputB[i], inputC[i]);
             if (r != output[i])
             {
-                log_error("failed\n");
-                return -1;
+                log_error("\n\nverification failed at index %d\n", i);
+                log_error("-> inputs: %llu, %llu, %llu\n",
+                          static_cast<cl_uint>(inputA[i]),
+                          static_cast<cl_uint>(inputB[i]),
+                          static_cast<cl_uint>(inputC[i]));
+                log_error("-> expected %llu, got %llu\n\n",
+                          static_cast<cl_uint>(r),
+                          static_cast<cl_uint>(output[i]));
+                return TEST_FAIL;
             }
         }
         log_info("passed\n");
     }
 
-    return err;
+    return TEST_PASS;
 }
 
 int test_intmath_int(cl_device_id device, cl_context context,
