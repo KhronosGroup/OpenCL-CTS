@@ -72,6 +72,13 @@ extern int test_write_image_formats( cl_device_id device, cl_context context, cl
   image_sampler_data *imageSampler, ExplicitType outputType,
   cl_mem_object_type imageType );
 
+extern int test_copy_image_generic(cl_context context, cl_command_queue queue,
+                                   image_descriptor *srcImageInfo,
+                                   image_descriptor *dstImageInfo,
+                                   const size_t sourcePos[],
+                                   const size_t destPos[],
+                                   const size_t regionSize[], MTdata d);
+
 #endif // _testBase_h
 
 

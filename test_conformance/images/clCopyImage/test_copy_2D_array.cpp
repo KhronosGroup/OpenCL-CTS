@@ -22,10 +22,6 @@ extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxI
 extern cl_filter_mode    gFilterModeToUse;
 extern cl_addressing_mode    gAddressModeToUse;
 
-// Defined in test_copy_generic.cpp
-extern int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
-                                   const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d );
-
 int test_copy_image_2D_array( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d )
 {
     size_t srcPos[] = { 0, 0, 0, 0}, dstPos[] = {0, 0, 0, 0};

@@ -23,9 +23,6 @@ extern cl_filter_mode    gFilterModeToUse;
 extern cl_addressing_mode    gAddressModeToUse;
 extern uint64_t gRoundingStartValue;
 
-extern int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
-                                   const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d );
-
 int test_copy_image_size_2D( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d )
 {
     size_t sourcePos[ 3 ], destPos[ 3 ], regionSize[ 3 ];
