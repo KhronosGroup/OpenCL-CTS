@@ -96,8 +96,7 @@ test_definition test_list[] = {
     ADD_TEST(unload_build_unload_create_kernel),
     ADD_TEST(unload_link_different),
     ADD_TEST(unload_build_threaded),
-    ADD_TEST(unload_build_info),
-    ADD_TEST(unload_program_binaries),
+
     ADD_TEST_VERSION(feature_macro_atomic_order_acq_rel, Version(3, 0)),
     ADD_TEST_VERSION(feature_macro_atomic_order_seq_cst, Version(3, 0)),
     ADD_TEST_VERSION(feature_macro_atomic_scope_device, Version(3, 0)),
