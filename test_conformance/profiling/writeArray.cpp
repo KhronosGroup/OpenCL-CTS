@@ -25,8 +25,6 @@
 #include "harness/errorHelpers.h"
 #include "harness/conversions.h"
 
-//#define USE_LOCAL_THREADS    1
-
 #ifndef uchar
 typedef unsigned char uchar;
 #endif
@@ -621,23 +619,10 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
     cl_ulong    queueStart, submitStart, writeStart, writeEnd;
     size_t            ptrSizes[5], outPtrSizes[5];
     size_t            threads[1];
-#ifdef USE_LOCAL_THREADS
-    size_t            localThreads[1];
-#endif
     int                err, err_count = 0;
     int                i, ii;
 
     threads[0] = (size_t)num_elements;
-
-#ifdef USE_LOCAL_THREADS
-    err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( cl_uint ), NULL );
-    if( err != CL_SUCCESS ){
-        print_error( err, " Unable to get thread group max size" );
-        return -1;
-    }
-    if( localThreads[0] > threads[0] )
-        localThreads[0] = threads[0];
-#endif
 
     ptrSizes[0] = size;
     ptrSizes[1] = ptrSizes[0] << 1;
@@ -764,11 +749,8 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
             return -1;
         }
 
-#ifdef USE_LOCAL_THREADS
-        err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, localThreads, 0, NULL, NULL );
-#else
         err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL );
-#endif
+
         if( err != CL_SUCCESS ){
             print_error( err, " clEnqueueNDRangeKernel failed" );
             clReleaseEvent(writeEvent);
@@ -813,7 +795,7 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
         }
         if( !err2 )
         {
-            log_info( " %s%d data verified\n", type, 1<<i );
+            log_info(" %s%d data verified\n", type, 1 << i);
         }
         err = err2;
 

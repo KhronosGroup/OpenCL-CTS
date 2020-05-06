@@ -622,24 +622,11 @@ int test_stream_read( cl_device_id device, cl_context context, cl_command_queue 
     cl_event        readEvent;
     cl_ulong    queueStart, submitStart, readStart, readEnd;
     size_t            threads[1];
-#ifdef USE_LOCAL_THREADS
-    size_t            localThreads[1];
-#endif
     int                err, err_count = 0;
     int                i;
     size_t            ptrSizes[5];
 
     threads[0] = (size_t)num_elements;
-
-#ifdef USE_LOCAL_THREADS
-    err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( cl_uint ), NULL );
-    if( err != CL_SUCCESS ){
-        log_error( "Unable to get thread group max size: %d", err );
-        return -1;
-    }
-    if( localThreads[0] > threads[0] )
-        localThreads[0] = threads[0];
-#endif
 
     ptrSizes[0] = size;
     ptrSizes[1] = ptrSizes[0] << 1;
@@ -676,11 +663,8 @@ int test_stream_read( cl_device_id device, cl_context context, cl_command_queue 
             return -1;
         }
 
-#ifdef USE_LOCAL_THREADS
-        err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, localThreads, 0, NULL, NULL );
-#else
         err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL );
-#endif
+
         if( err != CL_SUCCESS ){
             print_error( err, "clEnqueueNDRangeKernel failed" );
             clReleaseKernel( kernel[i] );
