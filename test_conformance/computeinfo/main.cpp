@@ -250,33 +250,40 @@ config_info config_infos[] = {
                 cl_uint),
 };
 
-#define ENTRY(T)                                                               \
+#define ENTRY(major, minor, T)                                                 \
     {                                                                          \
-        T, #T                                                                  \
+        { major, minor }, T, #T                                                \
     }
 struct image_type_entry
 {
+    version_t
+        version; // Image type is introduced in this version of OpenCL spec.
     cl_mem_object_type val;
     const char* str;
 };
 static const struct image_type_entry image_types[] = {
-    ENTRY(CL_MEM_OBJECT_IMAGE1D),       ENTRY(CL_MEM_OBJECT_IMAGE1D_BUFFER),
-    ENTRY(CL_MEM_OBJECT_IMAGE2D),       ENTRY(CL_MEM_OBJECT_IMAGE3D),
-    ENTRY(CL_MEM_OBJECT_IMAGE1D_ARRAY), ENTRY(CL_MEM_OBJECT_IMAGE2D_ARRAY)
+    ENTRY(1, 2, CL_MEM_OBJECT_IMAGE1D),
+    ENTRY(1, 2, CL_MEM_OBJECT_IMAGE1D_BUFFER),
+    ENTRY(1, 0, CL_MEM_OBJECT_IMAGE2D),
+    ENTRY(1, 0, CL_MEM_OBJECT_IMAGE3D),
+    ENTRY(1, 2, CL_MEM_OBJECT_IMAGE1D_ARRAY),
+    ENTRY(1, 2, CL_MEM_OBJECT_IMAGE2D_ARRAY)
 };
 
 struct supported_flags_entry
 {
+    version_t
+        version; // Memory flag is introduced in this version of OpenCL spec.
     cl_mem_flags val;
     const char* str;
 };
 
 static const struct supported_flags_entry supported_flags[] = {
-    ENTRY(CL_MEM_READ_ONLY), ENTRY(CL_MEM_WRITE_ONLY), ENTRY(CL_MEM_READ_WRITE),
-    ENTRY(CL_MEM_KERNEL_READ_AND_WRITE)
+    ENTRY(1, 0, CL_MEM_READ_ONLY), ENTRY(1, 0, CL_MEM_WRITE_ONLY),
+    ENTRY(1, 0, CL_MEM_READ_WRITE), ENTRY(2, 0, CL_MEM_KERNEL_READ_AND_WRITE)
 };
 
-int getImageInfo(cl_device_id device)
+int getImageInfo(cl_device_id device, const version_t& version)
 {
     cl_context ctx;
     cl_int err;
@@ -296,9 +303,18 @@ int getImageInfo(cl_device_id device)
     num_errors = 0;
     for (ii = 0; ii < ni; ++ii)
     {
+        if (vercmp(version, image_types[ii].version) < 0)
+        {
+            continue;
+        }
+
         log_info("\t%s supported formats:\n", image_types[ii].str);
         for (fi = 0; fi < nf; ++fi)
         {
+            if (vercmp(version, supported_flags[fi].version) < 0)
+            {
+                continue;
+            }
 
             err = clGetSupportedImageFormats(ctx, supported_flags[fi].val,
                                              image_types[ii].val, 5000, NULL,
@@ -945,7 +961,7 @@ int getConfigInfos(cl_device_id device)
         }
     }
 
-    total_errors += getImageInfo(device);
+    total_errors += getImageInfo(device, version);
 
     return total_errors;
 }
