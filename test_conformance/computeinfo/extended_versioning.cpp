@@ -56,7 +56,8 @@ static bool is_same_version(const char* const format,
 
     if (2 != matched)
     {
-        log_error("sscanf() fail on version string \"%s\", format=\"%s\"\n");
+        log_error("sscanf() fail on version string \"%s\", format=\"%s\"\n",
+                  version_string, format);
         return false;
     }
 
