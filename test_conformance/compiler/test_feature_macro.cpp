@@ -38,8 +38,7 @@ const char* macro_not_supported_source =
 
 
 template <typename T>
-cl_int
-check_api_feature_info(cl_device_id deviceID, cl_context context,
+cl_int check_api_feature_info(cl_device_id deviceID, cl_context context,
                               bool& status, cl_device_info check_property,
                               cl_device_atomic_capabilities check_atomic_cap,
                               cl_mem_flags mem_flags,
@@ -50,7 +49,8 @@ check_api_feature_info(cl_device_id deviceID, cl_context context,
     if (mem_flags)
     {
         cl_uint image_format_count;
-        error = clGetSupportedImageFormats(context, mem_flags, image_type, 0, NULL, &image_format_count);
+        error = clGetSupportedImageFormats(context, mem_flags, image_type, 0,
+                                           NULL, &image_format_count);
         response = image_format_count;
         test_error(error, "clGetSupportedImageFormats failed.\n");
     }
@@ -102,23 +102,15 @@ cl_int check_compiler_feature_info(cl_device_id deviceID, cl_context context,
     const char* ptr_supported = kernel_supported_src;
     error = create_single_kernel_helper_create_program(
         context, &program_supported, 1, &ptr_supported);
+    test_error(error, "Failure creating program, [%d] \n");
 
-    if (error != CL_SUCCESS)
-    {
-        log_error("Failure creating program, [%d] \n", error);
-        return error;
-    }
     sprintf(kernel_not_supported_src, macro_not_supported_source,
             feature_macro.c_str());
     const char* ptr_not_supported = kernel_not_supported_src;
     error = create_single_kernel_helper_create_program(
         context, &program_not_supported, 1, &ptr_not_supported);
+    test_error(error, "Failure creating program, [%d] \n");
 
-    if (error != CL_SUCCESS)
-    {
-        log_error("Failure creating program, [%d] \n", error);
-        return error;
-    }
     cl_int status_supported = CL_SUCCESS;
     cl_int status_not_supported = CL_SUCCESS;
     status_supported =
@@ -160,8 +152,9 @@ int test_feature_macro(cl_device_id deviceID, cl_context context,
     bool compiler_status;
 
     log_info("Testing macro: %s\n", feature_macro.c_str());
-    error = check_api_feature_info<T>(deviceID, context, api_status,
-                                           check_property, check_atomic_cap, mem_flags, image_type);
+    error =
+        check_api_feature_info<T>(deviceID, context, api_status, check_property,
+                                  check_atomic_cap, mem_flags, image_type);
     if (error != CL_SUCCESS)
     {
         return error;
@@ -192,10 +185,10 @@ int test_feature_macro_atomic_order_acq_rel(cl_device_id deviceID,
 {
     std::string test_macro_name = "__opencl_c_atomic_order_acq_rel";
     return test_feature_macro<cl_device_atomic_capabilities>(
-        deviceID, context, queue, num_elements,
-                              test_macro_name,
+        deviceID, context, queue, num_elements, test_macro_name,
         CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES, CL_DEVICE_ATOMIC_ORDER_ACQ_REL);
 }
+
 int test_feature_macro_atomic_order_seq_cst(cl_device_id deviceID,
                                             cl_context context,
                                             cl_command_queue queue,
@@ -206,6 +199,7 @@ int test_feature_macro_atomic_order_seq_cst(cl_device_id deviceID,
         deviceID, context, queue, num_elements, test_macro_name,
         CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES, CL_DEVICE_ATOMIC_ORDER_SEQ_CST);
 }
+
 int test_feature_macro_atomic_scope_device(cl_device_id deviceID,
                                            cl_context context,
                                            cl_command_queue queue,
@@ -216,6 +210,7 @@ int test_feature_macro_atomic_scope_device(cl_device_id deviceID,
         deviceID, context, queue, num_elements, test_macro_name,
         CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES, CL_DEVICE_ATOMIC_SCOPE_DEVICE);
 }
+
 int test_feature_macro_atomic_scope_all_devices(cl_device_id deviceID,
                                                 cl_context context,
                                                 cl_command_queue queue,
@@ -228,14 +223,14 @@ int test_feature_macro_atomic_scope_all_devices(cl_device_id deviceID,
         CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES);
 }
 
-
 int test_feature_macro_3d_image_writes(cl_device_id deviceID,
                                        cl_context context,
                                        cl_command_queue queue, int num_elements)
 {
     std::string test_macro_name = "__opencl_c_3d_image_writes";
-    return test_feature_macro<cl_uint>(deviceID, context, queue, num_elements, test_macro_name, 0, 0,
-        CL_MEM_WRITE_ONLY|CL_MEM_READ_WRITE|CL_MEM_KERNEL_READ_AND_WRITE,
+    return test_feature_macro<cl_uint>(
+        deviceID, context, queue, num_elements, test_macro_name, 0, 0,
+        CL_MEM_WRITE_ONLY | CL_MEM_READ_WRITE | CL_MEM_KERNEL_READ_AND_WRITE,
         CL_MEM_OBJECT_IMAGE3D);
 }
 
@@ -244,8 +239,8 @@ int test_feature_macro_device_enqueue(cl_device_id deviceID, cl_context context,
 {
     std::string test_macro_name = "__opencl_c_device_enqueue";
     return test_feature_macro<cl_bool>(deviceID, context, queue, num_elements,
-                              test_macro_name,
-                              CL_DEVICE_DEVICE_ENQUEUE_SUPPORT);
+                                       test_macro_name,
+                                       CL_DEVICE_DEVICE_ENQUEUE_SUPPORT);
 }
 
 int test_feature_macro_generic_adress_space(cl_device_id deviceID,
@@ -255,8 +250,8 @@ int test_feature_macro_generic_adress_space(cl_device_id deviceID,
 {
     std::string test_macro_name = "__opencl_c_generic_address_space";
     return test_feature_macro<cl_bool>(deviceID, context, queue, num_elements,
-                              test_macro_name,
-                              CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT);
+                                       test_macro_name,
+                                       CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT);
 }
 
 int test_feature_macro_pipes(cl_device_id deviceID, cl_context context,
