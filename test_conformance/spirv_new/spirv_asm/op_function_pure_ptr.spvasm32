@@ -7,7 +7,7 @@
                OpCapability Linkage
                OpCapability Kernel
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %1 "op_function_pure_ptr"
+               OpEntryPoint Kernel %1 "op_function_pure_ptr" %gl_GlobalInvocationID
                OpName %in "in"
                OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
                OpDecorate %gl_GlobalInvocationID Constant
@@ -15,7 +15,7 @@
                OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
-%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
       %float = OpTypeFloat 32
 %_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
@@ -23,7 +23,7 @@
     %uint_32 = OpConstant %uint 32
          %12 = OpTypeFunction %float %_ptr_CrossWorkgroup_float %uint
          %13 = OpTypeFunction %void %_ptr_CrossWorkgroup_float %uint %float
-%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
          %14 = OpFunction %float Pure %12
          %15 = OpFunctionParameter %_ptr_CrossWorkgroup_float
          %16 = OpFunctionParameter %uint

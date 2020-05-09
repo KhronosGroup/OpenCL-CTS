@@ -8,7 +8,7 @@
                OpCapability Kernel
                OpCapability Int64
                OpMemoryModel Physical64 OpenCL
-               OpEntryPoint Kernel %1 "select_if_dont_flatten"
+               OpEntryPoint Kernel %1 "select_if_dont_flatten" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %lhs "lhs"
                OpName %rhs "rhs"
@@ -20,7 +20,7 @@
                OpGroupDecorate %5 %res %lhs %rhs
       %ulong = OpTypeInt 64 0
     %v3ulong = OpTypeVector %ulong 3
-%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
        %bool = OpTypeBool
        %void = OpTypeVoid
        %uint = OpTypeInt 32 0
@@ -29,7 +29,7 @@
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
 %_ptr_Function_uint = OpTypePointer Function %uint
          %17 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint
-%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3ulong Input
           %1 = OpFunction %void None %17
         %res = OpFunctionParameter %_ptr_CrossWorkgroup_uint
         %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint

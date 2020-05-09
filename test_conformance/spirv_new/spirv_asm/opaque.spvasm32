@@ -7,7 +7,7 @@
                OpCapability Linkage
                OpCapability Kernel
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %1 "opaque"
+               OpEntryPoint Kernel %1 "opaque" %gl_GlobalInvocationID
                OpName %in "in"
                OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
                OpDecorate %gl_GlobalInvocationID Constant
@@ -16,14 +16,14 @@
                OpDecorate %4 LinkageAttributes "opaque_store" Import
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
-%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
       %float = OpTypeFloat 32
 %Opaque_opaque_t = OpTypeOpaque "opaque_t"
 %_ptr_CrossWorkgroup_Opaque_opaque_t = OpTypePointer CrossWorkgroup %Opaque_opaque_t
 %float_3_14159274 = OpConstant %float 3.14159274
          %13 = OpTypeFunction %void %_ptr_CrossWorkgroup_Opaque_opaque_t
-%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
          %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_Opaque_opaque_t %uint %float
           %4 = OpFunction %void None %14
          %15 = OpFunctionParameter %_ptr_CrossWorkgroup_Opaque_opaque_t

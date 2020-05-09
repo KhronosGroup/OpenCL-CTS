@@ -8,7 +8,7 @@
                OpCapability Kernel
                OpCapability Int64
                OpMemoryModel Physical64 OpenCL
-               OpEntryPoint Kernel %1 "op_function_pure_ptr"
+               OpEntryPoint Kernel %1 "op_function_pure_ptr" %gl_GlobalInvocationID
                OpName %in "in"
                OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
                OpDecorate %gl_GlobalInvocationID Constant
@@ -16,7 +16,7 @@
                OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
       %ulong = OpTypeInt 64 0
     %v3ulong = OpTypeVector %ulong 3
-%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
        %void = OpTypeVoid
       %float = OpTypeFloat 32
 %_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
@@ -24,7 +24,7 @@
    %ulong_32 = OpConstant %ulong 32
          %12 = OpTypeFunction %float %_ptr_CrossWorkgroup_float %ulong
          %13 = OpTypeFunction %void %_ptr_CrossWorkgroup_float %ulong %float
-%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3ulong Input
          %14 = OpFunction %float Pure %12
          %15 = OpFunctionParameter %_ptr_CrossWorkgroup_float
          %16 = OpFunctionParameter %ulong
