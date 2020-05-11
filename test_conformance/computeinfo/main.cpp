@@ -15,6 +15,7 @@
 //
 #include "harness/compat.h"
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -489,7 +490,7 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
                     | CL_DEVICE_TYPE_DEFAULT;
                 if (info->config.fp_config & ~all_device_types)
                 {
-                    log_info("WARNING: %s unknown bits found 0x%08llX",
+                    log_info("WARNING: %s unknown bits found 0x%08" PRIX64,
                              info->opcode_name,
                              (info->config.fp_config & ~all_device_types));
                 }
@@ -519,7 +520,7 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
                     | CL_FP_ROUND_TO_INF | CL_FP_FMA
                     | CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT;
                 if (info->config.fp_config & ~all_fp_config)
-                    log_info("WARNING: %s unknown bits found 0x%08llX",
+                    log_info("WARNING: %s unknown bits found 0x%08" PRIX64,
                              info->opcode_name,
                              (info->config.fp_config & ~all_fp_config));
             }
@@ -573,7 +574,7 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
                 cl_device_exec_capabilities all_exec_cap =
                     CL_EXEC_KERNEL | CL_EXEC_NATIVE_KERNEL;
                 if (info->config.exec_capabilities & ~all_exec_cap)
-                    log_info("WARNING: %s unknown bits found 0x%08llX",
+                    log_info("WARNING: %s unknown bits found 0x%08" PRIX64,
                              info->opcode_name,
                              (info->config.exec_capabilities & ~all_exec_cap));
             }
@@ -592,7 +593,7 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
                     CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
                     | CL_QUEUE_PROFILING_ENABLE;
                 if (info->config.queue_properties & ~all_queue_properties)
-                    log_info("WARNING: %s unknown bits found 0x%08llX",
+                    log_info("WARNING: %s unknown bits found 0x%08" PRIX64,
                              info->opcode_name,
                              (info->config.exec_capabilities
                               & ~all_queue_properties));
@@ -638,7 +639,7 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
                     | CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE;
                 if (info->config.affinity_domain & ~all_affinity_domain)
                     log_error(
-                        "ERROR: %s unknown bits found 0x%08llX",
+                        "ERROR: %s unknown bits found 0x%08" PRIX64,
                         info->opcode_name,
                         (info->config.affinity_domain & ~all_affinity_domain));
             }
@@ -655,7 +656,8 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
             log_info("\t%s == %zu\n", info->opcode_name, info->config.sizet);
             break;
         case type_cl_ulong:
-            log_info("\t%s == %lld\n", info->opcode_name, info->config.ull);
+            log_info("\t%s == %" PRIu64 "\n", info->opcode_name,
+                     info->config.ull);
             break;
         case type_string:
             log_info("\t%s == \"%s\"\n", info->opcode_name,
@@ -684,7 +686,7 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
                     | CL_DEVICE_SVM_FINE_GRAIN_SYSTEM | CL_DEVICE_SVM_ATOMICS;
                 if (info->config.svmCapabilities & ~all_svm_capabilities)
                     log_info(
-                        "WARNING: %s unknown bits found 0x%08llX",
+                        "WARNING: %s unknown bits found 0x%08" PRIX64,
                         info->opcode_name,
                         (info->config.svmCapabilities & ~all_svm_capabilities));
             }
