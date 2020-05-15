@@ -13,17 +13,6 @@
                OpEntryPoint Kernel %9 "spec_const_kernel" %__spirv_BuiltInGlobalInvocationId
          %36 = OpString "kernel_arg_type.spec_const_kernel.int*,int*,"
                OpSource OpenCL_C 102000
-               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
-               OpName %numbers_buffer "numbers_buffer"
-               OpName %spec_constant_value "spec_constant_value"
-               OpName %entry "entry"
-               OpName %numbers_buffer_addr "numbers_buffer.addr"
-               OpName %spec_constant_value_addr "spec_constant_value.addr"
-               OpName %id "id"
-               OpName %call "call"
-               OpName %arrayidx "arrayidx"
-               OpName %add "add"
-               OpName %arrayidx1 "arrayidx1"
                OpDecorate %37 Alignment 4
          %37 = OpDecorationGroup
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId

@@ -14,33 +14,6 @@
                OpEntryPoint Kernel %17 "spec_const_kernel" %__spirv_BuiltInGlobalInvocationId
          %63 = OpString "kernel_arg_type.spec_const_kernel.uchar*,uint*,"
                OpSource OpenCL_C 102000
-               OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
-               OpName %test_value "test_value"
-               OpName %entry "entry"
-               OpName %numbers_buffer "numbers_buffer"
-               OpName %value "value"
-               OpName %entry_0 "entry"
-               OpName %if_then "if.then"
-               OpName %if_else "if.else"
-               OpName %if_end "if.end"
-               OpName %numbers_buffer_addr "numbers_buffer.addr"
-               OpName %value_addr "value.addr"
-               OpName %id "id"
-               OpName %kernel_value "kernel_value"
-               OpName %call "call"
-               OpName %call1 "call1"
-               OpName %frombool "frombool"
-               OpName %tobool "tobool"
-               OpName %arrayidx "arrayidx"
-               OpName %conv "conv"
-               OpName %add "add"
-               OpName %conv2 "conv2"
-               OpName %arrayidx3 "arrayidx3"
-               OpName %arrayidx4 "arrayidx4"
-               OpName %conv5 "conv5"
-               OpName %sub "sub"
-               OpName %conv6 "conv6"
-               OpName %arrayidx7 "arrayidx7"
                OpDecorate %64 Alignment 8
          %64 = OpDecorationGroup
                OpDecorate %65 NoSignedWrap
