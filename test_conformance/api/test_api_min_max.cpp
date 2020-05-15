@@ -1872,145 +1872,97 @@ int test_min_max_queue_properties(cl_device_id deviceID, cl_context context, cl_
 
 int test_min_max_device_version(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    cl_int error, i;
-    cl_char buffer[ 4098 ];
-    size_t length;
+    // Query for the device version.
+    Version device_cl_version = get_device_cl_version(deviceID);
+    log_info("Returned version %s.\n", device_cl_version.to_string().c_str());
 
-
-    // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
-    test_error( error, "Unable to get device version string" );
-    if( memcmp( buffer, "OpenCL ", strlen( "OpenCL " ) ) != 0 )
-    {
-        log_error( "ERROR: Initial part of device version string does not match required format! (returned: %s)\n", (char *)buffer );
-        return -1;
-    }
-
-    log_info("Returned version %s.\n", buffer);
-
-    char *p1 = (char *)buffer + strlen( "OpenCL " );
-    while( *p1 == ' ' )
-        p1++;
-    char *p2 = p1;
-    if( ! isdigit(*p2) )
-    {
-        log_error( "ERROR: Major revision number must follow space behind OpenCL! (returned %s)\n", (char*) buffer );
-        return -1;
-    }
-    while( isdigit( *p2 ) )
-        p2++;
-    if( *p2 != '.' )
-    {
-        log_error( "ERROR: Version number must contain a decimal point! (returned: %s)\n", (char *)buffer );
-        return -1;
-    }
-    char *p3 = p2 + 1;
-    if( ! isdigit(*p3) )
-    {
-        log_error( "ERROR: Minor revision number is missing or does not abut the decimal point! (returned %s)\n", (char*) buffer );
-        return -1;
-    }
-    while( isdigit( *p3 ) )
-        p3++;
-    if( *p3 != ' ' )
-    {
-        log_error( "ERROR: A space must appear after the minor version! (returned: %s)\n", (char *)buffer );
-        return -1;
-    }
-    *p2 = ' '; // Put in a space for atoi below.
-    p2++;
-
-    int major = atoi( p1 );
-    int minor = atoi( p2 );
-    int minor_revision = 2;
-    if( getenv("OPENCL_1_0_DEVICE"))
-    {
-        minor_revision = 0;
-        log_info( "WARNING: This test was run with OPENCL_1_0_DEVICE defined!  This is not a OpenCL 1.1 or OpenCL 1.2 compatible device!!!\n" );
-    }
-    else if( getenv("OPENCL_1_1_DEVICE"))
-    {
-        minor_revision = 1;
-        log_info( "WARNING: This test was run with OPENCL_1_1_DEVICE defined!  This is not a OpenCL 1.2 compatible device!!!\n" );
-    }
-    if( major * 10 + minor < 10 + minor_revision )
-    {
-        log_error( "ERROR: OpenCL device version returned is less than 1.%d! (Returned: %s)\n", minor_revision, (char *)buffer );
-        return -1;
-    }
-
-    // Sanity checks on the returned values
-    if( length != (strlen( (char *)buffer ) + 1 ))
-    {
-        log_error( "ERROR: Returned length of version string does not match actual length (actual: %d, returned: %d)\n", (int)strlen( (char *)buffer ), (int)length );
-        return -1;
-    }
-
-    // Make sure 2.0 devices support required extensions for 2.0
-    const char *requiredExtensions20[] =
-    {
-        "cl_khr_byte_addressable_store",
+    // Make sure 2.x devices support required extensions for 2.x
+    // note: these extensions are **not** required for devices
+    // supporting OpenCL-3.0
+    const char *requiredExtensions2x[] = {
         "cl_khr_3d_image_writes",
         "cl_khr_image2d_from_buffer",
         "cl_khr_depth_images",
-        "cl_khr_fp64",
     };
 
     // Make sure 1.1 devices support required extensions for 1.1
-    const char *requiredExtensions[] =
-    {
+    const char *requiredExtensions11[] = {
         "cl_khr_global_int32_base_atomics",
         "cl_khr_global_int32_extended_atomics",
         "cl_khr_local_int32_base_atomics",
         "cl_khr_local_int32_extended_atomics",
         "cl_khr_byte_addressable_store",
-        NULL
     };
 
-    if( major * 10 + minor >= 11 )
+
+    if (device_cl_version >= Version(1, 1))
     {
-        log_info( "Checking for required extensions for OpenCL 1.1 and later devices...\n" );
-        for( i = 0; NULL != requiredExtensions[i]; i++ )
+        log_info("Checking for required extensions for OpenCL 1.1 and later "
+                 "devices...\n");
+        for (int i = 0; i < ARRAY_SIZE(requiredExtensions11); i++)
         {
-            if(!is_extension_available(deviceID, requiredExtensions[i]))
+            if (!is_extension_available(deviceID, requiredExtensions11[i]))
             {
-                log_error( "ERROR: Required extension for 1.1 and greater devices is not in extension string: %s\n", requiredExtensions[i] );
+                log_error("ERROR: Required extension for 1.1 and greater "
+                          "devices is not in extension string: %s\n",
+                          requiredExtensions11[i]);
                 return -1;
             }
             else
-                log_info( "\t%s\n", requiredExtensions[i] );
+                log_info("\t%s\n", requiredExtensions11[i]);
         }
 
-        if( major >= 2 )
+        if (device_cl_version >= Version(1, 2))
         {
-            log_info( "Checking for required extensions for OpenCL 2.0 and later devices...\n" );
-
-            // Check if double precision is supported, if it is, then check the extension "cl_khr_fp64"
-            cl_device_fp_config value;
-            int numRequiredExtension20 = sizeof(requiredExtensions20)/sizeof(char *);
-
-            error = clGetDeviceInfo( deviceID, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof( value ), &value, 0 );
-            test_error( error, "Unable to get device double fp config" );
-
-            // if double precision is not supported, then don't check extension "cl_khr_fp64"
-            numRequiredExtension20 -= (value == 0);
-
-            for( i = 0; i<numRequiredExtension20; i++ )
+            log_info("Checking for required extensions for OpenCL 1.2 and "
+                     "later devices...\n");
+            // The only required extension for an OpenCL-1.2 device is
+            // cl_khr_fp64 and it is only required if double precision is
+            // supported.
+            cl_device_fp_config doubles_supported;
+            cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_DOUBLE_FP_CONFIG,
+                                           sizeof(doubles_supported),
+                                           &doubles_supported, 0);
+            test_error(error, "Unable to get device double fp config");
+            if (doubles_supported)
             {
-                if(!is_extension_available(deviceID, requiredExtensions20[i]))
+                if (!is_extension_available(deviceID, "cl_khr_fp64"))
                 {
-                    log_error( "ERROR: Required extension for 2.0 and greater devices is not in extension string: %s\n", requiredExtensions20[i] );
+                    log_error(
+                        "ERROR: Required extension for 1.2 and greater devices "
+                        "is not in extension string: cl_khr_fp64\n");
+                }
+                else
+                {
+                    log_info("\t%s\n", "cl_khr_fp64");
+                }
+            }
+        }
+
+        if (device_cl_version >= Version(2, 0)
+            && device_cl_version < Version(3, 0))
+        {
+            log_info("Checking for required extensions for OpenCL 2.0, 2.1 and "
+                     "2.2 devices...\n");
+            for (int i = 0; i < ARRAY_SIZE(requiredExtensions2x); i++)
+            {
+                if (!is_extension_available(deviceID, requiredExtensions2x[i]))
+                {
+                    log_error("ERROR: Required extension for 2.0, 2.1 and 2.2 "
+                              "devices is not in extension string: %s\n",
+                              requiredExtensions2x[i]);
                     return -1;
                 }
                 else
-                    log_info( "\t%s\n", requiredExtensions20[i] );
+                {
+                    log_info("\t%s\n", requiredExtensions2x[i]);
+                }
             }
         }
     }
     else
-        log_info( "WARNING: skipping required extension test -- OpenCL 1.0 device.\n" );
-
-
+        log_info("WARNING: skipping required extension test -- OpenCL 1.0 "
+                 "device.\n");
     return 0;
 }
 
