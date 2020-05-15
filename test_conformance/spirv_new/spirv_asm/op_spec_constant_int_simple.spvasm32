@@ -30,10 +30,11 @@
                OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
                OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
                OpDecorate %add NoSignedWrap
+               OpDecorate %uint_0 SpecId 101
                OpGroupDecorate %37 %numbers_buffer_addr %spec_constant_value_addr %id
        %uint = OpTypeInt 32 0
       %uchar = OpTypeInt 8 0
-     %uint_0 = OpConstant %uint 0
+     %uint_0 = OpSpecConstant %uint 0
      %v3uint = OpTypeVector %uint 3
 %_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
