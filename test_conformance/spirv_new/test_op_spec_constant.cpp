@@ -128,7 +128,7 @@ int test_spec_constant(cl_device_id deviceID, cl_context context,
 
 
 #define TEST_SPEC_CONSTANT(NAME, type, value, spec_constant_value)             \
-    TEST_SPIRV_FUNC_VERSION(op_spec_constant_##NAME##_simple, Version(2, 1))   \
+    TEST_SPIRV_FUNC_VERSION(op_spec_constant_##NAME##_simple, Version(2, 2))   \
     {                                                                          \
         std::vector<type> inputs(1024, (type)value);                           \
         std::vector<type> references(1024,                                     \
