@@ -23,7 +23,6 @@
 #include <algorithm>
 
 
-
 #include "procs.h"
 #include "../../test_common/harness/conversions.h"
 
