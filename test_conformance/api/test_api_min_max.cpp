@@ -560,10 +560,12 @@ int test_min_max_image_2d_width(cl_device_id deviceID, cl_context context, cl_co
     PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID )
 
     auto version = get_device_cl_version(deviceID);
-    if (version == Version(1, 0)) {
-        minRequiredDimension =  gIsEmbedded ? 2048 : 4096;
+    if (version == Version(1, 0))
+    {
+        minRequiredDimension = gIsEmbedded ? 2048 : 4096;
     }
-    else {
+    else
+    {
         minRequiredDimension = gIsEmbedded ? 2048 : 8192;
     }
 
