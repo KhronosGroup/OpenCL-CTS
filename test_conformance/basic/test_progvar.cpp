@@ -599,6 +599,7 @@ static const TypeInfo& l_find_type( const char* name )
         if ( 0 == strcmp( name, type_info[i].get_name_c_str() ) ) return type_info[i];
     }
     assert(0);
+    return TypeInfo();
 }
 
 
