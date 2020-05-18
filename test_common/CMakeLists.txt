@@ -6,7 +6,7 @@ set(HARNESS_SOURCES
     harness/conversions.cpp
     harness/rounding_mode.cpp
     harness/msvc9.c
-    harness/crc32.c
+    harness/crc32.cpp
     harness/errorHelpers.cpp
     harness/genericThread.cpp
     harness/imageHelpers.cpp
