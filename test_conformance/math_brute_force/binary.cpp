@@ -28,15 +28,13 @@ int TestFunc_Double_Double_Double_common(const Func *f, MTdata, int isNextafter)
 const float twoToMinus126 = MAKE_HEX_FLOAT(0x1p-126f, 1, -126);
 const double twoToMinus1022 = MAKE_HEX_DOUBLE(0x1p-1022, 1, -1022);
 
-#if defined( __cplusplus )
-    extern "C"
-#endif
-const vtbl _binary = { "binary", TestFunc_Float_Float_Float, TestFunc_Double_Double_Double };
+extern const vtbl _binary = { "binary", TestFunc_Float_Float_Float,
+                              TestFunc_Double_Double_Double };
 
-#if defined( __cplusplus )
-    extern "C"
-#endif
-const vtbl _binary_nextafter = { "binary_nextafter", TestFunc_Float_Float_Float_nextafter, TestFunc_Double_Double_Double_nextafter };
+extern const vtbl _binary_nextafter = {
+    "binary_nextafter", TestFunc_Float_Float_Float_nextafter,
+    TestFunc_Double_Double_Double_nextafter
+};
 
 static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
 

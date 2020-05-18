@@ -16,8 +16,6 @@
 #include "testBase.h"
 #include "harness/os_helpers.h"
 
-extern cl_uint gRandomSeed;
-
 const char *define_kernel_code[] = {
 " #define VALUE\n"
 "__kernel void define_test(__global int *src, __global int *dstA, __global int *dstB)\n"

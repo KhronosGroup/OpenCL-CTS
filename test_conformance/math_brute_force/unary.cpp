@@ -25,10 +25,8 @@
 int TestFunc_Float_Float(const Func *f, MTdata);
 int TestFunc_Double_Double(const Func *f, MTdata);
 
-#if defined( __cplusplus)
-    extern "C"
-#endif
-const vtbl _unary = { "unary", TestFunc_Float_Float, TestFunc_Double_Double };
+extern const vtbl _unary = { "unary", TestFunc_Float_Float,
+                             TestFunc_Double_Double };
 
 static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
 static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );

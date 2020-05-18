@@ -16,16 +16,8 @@
 #ifndef SLEEP_H
 #define SLEEP_H
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 void PreventSleep( void );
 void ResumeSleep( void );
-
-#if defined(__cplusplus)
-}
-#endif //__cplusplus
 
 #endif /* SLEEP_H */
 

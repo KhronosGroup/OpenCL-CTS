@@ -21,10 +21,7 @@
 int TestFunc_mad(const Func *f, MTdata);
 int TestFunc_mad_Double(const Func *f, MTdata);
 
-#if defined( __cplusplus)
-    extern "C"
-#endif
-const vtbl _mad_tbl = { "ternary", TestFunc_mad, TestFunc_mad_Double };
+extern const vtbl _mad_tbl = { "ternary", TestFunc_mad, TestFunc_mad_Double };
 
 static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_program *p );
 static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl_program *p );

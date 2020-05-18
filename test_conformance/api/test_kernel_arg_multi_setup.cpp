@@ -27,8 +27,6 @@ const char *multi_arg_kernel_source_pattern =
 "    dst3[tid] = src3[tid];\n"
 "}\n";
 
-extern cl_uint gRandomSeed;
-
 #define MAX_ERROR_TOLERANCE 0.0005f
 
 int test_multi_arg_set(cl_device_id device, cl_context context, cl_command_queue queue,

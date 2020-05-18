@@ -21,10 +21,8 @@
 int TestMacro_Int_Float(const Func *f, MTdata);
 int TestMacro_Int_Double(const Func *f, MTdata);
 
-#if defined( __cplusplus)
-    extern "C"
-#endif
-const vtbl _macro_unary = { "macro_unary", TestMacro_Int_Float, TestMacro_Int_Double };
+extern const vtbl _macro_unary = { "macro_unary", TestMacro_Int_Float,
+                                   TestMacro_Int_Double };
 
 static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
 static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );

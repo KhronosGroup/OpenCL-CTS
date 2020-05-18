@@ -26,10 +26,6 @@
 
 extern MTdata gMTdata;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern int test_sub_group_info(cl_device_id device, cl_context context,
                                cl_command_queue queue, int num_elements);
 extern int test_work_item_functions(cl_device_id device, cl_context context,
@@ -40,9 +36,5 @@ extern int test_barrier_functions(cl_device_id device, cl_context context,
                                   cl_command_queue queue, int num_elements);
 extern int test_pipe_functions(cl_device_id device, cl_context context,
                                cl_command_queue queue, int num_elements);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /*_procs_h*/

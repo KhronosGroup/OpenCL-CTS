@@ -23,16 +23,8 @@
 
 #include <CL/opencl.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-
 /* Determines if an extension is supported by a device. */
 int is_extension_available(cl_device_id device, const char *extensionName);
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus
 
 /* Returns a string containing the supported extensions list for a device. */
 std::string get_device_extensions_string(cl_device_id device);

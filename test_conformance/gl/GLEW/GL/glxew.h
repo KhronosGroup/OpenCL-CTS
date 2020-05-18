@@ -100,10 +100,6 @@
 #include <X11/Xmd.h>
 #include <GL/glew.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* ---------------------------- GLX_VERSION_1_0 --------------------------- */
 
 #ifndef GLX_VERSION_1_0
@@ -1767,9 +1763,5 @@ GLEWAPI GLboolean GLEWAPIENTRY glxewIsSupported (const char *name);
 #endif
 
 GLEWAPI GLboolean GLEWAPIENTRY glxewGetExtension (const char *name);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __glxew_h__ */

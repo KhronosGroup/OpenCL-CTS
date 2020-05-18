@@ -23,8 +23,6 @@
     #include <CL/cl_gl.h>
 #endif
 
-extern "C" { extern cl_uint gRandomSeed; };
-
 extern int supportsHalf(cl_context context, bool* supports_half);
 
 static int test_image_info( cl_context context, cl_command_queue queue,

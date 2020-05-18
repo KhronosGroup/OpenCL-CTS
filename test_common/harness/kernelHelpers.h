@@ -40,10 +40,6 @@
 #include "deviceInfo.h"
 #include "harness/alloc.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-
 /*
  *  The below code is intended to be used at the top of kernels that appear inline in files to set line and file info for the kernel:
  *
@@ -176,9 +172,5 @@ cl_device_fp_config get_default_rounding_mode( cl_device_id device );
 
 /* Prints out the standard device header for all tests given the device to print for */
 extern int printDeviceHeader( cl_device_id device );
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus
 
 #endif // _kernelHelpers_h

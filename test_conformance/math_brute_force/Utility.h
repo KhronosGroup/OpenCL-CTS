@@ -90,16 +90,10 @@ extern cl_device_fp_config gDoubleCapabilities;
     #define scalbnl( _a, _i )       ldexpl( _a, _i )
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 float Abs_Error( float test, double reference );
 float Ulp_Error( float test, double reference );
 //float Ulp_Error_Half( float test, double reference );
 float Bruteforce_Ulp_Error_Double( double test, long double reference );
-#ifdef __cplusplus
-} //extern "C"
-#endif
 
 uint64_t GetTime( void );
 double SubtractTime( uint64_t endTime, uint64_t startTime );
@@ -230,11 +224,7 @@ static inline void Force64BitFPUPrecision(void)
 #endif
 }
 
-#ifdef __cplusplus
-extern "C"
-#else
 extern
-#endif
 void memset_pattern4(void *dest, const void *src_pattern, size_t bytes );
 
 typedef union

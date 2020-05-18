@@ -19,8 +19,6 @@
 #include <ctype.h>
 #include <string.h>
 
-extern cl_uint gRandomSeed;
-
 const char *sample_single_param_kernel[] = {
     "__kernel void sample_test(__global int *src)\n"
     "{\n"

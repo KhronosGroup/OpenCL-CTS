@@ -21,8 +21,6 @@
     #include <CL/cl_gl.h>
 #endif
 
-extern "C" { extern cl_uint gRandomSeed; };
-
 static const char *bufferKernelPattern =
 "__kernel void sample_test( __global %s%s *source, __global %s%s *clDest, __global %s%s *glDest )\n"
 "{\n"
