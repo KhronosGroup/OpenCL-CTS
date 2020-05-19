@@ -1038,9 +1038,11 @@ int test_work_group_functions(cl_device_id device, cl_context context,
         device, context, queue, num_elements, "test_scexmin", scexmin_source);
 
 
-    if (gTestIFP) {
-    error |= test<cl_int, IFP, G, L>::run(device, context, queue, num_elements,
-                                          "test_ifp", ifp_source, NUM_LOC + 1);
+    if (gTestIFP)
+    {
+        error |=
+            test<cl_int, IFP, G, L>::run(device, context, queue, num_elements,
+                                         "test_ifp", ifp_source, NUM_LOC + 1);
     }
     return error;
 }

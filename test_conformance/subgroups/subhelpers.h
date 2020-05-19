@@ -333,13 +333,16 @@ struct test
                                 (void *)&platform, NULL);
         test_error(error, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
 
-        kstrings[0] = gUseCoreSubgroups ? "\n" : "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
-        kstrings[1] = "#define XY(M,I) M[I].x = get_sub_group_local_id(); M[I].y = get_sub_group_id();\n";
+        kstrings[0] = gUseCoreSubgroups
+            ? "\n"
+            : "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
+        kstrings[1] = "#define XY(M,I) M[I].x = get_sub_group_local_id(); "
+                      "M[I].y = get_sub_group_id();\n";
         kstrings[2] = TypeDef<Ty>::val();
         kstrings[3] = src;
-        error = create_single_kernel_helper_with_build_options(context, &program, &kernel, 4, kstrings, kname, "-cl-std=CL2.0");
-        if (error != 0)
-            return error;
+        error = create_single_kernel_helper_with_build_options(
+            context, &program, &kernel, 4, kstrings, kname, "-cl-std=CL2.0");
+        if (error != 0) return error;
 
         // Determine some local dimensions to use for the test.
         global = GSIZE;
@@ -351,42 +354,51 @@ struct test
         if (local > LSIZE) local = LSIZE;
 
         // Get the sub group info
-        if (gUseCoreSubgroups) {
-            error = clGetKernelSubGroupInfo(kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE,
+        if (gUseCoreSubgroups)
+        {
+            error = clGetKernelSubGroupInfo(
+                kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE,
                 sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
-            test_error(error, "clGetKernelSubGroupInfo failed for CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE");
+            test_error(error,
+                       "clGetKernelSubGroupInfo failed for "
+                       "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE");
             subgroup_size = (int)tmp;
 
-            error = clGetKernelSubGroupInfo(kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE,
+            error = clGetKernelSubGroupInfo(
+                kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE,
                 sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
-            test_error(error, "clGetKernelSubGroupInfo failed for CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE");
+            test_error(error,
+                       "clGetKernelSubGroupInfo failed for "
+                       "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE");
             num_subgroups = (int)tmp;
-        } else {
-            clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfoKHR_ptr;
-        clGetKernelSubGroupInfoKHR_ptr = (clGetKernelSubGroupInfoKHR_fn)
-            clGetExtensionFunctionAddressForPlatform(
-                platform, "clGetKernelSubGroupInfoKHR");
-        if (clGetKernelSubGroupInfoKHR_ptr == NULL)
+        }
+        else
         {
-            log_error(
-                "ERROR: clGetKernelSubGroupInfoKHR function not available");
+            clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfoKHR_ptr;
+            clGetKernelSubGroupInfoKHR_ptr = (clGetKernelSubGroupInfoKHR_fn)
+                clGetExtensionFunctionAddressForPlatform(
+                    platform, "clGetKernelSubGroupInfoKHR");
+            if (clGetKernelSubGroupInfoKHR_ptr == NULL)
+            {
+                log_error(
+                    "ERROR: clGetKernelSubGroupInfoKHR function not available");
                 return -1;
             }
 
-        error = clGetKernelSubGroupInfoKHR_ptr(
-            kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR,
-            sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
-        test_error(error,
-                   "clGetKernelSubGroupInfoKHR failed for "
-                   "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR");
+            error = clGetKernelSubGroupInfoKHR_ptr(
+                kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR,
+                sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
+            test_error(error,
+                       "clGetKernelSubGroupInfoKHR failed for "
+                       "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR");
             subgroup_size = (int)tmp;
 
-        error = clGetKernelSubGroupInfoKHR_ptr(
-            kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR,
-            sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
-        test_error(error,
-                   "clGetKernelSubGroupInfoKHR failed for "
-                   "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR");
+            error = clGetKernelSubGroupInfoKHR_ptr(
+                kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR,
+                sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
+            test_error(error,
+                       "clGetKernelSubGroupInfoKHR failed for "
+                       "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR");
             num_subgroups = (int)tmp;
         }
         // Make sure the number of sub groups is what we expect
