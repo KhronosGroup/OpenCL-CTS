@@ -74,7 +74,7 @@ static test_status InitCL(cl_device_id device)
     {
         return ret;
     }
-    if (version > Version(2, 2))
+    if (version >= Version(3, 0))
     {
         cl_uint max_sub_groups;
         int error;
