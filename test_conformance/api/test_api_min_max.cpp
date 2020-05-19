@@ -554,29 +554,19 @@ int test_min_max_image_2d_width(cl_device_id deviceID, cl_context context, cl_co
     cl_image_format image_format_desc;
     cl_ulong maxAllocSize;
     cl_uint minRequiredDimension;
-    cl_char buffer[ 4098 ];
     size_t length;
 
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID )
 
-    // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
-    test_error( error, "Unable to get device version string" );
-    if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 2.1", strlen( "OpenCL 2.1" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 1.2", strlen( "OpenCL 1.2" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 1.1", strlen( "OpenCL 1.1" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if ( memcmp( buffer, "OpenCL 1.0", strlen( "OpenCL 1.0" ) ) == 0 )
+    auto version = get_device_cl_version(deviceID);
+    if (version == Version(1, 0))
+    {
         minRequiredDimension = gIsEmbedded ? 2048 : 4096;
+    }
     else
     {
-        log_error( "ERROR: device version string does not match required format! (returned: %s)\n", (char *)buffer );
-        return -1;
+        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
     }
 
 
@@ -633,28 +623,18 @@ int test_min_max_image_2d_height(cl_device_id deviceID, cl_context context, cl_c
     cl_image_format image_format_desc;
     cl_ulong maxAllocSize;
     cl_uint minRequiredDimension;
-    cl_char buffer[ 4098 ];
     size_t length;
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID )
 
-    // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
-    test_error( error, "Unable to get device version string" );
-    if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 2.1", strlen( "OpenCL 2.1" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 1.2", strlen( "OpenCL 1.2" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 1.1", strlen( "OpenCL 1.1" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if ( memcmp( buffer, "OpenCL 1.0", strlen( "OpenCL 1.0" ) ) == 0 )
-       minRequiredDimension = gIsEmbedded ? 2048 : 4096;
+    auto version = get_device_cl_version(deviceID);
+    if (version == Version(1, 0))
+    {
+        minRequiredDimension = gIsEmbedded ? 2048 : 4096;
+    }
     else
     {
-        log_error( "ERROR: device version string does not match required format! (returned: %s)\n", (char *)buffer );
-        return -1;
+        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
     }
 
     /* Just get any ol format to test with */
