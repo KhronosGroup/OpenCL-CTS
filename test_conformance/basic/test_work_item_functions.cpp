@@ -26,7 +26,7 @@
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
-typedef struct work_item_data
+struct work_item_data
 {
     cl_uint workDim;
     cl_uint globalSize[ 3 ];
