@@ -124,6 +124,7 @@ endif (GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
 
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
+include(CheckCXXCompilerFlag)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
     set(CLConform_TARGET_ARCH ARM)
@@ -139,16 +140,22 @@ if(NOT DEFINED CLConform_TARGET_ARCH)
     message (FATAL_ERROR "Target architecture not recognised. Exiting.")
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=cpp") # Allow #warning
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unknown-pragmas")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=absolute-value")
-    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=asm-operand-widths")
+macro(add_cxx_flag_if_supported flag)
+    string(REGEX REPLACE "[-=+]" "" FLAG_NO_SIGNS ${flag})
+    check_cxx_compiler_flag(${flag} COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
+    if(COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
     endif()
+endmacro(add_cxx_flag_if_supported)
+
+if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    add_cxx_flag_if_supported(-Wno-narrowing)
+    add_cxx_flag_if_supported(-Wno-format)
+    add_cxx_flag_if_supported(-Werror)
+    add_cxx_flag_if_supported(-Wno-error=cpp)
+    add_cxx_flag_if_supported(-Wno-error=absolute-value)
+    add_cxx_flag_if_supported(-Wno-error=unknown-pragmas)
+    add_cxx_flag_if_supported(-Wno-error=asm-operand-widths)
 
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float
