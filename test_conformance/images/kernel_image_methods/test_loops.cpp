@@ -111,7 +111,8 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
         gDeviceLt20 = true;
     }
 
-    if (version_check = (version < Version(1,2))) {
+    if ((version_check = (version < Version(1, 2))))
+    {
         switch (imageType) {
             case CL_MEM_OBJECT_IMAGE1D:
             test_missing_feature(version_check, "image_1D");
@@ -120,7 +121,7 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
             test_missing_feature(version_check, "image_2D_array");
     }
-  }
+    }
 
   int ret = 0;
     ret += test_image_type( device, context, queue, imageType, CL_MEM_READ_ONLY );

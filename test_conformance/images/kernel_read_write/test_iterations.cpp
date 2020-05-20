@@ -1008,9 +1008,12 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues, double
                             maxPixel = sample_image_pixel_float_offset( imageValues, imageInfo,
                                                                         xOffsetValues[ j ], yOffsetValues[ j ], 0.0f, norm_offset_x, norm_offset_y, 0.0f,
                                                                         imageSampler, expected, 0, &containsDenormals );
-                        float err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                        float err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                        float err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
+                        float err1 =
+                            fabs(sRGBmap(resultPtr[0]) - sRGBmap(expected[0]));
+                        float err2 =
+                            fabs(sRGBmap(resultPtr[1]) - sRGBmap(expected[1]));
+                        float err3 =
+                            fabs(sRGBmap(resultPtr[2]) - sRGBmap(expected[2]));
                         float err4 = fabsf( resultPtr[3] - expected[3] );
                         float maxErr = 0.5;
 
@@ -1034,9 +1037,12 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues, double
                                                                                  xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                  imageSampler, expected, 0, NULL );
 
-                                err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                                err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                                err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
+                                err1 = fabs(sRGBmap(resultPtr[0])
+                                            - sRGBmap(expected[0]));
+                                err2 = fabs(sRGBmap(resultPtr[1])
+                                            - sRGBmap(expected[1]));
+                                err3 = fabs(sRGBmap(resultPtr[2])
+                                            - sRGBmap(expected[2]));
                                 err4 = fabsf( resultPtr[3] - expected[3] );
                             }
                         }
@@ -1075,9 +1081,12 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues, double
                                                                                         xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                         imageSampler, expected, 0, &containsDenormals );
 
-                            float err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                            float err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                            float err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
+                            float err1 = fabs(sRGBmap(resultPtr[0])
+                                              - sRGBmap(expected[0]));
+                            float err2 = fabs(sRGBmap(resultPtr[1])
+                                              - sRGBmap(expected[1]));
+                            float err3 = fabs(sRGBmap(resultPtr[2])
+                                              - sRGBmap(expected[2]));
                             float err4 = fabsf( resultPtr[3] - expected[3] );
                             float maxErr = 0.6;
 
@@ -1099,9 +1108,12 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues, double
                                                                                      xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                      imageSampler, expected, 0, NULL );
 
-                                    err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                                    err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                                    err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
+                                    err1 = fabs(sRGBmap(resultPtr[0])
+                                                - sRGBmap(expected[0]));
+                                    err2 = fabs(sRGBmap(resultPtr[1])
+                                                - sRGBmap(expected[1]));
+                                    err3 = fabs(sRGBmap(resultPtr[2])
+                                                - sRGBmap(expected[2]));
                                     err4 = fabsf( resultPtr[3] - expected[3] );
                                 }
                             }

@@ -638,9 +638,12 @@ int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                                           norm_offset_x, norm_offset_y, norm_offset_z,
                                                                                           imageSampler, expected, 0, &hasDenormals, lod );
 
-                                    float err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                                    float err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                                    float err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
+                                    float err1 = fabs(sRGBmap(resultPtr[0])
+                                                      - sRGBmap(expected[0]));
+                                    float err2 = fabs(sRGBmap(resultPtr[1])
+                                                      - sRGBmap(expected[1]));
+                                    float err3 = fabs(sRGBmap(resultPtr[2])
+                                                      - sRGBmap(expected[2]));
                                     float err4 = fabsf( resultPtr[3] - expected[3] );
                                     // Clamp to the minimum absolute error for the format
                                     if (err1 > 0 && err1 < formatAbsoluteError) { err1 = 0.0f; }
@@ -663,9 +666,12 @@ int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                                        norm_offset_x, norm_offset_y, norm_offset_z,
                                                                                        imageSampler, expected, 0, NULL, lod );
 
-                                            err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                                            err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                                            err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
+                                            err1 = fabs(sRGBmap(resultPtr[0])
+                                                        - sRGBmap(expected[0]));
+                                            err2 = fabs(sRGBmap(resultPtr[1])
+                                                        - sRGBmap(expected[1]));
+                                            err3 = fabs(sRGBmap(resultPtr[2])
+                                                        - sRGBmap(expected[2]));
                                             err4 = fabsf( resultPtr[3] - expected[3] );
                                         }
                                     }
@@ -691,9 +697,15 @@ int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                                               norm_offset_x, norm_offset_y, norm_offset_z,
                                                                                               imageSampler, expected, 0, &hasDenormals, lod );
 
-                                        float err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                                        float err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                                        float err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
+                                        float err1 =
+                                            fabs(sRGBmap(resultPtr[0])
+                                                 - sRGBmap(expected[0]));
+                                        float err2 =
+                                            fabs(sRGBmap(resultPtr[1])
+                                                 - sRGBmap(expected[1]));
+                                        float err3 =
+                                            fabs(sRGBmap(resultPtr[2])
+                                                 - sRGBmap(expected[2]));
                                         float err4 = fabsf( resultPtr[3] - expected[3] );
                                         float maxErr = 0.6;
 
@@ -710,9 +722,15 @@ int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                                     xOffsetValues[ j ], yOffsetValues[ j ], zOffsetValues[ j ],
                                                                                     imageSampler, expected, 0, NULL, lod );
 
-                                                err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                                                err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                                                err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
+                                                err1 = fabs(
+                                                    sRGBmap(resultPtr[0])
+                                                    - sRGBmap(expected[0]));
+                                                err2 = fabs(
+                                                    sRGBmap(resultPtr[1])
+                                                    - sRGBmap(expected[1]));
+                                                err3 = fabs(
+                                                    sRGBmap(resultPtr[2])
+                                                    - sRGBmap(expected[2]));
                                                 err4 = fabsf( resultPtr[3] - expected[3] );
                                             }
                                         }
@@ -1311,7 +1329,3 @@ int test_read_image_set_3D( cl_device_id device, cl_context context, cl_command_
 
     return 0;
 }
-
-
-
-

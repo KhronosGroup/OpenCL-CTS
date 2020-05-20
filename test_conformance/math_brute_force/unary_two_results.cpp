@@ -240,8 +240,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d)
             if ( gTestFastRelaxed && strcmp(f->name,"sincos") == 0 )
             {
               float pj = *(float *)&p[j];
-              if(fabs(pj) > M_PI)
-                p[j] = NAN;
+              if (fabs(pj) > M_PI) p[j] = 0;
             }
           }
         }
@@ -253,8 +252,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d)
             if ( gTestFastRelaxed && strcmp(f->name,"sincos") == 0 )
             {
               float pj = *(float *)&p[j];
-              if(fabs(pj) > M_PI)
-                p[j] = NAN;
+              if (fabs(pj) > M_PI) p[j] = 0;
             }
           }
         }
