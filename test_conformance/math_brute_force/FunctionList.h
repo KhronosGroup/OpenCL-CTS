@@ -30,10 +30,6 @@
 
 #include "harness/mt19937.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef union fptr
 {
     void    *p;
@@ -96,10 +92,6 @@ typedef struct Func
 extern const Func  functionList[];
 
 extern const size_t functionListCount;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

@@ -266,10 +266,6 @@ typedef _W64 int ptrdiff_t;
 #define GLEW_VAR_EXPORT GLEWAPI
 #define GLEW_FUN_EXPORT GLEWAPI
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* ----------------------------- GL_VERSION_1_1 ---------------------------- */
 
 #ifndef GL_VERSION_1_1
@@ -23660,10 +23656,6 @@ GLEWAPI GLboolean glewExperimental;
 GLEWAPI GLboolean GLEWAPIENTRY glewGetExtension (const char *name);
 GLEWAPI const GLubyte * GLEWAPIENTRY glewGetErrorString (GLenum error);
 GLEWAPI const GLubyte * GLEWAPIENTRY glewGetString (GLenum name);
-
-#ifdef __cplusplus
-}
-#endif
 
 #ifdef GLEW_APIENTRY_DEFINED
 #undef GLEW_APIENTRY_DEFINED

@@ -15,8 +15,6 @@
 //
 #include "testBase.h"
 
-extern "C" { extern cl_uint gRandomSeed;}
-
 // This test is designed to stress changing kernel arguments between execute calls (that are asynchronous and thus
 // potentially overlapping) to make sure each kernel gets the right arguments
 

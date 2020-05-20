@@ -48,10 +48,6 @@ private:
 
 Version get_device_cl_version(cl_device_id device);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define ADD_TEST(fn)                                                           \
     {                                                                          \
         test_##fn, #fn, Version(1, 0)                                          \
@@ -152,9 +148,6 @@ extern int      gIsOpenCL_C_1_0_Device; // This is set to 1 if the device suppor
     void     memset_pattern4(void *, const void *, size_t);
 #endif
 
-#ifdef __cplusplus
-}
-#endif
 extern void PrintArch(void);
 
 

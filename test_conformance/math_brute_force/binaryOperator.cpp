@@ -21,11 +21,9 @@
 int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata);
 int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata);
 
-#if defined(__cplusplus)
-    extern "C"
-#endif
-
-const vtbl _binary_operator = { "binaryOperator", TestFunc_Float_Float_Float_Operator, TestFunc_Double_Double_Double_Operator };
+extern const vtbl _binary_operator = { "binaryOperator",
+                                       TestFunc_Float_Float_Float_Operator,
+                                       TestFunc_Double_Double_Double_Operator };
 
 static int BuildKernel( const char *name, const char *operator_symbol, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
 static int BuildKernelDouble( const char *name, const char *operator_symbol, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );

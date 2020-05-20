@@ -21,10 +21,8 @@
 int TestFunc_Float_UInt(const Func *f, MTdata);
 int TestFunc_Double_ULong(const Func *f, MTdata);
 
-#if defined( __cplusplus)
-    extern "C"
-#endif
-const vtbl _unary_u = { "unary_u", TestFunc_Float_UInt, TestFunc_Double_ULong };
+extern const vtbl _unary_u = { "unary_u", TestFunc_Float_UInt,
+                               TestFunc_Double_ULong };
 
 
 static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_program *p );

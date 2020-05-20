@@ -24,10 +24,6 @@
 #include <CL/opencl.h>
 #endif
 #include <stdlib.h>
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define LOWER_IS_BETTER     0
 #define HIGHER_IS_BETTER    1
 
@@ -149,10 +145,6 @@ static int vlog_win32(const char *format, ...)
 }
 #endif
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // _errorHelpers_h
 

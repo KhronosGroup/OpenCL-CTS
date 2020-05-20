@@ -25,10 +25,6 @@
 #include <stdio.h>
 #include "errorHelpers.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
   // helper function to replace clCreateImage2D , to make the existing code use
   // the functions of version 1.2 and veriosn 1.1  respectively
@@ -282,9 +278,5 @@ extern "C" {
         return mImage;
     }
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

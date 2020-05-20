@@ -22,10 +22,8 @@
 int TestFunc_Float_Float_Int(const Func *f, MTdata);
 int TestFunc_Double_Double_Int(const Func *f, MTdata);
 
-#if defined( __cplusplus)
-    extern "C"
-#endif
-const vtbl _binary_i = { "binary_i", TestFunc_Float_Float_Int, TestFunc_Double_Double_Int };
+extern const vtbl _binary_i = { "binary_i", TestFunc_Float_Float_Int,
+                                TestFunc_Double_Double_Int };
 
 static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
 static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );

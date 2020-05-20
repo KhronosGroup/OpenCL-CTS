@@ -21,8 +21,6 @@
 #include <CL/cl_gl.h>
 #endif
 
-extern "C" {extern cl_uint gRandomSeed;};
-
 static int test_renderbuffer_object_info( cl_context context, cl_command_queue queue,
                                           GLsizei width, GLsizei height, GLenum attachment,
                                           GLenum format, GLenum internalFormat,

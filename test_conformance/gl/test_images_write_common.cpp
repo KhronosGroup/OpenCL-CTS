@@ -24,8 +24,6 @@
     #include <CL/cl_gl.h>
 #endif
 
-extern "C" { extern cl_uint gRandomSeed; };
-
 #pragma mark -
 #pragma mark Write test kernels
 
