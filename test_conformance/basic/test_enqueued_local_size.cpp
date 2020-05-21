@@ -74,14 +74,41 @@ test_enqueued_local_size(cl_device_id device, cl_context context, cl_command_que
     size_t localsize[2];
     int err;
 
+    // For an OpenCL-3.0 device that does not support non-uniform work-groups
+    // we cannot enqueue local sizes which do not divide the global dimensions
+    // but we can still run the test checking that get_enqueued_local_size ==
+    // get_local_size.
+    bool use_uniform_work_groups{ false };
+    if (get_device_cl_version(device) >= Version(3, 0))
+    {
+        cl_bool areNonUniformWorkGroupsSupported = false;
+        err = clGetDeviceInfo(device, CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT,
+                              sizeof(areNonUniformWorkGroupsSupported),
+                              &areNonUniformWorkGroupsSupported, nullptr);
+        test_error_ret(err, "clGetDeviceInfo failed.", TEST_FAIL);
+
+        if (CL_FALSE == areNonUniformWorkGroupsSupported)
+        {
+            log_info("Non-uniform work group sizes are not supported, "
+                     "enqueuing with uniform workgroups\n");
+            use_uniform_work_groups = true;
+        }
+    }
+
     output_ptr   = (int*)malloc(2 * sizeof(int));
 
     streams = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), 2*sizeof(int), NULL, &err);
     test_error( err, "clCreateBuffer failed.");
 
-    err = create_single_kernel_helper_with_build_options(context, &program[0], &kernel[0], 1, &enqueued_local_size_1d_code, "test_enqueued_local_size_1d", "-cl-std=CL2.0");
+    std::string cl_std = "-cl-std=CL";
+    cl_std += (get_device_cl_version(device) == Version(3, 0)) ? "3.0" : "2.0";
+    err = create_single_kernel_helper_with_build_options(
+        context, &program[0], &kernel[0], 1, &enqueued_local_size_1d_code,
+        "test_enqueued_local_size_1d", cl_std.c_str());
     test_error( err, "create_single_kernel_helper failed");
-    err = create_single_kernel_helper_with_build_options(context, &program[1], &kernel[1], 1, &enqueued_local_size_2d_code, "test_enqueued_local_size_2d", "-cl-std=CL2.0");
+    err = create_single_kernel_helper_with_build_options(
+        context, &program[1], &kernel[1], 1, &enqueued_local_size_2d_code,
+        "test_enqueued_local_size_2d", cl_std.c_str());
     test_error( err, "create_single_kernel_helper failed");
 
     err  = clSetKernelArg(kernel[0], 0, sizeof streams, &streams);
@@ -98,6 +125,20 @@ test_enqueued_local_size(cl_device_id device, cl_context context, cl_command_que
 
     localsize[0] = MIN(16, max_wgs);
     localsize[1] = MIN(11, max_wgs / localsize[0]);
+    // If we need to use uniform workgroups because non-uniform workgroups are
+    // not supported, round up to the next global size that is divisible by the
+    // local size.
+    if (use_uniform_work_groups)
+    {
+        if (globalsize[0] % localsize[0])
+        {
+            globalsize[0] += (localsize[0] - (globalsize[0] % localsize[0]));
+        }
+        if (globalsize[1] % localsize[1])
+        {
+            globalsize[1] += (localsize[1] - (globalsize[1] % localsize[1]));
+        }
+    }
 
     err = clEnqueueNDRangeKernel(queue, kernel[1], 2, NULL, globalsize, localsize, 0, NULL, NULL);
     test_error( err, "clEnqueueNDRangeKernel failed.");
@@ -109,6 +150,10 @@ test_enqueued_local_size(cl_device_id device, cl_context context, cl_command_que
 
     globalsize[0] = (size_t)num_elements;
     localsize[0] = 9;
+    if (use_uniform_work_groups && (globalsize[0] % localsize[0]))
+    {
+        globalsize[0] += (localsize[0] - (globalsize[0] % localsize[0]));
+    }
     err = clEnqueueNDRangeKernel(queue, kernel[1], 1, NULL, globalsize, localsize, 0, NULL, NULL);
     test_error( err, "clEnqueueNDRangeKernel failed.");
 
