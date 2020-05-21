@@ -75,6 +75,14 @@ int test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_comman
     size_t ret_ndrange2d_flattened;
     size_t ret_ndrange3d_flattened;
 
+    // This test should be skipped in the case that the cl_khr_subgroups
+    // extension is not supported.
+    if (!is_extension_available(deviceID, "cl_khr_subgroups"))
+    {
+        log_info("Skipping since cl_khr_subgroups is not supported on device\n");
+        return TEST_SKIP;
+    }
+
     error = create_single_kernel_helper_with_build_options(context, &program, &kernel, 1, subgroup_dispatch_kernel, "subgroup_dispatch_kernel", "-cl-std=CL2.0");
     if (error != 0)
         return error;
