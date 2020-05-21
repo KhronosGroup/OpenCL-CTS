@@ -522,13 +522,13 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                             xOffsetValues[ j ], 0.0f, 0.0f, norm_offset_x, 0.0f, 0.0f,
                                                                             imageSampler, expected, 0, &containsDenormals, lod );
 
-                            float err1 = fabs(sRGBmap(resultPtr[0])
-                                              - sRGBmap(expected[0]));
-                            float err2 = fabs(sRGBmap(resultPtr[1])
-                                              - sRGBmap(expected[1]));
-                            float err3 = fabs(sRGBmap(resultPtr[2])
-                                              - sRGBmap(expected[2]));
-                            float err4 = fabsf( resultPtr[3] - expected[3] );
+                            float err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                                   sRGBmap(expected[0]));
+                            float err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                                   sRGBmap(expected[1]));
+                            float err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                                   sRGBmap(expected[2]));
+                            float err4 = ABS_ERROR(resultPtr[3], expected[3]);
 
                             float maxErr = 0.5;
 
@@ -547,13 +547,13 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                                  xOffsetValues[ j ], 0.0f, 0.0f, norm_offset_x, 0.0f, 0.0f,
                                                                                  imageSampler, expected, 0, NULL, lod );
 
-                                    err1 = fabs(sRGBmap(resultPtr[0])
-                                                - sRGBmap(expected[0]));
-                                    err2 = fabs(sRGBmap(resultPtr[1])
-                                                - sRGBmap(expected[1]));
-                                    err3 = fabs(sRGBmap(resultPtr[2])
-                                                - sRGBmap(expected[2]));
-                                    err4 = fabsf( resultPtr[3] - expected[3] );
+                                    err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                                     sRGBmap(expected[0]));
+                                    err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                                     sRGBmap(expected[1]));
+                                    err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                                     sRGBmap(expected[2]));
+                                    err4 = ABS_ERROR(resultPtr[3], expected[3]);
                                 }
                             }
 
@@ -582,13 +582,14 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                                         xOffsetValues[ j ], 0.0f, 0.0f, norm_offset_x, 0.0f, 0.0f,
                                                                                         imageSampler, expected, 0, &containsDenormals, lod );
 
-                                float err1 = fabs(sRGBmap(resultPtr[0])
-                                                  - sRGBmap(expected[0]));
-                                float err2 = fabs(sRGBmap(resultPtr[1])
-                                                  - sRGBmap(expected[1]));
-                                float err3 = fabs(sRGBmap(resultPtr[2])
-                                                  - sRGBmap(expected[2]));
-                                float err4 = fabsf( resultPtr[3] - expected[3] );
+                                float err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                                       sRGBmap(expected[0]));
+                                float err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                                       sRGBmap(expected[1]));
+                                float err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                                       sRGBmap(expected[2]));
+                                float err4 =
+                                    ABS_ERROR(resultPtr[3], expected[3]);
 
                                 float maxErr = 0.6;
 
@@ -606,13 +607,14 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                                      xOffsetValues[ j ], 0.0f, 0.0f, norm_offset_x, 0.0f, 0.0f,
                                                                                      imageSampler, expected, 0, NULL, lod );
 
-                                        err1 = fabs(sRGBmap(resultPtr[0])
-                                                    - sRGBmap(expected[0]));
-                                        err2 = fabs(sRGBmap(resultPtr[1])
-                                                    - sRGBmap(expected[1]));
-                                        err3 = fabs(sRGBmap(resultPtr[2])
-                                                    - sRGBmap(expected[2]));
-                                        err4 = fabsf( resultPtr[3] - expected[3] );
+                                        err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                                         sRGBmap(expected[0]));
+                                        err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                                         sRGBmap(expected[1]));
+                                        err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                                         sRGBmap(expected[2]));
+                                        err4 = ABS_ERROR(resultPtr[3],
+                                                         expected[3]);
                                     }
                                 }
                                 if( ! (err1 <= maxErr) || ! (err2 <= maxErr)    ||
@@ -679,10 +681,10 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                             xOffsetValues[ j ], 0.0f, 0.0f, norm_offset_x, 0.0f, 0.0f,
                                                                             imageSampler, expected, 0, &containsDenormals, lod );
 
-                            float err1 = fabsf( resultPtr[0] - expected[0] );
-                            float err2 = fabsf( resultPtr[1] - expected[1] );
-                            float err3 = fabsf( resultPtr[2] - expected[2] );
-                            float err4 = fabsf( resultPtr[3] - expected[3] );
+                            float err1 = ABS_ERROR(resultPtr[0], expected[0]);
+                            float err2 = ABS_ERROR(resultPtr[1], expected[1]);
+                            float err3 = ABS_ERROR(resultPtr[2], expected[2]);
+                            float err4 = ABS_ERROR(resultPtr[3], expected[3]);
                             // Clamp to the minimum absolute error for the format
                             if (err1 > 0 && err1 < formatAbsoluteError) { err1 = 0.0f; }
                             if (err2 > 0 && err2 < formatAbsoluteError) { err2 = 0.0f; }
@@ -711,10 +713,10 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                                  xOffsetValues[ j ], 0.0f, 0.0f, norm_offset_x, 0.0f, 0.0f,
                                                                                  imageSampler, expected, 0, NULL, lod );
 
-                                    err1 = fabsf( resultPtr[0] - expected[0] );
-                                    err2 = fabsf( resultPtr[1] - expected[1] );
-                                    err3 = fabsf( resultPtr[2] - expected[2] );
-                                    err4 = fabsf( resultPtr[3] - expected[3] );
+                                    err1 = ABS_ERROR(resultPtr[0], expected[0]);
+                                    err2 = ABS_ERROR(resultPtr[1], expected[1]);
+                                    err3 = ABS_ERROR(resultPtr[2], expected[2]);
+                                    err4 = ABS_ERROR(resultPtr[3], expected[3]);
                                 }
                             }
 
@@ -743,10 +745,14 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                                         xOffsetValues[ j ], 0.0f, 0.0f, norm_offset_x, 0.0f, 0.0f,
                                                                                         imageSampler, expected, 0, &containsDenormals, lod );
 
-                                float err1 = fabsf( resultPtr[0] - expected[0] );
-                                float err2 = fabsf( resultPtr[1] - expected[1] );
-                                float err3 = fabsf( resultPtr[2] - expected[2] );
-                                float err4 = fabsf( resultPtr[3] - expected[3] );
+                                float err1 =
+                                    ABS_ERROR(resultPtr[0], expected[0]);
+                                float err2 =
+                                    ABS_ERROR(resultPtr[1], expected[1]);
+                                float err3 =
+                                    ABS_ERROR(resultPtr[2], expected[2]);
+                                float err4 =
+                                    ABS_ERROR(resultPtr[3], expected[3]);
                                 float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
                                 float maxErr2 = MAX( maxErr * maxPixel.p[1], FLT_MIN );
                                 float maxErr3 = MAX( maxErr * maxPixel.p[2], FLT_MIN );
@@ -768,10 +774,14 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                                                                                      xOffsetValues[ j ], 0.0f, 0.0f, norm_offset_x, 0.0f, 0.0f,
                                                                                      imageSampler, expected, 0, NULL, lod );
 
-                                        err1 = fabsf( resultPtr[0] - expected[0] );
-                                        err2 = fabsf( resultPtr[1] - expected[1] );
-                                        err3 = fabsf( resultPtr[2] - expected[2] );
-                                        err4 = fabsf( resultPtr[3] - expected[3] );
+                                        err1 = ABS_ERROR(resultPtr[0],
+                                                         expected[0]);
+                                        err2 = ABS_ERROR(resultPtr[1],
+                                                         expected[1]);
+                                        err3 = ABS_ERROR(resultPtr[2],
+                                                         expected[2]);
+                                        err4 = ABS_ERROR(resultPtr[3],
+                                                         expected[3]);
                                     }
                                 }
                                 if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    ||
