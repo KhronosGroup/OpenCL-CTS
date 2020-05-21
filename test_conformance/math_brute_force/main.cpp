@@ -15,10 +15,9 @@
 //
 #include "Utility.h"
 
-#include <stdio.h>
-#include <string.h>
-
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
 #include <time.h>
 #include "FunctionList.h"
 #include "Sleep.h"
@@ -106,24 +105,6 @@ cl_device_fp_config gDoubleCapabilities = 0;
 int             gWimpyReductionFactor = 32;
 int             gWimpyBufferSize = BUFFER_SIZE;
 int             gVerboseBruteForce = 0;
-#if defined( __APPLE__ )
-int             gHasBasicDouble = 0;
-char*           gBasicDoubleFuncs[] = {
-                    "add",
-                    "assignment",
-                    "divide",
-                    "isequal",
-                    "isgreater",
-                    "isgreaterequal",
-                    "isless",
-                    "islessequal",
-                    "isnotequal",
-                    "multiply",
-                    "sqrt",
-                    "subtract" };
-size_t          gNumBasicDoubleFuncs = sizeof(gBasicDoubleFuncs)/sizeof(char*);
-#endif
-
 
 static int ParseArgs( int argc, const char **argv );
 static void PrintUsage( void );
@@ -255,44 +236,6 @@ int doTest( const char* name )
             //Re-enable testing fast-relaxed-math mode
             gTestFastRelaxed = testFastRelaxedTmp;
         }
-
-#if defined( __APPLE__ )
-        {
-            if( gHasBasicDouble && NULL != func_data->vtbl_ptr->DoubleTestFunc && NULL != func_data->dfunc.p)
-            {
-                //Disable fast-relaxed-math for double precision floating-point
-                int testFastRelaxedTmp = gTestFastRelaxed;
-                gTestFastRelaxed = 0;
-
-                int isBasicTest = 0;
-                for( size_t j = 0; j < gNumBasicDoubleFuncs; j++ ) {
-                    if( 0 == strcmp(gBasicDoubleFuncs[j], func_data->name ) ) {
-                        isBasicTest = 1;
-                        break;
-                    }
-                }
-                if (isBasicTest) {
-                    gTestCount++;
-                    if( gTestFloat )
-                        vlog( "    " );
-                    if( func_data->vtbl_ptr->DoubleTestFunc( func_data, gMTdata )  )
-                    {
-                        gFailCount++;
-                        error++;
-                        if( gStopOnError )
-                        {
-                            gTestFastRelaxed = testFastRelaxedTmp;
-                            gSkipRestOfTests = true;
-                            return error;
-                        }
-                    }
-                }
-
-                //Re-enable testing fast-relaxed-math mode
-                gTestFastRelaxed = testFastRelaxedTmp;
-            }
-        }
-#endif
     }
 
     return error;
@@ -1179,20 +1122,20 @@ test_status InitCL( cl_device_id device )
 
         if( DOUBLE_REQUIRED_FEATURES != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES) )
         {
-            char list[300] = "";
-            if( 0 == (gDoubleCapabilities & CL_FP_FMA) )
-                strncat( list, "CL_FP_FMA, ", sizeof( list )-1 );
+            std::string list;
+            if (0 == (gDoubleCapabilities & CL_FP_FMA)) list += "CL_FP_FMA, ";
             if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_NEAREST) )
-                strncat( list, "CL_FP_ROUND_TO_NEAREST, ", sizeof( list )-1 );
+                list += "CL_FP_ROUND_TO_NEAREST, ";
             if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_ZERO) )
-                strncat( list, "CL_FP_ROUND_TO_ZERO, ", sizeof( list )-1 );
+                list += "CL_FP_ROUND_TO_ZERO, ";
             if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_INF) )
-                strncat( list, "CL_FP_ROUND_TO_INF, ", sizeof( list )-1 );
+                list += "CL_FP_ROUND_TO_INF, ";
             if( 0 == (gDoubleCapabilities & CL_FP_INF_NAN) )
-                strncat( list, "CL_FP_INF_NAN, ", sizeof( list )-1 );
+                list += "CL_FP_INF_NAN, ";
             if( 0 == (gDoubleCapabilities & CL_FP_DENORM) )
-                strncat( list, "CL_FP_DENORM, ", sizeof( list )-1 );
-            vlog_error( "ERROR: required double features are missing: %s\n", list );
+                list += "CL_FP_DENORM, ";
+            vlog_error("ERROR: required double features are missing: %s\n",
+                       list.c_str());
 
             return TEST_FAIL;
         }
@@ -1201,43 +1144,6 @@ test_status InitCL( cl_device_id device )
         return TEST_FAIL;
 #endif
     }
-#if defined( __APPLE__ )
-    else if(is_extension_available(gDevice, "cl_APPLE_fp64_basic_ops" ))
-    {
-        gHasBasicDouble ^= 1;
-
-#if defined( CL_DEVICE_DOUBLE_FP_CONFIG )
-        if( (error = clGetDeviceInfo(gDevice, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof(gDoubleCapabilities), &gDoubleCapabilities, NULL)))
-        {
-            vlog_error( "ERROR: Unable to get device CL_DEVICE_DOUBLE_FP_CONFIG. (%d)\n", error );
-            return TEST_FAIL;
-        }
-
-        if( DOUBLE_REQUIRED_FEATURES != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES) )
-        {
-            char list[300] = "";
-            if( 0 == (gDoubleCapabilities & CL_FP_FMA) )
-                strncat( list, "CL_FP_FMA, ", sizeof( list ) );
-            if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_NEAREST) )
-                strncat( list, "CL_FP_ROUND_TO_NEAREST, ", sizeof( list ) );
-            if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_ZERO) )
-                strncat( list, "CL_FP_ROUND_TO_ZERO, ", sizeof( list ) );
-            if( 0 == (gDoubleCapabilities & CL_FP_ROUND_TO_INF) )
-                strncat( list, "CL_FP_ROUND_TO_INF, ", sizeof( list ) );
-            if( 0 == (gDoubleCapabilities & CL_FP_INF_NAN) )
-                strncat( list, "CL_FP_INF_NAN, ", sizeof( list ) );
-            if( 0 == (gDoubleCapabilities & CL_FP_DENORM) )
-                strncat( list, "CL_FP_DENORM, ", sizeof( list ) );
-            vlog_error( "ERROR: required double features are missing: %s\n", list );
-
-            return TEST_FAIL;
-        }
-#else
-        vlog_error( "FAIL: device says it supports cl_khr_fp64 but CL_DEVICE_DOUBLE_FP_CONFIG is not in the headers!\n" );
-        return TEST_FAIL;
-#endif
-    }
-#endif /* __APPLE__ */
 
     configSize = sizeof( gDeviceFrequency );
     if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY, configSize, &gDeviceFrequency, NULL )) )
@@ -1411,9 +1317,6 @@ test_status InitCL( cl_device_id device )
         vlog( "\t\t         can not accurately represent the right result to an accuracy closer\n" );
         vlog( "\t\t         than half an ulp. See comments in Bruteforce_Ulp_Error_Double() for more details.\n\n" );
     }
-#if defined( __APPLE__ )
-    vlog( "\tTesting basic double precision? %s\n", no_yes[0 != gHasBasicDouble] );
-#endif
 
     vlog( "\tIs Embedded? %s\n", no_yes[0 != gIsEmbedded] );
     if( gIsEmbedded )
