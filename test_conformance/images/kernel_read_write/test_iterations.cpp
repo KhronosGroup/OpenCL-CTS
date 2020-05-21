@@ -85,7 +85,7 @@ static const char *lodOffsetSource =
 static const char *offsetSource =
 "   int offset = tidY*get_image_width(input) + tidX;\n";
 
-#define ABS_ERROR(result, expected) (std::abs(expected - result))
+#define ABS_ERROR(result, expected) (fabs(expected - result))
 
 extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
                             int x, int y, int z, float *outData );

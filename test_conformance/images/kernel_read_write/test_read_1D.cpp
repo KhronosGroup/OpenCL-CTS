@@ -66,7 +66,7 @@ const char *float1DKernelSource =
 
 static const char *samplerKernelArg = " sampler_t imageSampler,";
 
-#define ABS_ERROR( result, expected ) ( fabsf( (float)expected - (float)result ) )
+#define ABS_ERROR(result, expected) (fabs((float)expected - (float)result))
 
 extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
                             int x, int y, int z, float *outData );
