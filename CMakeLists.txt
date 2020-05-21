@@ -156,6 +156,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
     add_cxx_flag_if_supported(-Wno-error=absolute-value)
     add_cxx_flag_if_supported(-Wno-error=unknown-pragmas)
     add_cxx_flag_if_supported(-Wno-error=asm-operand-widths)
+    add_cxx_flag_if_supported(-Wno-error=overflow) # Fixed by #699
 
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float
