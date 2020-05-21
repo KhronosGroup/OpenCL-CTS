@@ -152,10 +152,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
     add_cxx_flag_if_supported(-Wno-narrowing)
     add_cxx_flag_if_supported(-Wno-format)
     add_cxx_flag_if_supported(-Werror)
-    add_cxx_flag_if_supported(-Wno-error=cpp)
-    add_cxx_flag_if_supported(-Wno-error=absolute-value)
-    add_cxx_flag_if_supported(-Wno-error=unknown-pragmas)
-    add_cxx_flag_if_supported(-Wno-error=asm-operand-widths)
+    add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive
+    add_cxx_flag_if_supported(-Wno-error=absolute-value) # Issue 783
+    add_cxx_flag_if_supported(-Wno-error=unknown-pragmas) # Issue #785
+    add_cxx_flag_if_supported(-Wno-error=asm-operand-widths) # Issue #784
     add_cxx_flag_if_supported(-Wno-error=overflow) # Fixed by #699
 
     # -msse -mfpmath=sse to force gcc to use sse for float math,
