@@ -814,7 +814,7 @@ int test_images_write_common(cl_device_id device, cl_context context,
         {
             bool supports_msaa;
             int errorInGetInfo = supportsMsaa(context, &supports_msaa);
-            if( errorInGetInfo != 0 ) return errorInGetInfo;
+            if(errorInGetInfo != 0) return errorInGetInfo;
             if (!supports_msaa) return 0;
         }
         if (formats[ fidx ].formattype == GL_DEPTH_COMPONENT ||
@@ -822,7 +822,7 @@ int test_images_write_common(cl_device_id device, cl_context context,
         {
             bool supports_depth;
             int errorInGetInfo = supportsDepth(context, &supports_depth);
-            if( errorInGetInfo != 0 ) return errorInGetInfo;
+            if(errorInGetInfo != 0) return errorInGetInfo;
             if (!supports_depth) return 0;
         }
 #endif
