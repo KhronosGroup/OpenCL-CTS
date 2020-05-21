@@ -93,11 +93,6 @@ void ReleaseCL( void );
 int RunKernel( cl_device_id device, cl_kernel kernel, void *inBuf, void *outBuf, uint32_t blockCount , int extraArg);
 cl_program MakeProgram( cl_device_id device, const char *source[], int count );
 
-#define STRING( _x )    STRINGIFY( _x )
-#ifndef STRINGIFY
-#define STRINGIFY(x)    #x
-#endif
-
 static inline float as_float(cl_uint u) { union { cl_uint u; float f; }v; v.u = u; return v.f; }
 static inline double as_double(cl_ulong u) { union { cl_ulong u; double d; }v; v.u = u; return v.d; }
 
