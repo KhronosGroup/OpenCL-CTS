@@ -366,7 +366,6 @@ struct test
         size_t realSize;
         size_t global;
         size_t local;
-        const char *kstrings[4];
         clProgramWrapper program;
         clKernelWrapper kernel;
         cl_platform_id platform;
