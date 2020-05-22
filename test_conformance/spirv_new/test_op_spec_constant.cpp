@@ -24,22 +24,22 @@ int test_spec_constant(cl_device_id deviceID, cl_context context,
                        T spec_constant_value,
                        bool (*notEqual)(const T &, const T &) = isNotEqual<T>)
 {
-    if (name == "double")
+    if (std::string(name).find("double") != std::string::npos)
     {
         if (!is_extension_available(deviceID, "cl_khr_fp64"))
         {
             log_info("Extension cl_khr_fp64 not supported; skipping double "
                      "tests.\n");
-            return TEST_SKIP;
+            return TEST_SKIPPED_ITSELF;
         }
     }
-    if (name == "half")
+    if (std::string(name).find("half") != std::string::npos)
     {
         if (!is_extension_available(deviceID, "cl_khr_fp16"))
         {
             log_info(
                 "Extension cl_khr_fp16 not supported; skipping half tests.\n");
-            return TEST_SKIP;
+            return TEST_SKIPPED_ITSELF;
         }
     }
 
@@ -72,10 +72,6 @@ int test_spec_constant(cl_device_id deviceID, cl_context context,
     SPIRV_CHECK_ERROR(err, "Failed to enqueue kernel");
     clFinish(queue);
 
-    err = clSetProgramSpecializationConstant(prog, 101, sizeof(T),
-                                             &spec_constant_value);
-    SPIRV_CHECK_ERROR(err, "Failed to run clSetProgramSpecializationConstant");
-
     std::vector<T> device_results(num, 0);
     err = clEnqueueReadBuffer(queue, numbers_buffer, CL_TRUE, 0, bytes,
                               device_results.data(), 0, NULL, NULL);
@@ -91,6 +87,10 @@ int test_spec_constant(cl_device_id deviceID, cl_context context,
             return TEST_FAIL;
         }
     }
+
+    err = clSetProgramSpecializationConstant(prog, 101, sizeof(T),
+                                             &spec_constant_value);
+    SPIRV_CHECK_ERROR(err, "Failed to run clSetProgramSpecializationConstant");
 
     err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to build program");
