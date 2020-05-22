@@ -87,6 +87,9 @@ cl_int cImage_check_mem_host_write_only< T >::update_host_mem_2()
     test_error(err, "clWaitForEvents error");
   }
 
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
+
   this->host_m_2.Set_to_zero();
 
   err = clEnqueueReadImage(this->m_queue, this->m_Image_2, this->m_blocking,
@@ -99,6 +102,9 @@ cl_int cImage_check_mem_host_write_only< T >::update_host_mem_2()
     err = clWaitForEvents(1, &event);
     test_error(err, "clWaitForEvents error");
   }
+
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
 
   return err;
 }
@@ -152,6 +158,9 @@ cl_int cImage_check_mem_host_write_only<T>::verify_RW_Image()
   }
   test_error(err, "clEnqueueFillImage error");
 
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
+
   T v = TEST_VALUE;
 
   err= clEnqueueWriteImage(this->m_queue, this->m_Image, this->m_blocking,
@@ -164,6 +173,9 @@ cl_int cImage_check_mem_host_write_only<T>::verify_RW_Image()
     err = clWaitForEvents(1, &event);
     test_error(err, "clWaitForEvents error");
   }
+
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
 
   update_host_mem_2(); // Read buffer contents into mem_2
 
@@ -230,6 +242,9 @@ cl_int cImage_check_mem_host_write_only<T>::verify_RW_Image_Mapping()
     test_error(err, "clWaitForEvents error");
   }
 
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
+
   // Map image for writing
   T* dataPtr = (T*) clEnqueueMapImage(this->m_queue, this->m_Image,
                                       this->m_blocking, CL_MAP_WRITE,
@@ -243,6 +258,9 @@ cl_int cImage_check_mem_host_write_only<T>::verify_RW_Image_Mapping()
     err = clWaitForEvents(1, &event);
     test_error(err, "clWaitForEvents error");
   }
+
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
 
   // Verify map pointer
   err = this->verify_mapping_ptr(dataPtr);
@@ -269,6 +287,9 @@ cl_int cImage_check_mem_host_write_only<T>::verify_RW_Image_Mapping()
     err = clWaitForEvents(1, &event);
     test_error(err, "clWaitForEvents error");
   }
+
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
 
   dataPtr = (T*) clEnqueueMapImage(this->m_queue, this->m_Image, this->m_blocking,
                                    CL_MAP_READ,
