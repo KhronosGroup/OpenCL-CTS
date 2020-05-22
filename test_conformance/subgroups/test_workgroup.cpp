@@ -126,98 +126,6 @@ static const char *scexmin_source =
     "    out[gid] = sub_group_scan_exclusive_min(in[gid]);\n"
     "}\n";
 
-// These need to stay in sync with the kernel source below
-#define NUM_LOC 49
-#define INST_LOC_MASK 0x7f
-#define INST_OP_SHIFT 0
-#define INST_OP_MASK 0xf
-#define INST_LOC_SHIFT 4
-#define INST_VAL_SHIFT 12
-#define INST_VAL_MASK 0x7ffff
-#define INST_END 0x0
-#define INST_STORE 0x1
-#define INST_WAIT 0x2
-#define INST_COUNT 0x3
-
-static const char *ifp_source =
-    "#define NUM_LOC 49\n"
-    "#define INST_LOC_MASK 0x7f\n"
-    "#define INST_OP_SHIFT 0\n"
-    "#define INST_OP_MASK 0xf\n"
-    "#define INST_LOC_SHIFT 4\n"
-    "#define INST_VAL_SHIFT 12\n"
-    "#define INST_VAL_MASK 0x7ffff\n"
-    "#define INST_END 0x0\n"
-    "#define INST_STORE 0x1\n"
-    "#define INST_WAIT 0x2\n"
-    "#define INST_COUNT 0x3\n"
-    "\n"
-    "__kernel void\n"
-    "test_ifp(const __global int *in, __global int2 *xy, __global int *out)\n"
-    "{\n"
-    "    __local atomic_int loc[NUM_LOC];\n"
-    "\n"
-    "    // Don't run if there is only one sub group\n"
-    "    if (get_num_sub_groups() == 1)\n"
-    "        return;\n"
-    "\n"
-    "    // First initialize loc[]\n"
-    "    int lid = (int)get_local_id(0);\n"
-    "\n"
-    "    if (lid < NUM_LOC)\n"
-    "        atomic_init(loc+lid, 0);\n"
-    "\n"
-    "    work_group_barrier(CLK_LOCAL_MEM_FENCE);\n"
-    "\n"
-    "    // Compute pointer to this sub group's \"instructions\"\n"
-    "    const __global int *pc = in +\n"
-    "        ((int)get_group_id(0)*(int)get_enqueued_num_sub_groups() +\n"
-    "         (int)get_sub_group_id()) *\n"
-    "        (NUM_LOC+1);\n"
-    "\n"
-    "    // Set up to \"run\"\n"
-    "    bool ok = (int)get_sub_group_local_id() == 0;\n"
-    "    bool run = true;\n"
-    "\n"
-    "    while (run) {\n"
-    "        int inst = *pc++;\n"
-    "        int iop = (inst >> INST_OP_SHIFT) & INST_OP_MASK;\n"
-    "        int iloc = (inst >> INST_LOC_SHIFT) & INST_LOC_MASK;\n"
-    "        int ival = (inst >> INST_VAL_SHIFT) & INST_VAL_MASK;\n"
-    "\n"
-    "        switch (iop) {\n"
-    "        case INST_STORE:\n"
-    "            if (ok)\n"
-    "                atomic_store(loc+iloc, ival);\n"
-    "            break;\n"
-    "        case INST_WAIT:\n"
-    "            if (ok) {\n"
-    "                while (atomic_load(loc+iloc) != ival)\n"
-    "                    ;\n"
-    "            }\n"
-    "            break;\n"
-    "        case INST_COUNT:\n"
-    "            if (ok) {\n"
-    "                int i;\n"
-    "                for (i=0;i<ival;++i)\n"
-    "                    atomic_fetch_add(loc+iloc, 1);\n"
-    "            }\n"
-    "            break;\n"
-    "        case INST_END:\n"
-    "            run = false;\n"
-    "            break;\n"
-    "        }\n"
-    "\n"
-    "        sub_group_barrier(CLK_LOCAL_MEM_FENCE);\n"
-    "    }\n"
-    "\n"
-    "    work_group_barrier(CLK_LOCAL_MEM_FENCE);\n"
-    "\n"
-    "    // Save this group's result\n"
-    "    __global int *op = out + (int)get_group_id(0)*NUM_LOC;\n"
-    "    if (lid < NUM_LOC)\n"
-    "        op[lid] = atomic_load(loc+lid);\n"
-    "}\n";
 
 // Any/All test functions
 template <int Which> struct AA
@@ -713,168 +621,11 @@ template <typename Ty> struct BC
     }
 };
 
-// Independent forward progress stuff
-// Note:
-//   Output needs num_groups * NUM_LOC elements
-//   local_size must be > NUM_LOC
-//   Input needs num_groups * num_sub_groups * (NUM_LOC+1) elements
-
-static inline int inst(int op, int loc, int val)
-{
-    return (val << INST_VAL_SHIFT) | (loc << INST_LOC_SHIFT)
-        | (op << INST_OP_SHIFT);
-}
-
-void gen_insts(cl_int *x, cl_int *p, int n)
-{
-    int i, j0, j1;
-    int val;
-    int ii[NUM_LOC];
-
-    // Create a random permutation of 0...NUM_LOC-1
-    ii[0] = 0;
-    for (i = 1; i < NUM_LOC; ++i)
-    {
-        j0 = random_in_range(0, i, gMTdata);
-        if (j0 != i) ii[i] = ii[j0];
-        ii[j0] = i;
-    }
-
-    // Initialize "instruction pointers"
-    memset(p, 0, n * 4);
-
-    for (i = 0; i < NUM_LOC; ++i)
-    {
-        // Randomly choose 2 different sub groups
-        // One does a random amount of work, and the other waits for it
-        j0 = random_in_range(0, n - 1, gMTdata);
-
-        do
-        {
-            j1 = random_in_range(0, n - 1, gMTdata);
-        } while (j1 == j0);
-
-        // Randomly choose a wait value and assign "instructions"
-        val = random_in_range(100, 200 + 10 * NUM_LOC, gMTdata);
-        x[j0 * (NUM_LOC + 1) + p[j0]] = inst(INST_COUNT, ii[i], val);
-        x[j1 * (NUM_LOC + 1) + p[j1]] = inst(INST_WAIT, ii[i], val);
-        ++p[j0];
-        ++p[j1];
-    }
-
-    // Last "inst" for each sub group is END
-    for (i = 0; i < n; ++i) x[i * (NUM_LOC + 1) + p[i]] = inst(INST_END, 0, 0);
-}
-
-// Execute one group's "instructions"
-void run_insts(cl_int *x, cl_int *p, int n)
-{
-    int i, nend;
-    bool scont;
-    cl_int loc[NUM_LOC];
-
-    // Initialize result and "instruction pointers"
-    memset(loc, 0, sizeof(loc));
-    memset(p, 0, 4 * n);
-
-    // Repetitively loop over subgroups with each executing "instructions" until
-    // blocked The loop terminates when all subgroups have hit the "END
-    // instruction"
-    do
-    {
-        nend = 0;
-        for (i = 0; i < n; ++i)
-        {
-            do
-            {
-                cl_int inst = x[i * (NUM_LOC + 1) + p[i]];
-                cl_int iop = (inst >> INST_OP_SHIFT) & INST_OP_MASK;
-                cl_int iloc = (inst >> INST_LOC_SHIFT) & INST_LOC_MASK;
-                cl_int ival = (inst >> INST_VAL_SHIFT) & INST_VAL_MASK;
-                scont = false;
-
-                switch (iop)
-                {
-                    case INST_STORE:
-                        loc[iloc] = ival;
-                        ++p[i];
-                        scont = true;
-                        break;
-                    case INST_WAIT:
-                        if (loc[iloc] == ival)
-                        {
-                            ++p[i];
-                            scont = true;
-                        }
-                        break;
-                    case INST_COUNT:
-                        loc[iloc] += ival;
-                        ++p[i];
-                        scont = true;
-                        break;
-                    case INST_END: ++nend; break;
-                }
-            } while (scont);
-        }
-    } while (nend < n);
-
-    // Return result, reusing "p"
-    memcpy(p, loc, sizeof(loc));
-}
-
-
-struct IFP
-{
-    static void gen(cl_int *x, cl_int *t, cl_int *, int ns, int nw, int ng)
-    {
-        int k;
-        int nj = (nw + ns - 1) / ns;
-
-        // We need at least 2 sub groups per group for this test
-        if (nj == 1) return;
-
-        for (k = 0; k < ng; ++k)
-        {
-            gen_insts(x, t, nj);
-            x += nj * (NUM_LOC + 1);
-        }
-    }
-
-    static int chk(cl_int *x, cl_int *y, cl_int *t, cl_int *, cl_int *, int ns,
-                   int nw, int ng)
-    {
-        int i, k;
-        int nj = (nw + ns - 1) / ns;
-
-        // We need at least 2 sub groups per group for this tes
-        if (nj == 1) return 0;
-
-        log_info("  independent forward progress...\n");
-
-        for (k = 0; k < ng; ++k)
-        {
-            run_insts(x, t, nj);
-            for (i = 0; i < NUM_LOC; ++i)
-            {
-                if (t[i] != y[i])
-                {
-                    log_error(
-                        "ERROR: mismatch at element %d in work group %d\n", i,
-                        k);
-                    return -1;
-                }
-            }
-            x += nj * (NUM_LOC + 1);
-            y += NUM_LOC;
-        }
-
-        return 0;
-    }
-};
 
 // Entry point from main
 int test_work_group_functions(cl_device_id device, cl_context context,
-                              cl_command_queue queue, int num_elements)
+                              cl_command_queue queue, int num_elements,
+                              bool useCoreSubgroups)
 {
     int error;
 
@@ -883,181 +634,234 @@ int test_work_group_functions(cl_device_id device, cl_context context,
 #define L 200
 
     error = test<int, AA<0>, G, L>::run(device, context, queue, num_elements,
-                                        "test_any", any_source);
+                                        "test_any", any_source, 0,
+                                        useCoreSubgroups);
     error |= test<int, AA<1>, G, L>::run(device, context, queue, num_elements,
-                                         "test_all", all_source);
+                                         "test_all", all_source, 0,
+                                         useCoreSubgroups);
 
     // error |= test<cl_half, BC<cl_half>, G, L>::run(device, context, queue,
     // num_elements, "test_bcast", bcast_source);
     error |= test<cl_uint, BC<cl_uint>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source);
+        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
+        useCoreSubgroups);
     error |= test<cl_int, BC<cl_int>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source);
+        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
+        useCoreSubgroups);
     error |= test<cl_ulong, BC<cl_ulong>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source);
+        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
+        useCoreSubgroups);
     error |= test<cl_long, BC<cl_long>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source);
+        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
+        useCoreSubgroups);
     error |= test<float, BC<float>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source);
+        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
+        useCoreSubgroups);
     error |= test<double, BC<double>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source);
+        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
+        useCoreSubgroups);
 
     // error |= test<cl_half, RED<cl_half,0>, G, L>::run(device, context, queue,
     // num_elements, "test_redadd", redadd_source);
     error |= test<cl_uint, RED<cl_uint, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source);
+        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
+        useCoreSubgroups);
     error |= test<cl_int, RED<cl_int, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source);
+        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
+        useCoreSubgroups);
     error |= test<cl_ulong, RED<cl_ulong, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source);
+        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
+        useCoreSubgroups);
     error |= test<cl_long, RED<cl_long, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source);
+        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
+        useCoreSubgroups);
     error |= test<float, RED<float, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source);
+        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
+        useCoreSubgroups);
     error |= test<double, RED<double, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source);
+        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
+        useCoreSubgroups);
 
     // error |= test<cl_half, RED<cl_half,1>, G, L>::run(device, context, queue,
     // num_elements, "test_redmax", redmax_source);
     error |= test<cl_uint, RED<cl_uint, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source);
+        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
+        useCoreSubgroups);
     error |= test<cl_int, RED<cl_int, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source);
+        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
+        useCoreSubgroups);
     error |= test<cl_ulong, RED<cl_ulong, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source);
+        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
+        useCoreSubgroups);
     error |= test<cl_long, RED<cl_long, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source);
+        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
+        useCoreSubgroups);
     error |= test<float, RED<float, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source);
+        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
+        useCoreSubgroups);
     error |= test<double, RED<double, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source);
+        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
+        useCoreSubgroups);
 
     // error |= test<cl_half, RED<cl_half,2>, G, L>::run(device, context, queue,
     // num_elements, "test_redmin", redmin_source);
     error |= test<cl_uint, RED<cl_uint, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source);
+        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
+        useCoreSubgroups);
     error |= test<cl_int, RED<cl_int, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source);
+        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
+        useCoreSubgroups);
     error |= test<cl_ulong, RED<cl_ulong, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source);
+        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
+        useCoreSubgroups);
     error |= test<cl_long, RED<cl_long, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source);
+        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
+        useCoreSubgroups);
     error |= test<float, RED<float, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source);
+        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
+        useCoreSubgroups);
     error |= test<double, RED<double, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source);
+        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
+        useCoreSubgroups);
 
     // error |= test<cl_half, SCIN<cl_half,0>, G, L>::run(device, context,
     // queue, num_elements, "test_scinadd", scinadd_source);
     error |= test<cl_uint, SCIN<cl_uint, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source);
+        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
+        useCoreSubgroups);
     error |= test<cl_int, SCIN<cl_int, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source);
+        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
+        useCoreSubgroups);
     error |= test<cl_ulong, SCIN<cl_ulong, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source);
+        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
+        useCoreSubgroups);
     error |= test<cl_long, SCIN<cl_long, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source);
+        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
+        useCoreSubgroups);
     error |= test<float, SCIN<float, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source);
+        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
+        useCoreSubgroups);
     error |= test<double, SCIN<double, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source);
+        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
+        useCoreSubgroups);
 
     // error |= test<cl_half, SCIN<cl_half,1>, G, L>::run(device, context,
     // queue, num_elements, "test_scinmax", scinmax_source);
     error |= test<cl_uint, SCIN<cl_uint, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source);
+        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
+        useCoreSubgroups);
     error |= test<cl_int, SCIN<cl_int, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source);
+        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
+        useCoreSubgroups);
     error |= test<cl_ulong, SCIN<cl_ulong, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source);
+        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
+        useCoreSubgroups);
     error |= test<cl_long, SCIN<cl_long, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source);
+        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
+        useCoreSubgroups);
     error |= test<float, SCIN<float, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source);
+        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
+        useCoreSubgroups);
     error |= test<double, SCIN<double, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source);
+        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
+        useCoreSubgroups);
 
     // error |= test<cl_half, SCIN<cl_half,2>, G, L>::run(device, context,
     // queue, num_elements, "test_scinmin", scinmin_source);
     error |= test<cl_uint, SCIN<cl_uint, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source);
+        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
+        useCoreSubgroups);
     error |= test<cl_int, SCIN<cl_int, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source);
+        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
+        useCoreSubgroups);
     error |= test<cl_ulong, SCIN<cl_ulong, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source);
+        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
+        useCoreSubgroups);
     error |= test<cl_long, SCIN<cl_long, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source);
+        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
+        useCoreSubgroups);
     error |= test<float, SCIN<float, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source);
+        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
+        useCoreSubgroups);
     error |= test<double, SCIN<double, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source);
+        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
+        useCoreSubgroups);
 
     // error |= test<cl_half, SCEX<cl_half,0>, G, L>::run(device, context,
     // queue, num_elements, "test_scexadd", scexadd_source);
     error |= test<cl_uint, SCEX<cl_uint, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source);
+        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
+        useCoreSubgroups);
     error |= test<cl_int, SCEX<cl_int, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source);
+        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
+        useCoreSubgroups);
     error |= test<cl_ulong, SCEX<cl_ulong, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source);
+        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
+        useCoreSubgroups);
     error |= test<cl_long, SCEX<cl_long, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source);
+        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
+        useCoreSubgroups);
     error |= test<float, SCEX<float, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source);
+        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
+        useCoreSubgroups);
     error |= test<double, SCEX<double, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source);
+        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
+        useCoreSubgroups);
 
     // error |= test<cl_half, SCEX<cl_half,1>, G, L>::run(device, context,
     // queue, num_elements, "test_scexmax", scexmax_source);
     error |= test<cl_uint, SCEX<cl_uint, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source);
+        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
+        useCoreSubgroups);
     error |= test<cl_int, SCEX<cl_int, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source);
+        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
+        useCoreSubgroups);
     error |= test<cl_ulong, SCEX<cl_ulong, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source);
+        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
+        useCoreSubgroups);
     error |= test<cl_long, SCEX<cl_long, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source);
+        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
+        useCoreSubgroups);
     error |= test<float, SCEX<float, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source);
+        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
+        useCoreSubgroups);
     error |= test<double, SCEX<double, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source);
+        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
+        useCoreSubgroups);
 
     // error |= test<cl_half, SCEX<cl_half,2>, G, L>::run(device, context,
     // queue, num_elements, "test_scexmin", scexmin_source);
     error |= test<cl_uint, SCEX<cl_uint, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source);
+        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
+        useCoreSubgroups);
     error |= test<cl_int, SCEX<cl_int, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source);
+        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
+        useCoreSubgroups);
     error |= test<cl_ulong, SCEX<cl_ulong, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source);
+        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
+        useCoreSubgroups);
     error |= test<cl_long, SCEX<cl_long, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source);
+        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
+        useCoreSubgroups);
     error |= test<float, SCEX<float, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source);
+        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
+        useCoreSubgroups);
     error |= test<double, SCEX<double, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source);
-
-
-    if (gTestIFP)
-    {
-        error |=
-            test<cl_int, IFP, G, L>::run(device, context, queue, num_elements,
-                                         "test_ifp", ifp_source, NUM_LOC + 1);
-    }
+        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
+        useCoreSubgroups);
     return error;
 }
 
 int test_work_group_functions_core(cl_device_id device, cl_context context,
                                    cl_command_queue queue, int num_elements)
 {
-    gUseCoreSubgroups = true;
-    return test_work_group_functions(device, context, queue, num_elements);
+    return test_work_group_functions(device, context, queue, num_elements,
+                                     true);
 }
 
 int test_work_group_functions_ext(cl_device_id device, cl_context context,
                                   cl_command_queue queue, int num_elements)
 {
-    gUseCoreSubgroups = false;
     bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
 
     if (!hasExtension)
@@ -1066,13 +870,6 @@ int test_work_group_functions_ext(cl_device_id device, cl_context context,
             "Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
         return TEST_SKIP;
     }
-    // ifp only in subgroup functions tests:
-    if (gTestIFP == false)
-    {
-        log_info(
-            "Error reason: the extension cl_khr_subgroups requires that "
-            "Independed forward progress has to be supported by device.\n");
-        return TEST_FAIL;
-    }
-    return test_work_group_functions(device, context, queue, num_elements);
+    return test_work_group_functions(device, context, queue, num_elements,
+                                     false);
 }
