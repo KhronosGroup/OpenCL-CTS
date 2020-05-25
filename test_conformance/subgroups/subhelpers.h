@@ -27,48 +27,33 @@ class subgroupsAPI {
 public:
     subgroupsAPI(cl_platform_id platform, bool useCoreSubgroups)
     {
+        static_assert(CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE
+                          == CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR,
+                      "Enums have to be the same");
+        static_assert(CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE
+                          == CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR,
+                      "Enums have to be the same");
         if (useCoreSubgroups)
         {
-            _f_ptr = &clGetKernelSubGroupInfo;
-            _enum_max_sub_group_size_for_ndrange =
-                CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE;
-            _enum_sub_group_count_for_ndrange =
-                CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE;
-            enum_max_size_name = "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE";
-            enum_count_name = "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE";
-            f_name = "clGetKernelSubGroupInfo";
+            _clGetKernelSubGroupInfo_ptr = &clGetKernelSubGroupInfo;
+            clGetKernelSubGroupInfo_name = "clGetKernelSubGroupInfo";
         }
         else
         {
-            _f_ptr = (clGetKernelSubGroupInfoKHR_fn)
+            _clGetKernelSubGroupInfo_ptr = (clGetKernelSubGroupInfoKHR_fn)
                 clGetExtensionFunctionAddressForPlatform(
                     platform, "clGetKernelSubGroupInfoKHR");
-            _enum_max_sub_group_size_for_ndrange =
-                CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR;
-            _enum_sub_group_count_for_ndrange =
-                CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR;
-            enum_max_size_name = "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR";
-            enum_count_name = "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR";
-            f_name = "clGetKernelSubGroupInfoKHR";
+            clGetKernelSubGroupInfo_name = "clGetKernelSubGroupInfoKHR";
         }
     }
-    clGetKernelSubGroupInfoKHR_fn get_f_ptr() { return _f_ptr; }
-    cl_kernel_sub_group_info get_enum_max_size()
+    clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfo_ptr()
     {
-        return _enum_max_sub_group_size_for_ndrange;
+        return _clGetKernelSubGroupInfo_ptr;
     }
-    cl_kernel_sub_group_info get_enum_count()
-    {
-        return _enum_sub_group_count_for_ndrange;
-    }
-    const char *f_name;
-    const char *enum_max_size_name;
-    const char *enum_count_name;
+    const char *clGetKernelSubGroupInfo_name;
 
 private:
-    clGetKernelSubGroupInfoKHR_fn _f_ptr;
-    cl_kernel_sub_group_info _enum_max_sub_group_size_for_ndrange;
-    cl_kernel_sub_group_info _enum_sub_group_count_for_ndrange;
+    clGetKernelSubGroupInfoKHR_fn _clGetKernelSubGroupInfo_ptr;
 };
 
 // Some template helpers
@@ -407,32 +392,35 @@ struct test
 
         // Get the sub group info
         subgroupsAPI subgroupsApiSet(platform, useCoreSubgroups);
-        clGetKernelSubGroupInfoKHR_fn f_ptr = subgroupsApiSet.get_f_ptr();
-        if (f_ptr == NULL)
+        clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfo_ptr =
+            subgroupsApiSet.clGetKernelSubGroupInfo_ptr();
+        if (clGetKernelSubGroupInfo_ptr == NULL)
         {
             log_error("ERROR: %s function not available",
-                      subgroupsApiSet.f_name);
+                      subgroupsApiSet.clGetKernelSubGroupInfo_name);
             return TEST_FAIL;
         }
-        error = f_ptr(kernel, device, subgroupsApiSet.get_enum_max_size(),
-                      sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp,
-                      NULL);
+        error = clGetKernelSubGroupInfo_ptr(
+            kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE,
+            sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
         if (error != CL_SUCCESS)
         {
-            log_error("ERROR: %s function error for %s", subgroupsApiSet.f_name,
-                      subgroupsApiSet.enum_max_size_name);
+            log_error("ERROR: %s function error for "
+                      "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE",
+                      subgroupsApiSet.clGetKernelSubGroupInfo_name);
             return TEST_FAIL;
         }
 
         subgroup_size = (int)tmp;
 
-        error = f_ptr(kernel, device, subgroupsApiSet.get_enum_count(),
-                      sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp,
-                      NULL);
+        error = clGetKernelSubGroupInfo_ptr(
+            kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE,
+            sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
         if (error != CL_SUCCESS)
         {
-            log_error("ERROR: %s function error for %s", subgroupsApiSet.f_name,
-                      subgroupsApiSet.enum_count_name);
+            log_error("ERROR: %s function error for "
+                      "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE",
+                      subgroupsApiSet.clGetKernelSubGroupInfo_name);
             return TEST_FAIL;
         }
 

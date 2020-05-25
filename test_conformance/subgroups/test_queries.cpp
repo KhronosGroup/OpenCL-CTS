@@ -97,25 +97,29 @@ int test_sub_group_info(cl_device_id device, cl_context context,
     test_error(error, "clDeviceInfo failed for CL_DEVICE_PLATFORM");
 
     subgroupsAPI subgroupsApiSet(platform, useCoreSubgroups);
-    clGetKernelSubGroupInfoKHR_fn f_ptr = subgroupsApiSet.get_f_ptr();
-    if (f_ptr == NULL)
+    clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfo_ptr =
+        subgroupsApiSet.clGetKernelSubGroupInfo_ptr();
+    if (clGetKernelSubGroupInfo_ptr == NULL)
     {
-        log_error("ERROR: %s function not available", subgroupsApiSet.f_name);
+        log_error("ERROR: %s function not available",
+                  subgroupsApiSet.clGetKernelSubGroupInfo_name);
         return TEST_FAIL;
     }
 
-    error =
-        f_ptr(kernel, device, subgroupsApiSet.get_enum_max_size(),
-              sizeof(local), (void *)&local, sizeof(kernel_max_subgroup_size),
-              (void *)&kernel_max_subgroup_size, &realSize);
+    error = clGetKernelSubGroupInfo_ptr(
+        kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE, sizeof(local),
+        (void *)&local, sizeof(kernel_max_subgroup_size),
+        (void *)&kernel_max_subgroup_size, &realSize);
     if (error != CL_SUCCESS)
     {
-        log_error("ERROR: %s function error for %s", subgroupsApiSet.f_name,
-                  subgroupsApiSet.enum_max_size_name);
+        log_error("ERROR: %s function error for "
+                  "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE",
+                  subgroupsApiSet.clGetKernelSubGroupInfo_name);
         return TEST_FAIL;
     }
-    log_info("The %s for the kernel is %d.\n",
-             subgroupsApiSet.enum_max_size_name, (int)kernel_max_subgroup_size);
+    log_info(
+        "The CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE for the kernel is %d.\n",
+        (int)kernel_max_subgroup_size);
     if (realSize != sizeof(kernel_max_subgroup_size))
     {
         log_error("ERROR: Returned size of max sub group size not valid! "
@@ -123,17 +127,20 @@ int test_sub_group_info(cl_device_id device, cl_context context,
                   (int)sizeof(kernel_max_subgroup_size), (int)realSize);
         return TEST_FAIL;
     }
-    error = f_ptr(kernel, device, subgroupsApiSet.get_enum_count(),
-                  sizeof(local), (void *)&local, sizeof(kernel_subgroup_count),
-                  (void *)&kernel_subgroup_count, &realSize);
+    error = clGetKernelSubGroupInfo_ptr(
+        kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE, sizeof(local),
+        (void *)&local, sizeof(kernel_subgroup_count),
+        (void *)&kernel_subgroup_count, &realSize);
     if (error != CL_SUCCESS)
     {
-        log_error("ERROR: %s function error for %s", subgroupsApiSet.f_name,
-                  subgroupsApiSet.enum_count_name);
+        log_error("ERROR: %s function error "
+                  "for CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE",
+                  subgroupsApiSet.clGetKernelSubGroupInfo_name);
         return TEST_FAIL;
     }
-    log_info("The %s for the kernel is %d.\n", subgroupsApiSet.enum_count_name,
-             (int)kernel_subgroup_count);
+    log_info(
+        "The CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE for the kernel is %d.\n",
+        (int)kernel_subgroup_count);
 
     if (realSize != sizeof(kernel_subgroup_count))
     {
