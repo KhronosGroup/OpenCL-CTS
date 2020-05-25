@@ -328,7 +328,7 @@ int test_ifp_core(cl_device_id device, cl_context context,
     if (ifpSupport == false)
     {
         log_info("Independed forward progress skipped.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     return test_ifp(device, context, queue, num_elements, true);
@@ -344,7 +344,7 @@ int test_ifp_ext(cl_device_id device, cl_context context,
     {
         log_info(
             "Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
     // ifp only in subgroup functions tests:
     test_status error;

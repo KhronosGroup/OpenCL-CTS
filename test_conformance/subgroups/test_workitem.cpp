@@ -323,7 +323,7 @@ int test_work_item_functions_ext(cl_device_id device, cl_context context,
     {
         log_info(
             "Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     return test_work_item_functions(device, context, queue, num_elements,
