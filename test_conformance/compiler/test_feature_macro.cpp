@@ -268,7 +268,7 @@ int test_feature_macro_program_scope_global_variables(cl_device_id deviceID,
                                                       int num_elements)
 {
     std::string test_macro_name = "__opencl_c_program_scope_global_variables";
-    return test_feature_macro<cl_uint>(deviceID, context, queue, num_elements,
+    return test_feature_macro<size_t>(deviceID, context, queue, num_elements,
                                        test_macro_name,
                                        CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE);
 }
