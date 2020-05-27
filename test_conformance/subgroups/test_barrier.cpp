@@ -139,10 +139,10 @@ template <int Which> struct BAR
     }
 };
 
-
 // Entry point from main
 int test_barrier_functions(cl_device_id device, cl_context context,
-                           cl_command_queue queue, int num_elements)
+                           cl_command_queue queue, int num_elements,
+                           bool useCoreSubgroups)
 {
     int error;
 
@@ -150,10 +150,33 @@ int test_barrier_functions(cl_device_id device, cl_context context,
 #define G 2000
 #define L 200
 
-    error = test<cl_int, BAR<0>, G, L>::run(
-        device, context, queue, num_elements, "test_lbar", lbar_source);
+    error = test<cl_int, BAR<0>, G, L>::run(device, context, queue,
+                                            num_elements, "test_lbar",
+                                            lbar_source, 0, useCoreSubgroups);
     error = test<cl_int, BAR<1>, G, L, G>::run(
-        device, context, queue, num_elements, "test_gbar", gbar_source);
+        device, context, queue, num_elements, "test_gbar", gbar_source, 0,
+        useCoreSubgroups);
 
     return error;
+}
+
+int test_barrier_functions_core(cl_device_id device, cl_context context,
+                                cl_command_queue queue, int num_elements)
+{
+    return test_barrier_functions(device, context, queue, num_elements, true);
+}
+
+int test_barrier_functions_ext(cl_device_id device, cl_context context,
+                               cl_command_queue queue, int num_elements)
+{
+    bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
+
+    if (!hasExtension)
+    {
+        log_info(
+            "Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    return test_barrier_functions(device, context, queue, num_elements, false);
 }

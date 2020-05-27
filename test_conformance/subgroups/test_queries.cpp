@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "procs.h"
+#include "subhelpers.h"
 
 typedef struct
 {
@@ -21,23 +22,10 @@ typedef struct
     cl_uint numSubGroups;
 } result_data;
 
-static const char *query_kernel_source =
-    "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n"
-    "\n"
-    "typedef struct {\n"
-    "    uint maxSubGroupSize;\n"
-    "    uint numSubGroups;\n"
-    "} result_data;\n"
-    "\n"
-    "__kernel void query_kernel( __global result_data *outData )\n"
-    "{\n"
-    "    int gid = get_global_id( 0 );\n"
-    "    outData[gid].maxSubGroupSize = get_max_sub_group_size();\n"
-    "    outData[gid].numSubGroups = get_num_sub_groups();\n"
-    "}";
 
 int test_sub_group_info(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+                        cl_command_queue queue, int num_elements,
+                        bool useCoreSubgroups)
 {
     static const size_t gsize0 = 80;
     int i, error;
@@ -58,9 +46,29 @@ int test_sub_group_info(cl_device_id device, cl_context context,
     clProgramWrapper program;
     clKernelWrapper kernel;
     clMemWrapper out;
+    std::stringstream kernel_sstr;
+    if (useCoreSubgroups)
+    {
+        kernel_sstr << "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
+    }
+    kernel_sstr
+        << "\n"
+           "typedef struct {\n"
+           "    uint maxSubGroupSize;\n"
+           "    uint numSubGroups;\n"
+           "} result_data;\n"
+           "\n"
+           "__kernel void query_kernel( __global result_data *outData )\n"
+           "{\n"
+           "    int gid = get_global_id( 0 );\n"
+           "    outData[gid].maxSubGroupSize = get_max_sub_group_size();\n"
+           "    outData[gid].numSubGroups = get_num_sub_groups();\n"
+           "}";
 
+    const std::string &kernel_str = kernel_sstr.str();
+    const char *kernel_src = kernel_str.c_str();
     error = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel, 1, &query_kernel_source, "query_kernel",
+        context, &program, &kernel, 1, &kernel_src, "query_kernel",
         "-cl-std=CL2.0");
     if (error != 0) return error;
 
@@ -88,44 +96,50 @@ int test_sub_group_info(cl_device_id device, cl_context context,
                             (void *)&platform, NULL);
     test_error(error, "clDeviceInfo failed for CL_DEVICE_PLATFORM");
 
-    clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfoKHR_ptr;
-    clGetKernelSubGroupInfoKHR_ptr =
-        (clGetKernelSubGroupInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(
-            platform, "clGetKernelSubGroupInfoKHR");
-    if (clGetKernelSubGroupInfoKHR_ptr == NULL)
+    subgroupsAPI subgroupsApiSet(platform, useCoreSubgroups);
+    clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfo_ptr =
+        subgroupsApiSet.clGetKernelSubGroupInfo_ptr();
+    if (clGetKernelSubGroupInfo_ptr == NULL)
     {
-        log_error("ERROR: clGetKernelSubGroupInfoKHR function not available");
-        return -1;
+        log_error("ERROR: %s function not available",
+                  subgroupsApiSet.clGetKernelSubGroupInfo_name);
+        return TEST_FAIL;
     }
 
-    error = clGetKernelSubGroupInfoKHR_ptr(
-        kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR,
-        sizeof(local), (void *)&local, sizeof(kernel_max_subgroup_size),
+    error = clGetKernelSubGroupInfo_ptr(
+        kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE, sizeof(local),
+        (void *)&local, sizeof(kernel_max_subgroup_size),
         (void *)&kernel_max_subgroup_size, &realSize);
-    test_error(error,
-               "clGetKernelSubGroupInfoKHR failed for "
-               "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR");
-    log_info("The CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR for the kernel "
-             "is %d.\n",
-             (int)kernel_max_subgroup_size);
-
+    if (error != CL_SUCCESS)
+    {
+        log_error("ERROR: %s function error for "
+                  "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE",
+                  subgroupsApiSet.clGetKernelSubGroupInfo_name);
+        return TEST_FAIL;
+    }
+    log_info(
+        "The CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE for the kernel is %d.\n",
+        (int)kernel_max_subgroup_size);
     if (realSize != sizeof(kernel_max_subgroup_size))
     {
         log_error("ERROR: Returned size of max sub group size not valid! "
                   "(Expected %d, got %d)\n",
                   (int)sizeof(kernel_max_subgroup_size), (int)realSize);
-        return -1;
+        return TEST_FAIL;
     }
-
-    error = clGetKernelSubGroupInfoKHR_ptr(
-        kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR,
-        sizeof(local), (void *)&local, sizeof(kernel_subgroup_count),
+    error = clGetKernelSubGroupInfo_ptr(
+        kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE, sizeof(local),
+        (void *)&local, sizeof(kernel_subgroup_count),
         (void *)&kernel_subgroup_count, &realSize);
-    test_error(error,
-               "clGetKernelSubGroupInfoKHR failed for "
-               "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR");
+    if (error != CL_SUCCESS)
+    {
+        log_error("ERROR: %s function error "
+                  "for CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE",
+                  subgroupsApiSet.clGetKernelSubGroupInfo_name);
+        return TEST_FAIL;
+    }
     log_info(
-        "The CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR for the kernel is %d.\n",
+        "The CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE for the kernel is %d.\n",
         (int)kernel_subgroup_count);
 
     if (realSize != sizeof(kernel_subgroup_count))
@@ -133,7 +147,7 @@ int test_sub_group_info(cl_device_id device, cl_context context,
         log_error("ERROR: Returned size of sub group count not valid! "
                   "(Expected %d, got %d)\n",
                   (int)sizeof(kernel_subgroup_count), (int)realSize);
-        return -1;
+        return TEST_FAIL;
     }
 
     // Verify that the kernel gets the same max_subgroup_size and subgroup_count
@@ -175,4 +189,25 @@ int test_sub_group_info(cl_device_id device, cl_context context,
     }
 
     return 0;
+}
+
+int test_sub_group_info_core(cl_device_id device, cl_context context,
+                             cl_command_queue queue, int num_elements)
+{
+    return test_sub_group_info(device, context, queue, num_elements, true);
+}
+
+int test_sub_group_info_ext(cl_device_id device, cl_context context,
+                            cl_command_queue queue, int num_elements)
+{
+    bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
+
+    if (!hasExtension)
+    {
+        log_info(
+            "Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    return test_sub_group_info(device, context, queue, num_elements, false);
 }

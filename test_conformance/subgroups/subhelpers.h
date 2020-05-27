@@ -23,6 +23,39 @@
 #include <limits>
 #include <vector>
 
+class subgroupsAPI {
+public:
+    subgroupsAPI(cl_platform_id platform, bool useCoreSubgroups)
+    {
+        static_assert(CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE
+                          == CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR,
+                      "Enums have to be the same");
+        static_assert(CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE
+                          == CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR,
+                      "Enums have to be the same");
+        if (useCoreSubgroups)
+        {
+            _clGetKernelSubGroupInfo_ptr = &clGetKernelSubGroupInfo;
+            clGetKernelSubGroupInfo_name = "clGetKernelSubGroupInfo";
+        }
+        else
+        {
+            _clGetKernelSubGroupInfo_ptr = (clGetKernelSubGroupInfoKHR_fn)
+                clGetExtensionFunctionAddressForPlatform(
+                    platform, "clGetKernelSubGroupInfoKHR");
+            clGetKernelSubGroupInfo_name = "clGetKernelSubGroupInfoKHR";
+        }
+    }
+    clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfo_ptr()
+    {
+        return _clGetKernelSubGroupInfo_ptr;
+    }
+    const char *clGetKernelSubGroupInfo_name;
+
+private:
+    clGetKernelSubGroupInfoKHR_fn _clGetKernelSubGroupInfo_ptr;
+};
+
 // Some template helpers
 template <typename Ty> struct TypeName;
 template <> struct TypeName<cl_half>
@@ -310,7 +343,7 @@ struct test
 {
     static int run(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elements, const char *kname,
-                   const char *src, int dynscl = 0)
+                   const char *src, int dynscl, bool useCoreSubgroups)
     {
         size_t tmp;
         int error;
@@ -318,7 +351,6 @@ struct test
         size_t realSize;
         size_t global;
         size_t local;
-        const char *kstrings[3];
         clProgramWrapper program;
         clKernelWrapper kernel;
         cl_platform_id platform;
@@ -332,14 +364,21 @@ struct test
         error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
                                 (void *)&platform, NULL);
         test_error(error, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
+        std::stringstream kernel_sstr;
+        if (useCoreSubgroups)
+        {
+            kernel_sstr
+                << "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
+        }
+        kernel_sstr << "#define XY(M,I) M[I].x = get_sub_group_local_id(); "
+                       "M[I].y = get_sub_group_id();\n";
+        kernel_sstr << TypeDef<Ty>::val();
+        kernel_sstr << src;
+        const std::string &kernel_str = kernel_sstr.str();
+        const char *kernel_src = kernel_str.c_str();
 
-        kstrings[0] = "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n"
-                      "#define XY(M,I) M[I].x = get_sub_group_local_id(); "
-                      "M[I].y = get_sub_group_id();\n";
-        kstrings[1] = TypeDef<Ty>::val();
-        kstrings[2] = src;
         error = create_single_kernel_helper_with_build_options(
-            context, &program, &kernel, 3, kstrings, kname, "-cl-std=CL2.0");
+            context, &program, &kernel, 1, &kernel_src, kname, "-cl-std=CL2.0");
         if (error != 0) return error;
 
         // Determine some local dimensions to use for the test.
@@ -352,40 +391,46 @@ struct test
         if (local > LSIZE) local = LSIZE;
 
         // Get the sub group info
-        clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfoKHR_ptr;
-        clGetKernelSubGroupInfoKHR_ptr = (clGetKernelSubGroupInfoKHR_fn)
-            clGetExtensionFunctionAddressForPlatform(
-                platform, "clGetKernelSubGroupInfoKHR");
-        if (clGetKernelSubGroupInfoKHR_ptr == NULL)
+        subgroupsAPI subgroupsApiSet(platform, useCoreSubgroups);
+        clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfo_ptr =
+            subgroupsApiSet.clGetKernelSubGroupInfo_ptr();
+        if (clGetKernelSubGroupInfo_ptr == NULL)
         {
-            log_error(
-                "ERROR: clGetKernelSubGroupInfoKHR function not available");
-            return -1;
+            log_error("ERROR: %s function not available",
+                      subgroupsApiSet.clGetKernelSubGroupInfo_name);
+            return TEST_FAIL;
+        }
+        error = clGetKernelSubGroupInfo_ptr(
+            kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE,
+            sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
+        if (error != CL_SUCCESS)
+        {
+            log_error("ERROR: %s function error for "
+                      "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE",
+                      subgroupsApiSet.clGetKernelSubGroupInfo_name);
+            return TEST_FAIL;
         }
 
-        error = clGetKernelSubGroupInfoKHR_ptr(
-            kernel, device, CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR,
-            sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
-        test_error(error,
-                   "clGetKernelSubGroupInfoKHR failed for "
-                   "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR");
         subgroup_size = (int)tmp;
 
-        error = clGetKernelSubGroupInfoKHR_ptr(
-            kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR,
+        error = clGetKernelSubGroupInfo_ptr(
+            kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE,
             sizeof(local), (void *)&local, sizeof(tmp), (void *)&tmp, NULL);
-        test_error(error,
-                   "clGetKernelSubGroupInfoKHR failed for "
-                   "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR");
-        num_subgroups = (int)tmp;
+        if (error != CL_SUCCESS)
+        {
+            log_error("ERROR: %s function error for "
+                      "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE",
+                      subgroupsApiSet.clGetKernelSubGroupInfo_name);
+            return TEST_FAIL;
+        }
 
+        num_subgroups = (int)tmp;
         // Make sure the number of sub groups is what we expect
         if (num_subgroups != (local + subgroup_size - 1) / subgroup_size)
         {
-            log_error("ERROR: unexpected number of subgroups (%d) returned by "
-                      "clGetKernelSubGroupInfoKHR\n",
+            log_error("ERROR: unexpected number of subgroups (%d) returned\n",
                       num_subgroups);
-            return -1;
+            return TEST_FAIL;
         }
 
         std::vector<Ty> idata;

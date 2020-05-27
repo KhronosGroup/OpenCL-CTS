@@ -34,29 +34,6 @@ struct get_test_data
     }
 };
 
-static const char *get_test_source =
-    "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n"
-    "\n"
-    "typedef struct {\n"
-    "    uint subGroupSize;\n"
-    "    uint maxSubGroupSize;\n"
-    "    uint numSubGroups;\n"
-    "    uint enqNumSubGroups;\n"
-    "    uint subGroupId;\n"
-    "    uint subGroupLocalId;\n"
-    "} get_test_data;\n"
-    "\n"
-    "__kernel void get_test( __global get_test_data *outData )\n"
-    "{\n"
-    "    int gid = get_global_id( 0 );\n"
-    "    outData[gid].subGroupSize = get_sub_group_size();\n"
-    "    outData[gid].maxSubGroupSize = get_max_sub_group_size();\n"
-    "    outData[gid].numSubGroups = get_num_sub_groups();\n"
-    "    outData[gid].enqNumSubGroups = get_enqueued_num_sub_groups();\n"
-    "    outData[gid].subGroupId = get_sub_group_id();\n"
-    "    outData[gid].subGroupLocalId = get_sub_group_local_id();\n"
-    "}";
-
 static int check_group(const get_test_data *result, int nw, cl_uint ensg,
                        int maxwgs)
 {
@@ -207,7 +184,8 @@ static int check_group(const get_test_data *result, int nw, cl_uint ensg,
 }
 
 int test_work_item_functions(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+                             cl_command_queue queue, int num_elements,
+                             bool useCoreSubgroups)
 {
     static const size_t lsize = 200;
     int error;
@@ -220,9 +198,37 @@ int test_work_item_functions(cl_device_id device, cl_context context,
     clProgramWrapper program;
     clKernelWrapper kernel;
     clMemWrapper out;
-
+    std::stringstream kernel_sstr;
+    if (useCoreSubgroups)
+    {
+        kernel_sstr << "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
+    }
+    kernel_sstr
+        << "\n"
+           "\n"
+           "typedef struct {\n"
+           "    uint subGroupSize;\n"
+           "    uint maxSubGroupSize;\n"
+           "    uint numSubGroups;\n"
+           "    uint enqNumSubGroups;\n"
+           "    uint subGroupId;\n"
+           "    uint subGroupLocalId;\n"
+           "} get_test_data;\n"
+           "\n"
+           "__kernel void get_test( __global get_test_data *outData )\n"
+           "{\n"
+           "    int gid = get_global_id( 0 );\n"
+           "    outData[gid].subGroupSize = get_sub_group_size();\n"
+           "    outData[gid].maxSubGroupSize = get_max_sub_group_size();\n"
+           "    outData[gid].numSubGroups = get_num_sub_groups();\n"
+           "    outData[gid].enqNumSubGroups = get_enqueued_num_sub_groups();\n"
+           "    outData[gid].subGroupId = get_sub_group_id();\n"
+           "    outData[gid].subGroupLocalId = get_sub_group_local_id();\n"
+           "}";
+    const std::string &kernel_str = kernel_sstr.str();
+    const char *kernel_src = kernel_str.c_str();
     error = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel, 1, &get_test_source, "get_test",
+        context, &program, &kernel, 1, &kernel_src, "get_test",
         "-cl-std=CL2.0");
     if (error != 0) return error;
 
@@ -300,4 +306,26 @@ int test_work_item_functions(cl_device_id device, cl_context context,
     }
 
     return 0;
+}
+
+int test_work_item_functions_core(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements)
+{
+    return test_work_item_functions(device, context, queue, num_elements, true);
+}
+
+int test_work_item_functions_ext(cl_device_id device, cl_context context,
+                                 cl_command_queue queue, int num_elements)
+{
+    bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
+
+    if (!hasExtension)
+    {
+        log_info(
+            "Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    return test_work_item_functions(device, context, queue, num_elements,
+                                    false);
 }
