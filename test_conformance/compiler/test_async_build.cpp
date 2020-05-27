@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2017-2020 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,6 +21,8 @@
 
 #include <atomic>
 #include <string>
+
+namespace {
 
 const char *sample_async_kernel[] = {
     "__kernel void sample_test(__global float *src, __global int *dst)\n"
@@ -45,21 +47,22 @@ const char *sample_async_kernel_error[] = {
 // Data passed to a program completion callback
 struct TestData
 {
-    std::string str;
     cl_device_id device;
     cl_build_status expectedStatus;
 };
 
 std::atomic<int> callbackResult;
 
+}
+
 void CL_CALLBACK test_notify_build_complete( cl_program program, void *userData )
 {
     TestData *data = reinterpret_cast<TestData *>(userData);
 
-    // Check string in user data is correct
-    if (userData == NULL || data->str != "userData")
+    // Check user data is valid
+    if (data == nullptr)
     {
-        log_error( "ERROR: User data passed in to build notify function was not correct!\n" );
+        log_error("ERROR: User data passed to callback was not valid!\n");
         callbackResult = -1;
         return;
     }
@@ -116,7 +119,7 @@ int test_async_build(cl_device_id deviceID, cl_context context,
         test_error(error, "Unable to create program from source");
 
         // Start an asynchronous build, registering the completion callback
-        TestData testData = { "userData", deviceID, testDef.expectedStatus };
+        TestData testData = { deviceID, testDef.expectedStatus };
         callbackResult = 0;
         error = clBuildProgram(program, 1, &deviceID, NULL,
                                test_notify_build_complete, (void *)&testData);
