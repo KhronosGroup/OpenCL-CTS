@@ -62,7 +62,7 @@ static int test_setargs_and_execution(cl_command_queue queue, cl_kernel kernel,
 
     unsigned int i;
     cl_int status;
-    char *typestr;
+    const char *typestr;
 
     if (type == NON_NULL_PATH) {
         status = clSetKernelArg(kernel, 0, sizeof(cl_mem), &test_buf);

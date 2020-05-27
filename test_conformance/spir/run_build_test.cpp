@@ -268,7 +268,7 @@ static bool run_test(cl_context context, cl_command_queue queue, cl_program clpr
 {
     WorkSizeInfo ws;
     TestResult cl_result;
-    std::auto_ptr<TestResult> bc_result;
+    std::unique_ptr<TestResult> bc_result;
     // first, run the single CL test
     {
         // make sure that the kernel will be released before the program

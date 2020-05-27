@@ -96,7 +96,7 @@ typedef struct _extensions extensions_t;
 // first is greater).
 int vercmp(version_t a, version_t b)
 {
-    if (a.major < b.major || a.major == b.major && a.minor < b.minor)
+    if (a.major < b.major || (a.major == b.major && a.minor < b.minor))
     {
         return -1;
     }

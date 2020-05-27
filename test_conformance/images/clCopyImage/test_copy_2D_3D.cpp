@@ -167,7 +167,8 @@ int test_copy_image_size_2D_3D( cl_context context, cl_command_queue queue, imag
         sourcePos[ 1 ] = ( srcImageInfo->height > regionSize[ 1 ] ) ? (size_t)random_in_range( 0, (int)( srcImageInfo->height - regionSize[ 1 ] - 1 ), d ) : 0;
         sourcePos[ 2 ] = ( srcImageInfo->depth > 0 ) ? (size_t)random_in_range( 0, (int)( srcImageInfo->depth - 1 ), d ) : 0;
 
-        if ( gTestMipmaps )
+        if (gTestMipmaps)
+        {
             if( srcImageInfo->depth > 0 )
             {
                 sourcePos[ 0 ] = ( threeImage_width_lod > regionSize[ 0 ] ) ? (size_t)random_in_range( 0, (int)( threeImage_width_lod - regionSize[ 0 ] - 1 ), d ) : 0;
@@ -181,12 +182,14 @@ int test_copy_image_size_2D_3D( cl_context context, cl_command_queue queue, imag
                 sourcePos[ 1 ] = ( twoImage_height_lod > regionSize[ 1 ] ) ? (size_t)random_in_range( 0, (int)( twoImage_height_lod - regionSize[ 1 ] - 1 ), d ) : 0;
 
             }
+        }
 
         destPos[ 0 ] = ( dstImageInfo->width > regionSize[ 0 ] ) ? (size_t)random_in_range( 0, (int)( dstImageInfo->width - regionSize[ 0 ] - 1 ), d ) : 0;
         destPos[ 1 ] = ( dstImageInfo->height > regionSize[ 1 ] ) ? (size_t)random_in_range( 0, (int)( dstImageInfo->height - regionSize[ 1 ] - 1 ), d ) : 0;
         destPos[ 2 ] = ( dstImageInfo->depth > 0 ) ? (size_t)random_in_range( 0, (int)( dstImageInfo->depth - 1 ), d ) : 0;
 
-        if ( gTestMipmaps )
+        if (gTestMipmaps)
+        {
             if( dstImageInfo->depth > 0 )
             {
                 destPos[ 0 ] = ( threeImage_width_lod > regionSize[ 0 ] ) ? (size_t)random_in_range( 0, (int)( threeImage_width_lod - regionSize[ 0 ] - 1 ), d ) : 0;
@@ -200,6 +203,7 @@ int test_copy_image_size_2D_3D( cl_context context, cl_command_queue queue, imag
                 destPos[ 1 ] = ( twoImage_height_lod > regionSize[ 1 ] ) ? (size_t)random_in_range( 0, (int)( twoImage_height_lod - regionSize[ 1 ] - 1 ), d ) : 0;
 
             }
+        }
 
         // Go for it!
         retCode = test_copy_image_generic( context, queue, srcImageInfo, dstImageInfo, sourcePos, destPos, regionSize, d );
