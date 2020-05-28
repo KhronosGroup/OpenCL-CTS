@@ -19,7 +19,7 @@
 
 using namespace std;
 
-typedef struct image_kernel_data
+struct image_kernel_data
 {
     cl_int width;
     cl_int height;
