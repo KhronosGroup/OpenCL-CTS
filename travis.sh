@@ -69,6 +69,7 @@ cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
       -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin \
       -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \
       -DUSE_CL_EXPERIMENTAL=ON \
+      -DGL_IS_SUPPORTED=ON \
       ..
 make -j2
 
