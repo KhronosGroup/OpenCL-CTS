@@ -144,7 +144,10 @@ static int getTempFileName()
 static int acquireOutputStream()
 {
     int fd = streamDup(fileno(stdout));
-    freopen(gFileName,"w",stdout);
+    if (!freopen(gFileName, "w", stdout))
+    {
+        log_error("Error while redirection stdout to file");
+    }
     return fd;
 }
 
