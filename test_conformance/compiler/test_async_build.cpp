@@ -55,7 +55,7 @@ std::atomic<int> callbackResult;
 
 }
 
-void CL_CALLBACK test_notify_build_complete( cl_program program, void *userData )
+void CL_CALLBACK test_notify_build_complete(cl_program program, void *userData)
 {
     TestData *data = reinterpret_cast<TestData *>(userData);
 
