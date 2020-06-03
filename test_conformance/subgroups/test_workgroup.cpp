@@ -621,6 +621,64 @@ template <typename Ty> struct BC
     }
 };
 
+#define G 2000
+#define L 200
+struct run_for_type
+{
+    run_for_type(cl_device_id device, cl_context context,
+                 cl_command_queue queue, int num_elements,
+                 bool useCoreSubgroups)
+    {
+        device_ = device;
+        context_ = context;
+        queue_ = queue;
+        num_elements_ = num_elements;
+        useCoreSubgroups_ = useCoreSubgroups;
+    }
+
+    template <typename T> cl_int run()
+    {
+        cl_int error;
+        error = test<T, BC<T>, G, L>::run(device_, context_, queue_,
+                                          num_elements_, "test_bcast",
+                                          bcast_source, 0, useCoreSubgroups_);
+        error |= test<T, RED<T, 0>, G, L>::run(
+            device_, context_, queue_, num_elements_, "test_redadd",
+            redadd_source, 0, useCoreSubgroups_);
+        error |= test<T, RED<T, 1>, G, L>::run(
+            device_, context_, queue_, num_elements_, "test_redmax",
+            redmax_source, 0, useCoreSubgroups_);
+        error |= test<T, RED<T, 2>, G, L>::run(
+            device_, context_, queue_, num_elements_, "test_redmin",
+            redmin_source, 0, useCoreSubgroups_);
+        error |= test<T, SCIN<T, 0>, G, L>::run(
+            device_, context_, queue_, num_elements_, "test_scinadd",
+            scinadd_source, 0, useCoreSubgroups_);
+        error |= test<T, SCIN<T, 1>, G, L>::run(
+            device_, context_, queue_, num_elements_, "test_scinmax",
+            scinmax_source, 0, useCoreSubgroups_);
+        error |= test<T, SCIN<T, 2>, G, L>::run(
+            device_, context_, queue_, num_elements_, "test_scinmin",
+            scinmin_source, 0, useCoreSubgroups_);
+        error |= test<T, SCEX<T, 0>, G, L>::run(
+            device_, context_, queue_, num_elements_, "test_scexadd",
+            scexadd_source, 0, useCoreSubgroups_);
+        error |= test<T, SCEX<T, 1>, G, L>::run(
+            device_, context_, queue_, num_elements_, "test_scexmax",
+            scexmax_source, 0, useCoreSubgroups_);
+        error |= test<T, SCEX<T, 2>, G, L>::run(
+            device_, context_, queue_, num_elements_, "test_scexmin",
+            scexmin_source, 0, useCoreSubgroups_);
+        return error;
+    }
+
+private:
+    cl_device_id device_;
+    cl_context context_;
+    cl_command_queue queue_;
+    int num_elements_;
+    bool useCoreSubgroups_;
+};
 
 // Entry point from main
 int test_work_group_functions(cl_device_id device, cl_context context,
@@ -628,227 +686,21 @@ int test_work_group_functions(cl_device_id device, cl_context context,
                               bool useCoreSubgroups)
 {
     int error;
-
-    // Adjust these individually below if desired/needed
-#define G 2000
-#define L 200
-
     error = test<int, AA<0>, G, L>::run(device, context, queue, num_elements,
                                         "test_any", any_source, 0,
                                         useCoreSubgroups);
     error |= test<int, AA<1>, G, L>::run(device, context, queue, num_elements,
                                          "test_all", all_source, 0,
                                          useCoreSubgroups);
+    run_for_type rft(device, context, queue, num_elements, useCoreSubgroups);
+    error |= rft.run<cl_uint>();
+    error |= rft.run<cl_int>();
+    error |= rft.run<cl_ulong>();
+    error |= rft.run<cl_long>();
+    error |= rft.run<float>();
+    error |= rft.run<double>();
+    // error |= rft.run<cl_half>();
 
-    // error |= test<cl_half, BC<cl_half>, G, L>::run(device, context, queue,
-    // num_elements, "test_bcast", bcast_source);
-    error |= test<cl_uint, BC<cl_uint>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_int, BC<cl_int>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_ulong, BC<cl_ulong>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_long, BC<cl_long>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
-        useCoreSubgroups);
-    error |= test<float, BC<float>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
-        useCoreSubgroups);
-    error |= test<double, BC<double>, G, L>::run(
-        device, context, queue, num_elements, "test_bcast", bcast_source, 0,
-        useCoreSubgroups);
-
-    // error |= test<cl_half, RED<cl_half,0>, G, L>::run(device, context, queue,
-    // num_elements, "test_redadd", redadd_source);
-    error |= test<cl_uint, RED<cl_uint, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_int, RED<cl_int, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_ulong, RED<cl_ulong, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_long, RED<cl_long, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
-        useCoreSubgroups);
-    error |= test<float, RED<float, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
-        useCoreSubgroups);
-    error |= test<double, RED<double, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_redadd", redadd_source, 0,
-        useCoreSubgroups);
-
-    // error |= test<cl_half, RED<cl_half,1>, G, L>::run(device, context, queue,
-    // num_elements, "test_redmax", redmax_source);
-    error |= test<cl_uint, RED<cl_uint, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_int, RED<cl_int, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_ulong, RED<cl_ulong, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_long, RED<cl_long, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
-        useCoreSubgroups);
-    error |= test<float, RED<float, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
-        useCoreSubgroups);
-    error |= test<double, RED<double, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_redmax", redmax_source, 0,
-        useCoreSubgroups);
-
-    // error |= test<cl_half, RED<cl_half,2>, G, L>::run(device, context, queue,
-    // num_elements, "test_redmin", redmin_source);
-    error |= test<cl_uint, RED<cl_uint, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_int, RED<cl_int, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_ulong, RED<cl_ulong, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_long, RED<cl_long, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
-        useCoreSubgroups);
-    error |= test<float, RED<float, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
-        useCoreSubgroups);
-    error |= test<double, RED<double, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_redmin", redmin_source, 0,
-        useCoreSubgroups);
-
-    // error |= test<cl_half, SCIN<cl_half,0>, G, L>::run(device, context,
-    // queue, num_elements, "test_scinadd", scinadd_source);
-    error |= test<cl_uint, SCIN<cl_uint, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_int, SCIN<cl_int, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_ulong, SCIN<cl_ulong, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_long, SCIN<cl_long, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
-        useCoreSubgroups);
-    error |= test<float, SCIN<float, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
-        useCoreSubgroups);
-    error |= test<double, SCIN<double, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scinadd", scinadd_source, 0,
-        useCoreSubgroups);
-
-    // error |= test<cl_half, SCIN<cl_half,1>, G, L>::run(device, context,
-    // queue, num_elements, "test_scinmax", scinmax_source);
-    error |= test<cl_uint, SCIN<cl_uint, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_int, SCIN<cl_int, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_ulong, SCIN<cl_ulong, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_long, SCIN<cl_long, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
-        useCoreSubgroups);
-    error |= test<float, SCIN<float, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
-        useCoreSubgroups);
-    error |= test<double, SCIN<double, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmax", scinmax_source, 0,
-        useCoreSubgroups);
-
-    // error |= test<cl_half, SCIN<cl_half,2>, G, L>::run(device, context,
-    // queue, num_elements, "test_scinmin", scinmin_source);
-    error |= test<cl_uint, SCIN<cl_uint, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_int, SCIN<cl_int, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_ulong, SCIN<cl_ulong, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_long, SCIN<cl_long, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
-        useCoreSubgroups);
-    error |= test<float, SCIN<float, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
-        useCoreSubgroups);
-    error |= test<double, SCIN<double, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scinmin", scinmin_source, 0,
-        useCoreSubgroups);
-
-    // error |= test<cl_half, SCEX<cl_half,0>, G, L>::run(device, context,
-    // queue, num_elements, "test_scexadd", scexadd_source);
-    error |= test<cl_uint, SCEX<cl_uint, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_int, SCEX<cl_int, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_ulong, SCEX<cl_ulong, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_long, SCEX<cl_long, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
-        useCoreSubgroups);
-    error |= test<float, SCEX<float, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
-        useCoreSubgroups);
-    error |= test<double, SCEX<double, 0>, G, L>::run(
-        device, context, queue, num_elements, "test_scexadd", scexadd_source, 0,
-        useCoreSubgroups);
-
-    // error |= test<cl_half, SCEX<cl_half,1>, G, L>::run(device, context,
-    // queue, num_elements, "test_scexmax", scexmax_source);
-    error |= test<cl_uint, SCEX<cl_uint, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_int, SCEX<cl_int, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_ulong, SCEX<cl_ulong, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_long, SCEX<cl_long, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
-        useCoreSubgroups);
-    error |= test<float, SCEX<float, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
-        useCoreSubgroups);
-    error |= test<double, SCEX<double, 1>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmax", scexmax_source, 0,
-        useCoreSubgroups);
-
-    // error |= test<cl_half, SCEX<cl_half,2>, G, L>::run(device, context,
-    // queue, num_elements, "test_scexmin", scexmin_source);
-    error |= test<cl_uint, SCEX<cl_uint, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_int, SCEX<cl_int, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_ulong, SCEX<cl_ulong, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
-        useCoreSubgroups);
-    error |= test<cl_long, SCEX<cl_long, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
-        useCoreSubgroups);
-    error |= test<float, SCEX<float, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
-        useCoreSubgroups);
-    error |= test<double, SCEX<double, 2>, G, L>::run(
-        device, context, queue, num_elements, "test_scexmin", scexmin_source, 0,
-        useCoreSubgroups);
     return error;
 }
 
