@@ -2918,7 +2918,17 @@ int reference_isgreaterequall( long double x, long double y){ return x >= y; }
 int reference_isinfl( long double x){ return 0 != isinf(x); }
 int reference_islessl( long double x, long double y){ return x < y; }
 int reference_islessequall( long double x, long double y){ return x <= y; }
-int reference_islessgreaterl( long double x, long double y){  return 0 != islessgreater( x, y ); }
+#if defined(__INTEL_COMPILER)
+int reference_islessgreaterl(long double x, long double y)
+{
+    return 0 != islessgreaterl(x, y);
+}
+#else
+int reference_islessgreaterl(long double x, long double y)
+{
+    return 0 != islessgreater(x, y);
+}
+#endif
 int reference_isnanl( long double x){ return 0 != isnan( x ); }
 int reference_isnormall( long double x){ return 0 != isnormal( (double) x ); }
 int reference_isnotequall( long double x, long double y){ return x != y; }
