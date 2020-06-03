@@ -623,8 +623,8 @@ template <typename Ty> struct BC
 
 #define G 2000
 #define L 200
-class run_for_type {
-public:
+struct run_for_type
+{
     run_for_type(cl_device_id device, cl_context context,
                  cl_command_queue queue, int num_elements,
                  bool useCoreSubgroups)
@@ -672,6 +672,7 @@ public:
         return error;
     }
 
+private:
     cl_device_id device_;
     cl_context context_;
     cl_command_queue queue_;
