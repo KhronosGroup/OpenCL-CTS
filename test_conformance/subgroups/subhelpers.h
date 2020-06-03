@@ -347,7 +347,8 @@ struct test
 {
     static int run(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elements, const char *kname,
-                   const char *src, int dynscl, bool useCoreSubgroups)
+                   const char *src, int dynscl, bool useCoreSubgroups,
+                   std::vector<std::string> required_extensions = {})
     {
         size_t tmp;
         int error;
@@ -361,14 +362,42 @@ struct test
         cl_int sgmap[4 * GSIZE];
         Ty mapin[LSIZE];
         Ty mapout[LSIZE];
+        std::stringstream kernel_sstr;
 
         // Make sure a test of type Ty is supported by the device
-        if (!TypeCheck<Ty>::val(device)) return 0;
+        if (!TypeCheck<Ty>::val(device))
+        {
+            log_info("Data type not supported : %s\n", TypeName<Ty>::val());
+            return 0;
+        }
+        else
+        {
+            if (strstr(TypeDef<Ty>::val(), "double"))
+            {
+                kernel_sstr << "#pragma OPENCL EXTENSION cl_khr_fp64: enable\n";
+            }
+            else if (strstr(TypeDef<Ty>::val(), "half"))
+            {
+                kernel_sstr << "#pragma OPENCL EXTENSION cl_khr_fp16: enable\n";
+            }
+        }
+
+        for (std::string extension : required_extensions)
+        {
+            if (!is_extension_available(device, extension.c_str()))
+            {
+                log_info("The extension %s not supported on this device. SKIP "
+                         "testing - kernel %s data type %s\n",
+                         extension.c_str(), kname, TypeName<Ty>::val());
+                return 0;
+            }
+            kernel_sstr << "#pragma OPENCL EXTENSION " + extension
+                    + ": enable\n";
+        }
 
         error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
                                 (void *)&platform, NULL);
         test_error(error, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
-        std::stringstream kernel_sstr;
         if (useCoreSubgroups)
         {
             kernel_sstr
