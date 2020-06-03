@@ -22,6 +22,8 @@
 
 #include <limits>
 #include <vector>
+#undef min
+#undef max
 
 #define NON_UNIFORM 4
 
@@ -1246,37 +1248,208 @@ template <> struct TypeDef<cl_uchar16>
 };
 
 template <typename Ty, int Which> struct TypeIdentity;
-// template <> struct TypeIdentity<cl_half,0> { static cl_half val() { return
-// (cl_half)0.0; } }; template <> struct TypeIdentity<cl_half,0> { static
-// cl_half val() { return -(cl_half)65536.0; } }; template <> struct
-// TypeIdentity<cl_half,0> { static cl_half val() { return (cl_half)65536.0; }
-// };
+template <> struct TypeIdentity<subgroups::cl_half, 0>
+{
+    static subgroups::cl_half val() { return { 0x0000 }; }
+}; // add
+template <> struct TypeIdentity<subgroups::cl_half, 1>
+{
+    static subgroups::cl_half val() { return { 0xfc00 }; }
+}; // max
+template <> struct TypeIdentity<subgroups::cl_half, 2>
+{
+    static subgroups::cl_half val() { return { 0x7c00 }; }
+}; // min
+template <> struct TypeIdentity<subgroups::cl_half, 3>
+{
+    static subgroups::cl_half val() { return { 0x3c00 }; }
+}; // mul
+
+template <> struct TypeIdentity<cl_uchar, 0>
+{
+    static cl_uchar val() { return (cl_uchar)0; }
+}; // add
+template <> struct TypeIdentity<cl_uchar, 1>
+{
+    static cl_uchar val() { return std::numeric_limits<cl_uchar>::min(); }
+}; // max
+template <> struct TypeIdentity<cl_uchar, 2>
+{
+    static cl_uchar val() { return std::numeric_limits<cl_uchar>::max(); }
+}; // min
+template <> struct TypeIdentity<cl_uchar, 3>
+{
+    static cl_uchar val() { return (cl_uchar)1; }
+}; // mul
+template <> struct TypeIdentity<cl_uchar, 4>
+{
+    static cl_uchar val() { return (cl_uchar)~0; }
+}; // and
+template <> struct TypeIdentity<cl_uchar, 5>
+{
+    static cl_uchar val() { return (cl_uchar)0; }
+}; // or
+template <> struct TypeIdentity<cl_uchar, 6>
+{
+    static cl_uchar val() { return (cl_uchar)0; }
+}; // xor
+
+template <> struct TypeIdentity<cl_char, 0>
+{
+    static cl_char val() { return (cl_char)0; }
+}; // add
+template <> struct TypeIdentity<cl_char, 1>
+{
+    static cl_char val() { return std::numeric_limits<cl_char>::min(); }
+}; // max
+template <> struct TypeIdentity<cl_char, 2>
+{
+    static cl_char val() { return std::numeric_limits<cl_char>::max(); }
+}; // min
+template <> struct TypeIdentity<cl_char, 3>
+{
+    static cl_char val() { return (cl_char)1; }
+}; // mul
+template <> struct TypeIdentity<cl_char, 4>
+{
+    static cl_char val() { return (cl_char)~0; }
+}; // and
+template <> struct TypeIdentity<cl_char, 5>
+{
+    static cl_char val() { return (cl_char)0; }
+}; // or
+template <> struct TypeIdentity<cl_char, 6>
+{
+    static cl_char val() { return (cl_char)0; }
+}; // xor
 
 template <> struct TypeIdentity<cl_uint, 0>
 {
     static cl_uint val() { return (cl_uint)0; }
-};
+}; // add
 template <> struct TypeIdentity<cl_uint, 1>
 {
-    static cl_uint val() { return (cl_uint)0; }
-};
+    static cl_uint val() { return std::numeric_limits<cl_uint>::min(); }
+}; // max
 template <> struct TypeIdentity<cl_uint, 2>
 {
-    static cl_uint val() { return (cl_uint)0xffffffff; }
-};
+    static cl_uint val() { return std::numeric_limits<cl_uint>::max(); }
+}; // min
+template <> struct TypeIdentity<cl_uint, 3>
+{
+    static cl_uint val() { return (cl_uint)1; }
+}; // mul
+template <> struct TypeIdentity<cl_uint, 4>
+{
+    static cl_uint val() { return (cl_uint)~0; }
+}; // and
+template <> struct TypeIdentity<cl_uint, 5>
+{
+    static cl_uint val() { return (cl_uint)0; }
+}; // or
+template <> struct TypeIdentity<cl_uint, 6>
+{
+    static cl_uint val() { return (cl_uint)0; }
+}; // xor
 
 template <> struct TypeIdentity<cl_int, 0>
 {
     static cl_int val() { return (cl_int)0; }
-};
+}; // add
 template <> struct TypeIdentity<cl_int, 1>
 {
-    static cl_int val() { return (cl_int)0x80000000; }
-};
+    static cl_int val() { return std::numeric_limits<int>::min(); }
+}; // max
 template <> struct TypeIdentity<cl_int, 2>
 {
-    static cl_int val() { return (cl_int)0x7fffffff; }
-};
+    static cl_int val() { return std::numeric_limits<int>::max(); }
+}; // min
+template <> struct TypeIdentity<cl_int, 3>
+{
+    static cl_int val() { return (cl_int)1; }
+}; // mul
+template <> struct TypeIdentity<cl_int, 4>
+{
+    static cl_int val() { return (cl_int)~0; }
+}; // and
+template <> struct TypeIdentity<cl_int, 5>
+{
+    static cl_int val() { return (cl_int)0; }
+}; // or
+template <> struct TypeIdentity<cl_int, 6>
+{
+    static cl_int val() { return (cl_int)0; }
+}; // xor
+template <> struct TypeIdentity<cl_int, 7>
+{
+    static cl_int val() { return (cl_int)1; }
+}; // logical_and
+template <> struct TypeIdentity<cl_int, 8>
+{
+    static cl_int val() { return (cl_int)0; }
+}; // logical_or
+template <> struct TypeIdentity<cl_int, 9>
+{
+    static cl_int val() { return (cl_int)0; }
+}; // logical_xor
+
+template <> struct TypeIdentity<cl_short, 0>
+{
+    static cl_short val() { return (cl_short)0; }
+}; // add
+template <> struct TypeIdentity<cl_short, 1>
+{
+    static cl_short val() { return std::numeric_limits<cl_short>::min(); }
+}; // max
+template <> struct TypeIdentity<cl_short, 2>
+{
+    static cl_short val() { return std::numeric_limits<cl_short>::max(); }
+}; // min
+template <> struct TypeIdentity<cl_short, 3>
+{
+    static cl_short val() { return (cl_short)1; }
+}; // mul
+template <> struct TypeIdentity<cl_short, 4>
+{
+    static cl_short val() { return (cl_short)~0; }
+}; // and
+template <> struct TypeIdentity<cl_short, 5>
+{
+    static cl_short val() { return (cl_short)0; }
+}; // or
+template <> struct TypeIdentity<cl_short, 6>
+{
+    static cl_short val() { return (cl_short)0; }
+}; // xor
+
+template <> struct TypeIdentity<cl_ushort, 0>
+{
+    static cl_ushort val() { return (cl_ushort)0; }
+}; // add
+template <> struct TypeIdentity<cl_ushort, 1>
+{
+    static cl_ushort val() { return std::numeric_limits<cl_ushort>::min(); }
+}; // max
+template <> struct TypeIdentity<cl_ushort, 2>
+{
+    static cl_ushort val() { return std::numeric_limits<cl_ushort>::max(); }
+}; // min
+template <> struct TypeIdentity<cl_ushort, 3>
+{
+    static cl_ushort val() { return (cl_ushort)1; }
+}; // mul
+template <> struct TypeIdentity<cl_ushort, 4>
+{
+    static cl_ushort val() { return (cl_ushort)~0; }
+}; // and
+template <> struct TypeIdentity<cl_ushort, 5>
+{
+    static cl_ushort val() { return (cl_ushort)0; }
+}; // or
+template <> struct TypeIdentity<cl_ushort, 6>
+{
+    static cl_ushort val() { return (cl_ushort)0; }
+}; // xor
 
 template <> struct TypeIdentity<cl_ulong, 0>
 {
@@ -1284,12 +1457,28 @@ template <> struct TypeIdentity<cl_ulong, 0>
 };
 template <> struct TypeIdentity<cl_ulong, 1>
 {
-    static cl_ulong val() { return (cl_ulong)0; }
+    static cl_ulong val() { return std::numeric_limits<cl_ulong>::min(); }
 };
 template <> struct TypeIdentity<cl_ulong, 2>
 {
-    static cl_ulong val() { return (cl_ulong)0xffffffffffffffffULL; }
+    static cl_ulong val() { return std::numeric_limits<cl_ulong>::max(); }
 };
+template <> struct TypeIdentity<cl_ulong, 3>
+{
+    static cl_ulong val() { return (cl_ulong)1; }
+}; // mul
+template <> struct TypeIdentity<cl_ulong, 4>
+{
+    static cl_ulong val() { return (cl_ulong)~0; }
+}; // and
+template <> struct TypeIdentity<cl_ulong, 5>
+{
+    static cl_ulong val() { return (cl_ulong)0; }
+}; // or
+template <> struct TypeIdentity<cl_ulong, 6>
+{
+    static cl_ulong val() { return (cl_ulong)0; }
+}; // xor
 
 template <> struct TypeIdentity<cl_long, 0>
 {
@@ -1297,40 +1486,62 @@ template <> struct TypeIdentity<cl_long, 0>
 };
 template <> struct TypeIdentity<cl_long, 1>
 {
-    static cl_long val() { return (cl_long)0x8000000000000000ULL; }
+    static cl_long val() { return std::numeric_limits<cl_long>::min(); }
 };
 template <> struct TypeIdentity<cl_long, 2>
 {
-    static cl_long val() { return (cl_long)0x7fffffffffffffffULL; }
+    static cl_long val() { return std::numeric_limits<cl_long>::max(); }
 };
+template <> struct TypeIdentity<cl_long, 3>
+{
+    static cl_long val() { return (cl_long)1; }
+}; // mul
+template <> struct TypeIdentity<cl_long, 4>
+{
+    static cl_long val() { return (cl_long)~0; }
+}; // and
+template <> struct TypeIdentity<cl_long, 5>
+{
+    static cl_long val() { return (cl_long)0; }
+}; // or
+template <> struct TypeIdentity<cl_long, 6>
+{
+    static cl_long val() { return (cl_long)0; }
+}; // xor
 
+template <> struct TypeIdentity<cl_float, 0>
+{
+    static cl_float val() { return 0.F; }
+};
+template <> struct TypeIdentity<cl_float, 1>
+{
+    static cl_float val() { return -std::numeric_limits<float>::infinity(); }
+};
+template <> struct TypeIdentity<cl_float, 2>
+{
+    static cl_float val() { return std::numeric_limits<float>::infinity(); }
+};
+template <> struct TypeIdentity<cl_float, 3>
+{
+    static cl_float val() { return (cl_float)1; }
+}; // mul
 
-template <> struct TypeIdentity<float, 0>
+template <> struct TypeIdentity<cl_double, 0>
 {
-    static float val() { return 0.F; }
+    static cl_double val() { return 0.L; }
 };
-template <> struct TypeIdentity<float, 1>
+template <> struct TypeIdentity<cl_double, 1>
 {
-    static float val() { return -std::numeric_limits<float>::infinity(); }
+    static cl_double val() { return -std::numeric_limits<double>::infinity(); }
 };
-template <> struct TypeIdentity<float, 2>
+template <> struct TypeIdentity<cl_double, 2>
 {
-    static float val() { return std::numeric_limits<float>::infinity(); }
+    static cl_double val() { return std::numeric_limits<double>::infinity(); }
 };
-
-template <> struct TypeIdentity<double, 0>
+template <> struct TypeIdentity<cl_double, 3>
 {
-    static double val() { return 0.L; }
-};
-
-template <> struct TypeIdentity<double, 1>
-{
-    static double val() { return -std::numeric_limits<double>::infinity(); }
-};
-template <> struct TypeIdentity<double, 2>
-{
-    static double val() { return std::numeric_limits<double>::infinity(); }
-};
+    static cl_double val() { return (cl_double)1; }
+}; // mul
 
 template <typename Ty> struct TypeCheck;
 template <> struct TypeCheck<cl_uint>
