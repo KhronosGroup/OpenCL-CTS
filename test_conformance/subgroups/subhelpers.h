@@ -23,6 +23,8 @@
 #include <limits>
 #include <vector>
 
+#define NON_UNIFORM 4
+
 class subgroupsAPI {
 public:
     subgroupsAPI(cl_platform_id platform, bool useCoreSubgroups)
@@ -364,6 +366,8 @@ struct test
         Ty mapout[LSIZE];
         std::stringstream kernel_sstr;
 
+        kernel_sstr << "#define NON_UNIFORM " + std::to_string(NON_UNIFORM)
+                + " \n";
         // Make sure a test of type Ty is supported by the device
         if (!TypeCheck<Ty>::val(device))
         {
