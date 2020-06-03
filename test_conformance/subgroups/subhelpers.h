@@ -235,6 +235,35 @@ static bool int64_ok(cl_device_id device)
     return true;
 }
 
+static bool double_ok(cl_device_id device)
+{
+    int error;
+    cl_device_fp_config c;
+    error = clGetDeviceInfo(device, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof(c),
+                            (void *)&c, NULL);
+    if (error)
+    {
+        log_info("clGetDeviceInfo failed with CL_DEVICE_DOUBLE_FP_CONFIG\n");
+        return false;
+    }
+    return c != 0;
+}
+
+static bool half_ok(cl_device_id device)
+{
+    int error;
+    cl_device_fp_config c;
+    error = clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG, sizeof(c),
+                            (void *)&c, NULL);
+    if (error)
+    {
+        log_info("clGetDeviceInfo failed with CL_DEVICE_HALF_FP_CONFIG\n");
+        return false;
+    }
+    return c != 0;
+}
+
+
 template <> struct TypeCheck<cl_ulong>
 {
     static bool val(cl_device_id device) { return int64_ok(device); }
@@ -249,27 +278,11 @@ template <> struct TypeCheck<cl_float>
 };
 template <> struct TypeCheck<cl_half>
 {
-    static bool val(cl_device_id device)
-    {
-        return is_extension_available(device, "cl_khr_fp16");
-    }
+    static bool val(cl_device_id device) { return half_ok(device); }
 };
-template <> struct TypeCheck<double>
+template <> struct TypeCheck<cl_double>
 {
-    static bool val(cl_device_id device)
-    {
-        int error;
-        cl_device_fp_config c;
-        error = clGetDeviceInfo(device, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof(c),
-                                (void *)&c, NULL);
-        if (error)
-        {
-            log_info(
-                "clGetDeviceInfo failed with CL_DEVICE_DOUBLE_FP_CONFIG\n");
-            return false;
-        }
-        return c != 0;
-    }
+    static bool val(cl_device_id device) { return double_ok(device); }
 };
 
 
