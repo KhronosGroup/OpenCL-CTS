@@ -1,5 +1,5 @@
 os:
-  - Visual Studio 2017
+  - Visual Studio 2019
 
 shallow_clone: true
 
@@ -50,5 +50,5 @@ before_build:
 
 build:
   project: build_win\CLConform.sln
-  parallel: false
+  parallel: true
   verbosity: normal
