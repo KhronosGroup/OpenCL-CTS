@@ -22,27 +22,22 @@
 #include "version.h"
 
 #define ADD_TEST_FEATURE(fn, feat)                                             \
-    {                                                                          \
-        test_##fn, #fn, Version(1, 0), feat                                    \
-    }
+    test_definition { test_##fn, #fn, Version(1, 0), feat }
 
 #define ADD_TEST(fn)                                                           \
-    {                                                                          \
-        test_##fn, #fn, Version(1, 0), F_true                                  \
-    }
+    test_definition { test_##fn, #fn, Version(1, 0), F_true }
 #define ADD_TEST_VERSION(fn, ver)                                              \
-    {                                                                          \
-        test_##fn, #fn, ver, F_true                                            \
-    }
+    test_definition { test_##fn, #fn, ver, F_true }
 #define NOT_IMPLEMENTED_TEST(fn)                                               \
-    {                                                                          \
-        NULL, #fn, Version(0, 0), F_true                                       \
-    }
+    test_definition { NULL, #fn, Version(0, 0), F_true }
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 struct test_definition
 {
+    test_definition(basefn fn, const char *n, Version v, const feature &feat)
+        : func(fn), name(n), min_version(v), required_feature(feat)
+    {}
     basefn func;
     const char* name;
     Version min_version;

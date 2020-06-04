@@ -161,6 +161,8 @@ FEATURE(F_true);
 FEATURE(F_subgroups_extension);
 FEATURE(F_subgroups);
 FEATURE(F_program_scope_variables);
+FEATURE(F_non_uniform_work_groups);
+FEATURE(F_read_write_images);
 #undef FEATURE
 
 #endif // #ifndef HARNESS_FEATURE_H_

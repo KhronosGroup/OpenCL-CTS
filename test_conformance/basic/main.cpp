@@ -142,7 +142,7 @@ int main(int argc, const char *argv[])
 
         ADD_TEST_FEATURE(global_linear_id, F_version_ge(2, 0)),
         ADD_TEST_FEATURE(local_linear_id, F_version_ge(2, 0)),
-        ADD_TEST_FEATURE(enqueued_local_size, F_version_ge(2, 0)),
+        ADD_TEST_FEATURE(enqueued_local_size, F_non_uniform_work_groups),
 
         ADD_TEST(simple_read_image_pitch),
         ADD_TEST(simple_write_image_pitch),
@@ -152,7 +152,7 @@ int main(int argc, const char *argv[])
 #endif
 
         ADD_TEST_FEATURE(get_linear_ids, F_version_ge(2, 0)),
-        ADD_TEST_FEATURE(rw_image_access_qualifier, F_version_ge(2, 0)),
+        ADD_TEST_FEATURE(rw_image_access_qualifier, F_read_write_images),
     };
 
     const int test_num = ARRAY_SIZE(test_list);
