@@ -68,8 +68,9 @@ int             gForceFTZ = 0;
 int             gWimpyMode = 0;
 int             gHasDouble = 0;
 int             gTestFloat = 1;
-//This flag should be 'ON' by default and it can be changed through the command line arguments.
-volatile int             gTestFastRelaxed = 1;
+// This flag should be 'ON' by default and it can be changed through the command
+// line arguments.
+static int gTestFastRelaxed = 1;
 /*This flag corresponds to defining if the implementation has Derived Fast Relaxed functions.
   The spec does not specify ULP for derived function.  The derived functions are composed of base functions which are tested for ULP, thus when this flag is enabled,
   Derived functions will not be tested for ULP, as per table 7.1 of OpenCL 2.0 spec.
@@ -179,7 +180,9 @@ int doTest( const char* name )
             {
                 gTestCount++;
                 vlog( "%3d: ", gTestCount );
-                if( func_data->vtbl_ptr->TestFunc( func_data, gMTdata )  )
+                // Test with relaxed requirements here.
+                if (func_data->vtbl_ptr->TestFunc(func_data, gMTdata,
+                                                  true /* relaxed mode */))
                 {
                     gFailCount++;
                     error++;
@@ -194,47 +197,38 @@ int doTest( const char* name )
 
         if( gTestFloat )
         {
-            int testFastRelaxedTmp = gTestFastRelaxed;
-            gTestFastRelaxed = 0;
-
             gTestCount++;
             vlog( "%3d: ", gTestCount );
-            if( func_data->vtbl_ptr->TestFunc( func_data, gMTdata )  )
+            // Don't test with relaxed requirements.
+            if (func_data->vtbl_ptr->TestFunc(func_data, gMTdata,
+                                              false /* relaxed mode */))
             {
                 gFailCount++;
                 error++;
                 if( gStopOnError )
                 {
-                    gTestFastRelaxed = testFastRelaxedTmp;
                     gSkipRestOfTests = true;
                     return error;
                 }
             }
-            gTestFastRelaxed = testFastRelaxedTmp;
         }
 
         if( gHasDouble && NULL != func_data->vtbl_ptr->DoubleTestFunc && NULL != func_data->dfunc.p )
         {
-            //Disable fast-relaxed-math for double precision floating-point
-            int testFastRelaxedTmp = gTestFastRelaxed;
-            gTestFastRelaxed = 0;
-
             gTestCount++;
             vlog( "%3d: ", gTestCount );
-            if( func_data->vtbl_ptr->DoubleTestFunc( func_data, gMTdata )  )
+            // Don't test with relaxed requirements.
+            if (func_data->vtbl_ptr->DoubleTestFunc(func_data, gMTdata,
+                                                    false /* relaxed mode*/))
             {
                 gFailCount++;
                 error++;
                 if( gStopOnError )
                 {
-                    gTestFastRelaxed = testFastRelaxedTmp;
                     gSkipRestOfTests = true;
                     return error;
                 }
             }
-
-            //Re-enable testing fast-relaxed-math mode
-            gTestFastRelaxed = testFastRelaxedTmp;
         }
     }
 
@@ -1490,7 +1484,8 @@ int IsTininessDetectedBeforeRounding( void )
 }
 
 
-int MakeKernel( const char **c, cl_uint count, const char *name, cl_kernel *k, cl_program *p )
+int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
+               cl_program *p, bool relaxedMode)
 {
     int error = 0;
     char options[200] = "";
@@ -1500,7 +1495,7 @@ int MakeKernel( const char **c, cl_uint count, const char *name, cl_kernel *k, c
       strcat(options," -cl-denorms-are-zero");
     }
 
-    if( gTestFastRelaxed )
+    if (relaxedMode)
     {
       strcat(options, " -cl-fast-relaxed-math");
     }
@@ -1527,7 +1522,9 @@ int MakeKernel( const char **c, cl_uint count, const char *name, cl_kernel *k, c
     return error;
 }
 
-int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel_count, cl_kernel *k, cl_program *p )
+int MakeKernels(const char **c, cl_uint count, const char *name,
+                cl_uint kernel_count, cl_kernel *k, cl_program *p,
+                bool relaxedMode)
 {
     int error = 0;
     cl_uint i;
@@ -1543,7 +1540,7 @@ int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel
       strcat(options," -cl-fp32-correctly-rounded-divide-sqrt ");
     }
 
-    if( gTestFastRelaxed )
+    if (relaxedMode)
     {
       strcat(options, " -cl-fast-relaxed-math");
     }

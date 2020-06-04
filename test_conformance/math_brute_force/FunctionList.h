@@ -68,8 +68,10 @@ struct Func;
 typedef struct vtbl
 {
     const char  *type_name;
-    int         (*TestFunc)( const struct Func *, MTdata );
-    int         (*DoubleTestFunc)( const struct Func *, MTdata);        // may be NULL if function is single precision only
+    int (*TestFunc)(const struct Func *, MTdata, bool);
+    int (*DoubleTestFunc)(
+        const struct Func *, MTdata,
+        bool); // may be NULL if function is single precision only
 }vtbl;
 
 typedef struct Func

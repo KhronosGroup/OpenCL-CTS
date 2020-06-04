@@ -18,17 +18,25 @@
 #include <string.h>
 #include "FunctionList.h"
 
-int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata);
-int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata);
+int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata,
+                                        bool relaxedMode);
+int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata,
+                                           bool relaxedMode);
 
 extern const vtbl _binary_operator = { "binaryOperator",
                                        TestFunc_Float_Float_Float_Operator,
                                        TestFunc_Double_Double_Double_Operator };
 
-static int BuildKernel( const char *name, const char *operator_symbol, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
-static int BuildKernelDouble( const char *name, const char *operator_symbol, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
+static int BuildKernel(const char *name, const char *operator_symbol,
+                       int vectorSize, cl_uint kernel_count, cl_kernel *k,
+                       cl_program *p, bool relaxedMode);
+static int BuildKernelDouble(const char *name, const char *operator_symbol,
+                             int vectorSize, cl_uint kernel_count, cl_kernel *k,
+                             cl_program *p, bool relaxedMode);
 
-static int BuildKernel( const char *name, const char *operator_symbol, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p )
+static int BuildKernel(const char *name, const char *operator_symbol,
+                       int vectorSize, cl_uint kernel_count, cl_kernel *k,
+                       cl_program *p, bool relaxedMode)
 {
     const char *c[] = {
                             "__kernel void ", name, "_kernel", sizeNames[vectorSize], "( __global float", sizeNames[vectorSize], "* out, __global float", sizeNames[vectorSize], "* in1, __global float", sizeNames[vectorSize], "* in2 )\n"
@@ -88,11 +96,13 @@ static int BuildKernel( const char *name, const char *operator_symbol, int vecto
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "%s_kernel%s", name, sizeNames[vectorSize] );
 
-    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);
-
+    return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p,
+                       relaxedMode);
 }
 
-static int BuildKernelDouble( const char *name, const char *operator_symbol, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p )
+static int BuildKernelDouble(const char *name, const char *operator_symbol,
+                             int vectorSize, cl_uint kernel_count, cl_kernel *k,
+                             cl_program *p, bool relaxedMode)
 {
     const char *c[] = {
                             "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
@@ -154,8 +164,8 @@ static int BuildKernelDouble( const char *name, const char *operator_symbol, int
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "%s_kernel%s", name, sizeNames[vectorSize] );
 
-    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);
-
+    return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p,
+                       relaxedMode);
 }
 
 typedef struct BuildKernelInfo
@@ -166,6 +176,7 @@ typedef struct BuildKernelInfo
     cl_program  *programs;
     const char  *name;
     const char  *operator_symbol;
+    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 }BuildKernelInfo;
 
 static cl_int BuildKernel_FloatFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p );
@@ -173,7 +184,8 @@ static cl_int BuildKernel_FloatFn( cl_uint job_id, cl_uint thread_id UNUSED, voi
 {
     BuildKernelInfo *info = (BuildKernelInfo*) p;
     cl_uint i = info->offset + job_id;
-    return BuildKernel( info->name, info->operator_symbol, i, info->kernel_count, info->kernels[i], info->programs + i );
+    return BuildKernel(info->name, info->operator_symbol, i, info->kernel_count,
+                       info->kernels[i], info->programs + i, info->relaxedMode);
 }
 
 static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p );
@@ -181,7 +193,9 @@ static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, vo
 {
     BuildKernelInfo *info = (BuildKernelInfo*) p;
     cl_uint i = info->offset + job_id;
-    return BuildKernelDouble( info->name, info->operator_symbol, i, info->kernel_count, info->kernels[i], info->programs + i );
+    return BuildKernelDouble(info->name, info->operator_symbol, i,
+                             info->kernel_count, info->kernels[i],
+                             info->programs + i, info->relaxedMode);
 }
 
 //Thread specific data for a worker thread
@@ -210,6 +224,8 @@ typedef struct TestInfo
     cl_uint     scale;                              // stride between individual test values
     float       ulps;                               // max_allowed ulps
     int         ftz;                                // non-zero if running in flush to zero mode
+    bool relaxedMode; // True if the test is being run in relaxed mode, false
+                      // otherwise.
 
     // no special fields
 }TestInfo;
@@ -237,7 +253,8 @@ static size_t specialValuesFloatCount = sizeof( specialValuesFloat ) / sizeof( s
 
 static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *p );
 
-int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d)
+int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
+                                        bool relaxedMode)
 {
     TestInfo    test_info;
     cl_int      error;
@@ -246,7 +263,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d)
     double      maxErrorVal = 0.0;
     double      maxErrorVal2 = 0.0;
 
-    logFunctionInfo(f->name,sizeof(cl_float),gTestFastRelaxed);
+    logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
     // Init test_info
     memset( &test_info, 0, sizeof( test_info ) );
@@ -331,7 +348,13 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d)
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = { gMinVectorSizeIndex, test_info.threadCount, test_info.k, test_info.programs, f->name, f->nameInCode };
+        BuildKernelInfo build_info = { gMinVectorSizeIndex,
+                                       test_info.threadCount,
+                                       test_info.k,
+                                       test_info.programs,
+                                       f->name,
+                                       f->nameInCode,
+                                       relaxedMode };
         if( (error = ThreadPool_Do( BuildKernel_FloatFn, gMaxVectorSizeIndex - gMinVectorSizeIndex, &build_info ) ))
             goto exit;
     }
@@ -460,7 +483,7 @@ exit:
     return error;
 }
 
-static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
+static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
 {
     const TestInfo *job = (const TestInfo *) data;
     size_t      buffer_elements = job->subBufferSize;
@@ -469,9 +492,10 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
     ThreadInfo  *tinfo = job->tinfo + thread_id;
     float       ulps = job->ulps;
     fptr        func = job->f->func;
-    if ( gTestFastRelaxed )
+    bool relaxedMode = job->relaxedMode;
+    if (relaxedMode)
     {
-      func = job->f->rfunc;
+        func = job->f->rfunc;
     }
 
 
@@ -528,7 +552,8 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
                 if (y >= specialValuesFloatCount)
                     break;
             }
-            if (gTestFastRelaxed && strcmp(name,"divide") == 0) {
+            if (relaxedMode && strcmp(name, "divide") == 0)
+            {
                 cl_uint pj = p[j] & 0x7fffffff;
                 cl_uint p2j = p2[j] & 0x7fffffff;
                 // Replace values outside [2^-62, 2^62] with QNaN
@@ -546,7 +571,8 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
         p[j] = genrand_int32(d);
         p2[j] = genrand_int32(d);
 
-        if (gTestFastRelaxed && strcmp(name,"divide") == 0) {
+        if (relaxedMode && strcmp(name, "divide") == 0)
+        {
             cl_uint pj = p[j] & 0x7fffffff;
             cl_uint p2j = p2[j] & 0x7fffffff;
             // Replace values outside [2^-62, 2^62] with QNaN
@@ -704,8 +730,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
                 float err = Ulp_Error( test, correct );
                 float errB = Ulp_Error( test, (float) correct  );
 
-                if( gTestFastRelaxed )
-                  ulps = job->f->relaxed_error;
+                if (relaxedMode) ulps = job->f->relaxed_error;
 
                 int fail = ((!(fabsf(err) <= ulps)) && (!(fabsf(errB) <= ulps)));
                 if( fabsf( errB ) < fabsf(err ) )
@@ -898,7 +923,6 @@ exit:
     if( overflow )
         free( overflow );
     return error;
-
 }
 
 
@@ -925,7 +949,8 @@ static size_t specialValuesDoubleCount = sizeof( specialValuesDouble ) / sizeof(
 
 static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *p );
 
-int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d)
+int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
+                                           bool relaxedMode)
 {
     TestInfo    test_info;
     cl_int      error;
@@ -933,7 +958,7 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d)
     float       maxError = 0.0f;
     double      maxErrorVal = 0.0;
     double      maxErrorVal2 = 0.0;
-    logFunctionInfo(f->name,sizeof(cl_double),gTestFastRelaxed);
+    logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
     // Init test_info
     memset( &test_info, 0, sizeof( test_info ) );
@@ -1020,7 +1045,13 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d)
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = { gMinVectorSizeIndex, test_info.threadCount, test_info.k, test_info.programs, f->name, f->nameInCode };
+        BuildKernelInfo build_info = { gMinVectorSizeIndex,
+                                       test_info.threadCount,
+                                       test_info.k,
+                                       test_info.programs,
+                                       f->name,
+                                       f->nameInCode,
+                                       relaxedMode };
         if( (error = ThreadPool_Do( BuildKernel_DoubleFn, gMaxVectorSizeIndex - gMinVectorSizeIndex, &build_info ) ))
             goto exit;
     }
@@ -1162,6 +1193,7 @@ static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *data )
     float       ulps = job->ulps;
     dptr        func = job->f->dfunc;
     int         ftz = job->ftz;
+    bool relaxedMode = job->relaxedMode;
     MTdata      d = tinfo->d;
     cl_uint     j, k;
     cl_int      error;
