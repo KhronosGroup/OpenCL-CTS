@@ -23,8 +23,6 @@
 #include <functional>
 #include <string>
 
-using feature_predicate = std::function<bool(cl_device_id)>;
-
 struct feature_or;
 struct feature_and;
 
@@ -34,10 +32,10 @@ struct feature
     bool is_supported(cl_device_id device) const { return m_predicate(device); }
     const feature_or operator||(const feature& rhs) const;
     const feature_and operator&&(const feature& rhs) const;
-    feature_predicate predicate() const { return m_predicate; }
+    std::function<bool(cl_device_id)> predicate() const { return m_predicate; }
 
 protected:
-    feature_predicate m_predicate;
+    std::function<bool(cl_device_id)> m_predicate;
     std::string m_name;
 };
 
