@@ -50,5 +50,5 @@ before_build:
 
 build:
   project: build_win\CLConform.sln
-  parallel: true
+  parallel: false
   verbosity: normal
