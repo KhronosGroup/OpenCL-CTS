@@ -57,10 +57,6 @@ set(${MODULE_NAME}_SOURCES
     test_simple_image_pitch.cpp
     test_get_linear_ids.cpp
     test_rw_image_access_qualifier.cpp
-    test_wg_barrier.cpp
-    test_enqueued_local_size.cpp
-    test_global_linear_id.cpp
-    test_local_linear_id.cpp
 )
 
 if(APPLE)
