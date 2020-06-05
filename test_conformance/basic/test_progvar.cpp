@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "harness/feature.h"
 #include "harness/compat.h"
 
 // Bug: Missing in spec: atomic_intptr_t is always supported if device is 32-bits.
