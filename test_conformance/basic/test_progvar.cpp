@@ -271,8 +271,6 @@ static TypeInfo type_infos[MAX_TYPES];
 static int num_type_infos = 0; // Number of valid entries in type_infos[]
 
 
-
-
 // A helper class to form kernel source arguments for clCreateProgramWithSource.
 class StringTable {
 public:
@@ -545,7 +543,8 @@ static int l_build_type_table(cl_device_id device)
     num_type_infos = 0;
 
     // Boolean.
-    type_infos[ num_type_infos++ ] = TypeInfo( "bool" ).set_bool().set_size(1).set_buf_elem_type("uchar");
+    type_infos[num_type_infos++] =
+        TypeInfo("bool").set_bool().set_size(1).set_buf_elem_type("uchar");
 
     // Vector types, and the related scalar element types.
     for ( iscalar=0; iscalar < sizeof(vecbase)/sizeof(vecbase[0]) ; ++iscalar ) {
@@ -558,13 +557,15 @@ static int l_build_type_table(cl_device_id device)
 
         // Vector
         for ( ivecsize=0; ivecsize < sizeof(vecsizes)/sizeof(vecsizes[0]) ; ivecsize++ ) {
-            type_infos[ num_type_infos++ ] = TypeInfo( elem_type, vecsizes[ivecsize] );
+            type_infos[num_type_infos++] =
+                TypeInfo(elem_type, vecsizes[ivecsize]);
         }
     }
 
     // Size_t-like types
     for ( iscalar=0; iscalar < sizeof(like_size_t)/sizeof(like_size_t[0]) ; ++iscalar ) {
-        type_infos[ num_type_infos++ ] = TypeInfo( like_size_t[iscalar] ).set_like_size_t();
+        type_infos[num_type_infos++] =
+            TypeInfo(like_size_t[iscalar]).set_like_size_t();
     }
 
     // Atomic types.
@@ -574,15 +575,20 @@ static int l_build_type_table(cl_device_id device)
 
         // The +7 is used to skip over the "atomic_" prefix.
         const char* buf_type = atomics[iscalar] + 7;
-        type_infos[ num_type_infos++ ] = TypeInfo( atomics[iscalar] ).set_atomic().set_size( atomics_size[iscalar] ).set_buf_elem_type( buf_type );
+        type_infos[num_type_infos++] = TypeInfo(atomics[iscalar])
+                                           .set_atomic()
+                                           .set_size(atomics_size[iscalar])
+                                           .set_buf_elem_type(buf_type);
     }
     if ( l_has_intptr_atomics ) {
         for ( iscalar=0; iscalar < sizeof(intptr_atomics)/sizeof(intptr_atomics[0]) ; ++iscalar ) {
-            type_infos[ num_type_infos++ ] = TypeInfo( intptr_atomics[iscalar] ).set_atomic().set_like_size_t();
+            type_infos[num_type_infos++] = TypeInfo(intptr_atomics[iscalar])
+                                               .set_atomic()
+                                               .set_like_size_t();
         }
     }
 
-    assert( num_type_infos <= MAX_TYPES ); // or increase MAX_TYPES
+    assert(num_type_infos <= MAX_TYPES); // or increase MAX_TYPES
 
 #if 0
     for ( size_t i = 0 ; i < num_type_infos ; i++ ) {
@@ -894,8 +900,11 @@ static int l_write_read( cl_device_id device, cl_context context, cl_command_que
 
     RandomSeed rand_state( gRandomSeed );
 
-    for ( itype = 0; itype < num_type_infos ; itype++ ) {
-        status = status | l_write_read_for_type(device,context,queue,type_infos[itype], rand_state );
+    for (itype = 0; itype < num_type_infos; itype++)
+    {
+        status = status
+            | l_write_read_for_type(device, context, queue, type_infos[itype],
+                                    rand_state);
         FLUSH;
     }
 
@@ -1049,8 +1058,11 @@ static int l_init_write_read( cl_device_id device, cl_context context, cl_comman
 
     RandomSeed rand_state( gRandomSeed );
 
-    for ( itype = 0; itype < num_type_infos ; itype++ ) {
-        status = status | l_init_write_read_for_type(device,context,queue,type_infos[itype], rand_state );
+    for (itype = 0; itype < num_type_infos; itype++)
+    {
+        status = status
+            | l_init_write_read_for_type(device, context, queue,
+                                         type_infos[itype], rand_state);
     }
     return status;
 }
