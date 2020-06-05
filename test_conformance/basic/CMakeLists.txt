@@ -61,7 +61,6 @@ set(${MODULE_NAME}_SOURCES
     test_enqueued_local_size.cpp
     test_global_linear_id.cpp
     test_local_linear_id.cpp
-    test_progvar.cpp
 )
 
 if(APPLE)
