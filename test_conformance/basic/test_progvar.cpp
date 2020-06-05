@@ -267,8 +267,8 @@ private:
 // Need room for plain, array, pointer, struct
 #define MAX_TYPES (4*NUM_PLAIN_TYPES)
 
-static TypeInfo type_info[MAX_TYPES];
-static int num_type_info = 0; // Number of valid entries in type_info[]
+static TypeInfo type_infos[MAX_TYPES];
+static int num_type_infos = 0; // Number of valid entries in type_infos[]
 
 
 
@@ -542,10 +542,10 @@ static int l_build_type_table(cl_device_id device)
     };
 
     l_load_abilities(device);
-    num_type_info = 0;
+    num_type_infos = 0;
 
     // Boolean.
-    type_info[ num_type_info++ ] = TypeInfo( "bool" ).set_bool().set_size(1).set_buf_elem_type("uchar");
+    type_infos[ num_type_infos++ ] = TypeInfo( "bool" ).set_bool().set_size(1).set_buf_elem_type("uchar");
 
     // Vector types, and the related scalar element types.
     for ( iscalar=0; iscalar < sizeof(vecbase)/sizeof(vecbase[0]) ; ++iscalar ) {
@@ -553,18 +553,18 @@ static int l_build_type_table(cl_device_id device)
         if ( !l_has_double && strstr(vecbase[iscalar],"double") ) continue;
 
         // Scalar
-        TypeInfo* elem_type = type_info + num_type_info++;
+        TypeInfo* elem_type = type_infos + num_type_infos++;
         *elem_type = TypeInfo( vecbase[iscalar] ).set_vecbase().set_size( vecbase_size[iscalar] );
 
         // Vector
         for ( ivecsize=0; ivecsize < sizeof(vecsizes)/sizeof(vecsizes[0]) ; ivecsize++ ) {
-            type_info[ num_type_info++ ] = TypeInfo( elem_type, vecsizes[ivecsize] );
+            type_infos[ num_type_infos++ ] = TypeInfo( elem_type, vecsizes[ivecsize] );
         }
     }
 
     // Size_t-like types
     for ( iscalar=0; iscalar < sizeof(like_size_t)/sizeof(like_size_t[0]) ; ++iscalar ) {
-        type_info[ num_type_info++ ] = TypeInfo( like_size_t[iscalar] ).set_like_size_t();
+        type_infos[ num_type_infos++ ] = TypeInfo( like_size_t[iscalar] ).set_like_size_t();
     }
 
     // Atomic types.
@@ -574,19 +574,19 @@ static int l_build_type_table(cl_device_id device)
 
         // The +7 is used to skip over the "atomic_" prefix.
         const char* buf_type = atomics[iscalar] + 7;
-        type_info[ num_type_info++ ] = TypeInfo( atomics[iscalar] ).set_atomic().set_size( atomics_size[iscalar] ).set_buf_elem_type( buf_type );
+        type_infos[ num_type_infos++ ] = TypeInfo( atomics[iscalar] ).set_atomic().set_size( atomics_size[iscalar] ).set_buf_elem_type( buf_type );
     }
     if ( l_has_intptr_atomics ) {
         for ( iscalar=0; iscalar < sizeof(intptr_atomics)/sizeof(intptr_atomics[0]) ; ++iscalar ) {
-            type_info[ num_type_info++ ] = TypeInfo( intptr_atomics[iscalar] ).set_atomic().set_like_size_t();
+            type_infos[ num_type_infos++ ] = TypeInfo( intptr_atomics[iscalar] ).set_atomic().set_like_size_t();
         }
     }
 
-    assert( num_type_info <= MAX_TYPES ); // or increase MAX_TYPES
+    assert( num_type_infos <= MAX_TYPES ); // or increase MAX_TYPES
 
 #if 0
-    for ( size_t i = 0 ; i < num_type_info ; i++ ) {
-        type_info[ i ].dump(stdout);
+    for ( size_t i = 0 ; i < num_type_infos ; i++ ) {
+        type_infos[ i ].dump(stdout);
     }
     exit(0);
 #endif
@@ -597,9 +597,9 @@ static int l_build_type_table(cl_device_id device)
 static const TypeInfo& l_find_type( const char* name )
 {
     auto itr =
-        std::find_if(type_info, type_info + num_type_info,
+        std::find_if(type_infos, type_infos + num_type_infos,
                      [name](TypeInfo& ti) { return ti.get_name() == name; });
-    assert(itr != type_info + num_type_info);
+    assert(itr != type_infos + num_type_infos);
     return *itr;
 }
 
@@ -894,8 +894,8 @@ static int l_write_read( cl_device_id device, cl_context context, cl_command_que
 
     RandomSeed rand_state( gRandomSeed );
 
-    for ( itype = 0; itype < num_type_info ; itype++ ) {
-        status = status | l_write_read_for_type(device,context,queue,type_info[itype], rand_state );
+    for ( itype = 0; itype < num_type_infos ; itype++ ) {
+        status = status | l_write_read_for_type(device,context,queue,type_infos[itype], rand_state );
         FLUSH;
     }
 
@@ -1049,8 +1049,8 @@ static int l_init_write_read( cl_device_id device, cl_context context, cl_comman
 
     RandomSeed rand_state( gRandomSeed );
 
-    for ( itype = 0; itype < num_type_info ; itype++ ) {
-        status = status | l_init_write_read_for_type(device,context,queue,type_info[itype], rand_state );
+    for ( itype = 0; itype < num_type_infos ; itype++ ) {
+        status = status | l_init_write_read_for_type(device,context,queue,type_infos[itype], rand_state );
     }
     return status;
 }
