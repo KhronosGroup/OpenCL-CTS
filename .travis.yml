@@ -15,18 +15,8 @@ jobs:
             - clang-format-9
   - os: linux
     env: JOB_ARCHITECTURE=arm
-    addons:
-        apt:
-          packages:
-            - libqt4-dev 
-            - libqt4-opengl-dev
   - os: linux
     env: JOB_ARCHITECTURE=aarch64
-    addons:
-        apt:
-          packages:
-            - libqt4-dev 
-            - libqt4-opengl-dev
 
 script:
   - ./travis.sh
