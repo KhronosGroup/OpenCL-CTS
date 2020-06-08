@@ -59,7 +59,7 @@ static void printUsage( void );
 //Stream helper functions
 
 //Associate stdout stream with the file(gFileName):i.e redirect stdout stream to the specific files (gFileName)
-static int acquireOutputStream();
+static int acquireOutputStream(int* error);
 
 //Close the file(gFileName) associated with the stdout stream and disassociates it.
 static void releaseOutputStream(int fd);
@@ -141,12 +141,14 @@ static int getTempFileName()
 //-----------------------------------------
 // acquireOutputStream
 //-----------------------------------------
-static int acquireOutputStream()
+static int acquireOutputStream(int* error)
 {
     int fd = streamDup(fileno(stdout));
+    *error = 0;
     if (!freopen(gFileName, "w", stdout))
     {
-        log_error("Error while redirection stdout to file");
+        releaseOutputStream(fd);
+        *error = -1;
     }
     return fd;
 }
@@ -495,7 +497,12 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
         }
     }
 
-    fd = acquireOutputStream();
+    fd = acquireOutputStream(&err);
+    if (err != 0)
+    {
+        log_error("Error while redirection stdout to file");
+        goto exit;
+    }
     globalWorkSize[0] = 1;
     cl_event ndrEvt;
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, globalWorkSize, NULL, 0, NULL,&ndrEvt);
@@ -985,7 +992,12 @@ test_status InitCL( cl_device_id device )
     uint32_t compute_devices = 0;
 
     int err;
-    gFd = acquireOutputStream();
+    gFd = acquireOutputStream(&err);
+    if (err != 0)
+    {
+        log_error("Error while redirection stdout to file");
+        return TEST_FAIL;
+    }
 
     size_t config_size = sizeof( device_frequency );
 #if MULTITHREAD
@@ -1017,14 +1029,16 @@ test_status InitCL( cl_device_id device )
 
     log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
 
-    gFd = acquireOutputStream();
-
-    cl_context_properties printf_properties[] =
-        {
-            CL_PRINTF_CALLBACK_ARM, (cl_context_properties)printfCallBack,
-            CL_PRINTF_BUFFERSIZE_ARM, ANALYSIS_BUFFER_SIZE,
-            0
-        };
+    gFd = acquireOutputStream(&err);
+    if (err != 0)
+    {
+        log_error("Error while redirection stdout to file");
+        return TEST_FAIL;
+    }
+    cl_context_properties printf_properties[] = {
+        CL_PRINTF_CALLBACK_ARM, (cl_context_properties)printfCallBack,
+        CL_PRINTF_BUFFERSIZE_ARM, ANALYSIS_BUFFER_SIZE, 0
+    };
 
     cl_context_properties* props = NULL;
 
