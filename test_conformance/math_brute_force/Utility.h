@@ -28,6 +28,7 @@
 #include "harness/fpcontrol.h"
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
+#include "harness/conversions.h"
 #define BUFFER_SIZE         (1024*1024*2)
 
 #if defined( __GNUC__ )
@@ -127,34 +128,6 @@ void _LogBuildError( cl_program p, int line, const char *file );
 #define LogBuildError( program )        _LogBuildError( program, __LINE__, __FILE__ )
 
 #define PERF_LOOP_COUNT 100
-
-// Note: though this takes a double, this is for use with single precision tests
-static inline int IsFloatSubnormal( double x )
-{
-#if 2 == FLT_RADIX
-    // Do this in integer to avoid problems with FTZ behavior
-    union{ float d; uint32_t u;}u;
-    u.d = fabsf((float)x);
-    return (u.u-1) < 0x007fffffU;
-#else
-    // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) FLT_MIN && x != 0.0;
-#endif
-}
-
-
-static inline int IsDoubleSubnormal( long double x )
-{
-#if 2 == FLT_RADIX
-    // Do this in integer to avoid problems with FTZ behavior
-    union{ double d; uint64_t u;}u;
-    u.d = fabs((double) x);
-    return (u.u-1) < 0x000fffffffffffffULL;
-#else
-    // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) DBL_MIN && x != 0.0;
-#endif
-}
 
 //The spec is fairly clear that we may enforce a hard cutoff to prevent premature flushing to zero.
 // However, to avoid conflict for 1.0, we are letting results at TYPE_MIN + ulp_limit to be flushed to zero.
