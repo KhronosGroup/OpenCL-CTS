@@ -25,11 +25,20 @@
     test_definition { test_##fn, #fn, Version(1, 0), feat }
 
 #define ADD_TEST(fn)                                                           \
-    test_definition { test_##fn, #fn, Version(1, 0), {} }
+    test_definition                                                            \
+    {                                                                          \
+        test_##fn, #fn, Version(1, 0), {}                                      \
+    }
 #define ADD_TEST_VERSION(fn, ver)                                              \
-    test_definition { test_##fn, #fn, ver, {} }
+    test_definition                                                            \
+    {                                                                          \
+        test_##fn, #fn, ver, {}                                                \
+    }
 #define NOT_IMPLEMENTED_TEST(fn)                                               \
-    test_definition { NULL, #fn, Version(0, 0), {} }
+    test_definition                                                            \
+    {                                                                          \
+        NULL, #fn, Version(0, 0), {}                                           \
+    }
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
