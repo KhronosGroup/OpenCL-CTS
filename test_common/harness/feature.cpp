@@ -29,17 +29,6 @@ const feature_and feature::operator&&(const feature& rhs) const
 }
 
 // Feature definitions
-struct feature_true : public feature
-{
-    feature_true()
-    {
-        m_name = "true";
-        m_predicate = [](cl_device_id device) { return true; };
-    }
-};
-
-const feature& F_true = feature_true();
-
 struct feature_subgroups_core_optional : public feature
 {
     feature_subgroups_core_optional()

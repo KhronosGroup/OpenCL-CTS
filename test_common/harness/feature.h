@@ -30,8 +30,15 @@ struct feature_and;
 
 struct feature
 {
+    feature() : m_name("true"), m_predicate(nullptr) {}
     const std::string& name() const { return m_name; };
-    bool is_supported(cl_device_id device) const { return m_predicate(device); }
+    bool is_supported(cl_device_id device) const {
+        if (m_predicate != nullptr) {
+            return m_predicate(device);
+        } else {
+            return true;
+        }
+    }
     const feature_or operator||(const feature& rhs) const;
     const feature_and operator&&(const feature& rhs) const;
     feature_predicate predicate() const { return m_predicate; }
