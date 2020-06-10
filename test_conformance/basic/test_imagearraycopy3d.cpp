@@ -27,7 +27,7 @@ int test_imagearraycopy3d_single_format(cl_device_id device, cl_context context,
 {
   cl_uchar    *imgptr, *bufptr;
   clMemWrapper      image, buffer;
-  int        img_width = 128;
+  int        img_width = 256;
   int        img_height = 128;
   int        img_depth = 32;
   size_t    elem_size;
