@@ -28,84 +28,53 @@ const feature_and feature::operator&&(const feature& rhs) const
     return feature_and(*this, rhs);
 }
 
-// Feature definitions
-struct feature_subgroups_core_optional : public feature
+// Base feature classes
+template <const cl_device_info query, typename T>
+struct F_device_info_non_zero : public feature
 {
-    feature_subgroups_core_optional()
+    F_device_info_non_zero(const std::string& name)
     {
-        m_name = "Subgroups core optional";
+        m_name = name;
         m_predicate = [](cl_device_id device) {
-            cl_uint max_sub_groups;
-            auto err =
-                clGetDeviceInfo(device, CL_DEVICE_MAX_NUM_SUB_GROUPS,
-                                sizeof(max_sub_groups), &max_sub_groups, NULL);
+            T result;
+            auto err = clGetDeviceInfo(device, query, sizeof(result), &result,
+                                       nullptr);
             ASSERT_SUCCESS(err, "clGetDeviceInfo");
-            return max_sub_groups != 0;
+            return result != 0;
         };
     }
-} F_subgroups_core_optional;
+};
+
+// Feature definitions
+const feature& F_subgroups_core =
+    F_device_info_non_zero<CL_DEVICE_MAX_NUM_SUB_GROUPS, cl_uint>(
+        "Subgroups core");
 
 const feature& F_subgroups_extension = F_extension("cl_khr_subgroups");
 
 const feature& F_subgroups = F_subgroups_extension
     || (F_version_ge(2, 1) && F_version_lt(3, 0))
-    || (F_version_ge(3, 0) && F_subgroups_core_optional);
+    || (F_version_ge(3, 0) && F_subgroups_core);
 
-struct feature_program_scope_variables_core_optional : public feature
-{
-    feature_program_scope_variables_core_optional()
-    {
-        m_name = "Program scope variables core optional";
-        m_predicate = [](cl_device_id device) {
-            size_t max_size;
-            auto err =
-                clGetDeviceInfo(device, CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE,
-                                sizeof(max_size), &max_size, nullptr);
-            ASSERT_SUCCESS(err, "clGetDeviceInfo");
-            return max_size > 0;
-        };
-    }
-} F_program_scope_variables_core_optional;
+const feature& F_program_scope_variables_core =
+    F_device_info_non_zero<CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE, size_t>(
+        "Program scope variables core");
 
 const feature& F_program_scope_variables =
     (F_version_ge(2, 0) && F_version_lt(3, 0))
-    || (F_version_ge(3, 0) && F_program_scope_variables_core_optional);
+    || (F_version_ge(3, 0) && F_program_scope_variables_core);
 
-struct feature_non_uniform_work_groups_core_optional : public feature
-{
-    feature_non_uniform_work_groups_core_optional()
-    {
-        m_name = "Non-uniform work-groups core optional";
-        m_predicate = [](cl_device_id device) {
-            cl_bool supported;
-            auto err = clGetDeviceInfo(device,
-                                       CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT,
-                                       sizeof(supported), &supported, nullptr);
-            ASSERT_SUCCESS(err, "clGetDeviceInfo");
-            return supported;
-        };
-    }
-} F_non_uniform_work_groups_core_optional;
+const feature& F_non_uniform_work_groups_core =
+    F_device_info_non_zero<CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT, cl_bool>(
+        "Non-uniform work-groups core");
 
 const feature& F_non_uniform_work_groups =
     (F_version_ge(2, 0) && F_version_lt(3, 0))
-    || (F_version_ge(3, 0) && F_non_uniform_work_groups_core_optional);
+    || (F_version_ge(3, 0) && F_non_uniform_work_groups_core);
 
-struct feature_read_write_images_core_optional : public feature
-{
-    feature_read_write_images_core_optional()
-    {
-        m_name = "Read-write images core optional";
-        m_predicate = [](cl_device_id device) {
-            cl_uint num_args;
-            auto err =
-                clGetDeviceInfo(device, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
-                                sizeof(num_args), &num_args, nullptr);
-            ASSERT_SUCCESS(err, "clGetDeviceInfo");
-            return num_args > 0;
-        };
-    }
-} F_read_write_images_core_optional;
+const feature& F_read_write_images_core =
+    F_device_info_non_zero<CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS, cl_uint>(
+        "Read-write images core");
 
 const feature& F_read_write_images = (F_version_ge(2, 0) && F_version_lt(3, 0))
-    || (F_version_ge(3, 0) && F_read_write_images_core_optional);
+    || (F_version_ge(3, 0) && F_read_write_images_core);
