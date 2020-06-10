@@ -30,7 +30,7 @@ struct feature_and;
 
 struct feature
 {
-    feature(): m_name("true"), m_predicate(nullptr) {}
+    feature(): m_predicate(nullptr), m_name("true") {}
     const std::string& name() const { return m_name; };
     bool is_supported(cl_device_id device) const
     {
