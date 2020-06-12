@@ -522,3 +522,128 @@ int test_mem_copy_host_flags( cl_device_id deviceID, cl_context context, cl_comm
 
 }   // end test_mem_copy_host_flags()
 
+int test_mem_alloc_ref_flags(cl_device_id deviceID, cl_context context,
+                             cl_command_queue queue, int num_elements)
+{
+    cl_mem buffers[1];
+    int *ptr;
+    cl_program program[1];
+    cl_kernel kernel[1];
+    size_t global_work_size[3];
+#ifdef USE_LOCAL_WORK_GROUP
+    size_t local_work_size[3];
+#endif
+    cl_int err;
+    int i;
+
+    size_t min_alignment = get_min_alignment(context);
+
+    global_work_size[0] = (cl_uint)num_elements;
+
+    ptr = (int *)align_malloc(sizeof(cl_int) * num_elements, min_alignment);
+    if (!ptr)
+    {
+        log_error(" unable to allocate %d bytes of memory\n",
+                  (int)sizeof(cl_int) * num_elements);
+        return -1;
+    }
+
+    for (i = 0; i < num_elements; i++) ptr[i] = i;
+
+    buffers[0] =
+        clCreateBuffer(context, CL_MEM_ALLOC_HOST_PTR | CL_MEM_READ_WRITE,
+                       sizeof(cl_int) * num_elements, NULL, &err);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clCreateBuffer failed for CL_MEM_ALLOC_HOST_PTR\n");
+        align_free((void *)ptr);
+        return -1;
+    }
+
+    err = clEnqueueWriteBuffer(queue, buffers[0], true, 0,
+                               sizeof(cl_int) * num_elements, (void *)ptr, 0,
+                               NULL, NULL);
+    if (err != CL_SUCCESS)
+    {
+        clReleaseMemObject(buffers[0]);
+        align_free((void *)ptr);
+        return -1;
+    }
+
+    err = create_single_kernel_helper(context, &program[0], &kernel[0], 1,
+                                      &mem_read_write_kernel_code,
+                                      "test_mem_read_write");
+    if (err)
+    {
+        clReleaseMemObject(buffers[0]);
+        align_free((void *)ptr);
+        return -1;
+    }
+
+#ifdef USE_LOCAL_WORK_GROUP
+    err = get_max_common_work_group_size(
+        context, kernel[0], global_work_size[0], &local_work_size[0]);
+    test_error(err, "Unable to get work group size to use");
+#endif
+
+    err = clSetKernelArg(kernel[0], 0, sizeof(cl_mem), (void *)&buffers[0]);
+    if (err != CL_SUCCESS)
+    {
+        log_error("clSetKernelArgs failed\n");
+        clReleaseMemObject(buffers[0]);
+        clReleaseKernel(kernel[0]);
+        clReleaseProgram(program[0]);
+        align_free((void *)ptr);
+        return -1;
+    }
+
+#ifdef USE_LOCAL_WORK_GROUP
+    err = clEnqueueNDRangeKernel(queue, kernel[0], 1, NULL, global_work_size,
+                                 local_work_size, 0, NULL, NULL);
+#else
+    err = clEnqueueNDRangeKernel(queue, kernel[0], 1, NULL, global_work_size,
+                                 NULL, 0, NULL, NULL);
+#endif
+    if (err != CL_SUCCESS)
+    {
+        log_error("clEnqueueNDRangeKernel failed\n");
+        clReleaseMemObject(buffers[0]);
+        clReleaseKernel(kernel[0]);
+        clReleaseProgram(program[0]);
+        align_free((void *)ptr);
+        return -1;
+    }
+
+    err = clEnqueueReadBuffer(queue, buffers[0], true, 0,
+                              sizeof(cl_int) * num_elements, (void *)ptr, 0,
+                              NULL, NULL);
+    if (err != CL_SUCCESS)
+    {
+        log_error("CL_MEM_ALLOC_HOST_PTR failed.\n");
+        clReleaseMemObject(buffers[0]);
+        clReleaseKernel(kernel[0]);
+        clReleaseProgram(program[0]);
+        align_free((void *)ptr);
+        return -1;
+    }
+
+    if (verify_mem(ptr, num_elements))
+    {
+        log_error("CL_MEM_ALLOC_HOST_PTR test failed\n");
+        err = -1;
+    }
+    else
+    {
+        log_info("CL_MEM_ALLOC_HOST_PTR test passed\n");
+        err = 0;
+    }
+
+    // cleanup
+    clReleaseMemObject(buffers[0]);
+    clReleaseKernel(kernel[0]);
+    clReleaseProgram(program[0]);
+    align_free((void *)ptr);
+
+    return err;
+
+} // end test_mem_alloc_ref_flags()
