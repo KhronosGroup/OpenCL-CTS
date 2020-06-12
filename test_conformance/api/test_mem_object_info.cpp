@@ -17,8 +17,6 @@
 #include "harness/typeWrappers.h"
 #include "harness/testHarness.h"
 
-extern cl_uint gRandomSeed;
-
 
 #define TEST_MEM_OBJECT_PARAM( mem, paramName, val, expected, name, type, cast )    \
 error = clGetMemObjectInfo( mem, paramName, sizeof( val ), &val, &size );   \

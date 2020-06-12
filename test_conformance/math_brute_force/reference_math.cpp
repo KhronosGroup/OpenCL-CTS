@@ -37,39 +37,6 @@
 #define EVALUATE( x )       x
 #define CONCATENATE(x, y)  x ## EVALUATE(y)
 
-
-// Declare Classification macros for non-C99 platforms
-#ifndef isinf
-    #define isinf(x)    (    sizeof (x) == sizeof(float )    ?    fabsf(x) == INFINITY      \
-                        :    sizeof (x) == sizeof(double)    ?    fabs(x) == INFINITY      \
-                        :    fabsl(x) == INFINITY)
-#endif
-
-#ifndef isfinite
-    #define isfinite(x) (    sizeof (x) == sizeof(float )    ?    fabsf(x) < INFINITY      \
-                        :    sizeof (x) == sizeof(double)    ?    fabs(x) < INFINITY      \
-                        :    fabsl(x) < INFINITY)
-#endif
-
-#ifndef isnan
-    #define isnan(_a)       ( (_a) != (_a) )
-#endif
-
-#ifdef __MINGW32__
-    #undef isnormal
-#endif
-
-#ifndef isnormal
-    #define isnormal(x) (    sizeof (x) == sizeof(float )    ?    (fabsf(x) < INFINITY && fabsf(x) >= FLT_MIN)     \
-                        :    sizeof (x) == sizeof(double)    ?    (fabs(x) < INFINITY && fabs(x) >= DBL_MIN)     \
-                        :    (fabsl(x) < INFINITY && fabsl(x) >= LDBL_MIN)   )
-#endif
-
-#ifndef islessgreater
-    // Note: Non-C99 conformant. This will trigger floating point exceptions. We don't care about that here.
-    #define islessgreater( _x, _y )     ( (_x) < (_y) || (_x) > (_y) )
-#endif
-
 #pragma STDC FP_CONTRACT OFF
 static void __log2_ep(double *hi, double *lo, double x);
 
@@ -2951,7 +2918,17 @@ int reference_isgreaterequall( long double x, long double y){ return x >= y; }
 int reference_isinfl( long double x){ return 0 != isinf(x); }
 int reference_islessl( long double x, long double y){ return x < y; }
 int reference_islessequall( long double x, long double y){ return x <= y; }
-int reference_islessgreaterl( long double x, long double y){  return 0 != islessgreater( x, y ); }
+#if defined(__INTEL_COMPILER)
+int reference_islessgreaterl(long double x, long double y)
+{
+    return 0 != islessgreaterl(x, y);
+}
+#else
+int reference_islessgreaterl(long double x, long double y)
+{
+    return 0 != islessgreater(x, y);
+}
+#endif
 int reference_isnanl( long double x){ return 0 != isnan( x ); }
 int reference_isnormall( long double x){ return 0 != isnormal( (double) x ); }
 int reference_isnotequall( long double x, long double y){ return x != y; }

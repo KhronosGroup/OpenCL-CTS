@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "../testBase.h"
+#include "../common.h"
 
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
@@ -25,17 +26,6 @@ extern uint64_t gRoundingStartValue;
 
 extern int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
                                    const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d );
-
-
-static size_t random_in_ranges( size_t minimum, size_t rangeA, size_t rangeB, MTdata d )
-{
-    if( rangeB < rangeA )
-        rangeA = rangeB;
-    if( rangeA < minimum )
-        return rangeA;
-    return (size_t)random_in_range( (int)minimum, (int)rangeA - 1, d );
-}
-
 
 static void set_image_dimensions( image_descriptor *imageInfo, size_t width, size_t height, size_t arraySize, size_t rowPadding, size_t slicePadding )
 {
@@ -176,7 +166,8 @@ int test_copy_image_size_2D_2D_array( cl_context context, cl_command_queue queue
         sourcePos[ 0 ] = ( srcImageInfo->width > regionSize[ 0 ] ) ? (size_t)random_in_range( 0, (int)( srcImageInfo->width - regionSize[ 0 ] - 1 ), d ) : 0;
         sourcePos[ 1 ] = ( srcImageInfo->height > regionSize[ 1 ] ) ? (size_t)random_in_range( 0, (int)( srcImageInfo->height - regionSize[ 1 ] - 1 ), d ) : 0;
         sourcePos[ 2 ] = ( srcImageInfo->arraySize > 0 ) ? (size_t)random_in_range( 0, (int)( srcImageInfo->arraySize - 1 ), d ) : gTestMipmaps ? twoImage_lod : 0;
-        if ( gTestMipmaps )
+        if (gTestMipmaps)
+        {
             if( srcImageInfo->arraySize > 0 )
             {
                 sourcePos[ 0 ] = ( threeImage_width_lod > regionSize[ 0 ] ) ? (size_t)random_in_range( 0, (int)( threeImage_width_lod - regionSize[ 0 ] - 1 ), d ) : 0;
@@ -189,11 +180,13 @@ int test_copy_image_size_2D_2D_array( cl_context context, cl_command_queue queue
                 sourcePos[ 1 ] = ( twoImage_height_lod > regionSize[ 1 ] ) ? (size_t)random_in_range( 0, (int)( twoImage_height_lod - regionSize[ 1 ] - 1 ), d ) : 0;
 
             }
+        }
 
         destPos[ 0 ] = ( dstImageInfo->width > regionSize[ 0 ] ) ? (size_t)random_in_range( 0, (int)( dstImageInfo->width - regionSize[ 0 ] - 1 ), d ) : 0;
         destPos[ 1 ] = ( dstImageInfo->height > regionSize[ 1 ] ) ? (size_t)random_in_range( 0, (int)( dstImageInfo->height - regionSize[ 1 ] - 1 ), d ) : 0;
         destPos[ 2 ] = ( dstImageInfo->arraySize > 0 ) ? (size_t)random_in_range( 0, (int)( dstImageInfo->arraySize - 1 ), d ) : gTestMipmaps ? twoImage_lod : 0;
-        if ( gTestMipmaps )
+        if (gTestMipmaps)
+        {
             if( dstImageInfo->arraySize > 0 )
             {
                 destPos[ 0 ] = ( threeImage_width_lod > regionSize[ 0 ] ) ? (size_t)random_in_range( 0, (int)( threeImage_width_lod - regionSize[ 0 ] - 1 ), d ) : 0;
@@ -206,6 +199,7 @@ int test_copy_image_size_2D_2D_array( cl_context context, cl_command_queue queue
                 destPos[ 1 ] = ( twoImage_height_lod > regionSize[ 1 ] ) ? (size_t)random_in_range( 0, (int)( twoImage_height_lod - regionSize[ 1 ] - 1 ), d ) : 0;
 
             }
+        }
 
         // Go for it!
         retCode = test_copy_image_generic( context, queue, srcImageInfo, dstImageInfo, sourcePos, destPos, regionSize, d );

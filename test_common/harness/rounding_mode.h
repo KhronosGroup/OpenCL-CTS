@@ -51,18 +51,10 @@ typedef enum
     kTypeCount
 }Type;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern RoundingMode set_round( RoundingMode r, Type outType );
 extern RoundingMode get_round( void );
 extern void *FlushToZero( void );
 extern void UnFlushToZero( void *p);
-
-#ifdef __cplusplus
-}
-#endif
 
 
 

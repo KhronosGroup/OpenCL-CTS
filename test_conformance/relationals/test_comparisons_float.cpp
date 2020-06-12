@@ -17,8 +17,6 @@
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
-extern "C" { extern cl_uint gRandomSeed;};
-
 #define TEST_SIZE 512
 
 const char *equivTestKernelPattern_float =
@@ -63,7 +61,7 @@ const char *equivTestKernelPatternLessGreater_float3 =
 "}\n";
 
 typedef bool (*equivVerifyFn)( float inDataA, float inDataB );
-extern "C" { extern int gInfNanSupport; };
+extern int gInfNanSupport;
 
 int IsFloatInfinity(float x)
 {

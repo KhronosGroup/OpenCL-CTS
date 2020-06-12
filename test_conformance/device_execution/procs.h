@@ -15,10 +15,6 @@
 //
 #include "harness/testHarness.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern int test_device_info(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_device_queue(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_execute_block(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
@@ -32,9 +28,5 @@ extern int test_enqueue_ndrange(cl_device_id device, cl_context context, cl_comm
 extern int test_host_queue_order(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int test_execution_stress(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-
-#ifdef __cplusplus
-}
-#endif
 
 

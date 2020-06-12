@@ -37,6 +37,7 @@
 // TODO: pointer-to-half (and its vectors)
 // TODO: union of...
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -595,10 +596,11 @@ static int l_build_type_table(cl_device_id device)
 
 static const TypeInfo& l_find_type( const char* name )
 {
-    for ( size_t i = 0; i < num_type_info ; i++ ) {
-        if ( 0 == strcmp( name, type_info[i].get_name_c_str() ) ) return type_info[i];
-    }
-    assert(0);
+    auto itr =
+        std::find_if(type_info, type_info + num_type_info,
+                     [name](TypeInfo& ti) { return ti.get_name() == name; });
+    assert(itr != type_info + num_type_info);
+    return *itr;
 }
 
 

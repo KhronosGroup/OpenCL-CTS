@@ -26,7 +26,7 @@
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
-typedef struct work_item_data
+struct work_item_data
 {
     cl_uint workDim;
     cl_uint globalSize[ 3 ];
@@ -130,7 +130,7 @@ int test_work_item_functions(cl_device_id deviceID, cl_context context, cl_comma
                         free_mtdata(d);
                         return -1;
                     }
-                    if( testData[ q ].globalID[ j ] < 0 || testData[ q ].globalID[ j ] >= (cl_uint)threads[ j ] )
+                    if (testData[q].globalID[j] >= (cl_uint)threads[j])
                     {
                         log_error( "ERROR: get_global_id(%d) did not return proper value for %d dimensions (max %d, got %d)\n",
                                   (int)j, (int)dim, (int)threads[ j ], (int)testData[ q ].globalID[ j ] );
@@ -144,7 +144,7 @@ int test_work_item_functions(cl_device_id deviceID, cl_context context, cl_comma
                         free_mtdata(d);
                         return -1;
                     }
-                    if( testData[ q ].localID[ j ] < 0 && testData[ q ].localID[ j ] >= (cl_uint)localThreads[ j ] )
+                    if (testData[q].localID[j] >= (cl_uint)localThreads[j])
                     {
                         log_error( "ERROR: get_local_id(%d) did not return proper value for %d dimensions (max %d, got %d)\n",
                                   (int)j, (int)dim, (int)localThreads[ j ], (int)testData[ q ].localID[ j ] );
@@ -159,7 +159,7 @@ int test_work_item_functions(cl_device_id deviceID, cl_context context, cl_comma
                         free_mtdata(d);
                         return -1;
                     }
-                    if( testData[ q ].groupID[ j ] < 0 || testData[ q ].groupID[ j ] >= (cl_uint)groupCount )
+                    if (testData[q].groupID[j] >= (cl_uint)groupCount)
                     {
                         log_error( "ERROR: get_group_id(%d) did not return proper value for %d dimensions (max %d, got %d)\n",
                                   (int)j, (int)dim, (int)groupCount, (int)testData[ q ].groupID[ j ] );

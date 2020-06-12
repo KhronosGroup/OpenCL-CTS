@@ -100,7 +100,8 @@ void get_kernel_name (const char *test_name, std::string &kernel_name)
     kernel_name.assign(temp_str);
 }
 
-extern "C" void CL_CALLBACK notify_callback(const char *errInfo, const void *privateInfo, size_t cb, void *userData);
+void CL_CALLBACK notify_callback(const char* errInfo, const void* privateInfo,
+                                 size_t cb, void* userData);
 
 void create_context_and_queue(cl_device_id device, cl_context *out_context, cl_command_queue *out_queue)
 {

@@ -16,8 +16,6 @@
 #include "testBase.h"
 #include "harness/conversions.h"
 
-extern cl_uint gRandomSeed;
-
 const char * atomic_index_source =
 "#pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable\n"
 "// Counter keeps track of which index in counts we are using.\n"

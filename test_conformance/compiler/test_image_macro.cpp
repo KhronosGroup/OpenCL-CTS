@@ -57,7 +57,7 @@ int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue
       return status;
     }
 
-    if( (image_support == CL_TRUE) )
+    if (image_support == CL_TRUE)
     {
         status = create_single_kernel_helper_create_program(context, &program, 1, (const char**)&image_supported_source);
 

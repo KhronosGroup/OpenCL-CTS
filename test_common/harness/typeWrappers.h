@@ -29,9 +29,6 @@
 #include "errorHelpers.h"
 #include "kernelHelpers.h"
 
-extern "C" cl_uint gReSeed;
-extern "C" cl_uint gRandomSeed;
-
 /* cl_context wrapper */
 
 class clContextWrapper

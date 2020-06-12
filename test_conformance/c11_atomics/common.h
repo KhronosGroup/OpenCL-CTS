@@ -66,8 +66,6 @@ extern bool gDebug; // print OpenCL kernel code
 extern int gInternalIterations; // internal test iterations for atomic operation, sufficient to verify atomicity
 extern int gMaxDeviceThreads; // maximum number of threads executed on OCL device
 
-extern cl_uint gRandomSeed;
-
 extern const char *get_memory_order_type_name(TExplicitMemoryOrderType orderType);
 extern const char *get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
 

@@ -23,8 +23,6 @@
 #define LONG_TEST_VALUE 515154531254381446LL
 
 
-extern cl_uint gRandomSeed;
-
 const char *atomic_global_pattern[] = {
     "__kernel void test_atomic_fn(volatile __global %s *destMemory, __global %s *oldValues)\n"
     "{\n"

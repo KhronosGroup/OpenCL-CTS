@@ -23,16 +23,6 @@
 
 #include <string>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define ADD_TEST(fn) {test_##fn, #fn, Version(1, 0)}
-#define ADD_TEST_VERSION(fn, ver) {test_##fn, #fn, ver}
-#define NOT_IMPLEMENTED_TEST(fn) {NULL, #fn, Version(0, 0)}
-
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
-
 class Version
 {
 public:
@@ -55,6 +45,23 @@ private:
     int m_major;
     int m_minor;
 };
+
+Version get_device_cl_version(cl_device_id device);
+
+#define ADD_TEST(fn)                                                           \
+    {                                                                          \
+        test_##fn, #fn, Version(1, 0)                                          \
+    }
+#define ADD_TEST_VERSION(fn, ver)                                              \
+    {                                                                          \
+        test_##fn, #fn, ver                                                    \
+    }
+#define NOT_IMPLEMENTED_TEST(fn)                                               \
+    {                                                                          \
+        NULL, #fn, Version(0, 0)                                               \
+    }
+
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 typedef struct test_definition
 {
@@ -128,7 +135,6 @@ extern cl_device_type GetDeviceType( cl_device_id );
 // is the only device available, the SAME device is returned, so check!
 extern cl_device_id GetOpposingDevice( cl_device_id device );
 
-Version get_device_cl_version(cl_device_id device);
 void version_expected_info(const char * test_name, const char * expected_version, const char * device_version);
 
 
@@ -142,9 +148,6 @@ extern int      gIsOpenCL_C_1_0_Device; // This is set to 1 if the device suppor
     void     memset_pattern4(void *, const void *, size_t);
 #endif
 
-#ifdef __cplusplus
-}
-#endif
 extern void PrintArch(void);
 
 

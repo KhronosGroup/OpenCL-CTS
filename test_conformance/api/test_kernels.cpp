@@ -17,8 +17,6 @@
 #include "harness/typeWrappers.h"
 #include "harness/conversions.h"
 
-extern cl_uint gRandomSeed;
-
 const char *sample_single_test_kernel[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
 "{\n"

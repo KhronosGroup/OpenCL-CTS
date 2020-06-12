@@ -38,8 +38,6 @@ const char *anyAllTestKernelPatternVload =
 
 #define TEST_SIZE 512
 
-extern "C" {extern cl_uint gRandomSeed;};
-
 typedef int (*anyAllVerifyFn)( ExplicitType vecType, unsigned int vecSize, void *inData );
 
 int test_any_all_kernel(cl_context context, cl_command_queue queue,

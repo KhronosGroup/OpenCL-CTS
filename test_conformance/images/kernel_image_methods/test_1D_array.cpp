@@ -20,7 +20,7 @@
 
 extern bool            gDebugTrace, gTestSmallImages, gTestMaxImages, gDeviceLt20;
 
-typedef struct image_kernel_data
+struct image_kernel_data
 {
     cl_int width;
     cl_int arraySize;

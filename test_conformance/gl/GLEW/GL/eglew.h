@@ -108,10 +108,6 @@
 
 #include <GL/glew.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef int32_t EGLint;
 
 typedef unsigned int EGLBoolean;
@@ -2610,9 +2606,5 @@ GLEWAPI GLboolean GLEWAPIENTRY eglewIsSupported (const char *name);
 #define EGLEW_GET_FUN(x) x
 
 GLEWAPI GLboolean GLEWAPIENTRY eglewGetExtension (const char *name);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __eglew_h__ */

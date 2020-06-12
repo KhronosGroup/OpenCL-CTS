@@ -55,10 +55,6 @@
     #include <CL/cl_platform.h>
 #endif
 
-#ifdef __cplusplus
-    extern "C" {
-#endif
-
 /*
  *      Interfaces here have been modified from original sources so that they
  *      are safe to call reentrantly, so long as a different MTdata is used
@@ -91,10 +87,6 @@ double genrand_real3( MTdata /*data*/);
 /* generates a random number on [0,1) with 53-bit resolution*/
 double genrand_res53( MTdata /*data*/ );
 
-
-#ifdef __cplusplus
-    }
-#endif
 
 #ifdef __cplusplus
 

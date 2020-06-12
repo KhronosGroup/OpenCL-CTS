@@ -59,9 +59,6 @@
 #define HALF_ENTRY( _name, _ulp, _embedded_ulp, _rmode, _type )                 { "half_" STRINGIFY(_name), "half_" STRINGIFY(_name), {(void*)reference_##_name}, {NULL}, {NULL},                   _ulp, _ulp, _embedded_ulp, INFINITY, _rmode, RELAXED_OFF, _type }
 #define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _rmode, _type)    { STRINGIFY(_name), _operator,                        {(void*)reference_##_name}, {(void*)reference_##_name##l}, {NULL},                               _ulp, _ulp, _embedded_ulp, INFINITY,     _rmode, RELAXED_OFF, _type }
 
-#if defined( __cplusplus )
-    extern "C" {
-#endif
 extern const vtbl _unary;               // float foo( float )
 extern const vtbl _unary_u;             // float foo( uint ),  double foo( ulong )
 extern const vtbl _i_unary;             // int foo( float )
@@ -76,9 +73,6 @@ extern const vtbl _unary_two_results;   // float foo( float, float * )
 extern const vtbl _unary_two_results_i; // float foo( float, int * )
 extern const vtbl _binary_two_results_i; // float foo( float, float, int * )
 extern const vtbl _mad_tbl;             // float mad( float, float, float )
-#if defined( __cplusplus)
-    }
-#endif
 
 #define unaryF &_unary
 #define i_unaryF &_i_unary

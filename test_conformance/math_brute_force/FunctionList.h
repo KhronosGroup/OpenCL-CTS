@@ -30,10 +30,6 @@
 
 #include "harness/mt19937.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef union fptr
 {
     void    *p;
@@ -72,8 +68,10 @@ struct Func;
 typedef struct vtbl
 {
     const char  *type_name;
-    int         (*TestFunc)( const struct Func *, MTdata );
-    int         (*DoubleTestFunc)( const struct Func *, MTdata);        // may be NULL if function is single precision only
+    int (*TestFunc)(const struct Func *, MTdata, bool);
+    int (*DoubleTestFunc)(
+        const struct Func *, MTdata,
+        bool); // may be NULL if function is single precision only
 }vtbl;
 
 typedef struct Func
@@ -96,10 +94,6 @@ typedef struct Func
 extern const Func  functionList[];
 
 extern const size_t functionListCount;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

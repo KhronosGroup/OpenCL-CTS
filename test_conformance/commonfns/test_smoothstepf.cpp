@@ -48,8 +48,8 @@ static const char *smoothstep4_kernel_code =
 
 #define MAX_ERR (1e-5f)
 
-extern "C" float
-verify_smoothstep(float *edge0, float *edge1, float *x, float *outptr, int n, int veclen)
+float verify_smoothstep(float *edge0, float *edge1, float *x, float *outptr,
+                        int n, int veclen)
 {
   float       r, t, delta, max_err = 0.0f;
   int         i, j;

@@ -6,6 +6,7 @@ set(${MODULE_NAME}_SOURCES
     test_queries.cpp
     test_workitem.cpp
     test_workgroup.cpp
+    test_ifp.cpp
 )
 
 include(../CMakeCommon.txt)

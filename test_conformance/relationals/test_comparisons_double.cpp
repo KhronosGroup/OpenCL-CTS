@@ -17,8 +17,6 @@
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
-extern "C" { extern cl_uint gRandomSeed; };
-
 #define TEST_SIZE 512
 
 const char *equivTestKernelPattern_double =

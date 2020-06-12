@@ -899,8 +899,7 @@ int get_format_min_int( cl_image_format *format )
         case CL_UNORM_INT_101010:
             return 0;
 
-        case CL_HALF_FLOAT:
-            return -1<<10;
+        case CL_HALF_FLOAT: return -(1 << 10);
 
 #ifdef CL_SFIXED14_APPLE
         case CL_SFIXED14_APPLE:
