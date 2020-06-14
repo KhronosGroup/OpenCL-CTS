@@ -75,12 +75,12 @@ sRGBunmap(float fc)
 }
 
 
-size_t get_format_type_size( const cl_image_format *format )
+uint32_t get_format_type_size(const cl_image_format *format)
 {
     return get_channel_data_type_size( format->image_channel_data_type );
 }
 
-size_t get_channel_data_type_size( cl_channel_type channelType )
+uint32_t get_channel_data_type_size(cl_channel_type channelType)
 {
     switch( channelType )
     {
@@ -132,12 +132,12 @@ size_t get_channel_data_type_size( cl_channel_type channelType )
     }
 }
 
-size_t get_format_channel_count( const cl_image_format *format )
+uint32_t get_format_channel_count(const cl_image_format *format)
 {
     return get_channel_order_channel_count( format->image_channel_order );
 }
 
-size_t get_channel_order_channel_count( cl_channel_order order )
+uint32_t get_channel_order_channel_count(cl_channel_order order)
 {
     switch( order )
     {
@@ -284,7 +284,7 @@ int is_format_signed( const cl_image_format *format )
     }
 }
 
-size_t get_pixel_size( cl_image_format *format )
+uint32_t get_pixel_size(cl_image_format *format)
 {
   switch( format->image_channel_data_type )
   {
@@ -334,6 +334,23 @@ size_t get_pixel_size( cl_image_format *format )
     default:
       return 0;
   }
+}
+
+uint32_t next_power_of_two(uint32_t v)
+{
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+    return v;
+}
+
+uint32_t get_pixel_alignment(cl_image_format *format)
+{
+    return next_power_of_two(get_pixel_size(format));
 }
 
 int get_8_bit_image_format( cl_context context, cl_mem_object_type objType, cl_mem_flags flags, size_t channelCount, cl_image_format *outFormat )
@@ -1249,7 +1266,8 @@ char * generate_random_image_data( image_descriptor *imageInfo, BufferOwningPtr<
     }
 #else
     P.reset( NULL ); // Free already allocated memory first, then try to allocate new block.
-    char *data = (char *)align_malloc(allocSize, get_pixel_size(imageInfo->format));
+    char *data =
+        (char *)align_malloc(allocSize, get_pixel_alignment(imageInfo->format));
     P.reset(data,NULL,0,allocSize, true);
 #endif
 
@@ -3172,8 +3190,9 @@ char *create_random_image_data( ExplicitType dataType, image_descriptor *imageIn
       P.reset(data);
     }
 #else
-    char *data = (char *)align_malloc(allocSize, get_pixel_size(imageInfo->format));
-    P.reset(data,NULL,0,allocSize,true);
+  char *data =
+      (char *)align_malloc(allocSize, get_pixel_alignment(imageInfo->format));
+  P.reset(data, NULL, 0, allocSize, true);
 #endif
 
     if (data == NULL) {
