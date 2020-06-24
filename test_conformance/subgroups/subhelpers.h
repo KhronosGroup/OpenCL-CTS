@@ -22,6 +22,10 @@
 
 #include <limits>
 #include <vector>
+#include <type_traits>
+
+#undef min
+#undef max
 
 #define NON_UNIFORM 4
 
@@ -58,162 +62,75 @@ private:
     clGetKernelSubGroupInfoKHR_fn _clGetKernelSubGroupInfo_ptr;
 };
 
-// Some template helpers
-template <typename Ty> struct TypeName;
-template <> struct TypeName<cl_half>
+namespace subgroups {
+struct cl_char3
 {
-    static const char *val() { return "half"; }
+    ::cl_char3 data;
 };
-template <> struct TypeName<cl_uint>
+struct cl_uchar3
 {
-    static const char *val() { return "uint"; }
+    ::cl_uchar3 data;
 };
-template <> struct TypeName<cl_int>
+struct cl_short3
 {
-    static const char *val() { return "int"; }
+    ::cl_short3 data;
 };
-template <> struct TypeName<cl_ulong>
+struct cl_ushort3
 {
-    static const char *val() { return "ulong"; }
+    ::cl_ushort3 data;
 };
-template <> struct TypeName<cl_long>
+struct cl_int3
 {
-    static const char *val() { return "long"; }
+    ::cl_int3 data;
 };
-template <> struct TypeName<float>
+struct cl_uint3
 {
-    static const char *val() { return "float"; }
+    ::cl_uint3 data;
 };
-template <> struct TypeName<double>
+struct cl_long3
 {
-    static const char *val() { return "double"; }
+    ::cl_long3 data;
 };
-
-template <typename Ty> struct TypeDef;
-template <> struct TypeDef<cl_half>
+struct cl_ulong3
 {
-    static const char *val() { return "typedef half Type;\n"; }
+    ::cl_ulong3 data;
 };
-template <> struct TypeDef<cl_uint>
+struct cl_float3
 {
-    static const char *val() { return "typedef uint Type;\n"; }
+    ::cl_float3 data;
 };
-template <> struct TypeDef<cl_int>
+struct cl_double3
 {
-    static const char *val() { return "typedef int Type;\n"; }
+    ::cl_double3 data;
 };
-template <> struct TypeDef<cl_ulong>
+struct cl_half
 {
-    static const char *val() { return "typedef ulong Type;\n"; }
+    ::cl_half data;
 };
-template <> struct TypeDef<cl_long>
+struct cl_half2
 {
-    static const char *val() { return "typedef long Type;\n"; }
+    ::cl_half2 data;
 };
-template <> struct TypeDef<float>
+struct cl_half3
 {
-    static const char *val() { return "typedef float Type;\n"; }
+    ::cl_half3 data;
 };
-template <> struct TypeDef<double>
+struct cl_half4
 {
-    static const char *val() { return "typedef double Type;\n"; }
+    ::cl_half4 data;
 };
-
-template <typename Ty, int Which> struct TypeIdentity;
-// template <> struct TypeIdentity<cl_half,0> { static cl_half val() { return
-// (cl_half)0.0; } }; template <> struct TypeIdentity<cl_half,0> { static
-// cl_half val() { return -(cl_half)65536.0; } }; template <> struct
-// TypeIdentity<cl_half,0> { static cl_half val() { return (cl_half)65536.0; }
-// };
-
-template <> struct TypeIdentity<cl_uint, 0>
+struct cl_half8
 {
-    static cl_uint val() { return (cl_uint)0; }
+    ::cl_half8 data;
 };
-template <> struct TypeIdentity<cl_uint, 1>
+struct cl_half16
 {
-    static cl_uint val() { return (cl_uint)0; }
+    ::cl_half16 data;
 };
-template <> struct TypeIdentity<cl_uint, 2>
-{
-    static cl_uint val() { return (cl_uint)0xffffffff; }
 };
 
-template <> struct TypeIdentity<cl_int, 0>
+template <> struct std::is_scalar<subgroups::cl_half> : std::true_type
 {
-    static cl_int val() { return (cl_int)0; }
-};
-template <> struct TypeIdentity<cl_int, 1>
-{
-    static cl_int val() { return (cl_int)0x80000000; }
-};
-template <> struct TypeIdentity<cl_int, 2>
-{
-    static cl_int val() { return (cl_int)0x7fffffff; }
-};
-
-template <> struct TypeIdentity<cl_ulong, 0>
-{
-    static cl_ulong val() { return (cl_ulong)0; }
-};
-template <> struct TypeIdentity<cl_ulong, 1>
-{
-    static cl_ulong val() { return (cl_ulong)0; }
-};
-template <> struct TypeIdentity<cl_ulong, 2>
-{
-    static cl_ulong val() { return (cl_ulong)0xffffffffffffffffULL; }
-};
-
-template <> struct TypeIdentity<cl_long, 0>
-{
-    static cl_long val() { return (cl_long)0; }
-};
-template <> struct TypeIdentity<cl_long, 1>
-{
-    static cl_long val() { return (cl_long)0x8000000000000000ULL; }
-};
-template <> struct TypeIdentity<cl_long, 2>
-{
-    static cl_long val() { return (cl_long)0x7fffffffffffffffULL; }
-};
-
-
-template <> struct TypeIdentity<float, 0>
-{
-    static float val() { return 0.F; }
-};
-template <> struct TypeIdentity<float, 1>
-{
-    static float val() { return -std::numeric_limits<float>::infinity(); }
-};
-template <> struct TypeIdentity<float, 2>
-{
-    static float val() { return std::numeric_limits<float>::infinity(); }
-};
-
-template <> struct TypeIdentity<double, 0>
-{
-    static double val() { return 0.L; }
-};
-
-template <> struct TypeIdentity<double, 1>
-{
-    static double val() { return -std::numeric_limits<double>::infinity(); }
-};
-template <> struct TypeIdentity<double, 2>
-{
-    static double val() { return std::numeric_limits<double>::infinity(); }
-};
-
-template <typename Ty> struct TypeCheck;
-template <> struct TypeCheck<cl_uint>
-{
-    static bool val(cl_device_id) { return true; }
-};
-template <> struct TypeCheck<cl_int>
-{
-    static bool val(cl_device_id) { return true; }
 };
 
 static bool int64_ok(cl_device_id device)
@@ -263,27 +180,792 @@ static bool half_ok(cl_device_id device)
     return c != 0;
 }
 
+template <typename Ty> struct CommonTypeManager
+{
+    static const char *name() { return ""; }
+    static const char *add_typedef() { return "\n"; }
+    static const bool is_vector_type3() { return false; }
+    static const bool is_vector_type_half() { return false; }
+    static const bool is_scalar_type_half() { return false; }
+    static const bool type_supported(cl_device_id) { return true; }
+    static const Ty identify_limits(unsigned int test_id)
+    {
+        switch (test_id)
+        {
+            case 0: return (Ty)0; // add
+            case 1: return std::numeric_limits<Ty>::min(); // max
+            case 2: return std::numeric_limits<Ty>::max(); // min
+            case 3: return (Ty)1; // mul
+            case 4: return (Ty)~0; // and
+            case 5: return (Ty)0; // or
+            case 6: return (Ty)0; // xor
+        }
+        return 0;
+    }
+};
+template <typename T> struct TypeManager : public CommonTypeManager<T>
+{
+};
+template <> struct TypeManager<cl_int> : public CommonTypeManager<cl_int>
+{
+    static const char *name() { return "int"; }
+    static const char *add_typedef() { return "typedef int Type;\n"; }
+    static cl_int identify_limits(unsigned int test_id)
+    {
+        switch (test_id)
+        {
+            case 0: return (cl_int)0; // add
+            case 1: return std::numeric_limits<int>::min(); // max
+            case 2: return std::numeric_limits<int>::max(); // min
+            case 3: return (cl_int)1; // mul
+            case 4: return (cl_int)~0; // and
+            case 5: return (cl_int)0; // or
+            case 6: return (cl_int)0; // xor
+            case 7: return (cl_int)1; // logical and
+            case 8: return (cl_int)0; // logical or
+            case 9: return (cl_int)0; // logical xor
+        }
+        return 0;
+    }
+};
+template <> struct TypeManager<cl_int2> : public CommonTypeManager<cl_int2>
+{
+    static const char *name() { return "int2"; }
+    static const char *add_typedef() { return "typedef int2 Type;\n"; }
+    using scalar_type = cl_int;
+};
+template <>
+struct TypeManager<subgroups::cl_int3>
+    : public CommonTypeManager<subgroups::cl_int3>
+{
+    static const char *name() { return "int3"; }
+    static const char *add_typedef() { return "typedef int3 Type;\n"; }
+    static const bool is_vector_type3() { return true; }
+    using scalar_type = cl_int;
+};
+template <> struct TypeManager<cl_int4> : public CommonTypeManager<cl_int4>
+{
+    static const char *name() { return "int4"; }
+    static const char *add_typedef() { return "typedef int4 Type;\n"; }
+    using scalar_type = cl_int;
+};
+template <> struct TypeManager<cl_int8> : public CommonTypeManager<cl_int8>
+{
+    static const char *name() { return "int8"; }
+    static const char *add_typedef() { return "typedef int8 Type;\n"; }
+    using scalar_type = cl_int;
+};
+template <> struct TypeManager<cl_int16> : public CommonTypeManager<cl_int16>
+{
+    static const char *name() { return "int16"; }
+    static const char *add_typedef() { return "typedef int16 Type;\n"; }
+    using scalar_type = cl_int;
+};
+// cl_uint
+template <> struct TypeManager<cl_uint> : public CommonTypeManager<cl_uint>
+{
+    static const char *name() { return "uint"; }
+    static const char *add_typedef() { return "typedef uint Type;\n"; }
+};
+template <> struct TypeManager<cl_uint2> : public CommonTypeManager<cl_uint2>
+{
+    static const char *name() { return "uint2"; }
+    static const char *add_typedef() { return "typedef uint2 Type;\n"; }
+    using scalar_type = cl_uint;
+};
+template <>
+struct TypeManager<subgroups::cl_uint3>
+    : public CommonTypeManager<subgroups::cl_uint3>
+{
+    static const char *name() { return "uint3"; }
+    static const char *add_typedef() { return "typedef uint3 Type;\n"; }
+    static const bool is_vector_type3() { return true; }
+    using scalar_type = cl_uint;
+};
+template <> struct TypeManager<cl_uint4> : public CommonTypeManager<cl_uint4>
+{
+    static const char *name() { return "uint4"; }
+    static const char *add_typedef() { return "typedef uint4 Type;\n"; }
+    using scalar_type = cl_uint;
+};
+template <> struct TypeManager<cl_uint8> : public CommonTypeManager<cl_uint8>
+{
+    static const char *name() { return "uint8"; }
+    static const char *add_typedef() { return "typedef uint8 Type;\n"; }
+    using scalar_type = cl_uint;
+};
+template <> struct TypeManager<cl_uint16> : public CommonTypeManager<cl_uint16>
+{
+    static const char *name() { return "uint16"; }
+    static const char *add_typedef() { return "typedef uint16 Type;\n"; }
+    using scalar_type = cl_uint;
+};
+// cl_short
+template <> struct TypeManager<cl_short> : public CommonTypeManager<cl_short>
+{
+    static const char *name() { return "short"; }
+    static const char *add_typedef() { return "typedef short Type;\n"; }
+};
+template <> struct TypeManager<cl_short2> : public CommonTypeManager<cl_short2>
+{
+    static const char *name() { return "short2"; }
+    static const char *add_typedef() { return "typedef short2 Type;\n"; }
+    using scalar_type = cl_short;
+};
+template <>
+struct TypeManager<subgroups::cl_short3>
+    : public CommonTypeManager<subgroups::cl_short3>
+{
+    static const char *name() { return "short3"; }
+    static const char *add_typedef() { return "typedef short3 Type;\n"; }
+    static const bool is_vector_type3() { return true; }
+    using scalar_type = cl_short;
+};
+template <> struct TypeManager<cl_short4> : public CommonTypeManager<cl_short4>
+{
+    static const char *name() { return "short4"; }
+    static const char *add_typedef() { return "typedef short4 Type;\n"; }
+    using scalar_type = cl_short;
+};
+template <> struct TypeManager<cl_short8> : public CommonTypeManager<cl_short8>
+{
+    static const char *name() { return "short8"; }
+    static const char *add_typedef() { return "typedef short8 Type;\n"; }
+    using scalar_type = cl_short;
+};
+template <>
+struct TypeManager<cl_short16> : public CommonTypeManager<cl_short16>
+{
+    static const char *name() { return "short16"; }
+    static const char *add_typedef() { return "typedef short16 Type;\n"; }
+    using scalar_type = cl_short;
+};
+// cl_ushort
+template <> struct TypeManager<cl_ushort> : public CommonTypeManager<cl_ushort>
+{
+    static const char *name() { return "ushort"; }
+    static const char *add_typedef() { return "typedef ushort Type;\n"; }
+};
+template <>
+struct TypeManager<cl_ushort2> : public CommonTypeManager<cl_ushort2>
+{
+    static const char *name() { return "ushort2"; }
+    static const char *add_typedef() { return "typedef ushort2 Type;\n"; }
+    using scalar_type = cl_ushort;
+};
+template <>
+struct TypeManager<subgroups::cl_ushort3>
+    : public CommonTypeManager<subgroups::cl_ushort3>
+{
+    static const char *name() { return "ushort3"; }
+    static const char *add_typedef() { return "typedef ushort3 Type;\n"; }
+    static const bool is_vector_type3() { return true; }
+    using scalar_type = cl_ushort;
+};
+template <>
+struct TypeManager<cl_ushort4> : public CommonTypeManager<cl_ushort4>
+{
+    static const char *name() { return "ushort4"; }
+    static const char *add_typedef() { return "typedef ushort4 Type;\n"; }
+    using scalar_type = cl_ushort;
+};
+template <>
+struct TypeManager<cl_ushort8> : public CommonTypeManager<cl_ushort8>
+{
+    static const char *name() { return "ushort8"; }
+    static const char *add_typedef() { return "typedef ushort8 Type;\n"; }
+    using scalar_type = cl_ushort;
+};
+template <>
+struct TypeManager<cl_ushort16> : public CommonTypeManager<cl_ushort16>
+{
+    static const char *name() { return "ushort16"; }
+    static const char *add_typedef() { return "typedef ushort16 Type;\n"; }
+    using scalar_type = cl_ushort;
+};
+// cl_char
+template <> struct TypeManager<cl_char> : public CommonTypeManager<cl_char>
+{
+    static const char *name() { return "char"; }
+    static const char *add_typedef() { return "typedef char Type;\n"; }
+};
+template <> struct TypeManager<cl_char2> : public CommonTypeManager<cl_char2>
+{
+    static const char *name() { return "char2"; }
+    static const char *add_typedef() { return "typedef char2 Type;\n"; }
+    using scalar_type = cl_char;
+};
+template <>
+struct TypeManager<subgroups::cl_char3>
+    : public CommonTypeManager<subgroups::cl_char3>
+{
+    static const char *name() { return "char3"; }
+    static const char *add_typedef() { return "typedef char3 Type;\n"; }
+    static const bool is_vector_type3() { return true; }
+    using scalar_type = cl_char;
+};
+template <> struct TypeManager<cl_char4> : public CommonTypeManager<cl_char4>
+{
+    static const char *name() { return "char4"; }
+    static const char *add_typedef() { return "typedef char4 Type;\n"; }
+    using scalar_type = cl_char;
+};
+template <> struct TypeManager<cl_char8> : public CommonTypeManager<cl_char8>
+{
+    static const char *name() { return "char8"; }
+    static const char *add_typedef() { return "typedef char8 Type;\n"; }
+    using scalar_type = cl_char;
+};
+template <> struct TypeManager<cl_char16> : public CommonTypeManager<cl_char16>
+{
+    static const char *name() { return "char16"; }
+    static const char *add_typedef() { return "typedef char16 Type;\n"; }
+    using scalar_type = cl_char;
+};
+// cl_uchar
+template <> struct TypeManager<cl_uchar> : public CommonTypeManager<cl_uchar>
+{
+    static const char *name() { return "uchar"; }
+    static const char *add_typedef() { return "typedef uchar Type;\n"; }
+};
+template <> struct TypeManager<cl_uchar2> : public CommonTypeManager<cl_uchar2>
+{
+    static const char *name() { return "uchar2"; }
+    static const char *add_typedef() { return "typedef uchar2 Type;\n"; }
+    using scalar_type = cl_uchar;
+};
+template <>
+struct TypeManager<subgroups::cl_uchar3>
+    : public CommonTypeManager<subgroups::cl_char3>
+{
+    static const char *name() { return "uchar3"; }
+    static const char *add_typedef() { return "typedef uchar3 Type;\n"; }
+    static const bool is_vector_type3() { return true; }
+    using scalar_type = cl_uchar;
+};
+template <> struct TypeManager<cl_uchar4> : public CommonTypeManager<cl_uchar4>
+{
+    static const char *name() { return "uchar4"; }
+    static const char *add_typedef() { return "typedef uchar4 Type;\n"; }
+    using scalar_type = cl_uchar;
+};
+template <> struct TypeManager<cl_uchar8> : public CommonTypeManager<cl_uchar8>
+{
+    static const char *name() { return "uchar8"; }
+    static const char *add_typedef() { return "typedef uchar8 Type;\n"; }
+    using scalar_type = cl_uchar;
+};
+template <>
+struct TypeManager<cl_uchar16> : public CommonTypeManager<cl_uchar16>
+{
+    static const char *name() { return "uchar16"; }
+    static const char *add_typedef() { return "typedef uchar16 Type;\n"; }
+    using scalar_type = cl_uchar;
+};
+// cl_long
+template <> struct TypeManager<cl_long> : public CommonTypeManager<cl_long>
+{
+    static const char *name() { return "long"; }
+    static const char *add_typedef() { return "typedef long Type;\n"; }
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
+template <> struct TypeManager<cl_long2> : public CommonTypeManager<cl_long2>
+{
+    static const char *name() { return "long2"; }
+    static const char *add_typedef() { return "typedef long2 Type;\n"; }
+    using scalar_type = cl_long;
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
+template <>
+struct TypeManager<subgroups::cl_long3>
+    : public CommonTypeManager<subgroups::cl_long3>
+{
+    static const char *name() { return "long3"; }
+    static const char *add_typedef() { return "typedef long3 Type;\n"; }
+    static const bool is_vector_type3() { return true; }
+    using scalar_type = cl_long;
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
+template <> struct TypeManager<cl_long4> : public CommonTypeManager<cl_long4>
+{
+    static const char *name() { return "long4"; }
+    static const char *add_typedef() { return "typedef long4 Type;\n"; }
+    using scalar_type = cl_long;
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
+template <> struct TypeManager<cl_long8> : public CommonTypeManager<cl_long8>
+{
+    static const char *name() { return "long8"; }
+    static const char *add_typedef() { return "typedef long8 Type;\n"; }
+    using scalar_type = cl_long;
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
+template <> struct TypeManager<cl_long16> : public CommonTypeManager<cl_long16>
+{
+    static const char *name() { return "long16"; }
+    static const char *add_typedef() { return "typedef long16 Type;\n"; }
+    using scalar_type = cl_long;
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
+// cl_ulong
+template <> struct TypeManager<cl_ulong> : public CommonTypeManager<cl_ulong>
+{
+    static const char *name() { return "ulong"; }
+    static const char *add_typedef() { return "typedef ulong Type;\n"; }
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
+template <> struct TypeManager<cl_ulong2> : public CommonTypeManager<cl_ulong2>
+{
+    static const char *name() { return "ulong2"; }
+    static const char *add_typedef() { return "typedef ulong2 Type;\n"; }
+    using scalar_type = cl_ulong;
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
+template <>
+struct TypeManager<subgroups::cl_ulong3>
+    : public CommonTypeManager<subgroups::cl_ulong3>
+{
+    static const char *name() { return "ulong3"; }
+    static const char *add_typedef() { return "typedef ulong3 Type;\n"; }
+    static const bool is_vector_type3() { return true; }
+    using scalar_type = cl_ulong;
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
+template <> struct TypeManager<cl_ulong4> : public CommonTypeManager<cl_ulong4>
+{
+    static const char *name() { return "ulong4"; }
+    static const char *add_typedef() { return "typedef ulong4 Type;\n"; }
+    using scalar_type = cl_ulong;
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
+template <> struct TypeManager<cl_ulong8> : public CommonTypeManager<cl_ulong8>
+{
+    static const char *name() { return "ulong8"; }
+    static const char *add_typedef() { return "typedef ulong8 Type;\n"; }
+    using scalar_type = cl_ulong;
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
+template <>
+struct TypeManager<cl_ulong16> : public CommonTypeManager<cl_ulong16>
+{
+    static const char *name() { return "ulong16"; }
+    static const char *add_typedef() { return "typedef ulong16 Type;\n"; }
+    using scalar_type = cl_ulong;
+    static const bool type_supported(cl_device_id device)
+    {
+        return int64_ok(device);
+    }
+};
 
-template <> struct TypeCheck<cl_ulong>
+// cl_float
+template <> struct TypeManager<cl_float> : public CommonTypeManager<cl_float>
 {
-    static bool val(cl_device_id device) { return int64_ok(device); }
+    static const char *name() { return "float"; }
+    static const char *add_typedef() { return "typedef float Type;\n"; }
+    static cl_float identify_limits(unsigned int test_id)
+    {
+        switch (test_id)
+        {
+            case 0: return 0.F; // add
+            case 1: return -std::numeric_limits<float>::infinity(); // max
+            case 2: return std::numeric_limits<float>::infinity(); // min
+            case 3: return (cl_float)1; // mul
+        }
+        return 0;
+    }
 };
-template <> struct TypeCheck<cl_long>
+template <> struct TypeManager<cl_float2> : public CommonTypeManager<cl_float2>
 {
-    static bool val(cl_device_id device) { return int64_ok(device); }
+    static const char *name() { return "float2"; }
+    static const char *add_typedef() { return "typedef float2 Type;\n"; }
+    using scalar_type = cl_float;
 };
-template <> struct TypeCheck<cl_float>
+template <>
+struct TypeManager<subgroups::cl_float3>
+    : public CommonTypeManager<subgroups::cl_float3>
 {
-    static bool val(cl_device_id) { return true; }
+    static const char *name() { return "float3"; }
+    static const char *add_typedef() { return "typedef float3 Type;\n"; }
+    static const bool is_vector_type3() { return true; }
+    using scalar_type = cl_float;
 };
-template <> struct TypeCheck<cl_half>
+template <> struct TypeManager<cl_float4> : public CommonTypeManager<cl_float4>
 {
-    static bool val(cl_device_id device) { return half_ok(device); }
+    static const char *name() { return "float4"; }
+    static const char *add_typedef() { return "typedef float4 Type;\n"; }
+    using scalar_type = cl_float;
 };
-template <> struct TypeCheck<cl_double>
+template <> struct TypeManager<cl_float8> : public CommonTypeManager<cl_float8>
 {
-    static bool val(cl_device_id device) { return double_ok(device); }
+    static const char *name() { return "float8"; }
+    static const char *add_typedef() { return "typedef float8 Type;\n"; }
+    using scalar_type = cl_float;
 };
+template <>
+struct TypeManager<cl_float16> : public CommonTypeManager<cl_float16>
+{
+    static const char *name() { return "float16"; }
+    static const char *add_typedef() { return "typedef float16 Type;\n"; }
+    using scalar_type = cl_float;
+};
+
+// cl_double
+template <> struct TypeManager<cl_double> : public CommonTypeManager<cl_double>
+{
+    static const char *name() { return "double"; }
+    static const char *add_typedef() { return "typedef double Type;\n"; }
+    static cl_double identify_limits(unsigned int test_id)
+    {
+        switch (test_id)
+        {
+            case 0: return 0.L; // add
+            case 1: return -std::numeric_limits<double>::infinity(); // max
+            case 2: return std::numeric_limits<double>::infinity(); // min
+            case 3: return (cl_double)1; // mul
+        }
+        return 0;
+    }
+    static const bool type_supported(cl_device_id device)
+    {
+        return double_ok(device);
+    }
+};
+template <>
+struct TypeManager<cl_double2> : public CommonTypeManager<cl_double2>
+{
+    static const char *name() { return "double2"; }
+    static const char *add_typedef() { return "typedef double2 Type;\n"; }
+    using scalar_type = cl_double;
+    static const bool type_supported(cl_device_id device)
+    {
+        return double_ok(device);
+    }
+};
+template <>
+struct TypeManager<subgroups::cl_double3>
+    : public CommonTypeManager<subgroups::cl_double3>
+{
+    static const char *name() { return "double3"; }
+    static const char *add_typedef() { return "typedef double3 Type;\n"; }
+    static const bool is_vector_type3() { return true; }
+    using scalar_type = cl_double;
+    static const bool type_supported(cl_device_id device)
+    {
+        return double_ok(device);
+    }
+};
+template <>
+struct TypeManager<cl_double4> : public CommonTypeManager<cl_double4>
+{
+    static const char *name() { return "double4"; }
+    static const char *add_typedef() { return "typedef double4 Type;\n"; }
+    using scalar_type = cl_double;
+    static const bool type_supported(cl_device_id device)
+    {
+        return double_ok(device);
+    }
+};
+template <>
+struct TypeManager<cl_double8> : public CommonTypeManager<cl_double8>
+{
+    static const char *name() { return "double8"; }
+    static const char *add_typedef() { return "typedef double8 Type;\n"; }
+    using scalar_type = cl_double;
+    static const bool type_supported(cl_device_id device)
+    {
+        return double_ok(device);
+    }
+};
+template <>
+struct TypeManager<cl_double16> : public CommonTypeManager<cl_double16>
+{
+    static const char *name() { return "double16"; }
+    static const char *add_typedef() { return "typedef double16 Type;\n"; }
+    using scalar_type = cl_double;
+    static const bool type_supported(cl_device_id device)
+    {
+        return double_ok(device);
+    }
+};
+
+// cl_half
+template <>
+struct TypeManager<subgroups::cl_half>
+    : public CommonTypeManager<subgroups::cl_half>
+{
+    static const char *name() { return "half"; }
+    static const char *add_typedef() { return "typedef half Type;\n"; }
+    static const bool is_scalar_type_half() { return true; }
+    static subgroups::cl_half identify_limits(unsigned int test_id)
+    {
+        switch (test_id)
+        {
+            case 0: return { 0x0000 }; // add
+            case 1: return { 0xfc00 }; // max
+            case 2: return { 0x7c00 }; // min
+            case 3: return { 0x3c00 }; // mul
+        }
+        return { 0 };
+    }
+    static const bool type_supported(cl_device_id device)
+    {
+        return half_ok(device);
+    }
+};
+template <>
+struct TypeManager<subgroups::cl_half2>
+    : public CommonTypeManager<subgroups::cl_half2>
+{
+    static const char *name() { return "half2"; }
+    static const char *add_typedef() { return "typedef half2 Type;\n"; }
+    using scalar_type = subgroups::cl_half;
+    static const bool is_vector_type_half() { return true; }
+    static const bool type_supported(cl_device_id device)
+    {
+        return half_ok(device);
+    }
+};
+template <>
+struct TypeManager<subgroups::cl_half3>
+    : public CommonTypeManager<subgroups::cl_half3>
+{
+    static const char *name() { return "half3"; }
+    static const char *add_typedef() { return "typedef half3 Type;\n"; }
+    static const bool is_vector_type3() { return true; }
+    using scalar_type = subgroups::cl_half;
+
+    static const bool type_supported(cl_device_id device)
+    {
+        return half_ok(device);
+    }
+};
+template <>
+struct TypeManager<subgroups::cl_half4>
+    : public CommonTypeManager<subgroups::cl_half4>
+{
+    static const char *name() { return "half4"; }
+    static const char *add_typedef() { return "typedef half4 Type;\n"; }
+    using scalar_type = subgroups::cl_half;
+    static const bool is_vector_type_half() { return true; }
+    static const bool type_supported(cl_device_id device)
+    {
+        return half_ok(device);
+    }
+};
+template <>
+struct TypeManager<subgroups::cl_half8>
+    : public CommonTypeManager<subgroups::cl_half8>
+{
+    static const char *name() { return "half8"; }
+    static const char *add_typedef() { return "typedef half8 Type;\n"; }
+    using scalar_type = subgroups::cl_half;
+    static const bool is_vector_type_half() { return true; }
+    static const bool type_supported(cl_device_id device)
+    {
+        return half_ok(device);
+    }
+};
+template <>
+struct TypeManager<subgroups::cl_half16>
+    : public CommonTypeManager<subgroups::cl_half16>
+{
+    static const char *name() { return "half16"; }
+    static const char *add_typedef() { return "typedef half16 Type;\n"; }
+    using scalar_type = subgroups::cl_half;
+    static const bool is_vector_type_half() { return true; }
+    static const bool type_supported(cl_device_id device)
+    {
+        return half_ok(device);
+    }
+};
+
+// set scalar value to vector of halfs
+template <typename Ty, int N = 0>
+typename std::enable_if<TypeManager<Ty>::is_vector_type_half()>::type
+set_value(Ty &lhs, const cl_ulong &rhs)
+{
+    const int size = sizeof(Ty) / sizeof(typename TypeManager<Ty>::scalar_type);
+    for (auto i = 0; i < size; ++i)
+    {
+        lhs.data.s[i] = rhs;
+    }
+}
+
+
+// set scalar value to vector
+template <typename Ty>
+typename std::enable_if<!std::is_scalar<Ty>::value
+                        && !TypeManager<Ty>::is_vector_type3()>::type
+set_value(Ty &lhs, const cl_ulong &rhs)
+{
+    const int size = sizeof(Ty) / sizeof(typename TypeManager<Ty>::scalar_type);
+    for (auto i = 0; i < size; ++i)
+    {
+        lhs.s[i] = rhs;
+    }
+}
+
+
+// set vector to vector value
+template <typename Ty>
+typename std::enable_if<!std::is_scalar<Ty>::value>::type
+set_value(Ty &lhs, const Ty &rhs)
+{
+    lhs = rhs;
+}
+
+
+// set scalar value to vector size 3
+template <typename Ty, int N = 0>
+typename std::enable_if<!std::is_scalar<Ty>::value
+                        && TypeManager<Ty>::is_vector_type3()>::type
+set_value(Ty &lhs, const cl_ulong &rhs)
+{
+    for (auto i = 0; i < 3; ++i)
+    {
+        lhs.data.s[i] = rhs;
+    }
+}
+
+// set scalar value to scalar
+template <typename Ty>
+typename std::enable_if<std::is_scalar<Ty>::value
+                        && !TypeManager<Ty>::is_scalar_type_half()>::type
+set_value(Ty &lhs, const cl_ulong &rhs)
+{
+    lhs = static_cast<Ty>(rhs);
+}
+
+// set scalar value to half scalar
+template <typename Ty>
+typename std::enable_if<TypeManager<Ty>::is_scalar_type_half()>::type
+set_value(Ty &lhs, const cl_ulong &rhs)
+{
+    lhs.data = rhs;
+}
+
+
+// compare for general vectors
+template <typename Ty>
+typename std::enable_if<!TypeManager<Ty>::is_vector_type3()
+                            && !std::is_scalar<Ty>::value,
+                        bool>::type
+compare(const Ty &lhs, const Ty &rhs)
+{
+    const int size = sizeof(Ty) / sizeof(typename TypeManager<Ty>::scalar_type);
+    for (auto i = 0; i < size; ++i)
+    {
+        if (lhs.s[i] != rhs.s[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+// compare for vectors 3
+template <typename Ty>
+typename std::enable_if<TypeManager<Ty>::is_vector_type3(), bool>::type
+compare(const Ty &lhs, const Ty &rhs)
+{
+    for (auto i = 0; i < 3; ++i)
+    {
+        if (lhs.data.s[i] != rhs.data.s[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+// compare for half vectors
+template <typename Ty>
+typename std::enable_if<TypeManager<Ty>::is_vector_type_half(), bool>::type
+compare(const Ty &lhs, const Ty &rhs)
+{
+    const int size = sizeof(Ty) / sizeof(typename scalar_type<Ty>::type);
+    for (auto i = 0; i < size; ++i)
+    {
+        if (lhs.data.s[i] != rhs.data.s[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+// compare for scalars
+template <typename Ty>
+typename std::enable_if<std::is_scalar<Ty>::value
+                            && !TypeManager<Ty>::is_scalar_type_half(),
+                        bool>::type
+compare(const Ty &lhs, const Ty &rhs)
+{
+    return lhs == rhs;
+}
+
+// compare for scalar halfs
+template <typename Ty>
+typename std::enable_if<std::is_scalar<Ty>::value
+                            && TypeManager<Ty>::is_scalar_type_half(),
+                        bool>::type
+compare(const Ty &lhs, const Ty &rhs)
+{
+    return lhs.data == rhs.data;
+}
+
+
+inline bool isnan_half(const subgroups::cl_half &x)
+{
+    return (x.data & 0x7fff) > 0x7c00;
+}
+
+template <typename Ty> inline bool compare_ordered(const Ty &lhs, const Ty &rhs)
+{
+    return lhs == rhs;
+}
+
+template <>
+inline bool compare_ordered(const subgroups::cl_half &lhs,
+                            const subgroups::cl_half &rhs)
+{
+    return lhs.data == rhs.data && !isnan_half(lhs);
+}
 
 
 // Run a test kernel to compute the result of a built-in on an input
@@ -382,18 +1064,18 @@ struct test
         kernel_sstr << "#define NON_UNIFORM " + std::to_string(NON_UNIFORM)
                 + " \n";
         // Make sure a test of type Ty is supported by the device
-        if (!TypeCheck<Ty>::val(device))
+        if (!TypeManager<Ty>::type_supported(device))
         {
-            log_info("Data type not supported : %s\n", TypeName<Ty>::val());
+            log_info("Data type not supported : %s\n", TypeManager<Ty>::name());
             return 0;
         }
         else
         {
-            if (strstr(TypeDef<Ty>::val(), "double"))
+            if (strstr(TypeManager<Ty>::name(), "double"))
             {
                 kernel_sstr << "#pragma OPENCL EXTENSION cl_khr_fp64: enable\n";
             }
-            else if (strstr(TypeDef<Ty>::val(), "half"))
+            else if (strstr(TypeManager<Ty>::name(), "half"))
             {
                 kernel_sstr << "#pragma OPENCL EXTENSION cl_khr_fp16: enable\n";
             }
@@ -405,7 +1087,7 @@ struct test
             {
                 log_info("The extension %s not supported on this device. SKIP "
                          "testing - kernel %s data type %s\n",
-                         extension.c_str(), kname, TypeName<Ty>::val());
+                         extension.c_str(), kname, TypeManager<Ty>::name());
                 return 0;
             }
             kernel_sstr << "#pragma OPENCL EXTENSION " + extension
@@ -422,7 +1104,7 @@ struct test
         }
         kernel_sstr << "#define XY(M,I) M[I].x = get_sub_group_local_id(); "
                        "M[I].y = get_sub_group_id();\n";
-        kernel_sstr << TypeDef<Ty>::val();
+        kernel_sstr << TypeManager<Ty>::add_typedef();
         kernel_sstr << src;
         const std::string &kernel_str = kernel_sstr.str();
         const char *kernel_src = kernel_str.c_str();

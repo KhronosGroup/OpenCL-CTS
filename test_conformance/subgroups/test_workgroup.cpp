@@ -270,7 +270,7 @@ template <typename Ty, int Which> struct RED
 
         log_info("  sub_group_reduce_%s(%s)...\n",
                  Which == 0 ? "add" : (Which == 1 ? "max" : "min"),
-                 TypeName<Ty>::val());
+                 TypeManager<Ty>::name());
 
         for (k = 0; k < ng; ++k)
         {
@@ -319,7 +319,7 @@ template <typename Ty, int Which> struct RED
                                   "local id %d in sub group %d in group %d\n",
                                   Which == 0 ? "add"
                                              : (Which == 1 ? "max" : "min"),
-                                  TypeName<Ty>::val(), i, j, k);
+                                  TypeManager<Ty>::name(), i, j, k);
                         return -1;
                     }
                 }
@@ -378,7 +378,7 @@ template <typename Ty, int Which> struct SCIN
 
         log_info("  sub_group_scan_inclusive_%s(%s)...\n",
                  Which == 0 ? "add" : (Which == 1 ? "max" : "min"),
-                 TypeName<Ty>::val());
+                 TypeManager<Ty>::name());
 
         for (k = 0; k < ng; ++k)
         {
@@ -420,7 +420,7 @@ template <typename Ty, int Which> struct SCIN
                             "ERROR: sub_group_scan_inclusive_%s(%s) mismatch "
                             "for local id %d in sub group %d in group %d\n",
                             Which == 0 ? "add" : (Which == 1 ? "max" : "min"),
-                            TypeName<Ty>::val(), i, j, k);
+                            TypeManager<Ty>::name(), i, j, k);
                         return -1;
                     }
                 }
@@ -477,7 +477,7 @@ template <typename Ty, int Which> struct SCEX
 
         log_info("  sub_group_scan_exclusive_%s(%s)...\n",
                  Which == 0 ? "add" : (Which == 1 ? "max" : "min"),
-                 TypeName<Ty>::val());
+                 TypeManager<Ty>::name());
 
         for (k = 0; k < ng; ++k)
         {
@@ -499,16 +499,17 @@ template <typename Ty, int Which> struct SCEX
                 {
                     if (Which == 0)
                     {
-                        tr = i == 0 ? TypeIdentity<Ty, Which>::val() : tr + trt;
+                        tr = i == 0 ? TypeManager<Ty>::identify_limits(Which)
+                                    : tr + trt;
                     }
                     else if (Which == 1)
                     {
-                        tr = i == 0 ? TypeIdentity<Ty, Which>::val()
+                        tr = i == 0 ? TypeManager<Ty>::identify_limits(Which)
                                     : (trt > tr ? trt : tr);
                     }
                     else
                     {
-                        tr = i == 0 ? TypeIdentity<Ty, Which>::val()
+                        tr = i == 0 ? TypeManager<Ty>::identify_limits(Which)
                                     : (trt > tr ? tr : trt);
                     }
                     trt = mx[ii + i];
@@ -520,7 +521,7 @@ template <typename Ty, int Which> struct SCEX
                             "ERROR: sub_group_scan_exclusive_%s(%s) mismatch "
                             "for local id %d in sub group %d in group %d\n",
                             Which == 0 ? "add" : (Which == 1 ? "max" : "min"),
-                            TypeName<Ty>::val(), i, j, k);
+                            TypeManager<Ty>::name(), i, j, k);
                         return -1;
                     }
                 }
@@ -588,7 +589,7 @@ template <typename Ty> struct BC
         int nj = (nw + ns - 1) / ns;
         Ty tr, rr;
 
-        log_info("  sub_group_broadcast(%s)...\n", TypeName<Ty>::val());
+        log_info("  sub_group_broadcast(%s)...\n", TypeManager<Ty>::name());
 
         for (k = 0; k < ng; ++k)
         {
@@ -616,7 +617,7 @@ template <typename Ty> struct BC
                     {
                         log_error("ERROR: sub_group_broadcast(%s) mismatch for "
                                   "local id %d in sub group %d in group %d\n",
-                                  TypeName<Ty>::val(), i, j, k);
+                                  TypeManager<Ty>::name(), i, j, k);
                         return -1;
                     }
                 }
@@ -679,6 +680,7 @@ struct run_for_type
         error |= test<T, SCEX<T, 2>, G, L>::run(
             device_, context_, queue_, num_elements_, "test_scexmin",
             scexmin_source, 0, useCoreSubgroups_);
+
         return error;
     }
 
@@ -710,7 +712,6 @@ int test_work_group_functions(cl_device_id device, cl_context context,
     error |= rft.run<float>();
     error |= rft.run<double>();
     // error |= rft.run<cl_half>();
-
     return error;
 }
 
