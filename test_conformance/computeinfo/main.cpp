@@ -59,6 +59,9 @@ enum
     type_cl_ulong,
     type_string,
     type_cl_device_svm_capabilities,
+    type_cl_device_atomic_capabilities,
+    type_cl_name_version_array,
+    type_cl_name_version,
 };
 
 typedef union {
@@ -76,6 +79,9 @@ typedef union {
     cl_ulong ull;
     char* string;
     cl_device_svm_capabilities svmCapabilities;
+    cl_device_atomic_capabilities atomicCapabilities;
+    cl_name_version* cl_name_version_array;
+    cl_name_version cl_name_version;
 } config_data;
 
 struct _version
@@ -117,6 +123,7 @@ typedef struct
     const char* opcode_name;
     int config_type;
     config_data config;
+    size_t opcode_ret_size;
 } config_info;
 
 #define CONFIG_INFO(major, minor, opcode, type)                                \
@@ -248,6 +255,24 @@ config_info config_infos[] = {
     CONFIG_INFO(2, 1, CL_DEVICE_MAX_NUM_SUB_GROUPS, cl_uint),
     CONFIG_INFO(2, 1, CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
                 cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES,
+                cl_device_atomic_capabilities),
+    CONFIG_INFO(3, 0, CL_DEVICE_ATOMIC_FENCE_CAPABILITIES,
+                cl_device_atomic_capabilities),
+    CONFIG_INFO(3, 0, CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT, cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, size_t),
+    CONFIG_INFO(3, 0, CL_DEVICE_WORK_GROUP_COLLECTIVE_FUNCTIONS_SUPPORT,
+                cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT, cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_OPENCL_C_FEATURES, cl_name_version_array),
+    CONFIG_INFO(3, 0, CL_DEVICE_DEVICE_ENQUEUE_SUPPORT, cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_PIPE_SUPPORT, cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_NUMERIC_VERSION, cl_name_version),
+    CONFIG_INFO(3, 0, CL_DEVICE_EXTENSIONS_WITH_VERSION, cl_name_version_array),
+    CONFIG_INFO(3, 0, CL_DEVICE_OPENCL_C_ALL_VERSIONS, cl_name_version_array),
+    CONFIG_INFO(3, 0, CL_DEVICE_ILS_WITH_VERSION, cl_name_version_array),
+    CONFIG_INFO(3, 0, CL_DEVICE_BUILT_IN_KERNELS_WITH_VERSION,
+                cl_name_version_array),
 };
 
 #define ENTRY(major, minor, T)                                                 \
@@ -468,6 +493,37 @@ int getConfigInfo(cl_device_id device, config_info* info)
             err = clGetDeviceInfo(
                 device, info->opcode, sizeof(info->config.svmCapabilities),
                 &info->config.svmCapabilities, &config_size_ret);
+            break;
+        case type_cl_device_atomic_capabilities:
+            err = clGetDeviceInfo(
+                device, info->opcode, sizeof(info->config.atomicCapabilities),
+                &info->config.atomicCapabilities, &config_size_ret);
+            break;
+        case type_cl_name_version_array:
+            err = clGetDeviceInfo(device, info->opcode, 0, NULL,
+                                  &config_size_set);
+            info->config.cl_name_version_array = NULL;
+            if (err == CL_SUCCESS && config_size_set > 0)
+            {
+                info->config.cl_name_version_array = (cl_name_version*)malloc(
+                    config_size_set * sizeof(cl_name_version));
+                err = clGetDeviceInfo(device, info->opcode, config_size_set,
+                                      info->config.cl_name_version_array,
+                                      &config_size_ret);
+                size_err = config_size_set != config_size_ret;
+                info->opcode_ret_size = config_size_ret;
+            }
+            break;
+        case type_cl_name_version:
+            err = clGetDeviceInfo(device, info->opcode, 0, NULL,
+                                  &config_size_set);
+            if (err == CL_SUCCESS && config_size_set > 0)
+            {
+                err = clGetDeviceInfo(device, info->opcode, config_size_set,
+                                      &info->config.cl_name_version,
+                                      &config_size_ret);
+            }
+            size_err = config_size_set != config_size_ret;
             break;
         default:
             log_error("Unknown config type: %d\n", info->config_type);
@@ -707,6 +763,86 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
                         (info->config.svmCapabilities & ~all_svm_capabilities));
             }
             break;
+        case type_cl_device_atomic_capabilities:
+            log_info("\t%s == %s|%s|%s|%s|%s|%s|%s\n", info->opcode_name,
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_ORDER_RELAXED)
+                         ? "CL_DEVICE_ATOMIC_ORDER_RELAXED"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_ORDER_ACQ_REL)
+                         ? "CL_DEVICE_ATOMIC_ORDER_ACQ_REL"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_ORDER_SEQ_CST)
+                         ? "CL_DEVICE_ATOMIC_ORDER_SEQ_CST"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_SCOPE_WORK_ITEM)
+                         ? "CL_DEVICE_ATOMIC_SCOPE_WORK_ITEM"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP)
+                         ? "CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_SCOPE_DEVICE)
+                         ? "CL_DEVICE_ATOMIC_SCOPE_DEVICE"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES)
+                         ? "CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES"
+                         : "");
+            {
+                cl_device_atomic_capabilities all_atomic_capabilities =
+                    CL_DEVICE_ATOMIC_ORDER_RELAXED
+                    | CL_DEVICE_ATOMIC_ORDER_ACQ_REL
+                    | CL_DEVICE_ATOMIC_ORDER_SEQ_CST
+                    | CL_DEVICE_ATOMIC_SCOPE_WORK_ITEM
+                    | CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP
+                    | CL_DEVICE_ATOMIC_SCOPE_DEVICE
+                    | CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES;
+                if (info->config.atomicCapabilities & ~all_atomic_capabilities)
+                    log_info("WARNING: %s unknown bits found 0x%08" PRIX64,
+                             info->opcode_name,
+                             (info->config.atomicCapabilities
+                              & ~all_atomic_capabilities));
+            }
+            break;
+        case type_cl_name_version_array:
+            int number_of_version_items = info->opcode_ret_size
+                / sizeof(*info->config.cl_name_version_array);
+            log_info("\t%s supported name and version:\n", info->opcode_name);
+            if (number_of_version_items == 0)
+            {
+                log_info("\t\t\"\"\n");
+            }
+            else
+            {
+                for (int f = 0; f < number_of_version_items; f++)
+                {
+                    cl_name_version new_version_item =
+                        info->config.cl_name_version_array[f];
+                    cl_version new_version_major =
+                        CL_VERSION_MAJOR_KHR(new_version_item.version);
+                    cl_version new_version_minor =
+                        CL_VERSION_MINOR_KHR(new_version_item.version);
+                    cl_version new_version_patch =
+                        CL_VERSION_PATCH_KHR(new_version_item.version);
+                    log_info("\t\t\"%s\" %d.%d.%d\n", new_version_item.name,
+                             CL_VERSION_MAJOR_KHR(new_version_item.version),
+                             CL_VERSION_MINOR_KHR(new_version_item.version),
+                             CL_VERSION_PATCH_KHR(new_version_item.version));
+                }
+            }
+            break;
+        case type_cl_name_version:
+            log_info(
+                "\t%s == %d.%d.%d\n", info->opcode_name,
+                CL_VERSION_MAJOR_KHR(info->config.cl_name_version.version),
+                CL_VERSION_MINOR_KHR(info->config.cl_name_version.version),
+                CL_VERSION_PATCH_KHR(info->config.cl_name_version.version));
+            break;
     }
 }
 
@@ -925,6 +1061,10 @@ int getConfigInfos(cl_device_id device)
                 if (info.config_type == type_string)
                 {
                     free(info.config.string);
+                }
+                if (info.config_type == type_cl_name_version_array)
+                {
+                    free(info.config.cl_name_version_array);
                 }
             }
             else
