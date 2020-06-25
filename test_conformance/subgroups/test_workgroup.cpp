@@ -632,8 +632,6 @@ template <typename Ty> struct BC
     }
 };
 
-#define G 2000
-#define L 200
 struct run_for_type
 {
     run_for_type(cl_device_id device, cl_context context,

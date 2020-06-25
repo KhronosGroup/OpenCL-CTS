@@ -27,6 +27,10 @@
 #undef min
 #undef max
 
+// Adjust these individually below if desired/needed
+#define G 2000
+#define L 200
+
 #define NON_UNIFORM 4
 
 class subgroupsAPI {
@@ -129,10 +133,6 @@ struct cl_half16
 };
 };
 
-template <> struct std::is_scalar<subgroups::cl_half> : std::true_type
-{
-};
-
 static bool int64_ok(cl_device_id device)
 {
     char profile[128];
@@ -182,11 +182,13 @@ static bool half_ok(cl_device_id device)
 
 template <typename Ty> struct CommonTypeManager
 {
+
     static const char *name() { return ""; }
     static const char *add_typedef() { return "\n"; }
-    static const bool is_vector_type3() { return false; }
-    static const bool is_vector_type_half() { return false; }
-    static const bool is_scalar_type_half() { return false; }
+    typedef std::false_type is_vector_type;
+    typedef std::false_type is_sb_vector_size3;
+    typedef std::false_type is_sb_vector_type;
+    typedef std::false_type is_sb_scalar_type;
     static const bool type_supported(cl_device_id) { return true; }
     static const Ty identify_limits(unsigned int test_id)
     {
@@ -205,7 +207,9 @@ template <typename Ty> struct CommonTypeManager
 };
 template <typename T> struct TypeManager : public CommonTypeManager<T>
 {
+
 };
+
 template <> struct TypeManager<cl_int> : public CommonTypeManager<cl_int>
 {
     static const char *name() { return "int"; }
@@ -232,6 +236,7 @@ template <> struct TypeManager<cl_int2> : public CommonTypeManager<cl_int2>
 {
     static const char *name() { return "int2"; }
     static const char *add_typedef() { return "typedef int2 Type;\n"; }
+    typedef std::true_type is_vector_type;
     using scalar_type = cl_int;
 };
 template <>
@@ -240,7 +245,7 @@ struct TypeManager<subgroups::cl_int3>
 {
     static const char *name() { return "int3"; }
     static const char *add_typedef() { return "typedef int3 Type;\n"; }
-    static const bool is_vector_type3() { return true; }
+    typedef std::true_type is_sb_vector_size3;
     using scalar_type = cl_int;
 };
 template <> struct TypeManager<cl_int4> : public CommonTypeManager<cl_int4>
@@ -248,18 +253,21 @@ template <> struct TypeManager<cl_int4> : public CommonTypeManager<cl_int4>
     static const char *name() { return "int4"; }
     static const char *add_typedef() { return "typedef int4 Type;\n"; }
     using scalar_type = cl_int;
+    typedef std::true_type is_vector_type;
 };
 template <> struct TypeManager<cl_int8> : public CommonTypeManager<cl_int8>
 {
     static const char *name() { return "int8"; }
     static const char *add_typedef() { return "typedef int8 Type;\n"; }
     using scalar_type = cl_int;
+    typedef std::true_type is_vector_type;
 };
 template <> struct TypeManager<cl_int16> : public CommonTypeManager<cl_int16>
 {
     static const char *name() { return "int16"; }
     static const char *add_typedef() { return "typedef int16 Type;\n"; }
     using scalar_type = cl_int;
+    typedef std::true_type is_vector_type;
 };
 // cl_uint
 template <> struct TypeManager<cl_uint> : public CommonTypeManager<cl_uint>
@@ -272,6 +280,7 @@ template <> struct TypeManager<cl_uint2> : public CommonTypeManager<cl_uint2>
     static const char *name() { return "uint2"; }
     static const char *add_typedef() { return "typedef uint2 Type;\n"; }
     using scalar_type = cl_uint;
+    typedef std::true_type is_vector_type;
 };
 template <>
 struct TypeManager<subgroups::cl_uint3>
@@ -279,7 +288,7 @@ struct TypeManager<subgroups::cl_uint3>
 {
     static const char *name() { return "uint3"; }
     static const char *add_typedef() { return "typedef uint3 Type;\n"; }
-    static const bool is_vector_type3() { return true; }
+    typedef std::true_type is_sb_vector_size3;
     using scalar_type = cl_uint;
 };
 template <> struct TypeManager<cl_uint4> : public CommonTypeManager<cl_uint4>
@@ -287,18 +296,21 @@ template <> struct TypeManager<cl_uint4> : public CommonTypeManager<cl_uint4>
     static const char *name() { return "uint4"; }
     static const char *add_typedef() { return "typedef uint4 Type;\n"; }
     using scalar_type = cl_uint;
+    typedef std::true_type is_vector_type;
 };
 template <> struct TypeManager<cl_uint8> : public CommonTypeManager<cl_uint8>
 {
     static const char *name() { return "uint8"; }
     static const char *add_typedef() { return "typedef uint8 Type;\n"; }
     using scalar_type = cl_uint;
+    typedef std::true_type is_vector_type;
 };
 template <> struct TypeManager<cl_uint16> : public CommonTypeManager<cl_uint16>
 {
     static const char *name() { return "uint16"; }
     static const char *add_typedef() { return "typedef uint16 Type;\n"; }
     using scalar_type = cl_uint;
+    typedef std::true_type is_vector_type;
 };
 // cl_short
 template <> struct TypeManager<cl_short> : public CommonTypeManager<cl_short>
@@ -311,6 +323,7 @@ template <> struct TypeManager<cl_short2> : public CommonTypeManager<cl_short2>
     static const char *name() { return "short2"; }
     static const char *add_typedef() { return "typedef short2 Type;\n"; }
     using scalar_type = cl_short;
+    typedef std::true_type is_vector_type;
 };
 template <>
 struct TypeManager<subgroups::cl_short3>
@@ -318,7 +331,7 @@ struct TypeManager<subgroups::cl_short3>
 {
     static const char *name() { return "short3"; }
     static const char *add_typedef() { return "typedef short3 Type;\n"; }
-    static const bool is_vector_type3() { return true; }
+    typedef std::true_type is_sb_vector_size3;
     using scalar_type = cl_short;
 };
 template <> struct TypeManager<cl_short4> : public CommonTypeManager<cl_short4>
@@ -326,12 +339,14 @@ template <> struct TypeManager<cl_short4> : public CommonTypeManager<cl_short4>
     static const char *name() { return "short4"; }
     static const char *add_typedef() { return "typedef short4 Type;\n"; }
     using scalar_type = cl_short;
+    typedef std::true_type is_vector_type;
 };
 template <> struct TypeManager<cl_short8> : public CommonTypeManager<cl_short8>
 {
     static const char *name() { return "short8"; }
     static const char *add_typedef() { return "typedef short8 Type;\n"; }
     using scalar_type = cl_short;
+    typedef std::true_type is_vector_type;
 };
 template <>
 struct TypeManager<cl_short16> : public CommonTypeManager<cl_short16>
@@ -339,6 +354,7 @@ struct TypeManager<cl_short16> : public CommonTypeManager<cl_short16>
     static const char *name() { return "short16"; }
     static const char *add_typedef() { return "typedef short16 Type;\n"; }
     using scalar_type = cl_short;
+    typedef std::true_type is_vector_type;
 };
 // cl_ushort
 template <> struct TypeManager<cl_ushort> : public CommonTypeManager<cl_ushort>
@@ -352,6 +368,7 @@ struct TypeManager<cl_ushort2> : public CommonTypeManager<cl_ushort2>
     static const char *name() { return "ushort2"; }
     static const char *add_typedef() { return "typedef ushort2 Type;\n"; }
     using scalar_type = cl_ushort;
+    typedef std::true_type is_vector_type;
 };
 template <>
 struct TypeManager<subgroups::cl_ushort3>
@@ -359,7 +376,7 @@ struct TypeManager<subgroups::cl_ushort3>
 {
     static const char *name() { return "ushort3"; }
     static const char *add_typedef() { return "typedef ushort3 Type;\n"; }
-    static const bool is_vector_type3() { return true; }
+    typedef std::true_type is_sb_vector_size3;
     using scalar_type = cl_ushort;
 };
 template <>
@@ -368,6 +385,7 @@ struct TypeManager<cl_ushort4> : public CommonTypeManager<cl_ushort4>
     static const char *name() { return "ushort4"; }
     static const char *add_typedef() { return "typedef ushort4 Type;\n"; }
     using scalar_type = cl_ushort;
+    typedef std::true_type is_vector_type;
 };
 template <>
 struct TypeManager<cl_ushort8> : public CommonTypeManager<cl_ushort8>
@@ -375,6 +393,7 @@ struct TypeManager<cl_ushort8> : public CommonTypeManager<cl_ushort8>
     static const char *name() { return "ushort8"; }
     static const char *add_typedef() { return "typedef ushort8 Type;\n"; }
     using scalar_type = cl_ushort;
+    typedef std::true_type is_vector_type;
 };
 template <>
 struct TypeManager<cl_ushort16> : public CommonTypeManager<cl_ushort16>
@@ -382,6 +401,7 @@ struct TypeManager<cl_ushort16> : public CommonTypeManager<cl_ushort16>
     static const char *name() { return "ushort16"; }
     static const char *add_typedef() { return "typedef ushort16 Type;\n"; }
     using scalar_type = cl_ushort;
+    typedef std::true_type is_vector_type;
 };
 // cl_char
 template <> struct TypeManager<cl_char> : public CommonTypeManager<cl_char>
@@ -394,6 +414,7 @@ template <> struct TypeManager<cl_char2> : public CommonTypeManager<cl_char2>
     static const char *name() { return "char2"; }
     static const char *add_typedef() { return "typedef char2 Type;\n"; }
     using scalar_type = cl_char;
+    typedef std::true_type is_vector_type;
 };
 template <>
 struct TypeManager<subgroups::cl_char3>
@@ -401,7 +422,7 @@ struct TypeManager<subgroups::cl_char3>
 {
     static const char *name() { return "char3"; }
     static const char *add_typedef() { return "typedef char3 Type;\n"; }
-    static const bool is_vector_type3() { return true; }
+    typedef std::true_type is_sb_vector_size3;
     using scalar_type = cl_char;
 };
 template <> struct TypeManager<cl_char4> : public CommonTypeManager<cl_char4>
@@ -409,18 +430,21 @@ template <> struct TypeManager<cl_char4> : public CommonTypeManager<cl_char4>
     static const char *name() { return "char4"; }
     static const char *add_typedef() { return "typedef char4 Type;\n"; }
     using scalar_type = cl_char;
+    typedef std::true_type is_vector_type;
 };
 template <> struct TypeManager<cl_char8> : public CommonTypeManager<cl_char8>
 {
     static const char *name() { return "char8"; }
     static const char *add_typedef() { return "typedef char8 Type;\n"; }
     using scalar_type = cl_char;
+    typedef std::true_type is_vector_type;
 };
 template <> struct TypeManager<cl_char16> : public CommonTypeManager<cl_char16>
 {
     static const char *name() { return "char16"; }
     static const char *add_typedef() { return "typedef char16 Type;\n"; }
     using scalar_type = cl_char;
+    typedef std::true_type is_vector_type;
 };
 // cl_uchar
 template <> struct TypeManager<cl_uchar> : public CommonTypeManager<cl_uchar>
@@ -433,6 +457,7 @@ template <> struct TypeManager<cl_uchar2> : public CommonTypeManager<cl_uchar2>
     static const char *name() { return "uchar2"; }
     static const char *add_typedef() { return "typedef uchar2 Type;\n"; }
     using scalar_type = cl_uchar;
+    typedef std::true_type is_vector_type;
 };
 template <>
 struct TypeManager<subgroups::cl_uchar3>
@@ -440,7 +465,7 @@ struct TypeManager<subgroups::cl_uchar3>
 {
     static const char *name() { return "uchar3"; }
     static const char *add_typedef() { return "typedef uchar3 Type;\n"; }
-    static const bool is_vector_type3() { return true; }
+    typedef std::true_type is_sb_vector_size3;
     using scalar_type = cl_uchar;
 };
 template <> struct TypeManager<cl_uchar4> : public CommonTypeManager<cl_uchar4>
@@ -448,12 +473,14 @@ template <> struct TypeManager<cl_uchar4> : public CommonTypeManager<cl_uchar4>
     static const char *name() { return "uchar4"; }
     static const char *add_typedef() { return "typedef uchar4 Type;\n"; }
     using scalar_type = cl_uchar;
+    typedef std::true_type is_vector_type;
 };
 template <> struct TypeManager<cl_uchar8> : public CommonTypeManager<cl_uchar8>
 {
     static const char *name() { return "uchar8"; }
     static const char *add_typedef() { return "typedef uchar8 Type;\n"; }
     using scalar_type = cl_uchar;
+    typedef std::true_type is_vector_type;
 };
 template <>
 struct TypeManager<cl_uchar16> : public CommonTypeManager<cl_uchar16>
@@ -461,6 +488,7 @@ struct TypeManager<cl_uchar16> : public CommonTypeManager<cl_uchar16>
     static const char *name() { return "uchar16"; }
     static const char *add_typedef() { return "typedef uchar16 Type;\n"; }
     using scalar_type = cl_uchar;
+    typedef std::true_type is_vector_type;
 };
 // cl_long
 template <> struct TypeManager<cl_long> : public CommonTypeManager<cl_long>
@@ -477,6 +505,7 @@ template <> struct TypeManager<cl_long2> : public CommonTypeManager<cl_long2>
     static const char *name() { return "long2"; }
     static const char *add_typedef() { return "typedef long2 Type;\n"; }
     using scalar_type = cl_long;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return int64_ok(device);
@@ -488,7 +517,7 @@ struct TypeManager<subgroups::cl_long3>
 {
     static const char *name() { return "long3"; }
     static const char *add_typedef() { return "typedef long3 Type;\n"; }
-    static const bool is_vector_type3() { return true; }
+    typedef std::true_type is_sb_vector_size3;
     using scalar_type = cl_long;
     static const bool type_supported(cl_device_id device)
     {
@@ -500,6 +529,7 @@ template <> struct TypeManager<cl_long4> : public CommonTypeManager<cl_long4>
     static const char *name() { return "long4"; }
     static const char *add_typedef() { return "typedef long4 Type;\n"; }
     using scalar_type = cl_long;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return int64_ok(device);
@@ -510,6 +540,7 @@ template <> struct TypeManager<cl_long8> : public CommonTypeManager<cl_long8>
     static const char *name() { return "long8"; }
     static const char *add_typedef() { return "typedef long8 Type;\n"; }
     using scalar_type = cl_long;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return int64_ok(device);
@@ -520,6 +551,7 @@ template <> struct TypeManager<cl_long16> : public CommonTypeManager<cl_long16>
     static const char *name() { return "long16"; }
     static const char *add_typedef() { return "typedef long16 Type;\n"; }
     using scalar_type = cl_long;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return int64_ok(device);
@@ -540,6 +572,7 @@ template <> struct TypeManager<cl_ulong2> : public CommonTypeManager<cl_ulong2>
     static const char *name() { return "ulong2"; }
     static const char *add_typedef() { return "typedef ulong2 Type;\n"; }
     using scalar_type = cl_ulong;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return int64_ok(device);
@@ -551,7 +584,7 @@ struct TypeManager<subgroups::cl_ulong3>
 {
     static const char *name() { return "ulong3"; }
     static const char *add_typedef() { return "typedef ulong3 Type;\n"; }
-    static const bool is_vector_type3() { return true; }
+    typedef std::true_type is_sb_vector_size3;
     using scalar_type = cl_ulong;
     static const bool type_supported(cl_device_id device)
     {
@@ -563,6 +596,7 @@ template <> struct TypeManager<cl_ulong4> : public CommonTypeManager<cl_ulong4>
     static const char *name() { return "ulong4"; }
     static const char *add_typedef() { return "typedef ulong4 Type;\n"; }
     using scalar_type = cl_ulong;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return int64_ok(device);
@@ -573,6 +607,7 @@ template <> struct TypeManager<cl_ulong8> : public CommonTypeManager<cl_ulong8>
     static const char *name() { return "ulong8"; }
     static const char *add_typedef() { return "typedef ulong8 Type;\n"; }
     using scalar_type = cl_ulong;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return int64_ok(device);
@@ -584,6 +619,7 @@ struct TypeManager<cl_ulong16> : public CommonTypeManager<cl_ulong16>
     static const char *name() { return "ulong16"; }
     static const char *add_typedef() { return "typedef ulong16 Type;\n"; }
     using scalar_type = cl_ulong;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return int64_ok(device);
@@ -612,6 +648,7 @@ template <> struct TypeManager<cl_float2> : public CommonTypeManager<cl_float2>
     static const char *name() { return "float2"; }
     static const char *add_typedef() { return "typedef float2 Type;\n"; }
     using scalar_type = cl_float;
+    typedef std::true_type is_vector_type;
 };
 template <>
 struct TypeManager<subgroups::cl_float3>
@@ -619,7 +656,7 @@ struct TypeManager<subgroups::cl_float3>
 {
     static const char *name() { return "float3"; }
     static const char *add_typedef() { return "typedef float3 Type;\n"; }
-    static const bool is_vector_type3() { return true; }
+    typedef std::true_type is_sb_vector_size3;
     using scalar_type = cl_float;
 };
 template <> struct TypeManager<cl_float4> : public CommonTypeManager<cl_float4>
@@ -627,12 +664,14 @@ template <> struct TypeManager<cl_float4> : public CommonTypeManager<cl_float4>
     static const char *name() { return "float4"; }
     static const char *add_typedef() { return "typedef float4 Type;\n"; }
     using scalar_type = cl_float;
+    typedef std::true_type is_vector_type;
 };
 template <> struct TypeManager<cl_float8> : public CommonTypeManager<cl_float8>
 {
     static const char *name() { return "float8"; }
     static const char *add_typedef() { return "typedef float8 Type;\n"; }
     using scalar_type = cl_float;
+    typedef std::true_type is_vector_type;
 };
 template <>
 struct TypeManager<cl_float16> : public CommonTypeManager<cl_float16>
@@ -640,6 +679,7 @@ struct TypeManager<cl_float16> : public CommonTypeManager<cl_float16>
     static const char *name() { return "float16"; }
     static const char *add_typedef() { return "typedef float16 Type;\n"; }
     using scalar_type = cl_float;
+    typedef std::true_type is_vector_type;
 };
 
 // cl_double
@@ -669,6 +709,7 @@ struct TypeManager<cl_double2> : public CommonTypeManager<cl_double2>
     static const char *name() { return "double2"; }
     static const char *add_typedef() { return "typedef double2 Type;\n"; }
     using scalar_type = cl_double;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return double_ok(device);
@@ -680,7 +721,7 @@ struct TypeManager<subgroups::cl_double3>
 {
     static const char *name() { return "double3"; }
     static const char *add_typedef() { return "typedef double3 Type;\n"; }
-    static const bool is_vector_type3() { return true; }
+    typedef std::true_type is_sb_vector_size3;
     using scalar_type = cl_double;
     static const bool type_supported(cl_device_id device)
     {
@@ -693,6 +734,7 @@ struct TypeManager<cl_double4> : public CommonTypeManager<cl_double4>
     static const char *name() { return "double4"; }
     static const char *add_typedef() { return "typedef double4 Type;\n"; }
     using scalar_type = cl_double;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return double_ok(device);
@@ -704,6 +746,7 @@ struct TypeManager<cl_double8> : public CommonTypeManager<cl_double8>
     static const char *name() { return "double8"; }
     static const char *add_typedef() { return "typedef double8 Type;\n"; }
     using scalar_type = cl_double;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return double_ok(device);
@@ -715,6 +758,7 @@ struct TypeManager<cl_double16> : public CommonTypeManager<cl_double16>
     static const char *name() { return "double16"; }
     static const char *add_typedef() { return "typedef double16 Type;\n"; }
     using scalar_type = cl_double;
+    typedef std::true_type is_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return double_ok(device);
@@ -728,7 +772,8 @@ struct TypeManager<subgroups::cl_half>
 {
     static const char *name() { return "half"; }
     static const char *add_typedef() { return "typedef half Type;\n"; }
-    static const bool is_scalar_type_half() { return true; }
+    typedef std::true_type is_sb_scalar_type; 
+
     static subgroups::cl_half identify_limits(unsigned int test_id)
     {
         switch (test_id)
@@ -752,7 +797,7 @@ struct TypeManager<subgroups::cl_half2>
     static const char *name() { return "half2"; }
     static const char *add_typedef() { return "typedef half2 Type;\n"; }
     using scalar_type = subgroups::cl_half;
-    static const bool is_vector_type_half() { return true; }
+    typedef std::true_type is_sb_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return half_ok(device);
@@ -764,7 +809,7 @@ struct TypeManager<subgroups::cl_half3>
 {
     static const char *name() { return "half3"; }
     static const char *add_typedef() { return "typedef half3 Type;\n"; }
-    static const bool is_vector_type3() { return true; }
+    typedef std::true_type is_sb_vector_size3;
     using scalar_type = subgroups::cl_half;
 
     static const bool type_supported(cl_device_id device)
@@ -779,7 +824,7 @@ struct TypeManager<subgroups::cl_half4>
     static const char *name() { return "half4"; }
     static const char *add_typedef() { return "typedef half4 Type;\n"; }
     using scalar_type = subgroups::cl_half;
-    static const bool is_vector_type_half() { return true; }
+    typedef std::true_type is_sb_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return half_ok(device);
@@ -792,7 +837,8 @@ struct TypeManager<subgroups::cl_half8>
     static const char *name() { return "half8"; }
     static const char *add_typedef() { return "typedef half8 Type;\n"; }
     using scalar_type = subgroups::cl_half;
-    static const bool is_vector_type_half() { return true; }
+    typedef std::true_type is_sb_vector_type;
+
     static const bool type_supported(cl_device_id device)
     {
         return half_ok(device);
@@ -805,7 +851,7 @@ struct TypeManager<subgroups::cl_half16>
     static const char *name() { return "half16"; }
     static const char *add_typedef() { return "typedef half16 Type;\n"; }
     using scalar_type = subgroups::cl_half;
-    static const bool is_vector_type_half() { return true; }
+    typedef std::true_type is_sb_vector_type;
     static const bool type_supported(cl_device_id device)
     {
         return half_ok(device);
@@ -813,8 +859,9 @@ struct TypeManager<subgroups::cl_half16>
 };
 
 // set scalar value to vector of halfs
+
 template <typename Ty, int N = 0>
-typename std::enable_if<TypeManager<Ty>::is_vector_type_half()>::type
+typename std::enable_if<TypeManager<Ty>::is_sb_vector_type::value>::type
 set_value(Ty &lhs, const cl_ulong &rhs)
 {
     const int size = sizeof(Ty) / sizeof(typename TypeManager<Ty>::scalar_type);
@@ -827,8 +874,7 @@ set_value(Ty &lhs, const cl_ulong &rhs)
 
 // set scalar value to vector
 template <typename Ty>
-typename std::enable_if<!std::is_scalar<Ty>::value
-                        && !TypeManager<Ty>::is_vector_type3()>::type
+typename std::enable_if<TypeManager<Ty>::is_vector_type::value>::type
 set_value(Ty &lhs, const cl_ulong &rhs)
 {
     const int size = sizeof(Ty) / sizeof(typename TypeManager<Ty>::scalar_type);
@@ -841,7 +887,7 @@ set_value(Ty &lhs, const cl_ulong &rhs)
 
 // set vector to vector value
 template <typename Ty>
-typename std::enable_if<!std::is_scalar<Ty>::value>::type
+typename std::enable_if<TypeManager<Ty>::is_vector_type::value>::type
 set_value(Ty &lhs, const Ty &rhs)
 {
     lhs = rhs;
@@ -850,8 +896,7 @@ set_value(Ty &lhs, const Ty &rhs)
 
 // set scalar value to vector size 3
 template <typename Ty, int N = 0>
-typename std::enable_if<!std::is_scalar<Ty>::value
-                        && TypeManager<Ty>::is_vector_type3()>::type
+typename std::enable_if<TypeManager<Ty>::is_sb_vector_size3::value>::type
 set_value(Ty &lhs, const cl_ulong &rhs)
 {
     for (auto i = 0; i < 3; ++i)
@@ -862,8 +907,7 @@ set_value(Ty &lhs, const cl_ulong &rhs)
 
 // set scalar value to scalar
 template <typename Ty>
-typename std::enable_if<std::is_scalar<Ty>::value
-                        && !TypeManager<Ty>::is_scalar_type_half()>::type
+typename std::enable_if<std::is_scalar<Ty>::value>::type
 set_value(Ty &lhs, const cl_ulong &rhs)
 {
     lhs = static_cast<Ty>(rhs);
@@ -871,17 +915,16 @@ set_value(Ty &lhs, const cl_ulong &rhs)
 
 // set scalar value to half scalar
 template <typename Ty>
-typename std::enable_if<TypeManager<Ty>::is_scalar_type_half()>::type
+typename std::enable_if<TypeManager<Ty>::is_sb_scalar_type::value>::type
 set_value(Ty &lhs, const cl_ulong &rhs)
 {
     lhs.data = rhs;
 }
 
 
-// compare for general vectors
+// compare for common vectors
 template <typename Ty>
-typename std::enable_if<!TypeManager<Ty>::is_vector_type3()
-                            && !std::is_scalar<Ty>::value,
+typename std::enable_if<TypeManager<Ty>::is_vector_type::value,
                         bool>::type
 compare(const Ty &lhs, const Ty &rhs)
 {
@@ -899,7 +942,7 @@ compare(const Ty &lhs, const Ty &rhs)
 
 // compare for vectors 3
 template <typename Ty>
-typename std::enable_if<TypeManager<Ty>::is_vector_type3(), bool>::type
+typename std::enable_if<TypeManager<Ty>::is_sb_vector_size3::value, bool>::type
 compare(const Ty &lhs, const Ty &rhs)
 {
     for (auto i = 0; i < 3; ++i)
@@ -914,10 +957,11 @@ compare(const Ty &lhs, const Ty &rhs)
 
 // compare for half vectors
 template <typename Ty>
-typename std::enable_if<TypeManager<Ty>::is_vector_type_half(), bool>::type
+typename std::enable_if<TypeManager<Ty>::is_sb_vector_type::value, bool>::type
 compare(const Ty &lhs, const Ty &rhs)
 {
-    const int size = sizeof(Ty) / sizeof(typename scalar_type<Ty>::type);
+    const int size =
+        sizeof(Ty) / sizeof(typename TypeManager<Ty>::scalar_type);
     for (auto i = 0; i < size; ++i)
     {
         if (lhs.data.s[i] != rhs.data.s[i])
@@ -931,9 +975,7 @@ compare(const Ty &lhs, const Ty &rhs)
 
 // compare for scalars
 template <typename Ty>
-typename std::enable_if<std::is_scalar<Ty>::value
-                            && !TypeManager<Ty>::is_scalar_type_half(),
-                        bool>::type
+typename std::enable_if<std::is_scalar<Ty>::value, bool>::type
 compare(const Ty &lhs, const Ty &rhs)
 {
     return lhs == rhs;
@@ -941,8 +983,7 @@ compare(const Ty &lhs, const Ty &rhs)
 
 // compare for scalar halfs
 template <typename Ty>
-typename std::enable_if<std::is_scalar<Ty>::value
-                            && TypeManager<Ty>::is_scalar_type_half(),
+typename std::enable_if<TypeManager<Ty>::is_sb_scalar_type::value,
                         bool>::type
 compare(const Ty &lhs, const Ty &rhs)
 {
