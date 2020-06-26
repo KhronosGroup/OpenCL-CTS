@@ -81,7 +81,7 @@ typedef union {
     cl_device_svm_capabilities svmCapabilities;
     cl_device_atomic_capabilities atomicCapabilities;
     cl_name_version* cl_name_version_array;
-    cl_name_version cl_name_version;
+    cl_name_version cl_name_version_single;
 } config_data;
 
 struct _version
@@ -520,7 +520,7 @@ int getConfigInfo(cl_device_id device, config_info* info)
             if (err == CL_SUCCESS && config_size_set > 0)
             {
                 err = clGetDeviceInfo(device, info->opcode, config_size_set,
-                                      &info->config.cl_name_version,
+                                      &info->config.cl_name_version_single,
                                       &config_size_ret);
             }
             size_err = config_size_set != config_size_ret;
@@ -837,11 +837,13 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
             }
             break;
         case type_cl_name_version:
-            log_info(
-                "\t%s == %d.%d.%d\n", info->opcode_name,
-                CL_VERSION_MAJOR_KHR(info->config.cl_name_version.version),
-                CL_VERSION_MINOR_KHR(info->config.cl_name_version.version),
-                CL_VERSION_PATCH_KHR(info->config.cl_name_version.version));
+            log_info("\t%s == %d.%d.%d\n", info->opcode_name,
+                     CL_VERSION_MAJOR_KHR(
+                         info->config.cl_name_version_single.version),
+                     CL_VERSION_MINOR_KHR(
+                         info->config.cl_name_version_single.version),
+                     CL_VERSION_PATCH_KHR(
+                         info->config.cl_name_version_single.version));
             break;
     }
 }
