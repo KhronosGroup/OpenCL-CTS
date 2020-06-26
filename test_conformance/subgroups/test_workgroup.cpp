@@ -240,4 +240,3 @@ int test_work_group_functions_ext(cl_device_id device, cl_context context,
     return test_work_group_functions(device, context, queue, num_elements,
                                      false);
 }
-

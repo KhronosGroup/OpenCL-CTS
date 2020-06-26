@@ -58,6 +58,7 @@ extern int test_ifp_core(cl_device_id device, cl_context context,
                          cl_command_queue queue, int num_elements);
 extern int test_work_group_functions_extended_types(cl_device_id device,
                                                     cl_context context,
-                         cl_command_queue queue, int num_elements);
+                                                    cl_command_queue queue,
+                                                    int num_elements);
 
 #endif /*_procs_h*/
