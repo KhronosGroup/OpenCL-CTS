@@ -208,100 +208,12 @@ CheckD(cl_uint jid, cl_uint tid, void *userInfo)
     return ret;
 }
 
-static cl_ushort float2half_rte( float f );
-static cl_ushort float2half_rtz( float f );
 static cl_ushort float2half_rtp( float f );
 static cl_ushort float2half_rtn( float f );
 static cl_ushort double2half_rte( double f );
 static cl_ushort double2half_rtz( double f );
 static cl_ushort double2half_rtp( double f );
 static cl_ushort double2half_rtn( double f );
-
-static cl_ushort
-float2half_rte( float f )
-{
-    union{ float f; cl_uint u; } u = {f};
-    cl_uint sign = (u.u >> 16) & 0x8000;
-    float x = fabsf(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (24-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-    }
-
-    // overflow
-    if( x >= MAKE_HEX_FLOAT(0x1.ffep15f, 0x1ffeL, 3) )
-        return 0x7c00 | sign;
-
-    // underflow
-    if( x <= MAKE_HEX_FLOAT(0x1.0p-25f, 0x1L, -25) )
-        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-    // very small
-    if( x < MAKE_HEX_FLOAT(0x1.8p-24f, 0x18L, -28) )
-        return sign | 1;
-
-    // half denormal
-    if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-    {
-        u.f = x * MAKE_HEX_FLOAT(0x1.0p-125f, 0x1L, -125);
-        return sign | u.u;
-    }
-
-    u.f *= MAKE_HEX_FLOAT(0x1.0p13f, 0x1L, 13);
-    u.u &= 0x7f800000;
-    x += u.f;
-    u.f = x - u.f;
-    u.f *= MAKE_HEX_FLOAT(0x1.0p-112f, 0x1L, -112);
-
-    return (u.u >> (24-11)) | sign;
-}
-
-static cl_ushort
-float2half_rtz( float f )
-{
-    union{ float f; cl_uint u; } u = {f};
-    cl_uint sign = (u.u >> 16) & 0x8000;
-    float x = fabsf(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (24-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-    }
-
-    // overflow
-    if( x >= MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16) )
-    {
-        if( x == INFINITY )
-            return 0x7c00 | sign;
-
-        return 0x7bff | sign;
-    }
-
-    // underflow
-    if( x < MAKE_HEX_FLOAT(0x1.0p-24f, 0x1L, -24) )
-        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-    // half denormal
-    if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-    {
-        x *= MAKE_HEX_FLOAT(0x1.0p24f, 0x1L, 24);
-        return (cl_ushort)((int) x | sign);
-    }
-
-    u.u &= 0xFFFFE000U;
-    u.u -= 0x38000000U;
-
-    return (u.u >> (24-11)) | sign;
-}
 
 static cl_ushort
 float2half_rtp( float f )
