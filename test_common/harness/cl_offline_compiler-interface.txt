@@ -23,3 +23,5 @@ It is of the following form:
    CL_DEVICE_EXTENSIONS="<space separated list of CL extensions>"
    CL_DEVICE_IL_VERSION="<space separated list of IL versions>"
    CL_DEVICE_VERSION="OpenCL <version> <vendor info>"
+   CL_DEVICE_IMAGE_SUPPORT=<0|1>
+   CL_DEVICE_NAME="device name"
