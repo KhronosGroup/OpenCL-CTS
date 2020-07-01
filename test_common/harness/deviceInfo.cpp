@@ -79,3 +79,9 @@ std::string get_device_version_string(cl_device_id device)
 {
     return get_device_info_string(device, CL_DEVICE_VERSION);
 }
+
+/* Returns a string containing the device name. */
+std::string get_device_name(cl_device_id device)
+{
+    return get_device_info_string(device, CL_DEVICE_NAME);
+}
