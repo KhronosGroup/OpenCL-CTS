@@ -220,7 +220,17 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
     else
         float_ulps = f->float_ulps;
 
-    if (relaxedMode) float_ulps = f->relaxed_error;
+    if (relaxedMode)
+    {
+        if (gIsEmbedded)
+        {
+            float_ulps = f->float_embedded_relaxed_ulps;
+        }
+        else
+        {
+            float_ulps = f->relaxed_error;
+        }
+    }
 
     // Init the kernels
     BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,

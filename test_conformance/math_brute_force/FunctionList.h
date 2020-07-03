@@ -88,6 +88,7 @@ typedef struct Func
   int             ftz;
   int             relaxed;
   const vtbl      *vtbl_ptr;
+  float float_embedded_relaxed_ulps;
 }Func;
 
 

@@ -528,7 +528,14 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
       }else
       {
         func = job->f->rfunc;
-        ulps = job->f->relaxed_error;
+        if (gIsEmbedded)
+        {
+            ulps = job->f->float_embedded_relaxed_ulps;
+        }
+        else
+        {
+            ulps = job->f->relaxed_error;
+        }
       }
     }
 

@@ -469,7 +469,14 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
     bool relaxedMode = job->relaxedMode;
     if (relaxedMode)
     {
-        ulps = job->f->relaxed_error;
+        if (gIsEmbedded)
+        {
+            ulps = job->f->float_embedded_relaxed_ulps;
+        }
+        else
+        {
+            ulps = job->f->relaxed_error;
+        }
         func = job->f->rfunc;
     }
 
@@ -635,7 +642,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
                     if ( strcmp(fname, "exp") == 0 || strcmp(fname, "exp2") == 0 )
                     {
 
-                        float exp_error = 3+floor(fabs(2*s[j]));
+                        float exp_error = 3 + floor(fabs(2 * s[j]));
                         fail = ! (fabsf(err) <= exp_error);
                         ulps = exp_error;
                     }

@@ -731,7 +731,17 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
                 float err = Ulp_Error( test, correct );
                 float errB = Ulp_Error( test, (float) correct  );
 
-                if (relaxedMode) ulps = job->f->relaxed_error;
+                if (relaxedMode)
+                {
+                    if (gIsEmbedded)
+                    {
+                        ulps = job->f->float_embedded_relaxed_ulps;
+                    }
+                    else
+                    {
+                        ulps = job->f->relaxed_error;
+                    }
+                }
 
                 int fail = ((!(fabsf(err) <= ulps)) && (!(fabsf(errB) <= ulps)));
                 if( fabsf( errB ) < fabsf(err ) )
