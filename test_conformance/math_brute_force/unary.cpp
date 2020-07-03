@@ -641,8 +641,13 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
 
                     if ( strcmp(fname, "exp") == 0 || strcmp(fname, "exp2") == 0 )
                     {
+                        float exp_error = ulps;
 
-                        float exp_error = 3 + floor(fabs(2 * s[j]));
+                        if (!gIsEmbedded)
+                        {
+                            exp_error += floor(fabs(2 * s[j]));
+                        }
+
                         fail = ! (fabsf(err) <= exp_error);
                         ulps = exp_error;
                     }
