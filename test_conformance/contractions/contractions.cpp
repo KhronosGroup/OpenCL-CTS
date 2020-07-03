@@ -576,56 +576,39 @@ test_status InitCL( cl_device_id device )
         "}\n"
         "\n" };
 
-    for( i = 0; i < sizeof( sizeNames ) / sizeof( sizeNames[0] ); i++ )
+    for (i = 0; i < sizeof(sizeNames) / sizeof(sizeNames[0]); i++)
     {
-        size_t strCount = sizeof( kernels ) / sizeof( kernels[0] );
+        size_t strCount = sizeof(kernels) / sizeof(kernels[0]);
         kernels[0] = "";
 
-        for( j = 2; j < strCount; j += 2 )
-            kernels[j] = sizeNames[i];
-
-        gProgram[i] = clCreateProgramWithSource(gContext, strCount, kernels, NULL, &error);
-        if( NULL == gProgram[i] )
+        for (j = 2; j < strCount; j += 2) kernels[j] = sizeNames[i];
+        const auto error = create_single_kernel_helper(
+            gContext, &gProgram[i], nullptr, strCount, kernels, nullptr);
+        if (CL_SUCCESS != error || nullptr == gProgram[i])
         {
-            vlog_error( "clCreateProgramWithSource failed\n" );
-            return TEST_FAIL;
-        }
-
-        if(( error = clBuildProgram(gProgram[i], 1, &device, NULL, NULL, NULL) ))
-        {
-            vlog_error( "clBuildProgramExecutable failed\n" );
-            char build_log[2048] = "";
-
-            clGetProgramBuildInfo(gProgram[i], device, CL_PROGRAM_BUILD_LOG, sizeof(build_log), build_log, NULL);
-            vlog_error( "Log:\n%s\n", build_log );
+            log_error("Error: Unable to create test program! (%s) (in %s:%d)\n",
+                      IGetErrorString(error), __FILE__, __LINE__);
             return TEST_FAIL;
         }
     }
 
-    if( gHasDouble )
+    if (gHasDouble)
     {
         kernels[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
-        for( i = 0; i < sizeof( sizeNames_double ) / sizeof( sizeNames_double[0] ); i++ )
+        for (i = 0; i < sizeof(sizeNames_double) / sizeof(sizeNames_double[0]);
+             i++)
         {
-            size_t strCount = sizeof( kernels ) / sizeof( kernels[0] );
+            size_t strCount = sizeof(kernels) / sizeof(kernels[0]);
 
-            for( j = 2; j < strCount; j += 2 )
-                kernels[j] = sizeNames_double[i];
-
-            gProgram_double[i] = clCreateProgramWithSource(gContext, strCount, kernels, NULL, &error);
-            if( NULL == gProgram_double[i] )
+            for (j = 2; j < strCount; j += 2) kernels[j] = sizeNames_double[i];
+            const auto error = create_single_kernel_helper(
+                gContext, &gProgram_double[i], nullptr, strCount, kernels,
+                nullptr);
+            if (CL_SUCCESS != error || nullptr == gProgram_double[i])
             {
-                vlog_error( "clCreateProgramWithSource failed\n" );
-                return TEST_FAIL;
-            }
-
-            if(( error = clBuildProgram(gProgram_double[i], 1, &device, NULL, NULL, NULL) ))
-            {
-                vlog_error( "clBuildProgramExecutable failed\n" );
-                char build_log[2048] = "";
-
-                clGetProgramBuildInfo(gProgram_double[i], device, CL_PROGRAM_BUILD_LOG, sizeof(build_log), build_log, NULL);
-                vlog_error( "Log:\n%s\n", build_log );
+                log_error(
+                    "Error: Unable to create test program! (%s) (in %s:%d)\n",
+                    IGetErrorString(error), __FILE__, __LINE__);
                 return TEST_FAIL;
             }
         }
