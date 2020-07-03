@@ -9,7 +9,7 @@
                OpCapability Float16
           %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %2 "fmath_spv"
+               OpEntryPoint Kernel %2 "fmath_spv" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %lhs "lhs"
                OpName %rhs "rhs"
@@ -22,12 +22,12 @@
                OpGroupDecorate %7 %res %lhs %rhs
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
-%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
        %half = OpTypeFloat 16
 %_ptr_CrossWorkgroup_half = OpTypePointer CrossWorkgroup %half
          %15 = OpTypeFunction %void %_ptr_CrossWorkgroup_half %_ptr_CrossWorkgroup_half %_ptr_CrossWorkgroup_half
-%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
           %2 = OpFunction %void None %15
         %res = OpFunctionParameter %_ptr_CrossWorkgroup_half
         %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_half

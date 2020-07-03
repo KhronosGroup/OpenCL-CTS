@@ -8,7 +8,7 @@
                OpCapability Kernel
                OpCapability Int8
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %1 "decorate_saturated_conversion_char"
+               OpEntryPoint Kernel %1 "decorate_saturated_conversion_char" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %lhs "lhs"
                OpName %rhs "rhs"
@@ -19,14 +19,14 @@
                OpDecorate %7 SaturatedConversion
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
-%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
       %uchar = OpTypeInt 8 0
 %_ptr_CrossWorkgroup_uchar = OpTypePointer CrossWorkgroup %uchar
       %float = OpTypeFloat 32
 %_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
          %16 = OpTypeFunction %void %_ptr_CrossWorkgroup_uchar %_ptr_CrossWorkgroup_float %_ptr_CrossWorkgroup_float
-%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
           %1 = OpFunction %void None %16
         %res = OpFunctionParameter %_ptr_CrossWorkgroup_uchar
         %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
