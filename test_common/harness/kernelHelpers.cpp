@@ -665,30 +665,40 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
 
         size_t length = modifiedKernelBuf.size();
         log_info("offlineCompiler: clCreateProgramWithSource replaced with clCreateProgramWithIL\n");
-        if (gCoreILProgram) {
-            *outProgram = clCreateProgramWithIL(context, &modifiedKernelBuf[0], length, &error);
+        if (gCoreILProgram)
+        {
+            *outProgram = clCreateProgramWithIL(context, &modifiedKernelBuf[0],
+                                                length, &error);
         }
-        else {
+        else
+        {
             cl_platform_id platform;
-            error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id), &platform, NULL);
+            error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
+                                    sizeof(cl_platform_id), &platform, NULL);
             print_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
             clCreateProgramWithILKHR_fn clCreateProgramWithILKHR = NULL;
 
-            clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)clGetExtensionFunctionAddressForPlatform(platform, "clCreateProgramWithILKHR");
+            clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)
+                clGetExtensionFunctionAddressForPlatform(
+                    platform, "clCreateProgramWithILKHR");
             if (clCreateProgramWithILKHR == NULL)
             {
-                log_error("ERROR: clGetExtensionFunctionAddressForPlatform failed\n");
+                log_error(
+                    "ERROR: clGetExtensionFunctionAddressForPlatform failed\n");
                 return -1;
             }
-            *outProgram = clCreateProgramWithILKHR(context, &modifiedKernelBuf[0], length, &error);
+            *outProgram = clCreateProgramWithILKHR(
+                context, &modifiedKernelBuf[0], length, &error);
         }
 
         if (*outProgram == NULL || error != CL_SUCCESS)
         {
-            if (gCoreILProgram) {
+            if (gCoreILProgram)
+            {
                 print_error(error, "clCreateProgramWithIL failed");
             }
-            else {
+            else
+            {
                 print_error(error, "clCreateProgramWithILKHR failed");
             }
             return error;

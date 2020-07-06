@@ -137,7 +137,9 @@ extern cl_device_id GetOpposingDevice( cl_device_id device );
 
 Version get_device_spirv_il_version(cl_device_id device);
 bool check_device_spirv_il_support(cl_device_id device);
-void version_expected_info(const char * test_name, const char * api_name, const char * expected_version, const char * device_version);
+void version_expected_info(const char *test_name, const char *api_name,
+                           const char *expected_version,
+                           const char *device_version);
 test_status check_spirv_compilation_readiness(cl_device_id device);
 
 
@@ -146,7 +148,7 @@ extern int      gInfNanSupport;         // This is set to 1 if the device suppor
 extern int        gIsEmbedded;            // This is set to 1 if the device is an embedded device
 extern int        gHasLong;               // This is set to 1 if the device suppots long and ulong types in OpenCL C.
 extern int      gIsOpenCL_C_1_0_Device; // This is set to 1 if the device supports only OpenCL C 1.0.
-extern bool     gCoreILProgram;
+extern bool gCoreILProgram;
 
 #if ! defined( __APPLE__ )
     void     memset_pattern4(void *, const void *, size_t);
