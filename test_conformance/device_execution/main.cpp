@@ -43,9 +43,10 @@ test_status InitCL(cl_device_id device) {
   cl_uint max_queues_size;
   error = clGetDeviceInfo(device, CL_DEVICE_MAX_ON_DEVICE_QUEUES,
                           sizeof(max_queues_size), &max_queues_size, NULL);
-  if (error != CL_SUCCESS) {
-    print_error(error, "Unable to get max queues on device");
-    return TEST_FAIL;
+  if (error != CL_SUCCESS)
+  {
+      print_error(error, "Unable to get max queues on device");
+      return TEST_FAIL;
   }
 
   if ((max_queues_size == 0) && (version >= Version(3, 0)))
