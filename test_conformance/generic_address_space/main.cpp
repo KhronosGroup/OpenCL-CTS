@@ -75,7 +75,9 @@ test_status InitCL(cl_device_id device) {
 
     if (version < expected_min_version)
     {
-        version_expected_info("Test", "OpenCL", expected_min_version.to_string().c_str(), version.to_string().c_str());
+        version_expected_info("Test", "OpenCL",
+                              expected_min_version.to_string().c_str(),
+                              version.to_string().c_str());
         return TEST_SKIP;
     }
 

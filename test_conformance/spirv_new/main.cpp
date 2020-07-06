@@ -154,24 +154,33 @@ int get_program_with_il(clProgramWrapper &prog,
     }
 
     unsigned char *buffer = &buffer_vec[0];
-    if (gCoreILProgram) {
+    if (gCoreILProgram)
+    {
         prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
-        SPIRV_CHECK_ERROR(err, "Failed to create program with clCreateProgramWithIL");
+        SPIRV_CHECK_ERROR(
+            err, "Failed to create program with clCreateProgramWithIL");
     }
-    else {
+    else
+    {
         cl_platform_id platform;
-        err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(cl_platform_id), &platform, NULL);
-        SPIRV_CHECK_ERROR(err, "Failed to get platform info with clGetDeviceInfo");
+        err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM,
+                              sizeof(cl_platform_id), &platform, NULL);
+        SPIRV_CHECK_ERROR(err,
+                          "Failed to get platform info with clGetDeviceInfo");
         clCreateProgramWithILKHR_fn clCreateProgramWithILKHR = NULL;
 
-        clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)clGetExtensionFunctionAddressForPlatform(platform, "clCreateProgramWithILKHR");
+        clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)
+            clGetExtensionFunctionAddressForPlatform(
+                platform, "clCreateProgramWithILKHR");
         if (clCreateProgramWithILKHR == NULL)
         {
-            log_error("ERROR: clGetExtensionFunctionAddressForPlatform failed\n");
+            log_error(
+                "ERROR: clGetExtensionFunctionAddressForPlatform failed\n");
             return -1;
         }
         prog = clCreateProgramWithILKHR(context, buffer, file_bytes, &err);
-        SPIRV_CHECK_ERROR(err, "Failed to create program with clCreateProgramWithILKHR");
+        SPIRV_CHECK_ERROR(
+            err, "Failed to create program with clCreateProgramWithILKHR");
     }
 
     err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
@@ -185,15 +194,18 @@ test_status InitCL(cl_device_id id)
     test_status spirv_status;
     bool force = true;
     spirv_status = check_spirv_compilation_readiness(id);
-    if (spirv_status != TEST_PASS) {
+    if (spirv_status != TEST_PASS)
+    {
         return spirv_status;
     }
 
     cl_uint address_bits;
-    cl_uint err = clGetDeviceInfo(id, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &address_bits, NULL);
-    if(err != CL_SUCCESS){
-    log_error("clGetDeviceInfo failed to get address bits!");
-    return TEST_FAIL;
+    cl_uint err = clGetDeviceInfo(id, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint),
+                                  &address_bits, NULL);
+    if (err != CL_SUCCESS)
+    {
+        log_error("clGetDeviceInfo failed to get address bits!");
+        return TEST_FAIL;
     }
 
     gAddrWidth = address_bits == 32 ? "32" : "64";
@@ -234,8 +246,8 @@ int main(int argc, const char *argv[])
        printUsage();
     }
 
-    return runTestHarnessWithCheck(argc, argv,
-                          spirvTestsRegistry::getInstance().getNumTests(),
-                          spirvTestsRegistry::getInstance().getTestDefinitions(),
-                          false, 0, InitCL);
+    return runTestHarnessWithCheck(
+        argc, argv, spirvTestsRegistry::getInstance().getNumTests(),
+        spirvTestsRegistry::getInstance().getTestDefinitions(), false, 0,
+        InitCL);
 }
