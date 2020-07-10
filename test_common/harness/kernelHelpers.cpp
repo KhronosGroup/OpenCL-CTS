@@ -666,11 +666,56 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
         size_t length = modifiedKernelBuf.size();
         log_info("offlineCompiler: clCreateProgramWithSource replaced with clCreateProgramWithIL\n");
 
-        *outProgram = clCreateProgramWithIL(context, &modifiedKernelBuf[0], length, &error);
-        if (*outProgram == NULL || error != CL_SUCCESS)
+        // clCreateProgramWithIL API was introduced in OpenCL-2.1.
+        if (get_device_cl_version(device) >= Version(2, 1))
         {
-            print_error(error, "clCreateProgramWithIL failed");
-            return error;
+            *outProgram = clCreateProgramWithIL(context, &modifiedKernelBuf[0],
+                                                length, &error);
+            if (*outProgram == NULL || error != CL_SUCCESS)
+            {
+                print_error(error, "clCreateProgramWithIL failed\n");
+                return error;
+            }
+        }
+        else if (is_extension_available(device, "cl_khr_il_program"))
+        {
+            // Fallback on the clCreateProgramWithILKHR extension if it exists.
+            cl_platform_id platform{};
+            error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
+                                    sizeof(platform), &platform, nullptr);
+            if (CL_SUCCESS != error)
+            {
+                log_info("clGetDeviceInfo failed for CL_DEVICE_PLATFORM with "
+                         "errorcode %s\n",
+                         IGetErrorString(error));
+                return error;
+            }
+
+            if (auto clCreateProgramWithILKHR =
+                    reinterpret_cast<clCreateProgramWithILKHR_fn>(
+                        clGetExtensionFunctionAddressForPlatform(
+                            platform, "clCreateProgramWithILKHR")))
+            {
+                *outProgram = clCreateProgramWithILKHR(
+                    context, &modifiedKernelBuf[0], length, &error);
+                if (*outProgram == NULL || error != CL_SUCCESS)
+                {
+                    print_error(error, "clCreateProgramWithILKHR failed\n");
+                    return error;
+                }
+            }
+            else
+            {
+                log_info("Unable to obtain function address of "
+                         "clCreateProgramWithILKHR\n");
+                return -1;
+            }
+        }
+        else
+        {
+            log_info("clCreateProgramWithIL and clCreateProgramWithILKHR not "
+                     "supported on this device\n");
+            return -1;
         }
     }
 
