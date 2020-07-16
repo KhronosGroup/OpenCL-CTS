@@ -13,3 +13,20 @@ set(${MODULE_NAME}_SOURCES
 )
 
 include(../CMakeCommon.txt)
+
+# Copy required CL include directories into the binary directory
+
+set(COMPILER_SOURCE_DIR ${CLConform_SOURCE_DIR}/test_conformance/compiler)
+set(COMPILER_TARGET ${${MODULE_NAME}_OUT})
+
+add_custom_command(
+    TARGET  ${COMPILER_TARGET}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${COMPILER_SOURCE_DIR}/includeTestDirectory"
+            $<TARGET_FILE_DIR:${COMPILER_TARGET}>/includeTestDirectory)
+
+add_custom_command(
+    TARGET  ${COMPILER_TARGET}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${COMPILER_SOURCE_DIR}/secondIncludeTestDirectory"
+            $<TARGET_FILE_DIR:${COMPILER_TARGET}>/secondIncludeTestDirectory)

@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <set>
+#include <iterator>
 #include <algorithm>
 #include <cstring>
 #include "harness/testHarness.h"

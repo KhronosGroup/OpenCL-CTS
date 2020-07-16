@@ -232,17 +232,4 @@ else(WIN32)
   add_custom_target( COPY_FILES${CONFORMANCE_SUFFIX} )
 endif(WIN32)
 
-# Copy required CL include directories into the build directory
-# as required for the compiler testing.
-
-# ... For running the compiler test on the command line.
-file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/includeTestDirectory" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_conformance/compiler)
-file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_conformance/compiler)
-
-# ... For running the compiler test with VisualStudio.
-if(MSVC)
-  file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/includeTestDirectory" DESTINATION "${CLConform_SOURCE_DIR}/build/test_conformance/compiler")
-  file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory" DESTINATION "${CLConform_SOURCE_DIR}/build/test_conformance/compiler")
-endif(MSVC)
-
 set_property(TARGET COPY_FILES${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
