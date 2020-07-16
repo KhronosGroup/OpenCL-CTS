@@ -675,9 +675,9 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
             cl_platform_id platform;
             error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
                                     sizeof(cl_platform_id), &platform, NULL);
-            print_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
-            clCreateProgramWithILKHR_fn clCreateProgramWithILKHR = NULL;
+            test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
+            clCreateProgramWithILKHR_fn clCreateProgramWithILKHR = NULL;
             clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)
                 clGetExtensionFunctionAddressForPlatform(
                     platform, "clCreateProgramWithILKHR");
