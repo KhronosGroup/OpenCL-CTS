@@ -1,65 +1,36 @@
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos LLVM/SPIR-V Translator; 14
-; Bound: 38
+; Bound: 16
 ; Schema: 0
                OpCapability Addresses
-               OpCapability Linkage
                OpCapability Kernel
                OpCapability Int64
-               OpCapability Int8
           %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical64 OpenCL
-               OpEntryPoint Kernel %9 "spec_const_kernel" %__spirv_BuiltInGlobalInvocationId
-         %36 = OpString "kernel_arg_type.spec_const_kernel.ulong*,ulong*,"
+               OpEntryPoint Kernel %9 "spec_const_kernel"
+         %15 = OpString "kernel_arg_type.spec_const_kernel.ulong*,"
                OpSource OpenCL_C 102000
-               OpDecorate %37 Alignment 8
-         %37 = OpDecorationGroup
-               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
-               OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
-               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+               OpName %spec_const_kernel_spec_constant_value "spec_const_kernel.spec_constant_value"
+               OpName %output_value "output_value"
+               OpName %entry "entry"
+               OpName %add "add"
+               OpDecorate %spec_const_kernel_spec_constant_value Constant
+               OpDecorate %spec_const_kernel_spec_constant_value Alignment 8
                OpDecorate %ulong_0 SpecId 101
-               OpGroupDecorate %37 %numbers_buffer_addr %spec_constant_value_addr %id
       %ulong = OpTypeInt 64 0
-      %uchar = OpTypeInt 8 0
     %ulong_0 = OpSpecConstant %ulong 0
-    %v3ulong = OpTypeVector %ulong 3
-%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
+%_ptr_UniformConstant_ulong = OpTypePointer UniformConstant %ulong
        %void = OpTypeVoid
 %_ptr_CrossWorkgroup_ulong = OpTypePointer CrossWorkgroup %ulong
-          %8 = OpTypeFunction %void %_ptr_CrossWorkgroup_ulong %_ptr_CrossWorkgroup_ulong
-%_ptr_Function__ptr_CrossWorkgroup_ulong = OpTypePointer Function %_ptr_CrossWorkgroup_ulong
-%_ptr_Function_ulong = OpTypePointer Function %ulong
-%_ptr_Function_uchar = OpTypePointer Function %uchar
-%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3ulong Input
+          %8 = OpTypeFunction %void %_ptr_CrossWorkgroup_ulong
+%spec_const_kernel_spec_constant_value = OpVariable %_ptr_UniformConstant_ulong UniformConstant %ulong_0
           %9 = OpFunction %void None %8
-%numbers_buffer = OpFunctionParameter %_ptr_CrossWorkgroup_ulong
-%spec_constant_value = OpFunctionParameter %_ptr_CrossWorkgroup_ulong
+%output_value = OpFunctionParameter %_ptr_CrossWorkgroup_ulong
       %entry = OpLabel
-%numbers_buffer_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_ulong Function
-%spec_constant_value_addr = OpVariable %_ptr_Function__ptr_CrossWorkgroup_ulong Function
-         %id = OpVariable %_ptr_Function_ulong Function
-               OpStore %numbers_buffer_addr %numbers_buffer Aligned 8
-               OpStore %spec_constant_value_addr %spec_constant_value Aligned 8
-         %20 = OpBitcast %_ptr_Function_uchar %id
-               OpLifetimeStart %20 8
-         %21 = OpLoad %v3ulong %__spirv_BuiltInGlobalInvocationId
-       %call = OpCompositeExtract %ulong %21 0
-               OpStore %id %call Aligned 8
-         %23 = OpLoad %_ptr_CrossWorkgroup_ulong %spec_constant_value_addr Aligned 8
-               OpStore %23 %ulong_0 Aligned 8
-         %25 = OpLoad %_ptr_CrossWorkgroup_ulong %numbers_buffer_addr Aligned 8
-         %26 = OpLoad %ulong %id Aligned 8
-   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ulong %25 %26
-         %28 = OpLoad %ulong %arrayidx Aligned 8
-         %29 = OpLoad %_ptr_CrossWorkgroup_ulong %spec_constant_value_addr Aligned 8
-         %30 = OpLoad %ulong %29 Aligned 8
-        %add = OpIAdd %ulong %28 %30
-         %32 = OpLoad %_ptr_CrossWorkgroup_ulong %numbers_buffer_addr Aligned 8
-         %33 = OpLoad %ulong %id Aligned 8
-  %arrayidx1 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ulong %32 %33
-               OpStore %arrayidx1 %add Aligned 8
-         %35 = OpBitcast %_ptr_Function_uchar %id
-               OpLifetimeStop %35 8
+         %12 = OpLoad %ulong %output_value Aligned 8
+         %13 = OpLoad %ulong %spec_const_kernel_spec_constant_value Aligned 8
+        %add = OpIAdd %ulong %12 %13
+               OpStore %output_value %add Aligned 8
                OpReturn
                OpFunctionEnd
