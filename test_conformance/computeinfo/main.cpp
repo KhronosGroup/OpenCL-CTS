@@ -60,6 +60,7 @@ enum
     type_string,
     type_cl_device_svm_capabilities,
     type_cl_device_atomic_capabilities,
+    type_cl_device_device_enqueue_capabilities,
     type_cl_name_version_array,
     type_cl_name_version,
 };
@@ -80,6 +81,7 @@ typedef union {
     char* string;
     cl_device_svm_capabilities svmCapabilities;
     cl_device_atomic_capabilities atomicCapabilities;
+    cl_device_device_enqueue_capabilities deviceEnqueueCapabilities;
     cl_name_version* cl_name_version_array;
     cl_name_version cl_name_version_single;
 } config_data;
@@ -265,7 +267,8 @@ config_info config_infos[] = {
                 cl_uint),
     CONFIG_INFO(3, 0, CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT, cl_uint),
     CONFIG_INFO(3, 0, CL_DEVICE_OPENCL_C_FEATURES, cl_name_version_array),
-    CONFIG_INFO(3, 0, CL_DEVICE_DEVICE_ENQUEUE_SUPPORT, cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES,
+                cl_device_device_enqueue_capabilities),
     CONFIG_INFO(3, 0, CL_DEVICE_PIPE_SUPPORT, cl_uint),
     CONFIG_INFO(3, 0, CL_DEVICE_NUMERIC_VERSION, cl_name_version),
     CONFIG_INFO(3, 0, CL_DEVICE_EXTENSIONS_WITH_VERSION, cl_name_version_array),
@@ -493,6 +496,12 @@ int getConfigInfo(cl_device_id device, config_info* info)
             err = clGetDeviceInfo(
                 device, info->opcode, sizeof(info->config.svmCapabilities),
                 &info->config.svmCapabilities, &config_size_ret);
+            break;
+        case type_cl_device_device_enqueue_capabilities:
+            err = clGetDeviceInfo(
+                device, info->opcode,
+                sizeof(info->config.deviceEnqueueCapabilities),
+                &info->config.deviceEnqueueCapabilities, &config_size_ret);
             break;
         case type_cl_device_atomic_capabilities:
             err = clGetDeviceInfo(
@@ -762,6 +771,28 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
                         "WARNING: %s unknown bits found 0x%08" PRIX64,
                         info->opcode_name,
                         (info->config.svmCapabilities & ~all_svm_capabilities));
+            }
+            break;
+        case type_cl_device_device_enqueue_capabilities:
+            log_info("\t%s == %s|%s\n", info->opcode_name,
+                     (info->config.deviceEnqueueCapabilities
+                      & CL_DEVICE_QUEUE_SUPPORTED)
+                         ? "CL_DEVICE_QUEUE_SUPPORTED"
+                         : "",
+                     (info->config.deviceEnqueueCapabilities
+                      & CL_DEVICE_QUEUE_REPLACEABLE_DEFAULT)
+                         ? "CL_DEVICE_QUEUE_REPLACEABLE_DEFAULT"
+                         : "");
+            {
+                cl_device_device_enqueue_capabilities
+                    all_device_enqueue_capabilities = CL_DEVICE_QUEUE_SUPPORTED
+                    | CL_DEVICE_QUEUE_REPLACEABLE_DEFAULT;
+                if (info->config.deviceEnqueueCapabilities
+                    & ~all_device_enqueue_capabilities)
+                    log_info("WARNING: %s unknown bits found 0x%08" PRIX64,
+                             info->opcode_name,
+                             (info->config.deviceEnqueueCapabilities
+                              & ~all_device_enqueue_capabilities));
             }
             break;
         case type_cl_device_atomic_capabilities:
