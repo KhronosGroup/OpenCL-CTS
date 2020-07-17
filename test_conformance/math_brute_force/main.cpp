@@ -174,24 +174,29 @@ int doTest( const char* name )
             InitILogbConstants();
         }
 
-        if ( gTestFastRelaxed )
+        if (gTestFastRelaxed && func_data->relaxed)
         {
-            if( func_data->relaxed )
+            if (get_device_cl_version(gDevice) > Version(1, 2))
             {
                 gTestCount++;
-                vlog( "%3d: ", gTestCount );
+                vlog("%3d: ", gTestCount);
                 // Test with relaxed requirements here.
                 if (func_data->vtbl_ptr->TestFunc(func_data, gMTdata,
                                                   true /* relaxed mode */))
                 {
                     gFailCount++;
                     error++;
-                    if( gStopOnError )
+                    if (gStopOnError)
                     {
                         gSkipRestOfTests = true;
                         return error;
                     }
                 }
+            }
+            else
+            {
+                vlog("Skipping reduced precision testing for device with "
+                     "version 1.2 or less\n");
             }
         }
 

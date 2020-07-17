@@ -7,7 +7,7 @@
                OpCapability Linkage
                OpCapability Kernel
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %1 "phi_4"
+               OpEntryPoint Kernel %1 "phi_4" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %lhs "lhs"
                OpName %rhs "rhs"
@@ -19,13 +19,13 @@
                OpGroupDecorate %5 %res %lhs %rhs
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
-%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %bool = OpTypeBool
        %void = OpTypeVoid
      %uint_0 = OpConstant %uint 0
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
          %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint
-%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
           %1 = OpFunction %void None %14
         %res = OpFunctionParameter %_ptr_CrossWorkgroup_uint
         %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint

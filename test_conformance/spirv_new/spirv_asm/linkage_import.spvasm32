@@ -7,7 +7,7 @@
                OpCapability Linkage
                OpCapability Kernel
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %1 "test_linkage"
+               OpEntryPoint Kernel %1 "test_linkage" %gl_GlobalInvocationID
                OpName %in "in"
                OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
                OpDecorate %gl_GlobalInvocationID Constant
@@ -16,13 +16,13 @@
                OpDecorate %4 LinkageAttributes "simple_fnegate_linkage" Import
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
-%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
       %float = OpTypeFloat 32
 %_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
          %11 = OpTypeFunction %void %_ptr_CrossWorkgroup_float
          %12 = OpTypeFunction %float %float
-%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
           %4 = OpFunction %float Const %12
          %13 = OpFunctionParameter %float
                OpFunctionEnd

@@ -114,7 +114,8 @@ static inline int IsDoubleSubnormal( double x )
 }
 
 static inline int IsHalfSubnormal( cl_half x )
-{ 
+{
+    // this relies on interger overflow to exclude 0 as a subnormal
     return ( ( x & 0x7fffU ) - 1U ) < 0x03ffU; 
 }
 

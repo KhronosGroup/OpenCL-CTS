@@ -18,6 +18,7 @@
 
 #include "harness/testHarness.h"
 #include "harness/compat.h"
+#include "harness/conversions.h"
 
 #include <stdio.h>
 
@@ -107,43 +108,6 @@ static inline cl_ulong DoubleFromUInt( cl_uint bits )
     u -= (cl_ulong)((bits & 0x80U) << 1);
 
     return u;
-}
-
-static inline int IsHalfSubnormal( uint16_t x )
-{
-    // this relies on interger overflow to exclude 0 as a subnormal
-    return ( ( x & 0x7fffU ) - 1U ) < 0x03ffU;
-}
-
-// prevent silent failures due to missing FLT_RADIX
-#ifndef FLT_RADIX
-    #error FLT_RADIX is not defined by float.h
-#endif
-
-static inline int IsFloatSubnormal( double x )
-{
-#if 2 == FLT_RADIX
-    // Do this in integer to avoid problems with FTZ behavior
-    union{ float d; uint32_t u;}u;
-    u.d = fabsf((float) x);
-    return (u.u-1) < 0x007fffffU;
-#else
-    // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) FLT_MIN && x != 0.0;
-#endif
-}
-
-static inline int IsDoubleSubnormal( long double x )
-{
-#if 2 == FLT_RADIX
-    // Do this in integer to avoid problems with FTZ behavior
-    union{ double d; uint64_t u;}u;
-    u.d = fabs((double)x);
-    return (u.u-1) < 0x000fffffffffffffULL;
-#else
-    // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) DBL_MIN && x != 0.0;
-#endif
 }
 
 #endif /* CL_UTILS_H */

@@ -372,6 +372,10 @@ static cl_int get_cl_device_info_str(const cl_device_id device, const cl_uint de
         clDeviceInfoStream << "CL_DEVICE_IL_VERSION=\"" << ilVersionString << "\"" << std::endl;
     }
     clDeviceInfoStream << "CL_DEVICE_VERSION=\"" << versionString << "\"" << std::endl;
+    clDeviceInfoStream << "CL_DEVICE_IMAGE_SUPPORT="
+                       << (0 == checkForImageSupport(device)) << std::endl;
+    clDeviceInfoStream << "CL_DEVICE_NAME=\"" << get_device_name(device).c_str()
+                       << "\"" << std::endl;
 
     clDeviceInfo = clDeviceInfoStream.str();
 

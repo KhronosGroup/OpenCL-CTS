@@ -1143,10 +1143,12 @@ int test_computeinfo(cl_device_id deviceID, cl_context context,
 
 extern int test_extended_versioning(cl_device_id, cl_context, cl_command_queue,
                                     int);
+extern int test_device_uuid(cl_device_id, cl_context, cl_command_queue, int);
 
 test_definition test_list[] = {
     ADD_TEST(computeinfo),
     ADD_TEST(extended_versioning),
+    ADD_TEST(device_uuid),
 };
 
 const int test_num = ARRAY_SIZE(test_list);

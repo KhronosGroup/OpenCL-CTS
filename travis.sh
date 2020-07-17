@@ -17,6 +17,7 @@ TOOLCHAIN_PREFIX_aarch64=aarch64-linux-gnu
 
 TOOLCHAIN_FILE=${TOP}/toolchain.cmake
 touch ${TOOLCHAIN_FILE}
+BUILD_OPENGL_TEST="OFF"
 
 # Prepare toolchain if needed
 if [[ ${JOB_ARCHITECTURE} != "" ]]; then
@@ -40,6 +41,11 @@ if [[ ${JOB_ARCHITECTURE} != "" ]]; then
     echo "SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> ${TOOLCHAIN_FILE}
 fi
 
+if [[ ( ${JOB_ARCHITECTURE} == "" && ${TRAVIS_OS_NAME} == "linux" ) ]]; then
+    BUILD_OPENGL_TEST="ON"
+    sudo apt-get update
+    sudo apt-get -y install libglu1-mesa-dev freeglut3-dev mesa-common-dev libglew-dev
+fi
 # Prepare headers
 git clone https://github.com/KhronosGroup/OpenCL-Headers.git
 cd OpenCL-Headers
@@ -69,6 +75,7 @@ cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
       -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin \
       -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \
       -DUSE_CL_EXPERIMENTAL=ON \
+      -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
       ..
 make -j2
 

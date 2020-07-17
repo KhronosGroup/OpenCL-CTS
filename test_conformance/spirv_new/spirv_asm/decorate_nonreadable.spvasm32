@@ -9,7 +9,7 @@
                OpCapability ImageBasic
           %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %2 "decorate_nonreadable"
+               OpEntryPoint Kernel %2 "decorate_nonreadable" %__spirv_BuiltInGlobalInvocationId %__spirv_BuiltInGlobalSize
                OpSource OpenCL_C 100000
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
                OpName %__spirv_BuiltInGlobalSize "__spirv_BuiltInGlobalSize"
@@ -35,15 +35,15 @@
                OpGroupDecorate %16 %__spirv_BuiltInGlobalInvocationId %__spirv_BuiltInGlobalSize
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
-%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
          %21 = OpTypeImage %void 2D 0 0 0 0 Unknown WriteOnly
      %v4uint = OpTypeVector %uint 4
 %_ptr_CrossWorkgroup_v4uint = OpTypePointer CrossWorkgroup %v4uint
          %24 = OpTypeFunction %void %21 %_ptr_CrossWorkgroup_v4uint
      %v2uint = OpTypeVector %uint 2
-%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
-%__spirv_BuiltInGlobalSize = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
+%__spirv_BuiltInGlobalSize = OpVariable %_ptr_Input_v3uint Input
           %2 = OpFunction %void None %24
         %dst = OpFunctionParameter %21
         %src = OpFunctionParameter %_ptr_CrossWorkgroup_v4uint

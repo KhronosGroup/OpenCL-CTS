@@ -35,4 +35,6 @@ std::string get_device_il_version_string(cl_device_id device);
 /* Returns a string containing the supported OpenCL version for a device. */
 std::string get_device_version_string(cl_device_id device);
 
+/* Returns a string containing the device name. */
+std::string get_device_name(cl_device_id device);
 #endif // _deviceInfo_h
