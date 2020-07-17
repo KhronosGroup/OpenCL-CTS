@@ -1,5 +1,5 @@
 /******************************************************************
-Copyright (c) 2016 The Khronos Group Inc. All Rights Reserved.
+Copyright (c) 2020 The Khronos Group Inc. All Rights Reserved.
 
 This code is protected by copyright laws and contains material proprietary to
 the Khronos Group, Inc. This is UNPUBLISHED PROPRIETARY SOURCE CODE that may not
@@ -18,11 +18,63 @@ Agreement as executed between Khronos and the recipient.
 
 
 template <typename T>
+int run_case(cl_device_id deviceID, cl_context context, cl_command_queue queue,
+             const char *name, T init_buffer, T spec_constant_value,
+             T final_value, bool use_spec_constant,
+             bool (*notEqual)(const T &, const T &) = isNotEqual<T>)
+{
+    clProgramWrapper prog;
+    cl_int err = CL_SUCCESS;
+    err = get_program_with_il(prog, deviceID, context, name);
+    SPIRV_CHECK_ERROR(err, "Failed to build program");
+
+    if (use_spec_constant)
+    {
+        err = clSetProgramSpecializationConstant(prog, 101, sizeof(T),
+                                                 &spec_constant_value);
+        SPIRV_CHECK_ERROR(err,
+                          "Failed to run clSetProgramSpecializationConstant");
+
+        err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
+        SPIRV_CHECK_ERROR(err, "Failed to build program");
+    }
+
+    clKernelWrapper kernel = clCreateKernel(prog, "spec_const_kernel", &err);
+    SPIRV_CHECK_ERROR(err, "Failed to create kernel");
+    size_t bytes = sizeof(T);
+    clMemWrapper output_buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, bytes,
+                       &init_buffer, &err);
+    SPIRV_CHECK_ERROR(err, "Failed to create output_buffer");
+
+    err = clSetKernelArg(kernel, 0, sizeof(clMemWrapper), &output_buffer);
+    SPIRV_CHECK_ERROR(err, "Failed to set kernel argument output_buffer");
+
+    size_t work_size = 1;
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &work_size, NULL, 0,
+                                 NULL, NULL);
+    SPIRV_CHECK_ERROR(err, "Failed to enqueue kernel");
+    clFinish(queue);
+
+    T device_results = 0;
+    err = clEnqueueReadBuffer(queue, output_buffer, CL_TRUE, 0, bytes,
+                              &device_results, 0, NULL, NULL);
+    SPIRV_CHECK_ERROR(err, "Failed to copy from output_buffer");
+    T reference = 0;
+    use_spec_constant ? reference = final_value : reference = init_buffer;
+    if (device_results != reference)
+    {
+        log_error("Values do not match. Expected %d obtained %d\n", reference,
+                  device_results);
+        err = -1;
+    }
+    return err;
+}
+
+template <typename T>
 int test_spec_constant(cl_device_id deviceID, cl_context context,
-                       cl_command_queue queue, const char *name,
-                       std::vector<T> &inputs, std::vector<T> &references,
-                       T spec_constant_value,
-                       bool (*notEqual)(const T &, const T &) = isNotEqual<T>)
+                       cl_command_queue queue, const char *name, T init_buffer,
+                       T spec_constant_value, T final_value)
 {
     if (std::string(name).find("double") != std::string::npos)
     {
@@ -37,105 +89,36 @@ int test_spec_constant(cl_device_id deviceID, cl_context context,
     {
         if (!is_extension_available(deviceID, "cl_khr_fp16"))
         {
-            log_info(
-                "Extension cl_khr_fp16 not supported; skipping half tests.\n");
+            log_info("Extension cl_khr_fp16 not supported; skipping half "
+                     "tests.\n");
             return TEST_SKIPPED_ITSELF;
         }
     }
+    cl_int err = CL_SUCCESS;
+    err = run_case<T>(deviceID, context, queue, name, init_buffer,
+                      spec_constant_value, final_value, false);
+    err |= run_case<T>(deviceID, context, queue, name, init_buffer,
+                       spec_constant_value, final_value, true);
 
-    clProgramWrapper prog;
-    cl_int err = get_program_with_il(prog, deviceID, context, name);
-    SPIRV_CHECK_ERROR(err, "Failed to build program");
-
-    clKernelWrapper kernel = clCreateKernel(prog, "spec_const_kernel", &err);
-    SPIRV_CHECK_ERROR(err, "Failed to create kernel");
-    int num = (int)references.size();
-    size_t bytes = num * sizeof(T);
-    clMemWrapper numbers_buffer =
-        clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, bytes,
-                       inputs.data(), &err);
-    SPIRV_CHECK_ERROR(err, "Failed to create numbers_buffer");
-
-    clMemWrapper spec_buffer =
-        clCreateBuffer(context, CL_MEM_USE_HOST_PTR,
-                       sizeof(spec_constant_value), &spec_constant_value, &err);
-    SPIRV_CHECK_ERROR(err, "Failed to create spec_buffer");
-
-    err = clSetKernelArg(kernel, 0, sizeof(clMemWrapper), &numbers_buffer);
-    SPIRV_CHECK_ERROR(err, "Failed to set kernel argument inputs_buffer");
-    err = clSetKernelArg(kernel, 1, sizeof(clMemWrapper), &spec_buffer);
-    SPIRV_CHECK_ERROR(err, "Failed to set kernel argument spec_constant_value");
-
-    size_t global = num;
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL,
-                                 NULL);
-    SPIRV_CHECK_ERROR(err, "Failed to enqueue kernel");
-    clFinish(queue);
-
-    std::vector<T> device_results(num, 0);
-    err = clEnqueueReadBuffer(queue, numbers_buffer, CL_TRUE, 0, bytes,
-                              device_results.data(), 0, NULL, NULL);
-    SPIRV_CHECK_ERROR(err, "Failed to copy from numbers_buffer");
-
-    for (int i = 0; i < num; i++)
+    if (err == CL_SUCCESS)
     {
-        if (device_results[i] == references[i])
-        {
-            log_error("Values match but should not at location %d expected %d "
-                      "obtained %d\n",
-                      i, references[i], device_results[i]);
-            return TEST_FAIL;
-        }
+        return TEST_PASS;
     }
-
-    err = clSetProgramSpecializationConstant(prog, 101, sizeof(T),
-                                             &spec_constant_value);
-    SPIRV_CHECK_ERROR(err, "Failed to run clSetProgramSpecializationConstant");
-
-    err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
-    SPIRV_CHECK_ERROR(err, "Failed to build program");
-
-    kernel = clCreateKernel(prog, "spec_const_kernel", &err);
-    SPIRV_CHECK_ERROR(err, "Failed to create kernel");
-
-    err = clSetKernelArg(kernel, 0, sizeof(clMemWrapper), &numbers_buffer);
-    SPIRV_CHECK_ERROR(err, "Failed to set kernel argument inputs_buffer");
-    err = clSetKernelArg(kernel, 1, sizeof(clMemWrapper), &spec_buffer);
-    SPIRV_CHECK_ERROR(err, "Failed to set kernel argument spec_constant_value");
-
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL,
-                                 NULL);
-    SPIRV_CHECK_ERROR(err, "Failed to enqueue cl kernel");
-    clFinish(queue);
-
-    std::fill(device_results.begin(), device_results.end(), 0);
-    err = clEnqueueReadBuffer(queue, numbers_buffer, CL_TRUE, 0, bytes,
-                              device_results.data(), 0, NULL, NULL);
-    SPIRV_CHECK_ERROR(err, "Failed to copy from numbers_buffer");
-
-    for (int i = 0; i < num; i++)
+    else
     {
-        if (device_results[i] != references[i])
-        {
-            log_error(
-                "Values do not match in index %d expected %d obtained %d\n", i,
-                references[i], device_results[i]);
-            return TEST_FAIL;
-        }
+        return TEST_FAIL;
     }
-    return TEST_PASS;
 }
 
 
-#define TEST_SPEC_CONSTANT(NAME, type, value, spec_constant_value)             \
+#define TEST_SPEC_CONSTANT(NAME, type, init_buffer, spec_constant_value)       \
     TEST_SPIRV_FUNC_VERSION(op_spec_constant_##NAME##_simple, Version(2, 2))   \
     {                                                                          \
-        std::vector<type> inputs(1024, (type)value);                           \
-        std::vector<type> references(1024,                                     \
-                                     (type)value + (type)spec_constant_value); \
-        return test_spec_constant(deviceID, context, queue,                    \
-                                  "op_spec_constant_" #NAME "_simple", inputs, \
-                                  references, (type)spec_constant_value);      \
+        type init_value = init_buffer;                                         \
+        type final_value = init_value + spec_constant_value;                   \
+        return test_spec_constant(                                             \
+            deviceID, context, queue, "op_spec_constant_" #NAME "_simple",     \
+            init_value, (type)spec_constant_value, final_value);               \
     }
 
 // type name, type, value init, spec constant value
@@ -156,26 +139,24 @@ TEST_SPEC_CONSTANT(double, cl_double, 14534.53453, 1.53453)
 
 TEST_SPIRV_FUNC(op_spec_constant_true_simple)
 {
-    // 1-st ndrange use default spec const (true) value = value + 1 (first check
-    // verifies that values are different) 2-nd ndrange sets spec const false so
-    // value = value - 1
+    // 1-st ndrange init_value is expected value (no change)
+    // 2-nd ndrange sets spec const to 'false' so value = value + 1
     cl_uchar value = (cl_uchar)7;
-    std::vector<cl_uchar> inputs(1024, value);
-    std::vector<cl_uchar> references(1024, value);
+    cl_uchar init_value = value;
+    cl_uchar final_value = value + 1;
     return test_spec_constant<cl_uchar>(deviceID, context, queue,
-                                        "op_spec_constant_true_simple", inputs,
-                                        references, 0);
+                                        "op_spec_constant_true_simple",
+                                        init_value, 0, final_value);
 }
 
 TEST_SPIRV_FUNC(op_spec_constant_false_simple)
 {
-    // 1-st ndrange use default spec const (false) value = value - 1 (first
-    // check verifies that values are different) 2-nd ndrange sets spec const
-    // true so value = value + 1
-    cl_uchar value = (cl_uchar)8;
-    std::vector<cl_uchar> inputs(1024, value);
-    std::vector<cl_uchar> references(1024, value);
+    // 1-st ndrange init_value is expected value (no change)
+    // 2-nd ndrange sets spec const to 'true' so value = value + 1
+    cl_uchar value = (cl_uchar)7;
+    cl_uchar init_value = value;
+    cl_uchar final_value = value + 1;
     return test_spec_constant<cl_uchar>(deviceID, context, queue,
-                                        "op_spec_constant_false_simple", inputs,
-                                        references, 1);
+                                        "op_spec_constant_false_simple",
+                                        init_value, 1, final_value);
 }
