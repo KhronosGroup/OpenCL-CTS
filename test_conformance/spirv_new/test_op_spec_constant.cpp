@@ -139,7 +139,6 @@ int test_spec_constant(cl_device_id deviceID, cl_context context,
     }
 
 // type name, type, value init, spec constant value
-TEST_SPEC_CONSTANT(int, cl_int, 20, -11)
 TEST_SPEC_CONSTANT(uint, cl_uint, 25, 43)
 TEST_SPEC_CONSTANT(char, cl_char, -20, -3)
 TEST_SPEC_CONSTANT(uchar, cl_uchar, 19, 4)
