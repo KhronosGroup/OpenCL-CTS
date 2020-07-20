@@ -1174,8 +1174,11 @@ bool validate_float_write_results( float *expected, float *actual, image_descrip
                 continue;
             if ( IsFloatSubnormal( expected[j] ) && actual[j] == 0.0f )
                 continue;
-            pass = false;
-            break;
+            if (expected[j] != actual[j])
+            {
+                pass = false;
+                break;
+            }
         }
     }
     return pass;
@@ -1193,8 +1196,11 @@ bool validate_half_write_results( cl_half *expected, cl_half *actual, image_desc
                 continue;
             if ( is_half_denorm( expected[j] ) && is_half_zero( actual[j] ) )
                 continue;
-            pass = false;
-            break;
+            if (expected[j] != actual[j])
+            {
+                pass = false;
+                break;
+            }
         }
     }
     return pass;
