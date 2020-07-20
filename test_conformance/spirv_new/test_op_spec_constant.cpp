@@ -25,19 +25,19 @@ int run_case(cl_device_id deviceID, cl_context context, cl_command_queue queue,
 {
     clProgramWrapper prog;
     cl_int err = CL_SUCCESS;
-    err = get_program_with_il(prog, deviceID, context, name);
-    SPIRV_CHECK_ERROR(err, "Failed to build program");
-
     if (use_spec_constant)
     {
-        err = clSetProgramSpecializationConstant(prog, 101, sizeof(T),
-                                                 &spec_constant_value);
-        SPIRV_CHECK_ERROR(err,
-                          "Failed to run clSetProgramSpecializationConstant");
+        spec_const new_spec_const =
+            spec_const(101, sizeof(T), &spec_constant_value);
 
-        err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
-        SPIRV_CHECK_ERROR(err, "Failed to build program");
+        err =
+            get_program_with_il(prog, deviceID, context, name, new_spec_const);
     }
+    else
+    {
+        err = get_program_with_il(prog, deviceID, context, name);
+    }
+    SPIRV_CHECK_ERROR(err, "Failed to build program");
 
     clKernelWrapper kernel = clCreateKernel(prog, "spec_const_kernel", &err);
     SPIRV_CHECK_ERROR(err, "Failed to create kernel");

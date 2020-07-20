@@ -85,6 +85,16 @@ template <typename T> T *createAndRegister(const char *name, Version version)
 
 #define TEST_SPIRV_FUNC(name) TEST_SPIRV_FUNC_VERSION(name, Version(2, 1))
 
+struct spec_const
+{
+    spec_const(cl_int id = 0, size_t sizet = 0, const void *value = NULL)
+        : spec_id(id), spec_size(sizet), spec_value(value){};
+    cl_int spec_id;
+    size_t spec_size;
+    const void *spec_value;
+};
+
 int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
-                        const cl_context context, const char *prog_name);
+                        const cl_context context, const char *prog_name,
+                        spec_const spec_const_def = spec_const());
 std::vector<unsigned char> readSPIRV(const char *file_name);
