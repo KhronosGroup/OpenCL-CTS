@@ -1150,10 +1150,6 @@ int test_computeinfo(cl_device_id deviceID, cl_context context,
 
     err = clGetPlatformIDs(1, &platform, NULL);
     test_error(err, "clGetPlatformIDs failed");
-    if (err != CL_SUCCESS)
-    {
-        total_errors++;
-    }
 
     // print platform info
     log_info("\nclGetPlatformInfo:\n------------------\n");
