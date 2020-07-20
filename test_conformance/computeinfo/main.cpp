@@ -545,7 +545,7 @@ int getConfigInfo(cl_device_id device, config_info* info)
     return err || size_err;
 }
 
-void dumpConfigInfo(cl_device_id device, config_info* info)
+void dumpConfigInfo(config_info* info)
 {
     int number_of_version_items = 0;
     // We should not error if we find an unknown configuration since vendors
@@ -1071,7 +1071,7 @@ int getConfigInfos(cl_device_id device)
             err = getConfigInfo(device, &info);
             if (!err)
             {
-                dumpConfigInfo(device, &info);
+                dumpConfigInfo(&info);
                 if (info.opcode == CL_DEVICE_VERSION)
                 {
                     err = parseVersion(info.config.string, &version);
@@ -1125,7 +1125,7 @@ int getConfigInfos(cl_device_id device)
                 err = getConfigInfo(device, &info);
                 if (!err)
                 {
-                    dumpConfigInfo(device, &info);
+                    dumpConfigInfo(&info);
                 }
                 else
                 {
