@@ -175,9 +175,6 @@ static int kernelFilter( cl_device_id device, cl_context context, cl_command_que
     cl_event            executeEvent;
     cl_ulong    queueStart, submitStart, writeStart, writeEnd;
     size_t                threads[2];
-#ifdef USE_LOCAL_THREADS
-    size_t                localThreads[2];
-#endif
     float                filter_weights[] = { .1f, .1f, .1f, .1f, .2f, .1f, .1f, .1f, .1f };
     int                    filter_w = 3, filter_h = 3;
     int                    err = 0;
@@ -185,16 +182,6 @@ static int kernelFilter( cl_device_id device, cl_context context, cl_command_que
     // set thread dimensions
     threads[0] = w;
     threads[1] = h;
-
-#ifdef USE_LOCAL_THREADS
-    err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( cl_uint ), NULL );
-    test_error( err, "Unable to get thread group max size" );
-    localThreads[1] = localThreads[0];
-    if( localThreads[0] > threads[0] )
-        localThreads[0] = threads[0];
-    if( localThreads[1] > threads[1] )
-        localThreads[1] = threads[1];
-#endif
 
     // allocate the input and output image memory objects
     memobjs[0] = create_image_2d( context, (cl_mem_flags)(CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR),
@@ -249,11 +236,7 @@ static int kernelFilter( cl_device_id device, cl_context context, cl_command_que
         return -1;
     }
 
-#ifdef USE_LOCAL_THREADS
-    err = clEnqueueNDRangeKernel( queue, kernel[0], 2, NULL, threads, localThreads, 0, NULL, &executeEvent );
-#else
     err = clEnqueueNDRangeKernel( queue, kernel[0], 2, NULL, threads, NULL, 0, NULL, &executeEvent );
-#endif
 
     if( err != CL_SUCCESS ){
         print_error( err, "clEnqueueNDRangeKernel failed\n" );
