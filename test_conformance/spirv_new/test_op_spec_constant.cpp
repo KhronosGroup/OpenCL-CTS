@@ -123,11 +123,8 @@ int test_spec_constant(cl_device_id deviceID, cl_context context,
 
 // type name, type, value init, spec constant value
 TEST_SPEC_CONSTANT(uint, cl_uint, 25, 43)
-TEST_SPEC_CONSTANT(char, cl_char, -20, -3)
 TEST_SPEC_CONSTANT(uchar, cl_uchar, 19, 4)
-TEST_SPEC_CONSTANT(short, cl_short, -6000, -1000)
 TEST_SPEC_CONSTANT(ushort, cl_ushort, 6000, 3000)
-TEST_SPEC_CONSTANT(long, cl_long, 34359738360L, 2)
 TEST_SPEC_CONSTANT(ulong, cl_ulong, 9223372036854775000UL, 200)
 TEST_SPEC_CONSTANT(float, cl_float, 1.5, -3.7)
 TEST_SPEC_CONSTANT(half, cl_half, 1, 2)
