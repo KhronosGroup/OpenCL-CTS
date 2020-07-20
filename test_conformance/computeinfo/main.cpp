@@ -396,6 +396,62 @@ int getImageInfo(cl_device_id device, const version_t& version)
 
     return num_errors;
 }
+int getPlatformConfigInfo(cl_platform_id platform, config_info* info)
+{
+    int err = CL_SUCCESS;
+    int size_err = 0;
+    size_t config_size_set;
+    size_t config_size_ret;
+    switch (info->config_type)
+    {
+        case type_string:
+            err = clGetPlatformInfo(platform, info->opcode, 0, NULL,
+                                    &config_size_set);
+            info->config.string = NULL;
+            if (err == CL_SUCCESS && config_size_set > 0)
+            {
+                info->config.string = (char*)malloc(config_size_set);
+                err = clGetPlatformInfo(platform, info->opcode, config_size_set,
+                                        info->config.string, &config_size_ret);
+                size_err = config_size_set != config_size_ret;
+            }
+            break;
+        case type_cl_name_version_array:
+            err = clGetPlatformInfo(platform, info->opcode, 0, NULL,
+                                    &config_size_set);
+            info->config.cl_name_version_array = NULL;
+            if (err == CL_SUCCESS && config_size_set > 0)
+            {
+                info->config.cl_name_version_array = (cl_name_version*)malloc(
+                    config_size_set * sizeof(cl_name_version));
+                err = clGetPlatformInfo(platform, info->opcode, config_size_set,
+                                        info->config.cl_name_version_array,
+                                        &config_size_ret);
+                size_err = config_size_set != config_size_ret;
+                info->opcode_ret_size = config_size_ret;
+            }
+            break;
+        case type_cl_name_version:
+            err = clGetPlatformInfo(platform, info->opcode, 0, NULL,
+                                    &config_size_set);
+            if (err == CL_SUCCESS && config_size_set > 0)
+            {
+                err = clGetPlatformInfo(platform, info->opcode, config_size_set,
+                                        &info->config.cl_name_version_single,
+                                        &config_size_ret);
+            }
+            size_err = config_size_set != config_size_ret;
+            break;
+        default:
+            log_error("Unknown config type: %d\n", info->config_type);
+            break;
+    }
+    if (err || size_err)
+        log_error("\tFailed clGetPlatformInfo for %s.\n", info->opcode_name);
+    if (err) print_error(err, "\t\clGetPlatformInfo failed.");
+    if (size_err) log_error("\t\tWrong size return from clGetPlatformInfo.\n");
+    return err || size_err;
+}
 
 int getConfigInfo(cl_device_id device, config_info* info)
 {
@@ -1138,6 +1194,72 @@ int getConfigInfos(cl_device_id device)
     return total_errors;
 }
 
+config_info config_platform_infos[] = {
+    // CL_PLATFORM_VERSION has to be first defined with version 0 0.
+    CONFIG_INFO(0, 0, CL_PLATFORM_VERSION, string),
+    CONFIG_INFO(1, 1, CL_PLATFORM_PROFILE, string),
+    CONFIG_INFO(1, 1, CL_PLATFORM_NAME, string),
+    CONFIG_INFO(1, 1, CL_PLATFORM_VENDOR, string),
+    CONFIG_INFO(1, 1, CL_PLATFORM_EXTENSIONS, string),
+    CONFIG_INFO(3, 0, CL_PLATFORM_EXTENSIONS_WITH_VERSION,
+                cl_name_version_array),
+    CONFIG_INFO(3, 0, CL_PLATFORM_NUMERIC_VERSION, cl_name_version)
+};
+
+int getPlatformCapabilities(cl_platform_id platform)
+{
+    int total_errors = 0;
+    unsigned onConfigInfo;
+    version_t version = { 0, 0 }; // Version of the device. Will get real value
+                                  // on the first loop iteration.
+    int get;
+    int err;
+    for (onConfigInfo = 0; onConfigInfo
+         < sizeof(config_platform_infos) / sizeof(config_platform_infos[0]);
+         onConfigInfo++)
+    {
+        config_info info = config_platform_infos[onConfigInfo];
+        // Get a property only if device version is equal or greater than
+        // property version.
+        get = (vercmp(version, info.version) >= 0);
+
+        if (get)
+        {
+            err = getPlatformConfigInfo(platform, &info);
+            if (!err)
+            {
+                dumpConfigInfo(&info);
+                if (info.opcode == CL_PLATFORM_VERSION)
+                {
+                    err = parseVersion(info.config.string, &version);
+                    if (err)
+                    {
+                        total_errors++;
+                        free(info.config.string);
+                        break;
+                    }
+                }
+                if (info.config_type == type_string)
+                {
+                    free(info.config.string);
+                }
+                if (info.config_type == type_cl_name_version_array)
+                {
+                    free(info.config.cl_name_version_array);
+                }
+            }
+            else
+            {
+                total_errors++;
+            }
+        }
+        else
+        {
+            log_info("\tSkipped: %s.\n", info.opcode_name);
+        }
+    }
+    return total_errors;
+}
 
 int test_computeinfo(cl_device_id deviceID, cl_context context,
                      cl_command_queue ignoreQueue, int num_elements)
@@ -1151,16 +1273,8 @@ int test_computeinfo(cl_device_id deviceID, cl_context context,
 
     // print platform info
     log_info("\nclGetPlatformInfo:\n------------------\n");
-    print_platform_string_selector(platform, "CL_PLATFORM_PROFILE",
-                                   CL_PLATFORM_PROFILE);
-    print_platform_string_selector(platform, "CL_PLATFORM_VERSION",
-                                   CL_PLATFORM_VERSION);
-    print_platform_string_selector(platform, "CL_PLATFORM_NAME",
-                                   CL_PLATFORM_NAME);
-    print_platform_string_selector(platform, "CL_PLATFORM_VENDOR",
-                                   CL_PLATFORM_VENDOR);
-    print_platform_string_selector(platform, "CL_PLATFORM_EXTENSIONS",
-                                   CL_PLATFORM_EXTENSIONS);
+    err = getPlatformCapabilities(platform);
+    test_error(err, "getPlatformCapabilities failed");
     log_info("\n");
 
     // Check to see if this test is being run on a specific device
