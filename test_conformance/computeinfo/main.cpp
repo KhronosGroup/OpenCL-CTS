@@ -448,7 +448,7 @@ int getPlatformConfigInfo(cl_platform_id platform, config_info* info)
     }
     if (err || size_err)
         log_error("\tFailed clGetPlatformInfo for %s.\n", info->opcode_name);
-    if (err) print_error(err, "\t\clGetPlatformInfo failed.");
+    if (err) print_error(err, "\t\tclGetPlatformInfo failed.");
     if (size_err) log_error("\t\tWrong size return from clGetPlatformInfo.\n");
     return err || size_err;
 }
@@ -1209,21 +1209,16 @@ config_info config_platform_infos[] = {
 int getPlatformCapabilities(cl_platform_id platform)
 {
     int total_errors = 0;
-    unsigned onConfigInfo;
     version_t version = { 0, 0 }; // Version of the device. Will get real value
                                   // on the first loop iteration.
-    int get;
     int err;
-    for (onConfigInfo = 0; onConfigInfo
+    for (unsigned onConfigInfo = 0; onConfigInfo
          < sizeof(config_platform_infos) / sizeof(config_platform_infos[0]);
          onConfigInfo++)
     {
         config_info info = config_platform_infos[onConfigInfo];
-        // Get a property only if device version is equal or greater than
-        // property version.
-        get = (vercmp(version, info.version) >= 0);
 
-        if (get)
+        if (vercmp(version, info.version) >= 0)
         {
             err = getPlatformConfigInfo(platform, &info);
             if (!err)
