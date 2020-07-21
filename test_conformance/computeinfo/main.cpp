@@ -601,7 +601,6 @@ int getConfigInfo(cl_device_id device, config_info* info)
 
 void dumpConfigInfo(config_info* info)
 {
-    int number_of_version_items = 0;
     // We should not error if we find an unknown configuration since vendors
     // may specify their own options beyond the list in the specification.
     switch (info->config_type)
@@ -895,8 +894,8 @@ void dumpConfigInfo(config_info* info)
                               & ~all_atomic_capabilities));
             }
             break;
-        case type_cl_name_version_array:
-            number_of_version_items = info->opcode_ret_size
+        case type_cl_name_version_array: {
+            int number_of_version_items = info->opcode_ret_size
                 / sizeof(*info->config.cl_name_version_array);
             log_info("\t%s supported name and version:\n", info->opcode_name);
             if (number_of_version_items == 0)
@@ -922,6 +921,7 @@ void dumpConfigInfo(config_info* info)
                 }
             }
             break;
+        }
         case type_cl_name_version:
             log_info("\t%s == %d.%d.%d\n", info->opcode_name,
                      CL_VERSION_MAJOR_KHR(
