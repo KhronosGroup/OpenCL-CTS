@@ -28,6 +28,7 @@
 #include "typeWrappers.h"
 #include "imageHelpers.h"
 #include "parseParameters.h"
+#include "feature.h"
 
 #if !defined(_WIN32)
 #include <sys/utsname.h>
@@ -689,6 +690,14 @@ test_status callSingleTestFunction( test_definition test, cl_device_id deviceToU
         return TEST_SKIP;
     }
 
+    if (!test.required_feature.is_supported(deviceToUse))
+    {
+        log_info("%s skipped (requires feature '%s' that the device doesn't "
+                 "support)\n",
+                 test.name, test.required_feature.name().c_str());
+        return TEST_SKIP;
+    }
+
     /* Create a context to work with, unless we're told not to */
     if( !forceNoContextCreation )
     {
@@ -861,34 +870,6 @@ cl_device_id GetOpposingDevice( cl_device_id device )
 
     // Should never get here
     return NULL;
-}
-
-Version get_device_cl_version(cl_device_id device)
-{
-    size_t str_size;
-    cl_int err = clGetDeviceInfo(device, CL_DEVICE_VERSION, 0, NULL, &str_size);
-    ASSERT_SUCCESS(err, "clGetDeviceInfo");
-
-    std::vector<char> str(str_size);
-    err = clGetDeviceInfo(device, CL_DEVICE_VERSION, str_size, str.data(), NULL);
-    ASSERT_SUCCESS(err, "clGetDeviceInfo");
-
-    if (strstr(str.data(), "OpenCL 1.0") != NULL)
-        return Version(1, 0);
-    else if (strstr(str.data(), "OpenCL 1.1") != NULL)
-        return Version(1, 1);
-    else if (strstr(str.data(), "OpenCL 1.2") != NULL)
-        return Version(1, 2);
-    else if (strstr(str.data(), "OpenCL 2.0") != NULL)
-        return Version(2, 0);
-    else if (strstr(str.data(), "OpenCL 2.1") != NULL)
-        return Version(2, 1);
-    else if (strstr(str.data(), "OpenCL 2.2") != NULL)
-        return Version(2, 2);
-    else if (strstr(str.data(), "OpenCL 3.0") != NULL)
-        return Version(3, 0);
-
-    throw std::runtime_error(std::string("Unknown OpenCL version: ") + str.data());
 }
 
 void PrintArch( void )
