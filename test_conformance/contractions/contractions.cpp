@@ -582,8 +582,8 @@ test_status InitCL( cl_device_id device )
         kernels[0] = "";
 
         for (j = 2; j < strCount; j += 2) kernels[j] = sizeNames[i];
-        const auto error = create_single_kernel_helper(
-            gContext, &gProgram[i], nullptr, strCount, kernels, nullptr);
+        error = create_single_kernel_helper(gContext, &gProgram[i], nullptr,
+                                            strCount, kernels, nullptr);
         if (CL_SUCCESS != error || nullptr == gProgram[i])
         {
             log_error("Error: Unable to create test program! (%s) (in %s:%d)\n",
@@ -601,9 +601,9 @@ test_status InitCL( cl_device_id device )
             size_t strCount = sizeof(kernels) / sizeof(kernels[0]);
 
             for (j = 2; j < strCount; j += 2) kernels[j] = sizeNames_double[i];
-            const auto error = create_single_kernel_helper(
-                gContext, &gProgram_double[i], nullptr, strCount, kernels,
-                nullptr);
+            error = create_single_kernel_helper(gContext, &gProgram_double[i],
+                                                nullptr, strCount, kernels,
+                                                nullptr);
             if (CL_SUCCESS != error || nullptr == gProgram_double[i])
             {
                 log_error(
