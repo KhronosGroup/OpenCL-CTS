@@ -89,6 +89,7 @@ test_definition test_list[] = {
 
     ADD_TEST_VERSION(pragma_unroll, Version(2, 0)),
 
+    ADD_TEST_VERSION(features_macro, Version(2, 0)),
     ADD_TEST(unload_valid),
     ADD_TEST(unload_invalid),
     ADD_TEST(unload_repeated),
@@ -97,20 +98,6 @@ test_definition test_list[] = {
     ADD_TEST(unload_link_different),
     ADD_TEST(unload_build_threaded),
 
-    ADD_TEST_VERSION(feature_macro_atomic_order_acq_rel, Version(3, 0)),
-    ADD_TEST_VERSION(feature_macro_atomic_order_seq_cst, Version(3, 0)),
-    ADD_TEST_VERSION(feature_macro_atomic_scope_device, Version(3, 0)),
-    ADD_TEST_VERSION(feature_macro_atomic_scope_all_devices, Version(3, 0)),
-    ADD_TEST_VERSION(feature_macro_3d_image_writes, Version(3, 0)),
-    ADD_TEST_VERSION(feature_macro_device_enqueue, Version(3, 0)),
-    ADD_TEST_VERSION(feature_macro_generic_adress_space, Version(3, 0)),
-    ADD_TEST_VERSION(feature_macro_pipes, Version(3, 0)),
-    ADD_TEST_VERSION(feature_macro_program_scope_global_variables,
-                     Version(3, 0)),
-    ADD_TEST_VERSION(feature_macro_read_write_images, Version(3, 0)),
-    ADD_TEST_VERSION(feature_macro_subgroups, Version(3, 0)),
-    ADD_TEST_VERSION(feature_macro_work_group_collective_functions,
-                     Version(3, 0))
 
 };
 
