@@ -89,7 +89,7 @@ test_definition test_list[] = {
 
     ADD_TEST_VERSION(pragma_unroll, Version(2, 0)),
 
-    ADD_TEST_VERSION(features_macro, Version(2, 0)),
+    ADD_TEST_VERSION(features_macro, Version(3, 0))
     ADD_TEST(unload_valid),
     ADD_TEST(unload_invalid),
     ADD_TEST(unload_repeated),
