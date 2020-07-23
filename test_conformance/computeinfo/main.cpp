@@ -59,6 +59,10 @@ enum
     type_cl_ulong,
     type_string,
     type_cl_device_svm_capabilities,
+    type_cl_device_atomic_capabilities,
+    type_cl_device_device_enqueue_capabilities,
+    type_cl_name_version_array,
+    type_cl_name_version,
 };
 
 typedef union {
@@ -76,6 +80,10 @@ typedef union {
     cl_ulong ull;
     char* string;
     cl_device_svm_capabilities svmCapabilities;
+    cl_device_atomic_capabilities atomicCapabilities;
+    cl_device_device_enqueue_capabilities deviceEnqueueCapabilities;
+    cl_name_version* cl_name_version_array;
+    cl_name_version cl_name_version_single;
 } config_data;
 
 struct _version
@@ -117,6 +125,7 @@ typedef struct
     const char* opcode_name;
     int config_type;
     config_data config;
+    size_t opcode_ret_size;
 } config_info;
 
 #define CONFIG_INFO(major, minor, opcode, type)                                \
@@ -218,9 +227,7 @@ config_info config_infos[] = {
     CONFIG_INFO(1, 1, CL_DEVICE_VENDOR, string),
     CONFIG_INFO(1, 1, CL_DRIVER_VERSION, string),
     CONFIG_INFO(1, 1, CL_DEVICE_PROFILE, string),
-    CONFIG_INFO(1, 1, CL_DEVICE_VERSION, string),
     CONFIG_INFO(1, 1, CL_DEVICE_OPENCL_C_VERSION, string),
-    CONFIG_INFO(1, 1, CL_DEVICE_EXTENSIONS, string),
 
     CONFIG_INFO(2, 0, CL_DEVICE_MAX_PIPE_ARGS, cl_uint),
     CONFIG_INFO(2, 0, CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS, cl_uint),
@@ -248,6 +255,25 @@ config_info config_infos[] = {
     CONFIG_INFO(2, 1, CL_DEVICE_MAX_NUM_SUB_GROUPS, cl_uint),
     CONFIG_INFO(2, 1, CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
                 cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES,
+                cl_device_atomic_capabilities),
+    CONFIG_INFO(3, 0, CL_DEVICE_ATOMIC_FENCE_CAPABILITIES,
+                cl_device_atomic_capabilities),
+    CONFIG_INFO(3, 0, CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT, cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, size_t),
+    CONFIG_INFO(3, 0, CL_DEVICE_WORK_GROUP_COLLECTIVE_FUNCTIONS_SUPPORT,
+                cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT, cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_OPENCL_C_FEATURES, cl_name_version_array),
+    CONFIG_INFO(3, 0, CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES,
+                cl_device_device_enqueue_capabilities),
+    CONFIG_INFO(3, 0, CL_DEVICE_PIPE_SUPPORT, cl_uint),
+    CONFIG_INFO(3, 0, CL_DEVICE_NUMERIC_VERSION, cl_name_version),
+    CONFIG_INFO(3, 0, CL_DEVICE_EXTENSIONS_WITH_VERSION, cl_name_version_array),
+    CONFIG_INFO(3, 0, CL_DEVICE_OPENCL_C_ALL_VERSIONS, cl_name_version_array),
+    CONFIG_INFO(3, 0, CL_DEVICE_ILS_WITH_VERSION, cl_name_version_array),
+    CONFIG_INFO(3, 0, CL_DEVICE_BUILT_IN_KERNELS_WITH_VERSION,
+                cl_name_version_array),
 };
 
 #define ENTRY(major, minor, T)                                                 \
@@ -370,6 +396,62 @@ int getImageInfo(cl_device_id device, const version_t& version)
 
     return num_errors;
 }
+int getPlatformConfigInfo(cl_platform_id platform, config_info* info)
+{
+    int err = CL_SUCCESS;
+    int size_err = 0;
+    size_t config_size_set;
+    size_t config_size_ret;
+    switch (info->config_type)
+    {
+        case type_string:
+            err = clGetPlatformInfo(platform, info->opcode, 0, NULL,
+                                    &config_size_set);
+            info->config.string = NULL;
+            if (err == CL_SUCCESS && config_size_set > 0)
+            {
+                info->config.string = (char*)malloc(config_size_set);
+                err = clGetPlatformInfo(platform, info->opcode, config_size_set,
+                                        info->config.string, &config_size_ret);
+                size_err = config_size_set != config_size_ret;
+            }
+            break;
+        case type_cl_name_version_array:
+            err = clGetPlatformInfo(platform, info->opcode, 0, NULL,
+                                    &config_size_set);
+            info->config.cl_name_version_array = NULL;
+            if (err == CL_SUCCESS && config_size_set > 0)
+            {
+                info->config.cl_name_version_array = (cl_name_version*)malloc(
+                    config_size_set * sizeof(cl_name_version));
+                err = clGetPlatformInfo(platform, info->opcode, config_size_set,
+                                        info->config.cl_name_version_array,
+                                        &config_size_ret);
+                size_err = config_size_set != config_size_ret;
+                info->opcode_ret_size = config_size_ret;
+            }
+            break;
+        case type_cl_name_version:
+            err = clGetPlatformInfo(platform, info->opcode, 0, NULL,
+                                    &config_size_set);
+            if (err == CL_SUCCESS && config_size_set > 0)
+            {
+                err = clGetPlatformInfo(platform, info->opcode, config_size_set,
+                                        &info->config.cl_name_version_single,
+                                        &config_size_ret);
+            }
+            size_err = config_size_set != config_size_ret;
+            break;
+        default:
+            log_error("Unknown config type: %d\n", info->config_type);
+            break;
+    }
+    if (err || size_err)
+        log_error("\tFailed clGetPlatformInfo for %s.\n", info->opcode_name);
+    if (err) print_error(err, "\t\tclGetPlatformInfo failed.");
+    if (size_err) log_error("\t\tWrong size return from clGetPlatformInfo.\n");
+    return err || size_err;
+}
 
 int getConfigInfo(cl_device_id device, config_info* info)
 {
@@ -469,6 +551,43 @@ int getConfigInfo(cl_device_id device, config_info* info)
                 device, info->opcode, sizeof(info->config.svmCapabilities),
                 &info->config.svmCapabilities, &config_size_ret);
             break;
+        case type_cl_device_device_enqueue_capabilities:
+            err = clGetDeviceInfo(
+                device, info->opcode,
+                sizeof(info->config.deviceEnqueueCapabilities),
+                &info->config.deviceEnqueueCapabilities, &config_size_ret);
+            break;
+        case type_cl_device_atomic_capabilities:
+            err = clGetDeviceInfo(
+                device, info->opcode, sizeof(info->config.atomicCapabilities),
+                &info->config.atomicCapabilities, &config_size_ret);
+            break;
+        case type_cl_name_version_array:
+            err = clGetDeviceInfo(device, info->opcode, 0, NULL,
+                                  &config_size_set);
+            info->config.cl_name_version_array = NULL;
+            if (err == CL_SUCCESS && config_size_set > 0)
+            {
+                info->config.cl_name_version_array = (cl_name_version*)malloc(
+                    config_size_set * sizeof(cl_name_version));
+                err = clGetDeviceInfo(device, info->opcode, config_size_set,
+                                      info->config.cl_name_version_array,
+                                      &config_size_ret);
+                size_err = config_size_set != config_size_ret;
+                info->opcode_ret_size = config_size_ret;
+            }
+            break;
+        case type_cl_name_version:
+            err = clGetDeviceInfo(device, info->opcode, 0, NULL,
+                                  &config_size_set);
+            if (err == CL_SUCCESS && config_size_set > 0)
+            {
+                err = clGetDeviceInfo(device, info->opcode, config_size_set,
+                                      &info->config.cl_name_version_single,
+                                      &config_size_ret);
+            }
+            size_err = config_size_set != config_size_ret;
+            break;
         default:
             log_error("Unknown config type: %d\n", info->config_type);
             break;
@@ -480,7 +599,7 @@ int getConfigInfo(cl_device_id device, config_info* info)
     return err || size_err;
 }
 
-void dumpConfigInfo(cl_device_id device, config_info* info)
+void dumpConfigInfo(config_info* info)
 {
     // We should not error if we find an unknown configuration since vendors
     // may specify their own options beyond the list in the specification.
@@ -707,6 +826,111 @@ void dumpConfigInfo(cl_device_id device, config_info* info)
                         (info->config.svmCapabilities & ~all_svm_capabilities));
             }
             break;
+        case type_cl_device_device_enqueue_capabilities:
+            log_info("\t%s == %s|%s\n", info->opcode_name,
+                     (info->config.deviceEnqueueCapabilities
+                      & CL_DEVICE_QUEUE_SUPPORTED)
+                         ? "CL_DEVICE_QUEUE_SUPPORTED"
+                         : "",
+                     (info->config.deviceEnqueueCapabilities
+                      & CL_DEVICE_QUEUE_REPLACEABLE_DEFAULT)
+                         ? "CL_DEVICE_QUEUE_REPLACEABLE_DEFAULT"
+                         : "");
+            {
+                cl_device_device_enqueue_capabilities
+                    all_device_enqueue_capabilities = CL_DEVICE_QUEUE_SUPPORTED
+                    | CL_DEVICE_QUEUE_REPLACEABLE_DEFAULT;
+                if (info->config.deviceEnqueueCapabilities
+                    & ~all_device_enqueue_capabilities)
+                    log_info("WARNING: %s unknown bits found 0x%08" PRIX64,
+                             info->opcode_name,
+                             (info->config.deviceEnqueueCapabilities
+                              & ~all_device_enqueue_capabilities));
+            }
+            break;
+        case type_cl_device_atomic_capabilities:
+            log_info("\t%s == %s|%s|%s|%s|%s|%s|%s\n", info->opcode_name,
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_ORDER_RELAXED)
+                         ? "CL_DEVICE_ATOMIC_ORDER_RELAXED"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_ORDER_ACQ_REL)
+                         ? "CL_DEVICE_ATOMIC_ORDER_ACQ_REL"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_ORDER_SEQ_CST)
+                         ? "CL_DEVICE_ATOMIC_ORDER_SEQ_CST"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_SCOPE_WORK_ITEM)
+                         ? "CL_DEVICE_ATOMIC_SCOPE_WORK_ITEM"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP)
+                         ? "CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_SCOPE_DEVICE)
+                         ? "CL_DEVICE_ATOMIC_SCOPE_DEVICE"
+                         : "",
+                     (info->config.atomicCapabilities
+                      & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES)
+                         ? "CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES"
+                         : "");
+            {
+                cl_device_atomic_capabilities all_atomic_capabilities =
+                    CL_DEVICE_ATOMIC_ORDER_RELAXED
+                    | CL_DEVICE_ATOMIC_ORDER_ACQ_REL
+                    | CL_DEVICE_ATOMIC_ORDER_SEQ_CST
+                    | CL_DEVICE_ATOMIC_SCOPE_WORK_ITEM
+                    | CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP
+                    | CL_DEVICE_ATOMIC_SCOPE_DEVICE
+                    | CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES;
+                if (info->config.atomicCapabilities & ~all_atomic_capabilities)
+                    log_info("WARNING: %s unknown bits found 0x%08" PRIX64,
+                             info->opcode_name,
+                             (info->config.atomicCapabilities
+                              & ~all_atomic_capabilities));
+            }
+            break;
+        case type_cl_name_version_array: {
+            int number_of_version_items = info->opcode_ret_size
+                / sizeof(*info->config.cl_name_version_array);
+            log_info("\t%s supported name and version:\n", info->opcode_name);
+            if (number_of_version_items == 0)
+            {
+                log_info("\t\t\"\"\n");
+            }
+            else
+            {
+                for (int f = 0; f < number_of_version_items; f++)
+                {
+                    cl_name_version new_version_item =
+                        info->config.cl_name_version_array[f];
+                    cl_version new_version_major =
+                        CL_VERSION_MAJOR_KHR(new_version_item.version);
+                    cl_version new_version_minor =
+                        CL_VERSION_MINOR_KHR(new_version_item.version);
+                    cl_version new_version_patch =
+                        CL_VERSION_PATCH_KHR(new_version_item.version);
+                    log_info("\t\t\"%s\" %d.%d.%d\n", new_version_item.name,
+                             CL_VERSION_MAJOR_KHR(new_version_item.version),
+                             CL_VERSION_MINOR_KHR(new_version_item.version),
+                             CL_VERSION_PATCH_KHR(new_version_item.version));
+                }
+            }
+            break;
+        }
+        case type_cl_name_version:
+            log_info("\t%s == %d.%d.%d\n", info->opcode_name,
+                     CL_VERSION_MAJOR_KHR(
+                         info->config.cl_name_version_single.version),
+                     CL_VERSION_MINOR_KHR(
+                         info->config.cl_name_version_single.version),
+                     CL_VERSION_PATCH_KHR(
+                         info->config.cl_name_version_single.version));
+            break;
     }
 }
 
@@ -901,7 +1125,7 @@ int getConfigInfos(cl_device_id device)
             err = getConfigInfo(device, &info);
             if (!err)
             {
-                dumpConfigInfo(device, &info);
+                dumpConfigInfo(&info);
                 if (info.opcode == CL_DEVICE_VERSION)
                 {
                     err = parseVersion(info.config.string, &version);
@@ -925,6 +1149,10 @@ int getConfigInfos(cl_device_id device)
                 if (info.config_type == type_string)
                 {
                     free(info.config.string);
+                }
+                if (info.config_type == type_cl_name_version_array)
+                {
+                    free(info.config.cl_name_version_array);
                 }
             }
             else
@@ -951,7 +1179,7 @@ int getConfigInfos(cl_device_id device)
                 err = getConfigInfo(device, &info);
                 if (!err)
                 {
-                    dumpConfigInfo(device, &info);
+                    dumpConfigInfo(&info);
                 }
                 else
                 {
@@ -966,6 +1194,67 @@ int getConfigInfos(cl_device_id device)
     return total_errors;
 }
 
+config_info config_platform_infos[] = {
+    // CL_PLATFORM_VERSION has to be first defined with version 0 0.
+    CONFIG_INFO(0, 0, CL_PLATFORM_VERSION, string),
+    CONFIG_INFO(1, 1, CL_PLATFORM_PROFILE, string),
+    CONFIG_INFO(1, 1, CL_PLATFORM_NAME, string),
+    CONFIG_INFO(1, 1, CL_PLATFORM_VENDOR, string),
+    CONFIG_INFO(1, 1, CL_PLATFORM_EXTENSIONS, string),
+    CONFIG_INFO(3, 0, CL_PLATFORM_EXTENSIONS_WITH_VERSION,
+                cl_name_version_array),
+    CONFIG_INFO(3, 0, CL_PLATFORM_NUMERIC_VERSION, cl_name_version)
+};
+
+int getPlatformCapabilities(cl_platform_id platform)
+{
+    int total_errors = 0;
+    version_t version = { 0, 0 }; // Version of the device. Will get real value
+                                  // on the first loop iteration.
+    int err;
+    for (unsigned onConfigInfo = 0; onConfigInfo
+         < sizeof(config_platform_infos) / sizeof(config_platform_infos[0]);
+         onConfigInfo++)
+    {
+        config_info info = config_platform_infos[onConfigInfo];
+
+        if (vercmp(version, info.version) >= 0)
+        {
+            err = getPlatformConfigInfo(platform, &info);
+            if (!err)
+            {
+                dumpConfigInfo(&info);
+                if (info.opcode == CL_PLATFORM_VERSION)
+                {
+                    err = parseVersion(info.config.string, &version);
+                    if (err)
+                    {
+                        total_errors++;
+                        free(info.config.string);
+                        break;
+                    }
+                }
+                if (info.config_type == type_string)
+                {
+                    free(info.config.string);
+                }
+                if (info.config_type == type_cl_name_version_array)
+                {
+                    free(info.config.cl_name_version_array);
+                }
+            }
+            else
+            {
+                total_errors++;
+            }
+        }
+        else
+        {
+            log_info("\tSkipped: %s.\n", info.opcode_name);
+        }
+    }
+    return total_errors;
+}
 
 int test_computeinfo(cl_device_id deviceID, cl_context context,
                      cl_command_queue ignoreQueue, int num_elements)
@@ -976,23 +1265,11 @@ int test_computeinfo(cl_device_id deviceID, cl_context context,
 
     err = clGetPlatformIDs(1, &platform, NULL);
     test_error(err, "clGetPlatformIDs failed");
-    if (err != CL_SUCCESS)
-    {
-        total_errors++;
-    }
 
     // print platform info
     log_info("\nclGetPlatformInfo:\n------------------\n");
-    print_platform_string_selector(platform, "CL_PLATFORM_PROFILE",
-                                   CL_PLATFORM_PROFILE);
-    print_platform_string_selector(platform, "CL_PLATFORM_VERSION",
-                                   CL_PLATFORM_VERSION);
-    print_platform_string_selector(platform, "CL_PLATFORM_NAME",
-                                   CL_PLATFORM_NAME);
-    print_platform_string_selector(platform, "CL_PLATFORM_VENDOR",
-                                   CL_PLATFORM_VENDOR);
-    print_platform_string_selector(platform, "CL_PLATFORM_EXTENSIONS",
-                                   CL_PLATFORM_EXTENSIONS);
+    err = getPlatformCapabilities(platform);
+    test_error(err, "getPlatformCapabilities failed");
     log_info("\n");
 
     // Check to see if this test is being run on a specific device
