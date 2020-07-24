@@ -1041,9 +1041,9 @@ test_status check_spirv_compilation_readiness(cl_device_id device)
         }
         else
         {
-            version_expected_info("Test", "OpenCL",
-                                  ocl_expected_min_version.to_string().c_str(),
-                                  ocl_version.to_string().c_str());
+            log_error("SPIR-V intermediate language support on OpenCL version "
+                      "%s requires cl_khr_il_program extension.\n",
+                      ocl_version.to_string().c_str());
             return TEST_SKIP;
         }
     }
