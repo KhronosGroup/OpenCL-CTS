@@ -694,7 +694,12 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
                 }
                 if( fail )
                 {
-                    vlog_error( "\nERROR: %s%s: %f ulp error at {%a, %d}: *%a vs. %a (0x%8.8x) at index: %d\n", name, sizeNames[k], err, s[j], s2[j], r[j], test, ((cl_uint*)&test)[0], j );
+                    vlog_error(
+                        "\nERROR: %s%s: %f ulp error at {%a (0x%8.8x), %d}: "
+                        "*%a (0x%8.8x) vs. %a (0x%8.8x) at index: %d\n",
+                        name, sizeNames[k], err, s[j], ((uint32_t *)s)[j],
+                        s2[j], r[j], ((uint32_t *)r)[j], test,
+                        ((cl_uint *)&test)[0], j);
                     error = -1;
                     goto exit;
                 }
