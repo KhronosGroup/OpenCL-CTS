@@ -161,6 +161,15 @@ int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
         prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
         SPIRV_CHECK_ERROR(
             err, "Failed to create program with clCreateProgramWithIL");
+
+        if (spec_const_def.spec_value != NULL)
+        {
+            err = clSetProgramSpecializationConstant(
+                prog, spec_const_def.spec_id, spec_const_def.spec_size,
+                spec_const_def.spec_value);
+            SPIRV_CHECK_ERROR(
+                err, "Failed to run clSetProgramSpecializationConstant");
+        }
     }
     else
     {
