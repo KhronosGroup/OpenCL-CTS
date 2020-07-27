@@ -122,6 +122,8 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(sub_group_dispatch, Version(2, 1)),
     ADD_TEST_VERSION(clone_kernel, Version(2, 1)),
     ADD_TEST_VERSION(zero_sized_enqueue, Version(2, 1)),
+    ADD_TEST_VERSION(buffer_properties_queries, Version(3, 0)),
+    ADD_TEST_VERSION(image_properties_queries, Version(3, 0))
 };
 
 const int test_num = ARRAY_SIZE(test_list);
