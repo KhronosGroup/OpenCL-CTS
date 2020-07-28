@@ -101,14 +101,15 @@ cl_int check_compiler_feature_info(cl_device_id deviceID, cl_context context,
             feature_macro.c_str());
     const char* ptr_supported = kernel_supported_src;
     error = create_single_kernel_helper_create_program(
-        context, &program_supported, 1, &ptr_supported);
+        context, &program_supported, 1, &ptr_supported, "-cl-std=CL3.0");
     test_error(error, "create_single_kernel_helper_create_program failed.\n");
 
     sprintf(kernel_not_supported_src, macro_not_supported_source,
             feature_macro.c_str());
     const char* ptr_not_supported = kernel_not_supported_src;
     error = create_single_kernel_helper_create_program(
-        context, &program_not_supported, 1, &ptr_not_supported);
+        context, &program_not_supported, 1, &ptr_not_supported,
+        "-cl-std=CL3.0");
     test_error(error, "create_single_kernel_helper_create_program failed.\n");
 
     cl_int status_supported = CL_SUCCESS;
