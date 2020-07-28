@@ -57,7 +57,7 @@ git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
 cd ${TOP}/OpenCL-ICD-Loader
 mkdir build
 cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ ..
+cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DENABLE_OPENCL30_PROVISIONAL=1 -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ ..
 make
 
 # Get libclcxx
