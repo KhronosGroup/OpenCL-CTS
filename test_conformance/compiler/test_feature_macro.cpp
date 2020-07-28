@@ -367,8 +367,8 @@ int test_consistency_c_features_list(cl_device_id deviceID,
 
 #define NEW_FEATURE_MACRO_TEST(feat)                                           \
     test_macro_name = "__opencl_c_" #feat;                                     \
-    error |= test_feature_macro_##feat##(deviceID, context, test_macro_name,   \
-                                         supported);                           \
+    error |= test_feature_macro_##feat(deviceID, context, test_macro_name,     \
+                                       supported);                             \
     if (supported) supported_features_vec.push_back(test_macro_name);
 
 

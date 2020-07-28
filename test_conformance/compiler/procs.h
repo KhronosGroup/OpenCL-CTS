@@ -212,11 +212,8 @@ extern int test_compile_and_link_status_options_log(cl_device_id deviceID,
 
 extern int test_pragma_unroll(cl_device_id deviceID, cl_context context,
                               cl_command_queue queue, int num_elements);
-
-extern int test_features_macro(cl_device_id deviceID,
-                                                   cl_context context,
-                                                   cl_command_queue queue,
-                                                   int num_elements);
+extern int test_features_macro(cl_device_id deviceID, cl_context context,
+                               cl_command_queue queue, int num_elements);
 extern int test_unload_valid(cl_device_id deviceID, cl_context context,
                              cl_command_queue queue, int num_elements);
 extern int test_unload_invalid(cl_device_id deviceID, cl_context context,
