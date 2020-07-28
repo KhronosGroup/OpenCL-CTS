@@ -67,7 +67,7 @@ cl_int check_api_feature_info(cl_device_id deviceID, cl_context context,
     }
     else if (check_cap)
     {
-        if (response & check_cap == check_cap)
+        if ((response & check_cap) == check_cap)
         {
             status = true;
         }
