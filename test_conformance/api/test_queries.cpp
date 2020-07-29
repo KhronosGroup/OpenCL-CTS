@@ -216,14 +216,14 @@ int test_get_sampler_info(cl_device_id deviceID, cl_context context, cl_command_
         std::vector<cl_sampler_properties> set_properties(
             properties, properties + ARRAY_SIZE(properties));
         size_t set_size;
-        cl_uint numer_of_props = 0;
+        cl_uint number_of_props = 0;
 
         error = clGetSamplerInfo(sampler, CL_SAMPLER_PROPERTIES, 0, NULL,
                                  &set_size);
         test_error(error, "clGetSamplerInfo failed.");
 
-        numer_of_props = set_size / sizeof(cl_sampler_properties);
-        get_properties.resize(numer_of_props);
+        number_of_props = set_size / sizeof(cl_sampler_properties);
+        get_properties.resize(number_of_props);
         error = clGetSamplerInfo(sampler, CL_SAMPLER_PROPERTIES, set_size,
                                  get_properties.data(), 0);
         test_error(error, "clGetSamplerInfo failed.");
