@@ -10,6 +10,7 @@ set(${MODULE_NAME}_SOURCES
     test_image_macro.cpp
     test_compiler_defines_for_extensions.cpp
     test_pragma_unroll.cpp
+    test_unload_platform_compiler.cpp
 )
 
 include(../CMakeCommon.txt)
