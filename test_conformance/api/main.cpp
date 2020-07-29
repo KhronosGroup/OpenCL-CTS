@@ -108,6 +108,7 @@ test_definition test_list[] = {
     ADD_TEST( retain_mem_object_set_kernel_arg ),
     ADD_TEST( min_data_type_align_size_alignment ),
 
+    ADD_TEST_VERSION( context_destructor_callback, Version(3, 0) ),
     ADD_TEST( mem_object_destructor_callback ),
     ADD_TEST( null_buffer_arg ),
     ADD_TEST( get_buffer_info ),

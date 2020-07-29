@@ -27,6 +27,7 @@ set(${MODULE_NAME}_SOURCES
          test_sub_group_dispatch.cpp
          test_clone_kernel.cpp
          test_zero_sized_enqueue.cpp
+         test_context_destructor_callback.cpp
 )
 
 include(../CMakeCommon.txt)
