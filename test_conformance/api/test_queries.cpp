@@ -17,6 +17,7 @@
 #include "harness/imageHelpers.h"
 #include <stdlib.h>
 #include <ctype.h>
+#include <algorithm>
 
 int test_get_platform_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -222,14 +223,58 @@ int test_get_sampler_info(cl_device_id deviceID, cl_context context, cl_command_
                                  &set_size);
         test_error(error, "clGetSamplerInfo failed.");
 
+        if (set_size != set_properties.size() * sizeof(cl_sampler_properties))
+        {
+            test_error(error,
+                       "Incorrect size of CL_SAMPLER_PROPERTIES returned by "
+                       "clGetSamplerInfo");
+        }
+
         number_of_props = set_size / sizeof(cl_sampler_properties);
         get_properties.resize(number_of_props);
         error = clGetSamplerInfo(sampler, CL_SAMPLER_PROPERTIES, set_size,
                                  get_properties.data(), 0);
         test_error(error, "clGetSamplerInfo failed.");
+
+        if (get_properties.back() != 0)
+        {
+            log_error(
+                "ERROR: Incorrect last properties value - should be 0!\n");
+            return TEST_FAIL;
+        }
+        get_properties.pop_back();
+        set_properties.pop_back();
         if (set_properties != get_properties)
         {
-            log_error("Data mismatch while comparing CL_SAMPLER_PROPERTIES\n");
+            for (cl_uint i = 0; i < set_properties.size(); i = i + 2)
+            {
+                cl_sampler_properties set_property = set_properties[i];
+                cl_sampler_properties set_property_value =
+                    set_properties[i + 1];
+
+                std::vector<cl_sampler_properties>::iterator it = std::find(
+                    get_properties.begin(), get_properties.end(), set_property);
+
+                if (it == get_properties.end())
+                {
+                    log_error("ERROR: Property name not found ... 0x%x\n",
+                              set_property);
+                    return TEST_FAIL;
+                }
+                else
+                {
+                    if (set_property_value != *std::next(it))
+                    {
+                        log_error(
+                            "ERROR: Incorrect preperty value expected 0x%x, "
+                            "obtained 0x%x\n",
+                            set_property_value, *std::next(it));
+                        return TEST_FAIL;
+                    }
+                }
+            }
+            log_error("ERROR: ALL properties and values matched but order "
+                      "incorrect!\n");
             return TEST_FAIL;
         }
     }
