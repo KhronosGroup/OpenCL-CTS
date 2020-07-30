@@ -98,8 +98,14 @@ extern int        test_retain_mem_object_multiple(cl_device_id deviceID, cl_cont
 extern int        test_retain_mem_object_set_kernel_arg(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_min_data_type_align_size_alignment(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems );
 
-extern int      test_context_destructor_callback(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int        test_mem_object_destructor_callback(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_context_destructor_callback(cl_device_id deviceID,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            int num_elements);
+extern int test_mem_object_destructor_callback(cl_device_id deviceID,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
 
 extern int      test_null_buffer_arg( cl_device_id device_id, cl_context context, cl_command_queue queue, int num_elements );
 extern int      test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements );
