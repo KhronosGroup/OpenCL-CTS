@@ -18,6 +18,7 @@
 #include "testBase.h"
 #include "harness/typeWrappers.h"
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -27,16 +28,9 @@ typedef enum
     buffer
 } mem_obj_type;
 
-typedef enum
-{
-    NON_NULL_PATH,
-    NULL_PATH
-} query_type;
-
 struct test_data
 {
     mem_obj_type obj_t;
-    query_type query_t;
     std::vector<cl_mem_properties> properties;
     std::string description;
     std::string src;
@@ -64,7 +58,7 @@ int create_object_and_check_properties(cl_context context,
 
     if (test_case.obj_t == image)
     {
-        if (test_case.query_t == NULL_PATH)
+        if (test_case.properties.size() == 0)
         {
             test_object =
                 clCreateImageWithProperties(context, NULL, flags, &format,
@@ -80,7 +74,7 @@ int create_object_and_check_properties(cl_context context,
     }
     if (test_case.obj_t == buffer)
     {
-        if (test_case.query_t == NULL_PATH)
+        if (test_case.properties.size() == 0)
         {
             test_object = clCreateBufferWithProperties(
                 context, NULL, flags, local_data.size() * sizeof(cl_uint),
@@ -98,15 +92,25 @@ int create_object_and_check_properties(cl_context context,
     clGetMemObjectInfo(test_object, CL_MEM_PROPERTIES, 0, NULL, &set_size);
     test_error(error,
                "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES.");
-    if (test_case.query_t == NULL_PATH && set_size == 0)
+
+    // verify set_size 0 returned
+    if ((test_case.properties.size() == 0
+         || test_case.properties.size() == 1 && test_case.properties[0] == 0)
+        && set_size == 0)
     {
         return TEST_PASS;
     }
-    if (test_case.query_t == NON_NULL_PATH && set_size == 0)
+
+    if (test_case.properties.size() > 1)
     {
-        log_error("clGetMemObjectInfo - invalid value returned");
-        return TEST_FAIL;
+        if (test_case.properties.size() * sizeof(cl_mem_properties) > set_size)
+        {
+            log_error(
+                "Incorrect properties size returned by clGetMemObjectInfo\n");
+            return TEST_FAIL;
+        }
     }
+
     cl_uint number_of_props = set_size / sizeof(cl_mem_properties);
     object_properties_check.resize(number_of_props);
     clGetMemObjectInfo(test_object, CL_MEM_PROPERTIES, set_size,
@@ -114,12 +118,31 @@ int create_object_and_check_properties(cl_context context,
     test_error(error,
                "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES.");
 
-    if (object_properties_check != test_case.properties)
+    // check list with 0 terminator is returned
+    if (object_properties_check.size() == 1 && object_properties_check[0] == 0
+        && test_case.properties.size() == 0)
     {
-        log_error("clGetMemObjectInfo returned different properties than was "
-                  "set initially.\n");
-        error = TEST_FAIL;
+        return TEST_PASS;
     }
+    if (object_properties_check.size() == 1 && object_properties_check[0] == 0
+        && test_case.properties.size() == 1 && test_case.properties[0] == 0)
+    {
+        return TEST_PASS;
+    }
+
+
+    for (auto set_property : test_case.properties)
+    {
+        std::vector<cl_mem_properties>::iterator it =
+            std::find(object_properties_check.begin(),
+                      object_properties_check.end(), set_property);
+        if (it == object_properties_check.end())
+        {
+            log_error("ERROR: Property not found ...");
+            return TEST_FAIL;
+        }
+    }
+
     return error;
 }
 
@@ -160,9 +183,9 @@ int run_test_query_properties(cl_context context, cl_command_queue queue,
     free_mtdata(d);
     d = NULL;
     const char* kernel_src = test_case.src.c_str();
-    error = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel, 1, &kernel_src,
-        test_case.kernel_name.c_str(), "-cl-std=CL3.0");
+    error =
+        create_single_kernel_helper(context, &program, &kernel, 1, &kernel_src,
+                                    test_case.kernel_name.c_str());
 
     test_error(error, "create_single_kernel_helper failed");
 
@@ -237,18 +260,10 @@ int test_image_properties_queries(cl_device_id deviceID, cl_context context,
                                 "    write_imageui(dst, coords, val);\n"
                                 "\n"
                                 "}\n" };
-    test_cases.push_back({ image,
-                           NON_NULL_PATH,
-                           { 0 },
-                           "image, 0 properties",
-                           test_kernel,
-                           "data_copy" });
-    test_cases.push_back({ image,
-                           NULL_PATH,
-                           { NULL },
-                           "image, NULL properties",
-                           test_kernel,
-                           "data_copy" });
+    test_cases.push_back(
+        { image, { 0 }, "image, 0 properties", test_kernel, "data_copy" });
+    test_cases.push_back(
+        { image, {}, "image, NULL properties", test_kernel, "data_copy" });
 
     for (auto test_case : test_cases)
     {
@@ -272,18 +287,10 @@ int test_buffer_properties_queries(cl_device_id deviceID, cl_context context,
         "\n"
         "}\n"
     };
-    test_cases.push_back({ buffer,
-                           NON_NULL_PATH,
-                           { 0 },
-                           "buffer, 0 properties",
-                           test_kernel,
-                           "data_copy" });
-    test_cases.push_back({ buffer,
-                           NULL_PATH,
-                           { NULL },
-                           "buffer, NULL properties",
-                           test_kernel,
-                           "data_copy" });
+    test_cases.push_back(
+        { buffer, { 0 }, "buffer, 0 properties", test_kernel, "data_copy" });
+    test_cases.push_back(
+        { buffer, {}, "buffer, NULL properties", test_kernel, "data_copy" });
 
     for (auto test_case : test_cases)
     {
