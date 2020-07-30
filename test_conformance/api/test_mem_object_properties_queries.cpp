@@ -95,7 +95,7 @@ int create_object_and_check_properties(cl_context context,
 
     // verify set_size 0 returned
     if ((test_case.properties.size() == 0
-         || test_case.properties.size() == 1 && test_case.properties[0] == 0)
+         || (test_case.properties.size() == 1 && test_case.properties[0] == 0))
         && set_size == 0)
     {
         return TEST_PASS;
