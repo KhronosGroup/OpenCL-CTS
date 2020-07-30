@@ -64,8 +64,20 @@ int test_context_destructor_callback(cl_device_id deviceID, cl_context context, 
     {
         // Spin waiting for the release to finish.  If you don't call the context_destructor_callback, you will not
         // pass the test.
-        while( 0 == callbackOrders[i] )
-        {}
+        log_info("\tWaiting for callback %d...\n", i);
+        int wait = 0;
+        while (0 == callbackOrders[i])
+        {
+            usleep(100000); // 1/10th second
+            if (++wait >= 10 * 10)
+            {
+                log_error("\tERROR: Callback %d was not called within 10 "
+                          "seconds!  Assuming failure.\n",
+                          i+1);
+                numErrors++;
+                break;
+            }
+        }
 
         if( ABS( callbackOrders[ i ] ) != 3-i )
         {
