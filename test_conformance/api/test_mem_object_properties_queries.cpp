@@ -14,13 +14,10 @@
 // limitations under the License.
 //
 
-
 #include "testBase.h"
 #include "harness/typeWrappers.h"
 #include <vector>
 #include <algorithm>
-
-using namespace std;
 
 typedef enum
 {
@@ -37,7 +34,6 @@ struct test_data
     std::string kernel_name;
 };
 
-
 int create_object_and_check_properties(cl_context context,
                                        clMemWrapper& test_object,
                                        test_data test_case, cl_mem_flags flags,
@@ -47,17 +43,19 @@ int create_object_and_check_properties(cl_context context,
     int error = CL_SUCCESS;
     size_t set_size;
     std::vector<cl_mem_properties> object_properties_check;
-    cl_image_format format;
-    format.image_channel_order = CL_RGBA;
-    format.image_channel_data_type = CL_UNSIGNED_INT32;
-    cl_image_desc desc;
-    memset(&desc, 0x0, sizeof(cl_image_desc));
-    desc.image_type = CL_MEM_OBJECT_IMAGE2D;
-    desc.image_width = size_x;
-    desc.image_height = size_y;
+
 
     if (test_case.obj_t == image)
     {
+        cl_image_format format;
+        format.image_channel_order = CL_RGBA;
+        format.image_channel_data_type = CL_UNSIGNED_INT32;
+        cl_image_desc desc;
+        memset(&desc, 0x0, sizeof(cl_image_desc));
+        desc.image_type = CL_MEM_OBJECT_IMAGE2D;
+        desc.image_width = size_x;
+        desc.image_height = size_y;
+
         if (test_case.properties.size() == 0)
         {
             test_object =
@@ -94,21 +92,9 @@ int create_object_and_check_properties(cl_context context,
                "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES.");
 
     // verify set_size 0 returned
-    if ((test_case.properties.size() == 0
-         || (test_case.properties.size() == 1 && test_case.properties[0] == 0))
-        && set_size == 0)
+    if (test_case.properties.size() == 0 && set_size == 0)
     {
         return TEST_PASS;
-    }
-
-    if (test_case.properties.size() > 1)
-    {
-        if (test_case.properties.size() * sizeof(cl_mem_properties) > set_size)
-        {
-            log_error(
-                "Incorrect properties size returned by clGetMemObjectInfo\n");
-            return TEST_FAIL;
-        }
     }
 
     cl_uint number_of_props = set_size / sizeof(cl_mem_properties);
@@ -124,64 +110,74 @@ int create_object_and_check_properties(cl_context context,
     {
         return TEST_PASS;
     }
-    if (object_properties_check.size() == 1 && object_properties_check[0] == 0
-        && test_case.properties.size() == 1 && test_case.properties[0] == 0)
+    if (object_properties_check.back() != 0)
     {
-        return TEST_PASS;
+        log_error("ERROR: Incorrect last properties value - should be 0!\n");
+        return TEST_FAIL;
     }
-
-
-    for (auto set_property : test_case.properties)
+    object_properties_check.pop_back();
+    test_case.properties.pop_back();
+    if (object_properties_check != test_case.properties)
     {
-        std::vector<cl_mem_properties>::iterator it =
-            std::find(object_properties_check.begin(),
-                      object_properties_check.end(), set_property);
-        if (it == object_properties_check.end())
+        for (cl_uint i = 0; i < test_case.properties.size(); i = i + 2)
         {
-            log_error("ERROR: Property not found ...");
-            return TEST_FAIL;
+            cl_mem_properties set_property = test_case.properties[i];
+            cl_mem_properties set_property_value = test_case.properties[i + 1];
+            std::vector<cl_mem_properties>::iterator it =
+                std::find(object_properties_check.begin(),
+                          object_properties_check.end(), set_property);
+
+            if (it == object_properties_check.end())
+            {
+                log_error("ERROR: Property not found ... 0x%x\n", set_property);
+                return TEST_FAIL;
+            }
+            else
+            {
+                if (set_property_value != *std::next(it))
+                {
+                    log_error("ERROR: Incorrect preperty value expected %x, "
+                              "obtained %x\n",
+                              set_property_value, *std::next(it));
+                    return TEST_FAIL;
+                }
+            }
         }
+        log_error(
+            "ERROR: ALL properties and values matched but order incorrect!\n");
+        return TEST_FAIL;
     }
 
     return error;
 }
 
-
 int run_test_query_properties(cl_context context, cl_command_queue queue,
                               test_data test_case)
 {
     int error = CL_SUCCESS;
-    log_info("test case description: %s\n", test_case.description.c_str());
+    log_info("\nTC description: %s\n", test_case.description.c_str());
 
     clProgramWrapper program;
     clKernelWrapper kernel;
     clMemWrapper obj_src;
     clMemWrapper obj_dst;
     clEventWrapper event;
-    MTdata d;
-
+    MTdata init_generator = init_genrand(gRandomSeed);
     cl_mem_flags flags;
-    cl_uint size_x;
-    cl_uint size_y;
-    size_t size;
-    size_t global_dim[2];
-
-    size_x = 4;
-    size_y = 4;
-    size = size_x * size_y * 4;
-    global_dim[0] = size_x;
-    global_dim[1] = size_y;
+    cl_uint size_x = 4;
+    cl_uint size_y = 4;
+    size_t size = size_x * size_y * 4;
+    size_t global_dim[2] = { size_x, size_y };
     const size_t origin[3] = { 0, 0, 0 };
     const size_t region[3] = { size_x, size_y, 1 };
 
     std::vector<cl_uint> src_data(size);
     std::vector<cl_uint> dst_data(size);
-    d = init_genrand(gRandomSeed);
 
-    generate_random_data(kUInt, size, d, src_data.data());
-    generate_random_data(kUInt, size, d, dst_data.data());
-    free_mtdata(d);
-    d = NULL;
+    generate_random_data(kUInt, size, init_generator, src_data.data());
+    generate_random_data(kUInt, size, init_generator, dst_data.data());
+    free_mtdata(init_generator);
+    init_generator = NULL;
     const char* kernel_src = test_case.src.c_str();
     error =
         create_single_kernel_helper(context, &program, &kernel, 1, &kernel_src,
@@ -241,14 +237,26 @@ int run_test_query_properties(cl_context context, cl_command_queue queue,
         }
     }
 
-    return 0;
+    log_info("TC result: passed\n");
+    return TEST_PASS;
 }
-
 
 int test_image_properties_queries(cl_device_id deviceID, cl_context context,
                                   cl_command_queue queue, int num_elements)
 {
     int error = CL_SUCCESS;
+    cl_bool supports_images = CL_TRUE;
+
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_IMAGE_SUPPORT,
+                            sizeof(supports_images), &supports_images, NULL);
+    test_error(error, "clGetDeviceInfo for CL_DEVICE_IMAGE_SUPPORT failed");
+
+    if (supports_images == CL_FALSE)
+    {
+        log_info("No image support on current device - skipped\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     std::vector<test_data> test_cases;
     std::string test_kernel = { "__kernel void data_copy(read_only image2d_t "
                                 "src, write_only image2d_t dst)\n"
