@@ -75,6 +75,27 @@ int test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_comman
     size_t ret_ndrange2d_flattened;
     size_t ret_ndrange3d_flattened;
 
+    if (get_device_cl_version(deviceID) >= Version(3, 0))
+    {
+        int error;
+        cl_uint max_num_sub_groups;
+
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_NUM_SUB_GROUPS,
+                                sizeof(max_num_sub_groups), &max_num_sub_groups,
+                                NULL);
+        if (error != CL_SUCCESS)
+        {
+            print_error(error, "Unable to get max num subgroups");
+            return error;
+        }
+
+        if (max_num_sub_groups == 0
+            || !is_extension_available(deviceID, "cl_khr_subgroups"))
+        {
+            return TEST_SKIPPED_ITSELF;
+        }
+    }
+
     error = create_single_kernel_helper_with_build_options(context, &program, &kernel, 1, subgroup_dispatch_kernel, "subgroup_dispatch_kernel", "-cl-std=CL2.0");
     if (error != 0)
         return error;
