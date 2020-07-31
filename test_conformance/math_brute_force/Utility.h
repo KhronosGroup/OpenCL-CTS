@@ -29,6 +29,7 @@
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
 #include "harness/conversions.h"
+#include "FunctionList.h"
 #define BUFFER_SIZE         (1024*1024*2)
 
 #if defined( __GNUC__ )
@@ -223,6 +224,8 @@ int compareFloats(float x, float y);
 int compareDoubles(double x, double y);
 
 void logFunctionInfo(const char *fname, unsigned int float_size, unsigned int isFastRelaxed);
+
+float getAllowedUlpError(const Func *f, const bool relaxed);
 
 #endif /* UTILITY_H */
 

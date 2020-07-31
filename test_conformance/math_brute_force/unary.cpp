@@ -463,20 +463,12 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
     cl_uint scale = job->scale;
     cl_uint base = job_id * (cl_uint) job->step;
     ThreadInfo *tinfo = job->tinfo + thread_id;
-    float   ulps = job->ulps;
     fptr    func = job->f->func;
     const char * fname = job->f->name;
     bool relaxedMode = job->relaxedMode;
+    float ulps = getAllowedUlpError(job->f, relaxedMode);
     if (relaxedMode)
     {
-        if (gIsEmbedded)
-        {
-            ulps = job->f->float_embedded_relaxed_ulps;
-        }
-        else
-        {
-            ulps = job->f->relaxed_error;
-        }
         func = job->f->rfunc;
     }
 

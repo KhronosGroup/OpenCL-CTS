@@ -208,28 +208,12 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
     cl_uchar overflow[BUFFER_SIZE / sizeof( float )];
     int isFract = 0 == strcmp( "fract", f->nameInCode );
     int skipNanInf = isFract  && ! gInfNanSupport;
-    float float_ulps;
+    float float_ulps = getAllowedUlpError(f, relaxedMode);
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
     if( gWimpyMode )
     {
         step = (1ULL<<32) * gWimpyReductionFactor / (512);
-    }
-    if( gIsEmbedded )
-        float_ulps = f->float_embedded_ulps;
-    else
-        float_ulps = f->float_ulps;
-
-    if (relaxedMode)
-    {
-        if (gIsEmbedded)
-        {
-            float_ulps = f->float_embedded_relaxed_ulps;
-        }
-        else
-        {
-            float_ulps = f->relaxed_error;
-        }
     }
 
     // Init the kernels

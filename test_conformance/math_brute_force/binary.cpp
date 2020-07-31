@@ -500,10 +500,10 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
     size_t      buffer_size = buffer_elements * sizeof( cl_float );
     cl_uint     base = job_id * (cl_uint) job->step;
     ThreadInfo  *tinfo = job->tinfo + thread_id;
-    float       ulps = job->ulps;
     fptr        func = job->f->func;
     int         ftz = job->ftz;
     bool relaxedMode = job->relaxedMode;
+    float ulps = getAllowedUlpError(job->f, relaxedMode);
     MTdata      d = tinfo->d;
     cl_uint     j, k;
     cl_int      error;
@@ -528,14 +528,6 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
       }else
       {
         func = job->f->rfunc;
-        if (gIsEmbedded)
-        {
-            ulps = job->f->float_embedded_relaxed_ulps;
-        }
-        else
-        {
-            ulps = job->f->relaxed_error;
-        }
       }
     }
 

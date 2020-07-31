@@ -167,3 +167,32 @@ void logFunctionInfo(const char *fname, unsigned int float_size, unsigned int is
     vlog("%15s %4s %4s",fname, fpSizeStr, fpFastRelaxedStr);
 }
 
+float getAllowedUlpError(const Func *f, const bool relaxed)
+{
+    float ulp;
+
+    if (relaxed)
+    {
+        if (gIsEmbedded)
+        {
+            ulp = f->float_embedded_relaxed_ulps;
+        }
+        else
+        {
+            ulp = f->relaxed_error;
+        }
+    }
+    else
+    {
+        if (gIsEmbedded)
+        {
+            ulp = f->float_embedded_ulps;
+        }
+        else
+        {
+            ulp = f->float_ulps;
+        }
+    }
+
+    return ulp;
+}
