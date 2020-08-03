@@ -28,6 +28,7 @@ set(${MODULE_NAME}_SOURCES
          test_clone_kernel.cpp
          test_zero_sized_enqueue.cpp
          test_context_destructor_callback.cpp
+         test_queue_array_properties.cpp
 )
 
 include(../CMakeCommon.txt)
