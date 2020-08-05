@@ -89,8 +89,7 @@ int test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_comman
             return error;
         }
 
-        if (max_num_sub_groups == 0
-            || !is_extension_available(deviceID, "cl_khr_subgroups"))
+        if (max_num_sub_groups == 0)
         {
             return TEST_SKIPPED_ITSELF;
         }
