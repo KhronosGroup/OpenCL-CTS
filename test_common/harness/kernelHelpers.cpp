@@ -28,6 +28,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <thread>
 
 #if defined(_WIN32)
 std::string slash = "\\";
@@ -167,6 +168,12 @@ static std::string get_unique_filename_prefix(unsigned int numKernelLines,
                                               const char *buildOptions)
 {
     std::string kernel = get_kernel_content(numKernelLines, kernelProgram);
+    // Data races can occur in the filesystem if multiple threads in the thread
+    // pool read and write to a file with the same name, so here we include
+    // the thread ID in the hash.
+    std::stringstream ss{};
+    ss << std::this_thread::get_id();
+    kernel += ss.str();
     std::string kernelName = get_kernel_name(kernel);
     cl_uint kernelCrc = crc32(kernel.data(), kernel.size());
     std::ostringstream oss;
