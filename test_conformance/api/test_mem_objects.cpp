@@ -26,14 +26,9 @@ void CL_CALLBACK mem_destructor_callback(cl_mem memObject, void *userData)
     *userPtr = ++sDestructorIndex;
 }
 
-#ifndef ABS
-#define ABS(x) ((x < 0) ? -x : x)
-#endif
-
 int test_mem_object_destructor_callback_single(clMemWrapper &memObject)
 {
     cl_int error;
-    int i;
 
     // Set up some variables to catch the order in which callbacks are called
     volatile int callbackOrders[3] = { 0, 0, 0 };
@@ -62,7 +57,7 @@ int test_mem_object_destructor_callback_single(clMemWrapper &memObject)
 
     // At this point, all three callbacks should have already been called
     int numErrors = 0;
-    for (i = 0; i < 3; i++)
+    for (int i = 0; i < 3; i++)
     {
         // Spin waiting for the release to finish.  If you don't call the
         // mem_destructor_callback, you will not pass the test.  bugzilla 6316
@@ -81,16 +76,16 @@ int test_mem_object_destructor_callback_single(clMemWrapper &memObject)
             }
         }
 
-        if (ABS(callbackOrders[i]) != 3 - i)
+        if (callbackOrders[i] != 3 - i)
         {
             log_error("\tERROR: Callback %d was called in the wrong order! "
                       "(Was called order %d, should have been order %d)\n",
-                      i + 1, ABS(callbackOrders[i]), i);
+                      i + 1, callbackOrders[i], 3 - i);
             numErrors++;
         }
     }
 
-    return (numErrors > 0) ? -1 : 0;
+    return (numErrors > 0) ? TEST_FAIL : TEST_PASS;
 }
 
 int test_mem_object_destructor_callback(cl_device_id deviceID,
@@ -106,10 +101,10 @@ int test_mem_object_destructor_callback(cl_device_id deviceID,
     testBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, 1024, NULL, &error);
     test_error(error, "Unable to create testing buffer");
 
-    if (test_mem_object_destructor_callback_single(testBuffer) != 0)
+    if (test_mem_object_destructor_callback_single(testBuffer) != TEST_PASS)
     {
         log_error("ERROR: Destructor callbacks for buffer object FAILED\n");
-        return -1;
+        return TEST_FAIL;
     }
 
     if (checkForImageSupport(deviceID) == 0)
@@ -119,12 +114,12 @@ int test_mem_object_destructor_callback(cl_device_id deviceID,
                                     16, 0, NULL, &error);
         test_error(error, "Unable to create testing image");
 
-        if (test_mem_object_destructor_callback_single(testImage) != 0)
+        if (test_mem_object_destructor_callback_single(testImage) != TEST_PASS)
         {
             log_error("ERROR: Destructor callbacks for image object FAILED\n");
-            return -1;
+            return TEST_FAIL;
         }
     }
 
-    return 0;
+    return TEST_PASS;
 }

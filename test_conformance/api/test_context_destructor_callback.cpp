@@ -26,10 +26,6 @@ void CL_CALLBACK context_destructor_callback(cl_context context, void *userData)
     *userPtr = ++sDestructorIndex;
 }
 
-#ifndef ABS
-#define ABS(x) ((x < 0) ? -x : x)
-#endif
-
 int test_context_destructor_callback(cl_device_id deviceID, cl_context context,
                                      cl_command_queue queue, int num_elements)
 {
@@ -37,8 +33,6 @@ int test_context_destructor_callback(cl_device_id deviceID, cl_context context,
     clContextWrapper localContext =
         clCreateContext(NULL, 1, &deviceID, NULL, NULL, &error);
     test_error(error, "Unable to create local context");
-
-    int i;
 
     // Set up some variables to catch the order in which callbacks are called
     volatile int callbackOrders[3] = { 0, 0, 0 };
@@ -67,7 +61,7 @@ int test_context_destructor_callback(cl_device_id deviceID, cl_context context,
 
     // At this point, all three callbacks should have already been called
     int numErrors = 0;
-    for (i = 0; i < 3; i++)
+    for (int i = 0; i < 3; i++)
     {
         // Spin waiting for the release to finish.  If you don't call the
         // context_destructor_callback, you will not pass the test.
@@ -86,14 +80,14 @@ int test_context_destructor_callback(cl_device_id deviceID, cl_context context,
             }
         }
 
-        if (ABS(callbackOrders[i]) != 3 - i)
+        if (callbackOrders[i] != 3 - i)
         {
             log_error("\tERROR: Callback %d was called in the wrong order! "
                       "(Was called order %d, should have been order %d)\n",
-                      i + 1, ABS(callbackOrders[i]), i);
+                      i + 1, callbackOrders[i], 3 - i);
             numErrors++;
         }
     }
 
-    return (numErrors > 0) ? -1 : 0;
+    return (numErrors > 0) ? TEST_FAIL : TEST_PASS;
 }
