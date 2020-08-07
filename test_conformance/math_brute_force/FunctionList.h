@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -85,10 +85,10 @@ typedef struct Func
   float           double_ulps;
   float           float_embedded_ulps;
   float           relaxed_error;
+  float relaxed_embedded_error;
   int             ftz;
   int             relaxed;
   const vtbl      *vtbl_ptr;
-  float float_embedded_relaxed_ulps;
 }Func;
 
 

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,26 +30,26 @@
 #define ENTRY(_name, _ulp, _embedded_ulp, _rmode, _type)                       \
     {                                                                          \
         STRINGIFY(_name), STRINGIFY(_name), { NULL }, { NULL }, { NULL },      \
-            _ulp, _ulp, _embedded_ulp, INFINITY, _rmode, RELAXED_OFF, _type,   \
-            INFINITY                                                           \
+            _ulp, _ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,             \
+            RELAXED_OFF, _type                                                 \
     }
 #define ENTRY_EXT(_name, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, _type,     \
                   _relaxed_embedded_ulp)                                       \
     {                                                                          \
         STRINGIFY(_name), STRINGIFY(_name), { NULL }, { NULL }, { NULL },      \
-            _ulp, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, RELAXED_ON,       \
-            _type, _relaxed_embedded_ulp                                       \
+            _ulp, _ulp, _embedded_ulp, _relaxed_ulp, _relaxed_embedded_ulp,    \
+            _rmode, RELAXED_ON, _type                                          \
     }
 #define HALF_ENTRY(_name, _ulp, _embedded_ulp, _rmode, _type)                  \
     {                                                                          \
         "half_" STRINGIFY(_name), "half_" STRINGIFY(_name), { NULL },          \
-            { NULL }, { NULL }, _ulp, _ulp, _embedded_ulp, INFINITY, _rmode,   \
-            RELAXED_OFF, _type, INFINITY                                       \
+            { NULL }, { NULL }, _ulp, _ulp, _embedded_ulp, INFINITY, INFINITY, \
+            _rmode, RELAXED_OFF, _type                                         \
     }
 #define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _rmode, _type)   \
     {                                                                          \
         STRINGIFY(_name), _operator, { NULL }, { NULL }, { NULL }, _ulp, _ulp, \
-            _embedded_ulp, INFINITY, _rmode, RELAXED_OFF, _type, INFINITY      \
+            _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
     }
 #define unaryF                NULL
 #define i_unaryF              NULL
@@ -78,8 +78,8 @@
     {                                                                          \
         STRINGIFY(_name), STRINGIFY(_name), { (void*)reference_##_name },      \
             { (void*)reference_##_name##l }, { (void*)reference_##_name },     \
-            _ulp, _ulp, _embedded_ulp, INFINITY, _rmode, RELAXED_OFF, _type,   \
-            INFINITY                                                           \
+            _ulp, _ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,             \
+            RELAXED_OFF, _type                                                 \
     }
 #define ENTRY_EXT(_name, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, _type,     \
                   _relaxed_embedded_ulp)                                       \
@@ -87,19 +87,19 @@
         STRINGIFY(_name), STRINGIFY(_name), { (void*)reference_##_name },      \
             { (void*)reference_##_name##l },                                   \
             { (void*)reference_##relaxed_##_name }, _ulp, _ulp, _embedded_ulp, \
-            _relaxed_ulp, _rmode, RELAXED_ON, _type, _relaxed_embedded_ulp     \
+            _relaxed_ulp, _relaxed_embedded_ulp, _rmode, RELAXED_ON, _type     \
     }
 #define HALF_ENTRY(_name, _ulp, _embedded_ulp, _rmode, _type)                  \
     {                                                                          \
         "half_" STRINGIFY(_name), "half_" STRINGIFY(_name),                    \
             { (void*)reference_##_name }, { NULL }, { NULL }, _ulp, _ulp,      \
-            _embedded_ulp, INFINITY, _rmode, RELAXED_OFF, _type, INFINITY      \
+            _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
     }
 #define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _rmode, _type)   \
     {                                                                          \
         STRINGIFY(_name), _operator, { (void*)reference_##_name },             \
             { (void*)reference_##_name##l }, { NULL }, _ulp, _ulp,             \
-            _embedded_ulp, INFINITY, _rmode, RELAXED_OFF, _type, INFINITY      \
+            _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
     }
 
 extern const vtbl _unary;               // float foo( float )
@@ -243,6 +243,7 @@ const Func functionList[] = {
       0.0f,
       4.0f,
       INFINITY,
+      INFINITY,
       FTZ_OFF,
       RELAXED_OFF,
       unaryF },
@@ -254,6 +255,7 @@ const Func functionList[] = {
       0.0f,
       0.0f,
       0.0f,
+      INFINITY,
       INFINITY,
       FTZ_OFF,
       RELAXED_OFF,
@@ -297,6 +299,7 @@ const Func functionList[] = {
       0.0f,
       3.0f,
       2.5f,
+      INFINITY,
       FTZ_OFF,
       RELAXED_ON,
       binaryOperatorF },
@@ -309,6 +312,7 @@ const Func functionList[] = {
       0.0f,
       0.0f,
       0.f,
+      INFINITY,
       FTZ_OFF,
       RELAXED_OFF,
       binaryOperatorF },

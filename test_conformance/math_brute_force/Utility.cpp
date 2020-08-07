@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "Utility.h"
+#include "FunctionList.h"
 
 #if defined(__PPC__)
 // Global varaiable used to hold the FPU control register state. The FPSCR register can not
@@ -175,7 +176,7 @@ float getAllowedUlpError(const Func *f, const bool relaxed)
     {
         if (gIsEmbedded)
         {
-            ulp = f->float_embedded_relaxed_ulps;
+            ulp = f->relaxed_embedded_error;
         }
         else
         {
