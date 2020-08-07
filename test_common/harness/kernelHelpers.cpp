@@ -28,12 +28,15 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <mutex>
 
 #if defined(_WIN32)
 std::string slash = "\\";
 #else
 std::string slash = "/";
 #endif
+
+static std::mutex gCompilerMutex;
 
 static cl_int get_first_device_id(const cl_context context, cl_device_id &device);
 
@@ -717,6 +720,8 @@ static int create_single_kernel_helper_create_program(cl_context context,
                                                       const bool openclCXX,
                                                       CompilationMode compilationMode)
 {
+    std::lock_guard<std::mutex> compiler_lock(gCompilerMutex);
+
     std::string filePrefix = get_unique_filename_prefix(numKernelLines,
                                                         kernelProgram,
                                                         buildOptions);
