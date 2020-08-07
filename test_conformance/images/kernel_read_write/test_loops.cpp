@@ -186,14 +186,15 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
     static int printedFormatList = -1;
 
 
-    if ( ( 0 == is_extension_available( device, "cl_khr_3d_image_writes" )) && (imageType == CL_MEM_OBJECT_IMAGE3D) && (formatTestFn == test_write_image_formats) )
+    if ( (imageType == CL_MEM_OBJECT_IMAGE3D) && (formatTestFn == test_write_image_formats) )
     {
-        gFailCount++;
-        log_error( "-----------------------------------------------------\n" );
-        log_error( "FAILED: test writing CL_MEM_OBJECT_IMAGE3D images\n" );
-        log_error( "This device does not support the mandated extension cl_khr_3d_image_writes.\n");
-        log_error( "-----------------------------------------------------\n\n" );
-        return -1;
+        if ( 0 == is_extension_available( device, "cl_khr_3d_image_writes" ))
+        {
+            log_info( "-----------------------------------------------------\n" );
+            log_info( "This device does not support cl_khr_3d_image_writes.\nSkipping 3d image write test. \n" );
+            log_info( "-----------------------------------------------------\n\n" );
+            return 0;
+        }
     }
 
     if ( gTestMipmaps )
