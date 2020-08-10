@@ -17,7 +17,7 @@
 
 static volatile cl_int sDestructorIndex;
 
-void CL_CALLBACK mem_destructor_callback(cl_mem memObject, void *userData)
+void CL_CALLBACK context_destructor_callback(cl_context context, void *userData)
 {
     int *userPtr = (int *)userData;
 
@@ -26,41 +26,45 @@ void CL_CALLBACK mem_destructor_callback(cl_mem memObject, void *userData)
     *userPtr = ++sDestructorIndex;
 }
 
-int test_mem_object_destructor_callback_single(clMemWrapper &memObject)
+int test_context_destructor_callback(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue, int num_elements)
 {
     cl_int error;
+    clContextWrapper localContext =
+        clCreateContext(NULL, 1, &deviceID, NULL, NULL, &error);
+    test_error(error, "Unable to create local context");
 
     // Set up some variables to catch the order in which callbacks are called
     volatile int callbackOrders[3] = { 0, 0, 0 };
     sDestructorIndex = 0;
 
     // Set up the callbacks
-    error = clSetMemObjectDestructorCallback(memObject, mem_destructor_callback,
-                                             (void *)&callbackOrders[0]);
+    error = clSetContextDestructorCallback(
+        localContext, context_destructor_callback, (void *)&callbackOrders[0]);
     test_error(error, "Unable to set destructor callback");
 
-    error = clSetMemObjectDestructorCallback(memObject, mem_destructor_callback,
-                                             (void *)&callbackOrders[1]);
+    error = clSetContextDestructorCallback(
+        localContext, context_destructor_callback, (void *)&callbackOrders[1]);
     test_error(error, "Unable to set destructor callback");
 
-    error = clSetMemObjectDestructorCallback(memObject, mem_destructor_callback,
-                                             (void *)&callbackOrders[2]);
+    error = clSetContextDestructorCallback(
+        localContext, context_destructor_callback, (void *)&callbackOrders[2]);
     test_error(error, "Unable to set destructor callback");
 
-    // Now release the buffer, which SHOULD call the callbacks
-    error = clReleaseMemObject(memObject);
-    test_error(error, "Unable to release test buffer");
+    // Now release the context, which SHOULD call the callbacks
+    error = clReleaseContext(localContext);
+    test_error(error, "Unable to release local context");
 
-    // Note: since we manually released the mem wrapper, we need to set it to
-    // NULL to prevent a double-release
-    memObject = NULL;
+    // Note: since we manually released the context, we need to set it to NULL
+    // to prevent a double-release
+    localContext = NULL;
 
     // At this point, all three callbacks should have already been called
     int numErrors = 0;
     for (int i = 0; i < 3; i++)
     {
         // Spin waiting for the release to finish.  If you don't call the
-        // mem_destructor_callback, you will not pass the test.  bugzilla 6316
+        // context_destructor_callback, you will not pass the test.
         log_info("\tWaiting for callback %d...\n", i);
         int wait = 0;
         while (0 == callbackOrders[i])
@@ -86,40 +90,4 @@ int test_mem_object_destructor_callback_single(clMemWrapper &memObject)
     }
 
     return (numErrors > 0) ? TEST_FAIL : TEST_PASS;
-}
-
-int test_mem_object_destructor_callback(cl_device_id deviceID,
-                                        cl_context context,
-                                        cl_command_queue queue,
-                                        int num_elements)
-{
-    clMemWrapper testBuffer, testImage;
-    cl_int error;
-
-
-    // Create a buffer and an image to test callbacks against
-    testBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, 1024, NULL, &error);
-    test_error(error, "Unable to create testing buffer");
-
-    if (test_mem_object_destructor_callback_single(testBuffer) != TEST_PASS)
-    {
-        log_error("ERROR: Destructor callbacks for buffer object FAILED\n");
-        return TEST_FAIL;
-    }
-
-    if (checkForImageSupport(deviceID) == 0)
-    {
-        cl_image_format imageFormat = { CL_RGBA, CL_SIGNED_INT8 };
-        testImage = create_image_2d(context, CL_MEM_READ_ONLY, &imageFormat, 16,
-                                    16, 0, NULL, &error);
-        test_error(error, "Unable to create testing image");
-
-        if (test_mem_object_destructor_callback_single(testImage) != TEST_PASS)
-        {
-            log_error("ERROR: Destructor callbacks for image object FAILED\n");
-            return TEST_FAIL;
-        }
-    }
-
-    return TEST_PASS;
 }
