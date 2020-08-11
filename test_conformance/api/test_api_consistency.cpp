@@ -90,7 +90,8 @@ int test_consistency_svm(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-static int check_atomic_capabilities(cl_device_atomic_capabilities atomicCaps, cl_device_atomic_capabilities requiredCaps)
+static int check_atomic_capabilities(cl_device_atomic_capabilities atomicCaps,
+                                     cl_device_atomic_capabilities requiredCaps)
 {
     if ((atomicCaps & requiredCaps) != requiredCaps)
     {
@@ -251,7 +252,9 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
 
         error =
             clGetCommandQueueInfo(queue, CL_QUEUE_SIZE, sizeof(u), &u, NULL);
-        test_error(error, "Unable to query CL_QUEUE_SIZE");
+        // TODO: is this a valid query?  See:
+        // https://github.com/KhronosGroup/OpenCL-Docs/issues/402
+        // test_error(error, "Unable to query CL_QUEUE_SIZE");
 
         cl_command_queue q = NULL;
         error = clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE_DEFAULT, sizeof(q),
@@ -301,6 +304,87 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
                           "CL_FALSE\n");
                 return TEST_FAIL;
             }
+        }
+    }
+
+    return TEST_PASS;
+}
+
+int test_consistency_pipes(cl_device_id deviceID, cl_context context,
+                           cl_command_queue queue, int num_elements)
+{
+    // clGetDeviceInfo, passing CL_DEVICE_PIPE_SUPPORT
+    // May return CL_FALSE, indicating that device does not support Pipes.
+    int error;
+
+    cl_bool pipeSupport = CL_FALSE;
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_PIPE_SUPPORT,
+                            sizeof(pipeSupport), &pipeSupport, NULL);
+    test_error(error, "Unable to query CL_DEVICE_PIPE_SUPPORT");
+
+    if (pipeSupport == CL_FALSE)
+    {
+        // clGetDeviceInfo, passing
+        // CL_DEVICE_MAX_PIPE_ARGS,
+        // CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS, or
+        // CL_DEVICE_PIPE_MAX_PACKET_SIZE
+        // Returns 0 if device does not support Pipes.
+
+        cl_uint u = 0;
+
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_PIPE_ARGS, sizeof(u),
+                                &u, NULL);
+        test_error(error, "Unable to query CL_DEVICE_MAX_PIPE_ARGS");
+        if (u != 0)
+        {
+            log_info("Check: DEVICE_PIPE_SUPPORT is CL_FALSE, but "
+                     "MAX_PIPE_ARGS is nonzero?\n");
+        }
+
+        error =
+            clGetDeviceInfo(deviceID, CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS,
+                            sizeof(u), &u, NULL);
+        test_error(error,
+                   "Unable to query CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS");
+        if (u != 0)
+        {
+            log_info("Check: DEVICE_PIPE_SUPPORT is CL_FALSE, but "
+                     "PIPE_MAX_ACTIVE_RESERVATIONS is nonzero?\n");
+        }
+
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_PIPE_MAX_PACKET_SIZE,
+                                sizeof(u), &u, NULL);
+        test_error(error, "Unable to query CL_DEVICE_PIPE_MAX_PACKET_SIZE");
+        if (u != 0)
+        {
+            log_info("Check: DEVICE_PIPE_SUPPORT is CL_FALSE, but "
+                     "PIPE_MAX_PACKET_SIZE is nonzero?\n");
+        }
+
+        // Check that clCreatePipe can be called.
+        // This will probably return an error.
+        clMemWrapper mem = clCreatePipe(context, 0, 0, 0, NULL, &error);
+
+        // Check that clGetPipeInfo can be called.
+        // This will probably return an error.
+        clGetPipeInfo(mem, CL_PIPE_PACKET_SIZE, sizeof(u), &u, NULL);
+    }
+    else
+    {
+        // Devices that support pipes must also return CL_TRUE
+        // for CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT.
+        cl_bool b;
+        error =
+            clGetDeviceInfo(deviceID, CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT,
+                            sizeof(b), &b, NULL);
+        test_error(error,
+                   "Unable to query CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT");
+        if (b != CL_TRUE)
+        {
+            log_error("CL_DEVICE_PIPE_SUPPORT returned CL_TRUE but "
+                      "CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT returned "
+                      "CL_FALSE\n");
+            return TEST_FAIL;
         }
     }
 
