@@ -60,31 +60,98 @@ int test_consistency_svm(cl_device_id deviceID, cl_context context,
         test_error(error, "Unable to query CL_MEM_USES_SVM_POINTER");
 
         // Check that the SVM APIs can be called.
-        // It's OK if they return an error.
-        void* ptr0;
-        ptr0 = clSVMAlloc(context, CL_MEM_READ_WRITE, allocSize, 0);
 
-        void* ptr1;
-        ptr1 = clSVMAlloc(context, CL_MEM_READ_WRITE, allocSize, 0);
+        // Returns NULL if no devices in context support Shared Virtual Memory.
+        void* ptr0 = clSVMAlloc(context, CL_MEM_READ_WRITE, allocSize, 0);
+        void* ptr1 = clSVMAlloc(context, CL_MEM_READ_WRITE, allocSize, 0);
+        if (ptr0 != NULL || ptr1 != NULL)
+        {
+            log_error("CL_DEVICE_SVM_CAPABILITIES returned 0 but clSVMAlloc "
+                      "returned a non-NULL value\n");
+            return TEST_FAIL;
+        }
+
+        // clEnqueueSVMFree, clEnqueueSVMMemcpy, clEnqueueSVMMemFill,
+        // clEnqueueSVMMap, clEnqueueSVMUnmap, clEnqueueSVMMigrateMem Returns
+        // CL_INVALID_OPERATION if the device associated with command_queue does
+        // not support Shared Virtual Memory.
 
         cl_uint pattern = 0xAAAAAAAA;
-        clEnqueueSVMMemFill(queue, ptr0, &pattern, sizeof(pattern), allocSize,
-                            0, NULL, NULL);
-        clEnqueueSVMMemcpy(queue, CL_TRUE, ptr1, ptr0, allocSize, 0, NULL,
-                           NULL);
+        error = clEnqueueSVMMemFill(queue, ptr0, &pattern, sizeof(pattern),
+                                    allocSize, 0, NULL, NULL);
+        if (error != CL_INVALID_OPERATION)
+        {
+            log_error(
+                "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
+                "clEnqueueSVMMemFill did not return CL_INVALID_OPERATION\n");
+            return TEST_FAIL;
+        }
 
-        clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, ptr1, allocSize, 0, NULL,
-                        NULL);
-        clEnqueueSVMUnmap(queue, ptr1, 0, NULL, NULL);
+        error = clEnqueueSVMMemcpy(queue, CL_TRUE, ptr1, ptr0, allocSize, 0,
+                                   NULL, NULL);
+        if (error != CL_INVALID_OPERATION)
+        {
+            log_error(
+                "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
+                "clEnqueueSVMMemcpy did not return CL_INVALID_OPERATION\n");
+            return TEST_FAIL;
+        }
+
+        error = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, ptr1, allocSize, 0,
+                                NULL, NULL);
+        if (error != CL_INVALID_OPERATION)
+        {
+            log_error("CL_DEVICE_SVM_CAPABILITIES returned 0 but "
+                      "clEnqueueSVMMap did not return CL_INVALID_OPERATION\n");
+            return TEST_FAIL;
+        }
+
+        error = clEnqueueSVMUnmap(queue, ptr1, 0, NULL, NULL);
+        if (error != CL_INVALID_OPERATION)
+        {
+            log_error(
+                "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
+                "clEnqueueSVMUnmap did not return CL_INVALID_OPERATION\n");
+            return TEST_FAIL;
+        }
 
         error = clFinish(queue);
         test_error(error, "Error calling clFinish after SVM operations");
 
         clSVMFree(context, ptr0);
-        clEnqueueSVMFree(queue, 1, &ptr1, NULL, NULL, 0, NULL, NULL);
+        error = clEnqueueSVMFree(queue, 1, &ptr1, NULL, NULL, 0, NULL, NULL);
+        if (error != CL_INVALID_OPERATION)
+        {
+            log_error("CL_DEVICE_SVM_CAPABILITIES returned 0 but "
+                      "clEnqueueSVMFree did not return CL_INVALID_OPERATION\n");
+            return TEST_FAIL;
+        }
 
         error = clFinish(queue);
         test_error(error, "Error calling clFinish after SVM free");
+
+        // clSetKernelArgSVMPointer, clSetKernelExecInfo
+        // Returns CL_INVALID_OPERATION if no devices in the context associated
+        // with kernel support Shared Virtual Memory.
+
+        error = clSetKernelArgSVMPointer(kernel, 0, NULL);
+        if (error != CL_INVALID_OPERATION)
+        {
+            log_error("CL_DEVICE_SVM_CAPABILITIES returned 0 but "
+                      "clSetKernelArgSVMPointer did not return "
+                      "CL_INVALID_OPERATION\n");
+            return TEST_FAIL;
+        }
+
+        error =
+            clSetKernelExecInfo(kernel, CL_KERNEL_EXEC_INFO_SVM_PTRS, 0, NULL);
+        if (error != CL_INVALID_OPERATION)
+        {
+            log_error(
+                "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
+                "clSetKernelExecInfo did not return CL_INVALID_OPERATION\n");
+            return TEST_FAIL;
+        }
     }
 
     return TEST_PASS;
@@ -104,8 +171,6 @@ static int check_atomic_capabilities(cl_device_atomic_capabilities atomicCaps,
     if ((atomicCaps & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES) != 0
         && (atomicCaps & CL_DEVICE_ATOMIC_SCOPE_DEVICE) == 0)
     {
-        // It isn't an error to support ALL_DEVICES atomics but not DEVICE
-        // atomics, but it is strange.
         log_info("Check: ATOMIC_SCOPE_ALL_DEVICES is supported, but "
                  "ATOMIC_SCOPE_DEVICE is not?\n");
     }
@@ -113,10 +178,8 @@ static int check_atomic_capabilities(cl_device_atomic_capabilities atomicCaps,
     if ((atomicCaps & CL_DEVICE_ATOMIC_SCOPE_DEVICE) != 0
         && (atomicCaps & CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP) == 0)
     {
-        // It isn't an error to support DEVICE atomics but not WORK_GROUP
-        // atomics, but it is strange.
         log_info("Check: ATOMIC_SCOPE_DEVICE is supported, but "
-                 "ATOMIC_SCOPE_WORK_GROPU is not?\n");
+                 "ATOMIC_SCOPE_WORK_GROUP is not?\n");
     }
 
     return TEST_PASS;
@@ -184,10 +247,10 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
                    "Unable to query CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES");
         if (devQueueProps != 0)
         {
-            // It isn't an error to return nonzero device queue properties, but
-            // it is strange.
-            log_info("Check: DEVICE_ENQUEUE_CAPABILITIES is zero, but "
-                     "QUEUE_ON_DEVICE_PROPERTIES is nonzero?\n");
+            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+                      "CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES returned a "
+                      "non-zero value\n");
+            return TEST_FAIL;
         }
 
         // clGetDeviceInfo, passing
@@ -207,10 +270,10 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
                    "Unable to query CL_DEVICE_QUEUE_ON_DEVICE_PREFERRED_SIZE");
         if (u != 0)
         {
-            // It isn't an error to return a nonzero preferred device queue
-            // size, but it is strange.
-            log_info("Check: DEVICE_ENQUEUE_CAPABILITIES is zero, but "
-                     "​QUEUE_ON_DEVICE_PREFERRED_SIZE is nonzero?\n");
+            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+                      "CL_DEVICE_QUEUE_ON_DEVICE_PREFERRED_SIZE returned a "
+                      "non-zero value\n");
+            return TEST_FAIL;
         }
 
         error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE,
@@ -218,10 +281,10 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
         test_error(error, "Unable to query CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE");
         if (u != 0)
         {
-            // It isn't an error to return a nonzero preferred device queue
-            // size, but it is strange.
-            log_info("Check: DEVICE_ENQUEUE_CAPABILITIES is zero, but "
-                     "QUEUE_ON_DEVICE_MAX_SIZE is nonzero?\n");
+            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+                      "CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE returned a "
+                      "non-zero value\n");
+            return TEST_FAIL;
         }
 
         error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_ON_DEVICE_QUEUES,
@@ -229,10 +292,10 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
         test_error(error, "Unable to query CL_DEVICE_MAX_ON_DEVICE_QUEUES");
         if (u != 0)
         {
-            // It isn't an error to return a nonzero maximum number of on-device
-            // queues, but it is strange.
-            log_info("Check: DEVICE_ENQUEUE_CAPABILITIES is zero, but "
-                     "MAX_ON_DEVICE_QUEUES is nonzero?\n");
+            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+                      "CL_DEVICE_MAX_ON_DEVICE_QUEUES returned a "
+                      "non-zero value\n");
+            return TEST_FAIL;
         }
 
         error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_ON_DEVICE_EVENTS,
@@ -240,40 +303,68 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
         test_error(error, "Unable to query CL_DEVICE_MAX_ON_DEVICE_EVENTS");
         if (u != 0)
         {
-            // It isn't an error to return a nonzero maximum number of on-device
-            // events, but it is strange.
-            log_info("Check: DEVICE_ENQUEUE_CAPABILITIES is zero, but "
-                     "MAX_ON_DEVICE_EVENTS is nonzero?\n");
+            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+                      "CL_DEVICE_MAX_ON_DEVICE_EVENTS returned a "
+                      "non-zero value\n");
+            return TEST_FAIL;
         }
 
         // clGetCommandQueueInfo, passing CL_QUEUE_SIZE or
-        // CL_QUEUE_DEVICE_DEFAULT Returns 0 or NULL if the device associated
-        // with command_queue does not support On-Device Queues.
+        // CL_QUEUE_DEVICE_DEFAULT
+        // Returns 0 or NULL if the device associated with command_queue does
+        // not support On-Device Queues.
 
         error =
             clGetCommandQueueInfo(queue, CL_QUEUE_SIZE, sizeof(u), &u, NULL);
         // TODO: is this a valid query?  See:
         // https://github.com/KhronosGroup/OpenCL-Docs/issues/402
         // test_error(error, "Unable to query CL_QUEUE_SIZE");
+        if (error == CL_SUCCESS && u != 0)
+        {
+            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+                      "CL_QUEUE_SIZE returned a non-zero value\n");
+            return TEST_FAIL;
+        }
 
         cl_command_queue q = NULL;
         error = clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE_DEFAULT, sizeof(q),
                                       &q, NULL);
         test_error(error, "Unable to query CL_QUEUE_DEVICE_DEFAULT");
+        if (q != NULL)
+        {
+            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+                      "CL_QUEUE_DEVICE_DEFAULT returned a non-NULL value\n");
+            return TEST_FAIL;
+        }
 
-        // Check that clSetDefaultDeviceCommandQueue can be called.
-        // It's OK if it returns an error, and in fact it should, since NULL is
-        // not a valid device queue.
-        clSetDefaultDeviceCommandQueue(context, deviceID, NULL);
+        // clSetDefaultDeviceCommandQueue
+        // Returns CL_INVALID_OPERATION if device does not support On-Device
+        // Queues.
+        error = clSetDefaultDeviceCommandQueue(context, deviceID, NULL);
+        if (error != CL_INVALID_OPERATION)
+        {
+            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+                      "clSetDefaultDeviceCommandQueue did not return "
+                      "CL_INVALID_OPERATION\n");
+            return TEST_FAIL;
+        }
     }
     else
     {
         if ((dseCaps & CL_DEVICE_QUEUE_REPLACEABLE_DEFAULT) == 0)
         {
-            // Check that clSetDefaultDeviceCommandQueue can be called.
-            // It's OK if it returns an error, and in fact it should, since NULL
-            // is not a valid device queue.
-            clSetDefaultDeviceCommandQueue(context, deviceID, NULL);
+            // clSetDefaultDeviceCommandQueue
+            // Returns CL_INVALID_OPERATION if device does not support a
+            // replaceable default On-Device Queue.
+            error = clSetDefaultDeviceCommandQueue(context, deviceID, NULL);
+            if (error != CL_INVALID_OPERATION)
+            {
+                log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES did not "
+                          "include CL_DEVICE_QUEUE_REPLACEABLE_DEFAULT but "
+                          "clSetDefaultDeviceCommandQueue did not return "
+                          "CL_INVALID_OPERATION\n");
+                return TEST_FAIL;
+            }
         }
 
         // If CL_DEVICE_QUEUE_REPLACEABLE_DEFAULT is set,
@@ -337,8 +428,9 @@ int test_consistency_pipes(cl_device_id deviceID, cl_context context,
         test_error(error, "Unable to query CL_DEVICE_MAX_PIPE_ARGS");
         if (u != 0)
         {
-            log_info("Check: DEVICE_PIPE_SUPPORT is CL_FALSE, but "
-                     "MAX_PIPE_ARGS is nonzero?\n");
+            log_error("CL_DEVICE_PIPE_SUPPORT returned CL_FALSE, but "
+                      "CL_DEVICE_MAX_PIPE_ARGS returned a non-zero value\n");
+            return TEST_FAIL;
         }
 
         error =
@@ -348,8 +440,10 @@ int test_consistency_pipes(cl_device_id deviceID, cl_context context,
                    "Unable to query CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS");
         if (u != 0)
         {
-            log_info("Check: DEVICE_PIPE_SUPPORT is CL_FALSE, but "
-                     "PIPE_MAX_ACTIVE_RESERVATIONS is nonzero?\n");
+            log_error("CL_DEVICE_PIPE_SUPPORT returned CL_FALSE, but "
+                      "CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS returned a "
+                      "non-zero value\n");
+            return TEST_FAIL;
         }
 
         error = clGetDeviceInfo(deviceID, CL_DEVICE_PIPE_MAX_PACKET_SIZE,
@@ -357,17 +451,32 @@ int test_consistency_pipes(cl_device_id deviceID, cl_context context,
         test_error(error, "Unable to query CL_DEVICE_PIPE_MAX_PACKET_SIZE");
         if (u != 0)
         {
-            log_info("Check: DEVICE_PIPE_SUPPORT is CL_FALSE, but "
-                     "PIPE_MAX_PACKET_SIZE is nonzero?\n");
+            log_error(
+                "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE, but "
+                "CL_DEVICE_PIPE_MAX_PACKET_SIZE returned a non-zero value\n");
+            return TEST_FAIL;
         }
 
-        // Check that clCreatePipe can be called.
-        // This will probably return an error.
+        // clCreatePipe
+        // Returns CL_INVALID_OPERATION if no devices in context support Pipes.
         clMemWrapper mem = clCreatePipe(context, 0, 0, 0, NULL, &error);
+        if (error != CL_INVALID_OPERATION)
+        {
+            log_error("CL_DEVICE_PIPE_SUPPORT returned CL_FALSE but "
+                      "clCreatePipe did not return CL_INVALID_OPERATION\n");
+            return TEST_FAIL;
+        }
 
-        // Check that clGetPipeInfo can be called.
-        // This will probably return an error.
-        clGetPipeInfo(mem, CL_PIPE_PACKET_SIZE, sizeof(u), &u, NULL);
+        // clGetPipeInfo
+        // Returns CL_INVALID_MEM_OBJECT since pipe cannot be a valid pipe
+        // object.
+        error = clGetPipeInfo(mem, CL_PIPE_PACKET_SIZE, sizeof(u), &u, NULL);
+        if (error != CL_INVALID_MEM_OBJECT)
+        {
+            log_error("CL_DEVICE_PIPE_SUPPORT returned CL_FALSE but "
+                      "clGetPipeInfo did not return CL_INVALID_MEM_OBJECT\n");
+            return TEST_FAIL;
+        }
     }
     else
     {
