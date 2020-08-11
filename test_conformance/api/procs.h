@@ -131,3 +131,5 @@ extern int test_image_properties_queries(cl_device_id deviceID,
                                          int num_elements);
 
 extern int      test_consistency_svm( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+extern int      test_consistency_memory_model( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+extern int      test_consistency_device_enqueue( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
