@@ -442,10 +442,9 @@ int test_consistency_pipes(cl_device_id deviceID, cl_context context,
         // clCreatePipe
         // Returns CL_INVALID_OPERATION if no devices in context support Pipes.
         clMemWrapper mem = clCreatePipe(context, 0, 0, 0, NULL, &error);
-        test_failure_error(
-            error, CL_INVALID_OPERATION,
-            "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE but "
-            "clCreatePipe did not return CL_INVALID_OPERATION");
+        test_failure_error(error, CL_INVALID_OPERATION,
+                           "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE but "
+                           "clCreatePipe did not return CL_INVALID_OPERATION");
 
         // clGetPipeInfo
         // Returns CL_INVALID_MEM_OBJECT since pipe cannot be a valid pipe
