@@ -21,8 +21,6 @@
 #endif
 
 
-
-
 const char *known_extensions[] = {
     "cl_khr_byte_addressable_store",
     "cl_khr_3d_image_writes",
@@ -45,7 +43,8 @@ const char *known_extensions[] = {
     "cl_khr_srgb_image_writes",
     "cl_khr_subgroup_named_barrier",
 
-    //API-only extensions after this point.  If you add above here, modify first_API_extension below.
+    // API-only extensions after this point.  If you add above here, modify
+    // first_API_extension below.
     "cl_khr_icd",
     "cl_khr_gl_sharing",
     "cl_khr_gl_event",
@@ -64,6 +63,7 @@ const char *known_extensions[] = {
     "cl_khr_throttle_hints",
     "cl_khr_spirv_no_integer_wrap_decoration",
     "cl_khr_extended_versioning",
+    "cl_khr_device_uuid",
 };
 
 size_t num_known_extensions = sizeof(known_extensions)/sizeof(char*);
