@@ -87,7 +87,9 @@ test_wg_barrier(cl_device_id device, cl_context context, cl_command_queue queue,
     size_t max_threadgroup_size = 0;
     MTdata d;
 
-    err = create_single_kernel_helper_with_build_options(context, &program, &kernel, 1, &wg_barrier_kernel_code, "compute_sum", "-cl-std=CL2.0" );
+    err = create_single_kernel_helper_with_build_options(
+        context, &program, &kernel, 1, &wg_barrier_kernel_code, "compute_sum",
+        nullptr);
     test_error(err, "Failed to build kernel/program.");
 
     err = clGetKernelWorkGroupInfo(kernel, device, CL_KERNEL_WORK_GROUP_SIZE,

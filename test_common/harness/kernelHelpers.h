@@ -173,4 +173,12 @@ cl_device_fp_config get_default_rounding_mode( cl_device_id device );
 /* Prints out the standard device header for all tests given the device to print for */
 extern int printDeviceHeader( cl_device_id device );
 
+// Gets the latest (potentially non-backward compatible) OpenCL C version
+// supported by the device.
+Version get_device_cl_c_version(cl_device_id device);
+
+// Gets the maximum universally supported OpenCL C version in a context, i.e.
+// the OpenCL C version supported by all devices in a context.
+Version get_max_OpenCL_C_for_context(cl_context context);
+
 #endif // _kernelHelpers_h
