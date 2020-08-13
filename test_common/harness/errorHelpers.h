@@ -82,32 +82,32 @@
 #define test_failure_warning_ret(errCode, expectedErrCode, msg, retValue) { if( errCode != expectedErrCode ) { print_failure_warning( errCode, expectedErrCode, msg ); warnings++ ; } }
 #define print_failure_warning(errCode, expectedErrCode, msg) log_error( "WARNING: %s! (Got %s, expected %s from %s:%d)\n", msg, IGetErrorString( errCode ), IGetErrorString( expectedErrCode ), __FILE__, __LINE__ );
 
-// check for a specific boolean condition (not error code related)
-#define test_condition_error(condition, msg)                                   \
-    test_condition_error_ret(condition, msg, !condition)
-#define test_condition_error_ret(condition, msg, retValue)                     \
+// generate an error when an assertion is false (not error code related)
+#define test_assert_error(condition, msg)                                      \
+    test_assert_error_ret(condition, msg, TEST_FAIL)
+#define test_assert_error_ret(condition, msg, retValue)                        \
     {                                                                          \
-        if (!condition)                                                        \
+        if (!(condition))                                                      \
         {                                                                      \
-            print_condition_error(condition, msg);                             \
+            print_assertion_error(condition, msg);                             \
             return retValue;                                                   \
         }                                                                      \
     }
-#define print_condition_error(condition, msg)                                  \
+#define print_assertion_error(condition, msg)                                  \
     log_error("ERROR: %s! (!(%s) from %s:%d)\n", msg, #condition, __FILE__,    \
               __LINE__);
 
-#define ASSERT_SUCCESS(expr, msg)                                              \
-    do                                                                         \
-    {                                                                          \
-        cl_int _temp_retval = (expr);                                          \
-        if (_temp_retval != CL_SUCCESS)                                        \
-        {                                                                      \
-            std::stringstream ss;                                              \
-            ss << "ERROR: " << msg << "=" << IGetErrorString(_temp_retval)     \
-               << " at " << __FILE__ << ":" << __LINE__ << "\n";               \
-            throw std::runtime_error(ss.str());                                \
-        }                                                                      \
+#define ASSERT_SUCCESS(expr, msg)                                                                  \
+    do                                                                                             \
+    {                                                                                              \
+        cl_int _temp_retval = (expr);                                                              \
+        if (_temp_retval != CL_SUCCESS)                                                            \
+        {                                                                                          \
+            std::stringstream ss;                                                                  \
+            ss << "ERROR: " << msg << "=" << IGetErrorString(_temp_retval)                         \
+               << " at " << __FILE__ << ":" << __LINE__ << "\n";                                   \
+            throw std::runtime_error(ss.str());                                                    \
+        }                                                                                          \
     } while (0)
 
 extern const char    *IGetErrorString( int clErrorCode );

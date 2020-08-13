@@ -60,24 +60,18 @@ int test_consistency_svm(cl_device_id deviceID, cl_context context,
             clGetMemObjectInfo(mem, CL_MEM_USES_SVM_POINTER,
                                sizeof(usesSVMPointer), &usesSVMPointer, NULL);
         test_error(error, "Unable to query CL_MEM_USES_SVM_POINTER");
-        if (usesSVMPointer != CL_FALSE)
-        {
-            log_error("CL_DEVICE_SVM_CAPABILITIES returned 0 but "
-                      "CL_MEM_USES_SVM_POINTER did not return CL_FALSE\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(usesSVMPointer == CL_FALSE,
+                          "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
+                          "CL_MEM_USES_SVM_POINTER did not return CL_FALSE");
 
         // Check that the SVM APIs can be called.
 
         // Returns NULL if no devices in context support Shared Virtual Memory.
         void* ptr0 = clSVMAlloc(context, CL_MEM_READ_WRITE, allocSize, 0);
         void* ptr1 = clSVMAlloc(context, CL_MEM_READ_WRITE, allocSize, 0);
-        if (ptr0 != NULL || ptr1 != NULL)
-        {
-            log_error("CL_DEVICE_SVM_CAPABILITIES returned 0 but clSVMAlloc "
-                      "returned a non-NULL value\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(ptr0 == NULL && ptr1 == NULL,
+                          "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
+                          "clSVMAlloc returned a non-NULL value");
 
         // clEnqueueSVMFree, clEnqueueSVMMemcpy, clEnqueueSVMMemFill,
         // clEnqueueSVMMap, clEnqueueSVMUnmap, clEnqueueSVMMigrateMem Returns
@@ -239,13 +233,10 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
                                 sizeof(devQueueProps), &devQueueProps, NULL);
         test_error(error,
                    "Unable to query CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES");
-        if (devQueueProps != 0)
-        {
-            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
-                      "CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES returned a "
-                      "non-zero value\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(
+            devQueueProps == 0,
+            "CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+            "CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES returned a non-zero value");
 
         // clGetDeviceInfo, passing
         // CL_DEVICE_QUEUE_ON_DEVICE_PREFERRED_SIZE,
@@ -262,46 +253,34 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
                             sizeof(u), &u, NULL);
         test_error(error,
                    "Unable to query CL_DEVICE_QUEUE_ON_DEVICE_PREFERRED_SIZE");
-        if (u != 0)
-        {
-            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
-                      "CL_DEVICE_QUEUE_ON_DEVICE_PREFERRED_SIZE returned a "
-                      "non-zero value\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(u == 0,
+                          "CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 "
+                          "but CL_DEVICE_QUEUE_ON_DEVICE_PREFERRED_SIZE "
+                          "returned a non-zero value");
 
         error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE,
                                 sizeof(u), &u, NULL);
         test_error(error, "Unable to query CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE");
-        if (u != 0)
-        {
-            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
-                      "CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE returned a "
-                      "non-zero value\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(
+            u == 0,
+            "CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+            "CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE returned a non-zero value");
 
         error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_ON_DEVICE_QUEUES,
                                 sizeof(u), &u, NULL);
         test_error(error, "Unable to query CL_DEVICE_MAX_ON_DEVICE_QUEUES");
-        if (u != 0)
-        {
-            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
-                      "CL_DEVICE_MAX_ON_DEVICE_QUEUES returned a "
-                      "non-zero value\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(
+            u == 0,
+            "CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+            "CL_DEVICE_MAX_ON_DEVICE_QUEUES returned a non-zero value");
 
         error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_ON_DEVICE_EVENTS,
                                 sizeof(u), &u, NULL);
         test_error(error, "Unable to query CL_DEVICE_MAX_ON_DEVICE_EVENTS");
-        if (u != 0)
-        {
-            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
-                      "CL_DEVICE_MAX_ON_DEVICE_EVENTS returned a "
-                      "non-zero value\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(
+            u == 0,
+            "CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+            "CL_DEVICE_MAX_ON_DEVICE_EVENTS returned a non-zero value");
 
         // clGetCommandQueueInfo, passing CL_QUEUE_SIZE or
         // CL_QUEUE_DEVICE_DEFAULT
@@ -324,12 +303,10 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
         error = clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE_DEFAULT, sizeof(q),
                                       &q, NULL);
         test_error(error, "Unable to query CL_QUEUE_DEVICE_DEFAULT");
-        if (q != NULL)
-        {
-            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
-                      "CL_QUEUE_DEVICE_DEFAULT returned a non-NULL value\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(
+            q == NULL,
+            "CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+            "CL_QUEUE_DEVICE_DEFAULT returned a non-NULL value");
 
         // clSetDefaultDeviceCommandQueue
         // Returns CL_INVALID_OPERATION if device does not support On-Device
@@ -377,13 +354,10 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
             test_error(
                 error,
                 "Unable to query CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT");
-            if (b != CL_TRUE)
-            {
-                log_error("DEVICE_QUEUE_SUPPORTED is set but "
-                          "CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT returned "
-                          "CL_FALSE\n");
-                return TEST_FAIL;
-            }
+            test_assert_error(
+                b == CL_TRUE,
+                "DEVICE_QUEUE_SUPPORTED is set but "
+                "CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT returned CL_FALSE");
         }
     }
 
@@ -415,36 +389,27 @@ int test_consistency_pipes(cl_device_id deviceID, cl_context context,
         error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_PIPE_ARGS, sizeof(u),
                                 &u, NULL);
         test_error(error, "Unable to query CL_DEVICE_MAX_PIPE_ARGS");
-        if (u != 0)
-        {
-            log_error("CL_DEVICE_PIPE_SUPPORT returned CL_FALSE, but "
-                      "CL_DEVICE_MAX_PIPE_ARGS returned a non-zero value\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(u == 0,
+                          "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE, but "
+                          "CL_DEVICE_MAX_PIPE_ARGS returned a non-zero value");
 
         error =
             clGetDeviceInfo(deviceID, CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS,
                             sizeof(u), &u, NULL);
         test_error(error,
                    "Unable to query CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS");
-        if (u != 0)
-        {
-            log_error("CL_DEVICE_PIPE_SUPPORT returned CL_FALSE, but "
-                      "CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS returned a "
-                      "non-zero value\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(u == 0,
+                          "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE, but "
+                          "CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS returned "
+                          "a non-zero value");
 
         error = clGetDeviceInfo(deviceID, CL_DEVICE_PIPE_MAX_PACKET_SIZE,
                                 sizeof(u), &u, NULL);
         test_error(error, "Unable to query CL_DEVICE_PIPE_MAX_PACKET_SIZE");
-        if (u != 0)
-        {
-            log_error(
-                "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE, but "
-                "CL_DEVICE_PIPE_MAX_PACKET_SIZE returned a non-zero value\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(
+            u == 0,
+            "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE, but "
+            "CL_DEVICE_PIPE_MAX_PACKET_SIZE returned a non-zero value");
 
         // clCreatePipe
         // Returns CL_INVALID_OPERATION if no devices in context support Pipes.
@@ -473,13 +438,10 @@ int test_consistency_pipes(cl_device_id deviceID, cl_context context,
                             sizeof(b), &b, NULL);
         test_error(error,
                    "Unable to query CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT");
-        if (b != CL_TRUE)
-        {
-            log_error("CL_DEVICE_PIPE_SUPPORT returned CL_TRUE but "
-                      "CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT returned "
-                      "CL_FALSE\n");
-            return TEST_FAIL;
-        }
+        test_assert_error(
+            b == CL_TRUE,
+            "CL_DEVICE_PIPE_SUPPORT returned CL_TRUE but "
+            "CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT returned CL_FALSE");
     }
 
     return TEST_PASS;
@@ -522,7 +484,7 @@ int test_consistency_progvar(cl_device_id deviceID, cl_context context,
         test_error(
             error,
             "Unable to query CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE");
-        test_condition_error(
+        test_assert_error(
             sz == 0,
             "CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE returned 0 but "
             "CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE returned a "
@@ -535,10 +497,10 @@ int test_consistency_progvar(cl_device_id deviceID, cl_context context,
         error = clGetProgramBuildInfo(
             program, deviceID, CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE,
             sizeof(sz), &sz, NULL);
-        test_condition_error(sz == 0,
-                             "CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE returned 0 "
-                             "but CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE "
-                             "returned a non-zero value");
+        test_assert_error(sz == 0,
+                          "CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE returned 0 "
+                          "but CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE "
+                          "returned a non-zero value");
     }
 
     return TEST_PASS;
