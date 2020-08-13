@@ -20,6 +20,8 @@
 
 #include <math.h>
 
+#include <CL/cl_half.h>
+
 static RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
 
 
