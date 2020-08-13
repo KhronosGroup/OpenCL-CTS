@@ -23,6 +23,7 @@
 #include "../funcs_test_utils.hpp"
 
 #include "half_utils.hpp"
+#include <CL/cl_half.h>
 
 // Generates cl_half input
 std::vector<cl_half> generate_half_input(size_t count,
@@ -36,7 +37,7 @@ std::vector<cl_half> generate_half_input(size_t count,
     std::uniform_real_distribution<cl_float> dis(min, max);
     for(auto& i : input)
     {
-        i = float2half_rte(dis(gen));
+        i = cl_half_from_float(dis(gen), CL_HALF_RTE);
     }
 
     input.insert(input.begin(), special_cases.begin(), special_cases.end());

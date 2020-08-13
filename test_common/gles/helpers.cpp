@@ -961,49 +961,6 @@ const char *GetGLFormatName( GLenum format )
     }
 }
 
-cl_ushort float2half_rte( float f )
-{
-    union{ float f; cl_uint u; } u = {f};
-    cl_uint sign = (u.u >> 16) & 0x8000;
-    float x = fabsf(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (24-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-    }
-
-    // overflow
-    if( x >= MAKE_HEX_FLOAT(0x1.ffep15f, 0x1ffeL, 3) )
-        return 0x7c00 | sign;
-
-    // underflow
-    if( x <= MAKE_HEX_FLOAT(0x1.0p-25f, 0x1L, -25) )
-        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-    // very small
-    if( x < MAKE_HEX_FLOAT(0x1.8p-24f, 0x18L, -28) )
-        return sign | 1;
-
-    // half denormal
-    if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-    {
-        u.f = x * MAKE_HEX_FLOAT(0x1.0p-125f, 0x1L, -125);
-        return sign | u.u;
-    }
-
-    u.f *= MAKE_HEX_FLOAT(0x1.0p13f, 0x1L, 13);
-    u.u &= 0x7f800000;
-    x += u.f;
-    u.f = x - u.f;
-    u.f *= MAKE_HEX_FLOAT(0x1.0p-112f, 0x1L, -112);
-
-    return (u.u >> (24-11)) | sign;
-}
-
 void* CreateRandomData( ExplicitType type, size_t count, MTdata d )
 {
     switch(type)
@@ -1100,7 +1057,7 @@ void* CreateRandomData( ExplicitType type, size_t count, MTdata d )
 
             for( size_t i = 0; i < count; i++ )
             {
-                p[ i ] = float2half_rte(get_random_float( 0.f, 1.f, d ));
+                p[ i ] = cl_half_from_float(get_random_float( 0.f, 1.f, d ), CL_HALF_RTE);
             }
 
             return (void*)p;

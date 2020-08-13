@@ -23,6 +23,8 @@
 
 #include "common.hpp"
 
+#include <CL/cl_half.h>
+
 // -----------------------------------------------------------------------------------
 // ------------- ONLY FOR OPENCL 22 CONFORMANCE TEST 22 DEVELOPMENT ------------------
 // -----------------------------------------------------------------------------------
@@ -263,7 +265,7 @@ struct vload_half_func : public unary_func<
         Iterator temp = x + static_cast<diff_type>(offset * N);
         for(size_t i = 0; i < N; i++)
         {
-            r.s[i] = half2float(*temp);
+            r.s[i] = cl_half_to_float(*temp);
             temp++;
         }
         return r;
@@ -309,7 +311,7 @@ struct vloada_half_func : public unary_func<
         Iterator temp = x + static_cast<diff_type>(offset * alignment);
         for(size_t i = 0; i < N; i++)
         {
-            r.s[i] = half2float(*temp);
+            r.s[i] = cl_half_to_float(*temp);
             temp++;
         }
         return r;

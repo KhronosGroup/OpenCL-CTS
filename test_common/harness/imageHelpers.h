@@ -41,6 +41,8 @@
 #include "rounding_mode.h"
 #include "clImageHelper.h"
 
+#include <CL/cl_half.h>
+
 extern cl_device_type gDeviceType;
 extern bool gTestRounding;
 
@@ -154,7 +156,6 @@ size_t compute_mip_level_offset( image_descriptor * imageInfo , size_t lod);
 template <class T> void read_image_pixel( void *imageData, image_descriptor *imageInfo,
                                          int x, int y, int z, T *outData, int lod )
 {
-    float convert_half_to_float( unsigned short halfValue );
     size_t width_lod = imageInfo->width, height_lod = imageInfo->height, depth_lod = imageInfo->depth, slice_pitch_lod = 0/*imageInfo->slicePitch*/ , row_pitch_lod = 0/*imageInfo->rowPitch*/;
     width_lod = ( imageInfo->width >> lod) ?( imageInfo->width >> lod):1;
 
@@ -278,7 +279,7 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
         {
             cl_ushort *dPtr = (cl_ushort *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
-                tempData[ i ] = (T)convert_half_to_float( dPtr[ i ] );
+                tempData[ i ] = (T)cl_half_to_float( dPtr[ i ] );
             break;
         }
 
@@ -648,9 +649,6 @@ static int inline is_half_denorm( cl_ushort half ){ return IsHalfSubnormal( half
 
 // sign bit: don't care, exponent: zero, significand: zero
 static int inline is_half_zero( cl_ushort half ){ return ( half & 0x7fff ) == 0; }
-
-cl_ushort convert_float_to_half( cl_float f );
-cl_float  convert_half_to_float( cl_ushort h );
 
 extern double sRGBmap(float fc);
 
