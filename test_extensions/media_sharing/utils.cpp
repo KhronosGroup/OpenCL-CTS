@@ -775,14 +775,18 @@ bool DataCompare( TSurfaceFormat surfaceFormat, cl_channel_type type, const std:
         {
           for(unsigned planeIdx = 0; planeIdx < channelNum; ++planeIdx)
           {
-            float test = cl_half_to_float(dataTest.at(offset + j * channelNum + planeIdx));
-            float ref = cl_half_to_float(dataExp.at(offset + j * channelNum + planeIdx));
-            if (abs(test - ref) > epsilon)
-            {
-              log_error("Tested image is different than reference (x,y,plane) = (%i,%i,%i), test value = %f, expected value = %f\n",
-                j, i, planeIdx, test, ref);
-              return false;
-            }
+              float test = cl_half_to_float(
+                  dataTest.at(offset + j * channelNum + planeIdx));
+              float ref = cl_half_to_float(
+                  dataExp.at(offset + j * channelNum + planeIdx));
+              if (abs(test - ref) > epsilon)
+              {
+                  log_error(
+                      "Tested image is different than reference (x,y,plane) = "
+                      "(%i,%i,%i), test value = %f, expected value = %f\n",
+                      j, i, planeIdx, test, ref);
+                  return false;
+              }
           }
         }
       }

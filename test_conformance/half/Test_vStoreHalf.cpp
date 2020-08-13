@@ -210,35 +210,43 @@ CheckD(cl_uint jid, cl_uint tid, void *userInfo)
     return ret;
 }
 
-static cl_ushort float2half_rte( float f ) {
+static cl_ushort float2half_rte(float f)
+{
     return cl_half_from_float(f, CL_HALF_RTE);
 }
 
-static cl_ushort float2half_rtz( float f ) {
+static cl_ushort float2half_rtz(float f)
+{
     return cl_half_from_float(f, CL_HALF_RTZ);
 }
 
-static cl_ushort float2half_rtp( float f ) {
+static cl_ushort float2half_rtp(float f)
+{
     return cl_half_from_float(f, CL_HALF_RTP);
 }
 
-static cl_ushort float2half_rtn( float f ) {
+static cl_ushort float2half_rtn(float f)
+{
     return cl_half_from_float(f, CL_HALF_RTN);
 }
 
-static cl_ushort double2half_rte( double f ) {
+static cl_ushort double2half_rte(double f)
+{
     return cl_half_from_double(f, CL_HALF_RTE);
 }
 
-static cl_ushort double2half_rtz( double f ) {
+static cl_ushort double2half_rtz(double f)
+{
     return cl_half_from_double(f, CL_HALF_RTZ);
 }
 
-static cl_ushort double2half_rtp( double f ) {
+static cl_ushort double2half_rtp(double f)
+{
     return cl_half_from_double(f, CL_HALF_RTP);
 }
 
-static cl_ushort double2half_rtn( double f ) {
+static cl_ushort double2half_rtn(double f)
+{
     return cl_half_from_double(f, CL_HALF_RTN);
 }
 

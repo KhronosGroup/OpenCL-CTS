@@ -368,7 +368,7 @@ char * convert_to_expected( void * inputBuffer, size_t numPixels, ExplicitType i
                 cl_float *outData = new cl_float[ numPixels * channelNum ];
                 for( size_t i = 0; i < numPixels * channelNum; i++ )
                 {
-                    outData[ i ] = cl_half_to_float(src[ i ]);
+                    outData[i] = cl_half_to_float(src[i]);
                 }
                 return (char *)outData;
             }

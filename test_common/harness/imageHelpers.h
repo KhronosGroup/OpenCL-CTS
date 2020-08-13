@@ -279,7 +279,7 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
         {
             cl_ushort *dPtr = (cl_ushort *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
-                tempData[ i ] = (T)cl_half_to_float( dPtr[ i ] );
+                tempData[i] = (T)cl_half_to_float(dPtr[i]);
             break;
         }
 

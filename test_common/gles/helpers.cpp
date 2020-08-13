@@ -1057,7 +1057,8 @@ void* CreateRandomData( ExplicitType type, size_t count, MTdata d )
 
             for( size_t i = 0; i < count; i++ )
             {
-                p[ i ] = cl_half_from_float(get_random_float( 0.f, 1.f, d ), CL_HALF_RTE);
+                p[i] = cl_half_from_float(get_random_float(0.f, 1.f, d),
+                                          CL_HALF_RTE);
             }
 
             return (void*)p;

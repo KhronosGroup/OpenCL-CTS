@@ -912,10 +912,8 @@ cl_ushort convert_float_to_half( float f )
 {
     switch( gFloatToHalfRoundingMode )
     {
-        case kRoundToNearestEven:
-            return cl_half_from_float(f, CL_HALF_RTE);
-        case kRoundTowardZero:
-            return cl_half_from_float(f, CL_HALF_RTZ);
+        case kRoundToNearestEven: return cl_half_from_float(f, CL_HALF_RTE);
+        case kRoundTowardZero: return cl_half_from_float(f, CL_HALF_RTZ);
         default:
             log_error( "ERROR: Test internal error -- unhandled or unknown float->half rounding mode.\n" );
             exit(-1);
@@ -997,8 +995,8 @@ TEST::TEST()
             log_info( "\n******** ERROR: MyVal %04x control %04x source %12.24f\n", myval, control, test.f );
             log_info( "         source bits: %08x   %a\n", test.i, test.f );
             float t, c;
-            c = cl_half_to_float( control );
-            t = cl_half_to_float( myval );
+            c = cl_half_to_float(control);
+            t = cl_half_to_float(myval);
             log_info( "         converted control: %12.24f myval: %12.24f\n", c, t );
         }
         test.i++;
@@ -1352,7 +1350,7 @@ void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
         {
             cl_ushort *dPtr = (cl_ushort *)ptr;
             for( i = 0; i < channelCount; i++ )
-                tempData[ i ] = cl_half_to_float( dPtr[ i ] );
+                tempData[i] = cl_half_to_float(dPtr[i]);
             break;
         }
 
@@ -2472,11 +2470,11 @@ void pack_image_pixel( float *srcVector, const cl_image_format *imageFormat, voi
             {
                 case kRoundToNearestEven:
             for( unsigned int i = 0; i < channelCount; i++ )
-                        ptr[ i ] = cl_half_from_float( srcVector[ i ], CL_HALF_RTE );
+                ptr[i] = cl_half_from_float(srcVector[i], CL_HALF_RTE);
             break;
                 case kRoundTowardZero:
                     for( unsigned int i = 0; i < channelCount; i++ )
-                        ptr[ i ] = cl_half_from_float( srcVector[ i ], CL_HALF_RTZ );
+                        ptr[i] = cl_half_from_float(srcVector[i], CL_HALF_RTZ);
                     break;
                 default:
                     log_error( "ERROR: Test internal error -- unhandled or unknown float->half rounding mode.\n" );
@@ -2925,8 +2923,8 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
         cl_ushort rtz_ref[count*4];
         for( size_t i = 0; i < 4 * count; i++ )
         {
-            rte_ref[i] = cl_half_from_float( inp[i], CL_HALF_RTE );
-            rtz_ref[i] = cl_half_from_float( inp[i], CL_HALF_RTZ );
+            rte_ref[i] = cl_half_from_float(inp[i], CL_HALF_RTE);
+            rtz_ref[i] = cl_half_from_float(inp[i], CL_HALF_RTZ);
         }
 
     // Verify that we got something in either rtz or rte mode

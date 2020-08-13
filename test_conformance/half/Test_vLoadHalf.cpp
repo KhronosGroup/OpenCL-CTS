@@ -445,8 +445,7 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
         //create the reference result
         const unsigned short *s = (const unsigned short *)gIn_half;
         float *d = (float *)gOut_single_reference;
-        for( j = 0; j < count; j++ )
-            d[j] = cl_half_to_float( s[j] );
+        for (j = 0; j < count; j++) d[j] = cl_half_to_float(s[j]);
 
         //Check the vector lengths
         for( vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
