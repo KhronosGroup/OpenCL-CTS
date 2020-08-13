@@ -42,6 +42,8 @@ int test_consistency_svm(cl_device_id deviceID, cl_context context,
 
     if (svmCaps == 0)
     {
+        // Test setup:
+
         mem =
             clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
         test_error(error, "Unable to create test buffer");
@@ -110,8 +112,9 @@ int test_consistency_svm(cl_device_id deviceID, cl_context context,
             "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
             "clEnqueueSVMUnmap did not return CL_INVALID_OPERATION");
 
-        error = clFinish(queue);
-        test_error(error, "Error calling clFinish after SVM operations");
+        // If the enqueue calls above did not return errors, a clFinish would be
+        // needed here to ensure the SVM operations are complete before freeing
+        // the SVM pointers.
 
         clSVMFree(context, ptr0);
         error = clEnqueueSVMFree(queue, 1, &ptr1, NULL, NULL, 0, NULL, NULL);
@@ -120,8 +123,8 @@ int test_consistency_svm(cl_device_id deviceID, cl_context context,
             "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
             "clEnqueueSVMFree did not return CL_INVALID_OPERATION");
 
-        error = clFinish(queue);
-        test_error(error, "Error calling clFinish after SVM free");
+        // If the enqueue calls above did not return errors, a clFinish should
+        // be included here to ensure the enqueued SVM free is complete.
 
         // clSetKernelArgSVMPointer, clSetKernelExecInfo
         // Returns CL_INVALID_OPERATION if no devices in the context associated
