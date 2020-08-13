@@ -58,6 +58,24 @@ int verify_if_properties_supported(
         log_info("\tCL_DEVICE_QUEUE_SUPPORTED false, skipped\n");
         return TEST_SKIPPED_ITSELF;
     }
+    else if ((device_enqueue_caps & CL_DEVICE_QUEUE_SUPPORTED)
+             && requested_size > 0)
+    {
+        cl_uint max_packet_size = 0;
+        error =
+            clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE,
+                            sizeof(max_packet_size), &max_packet_size, NULL);
+        test_error(
+            error,
+            "clGetDeviceInfo for CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE failed");
+        if (requested_size > max_packet_size)
+        {
+            log_info("The value of CL_QUEUE_SIZE = %d cannot be bigger than "
+                     "CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE = %d, skipped\n",
+                     requested_size, max_packet_size);
+            return TEST_SKIPPED_ITSELF;
+        }
+    }
     for (auto check_property : all_properties)
     {
         if (check_property & requested_bitfield)
@@ -127,12 +145,6 @@ int create_queue_and_check_array_properties(
         error,
         "clGetCommandQueueInfo failed asking for CL_QUEUE_PROPERTIES_ARRAY");
 
-    if (get_properties.size() == 1 && get_properties[0] == 0
-        && test_case.properties.size() == 0)
-    {
-        return TEST_PASS;
-    }
-
     if (get_properties.back() != 0)
     {
         log_error("ERROR: Incorrect last property value - should be 0!\n");
@@ -182,7 +194,7 @@ int run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
     clCommandQueueWrapper queue;
     std::vector<cl_queue_properties> requested_properties =
         test_case.properties;
-
+    log_info("TC description: %s\n", test_case.description.c_str());
     // first verify if user properties are supported
     if (requested_properties.size() != 0)
     {
