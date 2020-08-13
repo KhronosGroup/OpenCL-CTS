@@ -16,6 +16,7 @@
 #include "utils.h"
 
 #include "harness/errorHelpers.h"
+#include "harness/imageHelpers.h"
 #include "harness/rounding_mode.h"
 
 #include <math.h>

@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "helpers.h"
-#include "../harness/imageHelpers.h"
+#include "harness/imageHelpers.h"
 
 #if defined( __APPLE__ )
     #include <OpenGL/glu.h>

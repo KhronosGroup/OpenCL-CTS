@@ -639,6 +639,7 @@ protected:
     size_t    mVecSize;
 };
 
+extern cl_ushort convert_float_to_half(float f);
 extern int  DetectFloatToHalfRoundingMode( cl_command_queue );  // Returns CL_SUCCESS on success
 
 // sign bit: don't care, exponent: maximum value, significand: non-zero
