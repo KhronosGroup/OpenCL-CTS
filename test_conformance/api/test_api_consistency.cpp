@@ -484,3 +484,62 @@ int test_consistency_pipes(cl_device_id deviceID, cl_context context,
 
     return TEST_PASS;
 }
+
+int test_consistency_progvar(cl_device_id deviceID, cl_context context,
+                             cl_command_queue queue, int num_elements)
+{
+    // clGetDeviceInfo, passing CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE
+    // May return 0, indicating that device does not support Program Scope
+    // Global Variables.
+    int error;
+
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    size_t maxGlobalVariableSize = 0;
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE,
+                            sizeof(maxGlobalVariableSize),
+                            &maxGlobalVariableSize, NULL);
+    test_error(error, "Unable to query CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE");
+
+    if (maxGlobalVariableSize == 0)
+    {
+        // Test setup:
+
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &test_kernel, "test");
+        test_error(error, "Unable to create test kernel");
+
+        size_t sz = 0;
+
+        // clGetDeviceInfo, passing
+        // CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE Returns 0 if device
+        // does not support Program Scope Global Variables.
+
+        error = clGetDeviceInfo(deviceID,
+                                CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE,
+                                sizeof(sz), &sz, NULL);
+        test_error(
+            error,
+            "Unable to query CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE");
+        test_condition_error(
+            sz == 0,
+            "CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE returned 0 but "
+            "CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE returned a "
+            "non-zero value");
+
+        // clGetProgramBuildInfo, passing
+        // CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE Returns 0 if device does
+        // not support Program Scope Global Variables.
+
+        error = clGetProgramBuildInfo(
+            program, deviceID, CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE,
+            sizeof(sz), &sz, NULL);
+        test_condition_error(sz == 0,
+                             "CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE returned 0 "
+                             "but CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE "
+                             "returned a non-zero value");
+    }
+
+    return TEST_PASS;
+}

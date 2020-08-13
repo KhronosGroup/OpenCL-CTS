@@ -129,6 +129,7 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(consistency_memory_model, Version(3, 0)),
     ADD_TEST_VERSION(consistency_device_enqueue, Version(3, 0)),
     ADD_TEST_VERSION(consistency_pipes, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_progvar, Version(3, 0)),
 };
 
 const int test_num = ARRAY_SIZE(test_list);
