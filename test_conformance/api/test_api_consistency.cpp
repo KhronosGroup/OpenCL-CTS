@@ -631,9 +631,9 @@ int test_consistency_read_write_images(cl_device_id deviceID,
     int error;
 
     cl_uint maxReadWriteImageArgs = 0;
-    error = clGetDeviceInfo(
-        deviceID, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
-        sizeof(maxReadWriteImageArgs), &maxReadWriteImageArgs, NULL);
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
+                            sizeof(maxReadWriteImageArgs),
+                            &maxReadWriteImageArgs, NULL);
     test_error(error,
                "Unable to query "
                "CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS");
@@ -704,18 +704,17 @@ int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
     clMemWrapper image;
 
     cl_uint imagePitchAlignment = 0;
-    error = clGetDeviceInfo(
-        deviceID, CL_DEVICE_IMAGE_PITCH_ALIGNMENT,
-        sizeof(imagePitchAlignment), &imagePitchAlignment, NULL);
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_IMAGE_PITCH_ALIGNMENT,
+                            sizeof(imagePitchAlignment), &imagePitchAlignment,
+                            NULL);
     test_error(error,
                "Unable to query "
                "CL_DEVICE_IMAGE_PITCH_ALIGNMENT");
 
     cl_uint imageBaseAddressAlignment = 0;
-    error = clGetDeviceInfo(
-        deviceID, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT,
-        sizeof(imageBaseAddressAlignment),
-        &imageBaseAddressAlignment, NULL);
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT,
+                            sizeof(imageBaseAddressAlignment),
+                            &imageBaseAddressAlignment, NULL);
     test_error(error,
                "Unable to query "
                "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT");
@@ -726,20 +725,19 @@ int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
         // supported.
 
         // Test setup:
-        buffer = clCreateBuffer(context, CL_MEM_READ_ONLY, bufferSize, NULL, &error);
+        buffer =
+            clCreateBuffer(context, CL_MEM_READ_ONLY, bufferSize, NULL, &error);
         test_error(error, "Unable to create test buffer");
 
         // Check that both queries return zero:
-        test_assert_error(
-            imagePitchAlignment == 0,
-            "CL_DEVICE_IMAGE_PITCH_ALIGNMENT returned a non-zero "
-            "value but CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT "
-            "returned 0");
-        test_assert_error(
-            imagePitchAlignment == 0,
-            "CL_DEVICE_IMAGE_PITCH_ALIGNMENT returned 0 but "
-            "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT returned a "
-            "non-zero value");
+        test_assert_error(imagePitchAlignment == 0,
+                          "CL_DEVICE_IMAGE_PITCH_ALIGNMENT returned a non-zero "
+                          "value but CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT "
+                          "returned 0");
+        test_assert_error(imagePitchAlignment == 0,
+                          "CL_DEVICE_IMAGE_PITCH_ALIGNMENT returned 0 but "
+                          "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT returned a "
+                          "non-zero value");
 
         bool supports_cl_khr_image2d_from_buffer =
             is_extension_available(deviceID, "cl_khr_image2d_from_buffer");
@@ -797,7 +795,8 @@ int test_consistency_device_and_host_timer(cl_device_id deviceID,
     int error;
 
     cl_platform_id platform = NULL;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform),
+                            &platform, NULL);
     test_error(error, "Unable to query CL_DEVICE_PLATFORM");
 
     cl_ulong hostTimerResolution = 0;
@@ -820,7 +819,7 @@ int test_consistency_device_and_host_timer(cl_device_id deviceID,
             error, CL_INVALID_OPERATION,
             "CL_PLATFORM_HOST_TIMER_RESOLUTION returned 0 but "
             "clGetDeviceAndHostTimer did not return CL_INVALID_OPERATION");
-        
+
         error = clGetHostTimer(deviceID, &ht);
         test_failure_error(
             error, CL_INVALID_OPERATION,
@@ -858,7 +857,8 @@ int test_consistency_il_programs(cl_device_id deviceID, cl_context context,
 
     if (ilVersion == "" || sz == 0)
     {
-        // This probably means that Intermediate Language Programs are not supported.
+        // This probably means that Intermediate Language Programs are not
+        // supported.
 
         // Check that both queries are consistent:
         test_assert_error(
@@ -904,8 +904,7 @@ int test_consistency_il_programs(cl_device_id deviceID, cl_context context,
         test_assert_error(ab == 32 || ab == 64,
                           "Unexpected value for CL_DEVICE_ADDRESS_BITS");
 
-        ct_assert(sizeof(empty_spirv_kernel32)
-                  == sizeof(empty_spirv_kernel64));
+        ct_assert(sizeof(empty_spirv_kernel32) == sizeof(empty_spirv_kernel64));
 
         const cl_uchar* empty_spirv_kernel =
             (ab == 32) ? empty_spirv_kernel32 : empty_spirv_kernel64;
