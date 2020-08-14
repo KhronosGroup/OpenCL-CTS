@@ -85,7 +85,13 @@ const char    *IGetErrorString( int clErrorCode )
         case CL_INVALID_IMAGE_DESCRIPTOR: return "CL_INVALID_IMAGE_DESCRIPTOR";
         case CL_INVALID_COMPILER_OPTIONS: return "CL_INVALID_COMPILER_OPTIONS";
         case CL_INVALID_LINKER_OPTIONS: return "CL_INVALID_LINKER_OPTIONS";
-        case CL_INVALID_DEVICE_PARTITION_COUNT: return "CL_INVALID_DEVICE_PARTITION_COUNT";
+        case CL_INVALID_DEVICE_PARTITION_COUNT:
+            return "CL_INVALID_DEVICE_PARTITION_COUNT";
+        case CL_INVALID_PIPE_SIZE: return "CL_INVALID_PIPE_SIZE";
+        case CL_INVALID_DEVICE_QUEUE: return "CL_INVALID_DEVICE_QUEUE";
+        case CL_INVALID_SPEC_ID: return "CL_INVALID_SPEC_ID";
+        case CL_MAX_SIZE_RESTRICTION_EXCEEDED:
+            return "CL_MAX_SIZE_RESTRICTION_EXCEEDED";
         default: return "(unknown)";
     }
 }
