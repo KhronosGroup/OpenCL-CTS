@@ -528,7 +528,7 @@ int test_consistency_non_uniform_work_group(cl_device_id deviceID,
     test_error(error,
                "Unable to query CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT");
 
-    if (true || nonUniformWorkGroupSupport == CL_FALSE)
+    if (nonUniformWorkGroupSupport == CL_FALSE)
     {
         // Test setup:
 
@@ -585,6 +585,69 @@ int test_consistency_non_uniform_work_group(cl_device_id deviceID,
             error, CL_INVALID_WORK_GROUP_SIZE,
             "CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT returned CL_FALSE but 3D "
             "clEnqueueNDRangeKernel did not return CL_INVALID_WORK_GROUP_SIZE");
+    }
+
+    return TEST_PASS;
+}
+
+int test_consistency_read_write_images(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue, int num_elements)
+{
+    // clGetDeviceInfo, passing
+    // CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS May return 0,
+    // indicating that device does not support Read-Write Images.
+    int error;
+
+    cl_uint maxReadWriteImageArgs = 0;
+    error = clGetDeviceInfo(
+        deviceID, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
+        sizeof(maxReadWriteImageArgs), &maxReadWriteImageArgs, NULL);
+    test_error(error,
+               "Unable to query "
+               "CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS");
+
+    // clGetSupportedImageFormats, passing
+    // CL_MEM_KERNEL_READ_AND_WRITE
+    // Returns an empty set (such as num_image_formats equal to 0), indicating
+    // that no image formats are supported for reading and writing in the same
+    // kernel, if no devices in context support Read-Write Images.
+
+    cl_uint totalReadWriteImageFormats = 0;
+
+    const cl_mem_object_type image_types[] = {
+        CL_MEM_OBJECT_IMAGE1D,       CL_MEM_OBJECT_IMAGE1D_BUFFER,
+        CL_MEM_OBJECT_IMAGE2D,       CL_MEM_OBJECT_IMAGE3D,
+        CL_MEM_OBJECT_IMAGE1D_ARRAY, CL_MEM_OBJECT_IMAGE2D_ARRAY,
+    };
+    for (int i = 0; i < ARRAY_SIZE(image_types); i++)
+    {
+        cl_uint numImageFormats = 0;
+        error = clGetSupportedImageFormats(
+            context, CL_MEM_KERNEL_READ_AND_WRITE, image_types[i], 0, NULL,
+            &numImageFormats);
+        test_error(error,
+                   "Unable to query number of CL_MEM_KERNEL_READ_AND_WRITE "
+                   "image formats");
+
+        totalReadWriteImageFormats += numImageFormats;
+    }
+
+    if (maxReadWriteImageArgs == 0)
+    {
+        test_assert_error(
+            totalReadWriteImageFormats == 0,
+            "CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS returned 0 "
+            "but clGetSupportedImageFormats(CL_MEM_KERNEL_READ_AND_WRITE) "
+            "returned a non-empty set");
+    }
+    else
+    {
+        test_assert_error(
+            totalReadWriteImageFormats != 0,
+            "CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS is non-zero "
+            "but clGetSupportedImageFormats(CL_MEM_KERNEL_READ_AND_WRITE) "
+            "returned an empty set");
     }
 
     return TEST_PASS;
