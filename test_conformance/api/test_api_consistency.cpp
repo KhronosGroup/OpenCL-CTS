@@ -874,7 +874,7 @@ int test_consistency_il_programs(cl_device_id deviceID, cl_context context,
             is_extension_available(deviceID, "cl_khr_il_program");
         test_assert_error(supports_cl_khr_il_program == false,
                           "Device does not support IL Programs but does "
-                          "support supports_cl_khr_il_program");
+                          "support cl_khr_il_program");
 
         // Test setup:
 
@@ -927,6 +927,71 @@ int test_consistency_il_programs(cl_device_id deviceID, cl_context context,
                            "Device does not support IL Programs but "
                            "clSetProgramSpecializationConstant did not return "
                            "CL_INVALID_PROGRAM");
+    }
+
+    return TEST_PASS;
+}
+
+int test_consistency_subgroups(cl_device_id deviceID, cl_context context,
+                               cl_command_queue queue, int num_elements)
+{
+    // clGetDeviceInfo, passing CL_DEVICE_MAX_NUM_SUB_GROUPS
+    // May return 0, indicating that device does not support Subgroups.
+    int error;
+
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    cl_uint maxNumSubGroups = 0;
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_NUM_SUB_GROUPS,
+                            sizeof(maxNumSubGroups), &maxNumSubGroups, NULL);
+    test_error(error, "Unable to query CL_DEVICE_MAX_NUM_SUB_GROUPS");
+
+    if (maxNumSubGroups == 0)
+    {
+        // Test setup:
+
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &test_kernel, "test");
+        test_error(error, "Unable to create test kernel");
+
+        // clGetDeviceInfo, passing
+        // CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS
+        // Returns CL_FALSE if device does not support Subgroups.
+
+        cl_bool ifp = CL_FALSE;
+        error = clGetDeviceInfo(
+            deviceID, CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
+            sizeof(ifp), &ifp, NULL);
+        test_error(
+            error,
+            "Unable to query CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS");
+        test_assert_error(ifp == CL_FALSE,
+                          "Device does not support Subgroups but "
+                          "CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS "
+                          "did not return CL_FALSE");
+
+        // clGetDeviceInfo, passing CL_DEVICE_EXTENSIONS
+        // Will not describe support for the cl_khr_subgroups extension if
+        // device does not support Subgroups.
+
+        bool supports_cl_khr_subgroups =
+            is_extension_available(deviceID, "cl_khr_subgroups");
+        test_assert_error(supports_cl_khr_subgroups == false,
+                          "Device does not support Subgroups but does "
+                          "support cl_khr_subgroups");
+
+        // clGetKernelSubGroupInfo
+        // Returns CL_INVALID_OPERATION if device does not support Subgroups.
+
+        size_t sz = 0;
+        error = clGetKernelSubGroupInfo(kernel, deviceID,
+                                        CL_KERNEL_MAX_NUM_SUB_GROUPS, 0, NULL,
+                                        sizeof(sz), &sz, NULL);
+        test_failure_error(
+            error, CL_INVALID_OPERATION,
+            "Device does not support Subgroups but clGetKernelSubGroupInfo did "
+            "not return CL_INVALID_OPERATION");
     }
 
     return TEST_PASS;

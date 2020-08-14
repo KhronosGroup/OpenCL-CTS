@@ -164,3 +164,5 @@ extern int test_consistency_il_programs(cl_device_id deviceID,
                                         cl_context context,
                                         cl_command_queue queue,
                                         int num_elements);
+extern int test_consistency_subgroups(cl_device_id deviceID, cl_context context,
+                                      cl_command_queue queue, int num_elements);
