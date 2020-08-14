@@ -206,8 +206,8 @@ static Long sLowerLimits[ kNumExplicitTypes ] =
         -1,
         -128, 0, 0,
         -32768, 0, 0,
-        0xffffffff80000000LL, 0, 0,
-        0x8000000000000000LL, 0, 0,
+        (Long)0xffffffff80000000LL, 0, 0,
+        (Long)0x8000000000000000LL, 0, 0,
         0, 0 };    // Last two values aren't stored here
 
 #define BOOL_CASE(inType) \
