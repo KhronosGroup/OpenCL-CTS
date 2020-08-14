@@ -16,15 +16,14 @@
 #ifndef TEST_CONFORMANCE_CLCPP_VLOAD_VSTORE_FUNCS_VSTORE_FUNCS_HPP
 #define TEST_CONFORMANCE_CLCPP_VLOAD_VSTORE_FUNCS_VSTORE_FUNCS_HPP
 
-#include "../common.hpp"
-#include "../funcs_test_utils.hpp"
-
 #include <iterator>
 
 #include "../common.hpp"
 #include "../funcs_test_utils.hpp"
 
 #include "common.hpp"
+
+#include <CL/cl_half.h>
 
 // -----------------------------------------------------------------------------------
 // ------------- ONLY FOR OPENCL 22 CONFORMANCE TEST 22 DEVELOPMENT ------------------
@@ -240,7 +239,7 @@ struct vstore_half_func : public unary_func<
         result_type r;
         for(size_t i = 0; i < N; i++)
         {
-            r.s[i] = float2half_rte(in.s[i]);
+            r.s[i] = cl_half_from_float(in.s[i], CL_HALF_RTE);
         }
         return r;
     }
@@ -287,7 +286,7 @@ struct vstorea_half_func : public unary_func<
         result_type r;
         for(size_t i = 0; i < N; i++)
         {
-            r.s[i] = float2half_rte(in.s[i]);
+            r.s[i] = cl_half_from_float(in.s[i], CL_HALF_RTE);
         }
         return r;
     }

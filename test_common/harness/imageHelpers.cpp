@@ -30,9 +30,6 @@
 
 RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
 
-static cl_ushort float2half_rte( float f );
-static cl_ushort float2half_rtz( float f );
-
 cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 bool gTestRounding = false;
 double
@@ -911,244 +908,17 @@ int get_format_min_int( cl_image_format *format )
     }
 }
 
-float convert_half_to_float( unsigned short halfValue )
-{
-    // We have to take care of a few special cases, but in general, we just extract
-    // the same components from the half that exist in the float and re-stuff them
-    // For a description of the actual half format, see http://en.wikipedia.org/wiki/Half_precision
-    // Note: we store these in 32-bit ints to make the bit manipulations easier later
-    int sign =     ( halfValue >> 15 ) & 0x0001;
-    int exponent = ( halfValue >> 10 ) & 0x001f;
-    int mantissa = ( halfValue )       & 0x03ff;
-
-    // Note: we use a union here to be able to access the bits of a float directly
-    union
-    {
-        unsigned int bits;
-        float floatValue;
-    } outFloat;
-
-    // Special cases first
-    if( exponent == 0 )
-    {
-        if( mantissa == 0 )
-        {
-            // If both exponent and mantissa are 0, the number is +/- 0
-            outFloat.bits  = sign << 31;
-            return outFloat.floatValue; // Already done!
-        }
-
-        // If exponent is 0, it's a denormalized number, so we renormalize it
-        // Note: this is not terribly efficient, but oh well
-        while( ( mantissa & 0x00000400 ) == 0 )
-        {
-            mantissa <<= 1;
-            exponent--;
-        }
-
-        // The first bit is implicit, so we take it off and inc the exponent accordingly
-        exponent++;
-        mantissa &= ~(0x00000400);
-    }
-    else if( exponent == 31 ) // Special-case "numbers"
-    {
-        // If the exponent is 31, it's a special case number (+/- infinity or NAN).
-        // If the mantissa is 0, it's infinity, else it's NAN, but in either case, the packing
-        // method is the same
-        outFloat.bits = ( sign << 31 ) | 0x7f800000 | ( mantissa << 13 );
-        return outFloat.floatValue;
-    }
-
-    // Plain ol' normalized number, so adjust to the ranges a 32-bit float expects and repack
-    exponent += ( 127 - 15 );
-    mantissa <<= 13;
-
-    outFloat.bits = ( sign << 31 ) | ( exponent << 23 ) | mantissa;
-    return outFloat.floatValue;
-}
-
-
-
 cl_ushort convert_float_to_half( float f )
 {
     switch( gFloatToHalfRoundingMode )
     {
-        case kRoundToNearestEven:
-            return float2half_rte( f );
-        case kRoundTowardZero:
-            return float2half_rtz( f );
+        case kRoundToNearestEven: return cl_half_from_float(f, CL_HALF_RTE);
+        case kRoundTowardZero: return cl_half_from_float(f, CL_HALF_RTZ);
         default:
             log_error( "ERROR: Test internal error -- unhandled or unknown float->half rounding mode.\n" );
             exit(-1);
             return 0xffff;
     }
-
-}
-
-cl_ushort float2half_rte( float f )
-    {
-    union{ float f; cl_uint u; } u = {f};
-    cl_uint sign = (u.u >> 16) & 0x8000;
-    float x = fabsf(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (24-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-                }
-
-    // overflow
-    if( x >= MAKE_HEX_FLOAT(0x1.ffep15f, 0x1ffeL, 3) )
-        return 0x7c00 | sign;
-
-    // underflow
-    if( x <= MAKE_HEX_FLOAT(0x1.0p-25f, 0x1L, -25) )
-        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-    // very small
-    if( x < MAKE_HEX_FLOAT(0x1.8p-24f, 0x18L, -28) )
-        return sign | 1;
-
-    // half denormal
-    if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-    {
-        u.f = x * MAKE_HEX_FLOAT(0x1.0p-125f, 0x1L, -125);
-        return sign | u.u;
-        }
-
-    u.f *= MAKE_HEX_FLOAT(0x1.0p13f, 0x1L, 13);
-    u.u &= 0x7f800000;
-    x += u.f;
-    u.f = x - u.f;
-    u.f *= MAKE_HEX_FLOAT(0x1.0p-112f, 0x1L, -112);
-
-    return (u.u >> (24-11)) | sign;
-    }
-
-cl_ushort float2half_rtz( float f )
-    {
-    union{ float f; cl_uint u; } u = {f};
-    cl_uint sign = (u.u >> 16) & 0x8000;
-    float x = fabsf(f);
-
-    //Nan
-    if( x != x )
-        {
-        u.u >>= (24-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-        }
-
-    // overflow
-    if( x >= MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16) )
-        {
-        if( x == INFINITY )
-            return 0x7c00 | sign;
-
-        return 0x7bff | sign;
-        }
-
-    // underflow
-    if( x < MAKE_HEX_FLOAT(0x1.0p-24f, 0x1L, -24) )
-        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-    // half denormal
-    if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-    {
-        x *= MAKE_HEX_FLOAT(0x1.0p24f, 0x1L, 24);
-        return (cl_ushort)((int) x | sign);
-    }
-
-    u.u &= 0xFFFFE000U;
-    u.u -= 0x38000000U;
-
-    return (u.u >> (24-11)) | sign;
-}
-
-class TEST
-{
-public:
-    TEST();
-};
-
-static TEST t;
-void  __vstore_half_rte(float f, size_t index, uint16_t *p)
-{
-    union{ unsigned int u; float f;} u;
-
-    u.f = f;
-    unsigned short r = (u.u >> 16) & 0x8000;
-    u.u &= 0x7fffffff;
-    if( u.u >= 0x33000000U )
-    {
-        if( u.u >= 0x47800000 )
-        {
-            if( u.u <= 0x7f800000 )
-                r |= 0x7c00;
-            else
-            {
-                r |= 0x7e00 | ( (u.u >> 13) & 0x3ff );
-            }
-        }
-        else
-        {
-            float x = u.f;
-            if( u.u < 0x38800000 )
-                u.u = 0x3f000000;
-            else
-                u.u += 0x06800000;
-            u.u &= 0x7f800000U;
-            x += u.f;
-            x -= u.f;
-            u.f = x * MAKE_HEX_FLOAT(0x1.0p-112f, 0x1L, -112);
-            u.u >>= 13;
-            r |= (unsigned short) u.u;
-        }
-    }
-
-    ((unsigned short*)p)[index] = r;
-}
-
-TEST::TEST()
-{
-    return;
-    union
-    {
-        float f;
-        uint32_t i;
-    } test;
-    uint16_t control, myval;
-
-    log_info(" &&&&&&&&&&&&&&&&&&&&&&&&&&&& TESTING HALFS &&&&&&&&&&&&&&&&&&&&\n" );
-    test.i = 0;
-    do
-    {
-        if( ( test.i & 0xffffff ) == 0 )
-        {
-            if( ( test.i & 0xfffffff ) == 0 )
-                log_info( "*" );
-            else
-                log_info( "." );
-            fflush(stdout);
-        }
-        __vstore_half_rte( test.f, 0, &control );
-        myval = convert_float_to_half( test.f );
-        if( myval != control )
-        {
-            log_info( "\n******** ERROR: MyVal %04x control %04x source %12.24f\n", myval, control, test.f );
-            log_info( "         source bits: %08x   %a\n", test.i, test.f );
-            float t, c;
-            c = convert_half_to_float( control );
-            t = convert_half_to_float( myval );
-            log_info( "         converted control: %12.24f myval: %12.24f\n", c, t );
-        }
-        test.i++;
-    } while( test.i != 0 );
-    log_info("\n &&&&&&&&&&&&&&&&&&&&&&&&&&&& TESTING HALFS &&&&&&&&&&&&&&&&&&&&\n" );
 
 }
 
@@ -1497,7 +1267,7 @@ void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
         {
             cl_ushort *dPtr = (cl_ushort *)ptr;
             for( i = 0; i < channelCount; i++ )
-                tempData[ i ] = convert_half_to_float( dPtr[ i ] );
+                tempData[i] = cl_half_to_float(dPtr[i]);
             break;
         }
 
@@ -2617,11 +2387,11 @@ void pack_image_pixel( float *srcVector, const cl_image_format *imageFormat, voi
             {
                 case kRoundToNearestEven:
             for( unsigned int i = 0; i < channelCount; i++ )
-                        ptr[ i ] = float2half_rte( srcVector[ i ] );
+                ptr[i] = cl_half_from_float(srcVector[i], CL_HALF_RTE);
             break;
                 case kRoundTowardZero:
                     for( unsigned int i = 0; i < channelCount; i++ )
-                        ptr[ i ] = float2half_rtz( srcVector[ i ] );
+                        ptr[i] = cl_half_from_float(srcVector[i], CL_HALF_RTZ);
                     break;
                 default:
                     log_error( "ERROR: Test internal error -- unhandled or unknown float->half rounding mode.\n" );
@@ -3070,8 +2840,8 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
         cl_ushort rtz_ref[count*4];
         for( size_t i = 0; i < 4 * count; i++ )
         {
-            rte_ref[i] = float2half_rte( inp[i] );
-            rtz_ref[i] = float2half_rtz( inp[i] );
+            rte_ref[i] = cl_half_from_float(inp[i], CL_HALF_RTE);
+            rtz_ref[i] = cl_half_from_float(inp[i], CL_HALF_RTZ);
         }
 
     // Verify that we got something in either rtz or rte mode

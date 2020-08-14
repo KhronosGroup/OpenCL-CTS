@@ -22,6 +22,8 @@
 
 #include "parseParameters.h"
 
+#include <CL/cl_half.h>
+
 const char    *IGetErrorString( int clErrorCode )
 {
     switch( clErrorCode )
@@ -287,7 +289,6 @@ const char *GetDataVectorString( void *dataBuffer, size_t typeSize, size_t vecSi
 #endif
 
 static float Ulp_Error_Half_Float( float test, double reference );
-static inline float  half2float( cl_ushort half );
 
 // taken from math tests
 #define HALF_MIN_EXP    -13
@@ -334,49 +335,9 @@ static float Ulp_Error_Half_Float( float test, double reference )
     return (float) scalbn( testVal - reference, ulp_exp );
 }
 
-// Taken from vLoadHalf test
-static inline float half2float( cl_ushort us )
-{
-    uint32_t u = us;
-    uint32_t sign = (u << 16) & 0x80000000;
-    int32_t exponent = (u & 0x7c00) >> 10;
-    uint32_t mantissa = (u & 0x03ff) << 13;
-    union{ unsigned int u; float f;}uu;
-
-    if( exponent == 0 )
-    {
-        if( mantissa == 0 )
-            return sign ? -0.0f : 0.0f;
-
-        int shift = __builtin_clz( mantissa ) - 8;
-        exponent -= shift-1;
-        mantissa <<= shift;
-        mantissa &= 0x007fffff;
-    }
-    else
-        if( exponent == 31)
-        {
-            uu.u = mantissa | sign;
-            if( mantissa )
-                uu.u |= 0x7fc00000;
-            else
-                uu.u |= 0x7f800000;
-
-            return uu.f;
-        }
-
-    exponent += 127 - 15;
-    exponent <<= 23;
-
-    exponent |= mantissa;
-    uu.u = exponent | sign;
-
-    return uu.f;
-}
-
 float Ulp_Error_Half( cl_ushort test, float reference )
 {
-    return Ulp_Error_Half_Float( half2float(test), reference );
+    return Ulp_Error_Half_Float(cl_half_to_float(test), reference);
 }
 
 
