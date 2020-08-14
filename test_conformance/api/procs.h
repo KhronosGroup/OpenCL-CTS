@@ -170,3 +170,7 @@ extern int test_consistency_prog_ctor_dtor(cl_device_id deviceID,
                                            cl_context context,
                                            cl_command_queue queue,
                                            int num_elements);
+extern int test_consistency_3d_image_writes(cl_device_id deviceID,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            int num_elements);

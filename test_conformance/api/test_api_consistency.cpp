@@ -1045,3 +1045,59 @@ int test_consistency_prog_ctor_dtor(cl_device_id deviceID, cl_context context,
 
     return TEST_PASS;
 }
+
+int test_consistency_3d_image_writes(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue, int num_elements)
+{
+    // clGetDeviceInfo, passing CL_DEVICE_EXTENSIONS
+    // Will not describe support for the cl_khr_3d_image_writes extension if
+    // device does not support Writing to 3D Image Objects.
+    int error;
+
+    bool supports_cl_khr_3d_image_writes =
+        is_extension_available(deviceID, "cl_khr_3d_image_writes");
+
+    // clGetSupportedImageFormats, passing CL_MEM_OBJECT_IMAGE3D and one of
+    // CL_MEM_WRITE_ONLY, CL_MEM_READ_WRITE, or CL_MEM_KERNEL_READ_AND_WRITE
+    // Returns an empty set (such as num_image_formats equal to 0),
+    // indicating that no image formats are supported for writing to 3D
+    // image objects, if no devices in context support Writing to 3D Image
+    // Objects.
+
+    cl_uint total3DImageWriteFormats = 0;
+
+    const cl_mem_flags mem_flags[] = {
+        CL_MEM_WRITE_ONLY,
+        CL_MEM_READ_WRITE,
+        CL_MEM_KERNEL_READ_AND_WRITE,
+    };
+    for (int i = 0; i < ARRAY_SIZE(mem_flags); i++)
+    {
+        cl_uint numImageFormats = 0;
+        error = clGetSupportedImageFormats(context, mem_flags[i],
+                                           CL_MEM_OBJECT_IMAGE3D, 0, NULL,
+                                           &numImageFormats);
+        test_error(
+            error,
+            "Unable to query number of CL_MEM_OBJECT_IMAGE3D image formats");
+
+        total3DImageWriteFormats += numImageFormats;
+    }
+
+    if (supports_cl_khr_3d_image_writes == false)
+    {
+        test_assert_error(total3DImageWriteFormats == 0,
+                          "Device does not support cl_khr_3d_image_writes but "
+                          "clGetSupportedImageFormats(CL_MEM_OBJECT_IMAGE3D) "
+                          "for writing returned a non-empty set");
+    }
+    else
+    {
+        test_assert_error(total3DImageWriteFormats != 0,
+                          "Device supports cl_khr_3d_image_writes but "
+                          "clGetSupportedImageFormats(CL_MEM_OBJECT_IMAGE3D) "
+                          "for writing returned an empty set");
+    }
+
+    return TEST_PASS;
+}
