@@ -652,3 +652,97 @@ int test_consistency_read_write_images(cl_device_id deviceID,
 
     return TEST_PASS;
 }
+
+int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
+                                          cl_context context,
+                                          cl_command_queue queue,
+                                          int num_elements)
+{
+    // clGetDeviceInfo, passing CL_DEVICE_IMAGE_PITCH_ALIGNMENT or
+    // CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT
+    // May return 0, indicating that device does not support Creating a 2D Image
+    // from a Buffer.
+    int error;
+
+    const cl_image_format imageFormat = { CL_RGBA, CL_UNORM_INT8 };
+    const size_t imageDim = 2;
+    const size_t elementSize = 4;
+    const size_t bufferSize = imageDim * imageDim * elementSize;
+
+    clMemWrapper buffer;
+    clMemWrapper image;
+
+    cl_uint imagePitchAlignment = 0;
+    error = clGetDeviceInfo(
+        deviceID, CL_DEVICE_IMAGE_PITCH_ALIGNMENT,
+        sizeof(imagePitchAlignment), &imagePitchAlignment, NULL);
+    test_error(error,
+               "Unable to query "
+               "CL_DEVICE_IMAGE_PITCH_ALIGNMENT");
+
+    cl_uint imageBaseAddressAlignment = 0;
+    error = clGetDeviceInfo(
+        deviceID, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT,
+        sizeof(imageBaseAddressAlignment),
+        &imageBaseAddressAlignment, NULL);
+    test_error(error,
+               "Unable to query "
+               "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT");
+
+    if (imagePitchAlignment == 0 || imageBaseAddressAlignment == 0)
+    {
+        // This probably means that Creating a 2D Image from a Buffer is not
+        // supported.
+
+        // Test setup:
+        buffer = clCreateBuffer(context, CL_MEM_READ_ONLY, bufferSize, NULL, &error);
+        test_error(error, "Unable to create test buffer");
+
+        // Check that both queries return zero:
+        test_assert_error(
+            imagePitchAlignment == 0,
+            "CL_DEVICE_IMAGE_PITCH_ALIGNMENT returned a non-zero "
+            "value but CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT "
+            "returned 0");
+        test_assert_error(
+            imagePitchAlignment == 0,
+            "CL_DEVICE_IMAGE_PITCH_ALIGNMENT returned 0 but "
+            "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT returned a "
+            "non-zero value");
+
+        bool supports_cl_khr_image2d_from_buffer =
+            is_extension_available(deviceID, "cl_khr_image2d_from_buffer");
+        test_assert_error(supports_cl_khr_image2d_from_buffer == false,
+                          "Device does not support Creating a 2D Image from a "
+                          "Buffer but does support cl_khr_image2d_from_buffer");
+
+        // clCreateImage or clCreateImageWithProperties, passing image_type
+        // equal to CL_MEM_OBJECT_IMAGE2D and mem_object not equal to
+        // NULL
+        // Returns CL_INVALID_OPERATION if no devices in context support
+        // Creating a 2D Image from a Buffer.
+
+        cl_image_desc imageDesc = { 0 };
+        imageDesc.image_type = CL_MEM_OBJECT_IMAGE2D;
+        imageDesc.image_width = imageDim;
+        imageDesc.image_height = imageDim;
+        imageDesc.mem_object = buffer;
+
+        image = clCreateImage(context, CL_MEM_READ_ONLY, &imageFormat,
+                              &imageDesc, NULL, &error);
+        test_failure_error(
+            error, CL_INVALID_OPERATION,
+            "Device does not support Creating a 2D Image from a "
+            "Buffer but clCreateImage did not return CL_INVALID_OPERATION");
+
+        image =
+            clCreateImageWithProperties(context, NULL, CL_MEM_READ_ONLY,
+                                        &imageFormat, &imageDesc, NULL, &error);
+        test_failure_error(error, CL_INVALID_OPERATION,
+                           "Device does not support Creating a 2D Image from a "
+                           "Buffer but clCreateImageWithProperties did not "
+                           "return CL_INVALID_OPERATION");
+    }
+
+    return TEST_PASS;
+}
