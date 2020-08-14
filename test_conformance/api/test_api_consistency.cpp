@@ -746,3 +746,56 @@ int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
 
     return TEST_PASS;
 }
+
+// Nothing needed for sRGB Images:
+// All of the sRGB Image Channel Orders (such as CL_​sRGBA) are optional for
+// devices supporting OpenCL 3.0.
+
+// Nothing needed for Depth Images:
+// The CL_​DEPTH Image Channel Order is optional for devices supporting
+// OpenCL 3.0.
+
+int test_consistency_device_and_host_timer(cl_device_id deviceID,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements)
+{
+    // clGetPlatformInfo, passing CL_PLATFORM_HOST_TIMER_RESOLUTION
+    // May return 0, indicating that platform does not support Device and Host
+    // Timer Synchronization.
+    int error;
+
+    cl_platform_id platform = NULL;
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
+    test_error(error, "Unable to query CL_DEVICE_PLATFORM");
+
+    cl_ulong hostTimerResolution = 0;
+    error = clGetPlatformInfo(platform, CL_PLATFORM_HOST_TIMER_RESOLUTION,
+                              sizeof(hostTimerResolution), &hostTimerResolution,
+                              NULL);
+    test_error(error, "Unable to query CL_PLATFORM_HOST_TIMER_RESOLUTION");
+
+    if (hostTimerResolution == 0)
+    {
+        // clGetDeviceAndHostTimer, clGetHostTimer
+        // Returns CL_INVALID_OPERATION if the platform associated with device
+        // does not support Device and Host Timer Synchronization.
+
+        cl_ulong dt = 0;
+        cl_ulong ht = 0;
+
+        error = clGetDeviceAndHostTimer(deviceID, &dt, &ht);
+        test_failure_error(
+            error, CL_INVALID_OPERATION,
+            "CL_PLATFORM_HOST_TIMER_RESOLUTION returned 0 but "
+            "clGetDeviceAndHostTimer did not return CL_INVALID_OPERATION");
+        
+        error = clGetHostTimer(deviceID, &ht);
+        test_failure_error(
+            error, CL_INVALID_OPERATION,
+            "CL_PLATFORM_HOST_TIMER_RESOLUTION returned 0 but "
+            "clGetHostTimer did not return CL_INVALID_OPERATION");
+    }
+
+    return TEST_PASS;
+}
