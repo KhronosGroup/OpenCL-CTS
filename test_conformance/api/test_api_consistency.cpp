@@ -119,10 +119,9 @@ int test_consistency_svm(cl_device_id deviceID, cl_context context,
         // These calls to free SVM purposefully passes a bogus pointer to the
         // free function to better test that it they are a NOP when SVM is not
         // supported.
-        cl_uint bogus = 0xDEADBEEF;
-        clSVMFree(context, &bogus);
-        void* pBogus = &bogus;
-        error = clEnqueueSVMFree(queue, 1, &pBogus, NULL, NULL, 0, NULL, NULL);
+        void* bogus = (void*)0xDEADBEEF;
+        clSVMFree(context, bogus);
+        error = clEnqueueSVMFree(queue, 1, &bogus, NULL, NULL, 0, NULL, NULL);
         test_failure_error(
             error, CL_INVALID_OPERATION,
             "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
