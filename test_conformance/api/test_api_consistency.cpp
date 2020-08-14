@@ -996,3 +996,52 @@ int test_consistency_subgroups(cl_device_id deviceID, cl_context context,
 
     return TEST_PASS;
 }
+
+static void CL_CALLBACK program_callback(cl_program, void*) {}
+
+int test_consistency_prog_ctor_dtor(cl_device_id deviceID, cl_context context,
+                                    cl_command_queue queue, int num_elements)
+{
+    int error;
+
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    // Test setup:
+
+    error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                        &test_kernel, "test");
+    test_error(error, "Unable to create test kernel");
+
+    // clGetProgramInfo, passing CL_PROGRAM_SCOPE_GLOBAL_CTORS_PRESENT or
+    // CL_PROGRAM_SCOPE_GLOBAL_DTORS_PRESENT
+    // Returns CL_FALSE if no devices in the context associated with program
+    // support Program Initialization and Clean-Up Kernels.
+
+    cl_bool b = CL_FALSE;
+
+    error = clGetProgramInfo(program, CL_PROGRAM_SCOPE_GLOBAL_CTORS_PRESENT,
+                             sizeof(b), &b, NULL);
+    test_error(error, "Unable to query CL_PROGRAM_SCOPE_GLOBAL_CTORS_PRESENT");
+    test_assert_error(
+        b == CL_FALSE,
+        "CL_PROGRAM_SCOPE_GLOBAL_CTORS_PRESENT did not return CL_FALSE");
+
+    error = clGetProgramInfo(program, CL_PROGRAM_SCOPE_GLOBAL_DTORS_PRESENT,
+                             sizeof(b), &b, NULL);
+    test_error(error, "Unable to query CL_PROGRAM_SCOPE_GLOBAL_DTORS_PRESENT");
+    test_assert_error(
+        b == CL_FALSE,
+        "CL_PROGRAM_SCOPE_GLOBAL_DTORS_PRESENT did not return CL_FALSE");
+
+    // clSetProgramReleaseCallback
+    // Returns CL_INVALID_OPERATION if no devices in the context associated with
+    // program support Program Initialization and Clean-Up Kernels.
+
+    error = clSetProgramReleaseCallback(program, program_callback, NULL);
+    test_failure_error(
+        error, CL_INVALID_OPERATION,
+        "clSetProgramReleaseCallback did not return CL_INVALID_OPERATION");
+
+    return TEST_PASS;
+}

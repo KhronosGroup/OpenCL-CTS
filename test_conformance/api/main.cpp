@@ -136,6 +136,7 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(consistency_device_and_host_timer, Version(3, 0)),
     ADD_TEST_VERSION(consistency_il_programs, Version(3, 0)),
     ADD_TEST_VERSION(consistency_subgroups, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_prog_ctor_dtor, Version(3, 0)),
 };
 
 const int test_num = ARRAY_SIZE(test_list);
