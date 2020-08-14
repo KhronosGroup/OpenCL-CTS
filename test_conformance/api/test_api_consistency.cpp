@@ -475,8 +475,8 @@ int test_consistency_progvar(cl_device_id deviceID, cl_context context,
         size_t sz = 0;
 
         // clGetDeviceInfo, passing
-        // CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE Returns 0 if device
-        // does not support Program Scope Global Variables.
+        // CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE
+        // Returns 0 if device does not support Program Scope Global Variables.
 
         error = clGetDeviceInfo(deviceID,
                                 CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE,
@@ -491,8 +491,8 @@ int test_consistency_progvar(cl_device_id deviceID, cl_context context,
             "non-zero value");
 
         // clGetProgramBuildInfo, passing
-        // CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE Returns 0 if device does
-        // not support Program Scope Global Variables.
+        // CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE
+        // Returns 0 if device does not support Program Scope Global Variables.
 
         error = clGetProgramBuildInfo(
             program, deviceID, CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE,
@@ -501,6 +501,90 @@ int test_consistency_progvar(cl_device_id deviceID, cl_context context,
                           "CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE returned 0 "
                           "but CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE "
                           "returned a non-zero value");
+    }
+
+    return TEST_PASS;
+}
+
+int test_consistency_non_uniform_work_group(cl_device_id deviceID,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            int num_elements)
+{
+    // clGetDeviceInfo, passing CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT:
+    // May return CL_FALSE, indicating that device does not support Non-Uniform
+    // Work Groups.
+    int error;
+
+    const size_t allocSize = 16;
+    clMemWrapper mem;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    cl_bool nonUniformWorkGroupSupport = CL_FALSE;
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT,
+                            sizeof(nonUniformWorkGroupSupport),
+                            &nonUniformWorkGroupSupport, NULL);
+    test_error(error,
+               "Unable to query CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT");
+
+    if (true || nonUniformWorkGroupSupport == CL_FALSE)
+    {
+        // Test setup:
+
+        mem =
+            clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
+        test_error(error, "Unable to create test buffer");
+
+        error = create_single_kernel_helper_with_build_options(
+            context, &program, &kernel, 1, &test_kernel, "test",
+            "-cl-std=CL3.0");
+        test_error(error, "Unable to create test kernel");
+
+        error = clSetKernelArg(kernel, 0, sizeof(mem), &mem);
+
+        // clEnqueueNDRangeKernel
+        // Behaves as though Non-Uniform Work Groups were not enabled for
+        // kernel, if the device associated with command_queue does not support
+        // Non-Uniform Work Groups.
+
+        size_t global_work_size[] = { 3, 3, 3 };
+        size_t local_work_size[] = { 2, 2, 2 };
+
+        // First, check that a NULL local work size succeeds.
+        error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size,
+                                       NULL, 0, NULL, NULL);
+        test_error(error,
+                   "Unable to enqueue kernel with a NULL local work size");
+
+        error = clFinish(queue);
+        test_error(error, "Error calling clFinish after NULL local work size");
+
+        // 1D non-uniform work group:
+        error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size,
+                                       local_work_size, 0, NULL, NULL);
+        test_failure_error(
+            error, CL_INVALID_WORK_GROUP_SIZE,
+            "CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT returned CL_FALSE but 1D "
+            "clEnqueueNDRangeKernel did not return CL_INVALID_WORK_GROUP_SIZE");
+
+        // 2D non-uniform work group:
+        global_work_size[0] = local_work_size[0];
+        error = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global_work_size,
+                                       local_work_size, 0, NULL, NULL);
+        test_failure_error(
+            error, CL_INVALID_WORK_GROUP_SIZE,
+            "CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT returned CL_FALSE but 2D "
+            "clEnqueueNDRangeKernel did not return CL_INVALID_WORK_GROUP_SIZE");
+
+        // 3D non-uniform work group:
+        global_work_size[1] = local_work_size[1];
+        error = clEnqueueNDRangeKernel(queue, kernel, 3, NULL, global_work_size,
+                                       local_work_size, 0, NULL, NULL);
+        test_failure_error(
+            error, CL_INVALID_WORK_GROUP_SIZE,
+            "CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT returned CL_FALSE but 3D "
+            "clEnqueueNDRangeKernel did not return CL_INVALID_WORK_GROUP_SIZE");
     }
 
     return TEST_PASS;
