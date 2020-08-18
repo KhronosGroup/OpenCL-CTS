@@ -50,8 +50,6 @@
 #include "Sleep.h"
 #include "basic_test_conversions.h"
 
-#pragma STDC FENV_ACCESS ON
-
 #if (defined(_WIN32) && defined (_MSC_VER))
 // need for _controlfp_s and rouinding modes in RoundingMode
 #include "harness/testHarness.h"
