@@ -719,6 +719,9 @@ int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
                "Unable to query "
                "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT");
 
+    bool supports_cl_khr_image2d_from_buffer =
+        is_extension_available(deviceID, "cl_khr_image2d_from_buffer");
+
     if (imagePitchAlignment == 0 || imageBaseAddressAlignment == 0)
     {
         // This probably means that Creating a 2D Image from a Buffer is not
@@ -739,8 +742,10 @@ int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
                           "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT returned a "
                           "non-zero value");
 
-        bool supports_cl_khr_image2d_from_buffer =
-            is_extension_available(deviceID, "cl_khr_image2d_from_buffer");
+        // clGetDeviceInfo, passing CL_DEVICE_EXTENSIONS
+        // Will not describe support for the cl_khr_image2d_from_buffer
+        // extension if device does not support Creating a 2D Image from a
+        // Buffer.
         test_assert_error(supports_cl_khr_image2d_from_buffer == false,
                           "Device does not support Creating a 2D Image from a "
                           "Buffer but does support cl_khr_image2d_from_buffer");
@@ -771,6 +776,12 @@ int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
                            "Device does not support Creating a 2D Image from a "
                            "Buffer but clCreateImageWithProperties did not "
                            "return CL_INVALID_OPERATION");
+    }
+    else
+    {
+        test_assert_error(supports_cl_khr_image2d_from_buffer,
+                          "Device supports Creating a 2D Image from a Buffer "
+                          "but does not support cl_khr_image2d_from_buffer");
     }
 
     return TEST_PASS;
@@ -1048,20 +1059,13 @@ int test_consistency_prog_ctor_dtor(cl_device_id deviceID, cl_context context,
 int test_consistency_3d_image_writes(cl_device_id deviceID, cl_context context,
                                      cl_command_queue queue, int num_elements)
 {
-    // clGetDeviceInfo, passing CL_DEVICE_EXTENSIONS
-    // Will not describe support for the cl_khr_3d_image_writes extension if
-    // device does not support Writing to 3D Image Objects.
-    int error;
-
-    bool supports_cl_khr_3d_image_writes =
-        is_extension_available(deviceID, "cl_khr_3d_image_writes");
-
     // clGetSupportedImageFormats, passing CL_MEM_OBJECT_IMAGE3D and one of
     // CL_MEM_WRITE_ONLY, CL_MEM_READ_WRITE, or CL_MEM_KERNEL_READ_AND_WRITE
     // Returns an empty set (such as num_image_formats equal to 0),
     // indicating that no image formats are supported for writing to 3D
     // image objects, if no devices in context support Writing to 3D Image
     // Objects.
+    int error;
 
     cl_uint total3DImageWriteFormats = 0;
 
@@ -1083,19 +1087,23 @@ int test_consistency_3d_image_writes(cl_device_id deviceID, cl_context context,
         total3DImageWriteFormats += numImageFormats;
     }
 
-    if (supports_cl_khr_3d_image_writes == false)
+    bool supports_cl_khr_3d_image_writes =
+        is_extension_available(deviceID, "cl_khr_3d_image_writes");
+
+    if (total3DImageWriteFormats == 0)
     {
-        test_assert_error(total3DImageWriteFormats == 0,
-                          "Device does not support cl_khr_3d_image_writes but "
-                          "clGetSupportedImageFormats(CL_MEM_OBJECT_IMAGE3D) "
-                          "for writing returned a non-empty set");
+        // clGetDeviceInfo, passing CL_DEVICE_EXTENSIONS
+        // Will not describe support for the cl_khr_3d_image_writes extension if
+        // device does not support Writing to 3D Image Objects.
+        test_assert_error(supports_cl_khr_3d_image_writes == false,
+                          "Device does not support Writing to 3D Image Objects "
+                          "but does support cl_khr_3d_image_writes");
     }
     else
     {
-        test_assert_error(total3DImageWriteFormats != 0,
-                          "Device supports cl_khr_3d_image_writes but "
-                          "clGetSupportedImageFormats(CL_MEM_OBJECT_IMAGE3D) "
-                          "for writing returned an empty set");
+        test_assert_error(supports_cl_khr_3d_image_writes,
+                          "Device supports Writing to 3D Image Objects but "
+                          "does not support cl_khr_3d_image_writes");
     }
 
     return TEST_PASS;
