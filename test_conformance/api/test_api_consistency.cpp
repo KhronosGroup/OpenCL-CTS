@@ -791,14 +791,66 @@ int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
 // All of the sRGB Image Channel Orders (such as CL_​sRGBA) are optional for
 // devices supporting OpenCL 3.0.
 
-// Nothing needed for Depth Images:
-// The CL_​DEPTH Image Channel Order is optional for devices supporting
-// OpenCL 3.0.
+int test_consistency_depth_images(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements)
+{
+    // The CL_​DEPTH Image Channel Order is optional for devices supporting
+    // OpenCL 3.0.
+    int error;
 
-int test_consistency_device_and_host_timer(cl_device_id deviceID,
-                                           cl_context context,
-                                           cl_command_queue queue,
-                                           int num_elements)
+    cl_uint totalDepthImageFormats = 0;
+
+    const cl_mem_flags mem_flags[] = {
+        CL_MEM_WRITE_ONLY,
+        CL_MEM_READ_WRITE,
+        CL_MEM_KERNEL_READ_AND_WRITE,
+    };
+    for (int i = 0; i < ARRAY_SIZE(mem_flags); i++)
+    {
+        cl_uint numImageFormats = 0;
+        error = clGetSupportedImageFormats(context, mem_flags[i],
+                                           CL_MEM_OBJECT_IMAGE2D, 0, NULL,
+                                           &numImageFormats);
+        test_error(
+            error,
+            "Unable to query number of CL_MEM_OBJECT_IMAGE2D image formats");
+
+        std::vector<cl_image_format> imageFormats(numImageFormats);
+        error = clGetSupportedImageFormats(
+            context, mem_flags[i], CL_MEM_OBJECT_IMAGE2D, imageFormats.size(),
+            imageFormats.data(), NULL);
+        test_error(error,
+                   "Unable to query CL_MEM_OBJECT_IMAGE2D image formats");
+        for (auto& imageFormat : imageFormats)
+        {
+            if (imageFormat.image_channel_order == CL_DEPTH)
+            {
+                totalDepthImageFormats++;
+            }
+        }
+    }
+
+    bool supports_cl_khr_depth_images =
+        is_extension_available(deviceID, "cl_khr_depth_images");
+
+    if (totalDepthImageFormats == 0)
+    {
+        test_assert_error(supports_cl_khr_depth_images == false,
+                          "Device does not support Depth Images but does "
+                          "support cl_khr_depth_images");
+    }
+    else
+    {
+        test_assert_error(supports_cl_khr_depth_images,
+                          "Device supports Depth Images but does not support "
+                          "cl_khr_depth_images");
+    }
+}
+
+    int test_consistency_device_and_host_timer(cl_device_id deviceID,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements)
 {
     // clGetPlatformInfo, passing CL_PLATFORM_HOST_TIMER_RESOLUTION
     // May return 0, indicating that platform does not support Device and Host
