@@ -1,0 +1,35 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 16
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %9 "spec_const_kernel"
+         %15 = OpString "kernel_arg_type.spec_const_kernel.float*,"
+               OpSource OpenCL_C 102000
+               OpName %spec_const_kernel_spec_constant_value "spec_const_kernel.spec_constant_value"
+               OpName %output_value "output_value"
+               OpName %entry "entry"
+               OpName %add "add"
+               OpDecorate %spec_const_kernel_spec_constant_value Constant
+               OpDecorate %spec_const_kernel_spec_constant_value Alignment 4
+               OpDecorate %float_0 SpecId 101
+      %float = OpTypeFloat 32
+%_ptr_UniformConstant_float = OpTypePointer UniformConstant %float
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
+          %8 = OpTypeFunction %void %_ptr_CrossWorkgroup_float
+    %float_0 = OpSpecConstant %float 0
+%spec_const_kernel_spec_constant_value = OpVariable %_ptr_UniformConstant_float UniformConstant %float_0
+          %9 = OpFunction %void None %8
+%output_value = OpFunctionParameter %_ptr_CrossWorkgroup_float
+      %entry = OpLabel
+         %12 = OpLoad %float %output_value Aligned 4
+         %13 = OpLoad %float %spec_const_kernel_spec_constant_value Aligned 4
+        %add = OpFAdd %float %12 %13
+               OpStore %output_value %add Aligned 4
+               OpReturn
+               OpFunctionEnd

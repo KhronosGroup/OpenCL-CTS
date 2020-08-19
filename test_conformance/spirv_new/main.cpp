@@ -74,7 +74,8 @@ size_t spirvTestsRegistry::getNumTests()
     return testDefinitions.size();
 }
 
-void spirvTestsRegistry::addTestClass(baseTestClass *test, const char *testName)
+void spirvTestsRegistry::addTestClass(baseTestClass *test, const char *testName,
+                                      Version version)
 {
 
     testClasses.push_back(test);
@@ -135,20 +136,21 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     return err;
 }
 
-int get_program_with_il(clProgramWrapper &prog,
-                        const cl_device_id deviceID,
-                        const cl_context context,
-                        const char *prog_name)
+int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
+                        const cl_context context, const char *prog_name,
+                        spec_const spec_const_def)
 {
     cl_int err = 0;
-    if (gCompilationMode == kBinary) {
+    if (gCompilationMode == kBinary)
+    {
         return offline_get_program_with_il(prog, deviceID, context, prog_name);
     }
 
     std::vector<unsigned char> buffer_vec = readSPIRV(prog_name);
 
     int file_bytes = buffer_vec.size();
-    if (file_bytes == 0) {
+    if (file_bytes == 0)
+    {
         log_error("File %s not found\n", prog_name);
         return -1;
     }
@@ -159,6 +161,15 @@ int get_program_with_il(clProgramWrapper &prog,
         prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
         SPIRV_CHECK_ERROR(
             err, "Failed to create program with clCreateProgramWithIL");
+
+        if (spec_const_def.spec_value != NULL)
+        {
+            err = clSetProgramSpecializationConstant(
+                prog, spec_const_def.spec_id, spec_const_def.spec_size,
+                spec_const_def.spec_value);
+            SPIRV_CHECK_ERROR(
+                err, "Failed to run clSetProgramSpecializationConstant");
+        }
     }
     else
     {
