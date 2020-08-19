@@ -959,8 +959,9 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(cl_device_id dev
     // Set up the kernel code
     programSource = PragmaHeader(deviceID)+ProgramHeader(numDestItems)+FunctionCode()+KernelCode(numDestItems);
     programLine = programSource.c_str();
-    if(create_single_kernel_helper_with_build_options(context, &program, &kernel, 1, &programLine, "test_atomic_kernel",
-      gOldAPI ? "" : "-cl-std=CL2.0"))
+    if (create_single_kernel_helper_with_build_options(
+            context, &program, &kernel, 1, &programLine, "test_atomic_kernel",
+            gOldAPI ? "" : nullptr))
     {
       return -1;
     }
