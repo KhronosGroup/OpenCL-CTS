@@ -313,22 +313,16 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
             "CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
             "CL_DEVICE_MAX_ON_DEVICE_EVENTS returned a non-zero value");
 
-        // clGetCommandQueueInfo, passing CL_QUEUE_SIZE or
-        // CL_QUEUE_DEVICE_DEFAULT
-        // Returns 0 or NULL if the device associated with command_queue does
-        // not support On-Device Queues.
+        // clGetCommandQueueInfo, passing CL_QUEUE_SIZE
+        // Returns CL_INVALID_COMMAND_QUEUE since command_queue cannot be a
+        // valid device command-queue.
 
         error =
             clGetCommandQueueInfo(queue, CL_QUEUE_SIZE, sizeof(u), &u, NULL);
-        // TODO: is this a valid query?  See:
-        // https://github.com/KhronosGroup/OpenCL-Docs/issues/402
-        // test_error(error, "Unable to query CL_QUEUE_SIZE");
-        if (error == CL_SUCCESS && u != 0)
-        {
-            log_error("CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
-                      "CL_QUEUE_SIZE returned a non-zero value\n");
-            return TEST_FAIL;
-        }
+        test_failure_error(
+            error, CL_INVALID_COMMAND_QUEUE,
+            "CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES returned 0 but "
+            "CL_QUEUE_SIZE did not return CL_INVALID_COMMAND_QUEUE");
 
         cl_command_queue q = NULL;
         error = clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE_DEFAULT, sizeof(q),
