@@ -278,8 +278,11 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
 
     // create program
     cl_program program;
+    const char **psrc = vec_len == 3 ? sourceV3 : source;
+    size_t src_size = vec_len == 3 ? ARRAY_SIZE(sourceV3) : ARRAY_SIZE(source);
 
-    if (create_single_kernel_helper(context, &program, kernel_ptr, (cl_uint)(vec_len == 3 ? sizeof(sourceV3) / sizeof(sourceV3[0]) : sizeof(source) / sizeof(source[0])), vec_len == 3 ? sourceV3 : source, testname))
+    if (create_single_kernel_helper(context, &program, kernel_ptr, src_size,
+                                    psrc, testname))
     {
         log_error("Failed to build program (%d)\n", err);
         return NULL;
