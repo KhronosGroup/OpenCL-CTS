@@ -839,12 +839,15 @@ int test_consistency_depth_images(cl_device_id deviceID, cl_context context,
                           "Device supports Depth Images but does not support "
                           "cl_khr_depth_images");
     }
+
+    return TEST_PASS;
+}
 }
 
-    int test_consistency_device_and_host_timer(cl_device_id deviceID,
-                                               cl_context context,
-                                               cl_command_queue queue,
-                                               int num_elements)
+int test_consistency_device_and_host_timer(cl_device_id deviceID,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements)
 {
     // clGetPlatformInfo, passing CL_PLATFORM_HOST_TIMER_RESOLUTION
     // May return 0, indicating that platform does not support Device and Host
