@@ -92,9 +92,17 @@ int create_object_and_check_properties(cl_context context,
                "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES.");
 
     // verify set_size 0 returned
-    if (test_case.properties.size() == 0 && set_size == 0)
+    if (set_size == 0)
     {
-        return TEST_PASS;
+        if (test_case.properties.size() == 0)
+        {
+            return TEST_PASS;
+        }
+        else
+        {
+            log_error("ERROR: Expected non-zero size!\n");
+            return TEST_FAIL;
+        }
     }
 
     cl_uint number_of_props = set_size / sizeof(cl_mem_properties);
