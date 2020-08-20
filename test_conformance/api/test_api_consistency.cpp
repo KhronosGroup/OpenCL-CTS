@@ -842,7 +842,6 @@ int test_consistency_depth_images(cl_device_id deviceID, cl_context context,
 
     return TEST_PASS;
 }
-}
 
 int test_consistency_device_and_host_timer(cl_device_id deviceID,
                                            cl_context context,
