@@ -319,9 +319,7 @@ public:
           case MEMORY_SCOPE_ALL_SVM_DEVICES: {
               if ((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES) == 0)
               {
-                  {
-                      return TEST_SKIPPED_ITSELF;
-                  }
+                  return TEST_SKIPPED_ITSELF;
               }
               break;
           }
@@ -355,9 +353,7 @@ public:
           case MEMORY_ORDER_SEQ_CST: {
               if ((gAtomicMemCap & CL_DEVICE_ATOMIC_ORDER_SEQ_CST) == 0)
               {
-                  {
-                      return TEST_SKIPPED_ITSELF;
-                  }
+                  return TEST_SKIPPED_ITSELF;
               }
               break;
           }
