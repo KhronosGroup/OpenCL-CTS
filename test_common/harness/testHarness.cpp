@@ -34,7 +34,7 @@
 #include <unistd.h>
 #endif
 
-#if !defined(_WIN32) && !defined(__ANDROID__)
+#if defined(__APPLE__)
 #include <sys/sysctl.h>
 #endif
 
