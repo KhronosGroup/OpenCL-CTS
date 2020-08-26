@@ -28,17 +28,45 @@ TEST_SPIRV_FUNC(op_type_opaque_simple)
     }
     unsigned char *buffer = &buffer_vec[0];
 
-    clProgramWrapper prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
-    SPIRV_CHECK_ERROR(err, "Failed to create program with clCreateProgramWithIL");
+    clProgramWrapper prog;
+
+    if (gCoreILProgram)
+    {
+        prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
+        SPIRV_CHECK_ERROR(
+            err, "Failed to create program with clCreateProgramWithIL");
+    }
+    else
+    {
+        cl_platform_id platform;
+        err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM,
+                              sizeof(cl_platform_id), &platform, NULL);
+        SPIRV_CHECK_ERROR(err,
+                          "Failed to get platform info with clGetDeviceInfo");
+        clCreateProgramWithILKHR_fn clCreateProgramWithILKHR = NULL;
+
+        clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)
+            clGetExtensionFunctionAddressForPlatform(
+                platform, "clCreateProgramWithILKHR");
+        if (clCreateProgramWithILKHR == NULL)
+        {
+            log_error(
+                "ERROR: clGetExtensionFunctionAddressForPlatform failed\n");
+            return -1;
+        }
+        prog = clCreateProgramWithILKHR(context, buffer, file_bytes, &err);
+        SPIRV_CHECK_ERROR(
+            err, "Failed to create program with clCreateProgramWithILKHR");
+    }
 
     err = clCompileProgram(prog, 1, &deviceID,
                            NULL, // options
-                           0,    // num headers
+                           0, // num headers
                            NULL, // input headers
                            NULL, // header include names
                            NULL, // callback
-                           NULL  // User data
-        );
+                           NULL // User data
+    );
     SPIRV_CHECK_ERROR(err, "Failed to compile spv program");
     return 0;
 }

@@ -595,7 +595,8 @@ static int test_buffer_map_read( cl_device_id deviceID, cl_context context, cl_c
             else
                 buffers[i] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, NULL, &err);
 
-            if ( ! buffers[i] | err){
+            if (!buffers[i] || err)
+            {
                 print_error(err, "clCreateBuffer failed\n" );
                 align_free( outptr[i] );
                 return -1;

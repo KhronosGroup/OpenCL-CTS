@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,6 +29,7 @@
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
 #include "harness/conversions.h"
+
 #define BUFFER_SIZE         (1024*1024*2)
 
 #if defined( __GNUC__ )
@@ -36,6 +37,8 @@
 #else
     #define UNUSED
 #endif
+
+struct Func;
 
 extern int gWimpyBufferSize;
 extern int gWimpyReductionFactor;
@@ -223,6 +226,8 @@ int compareFloats(float x, float y);
 int compareDoubles(double x, double y);
 
 void logFunctionInfo(const char *fname, unsigned int float_size, unsigned int isFastRelaxed);
+
+float getAllowedUlpError(const Func *f, const bool relaxed);
 
 #endif /* UTILITY_H */
 

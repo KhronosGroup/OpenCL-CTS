@@ -491,9 +491,9 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     size_t      buffer_size = buffer_elements * sizeof( cl_float );
     cl_uint     base = job_id * (cl_uint) job->step;
     ThreadInfo  *tinfo = job->tinfo + thread_id;
-    float       ulps = job->ulps;
     fptr        func = job->f->func;
     bool relaxedMode = job->relaxedMode;
+    float ulps = getAllowedUlpError(job->f, relaxedMode);
     if (relaxedMode)
     {
         func = job->f->rfunc;
@@ -730,8 +730,6 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
 
                 float err = Ulp_Error( test, correct );
                 float errB = Ulp_Error( test, (float) correct  );
-
-                if (relaxedMode) ulps = job->f->relaxed_error;
 
                 int fail = ((!(fabsf(err) <= ulps)) && (!(fabsf(errB) <= ulps)));
                 if( fabsf( errB ) < fabsf(err ) )

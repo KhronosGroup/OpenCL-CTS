@@ -816,9 +816,11 @@ int main (int argc, const char * argv[])
     free_mtdata(gMTdata);
     free(gTestNames);
 
-    int error_code = clFinish(gQueue);
-    if (error_code)
-        vlog_error("clFinish failed:%d\n", error_code);
+    if (gQueue)
+    {
+        int error_code = clFinish(gQueue);
+        if (error_code) vlog_error("clFinish failed:%d\n", error_code);
+    }
 
     ReleaseCL();
 
@@ -1103,8 +1105,6 @@ test_status InitCL( cl_device_id device )
     }
 
     gDevice = device;
-
-
     if( (error = clGetDeviceInfo( gDevice, CL_DEVICE_MAX_COMPUTE_UNITS, configSize, &gComputeDevices, NULL )) )
         gComputeDevices = 1;
 

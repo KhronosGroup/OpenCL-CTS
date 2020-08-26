@@ -2,6 +2,7 @@ set(MODULE_NAME API)
 
 set(${MODULE_NAME}_SOURCES
          main.cpp
+         test_api_consistency.cpp
          test_bool.cpp
          test_retain.cpp
          test_retain_program.cpp
@@ -27,6 +28,8 @@ set(${MODULE_NAME}_SOURCES
          test_sub_group_dispatch.cpp
          test_clone_kernel.cpp
          test_zero_sized_enqueue.cpp
+         test_context_destructor_callback.cpp
+         test_mem_object_properties_queries.cpp
 )
 
 include(../CMakeCommon.txt)

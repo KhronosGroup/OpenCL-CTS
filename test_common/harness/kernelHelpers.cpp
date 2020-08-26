@@ -28,12 +28,16 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <mutex>
+#include <algorithm>
 
 #if defined(_WIN32)
 std::string slash = "\\";
 #else
 std::string slash = "/";
 #endif
+
+static std::mutex gCompilerMutex;
 
 static cl_int get_first_device_id(const cl_context context, cl_device_id &device);
 
@@ -665,11 +669,42 @@ static int create_single_kernel_helper_create_program_offline(cl_context context
 
         size_t length = modifiedKernelBuf.size();
         log_info("offlineCompiler: clCreateProgramWithSource replaced with clCreateProgramWithIL\n");
+        if (gCoreILProgram)
+        {
+            *outProgram = clCreateProgramWithIL(context, &modifiedKernelBuf[0],
+                                                length, &error);
+        }
+        else
+        {
+            cl_platform_id platform;
+            error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
+                                    sizeof(cl_platform_id), &platform, NULL);
+            test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
-        *outProgram = clCreateProgramWithIL(context, &modifiedKernelBuf[0], length, &error);
+            clCreateProgramWithILKHR_fn clCreateProgramWithILKHR = NULL;
+            clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)
+                clGetExtensionFunctionAddressForPlatform(
+                    platform, "clCreateProgramWithILKHR");
+            if (clCreateProgramWithILKHR == NULL)
+            {
+                log_error(
+                    "ERROR: clGetExtensionFunctionAddressForPlatform failed\n");
+                return -1;
+            }
+            *outProgram = clCreateProgramWithILKHR(
+                context, &modifiedKernelBuf[0], length, &error);
+        }
+
         if (*outProgram == NULL || error != CL_SUCCESS)
         {
-            print_error(error, "clCreateProgramWithIL failed");
+            if (gCoreILProgram)
+            {
+                print_error(error, "clCreateProgramWithIL failed");
+            }
+            else
+            {
+                print_error(error, "clCreateProgramWithILKHR failed");
+            }
             return error;
         }
     }
@@ -686,6 +721,8 @@ static int create_single_kernel_helper_create_program(cl_context context,
                                                       const bool openclCXX,
                                                       CompilationMode compilationMode)
 {
+    std::lock_guard<std::mutex> compiler_lock(gCompilerMutex);
+
     std::string filePrefix = get_unique_filename_prefix(numKernelLines,
                                                         kernelProgram,
                                                         buildOptions);
@@ -773,6 +810,43 @@ int create_single_kernel_helper(cl_context context,
                                 const char *buildOptions,
                                 const bool openclCXX)
 {
+    // For the logic that automatically adds -cl-std it is much cleaner if the
+    // build options have RAII. This buffer will store the potentially updated
+    // build options, in which case buildOptions will point at the string owned
+    // by this buffer.
+    std::string build_options_internal{ buildOptions ? buildOptions : "" };
+
+    // Check the build options for the -cl-std option.
+    if (!buildOptions || !strstr(buildOptions, "-cl-std"))
+    {
+        // If the build option isn't present add it using the latest OpenCL-C
+        // version supported by the device. This allows calling code to force a
+        // particular CL C version if it is required, but also means that
+        // callers need not specify a version if they want to assume the most
+        // recent CL C.
+
+        auto version = get_max_OpenCL_C_for_context(context);
+
+        std::string cl_std{};
+        if (version >= Version(3, 0))
+        {
+            cl_std = "-cl-std=CL3.0";
+        }
+        else if (version >= Version(2, 0) && version < Version(3, 0))
+        {
+            cl_std = "-cl-std=CL2.0";
+        }
+        else
+        {
+            // If the -cl-std build option is not specified, the highest OpenCL
+            // C 1.x language version supported by each device is used when
+            // compiling the program for each device.
+            cl_std = "";
+        }
+        build_options_internal += ' ';
+        build_options_internal += cl_std;
+        buildOptions = build_options_internal.c_str();
+    }
     int error;
     // Create OpenCL C++ program
     if(openclCXX)
@@ -1506,4 +1580,116 @@ int printDeviceHeader( cl_device_id device )
              ( error == CL_SUCCESS ) ? cLangVersion : "" );
 
     return CL_SUCCESS;
+}
+
+Version get_device_cl_c_version(cl_device_id device)
+{
+    // Get the device OpenCL version.
+    auto device_cl_version = get_device_cl_version(device);
+
+    // If the device version >= 3.0 it must support the
+    // CL_DEVICE_OPENCL_C_ALL_VERSIONS query from which we can extract the most
+    // recent CL C version supported by the device.
+    if (device_cl_version >= Version{ 3, 0 })
+    {
+        size_t opencl_c_all_versions_size_in_bytes{};
+        auto error =
+            clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS, 0, nullptr,
+                            &opencl_c_all_versions_size_in_bytes);
+        test_error_ret(
+            error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
+            (Version{ -1, 0 }));
+        std::vector<cl_name_version> name_versions(
+            opencl_c_all_versions_size_in_bytes / sizeof(cl_name_version));
+        error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS,
+                                opencl_c_all_versions_size_in_bytes,
+                                name_versions.data(), nullptr);
+        test_error_ret(
+            error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
+            (Version{ -1, 0 }));
+
+        Version max_supported_cl_c_version{};
+        for (const auto &name_version : name_versions)
+        {
+            Version current_version{ CL_VERSION_MAJOR(name_version.version),
+                                     CL_VERSION_MINOR(name_version.version) };
+            max_supported_cl_c_version =
+                (current_version > max_supported_cl_c_version)
+                ? current_version
+                : max_supported_cl_c_version;
+        }
+        return max_supported_cl_c_version;
+    }
+
+    // The second special case is OpenCL-1.0 where CL_DEVICE_OPENCL_C_VERSION
+    // did not exist, but since this is just the first version we can
+    // return 1.0.
+    if (device_cl_version == Version{ 1, 0 })
+    {
+        return Version{ 1, 0 };
+    }
+
+    // Otherwise we know we have a 1.1 <= device_version <= 2.0 where all CL C
+    // versions are backwards compatible, hence querying with the
+    // CL_DEVICE_OPENCL_C_VERSION query must return the most recent supported
+    // OpenCL C version.
+    size_t opencl_c_version_size_in_bytes{};
+    auto error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, 0, nullptr,
+                                 &opencl_c_version_size_in_bytes);
+    test_error_ret(error,
+                   "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_VERSION\n",
+                   (Version{ -1, 0 }));
+
+    std::string opencl_c_version(opencl_c_version_size_in_bytes, '\0');
+    error =
+        clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION,
+                        opencl_c_version.size(), &opencl_c_version[0], nullptr);
+
+    test_error_ret(error,
+                   "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_VERSION\n",
+                   (Version{ -1, 0 }));
+
+    // Scrape out the major, minor pair from the string.
+    auto major = opencl_c_version[opencl_c_version.find('.') - 1];
+    auto minor = opencl_c_version[opencl_c_version.find('.') + 1];
+
+    return Version{ major - '0', minor - '0' };
+}
+
+Version get_max_OpenCL_C_for_context(cl_context context)
+{
+    // Get all the devices in the context and find the maximum
+    // universally supported OpenCL C version.
+    size_t devices_size_in_bytes{};
+    auto error = clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, nullptr,
+                                  &devices_size_in_bytes);
+    test_error_ret(error, "clGetDeviceInfo failed for CL_CONTEXT_DEVICES",
+                   (Version{ -1, 0 }));
+    std::vector<cl_device_id> devices(devices_size_in_bytes
+                                      / sizeof(cl_device_id));
+    error = clGetContextInfo(context, CL_CONTEXT_DEVICES, devices_size_in_bytes,
+                             devices.data(), nullptr);
+    auto current_version = get_device_cl_c_version(devices[0]);
+    std::for_each(std::next(devices.begin()), devices.end(),
+                  [&current_version](cl_device_id device) {
+                      auto device_version = get_device_cl_c_version(device);
+                      // OpenCL 3.0 is not backwards compatible with 2.0.
+                      // If we have 3.0 and 2.0 in the same driver we
+                      // use 1.2.
+                      if (((device_version >= Version(2, 0)
+                            && device_version < Version(3, 0))
+                           && current_version >= Version(3, 0))
+                          || (device_version >= Version(3, 0)
+                              && (current_version >= Version(2, 0)
+                                  && current_version < Version(3, 0))))
+                      {
+                          current_version = Version(1, 2);
+                      }
+                      else
+                      {
+                          current_version =
+                              (std::min)(device_version, current_version);
+                      }
+                  });
+    return current_version;
 }

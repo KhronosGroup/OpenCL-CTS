@@ -14,11 +14,7 @@
 // limitations under the License.
 //
 #include "helpers.h"
-#include "../harness/imageHelpers.h"
-
-// convert_float_to_half and convert_half_to_float may be found in test_conformance/images/image_helpers.cpp
-cl_ushort convert_float_to_half( cl_float f );
-cl_float  convert_half_to_float( cl_ushort h );
+#include "harness/imageHelpers.h"
 
 #if defined( __APPLE__ )
     #include <OpenGL/glu.h>

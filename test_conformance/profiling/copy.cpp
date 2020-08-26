@@ -436,9 +436,6 @@ static int copy_image_size( cl_device_id device, cl_context context,
     void                            *dst = NULL;
     cl_kernel                    kernel[1];
     size_t                        threads[2];
-#ifdef USE_LOCAL_THREADS
-    size_t                        localThreads[2];
-#endif
     int                                err = 0;
     cl_mem_flags            flags;
     unsigned int            num_channels = 4;
@@ -455,16 +452,6 @@ static int copy_image_size( cl_device_id device, cl_context context,
 
     threads[0] = (size_t)w;
     threads[1] = (size_t)h;
-
-#ifdef USE_LOCAL_THREADS
-    err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( cl_uint ), NULL );
-    test_error( err, "Unable to get thread group max size" );
-    localThreads[1] = localThreads[0];
-    if( localThreads[0] > threads[0] )
-        localThreads[0] = threads[0];
-    if( localThreads[1] > threads[1] )
-        localThreads[1] = threads[1];
-#endif
 
     inptr = (void *)generate_image( (int)num_bytes, d );
     if( ! inptr ){
@@ -539,11 +526,8 @@ static int copy_image_size( cl_device_id device, cl_context context,
         return -1;
     }
 
-#ifdef USE_LOCAL_THREADS
-    err = clEnqueueNDRangeKernel( queue, kernel[0], 2, NULL, threads, localThreads, 0, NULL, NULL );
-#else
     err = clEnqueueNDRangeKernel( queue, kernel[0], 2, NULL, threads, NULL, 0, NULL, NULL );
-#endif
+
     if (err != CL_SUCCESS){
         print_error( err, "clEnqueueNDRangeKernel failed" );
         clReleaseKernel( kernel[0] );

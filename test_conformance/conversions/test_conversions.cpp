@@ -50,8 +50,6 @@
 #include "Sleep.h"
 #include "basic_test_conversions.h"
 
-#pragma STDC FENV_ACCESS ON
-
 #if (defined(_WIN32) && defined (_MSC_VER))
 // need for _controlfp_s and rouinding modes in RoundingMode
 #include "harness/testHarness.h"
@@ -319,10 +317,11 @@ int main (int argc, const char **argv )
     int ret = runTestHarnessWithCheck( 1, arg, test_num, test_list, true, 0, InitCL );
 
     free_mtdata( gMTdata );
-
-    error = clFinish(gQueue);
-    if (error)
-        vlog_error("clFinish failed: %d\n", error);
+    if (gQueue)
+    {
+        error = clFinish(gQueue);
+        if (error) vlog_error("clFinish failed: %d\n", error);
+    }
 
     clReleaseMemObject(gInBuffer);
 

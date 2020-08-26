@@ -17,6 +17,7 @@
 #include <stdlib.h>
 
 #include "harness/errorHelpers.h"
+#include "harness/imageHelpers.h"
 #include "harness/kernelHelpers.h"
 
 #include "utils.h"

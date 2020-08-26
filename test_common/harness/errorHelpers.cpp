@@ -22,6 +22,8 @@
 
 #include "parseParameters.h"
 
+#include <CL/cl_half.h>
+
 const char    *IGetErrorString( int clErrorCode )
 {
     switch( clErrorCode )
@@ -287,7 +289,6 @@ const char *GetDataVectorString( void *dataBuffer, size_t typeSize, size_t vecSi
 #endif
 
 static float Ulp_Error_Half_Float( float test, double reference );
-static inline float  half2float( cl_ushort half );
 
 // taken from math tests
 #define HALF_MIN_EXP    -13
@@ -334,49 +335,9 @@ static float Ulp_Error_Half_Float( float test, double reference )
     return (float) scalbn( testVal - reference, ulp_exp );
 }
 
-// Taken from vLoadHalf test
-static inline float half2float( cl_ushort us )
-{
-    uint32_t u = us;
-    uint32_t sign = (u << 16) & 0x80000000;
-    int32_t exponent = (u & 0x7c00) >> 10;
-    uint32_t mantissa = (u & 0x03ff) << 13;
-    union{ unsigned int u; float f;}uu;
-
-    if( exponent == 0 )
-    {
-        if( mantissa == 0 )
-            return sign ? -0.0f : 0.0f;
-
-        int shift = __builtin_clz( mantissa ) - 8;
-        exponent -= shift-1;
-        mantissa <<= shift;
-        mantissa &= 0x007fffff;
-    }
-    else
-        if( exponent == 31)
-        {
-            uu.u = mantissa | sign;
-            if( mantissa )
-                uu.u |= 0x7fc00000;
-            else
-                uu.u |= 0x7f800000;
-
-            return uu.f;
-        }
-
-    exponent += 127 - 15;
-    exponent <<= 23;
-
-    exponent |= mantissa;
-    uu.u = exponent | sign;
-
-    return uu.f;
-}
-
 float Ulp_Error_Half( cl_ushort test, float reference )
 {
-    return Ulp_Error_Half_Float( half2float(test), reference );
+    return Ulp_Error_Half_Float(cl_half_to_float(test), reference);
 }
 
 
@@ -707,47 +668,63 @@ const char * subtests_requiring_opencl_1_2[] = {
     "popcount"
 };
 
-const char * subtests_to_skip_with_offline_compiler[] = {
-            "get_kernel_arg_info",
-            "binary_create",
-            "load_program_source",
-            "load_multistring_source",
-            "load_two_kernel_source",
-            "load_null_terminated_source",
-            "load_null_terminated_multi_line_source",
-            "load_null_terminated_partial_multi_line_source",
-            "load_discreet_length_source",
-            "get_program_source",
-            "get_program_build_info",
-            "options_build_optimizations",
-            "options_build_macro",
-            "options_build_macro_existence",
-            "options_include_directory",
-            "options_denorm_cache",
-            "preprocessor_define_udef",
-            "preprocessor_include",
-            "preprocessor_line_error",
-            "preprocessor_pragma",
-            "compiler_defines_for_extensions",
-            "image_macro",
-            "simple_extern_compile_only",
-            "simple_embedded_header_compile",
-            "two_file_regular_variable_access",
-            "two_file_regular_struct_access",
-            "two_file_regular_function_access",
-            "simple_embedded_header_link",
-            "execute_after_simple_compile_and_link_with_defines",
-            "execute_after_simple_compile_and_link_with_callbacks",
-            "execute_after_embedded_header_link",
-            "execute_after_included_header_link",
-            "multi_file_libraries",
-            "multiple_files",
-            "multiple_libraries",
-            "multiple_files_multiple_libraries",
-            "multiple_embedded_headers",
-            "program_binary_type",
-            "compile_and_link_status_options_log",
-            "kernel_preprocessor_macros",
+const char *subtests_to_skip_with_offline_compiler[] = {
+    "get_kernel_arg_info",
+    "get_kernel_arg_info_compatibility",
+    "binary_create",
+    "load_program_source",
+    "load_multistring_source",
+    "load_two_kernel_source",
+    "load_null_terminated_source",
+    "load_null_terminated_multi_line_source",
+    "load_null_terminated_partial_multi_line_source",
+    "load_discreet_length_source",
+    "get_program_source",
+    "get_program_build_info",
+    "options_build_optimizations",
+    "options_build_macro",
+    "options_build_macro_existence",
+    "options_include_directory",
+    "options_denorm_cache",
+    "preprocessor_define_udef",
+    "preprocessor_include",
+    "preprocessor_line_error",
+    "preprocessor_pragma",
+    "compiler_defines_for_extensions",
+    "image_macro",
+    "simple_extern_compile_only",
+    "simple_embedded_header_compile",
+    "two_file_regular_variable_access",
+    "two_file_regular_struct_access",
+    "two_file_regular_function_access",
+    "simple_embedded_header_link",
+    "execute_after_simple_compile_and_link_with_defines",
+    "execute_after_simple_compile_and_link_with_callbacks",
+    "execute_after_embedded_header_link",
+    "execute_after_included_header_link",
+    "multi_file_libraries",
+    "multiple_files",
+    "multiple_libraries",
+    "multiple_files_multiple_libraries",
+    "multiple_embedded_headers",
+    "program_binary_type",
+    "compile_and_link_status_options_log",
+    "kernel_preprocessor_macros",
+    "execute_after_serialize_reload_library",
+    "execute_after_serialize_reload_object",
+    "execute_after_simple_compile_and_link",
+    "execute_after_simple_compile_and_link_no_device_info",
+    "execute_after_simple_library_with_link",
+    "execute_after_two_file_link",
+    "simple_compile_only",
+    "simple_compile_with_callback",
+    "simple_library_only",
+    "simple_library_with_callback",
+    "simple_library_with_link",
+    "simple_link_only",
+    "simple_link_with_callback",
+    "simple_static_compile_only",
+    "two_file_link",
 };
 
 int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device)

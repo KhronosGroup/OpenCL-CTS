@@ -207,6 +207,10 @@ int test_userevents( cl_device_id deviceID, cl_context context, cl_command_queue
     log_info("Unsuccessful user event case passed.\n");
   }
 
+  clReleaseKernel(k0);
+  clReleaseProgram(program);
+  clReleaseMemObject(output);
+
   return 0;
 
 }
