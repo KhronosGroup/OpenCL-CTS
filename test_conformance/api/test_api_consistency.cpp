@@ -23,36 +23,6 @@ __kernel void test(__global int* dst) {
 }
 )CLC";
 
-// ; SPIR-V
-// ; Version: 1.0
-// ; Generator: Khronos SPIR-V Tools Assembler; 0
-// ; Bound: 1
-// ; Schema: 0
-//                OpCapability Addresses
-//                OpCapability Kernel
-//                OpCapability Linkage
-//                OpMemoryModel Physical(32|64) OpenCL
-// clang-format off
-static const cl_uchar empty_spirv_kernel32[] = {
-    0x03, 0x02, 0x23, 0x07, 0x00, 0x00, 0x01, 0x00,
-    0x00, 0x00, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00,
-    0x04, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00,
-    0x06, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00,
-    0x05, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x03, 0x00,
-    0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
-};
-static const cl_uchar empty_spirv_kernel64[] = {
-    0x03, 0x02, 0x23, 0x07, 0x00, 0x00, 0x01, 0x00,
-    0x00, 0x00, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00,
-    0x04, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00,
-    0x06, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00,
-    0x05, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x03, 0x00,
-    0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
-};
-// clang-format on
-
 int test_consistency_svm(cl_device_id deviceID, cl_context context,
                          cl_command_queue queue, int num_elements)
 {
@@ -445,13 +415,13 @@ int test_consistency_pipes(cl_device_id deviceID, cl_context context,
                            "clCreatePipe did not return CL_INVALID_OPERATION");
 
         // clGetPipeInfo
-        // Returns CL_INVALID_MEM_OBJECT since pipe cannot be a valid pipe
-        // object.
+        // Returns either CL_INVALID_MEM_OBJECT since pipe cannot be a valid
+        // pipe object, or CL_INVALID_OPERATION if Pipes are not supported.
         error = clGetPipeInfo(mem, CL_PIPE_PACKET_SIZE, sizeof(u), &u, NULL);
-        test_failure_error(
-            error, CL_INVALID_MEM_OBJECT,
-            "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE but "
-            "clGetPipeInfo did not return CL_INVALID_MEM_OBJECT");
+        test_assert_error(
+            error == CL_INVALID_MEM_OBJECT || error == CL_INVALID_OPERATION,
+            "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE but clGetPipeInfo did "
+            "not return CL_INVALID_MEM_OBJECT or CL_INVALID_OPERATION");
     }
     else
     {
@@ -953,38 +923,28 @@ int test_consistency_il_programs(cl_device_id deviceID, cl_context context,
                           "CL_PROGRAM_IL returned a non-zero size");
 
         // clCreateProgramWithIL
-        // Returns CL_INVALID_VALUE if no devices in context support
+        // Returns CL_INVALID_OPERATION if no devices in context support
         // Intermediate Language Programs.
 
-        cl_uint ab = 0;
-        error = clGetDeviceInfo(deviceID, CL_DEVICE_ADDRESS_BITS, sizeof(ab),
-                                &ab, NULL);
-        test_error(error, "Unable to query CL_DEVICE_ADDRESS_BITS");
-        test_assert_error(ab == 32 || ab == 64,
-                          "Unexpected value for CL_DEVICE_ADDRESS_BITS");
-
-        ct_assert(sizeof(empty_spirv_kernel32) == sizeof(empty_spirv_kernel64));
-
-        const cl_uchar* empty_spirv_kernel =
-            (ab == 32) ? empty_spirv_kernel32 : empty_spirv_kernel64;
+        cl_uint bogus = 0xDEADBEEF;
         clProgramWrapper ilProgram = clCreateProgramWithIL(
-            context, empty_spirv_kernel, sizeof(empty_spirv_kernel32), &error);
+            context, &bogus, sizeof(bogus), &error);
         test_failure_error(
-            error, CL_INVALID_VALUE,
+            error, CL_INVALID_OPERATION,
             "Device does not support IL Programs but clCreateProgramWithIL did "
-            "not return CL_INVALID_VALUE");
+            "not return CL_INVALID_OPERATION");
 
         // clSetProgramSpecializationConstant
-        // Returns CL_INVALID_PROGRAM, since program cannot have been created
-        // from an Intermediate Language.
+        // Returns CL_INVALID_OPERATION if no devices associated with program
+        // support Intermediate Language Programs.
 
         cl_uint specConst = 42;
         error = clSetProgramSpecializationConstant(
-            ilProgram, 0, sizeof(specConst), &specConst);
-        test_failure_error(error, CL_INVALID_PROGRAM,
+            program, 0, sizeof(specConst), &specConst);
+        test_failure_error(error, CL_INVALID_OPERATION,
                            "Device does not support IL Programs but "
                            "clSetProgramSpecializationConstant did not return "
-                           "CL_INVALID_PROGRAM");
+                           "CL_INVALID_OPERATION");
     }
 
     return TEST_PASS;
