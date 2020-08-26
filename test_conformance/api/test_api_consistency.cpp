@@ -930,8 +930,8 @@ int test_consistency_il_programs(cl_device_id deviceID, cl_context context,
         // Intermediate Language Programs.
 
         cl_uint bogus = 0xDEADBEEF;
-        clProgramWrapper ilProgram = clCreateProgramWithIL(
-            context, &bogus, sizeof(bogus), &error);
+        clProgramWrapper ilProgram =
+            clCreateProgramWithIL(context, &bogus, sizeof(bogus), &error);
         test_failure_error(
             error, CL_INVALID_OPERATION,
             "Device does not support IL Programs but clCreateProgramWithIL did "
