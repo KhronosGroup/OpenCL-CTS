@@ -29,7 +29,7 @@ int test_consistency_svm(cl_device_id deviceID, cl_context context,
     // clGetDeviceInfo, passing CL_DEVICE_SVM_CAPABILITIES:
     // May return 0, indicating that device does not support Shared Virtual
     // Memory.
-    int error;
+    cl_int error;
 
     const size_t allocSize = 16;
     clMemWrapper mem;
@@ -177,7 +177,7 @@ static int check_atomic_capabilities(cl_device_atomic_capabilities atomicCaps,
 int test_consistency_memory_model(cl_device_id deviceID, cl_context context,
                                   cl_command_queue queue, int num_elements)
 {
-    int error;
+    cl_int error;
     cl_device_atomic_capabilities atomicCaps = 0;
 
     error = clGetDeviceInfo(deviceID, CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES,
@@ -216,7 +216,7 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
     // clGetDeviceInfo, passing CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES
     // May return 0, indicating that device does not support Device-Side Enqueue
     // and On-Device Queues.
-    int error;
+    cl_int error;
 
     cl_device_device_enqueue_capabilities dseCaps = 0;
     error = clGetDeviceInfo(deviceID, CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES,
@@ -364,7 +364,7 @@ int test_consistency_pipes(cl_device_id deviceID, cl_context context,
 {
     // clGetDeviceInfo, passing CL_DEVICE_PIPE_SUPPORT
     // May return CL_FALSE, indicating that device does not support Pipes.
-    int error;
+    cl_int error;
 
     cl_bool pipeSupport = CL_FALSE;
     error = clGetDeviceInfo(deviceID, CL_DEVICE_PIPE_SUPPORT,
@@ -448,7 +448,7 @@ int test_consistency_progvar(cl_device_id deviceID, cl_context context,
     // clGetDeviceInfo, passing CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE
     // May return 0, indicating that device does not support Program Scope
     // Global Variables.
-    int error;
+    cl_int error;
 
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -492,6 +492,9 @@ int test_consistency_progvar(cl_device_id deviceID, cl_context context,
         error = clGetProgramBuildInfo(
             program, deviceID, CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE,
             sizeof(sz), &sz, NULL);
+        test_error(
+            error,
+            "Unable to query CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE");
         test_assert_error(sz == 0,
                           "CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE returned 0 "
                           "but CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE "
@@ -509,7 +512,7 @@ int test_consistency_non_uniform_work_group(cl_device_id deviceID,
     // clGetDeviceInfo, passing CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT:
     // May return CL_FALSE, indicating that device does not support Non-Uniform
     // Work Groups.
-    int error;
+    cl_int error;
 
     const size_t allocSize = 16;
     clMemWrapper mem;
@@ -592,7 +595,7 @@ int test_consistency_read_write_images(cl_device_id deviceID,
     // clGetDeviceInfo, passing
     // CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS May return 0,
     // indicating that device does not support Read-Write Images.
-    int error;
+    cl_int error;
 
     cl_uint maxReadWriteImageArgs = 0;
     error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
@@ -657,7 +660,7 @@ int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
     // CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT
     // May return 0, indicating that device does not support Creating a 2D Image
     // from a Buffer.
-    int error;
+    cl_int error;
 
     const cl_image_format imageFormat = { CL_RGBA, CL_UNORM_INT8 };
     const size_t imageDim = 2;
@@ -758,9 +761,9 @@ int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
 int test_consistency_depth_images(cl_device_id deviceID, cl_context context,
                                   cl_command_queue queue, int num_elements)
 {
-    // The CL_​DEPTH Image Channel Order is optional for devices supporting
+    // The CL_DEPTH Image Channel Order is optional for devices supporting
     // OpenCL 3.0.
-    int error;
+    cl_int error;
 
     cl_uint totalDepthImageFormats = 0;
 
@@ -821,7 +824,7 @@ int test_consistency_device_and_host_timer(cl_device_id deviceID,
     // clGetPlatformInfo, passing CL_PLATFORM_HOST_TIMER_RESOLUTION
     // May return 0, indicating that platform does not support Device and Host
     // Timer Synchronization.
-    int error;
+    cl_int error;
 
     cl_platform_id platform = NULL;
     error = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform),
@@ -866,7 +869,7 @@ int test_consistency_il_programs(cl_device_id deviceID, cl_context context,
     // CL_DEVICE_ILS_WITH_VERSION
     // May return an empty string and empty array, indicating that device does
     // not support Intermediate Language Programs.
-    int error;
+    cl_int error;
 
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -955,7 +958,7 @@ int test_consistency_subgroups(cl_device_id deviceID, cl_context context,
 {
     // clGetDeviceInfo, passing CL_DEVICE_MAX_NUM_SUB_GROUPS
     // May return 0, indicating that device does not support Subgroups.
-    int error;
+    cl_int error;
 
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -1020,7 +1023,7 @@ static void CL_CALLBACK program_callback(cl_program, void*) {}
 int test_consistency_prog_ctor_dtor(cl_device_id deviceID, cl_context context,
                                     cl_command_queue queue, int num_elements)
 {
-    int error;
+    cl_int error;
 
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -1073,7 +1076,7 @@ int test_consistency_3d_image_writes(cl_device_id deviceID, cl_context context,
     // indicating that no image formats are supported for writing to 3D
     // image objects, if no devices in context support Writing to 3D Image
     // Objects.
-    int error;
+    cl_int error;
 
     cl_uint total3DImageWriteFormats = 0;
 
