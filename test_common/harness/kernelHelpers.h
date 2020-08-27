@@ -40,6 +40,8 @@
 #include "deviceInfo.h"
 #include "harness/alloc.h"
 
+#include <functional>
+
 /*
  *  The below code is intended to be used at the top of kernels that appear inline in files to set line and file info for the kernel:
  *
@@ -180,5 +182,9 @@ Version get_device_cl_c_version(cl_device_id device);
 // Gets the maximum universally supported OpenCL C version in a context, i.e.
 // the OpenCL C version supported by all devices in a context.
 Version get_max_OpenCL_C_for_context(cl_context context);
+
+// Poll fn every interval_ms until timeout_ms or it returns true
+bool poll_until(unsigned timeout_ms, unsigned interval_ms,
+                std::function<bool()> fn);
 
 #endif // _kernelHelpers_h
