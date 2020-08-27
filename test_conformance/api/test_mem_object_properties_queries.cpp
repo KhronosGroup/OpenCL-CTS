@@ -91,7 +91,6 @@ int create_object_and_check_properties(cl_context context,
     test_error(error,
                "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES.");
 
-    // verify set_size 0 returned
     if (set_size == 0)
     {
         if (test_case.properties.size() == 0)
@@ -112,19 +111,20 @@ int create_object_and_check_properties(cl_context context,
     test_error(error,
                "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES.");
 
-    // check list with 0 terminator is returned
-    if (object_properties_check.size() == 1 && object_properties_check[0] == 0
-        && test_case.properties.size() == 0)
-    {
-        return TEST_PASS;
-    }
     if (object_properties_check.back() != 0)
     {
         log_error("ERROR: Incorrect last properties value - should be 0!\n");
         return TEST_FAIL;
     }
+    if (object_properties_check.size() > test_case.properties.size())
+    {
+        log_error("ERROR: Returned too many properties!\n");
+        return TEST_FAIL;
+    }
+
     object_properties_check.pop_back();
     test_case.properties.pop_back();
+
     if (object_properties_check != test_case.properties)
     {
         for (cl_uint i = 0; i < test_case.properties.size(); i = i + 2)
@@ -144,7 +144,7 @@ int create_object_and_check_properties(cl_context context,
             {
                 if (set_property_value != *std::next(it))
                 {
-                    log_error("ERROR: Incorrect preperty value expected %x, "
+                    log_error("ERROR: Incorrect property value expected %x, "
                               "obtained %x\n",
                               set_property_value, *std::next(it));
                     return TEST_FAIL;

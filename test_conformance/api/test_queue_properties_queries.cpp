@@ -141,9 +141,17 @@ int create_queue_and_check_array_properties(
         error,
         "clGetCommandQueueInfo failed asking for CL_QUEUE_PROPERTIES_ARRAY");
 
-    if (test_case.properties.size() == 0 && set_size == 0)
+    if (set_size == 0)
     {
-        return TEST_PASS;
+        if (test_case.properties.size() == 0)
+        {
+            return TEST_PASS;
+        }
+        else
+        {
+            log_error("ERROR: Expected non-zero size!\n");
+            return TEST_FAIL;
+        }
     }
 
     cl_uint number_of_props = set_size / sizeof(cl_queue_properties);
@@ -159,6 +167,12 @@ int create_queue_and_check_array_properties(
         log_error("ERROR: Incorrect last property value - should be 0!\n");
         return TEST_FAIL;
     }
+    if (get_properties.size() > test_case.properties.size())
+    {
+        log_error("ERROR: Returned too many properties!\n");
+        return TEST_FAIL;
+    }
+
     get_properties.pop_back();
     test_case.properties.pop_back();
 
@@ -182,7 +196,7 @@ int create_queue_and_check_array_properties(
             {
                 if (set_property_value != *std::next(it))
                 {
-                    log_error("ERROR: Incorrect preperty value expected %x, "
+                    log_error("ERROR: Incorrect property value expected %x, "
                               "obtained %x\n",
                               set_property_value, *std::next(it));
                     return TEST_FAIL;
@@ -242,8 +256,8 @@ int run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
     return TEST_PASS;
 }
 
-int test_queue_array_properties(cl_device_id deviceID, cl_context context,
-                                cl_command_queue queue, int num_elements)
+int test_queue_properties_queries(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements)
 {
     int error = CL_SUCCESS;
     std::vector<test_queue_array_properties_data> test_cases;
