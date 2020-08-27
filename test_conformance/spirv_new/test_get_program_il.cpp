@@ -27,9 +27,7 @@ const char *sample_kernel_code_single_line[] = {
 
 TEST_SPIRV_FUNC(get_program_il)
 {
-    cl_platform_id platform;
     clProgramWrapper source_program;
-    Version device_version = get_device_cl_version(deviceID);
     size_t il_size = -1;
     int error;
 
