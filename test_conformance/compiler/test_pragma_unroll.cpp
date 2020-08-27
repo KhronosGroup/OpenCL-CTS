@@ -258,9 +258,13 @@ int test_pragma_unroll(cl_device_id deviceID, cl_context context, cl_command_que
   for (size_t kernelIdx = 0; kernelIdx < KERNEL_NUM; ++kernelIdx) {
     clProgramWrapper program;
     clKernelWrapper kernel;
-    if( create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, (const char **)&pragma_unroll_kernels[kernelIdx], "pragma_unroll", "-cl-std=CL2.0" ) ) {
-      log_error("The program we attempted to compile was: \n%s\n", pragma_unroll_kernels[kernelIdx]);
-      return -1;
+    if (create_single_kernel_helper(
+            context, &program, &kernel, 1,
+            (const char **)&pragma_unroll_kernels[kernelIdx], "pragma_unroll"))
+    {
+        log_error("The program we attempted to compile was: \n%s\n",
+                  pragma_unroll_kernels[kernelIdx]);
+        return -1;
     }
 
     clMemWrapper buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, ELEMENT_NUM * sizeof(cl_uint), NULL, &error);
