@@ -56,6 +56,11 @@
 #define ct_assert_i(b, line)  ct_assert_ii(b, line)
 #define ct_assert_ii(b, line) int _compile_time_assertion_on_line_##line[b ? 1 : -1];
 
+#define test_fail(msg, ...)                                                    \
+    {                                                                          \
+        log_error(msg, ##__VA_ARGS__);                                         \
+        return TEST_FAIL;                                                      \
+    }
 #define test_error(errCode,msg)    test_error_ret(errCode,msg,errCode)
 #define test_error_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { print_error( errCode, msg ); return retValue ; } }
 #define print_error(errCode,msg)    log_error( "ERROR: %s! (%s from %s:%d)\n", msg, IGetErrorString( errCode ), __FILE__, __LINE__ );
