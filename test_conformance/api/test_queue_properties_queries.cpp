@@ -31,11 +31,30 @@ int verify_if_properties_supported(
     int error = CL_SUCCESS;
     bool on_host_queue = true;
 
-    if ((requested_bitfield & CL_QUEUE_ON_DEVICE)
-        || (requested_bitfield & CL_QUEUE_ON_DEVICE_DEFAULT))
+    if (requested_bitfield & CL_QUEUE_ON_DEVICE)
     {
         on_host_queue = false;
+
+        if (requested_size > 0)
+        {
+            cl_uint max_queue_size = 0;
+            error = clGetDeviceInfo(
+                deviceID, CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE,
+                sizeof(max_queue_size), &max_queue_size, NULL);
+            test_error(error,
+                       "clGetDeviceInfo for "
+                       "CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE failed");
+            if (requested_size > max_queue_size)
+            {
+                log_info(
+                    "The value of CL_QUEUE_SIZE = %d cannot be bigger than "
+                    "CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE = %d, skipped\n",
+                    requested_size, max_queue_size);
+                return TEST_SKIPPED_ITSELF;
+            }
+        }
     }
+
     cl_command_queue_properties supported_properties = 0;
     cl_command_queue_properties all_properties = 0;
 
@@ -66,29 +85,6 @@ int verify_if_properties_supported(
         test_error(error,
                    "clGetDeviceInfo asking for "
                    "CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES failed");
-        if (supported_properties == 0)
-        {
-            log_info("\tCL_DEVICE_QUEUE_SUPPORTED false, skipped\n");
-            return TEST_SKIPPED_ITSELF;
-        }
-        else if (requested_size > 0)
-        {
-            cl_uint max_packet_size = 0;
-            error = clGetDeviceInfo(
-                deviceID, CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE,
-                sizeof(max_packet_size), &max_packet_size, NULL);
-            test_error(error,
-                       "clGetDeviceInfo for "
-                       "CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE failed");
-            if (requested_size > max_packet_size)
-            {
-                log_info(
-                    "The value of CL_QUEUE_SIZE = %d cannot be bigger than "
-                    "CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE = %d, skipped\n",
-                    requested_size, max_packet_size);
-                return TEST_SKIPPED_ITSELF;
-            }
-        }
     }
 
     for (auto each_property : all_properties_vector)
@@ -145,7 +141,7 @@ static int create_queue_and_check_array_properties(
     }
     if (set_size != test_case.properties.size() * sizeof(cl_queue_properties))
     {
-        log_error("ERROR: CL_QUEUE_PROPERTIES size is %d, expected %d.\n",
+        log_error("ERROR: CL_QUEUE_PROPERTIES_ARRAY size is %d, expected %d.\n",
                   set_size,
                   test_case.properties.size() * sizeof(cl_queue_properties));
         return TEST_FAIL;
@@ -296,7 +292,7 @@ int test_queue_properties_queries(cl_device_id deviceID, cl_context context,
             CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | CL_QUEUE_ON_DEVICE
                 | CL_QUEUE_PROFILING_ENABLE,
             CL_QUEUE_SIZE, 124, 0 },
-          "devuce queue, all without CL_QUEUE_ON_DEVICE_DEFAULT" });
+          "device queue, all without CL_QUEUE_ON_DEVICE_DEFAULT" });
 
     test_cases.push_back(
         { { CL_QUEUE_PROPERTIES,
