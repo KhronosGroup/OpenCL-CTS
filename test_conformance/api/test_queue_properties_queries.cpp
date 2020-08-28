@@ -222,7 +222,7 @@ int run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
     if (requested_properties.size() != 0)
     {
         requested_properties.pop_back();
-        cl_command_queue_properties requested_bitfield;
+        cl_command_queue_properties requested_bitfield = 0;
         cl_uint requested_size = 0;
         for (cl_uint i = 0; i < requested_properties.size(); i = i + 2)
         {
@@ -263,6 +263,9 @@ int test_queue_properties_queries(cl_device_id deviceID, cl_context context,
     std::vector<test_queue_array_properties_data> test_cases;
 
     test_cases.push_back({ {}, "queue, NULL properties" });
+
+    test_cases.push_back(
+        { { CL_QUEUE_PROPERTIES, 0, 0 }, "queue, empty properties" });
 
     test_cases.push_back(
         { { CL_QUEUE_PROPERTIES,
