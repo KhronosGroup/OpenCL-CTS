@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "testBase.h"
 #include "harness/typeWrappers.h"
 #include <vector>
@@ -34,16 +33,14 @@ struct test_data
     std::string kernel_name;
 };
 
-int create_object_and_check_properties(cl_context context,
-                                       clMemWrapper& test_object,
-                                       test_data test_case, cl_mem_flags flags,
-                                       std::vector<cl_uint> local_data,
-                                       cl_uint size_x, cl_uint size_y)
+static int create_object_and_check_properties(cl_context context,
+                                              clMemWrapper& test_object,
+                                              test_data test_case,
+                                              cl_mem_flags flags,
+                                              std::vector<cl_uint> local_data,
+                                              cl_uint size_x, cl_uint size_y)
 {
     int error = CL_SUCCESS;
-    size_t set_size;
-    std::vector<cl_mem_properties> object_properties_check;
-
 
     if (test_case.obj_t == image)
     {
@@ -87,6 +84,10 @@ int create_object_and_check_properties(cl_context context,
 
         test_error(error, "clCreateBufferWithProperties failed.");
     }
+
+    std::vector<cl_mem_properties> check_properties;
+    size_t set_size = 0;
+
     clGetMemObjectInfo(test_object, CL_MEM_PROPERTIES, 0, NULL, &set_size);
     test_error(error,
                "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES.");
@@ -105,37 +106,38 @@ int create_object_and_check_properties(cl_context context,
     }
 
     cl_uint number_of_props = set_size / sizeof(cl_mem_properties);
-    object_properties_check.resize(number_of_props);
+    check_properties.resize(number_of_props);
     clGetMemObjectInfo(test_object, CL_MEM_PROPERTIES, set_size,
-                       object_properties_check.data(), NULL);
+                       check_properties.data(), NULL);
     test_error(error,
                "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES.");
 
-    if (object_properties_check.back() != 0)
+    if (check_properties.back() != 0)
     {
         log_error("ERROR: Incorrect last properties value - should be 0!\n");
         return TEST_FAIL;
     }
-    if (object_properties_check.size() > test_case.properties.size())
+    if (check_properties.size() > test_case.properties.size())
     {
-        log_error("ERROR: Returned too many properties!\n");
+        log_error("ERROR: Got %d properties, expected %d properties!\n",
+                  check_properties.size(), test_case.properties.size());
         return TEST_FAIL;
     }
 
-    object_properties_check.pop_back();
+    check_properties.pop_back();
     test_case.properties.pop_back();
 
-    if (object_properties_check != test_case.properties)
+    if (check_properties != test_case.properties)
     {
         for (cl_uint i = 0; i < test_case.properties.size(); i = i + 2)
         {
             cl_mem_properties set_property = test_case.properties[i];
             cl_mem_properties set_property_value = test_case.properties[i + 1];
-            std::vector<cl_mem_properties>::iterator it =
-                std::find(object_properties_check.begin(),
-                          object_properties_check.end(), set_property);
 
-            if (it == object_properties_check.end())
+            std::vector<cl_mem_properties>::iterator it = std::find(
+                check_properties.begin(), check_properties.end(), set_property);
+
+            if (it == check_properties.end())
             {
                 log_error("ERROR: Property not found ... 0x%x\n", set_property);
                 return TEST_FAIL;
@@ -159,8 +161,8 @@ int create_object_and_check_properties(cl_context context,
     return error;
 }
 
-int run_test_query_properties(cl_context context, cl_command_queue queue,
-                              test_data test_case)
+static int run_test_query_properties(cl_context context, cl_command_queue queue,
+                                     test_data test_case)
 {
     int error = CL_SUCCESS;
     log_info("\nTC description: %s\n", test_case.description.c_str());

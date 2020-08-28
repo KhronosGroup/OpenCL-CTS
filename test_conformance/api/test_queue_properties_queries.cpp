@@ -13,12 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-
 #include "testBase.h"
 #include "harness/typeWrappers.h"
-#include <sstream>
-#include <string>
 #include <vector>
 #include <algorithm>
 
@@ -52,7 +48,6 @@ int verify_if_properties_supported(
     }
     cl_command_queue_properties requested_properties =
         all_properties & requested_bitfield;
-    cl_device_device_enqueue_capabilities device_enqueue_caps;
 
     if (on_host_queue)
     {
@@ -114,12 +109,14 @@ int verify_if_properties_supported(
     return error;
 }
 
-int create_queue_and_check_array_properties(
+static int create_queue_and_check_array_properties(
     cl_context context, cl_device_id deviceID,
-    clCommandQueueWrapper& test_queue,
     test_queue_array_properties_data test_case)
 {
     int error = CL_SUCCESS;
+
+    clCommandQueueWrapper test_queue;
+
     if (test_case.properties.size() > 0)
     {
         test_queue = clCreateCommandQueueWithProperties(
@@ -132,7 +129,8 @@ int create_queue_and_check_array_properties(
             clCreateCommandQueueWithProperties(context, deviceID, NULL, &error);
         test_error(error, "clCreateCommandQueueWithProperties failed");
     }
-    std::vector<cl_queue_properties> get_properties;
+
+    std::vector<cl_queue_properties> check_properties;
     size_t set_size = 0;
 
     error = clGetCommandQueueInfo(test_queue, CL_QUEUE_PROPERTIES_ARRAY, 0,
@@ -155,28 +153,29 @@ int create_queue_and_check_array_properties(
     }
 
     cl_uint number_of_props = set_size / sizeof(cl_queue_properties);
-    get_properties.resize(number_of_props);
+    check_properties.resize(number_of_props);
     error = clGetCommandQueueInfo(test_queue, CL_QUEUE_PROPERTIES_ARRAY,
-                                  set_size, get_properties.data(), NULL);
+                                  set_size, check_properties.data(), NULL);
     test_error(
         error,
         "clGetCommandQueueInfo failed asking for CL_QUEUE_PROPERTIES_ARRAY");
 
-    if (get_properties.back() != 0)
+    if (check_properties.back() != 0)
     {
         log_error("ERROR: Incorrect last property value - should be 0!\n");
         return TEST_FAIL;
     }
-    if (get_properties.size() > test_case.properties.size())
+    if (check_properties.size() > test_case.properties.size())
     {
-        log_error("ERROR: Returned too many properties!\n");
+        log_error("ERROR: Got %d properties, expected %d properties!\n",
+                  check_properties.size(), test_case.properties.size());
         return TEST_FAIL;
     }
 
-    get_properties.pop_back();
+    check_properties.pop_back();
     test_case.properties.pop_back();
 
-    if (get_properties != test_case.properties)
+    if (check_properties != test_case.properties)
     {
         for (cl_uint i = 0; i < test_case.properties.size(); i = i + 2)
         {
@@ -185,9 +184,9 @@ int create_queue_and_check_array_properties(
                 test_case.properties[i + 1];
 
             std::vector<cl_mem_properties>::iterator it = std::find(
-                get_properties.begin(), get_properties.end(), set_property);
+                check_properties.begin(), check_properties.end(), set_property);
 
-            if (it == get_properties.end())
+            if (it == check_properties.end())
             {
                 log_error("ERROR: Property not found ... 0x%x\n", set_property);
                 return TEST_FAIL;
@@ -210,14 +209,16 @@ int create_queue_and_check_array_properties(
     return error;
 }
 
-int run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
-                                    test_queue_array_properties_data test_case)
+static int
+run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
+                                test_queue_array_properties_data test_case)
 {
     int error = CL_SUCCESS;
-    clCommandQueueWrapper queue;
+
     std::vector<cl_queue_properties> requested_properties =
         test_case.properties;
-    log_info("TC description: %s\n", test_case.description.c_str());
+    log_info("\nTC description: %s\n", test_case.description.c_str());
+
     // first verify if user properties are supported
     if (requested_properties.size() != 0)
     {
@@ -244,13 +245,13 @@ int run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
             return CL_SUCCESS;
         }
         test_error(error,
-                   "Checking which queue properites supported failed.\n");
+                   "Checking which queue properties supported failed.\n");
     }
 
     // continue testing if supported user properties
-    error = create_queue_and_check_array_properties(context, deviceID, queue,
-                                                    test_case);
-    test_error(error, "Queue properties array verification result failed.\n");
+    error =
+        create_queue_and_check_array_properties(context, deviceID, test_case);
+    test_error(error, "create_queue_and_check_array_properties failed.\n");
 
     log_info("TC result: passed\n");
     return TEST_PASS;
@@ -262,46 +263,52 @@ int test_queue_properties_queries(cl_device_id deviceID, cl_context context,
     int error = CL_SUCCESS;
     std::vector<test_queue_array_properties_data> test_cases;
 
-    test_cases.push_back({ {}, "queue, NULL properties" });
+    test_cases.push_back({ {}, "host queue, NULL properties" });
 
     test_cases.push_back(
-        { { CL_QUEUE_PROPERTIES, 0, 0 }, "queue, empty properties" });
+        { { CL_QUEUE_PROPERTIES, 0, 0 }, "host queue, zero properties" });
+
+    test_cases.push_back(
+        { { CL_QUEUE_PROPERTIES, CL_QUEUE_PROFILING_ENABLE, 0 },
+          "host queue, CL_QUEUE_PROFILING_ENABLE" });
+
+    test_cases.push_back(
+        { { CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0 },
+          "host queue, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE" });
 
     test_cases.push_back(
         { { CL_QUEUE_PROPERTIES,
             CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | CL_QUEUE_PROFILING_ENABLE,
             0 },
-          "queue, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | "
+          "host queue, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | "
           "CL_QUEUE_PROFILING_ENABLE" });
 
     test_cases.push_back(
-        { { CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0 },
-          "queue, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE" });
-
-    test_cases.push_back(
-        { { CL_QUEUE_PROPERTIES, CL_QUEUE_PROFILING_ENABLE, 0 },
-          "queue, CL_QUEUE_PROFILING_ENABLE" });
+        { { CL_QUEUE_PROPERTIES,
+            CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | CL_QUEUE_ON_DEVICE, 0 },
+          "device queue, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | "
+          "CL_QUEUE_ON_DEVICE" });
 
     test_cases.push_back(
         { { CL_QUEUE_PROPERTIES,
             CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | CL_QUEUE_ON_DEVICE
                 | CL_QUEUE_ON_DEVICE_DEFAULT | CL_QUEUE_PROFILING_ENABLE,
             CL_QUEUE_SIZE, 124, 0 },
-          "queue, all possible properties" });
+          "device queue, all possible properties" });
 
     test_cases.push_back(
         { { CL_QUEUE_PROPERTIES,
             CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | CL_QUEUE_ON_DEVICE
                 | CL_QUEUE_PROFILING_ENABLE,
             CL_QUEUE_SIZE, 124, 0 },
-          "queue, all without CL_QUEUE_ON_DEVICE_DEFAULT" });
+          "devuce queue, all without CL_QUEUE_ON_DEVICE_DEFAULT" });
 
     test_cases.push_back(
         { { CL_QUEUE_PROPERTIES,
             CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | CL_QUEUE_ON_DEVICE
                 | CL_QUEUE_ON_DEVICE_DEFAULT | CL_QUEUE_PROFILING_ENABLE,
             0 },
-          "queue, all without CL_QUEUE_SIZE" });
+          "device queue, all without CL_QUEUE_SIZE" });
 
     for (auto test_case : test_cases)
     {
