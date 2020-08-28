@@ -88,7 +88,8 @@ static int create_object_and_check_properties(cl_context context,
     std::vector<cl_mem_properties> check_properties;
     size_t set_size = 0;
 
-    error = clGetMemObjectInfo(test_object, CL_MEM_PROPERTIES, 0, NULL, &set_size);
+    error =
+        clGetMemObjectInfo(test_object, CL_MEM_PROPERTIES, 0, NULL, &set_size);
     test_error(error,
                "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES size.");
 
