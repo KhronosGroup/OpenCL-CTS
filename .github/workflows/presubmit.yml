@@ -1,0 +1,36 @@
+name: Presubmit
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }} ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    env:
+      JOB_CHECK_FORMAT: ${{ matrix.format }}
+      JOB_ARCHITECTURE: ${{ matrix.arch }}
+    strategy:
+      matrix:
+        mainmatrix: [true]
+        os: [ubuntu-20.04, macos-11.0]
+        include:
+          - os: ubuntu-20.04
+            mainmatrix: false
+            name: Format
+            format: 1
+          - os: ubuntu-20.04
+            mainmatrix: false
+            name: Arm
+            arch: arm
+          - os: ubuntu-20.04
+            mainmatrix: false
+            name: AArch64
+            arch: aarch64
+    steps:
+      - name: Setup
+        run: if [[ "${{matrix.format}}" == "1" ]]; then sudo apt install -y clang-format; fi
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build
+        run: ./presubmit.sh
+
