@@ -31,8 +31,7 @@ Profiling,profiling/test_profiling --compilation-mode spir-v --compilation-cache
 Events,events/test_events --compilation-mode spir-v --compilation-cache-path .
 Allocations (single maximum),allocations/test_allocations single 5 all --compilation-mode spir-v --compilation-cache-path .
 Allocations (total maximum),allocations/test_allocations multiple 5 all --compilation-mode spir-v --compilation-cache-path .
-VecAlign, vec_align/test_vecalign --compilation-mode spir-v --compilation-cache-path .
-VecStep, vec_step/test_vecstep --compilation-mode spir-v --compilation-cache-path .
+Vectors, vectors/test_vectors --compilation-mode spir-v --compilation-cache-path .
 Printf,printf/test_printf --compilation-mode spir-v --compilation-cache-path .
 Device Partitioning,device_partition/test_device_partition --compilation-mode spir-v --compilation-cache-path .
 

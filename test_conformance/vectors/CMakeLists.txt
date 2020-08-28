@@ -1,10 +1,11 @@
-set(MODULE_NAME VECSTEP)
+set(MODULE_NAME VECTORS)
 
 set(${MODULE_NAME}_SOURCES
     globals.cpp
-        test_step.cpp
         main.cpp
         structs.cpp
+        test_step.cpp
+        test_vec_align.cpp
         type_replacer.cpp
 )
 

@@ -198,7 +198,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
             if(preSizeBytes+postSizeBytes == 0)
             {
                 // log_info("About to Check Correctness\n"); fflush(stdout);
-                err = checkCorrectness(pBuffers, pClState,
+                err = checkCorrectnessAlign(pBuffers, pClState,
                                        get_align(g_arrVecSizes[vecSizeIdx])*
                                        typeSize);
             }
@@ -237,7 +237,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
 
 
 
-const char * patterns[] = {
+static const char * patterns[] = {
     ".PRAGMA..STATE.\n"
     "__kernel void test_vec_align_array(.SRC_SCOPE. .TYPE..NUM. *source, .DST_SCOPE. uint *dest)\n"
     "{\n"

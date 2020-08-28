@@ -25,6 +25,10 @@
 #endif
 
 test_definition test_list[] = {
+    ADD_TEST( step_type ),
+    ADD_TEST( step_var ),
+    ADD_TEST( step_typedef_type ),
+    ADD_TEST( step_typedef_var ),
     ADD_TEST( vec_align_array ),
     ADD_TEST( vec_align_struct ),
     ADD_TEST( vec_align_packed_struct ),

@@ -155,9 +155,9 @@ int test_step_internal(cl_device_id deviceID, cl_context context, cl_command_que
                 return -1;
             }
 
-            err = checkCorrectness(pBuffers, pClState,
-                                   g_arrTypeSizes[typeIdx],
-                                   g_arrVecSizes[vecSizeIdx]);
+            err = checkCorrectnessStep(pBuffers, pClState,
+                                      g_arrTypeSizes[typeIdx],
+                                      g_arrVecSizes[vecSizeIdx]);
 
             if(err != 0)
             {
@@ -184,7 +184,7 @@ int test_step_internal(cl_device_id deviceID, cl_context context, cl_command_que
     return 0; // -1; // fails on account of not being written.
 }
 
-const char * patterns[] = {
+static const char * patterns[] = {
     ".EXTENSIONS.\n"
     "__kernel void test_step_type(__global .TYPE..NUM. *source, __global int *dest)\n"
     "{\n"

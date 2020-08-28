@@ -48,6 +48,8 @@ typedef struct _bufferStruct
     cl_mem m_inBuffer;
 
     size_t m_bufSizeIn, m_bufSizeOut;
+
+    int       m_bufferUploaded;
 } bufferStruct;
 
 
@@ -62,6 +64,13 @@ void initContents(bufferStruct * pBufferStruct, clState * pClState,
 int pushArgs(bufferStruct * pBufferStruct, clState * pClState);
 int retrieveResults(bufferStruct * pBufferStruct, clState * pClState);
 
-int checkCorrectness(bufferStruct * pBufferStruct, clState * pClState,
+int checkCorrectnessStep(bufferStruct * pBufferStruct, clState * pClState,
              size_t typeSize,
              size_t vecWidth);
+// vecSizeIdx indexes into g_arrVecAlignMasks, g_arrVecSizeNames
+// and g_arrVecSizes
+int checkCorrectnessAlign(bufferStruct * pBufferStruct, clState * pClState,
+                          size_t minAlign);
+
+int checkPackedCorrectness(bufferStruct * pBufferStruct, clState * pClState,
+               size_t totSize, size_t beforeSize);

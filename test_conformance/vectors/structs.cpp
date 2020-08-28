@@ -319,8 +319,8 @@ int retrieveResults(bufferStruct * pBufferStruct, clState * pClState)
 
 // vecSizeIdx indexes into g_arrVecAlignMasks, g_arrVecSizeNames
 // and g_arrVecSizes
-int checkCorrectness(bufferStruct * pBufferStruct, clState * pClState,
-                     size_t minAlign)
+int checkCorrectnessAlign(bufferStruct * pBufferStruct, clState * pClState,
+                          size_t minAlign)
 {
     size_t i;
     cl_uint * targetArr = (cl_uint *)(pBufferStruct->m_pOut);
@@ -345,6 +345,29 @@ int checkCorrectness(bufferStruct * pBufferStruct, clState * pClState,
     return 0;
 }
 
+int checkCorrectnessStep(bufferStruct * pBufferStruct, clState * pClState,
+                     size_t typeSize,
+                     size_t vecWidth)
+{
+    size_t i;
+    cl_int targetSize = (cl_int) vecWidth;
+    cl_int * targetArr = (cl_int *)(pBufferStruct->m_pOut);
+    if(targetSize == 3)
+    {
+        targetSize = 4; // hack for 4-aligned vec3 types
+    }
+    for(i = 0; i < pClState->m_numThreads; ++i)
+    {
+        if(targetArr[i] != targetSize)
+        {
+            vlog_error("Error %ld (of %ld).  Expected %d, got %d\n",
+                       i, pClState->m_numThreads,
+                       targetSize, targetArr[i]);
+            return -1;
+        }
+    }
+    return 0;
+}
 
 // vecSizeIdx indexes into g_arrVecAlignMasks, g_arrVecSizeNames
 // and g_arrVecSizes
