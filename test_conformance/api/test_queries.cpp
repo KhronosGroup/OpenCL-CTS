@@ -213,49 +213,56 @@ int test_get_sampler_info(cl_device_id deviceID, cl_context context, cl_command_
     Version version = get_device_cl_version(deviceID);
     if (version >= Version(3, 0))
     {
-        std::vector<cl_sampler_properties> get_properties;
-        std::vector<cl_sampler_properties> set_properties(
+        std::vector<cl_sampler_properties> test_properties(
             properties, properties + ARRAY_SIZE(properties));
+
+        std::vector<cl_sampler_properties> check_properties;
         size_t set_size;
-        cl_uint number_of_props = 0;
 
         error = clGetSamplerInfo(sampler, CL_SAMPLER_PROPERTIES, 0, NULL,
                                  &set_size);
-        test_error(error, "clGetSamplerInfo failed.");
+        test_error(
+            error,
+            "clGetSamplerInfo failed asking for CL_SAMPLER_PROPERTIES size.");
 
-        if (set_size != set_properties.size() * sizeof(cl_sampler_properties))
+        if (set_size != test_properties.size() * sizeof(cl_sampler_properties))
         {
-            test_error(error,
-                       "Incorrect size of CL_SAMPLER_PROPERTIES returned by "
-                       "clGetSamplerInfo");
+            log_error("ERROR: CL_SAMPLER_PROPERTIES size is %d, expected %d.\n",
+                      set_size,
+                      test_properties.size() * sizeof(cl_sampler_properties));
+            return TEST_FAIL;
         }
 
-        number_of_props = set_size / sizeof(cl_sampler_properties);
-        get_properties.resize(number_of_props);
+        cl_uint number_of_props = set_size / sizeof(cl_sampler_properties);
+        check_properties.resize(number_of_props);
         error = clGetSamplerInfo(sampler, CL_SAMPLER_PROPERTIES, set_size,
-                                 get_properties.data(), 0);
-        test_error(error, "clGetSamplerInfo failed.");
+                                 check_properties.data(), 0);
+        test_error(error,
+                   "clGetSamplerInfo failed asking for CL_SAMPLER_PROPERTIES.");
 
-        if (get_properties.back() != 0)
+        if (check_properties.back() != 0)
         {
             log_error(
                 "ERROR: Incorrect last properties value - should be 0!\n");
             return TEST_FAIL;
         }
-        get_properties.pop_back();
-        set_properties.pop_back();
-        if (set_properties != get_properties)
+
+        check_properties.pop_back();
+        test_properties.pop_back();
+
+        if (check_properties != test_properties)
         {
-            for (cl_uint i = 0; i < set_properties.size(); i = i + 2)
+            for (cl_uint i = 0; i < test_properties.size(); i = i + 2)
             {
-                cl_sampler_properties set_property = set_properties[i];
+                cl_sampler_properties set_property = test_properties[i];
                 cl_sampler_properties set_property_value =
-                    set_properties[i + 1];
+                    test_properties[i + 1];
 
-                std::vector<cl_sampler_properties>::iterator it = std::find(
-                    get_properties.begin(), get_properties.end(), set_property);
+                std::vector<cl_sampler_properties>::iterator it =
+                    std::find(check_properties.begin(), check_properties.end(),
+                              set_property);
 
-                if (it == get_properties.end())
+                if (it == check_properties.end())
                 {
                     log_error("ERROR: Property name not found ... 0x%x\n",
                               set_property);
@@ -266,7 +273,7 @@ int test_get_sampler_info(cl_device_id deviceID, cl_context context, cl_command_
                     if (set_property_value != *std::next(it))
                     {
                         log_error(
-                            "ERROR: Incorrect preperty value expected 0x%x, "
+                            "ERROR: Incorrect property value expected 0x%x, "
                             "obtained 0x%x\n",
                             set_property_value, *std::next(it));
                         return TEST_FAIL;

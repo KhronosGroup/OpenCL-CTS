@@ -40,7 +40,7 @@ static int create_object_and_check_properties(cl_context context,
                                               std::vector<cl_uint> local_data,
                                               cl_uint size_x, cl_uint size_y)
 {
-    int error = CL_SUCCESS;
+    cl_int error = CL_SUCCESS;
 
     if (test_case.obj_t == image)
     {
@@ -88,39 +88,32 @@ static int create_object_and_check_properties(cl_context context,
     std::vector<cl_mem_properties> check_properties;
     size_t set_size = 0;
 
-    clGetMemObjectInfo(test_object, CL_MEM_PROPERTIES, 0, NULL, &set_size);
+    error = clGetMemObjectInfo(test_object, CL_MEM_PROPERTIES, 0, NULL, &set_size);
     test_error(error,
-               "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES.");
+               "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES size.");
 
-    if (set_size == 0)
+    if (set_size == 0 && test_case.properties.size() == 0)
     {
-        if (test_case.properties.size() == 0)
-        {
-            return TEST_PASS;
-        }
-        else
-        {
-            log_error("ERROR: Expected non-zero size!\n");
-            return TEST_FAIL;
-        }
+        return TEST_PASS;
+    }
+    if (set_size != test_case.properties.size() * sizeof(cl_mem_properties))
+    {
+        log_error("ERROR: CL_MEM_PROPERTIES size is %d, expected %d.\n",
+                  set_size,
+                  test_case.properties.size() * sizeof(cl_queue_properties));
+        return TEST_FAIL;
     }
 
     cl_uint number_of_props = set_size / sizeof(cl_mem_properties);
     check_properties.resize(number_of_props);
-    clGetMemObjectInfo(test_object, CL_MEM_PROPERTIES, set_size,
-                       check_properties.data(), NULL);
+    error = clGetMemObjectInfo(test_object, CL_MEM_PROPERTIES, set_size,
+                               check_properties.data(), NULL);
     test_error(error,
                "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES.");
 
     if (check_properties.back() != 0)
     {
         log_error("ERROR: Incorrect last properties value - should be 0!\n");
-        return TEST_FAIL;
-    }
-    if (check_properties.size() > test_case.properties.size())
-    {
-        log_error("ERROR: Got %d properties, expected %d properties!\n",
-                  check_properties.size(), test_case.properties.size());
         return TEST_FAIL;
     }
 

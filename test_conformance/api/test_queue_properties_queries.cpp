@@ -113,7 +113,7 @@ static int create_queue_and_check_array_properties(
     cl_context context, cl_device_id deviceID,
     test_queue_array_properties_data test_case)
 {
-    int error = CL_SUCCESS;
+    cl_int error = CL_SUCCESS;
 
     clCommandQueueWrapper test_queue;
 
@@ -135,21 +135,20 @@ static int create_queue_and_check_array_properties(
 
     error = clGetCommandQueueInfo(test_queue, CL_QUEUE_PROPERTIES_ARRAY, 0,
                                   NULL, &set_size);
-    test_error(
-        error,
-        "clGetCommandQueueInfo failed asking for CL_QUEUE_PROPERTIES_ARRAY");
+    test_error(error,
+               "clGetCommandQueueInfo failed asking for "
+               "CL_QUEUE_PROPERTIES_ARRAY size.");
 
-    if (set_size == 0)
+    if (set_size == 0 && test_case.properties.size() == 0)
     {
-        if (test_case.properties.size() == 0)
-        {
-            return TEST_PASS;
-        }
-        else
-        {
-            log_error("ERROR: Expected non-zero size!\n");
-            return TEST_FAIL;
-        }
+        return TEST_PASS;
+    }
+    if (set_size != test_case.properties.size() * sizeof(cl_queue_properties))
+    {
+        log_error("ERROR: CL_QUEUE_PROPERTIES size is %d, expected %d.\n",
+                  set_size,
+                  test_case.properties.size() * sizeof(cl_queue_properties));
+        return TEST_FAIL;
     }
 
     cl_uint number_of_props = set_size / sizeof(cl_queue_properties);
@@ -158,17 +157,11 @@ static int create_queue_and_check_array_properties(
                                   set_size, check_properties.data(), NULL);
     test_error(
         error,
-        "clGetCommandQueueInfo failed asking for CL_QUEUE_PROPERTIES_ARRAY");
+        "clGetCommandQueueInfo failed asking for CL_QUEUE_PROPERTIES_ARRAY.");
 
     if (check_properties.back() != 0)
     {
         log_error("ERROR: Incorrect last property value - should be 0!\n");
-        return TEST_FAIL;
-    }
-    if (check_properties.size() > test_case.properties.size())
-    {
-        log_error("ERROR: Got %d properties, expected %d properties!\n",
-                  check_properties.size(), test_case.properties.size());
         return TEST_FAIL;
     }
 
@@ -188,15 +181,16 @@ static int create_queue_and_check_array_properties(
 
             if (it == check_properties.end())
             {
-                log_error("ERROR: Property not found ... 0x%x\n", set_property);
+                log_error("ERROR: Property name not found ... 0x%x\n",
+                          set_property);
                 return TEST_FAIL;
             }
             else
             {
                 if (set_property_value != *std::next(it))
                 {
-                    log_error("ERROR: Incorrect property value expected %x, "
-                              "obtained %x\n",
+                    log_error("ERROR: Incorrect property value expected 0x%x, "
+                              "obtained 0x%x\n",
                               set_property_value, *std::next(it));
                     return TEST_FAIL;
                 }
@@ -206,6 +200,7 @@ static int create_queue_and_check_array_properties(
                   "incorrect!\n");
         return TEST_FAIL;
     }
+
     return error;
 }
 
