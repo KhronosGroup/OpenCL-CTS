@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,47 +30,46 @@ typedef struct _clState
     size_t m_numThreads;
 } clState;
 
-clState * newClState(cl_device_id device, cl_context context, cl_command_queue queue);
-clState * destroyClState(clState * pState);
+clState* newClState(cl_device_id device, cl_context context,
+                    cl_command_queue queue);
+clState* destroyClState(clState* pState);
 
-int clStateMakeProgram(clState * pState, const char * prog,
-               const char * kernelName);
-void clStateDestroyProgramAndKernel(clState * pState);
+int clStateMakeProgram(clState* pState, const char* prog,
+                       const char* kernelName);
+void clStateDestroyProgramAndKernel(clState* pState);
 
-int runKernel(clState * pState, size_t numThreads);
+int runKernel(clState* pState, size_t numThreads);
 
 typedef struct _bufferStruct
 {
-    void * m_pIn;
-    void * m_pOut;
+    void* m_pIn;
+    void* m_pOut;
 
     cl_mem m_outBuffer;
     cl_mem m_inBuffer;
 
     size_t m_bufSizeIn, m_bufSizeOut;
 
-    int       m_bufferUploaded;
+    int m_bufferUploaded;
 } bufferStruct;
 
 
-bufferStruct * newBufferStruct(size_t inSize, size_t outSize, clState * pClState);
+bufferStruct* newBufferStruct(size_t inSize, size_t outSize, clState* pClState);
 
-bufferStruct * destroyBufferStruct(bufferStruct * destroyMe, clState * pClState);
+bufferStruct* destroyBufferStruct(bufferStruct* destroyMe, clState* pClState);
 
-void initContents(bufferStruct * pBufferStruct, clState * pClState,
-             size_t typeSize,
-             size_t vecWidth);
+void initContents(bufferStruct* pBufferStruct, clState* pClState,
+                  size_t typeSize, size_t vecWidth);
 
-int pushArgs(bufferStruct * pBufferStruct, clState * pClState);
-int retrieveResults(bufferStruct * pBufferStruct, clState * pClState);
+int pushArgs(bufferStruct* pBufferStruct, clState* pClState);
+int retrieveResults(bufferStruct* pBufferStruct, clState* pClState);
 
-int checkCorrectnessStep(bufferStruct * pBufferStruct, clState * pClState,
-             size_t typeSize,
-             size_t vecWidth);
+int checkCorrectnessStep(bufferStruct* pBufferStruct, clState* pClState,
+                         size_t typeSize, size_t vecWidth);
 // vecSizeIdx indexes into g_arrVecAlignMasks, g_arrVecSizeNames
 // and g_arrVecSizes
-int checkCorrectnessAlign(bufferStruct * pBufferStruct, clState * pClState,
+int checkCorrectnessAlign(bufferStruct* pBufferStruct, clState* pClState,
                           size_t minAlign);
 
-int checkPackedCorrectness(bufferStruct * pBufferStruct, clState * pClState,
-               size_t totSize, size_t beforeSize);
+int checkPackedCorrectness(bufferStruct* pBufferStruct, clState* pClState,
+                           size_t totSize, size_t beforeSize);

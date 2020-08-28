@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,20 +24,32 @@
 #define MAX_ERRORS_TO_PRINT 1
 
 
-extern int      create_program_and_kernel(const char *source, const char *kernel_name, cl_program *program_ret, cl_kernel *kernel_ret);
+extern int create_program_and_kernel(const char *source,
+                                     const char *kernel_name,
+                                     cl_program *program_ret,
+                                     cl_kernel *kernel_ret);
 
-extern int test_step_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_step_var(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_step_typedef_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_step_typedef_var(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_step_type(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue, int num_elements);
+extern int test_step_var(cl_device_id deviceID, cl_context context,
+                         cl_command_queue queue, int num_elements);
+extern int test_step_typedef_type(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements);
+extern int test_step_typedef_var(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
 
-int test_vec_align_array(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+int test_vec_align_array(cl_device_id deviceID, cl_context context,
+                         cl_command_queue queue, int num_elements);
 
-int test_vec_align_struct(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+int test_vec_align_struct(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue, int num_elements);
 
-int test_vec_align_packed_struct(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+int test_vec_align_packed_struct(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
 
 
-int test_vec_align_struct_arr(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+int test_vec_align_struct_arr(cl_device_id deviceID, cl_context context,
+                              cl_command_queue queue, int num_elements);
 
-int test_vec_align_packed_struct_arr(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+int test_vec_align_packed_struct_arr(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue, int num_elements);

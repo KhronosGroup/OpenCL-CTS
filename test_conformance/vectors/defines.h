@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,11 +29,11 @@ extern int g_arrVecSizes[NUM_VECTOR_SIZES];
 extern int g_arrVecSteps[NUM_VECTOR_SIZES];
 extern bool g_wimpyMode;
 
-extern const char * g_arrVecSizeNames[NUM_VECTOR_SIZES];
+extern const char *g_arrVecSizeNames[NUM_VECTOR_SIZES];
 extern size_t g_arrVecAlignMasks[NUM_VECTOR_SIZES];
 
 // Define the buffer size that we want to block our test with
-#define BUFFER_SIZE (1024*1024)
+#define BUFFER_SIZE (1024 * 1024)
 #define KPAGESIZE 4096
 
 extern ExplicitType types[];

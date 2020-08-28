@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,9 +15,9 @@
 //
 #include <stdlib.h>
 
-size_t doReplace(char * dest, size_t destLength, const char * source,
-          const char * stringToReplace1,  const char * replaceWith1,
-          const char * stringToReplace2, const char * replaceWith2);
+size_t doReplace(char* dest, size_t destLength, const char* source,
+                 const char* stringToReplace1, const char* replaceWith1,
+                 const char* stringToReplace2, const char* replaceWith2);
 
-size_t doSingleReplace(char * dest, size_t destLength, const char * source,
-               const char * stringToReplace, const char * replaceWith);
+size_t doSingleReplace(char* dest, size_t destLength, const char* source,
+                       const char* stringToReplace, const char* replaceWith);
