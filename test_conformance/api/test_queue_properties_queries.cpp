@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#include "harness/propertyHelpers.h"
 #include "harness/typeWrappers.h"
 #include <vector>
 #include <algorithm>
@@ -38,9 +39,9 @@ int verify_if_properties_supported(
         if (requested_size > 0)
         {
             cl_uint max_queue_size = 0;
-            error = clGetDeviceInfo(
-                deviceID, CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE,
-                sizeof(max_queue_size), &max_queue_size, NULL);
+            error =
+                clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE,
+                                sizeof(max_queue_size), &max_queue_size, NULL);
             test_error(error,
                        "clGetDeviceInfo for "
                        "CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE failed");
@@ -155,48 +156,7 @@ static int create_queue_and_check_array_properties(
         error,
         "clGetCommandQueueInfo failed asking for CL_QUEUE_PROPERTIES_ARRAY.");
 
-    if (check_properties.back() != 0)
-    {
-        log_error("ERROR: Incorrect last property value - should be 0!\n");
-        return TEST_FAIL;
-    }
-
-    check_properties.pop_back();
-    test_case.properties.pop_back();
-
-    if (check_properties != test_case.properties)
-    {
-        for (cl_uint i = 0; i < test_case.properties.size(); i = i + 2)
-        {
-            cl_queue_properties set_property = test_case.properties[i];
-            cl_queue_properties set_property_value =
-                test_case.properties[i + 1];
-
-            std::vector<cl_mem_properties>::iterator it = std::find(
-                check_properties.begin(), check_properties.end(), set_property);
-
-            if (it == check_properties.end())
-            {
-                log_error("ERROR: Property name not found ... 0x%x\n",
-                          set_property);
-                return TEST_FAIL;
-            }
-            else
-            {
-                if (set_property_value != *std::next(it))
-                {
-                    log_error("ERROR: Incorrect property value expected 0x%x, "
-                              "obtained 0x%x\n",
-                              set_property_value, *std::next(it));
-                    return TEST_FAIL;
-                }
-            }
-        }
-        log_error("ERROR: ALL properties and values matched but order "
-                  "incorrect!\n");
-        return TEST_FAIL;
-    }
-
+    error = compareProperties(check_properties, test_case.properties);
     return error;
 }
 

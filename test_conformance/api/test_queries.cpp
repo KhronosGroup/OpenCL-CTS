@@ -15,6 +15,7 @@
 //
 #include "testBase.h"
 #include "harness/imageHelpers.h"
+#include "harness/propertyHelpers.h"
 #include <stdlib.h>
 #include <ctype.h>
 #include <algorithm>
@@ -240,50 +241,8 @@ int test_get_sampler_info(cl_device_id deviceID, cl_context context, cl_command_
         test_error(error,
                    "clGetSamplerInfo failed asking for CL_SAMPLER_PROPERTIES.");
 
-        if (check_properties.back() != 0)
-        {
-            log_error(
-                "ERROR: Incorrect last properties value - should be 0!\n");
-            return TEST_FAIL;
-        }
-
-        check_properties.pop_back();
-        test_properties.pop_back();
-
-        if (check_properties != test_properties)
-        {
-            for (cl_uint i = 0; i < test_properties.size(); i = i + 2)
-            {
-                cl_sampler_properties set_property = test_properties[i];
-                cl_sampler_properties set_property_value =
-                    test_properties[i + 1];
-
-                std::vector<cl_sampler_properties>::iterator it =
-                    std::find(check_properties.begin(), check_properties.end(),
-                              set_property);
-
-                if (it == check_properties.end())
-                {
-                    log_error("ERROR: Property name not found ... 0x%x\n",
-                              set_property);
-                    return TEST_FAIL;
-                }
-                else
-                {
-                    if (set_property_value != *std::next(it))
-                    {
-                        log_error(
-                            "ERROR: Incorrect property value expected 0x%x, "
-                            "obtained 0x%x\n",
-                            set_property_value, *std::next(it));
-                        return TEST_FAIL;
-                    }
-                }
-            }
-            log_error("ERROR: ALL properties and values matched but order "
-                      "incorrect!\n");
-            return TEST_FAIL;
-        }
+        error = compareProperties(check_properties, test_properties);
+        test_error(error, "checkProperties mismatch.");
     }
 
     return 0;
@@ -477,7 +436,8 @@ int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_q
     // extensions can support double but may not support cl_khr_fp64, which implies math library support.
 
     cl_uint baseAddrAlign;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, baseAddrAlign, "base address alignment", "%d bits", int )
+    TEST_DEVICE_PARAM(deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, baseAddrAlign,
+                      "base address alignment", "%d bits", int)
 
     cl_uint maxDataAlign;
     TEST_DEVICE_PARAM( deviceID, CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE, maxDataAlign, "min data type alignment", "%d bytes", int )

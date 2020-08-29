@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#include "harness/propertyHelpers.h"
 #include "harness/typeWrappers.h"
 #include <vector>
 #include <algorithm>
@@ -112,46 +113,7 @@ static int create_object_and_check_properties(cl_context context,
     test_error(error,
                "clGetMemObjectInfo failed asking for CL_MEM_PROPERTIES.");
 
-    if (check_properties.back() != 0)
-    {
-        log_error("ERROR: Incorrect last properties value - should be 0!\n");
-        return TEST_FAIL;
-    }
-
-    check_properties.pop_back();
-    test_case.properties.pop_back();
-
-    if (check_properties != test_case.properties)
-    {
-        for (cl_uint i = 0; i < test_case.properties.size(); i = i + 2)
-        {
-            cl_mem_properties set_property = test_case.properties[i];
-            cl_mem_properties set_property_value = test_case.properties[i + 1];
-
-            std::vector<cl_mem_properties>::iterator it = std::find(
-                check_properties.begin(), check_properties.end(), set_property);
-
-            if (it == check_properties.end())
-            {
-                log_error("ERROR: Property not found ... 0x%x\n", set_property);
-                return TEST_FAIL;
-            }
-            else
-            {
-                if (set_property_value != *std::next(it))
-                {
-                    log_error("ERROR: Incorrect property value expected %x, "
-                              "obtained %x\n",
-                              set_property_value, *std::next(it));
-                    return TEST_FAIL;
-                }
-            }
-        }
-        log_error(
-            "ERROR: ALL properties and values matched but order incorrect!\n");
-        return TEST_FAIL;
-    }
-
+    error = compareProperties(check_properties, test_case.properties);
     return error;
 }
 
