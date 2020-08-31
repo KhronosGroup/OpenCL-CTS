@@ -164,7 +164,7 @@ static int
 run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
                                 test_queue_array_properties_data test_case)
 {
-    int error = CL_SUCCESS;
+    int error = TEST_PASS;
 
     std::vector<cl_queue_properties> requested_properties =
         test_case.properties;
@@ -193,7 +193,7 @@ run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
         if (error == TEST_SKIPPED_ITSELF)
         {
             log_info("TC result: skipped\n");
-            return CL_SUCCESS;
+            return TEST_PASS;
         }
         test_error(error,
                    "Checking which queue properties supported failed.\n");
@@ -211,7 +211,7 @@ run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
 int test_queue_properties_queries(cl_device_id deviceID, cl_context context,
                                   cl_command_queue queue, int num_elements)
 {
-    int error = CL_SUCCESS;
+    int error = TEST_PASS;
     std::vector<test_queue_array_properties_data> test_cases;
 
     test_cases.push_back({ {}, "host queue, NULL properties" });

@@ -13,8 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "kernelHelpers.h"
+#include "propertyHelpers.h"
 #include "errorHelpers.h"
+
+#include <assert.h>
 
 #include <algorithm>
 #include <vector>
@@ -22,6 +24,10 @@
 static bool findProperty(const std::vector<cl_properties>& props,
                          cl_properties prop, cl_properties& value)
 {
+    // This function assumes properties are valid:
+    assert(props.size() == 0 || props.back() == 0);
+    assert(props.size() == 0 || props.size() % 2 == 1);
+
     for (cl_uint i = 0; i < props.size(); i = i + 2)
     {
         cl_properties check_prop = props[i];
@@ -89,7 +95,7 @@ int compareProperties(const std::vector<cl_properties>& queried,
 
             bool found = findProperty(queried, check_prop, queried_value);
 
-            if (found == false)
+            if (!found)
             {
                 log_error("ERROR: expected property 0x%x not found!\n",
                           check_prop);
