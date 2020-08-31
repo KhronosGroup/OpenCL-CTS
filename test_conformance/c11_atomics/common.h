@@ -65,6 +65,8 @@ extern bool gUseHostPtr; // use malloc/free instead of clSVMAlloc/clSVMFree
 extern bool gDebug; // print OpenCL kernel code
 extern int gInternalIterations; // internal test iterations for atomic operation, sufficient to verify atomicity
 extern int gMaxDeviceThreads; // maximum number of threads executed on OCL device
+extern cl_device_atomic_capabilities gAtomicMemCap,
+    gAtomicFenceCap; // atomic memory and fence capabilities for this device
 
 extern const char *get_memory_order_type_name(TExplicitMemoryOrderType orderType);
 extern const char *get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
@@ -281,6 +283,88 @@ public:
     else
       return 0;
   }
+
+  int CheckCapabilities(TExplicitMemoryScopeType memoryScope,
+                        TExplicitMemoryOrderType memoryOrder)
+  {
+      /*
+          Differentiation between atomic fence and other atomic operations
+          does not need to occur here.
+
+          The initialisation of this test checks that the minimum required
+          capabilities are supported by this device.
+
+          The following switches allow the test to skip if optional capabilites
+          are not supported by the device.
+        */
+      switch (memoryScope)
+      {
+          case MEMORY_SCOPE_EMPTY: {
+              break;
+          }
+          case MEMORY_SCOPE_WORK_GROUP: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          case MEMORY_SCOPE_DEVICE: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_DEVICE) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          case MEMORY_SCOPE_ALL_SVM_DEVICES: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          default: {
+              log_info("Invalid memory scope\n");
+              break;
+          }
+      }
+
+      switch (memoryOrder)
+      {
+          case MEMORY_ORDER_EMPTY: {
+              break;
+          }
+          case MEMORY_ORDER_RELAXED: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_ORDER_RELAXED) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          case MEMORY_ORDER_ACQUIRE:
+          case MEMORY_ORDER_RELEASE:
+          case MEMORY_ORDER_ACQ_REL: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_ORDER_ACQ_REL) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          case MEMORY_ORDER_SEQ_CST: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_ORDER_SEQ_CST) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          default: {
+              log_info("Invalid memory order\n");
+              break;
+          }
+      }
+
+      return 0;
+  }
   virtual bool SVMDataBufferAllSVMConsistent() {return false;}
   bool UseSVM() {return _useSVM;}
   void StartValue(HostDataType startValue) {_startValue = startValue;}
@@ -339,6 +423,7 @@ class CBasicTestMemOrderScope : public CBasicTest<HostAtomicType, HostDataType>
 public:
   using CBasicTest<HostAtomicType, HostDataType>::LocalMemory;
   using CBasicTest<HostAtomicType, HostDataType>::MaxGroupSize;
+  using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
   CBasicTestMemOrderScope(TExplicitAtomicType dataType, bool useSVM = false) : CBasicTest<HostAtomicType, HostDataType>(dataType, useSVM)
   {
   }
@@ -389,6 +474,10 @@ public:
       MaxGroupSize(16); // increase number of groups by forcing smaller group size
     else
       MaxGroupSize(0); // group size limited by device capabilities
+
+    if (CheckCapabilities(MemoryScope(), MemoryOrder()) == TEST_SKIPPED_ITSELF)
+        return 0; // skip test - not applicable
+
     return CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context, queue);
   }
   virtual int ExecuteForEachParameterSet(cl_device_id deviceID, cl_context context, cl_command_queue queue)
@@ -470,6 +559,8 @@ public:
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryScope;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrderStr;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryScopeStr;
+  using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
+
   CBasicTestMemOrder2Scope(TExplicitAtomicType dataType, bool useSVM = false) : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType, useSVM)
   {
   }
@@ -517,6 +608,15 @@ public:
           MemoryOrder(memoryOrder[oi]);
           MemoryOrder2(memoryOrder[o2i]);
           MemoryScope(memoryScope[si]);
+
+          if (CheckCapabilities(MemoryScope(), MemoryOrder())
+              == TEST_SKIPPED_ITSELF)
+              continue; // skip test - not applicable
+
+          if (CheckCapabilities(MemoryScope(), MemoryOrder2())
+              == TEST_SKIPPED_ITSELF)
+              continue; // skip test - not applicable
+
           EXECUTE_TEST(error, (CBasicTest<HostAtomicType, HostDataType>::ExecuteForEachParameterSet(deviceID, context, queue)));
         }
       }
@@ -855,8 +955,9 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(cl_device_id dev
     // Set up the kernel code
     programSource = PragmaHeader(deviceID)+ProgramHeader(numDestItems)+FunctionCode()+KernelCode(numDestItems);
     programLine = programSource.c_str();
-    if(create_single_kernel_helper_with_build_options(context, &program, &kernel, 1, &programLine, "test_atomic_kernel",
-      gOldAPI ? "" : "-cl-std=CL2.0"))
+    if (create_single_kernel_helper_with_build_options(
+            context, &program, &kernel, 1, &programLine, "test_atomic_kernel",
+            gOldAPI ? "" : nullptr))
     {
       return -1;
     }
