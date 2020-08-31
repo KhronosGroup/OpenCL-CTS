@@ -84,11 +84,10 @@ int test_single_param_integer_kernel(cl_command_queue queue, cl_context context,
                 useOpKernel ? fnName : "", useOpKernel ? "" : fnName, sizeName,
                 sizeName );
 
-    bool isOpenCL20Function = (strcmp(fnName,"ctz") == 0)? true: false;
-
     /* Create kernels */
     programPtr = kernelSource;
-    if( create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, (const char **)&programPtr, "sample_test", isOpenCL20Function ? "-cl-std=CL2.0": "" ) )
+    if (create_single_kernel_helper(context, &program, &kernel, 1,
+                                    (const char **)&programPtr, "sample_test"))
     {
         log_error("The program we attempted to compile was: \n%s\n", kernelSource);
         return -1;
