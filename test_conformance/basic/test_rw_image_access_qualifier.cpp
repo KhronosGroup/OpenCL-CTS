@@ -43,6 +43,29 @@ static const char* rw_kernel_code =
 
 int test_rw_image_access_qualifier(cl_device_id device_id, cl_context context, cl_command_queue commands, int num_elements)
 {
+    // This test should be skipped if images are not supported.
+    if (checkForImageSupport(device_id))
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    // Support for read-write image arguments is required for an
+    // or 2.X device if the device supports images. In OpenCL-3.0
+    // read-write images are optional. This test is already being skipped
+    // for 1.X devices.
+    if (get_device_cl_version(device_id) >= Version(3, 0))
+    {
+        cl_uint are_rw_images_supported{};
+        test_error(
+            clGetDeviceInfo(device_id, CL_DEVICE_MAX_READ_IMAGE_ARGS,
+                            sizeof(are_rw_images_supported),
+                            &are_rw_images_supported, nullptr),
+            "clGetDeviceInfo failed for CL_DEVICE_MAX_READ_IMAGE_ARGS\n");
+        if (0 == are_rw_images_supported)
+        {
+            return TEST_SKIPPED_ITSELF;
+        }
+    }
 
     unsigned int i;
 
@@ -86,7 +109,8 @@ int test_rw_image_access_qualifier(cl_device_id device_id, cl_context context, c
     }
 
     /* Build the program executable */
-  err = create_single_kernel_helper_with_build_options(context,&program,&kernel,1,&rw_kernel_code,"test_rw_images", "-cl-std=CL2.0");
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &rw_kernel_code, "test_rw_images");
     if (err != CL_SUCCESS || !program) {
         log_error("Error: clCreateProgramWithSource failed\n");
     return err;
