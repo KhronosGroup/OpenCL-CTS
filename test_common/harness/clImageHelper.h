@@ -42,7 +42,7 @@
 
 #ifdef CL_VERSION_1_2
     cl_image_desc image_desc_dest;
-    image_desc_dest.image_type = CL_MEM_OBJECT_IMAGE2D;;
+    image_desc_dest.image_type = CL_MEM_OBJECT_IMAGE2D;
     image_desc_dest.image_width = image_width;
     image_desc_dest.image_height = image_height;
     image_desc_dest.image_depth= 0;// not usedfor 2d
@@ -86,7 +86,7 @@
         cl_mem mImage = NULL;
 
         cl_image_desc image_desc_dest;
-        image_desc_dest.image_type = CL_MEM_OBJECT_IMAGE2D;;
+        image_desc_dest.image_type = CL_MEM_OBJECT_IMAGE2D;
         image_desc_dest.image_width = image_width;
         image_desc_dest.image_height = image_height;
         image_desc_dest.image_depth= 0;// not usedfor 2d

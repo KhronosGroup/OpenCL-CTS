@@ -390,7 +390,8 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_object_type imageTyp
                 image = create_image_2d( context, mem_flags, fmt, width, height, 0, NULL, &error );
                 break;
             case CL_MEM_OBJECT_IMAGE3D:
-                image = create_image_3d( context, mem_flags, fmt, width, height, depth, 0, 0, NULL, &error );;
+                image = create_image_3d(context, mem_flags, fmt, width, height,
+                                        depth, 0, 0, NULL, &error);
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
                 image = create_image_1d_array( context, mem_flags, fmt, width, arraySize, 0, 0, NULL, &error );
@@ -413,7 +414,8 @@ cl_int clProtectedImage::Create( cl_context context, cl_mem_object_type imageTyp
             image = create_image_2d( context, mem_flags, fmt, width, height, 0, NULL, &error );
             break;
         case CL_MEM_OBJECT_IMAGE3D:
-            image = create_image_3d( context, mem_flags, fmt, width, height, depth, 0, 0, NULL, &error );;
+            image = create_image_3d(context, mem_flags, fmt, width, height,
+                                    depth, 0, 0, NULL, &error);
             break;
         case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             image = create_image_1d_array( context, mem_flags, fmt, width, arraySize, 0, 0, NULL, &error );
