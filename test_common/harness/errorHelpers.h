@@ -106,6 +106,7 @@ extern int IsChannelTypeSupported( cl_channel_type type );
 extern const char *GetChannelOrderName( cl_channel_order order );
 extern int IsChannelOrderSupported( cl_channel_order order );
 extern const char *GetAddressModeName( cl_addressing_mode mode );
+extern const char *GetQueuePropertyName(cl_command_queue_properties properties);
 
 extern const char *GetDeviceTypeName( cl_device_type type );
 int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device);

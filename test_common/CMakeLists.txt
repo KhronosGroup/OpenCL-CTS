@@ -14,6 +14,7 @@ set(HARNESS_SOURCES
     harness/deviceInfo.cpp
     harness/os_helpers.cpp
     harness/parseParameters.cpp
+    harness/propertyHelpers.cpp
     harness/testHarness.cpp
     harness/ThreadPool.cpp
     miniz/miniz.c

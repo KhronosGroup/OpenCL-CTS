@@ -278,6 +278,19 @@ const char *GetDataVectorString( void *dataBuffer, size_t typeSize, size_t vecSi
     return buffer;
 }
 
+const char *GetQueuePropertyName(cl_command_queue_properties property)
+{
+    switch (property)
+    {
+        case CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE:
+            return "CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE";
+        case CL_QUEUE_PROFILING_ENABLE: return "CL_QUEUE_PROFILING_ENABLE";
+        case CL_QUEUE_ON_DEVICE: return "CL_QUEUE_ON_DEVICE";
+        case CL_QUEUE_ON_DEVICE_DEFAULT: return "CL_QUEUE_ON_DEVICE_DEFAULT";
+        default: return "(unknown)";
+    }
+}
+
 #ifndef MAX
 #define MAX( _a, _b )       ((_a) > (_b) ? (_a) : (_b))
 #endif
