@@ -371,8 +371,7 @@ void *ThreadPool_WorkerFunc( void *p )
             {
 #if (__MINGW32__)
                 EnterCriticalSection(&gAtomicLock);
-                if( jobError == CL_SUCCESS );
-                    jobError = err;
+                if (jobError == CL_SUCCESS) jobError = err;
                 gRunCount = 0;
                 LeaveCriticalSection(&gAtomicLock);
 #elif defined( __GNUC__ )
@@ -393,8 +392,7 @@ void *ThreadPool_WorkerFunc( void *p )
 #else
                 if( pthread_mutex_lock(&gAtomicLock) )
                     log_error( "Atomic operation failed. pthread_mutex_lock(&gAtomicLock) returned an error\n");
-                if( jobError == CL_SUCCESS );
-                    jobError = err;
+                if (jobError == CL_SUCCESS) jobError = err;
                 gRunCount = 0;
                 if( pthread_mutex_unlock(&gAtomicLock) )
                     log_error( "Failed to release gAtomicLock. Further atomic operations may deadlock\n");
