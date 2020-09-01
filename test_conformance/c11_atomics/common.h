@@ -948,50 +948,75 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(cl_device_id dev
 
   if(deviceThreadCount > 0)
   {
-    cl_ulong usedLocalMemory;
-    cl_ulong totalLocalMemory;
-    cl_uint maxWorkGroupSize;
+      // This loop iteratively reduces the workgroup size by 2 and then
+      // re-generates the kernel with the reduced
+      // workgroup size until we find a size which is admissible for the kernel
+      // being run or reduce the wg size
+      // to the trivial case of 1 (which was separately verified to be accurate
+      // for the kernel being run)
 
-    // Set up the kernel code
-    programSource = PragmaHeader(deviceID)+ProgramHeader(numDestItems)+FunctionCode()+KernelCode(numDestItems);
-    programLine = programSource.c_str();
-    if (create_single_kernel_helper_with_build_options(
-            context, &program, &kernel, 1, &programLine, "test_atomic_kernel",
-            gOldAPI ? "" : nullptr))
-    {
-      return -1;
-    }
-    if(gDebug)
-    {
-      log_info("Program source:\n");
-      log_info("%s\n", programLine);
-    }
-    // tune up work sizes based on kernel info
-    error = clGetKernelWorkGroupInfo(kernel, deviceID, CL_KERNEL_WORK_GROUP_SIZE, sizeof(groupSize), &groupSize, NULL);
-    test_error(error, "Unable to obtain max work group size for device and kernel combo");
+      while ((CurrentGroupSize() > 1))
+      {
+          // Re-generate the kernel code with the current group size
+          if (kernel) clReleaseKernel(kernel);
+          if (program) clReleaseProgram(program);
+          programSource = PragmaHeader(deviceID) + ProgramHeader(numDestItems)
+              + FunctionCode() + KernelCode(numDestItems);
+          programLine = programSource.c_str();
+          if (create_single_kernel_helper_with_build_options(
+                  context, &program, &kernel, 1, &programLine,
+                  "test_atomic_kernel", gOldAPI ? "" : nullptr))
+          {
+              return -1;
+          }
+          // Get work group size for the new kernel
+          error = clGetKernelWorkGroupInfo(kernel, deviceID,
+                                           CL_KERNEL_WORK_GROUP_SIZE,
+                                           sizeof(groupSize), &groupSize, NULL);
+          test_error(error,
+                     "Unable to obtain max work group size for device and "
+                     "kernel combo");
 
-    if(LocalMemory())
-    {
-      error = clGetKernelWorkGroupInfo (kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(usedLocalMemory), &usedLocalMemory, NULL);
-      test_error(error, "clGetKernelWorkGroupInfo failed");
+          if (LocalMemory())
+          {
+              cl_ulong usedLocalMemory;
+              cl_ulong totalLocalMemory;
+              cl_uint maxWorkGroupSize;
 
-      error = clGetDeviceInfo(deviceID, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(totalLocalMemory), &totalLocalMemory, NULL);
-      test_error(error, "clGetDeviceInfo failed");
+              error = clGetKernelWorkGroupInfo(
+                  kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE,
+                  sizeof(usedLocalMemory), &usedLocalMemory, NULL);
+              test_error(error, "clGetKernelWorkGroupInfo failed");
 
-      // We know that each work-group is going to use typeSize * deviceThreadCount bytes of local memory
-      // so pick the maximum value for deviceThreadCount that uses all the local memory.
-      maxWorkGroupSize = ((totalLocalMemory - usedLocalMemory) / typeSize);
+              error = clGetDeviceInfo(deviceID, CL_DEVICE_LOCAL_MEM_SIZE,
+                                      sizeof(totalLocalMemory),
+                                      &totalLocalMemory, NULL);
+              test_error(error, "clGetDeviceInfo failed");
 
-      if(maxWorkGroupSize < groupSize)
-        groupSize = maxWorkGroupSize;
-    }
+              // We know that each work-group is going to use typeSize *
+              // deviceThreadCount bytes of local memory
+              // so pick the maximum value for deviceThreadCount that uses all
+              // the local memory.
+              maxWorkGroupSize =
+                  ((totalLocalMemory - usedLocalMemory) / typeSize);
 
-    CurrentGroupSize((cl_uint)groupSize);
+              if (maxWorkGroupSize < groupSize) groupSize = maxWorkGroupSize;
+          }
+          if (CurrentGroupSize() <= groupSize)
+              break;
+          else
+              CurrentGroupSize(CurrentGroupSize() / 2);
+      }
     if(CurrentGroupSize() > deviceThreadCount)
       CurrentGroupSize(deviceThreadCount);
     if(CurrentGroupNum(deviceThreadCount) == 1 || gOldAPI)
       deviceThreadCount = CurrentGroupSize()*CurrentGroupNum(deviceThreadCount);
     threadCount = deviceThreadCount+hostThreadCount;
+  }
+  if (gDebug)
+  {
+      log_info("Program source:\n");
+      log_info("%s\n", programLine);
   }
   if(deviceThreadCount > 0)
     log_info("\t\t(thread count %u, group size %u)\n", deviceThreadCount, CurrentGroupSize());
