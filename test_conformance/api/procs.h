@@ -121,6 +121,10 @@ extern int      test_sub_group_dispatch(cl_device_id deviceID, cl_context contex
 extern int      test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_zero_sized_enqueue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_queue_properties( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+extern int test_queue_flush_on_release(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
 extern int test_buffer_properties_queries(cl_device_id deviceID,
                                           cl_context context,
                                           cl_command_queue queue,

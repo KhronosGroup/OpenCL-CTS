@@ -1693,3 +1693,23 @@ Version get_max_OpenCL_C_for_context(cl_context context)
                   });
     return current_version;
 }
+
+bool poll_until(unsigned timeout_ms, unsigned interval_ms,
+                std::function<bool()> fn)
+{
+    unsigned time_spent_ms = 0;
+    bool ret = false;
+
+    while (time_spent_ms < timeout_ms)
+    {
+        ret = fn();
+        if (ret)
+        {
+            break;
+        }
+        usleep(interval_ms * 1000);
+        time_spent_ms += interval_ms;
+    }
+
+    return ret;
+}
