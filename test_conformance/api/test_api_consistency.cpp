@@ -538,9 +538,8 @@ int test_consistency_non_uniform_work_group(cl_device_id deviceID,
             clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
         test_error(error, "Unable to create test buffer");
 
-        error = create_single_kernel_helper_with_build_options(
-            context, &program, &kernel, 1, &test_kernel, "test",
-            "-cl-std=CL3.0");
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &test_kernel, "test");
         test_error(error, "Unable to create test kernel");
 
         error = clSetKernelArg(kernel, 0, sizeof(mem), &mem);
