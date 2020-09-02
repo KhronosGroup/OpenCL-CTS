@@ -471,7 +471,7 @@ int test_consistency_progvar(cl_device_id deviceID, cl_context context,
                                             &test_kernel, "test");
         test_error(error, "Unable to create test kernel");
 
-        size_t sz = 0;
+        size_t sz = SIZE_MAX;
 
         // clGetDeviceInfo, passing
         // CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE
@@ -703,14 +703,14 @@ int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
         test_error(error, "Unable to create test buffer");
 
         // Check that both queries return zero:
-        test_assert_error(imagePitchAlignment == 0,
-                          "CL_DEVICE_IMAGE_PITCH_ALIGNMENT returned a non-zero "
-                          "value but CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT "
-                          "returned 0");
-        test_assert_error(imagePitchAlignment == 0,
-                          "CL_DEVICE_IMAGE_PITCH_ALIGNMENT returned 0 but "
-                          "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT returned a "
-                          "non-zero value");
+        test_assert_error(
+            imagePitchAlignment == 0,
+            "CL_DEVICE_IMAGE_PITCH_ALIGNMENT returned a non-zero value but "
+            "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT returned 0");
+        test_assert_error(
+            imageBaseAddressAlignment == 0,
+            "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT returned a non-zero value "
+            "but CL_DEVICE_IMAGE_PITCH_ALIGNMENT returned 0");
 
         // clGetDeviceInfo, passing CL_DEVICE_EXTENSIONS
         // Will not describe support for the cl_khr_image2d_from_buffer
@@ -879,7 +879,7 @@ int test_consistency_il_programs(cl_device_id deviceID, cl_context context,
 
     // Even if the device does not support Intermediate Language Programs the
     // size of the string query should not be zero.
-    size_t sz = 0;
+    size_t sz = SIZE_MAX;
     error = clGetDeviceInfo(deviceID, CL_DEVICE_IL_VERSION, 0, NULL, &sz);
     test_error(error, "Unable to query CL_DEVICE_IL_VERSION");
     test_assert_error(sz != 0,
@@ -1008,7 +1008,7 @@ int test_consistency_subgroups(cl_device_id deviceID, cl_context context,
         // clGetKernelSubGroupInfo
         // Returns CL_INVALID_OPERATION if device does not support Subgroups.
 
-        size_t sz = 0;
+        size_t sz = SIZE_MAX;
         error = clGetKernelSubGroupInfo(kernel, deviceID,
                                         CL_KERNEL_MAX_NUM_SUB_GROUPS, 0, NULL,
                                         sizeof(sz), &sz, NULL);
