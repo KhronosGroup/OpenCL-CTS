@@ -46,7 +46,7 @@ int test_queue_flush_on_release(cl_device_id deviceID, cl_context context,
     err = clReleaseCommandQueue(queue);
 
     // Wait for kernel to execute since the queue must flush on release
-    bool success = poll_until(2000, 50, [event]() {
+    bool success = poll_until(2000, 50, [&event]() {
         cl_int status;
         cl_int err = clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS,
                                     sizeof(cl_int), &status, nullptr);
