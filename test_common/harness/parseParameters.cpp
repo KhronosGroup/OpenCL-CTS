@@ -36,24 +36,33 @@ std::string          gCompilationProgram = DEFAULT_COMPILATION_PROGRAM;
 
 void helpInfo ()
 {
-    log_info("Common options:\n"
-             "        -h, --help                  This help\n"
-             "        --compilation-mode <mode>   Specify a compilation mode.  Mode can be:\n"
-             "                           online     Use online compilation (default)\n"
-             "                           binary     Use binary offline compilation\n"
-             "                           spir-v     Use SPIR-V offline compilation\n"
-             "\n"
-             "    For offline compilation (binary and spir-v modes) only:\n"
-             "        --compilation-cache-mode <cache-mode>  Specify a compilation caching mode:\n"
-             "                                 compile-if-absent  Read from cache if already populated, or\n"
-             "                                                    else perform offline compilation (default)\n"
-             "                                 force-read        Force reading from the cache\n"
-             "                                 overwrite         Disable reading from the cache\n"
-             "                                 dump-cl-files     Dumps the .cl and build .options files used by the test suite\n"
-             "        --compilation-cache-path <path>   Path for offline compiler output and CL source\n"
-             "        --compilation-program <prog>      Program to use for offline compilation,\n"
-             "                                          defaults to " DEFAULT_COMPILATION_PROGRAM "\n"
-             "\n");
+    log_info(
+        R"(Common options:
+    -h, --help
+        This help
+    --compilation-mode <mode>
+        Specify a compilation mode.  Mode can be:
+            online     Use online compilation (default)
+            binary     Use binary offline compilation
+            spir-v     Use SPIR-V offline compilation
+
+For offline compilation (binary and spir-v modes) only:
+    --compilation-cache-mode <cache-mode>
+        Specify a compilation caching mode:
+            compile-if-absent
+                Read from cache if already populated, or else perform
+                offline compilation (default)
+            force-read
+                Force reading from the cache
+            overwrite
+                Disable reading from the cache
+            dump-cl-files
+                Dumps the .cl and build .options files used by the test suite
+    --compilation-cache-path <path>
+        Path for offline compiler output and CL source
+    --compilation-program <prog>
+        Program to use for offline compilation, defaults to:
+            )" DEFAULT_COMPILATION_PROGRAM "\n\n");
 }
 
 int parseCustomParam (int argc, const char *argv[], const char *ignore)
