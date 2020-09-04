@@ -7,7 +7,6 @@
                OpCapability Linkage
                OpCapability Kernel
                OpCapability Int8
-               OpExtension "SPV_KHR_no_integer_wrap_decoration"
           %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical64 OpenCL
                OpEntryPoint Kernel %11 "spec_const_kernel"
@@ -21,7 +20,6 @@
                OpName %if_end "if.end"
                OpDecorate %test_value FuncParamAttr Zext
                OpDecorate %test_value LinkageAttributes "test_value" Export
-               OpDecorate %add NoSignedWrap
                OpDecorate %true SpecId 101
       %uchar = OpTypeInt 8 0
        %uint = OpTypeInt 32 0
