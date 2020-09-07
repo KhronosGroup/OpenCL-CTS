@@ -1584,42 +1584,7 @@ int printDeviceHeader( cl_device_id device )
 
 Version get_device_cl_c_version(cl_device_id device)
 {
-    // Get the device OpenCL version.
     auto device_cl_version = get_device_cl_version(device);
-
-    // If the device version >= 3.0 it must support the
-    // CL_DEVICE_OPENCL_C_ALL_VERSIONS query from which we can extract the most
-    // recent CL C version supported by the device.
-    if (device_cl_version >= Version{ 3, 0 })
-    {
-        size_t opencl_c_all_versions_size_in_bytes{};
-        auto error =
-            clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS, 0, nullptr,
-                            &opencl_c_all_versions_size_in_bytes);
-        test_error_ret(
-            error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
-            (Version{ -1, 0 }));
-        std::vector<cl_name_version> name_versions(
-            opencl_c_all_versions_size_in_bytes / sizeof(cl_name_version));
-        error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS,
-                                opencl_c_all_versions_size_in_bytes,
-                                name_versions.data(), nullptr);
-        test_error_ret(
-            error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
-            (Version{ -1, 0 }));
-
-        Version max_supported_cl_c_version{};
-        for (const auto &name_version : name_versions)
-        {
-            Version current_version{ CL_VERSION_MAJOR(name_version.version),
-                                     CL_VERSION_MINOR(name_version.version) };
-            max_supported_cl_c_version =
-                (current_version > max_supported_cl_c_version)
-                ? current_version
-                : max_supported_cl_c_version;
-        }
-        return max_supported_cl_c_version;
-    }
 
     // The second special case is OpenCL-1.0 where CL_DEVICE_OPENCL_C_VERSION
     // did not exist, but since this is just the first version we can
@@ -1656,6 +1621,47 @@ Version get_device_cl_c_version(cl_device_id device)
     return Version{ major - '0', minor - '0' };
 }
 
+Version get_device_latest_cl_c_version(cl_device_id device)
+{
+    auto device_cl_version = get_device_cl_version(device);
+
+    // If the device version >= 3.0 it must support the
+    // CL_DEVICE_OPENCL_C_ALL_VERSIONS query from which we can extract the most
+    // recent CL C version supported by the device.
+    if (device_cl_version >= Version{ 3, 0 })
+    {
+        size_t opencl_c_all_versions_size_in_bytes{};
+        auto error =
+            clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS, 0, nullptr,
+                            &opencl_c_all_versions_size_in_bytes);
+        test_error_ret(
+            error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
+            (Version{ -1, 0 }));
+        std::vector<cl_name_version> name_versions(
+            opencl_c_all_versions_size_in_bytes / sizeof(cl_name_version));
+        error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS,
+                                opencl_c_all_versions_size_in_bytes,
+                                name_versions.data(), nullptr);
+        test_error_ret(
+            error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
+            (Version{ -1, 0 }));
+
+        Version max_supported_cl_c_version{};
+        for (const auto &name_version : name_versions)
+        {
+            Version current_version{ CL_VERSION_MAJOR(name_version.version),
+                                     CL_VERSION_MINOR(name_version.version) };
+            max_supported_cl_c_version =
+                (current_version > max_supported_cl_c_version)
+                ? current_version
+                : max_supported_cl_c_version;
+        }
+        return max_supported_cl_c_version;
+    }
+
+    return get_device_cl_c_version(device);
+}
+
 Version get_max_OpenCL_C_for_context(cl_context context)
 {
     // Get all the devices in the context and find the maximum
@@ -1669,10 +1675,11 @@ Version get_max_OpenCL_C_for_context(cl_context context)
                                       / sizeof(cl_device_id));
     error = clGetContextInfo(context, CL_CONTEXT_DEVICES, devices_size_in_bytes,
                              devices.data(), nullptr);
-    auto current_version = get_device_cl_c_version(devices[0]);
+    auto current_version = get_device_latest_cl_c_version(devices[0]);
     std::for_each(std::next(devices.begin()), devices.end(),
                   [&current_version](cl_device_id device) {
-                      auto device_version = get_device_cl_c_version(device);
+                      auto device_version =
+                          get_device_latest_cl_c_version(device);
                       // OpenCL 3.0 is not backwards compatible with 2.0.
                       // If we have 3.0 and 2.0 in the same driver we
                       // use 1.2.
@@ -1692,6 +1699,50 @@ Version get_max_OpenCL_C_for_context(cl_context context)
                       }
                   });
     return current_version;
+}
+
+bool device_supports_cl_c_version(cl_device_id device, Version version)
+{
+    auto device_cl_version = get_device_cl_version(device);
+
+    // In general, a device does not support an OpenCL C version if it is <=
+    // CL_DEVICE_OPENCL_C_VERSION AND it does not appear in the
+    // CL_DEVICE_OPENCL_C_ALL_VERSIONS query.
+
+    // If the device version >= 3.0 it must support the
+    // CL_DEVICE_OPENCL_C_ALL_VERSIONS query, and the version of OpenCL C being
+    // used must appear in the query result if it's <=
+    // CL_DEVICE_OPENCL_C_VERSION.
+    if (device_cl_version >= Version{ 3, 0 })
+    {
+        size_t opencl_c_all_versions_size_in_bytes{};
+        auto error =
+            clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS, 0, nullptr,
+                            &opencl_c_all_versions_size_in_bytes);
+        test_error_ret(
+            error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
+            (false));
+        std::vector<cl_name_version> name_versions(
+            opencl_c_all_versions_size_in_bytes / sizeof(cl_name_version));
+        error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS,
+                                opencl_c_all_versions_size_in_bytes,
+                                name_versions.data(), nullptr);
+        test_error_ret(
+            error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
+            (false));
+
+        for (const auto &name_version : name_versions)
+        {
+            Version current_version{ CL_VERSION_MAJOR(name_version.version),
+                                     CL_VERSION_MINOR(name_version.version) };
+            if (current_version == version)
+            {
+                return true;
+            }
+        }
+    }
+
+    return version <= get_device_cl_c_version(device);
 }
 
 bool poll_until(unsigned timeout_ms, unsigned interval_ms,
