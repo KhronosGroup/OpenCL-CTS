@@ -160,15 +160,33 @@ static int check_atomic_capabilities(cl_device_atomic_capabilities atomicCaps,
     if ((atomicCaps & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES) != 0
         && (atomicCaps & CL_DEVICE_ATOMIC_SCOPE_DEVICE) == 0)
     {
-        log_info("Check: ATOMIC_SCOPE_ALL_DEVICES is supported, but "
-                 "ATOMIC_SCOPE_DEVICE is not?\n");
+        log_error("Support for CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES requires "
+                  "support for CL_DEVICE_ATOMIC_SCOPE_DEVICE!\n");
+        return TEST_FAIL;
     }
 
     if ((atomicCaps & CL_DEVICE_ATOMIC_SCOPE_DEVICE) != 0
         && (atomicCaps & CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP) == 0)
     {
-        log_info("Check: ATOMIC_SCOPE_DEVICE is supported, but "
-                 "ATOMIC_SCOPE_WORK_GROUP is not?\n");
+        log_error("Support for CL_DEVICE_ATOMIC_SCOPE_DEVICE requires "
+                  "support for CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP!\n");
+        return TEST_FAIL;
+    }
+
+    if ((atomicCaps & CL_DEVICE_ATOMIC_ORDER_SEQ_CST) != 0
+        && (atomicCaps & CL_DEVICE_ATOMIC_ORDER_ACQ_REL) == 0)
+    {
+        log_error("Support for CL_DEVICE_ATOMIC_ORDER_SEQ_CST requires "
+                  "support for CL_DEVICE_ATOMIC_ORDER_ACQ_REL!\n");
+        return TEST_FAIL;
+    }
+
+    if ((atomicCaps & CL_DEVICE_ATOMIC_ORDER_ACQ_REL) != 0
+        && (atomicCaps & CL_DEVICE_ATOMIC_ORDER_RELAXED) == 0)
+    {
+        log_error("Support for CL_DEVICE_ATOMIC_ORDER_ACQ_REL requires "
+                  "support for CL_DEVICE_ATOMIC_ORDER_RELAXED!\n");
+        return TEST_FAIL;
     }
 
     return TEST_PASS;
