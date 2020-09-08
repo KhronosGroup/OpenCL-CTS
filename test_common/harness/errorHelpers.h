@@ -82,6 +82,21 @@
 #define test_failure_warning_ret(errCode, expectedErrCode, msg, retValue) { if( errCode != expectedErrCode ) { print_failure_warning( errCode, expectedErrCode, msg ); warnings++ ; } }
 #define print_failure_warning(errCode, expectedErrCode, msg) log_error( "WARNING: %s! (Got %s, expected %s from %s:%d)\n", msg, IGetErrorString( errCode ), IGetErrorString( expectedErrCode ), __FILE__, __LINE__ );
 
+// generate an error when an assertion is false (not error code related)
+#define test_assert_error(condition, msg)                                      \
+    test_assert_error_ret(condition, msg, TEST_FAIL)
+#define test_assert_error_ret(condition, msg, retValue)                        \
+    {                                                                          \
+        if (!(condition))                                                      \
+        {                                                                      \
+            print_assertion_error(condition, msg);                             \
+            return retValue;                                                   \
+        }                                                                      \
+    }
+#define print_assertion_error(condition, msg)                                  \
+    log_error("ERROR: %s! (!(%s) from %s:%d)\n", msg, #condition, __FILE__,    \
+              __LINE__);
+
 #define ASSERT_SUCCESS(expr, msg)                                                                  \
     do                                                                                             \
     {                                                                                              \

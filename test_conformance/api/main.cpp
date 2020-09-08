@@ -132,6 +132,16 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(consistency_memory_model, Version(3, 0)),
     ADD_TEST_VERSION(consistency_device_enqueue, Version(3, 0)),
     ADD_TEST_VERSION(consistency_pipes, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_progvar, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_non_uniform_work_group, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_read_write_images, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_2d_image_from_buffer, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_depth_images, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_device_and_host_timer, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_il_programs, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_subgroups, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_prog_ctor_dtor, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_3d_image_writes, Version(3, 0)),
 };
 
 const int test_num = ARRAY_SIZE(test_list);

@@ -45,7 +45,8 @@ static std::string get_device_info_string(cl_device_id device,
         throw std::runtime_error("clGetDeviceInfo failed\n");
     }
 
-    return std::string(info.begin(), info.end());
+    /* The returned string does not include the null terminator. */
+    return std::string(info.data(), size - 1);
 }
 
 /* Determines if an extension is supported by a device. */
