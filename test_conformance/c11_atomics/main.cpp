@@ -159,6 +159,32 @@ test_status InitCL(cl_device_id device) {
                 "Minimum atomic memory capabilities unsupported by device\n");
             return TEST_FAIL;
         }
+
+        // Disable program scope global variable testing in the case that it is
+        // not supported on an OpenCL-3.0 driver.
+        size_t max_global_variable_size{};
+        test_error_ret(clGetDeviceInfo(device,
+                                       CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE,
+                                       sizeof(max_global_variable_size),
+                                       &max_global_variable_size, nullptr),
+                       "Unable to get max global variable size\n", TEST_FAIL);
+        if (0 == max_global_variable_size)
+        {
+            gNoGlobalVariables = true;
+        }
+
+        // Disable generic address space testing in the case that it is not
+        // supported on an OpenCL-3.0 driver.
+        cl_bool generic_address_space_support{};
+        test_error_ret(
+            clGetDeviceInfo(device, CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT,
+                            sizeof(generic_address_space_support),
+                            &generic_address_space_support, nullptr),
+            "Unable to get generic address space support\n", TEST_FAIL);
+        if (CL_FALSE == generic_address_space_support)
+        {
+            gNoGenericAddressSpace = true;
+        }
     }
     else
     {
