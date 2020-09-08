@@ -563,7 +563,7 @@ cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
             error = clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL,
                                      &size_ret);
             test_error(error, "Unable to query context's device size");
-            num_devices = size_ret / sizeof(cl_device_id);
+            num_devices = static_cast<cl_uint>(size_ret / sizeof(cl_device_id));
             device_list = (cl_device_id *)malloc(size_ret);
             if (device_list == NULL)
             {
@@ -693,7 +693,7 @@ int check_functions_for_offline_compiler(const char *subtestname,
 {
     if (gCompilationMode != kOnline)
     {
-        int nNotRequiredWithOfflineCompiler =
+        size_t nNotRequiredWithOfflineCompiler =
             sizeof(subtests_to_skip_with_offline_compiler) / sizeof(char *);
         size_t i;
         for (i = 0; i < nNotRequiredWithOfflineCompiler; ++i)

@@ -18,12 +18,12 @@
 
 #if defined(_WIN32) && defined(_MSC_VER)
 #include <Windows.h>
-#endif
-
+#else
 #ifdef __cplusplus
 #define EXTERN_C extern "C"
 #else
 #define EXTERN_C
+#endif
 #endif
 
 

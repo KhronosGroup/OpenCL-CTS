@@ -369,7 +369,9 @@ int test_images_read_cube( cl_device_id device, cl_context context, cl_command_q
 }
 
 
+#ifdef __APPLE__
 #pragma mark -------------------- Write tests -------------------------
+#endif
 
 
 int test_cl_image_write( cl_context context, cl_command_queue queue, cl_mem clImage,

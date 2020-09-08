@@ -26,8 +26,5 @@
 
 typedef int (*basefn)(cl_device_id deviceID, cl_context context,
                       cl_command_queue queue, int num_elements);
-extern int test_threaded_function(basefn fnToTest, cl_device_id device,
-                                  cl_context context, cl_command_queue queue,
-                                  int numElements);
 
 #endif // _threadTesting_h

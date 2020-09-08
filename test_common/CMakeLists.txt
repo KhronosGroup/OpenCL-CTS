@@ -1,6 +1,5 @@
 
 set(HARNESS_SOURCES
-    harness/threadTesting.cpp
     harness/typeWrappers.cpp
     harness/mt19937.cpp
     harness/conversions.cpp
@@ -23,3 +22,7 @@ set(HARNESS_SOURCES
 
 add_library(harness STATIC ${HARNESS_SOURCES})
 
+if(MSVC)
+    # Don't warn about using the portable "strdup" function.
+    target_compile_definitions(harness PRIVATE _CRT_NONSTDC_NO_DEPRECATE)
+endif()

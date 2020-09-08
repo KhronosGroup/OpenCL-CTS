@@ -181,8 +181,8 @@ static ULong sUpperLimits[kNumExplicitTypes] = {
     0xffffffffLL,
     0xffffffffLL,
     0x7fffffffffffffffLL,
-    0xffffffffffffffffLL,
-    0xffffffffffffffffLL,
+    0xffffffffffffffffULL,
+    0xffffffffffffffffULL,
     0,
     0
 }; // Last two values aren't stored here

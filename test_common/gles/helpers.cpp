@@ -22,7 +22,7 @@
     {GLint __error = glGetError(); if(__error) {log_error( "GL ERROR: %s!\n", gluErrorString( err ));}}
 
 #if defined(__linux__) || defined(GL_ES_VERSION_2_0)
-// On linux we dont link to GLU library to avoid comaptibility issues with
+// On linux we don't link to GLU library to avoid compatibility issues with
 // libstdc++
 // FIXME: Implement this
 const GLubyte* gluErrorString (GLenum error)
@@ -271,8 +271,6 @@ void * ReadGLTexture( GLenum glTarget, GLuint glTexture,
     // Read results from the GL texture
     glBindTexture(get_base_gl_target(glTarget), glTexture);
 
-    GLint realWidth, realHeight;
-    GLint realInternalFormat;
     GLenum readBackFormat = GL_RGBA;
     GLenum readBackType = glType;
     glFramebufferWrapper glFramebuffer;
@@ -301,7 +299,7 @@ void * ReadGLTexture( GLenum glTarget, GLuint glTexture,
         GetGLFormatName(readBackFormat),
         GetGLTypeName(readBackType));
 
-    DumpGLBuffer(readBackType, realWidth, realHeight, (void*)outBuffer);
+    DumpGLBuffer(readBackType, outWidth, outHeight, (void*)outBuffer);
 
 #endif
 

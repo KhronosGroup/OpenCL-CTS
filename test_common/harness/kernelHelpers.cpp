@@ -666,7 +666,7 @@ static int create_single_kernel_helper_create_program_offline(
 #endif
 
     ifs.seekg(0, ifs.end);
-    int length = ifs.tellg();
+    size_t length = static_cast<size_t>( ifs.tellg() );
     ifs.seekg(0, ifs.beg);
 
     // treat modifiedProgram as input for clCreateProgramWithBinary
@@ -1361,7 +1361,7 @@ int is_image_format_supported(cl_context context, cl_mem_flags flags,
     list = (cl_image_format *)malloc(count * sizeof(cl_image_format));
     if (NULL == list)
     {
-        log_error("Error: unable to allocate %ld byte buffer for image format "
+        log_error("Error: unable to allocate %zu byte buffer for image format "
                   "list at %s:%d (err = %d)\n",
                   count * sizeof(cl_image_format), __FILE__, __LINE__, err);
         return 0;

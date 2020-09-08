@@ -30,7 +30,11 @@
 // that rounding mode.
 #if defined(__APPLE__) || defined(_MSC_VER) || defined(__linux__)              \
     || defined(__MINGW32__)
-typedef int FPU_mode_type;
+#ifdef _MSC_VER
+    typedef int FPU_mode_type;
+#else
+    typedef int64_t FPU_mode_type;
+#endif
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
     || defined(__MINGW32__)
 #include <xmmintrin.h>
@@ -55,7 +59,7 @@ static inline void ForceFTZ(FPU_mode_type *mode)
     __asm__ volatile("fmxr fpscr, %0" ::"r"(fpscr | (1U << 24)));
     // Add 64 bit support
 #elif defined(__aarch64__)
-    unsigned fpscr;
+    uint64_t fpscr;
     __asm__ volatile("mrs %0, fpcr" : "=r"(fpscr));
     *mode = fpscr;
     __asm__ volatile("msr fpcr, %0" ::"r"(fpscr | (1U << 24)));
@@ -81,7 +85,7 @@ static inline void DisableFTZ(FPU_mode_type *mode)
     __asm__ volatile("fmxr fpscr, %0" ::"r"(fpscr & ~(1U << 24)));
     // Add 64 bit support
 #elif defined(__aarch64__)
-    unsigned fpscr;
+    uint64_t fpscr;
     __asm__ volatile("mrs %0, fpcr" : "=r"(fpscr));
     *mode = fpscr;
     __asm__ volatile("msr fpcr, %0" ::"r"(fpscr & ~(1U << 24)));
