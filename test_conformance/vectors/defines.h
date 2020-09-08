@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,24 +20,23 @@
 #include "harness/conversions.h"
 #include "harness/mt19937.h"
 
-// The number of errors to print out for each test in the shuffle tests
-#define MAX_ERRORS_TO_PRINT 1
 
+// 1,2,3,4,8,16 or
+// 1,2,4,8,16,3
+#define NUM_VECTOR_SIZES 6
 
-extern int      create_program_and_kernel(const char *source, const char *kernel_name, cl_program *program_ret, cl_kernel *kernel_ret);
+extern int g_arrVecSizes[NUM_VECTOR_SIZES];
+extern int g_arrVecSteps[NUM_VECTOR_SIZES];
+extern bool g_wimpyMode;
 
+extern const char *g_arrVecSizeNames[NUM_VECTOR_SIZES];
+extern size_t g_arrVecAlignMasks[NUM_VECTOR_SIZES];
 
-/*
-    test_step_type,
-    test_step_var,
-    test_step_typedef_type,
-    test_step_typedef_var,
-*/
+// Define the buffer size that we want to block our test with
+#define BUFFER_SIZE (1024 * 1024)
+#define KPAGESIZE 4096
 
-extern int test_step_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern ExplicitType types[];
 
-extern int test_step_var(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-
-extern int test_step_typedef_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-
-extern int test_step_typedef_var(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern const char *g_arrTypeNames[];
+extern const size_t g_arrTypeSizes[];

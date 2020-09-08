@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,16 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _testBase_h
-#define _testBase_h
+#include <stdlib.h>
 
-#include "harness/compat.h"
+size_t doReplace(char* dest, size_t destLength, const char* source,
+                 const char* stringToReplace1, const char* replaceWith1,
+                 const char* stringToReplace2, const char* replaceWith2);
 
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include "procs.h"
-
-#endif // _testBase_h
+size_t doSingleReplace(char* dest, size_t destLength, const char* source,
+                       const char* stringToReplace, const char* replaceWith);
