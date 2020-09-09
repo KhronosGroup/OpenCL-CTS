@@ -100,8 +100,9 @@ cl_int check_compiler_feature_info(cl_device_id deviceID, cl_context context,
     sprintf(kernel_supported_src, macro_supported_source,
             feature_macro.c_str());
     const char* ptr_supported = kernel_supported_src;
+    const char* build_options = "-cl-std=CL3.0";
     error = create_single_kernel_helper_create_program(
-        context, &program_supported, 1, &ptr_supported, "-cl-std=CL3.0");
+        context, &program_supported, 1, &ptr_supported, build_options);
     test_error(error, "create_single_kernel_helper_create_program failed.\n");
 
     sprintf(kernel_not_supported_src, macro_not_supported_source,
@@ -114,10 +115,10 @@ cl_int check_compiler_feature_info(cl_device_id deviceID, cl_context context,
 
     cl_int status_supported = CL_SUCCESS;
     cl_int status_not_supported = CL_SUCCESS;
-    status_supported =
-        clBuildProgram(program_supported, 1, &deviceID, NULL, NULL, NULL);
-    status_not_supported =
-        clBuildProgram(program_not_supported, 1, &deviceID, NULL, NULL, NULL);
+    status_supported = clBuildProgram(program_supported, 1, &deviceID,
+                                      build_options, NULL, NULL);
+    status_not_supported = clBuildProgram(program_not_supported, 1, &deviceID,
+                                          build_options, NULL, NULL);
     if (status_supported != status_not_supported)
     {
         if (status_not_supported == CL_SUCCESS)
