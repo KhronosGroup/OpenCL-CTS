@@ -62,8 +62,8 @@ TEST_FN_REDIRECTOR( renderbuffer_read )
 TEST_FN_REDIRECTOR( renderbuffer_write )
 TEST_FN_REDIRECTOR( renderbuffer_getinfo )
 
-#ifndef GL_ES_VERSION_2_0
-TEST_FN_REDIRECTOR( test_fence_sync )
+#ifdef GL_ES_VERSION_3_0
+TEST_FN_REDIRECTOR( fence_sync )
 #endif
 
 test_definition test_list[] = {
@@ -82,14 +82,17 @@ test_definition test_list[] = {
     TEST_FN_REDIRECT( renderbuffer_getinfo )
 };
 
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_ES_VERSION_3_0
 test_definition test_list32[] = {
     TEST_FN_REDIRECT( fence_sync )
 };
 #endif
 
 const int test_num = ARRAY_SIZE( test_list );
+
+#ifdef GL_ES_VERSION_3_0
 const int test_num32 = ARRAY_SIZE( test_list32 );
+#endif
 
 
 int main(int argc, const char *argv[])
@@ -113,9 +116,11 @@ int main(int argc, const char *argv[])
         for( int i = 0; i < test_num; i++ )
             log_info( "\t%s\n", test_list[i].name );
 
+#ifdef GL_ES_VERSION_3_0
         log_info( "Available 3.2 tests:\n" );
         for( int i = 0; i < test_num32; i++ )
             log_info( "\t%s\n", test_list32[i].name );
+#endif
 
     log_info( "Note: Any 3.2 test names must follow 2.1 test names on the command line." );
     log_info( "Use environment variables to specify desired device." );
@@ -141,12 +146,14 @@ int main(int argc, const char *argv[])
   // Check to see if any 2.x or 3.2 test names were specified on the command line.
   unsigned first_32_testname = 0;
 
+#ifdef GL_ES_VERSION_3_0
   for (int j=1; (j<argc) && (!first_32_testname); ++j)
     for (int i = 0; i < test_num32; ++i)
       if (strcmp(test_list32[i].name, argv[j]) == 0 ) {
         first_32_testname = j;
         break;
       }
+#endif
 
   // Create the environment for the test.
     GLEnvironment *glEnv = GLEnvironment::Instance();
@@ -322,7 +329,7 @@ int main(int argc, const char *argv[])
           error = -1;
           goto cleanup;
         }
-#ifdef GL_ES_VERSION_2_0
+#ifndef GLES3
         log_info("Cannot test OpenGL 3.2! This test was built for OpenGL ES 2.0\n");
         error = -1;
         goto cleanup;
