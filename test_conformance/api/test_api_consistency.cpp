@@ -425,7 +425,7 @@ int test_consistency_pipes(cl_device_id deviceID, cl_context context,
             clGetPipeInfo(not_a_pipe, CL_PIPE_PACKET_SIZE, sizeof(u), &u, NULL);
         test_failure_error(error, CL_INVALID_MEM_OBJECT,
                            "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE but "
-                           "clGetPipeInfo did not return CL_INVALID_OPERATION");
+                           "clGetPipeInfo did not return CL_INVALID_MEM_OBJECT");
     }
     else
     {
