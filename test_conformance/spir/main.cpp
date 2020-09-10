@@ -6935,7 +6935,7 @@ int main (int argc, const char* argv[])
 
         if (!is_extension_available(device, "cl_khr_spir")
             || (std::find(versions.begin(), versions.end(), Version{ 1, 2 })
-                == versions.end())(
+                == versions.end()))
         {
             log_info("Spir extension version 1.2 is not supported by the device\n");
             return 0;
