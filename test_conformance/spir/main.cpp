@@ -141,7 +141,8 @@ static bool is_dir_exits(const char* path)
     return false;
 }
 
-static void get_spir_version(cl_device_id device, std::vector<Version>& versions)
+static void get_spir_version(cl_device_id device,
+                             std::vector<Version> &versions)
 {
     char version[64] = {0};
     cl_int err;
@@ -6932,8 +6933,9 @@ int main (int argc, const char* argv[])
         std::vector<Version> versions;
         get_spir_version(device, versions);
 
-        if (!is_extension_available( device, "cl_khr_spir") ||
-            std::find(versions.begin(), versions.end(), Version{1, 2}) == versions.end())
+        if (!is_extension_available(device, "cl_khr_spir")
+            || (std::find(versions.begin(), versions.end(), Version{ 1, 2 })
+                == versions.end())(
         {
             log_info("Spir extension version 1.2 is not supported by the device\n");
             return 0;
