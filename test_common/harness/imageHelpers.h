@@ -83,14 +83,14 @@ extern void build_required_image_formats(cl_mem_flags flags,
                                          cl_device_id device,
                                          std::vector<cl_image_format>& formatsToSupport);
 
-extern size_t get_format_type_size( const cl_image_format *format );
-extern size_t get_channel_data_type_size( cl_channel_type channelType );
-extern size_t get_format_channel_count( const cl_image_format *format );
-extern size_t get_channel_order_channel_count( cl_channel_order order );
+extern uint32_t get_format_type_size(const cl_image_format *format);
+extern uint32_t get_channel_data_type_size(cl_channel_type channelType);
+extern uint32_t get_format_channel_count(const cl_image_format *format);
+extern uint32_t get_channel_order_channel_count(cl_channel_order order);
 cl_channel_type  get_channel_type_from_name( const char *name );
 cl_channel_order  get_channel_order_from_name( const char *name );
 extern int    is_format_signed( const cl_image_format *format );
-extern size_t get_pixel_size( cl_image_format *format );
+extern uint32_t get_pixel_size(cl_image_format *format);
 
 /* Helper to get any ol image format as long as it is 8-bits-per-channel */
 extern int get_8_bit_image_format( cl_context context, cl_mem_object_type objType, cl_mem_flags flags, size_t channelCount, cl_image_format *outFormat );
