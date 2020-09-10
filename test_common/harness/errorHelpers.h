@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -125,7 +125,8 @@ extern const char *GetQueuePropertyName(cl_command_queue_properties properties);
 
 extern const char *GetDeviceTypeName( cl_device_type type );
 int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device);
-
+cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
+                       cl_device_id *device_list);
 // NON-REENTRANT UNLESS YOU PROVIDE A BUFFER PTR (pass null to use static storage, but it's not reentrant then!)
 extern const char *GetDataVectorString( void *dataBuffer, size_t typeSize, size_t vecSize, char *buffer );
 
