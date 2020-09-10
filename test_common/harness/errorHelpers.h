@@ -37,19 +37,19 @@
 #define vlog_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,    \
                     _higherBetter?"higher is better":"lower is better" , _number)
 #ifdef _WIN32
-    #ifdef __MINGW32__
-        // Use __mingw_printf since it supports "%a" format specifier
-        #define vlog __mingw_printf
-        #define vlog_error __mingw_printf
-    #else
-        // Use home-baked function that treats "%a" as "%f"
-    static int vlog_win32(const char *format, ...);
-    #define vlog vlog_win32
-    #define vlog_error vlog_win32
-    #endif
+#ifdef __MINGW32__
+// Use __mingw_printf since it supports "%a" format specifier
+#define vlog __mingw_printf
+#define vlog_error __mingw_printf
 #else
-    #define vlog_error printf
-    #define vlog printf
+// Use home-baked function that treats "%a" as "%f"
+static int vlog_win32(const char *format, ...);
+#define vlog vlog_win32
+#define vlog_error vlog_win32
+#endif
+#else
+#define vlog_error printf
+#define vlog printf
 #endif
 
 #define ct_assert(b)          ct_assert_i(b, __LINE__)
@@ -66,12 +66,14 @@
 #define print_error(errCode,msg)    log_error( "ERROR: %s! (%s from %s:%d)\n", msg, IGetErrorString( errCode ), __FILE__, __LINE__ );
 
 #define test_missing_feature(errCode, msg) test_missing_feature_ret(errCode, msg, errCode)
-// this macro should always return CL_SUCCESS, but print the missing feature message
+// this macro should always return CL_SUCCESS, but print the missing feature
+// message
 #define test_missing_feature_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { print_missing_feature( errCode, msg ); return CL_SUCCESS ; } }
 #define print_missing_feature(errCode, msg) log_missing_feature("ERROR: Subtest %s tests a feature not supported by the device version! (from %s:%d)\n", msg, __FILE__, __LINE__ );
 
 #define test_missing_support_offline_cmpiler(errCode, msg) test_missing_support_offline_cmpiler_ret(errCode, msg, errCode)
-// this macro should always return CL_SUCCESS, but print the skip message on test not supported with offline compiler
+// this macro should always return CL_SUCCESS, but print the skip message on
+// test not supported with offline compiler
 #define test_missing_support_offline_cmpiler_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { log_info( "INFO: Subtest %s tests is not supported in offline compiler execution path! (from %s:%d)\n", msg, __FILE__, __LINE__ ); return TEST_SKIP ; } }
 
 // expected error code vs. what we got
