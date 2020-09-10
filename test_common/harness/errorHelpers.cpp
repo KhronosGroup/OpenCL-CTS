@@ -744,6 +744,7 @@ const char *subtests_to_skip_with_offline_compiler[] = {
     "simple_link_with_callback",
     "simple_static_compile_only",
     "two_file_link",
+    "async_build",
 };
 
 int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device)
