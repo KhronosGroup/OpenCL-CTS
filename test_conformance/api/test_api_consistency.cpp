@@ -433,17 +433,18 @@ int test_consistency_pipes(cl_device_id deviceID, cl_context context,
                            "clCreatePipe did not return CL_INVALID_OPERATION");
 
         // clGetPipeInfo
-        // Returns CL_INVALID_OPERATION if no devices in the context associated
-        // with pipe support Pipes.
+        // Returns CL_INVALID_MEM_OBJECT since pipe cannot be a valid pipe
+        // object.
         clMemWrapper not_a_pipe =
             clCreateBuffer(context, CL_MEM_READ_WRITE, 4, NULL, &error);
         test_error(error, "Unable to create non-pipe buffer");
 
         error =
             clGetPipeInfo(not_a_pipe, CL_PIPE_PACKET_SIZE, sizeof(u), &u, NULL);
-        test_assert_error(error == CL_INVALID_OPERATION,
-                          "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE but "
-                          "clGetPipeInfo did not return CL_INVALID_OPERATION");
+        test_failure_error(
+            error, CL_INVALID_MEM_OBJECT,
+            "CL_DEVICE_PIPE_SUPPORT returned CL_FALSE but clGetPipeInfo did "
+            "not return CL_INVALID_MEM_OBJECT");
     }
     else
     {
