@@ -112,18 +112,17 @@ public:
         size_t dev_size;
         cl_int status;
 
-        clGetGLContextInfoKHR_fn GetGLContextInfo = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(
-                                                                                _platform, "clGetGLContextInfoKHR");
-        if (GetGLContextInfo == NULL) {
+        clGetGLContextInfoKHR_fn GetGLContextInfo =
+            (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(
+                _platform, "clGetGLContextInfoKHR");
+        if (GetGLContextInfo == NULL)
+        {
             print_error(status, "clGetGLContextInfoKHR failed");
             return NULL;
         }
 
-        status = GetGLContextInfo(properties,
-                                  CL_DEVICES_FOR_GL_CONTEXT_KHR,
-                                  sizeof(devices),
-                                  devices,
-                                  &dev_size);
+        status = GetGLContextInfo(properties, CL_DEVICES_FOR_GL_CONTEXT_KHR,
+                                  sizeof(devices), devices, &dev_size);
         if (status != CL_SUCCESS) {
             print_error(status, "clGetGLContextInfoKHR failed");
             return NULL;
@@ -131,11 +130,9 @@ public:
         dev_size /= sizeof(cl_device_id);
         log_info("GL _context supports %d compute devices\n", dev_size);
 
-        status = GetGLContextInfo(properties,
-                                  CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR,
-                                  sizeof(devices),
-                                  devices,
-                                  &dev_size);
+        status =
+            GetGLContextInfo(properties, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR,
+                             sizeof(devices), devices, &dev_size);
         if (status != CL_SUCCESS) {
             print_error(status, "clGetGLContextInfoKHR failed");
             return NULL;
@@ -171,9 +168,12 @@ public:
 
         // Check all devices, search for one that supports cl_khr_gl_sharing
         for (int i=0; i<(int)num_of_devices; i++) {
-            if (!is_extension_available(devices[i], "cl_khr_gl_sharing")) {
+            if (!is_extension_available(devices[i], "cl_khr_gl_sharing"))
+            {
                 log_info("Device %d of %d does not support required extension cl_khr_gl_sharing.\n", i+1, num_of_devices);
-            } else {
+            }
+            else
+            {
                 log_info("Device %d of %d supports required extension cl_khr_gl_sharing.\n", i+1, num_of_devices);
                 interop_devices++;
             }
