@@ -42,17 +42,17 @@
 
 #ifndef GL_ES_VERSION_3_0
 #define glTexImage3D                 glTexImage3DOES
-#define GL_RGBA32F                   GL_RGBA32F_EXT
+#define GL_RGBA32F GL_RGBA32F_EXT
 //#define GL_TEXTURE_3D                GL_TEXTURE_3D_OES
-#define GL_READ_ONLY                 GL_BUFFER_ACCESS_OES
-#define GL_HALF_FLOAT_ARB            GL_HALF_FLOAT_OES
-#define GL_BGRA                      GL_BGRA_EXT
-#define glMapBufferRange             glMapBufferRangeEXT
-#define glUnmapBuffer                glUnmapBufferOES
+#define GL_READ_ONLY GL_BUFFER_ACCESS_OES
+#define GL_HALF_FLOAT_ARB GL_HALF_FLOAT_OES
+#define GL_BGRA GL_BGRA_EXT
+#define glMapBufferRange glMapBufferRangeEXT
+#define glUnmapBuffer glUnmapBufferOES
 #else
 //#define GL_HALF_FLOAT_OES            GL_HALF_FLOAT
 //#define GL_RGBA8_OES                 GL_RGBA8
-#define GL_HALF_FLOAT_ARB            GL_HALF_FLOAT
+#define GL_HALF_FLOAT_ARB GL_HALF_FLOAT
 #endif
 
 #define glutGetProcAddress           eglGetProcAddress
@@ -65,7 +65,7 @@
 #define GL_DEPTH_ATTACHMENT_EXT      GL_DEPTH_ATTACHMENT
 
 #define GL_RGBA32F_ARB               GL_RGBA
-#define GL_BGRA                      GL_BGRA_EXT
+#define GL_BGRA GL_BGRA_EXT
 
 typedef unsigned short GLhalf;
 

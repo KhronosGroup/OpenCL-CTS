@@ -63,7 +63,7 @@ TEST_FN_REDIRECTOR( renderbuffer_write )
 TEST_FN_REDIRECTOR( renderbuffer_getinfo )
 
 #ifdef GL_ES_VERSION_3_0
-TEST_FN_REDIRECTOR( fence_sync )
+TEST_FN_REDIRECTOR(fence_sync)
 #endif
 
 test_definition test_list[] = {
@@ -122,8 +122,9 @@ int main(int argc, const char *argv[])
             log_info( "\t%s\n", test_list32[i].name );
 #endif
 
-    log_info( "Note: Any 3.2 test names must follow 2.1 test names on the command line." );
-    log_info( "Use environment variables to specify desired device." );
+        log_info("Note: Any 3.2 test names must follow 2.1 test names on the "
+                 "command line.");
+        log_info("Use environment variables to specify desired device.");
 
         return 0;
     }
