@@ -119,6 +119,11 @@ int test_get_command_queue_info_compatibility(cl_device_id deviceID, cl_context 
     clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_PROPERTIES, sizeof(device_props), &device_props, NULL);
     log_info("CL_DEVICE_QUEUE_PROPERTIES is %d\n", (int)device_props);
 
+    // Mask off vendor extension properties.  Only test standard OpenCL
+    // properties
+    device_props &=
+        CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | CL_QUEUE_PROFILING_ENABLE;
+
     clCommandQueueWrapper queue = clCreateCommandQueue( context, deviceID, device_props, &error );
     test_error( error, "Unable to create command queue to test with" );
 
