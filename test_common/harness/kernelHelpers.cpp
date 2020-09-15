@@ -1579,6 +1579,15 @@ int printDeviceHeader( cl_device_id device )
              deviceName, deviceVendor, deviceVersion, ( error == CL_SUCCESS ) ? ", CL C Version = " : "",
              ( error == CL_SUCCESS ) ? cLangVersion : "" );
 
+    auto version = get_device_cl_version(device);
+    if (version >= Version(3, 0))
+    {
+        auto ctsVersion = get_device_info_string(
+            device, CL_DEVICE_LATEST_CONFORMANCE_VERSION_PASSED);
+        log_info("Device latest conformance version passed: %s\n",
+                 ctsVersion.c_str());
+    }
+
     return CL_SUCCESS;
 }
 
