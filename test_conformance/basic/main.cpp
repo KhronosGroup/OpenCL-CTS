@@ -123,6 +123,7 @@ test_definition test_list[] = {
 
     ADD_TEST( parameter_types ),
     ADD_TEST( vector_creation ),
+    ADD_TEST( vector_swizzle ),
     ADD_TEST( vec_type_hint ),
     ADD_TEST( kernel_memory_alignment_local ),
     ADD_TEST( kernel_memory_alignment_global ),
