@@ -15,7 +15,6 @@
 //
 
 #include <algorithm>
-#include <iostream> // deleteme
 #include <numeric>
 #include <string>
 #include <vector>
@@ -23,18 +22,11 @@
 #include "procs.h"
 #include "harness/testHarness.h"
 
-template<int N>
-struct TestInfo
+template <int N> struct TestInfo
 {
-    static const size_t vector_size = N;
-
-    static constexpr const char* kernel_source_xyzw = "";
-    static constexpr const char* kernel_source_rgba = "";
-    static constexpr const char* kernel_source_sN = "";
 };
 
-template <>
-struct TestInfo<2>
+template <> struct TestInfo<2>
 {
     static const size_t vector_size = 2;
 
@@ -49,8 +41,8 @@ __kernel void test_vector_swizzle_xyzw(TYPE value, __global TYPE* dst) {
     dst[index++].yx = value;
 
     // rvalue swizzles
-    dst[index++] = value.xx;
-    dst[index++] = value.yy;
+    dst[index++] = value.x;
+    dst[index++] = value.y;
     dst[index++] = value.xy;
     dst[index++] = value.yx;
 }
@@ -67,8 +59,8 @@ __kernel void test_vector_swizzle_rgba(TYPE value, __global TYPE* dst) {
     dst[index++].gr = value;
 
     // rvalue swizzles
-    dst[index++] = value.rr;
-    dst[index++] = value.gg;
+    dst[index++] = value.r;
+    dst[index++] = value.g;
     dst[index++] = value.rg;
     dst[index++] = value.gr;
 }
@@ -85,16 +77,80 @@ __kernel void test_vector_swizzle_sN(TYPE value, __global TYPE* dst) {
     dst[index++].s10 = value;
 
     // rvalue swizzles
-    dst[index++] = value.s00;
-    dst[index++] = value.s11;
+    dst[index++] = value.s0;
+    dst[index++] = value.s1;
     dst[index++] = value.s01;
     dst[index++] = value.s10;
 }
 )CLC";
 };
 
-template <>
-struct TestInfo<4>
+template <> struct TestInfo<3>
+{
+    static const size_t vector_size = 4; // sizeof(vec3) is four elements
+
+    static constexpr const char* kernel_source_xyzw = R"CLC(
+__kernel void test_vector_swizzle_xyzw(TYPE value, __global TYPE* dst) {
+    int index = 0;
+
+    // lvalue swizzles
+    dst[index++].x = value.x;
+    dst[index++].y = value.x;
+    dst[index++].z = value.x;
+    dst[index++].xyz = value;
+    dst[index++].zyx = value;
+
+    // rvalue swizzles
+    vstore3(value.x, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.y, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.z, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.xyz, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.zyx, 0, (BASETYPE*)(dst + index++));
+}
+)CLC";
+
+    static constexpr const char* kernel_source_rgba = R"CLC(
+__kernel void test_vector_swizzle_rgba(TYPE value, __global TYPE* dst) {
+    int index = 0;
+
+    // lvalue swizzles
+    dst[index++].r = value.r;
+    dst[index++].g = value.r;
+    dst[index++].b = value.r;
+    dst[index++].rgb = value;
+    dst[index++].bgr = value;
+
+    // rvalue swizzles
+    vstore3(value.r, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.g, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.b, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.rgb, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.bgr, 0, (BASETYPE*)(dst + index++));
+}
+)CLC";
+
+    static constexpr const char* kernel_source_sN = R"CLC(
+__kernel void test_vector_swizzle_sN(TYPE value, __global TYPE* dst) {
+    int index = 0;
+
+    // lvalue swizzles
+    dst[index++].s0 = value.s0;
+    dst[index++].s1 = value.s0;
+    dst[index++].s2 = value.s0;
+    dst[index++].s012 = value;
+    dst[index++].s210 = value;
+
+    // rvalue swizzles
+    vstore3(value.s0, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.s1, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.s2, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.s012, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.s210, 0, (BASETYPE*)(dst + index++));
+}
+)CLC";
+};
+
+template <> struct TestInfo<4>
 {
     static const size_t vector_size = 4;
 
@@ -111,10 +167,10 @@ __kernel void test_vector_swizzle_xyzw(TYPE value, __global TYPE* dst) {
     dst[index++].wzyx = value;
 
     // rvalue swizzles
-    dst[index++] = value.xxxx;
-    dst[index++] = value.yyyy;
-    dst[index++] = value.zzzz;
-    dst[index++] = value.wwww;
+    dst[index++] = value.x;
+    dst[index++] = value.y;
+    dst[index++] = value.z;
+    dst[index++] = value.w;
     dst[index++] = value.xyzw;
     dst[index++] = value.wzyx;
 }
@@ -133,10 +189,10 @@ __kernel void test_vector_swizzle_rgba(TYPE value, __global TYPE* dst) {
     dst[index++].abgr = value;
 
     // rvalue swizzles
-    dst[index++] = value.rrrr;
-    dst[index++] = value.gggg;
-    dst[index++] = value.bbbb;
-    dst[index++] = value.aaaa;
+    dst[index++] = value.r;
+    dst[index++] = value.g;
+    dst[index++] = value.b;
+    dst[index++] = value.a;
     dst[index++] = value.rgba;
     dst[index++] = value.abgr;
 }
@@ -155,18 +211,276 @@ __kernel void test_vector_swizzle_sN(TYPE value, __global TYPE* dst) {
     dst[index++].s3210 = value;
 
     // rvalue swizzles
-    dst[index++] = value.s0000;
-    dst[index++] = value.s1111;
-    dst[index++] = value.s2222;
-    dst[index++] = value.s3333;
+    dst[index++] = value.s0;
+    dst[index++] = value.s1;
+    dst[index++] = value.s2;
+    dst[index++] = value.s3;
     dst[index++] = value.s0123;
     dst[index++] = value.s3210;
 }
 )CLC";
 };
 
+template <> struct TestInfo<8>
+{
+    static const size_t vector_size = 8;
+
+    static constexpr const char* kernel_source_xyzw = R"CLC(
+__kernel void test_vector_swizzle_xyzw(TYPE value, __global TYPE* dst) {
+    int index = 0;
+
+    // xwzw only for first four components!
+
+    // lvalue swizzles
+    dst[index++].x = value.x;
+    dst[index++].y = value.x;
+    dst[index++].z = value.x;
+    dst[index++].w = value.x;
+    dst[index++].s4 = value.s0;
+    dst[index++].s5 = value.s0;
+    dst[index++].s6 = value.s0;
+    dst[index++].s7 = value.s0;
+    dst[index].xyzw = value.s0123;
+    dst[index++].s4567 = value.s4567;
+    dst[index].s7654 = value.s0123;
+    dst[index++].wzyx = value.s4567;
+
+    // rvalue swizzles
+    dst[index++] = value.x;
+    dst[index++] = value.y;
+    dst[index++] = value.z;
+    dst[index++] = value.w;
+    dst[index++] = value.s4;
+    dst[index++] = value.s5;
+    dst[index++] = value.s6;
+    dst[index++] = value.s7;
+    dst[index++] = (TYPE)(value.xyzw, value.s4567);
+    dst[index++] = (TYPE)(value.s7654, value.wzyx);
+}
+)CLC";
+    static constexpr const char* kernel_source_rgba = R"CLC(
+__kernel void test_vector_swizzle_rgba(TYPE value, __global TYPE* dst) {
+    int index = 0;
+
+    // rgba only for first four components!
+
+    // lvalue swizzles
+    dst[index++].r = value.r;
+    dst[index++].g = value.r;
+    dst[index++].b = value.r;
+    dst[index++].a = value.r;
+    dst[index++].s4 = value.s0;
+    dst[index++].s5 = value.s0;
+    dst[index++].s6 = value.s0;
+    dst[index++].s7 = value.s0;
+    dst[index].rgba = value.s0123;
+    dst[index++].s4567 = value.s4567;
+    dst[index].s7654 = value.s0123;
+    dst[index++].abgr = value.s4567;
+
+    // rvalue swizzles
+    dst[index++] = value.r;
+    dst[index++] = value.g;
+    dst[index++] = value.b;
+    dst[index++] = value.a;
+    dst[index++] = value.s4;
+    dst[index++] = value.s5;
+    dst[index++] = value.s6;
+    dst[index++] = value.s7;
+    dst[index++] = (TYPE)(value.rgba, value.s4567);
+    dst[index++] = (TYPE)(value.s7654, value.abgr);
+}
+)CLC";
+    static constexpr const char* kernel_source_sN = R"CLC(
+__kernel void test_vector_swizzle_sN(TYPE value, __global TYPE* dst) {
+    int index = 0;
+
+    // lvalue swizzles
+    dst[index++].s0 = value.s0;
+    dst[index++].s1 = value.s0;
+    dst[index++].s2 = value.s0;
+    dst[index++].s3 = value.s0;
+    dst[index++].s4 = value.s0;
+    dst[index++].s5 = value.s0;
+    dst[index++].s6 = value.s0;
+    dst[index++].s7 = value.s0;
+    dst[index++].s01234567 = value;
+    dst[index++].s76543210 = value;
+
+    // rvalue swizzles
+    dst[index++] = value.s0;
+    dst[index++] = value.s1;
+    dst[index++] = value.s2;
+    dst[index++] = value.s3;
+    dst[index++] = value.s4;
+    dst[index++] = value.s5;
+    dst[index++] = value.s6;
+    dst[index++] = value.s7;
+    dst[index++] = value.s01234567;
+    dst[index++] = value.s76543210;
+}
+)CLC";
+};
+
+template <> struct TestInfo<16>
+{
+    static const size_t vector_size = 16;
+
+    static constexpr const char* kernel_source_xyzw = R"CLC(
+__kernel void test_vector_swizzle_xyzw(TYPE value, __global TYPE* dst) {
+    int index = 0;
+
+    // xwzw only for first four components!
+
+    // lvalue swizzles
+    dst[index++].x = value.x;
+    dst[index++].y = value.x;
+    dst[index++].z = value.x;
+    dst[index++].w = value.x;
+    dst[index++].s4 = value.s0;
+    dst[index++].s5 = value.s0;
+    dst[index++].s6 = value.s0;
+    dst[index++].s7 = value.s0;
+    dst[index++].s8 = value.s0;
+    dst[index++].s9 = value.s0;
+    dst[index++].sa = value.s0;
+    dst[index++].sb = value.s0;
+    dst[index++].sc = value.s0;
+    dst[index++].sd = value.s0;
+    dst[index++].se = value.s0;
+    dst[index++].sf = value.s0;
+    dst[index].xyzw = value.s0123;
+    dst[index].s4567 = value.s4567;
+    dst[index].s89ab = value.s89ab;
+    dst[index++].scdef = value.scdef;
+    dst[index].sfedc = value.s0123;
+    dst[index].sba98 = value.s4567;
+    dst[index].s7654 = value.s89ab;
+    dst[index++].wzyx = value.scdef;
+
+    // rvalue swizzles
+    dst[index++] = value.x;
+    dst[index++] = value.y;
+    dst[index++] = value.z;
+    dst[index++] = value.w;
+    dst[index++] = value.s4;
+    dst[index++] = value.s5;
+    dst[index++] = value.s6;
+    dst[index++] = value.s7;
+    dst[index++] = value.s8;
+    dst[index++] = value.s9;
+    dst[index++] = value.sa;
+    dst[index++] = value.sb;
+    dst[index++] = value.sc;
+    dst[index++] = value.sd;
+    dst[index++] = value.se;
+    dst[index++] = value.sf;
+    dst[index++] = (TYPE)(value.xyzw, value.s4567, value.s89abcdef);
+    dst[index++] = (TYPE)(value.sfedcba98, value.s7654, value.wzyx);
+}
+)CLC";
+    static constexpr const char* kernel_source_rgba = R"CLC(
+__kernel void test_vector_swizzle_rgba(TYPE value, __global TYPE* dst) {
+    int index = 0;
+
+    // rgba only for first four components!
+
+    // lvalue swizzles
+    dst[index++].r = value.r;
+    dst[index++].g = value.r;
+    dst[index++].b = value.r;
+    dst[index++].a = value.r;
+    dst[index++].s4 = value.s0;
+    dst[index++].s5 = value.s0;
+    dst[index++].s6 = value.s0;
+    dst[index++].s7 = value.s0;
+    dst[index++].s8 = value.s0;
+    dst[index++].s9 = value.s0;
+    dst[index++].sa = value.s0;
+    dst[index++].sb = value.s0;
+    dst[index++].sc = value.s0;
+    dst[index++].sd = value.s0;
+    dst[index++].se = value.s0;
+    dst[index++].sf = value.s0;
+    dst[index].rgba = value.s0123;
+    dst[index].s4567 = value.s4567;
+    dst[index].s89ab = value.s89ab;
+    dst[index++].scdef = value.scdef;
+    dst[index].sfedc = value.s0123;
+    dst[index].sba98 = value.s4567;
+    dst[index].s7654 = value.s89ab;
+    dst[index++].abgr = value.scdef;
+
+    // rvalue swizzles
+    dst[index++] = value.r;
+    dst[index++] = value.g;
+    dst[index++] = value.b;
+    dst[index++] = value.a;
+    dst[index++] = value.s4;
+    dst[index++] = value.s5;
+    dst[index++] = value.s6;
+    dst[index++] = value.s7;
+    dst[index++] = value.s8;
+    dst[index++] = value.s9;
+    dst[index++] = value.sa;
+    dst[index++] = value.sb;
+    dst[index++] = value.sc;
+    dst[index++] = value.sd;
+    dst[index++] = value.se;
+    dst[index++] = value.sf;
+    dst[index++] = (TYPE)(value.rgba, value.s4567, value.s89abcdef);
+    dst[index++] = (TYPE)(value.sfedcba98, value.s7654, value.abgr);
+}
+)CLC";
+    static constexpr const char* kernel_source_sN = R"CLC(
+__kernel void test_vector_swizzle_sN(TYPE value, __global TYPE* dst) {
+    int index = 0;
+
+    // lvalue swizzles
+    dst[index++].s0 = value.s0;
+    dst[index++].s1 = value.s0;
+    dst[index++].s2 = value.s0;
+    dst[index++].s3 = value.s0;
+    dst[index++].s4 = value.s0;
+    dst[index++].s5 = value.s0;
+    dst[index++].s6 = value.s0;
+    dst[index++].s7 = value.s0;
+    dst[index++].s8 = value.s0;
+    dst[index++].s9 = value.s0;
+    dst[index++].sa = value.s0;
+    dst[index++].sb = value.s0;
+    dst[index++].sc = value.s0;
+    dst[index++].sd = value.s0;
+    dst[index++].se = value.s0;
+    dst[index++].sf = value.s0;
+    dst[index++].s0123456789abcdef = value; // lower-case
+    dst[index++].sFEDCBA9876543210 = value; // upper-case
+
+    // rvalue swizzles
+    dst[index++] = value.s0;
+    dst[index++] = value.s1;
+    dst[index++] = value.s2;
+    dst[index++] = value.s3;
+    dst[index++] = value.s4;
+    dst[index++] = value.s5;
+    dst[index++] = value.s6;
+    dst[index++] = value.s7;
+    dst[index++] = value.s8;
+    dst[index++] = value.s9;
+    dst[index++] = value.sa;
+    dst[index++] = value.sb;
+    dst[index++] = value.sc;
+    dst[index++] = value.sd;
+    dst[index++] = value.se;
+    dst[index++] = value.sf;
+    dst[index++] = value.s0123456789abcdef; // lower-case
+    dst[index++] = value.sFEDCBA9876543210; // upper-case
+}
+)CLC";
+};
+
 template <typename T, size_t N, size_t S>
-void makeReference(std::vector<T>& ref)
+static void makeReference(std::vector<T>& ref)
 {
     // N single channel lvalue tests
     // 2 multi-value lvalue tests
@@ -180,39 +494,46 @@ void makeReference(std::vector<T>& ref)
     size_t dstIndex = 0;
 
     // single channel lvalue
-    for (size_t i = 0; i < N; i++) {
+    for (size_t i = 0; i < N; i++)
+    {
         ref[dstIndex * S + i] = 0;
         ++dstIndex;
     }
 
     // normal lvalue
-    for (size_t c = 0; c < N; c++) {
+    for (size_t c = 0; c < N; c++)
+    {
         ref[dstIndex * S + c] = c;
     }
     ++dstIndex;
 
     // reverse lvalue
-    for (size_t c = 0; c < N; c++) {
+    for (size_t c = 0; c < N; c++)
+    {
         ref[dstIndex * S + c] = N - c - 1;
     }
     ++dstIndex;
 
     // single channel rvalue
-    for (size_t i = 0; i < N; i++) {
-        for (size_t c = 0; c < N; c++) {
+    for (size_t i = 0; i < N; i++)
+    {
+        for (size_t c = 0; c < N; c++)
+        {
             ref[dstIndex * S + c] = i;
         }
         ++dstIndex;
     }
 
     // normal rvalue
-    for (size_t c = 0; c < N; c++) {
+    for (size_t c = 0; c < N; c++)
+    {
         ref[dstIndex * S + c] = c;
     }
     ++dstIndex;
 
     // reverse rvalue
-    for (size_t c = 0; c < N; c++) {
+    for (size_t c = 0; c < N; c++)
+    {
         ref[dstIndex * S + c] = N - c - 1;
     }
     ++dstIndex;
@@ -221,14 +542,17 @@ void makeReference(std::vector<T>& ref)
 }
 
 template <typename T>
-int test_vector_swizzle_vec_case(const std::vector<T>& value, const std::vector<T>& reference, cl_context context, cl_kernel kernel, cl_command_queue queue)
+static int
+test_vectype_case(const std::vector<T>& value, const std::vector<T>& reference,
+                  cl_context context, cl_kernel kernel, cl_command_queue queue)
 {
     cl_int error = CL_SUCCESS;
 
     clMemWrapper mem;
 
     std::vector<T> buffer(reference.size(), 99);
-    mem = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, buffer.size() * sizeof(T), buffer.data(), &error);
+    mem = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                         buffer.size() * sizeof(T), buffer.data(), &error);
     test_error(error, "Unable to create test buffer");
 
     error = clSetKernelArg(kernel, 0, value.size() * sizeof(T), value.data());
@@ -238,21 +562,21 @@ int test_vector_swizzle_vec_case(const std::vector<T>& value, const std::vector<
     test_error(error, "Unable to set destination buffer kernel arg");
 
     size_t global_work_size[] = { 1 };
-    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, NULL, 0, NULL, NULL);
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size,
+                                   NULL, 0, NULL, NULL);
     test_error(error, "Unable to enqueue test kernel");
 
     error = clFinish(queue);
     test_error(error, "clFinish failed after test kernel");
 
-    error = clEnqueueReadBuffer(queue, mem, CL_TRUE, 0, buffer.size() * sizeof(T), buffer.data(), 0, NULL, NULL);
+    error =
+        clEnqueueReadBuffer(queue, mem, CL_TRUE, 0, buffer.size() * sizeof(T),
+                            buffer.data(), 0, NULL, NULL);
     test_error(error, "Unable to read data after test kernel");
 
-    if (buffer != reference) {
+    if (buffer != reference)
+    {
         log_error("Result buffer did not match reference buffer!\n");
-        log_error("buffer size = %d, reference size = %d\n", buffer.size(), reference.size());
-        for (int i = 0; i < buffer.size(); i++) {
-            std::cout << i << ": buffer = " << buffer[i] << "  reference = " << reference[i] << std::endl;
-        }
         return TEST_FAIL;
     }
 
@@ -260,16 +584,22 @@ int test_vector_swizzle_vec_case(const std::vector<T>& value, const std::vector<
 }
 
 template <typename T, size_t N>
-int test_vector_swizzle_vectype(cl_device_id device, cl_context context, cl_command_queue queue, const char* type_name)
+static int test_vectype(const char* type_name, cl_device_id device,
+                        cl_context context, cl_command_queue queue)
 {
+    log_info("    testing type %s%d\n", type_name, N);
+
     cl_int error = CL_SUCCESS;
+    int result = TEST_PASS;
 
     clProgramWrapper program;
     clKernelWrapper kernel;
 
-    std::string buildOptions{"-DTYPE="};
+    std::string buildOptions{ "-DTYPE=" };
     buildOptions += type_name;
     buildOptions += std::to_string(N);
+    buildOptions += " -DBASETYPE=";
+    buildOptions += type_name;
 
     std::vector<T> value(N);
     std::iota(value.begin(), value.end(), 0);
@@ -278,56 +608,70 @@ int test_vector_swizzle_vectype(cl_device_id device, cl_context context, cl_comm
     constexpr size_t S = TestInfo<N>::vector_size;
     makeReference<T, N, S>(reference);
 
-    if (N <= 4) {
-        // Test XYZW swizzles for vector sizes less than four:
-        const char* xyzw_source = TestInfo<N>::kernel_source_xyzw;
-        error = create_single_kernel_helper(
-            context, &program, &kernel, 1, &xyzw_source,
-            "test_vector_swizzle_xyzw", buildOptions.c_str());
-        test_error(error, "Unable to create xyzw test kernel");
+    // XYZW swizzles:
 
-        error = test_vector_swizzle_vec_case(value, reference, context, kernel, queue);
-
-        // Test RGBA swizzles for OpenCL 3.0 and newer:
-        const Version device_version = get_device_cl_version(device);
-        if (false && device_version >= Version(3, 0)) {
-            const char* rgba_source =TestInfo<N>::kernel_source_rgba;
-            error = create_single_kernel_helper(
-                context, &program, &kernel, 1, &xyzw_source,
-                "test_vector_swizzle_rgba", buildOptions.c_str());
-            test_error(error, "Unable to create rgba test kernel");
-
-            error = test_vector_swizzle_vec_case(value, reference, context, kernel, queue);
-        }
-    }
-
-    // Test sN swizzles:
-    const char* sN_source =TestInfo<N>::kernel_source_sN;
+    const char* xyzw_source = TestInfo<N>::kernel_source_xyzw;
     error = create_single_kernel_helper(
-        context, &program, &kernel, 1, &sN_source,
-        "test_vector_swizzle_sN", buildOptions.c_str());
+        context, &program, &kernel, 1, &xyzw_source, "test_vector_swizzle_xyzw",
+        buildOptions.c_str());
+    test_error(error, "Unable to create xyzw test kernel");
+
+    result |= test_vectype_case(value, reference, context, kernel, queue);
+
+    // sN swizzles:
+    const char* sN_source = TestInfo<N>::kernel_source_sN;
+    error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                        &sN_source, "test_vector_swizzle_sN",
+                                        buildOptions.c_str());
     test_error(error, "Unable to create sN test kernel");
 
-    error = test_vector_swizzle_vec_case(value, reference, context, kernel, queue);
+    result |= test_vectype_case(value, reference, context, kernel, queue);
 
-    return TEST_PASS;
+    // RGBA swizzles for OpenCL 3.0 and newer:
+    const Version device_version = get_device_cl_version(device);
+    if (device_version >= Version(3, 0))
+    {
+        const char* rgba_source = TestInfo<N>::kernel_source_rgba;
+        error = create_single_kernel_helper(
+            context, &program, &kernel, 1, &rgba_source,
+            "test_vector_swizzle_rgba", buildOptions.c_str());
+        test_error(error, "Unable to create rgba test kernel");
+
+        result |= test_vectype_case(value, reference, context, kernel, queue);
+    }
+
+    return result;
 }
 
 template <typename T>
-int test_vector_swizzle_type(cl_device_id device, cl_context context, cl_command_queue queue, const char* type_name)
+static int test_type(const char* type_name, cl_device_id device,
+                     cl_context context, cl_command_queue queue)
 {
-    return test_vector_swizzle_vectype<T, 2>(device, context, queue, type_name) |
-        test_vector_swizzle_vectype<T, 4>(device, context, queue, type_name);
+    return test_vectype<T, 2>(type_name, device, context, queue)
+        | test_vectype<T, 3>(type_name, device, context, queue)
+        | test_vectype<T, 4>(type_name, device, context, queue)
+        | test_vectype<T, 8>(type_name, device, context, queue)
+        | test_vectype<T, 16>(type_name, device, context, queue);
 }
 
-int test_vector_swizzle_int(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+int test_vector_swizzle(cl_device_id device, cl_context context,
+                        cl_command_queue queue, int num_elements)
 {
-    return test_vector_swizzle_type<cl_int>(device, context, queue, "int");
-}
+    int hasDouble = is_extension_available(device, "cl_khr_fp64");
 
-int test_vector_swizzle(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
-{
     int result = TEST_PASS;
-    result |= test_vector_swizzle_int(device, context, queue, num_elements);
+    result |= test_type<cl_char>("char", device, context, queue);
+    result |= test_type<cl_uchar>("uchar", device, context, queue);
+    result |= test_type<cl_short>("short", device, context, queue);
+    result |= test_type<cl_ushort>("ushort", device, context, queue);
+    result |= test_type<cl_int>("int", device, context, queue);
+    result |= test_type<cl_uint>("uint", device, context, queue);
+    result |= test_type<cl_long>("long", device, context, queue);
+    result |= test_type<cl_ulong>("ulong", device, context, queue);
+    result |= test_type<cl_float>("float", device, context, queue);
+    if (hasDouble)
+    {
+        result |= test_type<cl_double>("double", device, context, queue);
+    }
     return result;
 }
