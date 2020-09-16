@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "wrappers.h"
-#include "../../test_common/harness/errorHelpers.h"
+#include "harness/errorHelpers.h"
 
 LPCTSTR CDeviceWrapper::WINDOW_TITLE = _T( "cl_khr_dx9_media_sharing" );
 const int CDeviceWrapper::WINDOW_WIDTH = 256;
@@ -141,7 +141,7 @@ CDeviceWrapper::~CDeviceWrapper()
 
 #if defined(_WIN32)
 CD3D9Wrapper::CD3D9Wrapper():
-_d3d9(NULL), _d3dDevice(NULL), _status(true), _adapterIdx(0), _adapterFound(false)
+_d3d9(NULL), _d3dDevice(NULL), _status(DEVICE_PASS), _adapterIdx(0), _adapterFound(false)
 {
   WindowInit();
 
@@ -149,7 +149,7 @@ _d3d9(NULL), _d3dDevice(NULL), _status(true), _adapterIdx(0), _adapterFound(fals
   if (!_d3d9)
   {
     log_error("Direct3DCreate9 failed\n");
-    _status = false;
+    _status = DEVICE_FAIL;
   }
 }
 
@@ -169,16 +169,16 @@ void CD3D9Wrapper::Destroy()
   _d3dDevice = 0;
 }
 
-bool CD3D9Wrapper::Init()
+cl_int CD3D9Wrapper::Init()
 {
   if (!WindowHandle())
   {
     log_error("D3D9: Window is not created\n");
-    _status = false;
-    return false;
+    _status = DEVICE_FAIL;
+    return DEVICE_FAIL;
   }
 
-  if(!_d3d9 || !_status || !_adapterFound)
+  if(!_d3d9 || DEVICE_PASS  != _status || !_adapterFound)
     return false;
 
   _d3d9->GetAdapterDisplayMode(_adapterIdx - 1, &_d3ddm);
@@ -201,8 +201,8 @@ bool CD3D9Wrapper::Init()
     processingType, &d3dParams, &_d3dDevice) ) )
   {
     log_error("CreateDevice failed\n");
-    _status = false;
-    return false;
+    _status = DEVICE_FAIL;
+    return DEVICE_FAIL;
   }
 
   _d3dDevice->BeginScene();
@@ -232,14 +232,14 @@ D3DADAPTER_IDENTIFIER9 CD3D9Wrapper::Adapter()
   return _adapter;
 }
 
-bool CD3D9Wrapper::Status() const
+TDeviceStatus CD3D9Wrapper::Status() const
 {
   return _status;
 }
 
 bool CD3D9Wrapper::AdapterNext()
 {
-  if (!_status)
+  if (DEVICE_PASS != _status)
     return false;
 
   _adapterFound = false;
@@ -253,7 +253,7 @@ bool CD3D9Wrapper::AdapterNext()
     if(FAILED(_d3d9->GetAdapterIdentifier(_adapterIdx - 1, 0, &_adapter)))
     {
       log_error("D3D9: GetAdapterIdentifier failed\n");
-      _status = false;
+      _status = DEVICE_FAIL;
       return false;
     }
 
@@ -262,7 +262,7 @@ bool CD3D9Wrapper::AdapterNext()
     Destroy();
     if(!Init())
     {
-      _status = false;
+      _status = DEVICE_FAIL;
       _adapterFound = false;
     }
     break;
@@ -278,7 +278,7 @@ unsigned int CD3D9Wrapper::AdapterIdx() const
 
 
 CD3D9ExWrapper::CD3D9ExWrapper():
-_d3d9Ex(NULL), _d3dDeviceEx(NULL), _status(true), _adapterIdx(0), _adapterFound(false)
+_d3d9Ex(NULL), _d3dDeviceEx(NULL), _status(DEVICE_PASS), _adapterIdx(0), _adapterFound(false)
 {
   WindowInit();
 
@@ -286,7 +286,7 @@ _d3d9Ex(NULL), _d3dDeviceEx(NULL), _status(true), _adapterIdx(0), _adapterFound(
   if (FAILED(result) || !_d3d9Ex)
   {
     log_error("Direct3DCreate9Ex failed\n");
-    _status = false;
+    _status = DEVICE_FAIL;
   }
 }
 
@@ -319,17 +319,17 @@ D3DADAPTER_IDENTIFIER9 CD3D9ExWrapper::Adapter()
   return _adapter;
 }
 
-bool CD3D9ExWrapper::Init()
+cl_int CD3D9ExWrapper::Init()
 {
   if (!WindowHandle())
   {
     log_error("D3D9EX: Window is not created\n");
-    _status = false;
-    return false;
+    _status = DEVICE_FAIL;
+    return DEVICE_FAIL;
   }
 
-  if(!_d3d9Ex || !_status || !_adapterFound)
-    return false;
+  if(!_d3d9Ex || DEVICE_FAIL == _status || !_adapterFound)
+    return DEVICE_FAIL;
 
   RECT rect;
   GetClientRect(WindowHandle(),&rect);
@@ -353,15 +353,15 @@ bool CD3D9ExWrapper::Init()
     processingType, &d3dParams, NULL, &_d3dDeviceEx) ) )
   {
     log_error("CreateDeviceEx failed\n");
-    _status = false;
-    return false;
+    _status = DEVICE_FAIL;
+    return DEVICE_FAIL;
   }
 
   _d3dDeviceEx->BeginScene();
   _d3dDeviceEx->Clear(0, NULL, D3DCLEAR_TARGET, 0, 1.0f, 0);
   _d3dDeviceEx->EndScene();
 
-  return true;
+  return DEVICE_PASS;
 }
 
 void CD3D9ExWrapper::Destroy()
@@ -371,14 +371,14 @@ void CD3D9ExWrapper::Destroy()
   _d3dDeviceEx = 0;
 }
 
-bool CD3D9ExWrapper::Status() const
+TDeviceStatus CD3D9ExWrapper::Status() const
 {
   return _status;
 }
 
 bool CD3D9ExWrapper::AdapterNext()
 {
-  if (!_status)
+  if (DEVICE_FAIL == _status)
     return false;
 
   _adapterFound = false;
@@ -392,7 +392,7 @@ bool CD3D9ExWrapper::AdapterNext()
     if(FAILED(_d3d9Ex->GetAdapterIdentifier(_adapterIdx - 1, 0, &_adapter)))
     {
       log_error("D3D9EX: GetAdapterIdentifier failed\n");
-      _status = false;
+      _status = DEVICE_FAIL;
       return false;
     }
 
@@ -400,8 +400,8 @@ bool CD3D9ExWrapper::AdapterNext()
     Destroy();
     if(!Init())
     {
-      _status = false;
-      _adapterFound = false;
+      _status = DEVICE_FAIL;
+      _adapterFound = _status;
     }
 
     break;
@@ -416,7 +416,7 @@ unsigned int CD3D9ExWrapper::AdapterIdx() const
 }
 
 CDXVAWrapper::CDXVAWrapper():
-_dxvaDevice(NULL), _status(true), _adapterFound(false)
+_dxvaDevice(NULL), _status(DEVICE_PASS), _adapterFound(false)
 {
   _status = _d3d9.Status();
 }
@@ -431,19 +431,24 @@ void * CDXVAWrapper::Device() const
   return _dxvaDevice;
 }
 
-bool CDXVAWrapper::Status() const
+TDeviceStatus CDXVAWrapper::Status() const
 {
-  return _status && _d3d9.Status();
+    if(_status == DEVICE_FAIL || _d3d9.Status() == DEVICE_FAIL)
+        return DEVICE_FAIL;
+    else if(_status == DEVICE_NOTSUPPORTED || _d3d9.Status() == DEVICE_NOTSUPPORTED)
+        return DEVICE_NOTSUPPORTED;
+    else
+        return DEVICE_PASS;
 }
 
 bool CDXVAWrapper::AdapterNext()
 {
-  if (!_status)
+  if (DEVICE_PASS != _status)
     return false;
 
   _adapterFound = _d3d9.AdapterNext();
   _status = _d3d9.Status();
-  if (!_status)
+  if (DEVICE_PASS != _status)
   {
     _adapterFound = false;
     return false;
@@ -454,7 +459,7 @@ bool CDXVAWrapper::AdapterNext()
 
   DXVAHDDestroy();
   _status = DXVAHDInit();
-  if (!_status)
+  if (DEVICE_PASS != _status)
   {
     _adapterFound = false;
     return false;
@@ -463,10 +468,10 @@ bool CDXVAWrapper::AdapterNext()
   return true;
 }
 
-bool CDXVAWrapper::DXVAHDInit()
+TDeviceStatus CDXVAWrapper::DXVAHDInit()
 {
-  if (!_status || !_d3d9.Status() || !_adapterFound)
-    return false;
+  if ((_status == DEVICE_FAIL) || (_d3d9.Status() == DEVICE_FAIL) || !_adapterFound)
+    return DEVICE_FAIL;
 
   DXVAHD_RATIONAL fps = { VIDEO_FPS, 1 };
 
@@ -480,20 +485,27 @@ bool CDXVAWrapper::DXVAHDInit()
   desc.OutputHeight = WindowHeight();
 
 #ifdef USE_SOFTWARE_PLUGIN
-  _status = false;
-  return false;
+  _status = DEVICE_FAIL;
+  return DEVICE_FAIL;
 #endif
 
   HRESULT hr = DXVAHD_CreateDevice(static_cast<IDirect3DDevice9Ex *>(_d3d9.Device()),
     &desc, DXVAHD_DEVICE_USAGE_PLAYBACK_NORMAL, NULL, &_dxvaDevice);
   if(FAILED(hr))
   {
+    if (hr == E_NOINTERFACE)
+    {
+      log_error("DXVAHD_CreateDevice skipped due to no supported devices!\n");
+      _status = DEVICE_NOTSUPPORTED;
+    }
+    else
+    {
     log_error("DXVAHD_CreateDevice failed\n");
-    _status = false;
-    return false;
+    _status = DEVICE_FAIL;
+    }
   }
 
-  return true;
+  return _status;
 }
 
 void CDXVAWrapper::DXVAHDDestroy()

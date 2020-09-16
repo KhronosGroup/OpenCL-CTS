@@ -18,7 +18,7 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool               gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gEnablePitch, gTestRounding;
+extern bool               gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gEnablePitch;
 extern cl_filter_mode     gFilterModeToUse;
 extern cl_addressing_mode gAddressModeToUse;
 
@@ -150,9 +150,27 @@ int test_fill_image_set_2D_array( cl_device_id device, cl_context context, cl_co
 
             imageInfo.slicePitch = imageInfo.rowPitch * (imageInfo.height + slicePadding);
 
-            log_info( "Testing %d x %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
-            if ( gDebugTrace )
-                log_info( "   at max size %d,%d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
+            // Loop until we get a size that a) will fit in the max alloc size and b) that an allocation of that
+            // image, the result array, plus offset arrays, will fit in the global ram space
+            cl_ulong size = (cl_ulong)imageInfo.slicePitch * (cl_ulong)imageInfo.arraySize * 4 * 4;
+
+            while (size > maxAllocSize || (size * 3) > memSize) {
+                if (imageInfo.arraySize == 1) {
+                    // arraySize cannot be 0.
+                    break;
+                }
+                imageInfo.arraySize--;
+                size = (cl_ulong)imageInfo.slicePitch * (cl_ulong)imageInfo.arraySize * 4 * 4;
+            }
+
+            while (size > maxAllocSize || (size * 3) > memSize) {
+                imageInfo.height--;
+                imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
+                size = (cl_ulong)imageInfo.slicePitch * (cl_ulong)imageInfo.arraySize * 4 * 4;
+            }
+
+            log_info( "Testing %d x %d x %d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize);
+
             if ( test_fill_image_2D_array( context, queue, &imageInfo, outputType, seed ) )
                 return -1;
         }

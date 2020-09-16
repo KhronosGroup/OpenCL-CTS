@@ -1,8 +1,8 @@
 if(WIN32)
 list(APPEND CLConform_LIBRARIES d3d9.lib dxva2.lib )
-endif(WIN32)
+set(MODULE_NAME MEDIA_SURFACE_SHARING)
 
-set (MEDIA_SOURCES
+set(${MODULE_NAME}_SOURCES
         main.cpp
         wrappers.cpp
         utils.cpp
@@ -13,22 +13,13 @@ set (MEDIA_SOURCES
         test_interop_sync.cpp
         test_memory_access.cpp
         test_other_data_types.cpp
-        ../../test_common/harness/errorHelpers.c
-        ../../test_common/harness/kernelHelpers.c
-        ../../test_common/harness/testHarness.c
-        ../../test_common/harness/rounding_mode.c
-        ../../test_common/harness/typeWrappers.cpp
-        ../../test_common/harness/mt19937.c
-        ../../test_common/harness/parseParameters.cpp
-        ../../test_common/harness/crc32.c
     )
 
-add_executable(conformance_test_media_surface_sharing
-        ${MEDIA_SOURCES})
-
 set_source_files_properties(
-        ${MEDIA_SOURCES}
+        ${MODULE_NAME}_SOURCES
         PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_media_surface_sharing
-        ${CLConform_LIBRARIES})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+include(../../test_conformance/CMakeCommon.txt)
+endif(WIN32)

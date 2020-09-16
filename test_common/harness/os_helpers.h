@@ -37,17 +37,9 @@
 // C interface.
 // -------------------------------------------------------------------------------------------------
 
-#ifdef __cplusplus
-    extern "C" {
-#endif // __cplusplus
-
 char * get_err_msg( int err );  // Returns system error message. Subject to free.
 char * get_dir_sep();           // Returns dir separator. Subject to free.
 char * get_exe_path();          // Returns path of current executable. Subject to free.
 char * get_exe_dir();           // Returns dir of current executable. Subject to free.
-
-#ifdef __cplusplus
-    } // extern "C"
-#endif // __cplusplus
 
 #endif // __os_helpers_h__

@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "common.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/mt19937.h"
 
 #define GLOBAL_SIZE 65536
 
@@ -198,6 +198,24 @@ int test_svm_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue
 
     error = clFlush(queues[1]);
     test_error(error, "clFlush failed");
+
+    // Check the event command type for clEnqueueSVMMigrateMem (OpenCL 3.0 and
+    // newer)
+    Version version = get_device_cl_version(deviceID);
+    if (version >= Version(3, 0))
+    {
+        cl_command_type commandType;
+        error = clGetEventInfo(evs[3], CL_EVENT_COMMAND_TYPE,
+                               sizeof(commandType), &commandType, NULL);
+        test_error(error, "clGetEventInfo failed");
+        if (commandType != CL_COMMAND_SVM_MIGRATE_MEM)
+        {
+            log_error("Invalid command type returned for "
+                      "clEnqueueSVMMigrateMem: %X\n",
+                      commandType);
+            return TEST_FAIL;
+        }
+    }
 
     error = wait_and_release("first batch", evs, 8);
     if (error)

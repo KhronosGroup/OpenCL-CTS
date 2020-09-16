@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -27,6 +27,7 @@
 #include <iterator>
 #include <memory>
 #include <sstream>
+#include <vector>
 
 #include "exceptions.h"
 #include "datagen.h"
@@ -99,7 +100,8 @@ void get_kernel_name (const char *test_name, std::string &kernel_name)
     kernel_name.assign(temp_str);
 }
 
-extern "C" void CL_CALLBACK notify_callback(const char *errInfo, const void *privateInfo, size_t cb, void *userData);
+void CL_CALLBACK notify_callback(const char* errInfo, const void* privateInfo,
+                                 size_t cb, void* userData);
 
 void create_context_and_queue(cl_device_id device, cl_context *out_context, cl_command_queue *out_queue)
 {
@@ -114,7 +116,7 @@ void create_context_and_queue(cl_device_id device, cl_context *out_context, cl_c
         throw Exceptions::TestError("clCreateContext failed\n", error);
     }
 
-    *out_queue = clCreateCommandQueueWithProperties( *out_context, device, 0, &error );
+    *out_queue = clCreateCommandQueue( *out_context, device, 0, &error );
     if( NULL == *out_queue || error )
     {
         throw Exceptions::TestError("clCreateCommandQueue failed\n", error);
@@ -300,18 +302,11 @@ const std::string& DataRow::operator[](int column)const
 
 std::string& DataRow::operator[](int column)
 {
-    assert((column > -1) && "Index out of bound");
+    assert((column > -1 && (size_t)column <= m_row.size())
+           && "Index out of bound");
+    if ((size_t)column == m_row.size()) m_row.push_back("");
 
-    if ((size_t)column < m_row.size())
-        return m_row[column];
-
-    if (column == m_row.size())
-    {
-        m_row.push_back("");
-        return m_row[column];
-    }
-
-    assert(0 && "Index out of bound.");
+    return m_row[column];
 }
 
 /*
@@ -345,15 +340,19 @@ DataRow& DataTable::operator[](int index)
  */
 OclExtensions OclExtensions::getDeviceCapabilities(cl_device_id devId)
 {
-    char extensions[1024] = {0};
     size_t size;
-
+    size_t set_size;
+    cl_int errcode = clGetDeviceInfo(devId, CL_DEVICE_EXTENSIONS, 0, NULL, &set_size);
+    if (errcode)
+        throw Exceptions::TestError("Device query failed");
     // Querying the device for its supported extensions
-    cl_int errcode = clGetDeviceInfo(devId,
-                                     CL_DEVICE_EXTENSIONS,
-                                     sizeof(extensions),
-                                     extensions,
-                                     &size);
+    std::vector<char> extensions(set_size);
+    errcode = clGetDeviceInfo(devId,
+                              CL_DEVICE_EXTENSIONS,
+                              extensions.size(),
+                              extensions.data(),
+                              &size);
+
     if (errcode)
         throw Exceptions::TestError("Device query failed");
 
@@ -367,13 +366,13 @@ OclExtensions OclExtensions::getDeviceCapabilities(cl_device_id devId)
         throw Exceptions::TestError("Device query failed");
 
     OclExtensions ret = OclExtensions::empty();
-    assert(size < sizeof(extensions));
+    assert(size == set_size);
     if (!size)
       return ret;
 
     // Iterate over the extensions, and convert them into the bit field.
     std::list<std::string> extVector;
-    std::stringstream khrStream(extensions);
+    std::stringstream khrStream(extensions.data());
     std::copy(std::istream_iterator<std::string>(khrStream),
               std::istream_iterator<std::string>(),
               std::back_inserter(extVector));

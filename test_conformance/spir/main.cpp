@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,10 +23,10 @@
 #include <sstream>
 #include <iterator>
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/os_helpers.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/os_helpers.h"
 
 #include "exceptions.h"
 #include "run_build_test.h"
@@ -34,7 +34,7 @@
 
 #include <list>
 #include <algorithm>
-#include "../../test_common/miniz/miniz.h"
+#include "miniz/miniz.h"
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -147,8 +147,8 @@ static void get_spir_version(cl_device_id device, std::vector<float>& versions)
     cl_int err;
     size_t size = 0;
 
-    if (err = clGetDeviceInfo(device, CL_DEVICE_SPIR_VERSIONS, sizeof(version),
-                              (void*)version, &size))
+    if ((err = clGetDeviceInfo(device, CL_DEVICE_SPIR_VERSIONS, sizeof(version),
+                               (void *)version, &size)))
     {
         log_error( "Error: failed to obtain SPIR version at %s:%d (err = %d)\n",
                   __FILE__, __LINE__, err );

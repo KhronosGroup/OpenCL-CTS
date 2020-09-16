@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
 #include <sstream>
 #include <string>
 
@@ -90,15 +90,8 @@ int test_queue_hint(cl_device_id deviceID, cl_context context, cl_command_queue 
     int err = 0;
 
     // Query extension
-    cl_platform_id platform;
     clProgramWrapper program;
     clKernelWrapper kernel;
-    char *string_returned;
-
-    string_returned = (char*)malloc(8192);
-
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
-    test_error(err, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
     err = create_single_kernel_helper_with_build_options(context, &program, &kernel, 1, queue_hint_test_kernel, "vec_cpy", NULL);
     if (err != 0)
@@ -106,14 +99,9 @@ int test_queue_hint(cl_device_id deviceID, cl_context context, cl_command_queue 
         return err;
     }
 
-    memset(string_returned, 0, 8192);
-    err = clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, 8192, string_returned, NULL);
-    test_error(err, "clGetPlatformInfo for CL_PLATFORM_EXTENSIONS failed");
-    log_info("\tCL_PLATFORM_EXTENSIONS: %s\n", string_returned);
-    string strExt = string_returned;
-    if (strExt.find("cl_khr_priority_hints") != string::npos)
+    if (is_extension_available(deviceID, "cl_khr_priority_hints"))
     {
-        log_info("Testing cl_khr_priority_hints...\n", string_returned);
+        log_info("Testing cl_khr_priority_hints...\n");
 
         cl_queue_properties queue_prop[][3] =
         {
@@ -145,11 +133,12 @@ int test_queue_hint(cl_device_id deviceID, cl_context context, cl_command_queue 
     }
     else
     {
-        log_info("cl_khr_priority_hints is not supported.");
+        log_info("cl_khr_priority_hints is not supported.\n");
     }
 
-    if (strExt.find("cl_khr_throttle_hints") != string::npos)
+    if (is_extension_available(deviceID, "cl_khr_throttle_hints"))
     {
+        log_info("Testing cl_khr_throttle_hints...\n");
         cl_queue_properties queue_prop[][3] =
         {
             {
@@ -181,10 +170,8 @@ int test_queue_hint(cl_device_id deviceID, cl_context context, cl_command_queue 
     }
     else
     {
-        log_info("cl_khr_throttle_hints is not supported.");
+        log_info("cl_khr_throttle_hints is not supported.\n");
     }
-
-    free(string_returned);
 
     return 0;
 }

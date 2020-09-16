@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,8 +19,7 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool             gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestRounding;
-extern cl_device_type   gDeviceType;
+extern bool             gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gDeviceLt20;
 extern bool             gTestReadWrite;
 
 const char *read2DArrayKernelSourcePattern =
@@ -99,12 +98,7 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
     }
 
     // Create sampler to use
-    cl_sampler_properties properties[] = {
-        CL_SAMPLER_NORMALIZED_COORDS, CL_FALSE,
-        CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_NONE,
-        CL_SAMPLER_FILTER_MODE, CL_FILTER_NEAREST,
-        0 };
-    actualSampler = clCreateSamplerWithProperties( context, properties, &error );
+    actualSampler = clCreateSampler( context, CL_FALSE, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &error );
     test_error( error, "Unable to create image sampler" );
 
     // Create results buffer
@@ -245,7 +239,7 @@ int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_co
 
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", "-cl-std=CL2.0" );
+    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0" );
     test_error( error, "Unable to create testing kernel" );
 
 

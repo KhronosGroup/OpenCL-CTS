@@ -16,7 +16,7 @@
 #ifndef __DATAGEN_H
 #define __DATAGEN_H
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <assert.h>
 
@@ -27,7 +27,7 @@
 #include <fstream>
 #include <algorithm>
 
-#include "../../test_common/harness/mt19937.h"
+#include "harness/mt19937.h"
 
 #include "exceptions.h"
 #include "kernelargs.h"
@@ -274,20 +274,16 @@ public:
         if (CL_SUCCESS != error)
             throw Exceptions::TestError("clGetSupportedImageFormats failed\n", error);
 
-        std::auto_ptr<cl_image_format> supportedFormats(new cl_image_format[actualNumFormats]);
-        error = clGetSupportedImageFormats(
-            context,
-            flags,
-            m_desc.image_type,
-            actualNumFormats,
-            supportedFormats.get(),
-            NULL);
+        std::vector<cl_image_format> supportedFormats(actualNumFormats);
+        error = clGetSupportedImageFormats(context, flags, m_desc.image_type,
+                                           actualNumFormats,
+                                           supportedFormats.data(), NULL);
         if (CL_SUCCESS != error)
             throw Exceptions::TestError("clGetSupportedImageFormats failed\n", error);
 
         for (size_t i=0; i<actualNumFormats; ++i)
         {
-            cl_image_format curFormat = supportedFormats.get()[i];
+            cl_image_format curFormat = supportedFormats[i];
 
             if(imgFormat.image_channel_order == curFormat.image_channel_order &&
                imgFormat.image_channel_data_type == curFormat.image_channel_data_type)

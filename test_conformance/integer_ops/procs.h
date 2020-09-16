@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/threadTesting.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/threadTesting.h"
+#include "harness/typeWrappers.h"
+#include "harness/testHarness.h"
+#include "harness/mt19937.h"
 
 
 // The number of errors to print out for each test

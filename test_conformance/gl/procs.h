@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/mt19937.h"
 
 
 #pragma mark -

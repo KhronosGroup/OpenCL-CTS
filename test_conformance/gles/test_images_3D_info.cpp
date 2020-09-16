@@ -16,8 +16,6 @@
 #include "gl_headers.h"
 #include "testBase.h"
 
-extern "C" {extern cl_uint gRandomSeed;};
-
 static int test_image_read( cl_context context, cl_command_queue queue, GLenum glTarget, GLuint glTexture,
                     size_t imageWidth, size_t imageHeight, size_t imageDepth, cl_image_format *outFormat, ExplicitType *outType, void **outResultBuffer )
 {

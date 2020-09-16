@@ -1,49 +1,66 @@
-function (install_spir_artifacts suite_name)
-  install(FILES "${suite_name}.zip" DESTINATION ${CLConf_OUT_DIR}/spir)
-endfunction()
-
-include_directories(${CLConf_SRC_DIR}/test_common)
-
 # Import function list from math_brute_force
 add_definitions(-DFUNCTION_LIST_ULPS_ONLY)
 
-clconf_add_executable(
-    test_spir
+set(SPIR_OUT ${CONFORMANCE_PREFIX}spir${CONFORMANCE_SUFFIX})
+
+set (SPIR_SOURCES
     main.cpp
     datagen.cpp
     run_build_test.cpp
     run_services.cpp
     kernelargs.cpp
-    ../math_brute_force/FunctionList.c)
-
-target_link_libraries(
-    test_spir${CLConf_SUFFIX}
-    miniz${CLConf_SUFFIX}
+    ../math_brute_force/FunctionList.cpp
 )
 
-install_spir_artifacts(api)
-install_spir_artifacts(atomics)
-install_spir_artifacts(basic)
-install_spir_artifacts(compile_and_link)
-install_spir_artifacts(commonfns)
-install_spir_artifacts(conversions)
-install_spir_artifacts(geometrics)
-install_spir_artifacts(enum_values)
-install_spir_artifacts(half)
-install_spir_artifacts(kernel_attributes)
-install_spir_artifacts(kernel_image_methods)
-install_spir_artifacts(images_kernel_read_write)
-install_spir_artifacts(images_samplerlessRead)
-install_spir_artifacts(integer_ops)
-install_spir_artifacts(math_brute_force)
-install_spir_artifacts(printf)
-install_spir_artifacts(profiling)
-install_spir_artifacts(relationals)
-install_spir_artifacts(select)
-install_spir_artifacts(sampler_enumeration)
-install_spir_artifacts(vec_align)
-install_spir_artifacts(vec_step)
-install_spir_artifacts(binary_type)
-install(FILES "khr.csv" DESTINATION ${CLConf_OUT_DIR}/spir)
-#Add any other runtime directories you need here.
-# end of file #
+add_executable(${SPIR_OUT}
+    ${SPIR_SOURCES})
+
+if(UNIX)
+    set_target_properties(${SPIR_OUT} PROPERTIES
+       COMPILE_FLAGS "-fexceptions -frtti")
+elseif(MSVC)
+    set_target_properties(${SPIR_OUT} PROPERTIES
+       COMPILE_FLAGS "/GR /EHs /EHc")
+endif()
+
+TARGET_LINK_LIBRARIES(${SPIR_OUT} harness
+    ${CLConform_LIBRARIES})
+
+
+set_source_files_properties(${SPIR_SOURCES} PROPERTIES LANGUAGE CXX)
+
+# Need to copy the spir zips to sit beside the executable
+
+set(SPIR_FILES
+    "khr.csv"
+    "api.zip"
+    "atomics.zip"
+    "basic.zip"
+    "compile_and_link.zip"
+    "commonfns.zip"
+    "conversions.zip"
+    "geometrics.zip"
+    "enum_values.zip"
+    "half.zip"
+    "kernel_attributes.zip"
+    "kernel_image_methods.zip"
+    "images_kernel_read_write.zip"
+    "images_samplerlessRead.zip"
+    "integer_ops.zip"
+    "math_brute_force.zip"
+    "printf.zip"
+    "profiling.zip"
+    "relationals.zip"
+    "select.zip"
+    "sampler_enumeration.zip"
+    "vec_align.zip"
+    "vec_step.zip"
+    "binary_type.zip")
+
+foreach(input_file ${SPIR_FILES})
+    add_custom_command(
+    TARGET ${SPIR_OUT}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${input_file}" "$<TARGET_FILE_DIR:${SPIR_OUT}>/"
+)
+endforeach(input_file)

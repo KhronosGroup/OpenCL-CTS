@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
 #include <sstream>
 #include <string>
 #include <cmath>
@@ -261,28 +261,9 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     test_error( error, "clGetDeviceInfo failed." );
 
     // test double support
-    size_t ext_str_size;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, 0, NULL, &ext_str_size);
-    test_error( error, "clGetDeviceInfo failed." );
-    char* ext_str = new char[ext_str_size+1];
-
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, ext_str_size, ext_str, NULL);
-    test_error( error, "clGetDeviceInfo failed." );
-
-    ext_str[ext_str_size] = '\0';
-
-    stringstream ss;
-    ss << ext_str;
-
-    while (!ss.eof())
+    if (is_extension_available(deviceID, "cl_khr_fp64"))
     {
-        string s;
-        ss >> s;
-        if (s == "cl_khr_fp64")
-        {
-            bdouble = CL_TRUE;
-            break;
-        }
+        bdouble = CL_TRUE;
     }
 
     /* Create kernels to test with */
@@ -318,9 +299,6 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     bufOut = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, BUF_SIZE, NULL, &error);
     test_error( error, "clCreateBuffer failed." );
 
-    clMemWrapper pipe = clCreatePipe(context, CL_MEM_HOST_NO_ACCESS, sizeof(int), 16, NULL, &error);
-    test_error( error, "clCreatePipe failed." );
-
     error = clSetKernelArg(kernel, 0, sizeof(int), &intarg);
     error += clSetKernelArg(kernel, 1, sizeof(float), &farg);
     error += clSetKernelArg(kernel, 2, sizeof(structArg), &sa);
@@ -338,7 +316,7 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     error = clEnqueueNDRangeKernel(queue, clonek, 1, NULL, &ndrange1, NULL, 0, NULL, NULL);
     test_error( error, "clEnqueueNDRangeKernel failed." );
 
-    // shallow clone tests for buffer, svm and pipes
+    // shallow clone tests for buffer
     error = clSetKernelArg(kernel_buf_write, 0, sizeof(cl_mem), &buf);
     error += clSetKernelArg(kernel_buf_write, 1, sizeof(int), &write_val);
     test_error( error, "clSetKernelArg failed." );
@@ -404,7 +382,6 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
 
     delete [] pbuf;
     delete [] pbufRes;
-    delete [] ext_str;
 
     return 0;
 }

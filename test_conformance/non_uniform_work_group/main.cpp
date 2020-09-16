@@ -15,7 +15,7 @@
 //
 #include "procs.h"
 #include "tools.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #include "TestNonUniformWorkGroup.h"
 
 test_definition test_list[] = {
@@ -38,6 +38,19 @@ test_definition test_list[] = {
 
 const int test_num = ARRAY_SIZE( test_list );
 
+test_status InitCL(cl_device_id device) {
+    auto version = get_device_cl_version(device);
+    auto expected_min_version = Version(2, 0);
+    if (version < expected_min_version)
+    {
+        version_expected_info("Test", "OpenCL",
+                              expected_min_version.to_string().c_str(),
+                              version.to_string().c_str());
+        return TEST_SKIP;
+    }
+    return TEST_PASS;
+}
+
 int main(int argc, const char *argv[])
 {
   typedef std::vector<const char *> ArgsVector;
@@ -56,6 +69,6 @@ int main(int argc, const char *argv[])
 
   PrimeNumbers::generatePrimeNumbers(100000);
 
-  return runTestHarness(static_cast<int>(programArgs.size()), &programArgs.front(), test_num, test_list, false, false, 0 );
+  return runTestHarnessWithCheck(static_cast<int>(programArgs.size()), &programArgs.front(), test_num, test_list, false, false, InitCL);
 }
 

@@ -16,6 +16,8 @@
 #ifndef __ROUNDING_MODE_H__
 #define __ROUNDING_MODE_H__
 
+#pragma STDC FENV_ACCESS ON
+
 #include "compat.h"
 
 #if (defined(_WIN32) && defined (_MSC_VER))
@@ -51,18 +53,10 @@ typedef enum
     kTypeCount
 }Type;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern RoundingMode set_round( RoundingMode r, Type outType );
 extern RoundingMode get_round( void );
 extern void *FlushToZero( void );
 extern void UnFlushToZero( void *p);
-
-#ifdef __cplusplus
-}
-#endif
 
 
 

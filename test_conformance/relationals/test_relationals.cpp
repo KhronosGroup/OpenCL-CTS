@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/testHarness.h"
 
 const char *anyAllTestKernelPattern =
 "%s\n" // optional pragma
@@ -37,8 +37,6 @@ const char *anyAllTestKernelPatternVload =
 "}\n";
 
 #define TEST_SIZE 512
-
-extern "C" {extern cl_uint gRandomSeed;};
 
 typedef int (*anyAllVerifyFn)( ExplicitType vecType, unsigned int vecSize, void *inData );
 

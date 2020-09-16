@@ -18,7 +18,7 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool               gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gTestRounding, gEnablePitch;
+extern bool               gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gEnablePitch;
 extern cl_filter_mode     gFilterModeToUse;
 extern cl_addressing_mode gAddressModeToUse;
 extern uint64_t           gRoundingStartValue;
@@ -194,12 +194,26 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
     }
     else {
         // Else copy one scan line at a time.
+        size_t dstPitch2D = 0;
+        switch (imageInfo->type)
+        {
+            case CL_MEM_OBJECT_IMAGE3D:
+            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            case CL_MEM_OBJECT_IMAGE2D:
+                dstPitch2D = mappedRow;
+                break;
+            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            case CL_MEM_OBJECT_IMAGE1D:
+                dstPitch2D = mappedSlice;
+                break;
+        }
+
         for ( size_t z = 0; z < depth; z++ )
         {
             for ( size_t y = 0; y < height; y++ )
             {
                 memcpy( dst, src, imageInfo->width * get_pixel_size(imageInfo->format) );
-                dst += mappedRow;
+                dst += dstPitch2D;
                 src += scanlineSize;
             }
 
@@ -417,7 +431,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     if (error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to map image for verification: %s\n", IGetErrorString( error ) );
-        return NULL;
+        return -1;
     }
 
     // Verify scanline by scanline, since the pitches are different
@@ -531,6 +545,9 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
 
             total_matched += scanlineSize;
             sourcePtr += imageInfo->rowPitch;
+            if((imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY || imageInfo->type == CL_MEM_OBJECT_IMAGE1D))
+            destPtr += mappedSlice;
+            else
             destPtr += mappedRow;
         }
 
@@ -543,7 +560,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     if (error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to unmap image after verify: %s\n", IGetErrorString( error ) );
-        return NULL;
+        return -1;
     }
 
     imgHost.reset(0x0);

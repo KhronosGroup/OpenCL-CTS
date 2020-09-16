@@ -16,7 +16,7 @@
 #ifndef _testBase_h
 #define _testBase_h
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

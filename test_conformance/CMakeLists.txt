@@ -1,13 +1,14 @@
 # Remember current source directory (`test_conformance').
 set( CLConf_Install_Base_Dir "${CMAKE_CURRENT_SOURCE_DIR}" )
 
+set(HARNESS_LIB harness)
+
 add_subdirectory( allocations )
 add_subdirectory( api )
 add_subdirectory( atomics )
 add_subdirectory( basic )
 add_subdirectory( buffers )
 add_subdirectory( commonfns )
-add_subdirectory( compatibility )
 add_subdirectory( compiler )
 add_subdirectory( computeinfo )
 add_subdirectory( contractions )
@@ -28,7 +29,6 @@ if(GLES_IS_SUPPORTED)
    add_subdirectory(gles)
 endif(GLES_IS_SUPPORTED)
 add_subdirectory( half )
-add_subdirectory( headers )
 add_subdirectory( images )
 add_subdirectory( integer_ops )
 add_subdirectory( math_brute_force )
@@ -39,8 +39,7 @@ add_subdirectory( profiling )
 add_subdirectory( relationals )
 add_subdirectory( select )
 add_subdirectory( thread_dimensions )
-add_subdirectory( vec_align )
-add_subdirectory( vec_step )
+add_subdirectory( vectors )
 add_subdirectory( c11_atomics )
 add_subdirectory( device_execution )
 add_subdirectory( non_uniform_work_group )
@@ -51,26 +50,17 @@ add_subdirectory( workgroups )
 add_subdirectory( pipes )
 add_subdirectory( device_timer )
 add_subdirectory( clcpp )
+add_subdirectory( spirv_new )
+add_subdirectory( spir )
 
-set(CSV_FILES
-    opencl_conformance_tests_21_full_spirv.csv
-    opencl_conformance_tests_21_legacy_wimpy.csv
-    opencl_conformance_tests_22.csv
-    opencl_conformance_tests_generate_spirv.csv
-    opencl_conformance_tests_conversions.csv
-    opencl_conformance_tests_d3d.csv
-    opencl_conformance_tests_full.csv
-    opencl_conformance_tests_full_no_math_or_conversions.csv
-    opencl_conformance_tests_math.csv
-    opencl_conformance_tests_quick.csv
-)
-set(PY_FILES
-    run_conformance.py
-)
+file(GLOB CSV_FILES "opencl_conformance_tests_*.csv")
+
+set(PY_FILES run_conformance.py)
 
 # Copy .csv files
 foreach(FILE ${CSV_FILES})
-    configure_file(${FILE} ${FILE} COPYONLY)
+    get_filename_component(strippedName ${FILE} NAME)
+    configure_file(${strippedName} ${strippedName} COPYONLY)
 endforeach()
 
 # Copy test run script

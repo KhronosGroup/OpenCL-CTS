@@ -16,8 +16,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
+#include "harness/errorHelpers.h"
+#include "harness/imageHelpers.h"
+#include "harness/kernelHelpers.h"
 
 #include "utils.h"
 
@@ -65,13 +66,19 @@ int other_data_types(cl_device_id deviceID, cl_context context, cl_command_queue
 
   while (deviceWrapper->AdapterNext())
   {
+    cl_int error;
+    //check if the test can be run on the adapter
+    if (CL_SUCCESS != (error = deviceExistForCLTest(gPlatformIDdetected, adapterType, deviceWrapper->Device(), result, sharedHandle)))
+    {
+      return result.Result();
+    }
+
     cl_context_properties contextProperties[] = {
       CL_CONTEXT_PLATFORM, (cl_context_properties)gPlatformIDdetected,
       AdapterTypeToContextInfo(adapterType), (cl_context_properties)deviceWrapper->Device(),
       0,
     };
 
-    cl_int error;
     clContextWrapper ctx = clCreateContext(&contextProperties[0], 1, &gDeviceIDdetected, NULL, NULL, &error);
     if (error != CL_SUCCESS)
     {
@@ -419,13 +426,20 @@ int other_data_types(cl_device_id deviceID, cl_context context, cl_command_queue
     }
   }
 
-  if (!deviceWrapper->Status())
+  if (deviceWrapper->Status() != DEVICE_PASS)
   {
-    std::string adapter;
-    AdapterToString(adapterType, adapter);
-    log_error("%s init failed\n", adapter.c_str());
+    std::string adapterName;
+    AdapterToString(adapterType, adapterName);
+    if (deviceWrapper->Status() == DEVICE_FAIL)
+  {
+      log_error("%s init failed\n", adapterName.c_str());
     result.ResultSub(CResult::TEST_FAIL);
-    return result.Result();
+    }
+    else
+    {
+      log_error("%s init incomplete due to unsupported device\n", adapterName.c_str());
+      result.ResultSub(CResult::TEST_NOTSUPPORTED);
+    }
   }
 
   return result.Result();

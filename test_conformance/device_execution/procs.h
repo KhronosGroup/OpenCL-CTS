@@ -13,11 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/testHarness.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "harness/testHarness.h"
 
 extern int test_device_info(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_device_queue(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
@@ -30,11 +26,9 @@ extern int test_enqueue_multi_queue(cl_device_id device, cl_context context, cl_
 extern int test_host_multi_queue(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_enqueue_ndrange(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_host_queue_order(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_enqueue_profiling(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements);
 
 extern int test_execution_stress(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-
-#ifdef __cplusplus
-}
-#endif
 
 

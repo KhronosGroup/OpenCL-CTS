@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/typeWrappers.h"
 
 extern int test_non_uniform_1d_basic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_non_uniform_1d_atomics(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

@@ -429,10 +429,10 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
     test_error( error, "Unable to create shared context" );
 
     // Create two queues (can't use the existing one, because it's on the wrong context)
-    clCommandQueueWrapper queue1 = clCreateCommandQueueWithProperties( testingContext, deviceID, 0, &error );
+    clCommandQueueWrapper queue1 = clCreateCommandQueue( testingContext, deviceID, 0, &error );
     test_error( error, "Unable to create command queue on main device" );
 
-    clCommandQueueWrapper queue2 = clCreateCommandQueueWithProperties( testingContext, otherDevice, 0, &error );
+    clCommandQueueWrapper queue2 = clCreateCommandQueue( testingContext, otherDevice, 0, &error );
     test_error( error, "Unable to create command queue on secondary device" );
 
     // Determine the reasonable buffer size and address alignment that applies to BOTH devices

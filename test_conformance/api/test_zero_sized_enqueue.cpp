@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
 
 const char *zero_sized_enqueue_test_kernel[] = {
 "__kernel void foo_kernel(__global float *src, __global int *dst)\n"
@@ -134,7 +134,7 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
 
     // Verify zero-sized ND range kernel still satisfy event wait list and correct event object
     // is returned
-    cl_event ev = NULL;
+    clEventWrapper ev = NULL;
     clEventWrapper user_ev = clCreateUserEvent(context, &error);
     test_error( error, "user event creation failed." );
     error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, ndrange30, NULL, 1, &user_ev, &ev);

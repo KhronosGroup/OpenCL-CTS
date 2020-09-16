@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../../test_common/harness/compat.h"
+#include "../harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -28,10 +28,9 @@
 bool gDebugTrace;
 bool gTestSmallImages;
 bool gTestMaxImages;
-bool gTestRounding;
 int  gTypesToTest;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
-cl_device_type    gDeviceType = CL_DEVICE_TYPE_DEFAULT;
+cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
 
 extern int test_image_set( cl_device_id device, cl_context context, cl_mem_object_type image_type );
 static void printUsage( const char *execName );
@@ -79,8 +78,6 @@ int main(int argc, const char *argv[])
 {
     cl_channel_type chanType;
 
-    checkDeviceTypeOverride( &gDeviceType );
-
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 
     if( NULL == argList )
@@ -95,16 +92,7 @@ int main(int argc, const char *argv[])
     // Parse arguments
     for( int i = 1; i < argc; i++ )
     {
-        if( strcmp( argv[i], "cpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_CPU" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_CPU;
-        else if( strcmp( argv[i], "gpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_GPU" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_GPU;
-        else if( strcmp( argv[i], "accelerator" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-        else if( strcmp( argv[i], "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-
-        else if( strcmp( argv[i], "debug_trace" ) == 0 )
+        if( strcmp( argv[i], "debug_trace" ) == 0 )
             gDebugTrace = true;
 
         else if( strcmp( argv[i], "small_images" ) == 0 )
@@ -130,19 +118,6 @@ int main(int argc, const char *argv[])
         log_info( "Note: Using small test images\n" );
 
     int ret = runTestHarness( argCount, argList, test_num, test_list, true, false, 0 );
-
-  if (gTestFailure == 0) {
-    if (gTestCount > 1)
-      log_info("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-    else
-      log_info("PASSED sub-test.\n");
-  } else if (gTestFailure > 0) {
-    if (gTestCount > 1)
-      log_error("FAILED %d of %d sub-tests.\n", gTestFailure, gTestCount);
-    else
-      log_error("FAILED sub-test.\n");
-  }
-
 
     free(argList);
     return ret;

@@ -15,7 +15,11 @@
 //
 #include "common.h"
 
-const char *hash_table_kernel[] = {
+static char hash_table_kernel[] =
+  "#if 0\n"
+  "#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable\n"
+  "#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable\n"
+  "#endif\n"
   "typedef struct BinNode {\n"
   " int value;\n"
   " atomic_uintptr_t pNext;\n"
@@ -32,8 +36,7 @@ const char *hash_table_kernel[] = {
   " {\n"
   "   atomic_store_explicit(&(pNew->pNext), next, memory_order_seq_cst, memory_scope_all_svm_devices);\n" // always inserting at head of list
   " } while(!atomic_compare_exchange_strong_explicit(&(pNodes[b].pNext), &next, (uintptr_t)pNew, memory_order_seq_cst, memory_order_relaxed, memory_scope_all_svm_devices));\n"
-  "}\n"
-};
+  "}\n";
 
 typedef struct BinNode{
   cl_uint value;
@@ -110,6 +113,7 @@ int launch_kernels_and_verify(clContextWrapper &context, clCommandQueueWrapper* 
     }
   }
 
+  clReleaseEvent(done);
   clSVMFree(context, pInputImage);
   clSVMFree(context, pNodes);
   clSVMFree(context, pNumNodes);
@@ -136,14 +140,16 @@ int test_svm_fine_grain_memory_consistency(cl_device_id deviceID, cl_context c, 
 
   cl_uint     num_devices = 0;
   cl_int      err = CL_SUCCESS;
+  std::vector<std::string> required_extensions;
+  required_extensions.push_back("cl_khr_int64_base_atomics");
+  required_extensions.push_back("cl_khr_int64_extended_atomics");
 
-  if (sizeof(void *) == 8 && (!is_extension_available(deviceID, "cl_khr_int64_base_atomics") || !is_extension_available(deviceID, "cl_khr_int64_extended_atomics")))
-  {
-      log_info("WARNING: test skipped. 'cl_khr_int64_base_atomics' and 'cl_khr_int64_extended_atomics' extensions are not supported\n");
-      return 0;
-  }
+  // Make pragmas visible for 64-bit addresses
+  hash_table_kernel[4] = sizeof(void *) == 8 ? '1' : '0';
 
-  err = create_cl_objects(deviceID, &hash_table_kernel[0], &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS);
+  char *source[] = { hash_table_kernel };
+
+  err = create_cl_objects(deviceID, (const char**)source, &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS, required_extensions);
   if(err == 1) return 0; // no devices capable of requested SVM level, so don't execute but count test as passing.
   if(err < 0) return -1; // fail test.
 

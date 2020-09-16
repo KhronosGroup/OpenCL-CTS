@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 const char *write_kernels[] = {
     "__kernel void write_up(__global int *dst, int length)\n"
@@ -116,30 +116,30 @@ int test_event_enqueue_wait_for_events_run_test( cl_device_id deviceID, cl_conte
     }
 
     // If we are using two queues then create them
-    cl_queue_properties props[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0};
+    cl_command_queue_properties props = CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
     if (two_queues) {
         // Get a second queue
         if (two_devices)
         {
-            if( !checkDeviceForQueueSupport( two_device_ids[ 0 ], props[1] ) ||
-               !checkDeviceForQueueSupport( two_device_ids[ 1 ], props[1] ) )
+            if( !checkDeviceForQueueSupport( two_device_ids[ 0 ], props ) ||
+               !checkDeviceForQueueSupport( two_device_ids[ 1 ], props ) )
             {
                 log_info( "WARNING: One or more device for multi-device test does not support out-of-order exec mode; skipping test.\n" );
                 return -1942;
             }
 
-            queueWrappers[0] = clCreateCommandQueueWithProperties(context_to_use, two_device_ids[0], &props[0], &error);
+            queueWrappers[0] = clCreateCommandQueue(context_to_use, two_device_ids[0], props, &error);
             test_error(error, "clCreateCommandQueue for first queue on first device failed.");
-            queueWrappers[1] = clCreateCommandQueueWithProperties(context_to_use, two_device_ids[1], &props[0], &error);
+            queueWrappers[1] = clCreateCommandQueue(context_to_use, two_device_ids[1], props, &error);
             test_error(error, "clCreateCommandQueue for second queue on second device failed.");
 
         }
         else
         {
             // Single device has already been checked for out-of-order exec support
-            queueWrappers[0] = clCreateCommandQueueWithProperties(context_to_use, deviceID, &props[0], &error);
+            queueWrappers[0] = clCreateCommandQueue(context_to_use, deviceID, props, &error);
             test_error(error, "clCreateCommandQueue for first queue failed.");
-            queueWrappers[1] = clCreateCommandQueueWithProperties(context_to_use, deviceID, &props[0], &error);
+            queueWrappers[1] = clCreateCommandQueue(context_to_use, deviceID, props, &error);
             test_error(error, "clCreateCommandQueue for second queue failed.");
         }
         // Ugly hack to make sure we only have the wrapper auto-release if they are different queues
@@ -151,7 +151,7 @@ int test_event_enqueue_wait_for_events_run_test( cl_device_id deviceID, cl_conte
     {
         // (Note: single device has already been checked for out-of-order exec support)
         // Otherwise create one queue and have the second one be the same
-        queueWrappers[0] = clCreateCommandQueueWithProperties(context_to_use, deviceID, &props[0], &error);
+        queueWrappers[0] = clCreateCommandQueue(context_to_use, deviceID, props, &error);
         test_error(error, "clCreateCommandQueue for first queue failed.");
         queues[0] = queueWrappers[0];
         queues[1] = (cl_command_queue)queues[0];

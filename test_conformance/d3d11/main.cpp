@@ -19,8 +19,8 @@
 #include <vector>
 #include <algorithm>
 #include "harness.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 
 int main(int argc, const char* argv[])
 {

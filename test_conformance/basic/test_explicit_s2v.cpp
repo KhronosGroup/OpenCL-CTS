@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,8 +23,8 @@
 
 
 #include "procs.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
 
 #define DECLARE_S2V_IDENT_KERNEL(srctype,dsttype,size) \
 "__kernel void test_conversion(__global " srctype " *sourceValues, __global " dsttype #size " *destValues )\n"        \
@@ -235,19 +235,6 @@ int test_explicit_s2v_function_set(cl_device_id deviceID, cl_context context, cl
     }
 
     return failed;
-}
-
-int test_explicit_s2v_bool(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    log_info( "NOTE: Boolean vectors not defined in OpenCL 1.0. Skipping test.\n" );
-    return 0;
-#if 0
-    bool    data[128];
-
-    generate_random_data( kBool, 128, data );
-
-    return test_explicit_s2v_function_set( deviceID, context, queue, kBool, 128, data );
-#endif
 }
 
 int test_explicit_s2v_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)

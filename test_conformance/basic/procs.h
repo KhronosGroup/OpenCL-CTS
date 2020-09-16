@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/rounding_mode.h"
+#include "harness/kernelHelpers.h"
+#include "harness/testHarness.h"
+#include "harness/errorHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
+#include "harness/rounding_mode.h"
 
 extern void     memset_pattern4(void *dest, const void *src_pattern, size_t bytes );
 
@@ -91,7 +91,6 @@ extern int      test_vstore_global(cl_device_id deviceID, cl_context context, cl
 extern int      test_vstore_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_vstore_private(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int      test_explicit_s2v_bool(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_explicit_s2v_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_explicit_s2v_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_explicit_s2v_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

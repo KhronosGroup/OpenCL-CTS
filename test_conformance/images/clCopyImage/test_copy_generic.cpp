@@ -18,19 +18,10 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gTestRounding, gEnablePitch, gTestMipmaps;
+extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gEnablePitch, gTestMipmaps;
 extern cl_filter_mode    gFilterModeToUse;
 extern cl_addressing_mode    gAddressModeToUse;
 extern uint64_t gRoundingStartValue;
-
-size_t random_in_ranges( size_t minimum, size_t rangeA, size_t rangeB, MTdata d )
-{
-    if( rangeB < rangeA )
-        rangeA = rangeB;
-    if( rangeA < minimum )
-        return rangeA;
-    return (size_t)random_in_range( (int)minimum, (int)rangeA - 1, d );
-}
 
 static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *buf )
 {

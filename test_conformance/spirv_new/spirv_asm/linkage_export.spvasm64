@@ -1,0 +1,20 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 8
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpMemoryModel Physical64 OpenCL
+               OpName %simple_fnegate_linkage "simple_fnegate_linkage"
+               OpDecorate %simple_fnegate_linkage LinkageAttributes "simple_fnegate_linkage" Export
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+          %4 = OpTypeFunction %float %float
+%simple_fnegate_linkage = OpFunction %float Const %4
+          %5 = OpFunctionParameter %float
+          %6 = OpLabel
+          %7 = OpFNegate %float %5
+               OpReturnValue %7
+               OpFunctionEnd

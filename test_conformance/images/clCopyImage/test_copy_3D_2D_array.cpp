@@ -14,28 +14,18 @@
 // limitations under the License.
 //
 #include "../testBase.h"
+#include "../common.h"
 
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gTestRounding, gEnablePitch, gTestMipmaps;
+extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gEnablePitch, gTestMipmaps;
 extern cl_filter_mode    gFilterModeToUse;
 extern cl_addressing_mode    gAddressModeToUse;
 extern uint64_t gRoundingStartValue;
 
 extern int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
                                    const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d );
-
-
-static size_t random_in_ranges( size_t minimum, size_t rangeA, size_t rangeB, MTdata d )
-{
-    if( rangeB < rangeA )
-        rangeA = rangeB;
-    if( rangeA < minimum )
-        return rangeA;
-    return (size_t)random_in_range( (int)minimum, (int)rangeA - 1, d );
-}
-
 
 static void set_image_dimensions( image_descriptor *imageInfo, size_t width, size_t height, size_t depth, size_t arraySize, size_t rowPadding, size_t slicePadding )
 {
@@ -320,7 +310,7 @@ int test_copy_image_set_3D_2D_array(cl_device_id device, cl_context context, cl_
         size_t sizes2Darray[100][3];
 
         // Try to allocate a bit smaller images because we need the 3D ones as well for the copy.
-        get_max_sizes(&numbeOfSizes, 100, sizes2Darray, maxWidth, maxHeight, maxDepth, maxArraySize, maxAllocSize/2, memSize/2, CL_MEM_OBJECT_IMAGE3D, srcImageInfo.format);
+        get_max_sizes(&numbeOfSizes, 100, sizes2Darray, maxWidth, maxHeight, maxDepth, maxArraySize, maxAllocSize/2, memSize/2, CL_MEM_OBJECT_IMAGE2D_ARRAY, srcImageInfo.format);
         get_max_sizes(&numbeOfSizes, 100, sizes3D, max3DWidth, max3DHeight, maxDepth, maxArraySize, maxAllocSize/2, memSize/2, CL_MEM_OBJECT_IMAGE3D, dstImageInfo.format);
 
         for( size_t idx = 0; idx < numbeOfSizes; idx++ )

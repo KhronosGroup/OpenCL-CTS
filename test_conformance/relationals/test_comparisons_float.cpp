@@ -14,10 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
-
-extern "C" { extern cl_uint gRandomSeed;};
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
 
 #define TEST_SIZE 512
 
@@ -63,7 +61,7 @@ const char *equivTestKernelPatternLessGreater_float3 =
 "}\n";
 
 typedef bool (*equivVerifyFn)( float inDataA, float inDataB );
-extern "C" { extern int gInfNanSupport; };
+extern int gInfNanSupport;
 
 int IsFloatInfinity(float x)
 {

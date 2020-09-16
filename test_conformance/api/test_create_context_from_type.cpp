@@ -14,15 +14,13 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 
 #ifndef _WIN32
 #include <unistd.h>
 #endif
 
-#include "../../test_common/harness/conversions.h"
-
-extern cl_uint gRandomSeed;
+#include "harness/conversions.h"
 
 int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -58,7 +56,7 @@ int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_
     cl_context_properties properties[3] = {
       (cl_context_properties)CL_CONTEXT_PLATFORM,
       (cl_context_properties)platform,
-      NULL
+      0
     };
 
     context_to_test = clCreateContextFromType(properties, type, notify_callback, NULL, &error);
@@ -68,7 +66,7 @@ int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_
         return -1;
     }
 
-    queue_to_test = clCreateCommandQueueWithProperties(context_to_test, deviceID, NULL, &error);
+    queue_to_test = clCreateCommandQueue(context_to_test, deviceID, 0, &error);
     test_error(error, "clCreateCommandQueue failed");
     if (queue_to_test == NULL) {
         log_error("clCreateCommandQueue returned NULL, but error was CL_SUCCESS.");

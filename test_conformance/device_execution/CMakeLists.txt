@@ -8,19 +8,13 @@ set(DEVICE_EXECUTION_SOURCES
     enqueue_multi_queue.cpp
     enqueue_ndrange.cpp
     enqueue_wg_size.cpp
+    enqueue_profiling.cpp
     execute_block.cpp
     host_multi_queue.cpp
     host_queue_order.cpp
-    main.c
+    main.cpp
     nested_blocks.cpp
     utils.cpp
-    ../../test_common/harness/errorHelpers.c
-    ../../test_common/harness/testHarness.c
-    ../../test_common/harness/mt19937.c
-    ../../test_common/harness/kernelHelpers.c
-    ../../test_common/harness/msvc9.c
-    ../../test_common/harness/parseParameters.cpp
-    ../../test_common/harness/crc32.c
 )
 
 include(../CMakeCommon.txt)

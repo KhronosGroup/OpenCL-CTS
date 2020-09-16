@@ -25,10 +25,6 @@
 #include <string.h>
 #include <sys/types.h>
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 /* Note: the next three all have to match in size and order!! */
 
 enum ExplicitTypes
@@ -117,9 +113,11 @@ static inline int IsDoubleSubnormal( double x )
 #endif
 }
 
-#if defined(__cplusplus)
+static inline int IsHalfSubnormal( cl_half x )
+{
+    // this relies on interger overflow to exclude 0 as a subnormal
+    return ( ( x & 0x7fffU ) - 1U ) < 0x03ffU; 
 }
-#endif
 
 #endif // _conversions_h
 

@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/mt19937.h"
 
 
 extern int test_buffers( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );

@@ -22,10 +22,6 @@
     #include <CL/cl.h>
 #endif
 
-#if defined(__cplusplus)
-    extern "C" {
-#endif
-
 //
 // An atomic add operator
 cl_int     ThreadPool_AtomicAdd( volatile cl_int *a, cl_int b );    // returns old value
@@ -67,10 +63,6 @@ cl_uint     GetThreadCount( void );
 // SetThreadCount() must be called before the first call to GetThreadCount() or ThreadPool_Do(),
 // otherwise the behavior is indefined. It may not be called from a TPFuncPtr.
 void        SetThreadCount( int count );
-
-#ifdef __cplusplus
-    }   /* extern "C" */
-#endif
 
 
 #endif  /* THREAD_POOL_H  */

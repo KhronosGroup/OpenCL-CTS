@@ -16,8 +16,8 @@
 #ifndef _utils_h_
 #define _utils_h_
 
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/testHarness.h"
+#include "harness/mt19937.h"
 
 #include <string>
 

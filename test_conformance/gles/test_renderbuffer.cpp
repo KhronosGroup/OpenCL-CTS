@@ -18,8 +18,6 @@
 
 #include "gl_headers.h"
 
-extern "C" { extern cl_uint gRandomSeed; };
-
 extern int test_cl_image_write( cl_context context, cl_command_queue queue, cl_mem clImage,
                                 size_t imageWidth, size_t imageHeight, cl_image_format *outFormat,
                                 ExplicitType *outType, void **outSourceBuffer, MTdata d );

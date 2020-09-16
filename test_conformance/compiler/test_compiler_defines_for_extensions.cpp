@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,8 +19,6 @@
 #ifndef _WIN32
 #include <unistd.h>
 #endif
-
-
 
 
 const char *known_extensions[] = {
@@ -45,7 +43,8 @@ const char *known_extensions[] = {
     "cl_khr_srgb_image_writes",
     "cl_khr_subgroup_named_barrier",
 
-    //API-only extensions after this point.  If you add above here, modify first_API_extension below.
+    // API-only extensions after this point.  If you add above here, modify
+    // first_API_extension below.
     "cl_khr_icd",
     "cl_khr_gl_sharing",
     "cl_khr_gl_event",
@@ -63,6 +62,8 @@ const char *known_extensions[] = {
     "cl_khr_priority_hints",
     "cl_khr_throttle_hints",
     "cl_khr_spirv_no_integer_wrap_decoration",
+    "cl_khr_extended_versioning",
+    "cl_khr_device_uuid",
 };
 
 size_t num_known_extensions = sizeof(known_extensions)/sizeof(char*);
@@ -332,7 +333,10 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
     cl_program program;
     cl_kernel kernel;
 
-    error = create_single_kernel_helper(context, &program, &kernel, 1, (const char **)&kernel_code, "test");
+    Version version = get_device_cl_version(device);
+
+    error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                        (const char **)&kernel_code, "test");
     test_error(error, "create_single_kernel_helper failed");
 
     data = (cl_int*)malloc(sizeof(cl_int)*(num_not_supported_extensions+num_of_supported_extensions));

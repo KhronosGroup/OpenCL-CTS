@@ -25,8 +25,6 @@
 
 #define NUMBER_OF_REGIONS 8
 
-#define BUILD_CL_STD_2_0 "-cl-std=CL2.0"
-
 #define MAX_DIMS 3
 
 // This structure reflects data received from kernel.
@@ -62,18 +60,21 @@ std::string showArray (const size_t *arr, cl_uint dims);
 // Main class responsible for testing
 class TestNonUniformWorkGroup {
 public:
+    TestNonUniformWorkGroup(const cl_device_id &device,
+                            const cl_context &context,
+                            const cl_command_queue &queue, const cl_uint dims,
+                            size_t *globalSize, const size_t *localSize,
+                            const size_t *buffersSize,
+                            const size_t *globalWorkOffset,
+                            const size_t *reqdWorkGroupSize = NULL);
 
-  TestNonUniformWorkGroup (const cl_device_id &device, const cl_context &context,
-    const cl_command_queue &queue, const cl_uint dims, const size_t *globalSize,
-    const size_t *localSize, const size_t *buffersSize, const size_t *globalWorkOffset,
-    const size_t *reqdWorkGroupSize=NULL);
+    ~TestNonUniformWorkGroup();
 
-  ~TestNonUniformWorkGroup ();
-
-  static size_t getMaxLocalWorkgroupSize (const cl_device_id &device);
-  static void setMaxLocalWorkgroupSize (size_t workGroupSize) {
-    TestNonUniformWorkGroup::_maxLocalWorkgroupSize = workGroupSize;
-  }
+    static size_t getMaxLocalWorkgroupSize(const cl_device_id &device);
+    static void setMaxLocalWorkgroupSize(size_t workGroupSize)
+    {
+        TestNonUniformWorkGroup::_maxLocalWorkgroupSize = workGroupSize;
+    }
   static void enableStrictMode (bool state);
 
   void setTestRange (int range) {_testRange = range;}
@@ -126,12 +127,13 @@ public:
   SubTestExecutor(const cl_device_id &device, const cl_context &context, const cl_command_queue &queue)
     : _device (device), _context (context), _queue (queue), _failCounter (0), _overallCounter (0) {}
 
-  void runTestNonUniformWorkGroup (const cl_uint dims, const size_t *globalSize,
-    const size_t *localSize, int range);
+  void runTestNonUniformWorkGroup(const cl_uint dims, size_t *globalSize,
+                                  const size_t *localSize, int range);
 
-  void runTestNonUniformWorkGroup (const cl_uint dims, const size_t *globalSize,
-    const size_t *localSize, const size_t *globalWorkOffset,
-    const size_t *reqdWorkGroupSize, int range);
+  void runTestNonUniformWorkGroup(const cl_uint dims, size_t *globalSize,
+                                  const size_t *localSize,
+                                  const size_t *globalWorkOffset,
+                                  const size_t *reqdWorkGroupSize, int range);
 
   int calculateWorkGroupSize(size_t &maxWgSize, int testRange);
   int status();

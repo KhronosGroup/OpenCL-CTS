@@ -19,9 +19,7 @@
 #include <unistd.h>
 #endif
 
-#include "../../test_common/harness/conversions.h"
-
-extern cl_uint gRandomSeed;
+#include "harness/conversions.h"
 
 static void CL_CALLBACK test_native_kernel_fn( void *userData )
 {

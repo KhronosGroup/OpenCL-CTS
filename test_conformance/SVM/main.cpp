@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <vector>
 #include <sstream>
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/kernelHelpers.h"
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
 
 #include "common.h"
 
@@ -168,7 +168,7 @@ cl_int verify_linked_lists(Node* pNodes, size_t num_lists, int list_length)
 
 // Note that we don't use the context provided by the test harness since it doesn't support multiple devices,
 // so we create are own context here that has all devices, we use the same platform that the harness used.
-cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeString, cl_context* context, cl_program *program, cl_command_queue *queues, cl_uint *num_devices, cl_device_svm_capabilities required_svm_caps)
+cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeString, cl_context* context, cl_program *program, cl_command_queue *queues, cl_uint *num_devices, cl_device_svm_capabilities required_svm_caps, std::vector<std::string> extensions_list)
 {
   cl_int error;
 
@@ -198,30 +198,9 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
   cl_uint num_capable_devices = 0;
   for(cl_uint i = 0; i < *num_devices; i++)
   {
-    size_t ret_len = 0;
-    error = clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, 0, 0, &ret_len);
-    if (error != CL_SUCCESS)
-    {
-      log_error("clGetDeviceInfo failed %s\n", IGetErrorString(error));
-      return -1;
-    }
+    Version version = get_device_cl_version(devices[i]);
 
-    std::vector<char> oclVersion(ret_len + 1);
-    error = clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, sizeof(char) * oclVersion.size(), &oclVersion[0], 0);
-    if (error != CL_SUCCESS)
-    {
-      log_error("clGetDeviceInfo failed %s\n", IGetErrorString(error));
-      return -1;
-    }
-
-    std::string versionStr(&oclVersion[7]);
-    std::stringstream stream;
-    stream << versionStr;
-
-    double version = 0.0;
-    stream >> version;
-
-    if(device_from_harness != devices[i] && version < 2.0)
+    if(device_from_harness != devices[i] && version < Version(2,0))
     {
       continue;
     }
@@ -233,7 +212,17 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
       log_error("clGetDeviceInfo returned an invalid cl_device_svm_capabilities value");
       return -1;
     }
-    if((caps & required_svm_caps) == required_svm_caps)
+    bool extensions_supported = true;
+    for (auto extension : extensions_list) 
+    {
+      if (!is_extension_available(devices[i], extension.c_str())) 
+      {
+        log_error("Required extension not found - device id %d - %s\n", i, extension.c_str());
+        extensions_supported = false;
+        break;
+      }
+    }
+    if((caps & required_svm_caps) == required_svm_caps && extensions_supported)
     {
       capable_devices.push_back(devices[i]);
       ++num_capable_devices;
@@ -244,11 +233,11 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
   if(num_capable_devices == 0)
     //    if(svm_level > CL_DEVICE_COARSE_SVM && 0 == num_capable_devices)
   {
-    log_info("Requested SVM level not supported by any device on this platform, test not executed.\n");
+    log_info("Requested SVM level or required extensions not supported by any device on this platform, test not executed.\n");
     return 1; // 1 indicates do not execute, but counts as passing.
   }
 
-  cl_context_properties context_properties[3] = {CL_CONTEXT_PLATFORM, (cl_context_properties)platform_id, NULL };
+  cl_context_properties context_properties[3] = {CL_CONTEXT_PLATFORM, (cl_context_properties)platform_id, 0 };
   *context = clCreateContext(context_properties, *num_devices, &devices[0], NULL, NULL, &error);
   test_error(error, "Unable to create context" );
 
@@ -270,7 +259,7 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
 }
 
 test_definition test_list[] = {
-    ADD_TEST( svm_byte_granularity ),
+    ADD_TEST( svm_byte_granularity),
     ADD_TEST( svm_set_kernel_exec_info_svm_ptrs ),
     ADD_TEST( svm_fine_grain_memory_consistency ),
     ADD_TEST( svm_fine_grain_sync_buffers ),
@@ -283,13 +272,41 @@ test_definition test_list[] = {
     ADD_TEST( svm_cross_buffer_pointers_coarse_grain ),
     ADD_TEST( svm_pointer_passing ),
     ADD_TEST( svm_enqueue_api ),
-    ADD_TEST( svm_migrate ),
+    ADD_TEST_VERSION( svm_migrate, Version(2, 1)),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
 
+test_status InitCL(cl_device_id device) {
+  auto version = get_device_cl_version(device);
+  auto expected_min_version = Version(2, 0);
+  if (version < expected_min_version)
+  {
+      version_expected_info("Test", "OpenCL",
+                            expected_min_version.to_string().c_str(),
+                            version.to_string().c_str());
+      return TEST_SKIP;
+  }
+
+  int error;
+  cl_device_svm_capabilities svm_caps;
+  error = clGetDeviceInfo(device, CL_DEVICE_SVM_CAPABILITIES,
+                          sizeof(svm_caps), &svm_caps, NULL);
+  if (error != CL_SUCCESS) {
+    print_error(error, "Unable to get svm capabilities");
+    return TEST_FAIL;
+  }
+
+  if ((svm_caps == 0) && (version >= Version(3, 0)))
+  {
+      return TEST_SKIP;
+  }
+
+  return TEST_PASS;
+}
+
 int main(int argc, const char *argv[])
 {
-  return runTestHarness( argc, argv, test_num, test_list, false, true, 0 );
+  return runTestHarnessWithCheck(argc, argv, test_num, test_list, true, 0, InitCL);
 }
 

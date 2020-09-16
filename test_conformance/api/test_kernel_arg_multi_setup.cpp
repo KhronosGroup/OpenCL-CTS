@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/conversions.h"
 
 // This test is designed to stress passing multiple vector parameters to kernels and verifying access between them all
 
@@ -26,8 +26,6 @@ const char *multi_arg_kernel_source_pattern =
 "    dst2[tid] = src2[tid];\n"
 "    dst3[tid] = src3[tid];\n"
 "}\n";
-
-extern cl_uint gRandomSeed;
 
 #define MAX_ERROR_TOLERANCE 0.0005f
 

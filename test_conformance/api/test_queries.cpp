@@ -14,9 +14,11 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/imageHelpers.h"
+#include "harness/imageHelpers.h"
+#include "harness/propertyHelpers.h"
 #include <stdlib.h>
 #include <ctype.h>
+#include <algorithm>
 
 int test_get_platform_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -209,6 +211,40 @@ int test_get_sampler_info(cl_device_id deviceID, cl_context context, cl_command_
         return -1;
     }
 
+    Version version = get_device_cl_version(deviceID);
+    if (version >= Version(3, 0))
+    {
+        std::vector<cl_sampler_properties> test_properties(
+            properties, properties + ARRAY_SIZE(properties));
+
+        std::vector<cl_sampler_properties> check_properties;
+        size_t set_size;
+
+        error = clGetSamplerInfo(sampler, CL_SAMPLER_PROPERTIES, 0, NULL,
+                                 &set_size);
+        test_error(
+            error,
+            "clGetSamplerInfo failed asking for CL_SAMPLER_PROPERTIES size.");
+
+        if (set_size != test_properties.size() * sizeof(cl_sampler_properties))
+        {
+            log_error("ERROR: CL_SAMPLER_PROPERTIES size is %d, expected %d.\n",
+                      set_size,
+                      test_properties.size() * sizeof(cl_sampler_properties));
+            return TEST_FAIL;
+        }
+
+        cl_uint number_of_props = set_size / sizeof(cl_sampler_properties);
+        check_properties.resize(number_of_props);
+        error = clGetSamplerInfo(sampler, CL_SAMPLER_PROPERTIES, set_size,
+                                 check_properties.data(), 0);
+        test_error(error,
+                   "clGetSamplerInfo failed asking for CL_SAMPLER_PROPERTIES.");
+
+        error = compareProperties(check_properties, test_properties);
+        test_error(error, "checkProperties mismatch.");
+    }
+
     return 0;
 }
 
@@ -236,6 +272,9 @@ int test_get_command_queue_info(cl_device_id deviceID, cl_context context, cl_co
 
     clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_HOST_PROPERTIES, sizeof(device_props), &device_props, NULL);
     log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n", (int)device_props);
+
+    // Mask off vendor extension properties.  Only test standard OpenCL properties
+    device_props &= CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE|CL_QUEUE_PROFILING_ENABLE;
 
     queue_props[1] = device_props;
     clCommandQueueWrapper queue = clCreateCommandQueueWithProperties( context, deviceID, &queue_props[0], &error );
@@ -397,7 +436,8 @@ int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_q
     // extensions can support double but may not support cl_khr_fp64, which implies math library support.
 
     cl_uint baseAddrAlign;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, baseAddrAlign, "base address alignment", "%d bytes", int )
+    TEST_DEVICE_PARAM(deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, baseAddrAlign,
+                      "base address alignment", "%d bits", int)
 
     cl_uint maxDataAlign;
     TEST_DEVICE_PARAM( deviceID, CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE, maxDataAlign, "min data type alignment", "%d bytes", int )

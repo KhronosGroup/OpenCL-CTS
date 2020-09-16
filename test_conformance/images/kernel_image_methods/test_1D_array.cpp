@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,9 +18,9 @@
 #define MAX_ERR 0.005f
 #define MAX_HALF_LINEAR_ERR 0.3f
 
-extern bool            gDebugTrace, gTestSmallImages, gTestMaxImages;
+extern bool            gDebugTrace, gTestSmallImages, gTestMaxImages, gDeviceLt20;
 
-typedef struct image_kernel_data
+struct image_kernel_data
 {
     cl_int width;
     cl_int arraySize;
@@ -97,7 +97,7 @@ int test_get_1Dimage_array_info_single( cl_context context, cl_command_queue que
     if (error)
         print_error(error, "clFinish failed.\n");
     const char *ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", "-cl-std=CL2.0" );
+    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0");
     test_error( error, "Unable to create kernel to test against" );
 
     // Create an output buffer

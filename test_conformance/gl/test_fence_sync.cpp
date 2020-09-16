@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/gl/setup.h"
-#include "../../test_common/harness/genericThread.h"
+#include "gl/setup.h"
+#include "harness/genericThread.h"
 
 #if defined( __APPLE__ )
 #include <OpenGL/glu.h>
@@ -74,7 +74,7 @@ static void InitSyncFns( void )
     glGetInteger64vFunc = (glGetInteger64vPtr)glutGetProcAddress( "glGetInteger64v" );
     glGetSyncivFunc = (glGetSyncivPtr)glutGetProcAddress( "glGetSynciv" );
 }
-
+#ifndef GL_ARB_sync
 #define GL_MAX_SERVER_WAIT_TIMEOUT        0x9111
 
 #define GL_OBJECT_TYPE            0x9112
@@ -97,6 +97,7 @@ static void InitSyncFns( void )
 #define GL_TIMEOUT_EXPIRED            0x911B
 #define GL_CONDITION_SATISFIED        0x911C
 #define GL_WAIT_FAILED            0x911D
+#endif
 
 #define USING_ARB_sync 1
 #endif
@@ -285,7 +286,7 @@ public:
     virtual void * IRun( void )
     {
         cl_int error = run_cl_kernel( mKernel, mQueue, mStream0, mStream1, mRowIdx, mFenceEvent, mNumThreads );
-        return (void *)error;
+        return (void *)(uintptr_t)error;
     }
 };
 
@@ -669,7 +670,6 @@ int test_fence_sync( cl_device_id device, cl_context context, cl_command_queue q
     if( err != CL_SUCCESS )
     {
       print_error( err, "Unable to get device count from context" );
-      test_finish();
       return -1;
     }
     vs_count = (GLint)device_cb / sizeof(cl_device_id);

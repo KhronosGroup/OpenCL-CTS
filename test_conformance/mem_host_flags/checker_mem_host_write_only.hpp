@@ -142,6 +142,9 @@ cl_int cBuffer_check_mem_host_write_only< T >::verify_RW_Buffer()
     test_error(err, "clWaitForEvents error")
   }
 
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
+
   if (tmp_host_m.Equal(this->host_m_2)){
     log_error("Test data should be different\n");
     return FAILURE;
@@ -192,6 +195,7 @@ cl_int cBuffer_check_mem_host_write_only< T >::verify_RW_Buffer_rect()
   err = clEnqueueWriteBuffer(this->m_queue, this->m_buffer, CL_TRUE, 0,
                              this->get_block_size_bytes(), tmp_host_m.pData,
                              0, NULL, &event_1);
+  test_error(err, "clEnqueueWriteBuffer error");
 
   vv1 = TEST_VALUE;
   tmp_host_m.Set_to(vv1);
@@ -205,7 +209,7 @@ cl_int cBuffer_check_mem_host_write_only< T >::verify_RW_Buffer_rect()
                                  this->host_slice_pitch_bytes,
                                  tmp_host_m.pData,
                                  1, &event_1, &event);
-  test_error(err, "clEnqueueWriteBuffer error");
+  test_error(err, "clEnqueueWriteBufferRect error");
 
   if (!this->m_blocking) {
     err = clWaitForEvents(1, &event);
@@ -216,6 +220,11 @@ cl_int cBuffer_check_mem_host_write_only< T >::verify_RW_Buffer_rect()
     log_error("Test data should be different\n");
     return FAILURE;
   }
+
+  err = clReleaseEvent(event_1);
+  test_error(err, "clReleaseEvent error");
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
 
   update_host_mem_2();
 
@@ -265,6 +274,7 @@ cl_int cBuffer_check_mem_host_write_only< T >::update_host_mem_2()
   cl_event event, event_2;
   cl_int err = clEnqueueCopyBuffer(this->m_queue, this->m_buffer, this->m_buffer2, 0, 0,
                                    this->m_nNumber_elements* sizeof (T), 0, NULL, &event);
+  test_error(err, "clEnqueueCopyBuffer error");
 
   this->host_m_2.Set_to_zero();
   err = clEnqueueReadBuffer(this->m_queue, this->m_buffer2, CL_TRUE, 0,
@@ -275,6 +285,11 @@ cl_int cBuffer_check_mem_host_write_only< T >::update_host_mem_2()
   clWaitForEvents(1, &event_2);
   test_error(err, "clWaitForEvents error");
 
+  err = clReleaseEvent(event_2);
+  test_error(err, "clReleaseEvent error");
+
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
   return err;
 }
 
@@ -300,6 +315,9 @@ cl_int cBuffer_check_mem_host_write_only< T >::verify_RW_Buffer_mapping()
     test_error(err, "clWaitForEvents error");
   }
 
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
+
   update_host_mem_2();
 
   if ((this->buffer_mem_flag & CL_MEM_USE_HOST_PTR) && dataPtr != this->pHost_ptr){
@@ -311,6 +329,10 @@ cl_int cBuffer_check_mem_host_write_only< T >::verify_RW_Buffer_mapping()
     log_error("Buffer content difference found\n");
     return FAILURE;
   }
+
+  err = clEnqueueUnmapMemObject(this->m_queue, this->m_buffer, dataPtr, 0,
+                                nullptr, nullptr);
+  test_error(err, "clEnqueueUnmapMemObject error");
 
   // test map read
   clEnqueueMapBuffer(this->m_queue, this->m_buffer, this->m_blocking,

@@ -10,41 +10,40 @@ Compute Info,computeinfo/test_computeinfo
 # #########################################
 # Basic operation tests
 # #########################################
-Basic,basic/test_basic -offlineCompiler spir_v cache .
-API,api/test_api -offlineCompiler spir_v cache .
-Compiler,compiler/test_compiler -offlineCompiler spir_v cache .
+Basic,basic/test_basic --compilation-mode spir-v --compilation-cache-path .
+API,api/test_api --compilation-mode spir-v --compilation-cache-path .
+Compiler,compiler/test_compiler --compilation-mode spir-v --compilation-cache-path .
 
 # #########################################
 # Common mathematical functions
 # #########################################
-Common Functions,commonfns/test_commonfns -offlineCompiler spir_v cache .
-Geometric Functions,geometrics/test_geometrics -offlineCompiler spir_v cache .
-Relationals,relationals/test_relationals -offlineCompiler spir_v cache .
+Common Functions,commonfns/test_commonfns --compilation-mode spir-v --compilation-cache-path .
+Geometric Functions,geometrics/test_geometrics --compilation-mode spir-v --compilation-cache-path .
+Relationals,relationals/test_relationals --compilation-mode spir-v --compilation-cache-path .
 
 # #########################################
 # General operation
 # #########################################
-Thread Dimensions,thread_dimensions/test_thread_dimensions full* -offlineCompiler spir_v cache .
-Multiple Device/Context,multiple_device_context/test_multiples -offlineCompiler spir_v cache .
-Atomics,atomics/test_atomics -offlineCompiler spir_v cache .
-Profiling,profiling/test_profiling -offlineCompiler spir_v cache .
-Events,events/test_events -offlineCompiler spir_v cache .
-Allocations (single maximum),allocations/test_allocations single 5 all -offlineCompiler spir_v cache .
-Allocations (total maximum),allocations/test_allocations multiple 5 all -offlineCompiler spir_v cache .
-VecAlign, vec_align/test_vecalign -offlineCompiler spir_v cache .
-VecStep, vec_step/test_vecstep -offlineCompiler spir_v cache .
-Printf,printf/test_printf -offlineCompiler spir_v cache .
-Device Partitioning,device_partition/test_device_partition -offlineCompiler spir_v cache .
+Thread Dimensions,thread_dimensions/test_thread_dimensions full* --compilation-mode spir-v --compilation-cache-path .
+Multiple Device/Context,multiple_device_context/test_multiples --compilation-mode spir-v --compilation-cache-path .
+Atomics,atomics/test_atomics --compilation-mode spir-v --compilation-cache-path .
+Profiling,profiling/test_profiling --compilation-mode spir-v --compilation-cache-path .
+Events,events/test_events --compilation-mode spir-v --compilation-cache-path .
+Allocations (single maximum),allocations/test_allocations single 5 all --compilation-mode spir-v --compilation-cache-path .
+Allocations (total maximum),allocations/test_allocations multiple 5 all --compilation-mode spir-v --compilation-cache-path .
+Vectors, vectors/test_vectors --compilation-mode spir-v --compilation-cache-path .
+Printf,printf/test_printf --compilation-mode spir-v --compilation-cache-path .
+Device Partitioning,device_partition/test_device_partition --compilation-mode spir-v --compilation-cache-path .
 
 # #########################################
 # Buffers and images
 # #########################################
 Images (API Info),images/clGetInfo/test_cl_get_info 
-Buffers,buffers/test_buffers -offlineCompiler spir_v cache .
-Images (Kernel Methods),images/kernel_image_methods/test_kernel_image_methods -offlineCompiler spir_v cache .
-Images (Kernel),images/kernel_read_write/test_image_streams CL_FILTER_NEAREST -offlineCompiler spir_v cache .
-Images (Kernel pitch),images/kernel_read_write/test_image_streams use_pitches CL_FILTER_NEAREST -offlineCompiler spir_v cache .
-Images (Kernel max size),images/kernel_read_write/test_image_streams max_images CL_FILTER_NEAREST -offlineCompiler spir_v cache .
+Buffers,buffers/test_buffers --compilation-mode spir-v --compilation-cache-path .
+Images (Kernel Methods),images/kernel_image_methods/test_kernel_image_methods --compilation-mode spir-v --compilation-cache-path .
+Images (Kernel),images/kernel_read_write/test_image_streams CL_FILTER_NEAREST --compilation-mode spir-v --compilation-cache-path .
+Images (Kernel pitch),images/kernel_read_write/test_image_streams use_pitches CL_FILTER_NEAREST --compilation-mode spir-v --compilation-cache-path .
+Images (Kernel max size),images/kernel_read_write/test_image_streams max_images CL_FILTER_NEAREST --compilation-mode spir-v --compilation-cache-path .
 Images (clCopyImage),images/clCopyImage/test_cl_copy_images
 Images (clCopyImage small),images/clCopyImage/test_cl_copy_images small_images
 Images (clCopyImage max size),images/clCopyImage/test_cl_copy_images max_images 
@@ -54,69 +53,55 @@ Images (clReadWriteImage max size),images/clReadWriteImage/test_cl_read_write_im
 Images (clFillImage),images/clFillImage/test_cl_fill_images 
 Images (clFillImage pitch),images/clFillImage/test_cl_fill_images use_pitches 
 Images (clFillImage max size),images/clFillImage/test_cl_fill_images max_images 
-Images (Samplerless),images/samplerlessReads/test_samplerless_reads -offlineCompiler spir_v cache .
-Images (Samplerless pitch),images/samplerlessReads/test_samplerless_reads use_pitches -offlineCompiler spir_v cache .
-Images (Samplerless max size),images/samplerlessReads/test_samplerless_reads max_images -offlineCompiler spir_v cache .
+Images (Samplerless),images/samplerlessReads/test_samplerless_reads --compilation-mode spir-v --compilation-cache-path .
+Images (Samplerless pitch),images/samplerlessReads/test_samplerless_reads use_pitches --compilation-mode spir-v --compilation-cache-path .
+Images (Samplerless max size),images/samplerlessReads/test_samplerless_reads max_images --compilation-mode spir-v --compilation-cache-path .
 Mem (Host Flags),mem_host_flags/test_mem_host_flags
-
-# #########################################
-# Headers
-# #########################################
-Headers (cl_typen), headers/test_headers
-Headers (cl.h standalone), headers/test_cl_h
-Headers (cl_platform.h standalone), headers/test_cl_platform_h
-Headers (cl_gl.h standalone), headers/test_cl_gl_h
-Headers (opencl.h standalone), headers/test_opencl_h
 
 # #########################################
 # CPU is required to pass linear and normalized image filtering
 # #########################################
-CL_DEVICE_TYPE_CPU, Images (Kernel CL_FILTER_LINEAR),images/kernel_read_write/test_image_streams CL_FILTER_LINEAR -offlineCompiler spir_v cache .
-CL_DEVICE_TYPE_CPU, Images (Kernel CL_FILTER_LINEAR pitch),images/kernel_read_write/test_image_streams use_pitches CL_FILTER_LINEAR -offlineCompiler spir_v cache .
-CL_DEVICE_TYPE_CPU, Images (Kernel CL_FILTER_LINEAR max size),images/kernel_read_write/test_image_streams max_images CL_FILTER_LINEAR -offlineCompiler spir_v cache .
+CL_DEVICE_TYPE_CPU, Images (Kernel CL_FILTER_LINEAR),images/kernel_read_write/test_image_streams CL_FILTER_LINEAR --compilation-mode spir-v --compilation-cache-path .
+CL_DEVICE_TYPE_CPU, Images (Kernel CL_FILTER_LINEAR pitch),images/kernel_read_write/test_image_streams use_pitches CL_FILTER_LINEAR --compilation-mode spir-v --compilation-cache-path .
+CL_DEVICE_TYPE_CPU, Images (Kernel CL_FILTER_LINEAR max size),images/kernel_read_write/test_image_streams max_images CL_FILTER_LINEAR --compilation-mode spir-v --compilation-cache-path .
 
 # #########################################
 # OpenGL/CL interaction
 # #########################################
-OpenCL-GL Sharing,gl/test_gl -offlineCompiler spir_v cache .
+OpenCL-GL Sharing,gl/test_gl --compilation-mode spir-v --compilation-cache-path .
 
 # #########################################
 # Thorough math and conversions tests
 # #########################################
-Select,select/test_select -offlineCompiler spir_v cache .
-Conversions,conversions/test_conversions -offlineCompiler spir_v cache .
-Contractions,contractions/contractions -offlineCompiler spir_v cache .
-Math,math_brute_force/bruteforce -offlineCompiler spir_v cache .
-Integer Ops,integer_ops/test_integer_ops -offlineCompiler spir_v cache .
-Half Ops,half/Test_half -offlineCompiler spir_v cache .
-
-# #########################################
-# Compatibility with Previous Versions
-# #########################################
-Basic 1.2,compatibility/test_conformance/basic/test_basic
-API 1.2,compatibility/test_conformance/api/test_api
+Select,select/test_select --compilation-mode spir-v --compilation-cache-path .
+Conversions,conversions/test_conversions --compilation-mode spir-v --compilation-cache-path .
+Contractions,contractions/test_contractions --compilation-mode spir-v --compilation-cache-path .
+Math,math_brute_force/test_bruteforce --compilation-mode spir-v --compilation-cache-path .
+Integer Ops,integer_ops/test_integer_ops --compilation-mode spir-v --compilation-cache-path .
+Half Ops,half/test_half --compilation-mode spir-v --compilation-cache-path .
 
 #####################################
 # OpenCL 2.0 tests
 #####################################
-C11 Atomics,c11_atomics/test_c11_atomics -offlineCompiler spir_v cache .
-Execution Model,device_execution/test_device_execution -offlineCompiler spir_v cache .
-Generic Address Space,generic_address_space/test_generic_address_space -offlineCompiler spir_v cache .
-Non Uniform Work Groups,non_uniform_work_group/test_non_uniform_work_group -offlineCompiler spir_v cache .
-Pipes,pipes/test_pipes -offlineCompiler spir_v cache .
-SVM,SVM/test_SVM -offlineCompiler spir_v cache .
-Workgroups,workgroups/test_workgroups -offlineCompiler spir_v cache .
+C11 Atomics,c11_atomics/test_c11_atomics --compilation-mode spir-v --compilation-cache-path .
+Execution Model,device_execution/test_device_execution --compilation-mode spir-v --compilation-cache-path .
+Generic Address Space,generic_address_space/test_generic_address_space --compilation-mode spir-v --compilation-cache-path .
+Non Uniform Work Groups,non_uniform_work_group/test_non_uniform_work_group --compilation-mode spir-v --compilation-cache-path .
+Pipes,pipes/test_pipes --compilation-mode spir-v --compilation-cache-path .
+SVM,SVM/test_svm --compilation-mode spir-v --compilation-cache-path .
+Workgroups,workgroups/test_workgroups --compilation-mode spir-v --compilation-cache-path .
 
 #####################################
 # OpenCL 2.1 tests
 #####################################
 Device timer,device_timer/test_device_timer
+SPIRV new,spirv_new/test_spirv_new -ILPath spirv_bin
 
 #########################################
 # Extensions
 #########################################
 SPIR,spir/test_spir
-Mipmaps (Kernel),images/kernel_read_write/test_image_streams test_mipmaps CL_FILTER_NEAREST -offlineCompiler spir_v cache .
-Mipmaps (clCopyImage),images/clCopyImage/test_cl_copy_images test_mipmaps -offlineCompiler spir_v cache .
-Mipmaps (clReadWriteImage),images/clReadWriteImage/test_cl_read_write_images test_mipmaps -offlineCompiler spir_v cache .
-Subgroups,subgroups/test_subgroups -offlineCompiler spir_v cache .
+Mipmaps (Kernel),images/kernel_read_write/test_image_streams test_mipmaps CL_FILTER_NEAREST --compilation-mode spir-v --compilation-cache-path .
+Mipmaps (clCopyImage),images/clCopyImage/test_cl_copy_images test_mipmaps --compilation-mode spir-v --compilation-cache-path .
+Mipmaps (clReadWriteImage),images/clReadWriteImage/test_cl_read_write_images test_mipmaps --compilation-mode spir-v --compilation-cache-path .
+Subgroups,subgroups/test_subgroups --compilation-mode spir-v --compilation-cache-path .

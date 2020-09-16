@@ -14,24 +14,22 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/typeWrappers.h"
+#include "harness/testHarness.h"
+#include "harness/conversions.h"
 
-const char *test_kernels[] = {
-"__kernel void kernelA(__global int *dst)\n"
-"{\n"
-"\n"
-" dst[get_global_id(0)]*=3;\n"
-"\n"
-"}\n"
-"__kernel void kernelB(__global int *dst)\n"
-"{\n"
-"\n"
-" dst[get_global_id(0)]++;\n"
-"\n"
-"}\n"
-};
+const char *test_kernels[] = { "__kernel void kernelA(__global uint *dst)\n"
+                               "{\n"
+                               "\n"
+                               " dst[get_global_id(0)]*=3;\n"
+                               "\n"
+                               "}\n"
+                               "__kernel void kernelB(__global uint *dst)\n"
+                               "{\n"
+                               "\n"
+                               " dst[get_global_id(0)]++;\n"
+                               "\n"
+                               "}\n" };
 
 #define TEST_SIZE    512
 #define MAX_DEVICES 32
@@ -46,10 +44,10 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     clMemWrapper      stream;
     clCommandQueueWrapper queues[MAX_QUEUES];
     size_t    threads[1], localThreads[1];
-    int data[TEST_SIZE];
-    int outputData[TEST_SIZE];
-    int expectedResults[TEST_SIZE];
-    int expectedResultsOneDevice[MAX_DEVICES][TEST_SIZE];
+    cl_uint data[TEST_SIZE];
+    cl_uint outputData[TEST_SIZE];
+    cl_uint expectedResults[TEST_SIZE];
+    cl_uint expectedResultsOneDevice[MAX_DEVICES][TEST_SIZE];
     size_t i;
 
   memset(queues, 0, sizeof(queues));
@@ -93,8 +91,9 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
   for( i = 0; i < TEST_SIZE; i++ )
     data[i] = genrand_int32(seed);
 
-  stream = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_int) * TEST_SIZE, data, &error);
-    test_error( error, "Unable to create test array" );
+  stream = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR),
+                          sizeof(cl_uint) * TEST_SIZE, data, &error);
+  test_error(error, "Unable to create test array");
 
   // Update the expected results
   for( i = 0; i < TEST_SIZE; i++ ) {
@@ -119,7 +118,7 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     /* Create work queues */
     for( i = 0; i < queueCount; i++ )
     {
-        queues[i] = clCreateCommandQueueWithProperties( context, devices[ i % deviceCount ], 0, &error );
+        queues[i] = clCreateCommandQueue( context, devices[ i % deviceCount ], 0, &error );
     if (error != CL_SUCCESS || queues[i] == NULL) {
       log_info("Could not create queue[%d].\n", (int)i);
       queueCount = i;

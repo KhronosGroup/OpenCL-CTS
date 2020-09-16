@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../../test_common/harness/compat.h"
+#include "../harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -24,8 +24,8 @@
 #endif
 
 #include "../testBase.h"
-#include "../../../test_common/harness/fpcontrol.h"
-#include "../../../test_common/harness/parseParameters.h"
+#include "../harness/fpcontrol.h"
+#include "../harness/parseParameters.h"
 
 #include <vector>
 
@@ -41,9 +41,9 @@ bool gExtraValidateInfo;
 bool gDisableOffsets;
 bool gTestSmallImages;
 bool gTestMaxImages;
-bool gTestRounding;
 bool gTestImage2DFromBuffer;
 bool gTestMipmaps;
+bool gDeviceLt20 = false;
 cl_filter_mode    gFilterModeToUse = (cl_filter_mode)-1;
 // Default is CL_MEM_USE_HOST_PTR for the test
 cl_mem_flags    gMemFlagsToUse = CL_MEM_USE_HOST_PTR;
@@ -54,7 +54,6 @@ int             gNormalizedModeToUse = 7;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
 cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
 bool            gEnablePitch = false;
-cl_device_type    gDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
 int             gtestTypesToRun = 0;
 static int testTypesToRun;
@@ -118,6 +117,10 @@ static int doTest( cl_device_id device, cl_context context, cl_command_queue que
     bool            tDisableOffsets = false;
     bool            tNormalizedModeToUse = false;
     cl_filter_mode  tFilterModeToUse = (cl_filter_mode)-1;
+    auto version = get_device_cl_version(device);
+    if (version < Version(2, 0)) {
+        gDeviceLt20 = true;
+    }
 
     if( testTypesToRun & kReadTests )
     {
@@ -171,6 +174,13 @@ static int doTest( cl_device_id device, cl_context context, cl_command_queue que
                 gMemFlagsToUse = saved_gMemFlagsToUse;
                 gEnablePitch = saved_gEnablePitch;
             }
+        }
+    }
+
+    if (testTypesToRun & kReadWriteTests) {
+        if (gDeviceLt20)  {
+            log_info("TEST skipped, Opencl 2.0 + requried for this test");
+            return ret;
         }
     }
 
@@ -270,12 +280,8 @@ int main(int argc, const char *argv[])
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
     {
-        test_finish();
         return -1;
     }
-
-    //Check CL_DEVICE_TYPE environment variable
-    checkDeviceTypeOverride( &gDeviceType );
 
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 
@@ -291,16 +297,7 @@ int main(int argc, const char *argv[])
     // Parse arguments
     for( int i = 1; i < argc; i++ )
     {
-        if( strcmp( argv[i], "cpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_CPU" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_CPU;
-        else if( strcmp( argv[i], "gpu" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_GPU" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_GPU;
-        else if( strcmp( argv[i], "accelerator" ) == 0 || strcmp( argv[i], "CL_DEVICE_TYPE_ACCELERATOR" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_ACCELERATOR;
-        else if( strcmp( argv[i], "CL_DEVICE_TYPE_DEFAULT" ) == 0 )
-            gDeviceType = CL_DEVICE_TYPE_DEFAULT;
-
-        else if( strcmp( argv[i], "debug_trace" ) == 0 )
+        if( strcmp( argv[i], "debug_trace" ) == 0 )
             gDebugTrace = true;
 
         else if( strcmp( argv[i], "CL_FILTER_NEAREST" ) == 0 || strcmp( argv[i], "NEAREST" ) == 0 )
@@ -395,35 +392,6 @@ int main(int argc, const char *argv[])
     if( gTypesToTest == 0 )
         gTypesToTest = kTestAllTypes;
 
-#if defined( __APPLE__ )
-#if defined( __i386__ ) || defined( __x86_64__ )
-#define    kHasSSE3                0x00000008
-#define kHasSupplementalSSE3    0x00000100
-#define    kHasSSE4_1              0x00000400
-#define    kHasSSE4_2              0x00000800
-    /* check our environment for a hint to disable SSE variants */
-    {
-        const char *env = getenv( "CL_MAX_SSE" );
-        if( env )
-        {
-            extern int _cpu_capabilities;
-            int mask = 0;
-            if( 0 == strcmp( env, "SSE4.1" ) )
-                mask = kHasSSE4_2;
-            else if( 0 == strcmp( env, "SSSE3" ) )
-                mask = kHasSSE4_2 | kHasSSE4_1;
-            else if( 0 == strcmp( env, "SSE3" ) )
-                mask = kHasSSE4_2 | kHasSSE4_1 | kHasSupplementalSSE3;
-            else if( 0 == strcmp( env, "SSE2" ) )
-                mask = kHasSSE4_2 | kHasSSE4_1 | kHasSupplementalSSE3 | kHasSSE3;
-
-            log_info( "*** Environment: CL_MAX_SSE = %s ***\n", env );
-            _cpu_capabilities &= ~mask;
-        }
-    }
-#endif
-#endif
-
     if( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
 
@@ -442,18 +410,6 @@ int main(int argc, const char *argv[])
 
     // Restore FP state before leaving
     RestoreFPState(&oldMode);
-
-    if (gTestFailure == 0) {
-        if (gTestCount > 1)
-            log_info("PASSED %d of %d sub-tests.\n", gTestCount, gTestCount);
-        else
-            log_info("PASSED sub-test.\n");
-    } else if (gTestFailure > 0) {
-        if (gTestCount > 1)
-            log_error("FAILED %d of %d sub-tests.\n", gTestFailure, gTestCount);
-        else
-            log_error("FAILED sub-test.\n");
-    }
 
     free(argList);
     return ret;

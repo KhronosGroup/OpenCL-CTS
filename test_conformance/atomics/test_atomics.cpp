@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/conversions.h"
+#include "harness/conversions.h"
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -22,8 +22,6 @@
 #define INT_TEST_VALUE 402258822
 #define LONG_TEST_VALUE 515154531254381446LL
 
-
-extern cl_uint gRandomSeed;
 
 const char *atomic_global_pattern[] = {
     "__kernel void test_atomic_fn(volatile __global %s *destMemory, __global %s *oldValues)\n"
@@ -94,16 +92,13 @@ bool check_atomic_support( cl_device_id device, bool extended, bool isLocal, Exp
     if( isLocal )
         index += 2;
 
-    size_t major, minor;
-
-    int error = get_device_version(device, &major, &minor);
-    test_error( error, "get_device_version" );
+    Version version = get_device_cl_version(device);
 
     switch (dataType)
     {
         case kInt:
         case kUInt:
-            if( major * 10 + minor >= 11 )
+            if( version >= Version(1,1) )
                 return 1;
             break;
         case kLong:
@@ -111,7 +106,7 @@ bool check_atomic_support( cl_device_id device, bool extended, bool isLocal, Exp
             index += 4;
             break;
         case kFloat:  // this has to stay separate since the float atomics arent in the 1.0 extensions
-            return major * 10 + minor >= 11;
+            return version >= Version(1,1);
         default:
             log_error( "ERROR:  Unsupported data type (%d) in check_atomic_support\n", dataType );
             return 0;
@@ -204,6 +199,12 @@ int test_atomic_function(cl_device_id deviceID, cl_context context, cl_command_q
         size_t workSize;
         error = clGetKernelWorkGroupInfo( kernel, deviceID, CL_KERNEL_WORK_GROUP_SIZE, sizeof( workSize ), &workSize, NULL );
         test_error( error, "Unable to obtain max work group size for device and kernel combo" );
+
+        // "workSize" is limited to that of the first dimension as only a 1DRange is executed.
+        if( maxSizes[0] < workSize )
+        {
+            workSize = maxSizes[0];
+        }
 
         threadSize = groupSize = workSize;
     }

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,8 +23,8 @@
 
 
 #include "procs.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
 
 const cl_mem_flags flag_set[] = {
   CL_MEM_ALLOC_HOST_PTR,
@@ -45,27 +45,31 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context, cl_comman
 {
     int error;
     const size_t bufferSize = 256*256;
-    int src_flag_id;
-    MTdata d = init_genrand( gRandomSeed );
-    cl_char *initialData = (cl_char*)malloc(bufferSize);
-    cl_char *finalData = (cl_char*)malloc(bufferSize);
+    MTdataHolder d{gRandomSeed};
+    BufferOwningPtr<cl_char> hostPtrData{ malloc(bufferSize) };
+    BufferOwningPtr<cl_char> referenceData{ malloc(bufferSize) };
+    BufferOwningPtr<cl_char> finalData{malloc(bufferSize)};
 
-    for (src_flag_id=0; src_flag_id < sizeof(flag_set)/sizeof(flag_set[0]); src_flag_id++)
+    for (int src_flag_id=0; src_flag_id < ARRAY_SIZE(flag_set); src_flag_id++)
     {
         clMemWrapper memObject;
         log_info("Testing with cl_mem_flags src: %s\n", flag_set_names[src_flag_id]);
 
-        generate_random_data( kChar, (unsigned int)bufferSize, d, initialData );
+        generate_random_data(kChar, (unsigned int)bufferSize, d, hostPtrData);
+        memcpy(referenceData, hostPtrData, bufferSize);
 
-        if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
-            memObject = clCreateBuffer(context, flag_set[src_flag_id],  bufferSize * sizeof( cl_char ), initialData, &error);
-        else
-            memObject = clCreateBuffer(context, flag_set[src_flag_id],  bufferSize * sizeof( cl_char ), NULL, &error);
+        void *hostPtr = nullptr;
+        cl_mem_flags flags = flag_set[src_flag_id];
+        bool hasHostPtr = (flags & CL_MEM_USE_HOST_PTR) || (flags & CL_MEM_COPY_HOST_PTR);
+        if (hasHostPtr) hostPtr = hostPtrData;
+        memObject = clCreateBuffer(context, flags,  bufferSize, hostPtr, &error);
         test_error( error, "Unable to create testing buffer" );
 
-        if (!(flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) && !(flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
+        if (!hasHostPtr)
         {
-            error = clEnqueueWriteBuffer(queue, memObject, CL_TRUE, 0, bufferSize * sizeof( cl_char ), initialData, 0, NULL, NULL);
+            error =
+            clEnqueueWriteBuffer(queue, memObject, CL_TRUE, 0, bufferSize,
+                                 hostPtrData, 0, NULL, NULL);
             test_error( error, "clEnqueueWriteBuffer failed");
         }
 
@@ -81,9 +85,6 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context, cl_comman
           {
             print_error( error, "clEnqueueMapBuffer call failed" );
             log_error( "\tOffset: %d  Length: %d\n", (int)offset, (int)length );
-            free( initialData );
-            free( finalData );
-            free_mtdata(d);
             return -1;
           }
 
@@ -98,9 +99,9 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context, cl_comman
             mappedRegion[ j ] = value;
 
             // Also update the initial data array
-            value = initialData[ offset + j ];
+            value = referenceData[offset + j];
             value = spin - value;
-            initialData[ offset + j ] = value;
+            referenceData[offset + j] = value;
           }
 
           // Unmap
@@ -109,25 +110,20 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context, cl_comman
         }
 
         // Final validation: read actual values of buffer and compare against our reference
-        error = clEnqueueReadBuffer( queue, memObject, CL_TRUE, 0, sizeof( cl_char ) * bufferSize, finalData, 0, NULL, NULL );
+        error = clEnqueueReadBuffer( queue, memObject, CL_TRUE, 0, bufferSize, finalData, 0, NULL, NULL );
         test_error( error, "Unable to read results" );
 
         for( size_t q = 0; q < bufferSize; q++ )
         {
-            if( initialData[ q ] != finalData[ q ] )
+            if (referenceData[q] != finalData[q])
             {
-                log_error( "ERROR: Sample %d did not validate! Got %d, expected %d\n", (int)q, (int)finalData[ q ], (int)initialData[ q ] );
-                free( initialData );
-                free( finalData );
-                free_mtdata(d);
+                log_error(
+                "ERROR: Sample %d did not validate! Got %d, expected %d\n",
+                (int)q, (int)finalData[q], (int)referenceData[q]);
                 return -1;
             }
         }
     } // cl_mem flags
-
-    free( initialData );
-    free( finalData );
-    free_mtdata(d);
 
     return 0;
 }
@@ -137,42 +133,36 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command
     int error;
     cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT32 };
     const size_t imageSize = 256;
-    int src_flag_id;
-    cl_uint *initialData;
-    cl_uint *finalData;
-    MTdata  d;
+    const size_t imageDataSize = imageSize * imageSize * 4 * sizeof(cl_uint);
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID )
 
-    initialData = (cl_uint*)malloc(imageSize * imageSize * 4 *sizeof(cl_uint));
-    finalData = (cl_uint*)malloc(imageSize * imageSize * 4 *sizeof(cl_uint));
+    BufferOwningPtr<cl_uint> hostPtrData{ malloc(imageDataSize) };
+    BufferOwningPtr<cl_uint> referenceData{ malloc(imageDataSize) };
+    BufferOwningPtr<cl_uint> finalData{malloc(imageDataSize)};
 
-    if( !is_image_format_supported( context, CL_MEM_READ_ONLY, CL_MEM_OBJECT_IMAGE2D, &format ) )
-    {
-        log_error( "ERROR: Test requires basic OpenCL 1.0 format CL_RGBA:CL_UNSIGNED_INT32, which is unsupported by this device!\n" );
-        free(initialData);
-        free(finalData);
-        return -1;
-    }
-
-    d = init_genrand( gRandomSeed );
-  for (src_flag_id=0; src_flag_id < sizeof(flag_set)/sizeof(flag_set[0]); src_flag_id++) {
+    MTdataHolder d{gRandomSeed};
+  for (int src_flag_id=0; src_flag_id < ARRAY_SIZE(flag_set); src_flag_id++) {
     clMemWrapper memObject;
     log_info("Testing with cl_mem_flags src: %s\n", flag_set_names[src_flag_id]);
 
-    generate_random_data( kUInt, (unsigned int)( imageSize * imageSize ), d, initialData );
+    generate_random_data(kUInt, (unsigned int)(imageSize * imageSize), d,
+                         hostPtrData);
+    memcpy(referenceData, hostPtrData, imageDataSize);
 
-    if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
-      memObject = create_image_2d( context, CL_MEM_READ_WRITE | flag_set[src_flag_id], &format,
-                                  imageSize, imageSize, 0, initialData, &error );
-    else
-      memObject = create_image_2d( context, CL_MEM_READ_WRITE | flag_set[src_flag_id], &format,
-                                  imageSize, imageSize, 0, NULL, &error );
+    cl_mem_flags flags = flag_set[src_flag_id];
+    bool hasHostPtr = (flags & CL_MEM_USE_HOST_PTR) || (flags & CL_MEM_COPY_HOST_PTR);
+    void *hostPtr = nullptr;
+    if (hasHostPtr) hostPtr = hostPtrData;
+    memObject = create_image_2d(context, CL_MEM_READ_WRITE | flags, &format,
+                                imageSize, imageSize, 0, hostPtr, &error );
     test_error( error, "Unable to create testing buffer" );
 
-    if (!(flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) && !(flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR)) {
+    if (!hasHostPtr) {
       size_t write_origin[3]={0,0,0}, write_region[3]={imageSize, imageSize, 1};
-      error = clEnqueueWriteImage(queue, memObject, CL_TRUE, write_origin, write_region, NULL, NULL, initialData, 0, NULL, NULL);
+      error =
+      clEnqueueWriteImage(queue, memObject, CL_TRUE, write_origin, write_region,
+                          0, 0, hostPtrData, 0, NULL, NULL);
       test_error( error, "Unable to write to testing buffer" );
     }
 
@@ -194,9 +184,6 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command
       {
         print_error( error, "clEnqueueMapImage call failed" );
         log_error( "\tOffset: %d,%d  Region: %d,%d\n", (int)offset[0], (int)offset[1], (int)region[0], (int)region[1] );
-        free(initialData);
-        free(finalData);
-        free_mtdata(d);
         return -1;
       }
 
@@ -215,9 +202,11 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command
           mappedPtr[ ( y * rowPitch/sizeof(cl_uint) ) + x ] = value;
 
           // Also update the initial data array
-          value = initialData[ ( ( offset[ 1 ] + y ) * imageSize + offset[ 0 ] ) * 4 + x ];
+          value =
+          referenceData[((offset[1] + y) * imageSize + offset[0]) * 4 + x];
           value = spin - value;
-          initialData[ ( ( offset[ 1 ] + y ) * imageSize + offset[ 0 ] ) * 4 + x ] = value;
+          referenceData[((offset[1] + y) * imageSize + offset[0]) * 4 + x] =
+          value;
         }
       }
 
@@ -233,22 +222,18 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command
 
     for( size_t q = 0; q < imageSize * imageSize * 4; q++ )
     {
-      if( initialData[ q ] != finalData[ q ] )
-      {
-        log_error( "ERROR: Sample %d (coord %d,%d) did not validate! Got %d, expected %d\n", (int)q, (int)( ( q / 4 ) % imageSize ), (int)( ( q / 4 ) / imageSize ),
-                                    (int)finalData[ q ], (int)initialData[ q ] );
-        free(initialData);
-        free(finalData);
-        free_mtdata(d);
-        return -1;
-      }
+        if (referenceData[q] != finalData[q])
+        {
+            log_error("ERROR: Sample %d (coord %d,%d) did not validate! Got "
+                      "%d, expected %d\n",
+                      (int)q, (int)((q / 4) % imageSize),
+                      (int)((q / 4) / imageSize), (int)finalData[q],
+                      (int)referenceData[q]);
+            return -1;
+        }
     }
   } // cl_mem_flags
 
-    free(initialData);
-    free(finalData);
-    free_mtdata(d);
     return 0;
 }
-
 

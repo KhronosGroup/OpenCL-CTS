@@ -17,8 +17,8 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/parseParameters.h"
+#include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 
 int main(int argc, const char* argv[])
 {
@@ -209,7 +209,6 @@ void TestAdapterDevices(cl_platform_id platform, IDXGIAdapter* pAdapter, ID3D10D
     cl_int result;
     cl_uint num_devices = 0;
     cl_device_id* devices = NULL;
-    char extensions[8192];
 
     devices = new cl_device_id[num_devices_expected];
     NonTestRequire(
@@ -234,8 +233,7 @@ void TestAdapterDevices(cl_platform_id platform, IDXGIAdapter* pAdapter, ID3D10D
     for (cl_uint i = 0; i < num_devices; ++i)
     {
         // make sure the device supports the extension
-        result = clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(extensions), extensions, NULL); NonTestRequire(result == CL_SUCCESS, "Failed to get extensions.");
-        if (strstr(extensions, "cl_khr_d3d10_sharing") == NULL) {
+        if (!is_extension_available(devices[i], "cl_khr_d3d10_sharing")) {
           TestPrint("Device does not support cl_khr_d3d10_sharing extension\n");
           continue;
         }

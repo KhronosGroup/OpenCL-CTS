@@ -17,33 +17,21 @@ link_directories(${CL_LIB_DIR}, ${D3D10_LIB_DIR})
 
 list(APPEND CLConform_LIBRARIES d3d10 dxgi)
 
+set(MODULE_NAME D3D10)
 
-set(D3D10_SOURCES
+set(${MODULE_NAME}_SOURCES
     buffer.cpp
     texture2d.cpp
     texture3d.cpp
     misc.cpp
     main.cpp
     harness.cpp
-    ../../test_common/harness/errorHelpers.c
-    ../../test_common/harness/threadTesting.c
-    ../../test_common/harness/testHarness.c
-    ../../test_common/harness/kernelHelpers.c
-    ../../test_common/harness/mt19937.c
-    ../../test_common/harness/conversions.c
-    ../../test_common/harness/msvc9.c
-    ../../test_common/harness/parseParameters.cpp
-    ../../test_common/harness/crc32.c
 )
 
-add_executable(conformance_test_d3d10
-    ${D3D10_SOURCES})
-
 set_source_files_properties(
-    ${D3D10_SOURCES}
+    ${MODULE_NAME}_SOURCES
     PROPERTIES LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(conformance_test_d3d10
-    ${CLConform_LIBRARIES})
-
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include(../CMakeCommon.txt)
 endif(WIN32)

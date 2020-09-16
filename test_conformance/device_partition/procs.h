@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
-#include "../../test_common/harness/mt19937.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/mt19937.h"
 
 extern int      test_partition_all(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_partition_equally(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/testHarness.h"
-#include "../../test_common/harness/kernelHelpers.h"
-#include "../../test_common/harness/typeWrappers.h"
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
+#include "harness/typeWrappers.h"
 
 #include "common.h"
 #include "host_atomics.h"
@@ -29,7 +29,9 @@ class CBasicTestStore : public CBasicTestMemOrderScope<HostAtomicType, HostDataT
 public:
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::OldValueCheck;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrder;
+  using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryScope;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrderScopeStr;
+  using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
   CBasicTestStore(TExplicitAtomicType dataType, bool useSVM) : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType, useSVM)
   {
     OldValueCheck(false);
@@ -43,6 +45,10 @@ public:
     if(MemoryOrder() == MEMORY_ORDER_ACQUIRE ||
       MemoryOrder() == MEMORY_ORDER_ACQ_REL)
       return 0; //skip test - not applicable
+
+    if (CheckCapabilities(MemoryScope(), MemoryOrder()) == TEST_SKIPPED_ITSELF)
+        return 0; // skip test - not applicable
+
     return CBasicTestMemOrderScope<HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context, queue);
   }
   virtual std::string ProgramCore()
@@ -198,7 +204,9 @@ class CBasicTestLoad : public CBasicTestMemOrderScope<HostAtomicType, HostDataTy
 public:
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::OldValueCheck;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrder;
+  using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryScope;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrderScopeStr;
+  using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
   CBasicTestLoad(TExplicitAtomicType dataType, bool useSVM) : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType, useSVM)
   {
     OldValueCheck(false);
@@ -212,6 +220,10 @@ public:
     if(MemoryOrder() == MEMORY_ORDER_RELEASE ||
       MemoryOrder() == MEMORY_ORDER_ACQ_REL)
       return 0; //skip test - not applicable
+
+    if (CheckCapabilities(MemoryScope(), MemoryOrder()) == TEST_SKIPPED_ITSELF)
+        return 0; // skip test - not applicable
+
     return CBasicTestMemOrderScope<HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context, queue);
   }
   virtual std::string ProgramCore()
@@ -435,9 +447,11 @@ public:
   using CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::MemoryOrder;
   using CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::MemoryOrder2;
   using CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::MemoryOrderScope;
+  using CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::MemoryScope;
   using CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::DataType;
   using CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::Iterations;
   using CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::IterationsStr;
+  using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
   CBasicTestCompareStrong(TExplicitAtomicType dataType, bool useSVM) : CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>(dataType, useSVM)
   {
     StartValue(123456);
@@ -451,6 +465,13 @@ public:
     if((MemoryOrder() == MEMORY_ORDER_RELAXED && MemoryOrder2() != MEMORY_ORDER_RELAXED) ||
       (MemoryOrder() != MEMORY_ORDER_SEQ_CST && MemoryOrder2() == MEMORY_ORDER_SEQ_CST))
       return 0; // failure argument shall be no stronger than the success
+
+    if (CheckCapabilities(MemoryScope(), MemoryOrder()) == TEST_SKIPPED_ITSELF)
+        return 0; // skip test - not applicable
+
+    if (CheckCapabilities(MemoryScope(), MemoryOrder2()) == TEST_SKIPPED_ITSELF)
+        return 0; // skip test - not applicable
+
     return CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context, queue);
   }
   virtual std::string ProgramCore()
@@ -698,9 +719,9 @@ public:
     std::string memoryOrderScope = MemoryOrderScopeStr();
     std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
     return
-      "  oldValues[tid] = atomic_fetch_add"+postfix+"(&destMemory[0], tid + 3"+memoryOrderScope+");\n"+
-      "  atomic_fetch_add"+postfix+"(&destMemory[0], tid + 3"+memoryOrderScope+");\n"
-      "  atomic_fetch_add"+postfix+"(&destMemory[0], tid + 3"+memoryOrderScope+");\n"
+      "  oldValues[tid] = atomic_fetch_add"+postfix+"(&destMemory[0], ("+DataType().AddSubOperandTypeName()+")tid + 3"+memoryOrderScope+");\n"+
+      "  atomic_fetch_add"+postfix+"(&destMemory[0], ("+DataType().AddSubOperandTypeName()+")tid + 3"+memoryOrderScope+");\n"
+      "  atomic_fetch_add"+postfix+"(&destMemory[0], ("+DataType().AddSubOperandTypeName()+")tid + 3"+memoryOrderScope+");\n"
       "  atomic_fetch_add"+postfix+"(&destMemory[0], (("+DataType().AddSubOperandTypeName()+")tid + 3) << (sizeof("+DataType().AddSubOperandTypeName()+")-1)*8"+memoryOrderScope+");\n";
   }
   virtual void HostFunction(cl_uint tid, cl_uint threadCount, volatile HostAtomicType *destMemory, HostDataType *oldValues)
@@ -1761,7 +1782,16 @@ public:
     if (MemoryOrder() == MEMORY_ORDER_SEQ_CST)
       return 1;
     if (LocalMemory())
-      return 32 * 1024 / 8 / CurrentGroupSize() - 1; //32KB of local memory required by spec
+    {
+      if (gIsEmbedded)
+      {
+        if (CurrentGroupSize() > 1024)
+          CurrentGroupSize(1024);
+        return 1; //1KB of local memory required by spec. Clamp group size to 1k and allow 1 variable per thread
+      }
+      else
+        return 32 * 1024 / 8 / CurrentGroupSize() - 1; //32KB of local memory required by spec
+    }
     return 256;
   }
   virtual std::string SingleTestName()

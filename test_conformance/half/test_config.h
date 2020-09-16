@@ -16,6 +16,8 @@
 #ifndef TEST_CONFIG_H
 #define TEST_CONFIG_H
 
+#include <CL/cl.h>
+
 #define MULTITHREAD 1
 
 #define kVectorSizeCount    5

@@ -38,7 +38,7 @@ int test_retain_queue_single(cl_device_id deviceID, cl_context context, cl_comma
 
 
     /* Create a test queue */
-    queue = clCreateCommandQueueWithProperties( context, deviceID, 0, &err );
+    queue = clCreateCommandQueue( context, deviceID, 0, &err );
     test_error( err, "Unable to create command queue to test with" );
 
     /* Test the instance count */
@@ -70,7 +70,7 @@ int test_retain_queue_multiple(cl_device_id deviceID, cl_context context, cl_com
 
 
     /* Create a test program */
-    queue = clCreateCommandQueueWithProperties( context, deviceID, 0, &err );
+    queue = clCreateCommandQueue( context, deviceID, 0, &err );
     test_error( err, "Unable to create command queue to test with" );
 
     /* Increment 9 times, which should bring the count to 10 */
@@ -232,3 +232,44 @@ int test_retain_mem_object_multiple(cl_device_id deviceID, cl_context context, c
     return 0;
 }
 
+int test_retain_mem_object_set_kernel_arg(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    int err;
+    cl_mem buffer = nullptr;
+    cl_program program;
+    cl_kernel kernel;
+    static volatile uint32_t sValue;
+    sValue = 0;
+    auto callback = []( cl_mem, void * ) {
+      ++sValue;
+    };
+    const char *testProgram[] = { "__kernel void sample_test(__global int *data){}" };
+
+    buffer = clCreateBuffer( context, CL_MEM_READ_ONLY, 32, NULL, &err );
+    test_error( err, "Unable to create buffer to test with" );
+
+    err = clSetMemObjectDestructorCallback( buffer, callback, nullptr );
+    test_error( err, "Unable to set destructor callback" );
+
+    err = create_single_kernel_helper( context, &program, nullptr, 1, testProgram, nullptr );
+    test_error( err, "Unable to build sample program" );
+
+    kernel = clCreateKernel( program, "sample_test", &err );
+    test_error( err, "Unable to create sample_test kernel" );
+
+    err = clSetKernelArg( kernel, 0, sizeof(cl_mem), &buffer );
+    test_error( err, "Unable to set kernel argument" );
+
+    err = clReleaseMemObject( buffer );
+    test_error( err, "Unable to release buffer" );
+
+    // Spin waiting for the release to finish.  If you don't call the mem_destructor_callback, you will not
+    // pass the test.  bugzilla 6316
+    while (sValue == 0) { }
+
+    clReleaseKernel( kernel );
+    clReleaseProgram( program );
+
+    // If we got this far, we succeeded.
+    return 0;
+}

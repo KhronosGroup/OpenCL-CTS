@@ -57,7 +57,7 @@ cl_int cBuffer_check_mem_host_read_only< T >::SetupBuffer()
                                   block_size_in_byte, this->host_m_1.pData, &err);
   test_error(err, "clCreateBuffer error");
 
-  if (this->buffer_mem_flag | CL_MEM_USE_HOST_PTR)
+  if (this->buffer_mem_flag & CL_MEM_USE_HOST_PTR)
   {
     this->pHost_ptr = (void *)this->host_m_1.pData;
   }
@@ -139,6 +139,8 @@ cl_int cBuffer_check_mem_host_read_only< T >::verify_RW_Buffer()
     log_error("Buffer data difference found\n");
     return FAILURE;
   }
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
 
   // test write
   err = clEnqueueWriteBuffer(this->m_queue, this->m_buffer, this->m_blocking,
@@ -190,6 +192,8 @@ cl_int cBuffer_check_mem_host_read_only< T >::verify_RW_Buffer_rect()
     log_error("Buffer data diffeence found\n");
     return FAILURE;
   }
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
 
   // test blocking write rect
   err = clEnqueueWriteBufferRect(this->m_queue, this->m_buffer, this->m_blocking,
@@ -235,12 +239,20 @@ cl_int cBuffer_check_mem_host_read_only< T >::verify_RW_Buffer_mapping()
 
   if ((this->buffer_mem_flag & CL_MEM_USE_HOST_PTR) && dataPtr != this->pHost_ptr ) {
     log_error("Mapped host pointer difference found\n");
+    return FAILURE;
   }
 
   if(!this->host_m_1.Equal((T*)dataPtr, this->m_nNumber_elements)) {
     log_error("Buffer content difference found\n");
     return FAILURE;
   }
+
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
+
+  err = clEnqueueUnmapMemObject(this->m_queue, this->m_buffer, dataPtr, 0,
+                                nullptr, nullptr);
+  test_error(err, "clEnqueueUnmapMemObject error");
 
   //  test blocking map read
   clEnqueueMapBuffer(this->m_queue, this->m_buffer, this->m_blocking,

@@ -25,10 +25,6 @@
 #include <stdio.h>
 #include "errorHelpers.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
   // helper function to replace clCreateImage2D , to make the existing code use
   // the functions of version 1.2 and veriosn 1.1  respectively
@@ -46,7 +42,7 @@ extern "C" {
 
 #ifdef CL_VERSION_1_2
     cl_image_desc image_desc_dest;
-    image_desc_dest.image_type = CL_MEM_OBJECT_IMAGE2D;;
+    image_desc_dest.image_type = CL_MEM_OBJECT_IMAGE2D;
     image_desc_dest.image_width = image_width;
     image_desc_dest.image_height = image_height;
     image_desc_dest.image_depth= 0;// not usedfor 2d
@@ -90,7 +86,7 @@ extern "C" {
         cl_mem mImage = NULL;
 
         cl_image_desc image_desc_dest;
-        image_desc_dest.image_type = CL_MEM_OBJECT_IMAGE2D;;
+        image_desc_dest.image_type = CL_MEM_OBJECT_IMAGE2D;
         image_desc_dest.image_width = image_width;
         image_desc_dest.image_height = image_height;
         image_desc_dest.image_depth= 0;// not usedfor 2d
@@ -282,9 +278,5 @@ extern "C" {
         return mImage;
     }
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

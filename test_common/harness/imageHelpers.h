@@ -23,6 +23,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <vector>
 
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -40,9 +41,10 @@
 #include "rounding_mode.h"
 #include "clImageHelper.h"
 
-extern int gTestCount;
-extern int gTestFailure;
+#include <CL/cl_half.h>
+
 extern cl_device_type gDeviceType;
+extern bool gTestRounding;
 
 // Number of iterations per image format to test if not testing max images, rounding, or small images
 #define NUM_IMAGE_ITERATIONS 3
@@ -72,16 +74,23 @@ extern void print_read_header( cl_image_format *format, image_sampler_data *samp
 extern void print_write_header( cl_image_format *format, bool err);
 extern void print_header( cl_image_format *format, bool err );
 extern bool find_format( cl_image_format *formatList, unsigned int numFormats, cl_image_format *formatToFind );
-extern bool check_minimum_supported( cl_image_format *formatList, unsigned int numFormats, cl_mem_flags flags );
+extern bool is_image_format_required(cl_image_format format,
+                                     cl_mem_flags flags,
+                                     cl_mem_object_type image_type,
+                                     cl_device_id device);
+extern void build_required_image_formats(cl_mem_flags flags,
+                                         cl_mem_object_type image_type,
+                                         cl_device_id device,
+                                         std::vector<cl_image_format>& formatsToSupport);
 
-extern size_t get_format_type_size( const cl_image_format *format );
-extern size_t get_channel_data_type_size( cl_channel_type channelType );
-extern size_t get_format_channel_count( const cl_image_format *format );
-extern size_t get_channel_order_channel_count( cl_channel_order order );
+extern uint32_t get_format_type_size(const cl_image_format *format);
+extern uint32_t get_channel_data_type_size(cl_channel_type channelType);
+extern uint32_t get_format_channel_count(const cl_image_format *format);
+extern uint32_t get_channel_order_channel_count(cl_channel_order order);
 cl_channel_type  get_channel_type_from_name( const char *name );
 cl_channel_order  get_channel_order_from_name( const char *name );
 extern int    is_format_signed( const cl_image_format *format );
-extern size_t get_pixel_size( cl_image_format *format );
+extern uint32_t get_pixel_size(cl_image_format *format);
 
 /* Helper to get any ol image format as long as it is 8-bits-per-channel */
 extern int get_8_bit_image_format( cl_context context, cl_mem_object_type objType, cl_mem_flags flags, size_t channelCount, cl_image_format *outFormat );
@@ -147,7 +156,6 @@ size_t compute_mip_level_offset( image_descriptor * imageInfo , size_t lod);
 template <class T> void read_image_pixel( void *imageData, image_descriptor *imageInfo,
                                          int x, int y, int z, T *outData, int lod )
 {
-    float convert_half_to_float( unsigned short halfValue );
     size_t width_lod = imageInfo->width, height_lod = imageInfo->height, depth_lod = imageInfo->depth, slice_pitch_lod = 0/*imageInfo->slicePitch*/ , row_pitch_lod = 0/*imageInfo->rowPitch*/;
     width_lod = ( imageInfo->width >> lod) ?( imageInfo->width >> lod):1;
 
@@ -271,7 +279,7 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
         {
             cl_ushort *dPtr = (cl_ushort *)ptr;
             for( i = 0; i < get_format_channel_count( format ); i++ )
-                tempData[ i ] = (T)convert_half_to_float( dPtr[ i ] );
+                tempData[i] = (T)cl_half_to_float(dPtr[i]);
             break;
         }
 
@@ -631,12 +639,17 @@ protected:
     size_t    mVecSize;
 };
 
+extern cl_ushort convert_float_to_half(float f);
 extern int  DetectFloatToHalfRoundingMode( cl_command_queue );  // Returns CL_SUCCESS on success
 
-int inline is_half_nan( cl_ushort half ){ return (half & 0x7fff) > 0x7c00; }
+// sign bit: don't care, exponent: maximum value, significand: non-zero
+static int inline is_half_nan( cl_ushort half ){ return ( half & 0x7fff ) > 0x7c00; }
 
-cl_ushort convert_float_to_half( cl_float f );
-cl_float  convert_half_to_float( cl_ushort h );
+// sign bit: don't care, exponent: zero, significand: non-zero
+static int inline is_half_denorm( cl_ushort half ){ return IsHalfSubnormal( half ); }
+
+// sign bit: don't care, exponent: zero, significand: zero
+static int inline is_half_zero( cl_ushort half ){ return ( half & 0x7fff ) == 0; }
 
 extern double sRGBmap(float fc);
 

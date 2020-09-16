@@ -5,28 +5,29 @@ set(CLConform_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 project(CLConform${CONFORMANCE_SUFFIX})
 
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if(CMAKE_BUILD_TYPE STREQUAL "release")
     set (BUILD_FLAVOR "release")
 else(CMAKE_BUILD_TYPE STREQUAL "release")
     set (BUILD_FLAVOR "debug")
 endif(CMAKE_BUILD_TYPE STREQUAL "release")
 
-set(CLConform_VERSION_MAJOR "2")
-set(CLConform_VERSION_MINOR "2")
-set(CLConform_VERSION_MICRO "0")
-set(CLConform_VERSION_EXTRA "")
-set(CLConform_VERSION "${CLConform_VERSION_MAJOR}.${CLConform_VERSION_MINOR}")
-set(CLConform_VERSION_FULL
-    "${CLConform_VERSION}.${CLConform_VERSION_MICRO}${CLConform_VERSION_EXTRA}")
-
-add_definitions(-DCL_TARGET_OPENCL_VERSION=220)
-
+add_definitions(-DCL_TARGET_OPENCL_VERSION=300)
+add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_2_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_1_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_0_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_1_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_0_APIS=1)
 
+option(USE_CL_EXPERIMENTAL "Use Experimental definitions" OFF)
+if(USE_CL_EXPERIMENTAL)
+  add_definitions(-DCL_EXPERIMENTAL)
+endif(USE_CL_EXPERIMENTAL)
 
 # Support both VS2008 and VS2012.
 set(BUILD_DIR "$ENV{ADRENO_DRIVER}/build")
@@ -92,24 +93,23 @@ endif(CLPP_DEVELOPMENT_OPTIONS)
 # Path to offline OpenCL C/C++ compiler provided by Khronos.
 # See https://github.com/KhronosGroup/SPIR/ (spirv-1.1 branch or newer SPIR-V-ready
 # branch should be used).
-if(CL_OFFLINE_COMPILER)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCL_OFFLINE_COMPILER=${CL_OFFLINE_COMPILER}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCL_OFFLINE_COMPILER=${CL_OFFLINE_COMPILER}")
+if(KHRONOS_OFFLINE_COMPILER)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DKHRONOS_OFFLINE_COMPILER=${KHRONOS_OFFLINE_COMPILER}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKHRONOS_OFFLINE_COMPILER=${KHRONOS_OFFLINE_COMPILER}")
     # Additional OpenCL C/C++ compiler option.
-    if(CL_OFFLINE_COMPILER_OPTIONS)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCL_OFFLINE_COMPILER_OPTIONS=${CL_OFFLINE_COMPILER_OPTIONS}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCL_OFFLINE_COMPILER_OPTIONS=${CL_OFFLINE_COMPILER_OPTIONS}")
-    endif(CL_OFFLINE_COMPILER_OPTIONS)
-else(CL_OFFLINE_COMPILER)
-    message(STATUS "OpenCL C/C++ compiler hasn't been found!")
-    message(FATAL_ERROR "Pass path to OpenCL C/C++ compiler in CL_OFFLINE_COMPILER")
-endif(CL_OFFLINE_COMPILER)
+    if(KHRONOS_OFFLINE_COMPILER_OPTIONS)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DKHRONOS_OFFLINE_COMPILER_OPTIONS=${KHRONOS_OFFLINE_COMPILER_OPTIONS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKHRONOS_OFFLINE_COMPILER_OPTIONS=${KHRONOS_OFFLINE_COMPILER_OPTIONS}")
+    endif(KHRONOS_OFFLINE_COMPILER_OPTIONS)
+else(KHRONOS_OFFLINE_COMPILER)
+    message(WARNING "KHRONOS_OFFLINE_COMPILER is not defined!")
+    message(WARNING "Running CL C++ tests will not be possible.")
+endif(KHRONOS_OFFLINE_COMPILER)
 
 # CL_LIBCLCXX_DIR - path to dir with OpenCL C++ STL (libclcxx)
 # CL_INCLUDE_DIR - path to dir with OpenCL headers
 # CL_LIBCLCXX_DIR - path to dir with OpenCL library
 if(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
-    set(OPENCL_INCLUDE_DIR ${CL_INCLUDE_DIR})
     link_directories(${CL_LIB_DIR})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCL_LIBCLCXX_DIR=${CL_LIBCLCXX_DIR}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCL_LIBCLCXX_DIR=${CL_LIBCLCXX_DIR}")
@@ -118,24 +118,66 @@ else(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
     message(FATAL_ERROR "Either install OpenCL or pass -DCL_INCLUDE_DIR, -DCL_LIB_DIR and -DCL_LIBCLCXX_DIR")
 endif(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
 
+# CLConform_GL_LIBRARIES_DIR - path to OpenGL libraries
+if(GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
+    link_directories(${CLConform_GL_LIBRARIES_DIR})
+endif (GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
+
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
+include(CheckCXXCompilerFlag)
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
+    set(CLConform_TARGET_ARCH ARM)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
+    set(CLConform_TARGET_ARCH ARM64)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*")
+    set(CLConform_TARGET_ARCH x86_64)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*")
+    set(CLConform_TARGET_ARCH x86)
+endif()
+
+if(NOT DEFINED CLConform_TARGET_ARCH)
+    message (FATAL_ERROR "Target architecture not recognised. Exiting.")
+endif()
+
+macro(add_cxx_flag_if_supported flag)
+    string(REGEX REPLACE "[-=+]" "" FLAG_NO_SIGNS ${flag})
+    check_cxx_compiler_flag(${flag} COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
+    if(COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
+    endif()
+endmacro(add_cxx_flag_if_supported)
 
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    add_cxx_flag_if_supported(-Wno-narrowing)
+    add_cxx_flag_if_supported(-Wno-format)
+    add_cxx_flag_if_supported(-Werror)
+    add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive
+    add_cxx_flag_if_supported(-Wno-error=absolute-value) # Issue 783
+    add_cxx_flag_if_supported(-Wno-error=unknown-pragmas) # Issue #785
+    add_cxx_flag_if_supported(-Wno-error=asm-operand-widths) # Issue #784
+    add_cxx_flag_if_supported(-Wno-error=overflow) # Fixed by #699
+
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float
     # to falsely fail. -ffloat-store also works, but WG suggested
     # that sse would be better.
-    if(CMAKE_ARM_COMPILER OR ANDROID)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=gnu99 -Wno-narrowing")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=gnu++11 -Wno-narrowing")
-    else(CMAKE_ARM_COMPILER OR ANDROID)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=gnu99 -msse -mfpmath=sse -Wno-narrowing")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -msse -mfpmath=sse -std=gnu++11 -Wno-narrowing")
-    endif(CMAKE_ARM_COMPILER OR ANDROID)
+    if(${CLConform_TARGET_ARCH} STREQUAL "x86_64" OR ${CLConform_TARGET_ARCH}
+            STREQUAL "x86")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2 -mfpmath=sse")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -mfpmath=sse")
+
+        add_cxx_flag_if_supported(-frounding-math)
+    endif()
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D__SSE__")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
+endif()
+
+if( WIN32 AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
 endif()
 
 list(APPEND CLConform_LIBRARIES ${OPENCL_LIBRARIES})
@@ -152,11 +194,11 @@ if(APPLE)
     list(APPEND CLConform_LIBRARIES ${iokit})
 endif(APPLE)
 
-include_directories(SYSTEM ${OPENCL_INCLUDE_DIR})
+include_directories(SYSTEM ${CL_INCLUDE_DIR})
 include_directories(${CLConform_SOURCE_DIR}/test_common/harness
                     ${CLConform_SOURCE_DIR}/test_common/gles
                     ${CLConform_SOURCE_DIR}/test_common/gl
-                    ${CMAKE_CURRENT_SOURCE_DIR}/test_common/harness)
+                    ${CLConform_SOURCE_DIR}/test_common)
 
 if(CMAKE_BUILD_TYPE STREQUAL "release")
     set (BUILD_FLAVOR "release")
@@ -165,10 +207,10 @@ elseif (CMAKE_BUILD_TYPE STREQUAL "debug")
 endif(CMAKE_BUILD_TYPE STREQUAL "release")
 
 
+add_subdirectory(test_common)
 add_subdirectory(test_conformance)
+add_subdirectory(test_extensions)
 
-set (PY_PATH   "${CLConform_SOURCE_DIR}/test_conformance/*.py")
-set (CSV_PATH  "${CLConform_SOURCE_DIR}/test_conformance/*.csv")
 # Support both VS2008 and VS2012.
 set (DLL_FILES "${VS_BUILD_DIR}/Debug/*.dll")
 set (DST_DIR   "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/")
@@ -187,25 +229,10 @@ set_property(TARGET COPY_DLL${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${
 
 if(WIN32)
   add_custom_target( COPY_FILES${CONFORMANCE_SUFFIX} ALL
-                     COMMAND ${COPY} ${PY_PATH} ${DST_DIR}
-                     COMMAND ${COPY} ${CSV_PATH} ${DST_DIR}
                      COMMAND ${COPY} ${DLL_FILES} ${DST_DIR}
                      COMMENT "Copying other files to output folder..." )
 else(WIN32)
   add_custom_target( COPY_FILES${CONFORMANCE_SUFFIX} )
 endif(WIN32)
-
-# Copy required CL include directories into the build directory
-# as required for the compiler testing.
-
-# ... For running the compiler test on the command line.
-file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/includeTestDirectory" DESTINATION ${DST_DIR})
-file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory" DESTINATION ${DST_DIR})
-
-# ... For running the compiler test with VisualStudio.
-if(MSVC)
-  file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/includeTestDirectory" DESTINATION "${CLConform_SOURCE_DIR}/build/test_conformance/compiler")
-  file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory" DESTINATION "${CLConform_SOURCE_DIR}/build/test_conformance/compiler")
-endif(MSVC)
 
 set_property(TARGET COPY_FILES${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")

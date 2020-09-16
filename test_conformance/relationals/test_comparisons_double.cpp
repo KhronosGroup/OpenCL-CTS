@@ -14,10 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "../../test_common/harness/conversions.h"
-#include "../../test_common/harness/typeWrappers.h"
-
-extern "C" { extern cl_uint gRandomSeed; };
+#include "harness/conversions.h"
+#include "harness/typeWrappers.h"
 
 #define TEST_SIZE 512
 

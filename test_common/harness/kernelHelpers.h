@@ -37,9 +37,10 @@
     #include <CL/opencl.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
+#include "deviceInfo.h"
+#include "harness/alloc.h"
+
+#include <functional>
 
 /*
  *  The below code is intended to be used at the top of kernels that appear inline in files to set line and file info for the kernel:
@@ -89,6 +90,14 @@ extern int create_single_kernel_helper_create_program(cl_context context,
                                                       const char *buildOptions = NULL,
                                                       const bool openclCXX = false);
                                                       
+extern int create_single_kernel_helper_create_program_for_device(cl_context context,
+                                                                 cl_device_id device,
+                                                                 cl_program *outProgram,
+                                                                 unsigned int numKernelLines,
+                                                                 const char **kernelProgram,
+                                                                 const char *buildOptions = NULL,
+                                                                 const bool openclCXX = false);
+
 /* Creates OpenCL C++ program. This one must be used for creating OpenCL C++ program. */
 extern int create_openclcpp_program(cl_context context, 
                                     cl_program *outProgram,
@@ -114,14 +123,11 @@ extern int get_max_common_2D_work_group_size( cl_context context, cl_kernel kern
 /* Helper to obtain the biggest fit work group size for all the devices in a given group and for the given global thread size */
 extern int get_max_common_3D_work_group_size( cl_context context, cl_kernel kernel, size_t *globalThreadSize, size_t *outSizes );
 
-/* Helper to get major/minor number for a device */
-extern int get_device_version( cl_device_id id, size_t* major, size_t* minor);
-
 /* Helper to obtain the biggest allowed work group size for all the devices in a given group */
 extern int get_max_allowed_work_group_size( cl_context context, cl_kernel kernel, size_t *outSize, size_t *outLimits );
 
-/* Helper to determine if an extension is supported by a device */
-extern int is_extension_available( cl_device_id device, const char *extensionName );
+/* Helper to obtain the biggest allowed 1D work group size on a given device */
+extern int get_max_allowed_1d_work_group_size_on_device( cl_device_id device, cl_kernel kernel, size_t *outSize );
 
 /* Helper to determine if a device supports an image format */
 extern int is_image_format_supported( cl_context context, cl_mem_flags flags, cl_mem_object_type image_type, const cl_image_format *fmt );
@@ -138,10 +144,6 @@ extern int checkFor3DImageSupport( cl_device_id device );
 
 /* Checks that a given queue property is supported on the specified device. Returns 1 if supported, 0 if not or an error. */
 extern int checkDeviceForQueueSupport( cl_device_id device, cl_command_queue_properties prop );
-
-/* Helper for aligned memory allocation */
-void * align_malloc(size_t size, size_t alignment);
-void   align_free(void *);
 
 /* Helper to obtain the min alignment for a given context, i.e the max of all min alignments for devices attached to the context*/
 size_t get_min_alignment(cl_context context);
@@ -163,11 +165,26 @@ cl_device_fp_config get_default_rounding_mode( cl_device_id device );
         return 0;    \
     }
 
+#define PASSIVE_REQUIRE_FP16_SUPPORT(device)                            \
+    if (!is_extension_available(device, "cl_khr_fp16"))                 \
+    {                                                                   \
+        log_info("\n\tNote: device does not support fp16. Skipping test...\n"); \
+        return 0;                                                       \
+    }
+
 /* Prints out the standard device header for all tests given the device to print for */
 extern int printDeviceHeader( cl_device_id device );
 
-#ifdef __cplusplus
-}
-#endif // __cplusplus
+// Gets the latest (potentially non-backward compatible) OpenCL C version
+// supported by the device.
+Version get_device_cl_c_version(cl_device_id device);
+
+// Gets the maximum universally supported OpenCL C version in a context, i.e.
+// the OpenCL C version supported by all devices in a context.
+Version get_max_OpenCL_C_for_context(cl_context context);
+
+// Poll fn every interval_ms until timeout_ms or it returns true
+bool poll_until(unsigned timeout_ms, unsigned interval_ms,
+                std::function<bool()> fn);
 
 #endif // _kernelHelpers_h

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/testHarness.h"
+#include "harness/testHarness.h"
 #include <iostream>
 #include <string>
 
@@ -26,6 +26,8 @@ bool gUseHostPtr = false; // use malloc/free with CL_MEM_USE_HOST_PTR instead of
 bool gDebug = false; // always print OpenCL kernel code
 int gInternalIterations = 10000; // internal test iterations for atomic operation, sufficient to verify atomicity
 int gMaxDeviceThreads = 1024; // maximum number of threads executed on OCL device
+cl_device_atomic_capabilities gAtomicMemCap,
+    gAtomicFenceCap; // atomic memory and fence capabilities for this device
 
 extern int test_atomic_init(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_atomic_store(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
@@ -104,6 +106,77 @@ test_definition test_list[] = {
 };
 
 const int test_num = ARRAY_SIZE( test_list );
+
+test_status InitCL(cl_device_id device) {
+    auto version = get_device_cl_version(device);
+    auto expected_min_version = Version(2, 0);
+
+    if (version < expected_min_version)
+    {
+        version_expected_info("Test", "OpenCL",
+                              expected_min_version.to_string().c_str(),
+                              version.to_string().c_str());
+        return TEST_SKIP;
+    }
+
+    if (version >= Version(3, 0))
+    {
+        cl_int error;
+
+        error = clGetDeviceInfo(device, CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES,
+                                sizeof(gAtomicMemCap), &gAtomicMemCap, NULL);
+        if (error != CL_SUCCESS)
+        {
+            print_error(error, "Unable to get atomic memory capabilities\n");
+            return TEST_FAIL;
+        }
+
+        error =
+            clGetDeviceInfo(device, CL_DEVICE_ATOMIC_FENCE_CAPABILITIES,
+                            sizeof(gAtomicFenceCap), &gAtomicFenceCap, NULL);
+        if (error != CL_SUCCESS)
+        {
+            print_error(error, "Unable to get atomic fence capabilities\n");
+            return TEST_FAIL;
+        }
+
+        if ((gAtomicFenceCap
+             & (CL_DEVICE_ATOMIC_ORDER_RELAXED | CL_DEVICE_ATOMIC_ORDER_ACQ_REL
+                | CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP))
+            == 0)
+        {
+            log_info(
+                "Minimum atomic fence capabilities unsupported by device\n");
+            return TEST_FAIL;
+        }
+
+        if ((gAtomicMemCap
+             & (CL_DEVICE_ATOMIC_ORDER_RELAXED
+                | CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP))
+            == 0)
+        {
+            log_info(
+                "Minimum atomic memory capabilities unsupported by device\n");
+            return TEST_FAIL;
+        }
+    }
+    else
+    {
+        // OpenCL 2.x device, default to all capabilities
+        gAtomicMemCap = CL_DEVICE_ATOMIC_ORDER_RELAXED
+            | CL_DEVICE_ATOMIC_ORDER_ACQ_REL | CL_DEVICE_ATOMIC_ORDER_SEQ_CST
+            | CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP | CL_DEVICE_ATOMIC_SCOPE_DEVICE
+            | CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES;
+
+        gAtomicFenceCap = CL_DEVICE_ATOMIC_ORDER_RELAXED
+            | CL_DEVICE_ATOMIC_ORDER_ACQ_REL | CL_DEVICE_ATOMIC_ORDER_SEQ_CST
+            | CL_DEVICE_ATOMIC_SCOPE_WORK_ITEM
+            | CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP | CL_DEVICE_ATOMIC_SCOPE_DEVICE
+            | CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES;
+    }
+
+    return TEST_PASS;
+}
 
 int main(int argc, const char *argv[])
 {
@@ -186,5 +259,5 @@ int main(int argc, const char *argv[])
     log_info("*** Use of this mode is not sufficient to verify correctness.              ***\n");
     log_info("***                                                                        ***\n");
   }
-  return runTestHarness(argc, argv, test_num, test_list, false, false, 0);
+  return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, false, InitCL);
 }

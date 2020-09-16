@@ -37,9 +37,8 @@
     #include <GLES/gl.h>
     #include <GLES/glext.h>
 #else
-     #include <GL/glew.h>
+    #include <GL/glew.h>
     #include <GL/gl.h>
-     #include <GL/glext.h>
 #endif
 #ifdef _WIN32
     #include <GL/glut.h>

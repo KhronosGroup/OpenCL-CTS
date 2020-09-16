@@ -15,10 +15,13 @@
 //
 #include "utils.h"
 
-#include "../../test_common/harness/errorHelpers.h"
-#include "../../test_common/harness/rounding_mode.h"
+#include "harness/errorHelpers.h"
+#include "harness/imageHelpers.h"
+#include "harness/rounding_mode.h"
 
 #include <math.h>
+
+#include <CL/cl_half.h>
 
 static RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
 
@@ -65,37 +68,6 @@ void CResult::ResultSub( TTestResult result )
   _resultLast = result;
   if (static_cast<int>(result) > static_cast<int>(_result))
     _result = result;
-}
-
-bool ExtensionCheck(const std::string &extension, cl_device_id deviceID)
-{
-  std::string extensions;
-  size_t size = 0;
-  cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, 0, 0, &size);
-  if (error != CL_SUCCESS)
-  {
-    print_error(error, "clGetDeviceInfo failed\n");
-    return false;
-  }
-
-  if (size == 0)
-  {
-    print_error(error, "Invalid extension string size\n");
-    return false;
-  }
-
-  extensions.resize(size);
-  error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, size, &extensions[0], 0);
-  if (error != CL_SUCCESS)
-  {
-    print_error(error, "clGetDeviceInfo failed\n");
-    return false;
-  }
-
-  if (extensions.find(extension) != std::string::npos)
-    return true;
-
-  return false;
 }
 
 void FunctionContextCreateToString(TContextFuncType contextCreateFunction, std::string &contextFunction)
@@ -803,14 +775,18 @@ bool DataCompare( TSurfaceFormat surfaceFormat, cl_channel_type type, const std:
         {
           for(unsigned planeIdx = 0; planeIdx < channelNum; ++planeIdx)
           {
-            float test = convert_half_to_float(dataTest.at(offset + j * channelNum + planeIdx));
-            float ref = convert_half_to_float(dataExp.at(offset + j * channelNum + planeIdx));
-            if (abs(test - ref) > epsilon)
-            {
-              log_error("Tested image is different than reference (x,y,plane) = (%i,%i,%i), test value = %f, expected value = %f\n",
-                j, i, planeIdx, test, ref);
-              return false;
-            }
+              float test = cl_half_to_float(
+                  dataTest.at(offset + j * channelNum + planeIdx));
+              float ref = cl_half_to_float(
+                  dataExp.at(offset + j * channelNum + planeIdx));
+              if (abs(test - ref) > epsilon)
+              {
+                  log_error(
+                      "Tested image is different than reference (x,y,plane) = "
+                      "(%i,%i,%i), test value = %f, expected value = %f\n",
+                      j, i, planeIdx, test, ref);
+                  return false;
+              }
           }
         }
       }
@@ -1585,353 +1561,35 @@ bool MediaSurfaceCreate(cl_dx9_media_adapter_type_khr adapterType, unsigned int 
   return true;
 }
 
-int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS on success
+cl_int deviceExistForCLTest(cl_platform_id platform,
+     cl_dx9_media_adapter_type_khr media_adapters_type,
+     void *media_adapters,
+     CResult &result,
+     TSharedHandleType sharedHandle /*default SHARED_HANDLE_ENABLED*/
+     )
 {
-  cl_int err = CL_SUCCESS;
+    cl_int _error;
+    cl_uint devicesAllNum = 0;
+    std::string sharedHandleStr = (sharedHandle == SHARED_HANDLE_ENABLED)? "yes": "no";
+    std::string adapterStr;
+    AdapterToString(media_adapters_type, adapterStr);
 
-  if( gFloatToHalfRoundingMode == kDefaultRoundingMode )
-  {
-    // Some numbers near 0.5f, that we look at to see how the values are rounded.
-    static const cl_uint  inData[4*4] = {   0x3f000fffU, 0x3f001000U, 0x3f001001U, 0U, 0x3f001fffU, 0x3f002000U, 0x3f002001U, 0U,
-      0x3f002fffU, 0x3f003000U, 0x3f003001U, 0U, 0x3f003fffU, 0x3f004000U, 0x3f004001U, 0U    };
-    static const size_t count = sizeof( inData ) / (4*sizeof( inData[0] ));
-    const float *inp = (const float*) inData;
-    cl_context context = NULL;
+    _error = clGetDeviceIDsFromDX9MediaAdapterKHR(platform, 1,
+        &media_adapters_type, &media_adapters, CL_PREFERRED_DEVICES_FOR_DX9_MEDIA_ADAPTER_KHR, 0, 0, &devicesAllNum);
 
-    // Create an input buffer
-    err = clGetCommandQueueInfo( q, CL_QUEUE_CONTEXT, sizeof(context), &context, NULL );
-    if( err )
+    if (_error != CL_SUCCESS)
     {
-      log_error( "Error:  could not get context from command queue in DetectFloatToHalfRoundingMode  (%d)", err );
-      return err;
+        if(_error != CL_DEVICE_NOT_FOUND)
+        {
+           log_error("clGetDeviceIDsFromDX9MediaAdapterKHR failed: %s\n", IGetErrorString(_error));
+           result.ResultSub(CResult::TEST_ERROR);
+        }
+        else
+        {
+          log_info("Skipping test case, device type is not supported by a device (adapter type: %s, shared handle: %s)\n", adapterStr.c_str(), sharedHandleStr.c_str());
+          result.ResultSub(CResult::TEST_NOTSUPPORTED);
+        }
     }
 
-    cl_mem inBuf = clCreateBuffer( context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_ALLOC_HOST_PTR, sizeof( inData ), (void*) inData, &err );
-    if( NULL == inBuf || err )
-    {
-      log_error( "Error:  could not create input buffer in DetectFloatToHalfRoundingMode  (err: %d)", err );
-      return err;
-    }
-
-    // Create a small output image
-    cl_image_format fmt = { CL_RGBA, CL_HALF_FLOAT };
-    cl_image_desc imageDesc = { 0 };
-    imageDesc.image_type = CL_MEM_OBJECT_IMAGE2D;
-    imageDesc.image_width = count;
-    imageDesc.image_height = 1;
-
-    cl_mem outImage = clCreateImage(context, CL_MEM_READ_WRITE, &fmt, &imageDesc, 0, &err);
-    if( NULL == outImage || err )
-    {
-      log_error( "Error:  could not create half float out image in DetectFloatToHalfRoundingMode  (err: %d)", err );
-      clReleaseMemObject( inBuf );
-      return err;
-    }
-
-    // Create our program, and a kernel
-    const char *kernel[1] = {
-      "kernel void detect_round( global float4 *in, write_only image2d_t out )\n"
-      "{\n"
-      "   write_imagef( out, (int2)(get_global_id(0),0), in[get_global_id(0)] );\n"
-      "}\n" };
-      cl_program program = clCreateProgramWithSource( context, 1, kernel, NULL, &err );
-      if( NULL == program || err )
-      {
-        log_error( "Error:  could not create program in DetectFloatToHalfRoundingMode (err: %d)", err );
-        clReleaseMemObject( inBuf );
-        clReleaseMemObject( outImage );
-        return err;
-      }
-
-      cl_device_id device = NULL;
-      err = clGetCommandQueueInfo( q, CL_QUEUE_DEVICE, sizeof(device), &device, NULL );
-      if( err )
-      {
-        log_error( "Error:  could not get device from command queue in DetectFloatToHalfRoundingMode  (%d)", err );
-        clReleaseMemObject( inBuf );
-        clReleaseMemObject( outImage );
-        clReleaseProgram( program );
-        return err;
-      }
-
-      err = clBuildProgram( program, 1, &device, "", NULL, NULL );
-      if( err )
-      {
-        log_error( "Error:  could not build program in DetectFloatToHalfRoundingMode  (%d)", err );
-        clReleaseMemObject( inBuf );
-        clReleaseMemObject( outImage );
-        clReleaseProgram( program );
-        return err;
-      }
-
-      cl_kernel k = clCreateKernel( program, "detect_round", &err );
-      if( NULL == k || err )
-      {
-        log_error( "Error:  could not create kernel in DetectFloatToHalfRoundingMode  (%d)", err );
-        clReleaseMemObject( inBuf );
-        clReleaseMemObject( outImage );
-        clReleaseProgram( program );
-        return err;
-      }
-
-      err = clSetKernelArg( k, 0, sizeof( cl_mem ), &inBuf );
-      if( err )
-      {
-        log_error( "Error: could not set argument 0 of kernel in DetectFloatToHalfRoundingMode (%d)", err );
-        clReleaseMemObject( inBuf );
-        clReleaseMemObject( outImage );
-        clReleaseProgram( program );
-        clReleaseKernel( k );
-        return err;
-      }
-
-      err = clSetKernelArg( k, 1, sizeof( cl_mem ), &outImage );
-      if( err )
-      {
-        log_error( "Error: could not set argument 1 of kernel in DetectFloatToHalfRoundingMode (%d)", err );
-        clReleaseMemObject( inBuf );
-        clReleaseMemObject( outImage );
-        clReleaseProgram( program );
-        clReleaseKernel( k );
-        return err;
-      }
-
-      // Run the kernel
-      size_t global_work_size = count;
-      err = clEnqueueNDRangeKernel( q, k, 1, NULL, &global_work_size, NULL, 0, NULL, NULL );
-      if( err )
-      {
-        log_error( "Error: could not enqueue kernel in DetectFloatToHalfRoundingMode (%d)", err );
-        clReleaseMemObject( inBuf );
-        clReleaseMemObject( outImage );
-        clReleaseProgram( program );
-        clReleaseKernel( k );
-        return err;
-      }
-
-      // read the results
-      cl_ushort outBuf[count*4];
-      memset( outBuf, -1, sizeof( outBuf ) );
-      size_t origin[3] = {0,0,0};
-      size_t region[3] = {count,1,1};
-      err = clEnqueueReadImage( q, outImage, CL_TRUE, origin, region, 0, 0, outBuf, 0, NULL, NULL );
-      if( err )
-      {
-        log_error( "Error: could not read output image in DetectFloatToHalfRoundingMode (%d)", err );
-        clReleaseMemObject( inBuf );
-        clReleaseMemObject( outImage );
-        clReleaseProgram( program );
-        clReleaseKernel( k );
-        return err;
-      }
-
-      // Generate our list of reference results
-      cl_ushort rte_ref[count*4];
-      cl_ushort rtz_ref[count*4];
-      for( size_t i = 0; i < 4 * count; i++ )
-      {
-        rte_ref[i] = float2half_rte( inp[i] );
-        rtz_ref[i] = float2half_rtz( inp[i] );
-      }
-
-      // Verify that we got something in either rtz or rte mode
-      if( 0 == memcmp( rte_ref, outBuf, sizeof( rte_ref )) )
-      {
-        log_info( "Autodetected float->half rounding mode to be rte\n" );
-        gFloatToHalfRoundingMode = kRoundToNearestEven;
-      }
-      else if ( 0 == memcmp( rtz_ref, outBuf, sizeof( rtz_ref )) )
-      {
-        log_info( "Autodetected float->half rounding mode to be rtz\n" );
-        gFloatToHalfRoundingMode = kRoundTowardZero;
-      }
-      else
-      {
-        log_error( "ERROR: float to half conversions proceed with invalid rounding mode!\n" );
-        log_info( "\nfor:" );
-        for( size_t i = 0; i < count; i++ )
-          log_info( " {%a, %a, %a, %a},", inp[4*i], inp[4*i+1], inp[4*i+2], inp[4*i+3] );
-        log_info( "\ngot:" );
-        for( size_t i = 0; i < count; i++ )
-          log_info( " {0x%4.4x, 0x%4.4x, 0x%4.4x, 0x%4.4x},", outBuf[4*i], outBuf[4*i+1], outBuf[4*i+2], outBuf[4*i+3] );
-        log_info( "\nrte:" );
-        for( size_t i = 0; i < count; i++ )
-          log_info( " {0x%4.4x, 0x%4.4x, 0x%4.4x, 0x%4.4x},", rte_ref[4*i], rte_ref[4*i+1], rte_ref[4*i+2], rte_ref[4*i+3] );
-        log_info( "\nrtz:" );
-        for( size_t i = 0; i < count; i++ )
-          log_info( " {0x%4.4x, 0x%4.4x, 0x%4.4x, 0x%4.4x},", rtz_ref[4*i], rtz_ref[4*i+1], rtz_ref[4*i+2], rtz_ref[4*i+3] );
-        log_info( "\n" );
-        err = -1;
-        gFloatToHalfRoundingMode = kRoundingModeCount;  // illegal value
-      }
-
-      // clean up
-      clReleaseMemObject( inBuf );
-      clReleaseMemObject( outImage );
-      clReleaseProgram( program );
-      clReleaseKernel( k );
-      return err;
-  }
-
-  // Make sure that the rounding mode was successfully detected, if we checked earlier
-  if( gFloatToHalfRoundingMode != kRoundToNearestEven && gFloatToHalfRoundingMode != kRoundTowardZero)
-    return -2;
-
-  return err;
-}
-
-cl_ushort convert_float_to_half( float f )
-{
-  switch( gFloatToHalfRoundingMode )
-  {
-  case kRoundToNearestEven:
-    return float2half_rte( f );
-  case kRoundTowardZero:
-    return float2half_rtz( f );
-  default:
-    log_error( "ERROR: Test internal error -- unhandled or unknown float->half rounding mode.\n" );
-    exit(-1);
-    return 0xffff;
-  }
-
-}
-
-cl_ushort float2half_rte( float f )
-{
-  union{ float f; cl_uint u; } u = {f};
-  cl_uint sign = (u.u >> 16) & 0x8000;
-  float x = fabsf(f);
-
-  //Nan
-  if( x != x )
-  {
-    u.u >>= (24-11);
-    u.u &= 0x7fff;
-    u.u |= 0x0200;      //silence the NaN
-    return u.u | sign;
-  }
-
-  // overflow
-  if( x >= MAKE_HEX_FLOAT(0x1.ffep15f, 0x1ffeL, 3) )
-    return 0x7c00 | sign;
-
-  // underflow
-  if( x <= MAKE_HEX_FLOAT(0x1.0p-25f, 0x1L, -25) )
-    return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-  // very small
-  if( x < MAKE_HEX_FLOAT(0x1.8p-24f, 0x18L, -28) )
-    return sign | 1;
-
-  // half denormal
-  if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-  {
-    u.f = x * MAKE_HEX_FLOAT(0x1.0p-125f, 0x1L, -125);
-    return sign | u.u;
-  }
-
-  u.f *= MAKE_HEX_FLOAT(0x1.0p13f, 0x1L, 13);
-  u.u &= 0x7f800000;
-  x += u.f;
-  u.f = x - u.f;
-  u.f *= MAKE_HEX_FLOAT(0x1.0p-112f, 0x1L, -112);
-
-  return (u.u >> (24-11)) | sign;
-}
-
-cl_ushort float2half_rtz( float f )
-{
-  union{ float f; cl_uint u; } u = {f};
-  cl_uint sign = (u.u >> 16) & 0x8000;
-  float x = fabsf(f);
-
-  //Nan
-  if( x != x )
-  {
-    u.u >>= (24-11);
-    u.u &= 0x7fff;
-    u.u |= 0x0200;      //silence the NaN
-    return u.u | sign;
-  }
-
-  // overflow
-  if( x >= MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16) )
-  {
-    if( x == INFINITY )
-      return 0x7c00 | sign;
-
-    return 0x7bff | sign;
-  }
-
-  // underflow
-  if( x < MAKE_HEX_FLOAT(0x1.0p-24f, 0x1L, -24) )
-    return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-  // half denormal
-  if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-  {
-    x *= MAKE_HEX_FLOAT(0x1.0p24f, 0x1L, 24);
-    return (cl_ushort)((int) x | sign);
-  }
-
-  u.u &= 0xFFFFE000U;
-  u.u -= 0x38000000U;
-
-  return (u.u >> (24-11)) | sign;
-}
-
-float convert_half_to_float( unsigned short halfValue )
-{
-  // We have to take care of a few special cases, but in general, we just extract
-  // the same components from the half that exist in the float and re-stuff them
-  // For a description of the actual half format, see http://en.wikipedia.org/wiki/Half_precision
-  // Note: we store these in 32-bit ints to make the bit manipulations easier later
-  int sign =     ( halfValue >> 15 ) & 0x0001;
-  int exponent = ( halfValue >> 10 ) & 0x001f;
-  int mantissa = ( halfValue )       & 0x03ff;
-
-  // Note: we use a union here to be able to access the bits of a float directly
-  union
-  {
-    unsigned int bits;
-    float floatValue;
-  } outFloat;
-
-  // Special cases first
-  if( exponent == 0 )
-  {
-    if( mantissa == 0 )
-    {
-      // If both exponent and mantissa are 0, the number is +/- 0
-      outFloat.bits  = sign << 31;
-      return outFloat.floatValue; // Already done!
-    }
-
-    // If exponent is 0, it's a denormalized number, so we renormalize it
-    // Note: this is not terribly efficient, but oh well
-    while( ( mantissa & 0x00000400 ) == 0 )
-    {
-      mantissa <<= 1;
-      exponent--;
-    }
-
-    // The first bit is implicit, so we take it off and inc the exponent accordingly
-    exponent++;
-    mantissa &= ~(0x00000400);
-  }
-  else if( exponent == 31 ) // Special-case "numbers"
-  {
-    // If the exponent is 31, it's a special case number (+/- infinity or NAN).
-    // If the mantissa is 0, it's infinity, else it's NAN, but in either case, the packing
-    // method is the same
-    outFloat.bits = ( sign << 31 ) | 0x7f800000 | ( mantissa << 13 );
-    return outFloat.floatValue;
-  }
-
-  // Plain ol' normalized number, so adjust to the ranges a 32-bit float expects and repack
-  exponent += ( 127 - 15 );
-  mantissa <<= 13;
-
-  outFloat.bits = ( sign << 31 ) | ( exponent << 23 ) | mantissa;
-  return outFloat.floatValue;
+    return _error;
 }

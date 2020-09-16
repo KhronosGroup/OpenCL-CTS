@@ -15,27 +15,30 @@
 //
 #include "imageHelpers.h"
 #include <limits.h>
+#include <assert.h>
 #if defined( __APPLE__ )
 #include <sys/mman.h>
 #endif
 #if !defined (_WIN32) && !defined(__APPLE__)
 #include <malloc.h>
 #endif
+#include <algorithm>
+#include <iterator>
+#if !defined (_WIN32)
+#include <cmath>
+#endif
 
-int gTestCount = 0;
-int gTestFailure = 0;
 RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
 
-static cl_ushort float2half_rte( float f );
-static cl_ushort float2half_rtz( float f );
-
+cl_device_type gDeviceType = CL_DEVICE_TYPE_DEFAULT;
+bool gTestRounding = false;
 double
 sRGBmap(float fc)
 {
     double c = (double)fc;
 
 #if !defined (_WIN32)
-    if (isnan(c))
+    if (std::isnan(c))
         c = 0.0;
 #else
     if (_isnan(c))
@@ -69,12 +72,12 @@ sRGBunmap(float fc)
 }
 
 
-size_t get_format_type_size( const cl_image_format *format )
+uint32_t get_format_type_size(const cl_image_format *format)
 {
     return get_channel_data_type_size( format->image_channel_data_type );
 }
 
-size_t get_channel_data_type_size( cl_channel_type channelType )
+uint32_t get_channel_data_type_size(cl_channel_type channelType)
 {
     switch( channelType )
     {
@@ -126,12 +129,12 @@ size_t get_channel_data_type_size( cl_channel_type channelType )
     }
 }
 
-size_t get_format_channel_count( const cl_image_format *format )
+uint32_t get_format_channel_count(const cl_image_format *format)
 {
     return get_channel_order_channel_count( format->image_channel_order );
 }
 
-size_t get_channel_order_channel_count( cl_channel_order order )
+uint32_t get_channel_order_channel_count(cl_channel_order order)
 {
     switch( order )
     {
@@ -278,7 +281,7 @@ int is_format_signed( const cl_image_format *format )
     }
 }
 
-size_t get_pixel_size( cl_image_format *format )
+uint32_t get_pixel_size(cl_image_format *format)
 {
   switch( format->image_channel_data_type )
   {
@@ -328,6 +331,23 @@ size_t get_pixel_size( cl_image_format *format )
     default:
       return 0;
   }
+}
+
+uint32_t next_power_of_two(uint32_t v)
+{
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+    return v;
+}
+
+uint32_t get_pixel_alignment(cl_image_format *format)
+{
+    return next_power_of_two(get_pixel_size(format));
 }
 
 int get_8_bit_image_format( cl_context context, cl_mem_object_type objType, cl_mem_flags flags, size_t channelCount, cl_image_format *outFormat )
@@ -682,6 +702,16 @@ void get_max_sizes(size_t *numberOfSizes, const int maxNumberOfSizes,
       if(x0_dim == 0 && x0 < 16)
         x0 = 16;
       double x1 = fmin(fmin(A/M/x0,maximum_sizes[x1_dim]),other_sizes[(other_size++)%num_other_sizes]);
+
+      // Valid image sizes cannot be below 1. Due to the workaround for the xo_dim where x0 is overidden to 16
+      // there might not be enough space left for x1 dimension. This could be a fractional 0.x size that when cast to
+      // integer would result in a value 0. In these cases we clamp the size to a minimum of 1.
+      if ( x1 < 1 )
+        x1 = 1;
+
+      // M and x0 cannot be '0' as they derive from clDeviceInfo calls
+      assert(x0 > 0 && M > 0);
+
       // Store the size
       sizes[(*numberOfSizes)][fixed_dim] = (size_t)M;
       sizes[(*numberOfSizes)][x0_dim]    = (size_t)x0;
@@ -775,7 +805,6 @@ float get_max_relative_error( cl_image_format *format, image_sampler_data *sampl
     {
         if( sampler->filter_mode != CL_FILTER_NEAREST )
         {
-            extern cl_device_type   gDeviceType;
             // The maximum
             if( gDeviceType == CL_DEVICE_TYPE_GPU )
                 maxError += MAKE_HEX_FLOAT(0x1.0p-4f, 0x1L, -4);              // Some GPUs ain't so accurate
@@ -884,8 +913,7 @@ int get_format_min_int( cl_image_format *format )
         case CL_UNORM_INT_101010:
             return 0;
 
-        case CL_HALF_FLOAT:
-            return -1<<10;
+        case CL_HALF_FLOAT: return -(1 << 10);
 
 #ifdef CL_SFIXED14_APPLE
         case CL_SFIXED14_APPLE:
@@ -897,244 +925,17 @@ int get_format_min_int( cl_image_format *format )
     }
 }
 
-float convert_half_to_float( unsigned short halfValue )
-{
-    // We have to take care of a few special cases, but in general, we just extract
-    // the same components from the half that exist in the float and re-stuff them
-    // For a description of the actual half format, see http://en.wikipedia.org/wiki/Half_precision
-    // Note: we store these in 32-bit ints to make the bit manipulations easier later
-    int sign =     ( halfValue >> 15 ) & 0x0001;
-    int exponent = ( halfValue >> 10 ) & 0x001f;
-    int mantissa = ( halfValue )       & 0x03ff;
-
-    // Note: we use a union here to be able to access the bits of a float directly
-    union
-    {
-        unsigned int bits;
-        float floatValue;
-    } outFloat;
-
-    // Special cases first
-    if( exponent == 0 )
-    {
-        if( mantissa == 0 )
-        {
-            // If both exponent and mantissa are 0, the number is +/- 0
-            outFloat.bits  = sign << 31;
-            return outFloat.floatValue; // Already done!
-        }
-
-        // If exponent is 0, it's a denormalized number, so we renormalize it
-        // Note: this is not terribly efficient, but oh well
-        while( ( mantissa & 0x00000400 ) == 0 )
-        {
-            mantissa <<= 1;
-            exponent--;
-        }
-
-        // The first bit is implicit, so we take it off and inc the exponent accordingly
-        exponent++;
-        mantissa &= ~(0x00000400);
-    }
-    else if( exponent == 31 ) // Special-case "numbers"
-    {
-        // If the exponent is 31, it's a special case number (+/- infinity or NAN).
-        // If the mantissa is 0, it's infinity, else it's NAN, but in either case, the packing
-        // method is the same
-        outFloat.bits = ( sign << 31 ) | 0x7f800000 | ( mantissa << 13 );
-        return outFloat.floatValue;
-    }
-
-    // Plain ol' normalized number, so adjust to the ranges a 32-bit float expects and repack
-    exponent += ( 127 - 15 );
-    mantissa <<= 13;
-
-    outFloat.bits = ( sign << 31 ) | ( exponent << 23 ) | mantissa;
-    return outFloat.floatValue;
-}
-
-
-
 cl_ushort convert_float_to_half( float f )
 {
     switch( gFloatToHalfRoundingMode )
     {
-        case kRoundToNearestEven:
-            return float2half_rte( f );
-        case kRoundTowardZero:
-            return float2half_rtz( f );
+        case kRoundToNearestEven: return cl_half_from_float(f, CL_HALF_RTE);
+        case kRoundTowardZero: return cl_half_from_float(f, CL_HALF_RTZ);
         default:
             log_error( "ERROR: Test internal error -- unhandled or unknown float->half rounding mode.\n" );
             exit(-1);
             return 0xffff;
     }
-
-}
-
-cl_ushort float2half_rte( float f )
-    {
-    union{ float f; cl_uint u; } u = {f};
-    cl_uint sign = (u.u >> 16) & 0x8000;
-    float x = fabsf(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (24-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-                }
-
-    // overflow
-    if( x >= MAKE_HEX_FLOAT(0x1.ffep15f, 0x1ffeL, 3) )
-        return 0x7c00 | sign;
-
-    // underflow
-    if( x <= MAKE_HEX_FLOAT(0x1.0p-25f, 0x1L, -25) )
-        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-    // very small
-    if( x < MAKE_HEX_FLOAT(0x1.8p-24f, 0x18L, -28) )
-        return sign | 1;
-
-    // half denormal
-    if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-    {
-        u.f = x * MAKE_HEX_FLOAT(0x1.0p-125f, 0x1L, -125);
-        return sign | u.u;
-        }
-
-    u.f *= MAKE_HEX_FLOAT(0x1.0p13f, 0x1L, 13);
-    u.u &= 0x7f800000;
-    x += u.f;
-    u.f = x - u.f;
-    u.f *= MAKE_HEX_FLOAT(0x1.0p-112f, 0x1L, -112);
-
-    return (u.u >> (24-11)) | sign;
-    }
-
-cl_ushort float2half_rtz( float f )
-    {
-    union{ float f; cl_uint u; } u = {f};
-    cl_uint sign = (u.u >> 16) & 0x8000;
-    float x = fabsf(f);
-
-    //Nan
-    if( x != x )
-        {
-        u.u >>= (24-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-        }
-
-    // overflow
-    if( x >= MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16) )
-        {
-        if( x == INFINITY )
-            return 0x7c00 | sign;
-
-        return 0x7bff | sign;
-        }
-
-    // underflow
-    if( x < MAKE_HEX_FLOAT(0x1.0p-24f, 0x1L, -24) )
-        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-    // half denormal
-    if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-    {
-        x *= MAKE_HEX_FLOAT(0x1.0p24f, 0x1L, 24);
-        return (cl_ushort)((int) x | sign);
-    }
-
-    u.u &= 0xFFFFE000U;
-    u.u -= 0x38000000U;
-
-    return (u.u >> (24-11)) | sign;
-}
-
-class TEST
-{
-public:
-    TEST();
-};
-
-static TEST t;
-void  __vstore_half_rte(float f, size_t index, uint16_t *p)
-{
-    union{ unsigned int u; float f;} u;
-
-    u.f = f;
-    unsigned short r = (u.u >> 16) & 0x8000;
-    u.u &= 0x7fffffff;
-    if( u.u >= 0x33000000U )
-    {
-        if( u.u >= 0x47800000 )
-        {
-            if( u.u <= 0x7f800000 )
-                r |= 0x7c00;
-            else
-            {
-                r |= 0x7e00 | ( (u.u >> 13) & 0x3ff );
-            }
-        }
-        else
-        {
-            float x = u.f;
-            if( u.u < 0x38800000 )
-                u.u = 0x3f000000;
-            else
-                u.u += 0x06800000;
-            u.u &= 0x7f800000U;
-            x += u.f;
-            x -= u.f;
-            u.f = x * MAKE_HEX_FLOAT(0x1.0p-112f, 0x1L, -112);
-            u.u >>= 13;
-            r |= (unsigned short) u.u;
-        }
-    }
-
-    ((unsigned short*)p)[index] = r;
-}
-
-TEST::TEST()
-{
-    return;
-    union
-    {
-        float f;
-        uint32_t i;
-    } test;
-    uint16_t control, myval;
-
-    log_info(" &&&&&&&&&&&&&&&&&&&&&&&&&&&& TESTING HALFS &&&&&&&&&&&&&&&&&&&&\n" );
-    test.i = 0;
-    do
-    {
-        if( ( test.i & 0xffffff ) == 0 )
-        {
-            if( ( test.i & 0xfffffff ) == 0 )
-                log_info( "*" );
-            else
-                log_info( "." );
-            fflush(stdout);
-        }
-        __vstore_half_rte( test.f, 0, &control );
-        myval = convert_float_to_half( test.f );
-        if( myval != control )
-        {
-            log_info( "\n******** ERROR: MyVal %04x control %04x source %12.24f\n", myval, control, test.f );
-            log_info( "         source bits: %08x   %a\n", test.i, test.f );
-            float t, c;
-            c = convert_half_to_float( control );
-            t = convert_half_to_float( myval );
-            log_info( "         converted control: %12.24f myval: %12.24f\n", c, t );
-        }
-        test.i++;
-    } while( test.i != 0 );
-    log_info("\n &&&&&&&&&&&&&&&&&&&&&&&&&&&& TESTING HALFS &&&&&&&&&&&&&&&&&&&&\n" );
 
 }
 
@@ -1187,7 +988,6 @@ cl_ulong get_image_size_mb( image_descriptor const *imageInfo )
 }
 
 
-extern bool gTestRounding;
 uint64_t gRoundingStartValue = 0;
 
 
@@ -1236,13 +1036,8 @@ char * generate_random_image_data( image_descriptor *imageInfo, BufferOwningPtr<
     }
 #else
     P.reset( NULL ); // Free already allocated memory first, then try to allocate new block.
-#if defined (_WIN32) && defined(_MSC_VER)
-    char *data = (char *)_aligned_malloc(allocSize, get_pixel_size(imageInfo->format));
-#elif defined(__MINGW32__)
-    char *data = (char *)__mingw_aligned_malloc(allocSize, get_pixel_size(imageInfo->format));
-#else
-    char *data = (char *)memalign(get_pixel_size(imageInfo->format), allocSize);
-#endif
+    char *data =
+        (char *)align_malloc(allocSize, get_pixel_alignment(imageInfo->format));
     P.reset(data,NULL,0,allocSize, true);
 #endif
 
@@ -1490,7 +1285,7 @@ void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
         {
             cl_ushort *dPtr = (cl_ushort *)ptr;
             for( i = 0; i < channelCount; i++ )
-                tempData[ i ] = convert_half_to_float( dPtr[ i ] );
+                tempData[i] = cl_half_to_float(dPtr[i]);
             break;
         }
 
@@ -1810,7 +1605,7 @@ static inline void  check_for_denorms(float a[4], int *containsDenorms )
     {
         for( int i = 0; i < 4; i++ )
         {
-            if( fabsf(a[i]) < FLT_MIN )
+            if( IsFloatSubnormal( a[i] ) )
                 a[i] = copysignf( 0.0f, a[i] );
         }
     }
@@ -1818,7 +1613,7 @@ static inline void  check_for_denorms(float a[4], int *containsDenorms )
     {
         for( int i = 0; i < 4; i++ )
         {
-            if( fabs(a[i]) < FLT_MIN )
+            if( IsFloatSubnormal( a[i] ) )
             {
                 *containsDenorms = 1;
                 break;
@@ -2610,11 +2405,11 @@ void pack_image_pixel( float *srcVector, const cl_image_format *imageFormat, voi
             {
                 case kRoundToNearestEven:
             for( unsigned int i = 0; i < channelCount; i++ )
-                        ptr[ i ] = float2half_rte( srcVector[ i ] );
+                ptr[i] = cl_half_from_float(srcVector[i], CL_HALF_RTE);
             break;
                 case kRoundTowardZero:
                     for( unsigned int i = 0; i < channelCount; i++ )
-                        ptr[ i ] = float2half_rtz( srcVector[ i ] );
+                        ptr[i] = cl_half_from_float(srcVector[i], CL_HALF_RTZ);
                     break;
                 default:
                     log_error( "ERROR: Test internal error -- unhandled or unknown float->half rounding mode.\n" );
@@ -3063,8 +2858,8 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
         cl_ushort rtz_ref[count*4];
         for( size_t i = 0; i < 4 * count; i++ )
         {
-            rte_ref[i] = float2half_rte( inp[i] );
-            rtz_ref[i] = float2half_rtz( inp[i] );
+            rte_ref[i] = cl_half_from_float(inp[i], CL_HALF_RTE);
+            rtz_ref[i] = cl_half_from_float(inp[i], CL_HALF_RTZ);
         }
 
     // Verify that we got something in either rtz or rte mode
@@ -3165,15 +2960,9 @@ char *create_random_image_data( ExplicitType dataType, image_descriptor *imageIn
       P.reset(data);
     }
 #else
-#if defined (_WIN32) && defined(_MSC_VER)
-    char *data = (char *)_aligned_malloc(allocSize, get_pixel_size(imageInfo->format));
-#elif defined(__MINGW32__)
-        char *data = (char *)__mingw_aligned_malloc(allocSize, get_pixel_size(imageInfo->format));
-#else
-    char *data = (char *)memalign(get_pixel_size(imageInfo->format), allocSize);
-#endif
-
-    P.reset(data,NULL,0,allocSize,true);
+  char *data =
+      (char *)align_malloc(allocSize, get_pixel_alignment(imageInfo->format));
+  P.reset(data, NULL, 0, allocSize, true);
 #endif
 
     if (data == NULL) {
@@ -3289,6 +3078,7 @@ char *create_random_image_data( ExplicitType dataType, image_descriptor *imageIn
                     }
                     break;
             }
+            break;
         }
 
         case kInt:
@@ -3672,59 +3462,170 @@ bool find_format( cl_image_format *formatList, unsigned int numFormats, cl_image
     return false;
 }
 
-bool check_minimum_supported( cl_image_format *formatList, unsigned int numFormats, cl_mem_flags flags )
+void build_required_image_formats(cl_mem_flags flags,
+                                  cl_mem_object_type image_type,
+                                  cl_device_id device,
+                                  std::vector<cl_image_format>& formatsToSupport)
 {
-    cl_image_format readFormatsToSupport[] = { { CL_RGBA, CL_UNORM_INT8 },
-        { CL_RGBA, CL_UNORM_INT16 },
-        { CL_RGBA, CL_SIGNED_INT8 },
-        { CL_RGBA, CL_SIGNED_INT16 },
-        { CL_RGBA, CL_SIGNED_INT32 },
-        { CL_RGBA, CL_UNSIGNED_INT8 },
-        { CL_RGBA, CL_UNSIGNED_INT16 },
-        { CL_RGBA, CL_UNSIGNED_INT32 },
-        { CL_RGBA, CL_HALF_FLOAT },
-        { CL_RGBA, CL_FLOAT },
-        { CL_BGRA, CL_UNORM_INT8} };
+	Version version = get_device_cl_version(device);
 
-    cl_image_format writeFormatsToSupport[] = { { CL_RGBA, CL_UNORM_INT8 },
-        { CL_RGBA, CL_UNORM_INT16 },
-        { CL_RGBA, CL_SIGNED_INT8 },
-        { CL_RGBA, CL_SIGNED_INT16 },
-        { CL_RGBA, CL_SIGNED_INT32 },
-        { CL_RGBA, CL_UNSIGNED_INT8 },
-        { CL_RGBA, CL_UNSIGNED_INT16 },
-        { CL_RGBA, CL_UNSIGNED_INT32 },
-        { CL_RGBA, CL_HALF_FLOAT },
-        { CL_RGBA, CL_FLOAT },
-        { CL_BGRA, CL_UNORM_INT8} };
+	formatsToSupport.clear();
 
-    cl_image_format *formatsToTest;
-    unsigned int testCount;
-    bool passed = true;
+	// Required embedded formats.
+	static std::vector<cl_image_format> embeddedProfReadOrWriteFormats
+	{
+		{ CL_RGBA, CL_UNORM_INT8 },
+		{ CL_RGBA, CL_UNORM_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT8 },
+		{ CL_RGBA, CL_SIGNED_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT32 },
+		{ CL_RGBA, CL_UNSIGNED_INT8 },
+		{ CL_RGBA, CL_UNSIGNED_INT16 },
+		{ CL_RGBA, CL_UNSIGNED_INT32 },
+		{ CL_RGBA, CL_HALF_FLOAT },
+		{ CL_RGBA, CL_FLOAT },
+	};
 
-    if( flags == CL_MEM_READ_ONLY )
-    {
-        formatsToTest = readFormatsToSupport;
-        testCount = sizeof( readFormatsToSupport ) / sizeof( readFormatsToSupport[ 0 ] );
-    }
-    else
-    {
-        formatsToTest = writeFormatsToSupport;
-        testCount = sizeof( writeFormatsToSupport ) / sizeof( writeFormatsToSupport[ 0 ] );
-    }
+	/*
+		Required full profile formats.
+		This array does not contain any full profile
+		formats that have restrictions on when they
+		are required.
+	*/
+	static std::vector<cl_image_format> fullProfReadOrWriteFormats
+	{
+		{ CL_RGBA, CL_UNORM_INT8 },
+		{ CL_RGBA, CL_UNORM_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT8 },
+		{ CL_RGBA, CL_SIGNED_INT16 },
+		{ CL_RGBA, CL_SIGNED_INT32 },
+		{ CL_RGBA, CL_UNSIGNED_INT8 },
+		{ CL_RGBA, CL_UNSIGNED_INT16 },
+		{ CL_RGBA, CL_UNSIGNED_INT32 },
+		{ CL_RGBA, CL_HALF_FLOAT },
+		{ CL_RGBA, CL_FLOAT },
+		{ CL_BGRA, CL_UNORM_INT8 },
+	};
 
-    for( unsigned int i = 0; i < testCount; i++ )
-    {
-        if( !find_format( formatList, numFormats, &formatsToTest[ i ] ) )
-        {
-            log_error( "ERROR: Format required by OpenCL 1.0 is not supported: " );
-            print_header( &formatsToTest[ i ], true );
-            gTestCount++;
-            gTestFailure++;
-            passed = false;
-        }
-    }
-    return passed;
+	/*
+		Required full profile formats specifically for 2.x.
+		This array does not contain any full profile
+		formats that have restrictions on when they
+		are required.
+	*/
+	static std::vector<cl_image_format> fullProf2XReadOrWriteFormats
+	{
+		{ CL_R, CL_UNORM_INT8 },
+		{ CL_R, CL_UNORM_INT16 },
+		{ CL_R, CL_SNORM_INT8 },
+		{ CL_R, CL_SNORM_INT16 },
+		{ CL_R, CL_SIGNED_INT8 },
+		{ CL_R, CL_SIGNED_INT16 },
+		{ CL_R, CL_SIGNED_INT32 },
+		{ CL_R, CL_UNSIGNED_INT8 },
+		{ CL_R, CL_UNSIGNED_INT16 },
+		{ CL_R, CL_UNSIGNED_INT32 },
+		{ CL_R, CL_HALF_FLOAT },
+		{ CL_R, CL_FLOAT },
+		{ CL_RG, CL_UNORM_INT8 },
+		{ CL_RG, CL_UNORM_INT16 },
+		{ CL_RG, CL_SNORM_INT8 },
+		{ CL_RG, CL_SNORM_INT16 },
+		{ CL_RG, CL_SIGNED_INT8 },
+		{ CL_RG, CL_SIGNED_INT16 },
+		{ CL_RG, CL_SIGNED_INT32 },
+		{ CL_RG, CL_UNSIGNED_INT8 },
+		{ CL_RG, CL_UNSIGNED_INT16 },
+		{ CL_RG, CL_UNSIGNED_INT32 },
+		{ CL_RG, CL_HALF_FLOAT },
+		{ CL_RG, CL_FLOAT },
+		{ CL_RGBA, CL_SNORM_INT8 },
+		{ CL_RGBA, CL_SNORM_INT16 },
+	};
+
+	/*
+		Required full profile formats for CL_DEPTH
+		(specifically 2.x).
+		There are cases whereby the format isn't required.
+	*/
+	static std::vector<cl_image_format> fullProf2XReadOrWriteDepthFormats
+	{
+		{ CL_DEPTH, CL_UNORM_INT16 },
+		{ CL_DEPTH, CL_FLOAT },
+	};
+
+	/*
+		Required full profile formats for CL_sRGB
+		(specifically 2.x).
+		There are cases whereby the format isn't required.
+	*/
+	static std::vector<cl_image_format> fullProf2XSRGBFormats
+	{
+		{ CL_sRGBA, CL_UNORM_INT8 },
+	};
+
+	// Embedded profile
+	if (gIsEmbedded)
+	{
+		copy(embeddedProfReadOrWriteFormats.begin(),
+		     embeddedProfReadOrWriteFormats.end(),
+		     back_inserter(formatsToSupport));
+	}
+	// Full profile
+	else
+	{
+		copy(fullProfReadOrWriteFormats.begin(),
+		     fullProfReadOrWriteFormats.end(),
+		     back_inserter(formatsToSupport));
+	}
+
+	// Full profile, OpenCL 2.0, 2.1, 2.2
+	if (!gIsEmbedded && version >= Version(2, 0) && version <= Version(2, 2))
+	{
+		copy(fullProf2XReadOrWriteFormats.begin(),
+		     fullProf2XReadOrWriteFormats.end(),
+		     back_inserter(formatsToSupport));
+
+		// Depth images are only required for 2DArray and 2D images
+		if (image_type == CL_MEM_OBJECT_IMAGE2D_ARRAY || image_type == CL_MEM_OBJECT_IMAGE2D)
+		{
+			copy(fullProf2XReadOrWriteDepthFormats.begin(),
+			     fullProf2XReadOrWriteDepthFormats.end(),
+			     back_inserter(formatsToSupport));
+		}
+
+		// sRGB is not required for 1DImage Buffers
+		if (image_type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
+		{
+			// sRGB is only required for reading
+			if (flags == CL_MEM_READ_ONLY)
+			{
+				copy(fullProf2XSRGBFormats.begin(),
+				     fullProf2XSRGBFormats.end(),
+				     back_inserter(formatsToSupport));
+			}
+		}
+	}
+}
+
+bool is_image_format_required(cl_image_format format,
+                              cl_mem_flags flags,
+                              cl_mem_object_type image_type,
+                              cl_device_id device)
+{
+	std::vector<cl_image_format> formatsToSupport;
+	build_required_image_formats(flags, image_type, device, formatsToSupport);
+
+	for (auto &formatItr: formatsToSupport)
+	{
+		if (formatItr.image_channel_order == format.image_channel_order &&
+		    formatItr.image_channel_data_type == format.image_channel_data_type)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 cl_uint compute_max_mip_levels( size_t width, size_t height, size_t depth)

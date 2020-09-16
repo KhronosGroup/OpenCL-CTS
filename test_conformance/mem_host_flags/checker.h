@@ -16,7 +16,7 @@
 #ifndef test_conformance_checkers_h
 #define test_conformance_checkers_h
 
-#include "../../test_common/harness/compat.h"
+#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -132,6 +132,7 @@ cBuffer_checker<T>::~cBuffer_checker()
 {
 }
 
+
 template < class T >
 cl_int cBuffer_checker<T>::SetupBuffer()
 {
@@ -183,28 +184,18 @@ cl_int cBuffer_checker<T>::SetupASSubBuffer(cl_mem_flags parent_buffer_flag)
   this->m_sub_buffer_region.origin = this->buffer_origin_bytes[0]; // in bytes
   this->m_sub_buffer_region.size = this->region_bytes[0];
 
-  cl_event event;
   cl_int err = CL_SUCCESS;
-  err = clEnqueueReadBufferRect(this->m_queue, m_buffer_parent, CL_TRUE,
-                                this->buffer_origin_bytes,
-                                this->host_origin_bytes,
-                                this->region_bytes,
-                                this->buffer_row_pitch_bytes,
-                                this->buffer_slice_pitch_bytes,
-                                this->host_row_pitch_bytes,
-                                this->host_slice_pitch_bytes,
-                                this->host_m_1.pData,
-                                0, NULL, &event); // update the mem_1
+  err = clEnqueueReadBufferRect(
+      this->m_queue, m_buffer_parent, CL_TRUE, this->buffer_origin_bytes,
+      this->host_origin_bytes, this->region_bytes, this->buffer_row_pitch_bytes,
+      this->buffer_slice_pitch_bytes, this->host_row_pitch_bytes,
+      this->host_slice_pitch_bytes, this->host_m_1.pData, 0, NULL,
+      NULL); // update the mem_1
 
   if (err == CL_SUCCESS && (parent_buffer_flag & (CL_MEM_HOST_WRITE_ONLY | CL_MEM_HOST_NO_ACCESS))) {
     log_error("Calling clEnqueueReadBufferRect on a memory object created with the CL_MEM_HOST_WRITE_ONLY flag or the CL_MEM_HOST_NO_ACCESS flag should not return CL_SUCCESS\n");
     err = FAILURE;
     return err;
-
-    if (this->m_blocking) {
-      err = clWaitForEvents(1, &event);
-      test_error(err, "clWaitForEvents error");
-    }
   } else {
     err = CL_SUCCESS;
   }

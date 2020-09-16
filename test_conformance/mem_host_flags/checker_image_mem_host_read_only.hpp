@@ -206,6 +206,9 @@ cl_int cImage_check_mem_host_read_only< T >::verify_RW_Image()
     test_error(err, "clWaitForEvents error");
   }
 
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
+
   err = this->verify_data(this->host_m_2.pData);
   test_error(err, "verify_data error");
 
@@ -245,6 +248,9 @@ cl_int cImage_check_mem_host_read_only< T >::verify_RW_Image_Mapping()
     test_error(err, "clWaitForEvents error");
   }
 
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
+
   err= this->verify_mapping_ptr(dataPtr);
   test_error(err, "clEnqueueMapImage error");
 
@@ -256,6 +262,9 @@ cl_int cImage_check_mem_host_read_only< T >::verify_RW_Image_Mapping()
 
   err = clWaitForEvents(1, &event);
   test_error(err, "clWaitForEvents error");
+
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
 
   dataPtr = (T*) clEnqueueMapImage(this->m_queue, this->m_Image, this->m_blocking,
                                    CL_MAP_WRITE,

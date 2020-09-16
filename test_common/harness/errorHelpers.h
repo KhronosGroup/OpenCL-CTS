@@ -16,66 +16,51 @@
 #ifndef _errorHelpers_h
 #define _errorHelpers_h
 
+#include <sstream>
+
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
 #else
 #include <CL/opencl.h>
 #endif
 #include <stdlib.h>
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define LOWER_IS_BETTER     0
 #define HIGHER_IS_BETTER    1
 
-// If USE_ATF is defined, all log_error and log_info calls can be routed to test library
-// functions as described below. This is helpful for integration into an automated testing
-// system.
-#if USE_ATF
-// export BUILD_WITH_ATF=1
-    #include <ATF/ATF.h>
-    #define test_start() ATFTestStart()
-    #define log_info ATFLogInfo
-    #define log_error ATFLogError
-    #define log_missing_feature ATFLogMissingFeature
-    #define log_perf(_number, _higherBetter, _numType, _format, ...) ATFLogPerformanceNumber(_number, _higherBetter, _numType, _format, ##__VA_ARGS__)
-    #define test_finish() ATFTestFinish()
-    #define vlog_perf(_number, _higherBetter, _numType, _format, ...) ATFLogPerformanceNumber(_number, _higherBetter, _numType, _format,##__VA_ARGS__)
-    #define vlog ATFLogInfo
-    #define vlog_error ATFLogError
-#else
-    #include <stdio.h>
-    #define test_start()
-    #define log_info printf
-    #define log_error printf
-    #define log_missing_feature printf
-    #define log_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,        \
-                        _higherBetter?"higher is better":"lower is better", _number )
-    #define test_finish()
-    #define vlog_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,    \
-                        _higherBetter?"higher is better":"lower is better" , _number)
-    #ifdef _WIN32
-        #ifdef __MINGW32__
-            // Use __mingw_printf since it supports "%a" format specifier
-            #define vlog __mingw_printf
-            #define vlog_error __mingw_printf
-        #else
-            // Use home-baked function that treats "%a" as "%f"
-        static int vlog_win32(const char *format, ...);
-        #define vlog vlog_win32
-        #define vlog_error vlog_win32
-        #endif
+#include <stdio.h>
+#define test_start()
+#define log_info printf
+#define log_error printf
+#define log_missing_feature printf
+#define log_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,        \
+                    _higherBetter?"higher is better":"lower is better", _number )
+#define vlog_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,    \
+                    _higherBetter?"higher is better":"lower is better" , _number)
+#ifdef _WIN32
+    #ifdef __MINGW32__
+        // Use __mingw_printf since it supports "%a" format specifier
+        #define vlog __mingw_printf
+        #define vlog_error __mingw_printf
     #else
-        #define vlog_error printf
-        #define vlog printf
+        // Use home-baked function that treats "%a" as "%f"
+    static int vlog_win32(const char *format, ...);
+    #define vlog vlog_win32
+    #define vlog_error vlog_win32
     #endif
+#else
+    #define vlog_error printf
+    #define vlog printf
 #endif
 
 #define ct_assert(b)          ct_assert_i(b, __LINE__)
 #define ct_assert_i(b, line)  ct_assert_ii(b, line)
 #define ct_assert_ii(b, line) int _compile_time_assertion_on_line_##line[b ? 1 : -1];
 
+#define test_fail(msg, ...)                                                    \
+    {                                                                          \
+        log_error(msg, ##__VA_ARGS__);                                         \
+        return TEST_FAIL;                                                      \
+    }
 #define test_error(errCode,msg)    test_error_ret(errCode,msg,errCode)
 #define test_error_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { print_error( errCode, msg ); return retValue ; } }
 #define print_error(errCode,msg)    log_error( "ERROR: %s! (%s from %s:%d)\n", msg, IGetErrorString( errCode ), __FILE__, __LINE__ );
@@ -87,7 +72,7 @@ extern "C" {
 
 #define test_missing_support_offline_cmpiler(errCode, msg) test_missing_support_offline_cmpiler_ret(errCode, msg, errCode)
 // this macro should always return CL_SUCCESS, but print the skip message on test not supported with offline compiler
-#define test_missing_support_offline_cmpiler_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { log_info( "INFO: Subtest %s tests is not supported in offline compiler execution path! (from %s:%d)\n", msg, __FILE__, __LINE__ ); return CL_SUCCESS ; } }
+#define test_missing_support_offline_cmpiler_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { log_info( "INFO: Subtest %s tests is not supported in offline compiler execution path! (from %s:%d)\n", msg, __FILE__, __LINE__ ); return TEST_SKIP ; } }
 
 // expected error code vs. what we got
 #define test_failure_error(errCode, expectedErrCode, msg) test_failure_error_ret(errCode, expectedErrCode, msg, errCode != expectedErrCode)
@@ -96,6 +81,34 @@ extern "C" {
 #define test_failure_warning(errCode, expectedErrCode, msg) test_failure_warning_ret(errCode, expectedErrCode, msg, errCode != expectedErrCode)
 #define test_failure_warning_ret(errCode, expectedErrCode, msg, retValue) { if( errCode != expectedErrCode ) { print_failure_warning( errCode, expectedErrCode, msg ); warnings++ ; } }
 #define print_failure_warning(errCode, expectedErrCode, msg) log_error( "WARNING: %s! (Got %s, expected %s from %s:%d)\n", msg, IGetErrorString( errCode ), IGetErrorString( expectedErrCode ), __FILE__, __LINE__ );
+
+// generate an error when an assertion is false (not error code related)
+#define test_assert_error(condition, msg)                                      \
+    test_assert_error_ret(condition, msg, TEST_FAIL)
+#define test_assert_error_ret(condition, msg, retValue)                        \
+    {                                                                          \
+        if (!(condition))                                                      \
+        {                                                                      \
+            print_assertion_error(condition, msg);                             \
+            return retValue;                                                   \
+        }                                                                      \
+    }
+#define print_assertion_error(condition, msg)                                  \
+    log_error("ERROR: %s! (!(%s) from %s:%d)\n", msg, #condition, __FILE__,    \
+              __LINE__);
+
+#define ASSERT_SUCCESS(expr, msg)                                                                  \
+    do                                                                                             \
+    {                                                                                              \
+        cl_int _temp_retval = (expr);                                                              \
+        if (_temp_retval != CL_SUCCESS)                                                            \
+        {                                                                                          \
+            std::stringstream ss;                                                                  \
+            ss << "ERROR: " << msg << "=" << IGetErrorString(_temp_retval)                         \
+               << " at " << __FILE__ << ":" << __LINE__ << "\n";                                   \
+            throw std::runtime_error(ss.str());                                                    \
+        }                                                                                          \
+    } while (0)
 
 extern const char    *IGetErrorString( int clErrorCode );
 
@@ -108,10 +121,9 @@ extern int IsChannelTypeSupported( cl_channel_type type );
 extern const char *GetChannelOrderName( cl_channel_order order );
 extern int IsChannelOrderSupported( cl_channel_order order );
 extern const char *GetAddressModeName( cl_addressing_mode mode );
+extern const char *GetQueuePropertyName(cl_command_queue_properties properties);
 
 extern const char *GetDeviceTypeName( cl_device_type type );
-int check_opencl_version_with_testname(const char *subtestname, cl_device_id device);
-int check_opencl_version(cl_device_id device, cl_uint requestedMajorVersion, cl_uint requestedMinorVersion);
 int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device);
 
 // NON-REENTRANT UNLESS YOU PROVIDE A BUFFER PTR (pass null to use static storage, but it's not reentrant then!)
@@ -154,10 +166,6 @@ static int vlog_win32(const char *format, ...)
 }
 #endif
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // _errorHelpers_h
 
