@@ -23,6 +23,7 @@ set(${MODULE_NAME}_SOURCES
          test_kernel_arg_info_compatibility.cpp
          test_null_buffer_arg.cpp
          test_mem_object_info.cpp
+         test_min_image_formats.cpp
          test_queue.cpp
          test_queue_hint.cpp
          test_queue_properties.cpp

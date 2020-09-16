@@ -3462,150 +3462,199 @@ bool find_format( cl_image_format *formatList, unsigned int numFormats, cl_image
     return false;
 }
 
-void build_required_image_formats(cl_mem_flags flags,
-                                  cl_mem_object_type image_type,
-                                  cl_device_id device,
-                                  std::vector<cl_image_format>& formatsToSupport)
+void build_required_image_formats(
+    cl_mem_flags flags, cl_mem_object_type image_type, cl_device_id device,
+    std::vector<cl_image_format> &formatsToSupport)
 {
-	Version version = get_device_cl_version(device);
+    formatsToSupport.clear();
 
-	formatsToSupport.clear();
+    // Minimum list of supported image formats for reading or writing (embedded
+    // profile)
+    static std::vector<cl_image_format> embeddedProfile_readOrWrite{
+        // clang-format off
+        { CL_RGBA, CL_UNORM_INT8 },
+        { CL_RGBA, CL_UNORM_INT16 },
+        { CL_RGBA, CL_SIGNED_INT8 },
+        { CL_RGBA, CL_SIGNED_INT16 },
+        { CL_RGBA, CL_SIGNED_INT32 },
+        { CL_RGBA, CL_UNSIGNED_INT8 },
+        { CL_RGBA, CL_UNSIGNED_INT16 },
+        { CL_RGBA, CL_UNSIGNED_INT32 },
+        { CL_RGBA, CL_HALF_FLOAT },
+        { CL_RGBA, CL_FLOAT },
+        // clang-format on
+    };
 
-	// Required embedded formats.
-	static std::vector<cl_image_format> embeddedProfReadOrWriteFormats
-	{
-		{ CL_RGBA, CL_UNORM_INT8 },
-		{ CL_RGBA, CL_UNORM_INT16 },
-		{ CL_RGBA, CL_SIGNED_INT8 },
-		{ CL_RGBA, CL_SIGNED_INT16 },
-		{ CL_RGBA, CL_SIGNED_INT32 },
-		{ CL_RGBA, CL_UNSIGNED_INT8 },
-		{ CL_RGBA, CL_UNSIGNED_INT16 },
-		{ CL_RGBA, CL_UNSIGNED_INT32 },
-		{ CL_RGBA, CL_HALF_FLOAT },
-		{ CL_RGBA, CL_FLOAT },
-	};
+    // Minimum list of required image formats for reading or writing
+    // num_channels, for all image types.
+    static std::vector<cl_image_format> fullProfile_readOrWrite{
+        // clang-format off
+        { CL_RGBA, CL_UNORM_INT8 },
+        { CL_RGBA, CL_UNORM_INT16 },
+        { CL_RGBA, CL_SIGNED_INT8 },
+        { CL_RGBA, CL_SIGNED_INT16 },
+        { CL_RGBA, CL_SIGNED_INT32 },
+        { CL_RGBA, CL_UNSIGNED_INT8 },
+        { CL_RGBA, CL_UNSIGNED_INT16 },
+        { CL_RGBA, CL_UNSIGNED_INT32 },
+        { CL_RGBA, CL_HALF_FLOAT },
+        { CL_RGBA, CL_FLOAT },
+        { CL_BGRA, CL_UNORM_INT8 },
+        // clang-format on
+    };
 
-	/*
-		Required full profile formats.
-		This array does not contain any full profile
-		formats that have restrictions on when they
-		are required.
-	*/
-	static std::vector<cl_image_format> fullProfReadOrWriteFormats
-	{
-		{ CL_RGBA, CL_UNORM_INT8 },
-		{ CL_RGBA, CL_UNORM_INT16 },
-		{ CL_RGBA, CL_SIGNED_INT8 },
-		{ CL_RGBA, CL_SIGNED_INT16 },
-		{ CL_RGBA, CL_SIGNED_INT32 },
-		{ CL_RGBA, CL_UNSIGNED_INT8 },
-		{ CL_RGBA, CL_UNSIGNED_INT16 },
-		{ CL_RGBA, CL_UNSIGNED_INT32 },
-		{ CL_RGBA, CL_HALF_FLOAT },
-		{ CL_RGBA, CL_FLOAT },
-		{ CL_BGRA, CL_UNORM_INT8 },
-	};
+    // Minimum list of supported image formats for reading or writing
+    // (OpenCL 2.0, 2.1, or 2.2), for all image types.
+    static std::vector<cl_image_format> fullProfile_2x_readOrWrite{
+        // clang-format off
+        { CL_R, CL_UNORM_INT8 },
+        { CL_R, CL_UNORM_INT16 },
+        { CL_R, CL_SNORM_INT8 },
+        { CL_R, CL_SNORM_INT16 },
+        { CL_R, CL_SIGNED_INT8 },
+        { CL_R, CL_SIGNED_INT16 },
+        { CL_R, CL_SIGNED_INT32 },
+        { CL_R, CL_UNSIGNED_INT8 },
+        { CL_R, CL_UNSIGNED_INT16 },
+        { CL_R, CL_UNSIGNED_INT32 },
+        { CL_R, CL_HALF_FLOAT },
+        { CL_R, CL_FLOAT },
+        { CL_RG, CL_UNORM_INT8 },
+        { CL_RG, CL_UNORM_INT16 },
+        { CL_RG, CL_SNORM_INT8 },
+        { CL_RG, CL_SNORM_INT16 },
+        { CL_RG, CL_SIGNED_INT8 },
+        { CL_RG, CL_SIGNED_INT16 },
+        { CL_RG, CL_SIGNED_INT32 },
+        { CL_RG, CL_UNSIGNED_INT8 },
+        { CL_RG, CL_UNSIGNED_INT16 },
+        { CL_RG, CL_UNSIGNED_INT32 },
+        { CL_RG, CL_HALF_FLOAT },
+        { CL_RG, CL_FLOAT },
+        { CL_RGBA, CL_UNORM_INT8 },
+        { CL_RGBA, CL_UNORM_INT16 },
+        { CL_RGBA, CL_SNORM_INT8 },
+        { CL_RGBA, CL_SNORM_INT16 },
+        { CL_RGBA, CL_SIGNED_INT8 },
+        { CL_RGBA, CL_SIGNED_INT16 },
+        { CL_RGBA, CL_SIGNED_INT32 },
+        { CL_RGBA, CL_UNSIGNED_INT8 },
+        { CL_RGBA, CL_UNSIGNED_INT16 },
+        { CL_RGBA, CL_UNSIGNED_INT32 },
+        { CL_RGBA, CL_HALF_FLOAT },
+        { CL_RGBA, CL_FLOAT },
+        { CL_BGRA, CL_UNORM_INT8 },
+        // clang-format on
+    };
 
-	/*
-		Required full profile formats specifically for 2.x.
-		This array does not contain any full profile
-		formats that have restrictions on when they
-		are required.
-	*/
-	static std::vector<cl_image_format> fullProf2XReadOrWriteFormats
-	{
-		{ CL_R, CL_UNORM_INT8 },
-		{ CL_R, CL_UNORM_INT16 },
-		{ CL_R, CL_SNORM_INT8 },
-		{ CL_R, CL_SNORM_INT16 },
-		{ CL_R, CL_SIGNED_INT8 },
-		{ CL_R, CL_SIGNED_INT16 },
-		{ CL_R, CL_SIGNED_INT32 },
-		{ CL_R, CL_UNSIGNED_INT8 },
-		{ CL_R, CL_UNSIGNED_INT16 },
-		{ CL_R, CL_UNSIGNED_INT32 },
-		{ CL_R, CL_HALF_FLOAT },
-		{ CL_R, CL_FLOAT },
-		{ CL_RG, CL_UNORM_INT8 },
-		{ CL_RG, CL_UNORM_INT16 },
-		{ CL_RG, CL_SNORM_INT8 },
-		{ CL_RG, CL_SNORM_INT16 },
-		{ CL_RG, CL_SIGNED_INT8 },
-		{ CL_RG, CL_SIGNED_INT16 },
-		{ CL_RG, CL_SIGNED_INT32 },
-		{ CL_RG, CL_UNSIGNED_INT8 },
-		{ CL_RG, CL_UNSIGNED_INT16 },
-		{ CL_RG, CL_UNSIGNED_INT32 },
-		{ CL_RG, CL_HALF_FLOAT },
-		{ CL_RG, CL_FLOAT },
-		{ CL_RGBA, CL_SNORM_INT8 },
-		{ CL_RGBA, CL_SNORM_INT16 },
-	};
+    // Conditional addition to the 2x readOrWrite table:
+    // Support for the CL_DEPTH image channel order is required only for 2D
+    // images and 2D image arrays.
+    static std::vector<cl_image_format> fullProfile_2x_readOrWrite_Depth{
+        // clang-format off
+        { CL_DEPTH, CL_UNORM_INT16 },
+        { CL_DEPTH, CL_FLOAT },
+        // clang-format on
+    };
 
-	/*
-		Required full profile formats for CL_DEPTH
-		(specifically 2.x).
-		There are cases whereby the format isn't required.
-	*/
-	static std::vector<cl_image_format> fullProf2XReadOrWriteDepthFormats
-	{
-		{ CL_DEPTH, CL_UNORM_INT16 },
-		{ CL_DEPTH, CL_FLOAT },
-	};
+    // Conditional addition to the 2x readOrWrite table:
+    // Support for reading from the CL_sRGBA image channel order is optional for
+    // 1D image buffers. Support for writing to the CL_sRGBA image channel order
+    // is optional for all image types.
+    static std::vector<cl_image_format> fullProfile_2x_readOrWrite_srgb{
+        { CL_sRGBA, CL_UNORM_INT8 },
+    };
 
-	/*
-		Required full profile formats for CL_sRGB
-		(specifically 2.x).
-		There are cases whereby the format isn't required.
-	*/
-	static std::vector<cl_image_format> fullProf2XSRGBFormats
-	{
-		{ CL_sRGBA, CL_UNORM_INT8 },
-	};
+    // Minimum list of required image formats for reading and writing.
+    static std::vector<cl_image_format> fullProfile_readAndWrite{
+        // clang-format off
+        { CL_R, CL_UNORM_INT8 },
+        { CL_R, CL_SIGNED_INT8 },
+        { CL_R, CL_SIGNED_INT16 },
+        { CL_R, CL_SIGNED_INT32 },
+        { CL_R, CL_UNSIGNED_INT8 },
+        { CL_R, CL_UNSIGNED_INT16 },
+        { CL_R, CL_UNSIGNED_INT32 },
+        { CL_R, CL_HALF_FLOAT },
+        { CL_R, CL_FLOAT },
+        { CL_RGBA, CL_UNORM_INT8 },
+        { CL_RGBA, CL_SIGNED_INT8 },
+        { CL_RGBA, CL_SIGNED_INT16 },
+        { CL_RGBA, CL_SIGNED_INT32 },
+        { CL_RGBA, CL_UNSIGNED_INT8 },
+        { CL_RGBA, CL_UNSIGNED_INT16 },
+        { CL_RGBA, CL_UNSIGNED_INT32 },
+        { CL_RGBA, CL_HALF_FLOAT },
+        { CL_RGBA, CL_FLOAT },
+        // clang-format on
+    };
 
-	// Embedded profile
-	if (gIsEmbedded)
-	{
-		copy(embeddedProfReadOrWriteFormats.begin(),
-		     embeddedProfReadOrWriteFormats.end(),
-		     back_inserter(formatsToSupport));
-	}
-	// Full profile
-	else
-	{
-		copy(fullProfReadOrWriteFormats.begin(),
-		     fullProfReadOrWriteFormats.end(),
-		     back_inserter(formatsToSupport));
-	}
+    // Embedded profile
+    if (gIsEmbedded)
+    {
+        copy(embeddedProfile_readOrWrite.begin(),
+             embeddedProfile_readOrWrite.end(),
+             back_inserter(formatsToSupport));
+    }
+    // Full profile
+    else
+    {
+        Version version = get_device_cl_version(device);
+        if (version < Version(2, 0) || version >= Version(3, 0))
+        {
+            // Full profile, OpenCL 1.2 or 3.0.
+            if (flags & CL_MEM_KERNEL_READ_AND_WRITE)
+            {
+                // Note: assumes that read-write images are supported!
+                copy(fullProfile_readAndWrite.begin(),
+                     fullProfile_readAndWrite.end(),
+                     back_inserter(formatsToSupport));
+            }
+            else
+            {
+                copy(fullProfile_readOrWrite.begin(),
+                     fullProfile_readOrWrite.end(),
+                     back_inserter(formatsToSupport));
+            }
+        }
+        else
+        {
+            // Full profile, OpenCL 2.0, 2.1, 2.2.
+            if (flags & CL_MEM_KERNEL_READ_AND_WRITE)
+            {
+                copy(fullProfile_readAndWrite.begin(),
+                     fullProfile_readAndWrite.end(),
+                     back_inserter(formatsToSupport));
+            }
+            else
+            {
+                copy(fullProfile_2x_readOrWrite.begin(),
+                     fullProfile_2x_readOrWrite.end(),
+                     back_inserter(formatsToSupport));
 
-	// Full profile, OpenCL 2.0, 2.1, 2.2
-	if (!gIsEmbedded && version >= Version(2, 0) && version <= Version(2, 2))
-	{
-		copy(fullProf2XReadOrWriteFormats.begin(),
-		     fullProf2XReadOrWriteFormats.end(),
-		     back_inserter(formatsToSupport));
+                // Support for the CL_DEPTH image channel order is required only
+                // for 2D images and 2D image arrays.
+                if (image_type == CL_MEM_OBJECT_IMAGE2D
+                    || image_type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                {
+                    copy(fullProfile_2x_readOrWrite_Depth.begin(),
+                         fullProfile_2x_readOrWrite_Depth.end(),
+                         back_inserter(formatsToSupport));
+                }
 
-		// Depth images are only required for 2DArray and 2D images
-		if (image_type == CL_MEM_OBJECT_IMAGE2D_ARRAY || image_type == CL_MEM_OBJECT_IMAGE2D)
-		{
-			copy(fullProf2XReadOrWriteDepthFormats.begin(),
-			     fullProf2XReadOrWriteDepthFormats.end(),
-			     back_inserter(formatsToSupport));
-		}
-
-		// sRGB is not required for 1DImage Buffers
-		if (image_type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
-		{
-			// sRGB is only required for reading
-			if (flags == CL_MEM_READ_ONLY)
-			{
-				copy(fullProf2XSRGBFormats.begin(),
-				     fullProf2XSRGBFormats.end(),
-				     back_inserter(formatsToSupport));
-			}
-		}
-	}
+                // Support for reading from the CL_sRGBA image channel order is
+                // optional for 1D image buffers. Support for writing to the
+                // CL_sRGBA image channel order is optional for all image types.
+                if (image_type != CL_MEM_OBJECT_IMAGE1D_BUFFER
+                    && flags == CL_MEM_READ_ONLY)
+                {
+                    copy(fullProfile_2x_readOrWrite_srgb.begin(),
+                         fullProfile_2x_readOrWrite_srgb.end(),
+                         back_inserter(formatsToSupport));
+                }
+            }
+        }
+    }
 }
 
 bool is_image_format_required(cl_image_format format,
@@ -3733,4 +3782,18 @@ size_t compute_mip_level_offset( image_descriptor * imageInfo , size_t lod)
 
   }
   return retOffset;
+}
+
+const char *convert_image_type_to_string(cl_mem_object_type image_type)
+{
+    switch (image_type)
+    {
+        case CL_MEM_OBJECT_IMAGE1D: return "1D";
+        case CL_MEM_OBJECT_IMAGE2D: return "2D";
+        case CL_MEM_OBJECT_IMAGE3D: return "3D";
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY: return "1D array";
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY: return "2D array";
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER: return "1D image buffer";
+        default: return "unrecognized object type";
+    }
 }

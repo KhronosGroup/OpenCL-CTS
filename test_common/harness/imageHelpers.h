@@ -653,4 +653,7 @@ static int inline is_half_zero( cl_ushort half ){ return ( half & 0x7fff ) == 0;
 
 extern double sRGBmap(float fc);
 
+extern const char *convert_image_type_to_string(cl_mem_object_type imageType);
+
+
 #endif // _imageHelpers_h

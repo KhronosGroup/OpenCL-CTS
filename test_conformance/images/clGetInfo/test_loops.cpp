@@ -34,30 +34,6 @@ extern int test_get_image_info_3D( cl_device_id device, cl_context context, cl_i
 extern int test_get_image_info_1D_array( cl_device_id device, cl_context context, cl_image_format *format, cl_mem_flags flags );
 extern int test_get_image_info_2D_array( cl_device_id device, cl_context context, cl_image_format *format, cl_mem_flags flags );
 
-static bool check_minimum_supported(cl_image_format *formatList,
-                                    unsigned int numFormats,
-                                    cl_mem_flags flags,
-                                    cl_mem_object_type image_type,
-                                    cl_device_id device)
-{
-	bool passed = true;
-	Version version = get_device_cl_version(device);
-	std::vector<cl_image_format> formatsToSupport;
-	build_required_image_formats(flags, image_type, device, formatsToSupport);
-
-	for (auto &format: formatsToSupport)
-	{
-		if( !find_format( formatList, numFormats, &format ) )
-		{
-			log_error( "ERROR: Format required by OpenCL %s is not supported: ", version.to_string().c_str() );
-			print_header( &format, true );
-			passed = false;
-		}
-	}
-
-	return passed;
-}
-
 int test_image_type( cl_device_id device, cl_context context, cl_mem_object_type image_type, cl_mem_flags flags )
 {
     log_info( "Running %s %s-only tests...\n", convert_image_type_to_string(image_type), flags == CL_MEM_READ_ONLY ? "read" : "write" );
@@ -73,17 +49,6 @@ int test_image_type( cl_device_id device, cl_context context, cl_mem_object_type
         return -1;
 
     BufferOwningPtr<cl_image_format> formatListBuf(formatList);
-
-    if ((image_type == CL_MEM_OBJECT_IMAGE3D) && (flags != CL_MEM_READ_ONLY)) {
-        log_info("No requirement for 3D write in OpenCL 1.2. Not checking formats.\n");
-    } else {
-        log_info("Checking for required OpenCL 1.2 formats.\n");
-        if (check_minimum_supported( formatList, numFormats, flags, image_type, device ) == false) {
-            ret++;
-        } else {
-            log_info("All required formats present.\n");
-        }
-    }
 
     filterFlags = new bool[ numFormats ];
     BufferOwningPtr<bool> filterFlagsBuf(filterFlags);
