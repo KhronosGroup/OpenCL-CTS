@@ -201,7 +201,7 @@ int test_read_image_set_2D( cl_device_id device, cl_context context, cl_command_
     image_descriptor imageInfo = { 0 };
     size_t pixelSize;
 
-    if(gTestReadWrite && checkForReadWriteImageSupport(device)) 
+    if (gTestReadWrite && checkForReadWriteImageSupport(device))
     {
         return TEST_SKIPPED_ITSELF; 
     }

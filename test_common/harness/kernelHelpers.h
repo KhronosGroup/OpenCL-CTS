@@ -141,7 +141,7 @@ extern test_status verifyImageSupport( cl_device_id device );
 /* Checks that the given device supports images. Same as verify, but doesn't print an error */
 extern int checkForImageSupport( cl_device_id device );
 extern int checkFor3DImageSupport( cl_device_id device );
-extern int checkForReadWriteImageSupport( cl_device_id device );
+extern int checkForReadWriteImageSupport(cl_device_id device);
 
 /* Checks that a given queue property is supported on the specified device. Returns 1 if supported, 0 if not or an error. */
 extern int checkDeviceForQueueSupport( cl_device_id device, cl_command_queue_properties prop );

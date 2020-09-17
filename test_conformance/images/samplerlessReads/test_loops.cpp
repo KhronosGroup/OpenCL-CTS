@@ -109,7 +109,7 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
         gDeviceLt20 = true;
     }
 
-    if(gTestReadWrite && checkForReadWriteImageSupport(device)) 
+    if (gTestReadWrite && checkForReadWriteImageSupport(device))
     {
         return TEST_SKIPPED_ITSELF; 
     }

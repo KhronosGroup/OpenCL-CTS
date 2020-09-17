@@ -177,12 +177,9 @@ static int doTest( cl_device_id device, cl_context context, cl_command_queue que
         }
     }
 
-    if (testTypesToRun & kReadWriteTests)
+    if ((testTypesToRun & kReadWriteTests) && checkForReadWriteImageSupport(device))
     {
-        if(checkForReadWriteImageSupport(device)) 
-        {
-            return TEST_SKIPPED_ITSELF; 
-        }
+        return TEST_SKIPPED_ITSELF; 
     }
 
     if( ( testTypesToRun & kReadWriteTests ) && !gTestMipmaps )

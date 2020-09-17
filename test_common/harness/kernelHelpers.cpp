@@ -1469,7 +1469,7 @@ int checkFor3DImageSupport( cl_device_id device )
 
 int checkForReadWriteImageSupport( cl_device_id device )
 {
-    if (checkForImageSupport(device)) 
+    if (checkForImageSupport(device))
     {
         return CL_IMAGE_FORMAT_NOT_SUPPORTED;
     }
@@ -1485,10 +1485,10 @@ int checkForReadWriteImageSupport( cl_device_id device )
             sizeof(are_rw_images_supported),
             &are_rw_images_supported, nullptr),
             "clGetDeviceInfo failed for CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS\n");
-        if (0 == are_rw_images_supported) 
+        if (0 == are_rw_images_supported)
         {
-           log_info("READ_WRITE_IMAGE tests skipped, not supported.\n");
-           return CL_IMAGE_FORMAT_NOT_SUPPORTED;
+            log_info("READ_WRITE_IMAGE tests skipped, not supported.\n");
+            return CL_IMAGE_FORMAT_NOT_SUPPORTED;
         }
     }
     // READ_WRITE images are not supported on 1.X devices.
