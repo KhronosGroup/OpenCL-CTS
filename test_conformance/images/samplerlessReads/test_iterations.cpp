@@ -203,7 +203,7 @@ int test_read_image_set_2D( cl_device_id device, cl_context context, cl_command_
 
     if (gTestReadWrite && checkForReadWriteImageSupport(device))
     {
-        return TEST_SKIPPED_ITSELF; 
+        return TEST_SKIPPED_ITSELF;
     }
 
     imageInfo.format = format;

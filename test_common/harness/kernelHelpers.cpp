@@ -1467,7 +1467,7 @@ int checkFor3DImageSupport( cl_device_id device )
     return 0;
 }
 
-int checkForReadWriteImageSupport( cl_device_id device )
+int checkForReadWriteImageSupport(cl_device_id device)
 {
     if (checkForImageSupport(device))
     {
@@ -1475,15 +1475,15 @@ int checkForReadWriteImageSupport( cl_device_id device )
     }
 
     auto device_cl_version = get_device_cl_version(device);
-    if (device_cl_version >= Version(3, 0)) 
+    if (device_cl_version >= Version(3, 0))
     {
         // In OpenCL 3.0, Read-Write images are optional.
         // Check if they are supported.
         cl_uint are_rw_images_supported{};
         test_error(
             clGetDeviceInfo(device, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
-            sizeof(are_rw_images_supported),
-            &are_rw_images_supported, nullptr),
+                            sizeof(are_rw_images_supported),
+                            &are_rw_images_supported, nullptr),
             "clGetDeviceInfo failed for CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS\n");
         if (0 == are_rw_images_supported)
         {
@@ -1494,12 +1494,12 @@ int checkForReadWriteImageSupport( cl_device_id device )
     // READ_WRITE images are not supported on 1.X devices.
     else if (device_cl_version < Version(2, 0))
     {
-        log_info("READ_WRITE_IMAGE tests skipped, Opencl 2.0 + requried for this test");
+        log_info("READ_WRITE_IMAGE tests skipped, Opencl 2.0+ is requried.");
         return CL_IMAGE_FORMAT_NOT_SUPPORTED;
     }
-    // Support for read-write image arguments is required 
-    // for an 2.X device if the device supports images. 
-    
+    // Support for read-write image arguments is required
+    // for an 2.X device if the device supports images.
+
     /* So our support is good */
     return 0;
 }

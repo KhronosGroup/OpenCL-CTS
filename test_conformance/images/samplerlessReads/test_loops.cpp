@@ -111,7 +111,7 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
 
     if (gTestReadWrite && checkForReadWriteImageSupport(device))
     {
-        return TEST_SKIPPED_ITSELF; 
+        return TEST_SKIPPED_ITSELF;
     }
 
     // This flag is only for querying the list of supported formats
