@@ -880,7 +880,7 @@ void generate_random_data( ExplicitType type, size_t count, MTdata d, void *outD
     cl_ulong *ulongPtr;
     cl_float *floatPtr;
     cl_double *doublePtr;
-    cl_ushort *halfPtr;
+    cl_half *halfPtr;
     size_t i;
     cl_uint bits = genrand_int32(d);
     cl_uint bitsLeft = 32;

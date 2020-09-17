@@ -275,10 +275,9 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
             break;
         }
 
-        case CL_HALF_FLOAT:
-        {
-            cl_ushort *dPtr = (cl_ushort *)ptr;
-            for( i = 0; i < get_format_channel_count( format ); i++ )
+        case CL_HALF_FLOAT: {
+            cl_half *dPtr = (cl_half *)ptr;
+            for (i = 0; i < get_format_channel_count(format); i++)
                 tempData[i] = (T)cl_half_to_float(dPtr[i]);
             break;
         }
@@ -639,17 +638,18 @@ protected:
     size_t    mVecSize;
 };
 
-extern cl_ushort convert_float_to_half(float f);
-extern int  DetectFloatToHalfRoundingMode( cl_command_queue );  // Returns CL_SUCCESS on success
+extern cl_half convert_float_to_half(float f);
+extern int DetectFloatToHalfRoundingMode(
+    cl_command_queue); // Returns CL_SUCCESS on success
 
 // sign bit: don't care, exponent: maximum value, significand: non-zero
-static int inline is_half_nan( cl_ushort half ){ return ( half & 0x7fff ) > 0x7c00; }
+static int inline is_half_nan(cl_half half) { return (half & 0x7fff) > 0x7c00; }
 
 // sign bit: don't care, exponent: zero, significand: non-zero
-static int inline is_half_denorm( cl_ushort half ){ return IsHalfSubnormal( half ); }
+static int inline is_half_denorm(cl_half half) { return IsHalfSubnormal(half); }
 
 // sign bit: don't care, exponent: zero, significand: zero
-static int inline is_half_zero( cl_ushort half ){ return ( half & 0x7fff ) == 0; }
+static int inline is_half_zero(cl_half half) { return (half & 0x7fff) == 0; }
 
 extern double sRGBmap(float fc);
 
