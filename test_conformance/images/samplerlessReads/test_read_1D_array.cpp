@@ -198,6 +198,11 @@ int test_read_image_set_1D_array( cl_device_id device, cl_context context, cl_co
     image_descriptor imageInfo = { 0 };
     size_t pixelSize;
 
+    if(gTestReadWrite && checkForReadWriteImageSupport(device)) 
+    {
+        return TEST_SKIPPED_ITSELF; 
+    }
+
     imageInfo.format = format;
     imageInfo.height = imageInfo.depth = 0;
     imageInfo.type = CL_MEM_OBJECT_IMAGE1D_ARRAY;

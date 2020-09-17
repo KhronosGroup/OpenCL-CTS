@@ -196,6 +196,11 @@ int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_
     RandomSeed seed( gRandomSeed );
     int error;
 
+    if(gTestReadWrite && checkForReadWriteImageSupport(device)) 
+    {
+        return TEST_SKIPPED_ITSELF; 
+    }
+
     // Get our operating params
     size_t maxWidth;
     cl_ulong maxAllocSize, memSize;
