@@ -142,23 +142,12 @@ int test_enqueue_profiling(cl_device_id device, cl_context context,
                                     sizeof(complete), &complete, NULL);
         test_error(err_ret, "clGetEventProfilingInfo() failed");
 
-        if (level == 0)
+        if (end > complete)
         {
-            if (end != complete)
-            {
-                log_error("Profiling END should be the same as COMPLETE for "
-                          "kernels without children");
-                return -1;
-            }
-        }
-        else
-        {
-            if (end > complete)
-            {
-                log_error("Profiling END should be smaller than COMPLETE for "
-                          "kernels with device side children");
-                return -1;
-            }
+            log_error(
+                "Profiling END should be smaller than or equal to COMPLETE for "
+                "kernels that use the on-device queue");
+            return -1;
         }
 
         log_info("Profiling info for '%s' kernel is OK for level %d.\n",
