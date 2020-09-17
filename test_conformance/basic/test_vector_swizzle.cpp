@@ -670,8 +670,8 @@ int test_vector_swizzle(cl_device_id device, cl_context context,
     {
         result |= test_type<cl_long>("long", device, context, queue);
         result |= test_type<cl_ulong>("ulong", device, context, queue);
-        result |= test_type<cl_float>("float", device, context, queue);
     }
+    result |= test_type<cl_float>("float", device, context, queue);
     if (hasDouble)
     {
         result |= test_type<cl_double>("double", device, context, queue);
