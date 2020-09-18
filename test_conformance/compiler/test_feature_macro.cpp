@@ -92,16 +92,28 @@ cl_int check_api_feature_info_number(cl_device_id deviceID, cl_context context,
     return error;
 }
 
-cl_int check_api_feature_info_supported_image_formats(
-    cl_device_id deviceID, cl_context context, cl_bool& status,
-    cl_mem_flags mem_flags, cl_mem_object_type image_type)
+cl_int check_api_feature_info_supported_image_formats(cl_device_id deviceID,
+                                                      cl_context context,
+                                                      cl_bool& status)
 {
     cl_int error = CL_SUCCESS;
-    cl_uint response;
+    cl_uint response = 0;
     cl_uint image_format_count;
-    error = clGetSupportedImageFormats(context, mem_flags, image_type, 0, NULL,
+    error = clGetSupportedImageFormats(context, CL_MEM_WRITE_ONLY,
+                                       CL_MEM_OBJECT_IMAGE3D, 0, NULL,
                                        &image_format_count);
-    response = image_format_count;
+    test_error(error, "clGetSupportedImageFormats failed");
+    response += image_format_count;
+    error = clGetSupportedImageFormats(context, CL_MEM_READ_WRITE,
+                                       CL_MEM_OBJECT_IMAGE3D, 0, NULL,
+                                       &image_format_count);
+    test_error(error, "clGetSupportedImageFormats failed");
+    response += image_format_count;
+    error = clGetSupportedImageFormats(context, CL_MEM_KERNEL_READ_AND_WRITE,
+                                       CL_MEM_OBJECT_IMAGE3D, 0, NULL,
+                                       &image_format_count);
+    test_error(error, "clGetSupportedImageFormats failed");
+    response += image_format_count;
     if (response > 0)
     {
         status = CL_TRUE;
@@ -312,10 +324,8 @@ int test_feature_macro_3d_image_writes(cl_device_id deviceID,
     cl_bool api_status;
     cl_bool compiler_status;
     log_info("\n%s ...\n", test_macro_name.c_str());
-    error = check_api_feature_info_supported_image_formats(
-        deviceID, context, api_status,
-        CL_MEM_WRITE_ONLY | CL_MEM_READ_WRITE | CL_MEM_KERNEL_READ_AND_WRITE,
-        CL_MEM_OBJECT_IMAGE3D);
+    error = check_api_feature_info_supported_image_formats(deviceID, context,
+                                                           api_status);
     if (error != CL_SUCCESS)
     {
         return error;
