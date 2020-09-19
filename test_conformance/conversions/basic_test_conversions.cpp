@@ -21,11 +21,11 @@
 
 #include "harness/mt19937.h"
 
-#if defined( __arm__ ) && defined( __GNUC__ )
+#if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
 #include "fplib.h"
 #endif
 
-#if defined( __arm__ ) && defined( __GNUC__ )
+#if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
 /* Rounding modes and saturation for use with qcom 64 bit to float conversion library */
     bool            qcom_sat;
     roundingMode    qcom_rm;
@@ -759,12 +759,18 @@ static void ulong2float( void *out, void *in)
     ((float*) out)[0] = (l == 0 ? 0.0f : (((cl_long)l < 0) ? result * 2.0f : result));
 #else
     cl_ulong l = ((cl_ulong*) in)[0];
-#if defined( __arm__ ) && defined( __GNUC__ )
-    /* ARM VFP doesn't have hardware instruction for converting from 64-bit integer to float types, hence GCC ARM uses the floating-point emulation code
-     * despite which -mfloat-abi setting it is. But the emulation code in libgcc.a has only one rounding mode (round to nearest even in this case)
+#if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
+    /* ARM VFP doesn't have hardware instruction for converting from 64-bit
+     * integer to float types, hence GCC ARM uses the floating-point emulation
+     * code despite which -mfloat-abi setting it is. But the emulation code in
+     * libgcc.a has only one rounding mode (round to nearest even in this case)
      * and ignores the user rounding mode setting in hardware.
-     * As a result setting rounding modes in hardware won't give correct rounding results for type covert from 64-bit integer to float using GCC for ARM compiler
-     * so for testing different rounding modes, we need to use alternative reference function */
+     * As a result setting rounding modes in hardware won't give correct
+     * rounding results for type covert from 64-bit integer to float using GCC
+     * for ARM compiler so for testing different rounding modes, we need to use
+     * alternative reference function. ARM64 does have an instruction, however
+     * we cannot guarantee the compiler will use it.  On all ARM architechures
+     * use emulation to calculate reference.*/
     ((float*) out)[0] = qcom_u64_2_f32(l, qcom_sat, qcom_rm);
 #else
     ((float*) out)[0] = (l == 0 ? 0.0f : (float) l);        // Per IEEE-754-2008 5.4.1, 0's always convert to +0.0
@@ -806,12 +812,18 @@ static void long2float( void *out, void *in)
     ((float*) out)[0] = (l == 0 ? 0.0f : result);        // Per IEEE-754-2008 5.4.1, 0's always convert to +0.0
 #else
     cl_long l = ((cl_long*) in)[0];
-#if defined( __arm__ ) && defined( __GNUC__ )
-    /* ARM VFP doesn't have hardware instruction for converting from 64-bit integer to float types, hence GCC ARM uses the floating-point emulation code
-     * despite which -mfloat-abi setting it is. But the emulation code in libgcc.a has only one rounding mode (round to nearest even in this case)
+#if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
+    /* ARM VFP doesn't have hardware instruction for converting from 64-bit
+     * integer to float types, hence GCC ARM uses the floating-point emulation
+     * code despite which -mfloat-abi setting it is. But the emulation code in
+     * libgcc.a has only one rounding mode (round to nearest even in this case)
      * and ignores the user rounding mode setting in hardware.
-     * As a result setting rounding modes in hardware won't give correct rounding results for type covert from 64-bit integer to float using GCC for ARM compiler
-     * so for testing different rounding modes, we need to use alternative reference function */
+     * As a result setting rounding modes in hardware won't give correct
+     * rounding results for type covert from 64-bit integer to float using GCC
+     * for ARM compiler so for testing different rounding modes, we need to use
+     * alternative reference function. ARM64 does have an instruction, however
+     * we cannot guarantee the compiler will use it.  On all ARM architechures
+     * use emulation to calculate reference.*/
     ((float*) out)[0] = (l == 0 ? 0.0f : qcom_s64_2_f32(l, qcom_sat, qcom_rm));
 #else
     ((float*) out)[0] = (l == 0 ? 0.0f : (float) l);        // Per IEEE-754-2008 5.4.1, 0's always convert to +0.0
