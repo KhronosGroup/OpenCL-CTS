@@ -25,26 +25,49 @@ __kernel void test(__global int* dst) {
 }
 )CLC";
 
+// This sub-test checks that CL_DEVICE_OPENCL_C_VERSION meets any API
+// requirements and that programs can be built for the reported OpenCL C version
+// and all previous versions.
 static int test_CL_DEVICE_OPENCL_C_VERSION(cl_device_id device,
                                            cl_context context)
 {
-    log_info("  testing compilation based on CL_DEVICE_OPENCL_C_VERSION\n");
+    const Version latest_version = Version(3, 0);
 
+    const Version api_version = get_device_cl_version(device);
     const Version clc_version = get_device_cl_c_version(device);
-    if (clc_version > Version(3, 0))
+
+    if (api_version > latest_version)
+    {
+        log_info("CL_DEVICE_VERSION is %s, which is bigger than %s.\n"
+                 "Need to update the opencl_c_versions test!\n",
+                 api_version.to_string().c_str(),
+                 latest_version.to_string().c_str());
+    }
+
+    if (clc_version > latest_version)
     {
         log_info("CL_DEVICE_OPENCL_C_VERSION is %s, which is bigger than %s.\n"
                  "Need to update the opencl_c_versions test!\n",
                  clc_version.to_string().c_str(),
-                 Version(3, 0).to_string().c_str());
+                 latest_version.to_string().c_str());
     }
 
-    if (clc_version < Version(1, 0))
+    // For OpenCL 3.0, the minimum required OpenCL C version is OpenCL 1.2.
+    // For other OpenCL versions, the minimum required OpenCL C version is
+    // the same as the API version.
+    const Version min_clc_version =
+        api_version == Version(3, 0) ? Version(1, 2) : api_version;
+    if (clc_version < min_clc_version)
     {
-        log_error("CL_DEVICE_OPENCL_C_VERSION must be at least 1.0 (got %s)!\n",
+        log_error("The minimum required OpenCL C version for API version %s is "
+                  "%s (got %s)!\n",
+                  api_version.to_string().c_str(),
+                  min_clc_version.to_string().c_str(),
                   clc_version.to_string().c_str());
         return TEST_FAIL;
     }
+
+    log_info("  testing compilation based on CL_DEVICE_OPENCL_C_VERSION\n");
 
     struct TestCase
     {
@@ -77,9 +100,16 @@ static int test_CL_DEVICE_OPENCL_C_VERSION(cl_device_id device,
     return TEST_PASS;
 }
 
+// This sub-test checks that CL_DEVICE_OPENCL_C_ALL_VERSIONS includes any
+// requirements for the API version, and that programs can be built for all
+// reported versions.
 static int test_CL_DEVICE_OPENCL_C_ALL_VERSIONS(cl_device_id device,
                                                 cl_context context)
 {
+    // For now, the required OpenCL C version is the same as the API version.
+    const Version api_version = get_device_cl_version(device);
+    bool found_api_version = false;
+
     log_info(
         "  testing compilation based on CL_DEVICE_OPENCL_C_ALL_VERSIONS\n");
 
@@ -102,6 +132,11 @@ static int test_CL_DEVICE_OPENCL_C_ALL_VERSIONS(cl_device_id device,
 
         if (strcmp(clc_version.name, "OpenCL C") == 0)
         {
+            if (api_version == Version(major, minor))
+            {
+                found_api_version = true;
+            }
+
             if (major == 1 && minor == 0)
             {
                 log_info(
@@ -128,6 +163,13 @@ static int test_CL_DEVICE_OPENCL_C_ALL_VERSIONS(cl_device_id device,
             log_error("    unknown OpenCL C name '%s'.\n", clc_version.name);
             return TEST_FAIL;
         }
+    }
+
+    if (!found_api_version)
+    {
+        log_error("    didn't find required OpenCL C version '%s'!\n",
+            api_version.to_string().c_str());
+        return TEST_FAIL;
     }
 
     return TEST_PASS;
