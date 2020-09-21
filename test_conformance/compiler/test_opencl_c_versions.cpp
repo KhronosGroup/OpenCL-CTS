@@ -52,11 +52,13 @@ static int test_CL_DEVICE_OPENCL_C_VERSION(cl_device_id device,
                  latest_version.to_string().c_str());
     }
 
-    // For OpenCL 3.0, the minimum required OpenCL C version is OpenCL 1.2.
+    // For OpenCL 3.0, the minimum required OpenCL C version is OpenCL C 1.2.
+    // For OpenCL 2.x, the minimum required OpenCL C version is OpenCL C 2.0.
     // For other OpenCL versions, the minimum required OpenCL C version is
     // the same as the API version.
-    const Version min_clc_version =
-        api_version == Version(3, 0) ? Version(1, 2) : api_version;
+    const Version min_clc_version = api_version == Version(3, 0)
+        ? Version(1, 2)
+        : api_version >= Version(2, 0) ? Version(2, 0) : api_version;
     if (clc_version < min_clc_version)
     {
         log_error("The minimum required OpenCL C version for API version %s is "
@@ -168,7 +170,7 @@ static int test_CL_DEVICE_OPENCL_C_ALL_VERSIONS(cl_device_id device,
     if (!found_api_version)
     {
         log_error("    didn't find required OpenCL C version '%s'!\n",
-            api_version.to_string().c_str());
+                  api_version.to_string().c_str());
         return TEST_FAIL;
     }
 
