@@ -50,6 +50,7 @@ test_definition test_list[] = {
     ADD_TEST(preprocessor_line_error),
     ADD_TEST(preprocessor_pragma),
 
+    ADD_TEST(opencl_c_versions),
     ADD_TEST(compiler_defines_for_extensions),
     ADD_TEST(image_macro),
 

@@ -7,6 +7,7 @@ set(${MODULE_NAME}_SOURCES
     test_async_build.cpp
     test_build_options.cpp
     test_preprocessor.cpp
+    test_opencl_c_versions.cpp
     test_image_macro.cpp
     test_compiler_defines_for_extensions.cpp
     test_pragma_unroll.cpp
