@@ -206,6 +206,7 @@ public:
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrder;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryScope;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrderScopeStr;
+  using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryScopeStr;
   using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
   CBasicTestLoad(TExplicitAtomicType dataType, bool useSVM) : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType, useSVM)
   {
@@ -228,11 +229,19 @@ public:
   }
   virtual std::string ProgramCore()
   {
-    std::string memoryOrderScope = MemoryOrderScopeStr();
-    std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
-    return
-      "  atomic_store(&destMemory[tid], tid);\n"
-      "  oldValues[tid] = atomic_load"+postfix+"(&destMemory[tid]"+memoryOrderScope+");\n";
+      // In the case this test is run with MEMORY_ORDER_ACQUIRE, the store
+      // should be MEMORY_ORDER_RELEASE
+      std::string memoryOrderScopeLoad = MemoryOrderScopeStr();
+      std::string memoryOrderScopeStore =
+          (MemoryOrder() == MEMORY_ORDER_ACQUIRE)
+          ? (", memory_order_release" + MemoryScopeStr())
+          : memoryOrderScopeLoad;
+      std::string postfix(memoryOrderScopeLoad.empty() ? "" : "_explicit");
+      return "  atomic_store" + postfix + "(&destMemory[tid], tid"
+          + memoryOrderScopeStore
+          + ");\n"
+            "  oldValues[tid] = atomic_load"
+          + postfix + "(&destMemory[tid]" + memoryOrderScopeLoad + ");\n";
   }
   virtual void HostFunction(cl_uint tid, cl_uint threadCount, volatile HostAtomicType *destMemory, HostDataType *oldValues)
   {

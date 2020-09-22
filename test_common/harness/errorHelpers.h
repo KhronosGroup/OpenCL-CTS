@@ -62,7 +62,15 @@
         return TEST_FAIL;                                                      \
     }
 #define test_error(errCode,msg)    test_error_ret(errCode,msg,errCode)
-#define test_error_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { print_error( errCode, msg ); return retValue ; } }
+#define test_error_ret(errCode, msg, retValue)                                 \
+    {                                                                          \
+        auto errCodeResult = errCode;                                          \
+        if (errCodeResult != CL_SUCCESS)                                       \
+        {                                                                      \
+            print_error(errCodeResult, msg);                                   \
+            return retValue;                                                   \
+        }                                                                      \
+    }
 #define print_error(errCode,msg)    log_error( "ERROR: %s! (%s from %s:%d)\n", msg, IGetErrorString( errCode ), __FILE__, __LINE__ );
 
 #define test_missing_feature(errCode, msg) test_missing_feature_ret(errCode, msg, errCode)

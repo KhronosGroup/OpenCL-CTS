@@ -71,6 +71,10 @@ extern cl_device_atomic_capabilities gAtomicMemCap,
 extern const char *get_memory_order_type_name(TExplicitMemoryOrderType orderType);
 extern const char *get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
 
+extern cl_int getSupportedMemoryOrdersAndScopes(
+    cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
+    std::vector<TExplicitMemoryScopeType> &memoryScopes);
+
 class AtomicTypeInfo
 {
 public:
@@ -487,16 +491,11 @@ public:
     std::vector<TExplicitMemoryScopeType> memoryScope;
     int error = 0;
 
-    memoryOrder.push_back(MEMORY_ORDER_EMPTY);
-    memoryOrder.push_back(MEMORY_ORDER_RELAXED);
-    memoryOrder.push_back(MEMORY_ORDER_ACQUIRE);
-    memoryOrder.push_back(MEMORY_ORDER_RELEASE);
-    memoryOrder.push_back(MEMORY_ORDER_ACQ_REL);
-    memoryOrder.push_back(MEMORY_ORDER_SEQ_CST);
-    memoryScope.push_back(MEMORY_SCOPE_EMPTY);
-    memoryScope.push_back(MEMORY_SCOPE_WORK_GROUP);
-    memoryScope.push_back(MEMORY_SCOPE_DEVICE);
-    memoryScope.push_back(MEMORY_SCOPE_ALL_SVM_DEVICES);
+    // For OpenCL-3.0 and later some orderings and scopes are optional, so here
+    // we query for the supported ones.
+    test_error_ret(
+        getSupportedMemoryOrdersAndScopes(deviceID, memoryOrder, memoryScope),
+        "getSupportedMemoryOrdersAndScopes failed\n", TEST_FAIL);
 
     for(unsigned oi = 0; oi < memoryOrder.size(); oi++)
     {
@@ -582,16 +581,11 @@ public:
     std::vector<TExplicitMemoryScopeType> memoryScope;
     int error = 0;
 
-    memoryOrder.push_back(MEMORY_ORDER_EMPTY);
-    memoryOrder.push_back(MEMORY_ORDER_RELAXED);
-    memoryOrder.push_back(MEMORY_ORDER_ACQUIRE);
-    memoryOrder.push_back(MEMORY_ORDER_RELEASE);
-    memoryOrder.push_back(MEMORY_ORDER_ACQ_REL);
-    memoryOrder.push_back(MEMORY_ORDER_SEQ_CST);
-    memoryScope.push_back(MEMORY_SCOPE_EMPTY);
-    memoryScope.push_back(MEMORY_SCOPE_WORK_GROUP);
-    memoryScope.push_back(MEMORY_SCOPE_DEVICE);
-    memoryScope.push_back(MEMORY_SCOPE_ALL_SVM_DEVICES);
+    // For OpenCL-3.0 and later some orderings and scopes are optional, so here
+    // we query for the supported ones.
+    test_error_ret(
+        getSupportedMemoryOrdersAndScopes(deviceID, memoryOrder, memoryScope),
+        "getSupportedMemoryOrdersAndScopes failed\n", TEST_FAIL);
 
     for(unsigned oi = 0; oi < memoryOrder.size(); oi++)
     {
@@ -800,23 +794,35 @@ std::string CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumD
     "\n";
   if(LocalMemory())
   {
-    code +=
-      "  // initialize atomics not reachable from host (first thread is doing this, other threads are waiting on barrier)\n"
-      "  if(get_local_id(0) == 0)\n"
-      "    for(uint dstItemIdx = 0; dstItemIdx < numDestItems; dstItemIdx++)\n"
-      "    {\n";
-    if(aTypeName == "atomic_flag")
-    {
-      code +=
-        "      if(finalDest[dstItemIdx])\n"
-        "        atomic_flag_test_and_set(destMemory+dstItemIdx);\n"
-        "      else\n"
-        "        atomic_flag_clear(destMemory+dstItemIdx);\n";
-    }
+      // memory_order_relaxed is sufficient for these initialization operations
+      // as the barrier below will act as a fence, providing an order to the
+      // operations. memory_scope_work_group is sufficient as local memory is
+      // only visible within the work-group.
+      code += R"(
+              // initialize atomics not reachable from host (first thread
+              // is doing this, other threads are waiting on barrier)
+              if(get_local_id(0) == 0)
+                for(uint dstItemIdx = 0; dstItemIdx < numDestItems; dstItemIdx++)
+                {)";
+      if (aTypeName == "atomic_flag")
+      {
+          code += R"(
+                  if(finalDest[dstItemIdx])
+                    atomic_flag_test_and_set_explicit(destMemory+dstItemIdx,
+                                                      memory_order_relaxed,
+                                                      memory_scope_work_group);
+                  else
+                    atomic_flag_clear_explicit(destMemory+dstItemIdx,
+                                               memory_order_relaxed,
+                                               memory_scope_work_group);)";
+      }
     else
     {
-      code +=
-        "      atomic_store(destMemory+dstItemIdx, finalDest[dstItemIdx]);\n";
+        code += R"(
+                atomic_store_explicit(destMemory+dstItemIdx,
+                                      finalDest[dstItemIdx],
+                                      memory_order_relaxed,
+                                      memory_scope_work_group);)";
     }
     code +=
       "    }\n"
@@ -873,20 +879,28 @@ std::string CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumD
         "  if(get_local_id(0) == 0) // first thread in workgroup\n";
     else
       // global atomics declared in program scope
-      code +=
-      "  if(atomic_fetch_add(&finishedThreads, 1) == get_global_size(0)-1)\n"
-      "    // last finished thread\n";
+      code += R"(
+                if(atomic_fetch_add_explicit(&finishedThreads, 1,
+                                           memory_order_relaxed,
+                                           memory_scope_work_group)
+                   == get_global_size(0)-1) // last finished thread)";
     code +=
         "    for(uint dstItemIdx = 0; dstItemIdx < numDestItems; dstItemIdx++)\n";
     if(aTypeName == "atomic_flag")
     {
-      code +=
-        "      finalDest[dstItemIdx] = atomic_flag_test_and_set(destMemory+dstItemIdx);\n";
+        code += R"(
+                finalDest[dstItemIdx] =
+                    atomic_flag_test_and_set_explicit(destMemory+dstItemIdx,
+                                                      memory_order_relaxed,
+                                                      memory_scope_work_group);)";
     }
     else
     {
-      code +=
-        "      finalDest[dstItemIdx] = atomic_load(destMemory+dstItemIdx);\n";
+        code += R"(
+                finalDest[dstItemIdx] =
+                    atomic_load_explicit(destMemory+dstItemIdx,
+                                         memory_order_relaxed,
+                                         memory_scope_work_group);)";
     }
   }
   code += "}\n"
