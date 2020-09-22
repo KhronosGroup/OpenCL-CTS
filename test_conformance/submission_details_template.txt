@@ -1,5 +1,5 @@
 ##############################################################################
-# OpenCL 2.0 submission details template
+# OpenCL submission details template
 # $Id $
 # $URL $
 ##############################################################################
@@ -27,7 +27,7 @@ Contact Telephone:
 
 # Version of OpenCL specification being tested
 #
-OpenCL Version: 2.0
+OpenCL Version: Major.Minor
 
 # Statement of conformance listing each conformant product (at a specific
 # version) that is covered by this implementation. List each conformant product
@@ -79,14 +79,9 @@ Platform Version:
 #
 ##############################################################################
 
-# Date of tests used, 8 digit string as given in filename.
+# git tag of the tests used from GitHub (ex: vYYYY-MM-DD-XX)
 # 
-Tests date:
-
-
-# SHA-1 git identifier of the tests used from Gitlab (ex: 0a7770f98664a092c70d0a7d9a48d229b5fd8039)
-# 
-Test ID:
+Tests version:
 
 # Date of "Khronos Conformance Process" that this submission
 # adheres to (as shown in the change history at the start of the document).
@@ -99,15 +94,6 @@ Conformance Process Document date:
 #
 OpenCL Conformance Process Attachment date:
 
-# List of Khronos Bugzilla bugs filed for test bugs that have been fixed
-# by modifying the tests used in this submission. Separate bug numbers with
-# commas; if none, specify "none". It is OK to use an existing bug describing
-# the same problem. In any case, after filing this conformance submission,
-# add a comment to the bug referencing the submission tracking number
-# giving justification for the test change.
-#
-Test Bugs:
-
 ##############################################################################
 #
 # Tested device configuration
@@ -116,9 +102,6 @@ Test Bugs:
 
 # Max compute units (CL_DEVICE_MAX_COMPUTE_UNITS)
 CL_DEVICE_MAX_COMPUTE_UNITS:
-
-# Max clock frequency (CL_DEVICE_MAX_CLOCK_FREQUENCY)
-CL_DEVICE_MAX_CLOCK_FREQUENCY:
 
 # Max memory allocation size (CL_DEVICE_MAX_MEM_ALLOC_SIZE)
 CL_DEVICE_MAX_MEM_ALLOC_SIZE:
