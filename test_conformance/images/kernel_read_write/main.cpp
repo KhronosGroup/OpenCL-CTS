@@ -177,11 +177,10 @@ static int doTest( cl_device_id device, cl_context context, cl_command_queue que
         }
     }
 
-    if (testTypesToRun & kReadWriteTests) {
-        if (gDeviceLt20)  {
-            log_info("TEST skipped, Opencl 2.0 + requried for this test");
-            return ret;
-        }
+    if ((testTypesToRun & kReadWriteTests)
+        && checkForReadWriteImageSupport(device))
+    {
+        return TEST_SKIPPED_ITSELF;
     }
 
     if( ( testTypesToRun & kReadWriteTests ) && !gTestMipmaps )

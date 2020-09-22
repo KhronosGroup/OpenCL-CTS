@@ -109,9 +109,9 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
         gDeviceLt20 = true;
     }
 
-    if (gDeviceLt20 && gTestReadWrite) {
-        log_info("TEST skipped, Opencl 2.0 + requried for this test");
-        return ret;
+    if (gTestReadWrite && checkForReadWriteImageSupport(device))
+    {
+        return TEST_SKIPPED_ITSELF;
     }
 
     // This flag is only for querying the list of supported formats
