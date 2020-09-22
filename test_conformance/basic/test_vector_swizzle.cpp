@@ -601,11 +601,12 @@ static int test_vectype(const char* type_name, cl_device_id device,
     buildOptions += " -DBASETYPE=";
     buildOptions += type_name;
 
-    std::vector<T> value(N);
+    constexpr size_t S = TestInfo<N>::vector_size;
+
+    std::vector<T> value(S);
     std::iota(value.begin(), value.end(), 0);
 
     std::vector<T> reference;
-    constexpr size_t S = TestInfo<N>::vector_size;
     makeReference<T, N, S>(reference);
 
     // XYZW swizzles:
