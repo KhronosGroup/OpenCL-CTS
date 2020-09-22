@@ -1624,6 +1624,30 @@ public:
       orderStr = std::string(", ") + get_memory_order_type_name(MemoryOrderForClear());
     return orderStr + MemoryScopeStr();
   }
+
+  virtual int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
+                                cl_command_queue queue)
+  {
+      // This test assumes support for the memory_scope_device scope in the case
+      // that LocalMemory() == false. Therefore we should skip this test in that
+      // configuration on a 3.0 driver since supporting the memory_scope_device
+      // scope is optionaly.
+      if (get_device_cl_version(deviceID) >= Version{ 3, 0 })
+      {
+          if (!LocalMemory()
+              && !(gAtomicFenceCap & CL_DEVICE_ATOMIC_SCOPE_DEVICE))
+          {
+              log_info(
+                  "Skipping atomic_flag test due to use of atomic_scope_device "
+                  "which is optionally not supported on this device\n");
+              return 0; // skip test - not applicable
+          }
+      }
+      return CBasicTestMemOrderScope<HostAtomicType,
+                                     HostDataType>::ExecuteSingleTest(deviceID,
+                                                                      context,
+                                                                      queue);
+  }
   virtual std::string ProgramCore()
   {
     std::string memoryOrderScope = MemoryOrderScopeStr();
