@@ -1,4 +1,0 @@
-#
-# OpenCL Conformance Test Suite (math only)
-#
-Math,math_brute_force/test_bruteforce 
