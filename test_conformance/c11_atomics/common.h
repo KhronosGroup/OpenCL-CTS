@@ -883,7 +883,8 @@ std::string CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumD
                 if(atomic_fetch_add_explicit(&finishedThreads, 1,
                                            memory_order_relaxed,
                                            memory_scope_work_group)
-                   == get_global_size(0)-1) // last finished thread)";
+                   == get_global_size(0)-1) // last finished thread
+                   )";
     code +=
         "    for(uint dstItemIdx = 0; dstItemIdx < numDestItems; dstItemIdx++)\n";
     if(aTypeName == "atomic_flag")
