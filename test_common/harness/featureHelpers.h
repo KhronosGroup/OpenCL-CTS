@@ -38,6 +38,6 @@ struct OpenCLCFeatures
     bool __opencl_c_work_group_collective_functions;
 };
 
-int get_device_cl_c_features(cl_device_id device, OpenCLCFeatures* features);
+int get_device_cl_c_features(cl_device_id device, OpenCLCFeatures& features);
 
 #endif // _featureHelpers_h

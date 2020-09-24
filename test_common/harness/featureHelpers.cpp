@@ -21,12 +21,10 @@
 
 #include <vector>
 
-int get_device_cl_c_features(cl_device_id device, OpenCLCFeatures* features)
+int get_device_cl_c_features(cl_device_id device, OpenCLCFeatures& features)
 {
-    assert(features != NULL);
-
     // Initially, all features are unsupported.
-    *features = { 0 };
+    features = { 0 };
 
     // The CL_DEVICE_OPENCL_C_FEATURES query does not exist pre-3.0.
     const Version version = get_device_cl_version(device);
@@ -49,7 +47,7 @@ int get_device_cl_c_features(cl_device_id device, OpenCLCFeatures* features)
 #define CHECK_OPENCL_C_FEATURE(_feature)                                       \
     if (strcmp(clc_feature.name, #_feature) == 0)                              \
     {                                                                          \
-        features->_feature = true;                                             \
+        features._feature = true;                                              \
     }
 
     for (const auto& clc_feature : clc_features)

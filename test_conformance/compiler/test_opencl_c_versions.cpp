@@ -185,7 +185,7 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_features(cl_device_id device,
     log_info("  testing for OPENCL_C_VERSION required features\n");
 
     OpenCLCFeatures features;
-    int error = get_device_cl_c_features(device, &features);
+    int error = get_device_cl_c_features(device, features);
     if (error)
     {
         log_error("Couldn't query OpenCL C features for the device!\n");
