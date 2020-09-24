@@ -14,6 +14,7 @@ set(${MODULE_NAME}_SOURCES
          test_api_min_max.cpp
          test_kernel_arg_changes.cpp
          test_kernel_arg_multi_setup.cpp
+         test_kernel_attributes.cpp
          test_binary.cpp
          test_native_kernel.cpp
          test_mem_objects.cpp
