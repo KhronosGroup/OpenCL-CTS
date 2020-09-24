@@ -90,7 +90,7 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(pragma_unroll, Version(2, 0)),
 
     ADD_TEST(unload_valid),
-    ADD_TEST(unload_invalid),
+    // ADD_TEST(unload_invalid), // disabling temporarily, see GitHub #977
     ADD_TEST(unload_repeated),
     ADD_TEST(unload_compile_unload_link),
     ADD_TEST(unload_build_unload_create_kernel),
