@@ -95,7 +95,7 @@ Workgroups,workgroups/test_workgroups
 # OpenCL 2.1 tests
 #####################################
 Device timer,device_timer/test_device_timer
-SPIRV new,spirv_new/test_spirv_new -ILPath spirv_bin
+SPIRV new,spirv_new/test_spirv_new --spirv-binaries-path spirv_bin
 
 #########################################
 # Extensions
