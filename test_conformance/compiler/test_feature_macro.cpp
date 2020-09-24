@@ -22,7 +22,7 @@ const char* macro_supported_source = R"(kernel void enabled(global int * buf) {
         int n = get_global_id(0);
         buf[n] = 0;
         #ifndef %s
-            ERROR;
+            #error Feature macro was not defined
         #endif
 })";
 
@@ -31,7 +31,7 @@ const char* macro_not_supported_source =
         int n = get_global_id(0);
         buf[n] = 0;
         #ifdef %s
-            ERROR;
+            #error Feature macro was defined
         #endif
 })";
 
@@ -686,9 +686,7 @@ int test_consistency_c_features_list(cl_device_id deviceID,
     sort(vec_to_cmp.begin(), vec_to_cmp.end());
     sort(vec_device_feature_names.begin(), vec_device_feature_names.end());
 
-    cl_bool result =
-        std::equal(vec_device_feature_names.begin(),
-                   vec_device_feature_names.end(), vec_to_cmp.begin());
+    cl_bool result = vec_device_feature_names == vec_to_cmp;
     if (result)
     {
         log_info("Comparison list of features - passed\n");
