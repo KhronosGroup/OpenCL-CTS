@@ -101,11 +101,11 @@ __kernel void test_vector_swizzle_xyzw(TYPE value, __global TYPE* dst) {
     dst[index++].zyx = value;
 
     // rvalue swizzles
-    vstore3(value.x, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.y, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.z, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.xyz, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.zyx, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.x, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.y, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.z, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.xyz, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.zyx, 0, (__global BASETYPE*)(dst + index++));
 }
 )CLC";
 
@@ -121,11 +121,11 @@ __kernel void test_vector_swizzle_rgba(TYPE value, __global TYPE* dst) {
     dst[index++].bgr = value;
 
     // rvalue swizzles
-    vstore3(value.r, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.g, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.b, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.rgb, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.bgr, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.r, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.g, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.b, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.rgb, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.bgr, 0, (__global BASETYPE*)(dst + index++));
 }
 )CLC";
 
@@ -141,11 +141,11 @@ __kernel void test_vector_swizzle_sN(TYPE value, __global TYPE* dst) {
     dst[index++].s210 = value;
 
     // rvalue swizzles
-    vstore3(value.s0, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.s1, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.s2, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.s012, 0, (BASETYPE*)(dst + index++));
-    vstore3(value.s210, 0, (BASETYPE*)(dst + index++));
+    vstore3(value.s0, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.s1, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.s2, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.s012, 0, (__global BASETYPE*)(dst + index++));
+    vstore3(value.s210, 0, (__global BASETYPE*)(dst + index++));
 }
 )CLC";
 };
