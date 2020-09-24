@@ -21,21 +21,21 @@
 
 struct OpenCLCFeatures
 {
-    bool __opencl_c_3d_image_writes;
-    bool __opencl_c_atomic_order_acq_rel;
-    bool __opencl_c_atomic_order_seq_cst;
-    bool __opencl_c_atomic_scope_device;
-    bool __opencl_c_atomic_scope_all_devices;
-    bool __opencl_c_device_enqueue;
-    bool __opencl_c_generic_address_space;
-    bool __opencl_c_fp64;
-    bool __opencl_c_images;
-    bool __opencl_c_int64;
-    bool __opencl_c_pipes;
-    bool __opencl_c_program_scope_global_variables;
-    bool __opencl_c_read_write_images;
-    bool __opencl_c_subgroups;
-    bool __opencl_c_work_group_collective_functions;
+    bool supports__opencl_c_3d_image_writes;
+    bool supports__opencl_c_atomic_order_acq_rel;
+    bool supports__opencl_c_atomic_order_seq_cst;
+    bool supports__opencl_c_atomic_scope_device;
+    bool supports__opencl_c_atomic_scope_all_devices;
+    bool supports__opencl_c_device_enqueue;
+    bool supports__opencl_c_generic_address_space;
+    bool supports__opencl_c_fp64;
+    bool supports__opencl_c_images;
+    bool supports__opencl_c_int64;
+    bool supports__opencl_c_pipes;
+    bool supports__opencl_c_program_scope_global_variables;
+    bool supports__opencl_c_read_write_images;
+    bool supports__opencl_c_subgroups;
+    bool supports__opencl_c_work_group_collective_functions;
 };
 
 int get_device_cl_c_features(cl_device_id device, OpenCLCFeatures& features);

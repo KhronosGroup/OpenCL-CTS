@@ -196,20 +196,21 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_features(cl_device_id device,
     if (clc_version >= Version(2, 0))
     {
         bool has_all_OpenCL_C_20_features =
-            features.__opencl_c_atomic_order_acq_rel
-            && features.__opencl_c_atomic_order_seq_cst
-            && features.__opencl_c_atomic_scope_device
-            && features.__opencl_c_atomic_scope_all_devices
-            && features.__opencl_c_device_enqueue
-            && features.__opencl_c_generic_address_space
-            && features.__opencl_c_pipes
-            && features.__opencl_c_program_scope_global_variables
-            && features.__opencl_c_work_group_collective_functions;
+            features.supports__opencl_c_atomic_order_acq_rel
+            && features.supports__opencl_c_atomic_order_seq_cst
+            && features.supports__opencl_c_atomic_scope_device
+            && features.supports__opencl_c_atomic_scope_all_devices
+            && features.supports__opencl_c_device_enqueue
+            && features.supports__opencl_c_generic_address_space
+            && features.supports__opencl_c_pipes
+            && features.supports__opencl_c_program_scope_global_variables
+            && features.supports__opencl_c_work_group_collective_functions;
 
-        if (features.__opencl_c_images)
+        if (features.supports__opencl_c_images)
         {
             has_all_OpenCL_C_20_features = has_all_OpenCL_C_20_features
-                && features.__opencl_c_read_write_images;
+                && features.supports__opencl_c_3d_image_writes
+                && features.supports__opencl_c_read_write_images;
         }
 
         test_assert_error(
@@ -221,7 +222,7 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_features(cl_device_id device,
 }
 
 // This sub-test checks that all required OpenCL C versions are present for a
-// specific C_DEVICE_OPENCL_C_VERSION.
+// specific CL_DEVICE_OPENCL_C_VERSION.
 static int test_CL_DEVICE_OPENCL_C_VERSION_versions(cl_device_id device,
                                                     cl_context context)
 {

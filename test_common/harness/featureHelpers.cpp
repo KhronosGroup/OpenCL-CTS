@@ -47,7 +47,7 @@ int get_device_cl_c_features(cl_device_id device, OpenCLCFeatures& features)
 #define CHECK_OPENCL_C_FEATURE(_feature)                                       \
     if (strcmp(clc_feature.name, #_feature) == 0)                              \
     {                                                                          \
-        features._feature = true;                                              \
+        features.supports##_feature = true;                                    \
     }
 
     for (const auto& clc_feature : clc_features)
