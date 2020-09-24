@@ -972,6 +972,20 @@ bool check_device_spirv_version_reported(cl_device_id device)
     return true;
 }
 
+bool check_device_compiler_available(cl_device_id device)
+{
+    cl_bool compilerAvailable = CL_FALSE;
+    cl_int err =
+        clGetDeviceInfo(device, CL_DEVICE_COMPILER_AVAILABLE,
+                        sizeof(compilerAvailable), &compilerAvailable, NULL);
+    if (err != CL_SUCCESS)
+    {
+        log_error("clGetDeviceInfo: cannot read CL_DEVICE_COMPILER_AVAILABLE");
+        return false;
+    }
+    return compilerAvailable == CL_TRUE;
+}
+
 Version get_device_spirv_il_version(cl_device_id device)
 {
     size_t str_size;
@@ -1034,9 +1048,16 @@ test_status check_spirv_compilation_readiness(cl_device_id device)
                           ocl_version.to_string().c_str());
                 return TEST_FAIL;
             }
-            else
+            bool compiler_available = check_device_compiler_available(device);
+            if (compiler_available)
             {
                 return TEST_PASS;
+            }
+            else
+            {
+                log_info("Compiling SPIR-V intermediate language programs "
+                         "requires a compiler to be available.\n");
+                return TEST_SKIP;
             }
         }
         else
@@ -1070,6 +1091,15 @@ test_status check_spirv_compilation_readiness(cl_device_id device)
             return TEST_SKIP;
         }
     }
+
+    bool compiler_available = check_device_compiler_available(device);
+    if (!compiler_available)
+    {
+        log_info("Compiling SPIR-V intermediate language programs requires a "
+                 "compiler to be available.\n");
+        return TEST_SKIP;
+    }
+
     return TEST_PASS;
 }
 
