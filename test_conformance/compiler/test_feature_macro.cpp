@@ -686,8 +686,7 @@ int test_consistency_c_features_list(cl_device_id deviceID,
     sort(vec_to_cmp.begin(), vec_to_cmp.end());
     sort(vec_device_feature_names.begin(), vec_device_feature_names.end());
 
-    cl_bool result = vec_device_feature_names == vec_to_cmp;
-    if (result)
+    if (vec_device_feature_names == vec_to_cmp)
     {
         log_info("Comparison list of features - passed\n");
     }
