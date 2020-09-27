@@ -88,6 +88,8 @@ extern int test_preprocessor_line_error(cl_device_id deviceID,
 extern int test_preprocessor_pragma(cl_device_id deviceID, cl_context context,
                                     cl_command_queue queue, int num_elements);
 
+extern int test_opencl_c_versions(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements);
 extern int test_compiler_defines_for_extensions(cl_device_id device,
                                                 cl_context context,
                                                 cl_command_queue queue,
