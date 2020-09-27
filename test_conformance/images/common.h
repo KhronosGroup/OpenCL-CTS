@@ -40,7 +40,6 @@ struct ImageTestTypes
 
 extern std::array<ImageTestTypes, 3> imageTestTypes;
 
-const char *convert_image_type_to_string(cl_mem_object_type imageType);
 int filter_formats(cl_image_format *formatList, bool *filterFlags,
                    unsigned int formatCount,
                    cl_channel_type *channelDataTypesToFilter,
