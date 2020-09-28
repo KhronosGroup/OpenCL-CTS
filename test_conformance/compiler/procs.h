@@ -19,6 +19,25 @@
 #include "harness/mt19937.h"
 #include "harness/typeWrappers.h"
 
+// This is a macro rather than a function to be able to use and act like the
+// existing test_error macro.
+//
+// Not all compiler tests need to use this macro, only those that don't use the
+// test harness compiler helpers.
+#define check_compiler_available(DEVICE)                                       \
+    {                                                                          \
+        cl_bool compilerAvailable = CL_FALSE;                                  \
+        cl_int error = clGetDeviceInfo((DEVICE), CL_DEVICE_COMPILER_AVAILABLE, \
+                                       sizeof(compilerAvailable),              \
+                                       &compilerAvailable, NULL);              \
+        test_error(error, "Unable to query CL_DEVICE_COMPILER_AVAILABLE");     \
+        if (compilerAvailable == CL_FALSE)                                     \
+        {                                                                      \
+            log_info("Skipping test - no compiler is available.\n");           \
+            return TEST_SKIPPED_ITSELF;                                        \
+        }                                                                      \
+    }
+
 extern int test_load_program_source(cl_device_id deviceID, cl_context context,
                                     cl_command_queue queue, int num_elements);
 extern int test_load_multistring_source(cl_device_id deviceID,

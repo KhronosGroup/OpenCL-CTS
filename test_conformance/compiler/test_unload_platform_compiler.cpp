@@ -409,6 +409,8 @@ int test_unload_invalid(cl_device_id, cl_context, cl_command_queue, int)
 int test_unload_repeated(cl_device_id device, cl_context context,
                          cl_command_queue, int)
 {
+    check_compiler_available(device);
+
     const cl_platform_id platform = device_platform(device);
     try
     {
@@ -438,6 +440,8 @@ int test_unload_repeated(cl_device_id device, cl_context context,
 int test_unload_compile_unload_link(cl_device_id device, cl_context context,
                                     cl_command_queue, int)
 {
+    check_compiler_available(device);
+
     const cl_platform_id platform = device_platform(device);
     try
     {
@@ -468,6 +472,8 @@ int test_unload_build_unload_create_kernel(cl_device_id device,
                                            cl_context context, cl_command_queue,
                                            int)
 {
+    check_compiler_available(device);
+
     const cl_platform_id platform = device_platform(device);
     try
     {
@@ -497,6 +503,8 @@ int test_unload_build_unload_create_kernel(cl_device_id device,
 int test_unload_link_different(cl_device_id device, cl_context context,
                                cl_command_queue, int)
 {
+    check_compiler_available(device);
+
     const cl_platform_id platform = device_platform(device);
 
     static const char *sources_1[] = { "unsigned int a() { return 42; }" };
@@ -645,6 +653,8 @@ int test_unload_build_threaded(cl_device_id device, cl_context context,
 {
     using clock = std::chrono::steady_clock;
 
+    check_compiler_available(device);
+
     const cl_platform_id platform = device_platform(device);
 
     const auto end = clock::now() + std::chrono::seconds(5);
@@ -732,6 +742,8 @@ int test_unload_build_threaded(cl_device_id device, cl_context context,
 int test_unload_build_info(cl_device_id device, cl_context context,
                            cl_command_queue, int)
 {
+    check_compiler_available(device);
+
     const cl_platform_id platform = device_platform(device);
 
     static const char *sources[] = { write_kernel_source };
@@ -893,6 +905,8 @@ int test_unload_build_info(cl_device_id device, cl_context context,
 int test_unload_program_binaries(cl_device_id device, cl_context context,
                                  cl_command_queue, int)
 {
+    check_compiler_available(device);
+
     const cl_platform_id platform = device_platform(device);
 
     static const char *sources[] = { write_kernel_source };
