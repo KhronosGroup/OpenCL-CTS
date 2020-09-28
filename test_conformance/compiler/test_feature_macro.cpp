@@ -732,7 +732,7 @@ int test_features_macro(cl_device_id deviceID, cl_context context,
     // also "may not".
     check_compiler_available(deviceID);
 
-    cl_int error = CL_SUCCESS;
+    int error = TEST_PASS;
     cl_bool supported = CL_FALSE;
     std::string test_macro_name = "";
     std::vector<std::string> supported_features_vec;
