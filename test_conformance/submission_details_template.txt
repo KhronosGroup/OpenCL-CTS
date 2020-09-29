@@ -13,8 +13,7 @@
 
 ##############################################################################
 #
-# Submission information (mostly section 7 and F.5 of Conformance Process 
-# Document) that needs to be copied onto the web submission form.
+# Submission information that needs to be copied onto the web submission form
 #
 ##############################################################################
 
@@ -74,14 +73,18 @@ Platform Version:
 
 ##############################################################################
 #
-# Further submission information (mostly section 7 of Conformance Process
-# Document).
+# Further submission information
 #
 ##############################################################################
 
-# git tag of the tests used from GitHub (ex: vYYYY-MM-DD-XX)
+# git tag of the tests used from GitHub (e.g. vYYYY-MM-DD-XX)
 # 
 Tests version:
+
+# Implementations that support cl_khr_icd are required to use a loader to run
+# the tests and document the loader that was used.
+#
+Loader used:
 
 # Date of "Khronos Conformance Process" that this submission
 # adheres to (as shown in the change history at the start of the document).
@@ -94,35 +97,9 @@ Conformance Process Document date:
 #
 OpenCL Conformance Process Attachment date:
 
-##############################################################################
+# The conformance process document makes allowances for skipping specific tests
+# in some situations. A list of tests that were skipped in accordance to these
+# rules along with the justification must be documented here.
 #
-# Tested device configuration
-#
-##############################################################################
-
-# Max compute units (CL_DEVICE_MAX_COMPUTE_UNITS)
-CL_DEVICE_MAX_COMPUTE_UNITS:
-
-# Max memory allocation size (CL_DEVICE_MAX_MEM_ALLOC_SIZE)
-CL_DEVICE_MAX_MEM_ALLOC_SIZE:
-
-# Image support (CL_DEVICE_IMAGE_SUPPORT), 1/0
-CL_DEVICE_IMAGE_SUPPORT:
-
-# Global memory size (CL_DEVICE_GLOBAL_MEM_SIZE)
-CL_DEVICE_GLOBAL_MEM_SIZE:
-
-# Max constant buffer size (CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE)
-CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE:
-
-# Local memory size (CL_DEVICE_LOCAL_MEM_SIZE)
-CL_DEVICE_LOCAL_MEM_SIZE:
-
-
-##############################################################################
-#
-# Extension Queries
-#
-##############################################################################
-# Show the list of supported extensions per device tested, each extension string on a separate line.
+List of skipped tests in accordance with conformance process:
 
