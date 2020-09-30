@@ -243,7 +243,7 @@ static int test_extended_versioning_platform_version(cl_platform_id platform)
 
 /* Check that CL_DEVICE{,_OPENCL_C}_NUMERIC_VERSION_KHR return the same versions
  * as CL_DEVICE{,_OPENCL_C}_VERSION */
-static int test_extended_versioning_device_versions(int ext,
+static int test_extended_versioning_device_versions(bool ext,
                                                     cl_device_id deviceID)
 {
     log_info("Device versions:\n");
@@ -727,8 +727,8 @@ static_assert(CL_MAKE_VERSION(1, 2, 3) == CL_MAKE_VERSION_KHR(1, 2, 3),
 int test_extended_versioning(cl_device_id deviceID, cl_context context,
                              cl_command_queue ignoreQueue, int num_elements)
 {
-    int ext = is_extension_available(deviceID, "cl_khr_extended_versioning");
-    int core = get_device_cl_version(deviceID) >= Version(3, 0);
+    bool ext = is_extension_available(deviceID, "cl_khr_extended_versioning");
+    bool core = get_device_cl_version(deviceID) >= Version(3, 0);
 
     if (!ext && !core)
     {
