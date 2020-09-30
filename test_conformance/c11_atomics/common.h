@@ -53,6 +53,7 @@ enum TExplicitMemoryScopeType
   MEMORY_SCOPE_EMPTY,
   MEMORY_SCOPE_WORK_GROUP,
   MEMORY_SCOPE_DEVICE,
+  MEMORY_SCOPE_ALL_DEVICES, // Alias for MEMORY_SCOPE_ALL_SVM_DEVICES
   MEMORY_SCOPE_ALL_SVM_DEVICES
 };
 
@@ -320,6 +321,7 @@ public:
               }
               break;
           }
+          case MEMORY_SCOPE_ALL_DEVICES: // fallthough
           case MEMORY_SCOPE_ALL_SVM_DEVICES: {
               if ((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES) == 0)
               {
@@ -538,11 +540,17 @@ public:
   }
   virtual cl_uint MaxHostThreads()
   {
-    // block host threads execution for memory scope different than memory_scope_all_svm_devices
-    if(MemoryScope() == MEMORY_SCOPE_ALL_SVM_DEVICES || gHost)
-      return CBasicTest<HostAtomicType, HostDataType>::MaxHostThreads();
-    else
-      return 0;
+      // block host threads execution for memory scope different than
+      // memory_scope_all_svm_devices
+      if (MemoryScope() == MEMORY_SCOPE_ALL_DEVICES
+          || MemoryScope() == MEMORY_SCOPE_ALL_SVM_DEVICES || gHost)
+      {
+          return CBasicTest<HostAtomicType, HostDataType>::MaxHostThreads();
+      }
+      else
+      {
+          return 0;
+      }
   }
 private:
   TExplicitMemoryOrderType _memoryOrder;
