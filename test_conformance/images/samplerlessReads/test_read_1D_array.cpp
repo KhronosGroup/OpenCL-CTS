@@ -173,6 +173,8 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
     clReleaseSampler(actualSampler);
     clReleaseMemObject(results);
+    clReleaseMemObject(read_only_image);
+
     if(gTestReadWrite)
     {
         clReleaseMemObject(read_write_image);
