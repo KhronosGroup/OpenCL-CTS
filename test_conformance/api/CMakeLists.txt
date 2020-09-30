@@ -33,6 +33,7 @@ set(${MODULE_NAME}_SOURCES
          test_context_destructor_callback.cpp
          test_mem_object_properties_queries.cpp
          test_queue_properties_queries.cpp
+         test_pipe_properties_queries.cpp
 )
 
 include(../CMakeCommon.txt)

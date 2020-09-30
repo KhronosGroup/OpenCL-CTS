@@ -127,6 +127,7 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(buffer_properties_queries, Version(3, 0)),
     ADD_TEST_VERSION(image_properties_queries, Version(3, 0)),
     ADD_TEST_VERSION(queue_properties_queries, Version(3, 0)),
+    ADD_TEST_VERSION(pipe_properties_queries, Version(3, 0)),
 
     ADD_TEST_VERSION(consistency_svm, Version(3, 0)),
     ADD_TEST_VERSION(consistency_memory_model, Version(3, 0)),
