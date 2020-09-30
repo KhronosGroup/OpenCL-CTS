@@ -243,7 +243,8 @@ static int test_extended_versioning_platform_version(cl_platform_id platform)
 
 /* Check that CL_DEVICE{,_OPENCL_C}_NUMERIC_VERSION_KHR return the same versions
  * as CL_DEVICE{,_OPENCL_C}_VERSION */
-static int test_extended_versioning_device_versions(cl_device_id deviceID)
+static int test_extended_versioning_device_versions(int ext,
+                                                    cl_device_id deviceID)
 {
     log_info("Device versions:\n");
 
@@ -260,6 +261,15 @@ static int test_extended_versioning_device_versions(cl_device_id deviceID)
 
     for (const auto& query : device_version_queries)
     {
+        // CL_DEVICE_OPENCL_C_NUMERIC_VERSION_KHR is only supported by
+        // cl_khr_extended_versioning:
+        if (!ext
+            && query.param_name_numeric
+                == CL_DEVICE_OPENCL_C_NUMERIC_VERSION_KHR)
+        {
+            continue;
+        }
+
         const std::vector<char> version_string(
             get_device_string(deviceID, query.param_name_string));
         if (version_string.empty())
@@ -688,14 +698,41 @@ static int test_extended_versioning_device_built_in_kernels(cl_device_id device)
     return 0;
 }
 
+// Assumes the core enums, structures, and macros exactly match
+// the extension enums, structures, and macros:
+
+static_assert(CL_PLATFORM_NUMERIC_VERSION == CL_PLATFORM_NUMERIC_VERSION_KHR,
+              "CL_PLATFORM_NUMERIC_VERSION mismatch");
+static_assert(CL_PLATFORM_EXTENSIONS_WITH_VERSION
+                  == CL_PLATFORM_EXTENSIONS_WITH_VERSION_KHR,
+              "CL_PLATFORM_EXTENSIONS_WITH_VERSION mismatch");
+
+static_assert(CL_DEVICE_NUMERIC_VERSION == CL_DEVICE_NUMERIC_VERSION_KHR,
+              "CL_DEVICE_NUMERIC_VERSION mismatch");
+static_assert(CL_DEVICE_EXTENSIONS_WITH_VERSION
+                  == CL_DEVICE_EXTENSIONS_WITH_VERSION_KHR,
+              "CL_DEVICE_EXTENSIONS_WITH_VERSION mismatch");
+static_assert(CL_DEVICE_ILS_WITH_VERSION == CL_DEVICE_ILS_WITH_VERSION_KHR,
+              "CL_DEVICE_ILS_WITH_VERSION mismatch");
+static_assert(CL_DEVICE_BUILT_IN_KERNELS_WITH_VERSION
+                  == CL_DEVICE_BUILT_IN_KERNELS_WITH_VERSION_KHR,
+              "CL_DEVICE_BUILT_IN_KERNELS_WITH_VERSION mismatch");
+
+static_assert(sizeof(cl_name_version) == sizeof(cl_name_version_khr),
+              "cl_name_version mismatch");
+
+static_assert(CL_MAKE_VERSION(1, 2, 3) == CL_MAKE_VERSION_KHR(1, 2, 3),
+              "CL_MAKE_VERSION mismatch");
+
 int test_extended_versioning(cl_device_id deviceID, cl_context context,
                              cl_command_queue ignoreQueue, int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_extended_versioning"))
+    int ext = is_extension_available(deviceID, "cl_khr_extended_versioning");
+    int core = get_device_cl_version(deviceID) >= Version(3, 0);
+
+    if (!ext && !core)
     {
-        log_info(
-            "cl_khr_extended_versioning not supported. Skipping test...\n");
-        return 0;
+        return TEST_SKIPPED_ITSELF;
     }
 
     cl_platform_id platform;
@@ -706,7 +743,7 @@ int test_extended_versioning(cl_device_id deviceID, cl_context context,
     int total_errors = 0;
     total_errors += test_extended_versioning_platform_version(platform);
     total_errors += test_extended_versioning_platform_extensions(platform);
-    total_errors += test_extended_versioning_device_versions(deviceID);
+    total_errors += test_extended_versioning_device_versions(ext, deviceID);
     total_errors += test_extended_versioning_device_extensions(deviceID);
     total_errors += test_extended_versioning_device_il(deviceID);
     total_errors += test_extended_versioning_device_built_in_kernels(deviceID);
