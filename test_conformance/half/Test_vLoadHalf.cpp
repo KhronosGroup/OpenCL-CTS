@@ -506,7 +506,7 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
                                        (aligned?"aligned":"unaligned"));
                             gFailCount++;
                             error = -1;
-                            break; // goto exit;
+                            goto exit;
                         }
                     }
                 }
