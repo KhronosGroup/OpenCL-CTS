@@ -210,42 +210,42 @@ CheckD(cl_uint jid, cl_uint tid, void *userInfo)
     return ret;
 }
 
-static cl_ushort float2half_rte(float f)
+static cl_half float2half_rte(float f)
 {
     return cl_half_from_float(f, CL_HALF_RTE);
 }
 
-static cl_ushort float2half_rtz(float f)
+static cl_half float2half_rtz(float f)
 {
     return cl_half_from_float(f, CL_HALF_RTZ);
 }
 
-static cl_ushort float2half_rtp(float f)
+static cl_half float2half_rtp(float f)
 {
     return cl_half_from_float(f, CL_HALF_RTP);
 }
 
-static cl_ushort float2half_rtn(float f)
+static cl_half float2half_rtn(float f)
 {
     return cl_half_from_float(f, CL_HALF_RTN);
 }
 
-static cl_ushort double2half_rte(double f)
+static cl_half double2half_rte(double f)
 {
     return cl_half_from_double(f, CL_HALF_RTE);
 }
 
-static cl_ushort double2half_rtz(double f)
+static cl_half double2half_rtz(double f)
 {
     return cl_half_from_double(f, CL_HALF_RTZ);
 }
 
-static cl_ushort double2half_rtp(double f)
+static cl_half double2half_rtp(double f)
 {
     return cl_half_from_double(f, CL_HALF_RTP);
 }
 
-static cl_ushort double2half_rtn(double f)
+static cl_half double2half_rtn(double f)
 {
     return cl_half_from_double(f, CL_HALF_RTN);
 }
@@ -696,30 +696,30 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
 
     ComputeReferenceInfoF fref;
     fref.x = (float *)gIn_single;
-    fref.r = (cl_ushort *)gOut_half_reference;
+    fref.r = (cl_half *)gOut_half_reference;
     fref.f = referenceFunc;
     fref.lim = blockCount;
     fref.count = (blockCount + threadCount - 1) / threadCount;
 
     CheckResultInfoF fchk;
     fchk.x = (const float *)gIn_single;
-    fchk.r = (const cl_ushort *)gOut_half_reference;
-    fchk.s = (const cl_ushort *)gOut_half;
+    fchk.r = (const cl_half *)gOut_half_reference;
+    fchk.s = (const cl_half *)gOut_half;
     fchk.f = referenceFunc;
     fchk.lim = blockCount;
     fchk.count = (blockCount + threadCount - 1) / threadCount;
 
     ComputeReferenceInfoD dref;
     dref.x = (double *)gIn_double;
-    dref.r = (cl_ushort *)gOut_half_reference_double;
+    dref.r = (cl_half *)gOut_half_reference_double;
     dref.f = doubleReferenceFunc;
     dref.lim = blockCount;
     dref.count = (blockCount + threadCount - 1) / threadCount;
 
     CheckResultInfoD dchk;
     dchk.x = (const double *)gIn_double;
-    dchk.r = (const cl_ushort *)gOut_half_reference_double;
-    dchk.s = (const cl_ushort *)gOut_half;
+    dchk.r = (const cl_half *)gOut_half_reference_double;
+    dchk.s = (const cl_half *)gOut_half;
     dchk.f = doubleReferenceFunc;
     dchk.lim = blockCount;
     dchk.count = (blockCount + threadCount - 1) / threadCount;
@@ -764,7 +764,9 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
                 cl_uint pattern = 0xdeaddead;
                 memset_pattern4( gOut_half, &pattern, BUFFER_SIZE/2);
 
-                error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE,
+                                             0, count * sizeof(cl_half),
+                                             gOut_half, 0, NULL, NULL);
                 if (error) {
                     vlog_error( "Failure in clWriteArray\n" );
                     gFailCount++;
@@ -779,7 +781,9 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
                     goto exit;
                 }
 
-                error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0,
+                                            count * sizeof(cl_half), gOut_half,
+                                            0, NULL, NULL);
                 if (error) {
                     vlog_error( "Failure in clReadArray\n" );
                     gFailCount++;
@@ -795,7 +799,9 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
                 if (gTestDouble) {
                     memset_pattern4( gOut_half, &pattern, BUFFER_SIZE/2);
 
-                    error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                    error = clEnqueueWriteBuffer(
+                        gQueue, gOutBuffer_half, CL_FALSE, 0,
+                        count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
                     if (error) {
                         vlog_error( "Failure in clWriteArray\n" );
                         gFailCount++;
@@ -810,7 +816,9 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
                         goto exit;
                     }
 
-                    error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                    error = clEnqueueReadBuffer(
+                        gQueue, gOutBuffer_half, CL_TRUE, 0,
+                        count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
                     if (error) {
                         vlog_error( "Failure in clReadArray\n" );
                         gFailCount++;
@@ -1285,30 +1293,30 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
 
     ComputeReferenceInfoF fref;
     fref.x = (float *)gIn_single;
-    fref.r = (cl_ushort *)gOut_half_reference;
+    fref.r = (cl_half *)gOut_half_reference;
     fref.f = referenceFunc;
     fref.lim = blockCount;
     fref.count = (blockCount + threadCount - 1) / threadCount;
 
     CheckResultInfoF fchk;
     fchk.x = (const float *)gIn_single;
-    fchk.r = (const cl_ushort *)gOut_half_reference;
-    fchk.s = (const cl_ushort *)gOut_half;
+    fchk.r = (const cl_half *)gOut_half_reference;
+    fchk.s = (const cl_half *)gOut_half;
     fchk.f = referenceFunc;
     fchk.lim = blockCount;
     fchk.count = (blockCount + threadCount - 1) / threadCount;
 
     ComputeReferenceInfoD dref;
     dref.x = (double *)gIn_double;
-    dref.r = (cl_ushort *)gOut_half_reference_double;
+    dref.r = (cl_half *)gOut_half_reference_double;
     dref.f = doubleReferenceFunc;
     dref.lim = blockCount;
     dref.count = (blockCount + threadCount - 1) / threadCount;
 
     CheckResultInfoD dchk;
     dchk.x = (const double *)gIn_double;
-    dchk.r = (const cl_ushort *)gOut_half_reference_double;
-    dchk.s = (const cl_ushort *)gOut_half;
+    dchk.r = (const cl_half *)gOut_half_reference_double;
+    dchk.s = (const cl_half *)gOut_half;
     dchk.f = doubleReferenceFunc;
     dchk.lim = blockCount;
     dchk.count = (blockCount + threadCount - 1) / threadCount;
@@ -1353,7 +1361,9 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
                 cl_uint pattern = 0xdeaddead;
                 memset_pattern4(gOut_half, &pattern, BUFFER_SIZE/2);
 
-                error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE,
+                                             0, count * sizeof(cl_half),
+                                             gOut_half, 0, NULL, NULL);
                 if (error) {
                     vlog_error( "Failure in clWriteArray\n" );
                     gFailCount++;
@@ -1368,7 +1378,9 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
                     goto exit;
                 }
 
-                error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0,
+                                            count * sizeof(cl_half), gOut_half,
+                                            0, NULL, NULL);
                 if (error) {
                     vlog_error( "Failure in clReadArray\n" );
                     gFailCount++;
@@ -1384,7 +1396,9 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
                 if (gTestDouble) {
                     memset_pattern4(gOut_half, &pattern, BUFFER_SIZE/2);
 
-                    error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                    error = clEnqueueWriteBuffer(
+                        gQueue, gOutBuffer_half, CL_FALSE, 0,
+                        count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
                     if (error) {
                         vlog_error( "Failure in clWriteArray\n" );
                         gFailCount++;
@@ -1399,7 +1413,9 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
                         goto exit;
                     }
 
-                    error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                    error = clEnqueueReadBuffer(
+                        gQueue, gOutBuffer_half, CL_TRUE, 0,
+                        count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
                     if (error) {
                         vlog_error( "Failure in clReadArray\n" );
                         gFailCount++;

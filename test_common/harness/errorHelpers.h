@@ -122,9 +122,9 @@ static int vlog_win32(const char *format, ...);
 
 extern const char    *IGetErrorString( int clErrorCode );
 
-extern float Ulp_Error_Half( cl_ushort test, float reference );
-extern float Ulp_Error( float test, double reference );
-extern float Ulp_Error_Double( double test, long double reference );
+extern float Ulp_Error_Half(cl_half test, float reference);
+extern float Ulp_Error(float test, double reference);
+extern float Ulp_Error_Double(double test, long double reference);
 
 extern const char *GetChannelTypeName( cl_channel_type type );
 extern int IsChannelTypeSupported( cl_channel_type type );

@@ -925,7 +925,7 @@ int get_format_min_int( cl_image_format *format )
     }
 }
 
-cl_ushort convert_float_to_half( float f )
+cl_half convert_float_to_half(float f)
 {
     switch( gFloatToHalfRoundingMode )
     {
@@ -1281,10 +1281,9 @@ void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
             break;
         }
 
-        case CL_HALF_FLOAT:
-        {
-            cl_ushort *dPtr = (cl_ushort *)ptr;
-            for( i = 0; i < channelCount; i++ )
+        case CL_HALF_FLOAT: {
+            cl_half *dPtr = (cl_half *)ptr;
+            for (i = 0; i < channelCount; i++)
                 tempData[i] = cl_half_to_float(dPtr[i]);
             break;
         }
@@ -2397,9 +2396,8 @@ void pack_image_pixel( float *srcVector, const cl_image_format *imageFormat, voi
     size_t channelCount = get_format_channel_count( imageFormat );
     switch( imageFormat->image_channel_data_type )
     {
-        case CL_HALF_FLOAT:
-        {
-            cl_ushort *ptr = (cl_ushort *)outData;
+        case CL_HALF_FLOAT: {
+            cl_half *ptr = (cl_half *)outData;
 
             switch( gFloatToHalfRoundingMode )
             {
@@ -2569,9 +2567,8 @@ void pack_image_pixel_error( const float *srcVector, const cl_image_format *imag
     size_t channelCount = get_format_channel_count( imageFormat );
     switch( imageFormat->image_channel_data_type )
     {
-        case CL_HALF_FLOAT:
-        {
-            const cl_ushort *ptr = (const cl_ushort *)results;
+        case CL_HALF_FLOAT: {
+            const cl_half *ptr = (const cl_half *)results;
 
             for( unsigned int i = 0; i < channelCount; i++ )
                 errors[i] = Ulp_Error_Half( ptr[i], srcVector[i] );
@@ -2838,25 +2835,28 @@ int  DetectFloatToHalfRoundingMode( cl_command_queue q )  // Returns CL_SUCCESS 
             return err;
         }
 
-    // read the results
-        cl_ushort outBuf[count*4];
-        memset( outBuf, -1, sizeof( outBuf ) );
-        size_t origin[3] = {0,0,0};
-        size_t region[3] = {count,1,1};
-        err = clEnqueueReadImage( q, outImage, CL_TRUE, origin, region, 0, 0, outBuf, 0, NULL, NULL );
-        if( err )
+        // read the results
+        cl_half outBuf[count * 4];
+        memset(outBuf, -1, sizeof(outBuf));
+        size_t origin[3] = { 0, 0, 0 };
+        size_t region[3] = { count, 1, 1 };
+        err = clEnqueueReadImage(q, outImage, CL_TRUE, origin, region, 0, 0,
+                                 outBuf, 0, NULL, NULL);
+        if (err)
         {
-            log_error( "Error: could not read output image in DetectFloatToHalfRoundingMode (%d)", err );
-            clReleaseMemObject( inBuf );
-            clReleaseMemObject( outImage );
-            clReleaseKernel( k );
+            log_error("Error: could not read output image in "
+                      "DetectFloatToHalfRoundingMode (%d)",
+                      err);
+            clReleaseMemObject(inBuf);
+            clReleaseMemObject(outImage);
+            clReleaseKernel(k);
             return err;
         }
 
-    // Generate our list of reference results
-        cl_ushort rte_ref[count*4];
-        cl_ushort rtz_ref[count*4];
-        for( size_t i = 0; i < 4 * count; i++ )
+        // Generate our list of reference results
+        cl_half rte_ref[count * 4];
+        cl_half rtz_ref[count * 4];
+        for (size_t i = 0; i < 4 * count; i++)
         {
             rte_ref[i] = cl_half_from_float(inp[i], CL_HALF_RTE);
             rtz_ref[i] = cl_half_from_float(inp[i], CL_HALF_RTZ);
