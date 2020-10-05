@@ -692,7 +692,8 @@ int test_min_max_image_3d_width(cl_device_id deviceID, cl_context context, cl_co
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( deviceID )
 
     /* Just get any ol format to test with */
-    error = get_8_bit_image_format( context, CL_MEM_OBJECT_IMAGE3D, CL_MEM_READ_WRITE, 0, &image_format_desc );
+    error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
+                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
     test_error( error, "Unable to obtain suitable image format to test with!" );
 
     /* Get the max 2d image width */
@@ -748,7 +749,8 @@ int test_min_max_image_3d_height(cl_device_id deviceID, cl_context context, cl_c
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( deviceID )
 
     /* Just get any ol format to test with */
-    error = get_8_bit_image_format( context, CL_MEM_OBJECT_IMAGE3D, CL_MEM_READ_WRITE, 0, &image_format_desc );
+    error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
+                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
     test_error( error, "Unable to obtain suitable image format to test with!" );
 
     /* Get the max 2d image width */
@@ -805,7 +807,8 @@ int test_min_max_image_3d_depth(cl_device_id deviceID, cl_context context, cl_co
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( deviceID )
 
     /* Just get any ol format to test with */
-    error = get_8_bit_image_format( context, CL_MEM_OBJECT_IMAGE3D, CL_MEM_READ_WRITE, 0, &image_format_desc );
+    error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
+                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
     test_error( error, "Unable to obtain suitable image format to test with!" );
 
     /* Get the max 2d image width */
