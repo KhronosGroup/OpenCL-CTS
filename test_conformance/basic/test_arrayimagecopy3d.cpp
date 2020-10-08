@@ -48,7 +48,7 @@ int test_arrayimagecopy3d_single_format(cl_device_id device, cl_context context,
 
   buffer_size = sizeof(cl_uchar) * elem_size * img_width * img_height * img_depth;
 
-  buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  buffer_size, NULL, &err);
+  buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_size, NULL, &err);
   test_error(err, "clCreateBuffer failed");
 
   d = init_genrand( gRandomSeed );

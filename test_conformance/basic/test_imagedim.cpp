@@ -163,7 +163,9 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
 
             img_format.image_channel_order = CL_RGBA;
             img_format.image_channel_data_type = CL_UNORM_INT8;
-            streams[0] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format, img_width, img_height, 0, NULL, NULL);
+            streams[0] =
+                create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                img_width, img_height, 0, NULL, NULL);
             if (!streams[0])
             {
                 log_error("create_image_2d failed.  width = %d, height = %d\n", img_width, img_height);
@@ -174,7 +176,9 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
             }
             img_format.image_channel_order = CL_RGBA;
             img_format.image_channel_data_type = CL_UNORM_INT8;
-            streams[1] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format, img_width, img_height, 0, NULL, NULL);
+            streams[1] =
+                create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                img_width, img_height, 0, NULL, NULL);
             if (!streams[1])
             {
                 log_error("create_image_2d failed.  width = %d, height = %d\n", img_width, img_height);
@@ -404,7 +408,9 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
 
                 img_format.image_channel_order = CL_RGBA;
                 img_format.image_channel_data_type = CL_UNORM_INT8;
-                streams[0] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format, effective_img_width, effective_img_height, 0, NULL, NULL);
+                streams[0] = create_image_2d(
+                    context, CL_MEM_READ_WRITE, &img_format,
+                    effective_img_width, effective_img_height, 0, NULL, NULL);
                 if (!streams[0])
                 {
                     log_error("create_image_2d failed.  width = %d, height = %d\n", effective_img_width, effective_img_height);
@@ -415,7 +421,9 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
                 }
                 img_format.image_channel_order = CL_RGBA;
                 img_format.image_channel_data_type = CL_UNORM_INT8;
-                streams[1] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format, effective_img_width, effective_img_height, 0, NULL, NULL);
+                streams[1] = create_image_2d(
+                    context, CL_MEM_READ_WRITE, &img_format,
+                    effective_img_width, effective_img_height, 0, NULL, NULL);
                 if (!streams[1])
                 {
                     log_error("create_image_2d failed.  width = %d, height = %d\n", effective_img_width, effective_img_height);

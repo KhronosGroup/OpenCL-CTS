@@ -138,7 +138,9 @@ int test_global_work_offsets(cl_device_id deviceID, cl_context context, cl_comma
     memset( outputA, 0xff, sizeof( outputA ) );
     for( int i = 0; i < 3; i++ )
     {
-        streams[ i ] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR), sizeof(outputA), outputA, &error );
+        streams[i] =
+            clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                           sizeof(outputA), outputA, &error);
         test_error( error, "Unable to create output array" );
     }
 
@@ -228,7 +230,9 @@ int test_get_global_offset(cl_device_id deviceID, cl_context context, cl_command
 
     // Create some output streams, and storage for a single control ID
     memset( outOffsets, 0xff, sizeof( outOffsets ) );
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR), sizeof( outOffsets ), outOffsets, &error );
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                       sizeof(outOffsets), outOffsets, &error);
     test_error( error, "Unable to create control ID buffer" );
 
     // Run a few different times
