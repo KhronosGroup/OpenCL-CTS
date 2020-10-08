@@ -136,7 +136,8 @@ int test_min_max_thread_dimensions(cl_device_id deviceID, cl_context context, cl
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_int) * 100, NULL, &error );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * 100, NULL, &error);
     if( streams[0] == NULL )
     {
         log_error("ERROR: Creating test array failed!\n");
@@ -321,7 +322,8 @@ int test_min_max_read_image_args(cl_device_id deviceID, cl_context context, cl_c
     test_error( error, "Failed to create the program and kernel.");
     free( programSrc );
 
-    result = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_float), NULL, &error);
+    result = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_float), NULL,
+                            &error);
     test_error( error, "clCreateBufer failed");
 
     /* Create some I/O streams */
@@ -1095,7 +1097,8 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
         /* Try to set a large argument to the kernel */
         retVal = 0;
 
-        mem = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_long), NULL, &error);
+        mem = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_long), NULL,
+                             &error);
         test_error(error, "clCreateBuffer failed");
 
         for (i=0; i<(int)numberOfIntParametersToTry; i++) {
@@ -1249,7 +1252,8 @@ int test_min_max_samplers(cl_device_id deviceID, cl_context context, cl_command_
     clMemWrapper image = create_image_2d( context, CL_MEM_READ_WRITE, &format, 16, 16, 0, NULL, &error );
     test_error( error, "Unable to create a test image" );
 
-    clMemWrapper stream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), 16, NULL, &error );
+    clMemWrapper stream =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, 16, NULL, &error);
     test_error( error, "Unable to create test buffer" );
 
     error = clSetKernelArg( kernel, 0, sizeof( cl_mem ), &image );
@@ -1350,9 +1354,11 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
             constantData[i] = (int)genrand_int32(d);
 
         clMemWrapper streams[3];
-        streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeToAllocate, constantData, &error);
+        streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                    sizeToAllocate, constantData, &error);
         test_error( error, "Creating test array failed" );
-        streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeToAllocate, NULL, &error);
+        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
+                                    NULL, &error);
         test_error( error, "Creating test array failed" );
 
 
@@ -1516,7 +1522,8 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context, cl_com
     streams = new clMemWrapper[ maxArgs + 1 ];
     for( i = 0; i < maxArgs + 1; i++ )
     {
-        streams[i] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), individualBufferSize, NULL, &error);
+        streams[i] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    individualBufferSize, NULL, &error);
         test_error( error, "Creating test array failed" );
     }
 
@@ -1724,9 +1731,11 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context, cl_co
         localData[i] = (int)genrand_int32(d);
     free_mtdata(d); d = NULL;
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeToAllocate, localData, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeToAllocate,
+                                localData, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeToAllocate, NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
+                                NULL, &error);
     test_error( error, "Creating test array failed" );
 
 

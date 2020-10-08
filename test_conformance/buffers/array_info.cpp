@@ -33,7 +33,8 @@ int test_array_info_size( cl_device_id deviceID, cl_context context, cl_command_
     size_t          retSize;
     size_t          elementSize = sizeof( cl_int );
 
-    memobj = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  elementSize * w*h*d, NULL, &err);
+    memobj = clCreateBuffer(context, CL_MEM_READ_WRITE, elementSize * w * h * d,
+                            NULL, &err);
     test_error(err, "clCreateBuffer failed.");
 
     err = clGetMemObjectInfo(memobj, CL_MEM_SIZE, sizeof( size_t ), (void *)&retSize, NULL);

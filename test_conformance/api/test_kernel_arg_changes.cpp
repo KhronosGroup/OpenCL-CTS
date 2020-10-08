@@ -74,14 +74,16 @@ int test_kernel_arg_changes(cl_device_id device, cl_context context, cl_command_
         sizes[ i ][ 0 ] = genrand_int32(seed) % (maxWidth/32) + 1;
         sizes[ i ][ 1 ] = genrand_int32(seed) % (maxHeight/32) + 1;
 
-        images[ i ] = create_image_2d( context, (cl_mem_flags)(CL_MEM_READ_ONLY),
-                                     &imageFormat, sizes[ i ][ 0], sizes[ i ][ 1 ], 0, NULL, &error );
+        images[i] = create_image_2d(context, CL_MEM_READ_ONLY, &imageFormat,
+                                    sizes[i][0], sizes[i][1], 0, NULL, &error);
         if( images[i] == NULL )
         {
             log_error("Failed to create image %d of size %d x %d (%s).\n", i, (int)sizes[i][0], (int)sizes[i][1], IGetErrorString( error ));
             return -1;
         }
-        results[ i ] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof( cl_int ) * threads[0] * 2, NULL, &error );
+        results[i] =
+            clCreateBuffer(context, CL_MEM_READ_WRITE,
+                           sizeof(cl_int) * threads[0] * 2, NULL, &error);
         if( results[i] == NULL)
         {
             log_error("Failed to create array %d of size %d.\n", i, (int)threads[0]*2);

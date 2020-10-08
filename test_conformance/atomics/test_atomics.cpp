@@ -243,13 +243,17 @@ int test_atomic_function(cl_device_id deviceID, cl_context context, cl_command_q
     for( size_t i = 0; i < numDestItems; i++ )
         memcpy( destItems + i * typeSize, startValue, typeSize );
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), typeSize * numDestItems, destItems, NULL);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                typeSize * numDestItems, destItems, NULL);
     if (!streams[0])
     {
         log_error("ERROR: Creating output array failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(( startRefValues != NULL ? CL_MEM_COPY_HOST_PTR : CL_MEM_READ_WRITE )), typeSize * threadSize, startRefValues, NULL);
+    streams[1] = clCreateBuffer(
+        context,
+        ((startRefValues != NULL ? CL_MEM_COPY_HOST_PTR : CL_MEM_READ_WRITE)),
+        typeSize * threadSize, startRefValues, NULL);
     if (!streams[1])
     {
         log_error("ERROR: Creating reference array failed!\n");
