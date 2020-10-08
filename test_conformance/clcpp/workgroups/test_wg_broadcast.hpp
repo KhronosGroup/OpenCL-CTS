@@ -368,10 +368,12 @@ int work_group_broadcast(cl_device_id device, cl_context context, cl_command_que
     std::vector<cl_uint> input = generate_input_wg_broadcast(flat_work_size, flat_wg_size);
     std::vector<cl_uint> output = generate_output_wg_broadcast(flat_work_size, flat_wg_size);
 
-    buffers[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * input.size(), NULL, &err);
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_uint) * input.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer");
 
-    buffers[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * output.size(), NULL, &err);
+    buffers[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_uint) * output.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer");
 
     err = clEnqueueWriteBuffer(

@@ -357,7 +357,8 @@ struct constant_pointer_test : public address_spaces_test<T>
         RETURN_ON_CL_ERROR(err, "clGetCommandQueueInfo");
 
         // Create constant buffer
-        auto const_buff = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_ONLY), sizeof(cl_uint), NULL, &err);
+        auto const_buff = clCreateBuffer(context, CL_MEM_READ_ONLY,
+                                         sizeof(cl_uint), NULL, &err);
         RETURN_ON_CL_ERROR(err, "clCreateBuffer");
 
         // Write m_test_value to const_buff

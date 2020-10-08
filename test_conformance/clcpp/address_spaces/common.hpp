@@ -165,9 +165,8 @@ int run_address_spaces_test(cl_device_id device, cl_context context, cl_command_
     std::vector<TYPE> output = generate_output<TYPE>(work_size[0], 9999);
 
     // output buffer
-    buffers[0] = clCreateBuffer
-        (context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(TYPE) * output.size(), NULL, &err
-    );
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(TYPE) * output.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
     // Execute test
