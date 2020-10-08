@@ -639,7 +639,8 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
 
     for( i = 0; i < loops; i++ ){
         ii = i << 1;
-        streams[ii] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  ptrSizes[i] * num_elements, NULL, &err );
+        streams[ii] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                     ptrSizes[i] * num_elements, NULL, &err);
         if( ! streams[ii] ){
             free( outptr[i] );
             log_error( " clCreateBuffer failed\n" );
@@ -647,11 +648,15 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
         }
         if( ! strcmp( type, "half" ) ){
             outptr[i] = malloc( outPtrSizes[i] * num_elements * 2 );
-            streams[ii+1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  outPtrSizes[i] * 2 * num_elements, NULL, &err );
+            streams[ii + 1] =
+                clCreateBuffer(context, CL_MEM_READ_WRITE,
+                               outPtrSizes[i] * 2 * num_elements, NULL, &err);
         }
         else{
             outptr[i] = malloc( outPtrSizes[i] * num_elements );
-            streams[ii+1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  outPtrSizes[i] * num_elements, NULL, &err );
+            streams[ii + 1] =
+                clCreateBuffer(context, CL_MEM_READ_WRITE,
+                               outPtrSizes[i] * num_elements, NULL, &err);
         }
         if( ! streams[ii+1] ){
             clReleaseMemObject(streams[ii]);
