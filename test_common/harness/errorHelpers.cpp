@@ -85,7 +85,13 @@ const char    *IGetErrorString( int clErrorCode )
         case CL_INVALID_IMAGE_DESCRIPTOR: return "CL_INVALID_IMAGE_DESCRIPTOR";
         case CL_INVALID_COMPILER_OPTIONS: return "CL_INVALID_COMPILER_OPTIONS";
         case CL_INVALID_LINKER_OPTIONS: return "CL_INVALID_LINKER_OPTIONS";
-        case CL_INVALID_DEVICE_PARTITION_COUNT: return "CL_INVALID_DEVICE_PARTITION_COUNT";
+        case CL_INVALID_DEVICE_PARTITION_COUNT:
+            return "CL_INVALID_DEVICE_PARTITION_COUNT";
+        case CL_INVALID_PIPE_SIZE: return "CL_INVALID_PIPE_SIZE";
+        case CL_INVALID_DEVICE_QUEUE: return "CL_INVALID_DEVICE_QUEUE";
+        case CL_INVALID_SPEC_ID: return "CL_INVALID_SPEC_ID";
+        case CL_MAX_SIZE_RESTRICTION_EXCEEDED:
+            return "CL_MAX_SIZE_RESTRICTION_EXCEEDED";
         default: return "(unknown)";
     }
 }
@@ -278,6 +284,19 @@ const char *GetDataVectorString( void *dataBuffer, size_t typeSize, size_t vecSi
     return buffer;
 }
 
+const char *GetQueuePropertyName(cl_command_queue_properties property)
+{
+    switch (property)
+    {
+        case CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE:
+            return "CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE";
+        case CL_QUEUE_PROFILING_ENABLE: return "CL_QUEUE_PROFILING_ENABLE";
+        case CL_QUEUE_ON_DEVICE: return "CL_QUEUE_ON_DEVICE";
+        case CL_QUEUE_ON_DEVICE_DEFAULT: return "CL_QUEUE_ON_DEVICE_DEFAULT";
+        default: return "(unknown)";
+    }
+}
+
 #ifndef MAX
 #define MAX( _a, _b )       ((_a) > (_b) ? (_a) : (_b))
 #endif
@@ -335,7 +354,7 @@ static float Ulp_Error_Half_Float( float test, double reference )
     return (float) scalbn( testVal - reference, ulp_exp );
 }
 
-float Ulp_Error_Half( cl_ushort test, float reference )
+float Ulp_Error_Half(cl_half test, float reference)
 {
     return Ulp_Error_Half_Float(cl_half_to_float(test), reference);
 }
@@ -725,6 +744,7 @@ const char *subtests_to_skip_with_offline_compiler[] = {
     "simple_link_with_callback",
     "simple_static_compile_only",
     "two_file_link",
+    "async_build",
 };
 
 int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device)

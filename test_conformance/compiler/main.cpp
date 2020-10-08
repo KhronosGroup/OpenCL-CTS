@@ -50,6 +50,7 @@ test_definition test_list[] = {
     ADD_TEST(preprocessor_line_error),
     ADD_TEST(preprocessor_pragma),
 
+    ADD_TEST(opencl_c_versions),
     ADD_TEST(compiler_defines_for_extensions),
     ADD_TEST(image_macro),
 
@@ -89,8 +90,9 @@ test_definition test_list[] = {
 
     ADD_TEST_VERSION(pragma_unroll, Version(2, 0)),
 
+    ADD_TEST_VERSION(features_macro, Version(3, 0)),
     ADD_TEST(unload_valid),
-    ADD_TEST(unload_invalid),
+    // ADD_TEST(unload_invalid), // disabling temporarily, see GitHub #977
     ADD_TEST(unload_repeated),
     ADD_TEST(unload_compile_unload_link),
     ADD_TEST(unload_build_unload_create_kernel),
@@ -98,6 +100,7 @@ test_definition test_list[] = {
     ADD_TEST(unload_build_threaded),
     ADD_TEST(unload_build_info),
     ADD_TEST(unload_program_binaries),
+
 };
 
 const int test_num = ARRAY_SIZE(test_list);

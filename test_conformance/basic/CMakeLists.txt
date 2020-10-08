@@ -39,6 +39,7 @@ set(${MODULE_NAME}_SOURCES
     test_async_copy.cpp
     test_sizeof.cpp
     test_vector_creation.cpp
+    test_vector_swizzle.cpp
     test_vec_type_hint.cpp
     test_numeric_constants.cpp
     test_constant_source.cpp

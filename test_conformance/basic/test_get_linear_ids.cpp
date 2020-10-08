@@ -59,7 +59,8 @@ test_get_linear_ids(cl_device_id device, cl_context context, cl_command_queue qu
 
 
     // Create the kernel
-    error = create_single_kernel_helper_with_build_options(context, &program, &kernel, 1, linear_ids_source, "test_linear_ids", "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                        linear_ids_source, "test_linear_ids");
     if (error)
         return error;
 

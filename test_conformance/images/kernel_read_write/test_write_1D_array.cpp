@@ -491,8 +491,18 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
                                         log_error( "    Error:    %f %f %f %f\n", errors[0], errors[1], errors[2], errors[3] );
                                         break;
                                     case CL_HALF_FLOAT:
-                                        log_error( "    Expected: 0x%4.4x 0x%4.4x 0x%4.4x 0x%4.4x\n", ((cl_ushort*)resultBuffer)[0], ((cl_ushort*)resultBuffer)[1], ((cl_ushort*)resultBuffer)[2], ((cl_ushort*)resultBuffer)[3] );
-                                        log_error( "    Actual:   0x%4.4x 0x%4.4x 0x%4.4x 0x%4.4x\n", ((cl_ushort*)resultPtr)[0], ((cl_ushort*)resultPtr)[1], ((cl_ushort*)resultPtr)[2], ((cl_ushort*)resultPtr)[3] );
+                                        log_error("    Expected: 0x%4.4x "
+                                                  "0x%4.4x 0x%4.4x 0x%4.4x\n",
+                                                  ((cl_half *)resultBuffer)[0],
+                                                  ((cl_half *)resultBuffer)[1],
+                                                  ((cl_half *)resultBuffer)[2],
+                                                  ((cl_half *)resultBuffer)[3]);
+                                        log_error("    Actual:   0x%4.4x "
+                                                  "0x%4.4x 0x%4.4x 0x%4.4x\n",
+                                                  ((cl_half *)resultPtr)[0],
+                                                  ((cl_half *)resultPtr)[1],
+                                                  ((cl_half *)resultPtr)[2],
+                                                  ((cl_half *)resultPtr)[3]);
                                         log_error( "    Ulps:     %f %f %f %f\n", errors[0], errors[1], errors[2], errors[3] );
                                         break;
                                     case CL_UNSIGNED_INT32:

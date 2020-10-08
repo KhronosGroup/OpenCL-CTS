@@ -23,6 +23,8 @@ set(${MODULE_NAME}_SOURCES
          test_kernel_arg_info_compatibility.cpp
          test_null_buffer_arg.cpp
          test_mem_object_info.cpp
+         test_min_image_formats.cpp
+         test_queue.cpp
          test_queue_hint.cpp
          test_queue_properties.cpp
          test_sub_group_dispatch.cpp
@@ -30,6 +32,8 @@ set(${MODULE_NAME}_SOURCES
          test_zero_sized_enqueue.cpp
          test_context_destructor_callback.cpp
          test_mem_object_properties_queries.cpp
+         test_queue_properties_queries.cpp
+         test_pipe_properties_queries.cpp
 )
 
 include(../CMakeCommon.txt)

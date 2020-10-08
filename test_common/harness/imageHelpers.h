@@ -83,14 +83,14 @@ extern void build_required_image_formats(cl_mem_flags flags,
                                          cl_device_id device,
                                          std::vector<cl_image_format>& formatsToSupport);
 
-extern size_t get_format_type_size( const cl_image_format *format );
-extern size_t get_channel_data_type_size( cl_channel_type channelType );
-extern size_t get_format_channel_count( const cl_image_format *format );
-extern size_t get_channel_order_channel_count( cl_channel_order order );
+extern uint32_t get_format_type_size(const cl_image_format *format);
+extern uint32_t get_channel_data_type_size(cl_channel_type channelType);
+extern uint32_t get_format_channel_count(const cl_image_format *format);
+extern uint32_t get_channel_order_channel_count(cl_channel_order order);
 cl_channel_type  get_channel_type_from_name( const char *name );
 cl_channel_order  get_channel_order_from_name( const char *name );
 extern int    is_format_signed( const cl_image_format *format );
-extern size_t get_pixel_size( cl_image_format *format );
+extern uint32_t get_pixel_size(cl_image_format *format);
 
 /* Helper to get any ol image format as long as it is 8-bits-per-channel */
 extern int get_8_bit_image_format( cl_context context, cl_mem_object_type objType, cl_mem_flags flags, size_t channelCount, cl_image_format *outFormat );
@@ -275,10 +275,9 @@ template <class T> void read_image_pixel( void *imageData, image_descriptor *ima
             break;
         }
 
-        case CL_HALF_FLOAT:
-        {
-            cl_ushort *dPtr = (cl_ushort *)ptr;
-            for( i = 0; i < get_format_channel_count( format ); i++ )
+        case CL_HALF_FLOAT: {
+            cl_half *dPtr = (cl_half *)ptr;
+            for (i = 0; i < get_format_channel_count(format); i++)
                 tempData[i] = (T)cl_half_to_float(dPtr[i]);
             break;
         }
@@ -639,18 +638,22 @@ protected:
     size_t    mVecSize;
 };
 
-extern cl_ushort convert_float_to_half(float f);
-extern int  DetectFloatToHalfRoundingMode( cl_command_queue );  // Returns CL_SUCCESS on success
+extern cl_half convert_float_to_half(float f);
+extern int DetectFloatToHalfRoundingMode(
+    cl_command_queue); // Returns CL_SUCCESS on success
 
 // sign bit: don't care, exponent: maximum value, significand: non-zero
-static int inline is_half_nan( cl_ushort half ){ return ( half & 0x7fff ) > 0x7c00; }
+static int inline is_half_nan(cl_half half) { return (half & 0x7fff) > 0x7c00; }
 
 // sign bit: don't care, exponent: zero, significand: non-zero
-static int inline is_half_denorm( cl_ushort half ){ return IsHalfSubnormal( half ); }
+static int inline is_half_denorm(cl_half half) { return IsHalfSubnormal(half); }
 
 // sign bit: don't care, exponent: zero, significand: zero
-static int inline is_half_zero( cl_ushort half ){ return ( half & 0x7fff ) == 0; }
+static int inline is_half_zero(cl_half half) { return (half & 0x7fff) == 0; }
 
 extern double sRGBmap(float fc);
+
+extern const char *convert_image_type_to_string(cl_mem_object_type imageType);
+
 
 #endif // _imageHelpers_h

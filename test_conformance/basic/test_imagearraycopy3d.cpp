@@ -38,7 +38,8 @@ int test_imagearraycopy3d_single_format(cl_device_id device, cl_context context,
 
   log_info("Testing %s %s\n", GetChannelOrderName(format->image_channel_order), GetChannelTypeName(format->image_channel_data_type));
 
-  image = create_image_3d(context, (cl_mem_flags)(CL_MEM_READ_WRITE), format, img_width, img_height, img_depth, 0, 0, NULL, &err);
+  image = create_image_3d(context, CL_MEM_READ_ONLY, format, img_width,
+                          img_height, img_depth, 0, 0, NULL, &err);
   test_error(err, "create_image_3d failed");
 
   err = clGetImageInfo(image, CL_IMAGE_ELEMENT_SIZE, sizeof(size_t), &elem_size, NULL);
@@ -121,12 +122,15 @@ int test_imagearraycopy3d(cl_device_id device, cl_context context, cl_command_qu
 
   PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( device )
 
-  err = clGetSupportedImageFormats(context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE3D, 0, NULL, &num_formats);
+  err = clGetSupportedImageFormats(
+      context, CL_MEM_READ_ONLY, CL_MEM_OBJECT_IMAGE3D, 0, NULL, &num_formats);
   test_error(err, "clGetSupportedImageFormats failed");
 
   formats = (cl_image_format *)malloc(num_formats * sizeof(cl_image_format));
 
-  err = clGetSupportedImageFormats(context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE3D, num_formats, formats, NULL);
+  err = clGetSupportedImageFormats(context, CL_MEM_READ_ONLY,
+                                   CL_MEM_OBJECT_IMAGE3D, num_formats, formats,
+                                   NULL);
   test_error(err, "clGetSupportedImageFormats failed");
 
   for (i = 0; i < num_formats; i++) {

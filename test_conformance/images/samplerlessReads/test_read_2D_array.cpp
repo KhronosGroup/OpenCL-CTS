@@ -176,6 +176,11 @@ int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_co
 
     int error;
 
+    if (gTestReadWrite && checkForReadWriteImageSupport(device))
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
+
     clProgramWrapper program;
     clKernelWrapper kernel;
 

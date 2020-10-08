@@ -26,6 +26,8 @@ extern int test_enqueue_multi_queue(cl_device_id device, cl_context context, cl_
 extern int test_host_multi_queue(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_enqueue_ndrange(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_host_queue_order(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_enqueue_profiling(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements);
 
 extern int test_execution_stress(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 

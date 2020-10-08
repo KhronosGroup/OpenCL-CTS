@@ -243,75 +243,134 @@ static const char *KERNEL_FUNCTION =
   NL "}"
   NL ;
 
-TestNonUniformWorkGroup::TestNonUniformWorkGroup (const cl_device_id &device, const cl_context &context,
-  const cl_command_queue &queue, const cl_uint dims, const size_t *globalSize, const size_t *localSize, const size_t *buffersSize,
-  const size_t *globalWorkOffset, const size_t *reqdWorkGroupSize)
-  : _device(device), _context(context), _queue(queue), _dims (dims) {
+TestNonUniformWorkGroup::TestNonUniformWorkGroup(
+    const cl_device_id &device, const cl_context &context,
+    const cl_command_queue &queue, const cl_uint dims, size_t *globalSize,
+    const size_t *localSize, const size_t *buffersSize,
+    const size_t *globalWorkOffset, const size_t *reqdWorkGroupSize)
+    : _device(device), _context(context), _queue(queue), _dims(dims)
+{
 
-  if (globalSize == NULL || dims < 1 || dims > 3) {
-    //throw std::invalid_argument("globalSize is NULL value.");
-    // This is method of informing that parameters are wrong.
-    // It would be checked by prepareDevice() function.
-    // This is used because of lack of exception support.
-    _globalSize[0] = 0;
-    return;
-  }
-
-  cl_uint i;
-  _globalWorkOffset_IsNull = true;
-  _localSize_IsNull = true;
-
-  setGlobalWorkgroupSize(globalSize);
-  setLocalWorkgroupSize(globalSize,localSize);
-  for (i = _dims; i < MAX_DIMS; i++) {
-    _globalSize[i] = 1;
-  }
-
-  for (i = 0; i < MAX_DIMS; i++) {
-    _globalWorkOffset[i] = 0;
-  }
-
-  if (globalWorkOffset) {
-    _globalWorkOffset_IsNull = false;
-    for (i = 0; i < _dims; i++) {
-      _globalWorkOffset[i] = globalWorkOffset[i];
+    if (globalSize == NULL || dims < 1 || dims > 3)
+    {
+        // throw std::invalid_argument("globalSize is NULL value.");
+        // This is method of informing that parameters are wrong.
+        // It would be checked by prepareDevice() function.
+        // This is used because of lack of exception support.
+        _globalSize[0] = 0;
+        return;
     }
-  }
 
-  for (i = 0; i < MAX_DIMS; i++) {
-    _enqueuedLocalSize[i] = 1;
-  }
+    // For OpenCL-3.0 support for non-uniform workgroups is optional, it's still
+    // useful to run these tests since we can verify the behavior of the
+    // get_enqueued_local_size() builtin for uniform workgroups, so we round up
+    // the global size to insure uniform workgroups on those 3.0 devices.
+    // We only need to do this when localSize is non-null, otherwise the driver
+    // will select a value for localSize which will be uniform on devices that
+    // don't support non-uniform work-groups.
+    if (nullptr != localSize && get_device_cl_version(device) >= Version(3, 0))
+    {
+        // Query for the non-uniform work-group support.
+        cl_bool are_non_uniform_sub_groups_supported{ CL_FALSE };
+        auto error =
+            clGetDeviceInfo(device, CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT,
+                            sizeof(are_non_uniform_sub_groups_supported),
+                            &are_non_uniform_sub_groups_supported, nullptr);
+        if (error)
+        {
+            print_error(error,
+                        "clGetDeviceInfo failed for "
+                        "CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT");
+            // This signals an error to the caller (see above).
+            _globalSize[0] = 0;
+            return;
+        }
 
-  if (localSize) {
-    _localSize_IsNull = false;
-    for (i = 0; i < _dims; i++) {
-      _enqueuedLocalSize[i] = _localSize[i];
+        // If non-uniform work-groups are not supported round up the global
+        // sizes so workgroups are uniform and we have at least one.
+        if (CL_FALSE == are_non_uniform_sub_groups_supported)
+        {
+            log_info(
+                "WARNING: Non-uniform work-groups are not supported on this "
+                "device.\n Running test with uniform work-groups.\n");
+            for (unsigned dim = 0; dim < dims; ++dim)
+            {
+                auto global_size_before = globalSize[dim];
+                auto global_size_rounded = global_size_before
+                    + (localSize[dim] - global_size_before % localSize[dim]);
+                globalSize[dim] = global_size_rounded;
+                log_info("Rounding globalSize[%d] = %d -> %d\n", dim,
+                         global_size_before, global_size_rounded);
+            }
+        }
     }
-  }
 
-  if (reqdWorkGroupSize) {
-    for (i = 0; i < _dims; i++) {
-      _reqdWorkGroupSize[i] = reqdWorkGroupSize[i];
+    cl_uint i;
+    _globalWorkOffset_IsNull = true;
+    _localSize_IsNull = true;
+
+    setGlobalWorkgroupSize(globalSize);
+    setLocalWorkgroupSize(globalSize, localSize);
+    for (i = _dims; i < MAX_DIMS; i++)
+    {
+        _globalSize[i] = 1;
     }
-    for (i = _dims; i < MAX_DIMS; i++) {
-      _reqdWorkGroupSize[i] = 1;
+
+    for (i = 0; i < MAX_DIMS; i++)
+    {
+        _globalWorkOffset[i] = 0;
     }
-  } else {
-    _reqdWorkGroupSize[0] = 0;
-    _reqdWorkGroupSize[1] = 0;
-    _reqdWorkGroupSize[2] = 0;
-  }
 
-  _testRange = Range::ALL;
+    if (globalWorkOffset)
+    {
+        _globalWorkOffset_IsNull = false;
+        for (i = 0; i < _dims; i++)
+        {
+            _globalWorkOffset[i] = globalWorkOffset[i];
+        }
+    }
 
-  _numOfGlobalWorkItems = _globalSize[0]*_globalSize[1]*_globalSize[2];
+    for (i = 0; i < MAX_DIMS; i++)
+    {
+        _enqueuedLocalSize[i] = 1;
+    }
 
-  DataContainerAttrib temp = {{0, 0, 0}};
+    if (localSize)
+    {
+        _localSize_IsNull = false;
+        for (i = 0; i < _dims; i++)
+        {
+            _enqueuedLocalSize[i] = _localSize[i];
+        }
+    }
 
-  // array with results from each region
-  _resultsRegionArray.resize(NUMBER_OF_REGIONS, temp);
-  _referenceRegionArray.resize(NUMBER_OF_REGIONS, temp);
+    if (reqdWorkGroupSize)
+    {
+        for (i = 0; i < _dims; i++)
+        {
+            _reqdWorkGroupSize[i] = reqdWorkGroupSize[i];
+        }
+        for (i = _dims; i < MAX_DIMS; i++)
+        {
+            _reqdWorkGroupSize[i] = 1;
+        }
+    }
+    else
+    {
+        _reqdWorkGroupSize[0] = 0;
+        _reqdWorkGroupSize[1] = 0;
+        _reqdWorkGroupSize[2] = 0;
+    }
 
+    _testRange = Range::ALL;
+
+    _numOfGlobalWorkItems = _globalSize[0] * _globalSize[1] * _globalSize[2];
+
+    DataContainerAttrib temp = { { 0, 0, 0 } };
+
+    // array with results from each region
+    _resultsRegionArray.resize(NUMBER_OF_REGIONS, temp);
+    _referenceRegionArray.resize(NUMBER_OF_REGIONS, temp);
 }
 
 TestNonUniformWorkGroup::~TestNonUniformWorkGroup () {
@@ -482,7 +541,7 @@ int TestNonUniformWorkGroup::prepareDevice () {
   if(_localSize_IsNull == false)
     calculateExpectedValues();
 
-  std::string buildOptions = BUILD_CL_STD_2_0;
+  std::string buildOptions{};
   if(_reqdWorkGroupSize[0] != 0 && _reqdWorkGroupSize[1] != 0 && _reqdWorkGroupSize[2] != 0) {
     std::ostringstream tmp(" ");
     tmp << " -D RWGSX=" << _reqdWorkGroupSize[0]
@@ -721,42 +780,50 @@ int TestNonUniformWorkGroup::runKernel () {
   return 0;
 }
 
-void SubTestExecutor::runTestNonUniformWorkGroup(const cl_uint dims, const size_t *globalSize,
-  const size_t *localSize, int range) {
-  runTestNonUniformWorkGroup (dims, globalSize, localSize, NULL, NULL, range);
+void SubTestExecutor::runTestNonUniformWorkGroup(const cl_uint dims,
+                                                 size_t *globalSize,
+                                                 const size_t *localSize,
+                                                 int range)
+{
+    runTestNonUniformWorkGroup(dims, globalSize, localSize, NULL, NULL, range);
 }
 
-void SubTestExecutor::runTestNonUniformWorkGroup(const cl_uint dims, const size_t *globalSize,
-  const size_t *localSize, const size_t *globalWorkOffset,
-  const size_t *reqdWorkGroupSize, int range) {
+void SubTestExecutor::runTestNonUniformWorkGroup(
+    const cl_uint dims, size_t *globalSize, const size_t *localSize,
+    const size_t *globalWorkOffset, const size_t *reqdWorkGroupSize, int range)
+{
 
 
-  int err;
-  ++_overallCounter;
-  TestNonUniformWorkGroup test (_device, _context, _queue, dims, globalSize, localSize,
-    NULL, globalWorkOffset, reqdWorkGroupSize);
+    int err;
+    ++_overallCounter;
+    TestNonUniformWorkGroup test(_device, _context, _queue, dims, globalSize,
+                                 localSize, NULL, globalWorkOffset,
+                                 reqdWorkGroupSize);
 
-  test.setTestRange(range);
-  err = test.prepareDevice();
-  if (err) {
-    log_error ("Error: prepare device\n");
-    ++_failCounter;
-    return;
-  }
+    test.setTestRange(range);
+    err = test.prepareDevice();
+    if (err)
+    {
+        log_error("Error: prepare device\n");
+        ++_failCounter;
+        return;
+    }
 
-  err = test.runKernel();
-  if (err) {
-    log_error ("Error: run kernel\n");
-    ++_failCounter;
-    return;
-  }
+    err = test.runKernel();
+    if (err)
+    {
+        log_error("Error: run kernel\n");
+        ++_failCounter;
+        return;
+    }
 
-  err = test.verifyResults();
-  if (err) {
-    log_error ("Error: verify results\n");
-    ++_failCounter;
-    return;
-  }
+    err = test.verifyResults();
+    if (err)
+    {
+        log_error("Error: verify results\n");
+        ++_failCounter;
+        return;
+    }
 }
 
 int SubTestExecutor::calculateWorkGroupSize(size_t &maxWgSize, int testRange) {
@@ -764,7 +831,7 @@ int SubTestExecutor::calculateWorkGroupSize(size_t &maxWgSize, int testRange) {
 
   clProgramWrapper program;
   clKernelWrapper testKernel;
-  std::string buildOptions = BUILD_CL_STD_2_0;
+  std::string buildOptions{};
 
   if (testRange & Range::BASIC)
     buildOptions += " -D TESTBASIC";

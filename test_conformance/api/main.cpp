@@ -117,18 +117,34 @@ test_definition test_list[] = {
     ADD_TEST(get_image1d_info),
     ADD_TEST(get_image1d_array_info),
     ADD_TEST(get_image2d_array_info),
+    ADD_TEST(queue_flush_on_release),
     ADD_TEST(queue_hint),
     ADD_TEST(queue_properties),
     ADD_TEST_VERSION(sub_group_dispatch, Version(2, 1)),
     ADD_TEST_VERSION(clone_kernel, Version(2, 1)),
     ADD_TEST_VERSION(zero_sized_enqueue, Version(2, 1)),
+
     ADD_TEST_VERSION(buffer_properties_queries, Version(3, 0)),
     ADD_TEST_VERSION(image_properties_queries, Version(3, 0)),
+    ADD_TEST_VERSION(queue_properties_queries, Version(3, 0)),
+    ADD_TEST_VERSION(pipe_properties_queries, Version(3, 0)),
 
     ADD_TEST_VERSION(consistency_svm, Version(3, 0)),
     ADD_TEST_VERSION(consistency_memory_model, Version(3, 0)),
     ADD_TEST_VERSION(consistency_device_enqueue, Version(3, 0)),
     ADD_TEST_VERSION(consistency_pipes, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_progvar, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_non_uniform_work_group, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_read_write_images, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_2d_image_from_buffer, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_depth_images, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_device_and_host_timer, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_il_programs, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_subgroups, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_prog_ctor_dtor, Version(3, 0)),
+    ADD_TEST_VERSION(consistency_3d_image_writes, Version(3, 0)),
+
+    ADD_TEST(min_image_formats),
 };
 
 const int test_num = ARRAY_SIZE(test_list);

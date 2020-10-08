@@ -23,6 +23,11 @@
 
 #include <CL/opencl.h>
 
+/* Helper to return a string containing device information for the specified
+ * device info parameter. */
+std::string get_device_info_string(cl_device_id device,
+                                   cl_device_info param_name);
+
 /* Determines if an extension is supported by a device. */
 int is_extension_available(cl_device_id device, const char *extensionName);
 

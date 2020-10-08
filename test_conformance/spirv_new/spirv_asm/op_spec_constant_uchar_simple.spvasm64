@@ -6,7 +6,6 @@
                OpCapability Addresses
                OpCapability Kernel
                OpCapability Int8
-               OpExtension "SPV_KHR_no_integer_wrap_decoration"
           %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical64 OpenCL
                OpEntryPoint Kernel %9 "spec_const_kernel"
@@ -18,7 +17,6 @@
                OpName %add "add"
                OpDecorate %spec_const_kernel_spec_constant_value Constant
                OpDecorate %spec_const_kernel_spec_constant_value Alignment 1
-               OpDecorate %add NoSignedWrap
                OpDecorate %uchar_0 SpecId 101
       %uchar = OpTypeInt 8 0
        %uint = OpTypeInt 32 0

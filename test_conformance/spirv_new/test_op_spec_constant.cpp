@@ -20,8 +20,7 @@ Agreement as executed between Khronos and the recipient.
 template <typename T>
 int run_case(cl_device_id deviceID, cl_context context, cl_command_queue queue,
              const char *name, T init_buffer, T spec_constant_value,
-             T final_value, bool use_spec_constant,
-             bool (*notEqual)(const T &, const T &) = isNotEqual<T>)
+             T final_value, bool use_spec_constant)
 {
     clProgramWrapper prog;
     cl_int err = CL_SUCCESS;
@@ -54,7 +53,6 @@ int run_case(cl_device_id deviceID, cl_context context, cl_command_queue queue,
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &work_size, NULL, 0,
                                  NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue kernel");
-    clFinish(queue);
 
     T device_results = 0;
     err = clEnqueueReadBuffer(queue, output_buffer, CL_TRUE, 0, bytes,

@@ -34,7 +34,7 @@
 #include <unistd.h>
 #endif
 
-#if !defined(_WIN32) && !defined(__ANDROID__)
+#if defined(__APPLE__)
 #include <sys/sysctl.h>
 #endif
 
@@ -54,8 +54,6 @@ cl_uint gReSeed = 0;
 int     gFlushDenormsToZero = 0;
 int     gInfNanSupport = 1;
 int     gIsEmbedded = 0;
-int     gIsOpenCL_C_1_0_Device = 0;
-int     gIsOpenCL_1_0_Device = 0;
 int     gHasLong = 1;
 bool gCoreILProgram = true;
 
@@ -401,27 +399,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
         // check the extensions list to see if ulong and long are supported
         if( !is_extension_available(device, "cles_khr_int64" ))
             gHasLong = 0;
-    }
-
-    if( getenv( "OPENCL_1_0_DEVICE" ) )
-    {
-        char c_version[1024];
-        gIsOpenCL_1_0_Device = 1;
-        memset( c_version, 0, sizeof( c_version ) );
-
-        if( (err = clGetDeviceInfo( device, CL_DEVICE_OPENCL_C_VERSION, sizeof(c_version), c_version, NULL )) )
-        {
-            log_error( "FAILURE: unable to get CL_DEVICE_OPENCL_C_VERSION on 1.0 device. (%d)\n", err );
-            return EXIT_FAILURE;
-        }
-
-        if( 0 == strncmp( c_version, "OpenCL C 1.0 ", strlen( "OpenCL C 1.0 " ) ) )
-        {
-            gIsOpenCL_C_1_0_Device = 1;
-            log_info( "Device is a OpenCL C 1.0 device\n" );
-        }
-        else
-            log_info( "Device is a OpenCL 1.0 device, but supports OpenCL C 1.1\n" );
     }
 
     cl_uint device_address_bits = 0;

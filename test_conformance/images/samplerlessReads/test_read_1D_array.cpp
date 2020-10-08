@@ -173,6 +173,8 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
     clReleaseSampler(actualSampler);
     clReleaseMemObject(results);
+    clReleaseMemObject(read_only_image);
+
     if(gTestReadWrite)
     {
         clReleaseMemObject(read_write_image);
@@ -197,6 +199,11 @@ int test_read_image_set_1D_array( cl_device_id device, cl_context context, cl_co
     cl_ulong maxAllocSize, memSize;
     image_descriptor imageInfo = { 0 };
     size_t pixelSize;
+
+    if (gTestReadWrite && checkForReadWriteImageSupport(device))
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
 
     imageInfo.format = format;
     imageInfo.height = imageInfo.depth = 0;
