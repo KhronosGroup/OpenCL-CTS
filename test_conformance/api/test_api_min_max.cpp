@@ -994,6 +994,7 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
     size_t decrement;
     cl_event event;
     cl_int event_status;
+    bool embeddedNoLong = gIsEmbedded && !gHasLong;
 
 
     /* Get the max param size */
@@ -1007,8 +1008,9 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
         return -1;
     }
 
-    /* The embedded profile does not require longs, so use ints */
-    if(gIsEmbedded)
+    /* The embedded profile without cles_khr_int64 extension does not require
+     * longs, so use ints */
+    if (embeddedNoLong)
         numberOfIntParametersToTry = numberExpected = (maxSize-sizeof(cl_mem))/sizeof(cl_int);
     else
         numberOfIntParametersToTry = numberExpected = (maxSize-sizeof(cl_mem))/sizeof(cl_long);
@@ -1024,7 +1026,7 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
         clMemWrapper mem;
         clKernelWrapper kernel;
 
-        if(gIsEmbedded)
+        if (embeddedNoLong)
         {
             log_info("Trying a kernel with %ld int arguments (%ld bytes) and one cl_mem (%ld bytes) for %ld bytes total.\n",
                      numberOfIntParametersToTry, sizeof(cl_int)*numberOfIntParametersToTry, sizeof(cl_mem),
