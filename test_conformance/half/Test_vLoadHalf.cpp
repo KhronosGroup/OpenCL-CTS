@@ -170,17 +170,38 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
         };
 
         const char *source_local2[] = {
-            "__kernel void test( const __global half *p, __global float", vector_size_name_extensions[vectorSize], " *f )\n"
+            "#define VECTOR_LEN (",
+            vector_size_names[vectorSize],
+            "/",
+            align_divisors[vectorSize],
+            ")\n"
+            "#define ALIGN_TYPE ",
+            align_types[vectorSize],
+            "\n"
+            "__kernel void test( const __global half *p, __global float",
+            vector_size_name_extensions[vectorSize],
+            " *f )\n"
             "{\n"
-            "   __local ", align_types[vectorSize], " data[", local_buf_size, "/", align_divisors[vectorSize], "];\n"
+            "   __local uchar data[",
+            local_buf_size,
+            "/",
+            align_divisors[vectorSize],
+            "*sizeof(ALIGN_TYPE)] ",
+            "__attribute__((aligned(sizeof(ALIGN_TYPE))));\n"
             "   __local half* hdata_p = (__local half*) data;\n"
-            "   __global ", align_types[vectorSize], "* i_p = (__global ", align_types[vectorSize],"*)p;\n"
+            "   __global ALIGN_TYPE* i_p = (__global ALIGN_TYPE*)p;\n"
             "   size_t i = get_global_id(0);\n"
             "   size_t lid = get_local_id(0);\n"
             "   int k;\n"
-            "   for (k=0; k<",vector_size_names[vectorSize],"/",align_divisors[vectorSize],"; k++)\n"
-            "     data[lid*",vector_size_names[vectorSize],"/",align_divisors[vectorSize],"+k] = i_p[i*",vector_size_names[vectorSize],"/",align_divisors[vectorSize],"+k];\n"
-            "   f[i] = vload", aligned ? "a" : "", "_half",vector_size_name_extensions[vectorSize],"( lid, hdata_p );\n"
+            "   for (k=0; k<VECTOR_LEN; k++)\n"
+            "     *(__local ",
+            "ALIGN_TYPE*)&(data[(lid*VECTOR_LEN+k)*sizeof(ALIGN_TYPE)]) = ",
+            "i_p[i*VECTOR_LEN+k];\n"
+            "   f[i] = vload",
+            aligned ? "a" : "",
+            "_half",
+            vector_size_name_extensions[vectorSize],
+            "( lid, hdata_p );\n"
             "}\n"
         };
 
