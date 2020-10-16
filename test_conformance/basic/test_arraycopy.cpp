@@ -155,14 +155,15 @@ test_arraycopy(cl_device_id device, cl_context context, cl_command_queue queue, 
                        sizeof(cl_uint) * num_elements, input_ptr, &err);
     test_error(err, "clCreateBuffer failed");
 
-  err = create_single_kernel_helper(context, &program, &kernel, 1, &copy_kernel_code, "test_copy" );
-  test_error(err, "create_single_kernel_helper failed");
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &copy_kernel_code, "test_copy");
+    test_error(err, "create_single_kernel_helper failed");
 
-  err = clSetKernelArg(kernel, 0, sizeof streams[3], &streams[3]);
-  err |= clSetKernelArg(kernel, 1, sizeof results, &results);
-  test_error(err, "clSetKernelArg failed");
+    err = clSetKernelArg(kernel, 0, sizeof streams[3], &streams[3]);
+    err |= clSetKernelArg(kernel, 1, sizeof results, &results);
+    test_error(err, "clSetKernelArg failed");
 
-  size_t threads[3] = {num_elements, 0, 0};
+    size_t threads[3] = { num_elements, 0, 0 };
 
     err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
   test_error(err, "clEnqueueNDRangeKernel failed");
