@@ -621,16 +621,22 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     if( shuffleMode == kBuiltInDualInputFnMode )
         generate_random_data( vecType, (unsigned int)( numOrders * inVecSize ), d, inSecondData );
 
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), typeSize * inVecSize * numOrders, inData, &error);
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       typeSize * inVecSize * numOrders, inData, &error);
     test_error( error, "Unable to create input stream" );
 
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), typeSize * outRealVecSize * numOrders, outData, &error);
+    streams[1] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       typeSize * outRealVecSize * numOrders, outData, &error);
     test_error( error, "Unable to create output stream" );
 
     int argIndex = 0;
     if( shuffleMode == kBuiltInDualInputFnMode )
     {
-        streams[2] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), typeSize * inVecSize * numOrders, inSecondData, &error);
+        streams[2] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                    typeSize * inVecSize * numOrders,
+                                    inSecondData, &error);
         test_error( error, "Unable to create second input stream" );
 
         error = clSetKernelArg( kernel, argIndex++, sizeof( streams[ 2 ] ), &streams[ 2 ] );

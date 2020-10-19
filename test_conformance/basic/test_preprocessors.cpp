@@ -125,11 +125,14 @@ int test_kernel_preprocessor_macros(cl_device_id deviceID, cl_context context, c
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(results), NULL, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(results),
+                                NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(fileString), NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(fileString),
+                                NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(roundingString), NULL, &error);
+    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(roundingString), NULL, &error);
     test_error( error, "Creating test array failed" );
 
     // Set up and run

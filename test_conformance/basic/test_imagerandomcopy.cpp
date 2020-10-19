@@ -146,23 +146,29 @@ test_imagerandomcopy(cl_device_id device, cl_context context, cl_command_queue q
 
     img_format.image_channel_order = CL_RGBA;
     img_format.image_channel_data_type = CL_UNORM_INT8;
-    streams[0] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format, img_width, img_height, 0, NULL, &err);
+    streams[0] = create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                 img_width, img_height, 0, NULL, &err);
     test_error(err, "create_image_2d failed");
-    streams[1] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format, img_width, img_height, 0, NULL, &err);
+    streams[1] = create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                 img_width, img_height, 0, NULL, &err);
     test_error(err, "create_image_2d failed");
 
     img_format.image_channel_order = CL_RGBA;
     img_format.image_channel_data_type = CL_UNORM_INT16;
-    streams[2] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format, img_width, img_height, 0, NULL, &err);
+    streams[2] = create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                 img_width, img_height, 0, NULL, &err);
     test_error(err, "create_image_2d failed");
-    streams[3] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format, img_width, img_height, 0, NULL, &err);
+    streams[3] = create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                 img_width, img_height, 0, NULL, &err);
     test_error(err, "create_image_2d failed");
 
     img_format.image_channel_order = CL_RGBA;
     img_format.image_channel_data_type = CL_FLOAT;
-    streams[4] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format, img_width, img_height, 0, NULL, &err);
+    streams[4] = create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                 img_width, img_height, 0, NULL, &err);
     test_error(err, "create_image_2d failed");
-    streams[5] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format, img_width, img_height, 0, NULL, &err);
+    streams[5] = create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                 img_width, img_height, 0, NULL, &err);
     test_error(err, "create_image_2d failed");
 
     for (i=0; i<3; i++)

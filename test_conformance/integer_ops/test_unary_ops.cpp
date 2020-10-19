@@ -90,9 +90,9 @@ int test_unary_op( cl_command_queue queue, cl_context context, OpKonstants which
 
     // Generate two streams. The first is our random data to test against, the second is our control stream
     generate_random_data( vecType, vecSize * TEST_SIZE, d, inData );
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR),
-                                 get_explicit_type_size( vecType ) * vecSize * TEST_SIZE,
-                                 inData, &error );
+    streams[0] = clCreateBuffer(
+        context, CL_MEM_COPY_HOST_PTR,
+        get_explicit_type_size(vecType) * vecSize * TEST_SIZE, inData, &error);
     test_error( error, "Creating input data array failed" );
 
     cl_uint bits;
@@ -110,8 +110,8 @@ int test_unary_op( cl_command_queue queue, cl_context context, OpKonstants which
             // For addition ops, the MAX control value is 1. Otherwise, it's 3
             controlData[ i ] &= ~0x02;
     }
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR),
-                                sizeof( controlData ), controlData, &error );
+    streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                sizeof(controlData), controlData, &error);
     test_error( error, "Unable to create control stream" );
 
     // Assign streams and execute

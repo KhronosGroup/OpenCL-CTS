@@ -188,19 +188,25 @@ int test_geom_cross(cl_device_id deviceID, cl_context context, cl_command_queue 
         }
         fillWithTrickyNumbers( inDataA, inDataB, vecsize );
 
-        streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_float) * vecsize * TEST_SIZE, inDataA, NULL);
+        streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                    sizeof(cl_float) * vecsize * TEST_SIZE,
+                                    inDataA, NULL);
         if( streams[0] == NULL )
         {
             log_error("ERROR: Creating input array A failed!\n");
             return -1;
         }
-        streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_float) * vecsize * TEST_SIZE, inDataB, NULL);
+        streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                    sizeof(cl_float) * vecsize * TEST_SIZE,
+                                    inDataB, NULL);
         if( streams[1] == NULL )
         {
             log_error("ERROR: Creating input array B failed!\n");
             return -1;
         }
-        streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_float) * vecsize * TEST_SIZE, NULL, NULL);
+        streams[2] =
+            clCreateBuffer(context, CL_MEM_READ_WRITE,
+                           sizeof(cl_float) * vecsize * TEST_SIZE, NULL, NULL);
         if( streams[2] == NULL )
         {
             log_error("ERROR: Creating output array failed!\n");
@@ -353,19 +359,24 @@ int test_twoToFloat_kernel(cl_command_queue queue, cl_context context, const cha
     }
 
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_float) * vecSize * TEST_SIZE, inDataA, NULL);
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_float) * vecSize * TEST_SIZE, inDataA, NULL);
     if( streams[0] == NULL )
     {
         log_error("ERROR: Creating input array A failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_float) * vecSize * TEST_SIZE, inDataB, NULL);
+    streams[1] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_float) * vecSize * TEST_SIZE, inDataB, NULL);
     if( streams[1] == NULL )
     {
         log_error("ERROR: Creating input array B failed!\n");
         return -1;
     }
-    streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_float) * TEST_SIZE, NULL, NULL);
+    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * TEST_SIZE, NULL, NULL);
     if( streams[2] == NULL )
     {
         log_error("ERROR: Creating output array failed!\n");
@@ -660,14 +671,15 @@ int test_oneToFloat_kernel(cl_command_queue queue, cl_context context, const cha
         }
     }
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR),
-                                sizeof(cl_float) * vecSize * TEST_SIZE, inDataA, NULL);
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_float) * vecSize * TEST_SIZE, inDataA, NULL);
     if( streams[0] == NULL )
     {
         log_error("ERROR: Creating input array A failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                 sizeof(cl_float) * TEST_SIZE, NULL, NULL);
     if( streams[1] == NULL )
     {
@@ -872,13 +884,17 @@ int test_oneToOne_kernel(cl_command_queue queue, cl_context context, const char 
             inDataA[i] = any_float(d);
     }
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_float) * vecSize* TEST_SIZE, inDataA, NULL);
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_float) * vecSize * TEST_SIZE, inDataA, NULL);
     if( streams[0] == NULL )
     {
         log_error("ERROR: Creating input array A failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_float) * vecSize  * TEST_SIZE, NULL, NULL);
+    streams[1] =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_float) * vecSize * TEST_SIZE, NULL, NULL);
     if( streams[1] == NULL )
     {
         log_error("ERROR: Creating output array failed!\n");

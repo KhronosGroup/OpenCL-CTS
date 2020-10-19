@@ -639,7 +639,8 @@ int test_stream_read( cl_device_id device, cl_context context, cl_command_queue 
             log_error( " unable to allocate %d bytes for outptr\n", (int)( ptrSizes[i] * num_elements ) );
             return -1;
         }
-        streams[i] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  ptrSizes[i] * num_elements, NULL, &err );
+        streams[i] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    ptrSizes[i] * num_elements, NULL, &err);
         if( !streams[i] ){
             log_error( " clCreateBuffer failed\n" );
             free( outptr[i] );

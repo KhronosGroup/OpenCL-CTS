@@ -478,13 +478,26 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
         }
     }
 
-    xOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height * imageInfo->arraySize, xOffsetValues, &error );
+    xOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width
+                                  * imageInfo->height * imageInfo->arraySize,
+                              xOffsetValues, &error);
     test_error( error, "Unable to create x offset buffer" );
-    yOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height * imageInfo->arraySize, yOffsetValues, &error );
+    yOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width
+                                  * imageInfo->height * imageInfo->arraySize,
+                              yOffsetValues, &error);
     test_error( error, "Unable to create y offset buffer" );
-    zOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height * imageInfo->arraySize, zOffsetValues, &error );
+    zOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width
+                                  * imageInfo->height * imageInfo->arraySize,
+                              zOffsetValues, &error);
     test_error( error, "Unable to create y offset buffer" );
-    results = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  get_explicit_type_size( outputType ) * 4 * imageInfo->width * imageInfo->height * imageInfo->arraySize, NULL, &error );
+    results =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       get_explicit_type_size(outputType) * 4 * imageInfo->width
+                           * imageInfo->height * imageInfo->arraySize,
+                       NULL, &error);
     test_error( error, "Unable to create result buffer" );
 
     // Create sampler to use

@@ -70,14 +70,15 @@ test_global_linear_id(cl_device_id device, cl_context context, cl_command_queue 
     cl_kernel kernel[2];
 
     int *output_ptr;
-      size_t threads[2];
-      int err;
-      num_elements = (int)sqrt((float)num_elements);
-      int length = num_elements * num_elements;
+    size_t threads[2];
+    int err;
+    num_elements = (int)sqrt((float)num_elements);
+    int length = num_elements * num_elements;
 
-      output_ptr   = (int*)malloc(sizeof(int) * length);
+    output_ptr = (int *)malloc(sizeof(int) * length);
 
-    streams = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), length*sizeof(int), NULL, &err);
+    streams = clCreateBuffer(context, CL_MEM_READ_WRITE, length * sizeof(int),
+                             NULL, &err);
     test_error( err, "clCreateBuffer failed.");
 
     err = create_single_kernel_helper(context, &program[0], &kernel[0], 1,

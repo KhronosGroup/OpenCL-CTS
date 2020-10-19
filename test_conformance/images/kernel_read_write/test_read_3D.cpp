@@ -368,9 +368,9 @@ int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel ke
                                             ( gEnablePitch ? imageInfo->rowPitch : 0 ),
                                             ( gEnablePitch ? imageInfo->slicePitch : 0 ), maxImageUseHostPtrBackingStore, &error );
         } else {
-            error = protImage.Create( context,
-                                    (cl_mem_flags)(image_read_write_flags),
-                                    imageInfo->format, imageInfo->width, imageInfo->height, imageInfo->depth );
+            error = protImage.Create(context, image_read_write_flags,
+                                     imageInfo->format, imageInfo->width,
+                                     imageInfo->height, imageInfo->depth);
         }
         if( error != CL_SUCCESS )
         {
@@ -487,13 +487,26 @@ int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel ke
         }
     }
 
-    xOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height * imageInfo->depth, xOffsetValues, &error );
+    xOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width
+                                  * imageInfo->height * imageInfo->depth,
+                              xOffsetValues, &error);
     test_error( error, "Unable to create x offset buffer" );
-    yOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height * imageInfo->depth, yOffsetValues, &error );
+    yOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width
+                                  * imageInfo->height * imageInfo->depth,
+                              yOffsetValues, &error);
     test_error( error, "Unable to create y offset buffer" );
-    zOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height * imageInfo->depth, zOffsetValues, &error );
+    zOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width
+                                  * imageInfo->height * imageInfo->depth,
+                              zOffsetValues, &error);
     test_error( error, "Unable to create y offset buffer" );
-    results = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  get_explicit_type_size( outputType ) * 4 * imageInfo->width * imageInfo->height * imageInfo->depth, NULL, &error );
+    results =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       get_explicit_type_size(outputType) * 4 * imageInfo->width
+                           * imageInfo->height * imageInfo->depth,
+                       NULL, &error);
     test_error( error, "Unable to create result buffer" );
 
     // Create sampler to use

@@ -43,7 +43,8 @@ test_arrayreadwrite(cl_device_id device, cl_context context, cl_command_queue qu
     for (i=0; i<num_elements; i++)
         inptr[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_uint) * num_elements, NULL, &err);
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_uint) * num_elements, NULL, &err);
     test_error(err, "clCreateBuffer failed");
 
     for (i=0; i<num_tries; i++)

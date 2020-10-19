@@ -49,7 +49,8 @@ int get_ilogb_nan_zero(cl_device_id device, cl_context context, cl_command_queue
 
     std::vector<cl_int> output = generate_output<cl_int>(2);
 
-    buffers[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_int) * output.size(), NULL, &err);
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * output.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
     err = clSetKernelArg(kernel, 0, sizeof(buffers[0]), &buffers[0]);

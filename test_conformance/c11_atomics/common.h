@@ -1077,11 +1077,13 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(cl_device_id dev
       return -1;
     }
     memcpy(svmAtomicBuffer, &destItems[0], typeSize * numDestItems);
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_USE_HOST_PTR), typeSize * numDestItems, svmAtomicBuffer, NULL);
+    streams[0] = clCreateBuffer(context, CL_MEM_USE_HOST_PTR,
+                                typeSize * numDestItems, svmAtomicBuffer, NULL);
   }
   else
   {
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), typeSize * numDestItems, &destItems[0], NULL);
+      streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                  typeSize * numDestItems, &destItems[0], NULL);
   }
   if (!streams[0])
   {
@@ -1102,12 +1104,18 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(cl_device_id dev
     }
     if(startRefValues.size())
       memcpy(svmDataBuffer, &startRefValues[0], typeSize*threadCount*NumNonAtomicVariablesPerThread());
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_USE_HOST_PTR), typeSize*threadCount*NumNonAtomicVariablesPerThread(), svmDataBuffer, NULL);
+    streams[1] = clCreateBuffer(context, CL_MEM_USE_HOST_PTR,
+                                typeSize * threadCount
+                                    * NumNonAtomicVariablesPerThread(),
+                                svmDataBuffer, NULL);
   }
   else
   {
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)((startRefValues.size() ? CL_MEM_COPY_HOST_PTR : CL_MEM_READ_WRITE)),
-      typeSize * threadCount*NumNonAtomicVariablesPerThread(), startRefValues.size() ? &startRefValues[0] : 0, NULL);
+      streams[1] = clCreateBuffer(
+          context,
+          ((startRefValues.size() ? CL_MEM_COPY_HOST_PTR : CL_MEM_READ_WRITE)),
+          typeSize * threadCount * NumNonAtomicVariablesPerThread(),
+          startRefValues.size() ? &startRefValues[0] : 0, NULL);
   }
   if (!streams[1])
   {
