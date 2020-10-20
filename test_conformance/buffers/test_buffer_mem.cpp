@@ -68,13 +68,14 @@ static int verify_mem( int *outptr, int n )
 }
 
 
-
-int test_mem_read_write_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_mem_flags(cl_context context, cl_command_queue queue, int num_elements,
+                   cl_mem_flags flags, const char **kernel_program,
+                   const char *kernel_name)
 {
-    cl_mem      buffers[1];
+    clMemWrapper buffers[1];
     cl_int      *inptr, *outptr;
-    cl_program  program[1];
-    cl_kernel   kernel[1];
+    clProgramWrapper program;
+    clKernelWrapper kernel;
     size_t      global_work_size[3];
 #ifdef USE_LOCAL_WORK_GROUP
     size_t      local_work_size[3];
@@ -87,8 +88,23 @@ int test_mem_read_write_flags( cl_device_id deviceID, cl_context context, cl_com
     global_work_size[0] = (cl_uint)num_elements;
 
     inptr = (cl_int*)align_malloc(sizeof(cl_int)  * num_elements, min_alignment);
+    if (!inptr)
+    {
+        log_error(" unable to allocate %d bytes of memory\n",
+                  (int)sizeof(cl_int) * num_elements);
+        return -1;
+    }
     outptr = (cl_int*)align_malloc(sizeof(cl_int) * num_elements, min_alignment);
-    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int) * num_elements, NULL, &err);
+    if (!outptr)
+    {
+        log_error(" unable to allocate %d bytes of memory\n",
+                  (int)sizeof(cl_int) * num_elements);
+        align_free((void *)inptr);
+        return -1;
+    }
+
+    buffers[0] = clCreateBuffer(context, flags, sizeof(cl_int) * num_elements,
+                                NULL, &err);
     if (err != CL_SUCCESS) {
         print_error( err, "clCreateBuffer failed");
         align_free( (void *)outptr );
@@ -99,83 +115,87 @@ int test_mem_read_write_flags( cl_device_id deviceID, cl_context context, cl_com
     for (i=0; i<num_elements; i++)
         inptr[i] = i;
 
-    err = clEnqueueWriteBuffer(queue, buffers[0], CL_TRUE, 0, sizeof(cl_int)*num_elements, (void *)inptr, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queue, buffers[0], CL_TRUE, 0,
+                               sizeof(cl_int) * num_elements, (void *)inptr, 0,
+                               NULL, NULL);
     if (err != CL_SUCCESS) {
         print_error( err, "clEnqueueWriteBuffer failed");
-        clReleaseMemObject( buffers[0] );
         align_free( (void *)outptr );
         align_free( (void *)inptr );
         return -1;
     }
 
-    err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &mem_read_write_kernel_code, "test_mem_read_write" );
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      kernel_program, kernel_name);
     if (err){
-        clReleaseMemObject( buffers[0] );
+        print_error(err, "creating kernel failed");
         align_free( (void *)outptr );
         align_free( (void *)inptr );
         return -1;
     }
 
 #ifdef USE_LOCAL_WORK_GROUP
-    err = get_max_common_work_group_size( context, kernel[0], global_work_size[0], &local_work_size[0] );
+    err = get_max_common_work_group_size(context, kernel, global_work_size[0],
+                                         &local_work_size[0]);
     test_error( err, "Unable to get work group size to use" );
 #endif
 
-    err = clSetKernelArg( kernel[0], 0, sizeof( cl_mem ), (void *)&buffers[0] );
+    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&buffers[0]);
     if ( err != CL_SUCCESS ){
         print_error( err, "clSetKernelArg failed" );
-        clReleaseMemObject( buffers[0] );
-        clReleaseKernel( kernel[0] );
-        clReleaseProgram( program[0] );
         align_free( (void *)outptr );
         align_free( (void *)inptr );
         return -1;
     }
 
 #ifdef USE_LOCAL_WORK_GROUP
-    err = clEnqueueNDRangeKernel( queue, kernel[0], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size,
+                                 local_work_size, 0, NULL, NULL);
 #else
-    err = clEnqueueNDRangeKernel( queue, kernel[0], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, NULL,
+                                 0, NULL, NULL);
 #endif
     if (err != CL_SUCCESS){
         log_error("clEnqueueNDRangeKernel failed\n");
-        clReleaseMemObject( buffers[0] );
-        clReleaseKernel( kernel[0] );
-        clReleaseProgram( program[0] );
         align_free( (void *)outptr );
         align_free( (void *)inptr );
         return -1;
     }
 
-    err = clEnqueueReadBuffer( queue, buffers[0], true, 0, sizeof(cl_int)*num_elements, (void *)outptr, 0, NULL, NULL );
+    err = clEnqueueReadBuffer(queue, buffers[0], true, 0,
+                              sizeof(cl_int) * num_elements, (void *)outptr, 0,
+                              NULL, NULL);
     if ( err != CL_SUCCESS ){
         print_error( err, "clEnqueueReadBuffer failed" );
-        clReleaseMemObject( buffers[0] );
-        clReleaseKernel( kernel[0] );
-        clReleaseProgram( program[0] );
         align_free( (void *)outptr );
         align_free( (void *)inptr );
         return -1;
     }
 
-    if (verify_mem(outptr, num_elements)){
-        log_error("buffer_MEM_READ_WRITE test failed\n");
+    if (verify_mem(outptr, num_elements))
+    {
+        log_error("test failed\n");
         err = -1;
     }
-    else{
-        log_info("buffer_MEM_READ_WRITE test passed\n");
+    else
+    {
+        log_info("test passed\n");
         err = 0;
     }
 
     // cleanup
-    clReleaseMemObject( buffers[0] );
-    clReleaseKernel( kernel[0] );
-    clReleaseProgram( program[0] );
     align_free( (void *)outptr );
     align_free( (void *)inptr );
 
     return err;
-}   // end test_mem_read_write()
+} // end test_mem_flags()
+
+int test_mem_read_write_flags(cl_device_id deviceID, cl_context context,
+                              cl_command_queue queue, int num_elements)
+{
+    return test_mem_flags(context, queue, num_elements, CL_MEM_READ_WRITE,
+                          &mem_read_write_kernel_code, "test_mem_read_write");
+}
 
 
 int test_mem_write_only_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
