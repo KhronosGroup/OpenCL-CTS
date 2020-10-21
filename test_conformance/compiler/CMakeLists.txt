@@ -17,19 +17,17 @@ set(${MODULE_NAME}_SOURCES
 
 include(../CMakeCommon.txt)
 
-# Copy required CL include directories into the binary directory
-
-set(COMPILER_SOURCE_DIR ${CLConform_SOURCE_DIR}/test_conformance/compiler)
-set(COMPILER_TARGET ${${MODULE_NAME}_OUT})
-
+# Copy the required test include directories into the build directory.
+if(NOT DEFINED COMPILER_TEST_RESOURCES)
+    set(COMPILER_TEST_RESOURCES $<TARGET_FILE_DIR:${${MODULE_NAME}_OUT}>)
+endif()
 add_custom_command(
-    TARGET  ${COMPILER_TARGET}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${COMPILER_SOURCE_DIR}/includeTestDirectory"
-            $<TARGET_FILE_DIR:${COMPILER_TARGET}>/includeTestDirectory)
-
-add_custom_command(
-    TARGET  ${COMPILER_TARGET}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${COMPILER_SOURCE_DIR}/secondIncludeTestDirectory"
-            $<TARGET_FILE_DIR:${COMPILER_TARGET}>/secondIncludeTestDirectory)
+        COMMENT "Copying compiler test resources..."
+        TARGET ${${MODULE_NAME}_OUT}
+        PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CLConform_SOURCE_DIR}/test_conformance/compiler/includeTestDirectory
+        ${COMPILER_TEST_RESOURCES}/includeTestDirectory
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory
+        ${COMPILER_TEST_RESOURCES}/secondIncludeTestDirectory)

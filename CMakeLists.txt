@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5.1)
 
 set( CONFORMANCE_SUFFIX "" )
 set(CLConform_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -60,10 +60,7 @@ set(CONFORMANCE_SUFFIX "" )
 #-----------------------------------------------------------
 #Vendor Customization File can be included here to provide a way to automatically
 #build driver as a dependency of the conformance tests, or other such CMake customization
-option(USE_VENDOR_CUSTOM_FILE "Use Vendor Customization File" OFF)
-if(USE_VENDOR_CUSTOM_FILE)
-    include(CMakeVendor.txt OPTIONAL)
-endif(USE_VENDOR_CUSTOM_FILE)
+include(CMakeVendor.txt OPTIONAL)
 
 #-----------------------------------------------------------
 # Development options for OpenCL C++ tests
@@ -175,17 +172,30 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
 endif()
 
+if(MSVC)
+    # Don't warn when using standard non-secure functions.
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+endif()
+
 if( WIN32 AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
 endif()
 
 list(APPEND CLConform_LIBRARIES ${OPENCL_LIBRARIES})
 if(ANDROID)
     list(APPEND CLConform_LIBRARIES m)
-elseif(NOT WIN32)
+endif()
+if(NOT DEFINED LINK_PTHREAD)
+    if(ANDROID OR WIN32)
+        set(LINK_PTHREAD OFF)
+    else()
+        set(LINK_PTHREAD ON)
+    endif()
+endif()
+if(LINK_PTHREAD)
     list(APPEND CLConform_LIBRARIES pthread)
-endif(ANDROID)
+endif()
 
 if(APPLE)
     find_library(corefoundation CoreFoundation)
