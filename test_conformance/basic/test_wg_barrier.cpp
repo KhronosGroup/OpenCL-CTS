@@ -110,11 +110,15 @@ test_wg_barrier(cl_device_id device, cl_context context, cl_command_queue queue,
     input_ptr = (int*)malloc(sizeof(int) * num_elements);
     output_ptr = (int*)malloc(sizeof(int));
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * num_elements, NULL, &err);
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, &err);
     test_error(err, "clCreateBuffer failed.");
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int), NULL, &err);
+    streams[1] =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int), NULL, &err);
     test_error(err, "clCreateBuffer failed.");
-    streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * max_threadgroup_size, NULL, &err);
+    streams[2] =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_int) * max_threadgroup_size, NULL, &err);
     test_error(err, "clCreateBuffer failed.");
 
     d = init_genrand( gRandomSeed );

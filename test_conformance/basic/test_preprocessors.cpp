@@ -125,11 +125,14 @@ int test_kernel_preprocessor_macros(cl_device_id deviceID, cl_context context, c
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(results), NULL, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(results),
+                                NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(fileString), NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(fileString),
+                                NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(roundingString), NULL, &error);
+    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(roundingString), NULL, &error);
     test_error( error, "Creating test array failed" );
 
     // Set up and run
@@ -213,33 +216,15 @@ int test_kernel_preprocessor_macros(cl_device_id deviceID, cl_context context, c
 
     // The OpenCL version reported by the macro reports the feature level supported by the compiler. Since
     // this doesn't directly match any property we can query, we just check to see if it's a sane value
-    char versionBuffer[ 128 ];
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( versionBuffer ), versionBuffer, NULL );
-    test_error( error, "Unable to get device's version to validate against" );
-
-    // We need to parse to get the version number to compare against
-    char *p1, *p2, *p3;
-    for( p1 = versionBuffer; ( *p1 != 0 ) && !isdigit( *p1 ); p1++ )
-        ;
-    for( p2 = p1; ( *p2 != 0 ) && ( *p2 != '.' ); p2++ )
-        ;
-    for( p3 = p2; ( *p3 != 0 ) && ( *p3 != ' ' ); p3++ )
-        ;
-
-    if( p2 == p3 )
+    auto device_cl_version = get_device_cl_version(deviceID);
+    int device_cl_version_int = device_cl_version.to_int() * 10;
+    if ((results[2] < 100) || (results[2] > device_cl_version_int))
     {
-        log_error( "ERROR: Unable to verify OpenCL version string (platform string is incorrect format)\n" );
-        return -1;
-    }
-    *p2 = 0;
-    *p3 = 0;
-    int major = atoi( p1 );
-    int minor = atoi( p2 + 1 );
-    int realVersion = ( major * 100 ) + ( minor * 10 );
-    if( ( results[ 2 ] < 100 ) || ( results[ 2 ] > realVersion ) )
-    {
-        log_error( "ERROR: Kernel preprocessor __OPENCL_VERSION__ does not make sense w.r.t. device's version string! "
-                  "(preprocessor states %d, real version is %d (%d.%d))\n", results[ 2 ], realVersion, major, minor );
+        log_error("ERROR: Kernel preprocessor __OPENCL_VERSION__ does not make "
+                  "sense w.r.t. device's version string! "
+                  "(preprocessor states %d, CL_DEVICE_VERSION is %d (%s))\n",
+                  results[2], device_cl_version_int,
+                  device_cl_version.to_string().c_str());
         return -1;
     }
 
@@ -250,33 +235,29 @@ int test_kernel_preprocessor_macros(cl_device_id deviceID, cl_context context, c
         return -1;
     }
 
-    // The OpenCL C version reported by the macro reports the OpenCL C supported by the compiler for this OpenCL device.
-    char cVersionBuffer[ 128 ];
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_OPENCL_C_VERSION, sizeof( cVersionBuffer ), cVersionBuffer, NULL );
-    test_error( error, "Unable to get device's OpenCL C version to validate against" );
-
-    // We need to parse to get the version number to compare against
-    for( p1 = cVersionBuffer; ( *p1 != 0 ) && !isdigit( *p1 ); p1++ )
-        ;
-    for( p2 = p1; ( *p2 != 0 ) && ( *p2 != '.' ); p2++ )
-        ;
-    for( p3 = p2; ( *p3 != 0 ) && ( *p3 != ' ' ); p3++ )
-        ;
-
-    if( p2 == p3 )
+    // The OpenCL C version reported by the macro reports the OpenCL C version
+    // specified to the compiler. We need to see whether it is supported.
+    int cl_c_major_version = results[3] / 100;
+    int cl_c_minor_version = (results[3] / 10) % 10;
+    if ((results[3] < 100)
+        || (!device_supports_cl_c_version(
+            deviceID, Version{ cl_c_major_version, cl_c_minor_version })))
     {
-        log_error( "ERROR: Unable to verify OpenCL C version string (platform string is incorrect format)\n" );
-        return -1;
-    }
-    *p2 = 0;
-    *p3 = 0;
-    major = atoi( p1 );
-    minor = atoi( p2 + 1 );
-    realVersion = ( major * 100 ) + ( minor * 10 );
-    if( ( results[ 3 ] < 100 ) || ( results[ 3 ] > realVersion ) )
-    {
-        log_error( "ERROR: Kernel preprocessor __OPENCL_C_VERSION__ does not make sense w.r.t. device's version string! "
-                  "(preprocessor states %d, real version is %d (%d.%d))\n", results[ 2 ], realVersion, major, minor );
+        auto device_version = get_device_cl_c_version(deviceID);
+        log_error(
+            "ERROR: Kernel preprocessor __OPENCL_C_VERSION__ does not make "
+            "sense w.r.t. device's version string! "
+            "(preprocessor states %d, CL_DEVICE_OPENCL_C_VERSION is %d (%s))\n",
+            results[3], device_version.to_int() * 10,
+            device_version.to_string().c_str());
+        log_error("This means that CL_DEVICE_OPENCL_C_VERSION < "
+                  "__OPENCL_C_VERSION__");
+        if (device_cl_version >= Version{ 3, 0 })
+        {
+            log_error(", and __OPENCL_C_VERSION__ does not appear in "
+                      "CL_DEVICE_OPENCL_C_ALL_VERSIONS");
+        }
+        log_error("\n");
         return -1;
     }
 

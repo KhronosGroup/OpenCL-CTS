@@ -152,37 +152,47 @@ size_t get_min_alignment(cl_context context);
 /* Helper to obtain the default rounding mode for single precision computation. (Double is always CL_FP_ROUND_TO_NEAREST.) Returns 0 on error. */
 cl_device_fp_config get_default_rounding_mode( cl_device_id device );
 
-#define PASSIVE_REQUIRE_IMAGE_SUPPORT( device )    \
-    if( checkForImageSupport( device ) )    \
-    {    \
-        log_info( "\n\tNote: device does not support images. Skipping test...\n" );    \
-        return 0;    \
+#define PASSIVE_REQUIRE_IMAGE_SUPPORT(device)                                  \
+    if (checkForImageSupport(device))                                          \
+    {                                                                          \
+        log_info(                                                              \
+            "\n\tNote: device does not support images. Skipping test...\n");   \
+        return TEST_SKIPPED_ITSELF;                                            \
     }
 
-#define PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( device )    \
-    if( checkFor3DImageSupport( device ) )    \
-    {    \
-        log_info( "\n\tNote: device does not support 3D images. Skipping test...\n" );    \
-        return 0;    \
+#define PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device)                               \
+    if (checkFor3DImageSupport(device))                                        \
+    {                                                                          \
+        log_info("\n\tNote: device does not support 3D images. Skipping "      \
+                 "test...\n");                                                 \
+        return TEST_SKIPPED_ITSELF;                                            \
     }
 
-#define PASSIVE_REQUIRE_FP16_SUPPORT(device)                            \
-    if (!is_extension_available(device, "cl_khr_fp16"))                 \
-    {                                                                   \
-        log_info("\n\tNote: device does not support fp16. Skipping test...\n"); \
-        return 0;                                                       \
+#define PASSIVE_REQUIRE_FP16_SUPPORT(device)                                   \
+    if (!is_extension_available(device, "cl_khr_fp16"))                        \
+    {                                                                          \
+        log_info(                                                              \
+            "\n\tNote: device does not support fp16. Skipping test...\n");     \
+        return TEST_SKIPPED_ITSELF;                                            \
     }
 
 /* Prints out the standard device header for all tests given the device to print for */
 extern int printDeviceHeader( cl_device_id device );
 
+// Execute the CL_DEVICE_OPENCL_C_VERSION query and return the OpenCL C version
+// is supported by the device.
+Version get_device_cl_c_version(cl_device_id device);
+
 // Gets the latest (potentially non-backward compatible) OpenCL C version
 // supported by the device.
-Version get_device_cl_c_version(cl_device_id device);
+Version get_device_latest_cl_c_version(cl_device_id device);
 
 // Gets the maximum universally supported OpenCL C version in a context, i.e.
 // the OpenCL C version supported by all devices in a context.
 Version get_max_OpenCL_C_for_context(cl_context context);
+
+// Checks whether a particular OpenCL C version is supported by the device.
+bool device_supports_cl_c_version(cl_device_id device, Version version);
 
 // Poll fn every interval_ms until timeout_ms or it returns true
 bool poll_until(unsigned timeout_ms, unsigned interval_ms,

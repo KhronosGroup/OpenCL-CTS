@@ -206,8 +206,8 @@ static Long sLowerLimits[ kNumExplicitTypes ] =
         -1,
         -128, 0, 0,
         -32768, 0, 0,
-        0xffffffff80000000LL, 0, 0,
-        0x8000000000000000LL, 0, 0,
+        (Long)0xffffffff80000000LL, 0, 0,
+        (Long)0x8000000000000000LL, 0, 0,
         0, 0 };    // Last two values aren't stored here
 
 #define BOOL_CASE(inType) \
@@ -880,7 +880,7 @@ void generate_random_data( ExplicitType type, size_t count, MTdata d, void *outD
     cl_ulong *ulongPtr;
     cl_float *floatPtr;
     cl_double *doublePtr;
-    cl_ushort *halfPtr;
+    cl_half *halfPtr;
     size_t i;
     cl_uint bits = genrand_int32(d);
     cl_uint bitsLeft = 32;

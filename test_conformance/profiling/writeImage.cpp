@@ -452,7 +452,7 @@ int write_image( cl_device_id device, cl_context context, cl_command_queue queue
     }
 
     // allocate the input and output image memory objects
-    flags = (cl_mem_flags)(CL_MEM_READ_WRITE);
+    flags = CL_MEM_READ_WRITE;
     memobjs[0] = create_image_2d( context, flags, &image_format_desc, w, h, 0, NULL, &err );
     if( memobjs[0] == (cl_mem)0 ){
         free( dst );
@@ -461,7 +461,8 @@ int write_image( cl_device_id device, cl_context context, cl_command_queue queue
         return -1;
     }
 
-    memobjs[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  channel_nbytes * 4 * w * h, NULL, &err );
+    memobjs[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                channel_nbytes * 4 * w * h, NULL, &err);
     if( memobjs[1] == (cl_mem)0 ){
         free( dst );
         free( (void *)inptr );

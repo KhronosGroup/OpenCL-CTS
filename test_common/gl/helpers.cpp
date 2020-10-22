@@ -1277,9 +1277,7 @@ void * CreateGLTexture2DMultisample( size_t width, size_t height, size_t samples
         case kUInt:
         *((unsigned int*)p) = val*0xffffffff;
           break;
-        case kHalf:
-          *((cl_ushort*)p) = convert_float_to_half(val);
-          break;
+        case kHalf: *((cl_half *)p) = convert_float_to_half(val); break;
         default:
           log_error("Test error: unexpected type enum 0x%x\n",type);
       }
@@ -1541,9 +1539,7 @@ void * CreateGLTexture2DArrayMultisample(size_t width, size_t height,
         case kUInt:
           *((unsigned int*)p) = val*0xffffffff;
           break;
-        case kHalf:
-          *((cl_ushort*)p) = convert_float_to_half(val);
-          break;
+        case kHalf: *((cl_half *)p) = convert_float_to_half(val); break;
         default:
           log_error("Test error: unexpected type enum 0x%x\n",type);
       }

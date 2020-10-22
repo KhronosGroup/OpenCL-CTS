@@ -47,9 +47,11 @@ int create_and_execute_kernel( cl_context inContext, cl_command_queue inQueue, c
     error = get_max_common_work_group_size( inContext, *outKernel, threads[0], &localThreads[0] );
     test_error( error, "Unable to get work group size to use" );
 
-    streams[0] = clCreateBuffer(inContext, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 1000, NULL, &error);
+    streams[0] = clCreateBuffer(inContext, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * 1000, NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(inContext, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * 1000, NULL, &error);
+    streams[1] = clCreateBuffer(inContext, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * 1000, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     /* Set the arguments */
@@ -178,7 +180,8 @@ int test_event_get_write_array_status( cl_device_id deviceID, cl_context context
     cl_int status;
 
 
-    stream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 1024 * 32, NULL, &error );
+    stream = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                            sizeof(cl_float) * 1024 * 32, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     error = clEnqueueWriteBuffer(queue, stream, CL_FALSE, 0, sizeof(cl_float)*1024*32, (void *)testArray, 0, NULL, &event);
@@ -212,7 +215,8 @@ int test_event_get_read_array_status( cl_device_id deviceID, cl_context context,
     cl_int status;
 
 
-    stream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 1024 * 32, NULL, &error );
+    stream = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                            sizeof(cl_float) * 1024 * 32, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     error = clEnqueueReadBuffer(queue, stream, CL_FALSE, 0, sizeof(cl_float)*1024*32, (void *)testArray, 0, NULL, &event);
@@ -282,9 +286,11 @@ int test_event_wait_for_array( cl_device_id deviceID, cl_context context, cl_com
     cl_int status;
 
 
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 1024 * 32, NULL, &error );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * 1024 * 32, NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 1024 * 32, NULL, &error );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * 1024 * 32, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     error = clEnqueueReadBuffer(queue, streams[0], CL_FALSE, 0, sizeof(cl_float)*1024*32, (void *)readArray, 0, NULL, &events[0]);
@@ -421,9 +427,11 @@ int test_event_finish_array( cl_device_id deviceID, cl_context context, cl_comma
     cl_int status;
 
 
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 1024 * 32, NULL, &error );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * 1024 * 32, NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 1024 * 32, NULL, &error );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * 1024 * 32, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     error = clEnqueueReadBuffer(queue, streams[0], CL_FALSE, 0, sizeof(cl_float)*1024*32, (void *)readArray, 0, NULL, &events[0]);
@@ -509,8 +517,12 @@ int test_event_release_before_done( cl_device_id deviceID, cl_context context, c
     // Create a set of streams to use as arguments
     for( i = 0; i < NUM_EVENT_RUNS; i++ )
     {
-        streams[i][0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * threads[0], NULL, &error );
-        streams[i][1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * threads[0], NULL, &error );
+        streams[i][0] =
+            clCreateBuffer(context, CL_MEM_READ_WRITE,
+                           sizeof(cl_float) * threads[0], NULL, &error);
+        streams[i][1] =
+            clCreateBuffer(context, CL_MEM_READ_WRITE,
+                           sizeof(cl_int) * threads[0], NULL, &error);
         if( ( streams[i][0] == NULL ) || ( streams[i][1] == NULL ) )
         {
             log_error( "ERROR: Unable to allocate testing streams" );

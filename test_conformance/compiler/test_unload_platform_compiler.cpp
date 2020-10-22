@@ -265,7 +265,7 @@ public:
         Version version = get_device_cl_version(device);
         std::string sILVersion = get_device_il_version_string(device);
         if ((version >= Version(2, 1) && version < Version(3, 0))
-            || (version >= Version(3, 0) && sILVersion.length() != 1))
+            || (version >= Version(3, 0) && !sILVersion.empty()))
         {
             m_CreateProgramWithIL = clCreateProgramWithIL;
             m_enabled = true;

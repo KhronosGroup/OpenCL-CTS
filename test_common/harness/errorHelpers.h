@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -37,19 +37,19 @@
 #define vlog_perf(_number, _higherBetter, _numType, _format, ...) printf("Performance Number " _format " (in %s, %s): %g\n",##__VA_ARGS__, _numType,    \
                     _higherBetter?"higher is better":"lower is better" , _number)
 #ifdef _WIN32
-    #ifdef __MINGW32__
-        // Use __mingw_printf since it supports "%a" format specifier
-        #define vlog __mingw_printf
-        #define vlog_error __mingw_printf
-    #else
-        // Use home-baked function that treats "%a" as "%f"
-    static int vlog_win32(const char *format, ...);
-    #define vlog vlog_win32
-    #define vlog_error vlog_win32
-    #endif
+#ifdef __MINGW32__
+// Use __mingw_printf since it supports "%a" format specifier
+#define vlog __mingw_printf
+#define vlog_error __mingw_printf
 #else
-    #define vlog_error printf
-    #define vlog printf
+// Use home-baked function that treats "%a" as "%f"
+static int vlog_win32(const char *format, ...);
+#define vlog vlog_win32
+#define vlog_error vlog_win32
+#endif
+#else
+#define vlog_error printf
+#define vlog printf
 #endif
 
 #define ct_assert(b)          ct_assert_i(b, __LINE__)
@@ -62,16 +62,26 @@
         return TEST_FAIL;                                                      \
     }
 #define test_error(errCode,msg)    test_error_ret(errCode,msg,errCode)
-#define test_error_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { print_error( errCode, msg ); return retValue ; } }
+#define test_error_ret(errCode, msg, retValue)                                 \
+    {                                                                          \
+        auto errCodeResult = errCode;                                          \
+        if (errCodeResult != CL_SUCCESS)                                       \
+        {                                                                      \
+            print_error(errCodeResult, msg);                                   \
+            return retValue;                                                   \
+        }                                                                      \
+    }
 #define print_error(errCode,msg)    log_error( "ERROR: %s! (%s from %s:%d)\n", msg, IGetErrorString( errCode ), __FILE__, __LINE__ );
 
 #define test_missing_feature(errCode, msg) test_missing_feature_ret(errCode, msg, errCode)
-// this macro should always return CL_SUCCESS, but print the missing feature message
+// this macro should always return CL_SUCCESS, but print the missing feature
+// message
 #define test_missing_feature_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { print_missing_feature( errCode, msg ); return CL_SUCCESS ; } }
 #define print_missing_feature(errCode, msg) log_missing_feature("ERROR: Subtest %s tests a feature not supported by the device version! (from %s:%d)\n", msg, __FILE__, __LINE__ );
 
 #define test_missing_support_offline_cmpiler(errCode, msg) test_missing_support_offline_cmpiler_ret(errCode, msg, errCode)
-// this macro should always return CL_SUCCESS, but print the skip message on test not supported with offline compiler
+// this macro should always return CL_SUCCESS, but print the skip message on
+// test not supported with offline compiler
 #define test_missing_support_offline_cmpiler_ret(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { log_info( "INFO: Subtest %s tests is not supported in offline compiler execution path! (from %s:%d)\n", msg, __FILE__, __LINE__ ); return TEST_SKIP ; } }
 
 // expected error code vs. what we got
@@ -112,9 +122,9 @@
 
 extern const char    *IGetErrorString( int clErrorCode );
 
-extern float Ulp_Error_Half( cl_ushort test, float reference );
-extern float Ulp_Error( float test, double reference );
-extern float Ulp_Error_Double( double test, long double reference );
+extern float Ulp_Error_Half(cl_half test, float reference);
+extern float Ulp_Error(float test, double reference);
+extern float Ulp_Error_Double(double test, long double reference);
 
 extern const char *GetChannelTypeName( cl_channel_type type );
 extern int IsChannelTypeSupported( cl_channel_type type );
@@ -125,7 +135,8 @@ extern const char *GetQueuePropertyName(cl_command_queue_properties properties);
 
 extern const char *GetDeviceTypeName( cl_device_type type );
 int check_functions_for_offline_compiler(const char *subtestname, cl_device_id device);
-
+cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
+                       cl_device_id *device_list);
 // NON-REENTRANT UNLESS YOU PROVIDE A BUFFER PTR (pass null to use static storage, but it's not reentrant then!)
 extern const char *GetDataVectorString( void *dataBuffer, size_t typeSize, size_t vecSize, char *buffer );
 

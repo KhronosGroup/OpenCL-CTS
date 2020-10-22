@@ -328,7 +328,8 @@ int test_mem_read_only_flags( cl_device_id deviceID, cl_context context, cl_comm
     for (i=0; i<num_elements; i++)
         inptr[i] = i;
 
-    buffers[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * num_elements, NULL, &err);
+    buffers[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, &err);
     if ( err != CL_SUCCESS ){
         print_error(err, " clCreateBuffer failed to create MEM_ALLOC_GLOBAL_POOL array\n" );
         clReleaseMemObject( buffers[0]) ;

@@ -354,7 +354,7 @@ static float Ulp_Error_Half_Float( float test, double reference )
     return (float) scalbn( testVal - reference, ulp_exp );
 }
 
-float Ulp_Error_Half( cl_ushort test, float reference )
+float Ulp_Error_Half(cl_half test, float reference)
 {
     return Ulp_Error_Half_Float(cl_half_to_float(test), reference);
 }

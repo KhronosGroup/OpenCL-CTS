@@ -110,8 +110,8 @@ test_imagenpot(cl_device_id device_id, cl_context context, cl_command_queue queu
 
         img_format.image_channel_order = CL_RGBA;
         img_format.image_channel_data_type = CL_UNORM_INT8;
-        streams[0] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format,
-                                 img_width, img_height, 0, NULL, NULL);
+        streams[0] = create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                     img_width, img_height, 0, NULL, NULL);
         if (!streams[0])
         {
             log_error("create_image_2d failed\n");
@@ -120,8 +120,8 @@ test_imagenpot(cl_device_id device_id, cl_context context, cl_command_queue queu
         }
         img_format.image_channel_order = CL_RGBA;
         img_format.image_channel_data_type = CL_UNORM_INT8;
-    streams[1] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  &img_format,
-                                 img_width, img_height, 0, NULL, NULL);
+        streams[1] = create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                     img_width, img_height, 0, NULL, NULL);
         if (!streams[1])
         {
             log_error("create_image_2d failed\n");

@@ -456,7 +456,8 @@ int test_enqueue_task(cl_device_id deviceID, cl_context context, cl_command_queu
 
     // Create args
     count = 100;
-    output = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof( cl_int ) * count, NULL, &error );
+    output = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int) * count,
+                            NULL, &error);
     test_error( error, "Unable to create output buffer" );
 
     error = clSetKernelArg( kernel, 0, sizeof( cl_mem ), &output );

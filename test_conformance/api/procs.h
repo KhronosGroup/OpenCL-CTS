@@ -137,6 +137,8 @@ extern int test_queue_properties_queries(cl_device_id deviceID,
                                          cl_context context,
                                          cl_command_queue queue,
                                          int num_elements);
+int test_pipe_properties_queries(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
 
 extern int test_consistency_svm(cl_device_id deviceID, cl_context context,
                                 cl_command_queue queue, int num_elements);
@@ -186,3 +188,6 @@ extern int test_consistency_3d_image_writes(cl_device_id deviceID,
                                             cl_context context,
                                             cl_command_queue queue,
                                             int num_elements);
+
+extern int test_min_image_formats(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements);

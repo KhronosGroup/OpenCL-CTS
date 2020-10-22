@@ -133,7 +133,8 @@ int run_work_group_named_barrier_barrier_test(cl_device_id device, cl_context co
     std::vector<cl_uint> output = generate_output<cl_uint>(work_size[0], 9999);
 
     // device output buffer
-    buffers[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * output.size(), NULL, &err);
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_uint) * output.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
     // Execute test kernels

@@ -136,7 +136,8 @@ int test_min_max_thread_dimensions(cl_device_id deviceID, cl_context context, cl
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_int) * 100, NULL, &error );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * 100, NULL, &error);
     if( streams[0] == NULL )
     {
         log_error("ERROR: Creating test array failed!\n");
@@ -321,7 +322,8 @@ int test_min_max_read_image_args(cl_device_id deviceID, cl_context context, cl_c
     test_error( error, "Failed to create the program and kernel.");
     free( programSrc );
 
-    result = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_float), NULL, &error);
+    result = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_float), NULL,
+                            &error);
     test_error( error, "clCreateBufer failed");
 
     /* Create some I/O streams */
@@ -692,7 +694,8 @@ int test_min_max_image_3d_width(cl_device_id deviceID, cl_context context, cl_co
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( deviceID )
 
     /* Just get any ol format to test with */
-    error = get_8_bit_image_format( context, CL_MEM_OBJECT_IMAGE3D, CL_MEM_READ_WRITE, 0, &image_format_desc );
+    error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
+                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
     test_error( error, "Unable to obtain suitable image format to test with!" );
 
     /* Get the max 2d image width */
@@ -748,7 +751,8 @@ int test_min_max_image_3d_height(cl_device_id deviceID, cl_context context, cl_c
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( deviceID )
 
     /* Just get any ol format to test with */
-    error = get_8_bit_image_format( context, CL_MEM_OBJECT_IMAGE3D, CL_MEM_READ_WRITE, 0, &image_format_desc );
+    error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
+                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
     test_error( error, "Unable to obtain suitable image format to test with!" );
 
     /* Get the max 2d image width */
@@ -805,7 +809,8 @@ int test_min_max_image_3d_depth(cl_device_id deviceID, cl_context context, cl_co
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( deviceID )
 
     /* Just get any ol format to test with */
-    error = get_8_bit_image_format( context, CL_MEM_OBJECT_IMAGE3D, CL_MEM_READ_WRITE, 0, &image_format_desc );
+    error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
+                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
     test_error( error, "Unable to obtain suitable image format to test with!" );
 
     /* Get the max 2d image width */
@@ -991,6 +996,7 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
     size_t decrement;
     cl_event event;
     cl_int event_status;
+    bool embeddedNoLong = gIsEmbedded && !gHasLong;
 
 
     /* Get the max param size */
@@ -1004,8 +1010,9 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
         return -1;
     }
 
-    /* The embedded profile does not require longs, so use ints */
-    if(gIsEmbedded)
+    /* The embedded profile without cles_khr_int64 extension does not require
+     * longs, so use ints */
+    if (embeddedNoLong)
         numberOfIntParametersToTry = numberExpected = (maxSize-sizeof(cl_mem))/sizeof(cl_int);
     else
         numberOfIntParametersToTry = numberExpected = (maxSize-sizeof(cl_mem))/sizeof(cl_long);
@@ -1021,7 +1028,7 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
         clMemWrapper mem;
         clKernelWrapper kernel;
 
-        if(gIsEmbedded)
+        if (embeddedNoLong)
         {
             log_info("Trying a kernel with %ld int arguments (%ld bytes) and one cl_mem (%ld bytes) for %ld bytes total.\n",
                      numberOfIntParametersToTry, sizeof(cl_int)*numberOfIntParametersToTry, sizeof(cl_mem),
@@ -1092,7 +1099,8 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
         /* Try to set a large argument to the kernel */
         retVal = 0;
 
-        mem = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_long), NULL, &error);
+        mem = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_long), NULL,
+                             &error);
         test_error(error, "clCreateBuffer failed");
 
         for (i=0; i<(int)numberOfIntParametersToTry; i++) {
@@ -1246,7 +1254,8 @@ int test_min_max_samplers(cl_device_id deviceID, cl_context context, cl_command_
     clMemWrapper image = create_image_2d( context, CL_MEM_READ_WRITE, &format, 16, 16, 0, NULL, &error );
     test_error( error, "Unable to create a test image" );
 
-    clMemWrapper stream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), 16, NULL, &error );
+    clMemWrapper stream =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, 16, NULL, &error);
     test_error( error, "Unable to create test buffer" );
 
     error = clSetKernelArg( kernel, 0, sizeof( cl_mem ), &image );
@@ -1347,9 +1356,11 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
             constantData[i] = (int)genrand_int32(d);
 
         clMemWrapper streams[3];
-        streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeToAllocate, constantData, &error);
+        streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                    sizeToAllocate, constantData, &error);
         test_error( error, "Creating test array failed" );
-        streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeToAllocate, NULL, &error);
+        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
+                                    NULL, &error);
         test_error( error, "Creating test array failed" );
 
 
@@ -1513,7 +1524,8 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context, cl_com
     streams = new clMemWrapper[ maxArgs + 1 ];
     for( i = 0; i < maxArgs + 1; i++ )
     {
-        streams[i] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), individualBufferSize, NULL, &error);
+        streams[i] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    individualBufferSize, NULL, &error);
         test_error( error, "Creating test array failed" );
     }
 
@@ -1721,9 +1733,11 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context, cl_co
         localData[i] = (int)genrand_int32(d);
     free_mtdata(d); d = NULL;
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeToAllocate, localData, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeToAllocate,
+                                localData, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeToAllocate, NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
+                                NULL, &error);
     test_error( error, "Creating test array failed" );
 
 

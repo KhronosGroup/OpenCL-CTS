@@ -1,5 +1,0 @@
-#
-# OpenCL Conformance Test for DirectX interop
-#
-
-D3D10,D3D10/test_d3d10 

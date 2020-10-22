@@ -131,39 +131,53 @@ test_hostptr(cl_device_id device, cl_context context, cl_command_queue queue, in
         make_random_data(num_elements, input_ptr[1], d);
 
         // Create host-side input
-        streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_USE_HOST_PTR), sizeof(cl_float) * num_elements, input_ptr[0], &err);
+        streams[0] =
+            clCreateBuffer(context, CL_MEM_USE_HOST_PTR,
+                           sizeof(cl_float) * num_elements, input_ptr[0], &err);
         test_error(err, "clCreateBuffer 0 failed");
 
         // Create a copied input
-        streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_float) * num_elements, input_ptr[1], &err);
+        streams[1] =
+            clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                           sizeof(cl_float) * num_elements, input_ptr[1], &err);
         test_error(err, "clCreateBuffer 1 failed");
 
         // Create a host-side output
-        streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_USE_HOST_PTR), sizeof(cl_float) * num_elements, output_ptr, &err);
+        streams[2] =
+            clCreateBuffer(context, CL_MEM_USE_HOST_PTR,
+                           sizeof(cl_float) * num_elements, output_ptr, &err);
         test_error(err, "clCreateBuffer 2 failed");
 
         // Create a host-side input
         img_format.image_channel_order = CL_RGBA;
         img_format.image_channel_data_type = CL_UNORM_INT8;
-        streams[3] = create_image_2d(context, (cl_mem_flags)(CL_MEM_USE_HOST_PTR), &img_format, img_width, img_height, 0, rgba8_inptr, &err);
+        streams[3] =
+            create_image_2d(context, CL_MEM_USE_HOST_PTR, &img_format,
+                            img_width, img_height, 0, rgba8_inptr, &err);
         test_error(err, "create_image_2d 3 failed");
 
         // Create a copied input
         img_format.image_channel_order = CL_RGBA;
         img_format.image_channel_data_type = CL_UNORM_INT8;
-        streams[4] = create_image_2d(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), &img_format, img_width, img_height, 0, rgba8_inptr, &err);
+        streams[4] =
+            create_image_2d(context, CL_MEM_COPY_HOST_PTR, &img_format,
+                            img_width, img_height, 0, rgba8_inptr, &err);
         test_error(err, "create_image_2d 4 failed");
 
         // Create a host-side output
         img_format.image_channel_order = CL_RGBA;
         img_format.image_channel_data_type = CL_UNORM_INT8;
-        streams[5] = create_image_2d(context, (cl_mem_flags)(CL_MEM_USE_HOST_PTR), &img_format, img_width, img_height, 0, rgba8_outptr, &err);
+        streams[5] =
+            create_image_2d(context, CL_MEM_USE_HOST_PTR, &img_format,
+                            img_width, img_height, 0, rgba8_outptr, &err);
         test_error(err, "create_image_2d 5 failed");
 
         // Create a copied output
         img_format.image_channel_data_type = CL_RGBA;
         img_format.image_channel_data_type = CL_UNORM_INT8;
-        streams[6] = create_image_2d(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), &img_format, img_width, img_height, 0, rgba8_outptr, &err);
+        streams[6] =
+            create_image_2d(context, CL_MEM_COPY_HOST_PTR, &img_format,
+                            img_width, img_height, 0, rgba8_outptr, &err);
         test_error(err, "create_image_2d 6 failed");
 
         err = create_single_kernel_helper(context, &program, &kernel,1, &hostptr_kernel_code, "test_hostptr" );

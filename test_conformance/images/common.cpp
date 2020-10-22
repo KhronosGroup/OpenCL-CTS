@@ -58,20 +58,6 @@ std::array<ImageTestTypes, 3> imageTestTypes = { {
     { kTestFloat, kFloat, floatFormats, "float" },
 } };
 
-const char *convert_image_type_to_string(cl_mem_object_type image_type)
-{
-    switch (image_type)
-    {
-        case CL_MEM_OBJECT_IMAGE1D: return "1D";
-        case CL_MEM_OBJECT_IMAGE2D: return "2D";
-        case CL_MEM_OBJECT_IMAGE3D: return "3D";
-        case CL_MEM_OBJECT_IMAGE1D_ARRAY: return "1D array";
-        case CL_MEM_OBJECT_IMAGE2D_ARRAY: return "2D array";
-        case CL_MEM_OBJECT_IMAGE1D_BUFFER: return "1D image buffer";
-        default: return "unrecognized object type";
-    }
-}
-
 int filter_formats(cl_image_format *formatList, bool *filterFlags,
                    unsigned int formatCount,
                    cl_channel_type *channelDataTypesToFilter,

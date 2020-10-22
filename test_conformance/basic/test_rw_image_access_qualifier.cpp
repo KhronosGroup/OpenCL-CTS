@@ -121,8 +121,7 @@ int test_rw_image_access_qualifier(cl_device_id device_id, cl_context context, c
     format.image_channel_data_type = CL_UNSIGNED_INT32;
 
     /* Create input image */
-    flags = (cl_mem_flags) (CL_MEM_READ_WRITE
-                            | CL_MEM_COPY_HOST_PTR);
+    flags = CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR;
     src_image = create_image_2d(context, flags, &format,
                                 size_x, size_y, 0,
                                 (void *)input, &err);

@@ -130,10 +130,12 @@ int test_atomic_fetch_func(cl_device_id device, cl_context context, cl_command_q
     std::vector<TYPE> input = generate_input<TYPE>(count, op.min1(), op.max1(), std::vector<TYPE>());
     std::vector<TYPE> output = generate_output<TYPE>((count - 1) / atomic_bucket_size + 1);
 
-    buffers[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(TYPE) * input.size(), NULL, &err);
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(TYPE) * input.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
-    buffers[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(TYPE) * output.size(), NULL, &err);
+    buffers[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(TYPE) * output.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
     err = clEnqueueWriteBuffer(

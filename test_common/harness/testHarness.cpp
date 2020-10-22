@@ -15,6 +15,7 @@
 //
 #include "testHarness.h"
 #include "compat.h"
+#include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,8 +55,6 @@ cl_uint gReSeed = 0;
 int     gFlushDenormsToZero = 0;
 int     gInfNanSupport = 1;
 int     gIsEmbedded = 0;
-int     gIsOpenCL_C_1_0_Device = 0;
-int     gIsOpenCL_1_0_Device = 0;
 int     gHasLong = 1;
 bool gCoreILProgram = true;
 
@@ -403,27 +402,6 @@ int runTestHarnessWithCheck( int argc, const char *argv[], int testNum, test_def
             gHasLong = 0;
     }
 
-    if( getenv( "OPENCL_1_0_DEVICE" ) )
-    {
-        char c_version[1024];
-        gIsOpenCL_1_0_Device = 1;
-        memset( c_version, 0, sizeof( c_version ) );
-
-        if( (err = clGetDeviceInfo( device, CL_DEVICE_OPENCL_C_VERSION, sizeof(c_version), c_version, NULL )) )
-        {
-            log_error( "FAILURE: unable to get CL_DEVICE_OPENCL_C_VERSION on 1.0 device. (%d)\n", err );
-            return EXIT_FAILURE;
-        }
-
-        if( 0 == strncmp( c_version, "OpenCL C 1.0 ", strlen( "OpenCL C 1.0 " ) ) )
-        {
-            gIsOpenCL_C_1_0_Device = 1;
-            log_info( "Device is a OpenCL C 1.0 device\n" );
-        }
-        else
-            log_info( "Device is a OpenCL 1.0 device, but supports OpenCL C 1.1\n" );
-    }
-
     cl_uint device_address_bits = 0;
     if( (err = clGetDeviceInfo( device, CL_DEVICE_ADDRESS_BITS, sizeof( device_address_bits ), &device_address_bits, NULL ) ))
     {
@@ -660,6 +638,19 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
         {
             ret = saveResultsToJson( filename, argv[0], testList, selectedTestList, resultTestList, testNum );
         }
+    }
+
+    if (std::any_of(resultTestList, resultTestList + testNum,
+                    [](test_status result) {
+                        switch (result)
+                        {
+                            case TEST_PASS:
+                            case TEST_SKIP: return false;
+                            case TEST_FAIL: return true;
+                        };
+                    }))
+    {
+        ret = EXIT_FAILURE;
     }
 
     free( selectedTestList );

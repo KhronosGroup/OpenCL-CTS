@@ -333,8 +333,11 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
 
             char *imagePtrOffset = imageValues + nextLevelOffset;
 
-            inputStream = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ),
-                                     get_explicit_type_size( inputType ) * channel_scale * width_lod * height_lod, imagePtrOffset, &error );
+            inputStream =
+                clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                               get_explicit_type_size(inputType) * channel_scale
+                                   * width_lod * height_lod,
+                               imagePtrOffset, &error);
             test_error( error, "Unable to create input buffer" );
 
             // Set arguments
@@ -538,8 +541,18 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                                         log_error( "    Error:    %f %f %f %f\n", errors[0], errors[1], errors[2], errors[3] );
                                         break;
                                     case CL_HALF_FLOAT:
-                                        log_error( "    Expected: 0x%4.4x 0x%4.4x 0x%4.4x 0x%4.4x\n", ((cl_ushort*)resultBuffer)[0], ((cl_ushort*)resultBuffer)[1], ((cl_ushort*)resultBuffer)[2], ((cl_ushort*)resultBuffer)[3] );
-                                        log_error( "    Actual:   0x%4.4x 0x%4.4x 0x%4.4x 0x%4.4x\n", ((cl_ushort*)resultPtr)[0], ((cl_ushort*)resultPtr)[1], ((cl_ushort*)resultPtr)[2], ((cl_ushort*)resultPtr)[3] );
+                                        log_error("    Expected: 0x%4.4x "
+                                                  "0x%4.4x 0x%4.4x 0x%4.4x\n",
+                                                  ((cl_half *)resultBuffer)[0],
+                                                  ((cl_half *)resultBuffer)[1],
+                                                  ((cl_half *)resultBuffer)[2],
+                                                  ((cl_half *)resultBuffer)[3]);
+                                        log_error("    Actual:   0x%4.4x "
+                                                  "0x%4.4x 0x%4.4x 0x%4.4x\n",
+                                                  ((cl_half *)resultPtr)[0],
+                                                  ((cl_half *)resultPtr)[1],
+                                                  ((cl_half *)resultPtr)[2],
+                                                  ((cl_half *)resultPtr)[3]);
                                         log_error( "    Ulps:     %f %f %f %f\n", errors[0], errors[1], errors[2], errors[3] );
                                         break;
                                     case CL_UNSIGNED_INT32:

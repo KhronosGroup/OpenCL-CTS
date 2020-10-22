@@ -361,8 +361,8 @@ static int verify_readwrite_half(void *ptr1, void *ptr2, int n)
 {
     int            i;
     int            sum_input = 0, sum_output = 0;
-    cl_ushort    *inptr = (cl_ushort *)ptr1;
-    cl_ushort    *outptr = (cl_ushort *)ptr2;
+    cl_half *inptr = (cl_half *)ptr1;
+    cl_half *outptr = (cl_half *)ptr2;
 
     for(i = 0; i < n; i++)
     {

@@ -160,13 +160,13 @@ test_fpmath_float4(cl_device_id device, cl_context context, cl_command_queue que
     input_ptr[2] = (cl_float*)malloc(length);
     output_ptr   = (cl_float*)malloc(length);
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), length, NULL, &err);
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, &err);
     test_error( err, "clCreateBuffer failed.");
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), length, NULL, &err);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, &err);
     test_error( err, "clCreateBuffer failed.");
-    streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), length, NULL, &err);
+    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, &err);
     test_error( err, "clCreateBuffer failed.");
-    streams[3] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), length, NULL, &err);
+    streams[3] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, &err);
     test_error( err, "clCreateBuffer failed.");
 
     p = input_ptr[0];

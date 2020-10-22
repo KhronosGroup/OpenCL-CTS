@@ -127,6 +127,7 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(buffer_properties_queries, Version(3, 0)),
     ADD_TEST_VERSION(image_properties_queries, Version(3, 0)),
     ADD_TEST_VERSION(queue_properties_queries, Version(3, 0)),
+    ADD_TEST_VERSION(pipe_properties_queries, Version(3, 0)),
 
     ADD_TEST_VERSION(consistency_svm, Version(3, 0)),
     ADD_TEST_VERSION(consistency_memory_model, Version(3, 0)),
@@ -142,6 +143,8 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(consistency_subgroups, Version(3, 0)),
     ADD_TEST_VERSION(consistency_prog_ctor_dtor, Version(3, 0)),
     ADD_TEST_VERSION(consistency_3d_image_writes, Version(3, 0)),
+
+    ADD_TEST(min_image_formats),
 };
 
 const int test_num = ARRAY_SIZE(test_list);

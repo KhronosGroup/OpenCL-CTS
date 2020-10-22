@@ -24,8 +24,8 @@
 
 /* Helper to return a string containing device information for the specified
  * device info parameter. */
-static std::string get_device_info_string(cl_device_id device,
-                                          cl_device_info param_name)
+std::string get_device_info_string(cl_device_id device,
+                                   cl_device_info param_name)
 {
     size_t size = 0;
     int err;

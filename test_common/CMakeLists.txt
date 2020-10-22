@@ -8,6 +8,7 @@ set(HARNESS_SOURCES
     harness/msvc9.c
     harness/crc32.cpp
     harness/errorHelpers.cpp
+    harness/featureHelpers.cpp
     harness/genericThread.cpp
     harness/imageHelpers.cpp
     harness/kernelHelpers.cpp
