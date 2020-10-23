@@ -128,7 +128,9 @@ int test_ctors_execution(cl_device_id device,
 
     // host vector, size == count, output[0...count-1] == 1
     std::vector<cl_uint> output(count, cl_uint(1));
-    output_buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * output.size(), NULL, &error);
+    output_buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_uint) * output.size(), NULL, &error);
     RETURN_ON_CL_ERROR(error, "clCreateBuffer")
 
     error = clEnqueueWriteBuffer(queue, output_buffer, CL_TRUE, 0, sizeof(cl_uint) * output.size(), static_cast<void *>(output.data()), 0, NULL, NULL);
@@ -298,7 +300,9 @@ AUTO_TEST_CASE(test_global_scope_ctors_executed_once)
 
     // host vector, size == count, output[0...count-1] == 1
     std::vector<cl_uint> output(count, cl_uint(1));
-    output_buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * output.size(), NULL, &error);
+    output_buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_uint) * output.size(), NULL, &error);
     RETURN_ON_CL_ERROR(error, "clCreateBuffer")
 
     for(size_t i = 0; i < 4; i++)
@@ -435,7 +439,9 @@ AUTO_TEST_CASE(test_global_scope_ctors_ndrange)
 
     // host vector, size == count, output[0...count-1] == 1
     std::vector<cl_uint> output(count, cl_uint(1));
-    output_buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * output.size(), NULL, &error);
+    output_buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_uint) * output.size(), NULL, &error);
     RETURN_ON_CL_ERROR(error, "clCreateBuffer")
 
     error = clEnqueueWriteBuffer(

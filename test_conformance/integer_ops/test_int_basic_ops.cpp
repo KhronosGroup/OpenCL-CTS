@@ -244,18 +244,21 @@ cl_int perThreadDataInit(perThreadData * pThis, ExplicitType type,
     (cl_int*)malloc(pThis->m_type_size * num_elements * vectorSize);
     pThis->m_output_ptr =
     (cl_int*)malloc(pThis->m_type_size * num_elements * vectorSize);
-    pThis->m_streams[0] =
-    clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), pThis->m_type_size * num_elements * inputAVecSize, NULL, &err);
+    pThis->m_streams[0] = clCreateBuffer(
+        context, CL_MEM_READ_WRITE,
+        pThis->m_type_size * num_elements * inputAVecSize, NULL, &err);
 
     test_error(err, "clCreateBuffer failed");
 
-    pThis->m_streams[1] =
-    clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), pThis->m_type_size * num_elements * inputBVecSize, NULL, &err );
+    pThis->m_streams[1] = clCreateBuffer(
+        context, CL_MEM_READ_WRITE,
+        pThis->m_type_size * num_elements * inputBVecSize, NULL, &err);
 
     test_error(err, "clCreateBuffer failed");
 
-    pThis->m_streams[2] =
-    clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), pThis->m_type_size * num_elements * vectorSize, NULL, &err );
+    pThis->m_streams[2] = clCreateBuffer(
+        context, CL_MEM_READ_WRITE,
+        pThis->m_type_size * num_elements * vectorSize, NULL, &err);
 
     test_error(err, "clCreateBuffer failed");
 
@@ -1445,13 +1448,21 @@ int test_question_colon_op(cl_device_id deviceID, cl_context context,
     generate_random_data( type, num_elements * inputBVecSize, s_randStates, input_ptr[ 1 ] );
     generate_random_bool_data( num_elements * inputCVecSize, s_randStates, (cl_char *)input_ptr[ 2 ], type_size );
 
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR), type_size * num_elements * inputAVecSize, input_ptr[0], &err);
+    streams[0] = clCreateBuffer(
+        context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        type_size * num_elements * inputAVecSize, input_ptr[0], &err);
     test_error(err, "clCreateBuffer failed");
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR), type_size * num_elements * inputBVecSize, input_ptr[1], &err );
+    streams[1] = clCreateBuffer(
+        context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        type_size * num_elements * inputBVecSize, input_ptr[1], &err);
     test_error(err, "clCreateBuffer failed");
-    streams[2] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR), type_size * num_elements * inputCVecSize, input_ptr[2], &err );
+    streams[2] = clCreateBuffer(
+        context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        type_size * num_elements * inputCVecSize, input_ptr[2], &err);
     test_error(err, "clCreateBuffer failed");
-    streams[3] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_WRITE_ONLY), type_size * num_elements * vectorSize, NULL, &err );
+    streams[3] =
+        clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+                       type_size * num_elements * vectorSize, NULL, &err);
     test_error(err, "clCreateBuffer failed");
 
     const char *vectorString = sizeNames[ vectorSize ];

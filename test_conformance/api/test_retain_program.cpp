@@ -68,9 +68,11 @@ int test_release_during_execute( cl_device_id deviceID, cl_context context, cl_c
         return -1;
     }
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 10, NULL, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * 10, NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * 10, NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int) * 10,
+                                NULL, &error);
     test_error( error, "Creating test array failed" );
 
     /* Set the arguments */

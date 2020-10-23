@@ -80,9 +80,11 @@ int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer(context_to_test, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 10, NULL, &error);
+    streams[0] = clCreateBuffer(context_to_test, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * 10, NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context_to_test, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * 10, NULL, &error);
+    streams[1] = clCreateBuffer(context_to_test, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * 10, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     /* Write some test data */

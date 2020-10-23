@@ -1174,8 +1174,11 @@ bool validate_float_write_results( float *expected, float *actual, image_descrip
                 continue;
             if ( IsFloatSubnormal( expected[j] ) && actual[j] == 0.0f )
                 continue;
-            pass = false;
-            break;
+            if (expected[j] != actual[j])
+            {
+                pass = false;
+                break;
+            }
         }
     }
     return pass;
@@ -1193,8 +1196,11 @@ bool validate_half_write_results( cl_half *expected, cl_half *actual, image_desc
                 continue;
             if ( is_half_denorm( expected[j] ) && is_half_zero( actual[j] ) )
                 continue;
-            pass = false;
-            break;
+            if (expected[j] != actual[j])
+            {
+                pass = false;
+                break;
+            }
         }
     }
     return pass;
@@ -1428,11 +1434,20 @@ int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel ke
     if( gDebugTrace )
         log_info( " - Creating kernel arguments...\n" );
 
-    xOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height, xOffsetValues, &error );
+    xOffsets =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_float) * imageInfo->width * imageInfo->height,
+                       xOffsetValues, &error);
     test_error( error, "Unable to create x offset buffer" );
-    yOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height, yOffsetValues, &error );
+    yOffsets =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_float) * imageInfo->width * imageInfo->height,
+                       yOffsetValues, &error);
     test_error( error, "Unable to create y offset buffer" );
-    results = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  get_explicit_type_size( outputType ) * 4 * imageInfo->width * imageInfo->height, NULL, &error );
+    results = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                             get_explicit_type_size(outputType) * 4
+                                 * imageInfo->width * imageInfo->height,
+                             NULL, &error);
     test_error( error, "Unable to create result buffer" );
 
     // Create sampler to use

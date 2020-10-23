@@ -122,14 +122,18 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     }
 
     // allocate the input and output image memory objects
-    memobjs[0] = create_image_3d( context, (cl_mem_flags)(CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR), &image_format_desc, w, h, d, 0, 0, inptr, &err );
+    memobjs[0] =
+        create_image_3d(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                        &image_format_desc, w, h, d, 0, 0, inptr, &err);
     if( memobjs[0] == (cl_mem)0 ){
         log_error( " unable to create 2D image using create_image_2d\n" );
         return -1;
     }
 
     // allocate an array memory object to load the filter weights
-    memobjs[1] = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_READ_WRITE ), sizeof( cl_float ) * w*h*d*nChannels, NULL, &err );
+    memobjs[1] =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_float) * w * h * d * nChannels, NULL, &err);
     if( memobjs[1] == (cl_mem)0 ){
         log_error( " unable to create array using clCreateBuffer\n" );
         clReleaseMemObject( memobjs[0] );

@@ -208,12 +208,12 @@ static int run_test_query_properties(cl_context context, cl_command_queue queue,
     free_mtdata(init_generator);
     init_generator = NULL;
 
-    flags = (cl_mem_flags)(CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+    flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
     error = create_object_and_check_properties(context, obj_src, test_case,
                                                flags, src_data, size_x, size_y);
     test_error(error, "create_object_and_check_properties obj_src failed.");
 
-    flags = (cl_mem_flags)(CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR);
+    flags = CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR;
     error = create_object_and_check_properties(context, obj_dst, test_case,
                                                flags, dst_data, size_x, size_y);
     test_error(error, "create_object_and_check_properties obj_dst failed.");

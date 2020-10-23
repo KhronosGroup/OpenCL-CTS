@@ -97,7 +97,8 @@ test_enqueued_local_size(cl_device_id device, cl_context context, cl_command_que
 
     output_ptr   = (int*)malloc(2 * sizeof(int));
 
-    streams = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), 2*sizeof(int), NULL, &err);
+    streams =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, 2 * sizeof(int), NULL, &err);
     test_error( err, "clCreateBuffer failed.");
 
     std::string cl_std = "-cl-std=CL";

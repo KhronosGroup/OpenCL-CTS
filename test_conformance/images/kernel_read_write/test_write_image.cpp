@@ -333,8 +333,11 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
 
             char *imagePtrOffset = imageValues + nextLevelOffset;
 
-            inputStream = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ),
-                                     get_explicit_type_size( inputType ) * channel_scale * width_lod * height_lod, imagePtrOffset, &error );
+            inputStream =
+                clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                               get_explicit_type_size(inputType) * channel_scale
+                                   * width_lod * height_lod,
+                               imagePtrOffset, &error);
             test_error( error, "Unable to create input buffer" );
 
             // Set arguments

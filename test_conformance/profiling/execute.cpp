@@ -184,8 +184,9 @@ static int kernelFilter( cl_device_id device, cl_context context, cl_command_que
     threads[1] = h;
 
     // allocate the input and output image memory objects
-    memobjs[0] = create_image_2d( context, (cl_mem_flags)(CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR),
-                                 &image_format_desc, w, h, 0, inptr, &err );
+    memobjs[0] =
+        create_image_2d(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                        &image_format_desc, w, h, 0, inptr, &err);
     if( memobjs[0] == (cl_mem)0 ){
         log_error( " unable to create 2D image using create_image_2d\n" );
         return -1;
@@ -199,8 +200,9 @@ static int kernelFilter( cl_device_id device, cl_context context, cl_command_que
     }
 
     // allocate an array memory object to load the filter weights
-    memobjs[2] = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR ),
-                               sizeof( cl_float ) * filter_w * filter_h, &filter_weights, &err );
+    memobjs[2] = clCreateBuffer(
+        context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        sizeof(cl_float) * filter_w * filter_h, &filter_weights, &err);
     if( memobjs[2] == (cl_mem)0 ){
         log_error( " unable to create array using clCreateBuffer\n" );
         clReleaseMemObject( memobjs[1] );

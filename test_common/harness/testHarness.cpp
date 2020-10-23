@@ -15,6 +15,7 @@
 //
 #include "testHarness.h"
 #include "compat.h"
+#include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -637,6 +638,19 @@ int parseAndCallCommandLineTests( int argc, const char *argv[], cl_device_id dev
         {
             ret = saveResultsToJson( filename, argv[0], testList, selectedTestList, resultTestList, testNum );
         }
+    }
+
+    if (std::any_of(resultTestList, resultTestList + testNum,
+                    [](test_status result) {
+                        switch (result)
+                        {
+                            case TEST_PASS:
+                            case TEST_SKIP: return false;
+                            case TEST_FAIL: return true;
+                        };
+                    }))
+    {
+        ret = EXIT_FAILURE;
     }
 
     free( selectedTestList );
