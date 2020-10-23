@@ -97,7 +97,8 @@ static int test_get_1Dimage_info_single( cl_context context, cl_command_queue qu
     test_error( error, "Unable to create kernel to test against" );
 
     // Create an output buffer
-    outDataBuffer = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof( outKernelData ), NULL, &error );
+    outDataBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                   sizeof(outKernelData), NULL, &error);
     test_error( error, "Unable to create output buffer" );
 
     // Set up arguments and run

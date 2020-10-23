@@ -88,7 +88,9 @@ test_image_r8(cl_device_id device, cl_context context, cl_command_queue queue, i
     img_format.image_channel_data_type = CL_UNSIGNED_INT8;
 
     // early out if this image type is not supported
-    if( ! is_image_format_supported( context, (cl_mem_flags)(CL_MEM_READ_ONLY), CL_MEM_OBJECT_IMAGE2D, &img_format ) ) {
+    if (!is_image_format_supported(context, CL_MEM_READ_ONLY,
+                                   CL_MEM_OBJECT_IMAGE2D, &img_format))
+    {
         log_info("WARNING: Image type not supported; skipping test.\n");
         return 0;
     }
@@ -98,14 +100,17 @@ test_image_r8(cl_device_id device, cl_context context, cl_command_queue queue, i
     free_mtdata(d); d = NULL;
 
     output_ptr = (cl_uchar*)malloc(sizeof(cl_uchar) * img_width * img_height);
-    streams[0] = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_ONLY), &img_format, img_width, img_height, 0, NULL, NULL);
+    streams[0] = create_image_2d(context, CL_MEM_READ_ONLY, &img_format,
+                                 img_width, img_height, 0, NULL, NULL);
     if (!streams[0])
     {
         log_error("create_image_2d failed\n");
         return -1;
     }
 
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_uchar) * img_width*img_height, NULL, NULL);
+    streams[1] =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_uchar) * img_width * img_height, NULL, NULL);
     if (!streams[1])
     {
         log_error("clCreateBuffer failed\n");

@@ -172,7 +172,7 @@ test_image_multipass_integer_coord(cl_device_id device, cl_context context, cl_c
         cl_mem_flags        flags;
 
         initial_data = generate_initial_byte_image(img_width, img_height, 4, 0xF0);
-        flags = (cl_mem_flags)(CL_MEM_READ_WRITE);
+        flags = CL_MEM_READ_WRITE;
 
         accum_streams[0] = create_image_2d(context, flags, &img_format, img_width, img_height, 0, NULL, NULL);
         if (!accum_streams[0])
@@ -224,7 +224,7 @@ test_image_multipass_integer_coord(cl_device_id device, cl_context context, cl_c
         MTdata              d;
 
         input_streams = (cl_mem*)malloc(sizeof(cl_mem) * num_input_streams);
-        flags = (cl_mem_flags)(CL_MEM_READ_WRITE);
+        flags = CL_MEM_READ_WRITE;
 
         int i;
         d = init_genrand( gRandomSeed );
@@ -425,7 +425,7 @@ test_image_multipass_float_coord(cl_device_id device, cl_context context, cl_com
         cl_mem_flags        flags;
 
         initial_data = generate_initial_byte_image(img_width, img_height, 4, 0xF0);
-        flags = (cl_mem_flags)(CL_MEM_READ_WRITE);
+        flags = CL_MEM_READ_WRITE;
 
         accum_streams[0] = create_image_2d(context, flags, &img_format, img_width, img_height, 0, NULL, NULL);
         if (!accum_streams[0])
@@ -469,7 +469,7 @@ test_image_multipass_float_coord(cl_device_id device, cl_context context, cl_com
         MTdata              d;
 
         input_streams = (cl_mem*)malloc(sizeof(cl_mem) * num_input_streams);
-        flags = (cl_mem_flags)(CL_MEM_READ_WRITE);
+        flags = CL_MEM_READ_WRITE;
 
         int i;
         d = init_genrand( gRandomSeed );

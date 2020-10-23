@@ -394,9 +394,14 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
     if( gDebugTrace )
         log_info( " - Creating kernel arguments...\n" );
 
-    xOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width, xOffsetValues, &error );
+    xOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width,
+                              xOffsetValues, &error);
     test_error( error, "Unable to create x offset buffer" );
-    results = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  get_explicit_type_size( outputType ) * 4 * imageInfo->width, NULL, &error );
+    results = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                             get_explicit_type_size(outputType) * 4
+                                 * imageInfo->width,
+                             NULL, &error);
     test_error( error, "Unable to create result buffer" );
 
     // Create sampler to use

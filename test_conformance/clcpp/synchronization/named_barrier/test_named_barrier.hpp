@@ -276,7 +276,9 @@ struct global_fence_named_barrier_test : public work_group_named_barrier_test_ba
         RETURN_ON_CL_ERROR(err, "clGetCommandQueueInfo")
 
         // create temp buffer
-        auto temp_buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * work_size, NULL, &err);
+        auto temp_buffer =
+            clCreateBuffer(context, CL_MEM_READ_WRITE,
+                           sizeof(cl_uint) * work_size, NULL, &err);
         RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
         err = clSetKernelArg(kernel, 0, sizeof(output_buffer), &output_buffer);
@@ -420,10 +422,9 @@ struct global_local_fence_named_barrier_test : public work_group_named_barrier_t
         RETURN_ON_CL_ERROR(err, "clGetCommandQueueInfo")
 
         // create temp buffer
-        auto temp_buffer = clCreateBuffer(
-            context, (cl_mem_flags)(CL_MEM_READ_WRITE),
-            sizeof(cl_uint) * work_size, NULL, &err
-        );
+        auto temp_buffer =
+            clCreateBuffer(context, CL_MEM_READ_WRITE,
+                           sizeof(cl_uint) * work_size, NULL, &err);
         RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
         err = clSetKernelArg(kernel, 0, sizeof(output_buffer), &output_buffer);

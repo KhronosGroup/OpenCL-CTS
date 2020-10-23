@@ -242,11 +242,14 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(float_out), NULL, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(float_out),
+                                NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(int_out), NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(int_out),
+                                NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(uint_out), NULL, &error);
+    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(uint_out),
+                                NULL, &error);
     test_error( error, "Creating test array failed" );
 
     error = clSetKernelArg(kernel, 1, sizeof( streams[1] ), &streams[1]);
@@ -348,9 +351,11 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
             return -1;
         }
 
-        streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(long_out), NULL, &error);
+        streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    sizeof(long_out), NULL, &error);
         test_error( error, "Creating test array failed" );
-        streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(ulong_out), NULL, &error);
+        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    sizeof(ulong_out), NULL, &error);
         test_error( error, "Creating test array failed" );
 
         error = clSetKernelArg(kernel, 1, sizeof( streams[1] ), &streams[1]);
@@ -389,9 +394,11 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
             return -1;
         }
 
-        streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(double_out), NULL, &error);
+        streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    sizeof(double_out), NULL, &error);
         test_error( error, "Creating test array failed" );
-        streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(long_out), NULL, &error);
+        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    sizeof(long_out), NULL, &error);
         test_error( error, "Creating test array failed" );
 
         error = clSetKernelArg(kernel, 1, sizeof( streams[1] ), &streams[1]);
@@ -533,9 +540,11 @@ int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_co
 
 
     /* Create some I/O streams */
-    intStream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(intOut), NULL, &error );
+    intStream = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(intOut), NULL,
+                               &error);
     test_error( error, "Creating test array failed" );
-    floatStream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(floatOut), NULL, &error );
+    floatStream = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(floatOut),
+                                 NULL, &error);
     test_error( error, "Creating test array failed" );
 
     // Stage 1: basic limits on MAXFLOAT
@@ -677,7 +686,8 @@ int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_co
                 return -1;
             }
 
-            doubleStream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(doubleOut), NULL, &error );
+            doubleStream = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                          sizeof(doubleOut), NULL, &error);
             test_error( error, "Creating test array failed" );
 
             error = clSetKernelArg( kernel, 0, sizeof( intStream ), &intStream );

@@ -202,10 +202,13 @@ int work_group_scan_exclusive(cl_device_id device, cl_context context, cl_comman
     std::vector<CL_INT_TYPE> input = generate_input<CL_INT_TYPE, op>(flat_work_size, wg_size);
     std::vector<CL_INT_TYPE> output = generate_output<CL_INT_TYPE, op>(flat_work_size, wg_size);
 
-    buffers[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(CL_INT_TYPE) * input.size(), NULL, &err);
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(CL_INT_TYPE) * input.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer");
 
-    buffers[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(CL_INT_TYPE) * output.size(), NULL, &err);
+    buffers[1] =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(CL_INT_TYPE) * output.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer");
 
     err = clEnqueueWriteBuffer(

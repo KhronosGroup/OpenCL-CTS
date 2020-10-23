@@ -1172,7 +1172,8 @@ int test_buffer_read_struct(cl_device_id deviceID, cl_context context, cl_comman
         log_error( " unable to allocate %d bytes for output_ptr\n", (int)(objSize * num_elements) );
         return -1;
     }
-    buffers[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  objSize * num_elements, NULL , &err);
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                objSize * num_elements, NULL, &err);
     if ( err != CL_SUCCESS ){
         print_error( err, " clCreateBuffer failed\n" );
         align_free( output_ptr );
@@ -1273,7 +1274,8 @@ static int testRandomReadSize( cl_device_id deviceID, cl_context context, cl_com
             }
             return -1;
         }
-        buffers[i] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  ptrSizes[i] * num_elements, NULL, &err);
+        buffers[i] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    ptrSizes[i] * num_elements, NULL, &err);
         if ( err != CL_SUCCESS ){
             print_error(err, " clCreateBuffer failed\n" );
             for ( j = 0; j < i; j++ ){
