@@ -132,10 +132,11 @@ int test_get_platform_info(cl_device_id deviceID, cl_context context, cl_command
 }
 
 template <typename T>
-int sampler_param_test(cl_sampler sampler, cl_sampler_info param_name, T val,
+int sampler_param_test(cl_sampler sampler, cl_sampler_info param_name,
                        T expected, const char *name)
 {
     size_t size;
+    T val;
     int error = clGetSamplerInfo(sampler, param_name, sizeof(val), &val, &size);
     test_error(error, "Unable to get sampler info");
     if (val != expected)
@@ -202,24 +203,19 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
                   (int)sizeof(refCount), (int)size);
     }
 
-    cl_context otherCtx;
-    error = sampler_param_test(sampler, CL_SAMPLER_CONTEXT, otherCtx, context,
-                               "context");
+    error = sampler_param_test(sampler, CL_SAMPLER_CONTEXT, context, "context");
     test_error(error, "param checking failed");
 
-    cl_addressing_mode mode;
-    error = sampler_param_test(sampler, CL_SAMPLER_ADDRESSING_MODE, mode,
+    error = sampler_param_test(sampler, CL_SAMPLER_ADDRESSING_MODE,
                                addressing_mode_values[addr_mod_num],
                                "addressing mode");
     test_error(error, "param checking failed");
 
-    cl_filter_mode fmode;
-    error = sampler_param_test(sampler, CL_SAMPLER_FILTER_MODE, fmode,
+    error = sampler_param_test(sampler, CL_SAMPLER_FILTER_MODE,
                                filter_mode_values[filt_mod_num], "filter mode");
     test_error(error, "param checking failed");
 
-    cl_int norm;
-    error = sampler_param_test(sampler, CL_SAMPLER_NORMALIZED_COORDS, norm,
+    error = sampler_param_test(sampler, CL_SAMPLER_NORMALIZED_COORDS,
                                normalized_coord_values[norm_coord_num],
                                "normalized coords");
     test_error(error, "param checking failed");
@@ -316,10 +312,11 @@ int test_get_sampler_info_compatibility(cl_device_id deviceID,
 
 template <typename T>
 int command_queue_param_test(cl_command_queue queue,
-                             cl_command_queue_info param_name, T val,
-                             T expected, const char *name)
+                             cl_command_queue_info param_name, T expected,
+                             const char *name)
 {
     size_t size;
+    T val;
     int error =
         clGetCommandQueueInfo(queue, param_name, sizeof(val), &val, &size);
     test_error(error, "Unable to get command queue info");
@@ -410,18 +407,15 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
                       (int)sizeof(refCount), (int)size);
         }
 
-        cl_context otherCtx;
-        error = command_queue_param_test(queue, CL_QUEUE_CONTEXT, otherCtx,
-                                         context, "context");
+        error = command_queue_param_test(queue, CL_QUEUE_CONTEXT, context,
+                                         "context");
         test_error(error, "param checking failed");
 
-        cl_device_id otherDevice;
-        error = command_queue_param_test(queue, CL_QUEUE_DEVICE, otherDevice,
-                                         deviceID, "deviceID");
+        error = command_queue_param_test(queue, CL_QUEUE_DEVICE, deviceID,
+                                         "deviceID");
         test_error(error, "param checking failed");
 
-        cl_command_queue_properties props;
-        error = command_queue_param_test(queue, CL_QUEUE_PROPERTIES, props,
+        error = command_queue_param_test(queue, CL_QUEUE_PROPERTIES,
                                          queue_props[1], "properties");
         test_error(error, "param checking failed");
     }
