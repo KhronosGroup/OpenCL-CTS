@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,17 +17,18 @@
 #define _threadTesting_h
 
 #ifdef __APPLE__
-    #include <OpenCL/opencl.h>
+#include <OpenCL/opencl.h>
 #else
-    #include <CL/opencl.h>
+#include <CL/opencl.h>
 #endif
 
-#define TEST_NOT_IMPLEMENTED        -99
-#define TEST_SKIPPED_ITSELF         -100
+#define TEST_NOT_IMPLEMENTED -99
+#define TEST_SKIPPED_ITSELF -100
 
-typedef int (*basefn)(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_threaded_function( basefn fnToTest, cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
+typedef int (*basefn)(cl_device_id deviceID, cl_context context,
+                      cl_command_queue queue, int num_elements);
+extern int test_threaded_function(basefn fnToTest, cl_device_id device,
+                                  cl_context context, cl_command_queue queue,
+                                  int numElements);
 
 #endif // _threadTesting_h
-
-

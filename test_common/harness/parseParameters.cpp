@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,12 +29,12 @@ using namespace std;
 
 #define DEFAULT_COMPILATION_PROGRAM "cl_offline_compiler"
 
-CompilationMode      gCompilationMode = kOnline;
+CompilationMode gCompilationMode = kOnline;
 CompilationCacheMode gCompilationCacheMode = kCacheModeCompileIfAbsent;
-std::string          gCompilationCachePath = ".";
-std::string          gCompilationProgram = DEFAULT_COMPILATION_PROGRAM;
+std::string gCompilationCachePath = ".";
+std::string gCompilationProgram = DEFAULT_COMPILATION_PROGRAM;
 
-void helpInfo ()
+void helpInfo()
 {
     log_info(
         R"(Common options:
@@ -65,20 +65,22 @@ For offline compilation (binary and spir-v modes) only:
             )" DEFAULT_COMPILATION_PROGRAM "\n\n");
 }
 
-int parseCustomParam (int argc, const char *argv[], const char *ignore)
+int parseCustomParam(int argc, const char *argv[], const char *ignore)
 {
     int delArg = 0;
 
-    for (int i=1; i<argc; i++)
+    for (int i = 1; i < argc; i++)
     {
-        if(ignore != 0)
+        if (ignore != 0)
         {
-            // skip parameters that require special/different treatment in application
-            // (generic interpretation and parameter removal will not be performed)
-            const char * ptr = strstr(ignore, argv[i]);
-            if(ptr != 0 &&
-               (ptr == ignore || ptr[-1] == ' ') && //first on list or ' ' before
-               (ptr[strlen(argv[i])] == 0 || ptr[strlen(argv[i])] == ' ')) // last on list or ' ' after
+            // skip parameters that require special/different treatment in
+            // application (generic interpretation and parameter removal will
+            // not be performed)
+            const char *ptr = strstr(ignore, argv[i]);
+            if (ptr != 0 && (ptr == ignore || ptr[-1] == ' ')
+                && // first on list or ' ' before
+                (ptr[strlen(argv[i])] == 0
+                 || ptr[strlen(argv[i])] == ' ')) // last on list or ' ' after
                 continue;
         }
 
@@ -89,7 +91,7 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
             // Note: we don't increment delArg to delete this argument,
             // to allow the caller's argument parsing routine to see the
             // option and print its own help.
-            helpInfo ();
+            helpInfo();
         }
         else if (!strcmp(argv[i], "--compilation-mode"))
         {
@@ -151,15 +153,18 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
                 }
                 else
                 {
-                    log_error("Compilation cache mode not recognized: %s\n", mode);
+                    log_error("Compilation cache mode not recognized: %s\n",
+                              mode);
                     return -1;
                 }
                 log_info("Compilation cache mode specified: %s\n", mode);
             }
             else
             {
-                log_error("Compilation cache mode parameters are incorrect. Usage:\n"
-                          "  --compilation-cache-mode <compile-if-absent|force-read|overwrite>\n");
+                log_error(
+                    "Compilation cache mode parameters are incorrect. Usage:\n"
+                    "  --compilation-cache-mode "
+                    "<compile-if-absent|force-read|overwrite>\n");
                 return -1;
             }
         }
@@ -173,7 +178,8 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
             }
             else
             {
-                log_error("Path argument for --compilation-cache-path was not specified.\n");
+                log_error("Path argument for --compilation-cache-path was not "
+                          "specified.\n");
                 return -1;
             }
         }
@@ -187,34 +193,34 @@ int parseCustomParam (int argc, const char *argv[], const char *ignore)
             }
             else
             {
-                log_error("Program argument for --compilation-program was not specified.\n");
+                log_error("Program argument for --compilation-program was not "
+                          "specified.\n");
                 return -1;
             }
         }
 
-        //cleaning parameters from argv tab
-        for (int j = i; j < argc - delArg; j++)
-            argv[j] = argv[j + delArg];
+        // cleaning parameters from argv tab
+        for (int j = i; j < argc - delArg; j++) argv[j] = argv[j + delArg];
         argc -= delArg;
         i -= delArg;
     }
 
-    if ((gCompilationCacheMode == kCacheModeForceRead || gCompilationCacheMode == kCacheModeOverwrite)
-         && gCompilationMode == kOnline)
+    if ((gCompilationCacheMode == kCacheModeForceRead
+         || gCompilationCacheMode == kCacheModeOverwrite)
+        && gCompilationMode == kOnline)
     {
-        log_error("Compilation cache mode can only be specified when using an offline compilation mode.\n");
+        log_error("Compilation cache mode can only be specified when using an "
+                  "offline compilation mode.\n");
         return -1;
     }
 
     return argc;
 }
 
-bool is_power_of_two(int number)
-{
-    return number && !(number & (number - 1));
-}
+bool is_power_of_two(int number) { return number && !(number & (number - 1)); }
 
-extern void parseWimpyReductionFactor(const char *&arg, int &wimpyReductionFactor)
+extern void parseWimpyReductionFactor(const char *&arg,
+                                      int &wimpyReductionFactor)
 {
     const char *arg_temp = strchr(&arg[1], ']');
     if (arg_temp != 0)
@@ -223,12 +229,15 @@ extern void parseWimpyReductionFactor(const char *&arg, int &wimpyReductionFacto
         arg = arg_temp; // Advance until ']'
         if (is_power_of_two(new_factor))
         {
-            log_info("\n Wimpy reduction factor changed from %d to %d \n", wimpyReductionFactor, new_factor);
+            log_info("\n Wimpy reduction factor changed from %d to %d \n",
+                     wimpyReductionFactor, new_factor);
             wimpyReductionFactor = new_factor;
         }
         else
         {
-            log_info("\n WARNING: Incorrect wimpy reduction factor %d, must be power of 2. The default value will be used.\n", new_factor);
+            log_info("\n WARNING: Incorrect wimpy reduction factor %d, must be "
+                     "power of 2. The default value will be used.\n",
+                     new_factor);
         }
     }
 }
