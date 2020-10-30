@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,7 +21,7 @@ char *basename(char *path);
 #include <malloc.h>
 
 #if defined(__MINGW64__)
-//mingw-w64 doesnot have __mingw_aligned_malloc, instead it has _aligned_malloc
+// mingw-w64 doesnot have __mingw_aligned_malloc, instead it has _aligned_malloc
 #define __mingw_aligned_malloc _aligned_malloc
 #define __mingw_aligned_free _aligned_free
 #include <stddef.h>

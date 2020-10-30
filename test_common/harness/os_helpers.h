@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,12 +24,12 @@
 
 #ifdef __cplusplus
 
-    #include <string>
+#include <string>
 
-    std::string err_msg( int err );
-    std::string dir_sep();
-    std::string exe_path();
-    std::string exe_dir();
+std::string err_msg(int err);
+std::string dir_sep();
+std::string exe_path();
+std::string exe_dir();
 
 #endif // __cplusplus
 
@@ -37,9 +37,9 @@
 // C interface.
 // -------------------------------------------------------------------------------------------------
 
-char * get_err_msg( int err );  // Returns system error message. Subject to free.
-char * get_dir_sep();           // Returns dir separator. Subject to free.
-char * get_exe_path();          // Returns path of current executable. Subject to free.
-char * get_exe_dir();           // Returns dir of current executable. Subject to free.
+char* get_err_msg(int err); // Returns system error message. Subject to free.
+char* get_dir_sep(); // Returns dir separator. Subject to free.
+char* get_exe_path(); // Returns path of current executable. Subject to free.
+char* get_exe_dir(); // Returns dir of current executable. Subject to free.
 
 #endif // __os_helpers_h__

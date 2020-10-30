@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -96,5 +96,3 @@ int test_threaded_function( basefn fnToTest, cl_device_id device, cl_context con
     return (int)((intptr_t)retVal);
 }
 #endif
-
-
