@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -880,7 +880,7 @@ std::string CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumD
     else
       // global atomics declared in program scope
       code += R"(
-                if(atomic_fetch_add_explicit(&finishedThreads, 1,
+                if(atomic_fetch_add_explicit(&finishedThreads, 1u,
                                            memory_order_relaxed,
                                            memory_scope_work_group)
                    == get_global_size(0)-1) // last finished thread
@@ -1040,7 +1040,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(cl_device_id dev
 
   refValues.resize(threadCount*NumNonAtomicVariablesPerThread());
 
-  // Generate ref data if we have a ref generator provided		
+  // Generate ref data if we have a ref generator provided
   d = init_genrand(gRandomSeed);
   startRefValues.resize(threadCount*NumNonAtomicVariablesPerThread());
   if(GenerateRefs(threadCount, &startRefValues[0], d))
