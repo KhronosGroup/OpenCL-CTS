@@ -83,7 +83,7 @@ template <typename T> T *createAndRegister(const char *name, Version version)
     int test_##name(cl_device_id deviceID, cl_context context,                 \
                     cl_command_queue queue, int num_elements)
 
-#define TEST_SPIRV_FUNC(name) TEST_SPIRV_FUNC_VERSION(name, Version(2, 1))
+#define TEST_SPIRV_FUNC(name) TEST_SPIRV_FUNC_VERSION(name, Version(1, 2))
 
 struct spec_const
 {
