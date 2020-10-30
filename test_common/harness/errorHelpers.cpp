@@ -745,6 +745,7 @@ const char *subtests_to_skip_with_offline_compiler[] = {
     "unload_build_threaded",
     "unload_build_info",
     "unload_program_binaries",
+    "features_macro",
 };
 
 int check_functions_for_offline_compiler(const char *subtestname,
