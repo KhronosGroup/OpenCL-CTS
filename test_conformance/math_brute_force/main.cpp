@@ -1739,53 +1739,6 @@ float Abs_Error( float test, double reference )
   return fabs((float)(reference-(double)test));
 }
 
-/*
-#define HALF_MIN_EXP    -13
-#define HALF_MANT_DIG    11
-float Ulp_Error_Half( float test, double reference )
-{
-    union{ double d; uint64_t u; }u;     u.d = reference;
-
-  // Note: This function presumes that someone has already tested whether the result is correctly,
-  // rounded before calling this function.  That test:
-  //
-  //    if( (float) reference == test )
-  //        return 0.0f;
-  //
-  // would ensure that cases like fabs(reference) > FLT_MAX are weeded out before we get here.
-  // Otherwise, we'll return inf ulp error here, for what are otherwise correctly rounded
-  // results.
-
-    double testVal = test;
-    if( u.u & 0x000fffffffffffffULL )
-    { // Non-power of two and NaN
-        if( isnan( reference ) && isnan( test ) )
-            return 0.0f;    // if we are expecting a NaN, any NaN is fine
-
-        // The unbiased exponent of the ulp unit place
-        int ulp_exp = HALF_MANT_DIG - 1 - MAX( ilogb( reference), HALF_MIN_EXP-1 );
-
-        // Scale the exponent of the error
-        return (float) scalbn( testVal - reference, ulp_exp );
-    }
-
-    if( isinf( reference ) )
-    {
-        if( (double) test == reference )
-            return 0.0f;
-
-        return (float) (testVal - reference );
-    }
-
-    // reference is a normal power of two or a zero
-    int ulp_exp =  HALF_MANT_DIG - 1 - MAX( ilogb( reference) - 1, HALF_MIN_EXP-1 );
-
-    // Scale the exponent of the error
-    return (float) scalbn( testVal - reference, ulp_exp );
-}
-*/
-
-
 #if defined( __APPLE__ )
     #include <mach/mach_time.h>
 #endif

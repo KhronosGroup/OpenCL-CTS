@@ -17,7 +17,7 @@
 #ifndef HARNESS_ALLOC_H_
 #define HARNESS_ALLOC_H_
 
-#if defined(__linux__) || defined (linux) || defined(__APPLE__)
+#if defined(__linux__) || defined(linux) || defined(__APPLE__)
 #if defined(__ANDROID__)
 #include <malloc.h>
 #else
@@ -29,43 +29,41 @@
 #include "mingw_compat.h"
 #endif
 
-static void * align_malloc(size_t size, size_t alignment)
+static void* align_malloc(size_t size, size_t alignment)
 {
 #if defined(_WIN32) && defined(_MSC_VER)
     return _aligned_malloc(size, alignment);
-#elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
-    void * ptr = NULL;
+#elif defined(__linux__) || defined(linux) || defined(__APPLE__)
+    void* ptr = NULL;
 #if defined(__ANDROID__)
     ptr = memalign(alignment, size);
-    if ( ptr )
-        return ptr;
+    if (ptr) return ptr;
 #else
-    if (alignment < sizeof(void*)) {
+    if (alignment < sizeof(void*))
+    {
         alignment = sizeof(void*);
     }
-    if (0 == posix_memalign(&ptr, alignment, size))
-        return ptr;
+    if (0 == posix_memalign(&ptr, alignment, size)) return ptr;
 #endif
     return NULL;
 #elif defined(__MINGW32__)
     return __mingw_aligned_malloc(size, alignment);
 #else
-    #error "Please add support OS for aligned malloc"
+#error "Please add support OS for aligned malloc"
 #endif
 }
 
-static void align_free(void * ptr)
+static void align_free(void* ptr)
 {
 #if defined(_WIN32) && defined(_MSC_VER)
     _aligned_free(ptr);
-#elif  defined(__linux__) || defined (linux) || defined(__APPLE__)
-    return  free(ptr);
+#elif defined(__linux__) || defined(linux) || defined(__APPLE__)
+    return free(ptr);
 #elif defined(__MINGW32__)
     return __mingw_aligned_free(ptr);
 #else
-    #error "Please add support OS for aligned free"
+#error "Please add support OS for aligned free"
 #endif
 }
 
 #endif // #ifndef HARNESS_ALLOC_H_
-

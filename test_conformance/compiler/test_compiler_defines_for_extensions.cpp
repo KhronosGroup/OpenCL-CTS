@@ -42,6 +42,13 @@ const char *known_extensions[] = {
     "cl_khr_mipmap_image_writes",
     "cl_khr_srgb_image_writes",
     "cl_khr_subgroup_named_barrier",
+    "cl_khr_subgroup_extended_types",
+    "cl_khr_subgroup_non_uniform_vote",
+    "cl_khr_subgroup_ballot",
+    "cl_khr_subgroup_non_uniform_arithmetic",
+    "cl_khr_subgroup_shuffle",
+    "cl_khr_subgroup_shuffle_relative",
+    "cl_khr_subgroup_clustered_reduce",
 
     // API-only extensions after this point.  If you add above here, modify
     // first_API_extension below.
@@ -67,7 +74,7 @@ const char *known_extensions[] = {
 };
 
 size_t num_known_extensions = sizeof(known_extensions)/sizeof(char*);
-size_t first_API_extension = 20;
+size_t first_API_extension = 27;
 
 const char *known_embedded_extensions[] = {
     "cles_khr_int64",
