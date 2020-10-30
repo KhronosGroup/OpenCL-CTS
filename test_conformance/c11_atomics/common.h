@@ -35,25 +35,26 @@
 
 enum TExplicitAtomicType
 {
-  TYPE_ATOMIC_INT,
-  TYPE_ATOMIC_UINT,
-  TYPE_ATOMIC_LONG,
-  TYPE_ATOMIC_ULONG,
-  TYPE_ATOMIC_FLOAT,
-  TYPE_ATOMIC_DOUBLE,
-  TYPE_ATOMIC_INTPTR_T,
-  TYPE_ATOMIC_UINTPTR_T,
-  TYPE_ATOMIC_SIZE_T,
-  TYPE_ATOMIC_PTRDIFF_T,
-  TYPE_ATOMIC_FLAG
+    TYPE_ATOMIC_INT,
+    TYPE_ATOMIC_UINT,
+    TYPE_ATOMIC_LONG,
+    TYPE_ATOMIC_ULONG,
+    TYPE_ATOMIC_FLOAT,
+    TYPE_ATOMIC_DOUBLE,
+    TYPE_ATOMIC_INTPTR_T,
+    TYPE_ATOMIC_UINTPTR_T,
+    TYPE_ATOMIC_SIZE_T,
+    TYPE_ATOMIC_PTRDIFF_T,
+    TYPE_ATOMIC_FLAG
 };
 
 enum TExplicitMemoryScopeType
 {
-  MEMORY_SCOPE_EMPTY,
-  MEMORY_SCOPE_WORK_GROUP,
-  MEMORY_SCOPE_DEVICE,
-  MEMORY_SCOPE_ALL_SVM_DEVICES
+    MEMORY_SCOPE_EMPTY,
+    MEMORY_SCOPE_WORK_GROUP,
+    MEMORY_SCOPE_DEVICE,
+    MEMORY_SCOPE_ALL_DEVICES, // Alias for MEMORY_SCOPE_ALL_SVM_DEVICES
+    MEMORY_SCOPE_ALL_SVM_DEVICES
 };
 
 extern bool gHost; // temporary flag for testing native host threads (test verification)
@@ -320,6 +321,7 @@ public:
               }
               break;
           }
+          case MEMORY_SCOPE_ALL_DEVICES: // fallthough
           case MEMORY_SCOPE_ALL_SVM_DEVICES: {
               if ((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES) == 0)
               {
@@ -538,11 +540,17 @@ public:
   }
   virtual cl_uint MaxHostThreads()
   {
-    // block host threads execution for memory scope different than memory_scope_all_svm_devices
-    if(MemoryScope() == MEMORY_SCOPE_ALL_SVM_DEVICES || gHost)
-      return CBasicTest<HostAtomicType, HostDataType>::MaxHostThreads();
-    else
-      return 0;
+      // block host threads execution for memory scope different than
+      // memory_scope_all_svm_devices
+      if (MemoryScope() == MEMORY_SCOPE_ALL_DEVICES
+          || MemoryScope() == MEMORY_SCOPE_ALL_SVM_DEVICES || gHost)
+      {
+          return CBasicTest<HostAtomicType, HostDataType>::MaxHostThreads();
+      }
+      else
+      {
+          return 0;
+      }
   }
 private:
   TExplicitMemoryOrderType _memoryOrder;
