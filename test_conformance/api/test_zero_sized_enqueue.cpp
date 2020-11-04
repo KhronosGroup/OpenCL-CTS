@@ -159,7 +159,7 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
     error = clGetEventInfo(ev, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int), &sta, NULL);
     test_error( error, "Failed to get event status.");
 
-    if (sta != CL_QUEUED)
+    if (sta != CL_QUEUED && sta != CL_SUBMITTED)
     {
         log_error( "ERROR: incorrect zero sized kernel enqueue event status.\n" );
         return -1;
