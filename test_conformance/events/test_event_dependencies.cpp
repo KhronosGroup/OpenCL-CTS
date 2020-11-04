@@ -203,7 +203,7 @@ int test_event_enqueue_wait_for_events_run_test( cl_device_id deviceID, cl_conte
     // then incremented to 5s, repeatedly. Otherwise the values may be 2s (if the first one doesn't work) or 8s
     // (if the second one doesn't work).
     if (RANDOMIZE)
-        log_info("Queues chosen randomly for each kernel exection.\n");
+        log_info("Queues chosen randomly for each kernel execution.\n");
     else
         log_info("Queues chosen alternatily for each kernel execution.\n");
 
