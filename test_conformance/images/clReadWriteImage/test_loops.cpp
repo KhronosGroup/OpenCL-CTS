@@ -16,16 +16,6 @@
 #include "../testBase.h"
 #include "../common.h"
 
-extern cl_filter_mode     gFilterModeToUse;
-extern cl_addressing_mode gAddressModeToUse;
-extern int                gTypesToTest;
-extern int                gNormalizedModeToUse;
-extern cl_channel_type      gChannelTypeToUse;
-
-
-extern bool gDebugTrace;
-extern bool gTestMipmaps;
-
 extern int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
 extern int test_read_image_set_2D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
 extern int test_read_image_set_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );

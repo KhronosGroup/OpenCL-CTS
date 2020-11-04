@@ -13,29 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
-
-#if !defined(_WIN32)
-#include <unistd.h>
-#include <sys/time.h>
-#endif
-
 #include "../testBase.h"
+#include "../harness/compat.h"
 
 bool gDebugTrace;
 bool gTestSmallImages;
 bool gTestMaxImages;
-bool gUseRamp;
 bool gTestMipmaps;
-int  gTypesToTest;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
 cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
 bool            gEnablePitch = false;
-
-#define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
 static void printUsage( const char *execName );
 
@@ -99,8 +89,6 @@ int main(int argc, const char *argv[])
             gTestMaxImages = true;
         else if( strcmp( argv[i], "use_pitches" ) == 0 )
             gEnablePitch = true;
-        else if( strcmp( argv[i], "use_ramps" ) == 0 )
-            gUseRamp = true;
         else if( strcmp( argv[i], "test_mipmaps") == 0 ) {
             gTestMipmaps = true;
             // Don't test pitches with mipmaps right now.
@@ -142,7 +130,6 @@ static void printUsage( const char *execName )
     log_info( "\tsmall_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes\n" );
     log_info( "\tmax_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128\n" );
     log_info( "\tuse_pitches - Enables row and slice pitches\n" );
-    log_info( "\tuse_ramp - Instead of random data, uses images filled with ramps (and 0xff on any padding pixels) to ease debugging\n" );
     log_info( "\ttest_mipmaps - Test mipmapped images\n" );
     log_info( "\trandomize - Uses random seed\n" );
     log_info( "\n" );
