@@ -15,10 +15,7 @@
 //
 #include "../testBase.h"
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool            gDebugTrace, gTestSmallImages, gTestMaxImages, gDeviceLt20;
+extern bool gDeviceLt20;
 
 struct image_kernel_data
 {
