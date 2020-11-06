@@ -22,7 +22,6 @@
 #include <CL/opencl.h>
 #endif
 
-#define TEST_NOT_IMPLEMENTED -99
 #define TEST_SKIPPED_ITSELF -100
 
 typedef int (*basefn)(cl_device_id deviceID, cl_context context,

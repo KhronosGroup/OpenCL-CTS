@@ -64,10 +64,6 @@ Version get_device_cl_version(cl_device_id device);
     {                                                                          \
         test_##fn, #fn, ver                                                    \
     }
-#define NOT_IMPLEMENTED_TEST(fn)                                               \
-    {                                                                          \
-        NULL, #fn, Version(0, 0)                                               \
-    }
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
