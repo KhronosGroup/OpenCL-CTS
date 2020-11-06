@@ -4,7 +4,7 @@ set -e
 
 export TOP=$(pwd)
 
-if [ "${JOB_CHECK_FORMAT}" -eq 1 ]; then
+if [[ "${JOB_CHECK_FORMAT}" == "1" ]]; then
     ./check-format.sh
     exit $?
 fi
@@ -41,7 +41,7 @@ if [[ ${JOB_ARCHITECTURE} != "" ]]; then
     echo "SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> ${TOOLCHAIN_FILE}
 fi
 
-if [[ ( ${JOB_ARCHITECTURE} == "" && ${TRAVIS_OS_NAME} == "linux" ) ]]; then
+if [[ ( ${JOB_ARCHITECTURE} == "" && ${JOB_ENABLE_GL} == "1" ) ]]; then
     BUILD_OPENGL_TEST="ON"
     sudo apt-get update
     sudo apt-get -y install libglu1-mesa-dev freeglut3-dev mesa-common-dev libglew-dev
@@ -57,7 +57,7 @@ git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
 cd ${TOP}/OpenCL-ICD-Loader
 mkdir build
 cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DENABLE_OPENCL30_PROVISIONAL=1 -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ ..
+cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ ..
 make
 
 # Get libclcxx
