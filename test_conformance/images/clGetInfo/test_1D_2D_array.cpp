@@ -15,11 +15,6 @@
 //
 #include "../testBase.h"
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool            gDebugTrace, gTestSmallImages, gTestMaxImages;
-
 extern int test_get_image_info_single( cl_context context, image_descriptor *imageInfo, MTdata d, cl_mem_flags flags, size_t row_pitch, size_t slice_pitch );
 
 int test_get_image_info_1D_array( cl_device_id device, cl_context context, cl_image_format *format, cl_mem_flags flags )
