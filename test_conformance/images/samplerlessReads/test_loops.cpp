@@ -16,14 +16,9 @@
 #include "../testBase.h"
 #include "../common.h"
 
-extern int                  gTypesToTest;
-extern cl_channel_type      gChannelTypeToUse;
-extern cl_channel_order     gChannelOrderToUse;
-
-extern bool                 gDebugTrace;
-extern bool                 gDeviceLt20;
-
-extern bool                 gTestReadWrite;
+extern int gTypesToTest;
+extern bool gDeviceLt20;
+extern bool gTestReadWrite;
 
 extern int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
 extern int test_read_image_set_1D_buffer( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
