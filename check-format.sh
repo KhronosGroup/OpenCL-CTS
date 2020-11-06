@@ -7,6 +7,8 @@ ORIGIN_BRANCH=${1:-"origin/master"}
 if [ "$TRAVIS" == "true" ]; then
     EXTRA_OPTS="--binary `which clang-format-9`"
 fi
+git remote -v
+git branch -va
 CLANG_FORMAT_OUTPUT=$(git-clang-format --diff $ORIGIN_BRANCH --extensions c,cpp,h,hpp $EXTRA_OPTS)
 
 # Check for no-ops
