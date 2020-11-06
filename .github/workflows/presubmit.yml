@@ -8,11 +8,15 @@ jobs:
     env:
       JOB_CHECK_FORMAT: ${{ matrix.format }}
       JOB_ARCHITECTURE: ${{ matrix.arch }}
+      JOB_ENABLE_GL: ${{ matrix.gl }}
     strategy:
       matrix:
         mainmatrix: [true]
         os: [ubuntu-20.04, macos-11.0]
         include:
+          - os: ubuntu-20.04
+            mainmatrix: true
+            gl: 1
           - os: ubuntu-20.04
             mainmatrix: false
             name: Format
