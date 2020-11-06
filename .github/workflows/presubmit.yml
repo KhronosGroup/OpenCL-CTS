@@ -29,6 +29,8 @@ jobs:
       - name: Setup
         run: if [[ "${{matrix.format}}" == "1" ]]; then sudo apt install -y clang-format; fi
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Build
         run: ./presubmit.sh
 
