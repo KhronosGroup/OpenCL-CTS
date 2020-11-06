@@ -15,22 +15,12 @@
 //
 #include "../testBase.h"
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool               gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gEnablePitch;
-extern cl_filter_mode     gFilterModeToUse;
-extern cl_addressing_mode gAddressModeToUse;
-extern uint64_t           gRoundingStartValue;
-
 extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo, int x, int y, int z, float *outData );
-
 
 static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *buf )
 {
     free( buf );
 }
-
 
 cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr<char>& data, image_descriptor *imageInfo, int *error )
 {

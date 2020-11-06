@@ -15,14 +15,6 @@
 //
 #include "../testBase.h"
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool               gDebugTrace, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages;
-extern cl_filter_mode     gFilterModeToUse;
-extern cl_addressing_mode gAddressModeToUse;
-extern uint64_t           gRoundingStartValue;
-
 // Defined in test_fill_2D_3D.cpp
 extern int test_fill_image_generic( cl_context context, cl_command_queue queue, image_descriptor *imageInfo,
                                     const size_t origin[], const size_t region[], ExplicitType outputType, MTdata d );

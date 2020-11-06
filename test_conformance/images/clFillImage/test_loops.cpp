@@ -16,14 +16,7 @@
 #include "../testBase.h"
 #include "../common.h"
 
-extern bool               gDebugTrace;
-extern cl_filter_mode     gFilterModeToUse;
-extern cl_addressing_mode gAddressModeToUse;
-extern int                gTypesToTest;
-extern int                gNormalizedModeToUse;
-extern cl_channel_type    gChannelTypeToUse;
-extern cl_channel_order   gChannelOrderToUse;
-
+extern int gTypesToTest;
 
 extern int test_fill_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType outputType );
 extern int test_fill_image_set_2D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType outputType );
