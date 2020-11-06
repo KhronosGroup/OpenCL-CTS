@@ -19,8 +19,7 @@
 #include <sys/mman.h>
 #endif
 
-extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestImage2DFromBuffer, gTestMipmaps;
-extern cl_filter_mode    gFilterModeToSkip;
+extern bool gTestImage2DFromBuffer;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
 extern bool gDeviceLt20;

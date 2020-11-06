@@ -18,16 +18,9 @@
 
 extern cl_filter_mode gFilterModeToUse;
 extern cl_addressing_mode gAddressModeToUse;
-extern int gTypesToTest;
 extern int gNormalizedModeToUse;
-extern cl_channel_type gChannelTypeToUse;
-extern cl_channel_order gChannelOrderToUse;
-
-extern bool gDebugTrace;
-extern bool gTestMipmaps;
-
+extern int gTypesToTest;
 extern int gtestTypesToRun;
-extern bool gDeviceLt20;
 
 extern int test_read_image_set_1D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
