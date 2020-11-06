@@ -721,7 +721,8 @@ int parseAndCallCommandLineTests(int argc, const char *argv[],
                         {
                             case TEST_PASS:
                             case TEST_SKIP: return false;
-                            case TEST_FAIL: return true;
+                            case TEST_FAIL:
+                            default: return true;
                         };
                     }))
     {
