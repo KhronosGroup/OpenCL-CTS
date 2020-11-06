@@ -620,66 +620,6 @@ cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
     return CL_SUCCESS;
 }
 
-const char *subtests_requiring_opencl_1_2[] = {
-    "device_partition_equally", "device_partition_by_counts",
-    "device_partition_by_affinity_domain_numa",
-    "device_partition_by_affinity_domain_l4_cache",
-    "device_partition_by_affinity_domain_l3_cache",
-    "device_partition_by_affinity_domain_l2_cache",
-    "device_partition_by_affinity_domain_l1_cache",
-    "device_partition_by_affinity_domain_next_partitionable",
-    "device_partition_all", "buffer_fill_int", "buffer_fill_uint",
-    "buffer_fill_short", "buffer_fill_ushort", "buffer_fill_char",
-    "buffer_fill_uchar", "buffer_fill_long", "buffer_fill_ulong",
-    "buffer_fill_float", "buffer_fill_struct",
-    "test_mem_host_write_only_buffer", "test_mem_host_write_only_subbuffer",
-    "test_mem_host_no_access_buffer", "test_mem_host_no_access_subbuffer",
-    "test_mem_host_read_only_image", "test_mem_host_write_only_image",
-    "test_mem_host_no_access_image",
-    // CL_MEM_HOST_{READ|WRITE}_ONLY api/
-    "get_buffer_info", "get_image1d_info", "get_image1d_array_info",
-    "get_image2d_array_info",
-    // gl/
-    "images_read_1D", "images_write_1D", "images_1D_getinfo",
-    "images_read_1Darray", "images_write_1Darray", "images_1Darray_getinfo",
-    "images_read_2Darray", "images_write_2Darray", "images_2Darray_getinfo",
-    "buffer_migrate", "image_migrate",
-    // compiler/
-    "load_program_source", "load_multistring_source", "load_two_kernel_source",
-    "load_null_terminated_source", "load_null_terminated_multi_line_source",
-    "load_null_terminated_partial_multi_line_source",
-    "load_discreet_length_source", "get_program_source",
-    "get_program_build_info", "get_program_info", "large_compile",
-    "async_build", "options_build_optimizations", "options_build_macro",
-    "options_build_macro_existence", "options_include_directory",
-    "options_denorm_cache", "preprocessor_define_udef", "preprocessor_include",
-    "preprocessor_line_error", "preprocessor_pragma",
-    "compiler_defines_for_extensions", "image_macro", "simple_compile_only",
-    "simple_static_compile_only", "simple_extern_compile_only",
-    "simple_compile_with_callback", "simple_embedded_header_compile",
-    "simple_link_only", "two_file_regular_variable_access",
-    "two_file_regular_struct_access", "two_file_regular_function_access",
-    "simple_link_with_callback", "simple_embedded_header_link",
-    "execute_after_simple_compile_and_link",
-    "execute_after_simple_compile_and_link_no_device_info",
-    "execute_after_simple_compile_and_link_with_defines",
-    "execute_after_simple_compile_and_link_with_callbacks",
-    "execute_after_simple_library_with_link", "execute_after_two_file_link",
-    "execute_after_two_file_link", "execute_after_embedded_header_link",
-    "execute_after_included_header_link",
-    "execute_after_serialize_reload_object",
-    "execute_after_serialize_reload_library", "simple_library_only",
-    "simple_library_with_callback", "simple_library_with_link", "two_file_link",
-    "multi_file_libraries", "multiple_files", "multiple_libraries",
-    "multiple_files_multiple_libraries", "multiple_embedded_headers",
-    "program_binary_type", "compile_and_link_status_options_log",
-    // CL_PROGRAM_NUM_KERNELS, in api/
-    "get_kernel_arg_info", "create_kernels_in_program",
-    // clEnqueue..WithWaitList, in events/
-    "event_enqueue_marker_with_event_list",
-    "event_enqueue_barrier_with_event_list", "popcount"
-};
-
 const char *subtests_to_skip_with_offline_compiler[] = {
     "get_kernel_arg_info",
     "get_kernel_arg_info_compatibility",
