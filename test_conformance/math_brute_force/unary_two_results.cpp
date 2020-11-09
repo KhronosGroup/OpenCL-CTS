@@ -215,6 +215,10 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
     {
         step = (1ULL<<32) * gWimpyReductionFactor / (512);
     }
+    else if (gIsEmbedded)
+    {
+        step = (BUFFER_SIZE / sizeof(float)) * EMBEDDED_REDUCTION_FACTOR;
+    }
 
     // Init the kernels
     BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
@@ -673,6 +677,10 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
     if( gWimpyMode )
     {
         step = (1ULL<<32) * gWimpyReductionFactor / (512);
+    }
+    else if (gIsEmbedded)
+    {
+        step = (BUFFER_SIZE / sizeof(double)) * EMBEDDED_REDUCTION_FACTOR;
     }
 
     Force64BitFPUPrecision();

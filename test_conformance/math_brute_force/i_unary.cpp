@@ -199,6 +199,10 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
     {
         step = (1ULL<<32) * gWimpyReductionFactor / (512);
     }
+    else if (gIsEmbedded)
+    {
+        step = (BUFFER_SIZE / sizeof(cl_float)) * EMBEDDED_REDUCTION_FACTOR;
+    }
 
     // This test is not using ThreadPool so we need to disable FTZ here
     // for reference computations
@@ -420,6 +424,11 @@ int TestFunc_Int_Double(const Func *f, MTdata d, bool relaxedMode)
     {
         step = (1ULL<<32) * gWimpyReductionFactor / (512);
     }
+    else if (gIsEmbedded)
+    {
+        step = (BUFFER_SIZE / sizeof(cl_double)) * EMBEDDED_REDUCTION_FACTOR;
+    }
+
     // This test is not using ThreadPool so we need to disable FTZ here
     // for reference computations
     FPU_mode_type oldMode;

@@ -207,6 +207,11 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
     {
         step = (1ULL<<32) * gWimpyReductionFactor / (512);
     }
+    else if (gIsEmbedded)
+    {
+        step = (BUFFER_SIZE / sizeof(float)) * EMBEDDED_REDUCTION_FACTOR;
+    }
+
     if( gIsEmbedded)
         float_ulps = f->float_embedded_ulps;
     else
@@ -480,6 +485,11 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
     {
         step = (1ULL<<32) * gWimpyReductionFactor / (512);
     }
+    else if (gIsEmbedded)
+    {
+        step = (BUFFER_SIZE / sizeof(double)) * EMBEDDED_REDUCTION_FACTOR;
+    }
+
     Force64BitFPUPrecision();
 
     // Init the kernels

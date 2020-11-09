@@ -297,6 +297,10 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     if(gWimpyMode ){
         step = (1ULL<<32) * gWimpyReductionFactor / (512);
     }
+    else if (gIsEmbedded)
+    {
+        step = (BUFFER_SIZE / sizeof(float)) * EMBEDDED_REDUCTION_FACTOR;
+    }
 
     if( gIsEmbedded )
         float_ulps = f->float_embedded_ulps;
@@ -721,6 +725,10 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
     if(gWimpyMode ){
        step = (1ULL<<32) * gWimpyReductionFactor / (512);
+    }
+    else if (gIsEmbedded)
+    {
+        step = (BUFFER_SIZE / sizeof(double)) * EMBEDDED_REDUCTION_FACTOR;
     }
 
 #if defined PARALLEL_REFERENCE

@@ -272,6 +272,11 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
         test_info.subBufferSize = gWimpyBufferSize / (sizeof( cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
         test_info.scale =  (cl_uint) sizeof(cl_float) * 2 * gWimpyReductionFactor;
     }
+    else if (gIsEmbedded)
+    {
+        test_info.scale *= EMBEDDED_REDUCTION_FACTOR;
+    }
+
     test_info.step = (cl_uint) test_info.subBufferSize * test_info.scale;
     if (test_info.step / test_info.subBufferSize != test_info.scale)
     {
@@ -786,6 +791,11 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d, bool relaxedMode)
         test_info.subBufferSize = gWimpyBufferSize / (sizeof( cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
         test_info.scale =  (cl_uint) sizeof(cl_double) * 2 * gWimpyReductionFactor;
     }
+    else if (gIsEmbedded)
+    {
+        test_info.scale *= EMBEDDED_REDUCTION_FACTOR;
+    }
+
     test_info.step = (cl_uint) test_info.subBufferSize * test_info.scale;
     if (test_info.step / test_info.subBufferSize != test_info.scale)
     {
