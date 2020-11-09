@@ -22,8 +22,8 @@ int test_kernel_private_memory_size(cl_device_id deviceID, cl_context context,
                                     cl_command_queue queue, int num_elements)
 {
     const char* TEST_KERNEL =
-        R"(__kernel void private_memory( __global ulong *buffer ){
-         volatile __private ulong x[1];
+        R"(__kernel void private_memory( __global uint *buffer ){
+         volatile __private uint x[1];
          buffer[0] = x[0];
          })";
 
