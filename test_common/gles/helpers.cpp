@@ -16,6 +16,7 @@
 #include "helpers.h"
 
 #include "gl_headers.h"
+#include "CL/cl_half.h"
 
 #define CHECK_ERROR()\
     {GLint __error = glGetError(); if(__error) {log_error( "GL ERROR: %s!\n", gluErrorString( err ));}}
