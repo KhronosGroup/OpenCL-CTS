@@ -22,15 +22,15 @@ int test_kernel_private_memory_size(cl_device_id deviceID, cl_context context,
                                     cl_command_queue queue, int num_elements)
 {
     const char* TEST_KERNEL =
-        R"(__kernel void private_memory( __global ulong *buffer ){
-         volatile __private ulong x[1];
+        R"(__kernel void private_memory( __global uint *buffer ){
+         volatile __private uint x[1];
          buffer[0] = x[0];
          })";
 
     clProgramWrapper program;
     clKernelWrapper kernel;
     cl_int err = create_single_kernel_helper(context, &program, &kernel, 1,
-                                             &kernels[i], "private_memory");
+                                             &TEST_KERNEL, "private_memory");
     test_error(err, "create_single_kernel_helper");
     cl_ulong size = CL_ULONG_MAX;
     err = clGetKernelWorkGroupInfo(kernel, deviceID, CL_KERNEL_PRIVATE_MEM_SIZE,

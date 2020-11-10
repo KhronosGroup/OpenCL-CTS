@@ -47,6 +47,10 @@ extern int        test_release_kernel_order(cl_device_id deviceID, cl_context co
 extern int        test_release_during_execute(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int        test_get_kernel_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_kernel_private_memory_size(cl_device_id deviceID,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements);
 extern int        test_execute_kernel_local_sizes(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_set_kernel_arg_struct(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
