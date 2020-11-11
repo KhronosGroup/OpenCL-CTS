@@ -4,6 +4,7 @@ set(${MODULE_NAME}_SOURCES
          main.cpp
          negative_platform.cpp
          negative_queue.cpp
+         negative_device.cpp
          test_api_consistency.cpp
          test_bool.cpp
          test_retain.cpp
