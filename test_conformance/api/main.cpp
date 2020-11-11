@@ -148,6 +148,13 @@ test_definition test_list[] = {
     ADD_TEST(min_image_formats),
     ADD_TEST(negative_get_platform_info),
     ADD_TEST(negative_get_platform_ids),
+    ADD_TEST(negative_get_device_ids),
+    ADD_TEST(negative_get_device_info),
+    ADD_TEST_VERSION(negative_get_device_and_host_timer, Version(2, 1)),
+    ADD_TEST_VERSION(negative_get_host_timer, Version(2, 1)),
+    ADD_TEST_VERSION(negative_create_sub_devices, Version(1, 2)),
+    ADD_TEST_VERSION(negative_retain_device, Version(1, 2)),
+    ADD_TEST_VERSION(negative_release_device, Version(1, 2)),
 };
 
 const int test_num = ARRAY_SIZE(test_list);

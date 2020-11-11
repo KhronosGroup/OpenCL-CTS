@@ -203,3 +203,31 @@ extern int test_negative_get_platform_ids(cl_device_id deviceID,
                                           cl_context context,
                                           cl_command_queue queue,
                                           int num_elements);
+extern int test_negative_get_device_ids(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
+extern int test_negative_get_device_info(cl_device_id deviceID,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
+extern int test_negative_get_device_and_host_timer(cl_device_id deviceID,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int num_elements);
+extern int test_negative_get_host_timer(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
+extern int test_negative_create_sub_devices(cl_device_id deviceID,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            int num_elements);
+extern int test_negative_retain_device(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+extern int test_negative_release_device(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
