@@ -27,8 +27,6 @@
 typedef unsigned char uchar;
 #endif
 
-#define USE_LOCAL_WORK_GROUP 1
-
 
 const char *mem_read_write_kernel_code =
 "__kernel void test_mem_read_write(__global int *dst)\n"
@@ -77,9 +75,6 @@ int test_mem_flags(cl_context context, cl_command_queue queue, int num_elements,
     clProgramWrapper program;
     clKernelWrapper kernel;
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     int         i;
 
@@ -158,12 +153,6 @@ int test_mem_flags(cl_context context, cl_command_queue queue, int num_elements,
         return -1;
     }
 
-#ifdef USE_LOCAL_WORK_GROUP
-    err = get_max_common_work_group_size(context, kernel, global_work_size[0],
-                                         &local_work_size[0]);
-    test_error( err, "Unable to get work group size to use" );
-#endif
-
     err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&buffers[0]);
     if (test_read_only && (err == CL_SUCCESS))
     {
@@ -176,13 +165,8 @@ int test_mem_flags(cl_context context, cl_command_queue queue, int num_elements,
         return -1;
     }
 
-#ifdef USE_LOCAL_WORK_GROUP
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size,
-                                 local_work_size, 0, NULL, NULL);
-#else
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, NULL,
                                  0, NULL, NULL);
-#endif
     if (err != CL_SUCCESS){
         log_error("clEnqueueNDRangeKernel failed\n");
         align_free( (void *)outptr );
