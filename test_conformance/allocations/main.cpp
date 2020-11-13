@@ -43,16 +43,8 @@ static void printUsage( const char *execName );
 test_status init_cl( cl_device_id device ) {
     int error;
 
-    error = clGetDeviceInfo( device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(g_max_individual_allocation_size), &g_max_individual_allocation_size, NULL );
-    if ( error ) {
-        print_error( error, "clGetDeviceInfo failed for CL_DEVICE_MAX_MEM_ALLOC_SIZE");
-        return TEST_FAIL;
-    }
-    error = clGetDeviceInfo( device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(g_global_mem_size), &g_global_mem_size, NULL );
-    if ( error ) {
-        print_error( error, "clGetDeviceInfo failed for CL_DEVICE_GLOBAL_MEM_SIZE");
-        return TEST_FAIL;
-    }
+    g_max_individual_allocation_size = get_device_info_max_mem_alloc_size(device);
+    g_global_mem_size = get_device_info_global_mem_size(device);
 
     log_info("Device reports CL_DEVICE_MAX_MEM_ALLOC_SIZE=%llu bytes (%gMB), CL_DEVICE_GLOBAL_MEM_SIZE=%llu bytes (%gMB).\n",
              llu( g_max_individual_allocation_size ), toMB( g_max_individual_allocation_size ),
@@ -92,6 +84,12 @@ test_status init_cl( cl_device_id device ) {
         // e.g. vram on GPU is used by window server and even for this test, we need some space for context,
         // queue, kernel code on GPU.
         g_global_mem_size *= 0.60;
+    }
+
+    /* Cap the allocation size as the global size was deduced */
+    if (g_max_individual_allocation_size > g_global_mem_size)
+    {
+        g_max_individual_allocation_size = g_global_mem_size;
     }
 
     if( gReSeed )

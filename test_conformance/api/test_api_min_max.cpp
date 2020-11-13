@@ -491,12 +491,9 @@ int test_min_max_mem_alloc_size(cl_device_id deviceID, cl_context context, cl_co
     else
         requiredAllocSize = 128 * 1024 * 1024;
 
-    /* Get the max mem alloc size */
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof( maxAllocSize ), &maxAllocSize, NULL );
-    test_error( error, "Unable to get max mem alloc size from device" );
-
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof( memSize ), &memSize, NULL );
-    test_error( error, "Unable to get global memory size from device" );
+    /* Get the max mem alloc size, limit the alloc to half of the available memory */
+    maxAllocSize = get_device_info_max_mem_alloc_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
+    memSize = get_device_info_global_mem_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
 
     if (memSize > (cl_ulong)SIZE_MAX) {
       memSize = (cl_ulong)SIZE_MAX;
@@ -594,8 +591,7 @@ int test_min_max_image_2d_width(cl_device_id deviceID, cl_context context, cl_co
     }
 
     /* Verify that we can actually allocate an image that large */
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof ( maxAllocSize ), &maxAllocSize, NULL );
-    test_error( error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE." );
+    maxAllocSize = get_device_info_max_mem_alloc_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ( (cl_ulong)maxDimension*1*4 > maxAllocSize ) {
         log_error("Can not allocate a large enough image (min size: %lld bytes, max allowed: %lld bytes) to test.\n",
                   (cl_ulong)maxDimension*1*4, maxAllocSize);
@@ -661,8 +657,7 @@ int test_min_max_image_2d_height(cl_device_id deviceID, cl_context context, cl_c
     }
 
     /* Verify that we can actually allocate an image that large */
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof ( maxAllocSize ), &maxAllocSize, NULL );
-    test_error( error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE." );
+    maxAllocSize = get_device_info_max_mem_alloc_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ( (cl_ulong)maxDimension*1*4 > maxAllocSize ) {
         log_error("Can not allocate a large enough image (min size: %lld bytes, max allowed: %lld bytes) to test.\n",
                   (cl_ulong)maxDimension*1*4, maxAllocSize);
@@ -718,8 +713,7 @@ int test_min_max_image_3d_width(cl_device_id deviceID, cl_context context, cl_co
     }
 
     /* Verify that we can actually allocate an image that large */
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof ( maxAllocSize ), &maxAllocSize, NULL );
-    test_error( error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE." );
+    maxAllocSize = get_device_info_max_mem_alloc_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ( (cl_ulong)maxDimension*2*4 > maxAllocSize ) {
         log_error("Can not allocate a large enough image (min size: %lld bytes, max allowed: %lld bytes) to test.\n",
                   (cl_ulong)maxDimension*2*4, maxAllocSize);
@@ -775,8 +769,7 @@ int test_min_max_image_3d_height(cl_device_id deviceID, cl_context context, cl_c
     }
 
     /* Verify that we can actually allocate an image that large */
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof ( maxAllocSize ), &maxAllocSize, NULL );
-    test_error( error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE." );
+    maxAllocSize = get_device_info_max_mem_alloc_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ( (cl_ulong)maxDimension*2*4 > maxAllocSize ) {
         log_error("Can not allocate a large enough image (min size: %lld bytes, max allowed: %lld bytes) to test.\n",
                   (cl_ulong)maxDimension*2*4, maxAllocSize);
@@ -833,8 +826,7 @@ int test_min_max_image_3d_depth(cl_device_id deviceID, cl_context context, cl_co
     }
 
     /* Verify that we can actually allocate an image that large */
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof ( maxAllocSize ), &maxAllocSize, NULL );
-    test_error( error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE." );
+    maxAllocSize = get_device_info_max_mem_alloc_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ( (cl_ulong)maxDimension*1*4 > maxAllocSize ) {
         log_error("Can not allocate a large enough image (min size: %lld bytes, max allowed: %lld bytes) to test.\n",
                   (cl_ulong)maxDimension*1*4, maxAllocSize);
@@ -889,8 +881,7 @@ int test_min_max_image_array_size(cl_device_id deviceID, cl_context context, cl_
     }
 
     /* Verify that we can actually allocate an image that large */
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof ( maxAllocSize ), &maxAllocSize, NULL );
-    test_error( error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE." );
+    maxAllocSize = get_device_info_max_mem_alloc_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ( (cl_ulong)maxDimension*1*4 > maxAllocSize ) {
         log_error("Can not allocate a large enough image (min size: %lld bytes, max allowed: %lld bytes) to test.\n",
                   (cl_ulong)maxDimension*1*4, maxAllocSize);
@@ -923,9 +914,8 @@ int test_min_max_image_buffer_size(cl_device_id deviceID, cl_context context, cl
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID );
 
-    /* Get the max memory allocation size */
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof ( maxAllocSize ), &maxAllocSize, NULL );
-    test_error( error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE." );
+    /* Get the max memory allocation size, divide it */
+    maxAllocSize = get_device_info_max_mem_alloc_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
 
     /* Get the max image array width */
     error = clGetDeviceInfo( deviceID, CL_DEVICE_IMAGE_MAX_BUFFER_SIZE, sizeof( maxDimensionPixels ), &maxDimensionPixels, NULL );
@@ -1303,8 +1293,7 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
     MTdata d;
 
     /* Verify our test buffer won't be bigger than allowed */
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof( maxSize ), &maxSize, 0 );
-    test_error( error, "Unable to get max constant buffer size" );
+    maxSize = get_device_info_max_constant_buffer_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
 
     if( ( 0 == gIsEmbedded && maxSize < 64L * 1024L ) || maxSize <  1L * 1024L )
     {
@@ -1314,15 +1303,13 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
 
     log_info("Reported max constant buffer size of %lld bytes.\n", maxSize);
 
-    // Limit test buffer size to 1/8 of CL_DEVICE_GLOBAL_MEM_SIZE
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(maxGlobalSize), &maxGlobalSize, 0);
-    test_error(error, "Unable to get CL_DEVICE_GLOBAL_MEM_SIZE");
+    // Limit test buffer size to 1/8 of global max size
+    maxGlobalSize = get_device_info_global_mem_size(deviceID, 8);
 
-    if (maxSize > maxGlobalSize / 8)
-        maxSize = maxGlobalSize / 8;
+    if (maxSize > maxGlobalSize)
+        maxSize = maxGlobalSize;
 
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE , sizeof(maxAllocSize), &maxAllocSize, 0);
-    test_error(error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE ");
+    maxAllocSize = get_device_info_max_mem_alloc_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     
     if (maxSize > maxAllocSize)
         maxSize = maxAllocSize;
@@ -1487,8 +1474,7 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context, cl_com
         return -1;
     }
 
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof( maxSize ), &maxSize, 0 );
-    test_error( error, "Unable to get max constant buffer size" );
+    maxSize = get_device_info_max_constant_buffer_size(deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     individualBufferSize = ((int)maxSize/2)/maxArgs;
 
     log_info("Reported max constant arg count of %d and max constant buffer size of %d. Test will attempt to allocate half of that, or %d buffers of size %d.\n",
