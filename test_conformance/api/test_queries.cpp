@@ -196,12 +196,8 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
     error = clGetSamplerInfo(sampler, CL_SAMPLER_REFERENCE_COUNT,
                              sizeof(refCount), &refCount, &size);
     test_error(error, "Unable to get sampler ref count");
-    if (size != sizeof(refCount))
-    {
-        test_fail("ERROR: Returned size of sampler refcount "
-                  "does not validate! (expected %d, got %d)\n",
-                  (int)sizeof(refCount), (int)size);
-    }
+    test_assert_error(size == sizeof(refCount),
+                      "Returned size of sampler refcount does not validate!\n");
 
     error = sampler_param_test(sampler, CL_SAMPLER_CONTEXT, context, "context");
     test_error(error, "param checking failed");
@@ -337,17 +333,22 @@ int command_queue_param_test(cl_command_queue queue,
 #define OOO_NUM_COMMAND_QUEUE_PROPERTIES 4
 static cl_command_queue_properties property_options[] = {
     0,
+
     CL_QUEUE_PROFILING_ENABLE,
+
     CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-    CL_QUEUE_PROFILING_ENABLE,
-    CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+
+    CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+
     CL_QUEUE_ON_DEVICE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-    CL_QUEUE_PROFILING_ENABLE,
-    CL_QUEUE_ON_DEVICE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+
+    CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_ON_DEVICE
+        | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+
     CL_QUEUE_ON_DEVICE | CL_QUEUE_ON_DEVICE_DEFAULT
         | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-    CL_QUEUE_PROFILING_ENABLE,
-    CL_QUEUE_ON_DEVICE | CL_QUEUE_ON_DEVICE_DEFAULT
+
+    CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_ON_DEVICE | CL_QUEUE_ON_DEVICE_DEFAULT
         | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
 };
 
@@ -358,24 +359,36 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
     int error;
     size_t size;
 
-    cl_queue_properties device_props;
-    cl_queue_properties queue_props[] = {CL_QUEUE_PROPERTIES,0,0};
+    cl_queue_properties host_queue_props, device_queue_props;
+    cl_queue_properties queue_props[] = { CL_QUEUE_PROPERTIES, 0, 0 };
 
-    clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_HOST_PROPERTIES, sizeof(device_props), &device_props, NULL);
-    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n", (int)device_props);
+    clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_HOST_PROPERTIES,
+                    sizeof(host_queue_props), &host_queue_props, NULL);
+    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n",
+             (int)host_queue_props);
+    clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES,
+                    sizeof(device_queue_props), &device_queue_props, NULL);
+    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n",
+             (int)device_queue_props);
 
     auto version = get_device_cl_version(deviceID);
 
+    // Are on device queues supported
+    bool on_device_supported =
+        (version >= Version(2, 0)
+         || (version >= Version(3, 0) && sizeof(device_queue_props) != 0));
+
     int num_test_options = MIN_NUM_COMMAND_QUEUE_PROPERTIES;
-    if (device_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
+    if (host_queue_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
     {
         // Test out-of-order queues properties if supported
         num_test_options = OOO_NUM_COMMAND_QUEUE_PROPERTIES;
-        if (version > Version(2, 0) && !is_compatibility)
-        {
-            // Test queue on device if supported
-            num_test_options = ARRAY_SIZE(property_options);
-        }
+    }
+    if (on_device_supported && !is_compatibility)
+    {
+        // Test queue on device if supported (in this case out-of-order must
+        // also be supported)
+        num_test_options = ARRAY_SIZE(property_options);
     }
 
     for (int i = 0; i < num_test_options; i++)
@@ -400,12 +413,9 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
         error = clGetCommandQueueInfo(queue, CL_QUEUE_REFERENCE_COUNT,
                                       sizeof(refCount), &refCount, &size);
         test_error(error, "Unable to get command queue reference count");
-        if (size != sizeof(refCount))
-        {
-            test_fail("ERROR: Returned size of command queue reference count "
-                      "does not validate! (expected %d, got %d)\n",
-                      (int)sizeof(refCount), (int)size);
-        }
+        test_assert_error(size == sizeof(refCount),
+                          "Returned size of command queue reference count does "
+                          "not validate!\n");
 
         error = command_queue_param_test(queue, CL_QUEUE_CONTEXT, context,
                                          "context");
