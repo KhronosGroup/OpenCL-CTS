@@ -1005,7 +1005,7 @@ cl_long test_atomic_and_result_long( size_t size, cl_long *startRefValues, size_
     size_t numBits = (size_t)size - whichResult * 64;
     cl_long bits = (cl_long)0xffffffffffffffffLL;
     for( size_t i = 0; i < numBits; i++ )
-        bits &= ~( 1 << i );
+        bits &= ~( 1LL << i );
 
     return bits;
 }
@@ -1089,14 +1089,14 @@ const char atom_xor_core[] =
 "    size_t numBits = sizeof( destMemory[0] ) * 8;\n"
 "    int  bitIndex = tid & ( numBits - 1 );\n"
 "\n"
-"    oldValues[tid] = atom_xor( &destMemory[0], 1 << bitIndex );\n"
+"    oldValues[tid] = atom_xor( &destMemory[0], 1L << bitIndex );\n"
 ;
 
 const char atomic_xor_core[] =
 "    size_t numBits = sizeof( destMemory[0] ) * 8;\n"
 "    int  bitIndex = tid & ( numBits - 1 );\n"
 "\n"
-"    oldValues[tid] = atomic_xor( &destMemory[0], 1 << bitIndex );\n"
+"    oldValues[tid] = atomic_xor( &destMemory[0], 1L << bitIndex );\n"
 ;
 
 cl_int test_atomic_xor_result_int( size_t size, cl_int *startRefValues, size_t whichResult )
