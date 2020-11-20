@@ -17,14 +17,15 @@
 #include "harness/typeWrappers.h"
 #include "harness/conversions.h"
 
-const char *zero_sized_enqueue_test_kernel[] = {
-"__kernel void foo_kernel(__global float *src, __global int *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = (int)src[tid];\n"
-"\n"
-"}\n" };
+const char* zero_sized_enqueue_test_kernel[] = {
+    "__kernel void foo_kernel(__global int *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = 1;\n"
+    "\n"
+    "}\n"
+};
 
 const int bufSize = 128;
 
@@ -62,7 +63,7 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
     int error;
     clProgramWrapper program;
     clKernelWrapper kernel;
-    clMemWrapper            streams[2];
+    clMemWrapper output_stream;
     size_t    ndrange1 = 0;
     size_t    ndrange20[2] = {0, 0};
     size_t    ndrange21[2] = {1, 0};
@@ -76,15 +77,15 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
     size_t    ndrange35[3] = {1, 0, 1};
     size_t    ndrange36[3] = {1, 1, 0};
 
-    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, bufSize * sizeof(int), NULL, &error);
-    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, bufSize * sizeof(int), NULL, &error);
+    output_stream =
+        clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                       bufSize * sizeof(int), NULL, &error);
 
-    int* buf = new int[bufSize];
-    memset(buf, 0, sizeof(int) * bufSize);
-
-    // update output buffer
-    error = clEnqueueWriteBuffer(queue, streams[1], CL_TRUE, 0, sizeof(int) * bufSize, buf, 0, NULL, NULL);
-
+    // Initialise output buffer.
+    int output_buffer_data = 0;
+    error = clEnqueueFillBuffer(queue, output_stream, &output_buffer_data,
+                                sizeof(int), 0, sizeof(int) * bufSize, 0, NULL,
+                                NULL);
 
     /* Create a kernel to test with */
     if( create_single_kernel_helper( context, &program, &kernel, 1, zero_sized_enqueue_test_kernel, "foo_kernel" ) != 0 )
@@ -92,44 +93,53 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
         return -1;
     }
 
-    error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &streams[0]);
-    test_error( error, "clSetKernelArg failed." );
-    error = clSetKernelArg(kernel, 1, sizeof(cl_mem), &streams[1]);
+    error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &output_stream);
     test_error( error, "clSetKernelArg failed." );
 
     // Simple API return code tests for 1D, 2D and 3D zero sized ND range.
-    error = test_zero_sized_enqueue_and_test_output_buffer(queue, kernel, streams[1], 1, &ndrange1);
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 1, &ndrange1);
     test_error( error, "1D zero sized kernel enqueue failed." );
 
-    error = test_zero_sized_enqueue_and_test_output_buffer(queue, kernel, streams[1], 2, ndrange20);
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 2, ndrange20);
     test_error( error, "2D zero sized kernel enqueue failed." );
 
-    error = test_zero_sized_enqueue_and_test_output_buffer(queue, kernel, streams[1], 2, ndrange21);
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 2, ndrange21);
     test_error( error, "2D zero sized kernel enqueue failed." );
 
-    error = test_zero_sized_enqueue_and_test_output_buffer(queue, kernel, streams[1], 2, ndrange22);
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 2, ndrange22);
     test_error( error, "2D zero sized kernel enqueue failed." );
 
 
-    error = test_zero_sized_enqueue_and_test_output_buffer(queue, kernel, streams[1], 3, ndrange30);
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 3, ndrange30);
     test_error( error, "3D zero sized kernel enqueue failed." );
 
-    error = test_zero_sized_enqueue_and_test_output_buffer(queue, kernel, streams[1], 3, ndrange31);
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 3, ndrange31);
     test_error( error, "3D zero sized kernel enqueue failed." );
 
-    error = test_zero_sized_enqueue_and_test_output_buffer(queue, kernel, streams[1], 3, ndrange32);
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 3, ndrange32);
     test_error( error, "3D zero sized kernel enqueue failed." );
 
-    error = test_zero_sized_enqueue_and_test_output_buffer(queue, kernel, streams[1], 3, ndrange33);
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 3, ndrange33);
     test_error( error, "3D zero sized kernel enqueue failed." );
 
-    error = test_zero_sized_enqueue_and_test_output_buffer(queue, kernel, streams[1], 3, ndrange34);
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 3, ndrange34);
     test_error( error, "3D zero sized kernel enqueue failed." );
 
-    error = test_zero_sized_enqueue_and_test_output_buffer(queue, kernel, streams[1], 3, ndrange35);
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 3, ndrange35);
     test_error( error, "3D zero sized kernel enqueue failed." );
 
-    error = test_zero_sized_enqueue_and_test_output_buffer(queue, kernel, streams[1], 3, ndrange36);
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 3, ndrange36);
     test_error( error, "3D zero sized kernel enqueue failed." );
 
     // Verify zero-sized ND range kernel still satisfy event wait list and correct event object
@@ -149,7 +159,7 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
     error = clGetEventInfo(ev, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int), &sta, NULL);
     test_error( error, "Failed to get event status.");
 
-    if (sta != CL_QUEUED)
+    if (sta != CL_QUEUED && sta != CL_SUBMITTED)
     {
         log_error( "ERROR: incorrect zero sized kernel enqueue event status.\n" );
         return -1;
@@ -170,8 +180,6 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
         log_error( "ERROR: incorrect zero sized kernel enqueue event status.\n" );
         return -1;
     }
-
-    delete [] buf;
 
     return 0;
 }

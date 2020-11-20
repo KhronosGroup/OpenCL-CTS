@@ -10,6 +10,7 @@ set(${MODULE_NAME}_SOURCES
          test_queries_compatibility.cpp
          test_create_kernels.cpp
          test_kernels.cpp
+         test_kernel_private_memory_size.cpp
          test_api_min_max.cpp
          test_kernel_arg_changes.cpp
          test_kernel_arg_multi_setup.cpp

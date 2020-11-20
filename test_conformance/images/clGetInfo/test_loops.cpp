@@ -15,18 +15,6 @@
 //
 #include "../testBase.h"
 #include "../common.h"
-#include "harness/imageHelpers.h"
-#include <algorithm>
-#include <iterator>
-
-extern cl_filter_mode     gFilterModeToUse;
-extern cl_addressing_mode gAddressModeToUse;
-extern int                gTypesToTest;
-extern int                gNormalizedModeToUse;
-extern cl_channel_type      gChannelTypeToUse;
-
-
-extern bool gDebugTrace;
 
 extern int test_get_image_info_1D( cl_device_id device, cl_context context, cl_image_format *format, cl_mem_flags flags );
 extern int test_get_image_info_2D( cl_device_id device, cl_context context, cl_image_format *format, cl_mem_flags flags );

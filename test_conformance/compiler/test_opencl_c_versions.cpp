@@ -289,15 +289,7 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_versions(cl_device_id device,
 int test_opencl_c_versions(cl_device_id device, cl_context context,
                            cl_command_queue queue, int num_elements)
 {
-    cl_bool compilerAvailable = CL_FALSE;
-    cl_int error =
-        clGetDeviceInfo(device, CL_DEVICE_COMPILER_AVAILABLE,
-                        sizeof(compilerAvailable), &compilerAvailable, NULL);
-    if (compilerAvailable == CL_FALSE)
-    {
-        log_info("Skipping test - no compiler is available.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    check_compiler_available(device);
 
     const Version version = get_device_cl_version(device);
 

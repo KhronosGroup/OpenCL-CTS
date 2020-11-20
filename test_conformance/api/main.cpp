@@ -54,6 +54,7 @@ test_definition test_list[] = {
     ADD_TEST(get_kernel_arg_info_compatibility),
     ADD_TEST(create_kernels_in_program),
     ADD_TEST(get_kernel_info),
+    ADD_TEST(kernel_private_memory_size),
     ADD_TEST(execute_kernel_local_sizes),
     ADD_TEST(set_kernel_arg_by_index),
     ADD_TEST(set_kernel_arg_constant),

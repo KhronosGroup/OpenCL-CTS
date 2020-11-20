@@ -1843,7 +1843,11 @@ public:
   }
   virtual bool SVMDataBufferAllSVMConsistent()
   {
-    return MemoryScope() == MEMORY_SCOPE_ALL_SVM_DEVICES;
+      // Although memory_scope_all_devices doesn't mention SVM it is just an
+      // alias for memory_scope_all_svm_devices.  So both scopes interact with
+      // SVM allocations, on devices that support those, just the same.
+      return MemoryScope() == MEMORY_SCOPE_ALL_DEVICES
+          || MemoryScope() == MEMORY_SCOPE_ALL_SVM_DEVICES;
   }
   virtual int ExecuteForEachParameterSet(cl_device_id deviceID, cl_context context, cl_command_queue queue)
   {

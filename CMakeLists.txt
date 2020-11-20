@@ -197,6 +197,10 @@ if(LINK_PTHREAD)
     list(APPEND CLConform_LIBRARIES pthread)
 endif()
 
+if(DEFINED USE_GLES3)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLES3")
+endif()
+
 if(APPLE)
     find_library(corefoundation CoreFoundation)
     find_library(iokit IOKit)

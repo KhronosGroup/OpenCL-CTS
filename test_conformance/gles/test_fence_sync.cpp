@@ -297,7 +297,7 @@ public:
     virtual void * IRun( void )
     {
         cl_int error = run_cl_kernel( mKernel, mQueue, mStream0, mStream1, mRowIdx, mFenceEvent, mNumThreads );
-        return (void *)error;
+        return (void *)(intptr_t)error;
     }
 };
 

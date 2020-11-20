@@ -13,17 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
-
-#if !defined(_WIN32)
-#include <unistd.h>
-#include <sys/time.h>
-#endif
-
 #include "../testBase.h"
+#include "../harness/compat.h"
 #include "../harness/testHarness.h"
 
 bool gDebugTrace;
@@ -37,7 +31,6 @@ cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
 extern int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, MethodsToTest testMethod );
 static void printUsage( const char *execName );
 
-#define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
 int test_1D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {

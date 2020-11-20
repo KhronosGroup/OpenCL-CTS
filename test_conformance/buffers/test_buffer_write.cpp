@@ -315,40 +315,51 @@ static const char *float_kernel_name[] = { "test_buffer_write_float", "test_buff
 
 
 const char *buffer_write_half_kernel_code[] = {
-    "__kernel void test_buffer_write_half(__global half *src, __global float *dst)\n"
+    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+    "__kernel void test_buffer_write_half(__global half *src, __global half "
+    "*dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "\n"
-    "    dst[tid] = vload_half( tid * 2, src );\n"
+    "    dst[tid] = src[tid];\n"
     "}\n",
 
-    "__kernel void test_buffer_write_half2(__global half2 *src, __global float2 *dst)\n"
+    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+    "__kernel void test_buffer_write_half2(__global half2 *src, __global half2 "
+    "*dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "\n"
-    "    dst[tid] = vload_half2( tid * 2, src );\n"
+    "    dst[tid] = src[tid];\n"
     "}\n",
 
-    "__kernel void test_buffer_write_half4(__global half4 *src, __global float4 *dst)\n"
+    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+    "__kernel void test_buffer_write_half4(__global half4 *src, __global half4 "
+    "*dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "\n"
-    "    dst[tid] = vload_half4( tid * 2, src );\n"
+    "    dst[tid] = src[tid];\n"
     "}\n",
 
-    "__kernel void test_buffer_write_half8(__global half8 *src, __global float8 *dst)\n"
+    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+    "__kernel void test_buffer_write_half8(__global half8 *src, __global half8 "
+    "*dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "\n"
-    "    dst[tid] = vload_half8( tid * 2, src );\n"
+    "    dst[tid] = src[tid];\n"
     "}\n",
 
-    "__kernel void test_buffer_write_half16(__global half16 *src, __global float16 *dst)\n"
+    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+    "__kernel void test_buffer_write_half16(__global half16 *src, __global "
+    "half16 *dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "\n"
-    "    dst[tid] = vload_half16( tid * 2, src );\n"
-    "}\n" };
+    "    dst[tid] = src[tid];\n"
+    "}\n"
+};
 
 static const char *half_kernel_name[] = { "test_buffer_write_half", "test_buffer_write_half2", "test_buffer_write_half4", "test_buffer_write_half8", "test_buffer_write_half16" };
 
@@ -1398,6 +1409,7 @@ int test_buffer_write_float( cl_device_id deviceID, cl_context context, cl_comma
 
 int test_buffer_write_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
+    PASSIVE_REQUIRE_FP16_SUPPORT(deviceID)
     float   *inptr[5];
     size_t  ptrSizes[5];
     int     i, err;
@@ -1422,8 +1434,10 @@ int test_buffer_write_half( cl_device_id deviceID, cl_context context, cl_comman
             inptr[i][j] = get_random_float( -FLT_MAX, FLT_MAX, d );
     }
 
-    err = test_buffer_write( deviceID, context, queue, num_elements, sizeof( cl_float ) / 2, (char*)"half", 5, (void**)inptr,
-                             buffer_write_half_kernel_code, half_kernel_name, foo, d );
+    err = test_buffer_write(deviceID, context, queue, num_elements,
+                            sizeof(cl_half), (char *)"half", 5, (void **)inptr,
+                            buffer_write_half_kernel_code, half_kernel_name,
+                            foo, d);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );

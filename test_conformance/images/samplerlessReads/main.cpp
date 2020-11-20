@@ -186,7 +186,7 @@ static void printUsage( const char *execName )
     log_info( "You may also use appropriate CL_ channel type and ordering constants.\n" );
     log_info( "\n" );
     log_info( "\tThe following modify the types of images tested:\n" );
-    log_info( "\t\read_write - Runs the tests with read_write images which allow a kernel do both read and write to the same image \n" );
+    log_info( "\t\tread_write - Runs the tests with read_write images which allow a kernel do both read and write to the same image \n" );
     log_info( "\t\tsmall_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes\n" );
     log_info( "\t\tmax_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128\n" );
     log_info( "\n" );
