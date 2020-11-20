@@ -22,14 +22,8 @@
     #include <setjmp.h>
 #endif
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool                 gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gDeviceLt20;
-extern bool                 gTestReadWrite;
-
-#define MAX_TRIES   1
-#define MAX_CLAMPED 1
+extern bool gDeviceLt20;
+extern bool gTestReadWrite;
 
 const char *read1DArrayKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_array_t input, sampler_t sampler, __global int *results )\n"

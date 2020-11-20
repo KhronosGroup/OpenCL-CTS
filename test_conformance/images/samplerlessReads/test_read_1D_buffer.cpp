@@ -22,13 +22,7 @@
     #include <setjmp.h>
 #endif
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool             gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gDeviceLt20;
-
-#define MAX_TRIES   1
-#define MAX_CLAMPED 1
+extern bool gDeviceLt20;
 
 const char *read1DBufferKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_buffer_t inputA, read_only image1d_t inputB, sampler_t sampler, __global int *results )\n"
