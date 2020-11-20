@@ -24,7 +24,6 @@
 #include "procs.h"
 #include "harness/errorHelpers.h"
 
-#define USE_LOCAL_WORK_GROUP    1
 
 #ifndef uchar
 typedef unsigned char uchar;
@@ -631,9 +630,6 @@ int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_que
     cl_kernel   kernel[5];
     size_t      ptrSizes[5];
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     int         i, ii;
     int         src_flag_id, dst_flag_id;
@@ -729,11 +725,6 @@ int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_que
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
-                test_error( err, "Unable to get work group size to use" );
-#endif
-
                 err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[ii] );
                 err |= clSetKernelArg( kernel[i], 1, sizeof( cl_mem ), (void *)&buffers[ii+1] );
                 if ( err != CL_SUCCESS ){
@@ -746,11 +737,7 @@ int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_que
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
                 err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
                 if ( err != CL_SUCCESS ){
                     print_error( err, " clEnqueueNDRangeKernel failed" );
                     clReleaseMemObject( buffers[ii] );
@@ -811,9 +798,6 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
     size_t      ptrSizes[5];
     size_t      size = sizeof( TestStruct );
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     int         i, ii;
     cl_uint     j;
@@ -916,11 +900,6 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
-                test_error( err, "Unable to get work group size to use" );
-#endif
-
                 err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[ii] );
                 err |= clSetKernelArg( kernel[i], 1, sizeof( cl_mem ), (void *)&buffers[ii+1] );
                 if ( err != CL_SUCCESS ){
@@ -934,11 +913,7 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
                 err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
                 if ( err != CL_SUCCESS ){
                     print_error( err, " clEnqueueNDRangeKernel failed" );
                     clReleaseMemObject( buffers[ii] );
@@ -997,9 +972,6 @@ int test_buffer_write_array_async( cl_device_id deviceID, cl_context context, cl
     cl_event    event[2];
     size_t      ptrSizes[5];
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     int         i, ii;
     int         src_flag_id, dst_flag_id;
@@ -1056,11 +1028,6 @@ int test_buffer_write_array_async( cl_device_id deviceID, cl_context context, cl
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
-                test_error( err, "Unable to get work group size to use" );
-#endif
-
                 err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[ii] );
                 err |= clSetKernelArg( kernel[i], 1, sizeof( cl_mem ), (void *)&buffers[ii+1] );
                 if ( err != CL_SUCCESS ){
@@ -1084,11 +1051,8 @@ int test_buffer_write_array_async( cl_device_id deviceID, cl_context context, cl
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
                 err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
+
                 if (err != CL_SUCCESS){
                     print_error( err, "clEnqueueNDRangeKernel failed" );
                     return -1;
