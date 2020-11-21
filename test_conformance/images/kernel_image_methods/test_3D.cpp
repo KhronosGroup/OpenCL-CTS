@@ -15,15 +15,30 @@
 //
 #include "../testBase.h"
 
-extern int test_get_image_info_single( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d );
+extern int test_get_image_info_single(cl_context context,
+                                      cl_command_queue queue,
+                                      image_descriptor *imageInfo, MTdata d,
+                                      cl_mem_flags flags);
 
-int test_get_image_info_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format )
+int test_get_image_info_3D(cl_device_id device, cl_context context,
+                           cl_command_queue queue, cl_image_format *format,
+                           cl_mem_flags flags)
 {
     size_t maxWidth, maxHeight, maxDepth;
     cl_ulong maxAllocSize, memSize;
     image_descriptor imageInfo = { 0 };
     RandomSeed seed( gRandomSeed );
     size_t pixelSize;
+
+    if ((flags != CL_MEM_READ_ONLY)
+        && !is_extension_available(device, "cl_khr_3d_image_writes"))
+    {
+        log_info("-----------------------------------------------------\n");
+        log_info("This device does not support cl_khr_3d_image_writes.\n"
+                 "Skipping 3d image write test.\n");
+        log_info("-----------------------------------------------------\n\n");
+        return 0;
+    }
 
     imageInfo.type = CL_MEM_OBJECT_IMAGE3D;
     imageInfo.format = format;
@@ -53,7 +68,8 @@ int test_get_image_info_3D( cl_device_id device, cl_context context, cl_command_
                 {
                     if( gDebugTrace )
                         log_info( "   at size %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth );
-                    int ret = test_get_image_info_single( context, queue, &imageInfo, seed );
+                    int ret = test_get_image_info_single(
+                        context, queue, &imageInfo, seed, flags);
                     if( ret )
                         return -1;
                 }
@@ -79,7 +95,8 @@ int test_get_image_info_3D( cl_device_id device, cl_context context, cl_command_
             log_info( "Testing %d x %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
             if( gDebugTrace )
                 log_info( "   at max size %d,%d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
-            if( test_get_image_info_single( context, queue, &imageInfo, seed ) )
+            if (test_get_image_info_single(context, queue, &imageInfo, seed,
+                                           flags))
                 return -1;
         }
     }
@@ -115,7 +132,8 @@ int test_get_image_info_3D( cl_device_id device, cl_context context, cl_command_
 
             if( gDebugTrace )
                 log_info( "   at size %d,%d,%d (pitch %d,%d) out of %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth, (int)imageInfo.rowPitch, (int)imageInfo.slicePitch, (int)maxWidth, (int)maxHeight, (int)maxDepth );
-            int ret = test_get_image_info_single( context, queue, &imageInfo, seed );
+            int ret = test_get_image_info_single(context, queue, &imageInfo,
+                                                 seed, flags);
             if( ret )
                 return -1;
         }
