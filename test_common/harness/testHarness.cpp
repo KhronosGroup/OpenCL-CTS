@@ -65,9 +65,8 @@ int runTestHarness(int argc, const char *argv[], int testNum,
                    int forceNoContextCreation,
                    cl_command_queue_properties queueProps)
 {
-    return runTestHarnessWithCheck(
-        argc, argv, testNum, testList, forceNoContextCreation, queueProps,
-        (imageSupportRequired) ? verifyImageSupport : NULL);
+    return runTestHarnessWithCheck(argc, argv, testNum, testList,
+                                   forceNoContextCreation, queueProps, NULL);
 }
 
 int skip_init_info(int count)

@@ -395,7 +395,8 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = runTestHarness( argCount, argList, test_num, test_list, true, false, 0 );
+    int ret = runTestHarnessWithCheck(argCount, argList, test_num, test_list,
+                                      false, 0, verifyImageSupport);
 
     // Restore FP state before leaving
     RestoreFPState(&oldMode);
