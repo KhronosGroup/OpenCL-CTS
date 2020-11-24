@@ -184,7 +184,7 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue, ExplicitType 
     glBufferData( GL_ARRAY_BUFFER, bufferSize, outDataGL, GL_STATIC_DRAW );
 
     glBindBuffer( GL_ARRAY_BUFFER, 0 );
-    glFlush();
+    glFinish();
 
 
     /* Generate some streams. The first and last ones are GL, middle one just vanilla CL */
