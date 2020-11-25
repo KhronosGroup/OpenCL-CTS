@@ -31,9 +31,9 @@
 #if defined(__APPLE__) || defined(_MSC_VER) || defined(__linux__)              \
     || defined(__MINGW32__)
 #ifdef _MSC_VER
-    typedef int FPU_mode_type;
+typedef int FPU_mode_type;
 #else
-    typedef int64_t FPU_mode_type;
+typedef int64_t FPU_mode_type;
 #endif
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
     || defined(__MINGW32__)

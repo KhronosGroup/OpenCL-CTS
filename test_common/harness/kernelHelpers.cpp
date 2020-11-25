@@ -666,7 +666,7 @@ static int create_single_kernel_helper_create_program_offline(
 #endif
 
     ifs.seekg(0, ifs.end);
-    size_t length = static_cast<size_t>( ifs.tellg() );
+    size_t length = static_cast<size_t>(ifs.tellg());
     ifs.seekg(0, ifs.beg);
 
     // treat modifiedProgram as input for clCreateProgramWithBinary

@@ -709,8 +709,8 @@ void get_max_sizes(
             size_t A = max_pixels;
 
             int x0_dim = !fixed_dim;
-            size_t x0 =
-                static_cast<size_t>(fmin(fmin(other_sizes[(other_size++) % num_other_sizes], A / M),
+            size_t x0 = static_cast<size_t>(
+                fmin(fmin(other_sizes[(other_size++) % num_other_sizes], A / M),
                      maximum_sizes[x0_dim]));
 
             // Store the size
@@ -738,8 +738,9 @@ void get_max_sizes(
             int x1_dim = (fixed_dim == 2) ? 1 : 2;
 
             // Choose two other sizes for these dimensions
-            size_t x0 = static_cast<size_t>(fmin(fmin(A / M, maximum_sizes[x0_dim]),
-                             other_sizes[(other_size++) % num_other_sizes]));
+            size_t x0 = static_cast<size_t>(
+                fmin(fmin(A / M, maximum_sizes[x0_dim]),
+                     other_sizes[(other_size++) % num_other_sizes]));
             // GPUs have certain restrictions on minimum width (row alignment)
             // of images which has given us issues testing small widths in this
             // test (say we set width to 3 for testing, and compute size based
@@ -748,8 +749,9 @@ void get_max_sizes(
             // width of 16 which doesnt fit in vram). For this purpose we are
             // not testing width < 16 for this test.
             if (x0_dim == 0 && x0 < 16) x0 = 16;
-            size_t x1 = static_cast<size_t>(fmin(fmin(A / M / x0, maximum_sizes[x1_dim]),
-                             other_sizes[(other_size++) % num_other_sizes]));
+            size_t x1 = static_cast<size_t>(
+                fmin(fmin(A / M / x0, maximum_sizes[x1_dim]),
+                     other_sizes[(other_size++) % num_other_sizes]));
 
             // Valid image sizes cannot be below 1. Due to the workaround for
             // the xo_dim where x0 is overidden to 16 there might not be enough
@@ -1052,12 +1054,13 @@ void escape_inf_nan_values(char *data, size_t allocSize)
 char *generate_random_image_data(image_descriptor *imageInfo,
                                  BufferOwningPtr<char> &P, MTdata d)
 {
-    size_t allocSize = static_cast<size_t>( get_image_size(imageInfo) );
+    size_t allocSize = static_cast<size_t>(get_image_size(imageInfo));
     size_t pixelRowBytes = imageInfo->width * get_pixel_size(imageInfo->format);
     size_t i;
 
     if (imageInfo->num_mip_levels > 1)
-        allocSize = static_cast<size_t>( compute_mipmapped_image_size(*imageInfo) );
+        allocSize =
+            static_cast<size_t>(compute_mipmapped_image_size(*imageInfo));
 
 #if defined(__APPLE__)
     char *data = NULL;
@@ -1607,12 +1610,14 @@ bool get_integer_coords_offset(float x, float y, float z, float xAddressOffset,
     switch (imageInfo->type)
     {
         case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-            outY = static_cast<int>(calculate_array_index(y, (float)imageInfo->arraySize - 1.0f));
+            outY = static_cast<int>(
+                calculate_array_index(y, (float)imageInfo->arraySize - 1.0f));
             outZ = 0; /* don't care! */
             break;
         case CL_MEM_OBJECT_IMAGE2D_ARRAY:
             outY = adFn(static_cast<int>(floorf(y)), height);
-            outZ = static_cast<int>(calculate_array_index(z, (float)imageInfo->arraySize - 1.0f));
+            outZ = static_cast<int>(
+                calculate_array_index(z, (float)imageInfo->arraySize - 1.0f));
             break;
         default:
             // legacy path:
@@ -1688,7 +1693,7 @@ static float unnormalize_coordinate(const char *name, float coord, float offset,
     switch (addressing_mode)
     {
         case CL_ADDRESS_REPEAT:
-            ret = RepeatNormalizedAddressFn(coord, static_cast<size_t>( extent) );
+            ret = RepeatNormalizedAddressFn(coord, static_cast<size_t>(extent));
 
             if (verbose)
             {
@@ -1712,7 +1717,8 @@ static float unnormalize_coordinate(const char *name, float coord, float offset,
             break;
 
         case CL_ADDRESS_MIRRORED_REPEAT:
-            ret = MirroredRepeatNormalizedAddressFn(coord, static_cast<size_t>( extent) );
+            ret = MirroredRepeatNormalizedAddressFn(
+                coord, static_cast<size_t>(extent));
 
             if (verbose)
             {
@@ -1895,8 +1901,8 @@ FloatPixel sample_image_pixel_float_offset(
         switch (imageInfo->type)
         {
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                iy =
-                   static_cast<int>( calculate_array_index(y, (float)(imageInfo->arraySize - 1)));
+                iy = static_cast<int>(calculate_array_index(
+                    y, (float)(imageInfo->arraySize - 1)));
                 iz = 0;
                 if (verbose)
                 {
@@ -1905,8 +1911,8 @@ FloatPixel sample_image_pixel_float_offset(
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
                 iy = adFn(static_cast<int>(floorf(y)), height_lod);
-                iz =
-                   static_cast<int>( calculate_array_index(z, (float)(imageInfo->arraySize - 1)));
+                iz = static_cast<int>(calculate_array_index(
+                    z, (float)(imageInfo->arraySize - 1)));
                 if (verbose)
                 {
                     log_info("\tArray index %f evaluates to %d\n", z, iz);
@@ -2813,15 +2819,18 @@ void pack_image_pixel_error(const float *srcVector,
         case CL_UNSIGNED_INT8: {
             const cl_uchar *ptr = (const cl_uchar *)results;
             for (unsigned int i = 0; i < channelCount; i++)
-                errors[i] = static_cast<float>( (cl_int)ptr[i]
-                    - (cl_int)CONVERT_UINT(srcVector[i], 255.f, CL_UCHAR_MAX) );
+                errors[i] = static_cast<float>(
+                    (cl_int)ptr[i]
+                    - (cl_int)CONVERT_UINT(srcVector[i], 255.f, CL_UCHAR_MAX));
             break;
         }
         case CL_UNSIGNED_INT16: {
             const cl_ushort *ptr = (const cl_ushort *)results;
             for (unsigned int i = 0; i < channelCount; i++)
-                errors[i] = static_cast<float>( (cl_int)ptr[i]
-                    - (cl_int)CONVERT_UINT(srcVector[i], 32767.f, CL_USHRT_MAX) );
+                errors[i] = static_cast<float>(
+                    (cl_int)ptr[i]
+                    - (cl_int)CONVERT_UINT(srcVector[i], 32767.f,
+                                           CL_USHRT_MAX));
             break;
         }
         case CL_UNSIGNED_INT32: {
