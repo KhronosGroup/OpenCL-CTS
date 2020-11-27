@@ -582,4 +582,139 @@ template <typename Ty, int Which> struct SCEX
     }
 };
 
+template <typename Ty, int Which = 0> struct SHF
+{
+    static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
+    {
+        int i, ii, j, k, l, n, delta;
+        int nj = (nw + ns - 1) / ns;
+        int d = ns > 100 ? 100 : ns;
+        ii = 0;
+        for (k = 0; k < ng; ++k)
+        { // for each work_group
+            for (j = 0; j < nj; ++j)
+            { // for each subgroup
+                ii = j * ns;
+                n = ii + ns > nw ? nw - ii : ns;
+                for (i = 0; i < n; ++i)
+                {
+                    int midx = 4 * ii + 4 * i + 2;
+                    l = (int)(genrand_int32(gMTdata) & 0x7fffffff)
+                        % (d > n ? n : d);
+                    if (Which == 0 || Which == 3)
+                    {
+                        // storing information about shuffle index
+                        m[midx] = (cl_int)l;
+                    }
+
+                    if (Which == 1)
+                    {
+                        delta = l; // calculate delta for shuffle up
+                        if (i - delta < 0)
+                        {
+                            delta = i;
+                        }
+                        m[midx] = (cl_int)delta;
+                    }
+
+                    if (Which == 2)
+                    {
+                        delta = l; // calculate delta for shuffle down
+                        if (i + delta >= n)
+                        {
+                            delta = n - 1 - i;
+                        }
+                        m[midx] = (cl_int)delta;
+                    }
+
+                    cl_ulong number = genrand_int64(gMTdata);
+                    set_value(t[ii + i], number);
+
+                }
+            }
+            // Now map into work group using map from device
+            for (j = 0; j < nw; ++j)
+            { // for each element in work_group
+                i = m[4 * j + 1] * ns
+                    + m[4 * j]; // calculate index as number of subgroup plus
+                                // subgroup local id
+                x[j] = t[i];
+            }
+            x += nw;
+            m += 4 * nw;
+        }
+    }
+
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int ns, int nw,
+                   int ng)
+    {
+        int ii, i, j, k, l, n;
+        int nj = (nw + ns - 1) / ns;
+        Ty tr, rr;
+
+
+        log_info("  sub_group_shuffle%s(%s)...\n",
+                 Which == 0
+                     ? ""
+                     : (Which == 1 ? "_up" : Which == 2 ? "_down" : "_xor"),
+                 TypeManager<Ty>::name());
+
+        for (k = 0; k < ng; ++k)
+        { // for each work_group
+            for (j = 0; j < nw; ++j)
+            { // inside the work_group
+                i = m[4 * j + 1] * ns + m[4 * j];
+                mx[i] = x[j]; // read host inputs for work_group
+                my[i] = y[j]; // read device outputs for work_group
+            }
+
+            for (j = 0; j < nj; ++j)
+            { // for each subgroup
+                ii = j * ns;
+                n = ii + ns > nw ? nw - ii : ns;
+
+                for (i = 0; i < n; ++i)
+                { // inside the subgroup
+                    int midx = 4 * ii + 4 * i + 2; // shuffle index storage
+                    l = (int)m[midx];
+                    rr = my[ii + i];
+                    if (Which == 0)
+                    {
+                        tr = mx[ii + l]; // shuffle basic - treat l as index
+                    }
+                    if (Which == 1)
+                    {
+                        tr = mx[ii + i - l]; // shuffle up - treat l as delta
+                    }
+                    if (Which == 2)
+                    {
+                        tr = mx[ii + i + l]; // shuffle down - treat l as delta
+                    }
+                    if (Which == 3)
+                    {
+                        tr = mx[ii + (i ^ l)]; // shuffle xor - treat l as mask
+                    }
+
+                    if (!compare(rr, tr))
+                    {
+                        log_error("ERROR: sub_group_shuffle%s(%s) mismatch for "
+                                  "local id %d in sub group %d in group %d\n",
+                                  Which == 0
+                                      ? ""
+                                      : (Which == 1
+                                             ? "_up"
+                                             : (Which == 2 ? "_down" : "_xor")),
+                                  TypeManager<Ty>::name(), i, j, k);
+                        return -1;
+                    }
+                }
+            }
+            x += nw;
+            y += nw;
+            m += 4 * nw;
+        }
+        return 0;
+    }
+};
+
 #endif
