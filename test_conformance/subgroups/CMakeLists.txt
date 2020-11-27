@@ -11,6 +11,7 @@ set(${MODULE_NAME}_SOURCES
     workgroup_common_kernels.cpp
     test_workgroup_non_uniform_vote.cpp
     test_workgroup_non_uniform_arithmetic.cpp
+    test_workgroup_ballot.cpp
 )
 
 include(../CMakeCommon.txt)

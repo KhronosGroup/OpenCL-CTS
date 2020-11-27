@@ -67,5 +67,9 @@ extern int test_work_group_functions_non_uniform_vote(cl_device_id device,
 extern int test_work_group_functions_non_uniform_arithmetic(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
+extern int test_work_group_functions_ballot(cl_device_id device,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            int num_elements);
 
 #endif /*_procs_h*/

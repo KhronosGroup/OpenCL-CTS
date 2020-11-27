@@ -35,7 +35,9 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(ifp_core, Version(2, 1)),
     ADD_TEST_VERSION(work_group_functions_extended_types, Version(3, 0)),
     ADD_TEST_VERSION(work_group_functions_non_uniform_vote, Version(3, 0)),
-    ADD_TEST_VERSION(work_group_functions_non_uniform_arithmetic, Version(3, 0))
+    ADD_TEST_VERSION(work_group_functions_non_uniform_arithmetic,
+                     Version(3, 0)),
+    ADD_TEST_VERSION(work_group_functions_ballot, Version(3, 0))
 };
 
 const int test_num = ARRAY_SIZE(test_list);
