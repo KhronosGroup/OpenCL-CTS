@@ -25,6 +25,7 @@
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"
 #include "harness/parseParameters.h"
+#include "harness/typeWrappers.h"
 
 #if defined( __APPLE__ )
     #include <sys/sysctl.h>
@@ -1384,17 +1385,17 @@ void _LogBuildError( cl_program p, int line, const char *file )
 int InitILogbConstants( void )
 {
     int error;
-    const char *kernel =
-    "__kernel void GetILogBConstants( __global int *out )\n"
-    "{\n"
-    "   out[0] = FP_ILOGB0;\n"
-    "   out[1] = FP_ILOGBNAN;\n"
-    "}\n";
+    const char *kernelSource =
+        R"(__kernel void GetILogBConstants( __global int *out )
+        {
+            out[0] = FP_ILOGB0;
+            out[1] = FP_ILOGBNAN;
+        })";
 
-    cl_program query;
-    cl_kernel k;
-    error = create_single_kernel_helper(gContext, &query, &k, 1, &kernel,
-                                        "GetILogBConstants");
+    clProgramWrapper query;
+    clKernelWrapper kernel;
+    error = create_single_kernel_helper(gContext, &query, &kernel, 1,
+                                        &kernelSource, "GetILogBConstants");
     if (error != CL_SUCCESS)
     {
         vlog_error("Error: Unable to create kernel to get FP_ILOGB0 and "
@@ -1403,14 +1404,17 @@ int InitILogbConstants( void )
         return error;
     }
 
-    if((error = clSetKernelArg(k, 0, sizeof( gOutBuffer[gMinVectorSizeIndex]), &gOutBuffer[gMinVectorSizeIndex])))
+    if ((error =
+             clSetKernelArg(kernel, 0, sizeof(gOutBuffer[gMinVectorSizeIndex]),
+                            &gOutBuffer[gMinVectorSizeIndex])))
     {
         vlog_error( "Error: Unable to set kernel arg to get FP_ILOGB0 and FP_ILOGBNAN for the device. Err = %d", error );
         return error;
     }
 
     size_t dim = 1;
-    if((error = clEnqueueNDRangeKernel(gQueue, k, 1, NULL, &dim, NULL, 0, NULL, NULL) ))
+    if ((error = clEnqueueNDRangeKernel(gQueue, kernel, 1, NULL, &dim, NULL, 0,
+                                        NULL, NULL)))
     {
         vlog_error( "Error: Unable to execute kernel to get FP_ILOGB0 and FP_ILOGBNAN for the device. Err = %d", error );
         return error;
@@ -1426,27 +1430,25 @@ int InitILogbConstants( void )
     gDeviceILogb0 = data.ilogb0;
     gDeviceILogbNaN = data.ilogbnan;
 
-    clReleaseKernel(k);
-    clReleaseProgram(query);
-
     return 0;
 }
 
 int IsTininessDetectedBeforeRounding( void )
 {
     int error;
-    const char *kernel =
-    "__kernel void IsTininessDetectedBeforeRounding( __global float *out )\n"
-    "{\n"
-    "   volatile float a = 0x1.000002p-126f;\n"
-    "   volatile float b = 0x1.fffffcp-1f;\n"       // product is 0x1.fffffffffff8p-127
-    "   out[0] = a * b;\n"
-    "}\n";
+    const char *kernelSource =
+        R"(__kernel void IsTininessDetectedBeforeRounding( __global float *out )
+        {
+           volatile float a = 0x1.000002p-126f;
+           volatile float b = 0x1.fffffcp-1f;
+           out[0] = a * b; // product is 0x1.fffffffffff8p-127
+        })";
 
-    cl_program query;
-    cl_kernel k;
-    error = create_single_kernel_helper(gContext, &query, &k, 1, &kernel,
-                                        "IsTininessDetectedBeforeRounding");
+    clProgramWrapper query;
+    clKernelWrapper kernel;
+    error =
+        create_single_kernel_helper(gContext, &query, &kernel, 1, &kernelSource,
+                                    "IsTininessDetectedBeforeRounding");
     if (error != CL_SUCCESS) {
         vlog_error("Error: Unable to create kernel to detect how tininess is "
                    "detected for the device. (%d)",
@@ -1454,14 +1456,17 @@ int IsTininessDetectedBeforeRounding( void )
         return error;
     }
 
-    if((error = clSetKernelArg(k, 0, sizeof( gOutBuffer[gMinVectorSizeIndex]), &gOutBuffer[gMinVectorSizeIndex])))
+    if ((error =
+             clSetKernelArg(kernel, 0, sizeof(gOutBuffer[gMinVectorSizeIndex]),
+                            &gOutBuffer[gMinVectorSizeIndex])))
     {
         vlog_error( "Error: Unable to set kernel arg to detect how tininess is detected  for the device. Err = %d", error );
         return error;
     }
 
     size_t dim = 1;
-    if((error = clEnqueueNDRangeKernel(gQueue, k, 1, NULL, &dim, NULL, 0, NULL, NULL) ))
+    if ((error = clEnqueueNDRangeKernel(gQueue, kernel, 1, NULL, &dim, NULL, 0,
+                                        NULL, NULL)))
     {
         vlog_error( "Error: Unable to execute kernel to detect how tininess is detected  for the device. Err = %d", error );
         return error;
@@ -1475,9 +1480,6 @@ int IsTininessDetectedBeforeRounding( void )
     }
 
     gCheckTininessBeforeRounding = 0 == (data.f & 0x7fffffff);
-
-    clReleaseKernel(k);
-    clReleaseProgram(query);
 
     return 0;
 }
@@ -1564,18 +1566,18 @@ int MakeKernels(const char **c, cl_uint count, const char *name,
 static int IsInRTZMode( void )
 {
     int error;
-    const char *kernel =
-    "__kernel void GetRoundingMode( __global int *out )\n"
-    "{\n"
-    "   volatile float a = 0x1.0p23f;\n"
-    "   volatile float b = -0x1.0p23f;\n"
-    "   out[0] = (a + 0x1.fffffep-1f == a) && (b - 0x1.fffffep-1f == b);\n"
-    "}\n";
+    const char *kernelSource =
+        R"(__kernel void GetRoundingMode( __global int *out )
+        {
+            volatile float a = 0x1.0p23f;
+            volatile float b = -0x1.0p23f;
+            out[0] = (a + 0x1.fffffep-1f == a) && (b - 0x1.fffffep-1f == b);
+        "})";
 
-    cl_program query;
-    cl_kernel k;
-    error = create_single_kernel_helper(gContext, &query, &k, 1, &kernel,
-                                        "GetRoundingMode");
+    clProgramWrapper query;
+    clKernelWrapper kernel;
+    error = create_single_kernel_helper(gContext, &query, &kernel, 1,
+                                        &kernelSource, "GetRoundingMode");
     if (error != CL_SUCCESS) {
         vlog_error("Error: Unable to create kernel to detect RTZ mode for the "
                    "device. (%d)",
@@ -1583,14 +1585,17 @@ static int IsInRTZMode( void )
         return error;
     }
 
-    if((error = clSetKernelArg(k, 0, sizeof( gOutBuffer[gMinVectorSizeIndex]), &gOutBuffer[gMinVectorSizeIndex])))
+    if ((error =
+             clSetKernelArg(kernel, 0, sizeof(gOutBuffer[gMinVectorSizeIndex]),
+                            &gOutBuffer[gMinVectorSizeIndex])))
     {
         vlog_error( "Error: Unable to set kernel arg to detect RTZ mode for the device. Err = %d", error );
         return error;
     }
 
     size_t dim = 1;
-    if((error = clEnqueueNDRangeKernel(gQueue, k, 1, NULL, &dim, NULL, 0, NULL, NULL) ))
+    if ((error = clEnqueueNDRangeKernel(gQueue, kernel, 1, NULL, &dim, NULL, 0,
+                                        NULL, NULL)))
     {
         vlog_error( "Error: Unable to execute kernel to detect RTZ mode for the device. Err = %d", error );
         return error;
@@ -1602,9 +1607,6 @@ static int IsInRTZMode( void )
         vlog_error( "Error: unable to read RTZ mode data from the device. Err = %d", error );
         return error;
     }
-
-    clReleaseKernel(k);
-    clReleaseProgram(query);
 
     return data.isRTZ;
 }

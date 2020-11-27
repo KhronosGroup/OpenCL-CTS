@@ -2927,7 +2927,7 @@ int DetectFloatToHalfRoundingMode(
         };
 
         clProgramWrapper program;
-        cl_kernel kernel;
+        clKernelWrapper kernel;
         err = create_single_kernel_helper(context, &program, &kernel, 1,
                                           kernelSource, "detect_round");
 
@@ -2974,7 +2974,6 @@ int DetectFloatToHalfRoundingMode(
                       err);
             clReleaseMemObject(inBuf);
             clReleaseMemObject(outImage);
-            clReleaseKernel(kernel);
             return err;
         }
 

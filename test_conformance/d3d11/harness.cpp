@@ -400,7 +400,7 @@ cl_int HarnessD3D11_CreateKernelFromSource(
         const char *sourceTexts[] = {source};
         size_t sourceLengths[] = {strlen(source) };
 
-        status = create_single_kernel_helper(context, &program, &kernel 1,
+        status = create_single_kernel_helper(context, &program, &kernel, 1,
                                              &sourceTexts[0], entrypoint);
         TestRequire(CL_SUCCESS == status, "Kernel creation failed");
     }
