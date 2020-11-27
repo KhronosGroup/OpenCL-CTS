@@ -7,6 +7,8 @@ set(${MODULE_NAME}_SOURCES
     test_workitem.cpp
     test_workgroup.cpp
     test_ifp.cpp
+    test_workgroup_extended_types.cpp
+    workgroup_common_kernels.cpp
 )
 
 include(../CMakeCommon.txt)

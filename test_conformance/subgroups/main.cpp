@@ -32,7 +32,8 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(barrier_functions_ext, Version(2, 0)),
     ADD_TEST_VERSION(barrier_functions_core, Version(2, 1)),
     ADD_TEST_VERSION(ifp_ext, Version(2, 0)),
-    ADD_TEST_VERSION(ifp_core, Version(2, 1))
+    ADD_TEST_VERSION(ifp_core, Version(2, 1)),
+    ADD_TEST_VERSION(work_group_functions_extended_types, Version(3, 0))
 };
 
 const int test_num = ARRAY_SIZE(test_list);
