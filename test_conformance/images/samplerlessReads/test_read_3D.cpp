@@ -16,11 +16,8 @@
 #include "../testBase.h"
 #include <float.h>
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool             gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gDeviceLt20;
-extern bool             gTestReadWrite;
+extern bool gDeviceLt20;
+extern bool gTestReadWrite;
 
 const char *read3DKernelSourcePattern =
 "__kernel void sample_kernel( read_only image3d_t input, sampler_t sampler, __global int *results )\n"

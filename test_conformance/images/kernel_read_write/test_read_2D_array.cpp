@@ -16,18 +16,9 @@
 #include "test_common.h"
 #include <float.h>
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool         gDebugTrace, gExtraValidateInfo, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestMipmaps;
-extern bool         gUseKernelSamplers;
-extern cl_filter_mode   gFilterModeToUse;
-extern cl_addressing_mode   gAddressModeToUse;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
 extern bool gDeviceLt20;
-#define MAX_TRIES               1
-#define MAX_CLAMPED             1
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.
@@ -230,8 +221,6 @@ template <class T> int determine_validation_error_offset_2D_array( void *imagePt
     return 0;
 }
 
-#define CLAMP( _val, _min, _max )           ((_val) < (_min) ? (_min) : (_val) > (_max) ? (_max) : (_val))
-
 static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *imageSampler, float *xOffsets, float *yOffsets, float *zOffsets, float xfract, float yfract, float zfract, int normalized_coords, MTdata d , int lod)
 {
     size_t i = 0;
@@ -307,10 +296,6 @@ static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *im
         }
     }
 }
-
-#ifndef MAX
-#define MAX(_a, _b)             ((_a) > (_b) ? (_a) : (_b))
-#endif
 
 int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_kernel kernel,
                        image_descriptor *imageInfo, image_sampler_data *imageSampler,

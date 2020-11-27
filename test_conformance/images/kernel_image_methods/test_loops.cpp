@@ -16,20 +16,25 @@
 #include "../testBase.h"
 #include "../common.h"
 
-extern cl_filter_mode     gFilterModeToUse;
-extern cl_addressing_mode gAddressModeToUse;
-extern int                gTypesToTest;
-extern int                gNormalizedModeToUse;
-extern cl_channel_type      gChannelTypeToUse;
 extern bool gDeviceLt20;
 
-extern bool gDebugTrace;
-
-extern int test_get_image_info_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
-extern int test_get_image_info_2D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
-extern int test_get_image_info_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
-extern int test_get_image_info_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
-extern int test_get_image_info_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
+extern int test_get_image_info_1D(cl_device_id device, cl_context context,
+                                  cl_command_queue queue,
+                                  cl_image_format *format, cl_mem_flags flags);
+extern int test_get_image_info_2D(cl_device_id device, cl_context context,
+                                  cl_command_queue queue,
+                                  cl_image_format *format, cl_mem_flags flags);
+extern int test_get_image_info_3D(cl_device_id device, cl_context context,
+                                  cl_command_queue queue,
+                                  cl_image_format *format, cl_mem_flags flags);
+extern int test_get_image_info_1D_array(cl_device_id device, cl_context context,
+                                        cl_command_queue queue,
+                                        cl_image_format *format,
+                                        cl_mem_flags flags);
+extern int test_get_image_info_2D_array(cl_device_id device, cl_context context,
+                                        cl_command_queue queue,
+                                        cl_image_format *format,
+                                        cl_mem_flags flags);
 
 int test_image_type( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type imageType, cl_mem_flags flags )
 {
@@ -71,19 +76,24 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
 
         switch (imageType) {
             case CL_MEM_OBJECT_IMAGE1D:
-                test_return = test_get_image_info_1D( device, context, queue, &formatList[ i ] );
+                test_return = test_get_image_info_1D(device, context, queue,
+                                                     &formatList[i], flags);
                 break;
             case CL_MEM_OBJECT_IMAGE2D:
-                test_return = test_get_image_info_2D( device, context, queue, &formatList[ i ] );
+                test_return = test_get_image_info_2D(device, context, queue,
+                                                     &formatList[i], flags);
                 break;
             case CL_MEM_OBJECT_IMAGE3D:
-                test_return = test_get_image_info_3D( device, context, queue, &formatList[ i ] );
+                test_return = test_get_image_info_3D(device, context, queue,
+                                                     &formatList[i], flags);
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                test_return = test_get_image_info_1D_array( device, context, queue, &formatList[ i ] );
+                test_return = test_get_image_info_1D_array(
+                    device, context, queue, &formatList[i], flags);
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                test_return = test_get_image_info_2D_array( device, context, queue, &formatList[ i ] );
+                test_return = test_get_image_info_2D_array(
+                    device, context, queue, &formatList[i], flags);
                 break;
         }
 

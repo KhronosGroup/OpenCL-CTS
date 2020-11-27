@@ -627,9 +627,6 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
     cl_program  program[5];
     cl_kernel   kernel[5];
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     int         i;
     size_t      ptrSizes[5];
@@ -701,14 +698,7 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
                 return -1;
             }
 
-#ifdef USE_LOCAL_WORK_GROUP
-            err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
-            test_error( err, "Unable to get work group size to use" );
-
-            err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
             err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueNDRangeKernel failed" );
                 clReleaseMemObject( buffers[i] );
@@ -781,9 +771,6 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
     void        *outptr[5];
     void        *inptr[5];
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     int         i;
     size_t      lastIndex;
@@ -857,14 +844,7 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
                 return -1;
             }
 
-#ifdef USE_LOCAL_WORK_GROUP
-            err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
-            test_error( err, "Unable to get work group size to use" );
-
-            err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
             err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueNDRangeKernel failed" );
                 clReleaseMemObject( buffers[i] );
@@ -936,9 +916,6 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
     cl_event    event;
     void        *outptr[5], *inptr[5];
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     int         i;
     size_t      lastIndex;
@@ -1011,14 +988,7 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
                 return -1;
             }
 
-#ifdef USE_LOCAL_WORK_GROUP
-            err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
-            test_error( err, "Unable to get work group size to use" );
-
-            err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
             err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueNDRangeKernel failed" );
                 clReleaseMemObject( buffers[i] );
@@ -1157,9 +1127,6 @@ int test_buffer_read_struct(cl_device_id deviceID, cl_context context, cl_comman
     cl_program  program[1];
     cl_kernel   kernel[1];
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     size_t      objSize = sizeof(TestStruct);
 
@@ -1197,14 +1164,7 @@ int test_buffer_read_struct(cl_device_id deviceID, cl_context context, cl_comman
         return -1;
     }
 
-#ifdef USE_LOCAL_WORK_GROUP
-    err = get_max_common_work_group_size( context, kernel[0], global_work_size[0], &local_work_size[0] );
-    test_error( err, "Unable to get work group size to use" );
-
-    err = clEnqueueNDRangeKernel( queue, kernel[0], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
     err = clEnqueueNDRangeKernel( queue, kernel[0], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
     if ( err != CL_SUCCESS ){
         print_error( err, "clEnqueueNDRangeKernel failed" );
         clReleaseMemObject( buffers[0] );
@@ -1250,9 +1210,6 @@ static int testRandomReadSize( cl_device_id deviceID, cl_context context, cl_com
     cl_program  program[3];
     cl_kernel   kernel[3];
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     int         i, j;
     size_t      ptrSizes[3];    // sizeof(int), sizeof(int2), sizeof(int4)
@@ -1334,14 +1291,7 @@ static int testRandomReadSize( cl_device_id deviceID, cl_context context, cl_com
             return -1;
         }
 
-#ifdef USE_LOCAL_WORK_GROUP
-        err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
-        test_error( err, "Unable to get work group size to use" );
-
-        err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
         err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
         if ( err != CL_SUCCESS ){
             print_error( err, "clEnqueueNDRangeKernel failed" );
             clReleaseMemObject( buffers[i] );

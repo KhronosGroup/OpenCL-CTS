@@ -13,17 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
-
-#if !defined(_WIN32)
-#include <unistd.h>
-#include <sys/time.h>
-#endif
-
 #include "../testBase.h"
+#include "../harness/compat.h"
 #include "../harness/fpcontrol.h"
 #include "../harness/parseParameters.h"
 
@@ -43,8 +37,6 @@ cl_channel_type     gChannelTypeToUse = (cl_channel_type)-1;
 cl_channel_order    gChannelOrderToUse = (cl_channel_order)-1;
 bool                gEnablePitch = false;
 bool                gDeviceLt20 = false;
-
-#define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
 static void printUsage( const char *execName );
 
