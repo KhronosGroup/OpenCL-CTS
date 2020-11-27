@@ -61,8 +61,7 @@ bool gCoreILProgram = true;
 #define DEFAULT_NUM_ELEMENTS 0x4000
 
 int runTestHarness(int argc, const char *argv[], int testNum,
-                   test_definition testList[], int imageSupportRequired,
-                   int forceNoContextCreation,
+                   test_definition testList[], int forceNoContextCreation,
                    cl_command_queue_properties queueProps)
 {
     return runTestHarnessWithCheck(argc, argv, testNum, testList,
