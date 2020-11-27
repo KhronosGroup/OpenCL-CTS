@@ -207,7 +207,6 @@ template <typename Ty> struct CommonTypeManager
 };
 template <typename T> struct TypeManager : public CommonTypeManager<T>
 {
-
 };
 
 template <> struct TypeManager<cl_int> : public CommonTypeManager<cl_int>
@@ -772,7 +771,7 @@ struct TypeManager<subgroups::cl_half>
 {
     static const char *name() { return "half"; }
     static const char *add_typedef() { return "typedef half Type;\n"; }
-    typedef std::true_type is_sb_scalar_type; 
+    typedef std::true_type is_sb_scalar_type;
 
     static subgroups::cl_half identify_limits(unsigned int test_id)
     {
@@ -924,8 +923,7 @@ set_value(Ty &lhs, const cl_ulong &rhs)
 
 // compare for common vectors
 template <typename Ty>
-typename std::enable_if<TypeManager<Ty>::is_vector_type::value,
-                        bool>::type
+typename std::enable_if<TypeManager<Ty>::is_vector_type::value, bool>::type
 compare(const Ty &lhs, const Ty &rhs)
 {
     const int size = sizeof(Ty) / sizeof(typename TypeManager<Ty>::scalar_type);
@@ -960,8 +958,7 @@ template <typename Ty>
 typename std::enable_if<TypeManager<Ty>::is_sb_vector_type::value, bool>::type
 compare(const Ty &lhs, const Ty &rhs)
 {
-    const int size =
-        sizeof(Ty) / sizeof(typename TypeManager<Ty>::scalar_type);
+    const int size = sizeof(Ty) / sizeof(typename TypeManager<Ty>::scalar_type);
     for (auto i = 0; i < size; ++i)
     {
         if (lhs.data.s[i] != rhs.data.s[i])
@@ -983,8 +980,7 @@ compare(const Ty &lhs, const Ty &rhs)
 
 // compare for scalar halfs
 template <typename Ty>
-typename std::enable_if<TypeManager<Ty>::is_sb_scalar_type::value,
-                        bool>::type
+typename std::enable_if<TypeManager<Ty>::is_sb_scalar_type::value, bool>::type
 compare(const Ty &lhs, const Ty &rhs)
 {
     return lhs.data == rhs.data;

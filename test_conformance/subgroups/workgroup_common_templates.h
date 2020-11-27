@@ -629,7 +629,6 @@ template <typename Ty, int Which = 0> struct SHF
 
                     cl_ulong number = genrand_int64(gMTdata);
                     set_value(t[ii + i], number);
-
                 }
             }
             // Now map into work group using map from device
