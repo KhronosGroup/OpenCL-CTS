@@ -191,18 +191,10 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
     cl_kernel kernels[ VECTOR_SIZE_COUNT ];
     int ftz = f->ftz || 0 == (gFloatCapabilities & CL_FP_DENORM) || gForceFTZ;
     size_t bufferSize = (gWimpyMode)?gWimpyBufferSize:BUFFER_SIZE;
-    uint64_t step = bufferSize / sizeof( float );
+    uint64_t step = setTestStep(sizeof(float), bufferSize);
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( float )) + 1);
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
-    if( gWimpyMode )
-    {
-        step = (1ULL<<32) * gWimpyReductionFactor / (512);
-    }
-    else if (gIsEmbedded)
-    {
-        step = (BUFFER_SIZE / sizeof(cl_float)) * EMBEDDED_REDUCTION_FACTOR;
-    }
 
     // This test is not using ThreadPool so we need to disable FTZ here
     // for reference computations
@@ -416,18 +408,10 @@ int TestFunc_Int_Double(const Func *f, MTdata d, bool relaxedMode)
     cl_kernel kernels[ VECTOR_SIZE_COUNT ];
     int ftz = f->ftz || gForceFTZ;
     size_t bufferSize = (gWimpyMode)?gWimpyBufferSize:BUFFER_SIZE;
-    uint64_t step = bufferSize / sizeof( cl_double );
+    uint64_t step = setTestStep(sizeof(cl_double), bufferSize);
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( cl_double )) + 1);
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
-    if( gWimpyMode )
-    {
-        step = (1ULL<<32) * gWimpyReductionFactor / (512);
-    }
-    else if (gIsEmbedded)
-    {
-        step = (BUFFER_SIZE / sizeof(cl_double)) * EMBEDDED_REDUCTION_FACTOR;
-    }
 
     // This test is not using ThreadPool so we need to disable FTZ here
     // for reference computations
