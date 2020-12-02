@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -57,7 +57,7 @@ int test_rw_image_access_qualifier(cl_device_id device_id, cl_context context, c
     {
         cl_uint are_rw_images_supported{};
         test_error(
-            clGetDeviceInfo(device_id, CL_DEVICE_MAX_READ_IMAGE_ARGS,
+            clGetDeviceInfo(device_id, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
                             sizeof(are_rw_images_supported),
                             &are_rw_images_supported, nullptr),
             "clGetDeviceInfo failed for CL_DEVICE_MAX_READ_IMAGE_ARGS\n");
