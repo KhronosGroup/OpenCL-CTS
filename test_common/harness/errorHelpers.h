@@ -124,6 +124,17 @@ static int vlog_win32(const char *format, ...);
             return retValue;                                                   \
         }                                                                      \
     }
+#define test_failure_error_ret_file_line(errCode, expectedErrCode, msg,        \
+                                         retValue, file, line)                 \
+    {                                                                          \
+        if (errCode != expectedErrCode)                                        \
+        {                                                                      \
+            log_error("ERROR: %s! (Got %s, expected %s from %s:%d)\n", msg,    \
+                      IGetErrorString(errCode),                                \
+                      IGetErrorString(expectedErrCode), file, line);           \
+            return retValue;                                                   \
+        }                                                                      \
+    }
 #define print_failure_error(errCode, expectedErrCode, msg)                     \
     log_error("ERROR: %s! (Got %s, expected %s from %s:%d)\n", msg,            \
               IGetErrorString(errCode), IGetErrorString(expectedErrCode),      \

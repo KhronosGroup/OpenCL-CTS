@@ -68,6 +68,7 @@ const char *IGetErrorString(int clErrorCode)
         case CL_INVALID_SAMPLER: return "CL_INVALID_SAMPLER";
         case CL_INVALID_BINARY: return "CL_INVALID_BINARY";
         case CL_INVALID_BUILD_OPTIONS: return "CL_INVALID_BUILD_OPTIONS";
+        case CL_INVALID_PLATFORM: return "CL_INVALID_PLATFORM";
         case CL_INVALID_PROGRAM: return "CL_INVALID_PROGRAM";
         case CL_INVALID_PROGRAM_EXECUTABLE:
             return "CL_INVALID_PROGRAM_EXECUTABLE";
