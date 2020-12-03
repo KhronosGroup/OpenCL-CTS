@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,7 +31,7 @@ static const char* helper_ndrange_1d_glo[] =
 {
     NL, "void block_fn(int len, __global atomic_uint* val)"
     NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1, memory_order_relaxed, memory_scope_device);"
+    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
     NL, "}"
     NL, ""
     NL, "kernel void helper_ndrange_1d_glo(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global atomic_uint* val,  __global uint* ofs_arr)"
@@ -53,7 +53,7 @@ static const char* helper_ndrange_1d_loc[] =
 {
     NL, "void block_fn(int len, __global atomic_uint* val)"
     NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1, memory_order_relaxed, memory_scope_device);"
+    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
     NL, "}"
     NL, ""
     NL, "kernel void helper_ndrange_1d_loc(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global atomic_uint* val,  __global uint* ofs_arr)"
@@ -81,7 +81,7 @@ static const char* helper_ndrange_1d_ofs[] =
 {
     NL, "void block_fn(int len, __global atomic_uint* val)"
     NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[(get_global_offset(0) + get_global_linear_id()) % len], 1, memory_order_relaxed, memory_scope_device);"
+    NL, "  atomic_fetch_add_explicit(&val[(get_global_offset(0) + get_global_linear_id()) % len], 1u, memory_order_relaxed, memory_scope_device);"
     NL, "}"
     NL, ""
     NL, "kernel void helper_ndrange_1d_ofs(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global atomic_uint* val,  __global uint* ofs_arr)"
@@ -112,7 +112,7 @@ static const char* helper_ndrange_2d_glo[] =
 {
     NL, "void block_fn(int len, __global atomic_uint* val)"
     NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1, memory_order_relaxed, memory_scope_device);"
+    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
     NL, "}"
     NL, ""
     NL, "kernel void helper_ndrange_2d_glo(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"
@@ -135,7 +135,7 @@ static const char* helper_ndrange_2d_loc[] =
 {
     NL, "void block_fn(int len, __global atomic_uint* val)"
     NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1, memory_order_relaxed, memory_scope_device);"
+    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
     NL, "}"
     NL, ""
     NL, "kernel void helper_ndrange_2d_loc(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"
@@ -167,7 +167,7 @@ static const char* helper_ndrange_2d_ofs[] =
 {
     NL, "void block_fn(int len, __global atomic_uint* val)"
     NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[(get_global_offset(1) * get_global_size(0) + get_global_offset(0) + get_global_linear_id()) % len], 1, memory_order_relaxed, memory_scope_device);"
+    NL, "  atomic_fetch_add_explicit(&val[(get_global_offset(1) * get_global_size(0) + get_global_offset(0) + get_global_linear_id()) % len], 1u, memory_order_relaxed, memory_scope_device);"
     NL, "}"
     NL, ""
     NL, "kernel void helper_ndrange_2d_ofs(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"
@@ -203,7 +203,7 @@ static const char* helper_ndrange_3d_glo[] =
 {
     NL, "void block_fn(int len, __global atomic_uint* val)"
     NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1, memory_order_relaxed, memory_scope_device);"
+    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
     NL, "}"
     NL, ""
     NL, "kernel void helper_ndrange_3d_glo(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"
@@ -231,7 +231,7 @@ static const char* helper_ndrange_3d_loc[] =
 {
     NL, "void block_fn(int len, __global atomic_uint* val)"
     NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1, memory_order_relaxed, memory_scope_device);"
+    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
     NL, "}"
     NL, ""
     NL, "kernel void helper_ndrange_3d_loc(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"
@@ -263,7 +263,7 @@ static const char* helper_ndrange_3d_ofs[] =
 {
     NL, "void block_fn(int len, __global atomic_uint* val)"
     NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[(get_global_offset(2) * get_global_size(0) * get_global_size(1) + get_global_offset(1) * get_global_size(0) + get_global_offset(0) + get_global_linear_id()) % len], 1, memory_order_relaxed, memory_scope_device);"
+    NL, "  atomic_fetch_add_explicit(&val[(get_global_offset(2) * get_global_size(0) * get_global_size(1) + get_global_offset(1) * get_global_size(0) + get_global_offset(0) + get_global_linear_id()) % len], 1u, memory_order_relaxed, memory_scope_device);"
     NL, "}"
     NL, ""
     NL, "kernel void helper_ndrange_3d_ofs(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"

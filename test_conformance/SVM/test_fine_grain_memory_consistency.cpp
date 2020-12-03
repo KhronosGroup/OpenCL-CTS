@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,7 +27,7 @@ static char hash_table_kernel[] =
 
   "__kernel void build_hash_table(__global uint* input, __global BinNode* pNodes, volatile __global atomic_uint* pNumNodes, uint numBins)\n"
   "{\n"
-  " __global BinNode *pNew = &pNodes[ atomic_fetch_add_explicit(pNumNodes, 1, memory_order_relaxed, memory_scope_all_svm_devices) ];\n"
+  " __global BinNode *pNew = &pNodes[ atomic_fetch_add_explicit(pNumNodes, 1u, memory_order_relaxed, memory_scope_all_svm_devices) ];\n"
   " uint i = get_global_id(0);\n"
   " uint b = input[i] % numBins;\n"
   " pNew->value = input[i];\n"

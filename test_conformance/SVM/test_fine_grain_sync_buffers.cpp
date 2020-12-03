@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,7 +22,7 @@ const char *find_targets_kernel[] = {
   " size_t i = get_global_id(0);\n"
   " uint index;\n"
   " if(image[i] == target) {\n"
-  "   index = atomic_fetch_add_explicit(numTargetsFound, 1, memory_order_relaxed, memory_scope_device); \n"
+  "   index = atomic_fetch_add_explicit(numTargetsFound, 1u, memory_order_relaxed, memory_scope_device); \n"
   "   atomic_exchange_explicit(&targetLocations[index], i, memory_order_relaxed, memory_scope_all_svm_devices); \n"
   " }\n"
   "}\n"
