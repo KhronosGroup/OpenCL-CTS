@@ -16,27 +16,33 @@
 #include "common.h"
 
 static char hash_table_kernel[] =
-  "#if 0\n"
-  "#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable\n"
-  "#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable\n"
-  "#endif\n"
-  "typedef struct BinNode {\n"
-  " int value;\n"
-  " atomic_uintptr_t pNext;\n"
-  "} BinNode;\n"
+    "#if 0\n"
+    "#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable\n"
+    "#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable\n"
+    "#endif\n"
+    "typedef struct BinNode {\n"
+    " int value;\n"
+    " atomic_uintptr_t pNext;\n"
+    "} BinNode;\n"
 
-  "__kernel void build_hash_table(__global uint* input, __global BinNode* pNodes, volatile __global atomic_uint* pNumNodes, uint numBins)\n"
-  "{\n"
-  " __global BinNode *pNew = &pNodes[ atomic_fetch_add_explicit(pNumNodes, 1u, memory_order_relaxed, memory_scope_all_svm_devices) ];\n"
-  " uint i = get_global_id(0);\n"
-  " uint b = input[i] % numBins;\n"
-  " pNew->value = input[i];\n"
-  " uintptr_t next = atomic_load_explicit(&(pNodes[b].pNext), memory_order_seq_cst, memory_scope_all_svm_devices);\n"
-  " do\n"
-  " {\n"
-  "   atomic_store_explicit(&(pNew->pNext), next, memory_order_seq_cst, memory_scope_all_svm_devices);\n" // always inserting at head of list
-  " } while(!atomic_compare_exchange_strong_explicit(&(pNodes[b].pNext), &next, (uintptr_t)pNew, memory_order_seq_cst, memory_order_relaxed, memory_scope_all_svm_devices));\n"
-  "}\n";
+    "__kernel void build_hash_table(__global uint* input, __global BinNode* "
+    "pNodes, volatile __global atomic_uint* pNumNodes, uint numBins)\n"
+    "{\n"
+    " __global BinNode *pNew = &pNodes[ atomic_fetch_add_explicit(pNumNodes, "
+    "1u, memory_order_relaxed, memory_scope_all_svm_devices) ];\n"
+    " uint i = get_global_id(0);\n"
+    " uint b = input[i] % numBins;\n"
+    " pNew->value = input[i];\n"
+    " uintptr_t next = atomic_load_explicit(&(pNodes[b].pNext), "
+    "memory_order_seq_cst, memory_scope_all_svm_devices);\n"
+    " do\n"
+    " {\n"
+    "   atomic_store_explicit(&(pNew->pNext), next, memory_order_seq_cst, "
+    "memory_scope_all_svm_devices);\n" // always inserting at head of list
+    " } while(!atomic_compare_exchange_strong_explicit(&(pNodes[b].pNext), "
+    "&next, (uintptr_t)pNew, memory_order_seq_cst, memory_order_relaxed, "
+    "memory_scope_all_svm_devices));\n"
+    "}\n";
 
 typedef struct BinNode{
   cl_uint value;

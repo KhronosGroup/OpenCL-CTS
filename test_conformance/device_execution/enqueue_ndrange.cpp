@@ -27,271 +27,316 @@
 
 #ifdef CL_VERSION_2_0
 extern int gWimpyMode;
-static const char* helper_ndrange_1d_glo[] =
-{
-    NL, "void block_fn(int len, __global atomic_uint* val)"
-    NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
-    NL, "}"
-    NL, ""
-    NL, "kernel void helper_ndrange_1d_glo(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global atomic_uint* val,  __global uint* ofs_arr)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };"
-    NL, ""
-    NL, "  for(int i = 0; i < n; i++)"
-    NL, "  {"
-    NL, "    ndrange_t ndrange = ndrange_1D(glob_size_arr[i]);"
-    NL, "    int enq_res = enqueue_kernel(get_default_queue(), CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "    if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "  }"
-    NL, "}"
-    NL
+static const char *helper_ndrange_1d_glo[] = {
+    NL,
+    "void block_fn(int len, __global atomic_uint* val)" NL,
+    "{" NL,
+    "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, "
+    "memory_order_relaxed, memory_scope_device);" NL,
+    "}" NL,
+    "" NL,
+    "kernel void helper_ndrange_1d_glo(__global int* res, uint n, uint len, "
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
+    "{" NL,
+    "  size_t tid = get_global_id(0);" NL,
+    "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
+    "" NL,
+    "  for(int i = 0; i < n; i++)" NL,
+    "  {" NL,
+    "    ndrange_t ndrange = ndrange_1D(glob_size_arr[i]);" NL,
+    "    int enq_res = enqueue_kernel(get_default_queue(), "
+    "CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);" NL,
+    "    if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }" NL,
+    "  }" NL,
+    "}" NL
 };
 
-static const char* helper_ndrange_1d_loc[] =
-{
-    NL, "void block_fn(int len, __global atomic_uint* val)"
-    NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
-    NL, "}"
-    NL, ""
-    NL, "kernel void helper_ndrange_1d_loc(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global atomic_uint* val,  __global uint* ofs_arr)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };"
-    NL, ""
-    NL, "  for(int k = 0; k < n; k++)"
-    NL, "  {"
-    NL, "    for(int i = 0; i < n; i++)"
-    NL, "    {"
-    NL, "      if (glob_size_arr[i] >= loc_size_arr[k])"
-    NL, "      {"
-    NL, "        ndrange_t ndrange = ndrange_1D(glob_size_arr[i], loc_size_arr[k]);"
-    NL, "        int enq_res = enqueue_kernel(get_default_queue(), CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "        if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "      }"
-    NL, "    }"
-    NL, "  }"
-    NL, "}"
-    NL
+static const char *helper_ndrange_1d_loc[] = {
+    NL,
+    "void block_fn(int len, __global atomic_uint* val)" NL,
+    "{" NL,
+    "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, "
+    "memory_order_relaxed, memory_scope_device);" NL,
+    "}" NL,
+    "" NL,
+    "kernel void helper_ndrange_1d_loc(__global int* res, uint n, uint len, "
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
+    "{" NL,
+    "  size_t tid = get_global_id(0);" NL,
+    "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
+    "" NL,
+    "  for(int k = 0; k < n; k++)" NL,
+    "  {" NL,
+    "    for(int i = 0; i < n; i++)" NL,
+    "    {" NL,
+    "      if (glob_size_arr[i] >= loc_size_arr[k])" NL,
+    "      {" NL,
+    "        ndrange_t ndrange = ndrange_1D(glob_size_arr[i], "
+    "loc_size_arr[k]);" NL,
+    "        int enq_res = enqueue_kernel(get_default_queue(), "
+    "CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);" NL,
+    "        if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }" NL,
+    "      }" NL,
+    "    }" NL,
+    "  }" NL,
+    "}" NL
 };
 
-static const char* helper_ndrange_1d_ofs[] =
-{
-    NL, "void block_fn(int len, __global atomic_uint* val)"
-    NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[(get_global_offset(0) + get_global_linear_id()) % len], 1u, memory_order_relaxed, memory_scope_device);"
-    NL, "}"
-    NL, ""
-    NL, "kernel void helper_ndrange_1d_ofs(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global atomic_uint* val,  __global uint* ofs_arr)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };"
-    NL, ""
-    NL, "  for(int l = 0; l < n; l++)"
-    NL, "  {"
-    NL, "    for(int k = 0; k < n; k++)"
-    NL, "    {"
-    NL, "      for(int i = 0; i < n; i++)"
-    NL, "      {"
-    NL, "        if (glob_size_arr[i] >= loc_size_arr[k])"
-    NL, "        {"
-    NL, "          ndrange_t ndrange = ndrange_1D(ofs_arr[l], glob_size_arr[i], loc_size_arr[k]);"
-    NL, "          int enq_res = enqueue_kernel(get_default_queue(), CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "          if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "        }"
-    NL, "      }"
-    NL, "    }"
-    NL, "  }"
-    NL, "}"
-    NL
+static const char *helper_ndrange_1d_ofs[] = {
+    NL,
+    "void block_fn(int len, __global atomic_uint* val)" NL,
+    "{" NL,
+    "  atomic_fetch_add_explicit(&val[(get_global_offset(0) + "
+    "get_global_linear_id()) % len], 1u, memory_order_relaxed, "
+    "memory_scope_device);" NL,
+    "}" NL,
+    "" NL,
+    "kernel void helper_ndrange_1d_ofs(__global int* res, uint n, uint len, "
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
+    "{" NL,
+    "  size_t tid = get_global_id(0);" NL,
+    "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
+    "" NL,
+    "  for(int l = 0; l < n; l++)" NL,
+    "  {" NL,
+    "    for(int k = 0; k < n; k++)" NL,
+    "    {" NL,
+    "      for(int i = 0; i < n; i++)" NL,
+    "      {" NL,
+    "        if (glob_size_arr[i] >= loc_size_arr[k])" NL,
+    "        {" NL,
+    "          ndrange_t ndrange = ndrange_1D(ofs_arr[l], glob_size_arr[i], "
+    "loc_size_arr[k]);" NL,
+    "          int enq_res = enqueue_kernel(get_default_queue(), "
+    "CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);" NL,
+    "          if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }" NL,
+    "        }" NL,
+    "      }" NL,
+    "    }" NL,
+    "  }" NL,
+    "}" NL
 };
 
-static const char* helper_ndrange_2d_glo[] =
-{
-    NL, "void block_fn(int len, __global atomic_uint* val)"
-    NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
-    NL, "}"
-    NL, ""
-    NL, "kernel void helper_ndrange_2d_glo(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };"
-    NL, ""
-    NL, "  for(int i = 0; i < n; i++)"
-    NL, "  {"
-    NL, "    size_t glob_size[2] = { glob_size_arr[i], glob_size_arr[(i + 1) % n] };"
-    NL, "    ndrange_t ndrange = ndrange_2D(glob_size);"
-    NL, "    int enq_res = enqueue_kernel(get_default_queue(), CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "    if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "  }"
-    NL, "}"
-    NL
+static const char *helper_ndrange_2d_glo[] = {
+    NL,
+    "void block_fn(int len, __global atomic_uint* val)" NL,
+    "{" NL,
+    "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, "
+    "memory_order_relaxed, memory_scope_device);" NL,
+    "}" NL,
+    "" NL,
+    "kernel void helper_ndrange_2d_glo(__global int* res, uint n, uint len, "
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
+    "val,  __global uint* ofs_arr)" NL,
+    "{" NL,
+    "  size_t tid = get_global_id(0);" NL,
+    "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
+    "" NL,
+    "  for(int i = 0; i < n; i++)" NL,
+    "  {" NL,
+    "    size_t glob_size[2] = { glob_size_arr[i], glob_size_arr[(i + 1) % n] "
+    "};" NL,
+    "    ndrange_t ndrange = ndrange_2D(glob_size);" NL,
+    "    int enq_res = enqueue_kernel(get_default_queue(), "
+    "CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);" NL,
+    "    if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }" NL,
+    "  }" NL,
+    "}" NL
 };
 
-static const char* helper_ndrange_2d_loc[] =
-{
-    NL, "void block_fn(int len, __global atomic_uint* val)"
-    NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
-    NL, "}"
-    NL, ""
-    NL, "kernel void helper_ndrange_2d_loc(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };"
-    NL, ""
-    NL, "  for(int k = 0; k < n; k++)"
-    NL, "  {"
-    NL, "    for(int i = 0; i < n; i++)"
-    NL, "    {"
-    NL, "      if (glob_size_arr[(i + 1) % n] >= loc_size_arr[k])"
-    NL, "      {"
-    NL, "        size_t glob_size[] = { glob_size_arr[i], glob_size_arr[(i + 1) % n] };"
-    NL, "        size_t loc_size[] = { 1, loc_size_arr[k] };"
-    NL, ""
-    NL, "        ndrange_t ndrange = ndrange_2D(glob_size, loc_size);"
-    NL, "        int enq_res = enqueue_kernel(get_default_queue(), CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "        if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "      }"
-    NL, "    }"
-    NL, "  }"
-    NL, "}"
-    NL
-};
-
-
-static const char* helper_ndrange_2d_ofs[] =
-{
-    NL, "void block_fn(int len, __global atomic_uint* val)"
-    NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[(get_global_offset(1) * get_global_size(0) + get_global_offset(0) + get_global_linear_id()) % len], 1u, memory_order_relaxed, memory_scope_device);"
-    NL, "}"
-    NL, ""
-    NL, "kernel void helper_ndrange_2d_ofs(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };"
-    NL, ""
-    NL, "  for(int l = 0; l < n; l++)"
-    NL, "  {"
-    NL, "    for(int k = 0; k < n; k++)"
-    NL, "    {"
-    NL, "      for(int i = 0; i < n; i++)"
-    NL, "      {"
-    NL, "        if (glob_size_arr[(i + 1) % n] >= loc_size_arr[k])"
-    NL, "        {"
-    NL, "          size_t glob_size[] = { glob_size_arr[i], glob_size_arr[(i + 1) % n]};"
-    NL, "          size_t loc_size[] = { 1, loc_size_arr[k] };"
-    NL, "          size_t ofs[] = { ofs_arr[l], ofs_arr[(l + 1) % n] };"
-    NL, ""
-    NL, "          ndrange_t ndrange = ndrange_2D(ofs,glob_size,loc_size);"
-    NL, "          int enq_res = enqueue_kernel(get_default_queue(), CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "          if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "        }"
-    NL, "      }"
-    NL, "    }"
-    NL, "  }"
-    NL, "}"
-    NL
+static const char *helper_ndrange_2d_loc[] = {
+    NL,
+    "void block_fn(int len, __global atomic_uint* val)" NL,
+    "{" NL,
+    "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, "
+    "memory_order_relaxed, memory_scope_device);" NL,
+    "}" NL,
+    "" NL,
+    "kernel void helper_ndrange_2d_loc(__global int* res, uint n, uint len, "
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
+    "val,  __global uint* ofs_arr)" NL,
+    "{" NL,
+    "  size_t tid = get_global_id(0);" NL,
+    "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
+    "" NL,
+    "  for(int k = 0; k < n; k++)" NL,
+    "  {" NL,
+    "    for(int i = 0; i < n; i++)" NL,
+    "    {" NL,
+    "      if (glob_size_arr[(i + 1) % n] >= loc_size_arr[k])" NL,
+    "      {" NL,
+    "        size_t glob_size[] = { glob_size_arr[i], glob_size_arr[(i + 1) % "
+    "n] };" NL,
+    "        size_t loc_size[] = { 1, loc_size_arr[k] };" NL,
+    "" NL,
+    "        ndrange_t ndrange = ndrange_2D(glob_size, loc_size);" NL,
+    "        int enq_res = enqueue_kernel(get_default_queue(), "
+    "CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);" NL,
+    "        if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }" NL,
+    "      }" NL,
+    "    }" NL,
+    "  }" NL,
+    "}" NL
 };
 
 
-static const char* helper_ndrange_3d_glo[] =
-{
-    NL, "void block_fn(int len, __global atomic_uint* val)"
-    NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
-    NL, "}"
-    NL, ""
-    NL, "kernel void helper_ndrange_3d_glo(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };"
-    NL, ""
-    NL, "  for(int i = 0; i < n; i++)"
-    NL, "  {"
-    NL, "    uint global_work_size = glob_size_arr[i] *  glob_size_arr[(i + 1) % n] * glob_size_arr[(i + 2) % n];"
-    NL, "    if (global_work_size <= (len * len))"
-    NL, "    {"
-    NL, "      size_t glob_size[3] = { glob_size_arr[i], glob_size_arr[(i + 1) % n], glob_size_arr[(i + 2) % n] };"
-    NL, "      ndrange_t ndrange = ndrange_3D(glob_size);"
-    NL, "      int enq_res = enqueue_kernel(get_default_queue(), CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "      if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "    }"
-    NL, "  }"
-    NL, "}"
-    NL
+static const char *helper_ndrange_2d_ofs[] = {
+    NL,
+    "void block_fn(int len, __global atomic_uint* val)" NL,
+    "{" NL,
+    "  atomic_fetch_add_explicit(&val[(get_global_offset(1) * "
+    "get_global_size(0) + get_global_offset(0) + get_global_linear_id()) % "
+    "len], 1u, memory_order_relaxed, memory_scope_device);" NL,
+    "}" NL,
+    "" NL,
+    "kernel void helper_ndrange_2d_ofs(__global int* res, uint n, uint len, "
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
+    "val,  __global uint* ofs_arr)" NL,
+    "{" NL,
+    "  size_t tid = get_global_id(0);" NL,
+    "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
+    "" NL,
+    "  for(int l = 0; l < n; l++)" NL,
+    "  {" NL,
+    "    for(int k = 0; k < n; k++)" NL,
+    "    {" NL,
+    "      for(int i = 0; i < n; i++)" NL,
+    "      {" NL,
+    "        if (glob_size_arr[(i + 1) % n] >= loc_size_arr[k])" NL,
+    "        {" NL,
+    "          size_t glob_size[] = { glob_size_arr[i], glob_size_arr[(i + 1) "
+    "% n]};" NL,
+    "          size_t loc_size[] = { 1, loc_size_arr[k] };" NL,
+    "          size_t ofs[] = { ofs_arr[l], ofs_arr[(l + 1) % n] };" NL,
+    "" NL,
+    "          ndrange_t ndrange = ndrange_2D(ofs,glob_size,loc_size);" NL,
+    "          int enq_res = enqueue_kernel(get_default_queue(), "
+    "CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);" NL,
+    "          if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }" NL,
+    "        }" NL,
+    "      }" NL,
+    "    }" NL,
+    "  }" NL,
+    "}" NL
 };
 
 
-static const char* helper_ndrange_3d_loc[] =
-{
-    NL, "void block_fn(int len, __global atomic_uint* val)"
-    NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, memory_order_relaxed, memory_scope_device);"
-    NL, "}"
-    NL, ""
-    NL, "kernel void helper_ndrange_3d_loc(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };"
-    NL, ""
-    NL, "  for(int k = 0; k < n; k++)"
-    NL, "  {"
-    NL, "    for(int i = 0; i < n; i++)"
-    NL, "    {"
-    NL, "      uint global_work_size = glob_size_arr[i] *  glob_size_arr[(i + 1) % n] * glob_size_arr[(i + 2) % n];"
-    NL, "      if (glob_size_arr[(i + 2) % n] >= loc_size_arr[k] && global_work_size <= (len * len))"
-    NL, "      {"
-    NL, "        size_t glob_size[] = { glob_size_arr[i], glob_size_arr[(i + 1) % n], glob_size_arr[(i + 2) % n] };"
-    NL, "        size_t loc_size[] = { 1, 1, loc_size_arr[k] };"
-    NL, "        ndrange_t ndrange = ndrange_3D(glob_size,loc_size);"
-    NL, "        int enq_res = enqueue_kernel(get_default_queue(), CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "      "
-    NL, "        if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "      }"
-    NL, "    }"
-    NL, "  }"
-    NL, "}"
-    NL
+static const char *helper_ndrange_3d_glo[] = {
+    NL,
+    "void block_fn(int len, __global atomic_uint* val)" NL,
+    "{" NL,
+    "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, "
+    "memory_order_relaxed, memory_scope_device);" NL,
+    "}" NL,
+    "" NL,
+    "kernel void helper_ndrange_3d_glo(__global int* res, uint n, uint len, "
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
+    "val,  __global uint* ofs_arr)" NL,
+    "{" NL,
+    "  size_t tid = get_global_id(0);" NL,
+    "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
+    "" NL,
+    "  for(int i = 0; i < n; i++)" NL,
+    "  {" NL,
+    "    uint global_work_size = glob_size_arr[i] *  glob_size_arr[(i + 1) % "
+    "n] * glob_size_arr[(i + 2) % n];" NL,
+    "    if (global_work_size <= (len * len))" NL,
+    "    {" NL,
+    "      size_t glob_size[3] = { glob_size_arr[i], glob_size_arr[(i + 1) % "
+    "n], glob_size_arr[(i + 2) % n] };" NL,
+    "      ndrange_t ndrange = ndrange_3D(glob_size);" NL,
+    "      int enq_res = enqueue_kernel(get_default_queue(), "
+    "CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);" NL,
+    "      if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }" NL,
+    "    }" NL,
+    "  }" NL,
+    "}" NL
 };
 
-static const char* helper_ndrange_3d_ofs[] =
-{
-    NL, "void block_fn(int len, __global atomic_uint* val)"
-    NL, "{"
-    NL, "  atomic_fetch_add_explicit(&val[(get_global_offset(2) * get_global_size(0) * get_global_size(1) + get_global_offset(1) * get_global_size(0) + get_global_offset(0) + get_global_linear_id()) % len], 1u, memory_order_relaxed, memory_scope_device);"
-    NL, "}"
-    NL, ""
-    NL, "kernel void helper_ndrange_3d_ofs(__global int* res, uint n, uint len, __global uint* glob_size_arr, __global uint* loc_size_arr, __global int* val,  __global uint* ofs_arr)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };"
-    NL, ""
-    NL, "  for(int l = 0; l < n; l++)"
-    NL, "  {"
-    NL, "    for(int k = 0; k < n; k++)"
-    NL, "    {"
-    NL, "      for(int i = 0; i < n; i++)"
-    NL, "      {"
-    NL, "        uint global_work_size = glob_size_arr[i] *  glob_size_arr[(i + 1) % n] * glob_size_arr[(i + 2) % n];"
-    NL, "        if (glob_size_arr[(i + 2) % n] >= loc_size_arr[k] && global_work_size <= (len * len))"
-    NL, "        {"
-    NL, "          size_t glob_size[3] = { glob_size_arr[i], glob_size_arr[(i + 1) % n], glob_size_arr[(i + 2) % n]};"
-    NL, "          size_t loc_size[3] = { 1, 1, loc_size_arr[k] };"
-    NL, "          size_t ofs[3] = { ofs_arr[l], ofs_arr[(l + 1) % n], ofs_arr[(l + 2) % n] };"
-    NL, "          ndrange_t ndrange = ndrange_3D(ofs,glob_size,loc_size);"
-    NL, "          int enq_res = enqueue_kernel(get_default_queue(), CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "          if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "        }"
-    NL, "      }"
-    NL, "    }"
-    NL, "  }"
-    NL, "}"
-    NL
+
+static const char *helper_ndrange_3d_loc[] = {
+    NL,
+    "void block_fn(int len, __global atomic_uint* val)" NL,
+    "{" NL,
+    "  atomic_fetch_add_explicit(&val[get_global_linear_id() % len], 1u, "
+    "memory_order_relaxed, memory_scope_device);" NL,
+    "}" NL,
+    "" NL,
+    "kernel void helper_ndrange_3d_loc(__global int* res, uint n, uint len, "
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
+    "val,  __global uint* ofs_arr)" NL,
+    "{" NL,
+    "  size_t tid = get_global_id(0);" NL,
+    "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
+    "" NL,
+    "  for(int k = 0; k < n; k++)" NL,
+    "  {" NL,
+    "    for(int i = 0; i < n; i++)" NL,
+    "    {" NL,
+    "      uint global_work_size = glob_size_arr[i] *  glob_size_arr[(i + 1) % "
+    "n] * glob_size_arr[(i + 2) % n];" NL,
+    "      if (glob_size_arr[(i + 2) % n] >= loc_size_arr[k] && "
+    "global_work_size <= (len * len))" NL,
+    "      {" NL,
+    "        size_t glob_size[] = { glob_size_arr[i], glob_size_arr[(i + 1) % "
+    "n], glob_size_arr[(i + 2) % n] };" NL,
+    "        size_t loc_size[] = { 1, 1, loc_size_arr[k] };" NL,
+    "        ndrange_t ndrange = ndrange_3D(glob_size,loc_size);" NL,
+    "        int enq_res = enqueue_kernel(get_default_queue(), "
+    "CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);" NL,
+    "      " NL,
+    "        if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }" NL,
+    "      }" NL,
+    "    }" NL,
+    "  }" NL,
+    "}" NL
+};
+
+static const char *helper_ndrange_3d_ofs[] = {
+    NL,
+    "void block_fn(int len, __global atomic_uint* val)" NL,
+    "{" NL,
+    "  atomic_fetch_add_explicit(&val[(get_global_offset(2) * "
+    "get_global_size(0) * get_global_size(1) + get_global_offset(1) * "
+    "get_global_size(0) + get_global_offset(0) + get_global_linear_id()) % "
+    "len], 1u, memory_order_relaxed, memory_scope_device);" NL,
+    "}" NL,
+    "" NL,
+    "kernel void helper_ndrange_3d_ofs(__global int* res, uint n, uint len, "
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
+    "val,  __global uint* ofs_arr)" NL,
+    "{" NL,
+    "  size_t tid = get_global_id(0);" NL,
+    "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
+    "" NL,
+    "  for(int l = 0; l < n; l++)" NL,
+    "  {" NL,
+    "    for(int k = 0; k < n; k++)" NL,
+    "    {" NL,
+    "      for(int i = 0; i < n; i++)" NL,
+    "      {" NL,
+    "        uint global_work_size = glob_size_arr[i] *  glob_size_arr[(i + 1) "
+    "% n] * glob_size_arr[(i + 2) % n];" NL,
+    "        if (glob_size_arr[(i + 2) % n] >= loc_size_arr[k] && "
+    "global_work_size <= (len * len))" NL,
+    "        {" NL,
+    "          size_t glob_size[3] = { glob_size_arr[i], glob_size_arr[(i + 1) "
+    "% n], glob_size_arr[(i + 2) % n]};" NL,
+    "          size_t loc_size[3] = { 1, 1, loc_size_arr[k] };" NL,
+    "          size_t ofs[3] = { ofs_arr[l], ofs_arr[(l + 1) % n], ofs_arr[(l "
+    "+ 2) % n] };" NL,
+    "          ndrange_t ndrange = ndrange_3D(ofs,glob_size,loc_size);" NL,
+    "          int enq_res = enqueue_kernel(get_default_queue(), "
+    "CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);" NL,
+    "          if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }" NL,
+    "        }" NL,
+    "      }" NL,
+    "    }" NL,
+    "  }" NL,
+    "}" NL
 };
 
 static const kernel_src_dim_check sources_ndrange_Xd[] =
