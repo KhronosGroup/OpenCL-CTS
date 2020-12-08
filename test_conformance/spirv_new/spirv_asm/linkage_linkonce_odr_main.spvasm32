@@ -6,6 +6,7 @@
                OpCapability Addresses
                OpCapability Linkage
                OpCapability Kernel
+               OpExtension "SPV_KHR_linkonce_odr"
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %17 "test_linkonce_odr" %__spirv_BuiltInGlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId

@@ -6,9 +6,7 @@
                OpCapability Addresses
                OpCapability Linkage
                OpCapability Kernel
-
-               ; Enable this for the actual test:
-               ; OpExtension "SPV_KHR_linkonce_odr"
+               OpExtension "SPV_KHR_linkonce_odr"
 
                OpMemoryModel Physical32 OpenCL
                ; Use this for now, for testing:
