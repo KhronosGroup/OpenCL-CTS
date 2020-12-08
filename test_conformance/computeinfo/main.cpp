@@ -1421,15 +1421,16 @@ int test_computeinfo(cl_device_id deviceID, cl_context context,
 extern int test_extended_versioning(cl_device_id, cl_context, cl_command_queue,
                                     int);
 extern int test_device_uuid(cl_device_id, cl_context, cl_command_queue, int);
-
 extern int test_conformance_version(cl_device_id, cl_context, cl_command_queue,
                                     int);
+extern int test_pci_bus_info(cl_device_id, cl_context, cl_command_queue, int);
 
 test_definition test_list[] = {
     ADD_TEST(computeinfo),
     ADD_TEST(extended_versioning),
     ADD_TEST(device_uuid),
     ADD_TEST_VERSION(conformance_version, Version(3, 0)),
+    ADD_TEST(pci_bus_info),
 };
 
 const int test_num = ARRAY_SIZE(test_list);
