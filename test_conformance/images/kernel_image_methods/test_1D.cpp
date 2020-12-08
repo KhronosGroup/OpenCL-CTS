@@ -15,7 +15,6 @@
 //
 #include "../testBase.h"
 
-extern bool gDeviceLt20;
 
 struct image_kernel_data
 {

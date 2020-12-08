@@ -26,7 +26,6 @@
 extern uint64_t gRoundingStartValue;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
-extern bool gDeviceLt20;
 
 const char *read1DKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_t input,%s __global float *xOffsets, __global %s4 *results %s)\n"

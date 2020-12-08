@@ -22,7 +22,6 @@
     #include <setjmp.h>
 #endif
 
-extern bool gDeviceLt20;
 
 const char *read1DBufferKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_buffer_t inputA, read_only image1d_t inputB, sampler_t sampler, __global int *results )\n"

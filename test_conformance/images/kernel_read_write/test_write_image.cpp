@@ -22,7 +22,6 @@
 extern bool gTestImage2DFromBuffer;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
-extern bool gDeviceLt20;
 
 extern int test_write_image_1D_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d );
 extern int test_write_image_3D_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d );

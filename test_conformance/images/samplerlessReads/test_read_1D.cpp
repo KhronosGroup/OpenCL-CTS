@@ -22,7 +22,6 @@
     #include <setjmp.h>
 #endif
 
-extern bool gDeviceLt20;
 extern bool gTestReadWrite;
 
 const char *read1DKernelSourcePattern =

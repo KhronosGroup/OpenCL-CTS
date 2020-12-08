@@ -16,7 +16,6 @@
 #include "../testBase.h"
 #include <float.h>
 
-extern bool gDeviceLt20;
 extern bool gTestReadWrite;
 
 const char *read2DArrayKernelSourcePattern =

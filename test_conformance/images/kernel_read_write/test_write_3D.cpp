@@ -21,7 +21,6 @@
 
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
-extern bool gDeviceLt20;
 
 extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
 extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo );

@@ -26,7 +26,6 @@ extern bool gTestImage2DFromBuffer;
 extern uint64_t gRoundingStartValue;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
-extern bool gDeviceLt20;
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.

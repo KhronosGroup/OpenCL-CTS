@@ -35,7 +35,6 @@ bool gTestSmallImages;
 bool gTestMaxImages;
 bool gTestImage2DFromBuffer;
 bool gTestMipmaps;
-bool gDeviceLt20 = false;
 cl_filter_mode    gFilterModeToUse = (cl_filter_mode)-1;
 // Default is CL_MEM_USE_HOST_PTR for the test
 cl_mem_flags    gMemFlagsToUse = CL_MEM_USE_HOST_PTR;
@@ -107,10 +106,6 @@ static int doTest( cl_device_id device, cl_context context, cl_command_queue que
     bool            tDisableOffsets = false;
     bool            tNormalizedModeToUse = false;
     cl_filter_mode  tFilterModeToUse = (cl_filter_mode)-1;
-    auto version = get_device_cl_version(device);
-    if (version < Version(2, 0)) {
-        gDeviceLt20 = true;
-    }
 
     if( testTypesToRun & kReadTests )
     {

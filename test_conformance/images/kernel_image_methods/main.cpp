@@ -23,7 +23,6 @@
 bool gDebugTrace;
 bool gTestSmallImages;
 bool gTestMaxImages;
-bool gDeviceLt20 = false;
 
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
 cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
