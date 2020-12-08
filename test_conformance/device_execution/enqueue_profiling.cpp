@@ -89,9 +89,9 @@ int test_enqueue_profiling(cl_device_id device, cl_context context,
 
     cl_event kernel_event;
 
-    err_ret = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel, 1, &enqueue_multi_level,
-        "enqueue_multi_level", "-cl-std=CL2.0");
+    err_ret = create_single_kernel_helper(context, &program, &kernel, 1,
+                                          &enqueue_multi_level,
+                                          "enqueue_multi_level");
     if (check_error(err_ret, "Create single kernel failed")) return -1;
 
     res_mem = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,

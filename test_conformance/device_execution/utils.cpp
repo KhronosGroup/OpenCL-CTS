@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -40,7 +40,8 @@ int run_n_kernel_args(cl_context context, cl_command_queue queue, const char** s
     cl_uint i;
     size_t ret_len;
 
-    err_ret = create_single_kernel_helper_with_build_options(context, &program, &kernel, num_lines, source, kernel_name, "-cl-std=CL2.0");
+    err_ret = create_single_kernel_helper(context, &program, &kernel, num_lines,
+                                          source, kernel_name);
     if(check_error(err_ret, "Create single kernel failed")) return -1;
 
     mem = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, res_size, results, &err_ret);

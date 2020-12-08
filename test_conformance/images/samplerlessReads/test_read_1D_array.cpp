@@ -251,7 +251,8 @@ int test_read_image_set_1D_array( cl_device_id device, cl_context context, cl_co
 
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0" );
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     test_error( error, "Unable to create testing kernel" );
 
     if ( gTestSmallImages )

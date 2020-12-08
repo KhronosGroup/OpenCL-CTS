@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -184,7 +184,11 @@ int test_host_multi_queue(cl_device_id device, cl_context context, cl_command_qu
                 global = 16;
             }
 
-            err_ret |= create_single_kernel_helper_with_build_options(context, &program[i], &kernel[i], sources_multi_queue_block[i].num_lines, sources_multi_queue_block[i].lines, sources_multi_queue_block[i].kernel_name, "-cl-std=CL2.0");
+            err_ret |= create_single_kernel_helper(
+                context, &program[i], &kernel[i],
+                sources_multi_queue_block[i].num_lines,
+                sources_multi_queue_block[i].lines,
+                sources_multi_queue_block[i].kernel_name);
             if(check_error(err_ret, "Create single kernel failed")) { res = -1; break; }
 
             mem[i] = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(kernel_results), kernel_results, &err_ret);
