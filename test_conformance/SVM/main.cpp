@@ -215,12 +215,13 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
     bool extensions_supported = true;
     for (auto extension : extensions_list)
     {
-      if (!is_extension_available(devices[i], extension.c_str()))
-      {
-        log_error("Required extension not found - device id %d - %s\n", i, extension.c_str());
-        extensions_supported = false;
-        break;
-      }
+        if (!is_extension_available(devices[i], extension.c_str()))
+        {
+            log_error("Required extension not found - device id %d - %s\n", i,
+                      extension.c_str());
+            extensions_supported = false;
+            break;
+        }
     }
     if((caps & required_svm_caps) == required_svm_caps && extensions_supported)
     {
