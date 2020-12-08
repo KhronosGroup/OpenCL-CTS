@@ -144,6 +144,11 @@ TEST_SPIRV_FUNC(linkage_import_function_link)
 
 TEST_SPIRV_FUNC(linkage_linkonce_odr)
 {
+    if (!is_extension_available(deviceID, "cl_khr_spirv_linkonce_odr")) {
+        log_info("Extension cl_khr_spirv_linkonce_odr not supported; skipping tests.\n");
+        return 0;
+    }
+
     int err = 0;
 
     clProgramWrapper prog_obj;
