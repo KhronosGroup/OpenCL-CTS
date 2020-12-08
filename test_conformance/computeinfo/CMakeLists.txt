@@ -5,6 +5,7 @@ set(${MODULE_NAME}_SOURCES
         device_uuid.cpp
         extended_versioning.cpp
         conforming_version.cpp
+        pci_bus_info.cpp
 )
 
 include(../CMakeCommon.txt)
