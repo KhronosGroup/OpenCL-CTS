@@ -141,5 +141,5 @@ const char* flag_set_names[] = {
 
 int main( int argc, const char *argv[] )
 {
-    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
+    return runTestHarness(argc, argv, test_num, test_list, false, 0);
 }

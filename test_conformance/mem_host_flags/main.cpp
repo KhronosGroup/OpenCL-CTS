@@ -47,5 +47,5 @@ int main(int argc, const char *argv[])
 {
     log_info("1st part, non gl-sharing objects...\n");
     gTestRounding = true;
-    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
+    return runTestHarness(argc, argv, test_num, test_list, false, 0);
 }

@@ -645,7 +645,7 @@ int main(int argc, const char* argv[])
         log_info("*** Wimpy Reduction Factor: %-27u ***\n\n", s_wimpy_reduction_factor);
     }
 
-    int err = runTestHarness( argCount, argList, test_num, test_list, false, false, 0 );
+    int err = runTestHarness(argCount, argList, test_num, test_list, false, 0);
 
     free( argList );
 

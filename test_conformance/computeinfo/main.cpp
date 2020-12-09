@@ -1455,6 +1455,5 @@ int main(int argc, const char** argv)
         }
     }
 
-    return runTestHarness(argCount, argList, test_num, test_list, false, true,
-                          0);
+    return runTestHarness(argCount, argList, test_num, test_list, true, 0);
 }
