@@ -135,13 +135,13 @@ extern const vtbl _mad_tbl;             // float mad( float, float, float )
 #endif // FUNCTION_LIST_ULPS_ONLY
 
 const Func functionList[] = {
-    ENTRY(acos, 4.0f, 4.0f, FTZ_OFF, unaryF),
+    ENTRY_EXT(acos, 4.0f, 4.0f, 4096.0f, FTZ_OFF, unaryF, 4096.0f),
     ENTRY(acosh, 4.0f, 4.0f, FTZ_OFF, unaryF),
     ENTRY(acospi, 5.0f, 5.0f, FTZ_OFF, unaryF),
-    ENTRY(asin, 4.0f, 4.0f, FTZ_OFF, unaryF),
+    ENTRY_EXT(asin, 4.0f, 4.0f, 4096.0f, FTZ_OFF, unaryF, 4096.0f),
     ENTRY(asinh, 4.0f, 4.0f, FTZ_OFF, unaryF),
     ENTRY(asinpi, 5.0f, 5.0f, FTZ_OFF, unaryF),
-    ENTRY(atan, 5.0f, 5.0f, FTZ_OFF, unaryF),
+    ENTRY_EXT(atan, 5.0f, 5.0f, 4096.0f, FTZ_OFF, unaryF, 4096.0f),
     ENTRY(atanh, 5.0f, 5.0f, FTZ_OFF, unaryF),
     ENTRY(atanpi, 5.0f, 5.0f, FTZ_OFF, unaryF),
     ENTRY(atan2, 6.0f, 6.0f, FTZ_OFF, binaryF),
@@ -152,7 +152,8 @@ const Func functionList[] = {
     ENTRY_EXT(cos, 4.0f, 4.0f, 0.00048828125f, FTZ_OFF, unaryF,
               0.00048828125f), // relaxed ulp 2^-11
     ENTRY(cosh, 4.0f, 4.0f, FTZ_OFF, unaryF),
-    ENTRY(cospi, 4.0f, 4.0f, FTZ_OFF, unaryF),
+    ENTRY_EXT(cospi, 4.0f, 4.0f, 0.00048828125f, FTZ_OFF, unaryF,
+              0.00048828125f), // relaxed ulp 2^-11
     //                                  ENTRY( erfc,                  16.0f,
     //                                  16.0f,         FTZ_OFF,     unaryF),
     //                                  //disabled for 1.0 due to lack of
@@ -202,7 +203,8 @@ const Func functionList[] = {
               4.76837158203125e-7f), // relaxed ulp 2^-21
     ENTRY_EXT(log2, 3.0f, 4.0f, 4.76837158203125e-7f, FTZ_OFF, unaryF,
               4.76837158203125e-7f), // relaxed ulp 2^-21
-    ENTRY(log10, 3.0f, 4.0f, FTZ_OFF, unaryF),
+    ENTRY_EXT(log10, 3.0f, 4.0f, 4.76837158203125e-7f, FTZ_OFF, unaryF,
+              4.76837158203125e-7f), // relaxed ulp 2^-21
     ENTRY(log1p, 2.0f, 4.0f, FTZ_OFF, unaryF),
     ENTRY(logb, 0.0f, 0.0f, FTZ_OFF, unaryF),
     ENTRY_EXT(mad, INFINITY, INFINITY, INFINITY, FTZ_OFF, mad_function,
@@ -233,7 +235,8 @@ const Func functionList[] = {
     ENTRY_EXT(sincos, 4.0f, 4.0f, 0.00048828125f, FTZ_OFF, unaryF_two_results,
               0.00048828125f), // relaxed ulp 2^-11
     ENTRY(sinh, 4.0f, 4.0f, FTZ_OFF, unaryF),
-    ENTRY(sinpi, 4.0f, 4.0f, FTZ_OFF, unaryF),
+    ENTRY_EXT(sinpi, 4.0f, 4.0f, 0.00048828125f, FTZ_OFF, unaryF,
+              0.00048828125f), // relaxed ulp 2^-11
     { "sqrt",
       "sqrt",
       { (void*)reference_sqrt },
