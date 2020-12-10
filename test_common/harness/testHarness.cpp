@@ -256,17 +256,9 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     {
         char *fileName = getenv("CL_CONFORMANCE_RESULTS_FILENAME");
 
-        log_info(
-            "Usage: %s [<test name>*] [pid<num>] [id<num>] [<device type>]\n",
-            argv[0]);
-        log_info("\t<test name>\tOne or more of: (wildcard character '*') "
-                 "(default *)\n");
-        log_info("\tpid<num>\tIndicates platform at index <num> should be used "
-                 "(default 0).\n");
-        log_info("\tid<num>\t\tIndicates device at index <num> should be used "
-                 "(default 0).\n");
-        log_info("\t<device_type>\tcpu|gpu|accelerator|<CL_DEVICE_TYPE_*> "
-                 "(default CL_DEVICE_TYPE_DEFAULT)\n");
+        log_info("Usage: %s [<test name>*]\n", argv[0]);
+        log_info("\t<test name>\tOne or more of the test names below (wildcard "
+                 "character '*') (default *)\n");
         log_info("\n");
         log_info("\tNOTE: You may pass environment variable "
                  "CL_CONFORMANCE_RESULTS_FILENAME (currently '%s')\n",
