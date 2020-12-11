@@ -108,7 +108,8 @@ int main(int argc, const char *argv[])
     if( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
 
-    int ret = runTestHarness( argCount, argList, test_num, test_list, true, false, 0 );
+    int ret = runTestHarnessWithCheck(argCount, argList, test_num, test_list,
+                                      false, 0, verifyImageSupport);
 
     free(argList);
     return ret;

@@ -92,7 +92,7 @@ extern cl_uint gRandomSeed;
 // dictatated by the passed arguments. Returns EXIT_SUCCESS iff all tests
 // succeeded or the tests were listed, otherwise return EXIT_FAILURE.
 extern int runTestHarness(int argc, const char *argv[], int testNum,
-                          test_definition testList[], int imageSupportRequired,
+                          test_definition testList[],
                           int forceNoContextCreation,
                           cl_command_queue_properties queueProps);
 

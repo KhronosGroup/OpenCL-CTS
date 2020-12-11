@@ -200,5 +200,5 @@ int main(int argc, const char *argv[])
   if (!MediaSurfaceSharingExtensionInit())
     return TEST_FAIL;
 
-  return runTestHarness(argc, argv, test_num, test_list, false, true, 0);
+  return runTestHarness(argc, argv, test_num, test_list, true, 0);
 }

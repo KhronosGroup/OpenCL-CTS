@@ -25,5 +25,5 @@
 int main(int argc, const char *argv[])
 {
     auto& tests = autotest::test_suite::global_test_suite().test_defs;
-    return runTestHarness(argc, argv, tests.size(), tests.data(), false, false, 0);
+    return runTestHarness(argc, argv, tests.size(), tests.data(), false, 0);
 }

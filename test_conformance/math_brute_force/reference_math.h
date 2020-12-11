@@ -117,10 +117,15 @@ double reference_assignment( double x );
 int    reference_not( double x );
 // -- for testing fast-relaxed
 
+double reference_relaxed_acos(double);
+double reference_relaxed_asin(double);
+double reference_relaxed_atan(double);
 double reference_relaxed_mad( double, double, double );
 double reference_relaxed_divide( double x, double y );
 double reference_relaxed_sin( double x );
+double reference_relaxed_sinpi(double x);
 double reference_relaxed_cos( double x );
+double reference_relaxed_cospi(double x);
 double reference_relaxed_sincos( double x, double * y);
 double reference_relaxed_tan( double x );
 double reference_relaxed_exp( double x );
@@ -128,6 +133,7 @@ double reference_relaxed_exp2( double x );
 double reference_relaxed_exp10( double x );
 double reference_relaxed_log( double x );
 double reference_relaxed_log2( double x );
+double reference_relaxed_log10(double x);
 double reference_relaxed_pow( double x, double y);
 double reference_relaxed_reciprocal( double x );
 
