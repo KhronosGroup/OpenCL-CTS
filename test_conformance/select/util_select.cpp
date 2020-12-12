@@ -675,25 +675,6 @@ size_t check_int(void *test, void *correct, size_t count, size_t vector_size) {
                           "0x%8.8lx (of 0x%8.8lx):  "
                           "*0x%8.8x vs 0x%8.8x\n",
                           vector_size, i, count, c[i], t[i]);
-                log_error("\n(check_int) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
-                          "*0x%8.8x vs 0x%8.8x\n",
-                          vector_size, i + 1, count, c[i + 1], t[i + 1]);
-                log_error("\n(check_int) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
-                          "*0x%8.8x vs 0x%8.8x\n",
-                          vector_size, i + 2, count, c[i + 2], t[i + 2]);
-                log_error("\n(check_int) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
-                          "*0x%8.8x vs 0x%8.8x\n",
-                          vector_size, i + 3, count, c[i + 3], t[i + 3]);
-                if (i)
-                {
-                    log_error("\n(check_int) Error for vector size %ld found "
-                              "just after 0x%8.8lx:  "
-                              "*0x%8.8x vs 0x%8.8x\n",
-                              vector_size, i - 1, c[i - 1], t[i - 1]);
-                }
                 return i + 1;
             }
     }
