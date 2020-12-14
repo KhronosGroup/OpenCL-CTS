@@ -22,6 +22,12 @@
 #include "harness/clImageHelper.h"
 #include "harness/imageHelpers.h"
 
+extern bool gDebugTrace;
+extern bool gTestSmallImages;
+extern bool gEnablePitch;
+extern bool gTestMaxImages;
+extern bool gTestMipmaps;
+
 // Amount to offset pixels for checking normalized reads
 #define NORM_OFFSET 0.1f
 

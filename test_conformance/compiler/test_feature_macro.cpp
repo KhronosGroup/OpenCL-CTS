@@ -721,21 +721,15 @@ int test_consistency_c_features_list(cl_device_id deviceID,
 int test_features_macro(cl_device_id deviceID, cl_context context,
                         cl_command_queue queue, int num_elements)
 {
-    cl_bool compilerAvailable = CL_FALSE;
-    cl_int error =
-        clGetDeviceInfo(deviceID, CL_DEVICE_COMPILER_AVAILABLE,
-                        sizeof(compilerAvailable), &compilerAvailable, NULL);
-    test_error(error, "Unable to query CL_DEVICE_COMPILER_AVAILABLE");
-    if (compilerAvailable == CL_FALSE)
-    {
-        // Note: Not checking that the feature array is empty because the
-        // specification says "For devices that do not support compilation from
-        // OpenCL C source, this query may return an empty array."  It "may"
-        // return an empty array implies that an implementation also "may not".
-        log_info("Skipping test - no compiler is available.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
 
+    // Note: Not checking that the feature array is empty for the compiler not
+    // available case because the specification says "For devices that do not
+    // support compilation from OpenCL C source, this query may return an empty
+    // array."  It "may" return an empty array implies that an implementation
+    // also "may not".
+    check_compiler_available(deviceID);
+
+    int error = TEST_PASS;
     cl_bool supported = CL_FALSE;
     std::string test_macro_name = "";
     std::vector<std::string> supported_features_vec;

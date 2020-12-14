@@ -44,16 +44,12 @@ const char *get_memory_scope_type_name(TExplicitMemoryScopeType scopeType)
 {
   switch (scopeType)
   {
-  case MEMORY_SCOPE_EMPTY:
-    return "";
-  case MEMORY_SCOPE_WORK_GROUP:
-    return "memory_scope_work_group";
-  case MEMORY_SCOPE_DEVICE:
-    return "memory_scope_device";
-  case MEMORY_SCOPE_ALL_SVM_DEVICES:
-    return "memory_scope_all_svm_devices";
-  default:
-    return 0;
+      case MEMORY_SCOPE_EMPTY: return "";
+      case MEMORY_SCOPE_WORK_GROUP: return "memory_scope_work_group";
+      case MEMORY_SCOPE_DEVICE: return "memory_scope_device";
+      case MEMORY_SCOPE_ALL_DEVICES: return "memory_scope_all_devices";
+      case MEMORY_SCOPE_ALL_SVM_DEVICES: return "memory_scope_all_svm_devices";
+      default: return 0;
   }
 }
 
@@ -276,6 +272,9 @@ cl_int getSupportedMemoryOrdersAndScopes(
     }
     if (atomic_capabilities & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES)
     {
+        // OpenCL 3.0 added memory_scope_all_devices as an alias for
+        // memory_scope_all_svm_devices, so test both.
+        memoryScopes.push_back(MEMORY_SCOPE_ALL_DEVICES);
         memoryScopes.push_back(MEMORY_SCOPE_ALL_SVM_DEVICES);
     }
     return CL_SUCCESS;

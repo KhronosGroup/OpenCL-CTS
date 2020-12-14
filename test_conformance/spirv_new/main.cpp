@@ -82,7 +82,7 @@ void spirvTestsRegistry::addTestClass(baseTestClass *test, const char *testName,
     test_definition testDef;
     testDef.func = test->getFunction();
     testDef.name = testName;
-    testDef.min_version = Version(1, 2);
+    testDef.min_version = version;
     testDefinitions.push_back(testDef);
 }
 

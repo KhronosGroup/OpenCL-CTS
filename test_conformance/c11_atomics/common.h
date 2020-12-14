@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -35,25 +35,26 @@
 
 enum TExplicitAtomicType
 {
-  TYPE_ATOMIC_INT,
-  TYPE_ATOMIC_UINT,
-  TYPE_ATOMIC_LONG,
-  TYPE_ATOMIC_ULONG,
-  TYPE_ATOMIC_FLOAT,
-  TYPE_ATOMIC_DOUBLE,
-  TYPE_ATOMIC_INTPTR_T,
-  TYPE_ATOMIC_UINTPTR_T,
-  TYPE_ATOMIC_SIZE_T,
-  TYPE_ATOMIC_PTRDIFF_T,
-  TYPE_ATOMIC_FLAG
+    TYPE_ATOMIC_INT,
+    TYPE_ATOMIC_UINT,
+    TYPE_ATOMIC_LONG,
+    TYPE_ATOMIC_ULONG,
+    TYPE_ATOMIC_FLOAT,
+    TYPE_ATOMIC_DOUBLE,
+    TYPE_ATOMIC_INTPTR_T,
+    TYPE_ATOMIC_UINTPTR_T,
+    TYPE_ATOMIC_SIZE_T,
+    TYPE_ATOMIC_PTRDIFF_T,
+    TYPE_ATOMIC_FLAG
 };
 
 enum TExplicitMemoryScopeType
 {
-  MEMORY_SCOPE_EMPTY,
-  MEMORY_SCOPE_WORK_GROUP,
-  MEMORY_SCOPE_DEVICE,
-  MEMORY_SCOPE_ALL_SVM_DEVICES
+    MEMORY_SCOPE_EMPTY,
+    MEMORY_SCOPE_WORK_GROUP,
+    MEMORY_SCOPE_DEVICE,
+    MEMORY_SCOPE_ALL_DEVICES, // Alias for MEMORY_SCOPE_ALL_SVM_DEVICES
+    MEMORY_SCOPE_ALL_SVM_DEVICES
 };
 
 extern bool gHost; // temporary flag for testing native host threads (test verification)
@@ -320,6 +321,7 @@ public:
               }
               break;
           }
+          case MEMORY_SCOPE_ALL_DEVICES: // fallthough
           case MEMORY_SCOPE_ALL_SVM_DEVICES: {
               if ((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES) == 0)
               {
@@ -538,11 +540,17 @@ public:
   }
   virtual cl_uint MaxHostThreads()
   {
-    // block host threads execution for memory scope different than memory_scope_all_svm_devices
-    if(MemoryScope() == MEMORY_SCOPE_ALL_SVM_DEVICES || gHost)
-      return CBasicTest<HostAtomicType, HostDataType>::MaxHostThreads();
-    else
-      return 0;
+      // block host threads execution for memory scope different than
+      // memory_scope_all_svm_devices
+      if (MemoryScope() == MEMORY_SCOPE_ALL_DEVICES
+          || MemoryScope() == MEMORY_SCOPE_ALL_SVM_DEVICES || gHost)
+      {
+          return CBasicTest<HostAtomicType, HostDataType>::MaxHostThreads();
+      }
+      else
+      {
+          return 0;
+      }
   }
 private:
   TExplicitMemoryOrderType _memoryOrder;
@@ -880,7 +888,7 @@ std::string CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumD
     else
       // global atomics declared in program scope
       code += R"(
-                if(atomic_fetch_add_explicit(&finishedThreads, 1,
+                if(atomic_fetch_add_explicit(&finishedThreads, 1u,
                                            memory_order_relaxed,
                                            memory_scope_work_group)
                    == get_global_size(0)-1) // last finished thread
@@ -1040,7 +1048,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(cl_device_id dev
 
   refValues.resize(threadCount*NumNonAtomicVariablesPerThread());
 
-  // Generate ref data if we have a ref generator provided		
+  // Generate ref data if we have a ref generator provided
   d = init_genrand(gRandomSeed);
   startRefValues.resize(threadCount*NumNonAtomicVariablesPerThread());
   if(GenerateRefs(threadCount, &startRefValues[0], d))

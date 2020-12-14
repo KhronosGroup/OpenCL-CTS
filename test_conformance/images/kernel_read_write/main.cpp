@@ -13,21 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
-
-#if !defined(_WIN32)
-#include <unistd.h>
-#include <sys/time.h>
-#endif
-
 #include "../testBase.h"
+#include "../harness/compat.h"
 #include "../harness/fpcontrol.h"
 #include "../harness/parseParameters.h"
-
-#include <vector>
 
 #if defined(__PPC__)
 // Global varaiable used to hold the FPU control register state. The FPSCR register can not
@@ -57,8 +49,6 @@ bool            gEnablePitch = false;
 
 int             gtestTypesToRun = 0;
 static int testTypesToRun;
-
-#define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
 static void printUsage( const char *execName );
 
@@ -405,7 +395,8 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = runTestHarness( argCount, argList, test_num, test_list, true, false, 0 );
+    int ret = runTestHarnessWithCheck(argCount, argList, test_num, test_list,
+                                      false, 0, verifyImageSupport);
 
     // Restore FP state before leaving
     RestoreFPState(&oldMode);

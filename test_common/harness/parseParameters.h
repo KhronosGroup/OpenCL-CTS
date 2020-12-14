@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -39,8 +39,10 @@ extern CompilationCacheMode gCompilationCacheMode;
 extern std::string gCompilationCachePath;
 extern std::string gCompilationProgram;
 
-extern int parseCustomParam (int argc, const char *argv[], const char *ignore = 0 );
+extern int parseCustomParam(int argc, const char *argv[],
+                            const char *ignore = 0);
 
-extern void parseWimpyReductionFactor(const char *&arg, int &wimpyReductionFactor);
+extern void parseWimpyReductionFactor(const char *&arg,
+                                      int &wimpyReductionFactor);
 
 #endif // _parseParameters_h

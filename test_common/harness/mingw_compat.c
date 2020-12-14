@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,41 +19,44 @@
 #include <stdio.h>
 #include <string.h>
 
-//This function is unavailable on various mingw compilers,
-//especially 64 bit so implementing it here
-const char *basename_dot=".";
-char*
-basename(char *path)
+// This function is unavailable on various mingw compilers,
+// especially 64 bit so implementing it here
+const char *basename_dot = ".";
+char *basename(char *path)
 {
     char *p = path, *b = NULL;
     int len = strlen(path);
 
-    if (path == NULL) {
-        return (char*)basename_dot;
+    if (path == NULL)
+    {
+        return (char *)basename_dot;
     }
 
     // Not absolute path on windows
-    if (path[1] != ':') {
+    if (path[1] != ':')
+    {
         return path;
     }
 
     // Trim trailing path seperators
-    if (path[len - 1]  == '\\' ||
-        path[len - 1]  == '/' ) {
+    if (path[len - 1] == '\\' || path[len - 1] == '/')
+    {
         len--;
         path[len] = '\0';
     }
 
-    while (len) {
-        while((*p != '\\' || *p != '/')  && len) {
+    while (len)
+    {
+        while ((*p != '\\' || *p != '/') && len)
+        {
             p++;
             len--;
         }
         p++;
         b = p;
-     }
+    }
 
-     return b;
+    return b;
 }
 
 #endif

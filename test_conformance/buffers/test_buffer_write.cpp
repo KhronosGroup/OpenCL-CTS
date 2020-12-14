@@ -24,7 +24,6 @@
 #include "procs.h"
 #include "harness/errorHelpers.h"
 
-#define USE_LOCAL_WORK_GROUP    1
 
 #ifndef uchar
 typedef unsigned char uchar;
@@ -315,40 +314,51 @@ static const char *float_kernel_name[] = { "test_buffer_write_float", "test_buff
 
 
 const char *buffer_write_half_kernel_code[] = {
-    "__kernel void test_buffer_write_half(__global half *src, __global float *dst)\n"
+    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+    "__kernel void test_buffer_write_half(__global half *src, __global half "
+    "*dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "\n"
-    "    dst[tid] = vload_half( tid * 2, src );\n"
+    "    dst[tid] = src[tid];\n"
     "}\n",
 
-    "__kernel void test_buffer_write_half2(__global half2 *src, __global float2 *dst)\n"
+    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+    "__kernel void test_buffer_write_half2(__global half2 *src, __global half2 "
+    "*dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "\n"
-    "    dst[tid] = vload_half2( tid * 2, src );\n"
+    "    dst[tid] = src[tid];\n"
     "}\n",
 
-    "__kernel void test_buffer_write_half4(__global half4 *src, __global float4 *dst)\n"
+    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+    "__kernel void test_buffer_write_half4(__global half4 *src, __global half4 "
+    "*dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "\n"
-    "    dst[tid] = vload_half4( tid * 2, src );\n"
+    "    dst[tid] = src[tid];\n"
     "}\n",
 
-    "__kernel void test_buffer_write_half8(__global half8 *src, __global float8 *dst)\n"
+    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+    "__kernel void test_buffer_write_half8(__global half8 *src, __global half8 "
+    "*dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "\n"
-    "    dst[tid] = vload_half8( tid * 2, src );\n"
+    "    dst[tid] = src[tid];\n"
     "}\n",
 
-    "__kernel void test_buffer_write_half16(__global half16 *src, __global float16 *dst)\n"
+    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+    "__kernel void test_buffer_write_half16(__global half16 *src, __global "
+    "half16 *dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     "\n"
-    "    dst[tid] = vload_half16( tid * 2, src );\n"
-    "}\n" };
+    "    dst[tid] = src[tid];\n"
+    "}\n"
+};
 
 static const char *half_kernel_name[] = { "test_buffer_write_half", "test_buffer_write_half2", "test_buffer_write_half4", "test_buffer_write_half8", "test_buffer_write_half16" };
 
@@ -620,9 +630,6 @@ int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_que
     cl_kernel   kernel[5];
     size_t      ptrSizes[5];
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     int         i, ii;
     int         src_flag_id, dst_flag_id;
@@ -718,11 +725,6 @@ int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_que
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
-                test_error( err, "Unable to get work group size to use" );
-#endif
-
                 err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[ii] );
                 err |= clSetKernelArg( kernel[i], 1, sizeof( cl_mem ), (void *)&buffers[ii+1] );
                 if ( err != CL_SUCCESS ){
@@ -735,11 +737,7 @@ int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_que
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
                 err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
                 if ( err != CL_SUCCESS ){
                     print_error( err, " clEnqueueNDRangeKernel failed" );
                     clReleaseMemObject( buffers[ii] );
@@ -800,9 +798,6 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
     size_t      ptrSizes[5];
     size_t      size = sizeof( TestStruct );
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     int         i, ii;
     cl_uint     j;
@@ -905,11 +900,6 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
-                test_error( err, "Unable to get work group size to use" );
-#endif
-
                 err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[ii] );
                 err |= clSetKernelArg( kernel[i], 1, sizeof( cl_mem ), (void *)&buffers[ii+1] );
                 if ( err != CL_SUCCESS ){
@@ -923,11 +913,7 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
                 err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
                 if ( err != CL_SUCCESS ){
                     print_error( err, " clEnqueueNDRangeKernel failed" );
                     clReleaseMemObject( buffers[ii] );
@@ -986,9 +972,6 @@ int test_buffer_write_array_async( cl_device_id deviceID, cl_context context, cl
     cl_event    event[2];
     size_t      ptrSizes[5];
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     cl_int      err;
     int         i, ii;
     int         src_flag_id, dst_flag_id;
@@ -1045,11 +1028,6 @@ int test_buffer_write_array_async( cl_device_id deviceID, cl_context context, cl
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
-                test_error( err, "Unable to get work group size to use" );
-#endif
-
                 err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[ii] );
                 err |= clSetKernelArg( kernel[i], 1, sizeof( cl_mem ), (void *)&buffers[ii+1] );
                 if ( err != CL_SUCCESS ){
@@ -1073,11 +1051,8 @@ int test_buffer_write_array_async( cl_device_id deviceID, cl_context context, cl
                     return -1;
                 }
 
-#ifdef USE_LOCAL_WORK_GROUP
-                err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
                 err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
+
                 if (err != CL_SUCCESS){
                     print_error( err, "clEnqueueNDRangeKernel failed" );
                     return -1;
@@ -1398,6 +1373,7 @@ int test_buffer_write_float( cl_device_id deviceID, cl_context context, cl_comma
 
 int test_buffer_write_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
+    PASSIVE_REQUIRE_FP16_SUPPORT(deviceID)
     float   *inptr[5];
     size_t  ptrSizes[5];
     int     i, err;
@@ -1422,8 +1398,10 @@ int test_buffer_write_half( cl_device_id deviceID, cl_context context, cl_comman
             inptr[i][j] = get_random_float( -FLT_MAX, FLT_MAX, d );
     }
 
-    err = test_buffer_write( deviceID, context, queue, num_elements, sizeof( cl_float ) / 2, (char*)"half", 5, (void**)inptr,
-                             buffer_write_half_kernel_code, half_kernel_name, foo, d );
+    err = test_buffer_write(deviceID, context, queue, num_elements,
+                            sizeof(cl_half), (char *)"half", 5, (void **)inptr,
+                            buffer_write_half_kernel_code, half_kernel_name,
+                            foo, d);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );

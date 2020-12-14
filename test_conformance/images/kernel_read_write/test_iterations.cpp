@@ -22,20 +22,11 @@
     #include <setjmp.h>
 #endif
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool            gDebugTrace, gExtraValidateInfo, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestImage2DFromBuffer, gTestMipmaps;
-extern bool            gUseKernelSamplers;
-extern cl_filter_mode    gFilterModeToUse;
-extern cl_addressing_mode    gAddressModeToUse;
+extern bool gTestImage2DFromBuffer;
 extern uint64_t gRoundingStartValue;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
 extern bool gDeviceLt20;
-
-#define MAX_TRIES               1
-#define MAX_CLAMPED             1
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.
@@ -290,8 +281,6 @@ template <class T> int determine_validation_error( void *imagePtr, image_descrip
     return 0;
 }
 
-#define CLAMP( _val, _min, _max )           ((_val) < (_min) ? (_min) : (_val) > (_max) ? (_max) : (_val))
-
 static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *imageSampler, float *xOffsets, float *yOffsets, float xfract, float yfract, int normalized_coords, MTdata d )
 {
     size_t i = 0;
@@ -404,9 +393,6 @@ static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *im
         }
     }
 }
-#ifndef MAX
-    #define MAX( _a, _b )           ((_a) > (_b) ? (_a) : (_b))
-#endif
 
 int validate_image_2D_depth_results(void *imageValues, void *resultValues, double formatAbsoluteError, float *xOffsetValues, float *yOffsetValues,
                                                         ExplicitType outputType, int &numTries, int &numClamped, image_sampler_data *imageSampler, image_descriptor *imageInfo, size_t lod, char *imagePtr)

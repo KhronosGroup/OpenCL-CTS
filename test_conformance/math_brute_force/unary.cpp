@@ -629,6 +629,15 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
                         fail = ! (fabsf(abs_error) <= ulps);
                         use_abs_error = 1;
                     }
+                    if (strcmp(fname, "sinpi") == 0
+                        || strcmp(fname, "cospi") == 0)
+                    {
+                        if (s[j] >= -1.0 && s[j] <= 1.0)
+                        {
+                            fail = !(fabsf(abs_error) <= ulps);
+                            use_abs_error = 1;
+                        }
+                    }
 
                     if ( strcmp(fname, "reciprocal") == 0 )
                     {
@@ -663,7 +672,8 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
                         }
                         // Else fast math derived implementation does not require ULP verification
                     }
-                    if ( strcmp(fname,"log") == 0 || strcmp(fname,"log2") == 0 )
+                    if (strcmp(fname, "log") == 0 || strcmp(fname, "log2") == 0
+                        || strcmp(fname, "log10") == 0)
                     {
                         if( s[j] >= 0.5 && s[j] <= 2 )
                         {
@@ -674,7 +684,6 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data )
                             ulps = gIsEmbedded ? job->f->float_embedded_ulps : job->f->float_ulps;
                             fail = ! (fabsf(err) <= ulps);
                         }
-
                     }
 
 
