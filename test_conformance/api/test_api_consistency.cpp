@@ -79,44 +79,51 @@ int test_consistency_svm(cl_device_id deviceID, cl_context context,
         // CL_INVALID_OPERATION if the device associated with command_queue does
         // not support Shared Virtual Memory.
 
+        // These calls purposefully pass bogus pointers to the functions to
+        // better test that they are a NOP when SVM is not supported.
+        void* bogus0 = (void*)0xDEADBEEF;
+        void* bogus1 = (void*)0xDEADDEAD;
         cl_uint pattern = 0xAAAAAAAA;
-        error = clEnqueueSVMMemFill(queue, ptr0, &pattern, sizeof(pattern),
+        error = clEnqueueSVMMemFill(queue, bogus0, &pattern, sizeof(pattern),
                                     allocSize, 0, NULL, NULL);
         test_failure_error(
             error, CL_INVALID_OPERATION,
             "CL_DEVICE_SVM_CAPABILITIES returned 0 but clEnqueueSVMMemFill did "
             "not return CL_INVALID_OPERATION");
 
-        error = clEnqueueSVMMemcpy(queue, CL_TRUE, ptr1, ptr0, allocSize, 0,
+        error = clEnqueueSVMMemcpy(queue, CL_TRUE, bogus1, bogus0, allocSize, 0,
                                    NULL, NULL);
         test_failure_error(
             error, CL_INVALID_OPERATION,
             "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
             "clEnqueueSVMMemcpy did not return CL_INVALID_OPERATION");
 
-        error = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, ptr1, allocSize, 0,
-                                NULL, NULL);
+        error = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, bogus1, allocSize,
+                                0, NULL, NULL);
         test_failure_error(
             error, CL_INVALID_OPERATION,
             "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
             "clEnqueueSVMMap did not return CL_INVALID_OPERATION");
 
-        error = clEnqueueSVMUnmap(queue, ptr1, 0, NULL, NULL);
+        error = clEnqueueSVMUnmap(queue, bogus1, 0, NULL, NULL);
         test_failure_error(
             error, CL_INVALID_OPERATION,
             "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
             "clEnqueueSVMUnmap did not return CL_INVALID_OPERATION");
 
+        error = clEnqueueSVMMigrateMem(queue, 1, (const void**)&bogus1, NULL, 0,
+                                       0, NULL, NULL);
+        test_failure_error(
+            error, CL_INVALID_OPERATION,
+            "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
+            "clEnqueueSVMMigrateMem did not return CL_INVALID_OPERATION");
+
         // If the enqueue calls above did not return errors, a clFinish would be
         // needed here to ensure the SVM operations are complete before freeing
         // the SVM pointers.
 
-        // These calls to free SVM purposefully passes a bogus pointer to the
-        // free function to better test that it they are a NOP when SVM is not
-        // supported.
-        void* bogus = (void*)0xDEADBEEF;
-        clSVMFree(context, bogus);
-        error = clEnqueueSVMFree(queue, 1, &bogus, NULL, NULL, 0, NULL, NULL);
+        clSVMFree(context, bogus0);
+        error = clEnqueueSVMFree(queue, 1, &bogus0, NULL, NULL, 0, NULL, NULL);
         test_failure_error(
             error, CL_INVALID_OPERATION,
             "CL_DEVICE_SVM_CAPABILITIES returned 0 but "
