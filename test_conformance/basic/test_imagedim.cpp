@@ -41,8 +41,11 @@ static const char *image_dim_kernel_code =
 static unsigned char *
 generate_8888_image(int w, int h, MTdata d)
 {
-    unsigned char   *ptr = (unsigned char*)malloc(w * h * 4);
-    int             i;
+    unsigned char  *ptr = (unsigned char*)malloc(sizeof(unsigned char) * 4 * w * h);
+    unsigned int   i;
+    if (ptr == NULL) {
+        return ptr;
+    }
 
     for (i=0; i<w*h*4; i++)
         ptr[i] = (unsigned char)genrand_int32(d);
@@ -151,7 +154,19 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
 
     d = init_genrand( gRandomSeed );
     input_ptr = generate_8888_image(max_img_width, max_img_height, d);
+	if (input_ptr == NULL) {
+	    log_error("Malloc returned input_ptr as NULL\n");
+		free_mtdata(d);
+		return -1;
+	}
+
     output_ptr = (unsigned char*)malloc(sizeof(unsigned char) * 4 * max_img_width * max_img_height);
+	if (output_ptr == NULL) {
+		log_error("Malloc returned output_ptr as NULL\n");
+		free(input_ptr); 
+		free_mtdata(d);
+		return -1;
+    }
 
     // test power of 2 width, height starting at 1 to 4K
     for (i=1,i2=0; i<=max_img_height; i<<=1,i2++)
@@ -365,7 +380,19 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
 
     d = init_genrand( gRandomSeed );
     input_ptr = generate_8888_image(max_img_width, max_img_height, d);
+    if (input_ptr == NULL) {
+        log_error("Malloc returned input_ptr as NULL\n");
+        free_mtdata(d);
+        return -1;
+    }
+   
     output_ptr = (unsigned char*)malloc(sizeof(unsigned char) * 4 * max_img_width * max_img_height);
+    if (output_ptr == NULL) {
+        log_error("Malloc returned output_ptr as NULL\n");
+        free(input_ptr);
+        free_mtdata(d);
+        return -1;
+    }
 
     int plus_minus;
     for (plus_minus=0; plus_minus < 3; plus_minus++)
