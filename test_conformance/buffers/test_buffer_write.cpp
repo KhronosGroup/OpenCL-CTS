@@ -652,7 +652,6 @@ int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_que
                                           &kernelCode[i], kernelName[i]);
         if (err)
         {
-            align_free(outptr[i]);
             log_error(" Error creating program for %s\n", type);
             return -1;
         }
@@ -810,7 +809,6 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
                                           "read_write_struct");
         if (err)
         {
-            align_free(outptr[i]);
             log_error(" Error creating program for struct\n");
             free_mtdata(d);
             return -1;

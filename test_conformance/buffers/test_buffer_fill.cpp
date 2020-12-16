@@ -696,7 +696,7 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
     void        *outptr;
     TestStruct  *inptr;
     TestStruct  *hostptr;
-    TestStruct  *pattern;
+    TestStruct pattern;
     clProgramWrapper program;
     clKernelWrapper kernel;
     clEventWrapper event[2];
@@ -724,9 +724,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
         if (err)
         {
             log_error(" Error creating program for struct\n");
-            free((void *)pattern);
-            align_free((void *)inptr);
-            align_free((void *)hostptr);
             free_mtdata(d);
             return -1;
         }
@@ -741,9 +738,8 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             log_info("Testing random fill from offset %d for %d elements: \n",
                      (int)offset_elements, (int)fill_elements);
 
-            pattern = (TestStruct *)malloc(ptrSize);
-            pattern->a = (cl_int)genrand_int32(d);
-            pattern->b = (cl_float)get_random_float(-FLT_MAX, FLT_MAX, d);
+            pattern.a = (cl_int)genrand_int32(d);
+            pattern.b = (cl_float)get_random_float(-FLT_MAX, FLT_MAX, d);
 
             inptr = (TestStruct *)align_malloc(ptrSize * num_elements,
                                                min_alignment);
@@ -754,8 +750,8 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             }
             for (j = offset_elements; j < offset_elements + fill_elements; j++)
             {
-                inptr[j].a = pattern->a;
-                inptr[j].b = pattern->b;
+                inptr[j].a = pattern.a;
+                inptr[j].b = pattern.b;
             }
             for (j = offset_elements + fill_elements; j < (size_t)num_elements;
                  j++)
@@ -774,7 +770,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSize * num_elements, NULL, &err);
             if ( err ){
                 print_error(err, " clCreateBuffer failed\n" );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
@@ -784,7 +779,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 err = clEnqueueWriteBuffer(queue, buffers[0], CL_FALSE, 0, ptrSize * num_elements, hostptr, 0, NULL, NULL);
                 if ( err != CL_SUCCESS ){
                     print_error(err, " clEnqueueWriteBuffer failed\n" );
-                    free( (void *)pattern );
                     align_free( (void *)inptr );
                     align_free( (void *)hostptr );
                     free_mtdata(d);
@@ -797,23 +791,21 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             if ( ! buffers[1] || err){
                 print_error(err, " clCreateBuffer failed\n" );
                 align_free( outptr );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
                 return -1;
             }
 
-            err = clEnqueueFillBuffer(queue, buffers[0], pattern, ptrSize,
-                                      ptrSize * offset_elements, ptrSize * fill_elements,
-                                      0, NULL, &(event[0]));
+            err = clEnqueueFillBuffer(
+                queue, buffers[0], &pattern, ptrSize, ptrSize * offset_elements,
+                ptrSize * fill_elements, 0, NULL, &(event[0]));
             /* uncomment for test debugging
              err = clEnqueueWriteBuffer(queue, buffers[0], CL_FALSE, 0, ptrSize * num_elements, inptr, 0, NULL, &(event[0]));
              */
             if ( err != CL_SUCCESS ){
                 print_error( err, " clEnqueueFillBuffer failed" );
                 align_free( outptr );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
@@ -825,7 +817,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             if ( err != CL_SUCCESS ){
                 print_error( err, " clSetKernelArg failed" );
                 align_free( outptr );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
@@ -836,7 +827,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             if ( err != CL_SUCCESS ){
                 print_error( err, "clWaitForEvents() failed" );
                 align_free( outptr );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
@@ -848,7 +838,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             if ( err != CL_SUCCESS ){
                 print_error( err, " clEnqueueNDRangeKernel failed" );
                 align_free( outptr );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
@@ -859,7 +848,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             if ( err != CL_SUCCESS ){
                 print_error( err, " clEnqueueReadBuffer failed" );
                 align_free( outptr );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
@@ -881,7 +869,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             }
             // cleanup
             align_free( outptr );
-            free((void *)pattern);
             align_free((void *)inptr);
             align_free((void *)hostptr);
         } // src cl_mem_flag

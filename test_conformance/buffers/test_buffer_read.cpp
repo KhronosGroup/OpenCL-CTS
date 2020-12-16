@@ -659,8 +659,6 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
         {
             log_error("Creating program for %s\n", type);
             print_error(err, " Error creating program ");
-            align_free(outptr[i]);
-            align_free(inptr[i]);
             return -1;
         }
 
@@ -793,8 +791,6 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
         if (err)
         {
             log_error(" Error creating program for %s\n", type);
-            align_free(outptr[i]);
-            align_free(inptr[i]);
             return -1;
         }
 
@@ -927,8 +923,6 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
         if (err)
         {
             log_error(" Error creating program for %s\n", type);
-            align_free(outptr[i]);
-            align_free(inptr[i]);
             return -1;
         }
 

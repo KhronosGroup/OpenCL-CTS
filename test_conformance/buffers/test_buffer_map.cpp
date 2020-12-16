@@ -588,7 +588,6 @@ static int test_buffer_map_read( cl_device_id deviceID, cl_context context, cl_c
         if (err)
         {
             log_error(" Error creating program for %s\n", type);
-            align_free(outptr[i]);
             return -1;
         }
 
