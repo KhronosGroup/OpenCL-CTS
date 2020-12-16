@@ -375,8 +375,8 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
 
     // Are on device queues supported
     bool on_device_supported =
-        (version >= Version(2, 0)
-         || (version >= Version(3, 0) && sizeof(device_queue_props) != 0));
+        (version >= Version(2, 0) && version < Version(3, 0))
+        || (version >= Version(3, 0) && device_queue_props != 0);
 
     int num_test_options = MIN_NUM_COMMAND_QUEUE_PROPERTIES;
     if (host_queue_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
