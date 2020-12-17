@@ -320,11 +320,10 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
         }
         else
         {
-            unprotImage = create_image_1d( context,
-                                          image_read_write_flags | gMemFlagsToUse,
-                                          imageInfo->format,
-                                          imageInfo->width, ( gEnablePitch ? imageInfo->rowPitch : 0 ),
-                                          imageValues, NULL, &error );
+            unprotImage = create_image_1d(
+                context, image_read_write_flags | gMemFlagsToUse,
+                imageInfo->format, imageInfo->width,
+                (gEnablePitch ? imageInfo->rowPitch : 0), NULL, NULL, &error);
             if( error != CL_SUCCESS )
             {
                 log_error( "ERROR: Unable to create 1D image of size %d pitch %d (%s)\n", (int)imageInfo->width, (int)imageInfo->rowPitch, IGetErrorString( error ) );

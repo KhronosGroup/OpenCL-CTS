@@ -226,6 +226,13 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
         }
         else // Either CL_MEM_ALLOC_HOST_PTR, CL_MEM_COPY_HOST_PTR or none
         {
+            char *host_ptr = NULL;
+
+            if (gMemFlagsToUse & CL_MEM_COPY_HOST_PTR)
+            {
+                host_ptr = imageValues;
+            }
+
             // Note: if ALLOC_HOST_PTR is used, the driver allocates memory that can be accessed by the host, but otherwise
             // it works just as if no flag is specified, so we just do the same thing either way
             // Note: if the flags is really CL_MEM_COPY_HOST_PTR, we want to remove it, because we don't want to copy any incoming data
@@ -248,9 +255,12 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
             }
             else
             {
-                unprotImage = create_image_1d_array( context, mem_flag_types[mem_flag_index] | ( gMemFlagsToUse & ~(CL_MEM_COPY_HOST_PTR) ), imageInfo->format,
-                                              imageInfo->width, imageInfo->arraySize, 0, 0,
-                                              imageValues, &error );
+                unprotImage = create_image_1d_array(
+                    context,
+                    mem_flag_types[mem_flag_index]
+                        | (gMemFlagsToUse & ~(CL_MEM_COPY_HOST_PTR)),
+                    imageInfo->format, imageInfo->width, imageInfo->arraySize,
+                    0, 0, host_ptr, &error);
                 if( error != CL_SUCCESS )
                 {
                     log_error( "ERROR: Unable to create 1D image array of size %ld x %ld pitch %ld (%s, %s)\n", imageInfo->width, imageInfo->arraySize,

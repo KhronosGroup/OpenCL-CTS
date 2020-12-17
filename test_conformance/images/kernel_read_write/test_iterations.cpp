@@ -1360,11 +1360,10 @@ int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel ke
         {
             // Note: if ALLOC_HOST_PTR is used, the driver allocates memory that can be accessed by the host, but otherwise
             // it works just as if no flag is specified, so we just do the same thing either way
-            unprotImage = create_image_2d( context,
-                                      image_read_write_flags | gMemFlagsToUse,
-                                      imageInfo->format,
-                                      imageInfo->width, imageInfo->height, ( gEnablePitch ? imageInfo->rowPitch : 0 ),
-                                      imageValues, &error );
+            unprotImage = create_image_2d(
+                context, image_read_write_flags | gMemFlagsToUse,
+                imageInfo->format, imageInfo->width, imageInfo->height,
+                (gEnablePitch ? imageInfo->rowPitch : 0), NULL, &error);
         }
         if( error != CL_SUCCESS )
         {
