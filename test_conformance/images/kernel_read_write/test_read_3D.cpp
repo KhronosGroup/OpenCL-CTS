@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017, 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
 //
 #include "test_common.h"
 #include <float.h>
-
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.
@@ -76,7 +73,6 @@ const char *float3DUnnormalizedCoordKernelSource =
 
 static const char *samplerKernelArg = " sampler_t imageSampler,";
 
-extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo, int x, int y, int z, float *outData );
 template <class T> int determine_validation_error_offset( void *imagePtr, image_descriptor *imageInfo, image_sampler_data *imageSampler,
                                                          T *resultPtr, T * expected, float error,
                                                          float x, float y, float z, float xAddressOffset, float yAddressOffset, float zAddressOffset, size_t j, int &numTries, int &numClamped, bool printAsFloat, int lod )
@@ -202,7 +198,12 @@ template <class T> int determine_validation_error_offset( void *imagePtr, image_
     return 0;
 }
 
-static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *imageSampler, float *xOffsets, float *yOffsets, float *zOffsets, float xfract, float yfract, float zfract, int normalized_coords, MTdata d , int lod)
+static void InitFloatCoordsCommon(image_descriptor *imageInfo,
+                                  image_sampler_data *imageSampler,
+                                  float *xOffsets, float *yOffsets,
+                                  float *zOffsets, float xfract, float yfract,
+                                  float zfract, int normalized_coords, MTdata d,
+                                  int lod)
 {
     size_t i = 0;
     if( gDisableOffsets )
@@ -557,11 +558,12 @@ int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel ke
         float offset = float_offsets[ q % float_offset_count ];
 
         // Init the coordinates
-        InitFloatCoords( imageInfo, imageSampler, xOffsetValues, yOffsetValues, zOffsetValues,
-                        q>=float_offset_count ? -offset: offset,
-                        q>=float_offset_count ? offset: -offset,
-                        q>=float_offset_count ? -offset: offset,
-                        imageSampler->normalized_coords, d, lod );
+        InitFloatCoordsCommon(imageInfo, imageSampler, xOffsetValues,
+                              yOffsetValues, zOffsetValues,
+                              q >= float_offset_count ? -offset : offset,
+                              q >= float_offset_count ? offset : -offset,
+                              q >= float_offset_count ? -offset : offset,
+                              imageSampler->normalized_coords, d, lod);
 
         error = clEnqueueWriteBuffer( queue, xOffsets, CL_TRUE, 0, sizeof(cl_float) * imageInfo->height * imageInfo->width * imageInfo->depth, xOffsetValues, 0, NULL, NULL );
         test_error( error, "Unable to write x offsets" );
