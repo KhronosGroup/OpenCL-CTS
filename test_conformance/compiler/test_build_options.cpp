@@ -46,7 +46,7 @@ const char *options_test_kernel[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
 "{\n"
 "    size_t tid = get_global_id(0);\n"
-"    dst[tid] = src[tid];\n"
+"    dst[tid] = (int)src[tid];\n"
 "}\n" };
 
 const char *optimization_options[] = {
