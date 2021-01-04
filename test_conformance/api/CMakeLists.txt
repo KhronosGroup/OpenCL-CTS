@@ -7,7 +7,6 @@ set(${MODULE_NAME}_SOURCES
          test_retain.cpp
          test_retain_program.cpp
          test_queries.cpp
-         test_queries_compatibility.cpp
          test_create_kernels.cpp
          test_kernels.cpp
          test_kernel_private_memory_size.cpp
