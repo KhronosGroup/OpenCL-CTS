@@ -102,6 +102,16 @@ int determine_validation_error_offset(
                 }
                 log_error("ERROR: TEST FAILED: Read is erroneously clamping "
                           "coordinates!\n");
+
+                if (imageSampler->filter_mode != CL_FILTER_LINEAR)
+                {
+                    log_error(
+                        "\tValue really found in image at %d,%d,%d (%s)\n",
+                        actualX, actualY, actualZ,
+                        (found > 1) ? "NOT unique!!" : "unique");
+                }
+                log_error("\n");
+
                 return -1;
             }
             clampingErr = true;

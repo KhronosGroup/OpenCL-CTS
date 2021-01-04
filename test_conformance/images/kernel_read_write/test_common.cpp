@@ -210,6 +210,12 @@ cl_mem create_image_of_type(cl_context context, cl_mem_flags mem_flags,
     cl_mem image;
     switch (imageInfo->type)
     {
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            image = create_image_2d_array(context, mem_flags, imageInfo->format,
+                                          imageInfo->width, imageInfo->height,
+                                          imageInfo->arraySize, row_pitch,
+                                          slice_pitch, host_ptr, error);
+            break;
         case CL_MEM_OBJECT_IMAGE3D:
             image = create_image_3d(context, mem_flags, imageInfo->format,
                                     imageInfo->width, imageInfo->height,
@@ -231,6 +237,9 @@ static size_t get_image_num_pixels(image_descriptor *imageInfo, size_t width,
     size_t image_size;
     switch (imageInfo->type)
     {
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            image_size = width * height * array_size;
+            break;
         case CL_MEM_OBJECT_IMAGE3D: image_size = width * height * depth; break;
         default:
             log_error("Implementation is incomplete, only 3D images are "
@@ -452,9 +461,16 @@ int test_read_image(cl_context context, cl_command_queue queue,
                 nextLevelOffset += region[0] * region[1] * region[2]
                     * get_pixel_size(imageInfo->format);
                 // Subsequent mip level dimensions keep halving
+                // Regions for unnecessary dimensions are already 1.
                 region[0] = region[0] >> 1 ? region[0] >> 1 : 1;
-                region[1] = region[1] >> 1 ? region[1] >> 1 : 1;
-                region[2] = region[2] >> 1 ? region[2] >> 1 : 1;
+                if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
+                {
+                    region[1] = region[1] >> 1 ? region[1] >> 1 : 1;
+                }
+                if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                {
+                    region[2] = region[2] >> 1 ? region[2] >> 1 : 1;
+                }
             }
         }
     }
@@ -610,11 +626,258 @@ int test_read_image(cl_context context, cl_command_queue queue,
 
             // Validate results element by element
             char *imagePtr = (char *)imageValues + nextLevelOffset;
+            if (((imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                 && (imageInfo->format->image_channel_order == CL_DEPTH))
+                && (outputType == kFloat))
+            {
+                // Validate float results
+                float *resultPtr = (float *)(char *)resultValues;
+                float expected[4], error = 0.0f;
+                float maxErr = get_max_relative_error(
+                    imageInfo->format, imageSampler, 1 /*3D*/,
+                    CL_FILTER_LINEAR == imageSampler->filter_mode);
+
+                for (size_t z = 0, j = 0; z < depth_lod; z++)
+                {
+                    for (size_t y = 0; y < height_lod; y++)
+                    {
+                        for (size_t x = 0; x < width_lod; x++, j++)
+                        {
+                            // Step 1: go through and see if the results verify
+                            // for the pixel For the normalized case on a GPU we
+                            // put in offsets to the X, Y and Z to see if we
+                            // land on the right pixel. This addresses the
+                            // significant inaccuracy in GPU normalization in
+                            // OpenCL 1.0.
+                            int checkOnlyOnePixel = 0;
+                            int found_pixel = 0;
+                            float offset = NORM_OFFSET;
+                            if (!imageSampler->normalized_coords
+                                || imageSampler->filter_mode
+                                    != CL_FILTER_NEAREST
+                                || NORM_OFFSET == 0
+#if defined(__APPLE__)
+                                // Apple requires its CPU implementation to do
+                                // correctly rounded address arithmetic in all
+                                // modes
+                                || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+#endif
+                            )
+                                offset = 0.0f; // Loop only once
+
+                            for (float norm_offset_x = -offset;
+                                 norm_offset_x <= offset && !found_pixel;
+                                 norm_offset_x += NORM_OFFSET)
+                            {
+                                for (float norm_offset_y = -offset;
+                                     norm_offset_y <= offset && !found_pixel;
+                                     norm_offset_y += NORM_OFFSET)
+                                {
+                                    for (float norm_offset_z = -offset;
+                                         norm_offset_z <= NORM_OFFSET
+                                         && !found_pixel;
+                                         norm_offset_z += NORM_OFFSET)
+                                    {
+
+                                        int hasDenormals = 0;
+                                        FloatPixel maxPixel =
+                                            sample_image_pixel_float_offset(
+                                                imagePtr, imageInfo,
+                                                xOffsetValues[j],
+                                                yOffsetValues[j],
+                                                zOffsetValues[j], norm_offset_x,
+                                                norm_offset_y, norm_offset_z,
+                                                imageSampler, expected, 0,
+                                                &hasDenormals, lod);
+
+                                        float err1 = ABS_ERROR(resultPtr[0],
+                                                               expected[0]);
+                                        // Clamp to the minimum absolute error
+                                        // for the format
+                                        if (err1 > 0
+                                            && err1 < formatAbsoluteError)
+                                        {
+                                            err1 = 0.0f;
+                                        }
+                                        float maxErr1 = std::max(
+                                            maxErr * maxPixel.p[0], FLT_MIN);
+
+                                        if (!(err1 <= maxErr1))
+                                        {
+                                            // Try flushing the denormals
+                                            if (hasDenormals)
+                                            {
+                                                // If implementation decide to
+                                                // flush subnormals to zero, max
+                                                // error needs to be adjusted
+                                                maxErr1 += 4 * FLT_MIN;
+
+                                                maxPixel =
+                                                    sample_image_pixel_float_offset(
+                                                        imagePtr, imageInfo,
+                                                        xOffsetValues[j],
+                                                        yOffsetValues[j],
+                                                        zOffsetValues[j],
+                                                        norm_offset_x,
+                                                        norm_offset_y,
+                                                        norm_offset_z,
+                                                        imageSampler, expected,
+                                                        0, NULL, lod);
+
+                                                err1 = ABS_ERROR(resultPtr[0],
+                                                                 expected[0]);
+                                            }
+                                        }
+
+                                        found_pixel = (err1 <= maxErr1);
+                                    } // norm_offset_z
+                                } // norm_offset_y
+                            } // norm_offset_x
+
+                            // Step 2: If we did not find a match, then print
+                            // out debugging info.
+                            if (!found_pixel)
+                            {
+                                // For the normalized case on a GPU we put in
+                                // offsets to the X and Y to see if we land on
+                                // the right pixel. This addresses the
+                                // significant inaccuracy in GPU normalization
+                                // in OpenCL 1.0.
+                                checkOnlyOnePixel = 0;
+                                int shouldReturn = 0;
+                                for (float norm_offset_x = -offset;
+                                     norm_offset_x <= offset
+                                     && !checkOnlyOnePixel;
+                                     norm_offset_x += NORM_OFFSET)
+                                {
+                                    for (float norm_offset_y = -offset;
+                                         norm_offset_y <= offset
+                                         && !checkOnlyOnePixel;
+                                         norm_offset_y += NORM_OFFSET)
+                                    {
+                                        for (float norm_offset_z = -offset;
+                                             norm_offset_z <= offset
+                                             && !checkOnlyOnePixel;
+                                             norm_offset_z += NORM_OFFSET)
+                                        {
+
+                                            int hasDenormals = 0;
+                                            FloatPixel maxPixel =
+                                                sample_image_pixel_float_offset(
+                                                    imagePtr, imageInfo,
+                                                    xOffsetValues[j],
+                                                    yOffsetValues[j],
+                                                    zOffsetValues[j],
+                                                    norm_offset_x,
+                                                    norm_offset_y,
+                                                    norm_offset_z, imageSampler,
+                                                    expected, 0, &hasDenormals,
+                                                    lod);
+
+                                            float err1 = ABS_ERROR(resultPtr[0],
+                                                                   expected[0]);
+                                            float maxErr1 =
+                                                std::max(maxErr * maxPixel.p[0],
+                                                         FLT_MIN);
+
+
+                                            if (!(err1 <= maxErr1))
+                                            {
+                                                // Try flushing the denormals
+                                                if (hasDenormals)
+                                                {
+                                                    maxErr1 += 4 * FLT_MIN;
+
+                                                    maxPixel =
+                                                        sample_image_pixel_float(
+                                                            imagePtr, imageInfo,
+                                                            xOffsetValues[j],
+                                                            yOffsetValues[j],
+                                                            zOffsetValues[j],
+                                                            imageSampler,
+                                                            expected, 0, NULL,
+                                                            lod);
+
+                                                    err1 =
+                                                        ABS_ERROR(resultPtr[0],
+                                                                  expected[0]);
+                                                }
+                                            }
+
+                                            if (!(err1 <= maxErr1))
+                                            {
+                                                log_error(
+                                                    "FAILED norm_offsets: %g , "
+                                                    "%g , %g:\n",
+                                                    norm_offset_x,
+                                                    norm_offset_y,
+                                                    norm_offset_z);
+
+                                                float tempOut[4];
+                                                shouldReturn |=
+                                                    determine_validation_error_offset<
+                                                        float>(
+                                                        imagePtr, imageInfo,
+                                                        imageSampler, resultPtr,
+                                                        expected, error,
+                                                        xOffsetValues[j],
+                                                        yOffsetValues[j],
+                                                        zOffsetValues[j],
+                                                        norm_offset_x,
+                                                        norm_offset_y,
+                                                        norm_offset_z, j,
+                                                        numTries, numClamped,
+                                                        true, lod);
+                                                log_error("Step by step:\n");
+                                                FloatPixel temp =
+                                                    sample_image_pixel_float_offset(
+                                                        imagePtr, imageInfo,
+                                                        xOffsetValues[j],
+                                                        yOffsetValues[j],
+                                                        zOffsetValues[j],
+                                                        norm_offset_x,
+                                                        norm_offset_y,
+                                                        norm_offset_z,
+                                                        imageSampler, tempOut,
+                                                        1 /*verbose*/,
+                                                        &hasDenormals, lod);
+                                                log_error(
+                                                    "\tulps: %2.2f  (max "
+                                                    "allowed: %2.2f)\n\n",
+                                                    Ulp_Error(resultPtr[0],
+                                                              expected[0]),
+                                                    Ulp_Error(
+                                                        MAKE_HEX_FLOAT(
+                                                            0x1.000002p0f,
+                                                            0x1000002L, -24)
+                                                            + maxErr,
+                                                        MAKE_HEX_FLOAT(
+                                                            0x1.000002p0f,
+                                                            0x1000002L, -24)));
+                                            }
+                                            else
+                                            {
+                                                log_error(
+                                                    "Test error: we should "
+                                                    "have detected this "
+                                                    "passing above.\n");
+                                            }
+                                        } // norm_offset_z
+                                    } // norm_offset_y
+                                } // norm_offset_x
+                                if (shouldReturn) return 1;
+                            } // if (!found_pixel)
+
+                            resultPtr += 1;
+                        }
+                    }
+                }
+            }
             /*
              * FLOAT output type
              */
-            if (is_sRGBA_order(imageInfo->format->image_channel_order)
-                && (outputType == kFloat))
+            else if (is_sRGBA_order(imageInfo->format->image_channel_order)
+                     && (outputType == kFloat))
             {
                 // Validate float results
                 float *resultPtr = (float *)(char *)resultValues;
@@ -1626,8 +1889,9 @@ int test_read_image(cl_context context, cl_command_queue queue,
             }
         }
         {
-            nextLevelOffset += width_lod * height_lod * depth_lod
-                * get_pixel_size(imageInfo->format);
+            nextLevelOffset +=
+                image_lod_size * get_pixel_size(imageInfo->format);
+            // Any unnecessary dimensions will already be 1.
             width_lod = (width_lod >> 1) ? (width_lod >> 1) : 1;
             if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
             {
