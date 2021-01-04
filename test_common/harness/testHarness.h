@@ -80,6 +80,7 @@ typedef enum test_status
     TEST_PASS = 0,
     TEST_FAIL = 1,
     TEST_SKIP = 2,
+    TEST_SKIPPED_ITSELF = -100,
 } test_status;
 
 extern int gFailCount;
