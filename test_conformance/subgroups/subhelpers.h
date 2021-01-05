@@ -336,6 +336,7 @@ template <typename Ty> struct CommonTypeManager
             case ArithmeticOp::and_: return (Ty)~0;
             case ArithmeticOp::or_: return (Ty)0;
             case ArithmeticOp::xor_: return (Ty)0;
+            default: log_error("Unknown operation request"); break;
         }
         return 0;
     }
@@ -362,6 +363,7 @@ template <> struct TypeManager<cl_int> : public CommonTypeManager<cl_int>
             case ArithmeticOp::logical_and: return (cl_int)1;
             case ArithmeticOp::logical_or: return (cl_int)0;
             case ArithmeticOp::logical_xor: return (cl_int)0;
+            default: log_error("Unknown operation request"); break;
         }
         return 0;
     }
@@ -775,6 +777,7 @@ template <> struct TypeManager<cl_float> : public CommonTypeManager<cl_float>
             case ArithmeticOp::min_:
                 return std::numeric_limits<float>::infinity();
             case ArithmeticOp::mul_: return (cl_float)1;
+            default: log_error("Unknown operation request"); break;
         }
         return 0;
     }
@@ -833,6 +836,7 @@ template <> struct TypeManager<cl_double> : public CommonTypeManager<cl_double>
             case ArithmeticOp::min_:
                 return std::numeric_limits<double>::infinity();
             case ArithmeticOp::mul_: return (cl_double)1;
+            default: log_error("Unknown operation request"); break;
         }
         return 0;
     }
@@ -919,6 +923,7 @@ struct TypeManager<subgroups::cl_half>
             case ArithmeticOp::max_: return { 0xfc00 };
             case ArithmeticOp::min_: return { 0x7c00 };
             case ArithmeticOp::mul_: return { 0x3c00 };
+            default: log_error("Unknown operation request"); break;
         }
         return { 0 };
     }
