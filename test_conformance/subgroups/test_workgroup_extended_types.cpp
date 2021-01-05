@@ -19,57 +19,58 @@
 #include "workgroup_common_templates.h"
 #include "harness/typeWrappers.h"
 
+// Global/local work group sizes
+// Adjust these individually below if desired/needed
+#define GWS 2000
+#define LWS 200
+namespace {
 struct run_for_type
 {
     run_for_type(cl_device_id device, cl_context context,
                  cl_command_queue queue, int num_elements,
                  bool useCoreSubgroups,
                  std::vector<std::string> required_extensions = {})
-    {
-        device_ = device;
-        context_ = context;
-        queue_ = queue;
-        num_elements_ = num_elements;
-        useCoreSubgroups_ = useCoreSubgroups;
-        required_extensions_ = required_extensions;
-    }
+        : device_(device), context_(context), queue_(queue),
+          num_elements_(num_elements), useCoreSubgroups_(useCoreSubgroups),
+          required_extensions_(required_extensions)
+    {}
 
     template <typename T> cl_int run_bc()
     {
         cl_int error;
-        error = test<T, BC<T>, G, L>::run(
+        error = test<T, BC<T, SubgroupsBroadcastOp::broadcast>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_bcast",
             bcast_source, 0, useCoreSubgroups_, required_extensions_);
         return error;
     }
-    template <typename T> cl_int run_red_cin_scex()
+    template <typename T> cl_int run_red_scin_scex()
     {
         cl_int error;
-        error = test<T, RED<T, 0>, G, L>::run(
+        error = test<T, RED<T, ArithmeticOp::add_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_redadd",
             redadd_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, RED<T, 1>, G, L>::run(
+        error |= test<T, RED<T, ArithmeticOp::max_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_redmax",
             redmax_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, RED<T, 2>, G, L>::run(
+        error |= test<T, RED<T, ArithmeticOp::min_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_redmin",
             redmin_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCIN<T, 0>, G, L>::run(
+        error |= test<T, SCIN<T, ArithmeticOp::add_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_scinadd",
             scinadd_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCIN<T, 1>, G, L>::run(
+        error |= test<T, SCIN<T, ArithmeticOp::max_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_scinmax",
             scinmax_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCIN<T, 2>, G, L>::run(
+        error |= test<T, SCIN<T, ArithmeticOp::min_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_scinmin",
             scinmin_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCEX<T, 0>, G, L>::run(
+        error |= test<T, SCEX<T, ArithmeticOp::add_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_scexadd",
             scexadd_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCEX<T, 1>, G, L>::run(
+        error |= test<T, SCEX<T, ArithmeticOp::max_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_scexmax",
             scexmax_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCEX<T, 2>, G, L>::run(
+        error |= test<T, SCEX<T, ArithmeticOp::min_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_scexmin",
             scexmin_source, 0, useCoreSubgroups_, required_extensions_);
 
@@ -84,6 +85,7 @@ private:
     bool useCoreSubgroups_;
     std::vector<std::string> required_extensions_;
 };
+}
 
 int test_work_group_functions_extended_types(cl_device_id device,
                                              cl_context context,
@@ -91,8 +93,9 @@ int test_work_group_functions_extended_types(cl_device_id device,
                                              int num_elements)
 {
     int error;
-    std::vector<std::string> required_extensions;
-    required_extensions = { "cl_khr_subgroup_extended_types" };
+    std::vector<std::string> required_extensions = {
+        "cl_khr_subgroup_extended_types"
+    };
     run_for_type rft(device, context, queue, num_elements, true,
                      required_extensions);
 
@@ -158,9 +161,9 @@ int test_work_group_functions_extended_types(cl_device_id device,
     error |= rft.run_bc<subgroups::cl_half8>();
     error |= rft.run_bc<subgroups::cl_half16>();
 
-    error |= rft.run_red_cin_scex<cl_uchar>();
-    error |= rft.run_red_cin_scex<cl_char>();
-    error |= rft.run_red_cin_scex<cl_ushort>();
-    error |= rft.run_red_cin_scex<cl_short>();
+    error |= rft.run_red_scin_scex<cl_uchar>();
+    error |= rft.run_red_scin_scex<cl_char>();
+    error |= rft.run_red_scin_scex<cl_ushort>();
+    error |= rft.run_red_scin_scex<cl_short>();
     return error;
 }

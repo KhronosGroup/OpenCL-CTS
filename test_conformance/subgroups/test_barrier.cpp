@@ -147,13 +147,13 @@ int test_barrier_functions(cl_device_id device, cl_context context,
     int error;
 
     // Adjust these individually below if desired/needed
-#define G 2000
-#define L 200
+#define GWS 2000
+#define LWS 200
 
-    error = test<cl_int, BAR<0>, G, L>::run(device, context, queue,
-                                            num_elements, "test_lbar",
-                                            lbar_source, 0, useCoreSubgroups);
-    error = test<cl_int, BAR<1>, G, L, G>::run(
+    error = test<cl_int, BAR<0>, GWS, LWS>::run(
+        device, context, queue, num_elements, "test_lbar", lbar_source, 0,
+        useCoreSubgroups);
+    error = test<cl_int, BAR<1>, GWS, LWS, GWS>::run(
         device, context, queue, num_elements, "test_gbar", gbar_source, 0,
         useCoreSubgroups);
 

@@ -277,12 +277,13 @@ int test_ifp(cl_device_id device, cl_context context, cl_command_queue queue,
 {
     int error;
 
+    // Global/local work group sizes
     // Adjust these individually below if desired/needed
-#define G 2000
-#define L 200
-    error = test<cl_int, IFP, G, L>::run(device, context, queue, num_elements,
-                                         "test_ifp", ifp_source, NUM_LOC + 1,
-                                         useCoreSubgroups);
+#define GWS 2000
+#define LWS 200
+    error = test<cl_int, IFP, GWS, LWS>::run(
+        device, context, queue, num_elements, "test_ifp", ifp_source,
+        NUM_LOC + 1, useCoreSubgroups);
     return error;
 }
 

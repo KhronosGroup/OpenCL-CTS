@@ -19,6 +19,13 @@
 #include "harness/typeWrappers.h"
 #include <bitset>
 
+// Global/local work group sizes
+// Adjust these individually below if desired/needed
+#define GWS 2000
+#define LWS 200
+
+namespace {
+
 static const char* shuffle_xor_source =
     "__kernel void test_sub_group_shuffle_xor(const __global Type *in, "
     "__global int4 *xy, __global Type *out)\n"
@@ -45,22 +52,18 @@ struct run_for_type
                  cl_command_queue queue, int num_elements,
                  bool useCoreSubgroups,
                  std::vector<std::string> required_extensions = {})
-    {
-        device_ = device;
-        context_ = context;
-        queue_ = queue;
-        num_elements_ = num_elements;
-        useCoreSubgroups_ = useCoreSubgroups;
-        required_extensions_ = required_extensions;
-    }
+        : device_(device), context_(context), queue_(queue),
+          num_elements_(num_elements), useCoreSubgroups_(useCoreSubgroups),
+          required_extensions_(required_extensions)
+    {}
 
     template <typename T> cl_int run_shuffle()
     {
         cl_int error;
-        error = test<T, SHF<T, 0>, G, L>::run(
+        error = test<T, SHF<T, ShuffleOp::shuffle>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_sub_group_shuffle",
             shuffle_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SHF<T, 3>, G, L>::run(
+        error |= test<T, SHF<T, ShuffleOp::shuffle_xor>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_,
             "test_sub_group_shuffle_xor", shuffle_xor_source, 0,
             useCoreSubgroups_, required_extensions_);
@@ -76,12 +79,13 @@ private:
     std::vector<std::string> required_extensions_;
 };
 
+}
+
 int test_work_group_functions_shuffle(cl_device_id device, cl_context context,
                                       cl_command_queue queue, int num_elements)
 {
     int error;
-    std::vector<std::string> required_extensions;
-    required_extensions = { "cl_khr_subgroup_shuffle" };
+    std::vector<std::string> required_extensions{ "cl_khr_subgroup_shuffle" };
     run_for_type rft(device, context, queue, num_elements, true,
                      required_extensions);
 

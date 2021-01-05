@@ -19,6 +19,13 @@
 #include "harness/typeWrappers.h"
 #include <bitset>
 
+// Global/local work group sizes
+// Adjust these individually below if desired/needed
+#define GWS 2000
+#define LWS 200
+
+namespace {
+// Test for ballot functions
 template <typename Ty> struct BALLOT
 {
     static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
@@ -76,7 +83,7 @@ template <typename Ty> struct BALLOT
             { // inside the work_group
                 i = m[4 * j + 1] * ns + m[4 * j];
                 mx[i] = x[j]; // read host inputs for work_group
-                my[i] = y[j]; // read host inputs for work_group
+                my[i] = y[j]; // read device outputs for work_group
             }
 
             for (j = 0; j < nj; ++j)
@@ -120,10 +127,8 @@ template <typename Ty> struct BALLOT
     }
 };
 
-// DESCRIPTION:
 // Test for inverse/bit extract ballot functions
-// Which : 0 - inverse , 1 - bit extract
-template <typename Ty, int Which> struct BALLOT2
+template <typename Ty, BallotOp operation> struct BALLOT2
 {
     static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     {
@@ -155,7 +160,7 @@ template <typename Ty, int Which> struct BALLOT2
                     case 1:
                         // inverse ballot requires that value must be the same
                         // for all active invocations
-                        if (Which == 0)
+                        if (BallotOp::inverse_ballot == operation)
                             memset(&t[ii], (int)(genrand_int32(gMTdata)) & 0xff,
                                    n * sizeof(Ty));
                         else
@@ -188,10 +193,7 @@ template <typename Ty, int Which> struct BALLOT2
         int nj = (nw + ns - 1) / ns;
         cl_uint4 tr, rr;
 
-        log_info("  sub_group_%s(%s)...\n",
-                 Which == 0 ? "inverse_ballot"
-                            : (Which == 1 ? "ballot_bit_extract"
-                                          : Which == 2 ? "" : ""),
+        log_info("  sub_group_%s(%s)...\n", operation_names(operation),
                  TypeManager<Ty>::name());
 
         for (k = 0; k < ng; ++k)
@@ -201,7 +203,7 @@ template <typename Ty, int Which> struct BALLOT2
             { // inside the work_group
                 i = m[4 * j + 1] * ns + m[4 * j];
                 mx[i] = x[j]; // read host inputs for work_group
-                my[i] = y[j]; // read host inputs for work_group
+                my[i] = y[j]; // read device outputs for work_group
             }
 
             for (j = 0; j < nj; ++j)
@@ -218,7 +220,7 @@ template <typename Ty, int Which> struct BALLOT2
                 { // for each subgroup
                     int bit_value = 0;
                     int bit_mask = 1
-                        << ((Which == 0)
+                        << ((BallotOp::inverse_ballot == operation)
                                 ? i
                                 : l % 32); // from which value of bitfield bit
                                            // verification will be done
@@ -245,11 +247,8 @@ template <typename Ty, int Which> struct BALLOT2
                             "ERROR: sub_group_%s mismatch for local id %d in "
                             "sub group %d in group %d obtained {%d, %d, %d, "
                             "%d}, expected {%d, %d, %d, %d}\n",
-                            Which == 0 ? "inverse_ballot"
-                                       : (Which == 1 ? "ballot_bit_extract"
-                                                     : (Which == 2 ? "" : "")),
-                            i, j, k, rr.s0, rr.s1, rr.s2, rr.s3, tr.s0, tr.s1,
-                            tr.s2, tr.s3);
+                            operation_names(operation), i, j, k, rr.s0, rr.s1,
+                            rr.s2, rr.s3, tr.s0, tr.s1, tr.s2, tr.s3);
                         return -1;
                     }
                 }
@@ -264,11 +263,8 @@ template <typename Ty, int Which> struct BALLOT2
 };
 
 
-// DESCRIPTION:
 // Test for bit count/inclusive and exclusive scan/ find lsb msb ballot function
-// Which : 0 - bit count , 1 - inclusive scan, 2 - exclusive scan , 3 - find
-// lsb, 4 - find msb
-template <typename Ty, int Which> struct BALLOT3
+template <typename Ty, BallotOp operation> struct BALLOT3
 {
     static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     {
@@ -282,7 +278,9 @@ template <typename Ty, int Which> struct BALLOT3
             { // for each subgroup
                 ii = j * ns;
                 n = ii + ns > nw ? nw - ii : ns;
-                if (Which >= 0 && Which <= 2)
+                if (operation == BallotOp::ballot_bit_count
+                    || operation == BallotOp::ballot_inclusive_scan
+                    || operation == BallotOp::ballot_exclusive_scan)
                 {
                     // Initialize data matrix indexed by local id and sub group
                     // id
@@ -298,7 +296,8 @@ template <typename Ty, int Which> struct BALLOT3
                         case 2: memset(&t[ii], 0xff, n * sizeof(Ty)); break;
                     }
                 }
-                else
+                else if (operation == BallotOp::ballot_find_lsb
+                         || operation == BallotOp::ballot_find_msb)
                 {
                     // Regarding to the spec, find lsb and find msb result is
                     // undefined behavior if input value is zero, so generate
@@ -312,6 +311,10 @@ template <typename Ty, int Which> struct BALLOT3
                             memset(&t[ii], x ? x : 1, n * sizeof(Ty));
                             break;
                     }
+                }
+                else
+                {
+                    log_error("Unknown operation...");
                 }
             }
 
@@ -331,14 +334,18 @@ template <typename Ty, int Which> struct BALLOT3
                                   cl_uint sub_group_size)
     {
         bs128 mask;
-        if (Which == 0 || Which == 3 || Which == 4)
+        if (operation == BallotOp::ballot_bit_count
+            || operation == BallotOp::ballot_find_lsb
+            || operation == BallotOp::ballot_find_msb)
         {
             for (cl_uint i = 0; i < sub_group_size; ++i) mask.set(i);
         }
-        else if (Which == 1 || Which == 2)
+        else if (operation == BallotOp::ballot_inclusive_scan
+                 || operation == BallotOp::ballot_exclusive_scan)
         {
             for (cl_uint i = 0; i <= sub_group_local_id; ++i) mask.set(i);
-            if (Which == 2) mask.reset(sub_group_local_id);
+            if (operation == BallotOp::ballot_exclusive_scan)
+                mask.reset(sub_group_local_id);
         }
         return mask;
     }
@@ -350,13 +357,7 @@ template <typename Ty, int Which> struct BALLOT3
         int nj = (nw + ns - 1) / ns;
         cl_uint4 tr, rr;
 
-        log_info("  sub_group_ballot_%s(%s)...\n",
-                 Which == 0
-                     ? "bit_count"
-                     : (Which == 1 ? "inclusive_scan"
-                                   : (Which == 2 ? "exclusive_scan"
-                                                 : (Which == 3 ? "find_lsb"
-                                                               : "find_msb"))),
+        log_info("  sub_group_ballot_%s(%s)...\n", operation_names(operation),
                  TypeManager<Ty>::name());
 
         for (k = 0; k < ng; ++k)
@@ -366,7 +367,7 @@ template <typename Ty, int Which> struct BALLOT3
             { // inside the work_group
                 i = m[4 * j + 1] * ns + m[4 * j];
                 mx[i] = x[j]; // read host inputs for work_group
-                my[i] = y[j]; // read host inputs for work_group
+                my[i] = y[j]; // read device outputs for work_group
             }
 
             for (j = 0; j < nj; ++j)
@@ -385,7 +386,7 @@ template <typename Ty, int Which> struct BALLOT3
                     bs &= getImportantBits(i, n);
 
                     rr = my[ii + i];
-                    if (Which == 0)
+                    if (operation == BallotOp::ballot_bit_count)
                     {
                         tr.s0 = bs.count();
                         if (!compare(rr, tr))
@@ -399,7 +400,7 @@ template <typename Ty, int Which> struct BALLOT3
                             return -1;
                         }
                     }
-                    else if (Which == 1)
+                    else if (operation == BallotOp::ballot_inclusive_scan)
                     {
                         tr.s0 = bs.count();
                         if (!compare(rr, tr))
@@ -413,7 +414,7 @@ template <typename Ty, int Which> struct BALLOT3
                             return -1;
                         }
                     }
-                    else if (Which == 2)
+                    else if (operation == BallotOp::ballot_exclusive_scan)
                     {
                         tr.s0 = bs.count();
                         if (!compare(rr, tr))
@@ -427,7 +428,7 @@ template <typename Ty, int Which> struct BALLOT3
                             return -1;
                         }
                     }
-                    else if (Which == 3)
+                    else if (operation == BallotOp::ballot_find_lsb)
                     {
                         for (int id = 0; id < n; ++id)
                         {
@@ -448,7 +449,7 @@ template <typename Ty, int Which> struct BALLOT3
                             return -1;
                         }
                     }
-                    if (Which == 4)
+                    else if (operation == BallotOp::ballot_find_msb)
                     {
                         for (int id = n - 1; id >= 0; --id)
                         {
@@ -479,13 +480,9 @@ template <typename Ty, int Which> struct BALLOT3
         return 0;
     }
 };
-// test mask functions 0 means equal
-// DESCRIPTION :
-// test mask functions : 0 - equal, 1 - ge, 2 - gt, 3 - le, 4 - lt
 
-static const char smask_names[][3] = { "eq", "ge", "gt", "le", "lt" };
-
-template <typename Ty, int Which> struct SMASK
+// test mask functions
+template <typename Ty, BallotOp operation> struct SMASK
 {
     static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     {
@@ -507,31 +504,8 @@ template <typename Ty, int Which> struct SMASK
                     int midx = 4 * ii + 4 * i;
                     cl_uint max_sub_group_size = m[midx + 2];
                     cl_uint4 expected_mask = { 0 };
-                    if (Which == 0)
-                    {
-                        expected_mask =
-                            generate_bit_mask(i, "eq", max_sub_group_size);
-                    }
-                    if (Which == 1)
-                    {
-                        expected_mask =
-                            generate_bit_mask(i, "ge", max_sub_group_size);
-                    }
-                    if (Which == 2)
-                    {
-                        expected_mask =
-                            generate_bit_mask(i, "gt", max_sub_group_size);
-                    }
-                    if (Which == 3)
-                    {
-                        expected_mask =
-                            generate_bit_mask(i, "le", max_sub_group_size);
-                    }
-                    if (Which == 4)
-                    {
-                        expected_mask =
-                            generate_bit_mask(i, "lt", max_sub_group_size);
-                    }
+                    expected_mask = generate_bit_mask(
+                        i, operation_names(operation), max_sub_group_size);
                     set_value(t[ii + i], expected_mask);
                 }
             }
@@ -554,7 +528,7 @@ template <typename Ty, int Which> struct SMASK
         int nj = (nw + ns - 1) / ns;
         Ty taa, raa;
 
-        log_info("  get_sub_group_%s_mask...\n", smask_names[Which]);
+        log_info("  get_sub_group_%s_mask...\n", operation_names(operation));
 
         for (k = 0; k < ng; ++k)
         { // for each work_group
@@ -580,7 +554,8 @@ template <typename Ty, int Which> struct SMASK
                         log_error("ERROR:  get_sub_group_%s_mask... mismatch "
                                   "for local id %d in sub group %d in group "
                                   "%d, obtained %d, expected %d\n",
-                                  smask_names[Which], i, j, k, raa, taa);
+                                  operation_names(operation), i, j, k, raa,
+                                  taa);
                         return -1;
                     }
                 }
@@ -600,8 +575,9 @@ static const char *bcast_non_uniform_source =
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
     "    Type x = in[gid];\n"
-    " if (xy[gid].x < NON_UNIFORM) {\n" // broadcast 4 values , other values are
-                                        // 0
+    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {\n" // broadcast 4 values , other
+                                                // values are
+                                                // 0
     "    out[gid] = sub_group_broadcast(x, xy[gid].z);\n"
     " }\n"
     "}\n";
@@ -775,31 +751,30 @@ struct run_for_type
                  cl_command_queue queue, int num_elements,
                  bool useCoreSubgroups,
                  std::vector<std::string> required_extensions = {})
-    {
-        device_ = device;
-        context_ = context;
-        queue_ = queue;
-        num_elements_ = num_elements;
-        useCoreSubgroups_ = useCoreSubgroups;
-        required_extensions_ = required_extensions;
-    }
+        : device_(device), context_(context), queue_(queue),
+          num_elements_(num_elements), useCoreSubgroups_(useCoreSubgroups),
+          required_extensions_(required_extensions)
+    {}
+
 
     template <typename T> cl_int run_nu_bc()
     {
         cl_int error;
-        error = test<T, BC<T, 2>, G, L>::run(
-            device_, context_, queue_, num_elements_, "test_bcast_non_uniform",
-            bcast_non_uniform_source, 0, useCoreSubgroups_,
-            required_extensions_);
+        error =
+            test<T, BC<T, SubgroupsBroadcastOp::non_uniform_broadcast>, GWS,
+                 LWS>::run(device_, context_, queue_, num_elements_,
+                           "test_bcast_non_uniform", bcast_non_uniform_source,
+                           0, useCoreSubgroups_, required_extensions_);
         return error;
     }
 
     template <typename T> cl_int run_bc_first()
     {
         cl_int error;
-        error = test<T, BC<T, 1>, G, L>::run(
-            device_, context_, queue_, num_elements_, "test_bcast_first",
-            bcast_first_source, 0, useCoreSubgroups_, required_extensions_);
+        error = test<T, BC<T, SubgroupsBroadcastOp::broadcast_first>, GWS,
+                     LWS>::run(device_, context_, queue_, num_elements_,
+                               "test_bcast_first", bcast_first_source, 0,
+                               useCoreSubgroups_, required_extensions_);
         return error;
     }
 
@@ -807,67 +782,79 @@ struct run_for_type
     cl_int run_smask()
     {
         cl_int error;
-        error = test<cl_uint4, SMASK<cl_uint4, 0>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_get_sub_group_eq_mask", get_subgroup_eq_mask_source, 0,
-            useCoreSubgroups_, required_extensions_);
-        error |= test<cl_uint4, SMASK<cl_uint4, 1>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_get_sub_group_ge_mask", get_subgroup_ge_mask_source, 0,
-            useCoreSubgroups_, required_extensions_);
-        error |= test<cl_uint4, SMASK<cl_uint4, 2>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_get_sub_group_gt_mask", get_subgroup_gt_mask_source, 0,
-            useCoreSubgroups_, required_extensions_);
-        error |= test<cl_uint4, SMASK<cl_uint4, 3>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_get_sub_group_le_mask", get_subgroup_le_mask_source, 0,
-            useCoreSubgroups_, required_extensions_);
-        error |= test<cl_uint4, SMASK<cl_uint4, 4>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_get_sub_group_lt_mask", get_subgroup_lt_mask_source, 0,
-            useCoreSubgroups_, required_extensions_);
+        error =
+            test<cl_uint4, SMASK<cl_uint4, BallotOp::eq_mask>, GWS, LWS>::run(
+                device_, context_, queue_, num_elements_,
+                "test_get_sub_group_eq_mask", get_subgroup_eq_mask_source, 0,
+                useCoreSubgroups_, required_extensions_);
+        error |=
+            test<cl_uint4, SMASK<cl_uint4, BallotOp::ge_mask>, GWS, LWS>::run(
+                device_, context_, queue_, num_elements_,
+                "test_get_sub_group_ge_mask", get_subgroup_ge_mask_source, 0,
+                useCoreSubgroups_, required_extensions_);
+        error |=
+            test<cl_uint4, SMASK<cl_uint4, BallotOp::gt_mask>, GWS, LWS>::run(
+                device_, context_, queue_, num_elements_,
+                "test_get_sub_group_gt_mask", get_subgroup_gt_mask_source, 0,
+                useCoreSubgroups_, required_extensions_);
+        error |=
+            test<cl_uint4, SMASK<cl_uint4, BallotOp::le_mask>, GWS, LWS>::run(
+                device_, context_, queue_, num_elements_,
+                "test_get_sub_group_le_mask", get_subgroup_le_mask_source, 0,
+                useCoreSubgroups_, required_extensions_);
+        error |=
+            test<cl_uint4, SMASK<cl_uint4, BallotOp::lt_mask>, GWS, LWS>::run(
+                device_, context_, queue_, num_elements_,
+                "test_get_sub_group_lt_mask", get_subgroup_lt_mask_source, 0,
+                useCoreSubgroups_, required_extensions_);
         return error;
     }
 
     cl_int run_ballot()
     {
         cl_int error;
-        error = test<cl_uint4, BALLOT<cl_uint4>, G, L>::run(
+        error = test<cl_uint4, BALLOT<cl_uint4>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_sub_group_ballot",
             ballot_source, 0, useCoreSubgroups_, required_extensions_);
 
-        error |= test<cl_uint4, BALLOT2<cl_uint4, 0>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_sub_group_inverse_ballot", inverse_ballot_source, 0,
-            useCoreSubgroups_, required_extensions_);
-        error |= test<cl_uint4, BALLOT2<cl_uint4, 1>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_sub_group_ballot_bit_extract", ballot_bit_extract_source, 0,
-            useCoreSubgroups_, required_extensions_);
+        error |= test<cl_uint4, BALLOT2<cl_uint4, BallotOp::inverse_ballot>,
+                      GWS, LWS>::run(device_, context_, queue_, num_elements_,
+                                     "test_sub_group_inverse_ballot",
+                                     inverse_ballot_source, 0,
+                                     useCoreSubgroups_, required_extensions_);
+        error |= test<cl_uint4, BALLOT2<cl_uint4, BallotOp::ballot_bit_extract>,
+                      GWS, LWS>::run(device_, context_, queue_, num_elements_,
+                                     "test_sub_group_ballot_bit_extract",
+                                     ballot_bit_extract_source, 0,
+                                     useCoreSubgroups_, required_extensions_);
 
-        error |= test<cl_uint4, BALLOT3<cl_uint4, 0>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_sub_group_ballot_bit_count", ballot_bit_count_source, 0,
-            useCoreSubgroups_, required_extensions_);
-        error |= test<cl_uint4, BALLOT3<cl_uint4, 1>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_sub_group_ballot_inclusive_scan",
-            ballot_inclusive_scan_source, 0, useCoreSubgroups_,
-            required_extensions_);
-        error |= test<cl_uint4, BALLOT3<cl_uint4, 2>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_sub_group_ballot_exclusive_scan",
-            ballot_exclusive_scan_source, 0, useCoreSubgroups_,
-            required_extensions_);
-        error |= test<cl_uint4, BALLOT3<cl_uint4, 3>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_sub_group_ballot_find_lsb", ballot_find_lsb_source, 0,
-            useCoreSubgroups_, required_extensions_);
-        error |= test<cl_uint4, BALLOT3<cl_uint4, 4>, G, L>::run(
-            device_, context_, queue_, num_elements_,
-            "test_sub_group_ballot_find_msb", ballot_find_msb_source, 0,
-            useCoreSubgroups_, required_extensions_);
+        error |= test<cl_uint4, BALLOT3<cl_uint4, BallotOp::ballot_bit_count>,
+                      GWS, LWS>::run(device_, context_, queue_, num_elements_,
+                                     "test_sub_group_ballot_bit_count",
+                                     ballot_bit_count_source, 0,
+                                     useCoreSubgroups_, required_extensions_);
+        error |=
+            test<cl_uint4, BALLOT3<cl_uint4, BallotOp::ballot_inclusive_scan>,
+                 GWS, LWS>::run(device_, context_, queue_, num_elements_,
+                                "test_sub_group_ballot_inclusive_scan",
+                                ballot_inclusive_scan_source, 0,
+                                useCoreSubgroups_, required_extensions_);
+        error |=
+            test<cl_uint4, BALLOT3<cl_uint4, BallotOp::ballot_exclusive_scan>,
+                 GWS, LWS>::run(device_, context_, queue_, num_elements_,
+                                "test_sub_group_ballot_exclusive_scan",
+                                ballot_exclusive_scan_source, 0,
+                                useCoreSubgroups_, required_extensions_);
+        error |= test<cl_uint4, BALLOT3<cl_uint4, BallotOp::ballot_find_lsb>,
+                      GWS, LWS>::run(device_, context_, queue_, num_elements_,
+                                     "test_sub_group_ballot_find_lsb",
+                                     ballot_find_lsb_source, 0,
+                                     useCoreSubgroups_, required_extensions_);
+        error |= test<cl_uint4, BALLOT3<cl_uint4, BallotOp::ballot_find_msb>,
+                      GWS, LWS>::run(device_, context_, queue_, num_elements_,
+                                     "test_sub_group_ballot_find_msb",
+                                     ballot_find_msb_source, 0,
+                                     useCoreSubgroups_, required_extensions_);
         return error;
     }
 
@@ -880,12 +867,13 @@ private:
     std::vector<std::string> required_extensions_;
 };
 
+}
+
 int test_work_group_functions_ballot(cl_device_id device, cl_context context,
                                      cl_command_queue queue, int num_elements)
 {
     int error;
-    std::vector<std::string> required_extensions;
-    required_extensions = { "cl_khr_subgroup_ballot" };
+    std::vector<std::string> required_extensions = { "cl_khr_subgroup_ballot" };
     run_for_type rft(device, context, queue, num_elements, true,
                      required_extensions);
 

@@ -27,11 +27,145 @@
 #undef min
 #undef max
 
-// Adjust these individually below if desired/needed
-#define G 2000
-#define L 200
+#define NON_UNIFORM_WG_SIZE 4
 
-#define NON_UNIFORM 4
+
+enum class SubgroupsBroadcastOp
+{
+    broadcast,
+    broadcast_first,
+    non_uniform_broadcast
+};
+
+enum class NonUniformVoteOp
+{
+    elect,
+    all,
+    any,
+    all_equal
+};
+
+enum class BallotOp
+{
+    ballot,
+    inverse_ballot,
+    ballot_bit_extract,
+    ballot_bit_count,
+    ballot_inclusive_scan,
+    ballot_exclusive_scan,
+    ballot_find_lsb,
+    ballot_find_msb,
+    eq_mask,
+    ge_mask,
+    gt_mask,
+    le_mask,
+    lt_mask,
+};
+
+enum class ShuffleOp
+{
+    shuffle,
+    shuffle_up,
+    shuffle_down,
+    shuffle_xor
+};
+
+enum class ArithmeticOp
+{
+    add_,
+    max_,
+    min_,
+    mul_,
+    and_,
+    or_,
+    xor_,
+    logical_and,
+    logical_or,
+    logical_xor
+};
+
+static const char *const operation_names(ArithmeticOp operation)
+{
+    switch (operation)
+    {
+        case ArithmeticOp::add_: return "add"; break;
+        case ArithmeticOp::max_: return "max"; break;
+        case ArithmeticOp::min_: return "min"; break;
+        case ArithmeticOp::mul_: return "mul"; break;
+        case ArithmeticOp::and_: return "and"; break;
+        case ArithmeticOp::or_: return "or"; break;
+        case ArithmeticOp::xor_: return "xor"; break;
+        case ArithmeticOp::logical_and: return "logical_and"; break;
+        case ArithmeticOp::logical_or: return "logical_or"; break;
+        case ArithmeticOp::logical_xor: return "logical_xor"; break;
+        default: log_error("Unknown operation request"); break;
+    }
+    return "";
+}
+
+static const char *const operation_names(BallotOp operation)
+{
+    switch (operation)
+    {
+        case BallotOp::ballot: return "ballot"; break;
+        case BallotOp::inverse_ballot: return "inverse_ballot"; break;
+        case BallotOp::ballot_bit_extract: return "bit_extract"; break;
+        case BallotOp::ballot_bit_count: return "bit_count"; break;
+        case BallotOp::ballot_inclusive_scan: return "inclusive_scan"; break;
+        case BallotOp::ballot_exclusive_scan: return "exclusive_scan"; break;
+        case BallotOp::ballot_find_lsb: return "find_lsb"; break;
+        case BallotOp::ballot_find_msb: return "find_msb"; break;
+        case BallotOp::eq_mask: return "eq"; break;
+        case BallotOp::ge_mask: return "ge"; break;
+        case BallotOp::gt_mask: return "gt"; break;
+        case BallotOp::le_mask: return "le"; break;
+        case BallotOp::lt_mask: return "lt"; break;
+        default: log_error("Unknown operation request"); break;
+    }
+    return "";
+}
+
+static const char *const operation_names(ShuffleOp operation)
+{
+    switch (operation)
+    {
+        case ShuffleOp::shuffle: return "shuffle"; break;
+        case ShuffleOp::shuffle_up: return "shuffle_up"; break;
+        case ShuffleOp::shuffle_down: return "shuffle_down"; break;
+        case ShuffleOp::shuffle_xor: return "shuffle_xor"; break;
+        default: log_error("Unknown operation request"); break;
+    }
+    return "";
+}
+
+static const char *const operation_names(NonUniformVoteOp operation)
+{
+    switch (operation)
+    {
+        case NonUniformVoteOp::all: return "all"; break;
+        case NonUniformVoteOp::all_equal: return "all_equal"; break;
+        case NonUniformVoteOp::any: return "any"; break;
+        case NonUniformVoteOp::elect: return "elect"; break;
+        default: log_error("Unknown operation request"); break;
+    }
+    return "";
+}
+
+static const char *const operation_names(SubgroupsBroadcastOp operation)
+{
+    switch (operation)
+    {
+        case SubgroupsBroadcastOp::broadcast: return "broadcast"; break;
+        case SubgroupsBroadcastOp::broadcast_first:
+            return "broadcast_first";
+            break;
+        case SubgroupsBroadcastOp::non_uniform_broadcast:
+            return "non_uniform_broadcast";
+            break;
+        default: log_error("Unknown operation request"); break;
+    }
+    return "";
+}
 
 class subgroupsAPI {
 public:
@@ -66,6 +200,10 @@ private:
     clGetKernelSubGroupInfoKHR_fn _clGetKernelSubGroupInfo_ptr;
 };
 
+// Need to defined custom type for vector size = 3 and half type. This is
+// because because of 3-component types are otherwise indistinguishable from the
+// 4-component types, and because the half type is indistinguishable from some
+// other 16-bit type (ushort)
 namespace subgroups {
 struct cl_char3
 {
@@ -190,17 +328,17 @@ template <typename Ty> struct CommonTypeManager
     typedef std::false_type is_sb_vector_type;
     typedef std::false_type is_sb_scalar_type;
     static const bool type_supported(cl_device_id) { return true; }
-    static const Ty identify_limits(unsigned int test_id)
+    static const Ty identify_limits(ArithmeticOp operation)
     {
-        switch (test_id)
+        switch (operation)
         {
-            case 0: return (Ty)0; // add
-            case 1: return std::numeric_limits<Ty>::min(); // max
-            case 2: return std::numeric_limits<Ty>::max(); // min
-            case 3: return (Ty)1; // mul
-            case 4: return (Ty)~0; // and
-            case 5: return (Ty)0; // or
-            case 6: return (Ty)0; // xor
+            case ArithmeticOp::add_: return (Ty)0;
+            case ArithmeticOp::max_: return std::numeric_limits<Ty>::min();
+            case ArithmeticOp::min_: return std::numeric_limits<Ty>::max();
+            case ArithmeticOp::mul_: return (Ty)1;
+            case ArithmeticOp::and_: return (Ty)~0;
+            case ArithmeticOp::or_: return (Ty)0;
+            case ArithmeticOp::xor_: return (Ty)0;
         }
         return 0;
     }
@@ -213,20 +351,20 @@ template <> struct TypeManager<cl_int> : public CommonTypeManager<cl_int>
 {
     static const char *name() { return "int"; }
     static const char *add_typedef() { return "typedef int Type;\n"; }
-    static cl_int identify_limits(unsigned int test_id)
+    static cl_int identify_limits(ArithmeticOp operation)
     {
-        switch (test_id)
+        switch (operation)
         {
-            case 0: return (cl_int)0; // add
-            case 1: return std::numeric_limits<int>::min(); // max
-            case 2: return std::numeric_limits<int>::max(); // min
-            case 3: return (cl_int)1; // mul
-            case 4: return (cl_int)~0; // and
-            case 5: return (cl_int)0; // or
-            case 6: return (cl_int)0; // xor
-            case 7: return (cl_int)1; // logical and
-            case 8: return (cl_int)0; // logical or
-            case 9: return (cl_int)0; // logical xor
+            case ArithmeticOp::add_: return (cl_int)0;
+            case ArithmeticOp::max_: return std::numeric_limits<cl_int>::min();
+            case ArithmeticOp::min_: return std::numeric_limits<cl_int>::max();
+            case ArithmeticOp::mul_: return (cl_int)1;
+            case ArithmeticOp::and_: return (cl_int)~0;
+            case ArithmeticOp::or_: return (cl_int)0;
+            case ArithmeticOp::xor_: return (cl_int)0;
+            case ArithmeticOp::logical_and: return (cl_int)1;
+            case ArithmeticOp::logical_or: return (cl_int)0;
+            case ArithmeticOp::logical_xor: return (cl_int)0;
         }
         return 0;
     }
@@ -630,14 +768,16 @@ template <> struct TypeManager<cl_float> : public CommonTypeManager<cl_float>
 {
     static const char *name() { return "float"; }
     static const char *add_typedef() { return "typedef float Type;\n"; }
-    static cl_float identify_limits(unsigned int test_id)
+    static cl_float identify_limits(ArithmeticOp operation)
     {
-        switch (test_id)
+        switch (operation)
         {
-            case 0: return 0.F; // add
-            case 1: return -std::numeric_limits<float>::infinity(); // max
-            case 2: return std::numeric_limits<float>::infinity(); // min
-            case 3: return (cl_float)1; // mul
+            case ArithmeticOp::add_: return 0.0f;
+            case ArithmeticOp::max_:
+                return -std::numeric_limits<float>::infinity();
+            case ArithmeticOp::min_:
+                return std::numeric_limits<float>::infinity();
+            case ArithmeticOp::mul_: return (cl_float)1;
         }
         return 0;
     }
@@ -686,14 +826,16 @@ template <> struct TypeManager<cl_double> : public CommonTypeManager<cl_double>
 {
     static const char *name() { return "double"; }
     static const char *add_typedef() { return "typedef double Type;\n"; }
-    static cl_double identify_limits(unsigned int test_id)
+    static cl_double identify_limits(ArithmeticOp operation)
     {
-        switch (test_id)
+        switch (operation)
         {
-            case 0: return 0.L; // add
-            case 1: return -std::numeric_limits<double>::infinity(); // max
-            case 2: return std::numeric_limits<double>::infinity(); // min
-            case 3: return (cl_double)1; // mul
+            case ArithmeticOp::add_: return 0.0;
+            case ArithmeticOp::max_:
+                return -std::numeric_limits<double>::infinity();
+            case ArithmeticOp::min_:
+                return std::numeric_limits<double>::infinity();
+            case ArithmeticOp::mul_: return (cl_double)1;
         }
         return 0;
     }
@@ -772,15 +914,14 @@ struct TypeManager<subgroups::cl_half>
     static const char *name() { return "half"; }
     static const char *add_typedef() { return "typedef half Type;\n"; }
     typedef std::true_type is_sb_scalar_type;
-
-    static subgroups::cl_half identify_limits(unsigned int test_id)
+    static subgroups::cl_half identify_limits(ArithmeticOp operation)
     {
-        switch (test_id)
+        switch (operation)
         {
-            case 0: return { 0x0000 }; // add
-            case 1: return { 0xfc00 }; // max
-            case 2: return { 0x7c00 }; // min
-            case 3: return { 0x3c00 }; // mul
+            case ArithmeticOp::add_: return { 0x0000 };
+            case ArithmeticOp::max_: return { 0xfc00 };
+            case ArithmeticOp::min_: return { 0x7c00 };
+            case ArithmeticOp::mul_: return { 0x3c00 };
         }
         return { 0 };
     }
@@ -1082,7 +1223,7 @@ struct test
     static int run(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elements, const char *kname,
                    const char *src, int dynscl, bool useCoreSubgroups,
-                   std::vector<std::string> required_extensions = {})
+                   std::vector<std::string> const &required_extensions = {})
     {
         size_t tmp;
         int error;
@@ -1098,8 +1239,8 @@ struct test
         Ty mapout[LSIZE];
         std::stringstream kernel_sstr;
 
-        kernel_sstr << "#define NON_UNIFORM " + std::to_string(NON_UNIFORM)
-                + " \n";
+        kernel_sstr << "#define NON_UNIFORM_WG_SIZE "
+                + std::to_string(NON_UNIFORM_WG_SIZE) + " \n";
         // Make sure a test of type Ty is supported by the device
         if (!TypeManager<Ty>::type_supported(device))
         {
