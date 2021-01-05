@@ -23,6 +23,6 @@ test_definition test_list[] = {
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarnessWithCheck(argc, argv, ARRAY_SIZE(test_list), test_list, false, 0,
-                                   nullptr);
+    return runTestHarnessWithCheck(argc, argv, ARRAY_SIZE(test_list), test_list,
+                                   false, 0, nullptr);
 }
