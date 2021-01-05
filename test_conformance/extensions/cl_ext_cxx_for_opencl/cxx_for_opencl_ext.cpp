@@ -17,8 +17,7 @@
 
 
 int test_cxx_for_opencl(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements,
-                        bool useCoreSubgroups)
+                        cl_command_queue queue)
 {
     cl_int error;
     clProgramWrapper program;
@@ -93,7 +92,7 @@ int test_cxx_for_opencl(cl_device_id device, cl_context context,
 }
 
 int test_cxx_for_opencl_ext(cl_device_id device, cl_context context,
-                            cl_command_queue queue, int num_elements)
+                            cl_command_queue queue, int)
 {
     if (!is_extension_available(device, "cl_ext_cxx_for_opencl"))
     {
@@ -102,5 +101,5 @@ int test_cxx_for_opencl_ext(cl_device_id device, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    return test_cxx_for_opencl(device, context, queue, num_elements, false);
+    return test_cxx_for_opencl(device, context, queue);
 }

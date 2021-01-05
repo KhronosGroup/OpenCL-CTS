@@ -89,7 +89,7 @@ int test_cxx_for_opencl_version(cl_device_id device, cl_context context,
 }
 
 int test_cxx_for_opencl_ver(cl_device_id device, cl_context context,
-                            cl_command_queue queue, int num_elements)
+                            cl_command_queue queue, int)
 {
     if (!is_extension_available(device, "cl_ext_cxx_for_opencl"))
     {

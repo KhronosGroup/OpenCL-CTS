@@ -19,8 +19,8 @@
 #include "harness/typeWrappers.h"
 
 extern int test_cxx_for_opencl_ext(cl_device_id device, cl_context context,
-                                   cl_command_queue queue, int num_elements);
+                                   cl_command_queue queue, int);
 extern int test_cxx_for_opencl_ver(cl_device_id device, cl_context context,
-                                   cl_command_queue queue, int num_elements);
+                                   cl_command_queue queue, int);
 
 #endif /*_procs_h*/
