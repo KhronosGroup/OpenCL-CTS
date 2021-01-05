@@ -88,16 +88,16 @@ static const char *const operation_names(ArithmeticOp operation)
 {
     switch (operation)
     {
-        case ArithmeticOp::add_: return "add"; break;
-        case ArithmeticOp::max_: return "max"; break;
-        case ArithmeticOp::min_: return "min"; break;
-        case ArithmeticOp::mul_: return "mul"; break;
-        case ArithmeticOp::and_: return "and"; break;
-        case ArithmeticOp::or_: return "or"; break;
-        case ArithmeticOp::xor_: return "xor"; break;
-        case ArithmeticOp::logical_and: return "logical_and"; break;
-        case ArithmeticOp::logical_or: return "logical_or"; break;
-        case ArithmeticOp::logical_xor: return "logical_xor"; break;
+        case ArithmeticOp::add_: return "add";
+        case ArithmeticOp::max_: return "max";
+        case ArithmeticOp::min_: return "min";
+        case ArithmeticOp::mul_: return "mul";
+        case ArithmeticOp::and_: return "and";
+        case ArithmeticOp::or_: return "or";
+        case ArithmeticOp::xor_: return "xor";
+        case ArithmeticOp::logical_and: return "logical_and";
+        case ArithmeticOp::logical_or: return "logical_or";
+        case ArithmeticOp::logical_xor: return "logical_xor";
         default: log_error("Unknown operation request"); break;
     }
     return "";
@@ -107,19 +107,19 @@ static const char *const operation_names(BallotOp operation)
 {
     switch (operation)
     {
-        case BallotOp::ballot: return "ballot"; break;
-        case BallotOp::inverse_ballot: return "inverse_ballot"; break;
-        case BallotOp::ballot_bit_extract: return "bit_extract"; break;
-        case BallotOp::ballot_bit_count: return "bit_count"; break;
-        case BallotOp::ballot_inclusive_scan: return "inclusive_scan"; break;
-        case BallotOp::ballot_exclusive_scan: return "exclusive_scan"; break;
-        case BallotOp::ballot_find_lsb: return "find_lsb"; break;
-        case BallotOp::ballot_find_msb: return "find_msb"; break;
-        case BallotOp::eq_mask: return "eq"; break;
-        case BallotOp::ge_mask: return "ge"; break;
-        case BallotOp::gt_mask: return "gt"; break;
-        case BallotOp::le_mask: return "le"; break;
-        case BallotOp::lt_mask: return "lt"; break;
+        case BallotOp::ballot: return "ballot";
+        case BallotOp::inverse_ballot: return "inverse_ballot";
+        case BallotOp::ballot_bit_extract: return "bit_extract";
+        case BallotOp::ballot_bit_count: return "bit_count";
+        case BallotOp::ballot_inclusive_scan: return "inclusive_scan";
+        case BallotOp::ballot_exclusive_scan: return "exclusive_scan";
+        case BallotOp::ballot_find_lsb: return "find_lsb";
+        case BallotOp::ballot_find_msb: return "find_msb";
+        case BallotOp::eq_mask: return "eq";
+        case BallotOp::ge_mask: return "ge";
+        case BallotOp::gt_mask: return "gt";
+        case BallotOp::le_mask: return "le";
+        case BallotOp::lt_mask: return "lt";
         default: log_error("Unknown operation request"); break;
     }
     return "";
@@ -129,10 +129,10 @@ static const char *const operation_names(ShuffleOp operation)
 {
     switch (operation)
     {
-        case ShuffleOp::shuffle: return "shuffle"; break;
-        case ShuffleOp::shuffle_up: return "shuffle_up"; break;
-        case ShuffleOp::shuffle_down: return "shuffle_down"; break;
-        case ShuffleOp::shuffle_xor: return "shuffle_xor"; break;
+        case ShuffleOp::shuffle: return "shuffle";
+        case ShuffleOp::shuffle_up: return "shuffle_up";
+        case ShuffleOp::shuffle_down: return "shuffle_down";
+        case ShuffleOp::shuffle_xor: return "shuffle_xor";
         default: log_error("Unknown operation request"); break;
     }
     return "";
@@ -142,10 +142,10 @@ static const char *const operation_names(NonUniformVoteOp operation)
 {
     switch (operation)
     {
-        case NonUniformVoteOp::all: return "all"; break;
-        case NonUniformVoteOp::all_equal: return "all_equal"; break;
-        case NonUniformVoteOp::any: return "any"; break;
-        case NonUniformVoteOp::elect: return "elect"; break;
+        case NonUniformVoteOp::all: return "all";
+        case NonUniformVoteOp::all_equal: return "all_equal";
+        case NonUniformVoteOp::any: return "any";
+        case NonUniformVoteOp::elect: return "elect";
         default: log_error("Unknown operation request"); break;
     }
     return "";
@@ -155,13 +155,10 @@ static const char *const operation_names(SubgroupsBroadcastOp operation)
 {
     switch (operation)
     {
-        case SubgroupsBroadcastOp::broadcast: return "broadcast"; break;
-        case SubgroupsBroadcastOp::broadcast_first:
-            return "broadcast_first";
-            break;
+        case SubgroupsBroadcastOp::broadcast: return "broadcast";
+        case SubgroupsBroadcastOp::broadcast_first: return "broadcast_first";
         case SubgroupsBroadcastOp::non_uniform_broadcast:
             return "non_uniform_broadcast";
-            break;
         default: log_error("Unknown operation request"); break;
     }
     return "";
@@ -1239,8 +1236,8 @@ struct test
         Ty mapout[LSIZE];
         std::stringstream kernel_sstr;
 
-        kernel_sstr << "#define NON_UNIFORM_WG_SIZE "
-                + std::to_string(NON_UNIFORM_WG_SIZE) + " \n";
+        kernel_sstr << "#define NON_UNIFORM_WG_SIZE ";
+        kernel_sstr << NON_UNIFORM_WG_SIZE << "\n";
         // Make sure a test of type Ty is supported by the device
         if (!TypeManager<Ty>::type_supported(device))
         {
