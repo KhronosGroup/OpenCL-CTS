@@ -38,8 +38,6 @@ const char *anyAllTestKernelPatternVload =
 
 #define TEST_SIZE 512
 
-extern "C" {extern cl_uint gRandomSeed;};
-
 typedef int (*anyAllVerifyFn)( ExplicitType vecType, unsigned int vecSize, void *inData );
 
 int test_any_all_kernel(cl_context context, cl_command_queue queue,
@@ -91,13 +89,19 @@ int test_any_all_kernel(cl_context context, cl_command_queue queue,
     generate_random_data( vecType, TEST_SIZE * g_vector_aligns[vecSize], d, inDataA );
     memset( clearData, 0, sizeof( clearData ) );
 
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), get_explicit_type_size( vecType ) * g_vector_aligns[vecSize] * TEST_SIZE, &inDataA, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                get_explicit_type_size(vecType)
+                                    * g_vector_aligns[vecSize] * TEST_SIZE,
+                                &inDataA, &error);
     if( streams[0] == NULL )
     {
         print_error( error, "Creating input array A failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_int) * g_vector_aligns[vecSize] * TEST_SIZE, clearData, &error );
+    streams[1] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_int) * g_vector_aligns[vecSize] * TEST_SIZE,
+                       clearData, &error);
     if( streams[1] == NULL )
     {
         print_error( error, "Creating output array failed!\n");
@@ -365,19 +369,28 @@ int test_select_kernel(cl_context context, cl_command_queue queue, const char *f
     generate_random_data( vecType, TEST_SIZE * g_vector_aligns[vecSize], d, inDataB );
     generate_random_data( testVecType, TEST_SIZE * g_vector_aligns[vecSize], d, inDataC );
 
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), get_explicit_type_size( vecType ) * g_vector_aligns[vecSize] * TEST_SIZE, &inDataA, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                get_explicit_type_size(vecType)
+                                    * g_vector_aligns[vecSize] * TEST_SIZE,
+                                &inDataA, &error);
     if( streams[0] == NULL )
     {
         print_error( error, "Creating input array A failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), get_explicit_type_size( vecType ) * g_vector_aligns[vecSize] * TEST_SIZE, &inDataB, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                get_explicit_type_size(vecType)
+                                    * g_vector_aligns[vecSize] * TEST_SIZE,
+                                &inDataB, &error);
     if( streams[1] == NULL )
     {
         print_error( error, "Creating input array A failed!\n");
         return -1;
     }
-    streams[2] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), get_explicit_type_size( testVecType ) * g_vector_aligns[vecSize] * TEST_SIZE, &inDataC, &error);
+    streams[2] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                get_explicit_type_size(testVecType)
+                                    * g_vector_aligns[vecSize] * TEST_SIZE,
+                                &inDataC, &error);
     if( streams[2] == NULL )
     {
         print_error( error, "Creating input array A failed!\n");

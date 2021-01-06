@@ -51,7 +51,8 @@ test_arraycopy(cl_device_id device, cl_context context, cl_command_queue queue, 
     output_ptr = (cl_uint*)malloc(sizeof(cl_uint) * num_elements);
 
     // results
-    results = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_uint) * num_elements, NULL, &err);
+    results = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                             sizeof(cl_uint) * num_elements, NULL, &err);
     test_error(err, "clCreateBuffer failed");
 
 /*****************************************************************************************************************************************/
@@ -64,7 +65,9 @@ test_arraycopy(cl_device_id device, cl_context context, cl_command_queue queue, 
         input_ptr[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
 
     // client backing
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_USE_HOST_PTR), sizeof(cl_uint) * num_elements, input_ptr, &err);
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_USE_HOST_PTR,
+                       sizeof(cl_uint) * num_elements, input_ptr, &err);
     test_error(err, "clCreateBuffer failed");
 
     delta_offset = num_elements * sizeof(cl_uint) / num_copies;
@@ -103,7 +106,8 @@ test_arraycopy(cl_device_id device, cl_context context, cl_command_queue queue, 
         input_ptr[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
 
     // no backing
-    streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE) , sizeof(cl_uint) * num_elements, NULL, &err);
+    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_uint) * num_elements, NULL, &err);
     test_error(err, "clCreateBuffer failed");
 
     for (i=0; i<num_copies; i++)
@@ -146,17 +150,20 @@ test_arraycopy(cl_device_id device, cl_context context, cl_command_queue queue, 
     free_mtdata(d); d= NULL;
 
     // client backing
-  streams[3] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_USE_HOST_PTR), sizeof(cl_uint) * num_elements, input_ptr, &err);
-  test_error(err, "clCreateBuffer failed");
+    streams[3] =
+        clCreateBuffer(context, CL_MEM_USE_HOST_PTR,
+                       sizeof(cl_uint) * num_elements, input_ptr, &err);
+    test_error(err, "clCreateBuffer failed");
 
-  err = create_single_kernel_helper(context, &program, &kernel, 1, &copy_kernel_code, "test_copy" );
-  test_error(err, "create_single_kernel_helper failed");
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &copy_kernel_code, "test_copy");
+    test_error(err, "create_single_kernel_helper failed");
 
-  err = clSetKernelArg(kernel, 0, sizeof streams[3], &streams[3]);
-  err |= clSetKernelArg(kernel, 1, sizeof results, &results);
-  test_error(err, "clSetKernelArg failed");
+    err = clSetKernelArg(kernel, 0, sizeof streams[3], &streams[3]);
+    err |= clSetKernelArg(kernel, 1, sizeof results, &results);
+    test_error(err, "clSetKernelArg failed");
 
-  size_t threads[3] = {num_elements, 0, 0};
+    size_t threads[3] = { num_elements, 0, 0 };
 
     err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
   test_error(err, "clEnqueueNDRangeKernel failed");

@@ -23,9 +23,12 @@
 test_status InitCL(cl_device_id device) {
   auto version = get_device_cl_version(device);
   auto expected_min_version = Version(2, 0);
-  if (version < expected_min_version) {
-    version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
-    return TEST_SKIP;
+  if (version < expected_min_version)
+  {
+      version_expected_info("Test", "OpenCL",
+                            expected_min_version.to_string().c_str(),
+                            version.to_string().c_str());
+      return TEST_SKIP;
   }
 
   int error;
@@ -37,8 +40,9 @@ test_status InitCL(cl_device_id device) {
     return TEST_FAIL;
   }
 
-  if ((max_packet_size == 0) && (version > Version(2,2))) {
-    return TEST_SKIP;
+  if ((max_packet_size == 0) && (version >= Version(3, 0)))
+  {
+      return TEST_SKIP;
   }
 
   return TEST_PASS;

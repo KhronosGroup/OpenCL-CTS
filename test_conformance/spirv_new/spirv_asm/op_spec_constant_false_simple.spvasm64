@@ -1,0 +1,55 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 28
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int8
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %11 "spec_const_kernel"
+         %27 = OpString "kernel_arg_type.spec_const_kernel.uchar*,"
+               OpSource OpenCL_C 102000
+               OpName %test_value "test_value"
+               OpName %entry "entry"
+               OpName %output_value "output_value"
+               OpName %entry_0 "entry"
+               OpName %if_then "if.then"
+               OpName %if_end "if.end"
+               OpDecorate %test_value FuncParamAttr Zext
+               OpDecorate %test_value LinkageAttributes "test_value" Export
+               OpDecorate %false SpecId 101
+      %uchar = OpTypeInt 8 0
+       %uint = OpTypeInt 32 0
+    %uchar_0 = OpConstant %uchar 0
+    %uchar_1 = OpConstant %uchar 1
+     %uint_1 = OpConstant %uint 1
+       %bool = OpTypeBool
+          %3 = OpTypeFunction %bool
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uchar = OpTypePointer CrossWorkgroup %uchar
+         %10 = OpTypeFunction %void %_ptr_CrossWorkgroup_uchar
+      %false = OpSpecConstantFalse %bool
+ %test_value = OpFunction %bool None %3
+      %entry = OpLabel
+               OpReturnValue %false
+               OpFunctionEnd
+         %11 = OpFunction %void None %10
+%output_value = OpFunctionParameter %_ptr_CrossWorkgroup_uchar
+    %entry_0 = OpLabel
+       %call = OpFunctionCall %bool %test_value
+   %frombool = OpSelect %uchar %call %uchar_1 %uchar_0
+     %tobool = OpINotEqual %bool %frombool %uchar_0
+               OpBranchConditional %tobool %if_then %if_end
+    %if_then = OpLabel
+         %21 = OpLoad %uchar %output_value Aligned 1
+       %conv = OpUConvert %uint %21
+        %add = OpIAdd %uint %conv %uint_1
+      %conv1 = OpUConvert %uchar %add
+               OpStore %output_value %conv1 Aligned 1
+               OpBranch %if_end
+     %if_end = OpLabel
+               OpReturn
+               OpFunctionEnd

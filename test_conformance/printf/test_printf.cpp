@@ -20,7 +20,7 @@
 #include <memory>
 
 #if ! defined( _WIN32)
-#if ! defined( __ANDROID__ )
+#if defined(__APPLE__)
 #include <sys/sysctl.h>
 #endif
 #include <unistd.h>
@@ -59,7 +59,7 @@ static void printUsage( void );
 //Stream helper functions
 
 //Associate stdout stream with the file(gFileName):i.e redirect stdout stream to the specific files (gFileName)
-static int acquireOutputStream();
+static int acquireOutputStream(int* error);
 
 //Close the file(gFileName) associated with the stdout stream and disassociates it.
 static void releaseOutputStream(int fd);
@@ -141,10 +141,15 @@ static int getTempFileName()
 //-----------------------------------------
 // acquireOutputStream
 //-----------------------------------------
-static int acquireOutputStream()
+static int acquireOutputStream(int* error)
 {
     int fd = streamDup(fileno(stdout));
-    freopen(gFileName,"w",stdout);
+    *error = 0;
+    if (!freopen(gFileName, "w", stdout))
+    {
+        releaseOutputStream(fd);
+        *error = -1;
+    }
     return fd;
 }
 
@@ -366,35 +371,7 @@ static bool isLongSupported(cl_device_id device_id)
 
     if(!strcmp("EMBEDDED_PROFILE",profileType.get()))
     {
-        // Device extention
-        status = clGetDeviceInfo(
-            device_id,
-            CL_DEVICE_EXTENSIONS,
-            0,
-            NULL,
-            &tempSize);
-
-        if(status != CL_SUCCESS)
-        {
-            log_error("*** clGetDeviceInfo FAILED ***\n\n");
-            return false;
-        }
-
-        std::unique_ptr<char[]> devExt(new char[tempSize]);
-        if(devExt == NULL)
-        {
-            log_error("Failed to allocate memory(devExt)");
-            return false;
-        }
-
-        status = clGetDeviceInfo(
-            device_id,
-            CL_DEVICE_EXTENSIONS,
-            sizeof(char) * tempSize,
-            devExt.get(),
-            NULL);
-
-        extSupport  = (strstr(devExt.get(),"cles_khr_int64") != NULL);
+        extSupport = is_extension_available(device_id, "cles_khr_int64");
     }
     return extSupport;
 }
@@ -520,7 +497,12 @@ static int doTest(cl_command_queue queue, cl_context context, const unsigned int
         }
     }
 
-    fd = acquireOutputStream();
+    fd = acquireOutputStream(&err);
+    if (err != 0)
+    {
+        log_error("Error while redirection stdout to file");
+        goto exit;
+    }
     globalWorkSize[0] = 1;
     cl_event ndrEvt;
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, globalWorkSize, NULL, 0, NULL,&ndrEvt);
@@ -705,17 +687,19 @@ int test_float_17(cl_device_id deviceID, cl_context context, cl_command_queue qu
 {
     return doTest(gQueue, gContext, TYPE_FLOAT, 17, deviceID);
 }
-int test_float_18(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+
+
+int test_float_limits_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT, 18, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 0, deviceID);
 }
-int test_float_19(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_float_limits_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT, 19, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 1, deviceID);
 }
-int test_float_20(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_float_limits_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT, 20, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 2, deviceID);
 }
 
 
@@ -869,9 +853,10 @@ test_definition test_list[] = {
     ADD_TEST( float_15 ),
     ADD_TEST( float_16 ),
     ADD_TEST( float_17 ),
-    ADD_TEST( float_18 ),
-    ADD_TEST( float_19 ),
-    ADD_TEST( float_20 ),
+
+    ADD_TEST( float_limits_0 ),
+    ADD_TEST( float_limits_1 ),
+    ADD_TEST( float_limits_2 ),
 
     ADD_TEST( octal_0 ),
     ADD_TEST( octal_1 ),
@@ -1007,7 +992,12 @@ test_status InitCL( cl_device_id device )
     uint32_t compute_devices = 0;
 
     int err;
-    gFd = acquireOutputStream();
+    gFd = acquireOutputStream(&err);
+    if (err != 0)
+    {
+        log_error("Error while redirection stdout to file");
+        return TEST_FAIL;
+    }
 
     size_t config_size = sizeof( device_frequency );
 #if MULTITHREAD
@@ -1033,20 +1023,24 @@ test_status InitCL( cl_device_id device )
     auto expected_min_version = Version(1, 2);
     if (version < expected_min_version)
     {
-        version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
+        version_expected_info("Test", "OpenCL",
+                              expected_min_version.to_string().c_str(),
+                              version.to_string().c_str());
         return TEST_SKIP;
     }
 
     log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
 
-    gFd = acquireOutputStream();
-
-    cl_context_properties printf_properties[] =
-        {
-            CL_PRINTF_CALLBACK_ARM, (cl_context_properties)printfCallBack,
-            CL_PRINTF_BUFFERSIZE_ARM, ANALYSIS_BUFFER_SIZE,
-            0
-        };
+    gFd = acquireOutputStream(&err);
+    if (err != 0)
+    {
+        log_error("Error while redirection stdout to file");
+        return TEST_FAIL;
+    }
+    cl_context_properties printf_properties[] = {
+        CL_PRINTF_CALLBACK_ARM, (cl_context_properties)printfCallBack,
+        CL_PRINTF_BUFFERSIZE_ARM, ANALYSIS_BUFFER_SIZE, 0
+    };
 
     cl_context_properties* props = NULL;
 
@@ -1062,6 +1056,9 @@ test_status InitCL( cl_device_id device )
     checkNull(gQueue, "clCreateCommandQueue");
 
     releaseOutputStream(gFd);
+
+    // Generate reference results
+    generateRef(device);
 
     return TEST_PASS;
 }

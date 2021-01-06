@@ -16,15 +16,14 @@
 #ifndef TEST_CONFORMANCE_CLCPP_VLOAD_VSTORE_FUNCS_VSTORE_FUNCS_HPP
 #define TEST_CONFORMANCE_CLCPP_VLOAD_VSTORE_FUNCS_VSTORE_FUNCS_HPP
 
-#include "../common.hpp"
-#include "../funcs_test_utils.hpp"
-
 #include <iterator>
 
 #include "../common.hpp"
 #include "../funcs_test_utils.hpp"
 
 #include "common.hpp"
+
+#include <CL/cl_half.h>
 
 // -----------------------------------------------------------------------------------
 // ------------- ONLY FOR OPENCL 22 CONFORMANCE TEST 22 DEVELOPMENT ------------------
@@ -139,10 +138,12 @@ int test_vstore_func(cl_device_id device, cl_context context, cl_command_queue q
     std::vector<INPUT> input = generate_input<INPUT>(count, op.min1(), op.max1(), op.in_special_cases());
     std::vector<OUTPUT> output = generate_output<OUTPUT>(count * vector_size<INPUT>::value);
 
-    buffers[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(INPUT) * input.size(), NULL, &err);
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(INPUT) * input.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer");
 
-    buffers[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(OUTPUT) * output.size(), NULL, &err);
+    buffers[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(OUTPUT) * output.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer");
 
     err = clEnqueueWriteBuffer(
@@ -240,7 +241,7 @@ struct vstore_half_func : public unary_func<
         result_type r;
         for(size_t i = 0; i < N; i++)
         {
-            r.s[i] = float2half_rte(in.s[i]);
+            r.s[i] = cl_half_from_float(in.s[i], CL_HALF_RTE);
         }
         return r;
     }
@@ -287,7 +288,7 @@ struct vstorea_half_func : public unary_func<
         result_type r;
         for(size_t i = 0; i < N; i++)
         {
-            r.s[i] = float2half_rte(in.s[i]);
+            r.s[i] = cl_half_from_float(in.s[i], CL_HALF_RTE);
         }
         return r;
     }

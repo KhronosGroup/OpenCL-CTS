@@ -13,28 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
-
-#if !defined(_WIN32)
-#include <unistd.h>
-#include <sys/time.h>
-#endif
-
 #include "../testBase.h"
+#include "../harness/compat.h"
 
 bool gDebugTrace;
 bool gTestSmallImages;
 bool gTestMaxImages;
-int  gTypesToTest;
 cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
+cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
 
 extern int test_image_set( cl_device_id device, cl_context context, cl_mem_object_type image_type );
 static void printUsage( const char *execName );
-
-#define MAX_ALLOWED_STD_DEVIATION_IN_MB        8.0
 
 int test_1D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -116,7 +108,8 @@ int main(int argc, const char *argv[])
     if( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
 
-    int ret = runTestHarness( argCount, argList, test_num, test_list, true, false, 0 );
+    int ret = runTestHarnessWithCheck(argCount, argList, test_num, test_list,
+                                      false, 0, verifyImageSupport);
 
     free(argList);
     return ret;

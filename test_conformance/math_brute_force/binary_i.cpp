@@ -19,18 +19,20 @@
 #include <limits.h>
 #include "FunctionList.h"
 
-int TestFunc_Float_Float_Int(const Func *f, MTdata);
-int TestFunc_Double_Double_Int(const Func *f, MTdata);
+int TestFunc_Float_Float_Int(const Func *f, MTdata, bool relaxedMode);
+int TestFunc_Double_Double_Int(const Func *f, MTdata, bool relaxedMode);
 
-#if defined( __cplusplus)
-    extern "C"
-#endif
-const vtbl _binary_i = { "binary_i", TestFunc_Float_Float_Int, TestFunc_Double_Double_Int };
+extern const vtbl _binary_i = { "binary_i", TestFunc_Float_Float_Int,
+                                TestFunc_Double_Double_Int };
 
-static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
-static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
+static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
+                       cl_kernel *k, cl_program *p, bool relaxedMode);
+static int BuildKernelDouble(const char *name, int vectorSize,
+                             cl_uint kernel_count, cl_kernel *k, cl_program *p,
+                             bool relaxedMode);
 
-static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p )
+static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
+                       cl_kernel *k, cl_program *p, bool relaxedMode)
 {
     const char *c[] = { "__kernel void math_kernel", sizeNames[vectorSize], "( __global float", sizeNames[vectorSize], "* out, __global float", sizeNames[vectorSize], "* in1, __global int", sizeNames[vectorSize], "* in2 )\n"
                             "{\n"
@@ -91,10 +93,13 @@ static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, 
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
 
-    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);
+    return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p,
+                       relaxedMode);
 }
 
-static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p )
+static int BuildKernelDouble(const char *name, int vectorSize,
+                             cl_uint kernel_count, cl_kernel *k, cl_program *p,
+                             bool relaxedMode)
 {
     const char *c[] = {     "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
                             "__kernel void math_kernel", sizeNames[vectorSize], "( __global double", sizeNames[vectorSize], "* out, __global double", sizeNames[vectorSize], "* in1, __global int", sizeNames[vectorSize], "* in2 )\n"
@@ -157,7 +162,8 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_c
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
 
-    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);
+    return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p,
+                       relaxedMode);
 }
 
 typedef struct BuildKernelInfo
@@ -167,6 +173,7 @@ typedef struct BuildKernelInfo
     cl_kernel   **kernels;
     cl_program  *programs;
     const char  *nameInCode;
+    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 }BuildKernelInfo;
 
 static cl_int BuildKernel_FloatFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p );
@@ -174,7 +181,8 @@ static cl_int BuildKernel_FloatFn( cl_uint job_id, cl_uint thread_id UNUSED, voi
 {
     BuildKernelInfo *info = (BuildKernelInfo*) p;
     cl_uint i = info->offset + job_id;
-    return BuildKernel( info->nameInCode, i, info->kernel_count, info->kernels[i], info->programs + i );
+    return BuildKernel(info->nameInCode, i, info->kernel_count,
+                       info->kernels[i], info->programs + i, info->relaxedMode);
 }
 
 static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p );
@@ -182,7 +190,9 @@ static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, vo
 {
     BuildKernelInfo *info = (BuildKernelInfo*) p;
     cl_uint i = info->offset + job_id;
-    return BuildKernelDouble( info->nameInCode, i, info->kernel_count, info->kernels[i], info->programs + i );
+    return BuildKernelDouble(info->nameInCode, i, info->kernel_count,
+                             info->kernels[i], info->programs + i,
+                             info->relaxedMode);
 }
 
 
@@ -241,7 +251,7 @@ typedef struct TestInfo
 
 static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *p );
 
-int TestFunc_Float_Float_Int(const Func *f, MTdata d)
+int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
 {
     TestInfo    test_info;
     cl_int      error;
@@ -250,7 +260,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d)
     double      maxErrorVal = 0.0;
     cl_int      maxErrorVal2 = 0;
 
-    logFunctionInfo(f->name,sizeof(cl_float),gTestFastRelaxed);
+    logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
     // Init test_info
     memset( &test_info, 0, sizeof( test_info ) );
@@ -335,7 +345,10 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d)
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = { gMinVectorSizeIndex, test_info.threadCount, test_info.k, test_info.programs, f->nameInCode };
+        BuildKernelInfo build_info = {
+            gMinVectorSizeIndex, test_info.threadCount, test_info.k,
+            test_info.programs,  f->nameInCode,         relaxedMode
+        };
         if( (error = ThreadPool_Do( BuildKernel_FloatFn, gMaxVectorSizeIndex - gMinVectorSizeIndex, &build_info ) ))
             goto exit;
     }
@@ -681,7 +694,12 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
                 }
                 if( fail )
                 {
-                    vlog_error( "\nERROR: %s%s: %f ulp error at {%a, %d}: *%a vs. %a (0x%8.8x) at index: %d\n", name, sizeNames[k], err, s[j], s2[j], r[j], test, ((cl_uint*)&test)[0], j );
+                    vlog_error(
+                        "\nERROR: %s%s: %f ulp error at {%a (0x%8.8x), %d}: "
+                        "*%a (0x%8.8x) vs. %a (0x%8.8x) at index: %d\n",
+                        name, sizeNames[k], err, s[j], ((uint32_t *)s)[j],
+                        s2[j], r[j], ((uint32_t *)r)[j], test,
+                        ((cl_uint *)&test)[0], j);
                     error = -1;
                     goto exit;
                 }
@@ -747,7 +765,7 @@ static size_t specialValuesInt2Count = sizeof( specialValuesInt ) / sizeof( spec
 
 static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *p );
 
-int TestFunc_Double_Double_Int(const Func *f, MTdata d)
+int TestFunc_Double_Double_Int(const Func *f, MTdata d, bool relaxedMode)
 {
     TestInfo    test_info;
     cl_int      error;
@@ -756,7 +774,7 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d)
     double      maxErrorVal = 0.0;
     cl_int      maxErrorVal2 = 0;
 
-    logFunctionInfo(f->name,sizeof(cl_double),gTestFastRelaxed);
+    logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
     // Init test_info
     memset( &test_info, 0, sizeof( test_info ) );
@@ -845,7 +863,10 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d)
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = { gMinVectorSizeIndex, test_info.threadCount, test_info.k, test_info.programs, f->nameInCode };
+        BuildKernelInfo build_info = {
+            gMinVectorSizeIndex, test_info.threadCount, test_info.k,
+            test_info.programs,  f->nameInCode,         relaxedMode
+        };
         if( (error = ThreadPool_Do( BuildKernel_DoubleFn, gMaxVectorSizeIndex - gMinVectorSizeIndex, &build_info ) ))
             goto exit;
     }

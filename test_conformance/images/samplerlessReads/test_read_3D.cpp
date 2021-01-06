@@ -16,11 +16,8 @@
 #include "../testBase.h"
 #include <float.h>
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool             gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gDeviceLt20;
-extern bool             gTestReadWrite;
+extern bool gDeviceLt20;
+extern bool gTestReadWrite;
 
 const char *read3DKernelSourcePattern =
 "__kernel void sample_kernel( read_only image3d_t input, sampler_t sampler, __global int *results )\n"
@@ -178,6 +175,11 @@ int test_read_image_set_3D( cl_device_id device, cl_context context, cl_command_
     RandomSeed seed( gRandomSeed );
 
     int error;
+
+    if (gTestReadWrite && checkForReadWriteImageSupport(device))
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
 
     clProgramWrapper program;
     clKernelWrapper kernel;

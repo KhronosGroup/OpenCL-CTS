@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -35,25 +35,26 @@
 
 enum TExplicitAtomicType
 {
-  TYPE_ATOMIC_INT,
-  TYPE_ATOMIC_UINT,
-  TYPE_ATOMIC_LONG,
-  TYPE_ATOMIC_ULONG,
-  TYPE_ATOMIC_FLOAT,
-  TYPE_ATOMIC_DOUBLE,
-  TYPE_ATOMIC_INTPTR_T,
-  TYPE_ATOMIC_UINTPTR_T,
-  TYPE_ATOMIC_SIZE_T,
-  TYPE_ATOMIC_PTRDIFF_T,
-  TYPE_ATOMIC_FLAG
+    TYPE_ATOMIC_INT,
+    TYPE_ATOMIC_UINT,
+    TYPE_ATOMIC_LONG,
+    TYPE_ATOMIC_ULONG,
+    TYPE_ATOMIC_FLOAT,
+    TYPE_ATOMIC_DOUBLE,
+    TYPE_ATOMIC_INTPTR_T,
+    TYPE_ATOMIC_UINTPTR_T,
+    TYPE_ATOMIC_SIZE_T,
+    TYPE_ATOMIC_PTRDIFF_T,
+    TYPE_ATOMIC_FLAG
 };
 
 enum TExplicitMemoryScopeType
 {
-  MEMORY_SCOPE_EMPTY,
-  MEMORY_SCOPE_WORK_GROUP,
-  MEMORY_SCOPE_DEVICE,
-  MEMORY_SCOPE_ALL_SVM_DEVICES
+    MEMORY_SCOPE_EMPTY,
+    MEMORY_SCOPE_WORK_GROUP,
+    MEMORY_SCOPE_DEVICE,
+    MEMORY_SCOPE_ALL_DEVICES, // Alias for MEMORY_SCOPE_ALL_SVM_DEVICES
+    MEMORY_SCOPE_ALL_SVM_DEVICES
 };
 
 extern bool gHost; // temporary flag for testing native host threads (test verification)
@@ -65,11 +66,15 @@ extern bool gUseHostPtr; // use malloc/free instead of clSVMAlloc/clSVMFree
 extern bool gDebug; // print OpenCL kernel code
 extern int gInternalIterations; // internal test iterations for atomic operation, sufficient to verify atomicity
 extern int gMaxDeviceThreads; // maximum number of threads executed on OCL device
-
-extern cl_uint gRandomSeed;
+extern cl_device_atomic_capabilities gAtomicMemCap,
+    gAtomicFenceCap; // atomic memory and fence capabilities for this device
 
 extern const char *get_memory_order_type_name(TExplicitMemoryOrderType orderType);
 extern const char *get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
+
+extern cl_int getSupportedMemoryOrdersAndScopes(
+    cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
+    std::vector<TExplicitMemoryScopeType> &memoryScopes);
 
 class AtomicTypeInfo
 {
@@ -283,6 +288,89 @@ public:
     else
       return 0;
   }
+
+  int CheckCapabilities(TExplicitMemoryScopeType memoryScope,
+                        TExplicitMemoryOrderType memoryOrder)
+  {
+      /*
+          Differentiation between atomic fence and other atomic operations
+          does not need to occur here.
+
+          The initialisation of this test checks that the minimum required
+          capabilities are supported by this device.
+
+          The following switches allow the test to skip if optional capabilites
+          are not supported by the device.
+        */
+      switch (memoryScope)
+      {
+          case MEMORY_SCOPE_EMPTY: {
+              break;
+          }
+          case MEMORY_SCOPE_WORK_GROUP: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          case MEMORY_SCOPE_DEVICE: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_DEVICE) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          case MEMORY_SCOPE_ALL_DEVICES: // fallthough
+          case MEMORY_SCOPE_ALL_SVM_DEVICES: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          default: {
+              log_info("Invalid memory scope\n");
+              break;
+          }
+      }
+
+      switch (memoryOrder)
+      {
+          case MEMORY_ORDER_EMPTY: {
+              break;
+          }
+          case MEMORY_ORDER_RELAXED: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_ORDER_RELAXED) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          case MEMORY_ORDER_ACQUIRE:
+          case MEMORY_ORDER_RELEASE:
+          case MEMORY_ORDER_ACQ_REL: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_ORDER_ACQ_REL) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          case MEMORY_ORDER_SEQ_CST: {
+              if ((gAtomicMemCap & CL_DEVICE_ATOMIC_ORDER_SEQ_CST) == 0)
+              {
+                  return TEST_SKIPPED_ITSELF;
+              }
+              break;
+          }
+          default: {
+              log_info("Invalid memory order\n");
+              break;
+          }
+      }
+
+      return 0;
+  }
   virtual bool SVMDataBufferAllSVMConsistent() {return false;}
   bool UseSVM() {return _useSVM;}
   void StartValue(HostDataType startValue) {_startValue = startValue;}
@@ -341,6 +429,7 @@ class CBasicTestMemOrderScope : public CBasicTest<HostAtomicType, HostDataType>
 public:
   using CBasicTest<HostAtomicType, HostDataType>::LocalMemory;
   using CBasicTest<HostAtomicType, HostDataType>::MaxGroupSize;
+  using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
   CBasicTestMemOrderScope(TExplicitAtomicType dataType, bool useSVM = false) : CBasicTest<HostAtomicType, HostDataType>(dataType, useSVM)
   {
   }
@@ -391,6 +480,10 @@ public:
       MaxGroupSize(16); // increase number of groups by forcing smaller group size
     else
       MaxGroupSize(0); // group size limited by device capabilities
+
+    if (CheckCapabilities(MemoryScope(), MemoryOrder()) == TEST_SKIPPED_ITSELF)
+        return 0; // skip test - not applicable
+
     return CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context, queue);
   }
   virtual int ExecuteForEachParameterSet(cl_device_id deviceID, cl_context context, cl_command_queue queue)
@@ -400,16 +493,11 @@ public:
     std::vector<TExplicitMemoryScopeType> memoryScope;
     int error = 0;
 
-    memoryOrder.push_back(MEMORY_ORDER_EMPTY);
-    memoryOrder.push_back(MEMORY_ORDER_RELAXED);
-    memoryOrder.push_back(MEMORY_ORDER_ACQUIRE);
-    memoryOrder.push_back(MEMORY_ORDER_RELEASE);
-    memoryOrder.push_back(MEMORY_ORDER_ACQ_REL);
-    memoryOrder.push_back(MEMORY_ORDER_SEQ_CST);
-    memoryScope.push_back(MEMORY_SCOPE_EMPTY);
-    memoryScope.push_back(MEMORY_SCOPE_WORK_GROUP);
-    memoryScope.push_back(MEMORY_SCOPE_DEVICE);
-    memoryScope.push_back(MEMORY_SCOPE_ALL_SVM_DEVICES);
+    // For OpenCL-3.0 and later some orderings and scopes are optional, so here
+    // we query for the supported ones.
+    test_error_ret(
+        getSupportedMemoryOrdersAndScopes(deviceID, memoryOrder, memoryScope),
+        "getSupportedMemoryOrdersAndScopes failed\n", TEST_FAIL);
 
     for(unsigned oi = 0; oi < memoryOrder.size(); oi++)
     {
@@ -452,11 +540,17 @@ public:
   }
   virtual cl_uint MaxHostThreads()
   {
-    // block host threads execution for memory scope different than memory_scope_all_svm_devices
-    if(MemoryScope() == MEMORY_SCOPE_ALL_SVM_DEVICES || gHost)
-      return CBasicTest<HostAtomicType, HostDataType>::MaxHostThreads();
-    else
-      return 0;
+      // block host threads execution for memory scope different than
+      // memory_scope_all_svm_devices
+      if (MemoryScope() == MEMORY_SCOPE_ALL_DEVICES
+          || MemoryScope() == MEMORY_SCOPE_ALL_SVM_DEVICES || gHost)
+      {
+          return CBasicTest<HostAtomicType, HostDataType>::MaxHostThreads();
+      }
+      else
+      {
+          return 0;
+      }
   }
 private:
   TExplicitMemoryOrderType _memoryOrder;
@@ -472,6 +566,8 @@ public:
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryScope;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrderStr;
   using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryScopeStr;
+  using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
+
   CBasicTestMemOrder2Scope(TExplicitAtomicType dataType, bool useSVM = false) : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType, useSVM)
   {
   }
@@ -493,16 +589,11 @@ public:
     std::vector<TExplicitMemoryScopeType> memoryScope;
     int error = 0;
 
-    memoryOrder.push_back(MEMORY_ORDER_EMPTY);
-    memoryOrder.push_back(MEMORY_ORDER_RELAXED);
-    memoryOrder.push_back(MEMORY_ORDER_ACQUIRE);
-    memoryOrder.push_back(MEMORY_ORDER_RELEASE);
-    memoryOrder.push_back(MEMORY_ORDER_ACQ_REL);
-    memoryOrder.push_back(MEMORY_ORDER_SEQ_CST);
-    memoryScope.push_back(MEMORY_SCOPE_EMPTY);
-    memoryScope.push_back(MEMORY_SCOPE_WORK_GROUP);
-    memoryScope.push_back(MEMORY_SCOPE_DEVICE);
-    memoryScope.push_back(MEMORY_SCOPE_ALL_SVM_DEVICES);
+    // For OpenCL-3.0 and later some orderings and scopes are optional, so here
+    // we query for the supported ones.
+    test_error_ret(
+        getSupportedMemoryOrdersAndScopes(deviceID, memoryOrder, memoryScope),
+        "getSupportedMemoryOrdersAndScopes failed\n", TEST_FAIL);
 
     for(unsigned oi = 0; oi < memoryOrder.size(); oi++)
     {
@@ -519,6 +610,15 @@ public:
           MemoryOrder(memoryOrder[oi]);
           MemoryOrder2(memoryOrder[o2i]);
           MemoryScope(memoryScope[si]);
+
+          if (CheckCapabilities(MemoryScope(), MemoryOrder())
+              == TEST_SKIPPED_ITSELF)
+              continue; // skip test - not applicable
+
+          if (CheckCapabilities(MemoryScope(), MemoryOrder2())
+              == TEST_SKIPPED_ITSELF)
+              continue; // skip test - not applicable
+
           EXECUTE_TEST(error, (CBasicTest<HostAtomicType, HostDataType>::ExecuteForEachParameterSet(deviceID, context, queue)));
         }
       }
@@ -702,23 +802,35 @@ std::string CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumD
     "\n";
   if(LocalMemory())
   {
-    code +=
-      "  // initialize atomics not reachable from host (first thread is doing this, other threads are waiting on barrier)\n"
-      "  if(get_local_id(0) == 0)\n"
-      "    for(uint dstItemIdx = 0; dstItemIdx < numDestItems; dstItemIdx++)\n"
-      "    {\n";
-    if(aTypeName == "atomic_flag")
-    {
-      code +=
-        "      if(finalDest[dstItemIdx])\n"
-        "        atomic_flag_test_and_set(destMemory+dstItemIdx);\n"
-        "      else\n"
-        "        atomic_flag_clear(destMemory+dstItemIdx);\n";
-    }
+      // memory_order_relaxed is sufficient for these initialization operations
+      // as the barrier below will act as a fence, providing an order to the
+      // operations. memory_scope_work_group is sufficient as local memory is
+      // only visible within the work-group.
+      code += R"(
+              // initialize atomics not reachable from host (first thread
+              // is doing this, other threads are waiting on barrier)
+              if(get_local_id(0) == 0)
+                for(uint dstItemIdx = 0; dstItemIdx < numDestItems; dstItemIdx++)
+                {)";
+      if (aTypeName == "atomic_flag")
+      {
+          code += R"(
+                  if(finalDest[dstItemIdx])
+                    atomic_flag_test_and_set_explicit(destMemory+dstItemIdx,
+                                                      memory_order_relaxed,
+                                                      memory_scope_work_group);
+                  else
+                    atomic_flag_clear_explicit(destMemory+dstItemIdx,
+                                               memory_order_relaxed,
+                                               memory_scope_work_group);)";
+      }
     else
     {
-      code +=
-        "      atomic_store(destMemory+dstItemIdx, finalDest[dstItemIdx]);\n";
+        code += R"(
+                atomic_store_explicit(destMemory+dstItemIdx,
+                                      finalDest[dstItemIdx],
+                                      memory_order_relaxed,
+                                      memory_scope_work_group);)";
     }
     code +=
       "    }\n"
@@ -775,20 +887,29 @@ std::string CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumD
         "  if(get_local_id(0) == 0) // first thread in workgroup\n";
     else
       // global atomics declared in program scope
-      code +=
-      "  if(atomic_fetch_add(&finishedThreads, 1) == get_global_size(0)-1)\n"
-      "    // last finished thread\n";
+      code += R"(
+                if(atomic_fetch_add_explicit(&finishedThreads, 1u,
+                                           memory_order_relaxed,
+                                           memory_scope_work_group)
+                   == get_global_size(0)-1) // last finished thread
+                   )";
     code +=
         "    for(uint dstItemIdx = 0; dstItemIdx < numDestItems; dstItemIdx++)\n";
     if(aTypeName == "atomic_flag")
     {
-      code +=
-        "      finalDest[dstItemIdx] = atomic_flag_test_and_set(destMemory+dstItemIdx);\n";
+        code += R"(
+                finalDest[dstItemIdx] =
+                    atomic_flag_test_and_set_explicit(destMemory+dstItemIdx,
+                                                      memory_order_relaxed,
+                                                      memory_scope_work_group);)";
     }
     else
     {
-      code +=
-        "      finalDest[dstItemIdx] = atomic_load(destMemory+dstItemIdx);\n";
+        code += R"(
+                finalDest[dstItemIdx] =
+                    atomic_load_explicit(destMemory+dstItemIdx,
+                                         memory_order_relaxed,
+                                         memory_scope_work_group);)";
     }
   }
   code += "}\n"
@@ -850,49 +971,75 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(cl_device_id dev
 
   if(deviceThreadCount > 0)
   {
-    cl_ulong usedLocalMemory;
-    cl_ulong totalLocalMemory;
-    cl_uint maxWorkGroupSize;
+      // This loop iteratively reduces the workgroup size by 2 and then
+      // re-generates the kernel with the reduced
+      // workgroup size until we find a size which is admissible for the kernel
+      // being run or reduce the wg size
+      // to the trivial case of 1 (which was separately verified to be accurate
+      // for the kernel being run)
 
-    // Set up the kernel code
-    programSource = PragmaHeader(deviceID)+ProgramHeader(numDestItems)+FunctionCode()+KernelCode(numDestItems);
-    programLine = programSource.c_str();
-    if(create_single_kernel_helper_with_build_options(context, &program, &kernel, 1, &programLine, "test_atomic_kernel",
-      gOldAPI ? "" : "-cl-std=CL2.0"))
-    {
-      return -1;
-    }
-    if(gDebug)
-    {
-      log_info("Program source:\n");
-      log_info("%s\n", programLine);
-    }
-    // tune up work sizes based on kernel info
-    error = clGetKernelWorkGroupInfo(kernel, deviceID, CL_KERNEL_WORK_GROUP_SIZE, sizeof(groupSize), &groupSize, NULL);
-    test_error(error, "Unable to obtain max work group size for device and kernel combo");
+      while ((CurrentGroupSize() > 1))
+      {
+          // Re-generate the kernel code with the current group size
+          if (kernel) clReleaseKernel(kernel);
+          if (program) clReleaseProgram(program);
+          programSource = PragmaHeader(deviceID) + ProgramHeader(numDestItems)
+              + FunctionCode() + KernelCode(numDestItems);
+          programLine = programSource.c_str();
+          if (create_single_kernel_helper_with_build_options(
+                  context, &program, &kernel, 1, &programLine,
+                  "test_atomic_kernel", gOldAPI ? "" : nullptr))
+          {
+              return -1;
+          }
+          // Get work group size for the new kernel
+          error = clGetKernelWorkGroupInfo(kernel, deviceID,
+                                           CL_KERNEL_WORK_GROUP_SIZE,
+                                           sizeof(groupSize), &groupSize, NULL);
+          test_error(error,
+                     "Unable to obtain max work group size for device and "
+                     "kernel combo");
 
-    if(LocalMemory())
-    {
-      error = clGetKernelWorkGroupInfo (kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(usedLocalMemory), &usedLocalMemory, NULL);
-      test_error(error, "clGetKernelWorkGroupInfo failed");
+          if (LocalMemory())
+          {
+              cl_ulong usedLocalMemory;
+              cl_ulong totalLocalMemory;
+              cl_uint maxWorkGroupSize;
 
-      error = clGetDeviceInfo(deviceID, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(totalLocalMemory), &totalLocalMemory, NULL);
-      test_error(error, "clGetDeviceInfo failed");
+              error = clGetKernelWorkGroupInfo(
+                  kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE,
+                  sizeof(usedLocalMemory), &usedLocalMemory, NULL);
+              test_error(error, "clGetKernelWorkGroupInfo failed");
 
-      // We know that each work-group is going to use typeSize * deviceThreadCount bytes of local memory
-      // so pick the maximum value for deviceThreadCount that uses all the local memory.
-      maxWorkGroupSize = ((totalLocalMemory - usedLocalMemory) / typeSize);
+              error = clGetDeviceInfo(deviceID, CL_DEVICE_LOCAL_MEM_SIZE,
+                                      sizeof(totalLocalMemory),
+                                      &totalLocalMemory, NULL);
+              test_error(error, "clGetDeviceInfo failed");
 
-      if(maxWorkGroupSize < groupSize)
-        groupSize = maxWorkGroupSize;
-    }
+              // We know that each work-group is going to use typeSize *
+              // deviceThreadCount bytes of local memory
+              // so pick the maximum value for deviceThreadCount that uses all
+              // the local memory.
+              maxWorkGroupSize =
+                  ((totalLocalMemory - usedLocalMemory) / typeSize);
 
-    CurrentGroupSize((cl_uint)groupSize);
+              if (maxWorkGroupSize < groupSize) groupSize = maxWorkGroupSize;
+          }
+          if (CurrentGroupSize() <= groupSize)
+              break;
+          else
+              CurrentGroupSize(CurrentGroupSize() / 2);
+      }
     if(CurrentGroupSize() > deviceThreadCount)
       CurrentGroupSize(deviceThreadCount);
     if(CurrentGroupNum(deviceThreadCount) == 1 || gOldAPI)
       deviceThreadCount = CurrentGroupSize()*CurrentGroupNum(deviceThreadCount);
     threadCount = deviceThreadCount+hostThreadCount;
+  }
+  if (gDebug)
+  {
+      log_info("Program source:\n");
+      log_info("%s\n", programLine);
   }
   if(deviceThreadCount > 0)
     log_info("\t\t(thread count %u, group size %u)\n", deviceThreadCount, CurrentGroupSize());
@@ -901,7 +1048,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(cl_device_id dev
 
   refValues.resize(threadCount*NumNonAtomicVariablesPerThread());
 
-  // Generate ref data if we have a ref generator provided		
+  // Generate ref data if we have a ref generator provided
   d = init_genrand(gRandomSeed);
   startRefValues.resize(threadCount*NumNonAtomicVariablesPerThread());
   if(GenerateRefs(threadCount, &startRefValues[0], d))
@@ -938,11 +1085,13 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(cl_device_id dev
       return -1;
     }
     memcpy(svmAtomicBuffer, &destItems[0], typeSize * numDestItems);
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_USE_HOST_PTR), typeSize * numDestItems, svmAtomicBuffer, NULL);
+    streams[0] = clCreateBuffer(context, CL_MEM_USE_HOST_PTR,
+                                typeSize * numDestItems, svmAtomicBuffer, NULL);
   }
   else
   {
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), typeSize * numDestItems, &destItems[0], NULL);
+      streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                  typeSize * numDestItems, &destItems[0], NULL);
   }
   if (!streams[0])
   {
@@ -963,12 +1112,18 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(cl_device_id dev
     }
     if(startRefValues.size())
       memcpy(svmDataBuffer, &startRefValues[0], typeSize*threadCount*NumNonAtomicVariablesPerThread());
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_USE_HOST_PTR), typeSize*threadCount*NumNonAtomicVariablesPerThread(), svmDataBuffer, NULL);
+    streams[1] = clCreateBuffer(context, CL_MEM_USE_HOST_PTR,
+                                typeSize * threadCount
+                                    * NumNonAtomicVariablesPerThread(),
+                                svmDataBuffer, NULL);
   }
   else
   {
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)((startRefValues.size() ? CL_MEM_COPY_HOST_PTR : CL_MEM_READ_WRITE)),
-      typeSize * threadCount*NumNonAtomicVariablesPerThread(), startRefValues.size() ? &startRefValues[0] : 0, NULL);
+      streams[1] = clCreateBuffer(
+          context,
+          ((startRefValues.size() ? CL_MEM_COPY_HOST_PTR : CL_MEM_READ_WRITE)),
+          typeSize * threadCount * NumNonAtomicVariablesPerThread(),
+          startRefValues.size() ? &startRefValues[0] : 0, NULL);
   }
   if (!streams[1])
   {

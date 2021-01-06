@@ -18,6 +18,7 @@
 
 #include "harness/testHarness.h"
 #include "harness/compat.h"
+#include "harness/conversions.h"
 
 #include <stdio.h>
 
@@ -93,9 +94,6 @@ void ReleaseCL( void );
 int RunKernel( cl_device_id device, cl_kernel kernel, void *inBuf, void *outBuf, uint32_t blockCount , int extraArg);
 cl_program MakeProgram( cl_device_id device, const char *source[], int count );
 
-#define STRING( _x )    STRINGIFY( _x )
-#define STRINGIFY(x)    #x
-
 static inline float as_float(cl_uint u) { union { cl_uint u; float f; }v; v.u = u; return v.f; }
 static inline double as_double(cl_ulong u) { union { cl_ulong u; double d; }v; v.u = u; return v.d; }
 
@@ -110,42 +108,6 @@ static inline cl_ulong DoubleFromUInt( cl_uint bits )
     u -= (cl_ulong)((bits & 0x80U) << 1);
 
     return u;
-}
-
-static inline int IsHalfSubnormal( uint16_t x )
-{
-    return ((x&0x7fffU)-1U) < 0x03ffU;
-}
-
-// prevent silent failures due to missing FLT_RADIX
-#ifndef FLT_RADIX
-    #error FLT_RADIX is not defined by float.h
-#endif
-
-static inline int IsFloatSubnormal( double x )
-{
-#if 2 == FLT_RADIX
-    // Do this in integer to avoid problems with FTZ behavior
-    union{ float d; uint32_t u;}u;
-    u.d = fabsf((float) x);
-    return (u.u-1) < 0x007fffffU;
-#else
-    // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) FLT_MIN && x != 0.0;
-#endif
-}
-
-static inline int IsDoubleSubnormal( long double x )
-{
-#if 2 == FLT_RADIX
-    // Do this in integer to avoid problems with FTZ behavior
-    union{ double d; uint64_t u;}u;
-    u.d = fabs((double)x);
-    return (u.u-1) < 0x000fffffffffffffULL;
-#else
-    // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) DBL_MIN && x != 0.0;
-#endif
 }
 
 #endif /* CL_UTILS_H */

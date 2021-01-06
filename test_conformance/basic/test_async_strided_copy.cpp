@@ -215,6 +215,8 @@ int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queu
                 sprintf(values + strlen( values), "%2x ", outchar[j]);
             sprintf(values + strlen(values), "]");
             log_error("%s\n", values);
+            free(inBuffer);
+            free(outBuffer);
             return -1;
         }
     }

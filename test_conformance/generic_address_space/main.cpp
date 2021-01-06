@@ -75,12 +75,13 @@ test_status InitCL(cl_device_id device) {
 
     if (version < expected_min_version)
     {
-        version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
+        version_expected_info("Test", "OpenCL",
+                              expected_min_version.to_string().c_str(),
+                              version.to_string().c_str());
         return TEST_SKIP;
     }
 
-#ifdef CL_EXPERIMENTAL
-    if (version > Version(2,2))
+    if (version >= Version(3, 0))
     {
         cl_int error;
         cl_bool support_generic;
@@ -98,7 +99,6 @@ test_status InitCL(cl_device_id device) {
             return TEST_SKIP;
         }
     }
-#endif
 
     return TEST_PASS;
 }

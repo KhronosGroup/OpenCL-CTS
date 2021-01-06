@@ -19,8 +19,6 @@
 #include <ctype.h>
 #include <string.h>
 
-extern cl_uint gRandomSeed;
-
 const char *sample_single_param_kernel[] = {
     "__kernel void sample_test(__global int *src)\n"
     "{\n"
@@ -138,7 +136,8 @@ int test_min_max_thread_dimensions(cl_device_id deviceID, cl_context context, cl
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_int) * 100, NULL, &error );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * 100, NULL, &error);
     if( streams[0] == NULL )
     {
         log_error("ERROR: Creating test array failed!\n");
@@ -323,7 +322,8 @@ int test_min_max_read_image_args(cl_device_id deviceID, cl_context context, cl_c
     test_error( error, "Failed to create the program and kernel.");
     free( programSrc );
 
-    result = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_float), NULL, &error);
+    result = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_float), NULL,
+                            &error);
     test_error( error, "clCreateBufer failed");
 
     /* Create some I/O streams */
@@ -554,29 +554,19 @@ int test_min_max_image_2d_width(cl_device_id deviceID, cl_context context, cl_co
     cl_image_format image_format_desc;
     cl_ulong maxAllocSize;
     cl_uint minRequiredDimension;
-    cl_char buffer[ 4098 ];
     size_t length;
 
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID )
 
-    // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
-    test_error( error, "Unable to get device version string" );
-    if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 2.1", strlen( "OpenCL 2.1" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 1.2", strlen( "OpenCL 1.2" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 1.1", strlen( "OpenCL 1.1" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if ( memcmp( buffer, "OpenCL 1.0", strlen( "OpenCL 1.0" ) ) == 0 )
+    auto version = get_device_cl_version(deviceID);
+    if (version == Version(1, 0))
+    {
         minRequiredDimension = gIsEmbedded ? 2048 : 4096;
+    }
     else
     {
-        log_error( "ERROR: device version string does not match required format! (returned: %s)\n", (char *)buffer );
-        return -1;
+        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
     }
 
 
@@ -633,28 +623,18 @@ int test_min_max_image_2d_height(cl_device_id deviceID, cl_context context, cl_c
     cl_image_format image_format_desc;
     cl_ulong maxAllocSize;
     cl_uint minRequiredDimension;
-    cl_char buffer[ 4098 ];
     size_t length;
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID )
 
-    // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
-    test_error( error, "Unable to get device version string" );
-    if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 2.1", strlen( "OpenCL 2.1" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 1.2", strlen( "OpenCL 1.2" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if( memcmp( buffer, "OpenCL 1.1", strlen( "OpenCL 1.1" ) ) == 0 )
-        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
-    else if ( memcmp( buffer, "OpenCL 1.0", strlen( "OpenCL 1.0" ) ) == 0 )
-       minRequiredDimension = gIsEmbedded ? 2048 : 4096;
+    auto version = get_device_cl_version(deviceID);
+    if (version == Version(1, 0))
+    {
+        minRequiredDimension = gIsEmbedded ? 2048 : 4096;
+    }
     else
     {
-        log_error( "ERROR: device version string does not match required format! (returned: %s)\n", (char *)buffer );
-        return -1;
+        minRequiredDimension = gIsEmbedded ? 2048 : 8192;
     }
 
     /* Just get any ol format to test with */
@@ -714,7 +694,8 @@ int test_min_max_image_3d_width(cl_device_id deviceID, cl_context context, cl_co
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( deviceID )
 
     /* Just get any ol format to test with */
-    error = get_8_bit_image_format( context, CL_MEM_OBJECT_IMAGE3D, CL_MEM_READ_WRITE, 0, &image_format_desc );
+    error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
+                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
     test_error( error, "Unable to obtain suitable image format to test with!" );
 
     /* Get the max 2d image width */
@@ -770,7 +751,8 @@ int test_min_max_image_3d_height(cl_device_id deviceID, cl_context context, cl_c
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( deviceID )
 
     /* Just get any ol format to test with */
-    error = get_8_bit_image_format( context, CL_MEM_OBJECT_IMAGE3D, CL_MEM_READ_WRITE, 0, &image_format_desc );
+    error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
+                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
     test_error( error, "Unable to obtain suitable image format to test with!" );
 
     /* Get the max 2d image width */
@@ -827,7 +809,8 @@ int test_min_max_image_3d_depth(cl_device_id deviceID, cl_context context, cl_co
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( deviceID )
 
     /* Just get any ol format to test with */
-    error = get_8_bit_image_format( context, CL_MEM_OBJECT_IMAGE3D, CL_MEM_READ_WRITE, 0, &image_format_desc );
+    error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
+                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
     test_error( error, "Unable to obtain suitable image format to test with!" );
 
     /* Get the max 2d image width */
@@ -1013,6 +996,7 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
     size_t decrement;
     cl_event event;
     cl_int event_status;
+    bool embeddedNoLong = gIsEmbedded && !gHasLong;
 
 
     /* Get the max param size */
@@ -1026,8 +1010,9 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
         return -1;
     }
 
-    /* The embedded profile does not require longs, so use ints */
-    if(gIsEmbedded)
+    /* The embedded profile without cles_khr_int64 extension does not require
+     * longs, so use ints */
+    if (embeddedNoLong)
         numberOfIntParametersToTry = numberExpected = (maxSize-sizeof(cl_mem))/sizeof(cl_int);
     else
         numberOfIntParametersToTry = numberExpected = (maxSize-sizeof(cl_mem))/sizeof(cl_long);
@@ -1043,7 +1028,7 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
         clMemWrapper mem;
         clKernelWrapper kernel;
 
-        if(gIsEmbedded)
+        if (embeddedNoLong)
         {
             log_info("Trying a kernel with %ld int arguments (%ld bytes) and one cl_mem (%ld bytes) for %ld bytes total.\n",
                      numberOfIntParametersToTry, sizeof(cl_int)*numberOfIntParametersToTry, sizeof(cl_mem),
@@ -1114,7 +1099,8 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context, cl_co
         /* Try to set a large argument to the kernel */
         retVal = 0;
 
-        mem = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_long), NULL, &error);
+        mem = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_long), NULL,
+                             &error);
         test_error(error, "clCreateBuffer failed");
 
         for (i=0; i<(int)numberOfIntParametersToTry; i++) {
@@ -1268,7 +1254,8 @@ int test_min_max_samplers(cl_device_id deviceID, cl_context context, cl_command_
     clMemWrapper image = create_image_2d( context, CL_MEM_READ_WRITE, &format, 16, 16, 0, NULL, &error );
     test_error( error, "Unable to create a test image" );
 
-    clMemWrapper stream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), 16, NULL, &error );
+    clMemWrapper stream =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, 16, NULL, &error);
     test_error( error, "Unable to create test buffer" );
 
     error = clSetKernelArg( kernel, 0, sizeof( cl_mem ), &image );
@@ -1369,9 +1356,11 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
             constantData[i] = (int)genrand_int32(d);
 
         clMemWrapper streams[3];
-        streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeToAllocate, constantData, &error);
+        streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                    sizeToAllocate, constantData, &error);
         test_error( error, "Creating test array failed" );
-        streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeToAllocate, NULL, &error);
+        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
+                                    NULL, &error);
         test_error( error, "Creating test array failed" );
 
 
@@ -1535,7 +1524,8 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context, cl_com
     streams = new clMemWrapper[ maxArgs + 1 ];
     for( i = 0; i < maxArgs + 1; i++ )
     {
-        streams[i] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), individualBufferSize, NULL, &error);
+        streams[i] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    individualBufferSize, NULL, &error);
         test_error( error, "Creating test array failed" );
     }
 
@@ -1743,9 +1733,11 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context, cl_co
         localData[i] = (int)genrand_int32(d);
     free_mtdata(d); d = NULL;
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeToAllocate, localData, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeToAllocate,
+                                localData, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeToAllocate, NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
+                                NULL, &error);
     test_error( error, "Creating test array failed" );
 
 
@@ -1872,191 +1864,97 @@ int test_min_max_queue_properties(cl_device_id deviceID, cl_context context, cl_
 
 int test_min_max_device_version(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    cl_int error, i;
-    cl_char buffer[ 4098 ];
-    size_t length;
+    // Query for the device version.
+    Version device_cl_version = get_device_cl_version(deviceID);
+    log_info("Returned version %s.\n", device_cl_version.to_string().c_str());
 
-
-    // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
-    test_error( error, "Unable to get device version string" );
-    if( memcmp( buffer, "OpenCL ", strlen( "OpenCL " ) ) != 0 )
-    {
-        log_error( "ERROR: Initial part of device version string does not match required format! (returned: %s)\n", (char *)buffer );
-        return -1;
-    }
-
-    log_info("Returned version %s.\n", buffer);
-
-    char *p1 = (char *)buffer + strlen( "OpenCL " );
-    while( *p1 == ' ' )
-        p1++;
-    char *p2 = p1;
-    if( ! isdigit(*p2) )
-    {
-        log_error( "ERROR: Major revision number must follow space behind OpenCL! (returned %s)\n", (char*) buffer );
-        return -1;
-    }
-    while( isdigit( *p2 ) )
-        p2++;
-    if( *p2 != '.' )
-    {
-        log_error( "ERROR: Version number must contain a decimal point! (returned: %s)\n", (char *)buffer );
-        return -1;
-    }
-    char *p3 = p2 + 1;
-    if( ! isdigit(*p3) )
-    {
-        log_error( "ERROR: Minor revision number is missing or does not abut the decimal point! (returned %s)\n", (char*) buffer );
-        return -1;
-    }
-    while( isdigit( *p3 ) )
-        p3++;
-    if( *p3 != ' ' )
-    {
-        log_error( "ERROR: A space must appear after the minor version! (returned: %s)\n", (char *)buffer );
-        return -1;
-    }
-    *p2 = ' '; // Put in a space for atoi below.
-    p2++;
-
-    int major = atoi( p1 );
-    int minor = atoi( p2 );
-    int minor_revision = 2;
-    if( getenv("OPENCL_1_0_DEVICE"))
-    {
-        minor_revision = 0;
-        log_info( "WARNING: This test was run with OPENCL_1_0_DEVICE defined!  This is not a OpenCL 1.1 or OpenCL 1.2 compatible device!!!\n" );
-    }
-    else if( getenv("OPENCL_1_1_DEVICE"))
-    {
-        minor_revision = 1;
-        log_info( "WARNING: This test was run with OPENCL_1_1_DEVICE defined!  This is not a OpenCL 1.2 compatible device!!!\n" );
-    }
-    if( major * 10 + minor < 10 + minor_revision )
-    {
-        log_error( "ERROR: OpenCL device version returned is less than 1.%d! (Returned: %s)\n", minor_revision, (char *)buffer );
-        return -1;
-    }
-
-    // Sanity checks on the returned values
-    if( length != (strlen( (char *)buffer ) + 1 ))
-    {
-        log_error( "ERROR: Returned length of version string does not match actual length (actual: %d, returned: %d)\n", (int)strlen( (char *)buffer ), (int)length );
-        return -1;
-    }
-
-    // Make sure 2.0 devices support required extensions for 2.0
-    const char *requiredExtensions20[] =
-    {
-        "cl_khr_byte_addressable_store",
+    // Make sure 2.x devices support required extensions for 2.x
+    // note: these extensions are **not** required for devices
+    // supporting OpenCL-3.0
+    const char *requiredExtensions2x[] = {
         "cl_khr_3d_image_writes",
         "cl_khr_image2d_from_buffer",
         "cl_khr_depth_images",
-        "cl_khr_fp64",
     };
 
     // Make sure 1.1 devices support required extensions for 1.1
-    const char *requiredExtensions[] =
-    {
+    const char *requiredExtensions11[] = {
         "cl_khr_global_int32_base_atomics",
         "cl_khr_global_int32_extended_atomics",
         "cl_khr_local_int32_base_atomics",
         "cl_khr_local_int32_extended_atomics",
         "cl_khr_byte_addressable_store",
-        NULL
     };
 
-    if( major * 10 + minor >= 11 )
+
+    if (device_cl_version >= Version(1, 1))
     {
-        char *extensions;
-        size_t extensions_size = 0;
-
-        log_info( "Checking for required extensions for OpenCL 1.1 and later devices...\n" );
-
-        if( (error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, 0, NULL, &extensions_size)))
+        log_info("Checking for required extensions for OpenCL 1.1 and later "
+                 "devices...\n");
+        for (int i = 0; i < ARRAY_SIZE(requiredExtensions11); i++)
         {
-            log_error( "ERROR: could not get extensions size.  Err # %d\n", error );
-            return -1;
-        }
-
-        if( extensions_size < 1 )
-        {
-            log_error( "ERROR: invalid extensions size.  Err # %d\n", error );
-            return -1;
-        }
-
-        extensions = (char*) malloc(extensions_size);
-        if( NULL == extensions )
-        {
-            log_error( "ERROR: cannot allocate %ld bytes to hold extension string.\n", extensions_size );
-            return -1;
-        }
-        memset( extensions, -1, extensions_size );
-
-        if( (error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, extensions_size, extensions, NULL)))
-        {
-            log_error( "ERROR: could not get extensions.  Err # %d\n", error );
-            free( extensions );
-            return -1;
-        }
-
-        if( '\0' != extensions[ extensions_size - 1 ] )
-        {
-            if( -1 == extensions[ extensions_size - 1 ] )
-                log_error( "ERROR: extensions size reported incorrectly.  Last byte is not NUL. Size too big. Reported: %ld.  Should be: %ld\n", extensions_size, strlen(extensions) + 1  );
-            else
-                log_error( "ERROR: extensions size reported incorrectly.  Last byte is not NUL. Size too small. \n" );
-
-            free( extensions );
-            return -1;
-        }
-
-        for( i = 0; NULL != requiredExtensions[i]; i++ )
-        {
-            if( NULL == strstr( extensions, requiredExtensions[i] ) )
+            if (!is_extension_available(deviceID, requiredExtensions11[i]))
             {
-                log_error( "ERROR: Required extension for 1.1 and greater devices is not in extension string: %s\n", requiredExtensions[i] );
-                free( extensions );
+                log_error("ERROR: Required extension for 1.1 and greater "
+                          "devices is not in extension string: %s\n",
+                          requiredExtensions11[i]);
                 return -1;
             }
             else
-                log_info( "\t%s\n", requiredExtensions[i] );
+                log_info("\t%s\n", requiredExtensions11[i]);
         }
 
-        if( major >= 2 )
+        if (device_cl_version >= Version(1, 2))
         {
-            log_info( "Checking for required extensions for OpenCL 2.0 and later devices...\n" );
-
-            // Check if double precision is supported, if it is, then check the extension "cl_khr_fp64"
-            cl_device_fp_config value;
-            int numRequiredExtension20 = sizeof(requiredExtensions20)/sizeof(char *);
-
-            error = clGetDeviceInfo( deviceID, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof( value ), &value, 0 );
-            test_error( error, "Unable to get device double fp config" );
-
-            // if double precision is not supported, then don't check extension "cl_khr_fp64"
-            numRequiredExtension20 -= (value == 0);
-
-            for( i = 0; i<numRequiredExtension20; i++ )
+            log_info("Checking for required extensions for OpenCL 1.2 and "
+                     "later devices...\n");
+            // The only required extension for an OpenCL-1.2 device is
+            // cl_khr_fp64 and it is only required if double precision is
+            // supported.
+            cl_device_fp_config doubles_supported;
+            cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_DOUBLE_FP_CONFIG,
+                                           sizeof(doubles_supported),
+                                           &doubles_supported, 0);
+            test_error(error, "Unable to get device double fp config");
+            if (doubles_supported)
             {
-                if( NULL == strstr( extensions, requiredExtensions20[i] ) )
+                if (!is_extension_available(deviceID, "cl_khr_fp64"))
                 {
-                    log_error( "ERROR: Required extension for 2.0 and greater devices is not in extension string: %s\n", requiredExtensions20[i] );
-                    free( extensions );
-                    return -1;
+                    log_error(
+                        "ERROR: Required extension for 1.2 and greater devices "
+                        "is not in extension string: cl_khr_fp64\n");
                 }
                 else
-                    log_info( "\t%s\n", requiredExtensions20[i] );
+                {
+                    log_info("\t%s\n", "cl_khr_fp64");
+                }
             }
         }
 
-        free( extensions );
+        if (device_cl_version >= Version(2, 0)
+            && device_cl_version < Version(3, 0))
+        {
+            log_info("Checking for required extensions for OpenCL 2.0, 2.1 and "
+                     "2.2 devices...\n");
+            for (int i = 0; i < ARRAY_SIZE(requiredExtensions2x); i++)
+            {
+                if (!is_extension_available(deviceID, requiredExtensions2x[i]))
+                {
+                    log_error("ERROR: Required extension for 2.0, 2.1 and 2.2 "
+                              "devices is not in extension string: %s\n",
+                              requiredExtensions2x[i]);
+                    return -1;
+                }
+                else
+                {
+                    log_info("\t%s\n", requiredExtensions2x[i]);
+                }
+            }
+        }
     }
     else
-        log_info( "WARNING: skipping required extension test -- OpenCL 1.0 device.\n" );
-
-
+        log_info("WARNING: skipping required extension test -- OpenCL 1.0 "
+                 "device.\n");
     return 0;
 }
 

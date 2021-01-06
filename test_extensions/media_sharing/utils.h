@@ -98,7 +98,6 @@ private:
   TTestResult _resultLast;
 };
 
-bool ExtensionCheck(const std::string &extension, cl_device_id deviceID);
 void FunctionContextCreateToString(TContextFuncType contextCreateFunction, std::string &contextFunction);
 void AdapterToString(cl_dx9_media_adapter_type_khr adapterType, std::string &adapter);
 cl_context_info AdapterTypeToContextInfo(cl_dx9_media_adapter_type_khr adapterType);
@@ -163,13 +162,6 @@ bool SurfaceFormatToOCL(TSurfaceFormat surfaceFormat, cl_image_format &format);
 void SurfaceFormatToString(TSurfaceFormat surfaceFormat, std::string &str );
 bool MediaSurfaceCreate(cl_dx9_media_adapter_type_khr adapterType, unsigned int width, unsigned int height, TSurfaceFormat surfaceFormat,
                       CDeviceWrapper &device, std::auto_ptr<CSurfaceWrapper> &surface, bool sharedHandle, void **objectSharedHandle);
-
-//imported from image helpers
-cl_ushort float2half_rte( float f );
-cl_ushort float2half_rtz( float f );
-cl_ushort convert_float_to_half( float f );
-float convert_half_to_float( unsigned short halfValue );
-int DetectFloatToHalfRoundingMode( cl_command_queue );
 
 cl_int deviceExistForCLTest(cl_platform_id platform,cl_dx9_media_adapter_type_khr media_adapters_type,void *media_adapters,CResult &result,TSharedHandleType sharedHandle=SHARED_HANDLE_DISABLED);
 #endif  // __UTILS_KHR_MEDIA_H

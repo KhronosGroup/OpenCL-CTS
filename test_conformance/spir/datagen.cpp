@@ -93,38 +93,6 @@ void DataGenerator::setArgGenerator(const KernelArgInfo& argInfo,
     m_argGenerators[argInfo.getTypeName()] = pGen;
 }
 
-float get_random_float(float low, float high, MTdata d)
-{
-    float t = (float)((double)genrand_int32(d) / (double)0xFFFFFFFF);
-    return (1.0f - t) * low + t * high;
-}
-
-double get_random_double(double low, double high, MTdata d)
-{
-    cl_ulong u = (cl_ulong) genrand_int32(d) | ((cl_ulong) genrand_int32(d) << 32 );
-    double t = (double) u * MAKE_HEX_DOUBLE( 0x1.0p-64, 0x1, -64);
-    return (1.0f - t) * low + t * high;
-}
-
-size_t get_random_size_t(size_t low, size_t high, MTdata d)
-{
-  enum { N = sizeof(size_t)/sizeof(int) };
-
-  union {
-    int word[N];
-    size_t size;
-  } u;
-
-  for (unsigned i=0; i != N; ++i) {
-    u.word[i] = genrand_int32(d);
-  }
-
-  assert(low <= high && "Invalid random number range specified");
-  size_t range = high - low;
-
-  return (range) ? low + ((u.size - low) % range) : low;
-}
-
 size_t get_random_int32(int low, int high, MTdata d)
 {
   int v = genrand_int32(d);

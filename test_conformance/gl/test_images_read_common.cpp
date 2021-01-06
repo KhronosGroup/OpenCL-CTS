@@ -23,8 +23,6 @@
     #include <CL/cl_gl.h>
 #endif
 
-extern "C" { extern cl_uint gRandomSeed; };
-
 extern int supportsHalf(cl_context context, bool* supports_half);
 extern int supportsMsaa(cl_context context, bool* supports_msaa);
 extern int supportsDepth(cl_context context, bool* supports_depth);

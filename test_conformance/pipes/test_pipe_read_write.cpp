@@ -15,11 +15,15 @@
 //
 #include "harness/compat.h"
 
+#include <assert.h>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
+#include <string>
 #include <sys/stat.h>
-#include <assert.h>
+#include <sys/types.h>
 
 #include "procs.h"
 #include "kernels.h"
@@ -89,113 +93,139 @@ static const char* convenience_float_kernel_name[] = { "test_pipe_convenience_wr
 static const char* convenience_half_kernel_name[] = { "test_pipe_convenience_write_half", "test_pipe_convenience_read_half", "test_pipe_convenience_write_half2", "test_pipe_convenience_read_half2", "test_pipe_convenience_write_half4", "test_pipe_convenience_read_half4", "test_pipe_convenience_write_half8", "test_pipe_convenience_read_half8", "test_pipe_convenience_write_half16", "test_pipe_convenience_read_half16" };
 static const char* convenience_double_kernel_name[] = { "test_pipe_convenience_write_double", "test_pipe_convenience_read_double", "test_pipe_convenience_write_double2", "test_pipe_convenience_read_double2", "test_pipe_convenience_write_double4", "test_pipe_convenience_read_double4", "test_pipe_convenience_write_double8", "test_pipe_convenience_read_double8", "test_pipe_convenience_write_double16", "test_pipe_convenience_read_double16" };
 
-static void insertPragmaForHalfType(char *source, char *type)
+static void insertPragmaForHalfType(std::stringstream &stream, char *type)
 {
-    source[0] = 0;
-    if(strncmp(type, "half",4) == 0)
+    if (strncmp(type, "half", 4) == 0)
     {
-        strcat(source, "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n");
+        stream << "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
     }
 }
 
-void createKernelSource(char *source, char *type)
+void createKernelSource(std::stringstream &stream, char *type)
 {
-    char str[512];
-    int     str_length;
+    insertPragmaForHalfType(stream, type);
 
-    insertPragmaForHalfType(source, type);
+    // clang-format off
+    stream << R"(
+        __kernel void test_pipe_write_)" << type << "(__global " << type << " *src, __write_only pipe " << type << R"( out_pipe)
+        {
+            int gid = get_global_id(0);
+            reserve_id_t res_id;
 
-    sprintf(str, "__kernel void test_pipe_write_%s(__global %s *src, __write_only pipe %s out_pipe)\n", type, type, type);
-    strcat(source, str);
-    sprintf(str, "{\n  int gid = get_global_id(0);\n  reserve_id_t res_id; \n\n");
-    strcat(source, str);
-    sprintf(str, "  res_id = reserve_write_pipe(out_pipe, 1);\n  if(is_valid_reserve_id(res_id))\n  {\n");
-    strcat(source, str);
-    sprintf(str, "    write_pipe(out_pipe, res_id, 0, &src[gid]);\n    commit_write_pipe(out_pipe, res_id);\n  }\n}\n\n");
-    strcat(source, str);
-    sprintf(str, "__kernel void test_pipe_read_%s(__read_only pipe %s in_pipe, __global %s *dst)\n", type, type, type);
-    strcat(source, str);
-    sprintf(str, "{\n  int gid = get_global_id(0);\n  reserve_id_t res_id; \n\n");
-    strcat(source, str);
-    sprintf(str, "  res_id = reserve_read_pipe(in_pipe, 1);\n  if(is_valid_reserve_id(res_id))\n  {\n");
-    strcat(source, str);
-    sprintf(str, "    read_pipe(in_pipe, res_id, 0, &dst[gid]);\n    commit_read_pipe(in_pipe, res_id);\n  }\n}\n");
-    strcat(source, str);
-    str_length = strlen(source);
-    assert(str_length <= STRING_LENGTH);
+            res_id = reserve_write_pipe(out_pipe, 1);
+            if(is_valid_reserve_id(res_id))
+            {
+                write_pipe(out_pipe, res_id, 0, &src[gid]);
+                commit_write_pipe(out_pipe, res_id);
+            }
+        }
+
+        __kernel void test_pipe_read_)" << type << "(__read_only pipe " << type << " in_pipe, __global " << type << R"( *dst)
+        {
+            int gid = get_global_id(0);
+            reserve_id_t res_id;
+
+            res_id = reserve_read_pipe(in_pipe, 1);
+            if(is_valid_reserve_id(res_id))
+            {
+                read_pipe(in_pipe, res_id, 0, &dst[gid]);
+                commit_read_pipe(in_pipe, res_id);
+            }
+        }
+        )";
+    // clang-format on
 }
 
-void createKernelSourceWorkGroup(char *source, char *type)
+void createKernelSourceWorkGroup(std::stringstream &stream, char *type)
 {
-    char str[512];
-    int     str_length;
+    insertPragmaForHalfType(stream, type);
 
-    insertPragmaForHalfType(source, type);
+    // clang-format off
+    stream << R"(
+        __kernel void test_pipe_workgroup_write_)" << type << "(__global " << type << " *src, __write_only pipe " << type << R"( out_pipe)
+        {
+            int gid = get_global_id(0);
+            __local reserve_id_t res_id;
 
-    sprintf(str, "__kernel void test_pipe_workgroup_write_%s(__global %s *src, __write_only pipe %s out_pipe)\n", type, type, type);
-    strcat(source, str);
-    sprintf(str, "{\n  int gid = get_global_id(0);\n  __local reserve_id_t res_id; \n\n");
-    strcat(source, str);
-    sprintf(str, "  res_id = work_group_reserve_write_pipe(out_pipe, get_local_size(0));\n  if(is_valid_reserve_id(res_id))\n  {\n");
-    strcat(source, str);
-    sprintf(str, "    write_pipe(out_pipe, res_id, get_local_id(0), &src[gid]);\n    work_group_commit_write_pipe(out_pipe, res_id);\n  }\n}\n\n");
-    strcat(source, str);
-    sprintf(str, "__kernel void test_pipe_workgroup_read_%s(__read_only pipe %s in_pipe, __global %s *dst)\n", type, type, type);
-    strcat(source, str);
-    sprintf(str, "{\n  int gid = get_global_id(0);\n  __local reserve_id_t res_id; \n\n");
-    strcat(source, str);
-    sprintf(str, "  res_id = work_group_reserve_read_pipe(in_pipe, get_local_size(0));\n  if(is_valid_reserve_id(res_id))\n  {\n");
-    strcat(source, str);
-    sprintf(str, "    read_pipe(in_pipe, res_id, get_local_id(0), &dst[gid]);\n    work_group_commit_read_pipe(in_pipe, res_id);\n  }\n}\n");
-    strcat(source, str);
-    str_length = strlen(source);
-    assert(str_length <= STRING_LENGTH);
+            res_id = work_group_reserve_write_pipe(out_pipe, get_local_size(0));
+            if(is_valid_reserve_id(res_id))
+            {
+                write_pipe(out_pipe, res_id, get_local_id(0), &src[gid]);
+                work_group_commit_write_pipe(out_pipe, res_id);
+            }
+        }
+
+        __kernel void test_pipe_workgroup_read_)" << type << "(__read_only pipe " << type << " in_pipe, __global " << type << R"( *dst)
+        {
+            int gid = get_global_id(0);
+            __local reserve_id_t res_id;
+
+            res_id = work_group_reserve_read_pipe(in_pipe, get_local_size(0));
+            if(is_valid_reserve_id(res_id))
+            {
+                read_pipe(in_pipe, res_id, get_local_id(0), &dst[gid]);
+                work_group_commit_read_pipe(in_pipe, res_id);
+            }
+        }
+        )";
+    // clang-format on
 }
 
-void createKernelSourceSubGroup(char *source, char *type)
+void createKernelSourceSubGroup(std::stringstream &stream, char *type)
 {
-    char str[512];
-    int  str_length;
+    insertPragmaForHalfType(stream, type);
 
-    insertPragmaForHalfType(source, type);
+    // clang-format off
+    stream << R"(
+        #pragma OPENCL EXTENSION cl_khr_subgroups : enable
+        __kernel void test_pipe_subgroup_write_)" << type << "(__global " << type << " *src, __write_only pipe " << type << R"( out_pipe)
+        {
+            int gid = get_global_id(0);
+            reserve_id_t res_id;
 
-    sprintf(str, "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n__kernel void test_pipe_subgroup_write_%s(__global %s *src, __write_only pipe %s out_pipe)\n", type, type, type);
-    strcat(source, str);
-    sprintf(str, "{\n  int gid = get_global_id(0);\n  reserve_id_t res_id; \n\n");
-    strcat(source, str);
-    sprintf(str, "  res_id = sub_group_reserve_write_pipe(out_pipe, get_sub_group_size());\n  if(is_valid_reserve_id(res_id))\n  {\n");
-    strcat(source, str);
-    sprintf(str, "    write_pipe(out_pipe, res_id, get_sub_group_local_id(), &src[gid]);\n    sub_group_commit_write_pipe(out_pipe, res_id);\n  }\n}\n\n");
-    strcat(source, str);
-    sprintf(str, "__kernel void test_pipe_subgroup_read_%s(__read_only pipe %s in_pipe, __global %s *dst)\n", type, type, type);
-    strcat(source, str);
-    sprintf(str, "{\n  int gid = get_global_id(0);\n  reserve_id_t res_id; \n\n");
-    strcat(source, str);
-    sprintf(str, "  res_id = sub_group_reserve_read_pipe(in_pipe, get_sub_group_size());\n  if(is_valid_reserve_id(res_id))\n  {\n");
-    strcat(source, str);
-    sprintf(str, "    read_pipe(in_pipe, res_id, get_sub_group_local_id(), &dst[gid]);\n    sub_group_commit_read_pipe(in_pipe, res_id);\n  }\n}\n");
-    strcat(source, str);
-    str_length = strlen(source);
-    assert(str_length <= STRING_LENGTH);
+            res_id = sub_group_reserve_write_pipe(out_pipe, get_sub_group_size());
+            if(is_valid_reserve_id(res_id))
+            {
+                write_pipe(out_pipe, res_id, get_sub_group_local_id(), &src[gid]);
+                sub_group_commit_write_pipe(out_pipe, res_id);
+            }
+        }
+
+        __kernel void test_pipe_subgroup_read_)" << type << "(__read_only pipe " << type << " in_pipe, __global " << type << R"( *dst)
+        {
+            int gid = get_global_id(0);
+            reserve_id_t res_id;
+
+            res_id = sub_group_reserve_read_pipe(in_pipe, get_sub_group_size());
+            if(is_valid_reserve_id(res_id))
+            {
+                read_pipe(in_pipe, res_id, get_sub_group_local_id(), &dst[gid]);
+                sub_group_commit_read_pipe(in_pipe, res_id);
+            }
+        }
+        )";
+    // clang-format on
 }
 
-void createKernelSourceConvenience(char *source, char *type)
+void createKernelSourceConvenience(std::stringstream &stream, char *type)
 {
-    char str[512];
-    int     str_length;
+    insertPragmaForHalfType(stream, type);
 
-    insertPragmaForHalfType(source, type);
+    // clang-format off
+    stream << R"(
+        __kernel void test_pipe_convenience_write_)" << type << "(__global " << type << " *src, __write_only pipe " << type << R"( out_pipe)
+        {
+            int gid = get_global_id(0);
+            write_pipe(out_pipe, &src[gid]);
+        }
 
-    sprintf(str, "__kernel void test_pipe_convenience_write_%s(__global %s *src, __write_only pipe %s out_pipe)\n", type, type, type);
-    strcat(source, str);
-    sprintf(str, "{\n  int gid = get_global_id(0);\n  write_pipe(out_pipe, &src[gid]);\n}\n\n");
-    strcat(source, str);
-    sprintf(str, "__kernel void test_pipe_convenience_read_%s(__read_only pipe %s in_pipe, __global %s *dst)\n", type, type, type);
-    strcat(source, str);
-    sprintf(str, "{\n  int gid = get_global_id(0);\n  read_pipe(in_pipe, &dst[gid]);\n}\n");
-    strcat(source, str);
-    str_length = strlen(source);
-    assert(str_length <= STRING_LENGTH);
+        __kernel void test_pipe_convenience_read_)" << type << "(__read_only pipe " << type << " in_pipe, __global " << type << R"( *dst)
+        {
+            int gid = get_global_id(0);
+            read_pipe(in_pipe, &dst[gid]);
+        }
+        )";
+    // clang-format on
 }
 
 // verify functions
@@ -331,8 +361,8 @@ static int verify_readwrite_half(void *ptr1, void *ptr2, int n)
 {
     int            i;
     int            sum_input = 0, sum_output = 0;
-    cl_ushort    *inptr = (cl_ushort *)ptr1;
-    cl_ushort    *outptr = (cl_ushort *)ptr2;
+    cl_half *inptr = (cl_half *)ptr1;
+    cl_half *outptr = (cl_half *)ptr2;
 
     for(i = 0; i < n; i++)
     {
@@ -424,23 +454,24 @@ static int verify_readwrite_struct(void *ptr1, void *ptr2, int n)
 int test_pipe_readwrite( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
                          void *inptr[5], const char *kernelName[], int (*fn)(void *, void *, int) )
 {
-    cl_mem        pipes[5];
-    cl_mem      buffers[10];
-    void        *outptr[5];
-    cl_program  program[5];
-    cl_kernel   kernel[10];
-    size_t      global_work_size[3];
-    size_t        local_work_size[3];
-    cl_int      err;
-    int         i, ii;
-    size_t      ptrSizes[5];
-    int         total_errors = 0;
-    cl_event    producer_sync_event[5];
-    cl_event    consumer_sync_event[5];
-    char        *sourceCode[5];
-    char        vector_type[10];
+    clMemWrapper pipes[5];
+    clMemWrapper buffers[10];
+    void *outptr[5];
+    BufferOwningPtr<cl_int> BufferOutPtr[5];
+    clProgramWrapper program[5];
+    clKernelWrapper kernel[10];
+    size_t global_work_size[3];
+    size_t local_work_size[3];
+    cl_int err;
+    int i, ii;
+    size_t ptrSizes[5];
+    int total_errors = 0;
+    clEventWrapper producer_sync_event[5];
+    clEventWrapper consumer_sync_event[5];
+    std::stringstream sourceCode[5];
+    char vector_type[10];
 
-    size_t      min_alignment = get_min_alignment(context);
+    size_t min_alignment = get_min_alignment(context);
 
     global_work_size[0] = (cl_uint)num_elements;
 
@@ -450,217 +481,133 @@ int test_pipe_readwrite( cl_device_id deviceID, cl_context context, cl_command_q
     ptrSizes[3] = ptrSizes[2] << 1;
     ptrSizes[4] = ptrSizes[3] << 1;
 
-    for( i = 0; i < loops; i++)
+    for (i = 0; i < loops; i++)
     {
         ii = i << 1;
-        sourceCode[i] = (char*) malloc(STRING_LENGTH * sizeof(char));
-        buffers[ii] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, ptrSizes[i] * num_elements, inptr[i], &err);
-        if(err){
-            clReleaseMemObject(buffers[ii]);
-            align_free( outptr[i] );
-            print_error(err, " clCreateBuffer failed\n");
-            return -1;
-        }
-        outptr[i] = align_malloc( ptrSizes[i] * num_elements, min_alignment);
-        buffers[ii+1] = clCreateBuffer(context, CL_MEM_USE_HOST_PTR,  ptrSizes[i] * num_elements, outptr[i], &err);
 
-        if ( err ){
-            clReleaseMemObject(buffers[ii]);
-            align_free( outptr[i] );
-            print_error(err, " clCreateBuffer failed\n" );
-            return -1;
-        }
+        buffers[ii] =
+            clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                           ptrSizes[i] * num_elements, inptr[i], &err);
+        test_error_ret(err, " clCreateBuffer failed", -1);
+
+        outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
+        BufferOutPtr[i].reset(outptr[i], nullptr, 0, size, true);
+        buffers[ii + 1] =
+            clCreateBuffer(context, CL_MEM_USE_HOST_PTR,
+                           ptrSizes[i] * num_elements, outptr[i], &err);
+        test_error_ret(err, " clCreateBuffer failed", -1);
+
         // Creating pipe with non-power of 2 size
-        pipes[i] = clCreatePipe(context, CL_MEM_HOST_NO_ACCESS, ptrSizes[i], num_elements+3, NULL, &err);
-        if(err){
-            clReleaseMemObject(pipes[i]);
-            print_error(err, " clCreatePipe failed\n");
-            return -1;
-        }
+        pipes[i] = clCreatePipe(context, CL_MEM_HOST_NO_ACCESS, ptrSizes[i],
+                                num_elements + 3, NULL, &err);
+        test_error_ret(err, " clCreatePipe failed", -1);
 
-        switch(i)
+        switch (i)
         {
-        case 0:
-            sprintf(vector_type, "%s", type);
-            break;
-        case 1:
-            sprintf(vector_type, "%s%d", type, 2);
-            break;
-        case 2:
-            sprintf(vector_type, "%s%d", type, 4);
-            break;
-        case 3:
-            sprintf(vector_type, "%s%d", type, 8);
-            break;
-        case 4:
-            sprintf(vector_type, "%s%d", type, 16);
-            break;
+            case 0: sprintf(vector_type, "%s", type); break;
+            case 1: sprintf(vector_type, "%s%d", type, 2); break;
+            case 2: sprintf(vector_type, "%s%d", type, 4); break;
+            case 3: sprintf(vector_type, "%s%d", type, 8); break;
+            case 4: sprintf(vector_type, "%s%d", type, 16); break;
         }
 
-        if(useWorkgroupReserve == 1){
+        if (useWorkgroupReserve == 1)
+        {
             createKernelSourceWorkGroup(sourceCode[i], vector_type);
         }
-        else if(useSubgroupReserve == 1){
+        else if (useSubgroupReserve == 1)
+        {
             createKernelSourceSubGroup(sourceCode[i], vector_type);
         }
-        else if(useConvenienceBuiltIn == 1){
+        else if (useConvenienceBuiltIn == 1)
+        {
             createKernelSourceConvenience(sourceCode[i], vector_type);
         }
-        else{
+        else
+        {
             createKernelSource(sourceCode[i], vector_type);
         }
 
+        std::string kernel_source = sourceCode[i].str();
+        const char *sources[] = { kernel_source.c_str() };
         // Create producer kernel
-        err = create_single_kernel_helper_with_build_options(context, &program[i], &kernel[ii], 1, (const char**)&sourceCode[i], kernelName[ii], "-cl-std=CL2.0");
-        if(err){
-            clReleaseMemObject(buffers[ii]);
-            clReleaseMemObject(buffers[ii+1]);
-            clReleaseMemObject(pipes[i]);
-            align_free( outptr[i] );
-            print_error(err, "Error creating program\n");
-            return -1;
-        }
-        //Create consumer kernel
+        err = create_single_kernel_helper_with_build_options(
+            context, &program[i], &kernel[ii], 1, sources, kernelName[ii],
+            "-cl-std=CL2.0");
+
+        test_error_ret(err, " Error creating program", -1);
+
+        // Create consumer kernel
         kernel[ii + 1] = clCreateKernel(program[i], kernelName[ii + 1], &err);
-        if( kernel[ii + 1] == NULL || err != CL_SUCCESS)
-        {
-            clReleaseMemObject(buffers[ii]);
-            clReleaseMemObject(buffers[ii+1]);
-            clReleaseMemObject(pipes[i]);
-            align_free( outptr[i] );
-            log_error("Creating program for %s\n", type);
-            print_error( err, "Unable to create kernel" );
-            return -1;
-        }
+        test_error_ret(err, " Error creating kernel", -1);
 
-        err = clSetKernelArg(kernel[ii], 0, sizeof(cl_mem), (void*)&buffers[ii]);
-        err |= clSetKernelArg(kernel[ii], 1, sizeof(cl_mem), (void*)&pipes[i]);
-        err |= clSetKernelArg(kernel[ii + 1], 0, sizeof(cl_mem), (void*)&pipes[i]);
-        err |= clSetKernelArg(kernel[ii + 1], 1, sizeof(cl_mem), (void*)&buffers[ii + 1]);
-        if ( err != CL_SUCCESS ){
-            clReleaseMemObject(buffers[ii]);
-            clReleaseMemObject(buffers[ii+1]);
-            clReleaseMemObject(pipes[i]);
-            clReleaseKernel(kernel[ii]);
-            clReleaseKernel(kernel[ii+1]);
-            clReleaseProgram(program[i]);
-            align_free(outptr[i]);
-            print_error(err, " clSetKernelArg failed");
-            return -1;
-        }
+        err =
+            clSetKernelArg(kernel[ii], 0, sizeof(cl_mem), (void *)&buffers[ii]);
+        err |= clSetKernelArg(kernel[ii], 1, sizeof(cl_mem), (void *)&pipes[i]);
+        err |= clSetKernelArg(kernel[ii + 1], 0, sizeof(cl_mem),
+                              (void *)&pipes[i]);
+        err |= clSetKernelArg(kernel[ii + 1], 1, sizeof(cl_mem),
+                              (void *)&buffers[ii + 1]);
+        test_error_ret(err, " clSetKernelArg failed", -1);
 
-        if(useWorkgroupReserve == 1 || useSubgroupReserve == 1)
+        if (useWorkgroupReserve == 1 || useSubgroupReserve == 1)
         {
-            err = get_max_common_work_group_size( context, kernel[ii], global_work_size[0], &local_work_size[0] );
-            test_error( err, "Unable to get work group size to use" );
+            err = get_max_common_work_group_size(
+                context, kernel[ii], global_work_size[0], &local_work_size[0]);
+            test_error(err, "Unable to get work group size to use");
             // Launch Producer kernel
-            err = clEnqueueNDRangeKernel( queue, kernel[ii], 1, NULL, global_work_size, local_work_size, 0, NULL, &producer_sync_event[i] );
-            if ( err != CL_SUCCESS ){
-                print_error( err, " clEnqueueNDRangeKernel failed" );
-                clReleaseMemObject(buffers[ii]);
-                clReleaseMemObject(buffers[ii+1]);
-                clReleaseMemObject(pipes[i]);
-                clReleaseKernel(kernel[ii]);
-                clReleaseKernel(kernel[ii+1]);
-                clReleaseEvent(producer_sync_event[i]);
-                clReleaseEvent(consumer_sync_event[i]);
-                clReleaseProgram(program[i]);
-                align_free(outptr[i]);
-                return -1;
-            }
+            err = clEnqueueNDRangeKernel(queue, kernel[ii], 1, NULL,
+                                         global_work_size, local_work_size, 0,
+                                         NULL, &producer_sync_event[i]);
+            test_error_ret(err, " clEnqueueNDRangeKernel failed", -1);
         }
         else
         {
             // Launch Producer kernel
-            err = clEnqueueNDRangeKernel( queue, kernel[ii], 1, NULL, global_work_size, NULL, 0, NULL, &producer_sync_event[i] );
-            if ( err != CL_SUCCESS ){
-                print_error( err, " clEnqueueNDRangeKernel failed" );
-                clReleaseMemObject(buffers[ii]);
-                clReleaseMemObject(buffers[ii+1]);
-                clReleaseMemObject(pipes[i]);
-                clReleaseKernel(kernel[ii]);
-                clReleaseKernel(kernel[ii+1]);
-                clReleaseEvent(producer_sync_event[i]);
-                clReleaseEvent(consumer_sync_event[i]);
-                clReleaseProgram(program[i]);
-                align_free(outptr[i]);
-                return -1;
-            }
+            err = clEnqueueNDRangeKernel(queue, kernel[ii], 1, NULL,
+                                         global_work_size, NULL, 0, NULL,
+                                         &producer_sync_event[i]);
+            test_error_ret(err, " clEnqueueNDRangeKernel failed", -1);
         }
 
-        if(useWorkgroupReserve == 1 || useSubgroupReserve == 1)
+        if (useWorkgroupReserve == 1 || useSubgroupReserve == 1)
         {
-            err = get_max_common_work_group_size( context, kernel[ii + 1], global_work_size[0], &local_work_size[0] );
-            test_error( err, "Unable to get work group size to use" );
+            err = get_max_common_work_group_size(context, kernel[ii + 1],
+                                                 global_work_size[0],
+                                                 &local_work_size[0]);
+            test_error(err, "Unable to get work group size to use");
 
             // Launch Consumer kernel
-            err = clEnqueueNDRangeKernel( queue, kernel[ii + 1], 1, NULL, global_work_size, local_work_size, 1, &producer_sync_event[i], &consumer_sync_event[i] );
-            if ( err != CL_SUCCESS ){
-                print_error( err, " clEnqueueNDRangeKernel failed" );
-                clReleaseMemObject(buffers[ii]);
-                clReleaseMemObject(buffers[ii+1]);
-                clReleaseMemObject(pipes[i]);
-                clReleaseKernel(kernel[ii]);
-                clReleaseKernel(kernel[ii+1]);
-                clReleaseEvent(producer_sync_event[i]);
-                clReleaseEvent(consumer_sync_event[i]);
-                clReleaseProgram(program[i]);
-                align_free(outptr[i]);
-                return -1;
-            }
+            err = clEnqueueNDRangeKernel(queue, kernel[ii + 1], 1, NULL,
+                                         global_work_size, local_work_size, 1,
+                                         &producer_sync_event[i],
+                                         &consumer_sync_event[i]);
+            test_error_ret(err, " clEnqueueNDRangeKernel failed", -1);
         }
         else
         {
             // Launch Consumer kernel
-            err = clEnqueueNDRangeKernel( queue, kernel[ii + 1], 1, NULL, global_work_size, NULL, 1,  &producer_sync_event[i], &consumer_sync_event[i] );
-            if ( err != CL_SUCCESS ){
-                print_error( err, " clEnqueueNDRangeKernel failed" );
-                clReleaseMemObject(buffers[ii]);
-                clReleaseMemObject(buffers[ii+1]);
-                clReleaseMemObject(pipes[i]);
-                clReleaseKernel(kernel[ii]);
-                clReleaseKernel(kernel[ii+1]);
-                clReleaseEvent(producer_sync_event[i]);
-                clReleaseEvent(consumer_sync_event[i]);
-                clReleaseProgram(program[i]);
-                align_free(outptr[i]);
-                return -1;
-            }
+            err = clEnqueueNDRangeKernel(
+                queue, kernel[ii + 1], 1, NULL, global_work_size, NULL, 1,
+                &producer_sync_event[i], &consumer_sync_event[i]);
+            test_error_ret(err, " clEnqueueNDRangeKernel failed", -1);
         }
 
-        err = clEnqueueReadBuffer(queue, buffers[ii+1], true, 0, ptrSizes[i]*num_elements, outptr[i], 1, &consumer_sync_event[i], NULL);
-        if ( err != CL_SUCCESS ){
-            print_error( err, " clEnqueueReadBuffer failed" );
-            clReleaseMemObject(buffers[ii]);
-            clReleaseMemObject(buffers[ii+1]);
-            clReleaseMemObject(pipes[i]);
-            clReleaseKernel(kernel[ii]);
-            clReleaseKernel(kernel[ii+1]);
-            clReleaseEvent(producer_sync_event[i]);
-            clReleaseEvent(consumer_sync_event[i]);
-            clReleaseProgram(program[i]);
-            align_free(outptr[i]);
-            return -1;
-        }
+        err = clEnqueueReadBuffer(queue, buffers[ii + 1], true, 0,
+                                  ptrSizes[i] * num_elements, outptr[i], 1,
+                                  &consumer_sync_event[i], NULL);
+        test_error_ret(err, " clEnqueueReadBuffer failed", -1);
 
-        if( fn( inptr[i], outptr[i], (int)(ptrSizes[i] * (size_t)num_elements / ptrSizes[0]))){
-            log_error("%s%d test failed\n", type, 1<<i);
+        if (fn(inptr[i], outptr[i],
+               (int)(ptrSizes[i] * (size_t)num_elements / ptrSizes[0])))
+        {
+            log_error("%s%d test failed\n", type, 1 << i);
             total_errors++;
         }
-        else {
-            log_info("%s%d test passed\n", type, 1<<i);
+        else
+        {
+            log_info("%s%d test passed\n", type, 1 << i);
         }
-        //cleanup
-        clReleaseMemObject(buffers[ii]);
-        clReleaseMemObject(buffers[ii+1]);
-        clReleaseMemObject(pipes[i]);
-        clReleaseKernel(kernel[ii]);
-        clReleaseKernel(kernel[ii+1]);
-        clReleaseEvent(producer_sync_event[i]);
-        clReleaseEvent(consumer_sync_event[i]);
-        clReleaseProgram(program[i]);
-        align_free(outptr[i]);
-
     }
 
     return total_errors;
@@ -669,166 +616,80 @@ int test_pipe_readwrite( cl_device_id deviceID, cl_context context, cl_command_q
 int test_pipe_readwrite_struct_generic( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements,
                                 const char *kernelCode, const char *kernelName[])
 {
-    cl_mem        buffers[2];
-    cl_mem        pipe;
-    void        *outptr;
-    TestStruct    *inptr;
-    cl_program    program;
-    cl_kernel    kernel[2];
-    size_t        size = sizeof(TestStruct);
-    size_t      global_work_size[3];
-    cl_int      err;
-    int         total_errors = 0;
-    int            i;
-    MTdata      d = init_genrand( gRandomSeed );
-    cl_event    producer_sync_event = NULL;
-    cl_event    consumer_sync_event = NULL;
+    clMemWrapper buffers[2];
+    clMemWrapper pipe;
+    void *outptr;
+    TestStruct *inptr;
+    BufferOwningPtr<cl_int> BufferInPtr;
+    BufferOwningPtr<TestStruct> BufferOutPtr;
+    clProgramWrapper program;
+    clKernelWrapper kernel[2];
+    size_t size = sizeof(TestStruct);
+    size_t global_work_size[3];
+    cl_int err;
+    int total_errors = 0;
+    int i;
+    MTdataHolder d(gRandomSeed);
+    clEventWrapper producer_sync_event = NULL;
+    clEventWrapper consumer_sync_event = NULL;
 
-    size_t      min_alignment = get_min_alignment(context);
+    size_t min_alignment = get_min_alignment(context);
 
     global_work_size[0] = (size_t)num_elements;
 
     inptr = (TestStruct *)align_malloc(size * num_elements, min_alignment);
 
-    for ( i = 0; i < num_elements; i++ ){
+    for (i = 0; i < num_elements; i++)
+    {
         inptr[i].a = (char)genrand_int32(d);
         inptr[i].b = genrand_int32(d);
     }
+    BufferInPtr.reset(inptr, nullptr, 0, size, true);
+
     buffers[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, size * num_elements, inptr, &err);
-    if(err){
-        clReleaseMemObject(buffers[0]);
-        print_error(err, " clCreateBuffer failed\n");
-        return -1;
-    }
+    test_error_ret(err, " clCreateBuffer failed", -1);
+
     outptr = align_malloc( size * num_elements, min_alignment);
+    BufferOutPtr.reset(outptr, nullptr, 0, size, true);
+
     buffers[1] = clCreateBuffer(context, CL_MEM_USE_HOST_PTR,  size * num_elements, outptr, &err);
-    if (err){
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        align_free( outptr );
-        print_error(err, " clCreateBuffer failed\n" );
-        return -1;
-    }
+    test_error_ret(err, " clCreateBuffer failed", -1);
+
     pipe = clCreatePipe(context, CL_MEM_HOST_NO_ACCESS, size, num_elements, NULL, &err);
-    if(err){
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        align_free( outptr );
-        clReleaseMemObject(pipe);
-        print_error(err, " clCreatePipe failed\n");
-        return -1;
-    }
+    test_error_ret(err, " clCreatePipe failed", -1);
+
     // Create producer kernel
     err = create_single_kernel_helper_with_build_options(context, &program, &kernel[0], 1, &kernelCode, kernelName[0], "-cl-std=CL2.0");
-    if(err){
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(pipe);
-        align_free(outptr);
-        log_error(" Error creating program for struct\n");
-        print_error(err, "Error creating program\n");
-        return -1;
-    }
+    test_error_ret(err, " Error creating program", -1);
+
     //Create consumer kernel
     kernel[1] = clCreateKernel(program, kernelName[1], &err);
-    if( kernel[1] == NULL || err != CL_SUCCESS)
-    {
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(pipe);
-        align_free(outptr);
-        print_error(err, "Error creating kernel\n");
-        return -1;
-    }
+    test_error_ret(err, " Error creating kernel", -1);
 
     err = clSetKernelArg(kernel[0], 0, sizeof(cl_mem), (void*)&buffers[0]);
     err |= clSetKernelArg(kernel[0], 1, sizeof(cl_mem), (void*)&pipe);
     err |= clSetKernelArg(kernel[1], 0, sizeof(cl_mem), (void*)&pipe);
     err |= clSetKernelArg(kernel[1], 1, sizeof(cl_mem), (void*)&buffers[1]);
-    if (err != CL_SUCCESS){
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseProgram(program);
-        align_free(outptr);
-        print_error(err, " clSetKernelArg failed");
-        return -1;
-    }
+    test_error_ret(err, " clSetKernelArg failed", -1);
 
     // Launch Producer kernel
     err = clEnqueueNDRangeKernel( queue, kernel[0], 1, NULL, global_work_size, NULL, 0, NULL, &producer_sync_event );
-    if (err != CL_SUCCESS){
-        print_error( err, " clEnqueueNDRangeKernel failed" );
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseEvent(producer_sync_event);
-        clReleaseProgram(program);
-        align_free(outptr);
-        return -1;
-    }
+    test_error_ret(err, " clEnqueueNDRangeKernel failed", -1);
 
     // Launch Consumer kernel
     err = clEnqueueNDRangeKernel( queue, kernel[1], 1, NULL, global_work_size, NULL, 1, &producer_sync_event, &consumer_sync_event );
-    if (err != CL_SUCCESS){
-        print_error( err, " clEnqueueNDRangeKernel failed" );
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseEvent(producer_sync_event);
-        clReleaseEvent(consumer_sync_event);
-        clReleaseProgram(program);
-        align_free(outptr);
-        return -1;
-    }
+    test_error_ret(err, " clEnqueueNDRangeKernel failed", -1);
 
     err = clEnqueueReadBuffer(queue, buffers[1], true, 0, size*num_elements, outptr, 1, &consumer_sync_event, NULL);
-    if (err != CL_SUCCESS){
-        print_error( err, " clEnqueueReadBuffer failed" );
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseEvent(producer_sync_event);
-        clReleaseEvent(consumer_sync_event);
-        clReleaseProgram(program);
-        align_free(outptr);
-        return -1;
-    }
+    test_error_ret(err, " clEnqueueReadBuffer failed", -1);
 
     if( verify_readwrite_struct( inptr, outptr, num_elements)){
         log_error("struct_readwrite test failed\n");
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseEvent(producer_sync_event);
-        clReleaseEvent(consumer_sync_event);
-        clReleaseProgram(program);
-        align_free(outptr);
         return -1;
     }
     else {
         log_info("struct_readwrite test passed\n");
     }
-    //cleanup
-    clReleaseMemObject(buffers[0]);
-    clReleaseMemObject(buffers[1]);
-    clReleaseMemObject(pipe);
-    clReleaseKernel(kernel[0]);
-    clReleaseKernel(kernel[1]);
-    clReleaseEvent(producer_sync_event);
-    clReleaseEvent(consumer_sync_event);
-    clReleaseProgram(program);
-    align_free(outptr);
 
     return 0;
 }

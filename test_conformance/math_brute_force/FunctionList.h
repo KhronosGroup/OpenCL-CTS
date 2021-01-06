@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,10 +29,6 @@
 #endif
 
 #include "harness/mt19937.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef union fptr
 {
@@ -72,8 +68,10 @@ struct Func;
 typedef struct vtbl
 {
     const char  *type_name;
-    int         (*TestFunc)( const struct Func *, MTdata );
-    int         (*DoubleTestFunc)( const struct Func *, MTdata);        // may be NULL if function is single precision only
+    int (*TestFunc)(const struct Func *, MTdata, bool);
+    int (*DoubleTestFunc)(
+        const struct Func *, MTdata,
+        bool); // may be NULL if function is single precision only
 }vtbl;
 
 typedef struct Func
@@ -87,6 +85,7 @@ typedef struct Func
   float           double_ulps;
   float           float_embedded_ulps;
   float           relaxed_error;
+  float relaxed_embedded_error;
   int             ftz;
   int             relaxed;
   const vtbl      *vtbl_ptr;
@@ -96,10 +95,6 @@ typedef struct Func
 extern const Func  functionList[];
 
 extern const size_t functionListCount;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

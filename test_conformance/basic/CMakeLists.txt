@@ -3,8 +3,7 @@ set(MODULE_NAME BASIC)
 set(${MODULE_NAME}_SOURCES
     main.cpp
     test_fpmath_float.cpp test_fpmath_float2.cpp test_fpmath_float4.cpp
-    test_intmath_int.cpp test_intmath_int2.cpp test_intmath_int4.cpp
-    test_intmath_long.cpp test_intmath_long2.cpp test_intmath_long4.cpp
+    test_intmath.cpp
     test_hiloeo.cpp test_local.cpp test_pointercast.cpp
     test_if.cpp test_loop.cpp
     test_readimage.cpp test_readimage_int16.cpp test_readimage_fp32.cpp
@@ -43,6 +42,7 @@ set(${MODULE_NAME}_SOURCES
     test_async_copy_fence.cpp	
     test_sizeof.cpp
     test_vector_creation.cpp
+    test_vector_swizzle.cpp
     test_vec_type_hint.cpp
     test_numeric_constants.cpp
     test_constant_source.cpp

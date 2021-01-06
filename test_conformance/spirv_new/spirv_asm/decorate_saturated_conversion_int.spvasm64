@@ -9,7 +9,7 @@
                OpCapability Int64
                OpCapability Float64
                OpMemoryModel Physical64 OpenCL
-               OpEntryPoint Kernel %1 "decorate_saturated_conversion_int"
+               OpEntryPoint Kernel %1 "decorate_saturated_conversion_int" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %lhs "lhs"
                OpName %rhs "rhs"
@@ -20,7 +20,7 @@
                OpDecorate %7 SaturatedConversion
       %ulong = OpTypeInt 64 0
     %v3ulong = OpTypeVector %ulong 3
-%_ptr_UniformConstant_v3ulong = OpTypePointer UniformConstant %v3ulong
+%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
        %void = OpTypeVoid
        %uint = OpTypeInt 32 0
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
@@ -28,7 +28,7 @@
 %_ptr_CrossWorkgroup_double = OpTypePointer CrossWorkgroup %double
          %16 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_double %_ptr_CrossWorkgroup_double
    %ulong_32 = OpConstant %ulong 32
-%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3ulong UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3ulong Input
           %1 = OpFunction %void None %16
         %res = OpFunctionParameter %_ptr_CrossWorkgroup_uint
         %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_double

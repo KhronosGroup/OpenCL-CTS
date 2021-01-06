@@ -16,8 +16,6 @@
 #include "testBase.h"
 #include "harness/conversions.h"
 
-extern cl_uint gRandomSeed;
-
 const char * atomic_index_source =
 "#pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable\n"
 "// Counter keeps track of which index in counts we are using.\n"
@@ -66,12 +64,12 @@ int test_atomic_add_index(cl_device_id deviceID, cl_context context, cl_command_
              (int)numGlobalThreads, (int)numLocalThreads);
 
     // Create the counter that will keep track of where each thread writes.
-    counter = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
-                                   sizeof(cl_int) * 1, NULL, NULL);
+    counter = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int) * 1,
+                             NULL, NULL);
     // Create the counters that will hold the results of each thread writing
     // its ID into a (hopefully) unique location.
-    counters = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
-                                    sizeof(cl_int) * numGlobalThreads, NULL, NULL);
+    counters = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                              sizeof(cl_int) * numGlobalThreads, NULL, NULL);
 
     // Reset all those locations to -1 to indciate they have not been used.
     cl_int *values = (cl_int*) malloc(sizeof(cl_int)*numGlobalThreads);
@@ -177,12 +175,15 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue, cl_contex
              (int)global_threads[0], (int)local_threads[0]);
 
     // Allocate our storage
-    cl_mem bin_counters = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
-                                        sizeof(cl_int) * number_of_bins, NULL, NULL);
-    cl_mem bins = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
-                                sizeof(cl_int) * number_of_bins*max_counts_per_bin, NULL, NULL);
-    cl_mem bin_assignments = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_ONLY),
-                                           sizeof(cl_int) * number_of_items, NULL, NULL);
+    cl_mem bin_counters =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_int) * number_of_bins, NULL, NULL);
+    cl_mem bins = clCreateBuffer(
+        context, CL_MEM_READ_WRITE,
+        sizeof(cl_int) * number_of_bins * max_counts_per_bin, NULL, NULL);
+    cl_mem bin_assignments =
+        clCreateBuffer(context, CL_MEM_READ_ONLY,
+                       sizeof(cl_int) * number_of_items, NULL, NULL);
 
     if (bin_counters == NULL) {
         log_error("add_index_bin_test FAILED to allocate bin_counters.\n");

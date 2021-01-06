@@ -86,15 +86,19 @@ int test_binary_fn( cl_device_id device, cl_context context, cl_command_queue qu
 
     for( i = 0; i < 3; i++ )
     {
-        streams[ i ] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, &err );
+        streams[i] =
+            clCreateBuffer(context, CL_MEM_READ_WRITE,
+                           sizeof(cl_float) * num_elements, NULL, &err);
         test_error( err, "clCreateBuffer failed");
     }
 
     if (test_double)
         for( i = 3; i < 6; i++ )
         {
-          streams[ i ] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_double) * num_elements, NULL, &err );
-          test_error( err, "clCreateBuffer failed");
+            streams[i] =
+                clCreateBuffer(context, CL_MEM_READ_WRITE,
+                               sizeof(cl_double) * num_elements, NULL, &err);
+            test_error(err, "clCreateBuffer failed");
         }
 
     d = init_genrand( gRandomSeed );

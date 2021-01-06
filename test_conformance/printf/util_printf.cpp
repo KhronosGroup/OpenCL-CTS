@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,13 +14,18 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/rounding_mode.h"
+#include "harness/kernelHelpers.h"
 
 #include "test_printf.h"
+#include <assert.h>
 
-
-const char* strType[] = {"int","float","octal","unsigned","hexadecimal","char","string","vector","address space"};
-
-
+// Helpers for generating runtime reference results
+static void intRefBuilder(printDataGenParameters&, char*, const size_t);
+static void floatRefBuilder(printDataGenParameters&, char* rResult, const size_t);
+static void octalRefBuilder(printDataGenParameters&, char*, const size_t);
+static void unsignedRefBuilder(printDataGenParameters&, char*, const size_t);
+static void hexRefBuilder(printDataGenParameters&, char*, const size_t);
 
 //==================================
 
@@ -34,7 +39,7 @@ const char* strType[] = {"int","float","octal","unsigned","hexadecimal","char","
 
 //------------------------------------------------------
 
-struct printDataGenParameters printIntGenParameters[] = {
+std::vector<printDataGenParameters> printIntGenParameters = {
 
     //(Minimum)Five-wide,default(right)-justified
 
@@ -74,38 +79,6 @@ struct printDataGenParameters printIntGenParameters[] = {
 
 };
 
-//------------------------------------------------
-
-// Lookup table - [string]int-correct buffer     |
-
-//------------------------------------------------
-
-const char *correctBufferInt[] = {
-
-    "   10",
-
-    "10   ",
-
-    "00010",
-
-    "  +10",
-
-    "+10  ",
-
-    "00100",
-
-    " 00100",
-
-    "100   ",
-
-    " 00100"
-
-};
-
-
-
-
-
 //-----------------------------------------------
 
 //test case for int                             |
@@ -114,13 +87,15 @@ const char *correctBufferInt[] = {
 
 testCase testCaseInt = {
 
-    sizeof(correctBufferInt)/sizeof(char*),
-
     TYPE_INT,
 
     correctBufferInt,
 
-    printIntGenParameters
+    printIntGenParameters,
+
+    intRefBuilder,
+
+    kint
 
 };
 
@@ -142,7 +117,7 @@ testCase testCaseInt = {
 
 //--------------------------------------------------------
 
-struct printDataGenParameters printFloatGenParameters[] = {
+std::vector<printDataGenParameters> printFloatGenParameters = {
 
     //Default(right)-justified
 
@@ -215,6 +190,44 @@ struct printDataGenParameters printFloatGenParameters[] = {
     //(Minimum)Ten-wide,Double argument representing floating-point,in xh.hhhhpAd style,default(right)-justified
 
     {"%10.2a","9990.235"},
+};
+
+//---------------------------------------------------------
+
+//Test case for float                                     |
+
+//---------------------------------------------------------
+
+testCase testCaseFloat = {
+
+    TYPE_FLOAT,
+
+    correctBufferFloat,
+
+    printFloatGenParameters,
+
+    floatRefBuilder,
+
+    kfloat
+
+};
+
+//==============================================
+
+// float limits
+
+//==============================================
+
+
+
+//--------------------------------------------------------
+
+// [string] format |  [string] float-data representation |
+
+//--------------------------------------------------------
+
+
+std::vector<printDataGenParameters> printFloatLimitsGenParameters = {
 
     //Infinity (1.0/0.0)
 
@@ -233,43 +246,7 @@ struct printDataGenParameters printFloatGenParameters[] = {
 
 //--------------------------------------------------------
 
-const char* correctBufferFloat[] = {
-
-    "10.345600",
-
-    "10.3",
-
-    "10.35",
-
-    "  10.346",
-
-    "00010.35",
-
-    "10.35   ",
-
-    "  -10.35",
-
-    "0",
-
-    "1",
-
-    "0.600000",
-
-    "12345.7",
-
-    "1.2e+4",
-
-    "2.3E-6",
-
-    "0.023",
-
-    "7.894561230000000e+8",
-
-    "+7.894561230000000E+8",
-
-    "0x1.99999ap-4",
-
-    "0x1.38p+13",
+std::vector<std::string> correctBufferFloatLimits = {
 
     "inf",
 
@@ -284,19 +261,17 @@ const char* correctBufferFloat[] = {
 
 //---------------------------------------------------------
 
-testCase testCaseFloat = {
+testCase testCaseFloatLimits = {
 
-    sizeof(correctBufferFloat)/sizeof(char*),
+    TYPE_FLOAT_LIMITS,
 
-    TYPE_FLOAT,
+    correctBufferFloatLimits,
 
-    correctBufferFloat,
+    printFloatLimitsGenParameters,
 
-    printFloatGenParameters
+    NULL
 
 };
-
-
 
 //=========================================================
 
@@ -312,7 +287,7 @@ testCase testCaseFloat = {
 
 //---------------------------------------------------------
 
-struct printDataGenParameters printOctalGenParameters[] = {
+std::vector<printDataGenParameters> printOctalGenParameters = {
 
     //Default(right)-justified
 
@@ -334,39 +309,21 @@ struct printDataGenParameters printOctalGenParameters[] = {
 
 //-------------------------------------------------------
 
-// Lookup table - [string] octal-correct buffer            |
-
-//-------------------------------------------------------
-
-
-
-const char* correctBufferOctal[] = {
-
-    "12",
-
-    "00012",
-
-    "0575360400",
-
-    "00012"
-
-};
-
-//-------------------------------------------------------
-
 //Test case for octal                                   |
 
 //-------------------------------------------------------
 
 testCase testCaseOctal = {
 
-    sizeof(correctBufferOctal)/sizeof(char*),
-
     TYPE_OCTAL,
 
     correctBufferOctal,
 
-    printOctalGenParameters
+    printOctalGenParameters,
+
+    octalRefBuilder,
+
+    kulong
 
 };
 
@@ -386,7 +343,7 @@ testCase testCaseOctal = {
 
 //---------------------------------------------------------
 
-struct printDataGenParameters printUnsignedGenParameters[] = {
+std::vector<printDataGenParameters> printUnsignedGenParameters = {
 
     //Default(right)-justified
 
@@ -400,35 +357,21 @@ struct printDataGenParameters printUnsignedGenParameters[] = {
 
 //-------------------------------------------------------
 
-// Lookup table - [string] octal-correct buffer            |
-
-//-------------------------------------------------------
-
-
-
-const char* correctBufferUnsigned[] = {
-
-    "10",
-
-    ""
-
-};
-
-//-------------------------------------------------------
-
 //Test case for octal                                   |
 
 //-------------------------------------------------------
 
 testCase testCaseUnsigned = {
 
-    sizeof(correctBufferUnsigned)/sizeof(char*),
-
     TYPE_UNSIGNED,
 
     correctBufferUnsigned,
 
-    printUnsignedGenParameters
+    printUnsignedGenParameters,
+
+    unsignedRefBuilder,
+
+    kulong
 
 };
 
@@ -448,7 +391,7 @@ testCase testCaseUnsigned = {
 
 //--------------------------------------------------------------
 
-struct printDataGenParameters printHexadecimalGenParameters[] = {
+std::vector<printDataGenParameters> printHexadecimalGenParameters = {
 
     //Add 0x,low x,default(right)-justified
 
@@ -474,41 +417,21 @@ struct printDataGenParameters printHexadecimalGenParameters[] = {
 
 //--------------------------------------------------------------
 
-// Lookup table - [string]hexadecimal-correct buffer           |
-
-//--------------------------------------------------------------
-
-
-
-const char* correctBufferHexadecimal[] = {
-
-    "0xabcdef",
-
-    "0XABCDEF",
-
-    "0",
-
-    "     18f",
-
-    "018f"
-
-};
-
-//--------------------------------------------------------------
-
 //Test case for hexadecimal                                    |
 
 //--------------------------------------------------------------
 
 testCase testCaseHexadecimal = {
 
-    sizeof(correctBufferHexadecimal)/sizeof(char*),
-
     TYPE_HEXADEC,
 
     correctBufferHexadecimal,
 
-    printHexadecimalGenParameters
+    printHexadecimalGenParameters,
+
+    hexRefBuilder,
+
+    kulong
 
 };
 
@@ -528,7 +451,7 @@ testCase testCaseHexadecimal = {
 
 //-----------------------------------------------------------
 
-struct printDataGenParameters printCharGenParameters[] = {
+std::vector<printDataGenParameters> printCharGenParameters = {
 
     //Four-wide,zero-filled,default(right)-justified
 
@@ -550,7 +473,7 @@ struct printDataGenParameters printCharGenParameters[] = {
 
 //---------------------------------------------------------
 
-const char * correctBufferChar[] = {
+std::vector<std::string> correctBufferChar = {
 
     "   1",
 
@@ -562,6 +485,7 @@ const char * correctBufferChar[] = {
 
 
 
+
 //----------------------------------------------------------
 
 //Test case for char                                       |
@@ -570,13 +494,15 @@ const char * correctBufferChar[] = {
 
 testCase testCaseChar = {
 
-    sizeof(correctBufferChar)/sizeof(char*),
-
     TYPE_CHAR,
 
     correctBufferChar,
 
-    printCharGenParameters
+    printCharGenParameters,
+
+    NULL,
+
+    kchar
 
 };
 
@@ -596,7 +522,7 @@ testCase testCaseChar = {
 
 //--------------------------------------------------------
 
-struct printDataGenParameters printStringGenParameters[] = {
+std::vector<printDataGenParameters> printStringGenParameters = {
 
     //(Minimum)Four-wide,zero-filled,default(right)-justified
 
@@ -617,7 +543,7 @@ struct printDataGenParameters printStringGenParameters[] = {
 
 //---------------------------------------------------------
 
-const char * correctBufferString[] = {
+std::vector<std::string> correctBufferString = {
 
     " foo",
 
@@ -625,6 +551,7 @@ const char * correctBufferString[] = {
 
     "%%",
 };
+
 
 //---------------------------------------------------------
 
@@ -634,13 +561,15 @@ const char * correctBufferString[] = {
 
 testCase testCaseString = {
 
-    sizeof(correctBufferString)/sizeof(char*),
-
     TYPE_STRING,
 
     correctBufferString,
 
-    printStringGenParameters
+    printStringGenParameters,
+
+    NULL,
+
+    kchar
 
 };
 
@@ -660,7 +589,7 @@ testCase testCaseString = {
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct printDataGenParameters printVectorGenParameters[]={
+std::vector<printDataGenParameters> printVectorGenParameters = {
 
     //(Minimum)Two-wide,two positions after decimal
 
@@ -690,7 +619,7 @@ struct printDataGenParameters printVectorGenParameters[]={
 
 //------------------------------------------------------------
 
-const char * correctBufferVector[] = {
+std::vector<std::string> correctBufferVector = {
 
     "1.00,2.00,3.00,4.00",
 
@@ -712,13 +641,13 @@ const char * correctBufferVector[] = {
 
 testCase testCaseVector = {
 
-    sizeof(correctBufferVector)/(sizeof(char *)),
-
     TYPE_VECTOR,
 
     correctBufferVector,
 
-    printVectorGenParameters
+    printVectorGenParameters,
+
+    NULL
 
 };
 
@@ -740,7 +669,7 @@ testCase testCaseVector = {
 
 
 
-struct printDataGenParameters printAddrSpaceGenParameters[]={
+std::vector<printDataGenParameters> printAddrSpaceGenParameters = {
 
     //Global memory region
 
@@ -770,7 +699,7 @@ struct printDataGenParameters printAddrSpaceGenParameters[]={
 
 //-------------------------------------------------------------------------------
 
-const char * correctAddrSpace[] = {
+std::vector<std::string> correctAddrSpace = {
 
     "2","2","+3","-1",""
 
@@ -784,13 +713,13 @@ const char * correctAddrSpace[] = {
 
 testCase testCaseAddrSpace = {
 
-    sizeof(correctAddrSpace)/(sizeof(char *)),
-
     TYPE_ADDRESS_SPACE,
 
     correctAddrSpace,
 
-    printAddrSpaceGenParameters
+    printAddrSpaceGenParameters,
+
+    NULL
 
 };
 
@@ -802,7 +731,7 @@ testCase testCaseAddrSpace = {
 
 //-------------------------------------------------------------------------------
 
-testCase* allTestCase[] = {&testCaseInt,&testCaseFloat,&testCaseOctal,&testCaseUnsigned,&testCaseHexadecimal,&testCaseChar,&testCaseString,&testCaseVector,&testCaseAddrSpace};
+std::vector<testCase*> allTestCase = {&testCaseInt,&testCaseFloat,&testCaseFloatLimits,&testCaseOctal,&testCaseUnsigned,&testCaseHexadecimal,&testCaseChar,&testCaseString,&testCaseVector,&testCaseAddrSpace};
 
 
 //-----------------------------------------
@@ -848,8 +777,7 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
         char correctExp[3]={0};
         strncpy(correctExp,exp,2);
 
-
-        char* eCorrectBuffer = strstr((char*)pTestCase->_correctBuffer[testId],correctExp);
+        char* eCorrectBuffer = strstr((char*)pTestCase->_correctBuffer[testId].c_str(),correctExp);
         if(eCorrectBuffer == NULL)
             return 1;
 
@@ -859,16 +787,108 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
         //Exponent always contains at least two digits
         if(strlen(exp) < 2)
             return 1;
-        //Scip leading zeros in the exponent
+        //Skip leading zeros in the exponent
         while(*exp == '0')
             ++exp;
+        while(*eCorrectBuffer == '0')
+            ++eCorrectBuffer;
         return strcmp(eCorrectBuffer,exp);
     }
-    if(!strcmp(pTestCase->_correctBuffer[testId],"inf"))
+    if(!strcmp(pTestCase->_correctBuffer[testId].c_str(),"inf"))
     return strcmp(analysisBuffer,"inf")&&strcmp(analysisBuffer,"infinity")&&strcmp(analysisBuffer,"1.#INF00")&&strcmp(analysisBuffer,"Inf");
-    if(!strcmp(pTestCase->_correctBuffer[testId],"nan") || !strcmp(pTestCase->_correctBuffer[testId],"-nan")) {
+    if(!strcmp(pTestCase->_correctBuffer[testId].c_str(),"nan") || !strcmp(pTestCase->_correctBuffer[testId].c_str(),"-nan")) {
        return strcmp(analysisBuffer,"nan")&&strcmp(analysisBuffer,"-nan")&&strcmp(analysisBuffer,"1.#IND00")&&strcmp(analysisBuffer,"-1.#IND00")&&strcmp(analysisBuffer,"NaN")&&strcmp(analysisBuffer,"nan(ind)")&&strcmp(analysisBuffer,"nan(snan)")&&strcmp(analysisBuffer,"-nan(ind)");
     }
-    return strcmp(analysisBuffer,pTestCase->_correctBuffer[testId]);
+    return strcmp(analysisBuffer,pTestCase->_correctBuffer[testId].c_str());
 }
 
+static void intRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
+{
+    snprintf(refResult, refSize, params.genericFormat, atoi(params.dataRepresentation));
+}
+
+static void floatRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
+{
+    snprintf(refResult, refSize, params.genericFormat, strtof(params.dataRepresentation, NULL));
+}
+
+static void octalRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
+{
+    const unsigned long int data = strtoul(params.dataRepresentation, NULL, 10);
+    snprintf(refResult, refSize, params.genericFormat, data);
+}
+
+static void unsignedRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
+{
+    const unsigned long int data = strtoul(params.dataRepresentation, NULL, 10);
+    snprintf(refResult, refSize, params.genericFormat, data);
+}
+
+static void hexRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
+{
+    const unsigned long int data = strtoul(params.dataRepresentation, NULL, 0);
+    snprintf(refResult, refSize, params.genericFormat, data);
+}
+
+/*
+    Generate reference results.
+
+    Results are only generated for test cases
+    that can easily be generated by using CPU
+    printf.
+
+    If that is not the case, results are constants
+    that have been hard-coded.
+*/
+void generateRef(const cl_device_id device)
+{
+    int fd = -1;
+    char _refBuffer[ANALYSIS_BUFFER_SIZE];
+    const cl_device_fp_config fpConfig = get_default_rounding_mode(device);
+    const RoundingMode hostRound = get_round();
+    RoundingMode deviceRound;
+
+    // Map device rounding to CTS rounding type
+    // get_default_rounding_mode supports RNE and RTZ
+    if (fpConfig == CL_FP_ROUND_TO_NEAREST)
+    {
+        deviceRound = kRoundToNearestEven;
+    }
+    else if (fpConfig == CL_FP_ROUND_TO_ZERO)
+    {
+        deviceRound = kRoundTowardZero;
+    }
+    else
+    {
+        assert(false && "Unreachable");
+    }
+
+    // Loop through all test cases
+    for (auto &caseToTest: allTestCase)
+    {
+        /*
+            Cases that have a NULL function pointer
+            already have their reference results
+            as they're constant and hard-coded
+        */
+        if (caseToTest->printFN == NULL)
+            continue;
+
+        // Make sure the reference result is empty
+        assert(caseToTest->_correctBuffer.size() == 0);
+
+        // Loop through each input
+        for (auto &params: caseToTest->_genParameters)
+        {
+            char refResult[ANALYSIS_BUFFER_SIZE];
+            // Set CPU rounding mode to match that of the device
+            set_round(deviceRound, caseToTest->dataType);
+            // Generate the result
+            caseToTest->printFN(params, refResult, ARRAY_SIZE(refResult));
+            // Restore the original CPU rounding mode
+            set_round(hostRound, kfloat);
+            // Save the reference result
+            caseToTest->_correctBuffer.push_back(refResult);
+        }
+    }
+}

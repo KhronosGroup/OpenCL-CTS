@@ -19,7 +19,7 @@
 
 using namespace std;
 
-typedef struct image_kernel_data
+struct image_kernel_data
 {
     cl_int width;
     cl_int height;
@@ -277,7 +277,8 @@ int test_image_format_methods( cl_device_id device, cl_context context, cl_comma
     test_error( error, "Unable to create kernel to test against" );
 
     // Create an output buffer
-    outDataBuffer = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof( outKernelData ), NULL, &error );
+    outDataBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                   sizeof(outKernelData), NULL, &error);
     test_error( error, "Unable to create output buffer" );
 
     // Set up arguments and run

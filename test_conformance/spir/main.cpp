@@ -141,14 +141,15 @@ static bool is_dir_exits(const char* path)
     return false;
 }
 
-static void get_spir_version(cl_device_id device, std::vector<float>& versions)
+static void get_spir_version(cl_device_id device,
+                             std::vector<Version> &versions)
 {
     char version[64] = {0};
     cl_int err;
     size_t size = 0;
 
-    if (err = clGetDeviceInfo(device, CL_DEVICE_SPIR_VERSIONS, sizeof(version),
-                              (void*)version, &size))
+    if ((err = clGetDeviceInfo(device, CL_DEVICE_SPIR_VERSIONS, sizeof(version),
+                               (void *)version, &size)))
     {
         log_error( "Error: failed to obtain SPIR version at %s:%d (err = %d)\n",
                   __FILE__, __LINE__, err );
@@ -162,11 +163,11 @@ static void get_spir_version(cl_device_id device, std::vector<float>& versions)
     std::copy(std::istream_iterator<std::string>(versionStream),
               std::istream_iterator<std::string>(),
               std::back_inserter(versionVector));
-    for(std::list<std::string>::const_iterator it = versionVector.begin(),
-                                               e  = versionVector.end(); it != e;
-                                               it++)
+    for (auto &v : versionVector)
     {
-        versions.push_back(atof(it->c_str()));
+        auto major = v[v.find('.') - 1];
+        auto minor = v[v.find('.') + 1];
+        versions.push_back(Version{ major - '0', minor - '0' });
     }
 }
 
@@ -6929,10 +6930,12 @@ int main (int argc, const char* argv[])
         cl_device_id device = get_platform_device(device_type, choosen_device_index, choosen_platform_index);
         printDeviceHeader(device);
 
-        std::vector<float> versions;
+        std::vector<Version> versions;
         get_spir_version(device, versions);
-        if (!is_extension_available( device, "cl_khr_spir") ||
-            std::find(versions.begin(), versions.end(), 1.2f) == versions.end())
+
+        if (!is_extension_available(device, "cl_khr_spir")
+            || (std::find(versions.begin(), versions.end(), Version{ 1, 2 })
+                == versions.end()))
         {
             log_info("Spir extension version 1.2 is not supported by the device\n");
             return 0;

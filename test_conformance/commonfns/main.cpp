@@ -58,6 +58,6 @@ const int test_num = ARRAY_SIZE( test_list );
 int main(int argc, const char *argv[])
 {
     initVecSizes();
-    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
+    return runTestHarness(argc, argv, test_num, test_list, false, 0);
 }
 

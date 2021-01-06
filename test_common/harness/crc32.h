@@ -18,17 +18,9 @@ executed between Khronos and the recipient.
 #ifndef _CRC32_H_
 #define _CRC32_H_
 
-#include <stdint.h> 
+#include <stdint.h>
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 uint32_t crc32(const void *buf, size_t size);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

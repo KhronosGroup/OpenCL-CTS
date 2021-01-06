@@ -43,11 +43,12 @@ const char *include_test_kernel[] = {
 "}\n" };
 
 const char *options_test_kernel[] = {
-"__kernel void sample_test(__global float *src, __global int *dst)\n"
-"{\n"
-"    size_t tid = get_global_id(0);\n"
-"    dst[tid] = src[tid];\n"
-"}\n" };
+    "__kernel void sample_test(__global float *src, __global int *dst)\n"
+    "{\n"
+    "    size_t tid = get_global_id(0);\n"
+    "    dst[tid] = (int)src[tid];\n"
+    "}\n"
+};
 
 const char *optimization_options[] = {
     "-cl-single-precision-constant",
@@ -73,7 +74,8 @@ cl_int get_result_from_program( cl_context context, cl_command_queue queue, cl_p
     test_error( error, "Unable to create kernel from program" );
 
     clMemWrapper outStream;
-    outStream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_int), NULL, &error );
+    outStream = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int), NULL,
+                               &error);
     test_error( error, "Unable to create test buffer" );
 
     error = clSetKernelArg( kernel, 0, sizeof( outStream ), &outStream );
@@ -312,7 +314,8 @@ cl_int get_float_result_from_program( cl_context context, cl_command_queue queue
     clKernelWrapper kernel = clCreateKernel( program, "sample_test", &error );
     test_error( error, "Unable to create kernel from program" );
 
-    clMemWrapper outStream = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_float), NULL, &error );
+    clMemWrapper outStream = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                            sizeof(cl_float), NULL, &error);
     test_error( error, "Unable to create test buffer" );
 
     error = clSetKernelArg( kernel, 0, sizeof( cl_float ), &inA );

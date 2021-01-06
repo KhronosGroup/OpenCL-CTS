@@ -186,14 +186,16 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
 
     input_ptr[0] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
     output_ptr = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, NULL );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * num_elements, NULL, NULL);
     if (!streams[0])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
 
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, NULL );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * num_elements, NULL, NULL);
     if (!streams[1])
     {
         log_error("clCreateBuffer failed\n");
@@ -311,14 +313,16 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
 
     input_ptr[0] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
     output_ptr = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, NULL );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * num_elements, NULL, NULL);
     if (!streams[0])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
 
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, NULL );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * num_elements, NULL, NULL);
     if (!streams[1])
     {
         log_error("clCreateBuffer failed\n");
@@ -435,14 +439,16 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
 
     input_ptr[0] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
     output_ptr = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, NULL );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * num_elements, NULL, NULL);
     if (!streams[0])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
 
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, NULL );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * num_elements, NULL, NULL);
     if (!streams[1])
     {
         log_error("clCreateBuffer failed\n");

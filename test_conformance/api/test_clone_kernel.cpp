@@ -113,15 +113,16 @@ int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_c
     clSamplerWrapper sampler;
     img_format.image_channel_order = CL_RGBA;
     img_format.image_channel_data_type = CL_UNSIGNED_INT8;
-	cl_image_desc imageDesc;
-	memset(&imageDesc, 0x0, sizeof(cl_image_desc));
+    cl_image_desc imageDesc;
+    memset(&imageDesc, 0x0, sizeof(cl_image_desc));
     imageDesc.image_type = CL_MEM_OBJECT_IMAGE2D;
     imageDesc.image_width = 512;
     imageDesc.image_height = 512;
 
     cl_uint color[4] = {1,3,5,7};
 
-    clProgramWrapper program;
+    clProgramWrapper program_read;
+    clProgramWrapper program_write;
     clKernelWrapper kernel_read;
     clKernelWrapper kernel_write;
     clKernelWrapper kernel_cloned;
@@ -129,12 +130,16 @@ int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_c
 
     clMemWrapper img;
 
-    if( create_single_kernel_helper( context, &program, &kernel_read, 1, clone_kernel_test_img, "img_read_kernel" ) != 0 )
+    if (create_single_kernel_helper(context, &program_read, &kernel_read, 1,
+                                    clone_kernel_test_img, "img_read_kernel")
+        != 0)
     {
         return -1;
     }
 
-    if( create_single_kernel_helper( context, &program, &kernel_write, 1, clone_kernel_test_img, "img_write_kernel" ) != 0 )
+    if (create_single_kernel_helper(context, &program_write, &kernel_write, 1,
+                                    clone_kernel_test_img, "img_write_kernel")
+        != 0)
     {
         return -1;
     }
@@ -241,6 +246,8 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
 {
     int error;
     clProgramWrapper program;
+    clProgramWrapper program_buf_read;
+    clProgramWrapper program_buf_write;
     clKernelWrapper kernel;
     clKernelWrapper kernel_pipe_read;
     clKernelWrapper kernel_buf_read;
@@ -261,28 +268,9 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     test_error( error, "clGetDeviceInfo failed." );
 
     // test double support
-    size_t ext_str_size;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, 0, NULL, &ext_str_size);
-    test_error( error, "clGetDeviceInfo failed." );
-    char* ext_str = new char[ext_str_size+1];
-
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, ext_str_size, ext_str, NULL);
-    test_error( error, "clGetDeviceInfo failed." );
-
-    ext_str[ext_str_size] = '\0';
-
-    stringstream ss;
-    ss << ext_str;
-
-    while (!ss.eof())
+    if (is_extension_available(deviceID, "cl_khr_fp64"))
     {
-        string s;
-        ss >> s;
-        if (s == "cl_khr_fp64")
-        {
-            bdouble = CL_TRUE;
-            break;
-        }
+        bdouble = CL_TRUE;
     }
 
     /* Create kernels to test with */
@@ -291,12 +279,18 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
         return -1;
     }
 
-    if( create_single_kernel_helper( context, &program, &kernel_buf_read, 1, clone_kernel_test_kernel, "buf_read_kernel" ) != 0 )
+    if (create_single_kernel_helper(context, &program_buf_read,
+                                    &kernel_buf_read, 1,
+                                    clone_kernel_test_kernel, "buf_read_kernel")
+        != 0)
     {
         return -1;
     }
 
-    if( create_single_kernel_helper( context, &program, &kernel_buf_write, 1, clone_kernel_test_kernel, "buf_write_kernel" ) != 0 )
+    if (create_single_kernel_helper(
+            context, &program_buf_write, &kernel_buf_write, 1,
+            clone_kernel_test_kernel, "buf_write_kernel")
+        != 0)
     {
         return -1;
     }
@@ -318,9 +312,6 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     bufOut = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, BUF_SIZE, NULL, &error);
     test_error( error, "clCreateBuffer failed." );
 
-    clMemWrapper pipe = clCreatePipe(context, CL_MEM_HOST_NO_ACCESS, sizeof(int), 16, NULL, &error);
-    test_error( error, "clCreatePipe failed." );
-
     error = clSetKernelArg(kernel, 0, sizeof(int), &intarg);
     error += clSetKernelArg(kernel, 1, sizeof(float), &farg);
     error += clSetKernelArg(kernel, 2, sizeof(structArg), &sa);
@@ -338,7 +329,7 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     error = clEnqueueNDRangeKernel(queue, clonek, 1, NULL, &ndrange1, NULL, 0, NULL, NULL);
     test_error( error, "clEnqueueNDRangeKernel failed." );
 
-    // shallow clone tests for buffer, svm and pipes
+    // shallow clone tests for buffer
     error = clSetKernelArg(kernel_buf_write, 0, sizeof(cl_mem), &buf);
     error += clSetKernelArg(kernel_buf_write, 1, sizeof(int), &write_val);
     test_error( error, "clSetKernelArg failed." );
@@ -404,7 +395,6 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
 
     delete [] pbuf;
     delete [] pbufRes;
-    delete [] ext_str;
 
     return 0;
 }

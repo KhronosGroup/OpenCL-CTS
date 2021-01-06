@@ -6,14 +6,16 @@ set(HARNESS_SOURCES
     harness/conversions.cpp
     harness/rounding_mode.cpp
     harness/msvc9.c
-    harness/crc32.c
+    harness/crc32.cpp
     harness/errorHelpers.cpp
+    harness/featureHelpers.cpp
     harness/genericThread.cpp
     harness/imageHelpers.cpp
     harness/kernelHelpers.cpp
     harness/deviceInfo.cpp
     harness/os_helpers.cpp
     harness/parseParameters.cpp
+    harness/propertyHelpers.cpp
     harness/testHarness.cpp
     harness/ThreadPool.cpp
     miniz/miniz.c

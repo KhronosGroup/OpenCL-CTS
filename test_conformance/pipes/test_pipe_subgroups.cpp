@@ -88,30 +88,35 @@ static int verify_result(void *ptr1, void *ptr2, int n)
 
 int test_pipe_subgroups_divergence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    cl_mem        pipe;
-    cl_mem      buffers[3];
-    cl_int        *outptr;
-    cl_int        *inptr;
-    cl_int        *active_work_item_buffer;
-    cl_program  program;
-    cl_kernel   kernel[2];
-    size_t      global_work_size[3];
-    size_t      local_work_size[3];
-    cl_int      err;
-    cl_int        size;
-    int         i;
-    size_t      subgroup_count;
-    cl_event    producer_sync_event = NULL;
-    cl_event    consumer_sync_event = NULL;
-    const char*    kernelName[] = {"test_pipe_subgroups_divergence_write", "test_pipe_subgroups_divergence_read"};
+    clMemWrapper pipe;
+    clMemWrapper buffers[3];
+    cl_int *outptr;
+    cl_int *inptr;
+    cl_int *active_work_item_buffer;
+    clProgramWrapper program;
+    clKernelWrapper kernel[2];
+    size_t global_work_size[3];
+    size_t local_work_size[3];
+    cl_int err;
+    cl_int size;
+    int i;
+    size_t subgroup_count;
+    clEventWrapper producer_sync_event = NULL;
+    clEventWrapper consumer_sync_event = NULL;
+    BufferOwningPtr<cl_int> BufferInPtr;
+    BufferOwningPtr<cl_int> BufferOutPtr;
+    const char *kernelName[] = { "test_pipe_subgroups_divergence_write",
+                                 "test_pipe_subgroups_divergence_read" };
 
-    size_t      min_alignment = get_min_alignment(context);
+    size_t min_alignment = get_min_alignment(context);
 
     global_work_size[0] = (cl_uint)num_elements;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info(
+            "cl_khr_subgroups is not supported on this platoform. Skipping "
+            "test.\n");
         return CL_SUCCESS;
     }
 
@@ -125,215 +130,77 @@ int test_pipe_subgroups_divergence(cl_device_id deviceID, cl_context context, cl
         outptr[i] = 0;
         active_work_item_buffer[i] = 0;
     }
+    BufferInPtr.reset(inptr, nullptr, 0, size, true);
+    BufferOutPtr.reset(outptr, nullptr, 0, size, true);
 
     buffers[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, size, inptr, &err);
-    if(err){
-        clReleaseMemObject(buffers[0]);
-        print_error(err, " clCreateBuffer failed\n");
-        return -1;
-    }
+    test_error_ret(err, " clCreateBuffer failed", -1);
 
     buffers[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,  size, outptr, &err);
-    if ( err ){
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        align_free( outptr );
-        print_error(err, " clCreateBuffer failed\n" );
-        return -1;
-    }
+    test_error_ret(err, " clCreateBuffer failed", -1);
 
     buffers[2] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,  size, active_work_item_buffer, &err);
-    if ( err ){
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        align_free( outptr );
-        print_error(err, " clCreateBuffer failed\n" );
-        return -1;
-    }
+    test_error_ret(err, " clCreateBuffer failed", -1);
 
     pipe = clCreatePipe(context, CL_MEM_HOST_NO_ACCESS, sizeof(int), num_elements, NULL, &err);
-    if(err){
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        align_free( outptr );
-        clReleaseMemObject(pipe);
-        print_error(err, " clCreatePipe failed\n");
-        return -1;
-    }
+    test_error_ret(err, " clCreatePipe failed", -1);
 
     // Create producer kernel
     err = create_single_kernel_helper_with_build_options(context, &program, &kernel[0], 1, (const char**)&pipe_subgroups_kernel_code, kernelName[0], "-cl-std=CL2.0");
-    if(err){
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        clReleaseMemObject(pipe);
-        align_free(outptr);
-        print_error(err, "Error creating program\n");
-        return -1;
-    }
+    test_error_ret(err, " Error creating program", -1);
+
     //Create consumer kernel
     kernel[1] = clCreateKernel(program, kernelName[1], &err);
-    if( kernel[1] == NULL || err != CL_SUCCESS)
-    {
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        clReleaseMemObject(pipe);
-        align_free(outptr);
-        print_error(err, "Error creating kernel\n");
-        return -1;
-    }
+    test_error_ret(err, " Error creating kernel", -1);
 
     err = clSetKernelArg(kernel[0], 0, sizeof(cl_mem), (void*)&buffers[0]);
     err |= clSetKernelArg(kernel[0], 1, sizeof(cl_mem), (void*)&pipe);
     err |= clSetKernelArg(kernel[0], 2, sizeof(cl_mem), (void*)&buffers[2]);
     err |= clSetKernelArg(kernel[1], 0, sizeof(cl_mem), (void*)&pipe);
     err |= clSetKernelArg(kernel[1], 1, sizeof(cl_mem), (void*)&buffers[1]);
-    if ( err != CL_SUCCESS ){
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseProgram(program);
-        align_free(outptr);
-        print_error(err, " clSetKernelArg failed");
-        return -1;
-    }
+    test_error_ret(err, " clSetKernelArg failed", -1);
 
     err = get_max_common_work_group_size( context, kernel[0], global_work_size[0], &local_work_size[0] );
-    if( err != CL_SUCCESS)
-    {
-        test_error( err, "Unable to get work group size to use" );
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseProgram(program);
-        align_free(outptr);
-        return -1;
-    }
+    test_error_ret(err, " Unable to get work group size to use", -1);
 
-        cl_platform_id platform;
-        err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
-        clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfoKHR = (clGetKernelSubGroupInfoKHR_fn) clGetExtensionFunctionAddressForPlatform(platform, "clGetKernelSubGroupInfoKHR");
+    cl_platform_id platform;
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform),
+                          &platform, NULL);
+    test_error_ret(err, " clGetDeviceInfo failed", -1);
+
+    clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfoKHR =
+        (clGetKernelSubGroupInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(
+            platform, "clGetKernelSubGroupInfoKHR");
 
     err = clGetKernelSubGroupInfoKHR(kernel[0], deviceID, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR, sizeof(local_work_size[0]), &local_work_size[0], sizeof(subgroup_count), &subgroup_count, NULL);
+    test_error_ret(err, " clGetKernelSubGroupInfoKHR failed", -1);
     if(subgroup_count <= 1)
     {
         log_info("Only 1 subgroup per workgroup for the kernel. Hence no divergence among subgroups possible. Skipping test.\n");
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseProgram(program);
-        align_free(outptr);
         return CL_SUCCESS;
     }
 
     // Launch Producer kernel
     err = clEnqueueNDRangeKernel( queue, kernel[0], 1, NULL, global_work_size, local_work_size, 0, NULL, &producer_sync_event );
-    if ( err != CL_SUCCESS ){
-        print_error( err, " clEnqueueNDRangeKernel failed" );
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseEvent(producer_sync_event);
-        clReleaseEvent(consumer_sync_event);
-        clReleaseProgram(program);
-        align_free(outptr);
-        return -1;
-    }
+    test_error_ret(err, " clEnqueueNDRangeKernel failed", -1);
 
     err = clEnqueueReadBuffer(queue, buffers[2], true, 0, size, active_work_item_buffer, 1, &producer_sync_event, NULL);
-    if ( err != CL_SUCCESS ){
-        print_error( err, " clEnqueueReadBuffer failed" );
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseEvent(producer_sync_event);
-        clReleaseEvent(consumer_sync_event);
-        clReleaseProgram(program);
-        align_free(outptr);
-        return -1;
-    }
-
+    test_error_ret(err, " clEnqueueReadBuffer failed", -1);
 
     // Launch Consumer kernel
     err = clEnqueueNDRangeKernel( queue, kernel[1], 1, NULL, global_work_size, local_work_size, 1, &producer_sync_event, &consumer_sync_event );
-    if ( err != CL_SUCCESS ){
-        print_error( err, " clEnqueueNDRangeKernel failed" );
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseEvent(producer_sync_event);
-        clReleaseEvent(consumer_sync_event);
-        clReleaseProgram(program);
-        align_free(outptr);
-        return -1;
-    }
+    test_error_ret(err, " clEnqueueNDRangeKernel failed", -1);
 
     err = clEnqueueReadBuffer(queue, buffers[1], true, 0, size, outptr, 1, &consumer_sync_event, NULL);
-    if ( err != CL_SUCCESS ){
-        print_error( err, " clEnqueueReadBuffer failed" );
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseEvent(producer_sync_event);
-        clReleaseEvent(consumer_sync_event);
-        clReleaseProgram(program);
-        align_free(outptr);
-        return -1;
-    }
+    test_error_ret(err, " clEnqueueReadBuffer failed", -1);
 
     if( verify_result( active_work_item_buffer, outptr, num_elements)){
         log_error("test_pipe_subgroups_divergence failed\n");
-        clReleaseMemObject(buffers[0]);
-        clReleaseMemObject(buffers[1]);
-        clReleaseMemObject(buffers[2]);
-        clReleaseMemObject(pipe);
-        clReleaseKernel(kernel[0]);
-        clReleaseKernel(kernel[1]);
-        clReleaseEvent(producer_sync_event);
-        clReleaseEvent(consumer_sync_event);
-        clReleaseProgram(program);
-        align_free(outptr);
         return -1;
     }
     else {
         log_info("test_pipe_subgroups_divergence passed\n");
     }
-    //cleanup
-    clReleaseMemObject(buffers[0]);
-    clReleaseMemObject(buffers[1]);
-    clReleaseMemObject(buffers[2]);
-    clReleaseMemObject(pipe);
-    clReleaseKernel(kernel[0]);
-    clReleaseKernel(kernel[1]);
-    clReleaseEvent(producer_sync_event);
-    clReleaseEvent(consumer_sync_event);
-    clReleaseProgram(program);
-    align_free(outptr);
 
     return 0;
 }

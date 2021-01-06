@@ -126,15 +126,14 @@ test_definition test_list[] = {
     ADD_TEST(
         async_work_group_copy_fence_export_after_import_aliased_global_and_local),
     ADD_TEST(prefetch),
-
     ADD_TEST(kernel_call_kernel_function),
     ADD_TEST(host_numeric_constants),
     ADD_TEST(kernel_numeric_constants),
     ADD_TEST(kernel_limit_constants),
     ADD_TEST(kernel_preprocessor_macros),
-
     ADD_TEST(parameter_types),
     ADD_TEST(vector_creation),
+    ADD_TEST(vector_swizzle),
     ADD_TEST(vec_type_hint),
     ADD_TEST(kernel_memory_alignment_local),
     ADD_TEST(kernel_memory_alignment_global),
@@ -168,6 +167,6 @@ const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
+    return runTestHarness(argc, argv, test_num, test_list, false, 0);
 }
 

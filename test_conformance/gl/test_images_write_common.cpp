@@ -24,8 +24,6 @@
     #include <CL/cl_gl.h>
 #endif
 
-extern "C" { extern cl_uint gRandomSeed; };
-
 #pragma mark -
 #pragma mark Write test kernels
 
@@ -439,22 +437,7 @@ int supportsHalf(cl_context context, bool* supports_half)
   error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDev * sizeof(cl_device_id), devices, NULL);
   test_error(error, "clGetContextInfo for CL_CONTEXT_DEVICES failed");
 
-  // Get the extensions string for the device
-  error = clGetDeviceInfo(devices[0], CL_DEVICE_EXTENSIONS, 0, NULL, &size);
-  test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS size failed");
-
-  char *extensions = new char[size+1];
-  if (extensions == 0) {
-      log_error("Failed to allocate memory for extensions string.\n");
-      return -1;
-  }
-  memset( extensions, CHAR_MIN, sizeof(char)*(size+1) );
-
-  error = clGetDeviceInfo(devices[0], CL_DEVICE_EXTENSIONS, sizeof(char)*size, extensions, NULL);
-  test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS failed");
-
-  *supports_half = strstr(extensions, "cl_khr_fp16");
-  delete [] extensions;
+  *supports_half = is_extension_available(devices[0], "cl_khr_fp16");
   delete [] devices;
 
   return error;
@@ -473,22 +456,7 @@ int supportsMsaa(cl_context context, bool* supports_msaa)
   error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDev * sizeof(cl_device_id), devices, NULL);
   test_error(error, "clGetContextInfo for CL_CONTEXT_DEVICES failed");
 
-  // Get the extensions string for the device
-  error = clGetDeviceInfo(devices[0], CL_DEVICE_EXTENSIONS, 0, NULL, &size);
-  test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS size failed");
-
-  char *extensions = new char[size+1];
-  if (extensions == 0) {
-      log_error("Failed to allocate memory for extensions string.\n");
-      return -1;
-  }
-  memset( extensions, CHAR_MIN, sizeof(char)*(size+1) );
-
-  error = clGetDeviceInfo(devices[0], CL_DEVICE_EXTENSIONS, sizeof(char)*size, extensions, NULL);
-  test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS failed");
-
-  *supports_msaa = strstr(extensions, "cl_khr_gl_msaa_sharing");
-  delete [] extensions;
+  *supports_msaa = is_extension_available(devices[0], "cl_khr_gl_msaa_sharing");
   delete [] devices;
 
   return error;
@@ -507,22 +475,7 @@ int supportsDepth(cl_context context, bool* supports_depth)
   error = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDev * sizeof(cl_device_id), devices, NULL);
   test_error(error, "clGetContextInfo for CL_CONTEXT_DEVICES failed");
 
-  // Get the extensions string for the device
-  error = clGetDeviceInfo(devices[0], CL_DEVICE_EXTENSIONS, 0, NULL, &size);
-  test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS size failed");
-
-  char *extensions = new char[size+1];
-  if (extensions == 0) {
-      log_error("Failed to allocate memory for extensions string.\n");
-      return -1;
-  }
-  memset( extensions, CHAR_MIN, sizeof(char)*(size+1) );
-
-  error = clGetDeviceInfo(devices[0], CL_DEVICE_EXTENSIONS, sizeof(char)*size, extensions, NULL);
-  test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS failed");
-
-  *supports_depth = strstr(extensions, "cl_khr_gl_depth_images");
-  delete [] extensions;
+  *supports_depth = is_extension_available(devices[0], "cl_khr_gl_depth_images");
   delete [] devices;
 
   return error;
@@ -810,16 +763,16 @@ int test_images_write_common(cl_device_id device, cl_context context,
             get_base_gl_target(targets[ tidx ]) == GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
         {
             bool supports_msaa;
-            error = supportsMsaa(context, &supports_msaa);
-            if( error != 0 ) return error;
+            int errorInGetInfo = supportsMsaa(context, &supports_msaa);
+            if (errorInGetInfo != 0) return errorInGetInfo;
             if (!supports_msaa) return 0;
         }
         if (formats[ fidx ].formattype == GL_DEPTH_COMPONENT ||
             formats[ fidx ].formattype == GL_DEPTH_STENCIL)
         {
             bool supports_depth;
-            error = supportsDepth(context, &supports_depth);
-            if( error != 0 ) return error;
+            int errorInGetInfo = supportsDepth(context, &supports_depth);
+            if (errorInGetInfo != 0) return errorInGetInfo;
             if (!supports_depth) return 0;
         }
 #endif

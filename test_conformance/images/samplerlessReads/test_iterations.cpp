@@ -22,14 +22,8 @@
     #include <setjmp.h>
 #endif
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool                 gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gDeviceLt20;
-extern bool                 gTestReadWrite;
-
-#define MAX_TRIES   1
-#define MAX_CLAMPED 1
+extern bool gDeviceLt20;
+extern bool gTestReadWrite;
 
 const char *read2DKernelSourcePattern =
 "__kernel void sample_kernel( read_only %s input, sampler_t sampler, __global int *results )\n"
@@ -200,6 +194,11 @@ int test_read_image_set_2D( cl_device_id device, cl_context context, cl_command_
     cl_ulong maxAllocSize, memSize;
     image_descriptor imageInfo = { 0 };
     size_t pixelSize;
+
+    if (gTestReadWrite && checkForReadWriteImageSupport(device))
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
 
     imageInfo.format = format;
     imageInfo.depth = imageInfo.arraySize = imageInfo.slicePitch = 0;

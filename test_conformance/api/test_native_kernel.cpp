@@ -21,8 +21,6 @@
 
 #include "harness/conversions.h"
 
-extern cl_uint gRandomSeed;
-
 static void CL_CALLBACK test_native_kernel_fn( void *userData )
 {
     struct arg_struct {

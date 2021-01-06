@@ -10,6 +10,18 @@ platform:
 configuration:
   - Release
 
+environment:
+  matrix:
+   - SETARCH: i686
+   - SETARCH: x86_64
+
+matrix:
+  exclude:
+    - platform: Win32
+      SETARCH: x86_64
+    - platform: x64
+      SETARCH: i686
+
 before_build:
   # Setup environment:
   - ps: $env:TOP = $env:APPVEYOR_BUILD_FOLDER
@@ -22,7 +34,7 @@ before_build:
   - ps: cd OpenCL-ICD-Loader
   - ps: mkdir build
   - ps: cd build
-  - cmake -A%PLATFORM% -DOPENCL_ICD_LOADER_HEADERS_DIR=%TOP%/OpenCL-Headers/ ..
+  - cmake -A%PLATFORM% -DENABLE_OPENCL30_PROVISIONAL=1 -DOPENCL_ICD_LOADER_HEADERS_DIR=%TOP%/OpenCL-Headers/ ..
   - cmake --build . --config %CONFIGURATION%
   - ps: cd $env:TOP
   # Get the libclcxx standard library:
@@ -34,6 +46,7 @@ before_build:
           -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin
           -DOPENCL_LIBRARIES="OpenCL"
           -H. -Bbuild_win -A%PLATFORM%
+          -DD3D10_IS_SUPPORTED=ON -DD3D11_IS_SUPPORTED=ON -DARCH=%SETARCH%
 
 build:
   project: build_win\CLConform.sln

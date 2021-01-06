@@ -49,15 +49,8 @@ cl_int get_type_size( cl_context context, cl_command_queue queue, const char *ty
     {
         sizeof_kernel_code[0] = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
     }
-    size_t major = 0;
-    size_t minor = 0;
-    bool deviceLt20 = false;
-    int error = get_device_version(device, &major, &minor);
-    if (major < 2) {
-        deviceLt20 = true;
-    }
-
-    cl_int err = create_single_kernel_helper_with_build_options(context, &p, &k, 4, sizeof_kernel_code, "test_sizeof", deviceLt20 ? "" : "-cl-std=CL2.0");
+    cl_int err = create_single_kernel_helper_with_build_options(
+        context, &p, &k, 4, sizeof_kernel_code, "test_sizeof", nullptr);
     if( err )
         return err;
 

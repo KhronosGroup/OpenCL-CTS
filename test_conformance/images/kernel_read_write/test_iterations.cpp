@@ -22,20 +22,11 @@
     #include <setjmp.h>
 #endif
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool            gDebugTrace, gExtraValidateInfo, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestImage2DFromBuffer, gTestMipmaps;
-extern bool            gUseKernelSamplers;
-extern cl_filter_mode    gFilterModeToUse;
-extern cl_addressing_mode    gAddressModeToUse;
+extern bool gTestImage2DFromBuffer;
 extern uint64_t gRoundingStartValue;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
 extern bool gDeviceLt20;
-
-#define MAX_TRIES               1
-#define MAX_CLAMPED             1
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.
@@ -84,8 +75,6 @@ static const char *lodOffsetSource =
 
 static const char *offsetSource =
 "   int offset = tidY*get_image_width(input) + tidX;\n";
-
-#define ABS_ERROR( result, expected ) ( fabsf( (float)expected - (float)result ) )
 
 extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
                             int x, int y, int z, float *outData );
@@ -292,8 +281,6 @@ template <class T> int determine_validation_error( void *imagePtr, image_descrip
     return 0;
 }
 
-#define CLAMP( _val, _min, _max )           ((_val) < (_min) ? (_min) : (_val) > (_max) ? (_max) : (_val))
-
 static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *imageSampler, float *xOffsets, float *yOffsets, float xfract, float yfract, int normalized_coords, MTdata d )
 {
     size_t i = 0;
@@ -406,9 +393,6 @@ static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *im
         }
     }
 }
-#ifndef MAX
-    #define MAX( _a, _b )           ((_a) > (_b) ? (_a) : (_b))
-#endif
 
 int validate_image_2D_depth_results(void *imageValues, void *resultValues, double formatAbsoluteError, float *xOffsetValues, float *yOffsetValues,
                                                         ExplicitType outputType, int &numTries, int &numClamped, image_sampler_data *imageSampler, image_descriptor *imageInfo, size_t lod, char *imagePtr)
@@ -453,7 +437,7 @@ int validate_image_2D_depth_results(void *imageValues, void *resultValues, doubl
                                                                     xOffsetValues[ j ], yOffsetValues[ j ], 0.0f, norm_offset_x, norm_offset_y, 0.0f,
                                                                     imageSampler, expected, 0, &containsDenormals );
 
-                        float err1 = fabsf( resultPtr[0] - expected[0] );
+                        float err1 = ABS_ERROR(resultPtr[0], expected[0]);
                         // Clamp to the minimum absolute error for the format
                         if (err1 > 0 && err1 < formatAbsoluteError) { err1 = 0.0f; }
                         float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
@@ -472,7 +456,7 @@ int validate_image_2D_depth_results(void *imageValues, void *resultValues, doubl
                                                                              xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                              imageSampler, expected, 0, NULL );
 
-                                err1 = fabsf( resultPtr[0] - expected[0] );
+                                err1 = ABS_ERROR(resultPtr[0], expected[0]);
                             }
                         }
 
@@ -505,7 +489,7 @@ int validate_image_2D_depth_results(void *imageValues, void *resultValues, doubl
                                                                                     xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                     imageSampler, expected, 0, &containsDenormals );
 
-                            float err1 = fabsf( resultPtr[0] - expected[0] );
+                            float err1 = ABS_ERROR(resultPtr[0], expected[0]);
                             float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
 
 
@@ -520,7 +504,7 @@ int validate_image_2D_depth_results(void *imageValues, void *resultValues, doubl
                                                                                  xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                  imageSampler, expected, 0, NULL );
 
-                                    err1 = fabsf( resultPtr[0] - expected[0] );
+                                    err1 = ABS_ERROR(resultPtr[0], expected[0]);
                                 }
                             }
                             if( ! (err1 <= maxErr1) )
@@ -611,10 +595,10 @@ int validate_image_2D_results(void *imageValues, void *resultValues, double form
                                                                         xOffsetValues[ j ], yOffsetValues[ j ], 0.0f, norm_offset_x, norm_offset_y, 0.0f,
                                                                         imageSampler, expected, 0, &containsDenormals );
 
-                        float err1 = fabsf( resultPtr[0] - expected[0] );
-                        float err2 = fabsf( resultPtr[1] - expected[1] );
-                        float err3 = fabsf( resultPtr[2] - expected[2] );
-                        float err4 = fabsf( resultPtr[3] - expected[3] );
+                        float err1 = ABS_ERROR(resultPtr[0], expected[0]);
+                        float err2 = ABS_ERROR(resultPtr[1], expected[1]);
+                        float err3 = ABS_ERROR(resultPtr[2], expected[2]);
+                        float err4 = ABS_ERROR(resultPtr[3], expected[3]);
                         // Clamp to the minimum absolute error for the format
                         if (err1 > 0 && err1 < formatAbsoluteError) { err1 = 0.0f; }
                         if (err2 > 0 && err2 < formatAbsoluteError) { err2 = 0.0f; }
@@ -648,10 +632,10 @@ int validate_image_2D_results(void *imageValues, void *resultValues, double form
                                                                                  xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                  imageSampler, expected, 0, NULL );
 
-                                err1 = fabsf( resultPtr[0] - expected[0] );
-                                err2 = fabsf( resultPtr[1] - expected[1] );
-                                err3 = fabsf( resultPtr[2] - expected[2] );
-                                err4 = fabsf( resultPtr[3] - expected[3] );
+                                err1 = ABS_ERROR(resultPtr[0], expected[0]);
+                                err2 = ABS_ERROR(resultPtr[1], expected[1]);
+                                err3 = ABS_ERROR(resultPtr[2], expected[2]);
+                                err4 = ABS_ERROR(resultPtr[3], expected[3]);
                             }
                         }
 
@@ -689,10 +673,10 @@ int validate_image_2D_results(void *imageValues, void *resultValues, double form
                                                                                         xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                         imageSampler, expected, 0, &containsDenormals );
 
-                            float err1 = fabsf( resultPtr[0] - expected[0] );
-                            float err2 = fabsf( resultPtr[1] - expected[1] );
-                            float err3 = fabsf( resultPtr[2] - expected[2] );
-                            float err4 = fabsf( resultPtr[3] - expected[3] );
+                            float err1 = ABS_ERROR(resultPtr[0], expected[0]);
+                            float err2 = ABS_ERROR(resultPtr[1], expected[1]);
+                            float err3 = ABS_ERROR(resultPtr[2], expected[2]);
+                            float err4 = ABS_ERROR(resultPtr[3], expected[3]);
                             float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
                             float maxErr2 = MAX( maxErr * maxPixel.p[1], FLT_MIN );
                             float maxErr3 = MAX( maxErr * maxPixel.p[2], FLT_MIN );
@@ -719,10 +703,10 @@ int validate_image_2D_results(void *imageValues, void *resultValues, double form
                                                                                      xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                      imageSampler, expected, 0, NULL );
 
-                                    err1 = fabsf( resultPtr[0] - expected[0] );
-                                    err2 = fabsf( resultPtr[1] - expected[1] );
-                                    err3 = fabsf( resultPtr[2] - expected[2] );
-                                    err4 = fabsf( resultPtr[3] - expected[3] );
+                                    err1 = ABS_ERROR(resultPtr[0], expected[0]);
+                                    err2 = ABS_ERROR(resultPtr[1], expected[1]);
+                                    err3 = ABS_ERROR(resultPtr[2], expected[2]);
+                                    err4 = ABS_ERROR(resultPtr[3], expected[3]);
                                 }
                             }
                             if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    ||
@@ -1008,10 +992,13 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues, double
                             maxPixel = sample_image_pixel_float_offset( imageValues, imageInfo,
                                                                         xOffsetValues[ j ], yOffsetValues[ j ], 0.0f, norm_offset_x, norm_offset_y, 0.0f,
                                                                         imageSampler, expected, 0, &containsDenormals );
-                        float err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                        float err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                        float err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
-                        float err4 = fabsf( resultPtr[3] - expected[3] );
+                        float err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                               sRGBmap(expected[0]));
+                        float err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                               sRGBmap(expected[1]));
+                        float err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                               sRGBmap(expected[2]));
+                        float err4 = ABS_ERROR(resultPtr[3], expected[3]);
                         float maxErr = 0.5;
 
                         // Check if the result matches.
@@ -1034,10 +1021,13 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues, double
                                                                                  xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                  imageSampler, expected, 0, NULL );
 
-                                err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                                err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                                err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
-                                err4 = fabsf( resultPtr[3] - expected[3] );
+                                err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                                 sRGBmap(expected[0]));
+                                err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                                 sRGBmap(expected[1]));
+                                err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                                 sRGBmap(expected[2]));
+                                err4 = ABS_ERROR(resultPtr[3], expected[3]);
                             }
                         }
 
@@ -1075,10 +1065,13 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues, double
                                                                                         xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                         imageSampler, expected, 0, &containsDenormals );
 
-                            float err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                            float err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                            float err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
-                            float err4 = fabsf( resultPtr[3] - expected[3] );
+                            float err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                                   sRGBmap(expected[0]));
+                            float err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                                   sRGBmap(expected[1]));
+                            float err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                                   sRGBmap(expected[2]));
+                            float err4 = ABS_ERROR(resultPtr[3], expected[3]);
                             float maxErr = 0.6;
 
                             if( ! (err1 <= maxErr) || ! (err2 <= maxErr)    ||
@@ -1099,10 +1092,13 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues, double
                                                                                      xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                      imageSampler, expected, 0, NULL );
 
-                                    err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                                    err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                                    err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
-                                    err4 = fabsf( resultPtr[3] - expected[3] );
+                                    err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                                     sRGBmap(expected[0]));
+                                    err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                                     sRGBmap(expected[1]));
+                                    err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                                     sRGBmap(expected[2]));
+                                    err4 = ABS_ERROR(resultPtr[3], expected[3]);
                                 }
                             }
                             if( ! (err1 <= maxErr) || ! (err2 <= maxErr)    ||
@@ -1155,7 +1151,7 @@ bool validate_float_write_results( float *expected, float *actual, image_descrip
 {
     bool pass = true;
     // Compare floats
-    if( memcmp( expected, actual, 4 * get_format_channel_count( imageInfo->format ) ) != 0 )
+    if( memcmp( expected, actual, sizeof( cl_float ) * get_format_channel_count( imageInfo->format ) ) != 0 )
     {
         // 8.3.3 Fix up cases where we have NaNs or flushed denorms; "all other values must be preserved"
         for ( size_t j = 0; j < get_format_channel_count( imageInfo->format ); j++ )
@@ -1164,8 +1160,33 @@ bool validate_float_write_results( float *expected, float *actual, image_descrip
                 continue;
             if ( IsFloatSubnormal( expected[j] ) && actual[j] == 0.0f )
                 continue;
-            pass = false;
-            break;
+            if (expected[j] != actual[j])
+            {
+                pass = false;
+                break;
+            }
+        }
+    }
+    return pass;
+}
+
+bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo )
+{
+    bool pass = true;
+    // Compare half floats
+    if (memcmp(expected, actual, sizeof( cl_half ) * get_format_channel_count(imageInfo->format)) != 0) {
+
+        // 8.3.2 Fix up cases where we have NaNs or generated half denormals
+        for ( size_t j = 0; j < get_format_channel_count( imageInfo->format ); j++ ) {
+            if ( is_half_nan( expected[j] ) && is_half_nan( actual[j] ) )
+                continue;
+            if ( is_half_denorm( expected[j] ) && is_half_zero( actual[j] ) )
+                continue;
+            if (expected[j] != actual[j])
+            {
+                pass = false;
+                break;
+            }
         }
     }
     return pass;
@@ -1399,11 +1420,20 @@ int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel ke
     if( gDebugTrace )
         log_info( " - Creating kernel arguments...\n" );
 
-    xOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height, xOffsetValues, &error );
+    xOffsets =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_float) * imageInfo->width * imageInfo->height,
+                       xOffsetValues, &error);
     test_error( error, "Unable to create x offset buffer" );
-    yOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height, yOffsetValues, &error );
+    yOffsets =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_float) * imageInfo->width * imageInfo->height,
+                       yOffsetValues, &error);
     test_error( error, "Unable to create y offset buffer" );
-    results = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  get_explicit_type_size( outputType ) * 4 * imageInfo->width * imageInfo->height, NULL, &error );
+    results = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                             get_explicit_type_size(outputType) * 4
+                                 * imageInfo->width * imageInfo->height,
+                             NULL, &error);
     test_error( error, "Unable to create result buffer" );
 
     // Create sampler to use

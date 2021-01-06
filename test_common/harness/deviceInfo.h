@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017-2019 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,26 +19,27 @@
 // Configuration
 #include "../config.hpp"
 
+#include <string>
+
 #include <CL/opencl.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
+/* Helper to return a string containing device information for the specified
+ * device info parameter. */
+std::string get_device_info_string(cl_device_id device,
+                                   cl_device_info param_name);
 
 /* Determines if an extension is supported by a device. */
 int is_extension_available(cl_device_id device, const char *extensionName);
 
-/* Returns a newly allocated C string containing the supported extensions list for a device. */
-char *alloc_and_get_device_extensions_string(cl_device_id device);
+/* Returns a string containing the supported extensions list for a device. */
+std::string get_device_extensions_string(cl_device_id device);
 
-/* Returns a newly allocated C string containing the supported IL version(s) for a device. */
-char *alloc_and_get_device_il_version_string(cl_device_id device);
+/* Returns a string containing the supported IL version(s) for a device. */
+std::string get_device_il_version_string(cl_device_id device);
 
-/* Returns a newly allocated C string containing the supported OpenCL version for a device. */
-char *alloc_and_get_device_version_string(cl_device_id device);
+/* Returns a string containing the supported OpenCL version for a device. */
+std::string get_device_version_string(cl_device_id device);
 
-#ifdef __cplusplus
-}
-#endif // __cplusplus
-
+/* Returns a string containing the device name. */
+std::string get_device_name(cl_device_id device);
 #endif // _deviceInfo_h

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5.1)
 
 set( CONFORMANCE_SUFFIX "" )
 set(CLConform_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -16,7 +16,8 @@ else(CMAKE_BUILD_TYPE STREQUAL "release")
     set (BUILD_FLAVOR "debug")
 endif(CMAKE_BUILD_TYPE STREQUAL "release")
 
-add_definitions(-DCL_TARGET_OPENCL_VERSION=220)
+add_definitions(-DCL_TARGET_OPENCL_VERSION=300)
+add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_2_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_1_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_0_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)
@@ -59,10 +60,7 @@ set(CONFORMANCE_SUFFIX "" )
 #-----------------------------------------------------------
 #Vendor Customization File can be included here to provide a way to automatically
 #build driver as a dependency of the conformance tests, or other such CMake customization
-option(USE_VENDOR_CUSTOM_FILE "Use Vendor Customization File" OFF)
-if(USE_VENDOR_CUSTOM_FILE)
-    include(CMakeVendor.txt OPTIONAL)
-endif(USE_VENDOR_CUSTOM_FILE)
+include(CMakeVendor.txt OPTIONAL)
 
 #-----------------------------------------------------------
 # Development options for OpenCL C++ tests
@@ -124,6 +122,7 @@ endif (GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
 
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
+include(CheckCXXCompilerFlag)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
     set(CLConform_TARGET_ARCH ARM)
@@ -139,9 +138,24 @@ if(NOT DEFINED CLConform_TARGET_ARCH)
     message (FATAL_ERROR "Target architecture not recognised. Exiting.")
 endif()
 
+macro(add_cxx_flag_if_supported flag)
+    string(REGEX REPLACE "[-=+]" "" FLAG_NO_SIGNS ${flag})
+    check_cxx_compiler_flag(${flag} COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
+    if(COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
+    endif()
+endmacro(add_cxx_flag_if_supported)
+
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
+    add_cxx_flag_if_supported(-Wno-narrowing)
+    add_cxx_flag_if_supported(-Wno-format)
+    add_cxx_flag_if_supported(-Werror)
+    add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive
+    add_cxx_flag_if_supported(-Wno-error=absolute-value) # Issue 783
+    add_cxx_flag_if_supported(-Wno-error=unknown-pragmas) # Issue #785
+    add_cxx_flag_if_supported(-Wno-error=asm-operand-widths) # Issue #784
+    add_cxx_flag_if_supported(-Wno-error=overflow) # Fixed by #699
+
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float
     # to falsely fail. -ffloat-store also works, but WG suggested
@@ -150,23 +164,42 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
             STREQUAL "x86")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2 -mfpmath=sse")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -mfpmath=sse")
+
+        add_cxx_flag_if_supported(-frounding-math)
     endif()
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D__SSE__")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
 endif()
 
+if(MSVC)
+    # Don't warn when using standard non-secure functions.
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+endif()
+
 if( WIN32 AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
 endif()
 
 list(APPEND CLConform_LIBRARIES ${OPENCL_LIBRARIES})
 if(ANDROID)
     list(APPEND CLConform_LIBRARIES m)
-elseif(NOT WIN32)
+endif()
+if(NOT DEFINED LINK_PTHREAD)
+    if(ANDROID OR WIN32)
+        set(LINK_PTHREAD OFF)
+    else()
+        set(LINK_PTHREAD ON)
+    endif()
+endif()
+if(LINK_PTHREAD)
     list(APPEND CLConform_LIBRARIES pthread)
-endif(ANDROID)
+endif()
+
+if(DEFINED USE_GLES3)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLES3")
+endif()
 
 if(APPLE)
     find_library(corefoundation CoreFoundation)
@@ -215,18 +248,5 @@ if(WIN32)
 else(WIN32)
   add_custom_target( COPY_FILES${CONFORMANCE_SUFFIX} )
 endif(WIN32)
-
-# Copy required CL include directories into the build directory
-# as required for the compiler testing.
-
-# ... For running the compiler test on the command line.
-file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/includeTestDirectory" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_conformance/compiler)
-file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_conformance/compiler)
-
-# ... For running the compiler test with VisualStudio.
-if(MSVC)
-  file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/includeTestDirectory" DESTINATION "${CLConform_SOURCE_DIR}/build/test_conformance/compiler")
-  file(COPY "${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory" DESTINATION "${CLConform_SOURCE_DIR}/build/test_conformance/compiler")
-endif(MSVC)
 
 set_property(TARGET COPY_FILES${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")

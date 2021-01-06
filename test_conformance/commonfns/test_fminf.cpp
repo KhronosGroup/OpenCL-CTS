@@ -104,19 +104,22 @@ test_fminf(cl_device_id device, cl_context context, cl_command_queue queue, int 
     input_ptr[0] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
     input_ptr[1] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
     output_ptr = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, NULL );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * num_elements, NULL, NULL);
     if (!streams[0])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, NULL );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * num_elements, NULL, NULL);
     if (!streams[1])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
-    streams[2] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, NULL );
+    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * num_elements, NULL, NULL);
     if (!streams[2])
     {
         log_error("clCreateBuffer failed\n");

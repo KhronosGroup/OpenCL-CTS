@@ -152,7 +152,9 @@ test_clamp(cl_device_id device, cl_context context, cl_command_queue queue, int 
     // why does this go from 0 to 3?
     for( i = 0; i < 4; i++ )
     {
-        streams[ i ] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * num_elements, NULL, NULL );
+        streams[i] =
+            clCreateBuffer(context, CL_MEM_READ_WRITE,
+                           sizeof(cl_float) * num_elements, NULL, NULL);
         if (!streams[0])
         {
             log_error("clCreateBuffer failed\n");
@@ -162,8 +164,10 @@ test_clamp(cl_device_id device, cl_context context, cl_command_queue queue, int 
     if (test_double)
     for( i = 4; i < 8; i++ )
         {
-        streams[ i ] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_double) * num_elements, NULL, NULL );
-        if (!streams[0])
+            streams[i] =
+                clCreateBuffer(context, CL_MEM_READ_WRITE,
+                               sizeof(cl_double) * num_elements, NULL, NULL);
+            if (!streams[0])
             {
             log_error("clCreateBuffer failed\n");
             return -1;

@@ -218,10 +218,9 @@ int test_workitems(cl_device_id device, cl_context context, cl_command_queue que
     check_sub_groups_limits = false;
     if (is_extension_available(device, "cl_khr_subgroups"))
     {
-        size_t major, minor;
-        error = get_device_version(device, &major, &minor);
+        Version version = get_device_cl_version(device);
         RETURN_ON_ERROR(error)
-        check_sub_groups_limits = (major > 2 || major == 2 && minor >= 1); // clGetKernelSubGroupInfo is from 2.1
+        check_sub_groups_limits = (version >= Version(2,1)); // clGetKernelSubGroupInfo is from 2.1
         check_sub_groups = true;
     }
 #endif

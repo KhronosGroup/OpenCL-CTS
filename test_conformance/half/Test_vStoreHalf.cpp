@@ -21,6 +21,8 @@
 #include "cl_utils.h"
 #include "tests.h"
 
+#include <CL/cl_half.h>
+
 typedef struct ComputeReferenceInfoF_
 {
     float *x;
@@ -208,406 +210,44 @@ CheckD(cl_uint jid, cl_uint tid, void *userInfo)
     return ret;
 }
 
-static cl_ushort float2half_rte( float f );
-static cl_ushort float2half_rtz( float f );
-static cl_ushort float2half_rtp( float f );
-static cl_ushort float2half_rtn( float f );
-static cl_ushort double2half_rte( double f );
-static cl_ushort double2half_rtz( double f );
-static cl_ushort double2half_rtp( double f );
-static cl_ushort double2half_rtn( double f );
-
-static cl_ushort
-float2half_rte( float f )
+static cl_half float2half_rte(float f)
 {
-    union{ float f; cl_uint u; } u = {f};
-    cl_uint sign = (u.u >> 16) & 0x8000;
-    float x = fabsf(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (24-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-    }
-
-    // overflow
-    if( x >= MAKE_HEX_FLOAT(0x1.ffep15f, 0x1ffeL, 3) )
-        return 0x7c00 | sign;
-
-    // underflow
-    if( x <= MAKE_HEX_FLOAT(0x1.0p-25f, 0x1L, -25) )
-        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-    // very small
-    if( x < MAKE_HEX_FLOAT(0x1.8p-24f, 0x18L, -28) )
-        return sign | 1;
-
-    // half denormal
-    if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-    {
-        u.f = x * MAKE_HEX_FLOAT(0x1.0p-125f, 0x1L, -125);
-        return sign | u.u;
-    }
-
-    u.f *= MAKE_HEX_FLOAT(0x1.0p13f, 0x1L, 13);
-    u.u &= 0x7f800000;
-    x += u.f;
-    u.f = x - u.f;
-    u.f *= MAKE_HEX_FLOAT(0x1.0p-112f, 0x1L, -112);
-
-    return (u.u >> (24-11)) | sign;
+    return cl_half_from_float(f, CL_HALF_RTE);
 }
 
-static cl_ushort
-float2half_rtz( float f )
+static cl_half float2half_rtz(float f)
 {
-    union{ float f; cl_uint u; } u = {f};
-    cl_uint sign = (u.u >> 16) & 0x8000;
-    float x = fabsf(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (24-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-    }
-
-    // overflow
-    if( x >= MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16) )
-    {
-        if( x == INFINITY )
-            return 0x7c00 | sign;
-
-        return 0x7bff | sign;
-    }
-
-    // underflow
-    if( x < MAKE_HEX_FLOAT(0x1.0p-24f, 0x1L, -24) )
-        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-    // half denormal
-    if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-    {
-        x *= MAKE_HEX_FLOAT(0x1.0p24f, 0x1L, 24);
-        return (cl_ushort)((int) x | sign);
-    }
-
-    u.u &= 0xFFFFE000U;
-    u.u -= 0x38000000U;
-
-    return (u.u >> (24-11)) | sign;
+    return cl_half_from_float(f, CL_HALF_RTZ);
 }
 
-static cl_ushort
-float2half_rtp( float f )
+static cl_half float2half_rtp(float f)
 {
-    union{ float f; cl_uint u; } u = {f};
-    cl_uint sign = (u.u >> 16) & 0x8000;
-    float x = fabsf(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (24-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-    }
-
-    // overflow
-    if( f > MAKE_HEX_FLOAT(0x1.ffcp15f, 0x1ffcL, 3) )
-        return 0x7c00;
-
-    if( f <= MAKE_HEX_FLOAT(-0x1.0p16f, -0x1L, 16) )
-    {
-        if( f == -INFINITY )
-            return 0xfc00;
-
-        return 0xfbff;
-    }
-
-    // underflow
-    if( x < MAKE_HEX_FLOAT(0x1.0p-24f, 0x1L, -24) )
-    {
-        if( f > 0 )
-            return 1;
-        return sign;
-    }
-
-    // half denormal
-    if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-    {
-        x *= MAKE_HEX_FLOAT(0x1.0p24f, 0x1L, 24);
-        int r = (int) x;
-        r += (float) r != x && f > 0.0f;
-
-        return (cl_ushort)( r | sign);
-    }
-
-    float g = u.f;
-    u.u &= 0xFFFFE000U;
-    if( g > u.f )
-        u.u += 0x00002000U;
-    u.u -= 0x38000000U;
-
-    return (u.u >> (24-11)) | sign;
+    return cl_half_from_float(f, CL_HALF_RTP);
 }
 
-
-static cl_ushort
-float2half_rtn( float f )
+static cl_half float2half_rtn(float f)
 {
-    union{ float f; cl_uint u; } u = {f};
-    cl_uint sign = (u.u >> 16) & 0x8000;
-    float x = fabsf(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (24-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-    }
-
-    // overflow
-    if( f >= MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16) )
-    {
-        if( f == INFINITY )
-            return 0x7c00;
-
-        return 0x7bff;
-    }
-
-    if( f < MAKE_HEX_FLOAT(-0x1.ffcp15f, -0x1ffcL, 3) )
-        return 0xfc00;
-
-    // underflow
-    if( x < MAKE_HEX_FLOAT(0x1.0p-24f, 0x1L, -24) )
-    {
-        if( f < 0 )
-            return 0x8001;
-        return sign;
-    }
-
-    // half denormal
-    if( x < MAKE_HEX_FLOAT(0x1.0p-14f, 0x1L, -14) )
-    {
-        x *= MAKE_HEX_FLOAT(0x1.0p24f, 0x1L, 24);
-        int r = (int) x;
-        r += (float) r != x && f < 0.0f;
-
-        return (cl_ushort)( r | sign);
-    }
-
-    u.u &= 0xFFFFE000U;
-    if( u.f > f )
-        u.u += 0x00002000U;
-    u.u -= 0x38000000U;
-
-    return (u.u >> (24-11)) | sign;
+    return cl_half_from_float(f, CL_HALF_RTN);
 }
 
-static cl_ushort
-double2half_rte( double f )
+static cl_half double2half_rte(double f)
 {
-    union{ double f; cl_ulong u; } u = {f};
-    cl_ulong sign = (u.u >> 48) & 0x8000;
-    double x = fabs(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (53-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-    }
-
-    // overflow
-    if( x >= MAKE_HEX_DOUBLE(0x1.ffep15, 0x1ffeLL, 3) )
-        return 0x7c00 | sign;
-
-    // underflow
-    if( x <= MAKE_HEX_DOUBLE(0x1.0p-25, 0x1LL, -25) )
-        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-    // very small
-    if( x < MAKE_HEX_DOUBLE(0x1.8p-24, 0x18LL, -28) )
-        return sign | 1;
-
-    // half denormal
-    if( x < MAKE_HEX_DOUBLE(0x1.0p-14, 0x1LL, -14) )
-    {
-        u.f = x * MAKE_HEX_DOUBLE(0x1.0p-1050, 0x1LL, -1050);
-        return sign | u.u;
-    }
-
-    u.f *= MAKE_HEX_DOUBLE(0x1.0p42, 0x1LL, 42);
-    u.u &= 0x7ff0000000000000ULL;
-    x += u.f;
-    u.f = x - u.f;
-    u.f *= MAKE_HEX_DOUBLE(0x1.0p-1008, 0x1LL, -1008);
-
-    return (u.u >> (53-11)) | sign;
+    return cl_half_from_double(f, CL_HALF_RTE);
 }
 
-static cl_ushort
-double2half_rtz( double f )
+static cl_half double2half_rtz(double f)
 {
-    union{ double f; cl_ulong u; } u = {f};
-    cl_ulong sign = (u.u >> 48) & 0x8000;
-    double x = fabs(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (53-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-    }
-
-    if( x == INFINITY )
-        return 0x7c00 | sign;
-
-    // overflow
-    if( x >= MAKE_HEX_DOUBLE(0x1.0p16, 0x1LL, 16) )
-        return 0x7bff | sign;
-
-    // underflow
-    if( x < MAKE_HEX_DOUBLE(0x1.0p-24, 0x1LL, -24) )
-        return sign;    // The halfway case can return 0x0001 or 0. 0 is even.
-
-    // half denormal
-    if( x < MAKE_HEX_DOUBLE(0x1.0p-14, 0x1LL, -14) )
-    {
-        x *= MAKE_HEX_FLOAT(0x1.0p24f, 0x1L, 24);
-        return (cl_ushort)((int) x | sign);
-    }
-
-    u.u &= 0xFFFFFC0000000000ULL;
-    u.u -= 0x3F00000000000000ULL;
-
-    return (u.u >> (53-11)) | sign;
+    return cl_half_from_double(f, CL_HALF_RTZ);
 }
 
-static cl_ushort
-double2half_rtp( double f )
+static cl_half double2half_rtp(double f)
 {
-    union{ double f; cl_ulong u; } u = {f};
-    cl_ulong sign = (u.u >> 48) & 0x8000;
-    double x = fabs(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (53-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-    }
-
-    // overflow
-    if( f > MAKE_HEX_DOUBLE(0x1.ffcp15, 0x1ffcLL, 3) )
-        return 0x7c00;
-
-    if( f <= MAKE_HEX_DOUBLE(-0x1.0p16, -0x1LL, 16) )
-    {
-        if( f == -INFINITY )
-            return 0xfc00;
-
-        return 0xfbff;
-    }
-
-    // underflow
-    if( x < MAKE_HEX_DOUBLE(0x1.0p-24, 0x1LL, -24) )
-    {
-        if( f > 0 )
-            return 1;
-        return sign;
-    }
-
-    // half denormal
-    if( x < MAKE_HEX_DOUBLE(0x1.0p-14, 0x1LL, -14) )
-    {
-        x *= MAKE_HEX_FLOAT(0x1.0p24f, 0x1L, 24);
-        int r = (int) x;
-        if( 0 == sign )
-            r += (double) r != x;
-
-        return (cl_ushort)( r | sign);
-    }
-
-    double g = u.f;
-    u.u &= 0xFFFFFC0000000000ULL;
-    if( g != u.f && 0 == sign)
-        u.u += 0x0000040000000000ULL;
-    u.u -= 0x3F00000000000000ULL;
-
-    return (u.u >> (53-11)) | sign;
+    return cl_half_from_double(f, CL_HALF_RTP);
 }
 
-
-static cl_ushort
-double2half_rtn( double f )
+static cl_half double2half_rtn(double f)
 {
-    union{ double f; cl_ulong u; } u = {f};
-    cl_ulong sign = (u.u >> 48) & 0x8000;
-    double x = fabs(f);
-
-    //Nan
-    if( x != x )
-    {
-        u.u >>= (53-11);
-        u.u &= 0x7fff;
-        u.u |= 0x0200;      //silence the NaN
-        return u.u | sign;
-    }
-
-    // overflow
-    if( f >= MAKE_HEX_DOUBLE(0x1.0p16, 0x1LL, 16) )
-    {
-        if( f == INFINITY )
-            return 0x7c00;
-
-        return 0x7bff;
-    }
-
-    if( f < MAKE_HEX_DOUBLE(-0x1.ffcp15, -0x1ffcLL, 3) )
-        return 0xfc00;
-
-    // underflow
-    if( x < MAKE_HEX_DOUBLE(0x1.0p-24, 0x1LL, -24) )
-    {
-        if( f < 0 )
-            return 0x8001;
-        return sign;
-    }
-
-    // half denormal
-    if( x < MAKE_HEX_DOUBLE(0x1.0p-14, 0x1LL, -14) )
-    {
-        x *= MAKE_HEX_DOUBLE(0x1.0p24, 0x1LL, 24);
-        int r = (int) x;
-        if( sign )
-            r += (double) r != x;
-
-        return (cl_ushort)( r | sign);
-    }
-
-    double g = u.f;
-    u.u &= 0xFFFFFC0000000000ULL;
-    if( g < u.f && sign)
-        u.u += 0x0000040000000000ULL;
-    u.u -= 0x3F00000000000000ULL;
-
-    return (u.u >> (53-11)) | sign;
+    return cl_half_from_double(f, CL_HALF_RTN);
 }
 
 int test_vstore_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
@@ -1056,30 +696,30 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
 
     ComputeReferenceInfoF fref;
     fref.x = (float *)gIn_single;
-    fref.r = (cl_ushort *)gOut_half_reference;
+    fref.r = (cl_half *)gOut_half_reference;
     fref.f = referenceFunc;
     fref.lim = blockCount;
     fref.count = (blockCount + threadCount - 1) / threadCount;
 
     CheckResultInfoF fchk;
     fchk.x = (const float *)gIn_single;
-    fchk.r = (const cl_ushort *)gOut_half_reference;
-    fchk.s = (const cl_ushort *)gOut_half;
+    fchk.r = (const cl_half *)gOut_half_reference;
+    fchk.s = (const cl_half *)gOut_half;
     fchk.f = referenceFunc;
     fchk.lim = blockCount;
     fchk.count = (blockCount + threadCount - 1) / threadCount;
 
     ComputeReferenceInfoD dref;
     dref.x = (double *)gIn_double;
-    dref.r = (cl_ushort *)gOut_half_reference_double;
+    dref.r = (cl_half *)gOut_half_reference_double;
     dref.f = doubleReferenceFunc;
     dref.lim = blockCount;
     dref.count = (blockCount + threadCount - 1) / threadCount;
 
     CheckResultInfoD dchk;
     dchk.x = (const double *)gIn_double;
-    dchk.r = (const cl_ushort *)gOut_half_reference_double;
-    dchk.s = (const cl_ushort *)gOut_half;
+    dchk.r = (const cl_half *)gOut_half_reference_double;
+    dchk.s = (const cl_half *)gOut_half;
     dchk.f = doubleReferenceFunc;
     dchk.lim = blockCount;
     dchk.count = (blockCount + threadCount - 1) / threadCount;
@@ -1124,7 +764,9 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
                 cl_uint pattern = 0xdeaddead;
                 memset_pattern4( gOut_half, &pattern, BUFFER_SIZE/2);
 
-                error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE,
+                                             0, count * sizeof(cl_half),
+                                             gOut_half, 0, NULL, NULL);
                 if (error) {
                     vlog_error( "Failure in clWriteArray\n" );
                     gFailCount++;
@@ -1139,7 +781,9 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
                     goto exit;
                 }
 
-                error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0,
+                                            count * sizeof(cl_half), gOut_half,
+                                            0, NULL, NULL);
                 if (error) {
                     vlog_error( "Failure in clReadArray\n" );
                     gFailCount++;
@@ -1155,7 +799,9 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
                 if (gTestDouble) {
                     memset_pattern4( gOut_half, &pattern, BUFFER_SIZE/2);
 
-                    error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                    error = clEnqueueWriteBuffer(
+                        gQueue, gOutBuffer_half, CL_FALSE, 0,
+                        count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
                     if (error) {
                         vlog_error( "Failure in clWriteArray\n" );
                         gFailCount++;
@@ -1170,7 +816,9 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
                         goto exit;
                     }
 
-                    error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                    error = clEnqueueReadBuffer(
+                        gQueue, gOutBuffer_half, CL_TRUE, 0,
+                        count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
                     if (error) {
                         vlog_error( "Failure in clReadArray\n" );
                         gFailCount++;
@@ -1645,30 +1293,30 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
 
     ComputeReferenceInfoF fref;
     fref.x = (float *)gIn_single;
-    fref.r = (cl_ushort *)gOut_half_reference;
+    fref.r = (cl_half *)gOut_half_reference;
     fref.f = referenceFunc;
     fref.lim = blockCount;
     fref.count = (blockCount + threadCount - 1) / threadCount;
 
     CheckResultInfoF fchk;
     fchk.x = (const float *)gIn_single;
-    fchk.r = (const cl_ushort *)gOut_half_reference;
-    fchk.s = (const cl_ushort *)gOut_half;
+    fchk.r = (const cl_half *)gOut_half_reference;
+    fchk.s = (const cl_half *)gOut_half;
     fchk.f = referenceFunc;
     fchk.lim = blockCount;
     fchk.count = (blockCount + threadCount - 1) / threadCount;
 
     ComputeReferenceInfoD dref;
     dref.x = (double *)gIn_double;
-    dref.r = (cl_ushort *)gOut_half_reference_double;
+    dref.r = (cl_half *)gOut_half_reference_double;
     dref.f = doubleReferenceFunc;
     dref.lim = blockCount;
     dref.count = (blockCount + threadCount - 1) / threadCount;
 
     CheckResultInfoD dchk;
     dchk.x = (const double *)gIn_double;
-    dchk.r = (const cl_ushort *)gOut_half_reference_double;
-    dchk.s = (const cl_ushort *)gOut_half;
+    dchk.r = (const cl_half *)gOut_half_reference_double;
+    dchk.s = (const cl_half *)gOut_half;
     dchk.f = doubleReferenceFunc;
     dchk.lim = blockCount;
     dchk.count = (blockCount + threadCount - 1) / threadCount;
@@ -1713,7 +1361,9 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
                 cl_uint pattern = 0xdeaddead;
                 memset_pattern4(gOut_half, &pattern, BUFFER_SIZE/2);
 
-                error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE,
+                                             0, count * sizeof(cl_half),
+                                             gOut_half, 0, NULL, NULL);
                 if (error) {
                     vlog_error( "Failure in clWriteArray\n" );
                     gFailCount++;
@@ -1728,7 +1378,9 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
                     goto exit;
                 }
 
-                error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0,
+                                            count * sizeof(cl_half), gOut_half,
+                                            0, NULL, NULL);
                 if (error) {
                     vlog_error( "Failure in clReadArray\n" );
                     gFailCount++;
@@ -1744,7 +1396,9 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
                 if (gTestDouble) {
                     memset_pattern4(gOut_half, &pattern, BUFFER_SIZE/2);
 
-                    error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                    error = clEnqueueWriteBuffer(
+                        gQueue, gOutBuffer_half, CL_FALSE, 0,
+                        count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
                     if (error) {
                         vlog_error( "Failure in clWriteArray\n" );
                         gFailCount++;
@@ -1759,7 +1413,9 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
                         goto exit;
                     }
 
-                    error = clEnqueueReadBuffer(gQueue, gOutBuffer_half, CL_TRUE, 0, count * sizeof(cl_ushort), gOut_half, 0, NULL, NULL);
+                    error = clEnqueueReadBuffer(
+                        gQueue, gOutBuffer_half, CL_TRUE, 0,
+                        count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
                     if (error) {
                         vlog_error( "Failure in clReadArray\n" );
                         gFailCount++;

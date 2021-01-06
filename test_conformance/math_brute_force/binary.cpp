@@ -18,29 +18,33 @@
 #include <string.h>
 #include "FunctionList.h"
 
-int TestFunc_Float_Float_Float(const Func *f, MTdata);
-int TestFunc_Double_Double_Double(const Func *f, MTdata);
-int TestFunc_Float_Float_Float_nextafter(const Func *f, MTdata);
-int TestFunc_Double_Double_Double_nextafter(const Func *f, MTdata);
-int TestFunc_Float_Float_Float_common(const Func *f, MTdata, int isNextafter);
-int TestFunc_Double_Double_Double_common(const Func *f, MTdata, int isNextafter);
+int TestFunc_Float_Float_Float(const Func *f, MTdata, bool relaxedMode);
+int TestFunc_Double_Double_Double(const Func *f, MTdata, bool relaxedMode);
+int TestFunc_Float_Float_Float_nextafter(const Func *f, MTdata,
+                                         bool relaxedMode);
+int TestFunc_Double_Double_Double_nextafter(const Func *f, MTdata,
+                                            bool relaxedMode);
+int TestFunc_Float_Float_Float_common(const Func *f, MTdata, int isNextafter,
+                                      bool relaxedMode);
+int TestFunc_Double_Double_Double_common(const Func *f, MTdata, int isNextafter,
+                                         bool relaxedMode);
 
 const float twoToMinus126 = MAKE_HEX_FLOAT(0x1p-126f, 1, -126);
 const double twoToMinus1022 = MAKE_HEX_DOUBLE(0x1p-1022, 1, -1022);
 
-#if defined( __cplusplus )
-    extern "C"
-#endif
-const vtbl _binary = { "binary", TestFunc_Float_Float_Float, TestFunc_Double_Double_Double };
+extern const vtbl _binary = { "binary", TestFunc_Float_Float_Float,
+                              TestFunc_Double_Double_Double };
 
-#if defined( __cplusplus )
-    extern "C"
-#endif
-const vtbl _binary_nextafter = { "binary_nextafter", TestFunc_Float_Float_Float_nextafter, TestFunc_Double_Double_Double_nextafter };
+extern const vtbl _binary_nextafter = {
+    "binary_nextafter", TestFunc_Float_Float_Float_nextafter,
+    TestFunc_Double_Double_Double_nextafter
+};
 
-static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p );
+static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
+                       cl_kernel *k, cl_program *p, bool relaxedMode);
 
-static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p )
+static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
+                       cl_kernel *k, cl_program *p, bool relaxedMode)
 {
     const char *c[] = {     "__kernel void math_kernel", sizeNames[vectorSize], "( __global float", sizeNames[vectorSize], "* out, __global float", sizeNames[vectorSize], "* in1, __global float", sizeNames[vectorSize], "* in2 )\n"
                             "{\n"
@@ -100,10 +104,13 @@ static int BuildKernel( const char *name, int vectorSize, cl_uint kernel_count, 
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
 
-    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);
+    return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p,
+                       relaxedMode);
 }
 
-static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_count, cl_kernel *k, cl_program *p )
+static int BuildKernelDouble(const char *name, int vectorSize,
+                             cl_uint kernel_count, cl_kernel *k, cl_program *p,
+                             bool relaxedMode)
 {
     const char *c[] = {     "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
                             "__kernel void math_kernel", sizeNames[vectorSize], "( __global double", sizeNames[vectorSize], "* out, __global double", sizeNames[vectorSize], "* in1, __global double", sizeNames[vectorSize], "* in2 )\n"
@@ -165,7 +172,8 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_uint kernel_c
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
 
-    return MakeKernels(kern, (cl_uint) kernSize, testName, kernel_count, k, p);
+    return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p,
+                       relaxedMode);
 }
 
 // A table of more difficult cases to get right
@@ -194,6 +202,7 @@ typedef struct BuildKernelInfo
     cl_kernel   **kernels;
     cl_program  *programs;
     const char  *nameInCode;
+    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 }BuildKernelInfo;
 
 static cl_int BuildKernel_FloatFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p );
@@ -201,7 +210,8 @@ static cl_int BuildKernel_FloatFn( cl_uint job_id, cl_uint thread_id UNUSED, voi
 {
     BuildKernelInfo *info = (BuildKernelInfo*) p;
     cl_uint i = info->offset + job_id;
-    return BuildKernel( info->nameInCode, i, info->kernel_count, info->kernels[i], info->programs + i );
+    return BuildKernel(info->nameInCode, i, info->kernel_count,
+                       info->kernels[i], info->programs + i, info->relaxedMode);
 }
 
 static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p );
@@ -209,7 +219,9 @@ static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, vo
 {
     BuildKernelInfo *info = (BuildKernelInfo*) p;
     cl_uint i = info->offset + job_id;
-    return BuildKernelDouble( info->nameInCode, i, info->kernel_count, info->kernels[i], info->programs + i );
+    return BuildKernelDouble(info->nameInCode, i, info->kernel_count,
+                             info->kernels[i], info->programs + i,
+                             info->relaxedMode);
 }
 
 //Thread specific data for a worker thread
@@ -242,11 +254,14 @@ typedef struct TestInfo
     int         isFDim;
     int         skipNanInf;
     int         isNextafter;
-}TestInfo;
+    bool relaxedMode; // True if test is running in relaxed mode, false
+                      // otherwise.
+} TestInfo;
 
 static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *p );
 
-int TestFunc_Float_Float_Float_common(const Func *f, MTdata d, int isNextafter)
+int TestFunc_Float_Float_Float_common(const Func *f, MTdata d, int isNextafter,
+                                      bool relaxedMode)
 {
     TestInfo    test_info;
     cl_int      error;
@@ -256,7 +271,7 @@ int TestFunc_Float_Float_Float_common(const Func *f, MTdata d, int isNextafter)
     double      maxErrorVal2 = 0.0;
     int         skipTestingRelaxed = 0;
 
-    logFunctionInfo(f->name,sizeof(cl_float),gTestFastRelaxed);
+    logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
     // Init test_info
     memset( &test_info, 0, sizeof( test_info ) );
@@ -286,6 +301,7 @@ int TestFunc_Float_Float_Float_common(const Func *f, MTdata d, int isNextafter)
     test_info.isFDim = 0 == strcmp( "fdim", f->nameInCode );
     test_info.skipNanInf = test_info.isFDim  && ! gInfNanSupport;
     test_info.isNextafter = isNextafter;
+    test_info.relaxedMode = relaxedMode;
     // cl_kernels aren't thread safe, so we make one for each vector size for every thread
     for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
     {
@@ -344,7 +360,10 @@ int TestFunc_Float_Float_Float_common(const Func *f, MTdata d, int isNextafter)
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = { gMinVectorSizeIndex, test_info.threadCount, test_info.k, test_info.programs, f->nameInCode };
+        BuildKernelInfo build_info = {
+            gMinVectorSizeIndex, test_info.threadCount, test_info.k,
+            test_info.programs,  f->nameInCode,         relaxedMode
+        };
         if( (error = ThreadPool_Do( BuildKernel_FloatFn, gMaxVectorSizeIndex - gMinVectorSizeIndex, &build_info ) ))
             goto exit;
     }
@@ -481,9 +500,10 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
     size_t      buffer_size = buffer_elements * sizeof( cl_float );
     cl_uint     base = job_id * (cl_uint) job->step;
     ThreadInfo  *tinfo = job->tinfo + thread_id;
-    float       ulps = job->ulps;
     fptr        func = job->f->func;
     int         ftz = job->ftz;
+    bool relaxedMode = job->relaxedMode;
+    float ulps = getAllowedUlpError(job->f, relaxedMode);
     MTdata      d = tinfo->d;
     cl_uint     j, k;
     cl_int      error;
@@ -498,7 +518,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
     RoundingMode oldRoundMode;
     int skipVerification = 0;
 
-    if(gTestFastRelaxed)
+    if (relaxedMode)
     {
       if (strcmp(name,"pow")==0 && gFastRelaxedDerived)
       {
@@ -508,7 +528,6 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
       }else
       {
         func = job->f->rfunc;
-        ulps = job->f->relaxed_error;
       }
     }
 
@@ -712,7 +731,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
                     // As per OpenCL 2.0 spec, section 5.8.4.3, enabling fast-relaxed-math mode also enables
                     // -cl-finite-math-only optimization. This optimization allows to assume that arguments and
                     // results are not NaNs or +/-INFs. Hence, accept any result if inputs or results are NaNs or INFs.
-                    if ( gTestFastRelaxed || skipNanInf)
+                    if (relaxedMode || skipNanInf)
                     {
                         if( skipNanInf && overflow[j])
                             continue;
@@ -774,7 +793,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
                                 // As per OpenCL 2.0 spec, section 5.8.4.3, enabling fast-relaxed-math mode also enables
                                 // -cl-finite-math-only optimization. This optimization allows to assume that arguments and
                                 // results are not NaNs or +/-INFs. Hence, accept any result if inputs or results are NaNs or INFs.
-                                if( gTestFastRelaxed || skipNanInf )
+                                if (relaxedMode || skipNanInf)
                                 {
                                     if( fetestexcept(FE_OVERFLOW) && skipNanInf )
                                         continue;
@@ -819,7 +838,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
                                     // As per OpenCL 2.0 spec, section 5.8.4.3, enabling fast-relaxed-math mode also enables
                                     // -cl-finite-math-only optimization. This optimization allows to assume that arguments and
                                     // results are not NaNs or +/-INFs. Hence, accept any result if inputs or results are NaNs or INFs.
-                                    if( gTestFastRelaxed || skipNanInf )
+                                    if (relaxedMode || skipNanInf)
                                     {
                                         if( fetestexcept(FE_OVERFLOW) && skipNanInf )
                                             continue;
@@ -872,7 +891,7 @@ static cl_int TestFloat( cl_uint job_id, cl_uint thread_id, void *data  )
                                 // As per OpenCL 2.0 spec, section 5.8.4.3, enabling fast-relaxed-math mode also enables
                                 // -cl-finite-math-only optimization. This optimization allows to assume that arguments and
                                 // results are not NaNs or +/-INFs. Hence, accept any result if inputs or results are NaNs or INFs.
-                                if ( gTestFastRelaxed || skipNanInf )
+                                if (relaxedMode || skipNanInf)
                                 {
                                     // Note: no double rounding here.  Reference functions calculate in single precision.
                                     if( overflow[j] && skipNanInf)
@@ -979,7 +998,8 @@ static size_t specialValuesDoubleCount = sizeof( specialValuesDouble ) / sizeof(
 
 static cl_int TestDouble( cl_uint job_id, cl_uint thread_id, void *p );
 
-int TestFunc_Double_Double_Double_common(const Func *f, MTdata d, int isNextafter)
+int TestFunc_Double_Double_Double_common(const Func *f, MTdata d,
+                                         int isNextafter, bool relaxedMode)
 {
     TestInfo    test_info;
     cl_int      error;
@@ -988,7 +1008,7 @@ int TestFunc_Double_Double_Double_common(const Func *f, MTdata d, int isNextafte
     double      maxErrorVal = 0.0;
     double      maxErrorVal2 = 0.0;
 
-    logFunctionInfo(f->name,sizeof(cl_double),gTestFastRelaxed);
+    logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
     // Init test_info
     memset( &test_info, 0, sizeof( test_info ) );
@@ -1077,7 +1097,10 @@ int TestFunc_Double_Double_Double_common(const Func *f, MTdata d, int isNextafte
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = { gMinVectorSizeIndex, test_info.threadCount, test_info.k, test_info.programs, f->nameInCode };
+        BuildKernelInfo build_info = {
+            gMinVectorSizeIndex, test_info.threadCount, test_info.k,
+            test_info.programs,  f->nameInCode,         relaxedMode
+        };
         if( (error = ThreadPool_Do( BuildKernel_DoubleFn, gMaxVectorSizeIndex - gMinVectorSizeIndex, &build_info ) ))
             goto exit;
     }
@@ -1536,23 +1559,25 @@ exit:
 
 }
 
-int TestFunc_Float_Float_Float(const Func *f, MTdata d)
+int TestFunc_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 {
-    return TestFunc_Float_Float_Float_common(f, d, 0);
+    return TestFunc_Float_Float_Float_common(f, d, 0, relaxedMode);
 }
 
-int TestFunc_Double_Double_Double(const Func *f, MTdata d)
+int TestFunc_Double_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 {
-    return TestFunc_Double_Double_Double_common(f, d, 0);
+    return TestFunc_Double_Double_Double_common(f, d, 0, relaxedMode);
 }
 
-int TestFunc_Float_Float_Float_nextafter(const Func *f, MTdata d)
+int TestFunc_Float_Float_Float_nextafter(const Func *f, MTdata d,
+                                         bool relaxedMode)
 {
-    return TestFunc_Float_Float_Float_common(f, d, 1);
+    return TestFunc_Float_Float_Float_common(f, d, 1, relaxedMode);
 }
 
-int TestFunc_Double_Double_Double_nextafter(const Func *f, MTdata d)
+int TestFunc_Double_Double_Double_nextafter(const Func *f, MTdata d,
+                                            bool relaxedMode)
 {
-    return TestFunc_Double_Double_Double_common(f, d, 1);
+    return TestFunc_Double_Double_Double_common(f, d, 1, relaxedMode);
 }
 

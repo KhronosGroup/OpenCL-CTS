@@ -7,7 +7,7 @@
                OpCapability Linkage
                OpCapability Kernel
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %1 "loop_merge_branch_conditional_dont_unroll"
+               OpEntryPoint Kernel %1 "loop_merge_branch_conditional_dont_unroll" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %in "in"
                OpName %rep "rep"
@@ -20,7 +20,7 @@
                OpGroupDecorate %6 %res %in
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
-%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %bool = OpTypeBool
        %void = OpTypeVoid
      %uint_0 = OpConstant %uint 0
@@ -28,7 +28,7 @@
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
 %_ptr_Function_uint = OpTypePointer Function %uint
          %17 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint %uint %uint
-%gl_GlobalInvocationID = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
           %1 = OpFunction %void None %17
         %res = OpFunctionParameter %_ptr_CrossWorkgroup_uint
          %in = OpFunctionParameter %_ptr_CrossWorkgroup_uint

@@ -114,7 +114,9 @@ AUTO_TEST_CASE(test_global_scope_dtor_is_executed)
     // host vector, size == count, output[0...count-1] == 0xbeefbeef (3203383023)
     // values in output __MUST BE__ greater than 0 for the test to work correctly
     std::vector<cl_uint> output(count, cl_uint(0xbeefbeef));
-    output_buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * output.size(), NULL, &error);
+    output_buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_uint) * output.size(), NULL, &error);
     RETURN_ON_CL_ERROR(error, "clCreateBuffer")
 
     error = clEnqueueWriteBuffer(
@@ -297,7 +299,9 @@ AUTO_TEST_CASE(test_global_scope_dtors_executed_once)
     // values in output __MUST BE__ greater than 0 for the test to work correctly
     cl_uint init_value = cl_uint(0xbeefbeef);
     std::vector<cl_uint> output(count, init_value);
-    output_buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * output.size(), NULL, &error);
+    output_buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_uint) * output.size(), NULL, &error);
     RETURN_ON_CL_ERROR(error, "clCreateBuffer")
 
     error = clEnqueueWriteBuffer(
@@ -497,7 +501,9 @@ AUTO_TEST_CASE(test_global_scope_dtor_ndrange)
     // host vector, size == count, output[0...count-1] == 0xbeefbeef (3203383023)
     // values in output __MUST BE__ greater than 0 for the test to work correctly
     std::vector<cl_uint> output(count, cl_uint(0xbeefbeef));
-    output_buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * output.size(), NULL, &error);
+    output_buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_uint) * output.size(), NULL, &error);
     RETURN_ON_CL_ERROR(error, "clCreateBuffer")
 
     error = clEnqueueWriteBuffer(

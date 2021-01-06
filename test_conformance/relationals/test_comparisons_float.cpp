@@ -17,8 +17,6 @@
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
-extern "C" { extern cl_uint gRandomSeed;};
-
 #define TEST_SIZE 512
 
 const char *equivTestKernelPattern_float =
@@ -63,7 +61,7 @@ const char *equivTestKernelPatternLessGreater_float3 =
 "}\n";
 
 typedef bool (*equivVerifyFn)( float inDataA, float inDataB );
-extern "C" { extern int gInfNanSupport; };
+extern int gInfNanSupport;
 
 int IsFloatInfinity(float x)
 {
@@ -160,13 +158,17 @@ int test_equiv_kernel_float(cl_context context, cl_command_queue queue, const ch
     generate_equiv_test_data_float( inDataA, vecSize, true, d );
     generate_equiv_test_data_float( inDataB, vecSize, false, d );
 
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof( cl_float ) * vecSize * TEST_SIZE, &inDataA, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                sizeof(cl_float) * vecSize * TEST_SIZE,
+                                &inDataA, &error);
     if( streams[0] == NULL )
     {
         print_error( error, "Creating input array A failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof( cl_float ) * vecSize * TEST_SIZE, &inDataB, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                sizeof(cl_float) * vecSize * TEST_SIZE,
+                                &inDataB, &error);
     if( streams[1] == NULL )
     {
         print_error( error, "Creating input array A failed!\n");

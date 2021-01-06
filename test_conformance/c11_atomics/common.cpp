@@ -44,16 +44,12 @@ const char *get_memory_scope_type_name(TExplicitMemoryScopeType scopeType)
 {
   switch (scopeType)
   {
-  case MEMORY_SCOPE_EMPTY:
-    return "";
-  case MEMORY_SCOPE_WORK_GROUP:
-    return "memory_scope_work_group";
-  case MEMORY_SCOPE_DEVICE:
-    return "memory_scope_device";
-  case MEMORY_SCOPE_ALL_SVM_DEVICES:
-    return "memory_scope_all_svm_devices";
-  default:
-    return 0;
+      case MEMORY_SCOPE_EMPTY: return "";
+      case MEMORY_SCOPE_WORK_GROUP: return "memory_scope_work_group";
+      case MEMORY_SCOPE_DEVICE: return "memory_scope_device";
+      case MEMORY_SCOPE_ALL_DEVICES: return "memory_scope_all_devices";
+      case MEMORY_SCOPE_ALL_SVM_DEVICES: return "memory_scope_all_svm_devices";
+      default: return 0;
   }
 }
 
@@ -206,3 +202,80 @@ template<> cl_long AtomicTypeExtendedInfo<cl_long>::MaxValue() {return CL_LONG_M
 template<> cl_ulong AtomicTypeExtendedInfo<cl_ulong>::MaxValue() {return CL_ULONG_MAX;}
 template<> cl_float AtomicTypeExtendedInfo<cl_float>::MaxValue() {return CL_FLT_MAX;}
 template<> cl_double AtomicTypeExtendedInfo<cl_double>::MaxValue() {return CL_DBL_MAX;}
+
+cl_int getSupportedMemoryOrdersAndScopes(
+    cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
+    std::vector<TExplicitMemoryScopeType> &memoryScopes)
+{
+    // The CL_DEVICE_ATOMIC_MEMORY_CAPABILITES is missing before 3.0, but since
+    // all orderings and scopes are required for 2.X devices and this test is
+    // skipped before 2.0 we can safely return all orderings and scopes if the
+    // device is 2.X. Query device for the supported orders.
+    if (get_device_cl_version(device) < Version{ 3, 0 })
+    {
+        memoryOrders.push_back(MEMORY_ORDER_EMPTY);
+        memoryOrders.push_back(MEMORY_ORDER_RELAXED);
+        memoryOrders.push_back(MEMORY_ORDER_ACQUIRE);
+        memoryOrders.push_back(MEMORY_ORDER_RELEASE);
+        memoryOrders.push_back(MEMORY_ORDER_ACQ_REL);
+        memoryOrders.push_back(MEMORY_ORDER_SEQ_CST);
+        memoryScopes.push_back(MEMORY_SCOPE_EMPTY);
+        memoryScopes.push_back(MEMORY_SCOPE_WORK_GROUP);
+        memoryScopes.push_back(MEMORY_SCOPE_DEVICE);
+        memoryScopes.push_back(MEMORY_SCOPE_ALL_SVM_DEVICES);
+        return CL_SUCCESS;
+    }
+
+    // For a 3.0 device we can query the supported orderings and scopes
+    // directly.
+    cl_device_atomic_capabilities atomic_capabilities{};
+    test_error(
+        clGetDeviceInfo(device, CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES,
+                        sizeof(atomic_capabilities), &atomic_capabilities,
+                        nullptr),
+        "clGetDeviceInfo failed for CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES\n");
+
+    // Provided we succeeded, we can start filling the vectors.
+    if (atomic_capabilities & CL_DEVICE_ATOMIC_ORDER_RELAXED)
+    {
+        memoryOrders.push_back(MEMORY_ORDER_RELAXED);
+    }
+
+    if (atomic_capabilities & CL_DEVICE_ATOMIC_ORDER_ACQ_REL)
+    {
+        memoryOrders.push_back(MEMORY_ORDER_ACQUIRE);
+        memoryOrders.push_back(MEMORY_ORDER_RELEASE);
+        memoryOrders.push_back(MEMORY_ORDER_ACQ_REL);
+    }
+
+    if (atomic_capabilities & CL_DEVICE_ATOMIC_ORDER_SEQ_CST)
+    {
+        // The functions not ending in explicit have the same semantics as the
+        // corresponding explicit function with memory_order_seq_cst for the
+        // memory_order argument.
+        memoryOrders.push_back(MEMORY_ORDER_EMPTY);
+        memoryOrders.push_back(MEMORY_ORDER_SEQ_CST);
+    }
+
+    if (atomic_capabilities & CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP)
+    {
+        memoryScopes.push_back(MEMORY_SCOPE_WORK_GROUP);
+    }
+
+    if (atomic_capabilities & CL_DEVICE_ATOMIC_SCOPE_DEVICE)
+    {
+        // The functions that do not have memory_scope argument have the same
+        // semantics as the corresponding functions with the memory_scope
+        // argument set to memory_scope_device.
+        memoryScopes.push_back(MEMORY_SCOPE_EMPTY);
+        memoryScopes.push_back(MEMORY_SCOPE_DEVICE);
+    }
+    if (atomic_capabilities & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES)
+    {
+        // OpenCL 3.0 added memory_scope_all_devices as an alias for
+        // memory_scope_all_svm_devices, so test both.
+        memoryScopes.push_back(MEMORY_SCOPE_ALL_DEVICES);
+        memoryScopes.push_back(MEMORY_SCOPE_ALL_SVM_DEVICES);
+    }
+    return CL_SUCCESS;
+}

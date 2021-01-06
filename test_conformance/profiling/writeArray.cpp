@@ -25,8 +25,6 @@
 #include "harness/errorHelpers.h"
 #include "harness/conversions.h"
 
-//#define USE_LOCAL_THREADS    1
-
 #ifndef uchar
 typedef unsigned char uchar;
 #endif
@@ -553,8 +551,8 @@ static int verify_write_float( void *ptr1, void *ptr2, int n )
 static int verify_write_half( void *ptr1, void *ptr2, int n )
 {
     int        i;
-    cl_ushort    *inptr = (cl_ushort *)ptr1;
-    cl_ushort    *outptr = (cl_ushort *)ptr2;
+    cl_half *inptr = (cl_half *)ptr1;
+    cl_half *outptr = (cl_half *)ptr2;
 
     for( i = 0; i < n; i++ ){
         if( outptr[i] != inptr[i] )
@@ -621,23 +619,10 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
     cl_ulong    queueStart, submitStart, writeStart, writeEnd;
     size_t            ptrSizes[5], outPtrSizes[5];
     size_t            threads[1];
-#ifdef USE_LOCAL_THREADS
-    size_t            localThreads[1];
-#endif
     int                err, err_count = 0;
     int                i, ii;
 
     threads[0] = (size_t)num_elements;
-
-#ifdef USE_LOCAL_THREADS
-    err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( cl_uint ), NULL );
-    if( err != CL_SUCCESS ){
-        print_error( err, " Unable to get thread group max size" );
-        return -1;
-    }
-    if( localThreads[0] > threads[0] )
-        localThreads[0] = threads[0];
-#endif
 
     ptrSizes[0] = size;
     ptrSizes[1] = ptrSizes[0] << 1;
@@ -654,7 +639,8 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
 
     for( i = 0; i < loops; i++ ){
         ii = i << 1;
-        streams[ii] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  ptrSizes[i] * num_elements, NULL, &err );
+        streams[ii] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                     ptrSizes[i] * num_elements, NULL, &err);
         if( ! streams[ii] ){
             free( outptr[i] );
             log_error( " clCreateBuffer failed\n" );
@@ -662,11 +648,15 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
         }
         if( ! strcmp( type, "half" ) ){
             outptr[i] = malloc( outPtrSizes[i] * num_elements * 2 );
-            streams[ii+1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  outPtrSizes[i] * 2 * num_elements, NULL, &err );
+            streams[ii + 1] =
+                clCreateBuffer(context, CL_MEM_READ_WRITE,
+                               outPtrSizes[i] * 2 * num_elements, NULL, &err);
         }
         else{
             outptr[i] = malloc( outPtrSizes[i] * num_elements );
-            streams[ii+1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  outPtrSizes[i] * num_elements, NULL, &err );
+            streams[ii + 1] =
+                clCreateBuffer(context, CL_MEM_READ_WRITE,
+                               outPtrSizes[i] * num_elements, NULL, &err);
         }
         if( ! streams[ii+1] ){
             clReleaseMemObject(streams[ii]);
@@ -764,11 +754,8 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
             return -1;
         }
 
-#ifdef USE_LOCAL_THREADS
-        err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, localThreads, 0, NULL, NULL );
-#else
         err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL );
-#endif
+
         if( err != CL_SUCCESS ){
             print_error( err, " clEnqueueNDRangeKernel failed" );
             clReleaseEvent(writeEvent);
@@ -813,7 +800,7 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
         }
         if( !err2 )
         {
-            log_info( " %s%d data verified\n", type, 1<<i );
+            log_info(" %s%d data verified\n", type, 1 << i);
         }
         err = err2;
 
@@ -833,150 +820,6 @@ int test_stream_write( cl_device_id device, cl_context context, cl_command_queue
 
 }    // end test_stream_write()
 
-
-
-/*
- int test_stream_struct_write( cl_device_group device, cl_device id, cl_context context, int num_elements )
- {
- cl_mem            streams[10];
- void            *outptr[5];
- TestStruct        *inptr[5];
- cl_program        program[5];
- cl_kernel        kernel[5];
- void            *values[2];
- size_t            sizes[2] = { sizeof(cl_stream), sizeof(cl_stream) };
- size_t            ptrSizes[5];
- size_t            size = sizeof( TestStruct );
- size_t            threads[1];
- #ifdef USE_LOCAL_THREADS
- size_t            localThreads[1];
- #endif
- int                err;
- int                i, ii, j;
- int                loops = 1;        // no vector for structs
-
- threads[0] = (size_t)num_elements;
-
- #ifdef USE_LOCAL_THREADS
- err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( cl_uint ), NULL );
- if( err != CL_SUCCESS ){
- log_error( "Unable to get thread group max size: %d", err );
- return -1;
- }
- if( localThreads[0] > threads[0] )
- localThreads[0] = threads[0];
- #endif
-
- ptrSizes[0] = size;
- ptrSizes[1] = ptrSizes[0] << 1;
- ptrSizes[2] = ptrSizes[1] << 1;
- ptrSizes[3] = ptrSizes[2] << 1;
- ptrSizes[4] = ptrSizes[3] << 1;
-
-
- loops = ( loops < 5 ? loops : 5 );
- for( i = 0; i < loops; i++ ){
-
- inptr[i] = (TestStruct *)malloc(ptrSizes[i] * num_elements);
-
- for( j = 0; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++ ){
- inptr[i][j].a = (int)random_float( -2147483648.f, 2147483647.0f );
- inptr[i][j].b = random_float( -FLT_MAX, FLT_MAX );
- }
-
- ii = i << 1;
- streams[ii] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  ptrSizes[i] * num_elements, NULL);
- if( ! streams[ii] ){
- free( outptr[i] );
- log_error( " clCreateBuffer failed\n" );
- return -1;
- }
- outptr[i] = malloc( ptrSizes[i] * num_elements );
- streams[ii+1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  ptrSizes[i] * num_elements, NULL);
- if( ! streams[ii+1] ){
- clReleaseMemObject(streams[ii]);
- free( outptr[i] );
- log_error( " clCreateBuffer failed\n" );
- return -1;
- }
-
- err = clWriteArray(context, streams[ii], false, 0, ptrSizes[i]*num_elements, inptr[i], NULL);
- if( err != CL_SUCCESS ){
- clReleaseMemObject(streams[ii]);
- clReleaseMemObject(streams[ii+1]);
- free( outptr[i] );
- print_error( err, " clWriteArray failed" );
- return -1;
- }
-
- err = create_program_and_kernel( device, struct_kernel_code, "read_write_struct", &program[i], &kernel[i] );
- if( err ){
- clReleaseMemObject(streams[ii]);
- clReleaseMemObject(streams[ii+1]);
- free( outptr[i] );
- log_error( " Error creating program for struct\n" );
- return -1;
- }
-
- err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&streams[ii] );
- err |= clSetKernelArg( kernel[i], 1, sizeof( cl_mem ), (void *)&streams[ii+1] );
- if (err != CL_SUCCESS){
- clReleaseProgram( program[i] );
- clReleaseKernel( kernel[i] );
- clReleaseMemObject( streams[ii] );
- clReleaseMemObject( streams[ii+1] );
- free( outptr[i] );
- print_error( err, " clSetKernelArg failed" );
- return -1;
- }
-
- #ifdef USE_LOCAL_THREADS
- err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, localThreads, 0, NULL, NULL );
- #else
- err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL );
- #endif
- if( err != CL_SUCCESS ){
- print_error( err, " clEnqueueNDRangeKernel failed" );
- clReleaseMemObject( streams[ii] );
- clReleaseMemObject( streams[ii+1] );
- clReleaseKernel( kernel[i] );
- clReleaseProgram( program[i] );
- free( outptr[i] );
- return -1;
- }
-
- err = clEnqueueReadBuffer( queue, streams[ii+1], true, 0, ptrSizes[i]*num_elements, outptr[i], 0, NULL, NULL );
- if( err != CL_SUCCESS ){
- clReleaseMemObject( streams[ii] );
- clReleaseMemObject( streams[ii+1] );
- clReleaseKernel( kernel[i] );
- clReleaseProgram( program[i] );
- free( outptr[i] );
- print_error( err, " clEnqueueReadBuffer failed" );
- return -1;
- }
-
- if( verify_write_struct( inptr[i], outptr[i], ptrSizes[i] * num_elements / ptrSizes[0] ) ){
- log_error( " STREAM_WRITE struct%d test failed\n", 1<<i );
- err = -1;
- }
- else{
- log_info( " STREAM_WRITE struct%d test passed\n", 1<<i );
- err = 0;
- }
- // cleanup
- clReleaseMemObject( streams[ii] );
- clReleaseMemObject( streams[ii+1] );
- clReleaseKernel( kernel[i] );
- clReleaseProgram( program[i] );
- free( outptr[i] );
- free( (void *)inptr[i] );
- }
-
- return err;
-
- }    // end test_stream_struct_write()
- */
 
 int test_write_array_int( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {

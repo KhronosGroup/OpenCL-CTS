@@ -17,28 +17,12 @@
 #include "harness/typeWrappers.h"
 #include "harness/conversions.h"
 
-extern cl_uint gRandomSeed;
-
 const char *sample_single_test_kernel[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
 "\n"
 "    dst[tid] = (int)src[tid];\n"
-"\n"
-"}\n" };
-
-const char *sample_struct_test_kernel[] = {
-"typedef struct {\n"
-"__global int *A;\n"
-"__global int *B;\n"
-"} input_pair_t;\n"
-"\n"
-"__kernel void sample_test(__global input_pair_t *src, __global int *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = src->A[tid] + src->B[tid];\n"
 "\n"
 "}\n" };
 
@@ -194,10 +178,12 @@ int test_execute_kernel_local_sizes(cl_device_id deviceID, cl_context context, c
     clKernelWrapper kernel;
     clMemWrapper            streams[2];
     size_t    threads[1], localThreads[1];
-    cl_float inputData[100];
-    cl_int outputData[100];
     RandomSeed seed( gRandomSeed );
     int i;
+
+    num_elements = 100;
+    std::vector<cl_float> inputData(num_elements);
+    std::vector<cl_int> outputData(num_elements);
 
     /* Create a kernel to test with */
     if( create_single_kernel_helper( context, &program, &kernel, 1, sample_single_test_kernel, "sample_test" ) != 0 )
@@ -206,18 +192,20 @@ int test_execute_kernel_local_sizes(cl_device_id deviceID, cl_context context, c
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 100, NULL, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * 100, NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     /* Write some test data */
-    memset( outputData, 0, sizeof( outputData ) );
-
-    for (i=0; i<100; i++)
+    for (i = 0; i < num_elements; i++)
         inputData[i] = get_random_float(-(float) 0x7fffffff, (float) 0x7fffffff, seed);
 
-    error = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, sizeof(cl_float)*100, (void *)inputData, 0, NULL, NULL);
+    error = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0,
+                                 sizeof(cl_float) * num_elements,
+                                 (void *)inputData.data(), 0, NULL, NULL);
     test_error( error, "Unable to set testing kernel data" );
 
     /* Set the arguments */
@@ -227,17 +215,19 @@ int test_execute_kernel_local_sizes(cl_device_id deviceID, cl_context context, c
     test_error( error, "Unable to set kernel arguments" );
 
     /* Test running the kernel and verifying it */
-    threads[0] = (size_t)100;
+    threads[0] = (size_t)num_elements;
     error = get_max_common_work_group_size( context, kernel, threads[0], &localThreads[0] );
     test_error( error, "Unable to get work group size to use" );
 
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Kernel execution failed" );
 
-    error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*100, (void *)outputData, 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                sizeof(cl_int) * num_elements,
+                                (void *)outputData.data(), 0, NULL, NULL);
     test_error( error, "Unable to get result data" );
 
-    for (i=0; i<100; i++)
+    for (i = 0; i < num_elements; i++)
     {
         if (outputData[i] != (int)inputData[i])
         {
@@ -254,10 +244,12 @@ int test_execute_kernel_local_sizes(cl_device_id deviceID, cl_context context, c
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Kernel execution failed" );
 
-    error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*100, (void *)outputData, 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                sizeof(cl_int) * num_elements,
+                                (void *)outputData.data(), 0, NULL, NULL);
     test_error( error, "Unable to get result data" );
 
-    for (i=0; i<100; i++)
+    for (i = 0; i < num_elements; i++)
     {
         if (outputData[i] != (int)inputData[i])
         {
@@ -274,10 +266,12 @@ int test_execute_kernel_local_sizes(cl_device_id deviceID, cl_context context, c
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Kernel execution failed" );
 
-    error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*100, (void *)outputData, 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                sizeof(cl_int) * num_elements,
+                                (void *)outputData.data(), 0, NULL, NULL);
     test_error( error, "Unable to get result data" );
 
-    for (i=0; i<100; i++)
+    for (i = 0; i < num_elements; i++)
     {
         if (outputData[i] != (int)inputData[i])
         {
@@ -291,10 +285,12 @@ int test_execute_kernel_local_sizes(cl_device_id deviceID, cl_context context, c
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Kernel execution failed" );
 
-    error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*100, (void *)outputData, 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                sizeof(cl_int) * num_elements,
+                                (void *)outputData.data(), 0, NULL, NULL);
     test_error( error, "Unable to get result data" );
 
-    for (i=0; i<100; i++)
+    for (i = 0; i < num_elements; i++)
     {
         if (outputData[i] != (int)inputData[i])
         {
@@ -313,10 +309,12 @@ int test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_c
     clKernelWrapper kernel;
     clMemWrapper    streams[2];
     size_t    threads[1], localThreads[1];
-    cl_float inputData[10];
-    cl_int outputData[10];
     RandomSeed seed( gRandomSeed );
     int i;
+
+    num_elements = 10;
+    std::vector<cl_float> inputData(num_elements);
+    std::vector<cl_int> outputData(num_elements);
 
     /* Create a kernel to test with */
     if( create_single_kernel_helper( context, &program, &kernel, 1, sample_single_test_kernel, "sample_test" ) != 0 )
@@ -325,18 +323,20 @@ int test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_c
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 10, NULL, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * 10, NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     /* Write some test data */
-    memset( outputData, 0, sizeof( outputData ) );
-
-    for (i=0; i<10; i++)
+    for (i = 0; i < num_elements; i++)
         inputData[i] = get_random_float(-(float) 0x7fffffff, (float) 0x7fffffff, seed);
 
-    error = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, sizeof(cl_float)*10, (void *)inputData, 0, NULL, NULL);
+    error = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0,
+                                 sizeof(cl_float) * num_elements,
+                                 (void *)inputData.data(), 0, NULL, NULL);
     test_error( error, "Unable to set testing kernel data" );
 
     /* Test setting the arguments by index manually */
@@ -347,7 +347,7 @@ int test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_c
 
 
     /* Test running the kernel and verifying it */
-    threads[0] = (size_t)10;
+    threads[0] = (size_t)num_elements;
 
     error = get_max_common_work_group_size( context, kernel, threads[0], &localThreads[0] );
     test_error( error, "Unable to get work group size to use" );
@@ -355,10 +355,12 @@ int test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_c
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Kernel execution failed" );
 
-    error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*10, (void *)outputData, 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                sizeof(cl_int) * num_elements,
+                                (void *)outputData.data(), 0, NULL, NULL);
     test_error( error, "Unable to get result data" );
 
-    for (i=0; i<10; i++)
+    for (i = 0; i < num_elements; i++)
     {
         if (outputData[i] != (int)inputData[i])
         {
@@ -370,88 +372,6 @@ int test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_c
     return 0;
 }
 
-int test_set_kernel_arg_struct(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    int error;
-    cl_program program;
-    cl_kernel kernel;
-    void            *args[2];
-    cl_mem            outStream;
-    size_t    threads[1], localThreads[1];
-    cl_int outputData[10];
-    int i;
-    cl_int randomTestDataA[10], randomTestDataB[10];
-    MTdata  d;
-
-    struct img_pair_t
-    {
-        cl_mem streamA;
-        cl_mem streamB;
-    } image_pair;
-
-
-    /* Create a kernel to test with */
-    if( create_single_kernel_helper( context, &program, &kernel, 1, sample_struct_test_kernel, "sample_test" ) != 0 )
-    {
-        return -1;
-    }
-
-    /* Create some I/O streams */
-    d = init_genrand( gRandomSeed );
-    for( i = 0; i < 10; i++ )
-    {
-        randomTestDataA[i] = (cl_int)genrand_int32(d);
-        randomTestDataB[i] = (cl_int)genrand_int32(d);
-    }
-    free_mtdata(d); d = NULL;
-
-    image_pair.streamA = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_int) * 10, randomTestDataA, &error);
-    test_error( error, "Creating test array failed" );
-    image_pair.streamB = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_int) * 10, randomTestDataB, &error);
-    test_error( error, "Creating test array failed" );
-    outStream = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * 10, NULL, &error);
-    test_error( error, "Creating test array failed" );
-
-    /* Set the arguments */
-    args[0] = &image_pair;
-    args[1] = outStream;
-
-    error = clSetKernelArg(kernel, 0, sizeof( image_pair ), &image_pair);
-    test_error( error, "Unable to set indexed kernel arguments" );
-    error = clSetKernelArg(kernel, 1, sizeof( cl_mem ), &args[1]);
-    test_error( error, "Unable to set indexed kernel arguments" );
-
-    /* Test running the kernel and verifying it */
-    threads[0] = (size_t)10;
-
-    error = get_max_common_work_group_size( context, kernel, threads[0], &localThreads[0] );
-    test_error( error, "Unable to get work group size to use" );
-
-    error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
-    test_error( error, "Kernel execution failed" );
-
-    error = clEnqueueReadBuffer( queue, outStream, CL_TRUE, 0, sizeof(cl_int)*10, (void *)outputData, 0, NULL, NULL );
-    test_error( error, "Unable to get result data" );
-
-    for (i=0; i<10; i++)
-    {
-        if (outputData[i] != randomTestDataA[i] + randomTestDataB[i])
-        {
-            log_error( "ERROR: Data did not verify!\n" );
-            return -1;
-        }
-    }
-
-
-    clReleaseMemObject( image_pair.streamA );
-    clReleaseMemObject( image_pair.streamB );
-    clReleaseMemObject( outStream );
-    clReleaseKernel( kernel );
-    clReleaseProgram( program );
-
-    return 0;
-}
-
 int test_set_kernel_arg_constant(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     int error;
@@ -459,16 +379,19 @@ int test_set_kernel_arg_constant(cl_device_id deviceID, cl_context context, cl_c
     clKernelWrapper kernel;
     clMemWrapper            streams[3];
     size_t    threads[1], localThreads[1];
-    cl_int outputData[10];
     int i;
-    cl_int randomTestDataA[10], randomTestDataB[10];
     cl_ulong maxSize;
     MTdata d;
+
+    num_elements = 10;
+    std::vector<cl_int> outputData(num_elements);
+    std::vector<cl_int> randomTestDataA(num_elements);
+    std::vector<cl_int> randomTestDataB(num_elements);
 
     /* Verify our test buffer won't be bigger than allowed */
     error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof( maxSize ), &maxSize, 0 );
     test_error( error, "Unable to get max constant buffer size" );
-    if( maxSize < sizeof( cl_int ) * 10 )
+    if (maxSize < sizeof(cl_int) * num_elements)
     {
         log_error( "ERROR: Unable to test constant argument to kernel: max size of constant buffer is reported as %d!\n", (int)maxSize );
         return -1;
@@ -482,18 +405,23 @@ int test_set_kernel_arg_constant(cl_device_id deviceID, cl_context context, cl_c
 
     /* Create some I/O streams */
     d = init_genrand( gRandomSeed );
-    for( i = 0; i < 10; i++ )
+    for (i = 0; i < num_elements; i++)
     {
         randomTestDataA[i] = (cl_int)genrand_int32(d) & 0xffffff;    /* Make sure values are positive, just so we don't have to */
         randomTestDataB[i] = (cl_int)genrand_int32(d) & 0xffffff;    /* deal with overflow on the verification */
     }
     free_mtdata(d); d = NULL;
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_int) * 10, randomTestDataA, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                sizeof(cl_int) * num_elements,
+                                randomTestDataA.data(), &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_int) * 10, randomTestDataB, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                sizeof(cl_int) * num_elements,
+                                randomTestDataB.data(), &error);
     test_error( error, "Creating test array failed" );
-    streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * 10, NULL, &error);
+    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     /* Set the arguments */
@@ -506,7 +434,7 @@ int test_set_kernel_arg_constant(cl_device_id deviceID, cl_context context, cl_c
 
 
     /* Test running the kernel and verifying it */
-    threads[0] = (size_t)10;
+    threads[0] = (size_t)num_elements;
 
     error = get_max_common_work_group_size( context, kernel, threads[0], &localThreads[0] );
     test_error( error, "Unable to get work group size to use" );
@@ -514,10 +442,12 @@ int test_set_kernel_arg_constant(cl_device_id deviceID, cl_context context, cl_c
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Kernel execution failed" );
 
-    error = clEnqueueReadBuffer( queue, streams[2], CL_TRUE, 0, sizeof(cl_int)*10, (void *)outputData, 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[2], CL_TRUE, 0,
+                                sizeof(cl_int) * num_elements,
+                                (void *)outputData.data(), 0, NULL, NULL);
     test_error( error, "Unable to get result data" );
 
-    for (i=0; i<10; i++)
+    for (i = 0; i < num_elements; i++)
     {
         if (outputData[i] != randomTestDataA[i] + randomTestDataB[i])
         {
@@ -536,9 +466,11 @@ int test_set_kernel_arg_struct_array(cl_device_id deviceID, cl_context context, 
     clKernelWrapper kernel;
     clMemWrapper            streams[2];
     size_t    threads[1], localThreads[1];
-    cl_int outputData[10];
     int i;
     MTdata d;
+
+    num_elements = 10;
+    std::vector<cl_int> outputData(num_elements);
 
     typedef struct img_pair_type
     {
@@ -546,7 +478,7 @@ int test_set_kernel_arg_struct_array(cl_device_id deviceID, cl_context context, 
         int B;
     } image_pair_t;
 
-    image_pair_t image_pair[ 10 ];
+    std::vector<image_pair_t> image_pair(num_elements);
 
 
     /* Create a kernel to test with */
@@ -557,16 +489,19 @@ int test_set_kernel_arg_struct_array(cl_device_id deviceID, cl_context context, 
 
     /* Create some I/O streams */
     d = init_genrand( gRandomSeed );
-    for( i = 0; i < 10; i++ )
+    for (i = 0; i < num_elements; i++)
     {
         image_pair[i].A = (cl_int)genrand_int32(d);
-        image_pair[i].A = (cl_int)genrand_int32(d);
+        image_pair[i].B = (cl_int)genrand_int32(d);
     }
     free_mtdata(d); d = NULL;
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(image_pair_t) * 10, (void *)image_pair, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                sizeof(image_pair_t) * num_elements,
+                                (void *)image_pair.data(), &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * 10, NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     /* Set the arguments */
@@ -576,7 +511,7 @@ int test_set_kernel_arg_struct_array(cl_device_id deviceID, cl_context context, 
     test_error( error, "Unable to set indexed kernel arguments" );
 
     /* Test running the kernel and verifying it */
-    threads[0] = (size_t)10;
+    threads[0] = (size_t)num_elements;
 
     error = get_max_common_work_group_size( context, kernel, threads[0], &localThreads[0] );
     test_error( error, "Unable to get work group size to use" );
@@ -584,10 +519,12 @@ int test_set_kernel_arg_struct_array(cl_device_id deviceID, cl_context context, 
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Kernel execution failed" );
 
-    error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*10, (void *)outputData, 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                sizeof(cl_int) * num_elements,
+                                (void *)outputData.data(), 0, NULL, NULL);
     test_error( error, "Unable to get result data" );
 
-    for (i=0; i<10; i++)
+    for (i = 0; i < num_elements; i++)
     {
         if (outputData[i] != image_pair[i].A + image_pair[i].B)
         {
@@ -635,11 +572,12 @@ int test_kernel_global_constant(cl_device_id deviceID, cl_context context, cl_co
     clKernelWrapper kernel;
     clMemWrapper            streams[2];
     size_t    threads[1], localThreads[1];
-    cl_int outputData[10];
     int i;
-    cl_int randomTestDataA[10];
     MTdata d;
 
+    num_elements = 10;
+    std::vector<cl_int> outputData(num_elements);
+    std::vector<cl_int> randomTestDataA(num_elements);
 
     /* Create a kernel to test with */
     if( create_single_kernel_helper( context, &program, &kernel, 1, sample_const_global_test_kernel, "sample_test" ) != 0 )
@@ -649,15 +587,18 @@ int test_kernel_global_constant(cl_device_id deviceID, cl_context context, cl_co
 
     /* Create some I/O streams */
     d = init_genrand( gRandomSeed );
-    for( i = 0; i < 10; i++ )
+    for (i = 0; i < num_elements; i++)
     {
         randomTestDataA[i] = (cl_int)genrand_int32(d) & 0xffff;    /* Make sure values are positive and small, just so we don't have to */
     }
     free_mtdata(d); d = NULL;
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_int) * 10, randomTestDataA, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                sizeof(cl_int) * num_elements,
+                                randomTestDataA.data(), &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * 10, NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     /* Set the arguments */
@@ -668,7 +609,7 @@ int test_kernel_global_constant(cl_device_id deviceID, cl_context context, cl_co
 
 
     /* Test running the kernel and verifying it */
-    threads[0] = (size_t)10;
+    threads[0] = (size_t)num_elements;
 
     error = get_max_common_work_group_size( context, kernel, threads[0], &localThreads[0] );
     test_error( error, "Unable to get work group size to use" );
@@ -676,10 +617,12 @@ int test_kernel_global_constant(cl_device_id deviceID, cl_context context, cl_co
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, localThreads, 0, NULL, NULL );
     test_error( error, "Kernel execution failed" );
 
-    error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*10, (void *)outputData, 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                sizeof(cl_int) * num_elements,
+                                (void *)outputData.data(), 0, NULL, NULL);
     test_error( error, "Unable to get result data" );
 
-    for (i=0; i<10; i++)
+    for (i = 0; i < num_elements; i++)
     {
         if (outputData[i] != randomTestDataA[i] + 1024)
         {

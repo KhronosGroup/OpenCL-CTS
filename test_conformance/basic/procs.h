@@ -162,8 +162,12 @@ extern int    test_kernel_preprocessor_macros(cl_device_id deviceID, cl_context 
 extern int      test_kernel_call_kernel_function(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int      test_parameter_types(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_vector_creation(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_vec_type_hint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_vector_creation(cl_device_id deviceID, cl_context context,
+                                cl_command_queue queue, int num_elements);
+extern int test_vector_swizzle(cl_device_id deviceID, cl_context context,
+                               cl_command_queue queue, int num_elements);
+extern int test_vec_type_hint(cl_device_id deviceID, cl_context context,
+                              cl_command_queue queue, int num_elements);
 
 
 extern int test_kernel_memory_alignment_local(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems );

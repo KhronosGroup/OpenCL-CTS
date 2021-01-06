@@ -38,7 +38,8 @@ int test_arrayimagecopy_single_format(cl_device_id device, cl_context context, c
 
   log_info("Testing %s %s\n", GetChannelOrderName(format->image_channel_order), GetChannelTypeName(format->image_channel_data_type));
 
-  image = create_image_2d(context, (cl_mem_flags)(CL_MEM_READ_WRITE), format, img_width, img_height, 0, NULL, &err);
+  image = create_image_2d(context, CL_MEM_READ_WRITE, format, img_width,
+                          img_height, 0, NULL, &err);
   test_error(err, "create_image_2d failed");
 
   err = clGetImageInfo(image, CL_IMAGE_ELEMENT_SIZE, sizeof(size_t), &elem_size, NULL);
@@ -46,7 +47,7 @@ int test_arrayimagecopy_single_format(cl_device_id device, cl_context context, c
 
   buffer_size = sizeof(cl_uchar) * elem_size * img_width * img_height;
 
-  buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  buffer_size, NULL, &err);
+  buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_size, NULL, &err);
   test_error(err, "clCreateBuffer failed");
 
   d = init_genrand( gRandomSeed );
@@ -67,6 +68,9 @@ int test_arrayimagecopy_single_format(cl_device_id device, cl_context context, c
 
   err = clEnqueueReadImage( queue, image, CL_TRUE, origin, region, 0, 0, imgptr, 1, &copyevent, NULL );
   test_error(err, "clEnqueueReadBuffer failed");
+
+  err = clReleaseEvent(copyevent);
+  test_error(err, "clReleaseEvent failed");
 
   if (memcmp(bufptr, imgptr, buffer_size) != 0) {
     log_error( "ERROR: Results did not validate!\n" );

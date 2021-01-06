@@ -37,39 +37,6 @@
 #define EVALUATE( x )       x
 #define CONCATENATE(x, y)  x ## EVALUATE(y)
 
-
-// Declare Classification macros for non-C99 platforms
-#ifndef isinf
-    #define isinf(x)    (    sizeof (x) == sizeof(float )    ?    fabsf(x) == INFINITY      \
-                        :    sizeof (x) == sizeof(double)    ?    fabs(x) == INFINITY      \
-                        :    fabsl(x) == INFINITY)
-#endif
-
-#ifndef isfinite
-    #define isfinite(x) (    sizeof (x) == sizeof(float )    ?    fabsf(x) < INFINITY      \
-                        :    sizeof (x) == sizeof(double)    ?    fabs(x) < INFINITY      \
-                        :    fabsl(x) < INFINITY)
-#endif
-
-#ifndef isnan
-    #define isnan(_a)       ( (_a) != (_a) )
-#endif
-
-#ifdef __MINGW32__
-    #undef isnormal
-#endif
-
-#ifndef isnormal
-    #define isnormal(x) (    sizeof (x) == sizeof(float )    ?    (fabsf(x) < INFINITY && fabsf(x) >= FLT_MIN)     \
-                        :    sizeof (x) == sizeof(double)    ?    (fabs(x) < INFINITY && fabs(x) >= DBL_MIN)     \
-                        :    (fabsl(x) < INFINITY && fabsl(x) >= LDBL_MIN)   )
-#endif
-
-#ifndef islessgreater
-    // Note: Non-C99 conformant. This will trigger floating point exceptions. We don't care about that here.
-    #define islessgreater( _x, _y )     ( (_x) < (_y) || (_x) > (_y) )
-#endif
-
 #pragma STDC FP_CONTRACT OFF
 static void __log2_ep(double *hi, double *lo, double x);
 
@@ -156,6 +123,8 @@ double reference_cospi( double x)
 
     return reference_sin( x * M_PI );
 }
+
+double reference_relaxed_cospi(double x) { return reference_cospi(x); }
 
 double reference_relaxed_divide( double x, double y ) { return (float)(((float) x ) / ( (float) y )); }
 
@@ -752,6 +721,8 @@ double reference_sinpi( double x)
     return reference_sin( r * M_PI );
 }
 
+double reference_relaxed_sinpi(double x) { return reference_sinpi(x); }
+
 double reference_tanpi( double x)
 {
     // set aside the sign  (allows us to preserve sign of -0)
@@ -1232,6 +1203,8 @@ double reference_atanh( double x )
 
     return signed_half * reference_log1p(2.0 * x / (1-x));
 }
+
+double reference_relaxed_atan(double x) { return reference_atan(x); }
 
 double reference_relaxed_exp2( double x )
 {
@@ -2951,7 +2924,17 @@ int reference_isgreaterequall( long double x, long double y){ return x >= y; }
 int reference_isinfl( long double x){ return 0 != isinf(x); }
 int reference_islessl( long double x, long double y){ return x < y; }
 int reference_islessequall( long double x, long double y){ return x <= y; }
-int reference_islessgreaterl( long double x, long double y){  return 0 != islessgreater( x, y ); }
+#if defined(__INTEL_COMPILER)
+int reference_islessgreaterl(long double x, long double y)
+{
+    return 0 != islessgreaterl(x, y);
+}
+#else
+int reference_islessgreaterl(long double x, long double y)
+{
+    return 0 != islessgreater(x, y);
+}
+#endif
 int reference_isnanl( long double x){ return 0 != isnan( x ); }
 int reference_isnormall( long double x){ return 0 != isnormal( (double) x ); }
 int reference_isnotequall( long double x, long double y){ return x != y; }
@@ -5286,6 +5269,8 @@ long double reference_acosl(long double x)
     return head + ((y + tail) - x);
 }
 
+double reference_relaxed_acos(double x) { return reference_acos(x); }
+
 double reference_log10(double x)
 {
     if( x == 0.0 )
@@ -5302,6 +5287,8 @@ double reference_log10(double x)
     __log2_ep(&logxHi, &logxLo, x);
     return logxHi*log2Hi;
 }
+
+double reference_relaxed_log10(double x) { return reference_log10(x); }
 
 long double reference_log10l(long double x)
 {
@@ -5432,6 +5419,8 @@ double reference_asin(double x)
 {
     return asin( x );
 }
+
+double reference_relaxed_asin(double x) { return reference_asin(x); }
 
 double reference_fabs(double x)
 {

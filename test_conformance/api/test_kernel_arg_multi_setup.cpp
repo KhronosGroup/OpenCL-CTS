@@ -27,8 +27,6 @@ const char *multi_arg_kernel_source_pattern =
 "    dst3[tid] = src3[tid];\n"
 "}\n";
 
-extern cl_uint gRandomSeed;
-
 #define MAX_ERROR_TOLERANCE 0.0005f
 
 int test_multi_arg_set(cl_device_id device, cl_context context, cl_command_queue queue,
@@ -68,24 +66,39 @@ int test_multi_arg_set(cl_device_id device, cl_context context, cl_command_queue
 
     // Create input streams
     initData[ 0 ] = create_random_data( vec1Type, d, (unsigned int)threads[ 0 ] * vec1Size );
-    streams[ 0 ] = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), get_explicit_type_size( vec1Type ) * threads[0] * vec1Size, initData[ 0 ], &error );
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       get_explicit_type_size(vec1Type) * threads[0] * vec1Size,
+                       initData[0], &error);
     test_error( error, "Unable to create testing stream" );
 
     initData[ 1 ] = create_random_data( vec2Type, d, (unsigned int)threads[ 0 ] * vec2Size );
-    streams[ 1 ] = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), get_explicit_type_size( vec2Type ) * threads[0] * vec2Size, initData[ 1 ], &error );
+    streams[1] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       get_explicit_type_size(vec2Type) * threads[0] * vec2Size,
+                       initData[1], &error);
     test_error( error, "Unable to create testing stream" );
 
     initData[ 2 ] = create_random_data( vec3Type, d, (unsigned int)threads[ 0 ] * vec3Size );
-    streams[ 2 ] = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), get_explicit_type_size( vec3Type ) * threads[0] * vec3Size, initData[ 2 ], &error );
+    streams[2] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       get_explicit_type_size(vec3Type) * threads[0] * vec3Size,
+                       initData[2], &error);
     test_error( error, "Unable to create testing stream" );
 
-    streams[ 3 ] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  get_explicit_type_size( vec1Type ) * threads[0] * vec1Size, NULL, &error );
+    streams[3] = clCreateBuffer(
+        context, CL_MEM_READ_WRITE,
+        get_explicit_type_size(vec1Type) * threads[0] * vec1Size, NULL, &error);
     test_error( error, "Unable to create testing stream" );
 
-    streams[ 4 ] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  get_explicit_type_size( vec2Type ) * threads[0] * vec2Size, NULL, &error );
+    streams[4] = clCreateBuffer(
+        context, CL_MEM_READ_WRITE,
+        get_explicit_type_size(vec2Type) * threads[0] * vec2Size, NULL, &error);
     test_error( error, "Unable to create testing stream" );
 
-    streams[ 5 ] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  get_explicit_type_size( vec3Type ) * threads[0] * vec3Size, NULL, &error );
+    streams[5] = clCreateBuffer(
+        context, CL_MEM_READ_WRITE,
+        get_explicit_type_size(vec3Type) * threads[0] * vec3Size, NULL, &error);
     test_error( error, "Unable to create testing stream" );
 
     // Set the arguments

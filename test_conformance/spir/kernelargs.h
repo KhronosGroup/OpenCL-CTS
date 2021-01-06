@@ -348,9 +348,9 @@ public:
         if( NULL != buffer )
         {
             int error = CL_SUCCESS;
-            m_memObj = clCreateBuffer( context,
-                                       (cl_mem_flags)( CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR ),
-                                       size, buffer, &error );
+            m_memObj = clCreateBuffer(context,
+                                      CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                                      size, buffer, &error);
             if( error != CL_SUCCESS )
             {
                 throw Exceptions::TestError("clCreateBuffer failed\n", error);

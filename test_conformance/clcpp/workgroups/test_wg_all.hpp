@@ -164,10 +164,12 @@ int work_group_all(cl_device_id device, cl_context context, cl_command_queue que
     std::vector<cl_uint> input = generate_input_wg_all(flat_work_size + 1, wg_size);
     std::vector<cl_uint> output = generate_output_wg_all(flat_work_size, wg_size);
 
-    buffers[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * input.size(), NULL, &err);
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_uint) * input.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer");
 
-    buffers[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * output.size(), NULL, &err);
+    buffers[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_uint) * output.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer");
 
     err = clEnqueueWriteBuffer(

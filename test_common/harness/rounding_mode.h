@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,9 +16,11 @@
 #ifndef __ROUNDING_MODE_H__
 #define __ROUNDING_MODE_H__
 
+#pragma STDC FENV_ACCESS ON
+
 #include "compat.h"
 
-#if (defined(_WIN32) && defined (_MSC_VER))
+#if (defined(_WIN32) && defined(_MSC_VER))
 #include "errorHelpers.h"
 #include "testHarness.h"
 #endif
@@ -32,7 +34,7 @@ typedef enum
     kRoundTowardZero,
 
     kRoundingModeCount
-}RoundingMode;
+} RoundingMode;
 
 typedef enum
 {
@@ -47,23 +49,14 @@ typedef enum
     kulong = 8,
     klong = 9,
 
-    //This goes last
+    // This goes last
     kTypeCount
-}Type;
+} Type;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern RoundingMode set_round( RoundingMode r, Type outType );
-extern RoundingMode get_round( void );
-extern void *FlushToZero( void );
-extern void UnFlushToZero( void *p);
-
-#ifdef __cplusplus
-}
-#endif
-
+extern RoundingMode set_round(RoundingMode r, Type outType);
+extern RoundingMode get_round(void);
+extern void *FlushToZero(void);
+extern void UnFlushToZero(void *p);
 
 
 #endif /* __ROUNDING_MODE_H__ */

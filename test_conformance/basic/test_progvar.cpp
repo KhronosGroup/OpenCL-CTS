@@ -37,6 +37,7 @@
 // TODO: pointer-to-half (and its vectors)
 // TODO: union of...
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -595,10 +596,11 @@ static int l_build_type_table(cl_device_id device)
 
 static const TypeInfo& l_find_type( const char* name )
 {
-    for ( size_t i = 0; i < num_type_info ; i++ ) {
-        if ( 0 == strcmp( name, type_info[i].get_name_c_str() ) ) return type_info[i];
-    }
-    assert(0);
+    auto itr =
+        std::find_if(type_info, type_info + num_type_info,
+                     [name](TypeInfo& ti) { return ti.get_name() == name; });
+    assert(itr != type_info + num_type_info);
+    return *itr;
 }
 
 
@@ -1508,6 +1510,29 @@ static int l_user_type( cl_device_id device, cl_context context, cl_command_queu
     return err;
 }
 
+// Determines whether its valid to skip this test based on the driver version
+// and the features it optionally supports.
+// Whether the test should be skipped is writen into the out paramter skip.
+// The check returns an error code for the clDeviceInfo query.
+static cl_int should_skip(cl_device_id device, cl_bool& skip)
+{
+    // Assume we can't skip to begin with.
+    skip = CL_FALSE;
+
+    // Progvar tests are already skipped for OpenCL < 2.0, so here we only need
+    // to test for 3.0 since that is when program scope global variables become
+    // optional.
+    if (get_device_cl_version(device) >= Version(3, 0))
+    {
+        size_t max_global_variable_size{};
+        test_error(clGetDeviceInfo(device, CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE,
+                                   sizeof(max_global_variable_size),
+                                   &max_global_variable_size, nullptr),
+                   "clGetDeviceInfo failed");
+        skip = (max_global_variable_size != 0) ? CL_FALSE : CL_TRUE;
+    }
+    return CL_SUCCESS;
+}
 
 ////////////////////
 // Global functions
@@ -1516,6 +1541,18 @@ static int l_user_type( cl_device_id device, cl_context context, cl_command_queu
 // Test support for variables at program scope. Miscellaneous
 int test_progvar_prog_scope_misc(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
+    cl_bool skip{ CL_FALSE };
+    auto error = should_skip(device, skip);
+    if (CL_SUCCESS != error)
+    {
+        return TEST_FAIL;
+    }
+    if (skip)
+    {
+        log_info("Skipping progvar_prog_scope_misc since it is optionally not "
+                 "supported on this device\n");
+        return TEST_SKIPPED_ITSELF;
+    }
     size_t max_size = 0;
     size_t pref_size = 0;
 
@@ -1535,6 +1572,19 @@ int test_progvar_prog_scope_misc(cl_device_id device, cl_context context, cl_com
 // Test support for variables at program scope. Unitialized data
 int test_progvar_prog_scope_uninit(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
+    cl_bool skip{ CL_FALSE };
+    auto error = should_skip(device, skip);
+    if (CL_SUCCESS != error)
+    {
+        return TEST_FAIL;
+    }
+    if (skip)
+    {
+        log_info(
+            "Skipping progvar_prog_scope_uninit since it is optionally not "
+            "supported on this device\n");
+        return TEST_SKIPPED_ITSELF;
+    }
     size_t max_size = 0;
     size_t pref_size = 0;
 
@@ -1551,6 +1601,18 @@ int test_progvar_prog_scope_uninit(cl_device_id device, cl_context context, cl_c
 // Test support for variables at program scope. Initialized data.
 int test_progvar_prog_scope_init(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
+    cl_bool skip{ CL_FALSE };
+    auto error = should_skip(device, skip);
+    if (CL_SUCCESS != error)
+    {
+        return TEST_FAIL;
+    }
+    if (skip)
+    {
+        log_info("Skipping progvar_prog_scope_init since it is optionally not "
+                 "supported on this device\n");
+        return TEST_SKIPPED_ITSELF;
+    }
     size_t max_size = 0;
     size_t pref_size = 0;
 
@@ -1568,6 +1630,18 @@ int test_progvar_prog_scope_init(cl_device_id device, cl_context context, cl_com
 // A simple test for support of static variables inside a kernel.
 int test_progvar_func_scope(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
+    cl_bool skip{ CL_FALSE };
+    auto error = should_skip(device, skip);
+    if (CL_SUCCESS != error)
+    {
+        return TEST_FAIL;
+    }
+    if (skip)
+    {
+        log_info("Skipping progvar_func_scope since it is optionally not "
+                 "supported on this device\n");
+        return TEST_SKIPPED_ITSELF;
+    }
     size_t max_size = 0;
     size_t pref_size = 0;
 

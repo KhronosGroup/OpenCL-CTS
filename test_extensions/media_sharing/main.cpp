@@ -116,7 +116,7 @@ bool DetectPlatformAndDevice()
 
     for (size_t j = 0; j < devicesNum; ++j)
     {
-      if (ExtensionCheck("cl_khr_dx9_media_sharing", devices[j]))
+      if (is_extension_available(devices[j], "cl_khr_dx9_media_sharing"))
       {
         gPlatformIDdetected = platforms[i];
         gDeviceIDdetected = devices[j];
@@ -200,5 +200,5 @@ int main(int argc, const char *argv[])
   if (!MediaSurfaceSharingExtensionInit())
     return TEST_FAIL;
 
-  return runTestHarness(argc, argv, test_num, test_list, false, true, 0);
+  return runTestHarness(argc, argv, test_num, test_list, true, 0);
 }

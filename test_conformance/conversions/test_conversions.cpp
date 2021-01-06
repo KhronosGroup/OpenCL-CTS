@@ -19,7 +19,7 @@
 #include "harness/testHarness.h"
 #include "harness/kernelHelpers.h"
 #include "harness/parseParameters.h"
-#if !defined(_WIN32) && !defined(__ANDROID__)
+#if defined(__APPLE__)
 #include <sys/sysctl.h>
 #endif
 
@@ -50,8 +50,6 @@
 #include "Sleep.h"
 #include "basic_test_conversions.h"
 
-#pragma STDC FENV_ACCESS ON
-
 #if (defined(_WIN32) && defined (_MSC_VER))
 // need for _controlfp_s and rouinding modes in RoundingMode
 #include "harness/testHarness.h"
@@ -67,7 +65,7 @@
 
 #define      kCallStyleCount (kVectorSizeCount + 1 /* for implicit scalar */)
 
-#if defined( __arm__ ) && defined( __GNUC__ )
+#if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
 #include "fplib.h"
     extern bool            qcom_sat;
     extern roundingMode    qcom_rm;
@@ -319,10 +317,11 @@ int main (int argc, const char **argv )
     int ret = runTestHarnessWithCheck( 1, arg, test_num, test_list, true, 0, InitCL );
 
     free_mtdata( gMTdata );
-
-    error = clFinish(gQueue);
-    if (error)
-        vlog_error("clFinish failed: %d\n", error);
+    if (gQueue)
+    {
+        error = clFinish(gQueue);
+        if (error) vlog_error("clFinish failed: %d\n", error);
+    }
 
     clReleaseMemObject(gInBuffer);
 
@@ -885,12 +884,18 @@ cl_int PrepareReference( cl_uint job_id, cl_uint thread_id, void *p )
         if( info->sat )
             f = gSaturatedConversions[ outType ][ inType ];
 
-#if defined( __arm__ ) && defined( __GNUC__ )
-       /* ARM VFP doesn't have hardware instruction for converting from 64-bit integer to float types, hence GCC ARM uses the floating-point emulation code
-        * despite which -mfloat-abi setting it is. But the emulation code in libgcc.a has only one rounding mode (round to nearest even in this case)
-        * and ignores the user rounding mode setting in hardware.
-        * As a result setting rounding modes in hardware won't give correct rounding results for type covert from 64-bit integer to float using GCC for ARM compiler
-        * so for testing different rounding modes, we need to use alternative reference function */
+#if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
+        /* ARM VFP doesn't have hardware instruction for converting from 64-bit
+         * integer to float types, hence GCC ARM uses the floating-point
+         * emulation code despite which -mfloat-abi setting it is. But the
+         * emulation code in libgcc.a has only one rounding mode (round to
+         * nearest even in this case) and ignores the user rounding mode setting
+         * in hardware. As a result setting rounding modes in hardware won't
+         * give correct rounding results for type covert from 64-bit integer to
+         * float using GCC for ARM compiler so for testing different rounding
+         * modes, we need to use alternative reference function. ARM64 does have
+         * an instruction, however we cannot guarantee the compiler will use it.
+         * On all ARM architechures use emulation to calculate reference.*/
         switch (round)
         {
             /* conversions to floating-point type use the current rounding mode.

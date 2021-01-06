@@ -230,9 +230,8 @@ int run_ps_ctor_dtor_test(cl_device_id device, cl_context context, cl_command_qu
     std::vector<cl_uint> output = generate_output<cl_uint>(work_size[0], 9999);
 
     // device output buffer
-    buffers[0] = clCreateBuffer(
-        context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_uint) * output.size(), NULL, &err
-    );
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_uint) * output.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
     // Execute test

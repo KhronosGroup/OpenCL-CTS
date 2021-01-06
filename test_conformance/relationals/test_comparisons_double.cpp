@@ -17,8 +17,6 @@
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
-extern "C" { extern cl_uint gRandomSeed; };
-
 #define TEST_SIZE 512
 
 const char *equivTestKernelPattern_double =
@@ -153,13 +151,17 @@ int test_equiv_kernel_double(cl_context context, cl_command_queue queue, const c
     generate_equiv_test_data_double( inDataA, vecSize, true, d );
     generate_equiv_test_data_double( inDataB, vecSize, false, d );
 
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof( cl_double ) * vecSize * TEST_SIZE, &inDataA, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                sizeof(cl_double) * vecSize * TEST_SIZE,
+                                &inDataA, &error);
     if( streams[0] == NULL )
     {
         print_error( error, "Creating input array A failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof( cl_double ) * vecSize * TEST_SIZE, &inDataB, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                sizeof(cl_double) * vecSize * TEST_SIZE,
+                                &inDataB, &error);
     if( streams[1] == NULL )
     {
         print_error( error, "Creating input array A failed!\n");

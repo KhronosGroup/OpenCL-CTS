@@ -11,6 +11,7 @@ set(${MODULE_NAME}_SOURCES
     test_loops.cpp
     test_fill_3D.cpp
 #    test_fill_2D_3D.cpp
+    ../common.cpp
 )
 
 

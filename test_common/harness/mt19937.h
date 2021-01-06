@@ -31,8 +31,8 @@
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER
+ OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
@@ -47,16 +47,12 @@
  */
 
 #ifndef MT19937_H
-#define MT19937_H   1
+#define MT19937_H 1
 
-#if defined( __APPLE__ )
-    #include <OpenCL/cl_platform.h>
+#if defined(__APPLE__)
+#include <OpenCL/cl_platform.h>
 #else
-    #include <CL/cl_platform.h>
-#endif
-
-#ifdef __cplusplus
-    extern "C" {
+#include <CL/cl_platform.h>
 #endif
 
 /*
@@ -65,35 +61,55 @@
  *      on each thread.
  */
 
-typedef struct _MTdata  *MTdata;
+typedef struct _MTdata *MTdata;
 
 /* Create the random number generator with seed */
-MTdata init_genrand( cl_uint /*seed*/ );
+MTdata init_genrand(cl_uint /*seed*/);
 
 /* release memory used by a MTdata private data */
-void   free_mtdata( MTdata /*data*/ );
+void free_mtdata(MTdata /*data*/);
 
 /* generates a random number on [0,0xffffffff]-interval */
-cl_uint genrand_int32( MTdata /*data*/);
+cl_uint genrand_int32(MTdata /*data*/);
 
 /* generates a random number on [0,0xffffffffffffffffULL]-interval */
-cl_ulong genrand_int64( MTdata /*data*/);
+cl_ulong genrand_int64(MTdata /*data*/);
 
 /* generates a random number on [0,1]-real-interval */
-double genrand_real1( MTdata /*data*/);
+double genrand_real1(MTdata /*data*/);
 
 /* generates a random number on [0,1)-real-interval */
-double genrand_real2( MTdata /*data*/);
+double genrand_real2(MTdata /*data*/);
 
 /* generates a random number on (0,1)-real-interval */
-double genrand_real3( MTdata /*data*/);
+double genrand_real3(MTdata /*data*/);
 
 /* generates a random number on [0,1) with 53-bit resolution*/
-double genrand_res53( MTdata /*data*/ );
+double genrand_res53(MTdata /*data*/);
 
 
 #ifdef __cplusplus
-    }
-#endif
 
-#endif  /* MT19937_H */
+#include <cassert>
+
+struct MTdataHolder
+{
+    MTdataHolder(cl_uint seed)
+    {
+        m_mtdata = init_genrand(seed);
+        assert(m_mtdata != nullptr);
+    }
+
+    MTdataHolder(MTdata mtdata): m_mtdata(mtdata) {}
+
+    ~MTdataHolder() { free_mtdata(m_mtdata); }
+
+    operator MTdata() const { return m_mtdata; }
+
+private:
+    MTdata m_mtdata;
+};
+
+#endif // #ifdef __cplusplus
+
+#endif /* MT19937_H */

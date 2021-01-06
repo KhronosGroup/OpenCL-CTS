@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,6 +28,8 @@
 #include "harness/fpcontrol.h"
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
+#include "harness/conversions.h"
+
 #define BUFFER_SIZE         (1024*1024*2)
 
 #if defined( __GNUC__ )
@@ -35,6 +37,8 @@
 #else
     #define UNUSED
 #endif
+
+struct Func;
 
 extern int gWimpyBufferSize;
 extern int gWimpyReductionFactor;
@@ -64,7 +68,6 @@ extern int              gSkipCorrectnessTesting;
 extern int              gMeasureTimes;
 extern int              gReportAverageTimes;
 extern int              gForceFTZ;
-extern volatile int     gTestFastRelaxed;
 extern int              gFastRelaxedDerived;
 extern int              gWimpyMode;
 extern int              gHasDouble;
@@ -90,21 +93,17 @@ extern cl_device_fp_config gDoubleCapabilities;
     #define scalbnl( _a, _i )       ldexpl( _a, _i )
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 float Abs_Error( float test, double reference );
 float Ulp_Error( float test, double reference );
-//float Ulp_Error_Half( float test, double reference );
 float Bruteforce_Ulp_Error_Double( double test, long double reference );
-#ifdef __cplusplus
-} //extern "C"
-#endif
 
 uint64_t GetTime( void );
 double SubtractTime( uint64_t endTime, uint64_t startTime );
-int MakeKernel( const char **c, cl_uint count, const char *name, cl_kernel *k, cl_program *p );
-int MakeKernels( const char **c, cl_uint count, const char *name, cl_uint kernel_count, cl_kernel *k, cl_program *p );
+int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
+               cl_program *p, bool relaxedMode);
+int MakeKernels(const char **c, cl_uint count, const char *name,
+                cl_uint kernel_count, cl_kernel *k, cl_program *p,
+                bool relaxedMode);
 
 // used to convert a bucket of bits into a search pattern through double
 static inline double DoubleFromUInt32( uint32_t bits );
@@ -127,34 +126,6 @@ void _LogBuildError( cl_program p, int line, const char *file );
 #define LogBuildError( program )        _LogBuildError( program, __LINE__, __FILE__ )
 
 #define PERF_LOOP_COUNT 100
-
-// Note: though this takes a double, this is for use with single precision tests
-static inline int IsFloatSubnormal( double x )
-{
-#if 2 == FLT_RADIX
-    // Do this in integer to avoid problems with FTZ behavior
-    union{ float d; uint32_t u;}u;
-    u.d = fabsf((float)x);
-    return (u.u-1) < 0x007fffffU;
-#else
-    // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) FLT_MIN && x != 0.0;
-#endif
-}
-
-
-static inline int IsDoubleSubnormal( long double x )
-{
-#if 2 == FLT_RADIX
-    // Do this in integer to avoid problems with FTZ behavior
-    union{ double d; uint64_t u;}u;
-    u.d = fabs((double) x);
-    return (u.u-1) < 0x000fffffffffffffULL;
-#else
-    // rely on floating point hardware for non-radix2 non-IEEE-754 hardware -- will fail if you flush subnormals to zero
-    return fabs(x) < (double) DBL_MIN && x != 0.0;
-#endif
-}
 
 //The spec is fairly clear that we may enforce a hard cutoff to prevent premature flushing to zero.
 // However, to avoid conflict for 1.0, we are letting results at TYPE_MIN + ulp_limit to be flushed to zero.
@@ -230,11 +201,7 @@ static inline void Force64BitFPUPrecision(void)
 #endif
 }
 
-#ifdef __cplusplus
-extern "C"
-#else
 extern
-#endif
 void memset_pattern4(void *dest, const void *src_pattern, size_t bytes );
 
 typedef union
@@ -258,6 +225,8 @@ int compareFloats(float x, float y);
 int compareDoubles(double x, double y);
 
 void logFunctionInfo(const char *fname, unsigned int float_size, unsigned int isFastRelaxed);
+
+float getAllowedUlpError(const Func *f, const bool relaxed);
 
 #endif /* UTILITY_H */
 

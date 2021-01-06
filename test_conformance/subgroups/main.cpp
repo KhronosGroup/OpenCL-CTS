@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,69 +23,48 @@
 MTdata gMTdata;
 
 test_definition test_list[] = {
-    ADD_TEST( sub_group_info ),
-    ADD_TEST( work_item_functions ),
-    ADD_TEST( work_group_functions ),
-    ADD_TEST( barrier_functions ),
+    ADD_TEST_VERSION(sub_group_info_ext, Version(2, 0)),
+    ADD_TEST_VERSION(sub_group_info_core, Version(2, 1)),
+    ADD_TEST_VERSION(work_item_functions_ext, Version(2, 0)),
+    ADD_TEST_VERSION(work_item_functions_core, Version(2, 1)),
+    ADD_TEST_VERSION(work_group_functions_ext, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_functions_core, Version(2, 1)),
+    ADD_TEST_VERSION(barrier_functions_ext, Version(2, 0)),
+    ADD_TEST_VERSION(barrier_functions_core, Version(2, 1)),
+    ADD_TEST_VERSION(ifp_ext, Version(2, 0)),
+    ADD_TEST_VERSION(ifp_core, Version(2, 1))
 };
 
-const int test_num = ARRAY_SIZE( test_list );
+const int test_num = ARRAY_SIZE(test_list);
 
-static test_status checkSubGroupsExtension(cl_device_id device)
+static test_status InitCL(cl_device_id device)
 {
-    // The extension is optional in OpenCL 2.0 (minimum required version) and
-    // required in later versions.
-    auto version = get_device_cl_version(device);
-    auto expected_min_version = Version(2, 0);
-
-    if (version < expected_min_version) {
-        version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
-        return TEST_SKIP;
-    }
-
-    bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
-
-    if ((version == expected_min_version) && !hasExtension) {
-        log_info("Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
-        return TEST_SKIP;
-    }
-
-    if ((version > expected_min_version) && !hasExtension) {
-        log_error("'cl_khr_subgroups' is a required extension, failing.\n");
-        return TEST_FAIL;
-    }
-
-    return TEST_PASS;
-}
-
-static test_status InitCL(cl_device_id device) {
-
     auto version = get_device_cl_version(device);
     test_status ret = TEST_PASS;
-    if (version > Version(2, 2)) {
+    if (version >= Version(3, 0))
+    {
         cl_uint max_sub_groups;
         int error;
 
         error = clGetDeviceInfo(device, CL_DEVICE_MAX_NUM_SUB_GROUPS,
-                              sizeof(max_sub_groups), &max_sub_groups, NULL);
-        if (error != CL_SUCCESS) {
+                                sizeof(max_sub_groups), &max_sub_groups, NULL);
+        if (error != CL_SUCCESS)
+        {
             print_error(error, "Unable to get max number of subgroups");
             return TEST_FAIL;
         }
 
-        if (max_sub_groups == 0) {
+        if (max_sub_groups == 0)
+        {
             ret = TEST_SKIP;
         }
-    } else {
-        ret = checkSubGroupsExtension(device);
     }
     return ret;
-
 }
 
 int main(int argc, const char *argv[])
 {
     gMTdata = init_genrand(0);
-    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0, InitCL);
+    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0,
+                                   InitCL);
 }
-

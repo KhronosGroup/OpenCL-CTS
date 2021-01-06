@@ -47,27 +47,32 @@ test_status InitCL(cl_device_id device) {
     auto expected_min_version = Version(2, 0);
     if (version < expected_min_version)
     {
-        version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
+        version_expected_info("Test", "OpenCL",
+                              expected_min_version.to_string().c_str(),
+                              version.to_string().c_str());
         return TEST_SKIP;
     }
-#ifdef CL_EXPERIMENTAL
 
-  if(version > Version(2,2)) {
-    int error;
-    cl_bool isSupported;
-    error = clGetDeviceInfo(device,
-                            CL_DEVICE_WORK_GROUP_COLLECTIVE_FUNCTIONS_SUPPORT,
-                            sizeof(isSupported), &isSupported, NULL);
-    if (error != CL_SUCCESS) {
-      print_error(error, "Unable to query support for collective functions");
-      return TEST_FAIL;
+    if (version >= Version(3, 0))
+    {
+        int error;
+        cl_bool isSupported;
+        error = clGetDeviceInfo(
+            device, CL_DEVICE_WORK_GROUP_COLLECTIVE_FUNCTIONS_SUPPORT,
+            sizeof(isSupported), &isSupported, NULL);
+        if (error != CL_SUCCESS)
+        {
+            print_error(error,
+                        "Unable to query support for collective functions");
+            return TEST_FAIL;
+        }
+
+        if (isSupported == CL_FALSE)
+        {
+            return TEST_SKIP;
+        }
     }
 
-    if (isSupported == CL_FALSE) {
-      return TEST_SKIP;
-    }
-  }
-#endif
   return TEST_PASS;
 }
 

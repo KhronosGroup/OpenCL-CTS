@@ -58,6 +58,9 @@ cl_int cImage_check_mem_host_no_access<T>:: verify_RW_Image()
     test_error(err, "clWaitForEvents error");
   }
 
+  err = clReleaseEvent(event);
+  test_error(err, "clReleaseEvent error");
+
   this->update_host_mem_2();
 
   int total = (int)(this->region[0] * this->region[1] * this->region[2]);

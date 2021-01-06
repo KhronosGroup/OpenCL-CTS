@@ -9,6 +9,7 @@ set(${MODULE_NAME}_SOURCES
     test_read_1D_buffer.cpp
     test_read_1D_array.cpp
     test_read_2D_array.cpp
+    ../common.cpp
 )
 
 include(../../CMakeCommon.txt)

@@ -22,8 +22,6 @@
 #endif
 #include "harness/conversions.h"
 
-extern cl_uint gRandomSeed;
-
 #define MAX_LINE_SIZE_IN_PROGRAM 1024
 #define MAX_LOG_SIZE_IN_PROGRAM  2048
 

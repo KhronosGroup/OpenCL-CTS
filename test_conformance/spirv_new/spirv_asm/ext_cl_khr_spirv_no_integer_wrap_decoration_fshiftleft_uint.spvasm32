@@ -1,5 +1,5 @@
 ; SPIR-V
-; Version: 1.1
+; Version: 1.0
 ; Generator: Khronos SPIR-V Tools Assembler; 0
 ; Bound: 25
 ; Schema: 0
@@ -9,7 +9,7 @@
                OpExtension "SPV_KHR_no_integer_wrap_decoration"
           %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %2 "fmath_cl"
+               OpEntryPoint Kernel %2 "fmath_cl" %__spirv_BuiltInGlobalInvocationId
                OpSource OpenCL_C 200000
                OpName %__spirv_BuiltInGlobalInvocationId "__spirv_BuiltInGlobalInvocationId"
                OpName %out "out"
@@ -25,11 +25,11 @@
        %uint = OpTypeInt 32 0
     %uint_31 = OpConstant %uint 31
      %v3uint = OpTypeVector %uint 3
-%_ptr_UniformConstant_v3uint = OpTypePointer UniformConstant %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
          %15 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint
-%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_UniformConstant_v3uint UniformConstant
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3uint Input
           %2 = OpFunction %void None %15
         %out = OpFunctionParameter %_ptr_CrossWorkgroup_uint
         %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint

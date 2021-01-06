@@ -8,6 +8,7 @@ set(DEVICE_EXECUTION_SOURCES
     enqueue_multi_queue.cpp
     enqueue_ndrange.cpp
     enqueue_wg_size.cpp
+    enqueue_profiling.cpp
     execute_block.cpp
     host_multi_queue.cpp
     host_queue_order.cpp

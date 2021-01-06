@@ -23,6 +23,8 @@
 
 #include "common.hpp"
 
+#include <CL/cl_half.h>
+
 // -----------------------------------------------------------------------------------
 // ------------- ONLY FOR OPENCL 22 CONFORMANCE TEST 22 DEVELOPMENT ------------------
 // -----------------------------------------------------------------------------------
@@ -138,10 +140,12 @@ int test_vload_func(cl_device_id device, cl_context context, cl_command_queue qu
     );
     std::vector<OUTPUT> output = generate_output<OUTPUT>(count);
 
-    buffers[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(INPUT) * input.size(), NULL, &err);
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(INPUT) * input.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer");
 
-    buffers[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(OUTPUT) * output.size(), NULL, &err);
+    buffers[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(OUTPUT) * output.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer");
 
     err = clEnqueueWriteBuffer(
@@ -263,7 +267,7 @@ struct vload_half_func : public unary_func<
         Iterator temp = x + static_cast<diff_type>(offset * N);
         for(size_t i = 0; i < N; i++)
         {
-            r.s[i] = half2float(*temp);
+            r.s[i] = cl_half_to_float(*temp);
             temp++;
         }
         return r;
@@ -309,7 +313,7 @@ struct vloada_half_func : public unary_func<
         Iterator temp = x + static_cast<diff_type>(offset * alignment);
         for(size_t i = 0; i < N; i++)
         {
-            r.s[i] = half2float(*temp);
+            r.s[i] = cl_half_to_float(*temp);
             temp++;
         }
         return r;

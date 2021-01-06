@@ -47,6 +47,10 @@ extern int        test_release_kernel_order(cl_device_id deviceID, cl_context co
 extern int        test_release_during_execute(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int        test_get_kernel_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_kernel_private_memory_size(cl_device_id deviceID,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements);
 extern int        test_execute_kernel_local_sizes(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_set_kernel_arg_struct(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
@@ -98,7 +102,14 @@ extern int        test_retain_mem_object_multiple(cl_device_id deviceID, cl_cont
 extern int        test_retain_mem_object_set_kernel_arg(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_min_data_type_align_size_alignment(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems );
 
-extern int        test_mem_object_destructor_callback(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_context_destructor_callback(cl_device_id deviceID,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            int num_elements);
+extern int test_mem_object_destructor_callback(cl_device_id deviceID,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
 
 extern int      test_null_buffer_arg( cl_device_id device_id, cl_context context, cl_command_queue queue, int num_elements );
 extern int      test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements );
@@ -114,3 +125,73 @@ extern int      test_sub_group_dispatch(cl_device_id deviceID, cl_context contex
 extern int      test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_zero_sized_enqueue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_queue_properties( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements );
+extern int test_queue_flush_on_release(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+extern int test_buffer_properties_queries(cl_device_id deviceID,
+                                          cl_context context,
+                                          cl_command_queue queue,
+                                          int num_elements);
+extern int test_image_properties_queries(cl_device_id deviceID,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
+extern int test_queue_properties_queries(cl_device_id deviceID,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
+int test_pipe_properties_queries(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+
+extern int test_consistency_svm(cl_device_id deviceID, cl_context context,
+                                cl_command_queue queue, int num_elements);
+extern int test_consistency_memory_model(cl_device_id deviceID,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
+extern int test_consistency_device_enqueue(cl_device_id deviceID,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements);
+extern int test_consistency_pipes(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements);
+extern int test_consistency_progvar(cl_device_id deviceID, cl_context context,
+                                    cl_command_queue queue, int num_elements);
+extern int test_consistency_non_uniform_work_group(cl_device_id deviceID,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int num_elements);
+extern int test_consistency_read_write_images(cl_device_id deviceID,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
+extern int test_consistency_2d_image_from_buffer(cl_device_id deviceID,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 int num_elements);
+extern int test_consistency_depth_images(cl_device_id deviceID,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
+extern int test_consistency_device_and_host_timer(cl_device_id deviceID,
+                                                  cl_context context,
+                                                  cl_command_queue queue,
+                                                  int num_elements);
+extern int test_consistency_il_programs(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
+extern int test_consistency_subgroups(cl_device_id deviceID, cl_context context,
+                                      cl_command_queue queue, int num_elements);
+extern int test_consistency_prog_ctor_dtor(cl_device_id deviceID,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements);
+extern int test_consistency_3d_image_writes(cl_device_id deviceID,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            int num_elements);
+
+extern int test_min_image_formats(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements);

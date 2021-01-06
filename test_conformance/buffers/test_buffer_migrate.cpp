@@ -69,6 +69,7 @@ static cl_int migrateMemObject(enum migrations migrate, cl_command_queue *queues
         // Choose a random set of flags
         flags[i] = (cl_mem_migration_flags)(genrand_int32(d) & (CL_MIGRATE_MEM_OBJECT_HOST | CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED));;
         break;
+      default: log_error("Unhandled migration type: %d\n", migrate); return -1;
     }
     if ((err = clEnqueueMigrateMemObjects(queues[j], 1, (const cl_mem *)(&mem_objects[i]), flags[i], 0, NULL, NULL)) != CL_SUCCESS) {
       print_error(err, "Failed migrating memory object.");
@@ -218,10 +219,13 @@ int test_buffer_migrate(cl_device_id deviceID, cl_context context, cl_command_qu
     }
 
     // Build the kernel program.
-    if (err = create_single_kernel_helper(ctx, &program, &kernel, 1, &buffer_migrate_kernel_code, "test_buffer_migrate")) {
-      print_error(err, "Failed creating kernel.");
-      failed = 1;
-      goto cleanup;
+    if ((err = create_single_kernel_helper(ctx, &program, &kernel, 1,
+                                           &buffer_migrate_kernel_code,
+                                           "test_buffer_migrate")))
+    {
+        print_error(err, "Failed creating kernel.");
+        failed = 1;
+        goto cleanup;
     }
 
     num_devices_limited = num_devices;

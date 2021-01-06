@@ -197,14 +197,16 @@ test_work_group_scan_exclusive_min_int(cl_device_id device, cl_context context, 
 
     input_ptr[0] = (cl_int*)malloc(sizeof(cl_int) * num_elements);
     output_ptr = (cl_int*)malloc(sizeof(cl_int) * num_elements);
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * num_elements, NULL, NULL );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, NULL);
     if (!streams[0])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
 
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * num_elements, NULL, NULL );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, NULL);
     if (!streams[1])
     {
         log_error("clCreateBuffer failed\n");
@@ -307,14 +309,16 @@ test_work_group_scan_exclusive_min_uint(cl_device_id device, cl_context context,
 
     input_ptr[0] = (cl_uint*)malloc(sizeof(cl_uint) * num_elements);
     output_ptr = (cl_uint*)malloc(sizeof(cl_uint) * num_elements);
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_uint) * num_elements, NULL, NULL );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_uint) * num_elements, NULL, NULL);
     if (!streams[0])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
 
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_uint) * num_elements, NULL, NULL );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_uint) * num_elements, NULL, NULL);
     if (!streams[1])
     {
         log_error("clCreateBuffer failed\n");
@@ -416,14 +420,16 @@ test_work_group_scan_exclusive_min_long(cl_device_id device, cl_context context,
 
     input_ptr[0] = (cl_long*)malloc(sizeof(cl_long) * num_elements);
     output_ptr = (cl_long*)malloc(sizeof(cl_long) * num_elements);
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_long) * num_elements, NULL, NULL );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_long) * num_elements, NULL, NULL);
     if (!streams[0])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
 
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_long) * num_elements, NULL, NULL );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_long) * num_elements, NULL, NULL);
     if (!streams[1])
     {
         log_error("clCreateBuffer failed\n");
@@ -526,14 +532,16 @@ test_work_group_scan_exclusive_min_ulong(cl_device_id device, cl_context context
 
     input_ptr[0] = (cl_ulong*)malloc(sizeof(cl_ulong) * num_elements);
     output_ptr = (cl_ulong*)malloc(sizeof(cl_ulong) * num_elements);
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_ulong) * num_elements, NULL, NULL );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_ulong) * num_elements, NULL, NULL);
     if (!streams[0])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
 
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_ulong) * num_elements, NULL, NULL );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_ulong) * num_elements, NULL, NULL);
     if (!streams[1])
     {
         log_error("clCreateBuffer failed\n");

@@ -104,16 +104,8 @@
     }
 
 #else  /* not __APPLE__ */
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
     void PreventSleep( void )  {}
     void ResumeSleep( void )   {}
-
-#if defined(__cplusplus)
-}
-#endif //__cplusplus
 
 #endif
 

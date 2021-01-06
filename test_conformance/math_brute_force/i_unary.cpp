@@ -18,19 +18,20 @@
 #include <string.h>
 #include "FunctionList.h"
 
-int TestFunc_Int_Float(const Func *f, MTdata);
-int TestFunc_Int_Double(const Func *f, MTdata);
+int TestFunc_Int_Float(const Func *f, MTdata, bool relaxedMode);
+int TestFunc_Int_Double(const Func *f, MTdata, bool relaxedMode);
 
-#if defined( __cplusplus)
-    extern "C"
-#endif
-const vtbl _i_unary = { "i_unary", TestFunc_Int_Float, TestFunc_Int_Double };
+extern const vtbl _i_unary = { "i_unary", TestFunc_Int_Float,
+                               TestFunc_Int_Double };
 
 
-static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_program *p );
-static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl_program *p );
+static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
+                       cl_program *p, bool relaxedMode);
+static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
+                             cl_program *p, bool relaxedMode);
 
-static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_program *p )
+static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
+                       cl_program *p, bool relaxedMode)
 {
     const char *c[] = { "__kernel void math_kernel", sizeNames[vectorSize], "( __global int", sizeNames[vectorSize], "* out, __global float", sizeNames[vectorSize], "* in)\n"
                             "{\n"
@@ -87,10 +88,11 @@ static int BuildKernel( const char *name, int vectorSize, cl_kernel *k, cl_progr
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
 
-    return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);
+    return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
 }
 
-static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl_program *p )
+static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
+                             cl_program *p, bool relaxedMode)
 {
     const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
                         "__kernel void math_kernel", sizeNames[vectorSize], "( __global int", sizeNames[vectorSize], "* out, __global double", sizeNames[vectorSize], "* in)\n"
@@ -150,7 +152,7 @@ static int BuildKernelDouble( const char *name, int vectorSize, cl_kernel *k, cl
     char testName[32];
     snprintf( testName, sizeof( testName ) -1, "math_kernel%s", sizeNames[vectorSize] );
 
-    return MakeKernel(kern, (cl_uint) kernSize, testName, k, p);
+    return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
 }
 
 typedef struct BuildKernelInfo
@@ -159,6 +161,7 @@ typedef struct BuildKernelInfo
     cl_kernel   *kernels;
     cl_program  *programs;
     const char  *nameInCode;
+    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 }BuildKernelInfo;
 
 static cl_int BuildKernel_FloatFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p );
@@ -166,7 +169,8 @@ static cl_int BuildKernel_FloatFn( cl_uint job_id, cl_uint thread_id UNUSED, voi
 {
     BuildKernelInfo *info = (BuildKernelInfo*) p;
     cl_uint i = info->offset + job_id;
-    return BuildKernel( info->nameInCode, i, info->kernels + i, info->programs + i );
+    return BuildKernel(info->nameInCode, i, info->kernels + i,
+                       info->programs + i, info->relaxedMode);
 }
 
 static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, void *p );
@@ -174,10 +178,11 @@ static cl_int BuildKernel_DoubleFn( cl_uint job_id, cl_uint thread_id UNUSED, vo
 {
     BuildKernelInfo *info = (BuildKernelInfo*) p;
     cl_uint i = info->offset + job_id;
-    return BuildKernelDouble( info->nameInCode, i, info->kernels + i, info->programs + i );
+    return BuildKernelDouble(info->nameInCode, i, info->kernels + i,
+                             info->programs + i, info->relaxedMode);
 }
 
-int TestFunc_Int_Float(const Func *f, MTdata d)
+int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
 {
     uint64_t i;
     uint32_t j, k;
@@ -189,7 +194,7 @@ int TestFunc_Int_Float(const Func *f, MTdata d)
     uint64_t step = bufferSize / sizeof( float );
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( float )) + 1);
 
-    logFunctionInfo(f->name,sizeof(cl_float),gTestFastRelaxed);
+    logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
     if( gWimpyMode )
     {
         step = (1ULL<<32) * gWimpyReductionFactor / (512);
@@ -203,7 +208,8 @@ int TestFunc_Int_Float(const Func *f, MTdata d)
     Force64BitFPUPrecision();
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs, f->nameInCode };
+    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                   f->nameInCode, relaxedMode };
     if( (error = ThreadPool_Do( BuildKernel_FloatFn, gMaxVectorSizeIndex - gMinVectorSizeIndex, &build_info ) ))
         return error;
 /*
@@ -397,7 +403,7 @@ exit:
     return error;
 }
 
-int TestFunc_Int_Double(const Func *f, MTdata d)
+int TestFunc_Int_Double(const Func *f, MTdata d, bool relaxedMode)
 {
     uint64_t i;
     uint32_t j, k;
@@ -409,7 +415,7 @@ int TestFunc_Int_Double(const Func *f, MTdata d)
     uint64_t step = bufferSize / sizeof( cl_double );
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( cl_double )) + 1);
 
-    logFunctionInfo(f->name,sizeof(cl_double),gTestFastRelaxed);
+    logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
     if( gWimpyMode )
     {
         step = (1ULL<<32) * gWimpyReductionFactor / (512);
@@ -422,7 +428,8 @@ int TestFunc_Int_Double(const Func *f, MTdata d)
     Force64BitFPUPrecision();
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs, f->nameInCode };
+    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                   f->nameInCode, relaxedMode };
     if( (error = ThreadPool_Do( BuildKernel_DoubleFn,
                                 gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                 &build_info ) ))
@@ -624,6 +631,4 @@ exit:
 
     return error;
 }
-
-
 

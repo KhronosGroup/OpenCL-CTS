@@ -22,20 +22,10 @@
 #include <setjmp.h>
 #endif
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool            gDebugTrace, gExtraValidateInfo, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestMipmaps;
-extern bool            gUseKernelSamplers;
-extern cl_filter_mode    gFilterModeToUse;
-extern cl_addressing_mode    gAddressModeToUse;
 extern uint64_t gRoundingStartValue;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
 extern bool gDeviceLt20;
-
-#define MAX_TRIES               1
-#define MAX_CLAMPED             1
 
 const char *read1DArrayKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_array_t input,%s __global float *xOffsets, __global float *yOffsets, __global %s4 *results %s)\n"
@@ -72,8 +62,6 @@ const char *floatKernelSource1DArray =
 "   float2 coords = (float2)( (float)( xOffsets[offset] ), (float)( yOffsets[offset] ) );\n";
 
 static const char *samplerKernelArg = " sampler_t imageSampler,";
-
-#define ABS_ERROR( result, expected ) ( fabsf( (float)expected - (float)result ) )
 
 extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
                                    int x, int y, int z, float *outData );
@@ -220,8 +208,6 @@ template <class T> int determine_validation_error_1D_arr( void *imagePtr, image_
     return 0;
 }
 
-#define CLAMP( _val, _min, _max )           ((_val) < (_min) ? (_min) : (_val) > (_max) ? (_max) : (_val))
-
 static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *imageSampler, float *xOffsets, float *yOffsets, float xfract, float yfract, int normalized_coords, MTdata d , int lod)
 {
     size_t i = 0;
@@ -278,11 +264,6 @@ static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *im
         }
     }
 }
-
-#ifndef MAX
-#define MAX( _a, _b )           ((_a) > (_b) ? (_a) : (_b))
-#endif
-
 
 int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_kernel kernel,
                              image_descriptor *imageInfo, image_sampler_data *imageSampler,
@@ -470,16 +451,22 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
     if( gDebugTrace )
         log_info( " - Creating kernel arguments...\n" );
 
-    xOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ),
-        sizeof( cl_float ) * imageInfo->width * imageInfo->arraySize, xOffsetValues, &error );
+    xOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width
+                                  * imageInfo->arraySize,
+                              xOffsetValues, &error);
     test_error( error, "Unable to create x offset buffer" );
 
-    yOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ),
-        sizeof( cl_float ) * imageInfo->width * imageInfo->arraySize, yOffsetValues, &error );
+    yOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width
+                                  * imageInfo->arraySize,
+                              yOffsetValues, &error);
     test_error( error, "Unable to create y offset buffer" );
 
-    results = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),
-        get_explicit_type_size( outputType ) * 4 * imageInfo->width * imageInfo->arraySize, NULL, &error );
+    results = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                             get_explicit_type_size(outputType) * 4
+                                 * imageInfo->width * imageInfo->arraySize,
+                             NULL, &error);
     test_error( error, "Unable to create result buffer" );
 
     // Create sampler to use
@@ -618,10 +605,13 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                                 xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                 imageSampler, expected, 0, &containsDenormals, lod );
 
-                            float err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                            float err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                            float err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
-                            float err4 = fabsf( resultPtr[3] - expected[3] );
+                            float err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                                   sRGBmap(expected[0]));
+                            float err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                                   sRGBmap(expected[1]));
+                            float err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                                   sRGBmap(expected[2]));
+                            float err4 = ABS_ERROR(resultPtr[3], expected[3]);
                             float maxErr = 0.5;
 
                             // Check if the result matches.
@@ -639,10 +629,13 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                                                                                xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                imageSampler, expected, 0, NULL, lod );
 
-                                    err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                                    err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                                    err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
-                                    err4 = fabsf( resultPtr[3] - expected[3] );
+                                    err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                                     sRGBmap(expected[0]));
+                                    err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                                     sRGBmap(expected[1]));
+                                    err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                                     sRGBmap(expected[2]));
+                                    err4 = ABS_ERROR(resultPtr[3], expected[3]);
                                 }
                             }
 
@@ -674,10 +667,14 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                                                                                       xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                       imageSampler, expected, 0, &containsDenormals, lod );
 
-                                float err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                                float err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                                float err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
-                                float err4 = fabsf( resultPtr[3] - expected[3] );
+                                float err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                                       sRGBmap(expected[0]));
+                                float err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                                       sRGBmap(expected[1]));
+                                float err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                                       sRGBmap(expected[2]));
+                                float err4 =
+                                    ABS_ERROR(resultPtr[3], expected[3]);
 
                                 float maxErr = 0.6;
 
@@ -695,10 +692,14 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                                                                                    xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                    imageSampler, expected, 0, NULL, lod );
 
-                                        err1 = fabsf( sRGBmap( resultPtr[0] ) - sRGBmap( expected[0] ) );
-                                        err2 = fabsf( sRGBmap( resultPtr[1] ) - sRGBmap( expected[1] ) );
-                                        err3 = fabsf( sRGBmap( resultPtr[2] ) - sRGBmap( expected[2] ) );
-                                        err4 = fabsf( resultPtr[3] - expected[3] );
+                                        err1 = ABS_ERROR(sRGBmap(resultPtr[0]),
+                                                         sRGBmap(expected[0]));
+                                        err2 = ABS_ERROR(sRGBmap(resultPtr[1]),
+                                                         sRGBmap(expected[1]));
+                                        err3 = ABS_ERROR(sRGBmap(resultPtr[2]),
+                                                         sRGBmap(expected[2]));
+                                        err4 = ABS_ERROR(resultPtr[3],
+                                                         expected[3]);
                                     }
                                 }
                                 if( ! (err1 <= maxErr) || ! (err2 <= maxErr)    ||
@@ -772,10 +773,10 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                                 xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                 imageSampler, expected, 0, &containsDenormals, lod );
 
-                            float err1 = fabsf( resultPtr[0] - expected[0] );
-                            float err2 = fabsf( resultPtr[1] - expected[1] );
-                            float err3 = fabsf( resultPtr[2] - expected[2] );
-                            float err4 = fabsf( resultPtr[3] - expected[3] );
+                            float err1 = ABS_ERROR(resultPtr[0], expected[0]);
+                            float err2 = ABS_ERROR(resultPtr[1], expected[1]);
+                            float err3 = ABS_ERROR(resultPtr[2], expected[2]);
+                            float err4 = ABS_ERROR(resultPtr[3], expected[3]);
                             // Clamp to the minimum absolute error for the format
                             if (err1 > 0 && err1 < formatAbsoluteError) { err1 = 0.0f; }
                             if (err2 > 0 && err2 < formatAbsoluteError) { err2 = 0.0f; }
@@ -804,10 +805,10 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                                                                                xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                imageSampler, expected, 0, NULL, lod );
 
-                                    err1 = fabsf( resultPtr[0] - expected[0] );
-                                    err2 = fabsf( resultPtr[1] - expected[1] );
-                                    err3 = fabsf( resultPtr[2] - expected[2] );
-                                    err4 = fabsf( resultPtr[3] - expected[3] );
+                                    err1 = ABS_ERROR(resultPtr[0], expected[0]);
+                                    err2 = ABS_ERROR(resultPtr[1], expected[1]);
+                                    err3 = ABS_ERROR(resultPtr[2], expected[2]);
+                                    err4 = ABS_ERROR(resultPtr[3], expected[3]);
                                 }
                             }
 
@@ -839,10 +840,14 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                                                                                       xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                       imageSampler, expected, 0, &containsDenormals, lod );
 
-                                float err1 = fabsf( resultPtr[0] - expected[0] );
-                                float err2 = fabsf( resultPtr[1] - expected[1] );
-                                float err3 = fabsf( resultPtr[2] - expected[2] );
-                                float err4 = fabsf( resultPtr[3] - expected[3] );
+                                float err1 =
+                                    ABS_ERROR(resultPtr[0], expected[0]);
+                                float err2 =
+                                    ABS_ERROR(resultPtr[1], expected[1]);
+                                float err3 =
+                                    ABS_ERROR(resultPtr[2], expected[2]);
+                                float err4 =
+                                    ABS_ERROR(resultPtr[3], expected[3]);
                                 float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
                                 float maxErr2 = MAX( maxErr * maxPixel.p[1], FLT_MIN );
                                 float maxErr3 = MAX( maxErr * maxPixel.p[2], FLT_MIN );
@@ -864,10 +869,14 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                                                                                    xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
                                                                                    imageSampler, expected, 0, NULL, lod );
 
-                                        err1 = fabsf( resultPtr[0] - expected[0] );
-                                        err2 = fabsf( resultPtr[1] - expected[1] );
-                                        err3 = fabsf( resultPtr[2] - expected[2] );
-                                        err4 = fabsf( resultPtr[3] - expected[3] );
+                                        err1 = ABS_ERROR(resultPtr[0],
+                                                         expected[0]);
+                                        err2 = ABS_ERROR(resultPtr[1],
+                                                         expected[1]);
+                                        err3 = ABS_ERROR(resultPtr[2],
+                                                         expected[2]);
+                                        err4 = ABS_ERROR(resultPtr[3],
+                                                         expected[3]);
                                     }
                                 }
                                 if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    ||

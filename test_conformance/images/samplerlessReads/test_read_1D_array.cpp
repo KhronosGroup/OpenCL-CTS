@@ -22,14 +22,8 @@
     #include <setjmp.h>
 #endif
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool                 gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gDeviceLt20;
-extern bool                 gTestReadWrite;
-
-#define MAX_TRIES   1
-#define MAX_CLAMPED 1
+extern bool gDeviceLt20;
+extern bool gTestReadWrite;
 
 const char *read1DArrayKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_array_t input, sampler_t sampler, __global int *results )\n"
@@ -173,6 +167,8 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
     clReleaseSampler(actualSampler);
     clReleaseMemObject(results);
+    clReleaseMemObject(read_only_image);
+
     if(gTestReadWrite)
     {
         clReleaseMemObject(read_write_image);
@@ -197,6 +193,11 @@ int test_read_image_set_1D_array( cl_device_id device, cl_context context, cl_co
     cl_ulong maxAllocSize, memSize;
     image_descriptor imageInfo = { 0 };
     size_t pixelSize;
+
+    if (gTestReadWrite && checkForReadWriteImageSupport(device))
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
 
     imageInfo.format = format;
     imageInfo.height = imageInfo.depth = 0;
