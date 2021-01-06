@@ -252,3 +252,22 @@ extern int test_negative_create_command_queue_with_properties(
 extern int test_negative_create_command_queue_with_properties_khr(
     cl_device_id deviceID, cl_context context, cl_command_queue queue,
     int num_elements);
+extern int test_negative_set_default_device_command_queue(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_retain_command_queue(cl_device_id deviceID,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
+extern int test_negative_release_command_queue(cl_device_id deviceID,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
+extern int test_negative_get_command_queue_info(cl_device_id deviceID,
+                                                cl_context context,
+                                                cl_command_queue queue,
+                                                int num_elements);
+extern int test_negative_set_command_queue_property(cl_device_id deviceID,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements);
