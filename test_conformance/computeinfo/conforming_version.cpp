@@ -27,7 +27,7 @@ int test_conformance_version(cl_device_id deviceID, cl_context context,
     // Latest conformance version passed should match vYYYY-MM-DD-XX, where XX
     // is a number
     std::regex valid_format("^v\\d{4}-(((0)[1-9])|((1)[0-2]))-((0)[1-9]|[1-2]["
-                            "0-9]|(3)[0-1])-[0-9][0-9]$");
+                            "0-9]|(3)[0-1])-\\d{2}$");
     test_assert_error(
         std::regex_match(version_string, valid_format),
         "CL_DEVICE_LATEST_CONFORMANCE_VERSION_PASSED does not return "
