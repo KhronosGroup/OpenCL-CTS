@@ -53,6 +53,8 @@ int determine_validation_error_offset(
     float zAddressOffset, size_t j, int &numTries, int &numClamped,
     bool printAsFloat, int lod)
 {
+    bool image_type_3D = ((imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                          || (imageInfo->type == CL_MEM_OBJECT_IMAGE3D));
     int actualX, actualY, actualZ;
     int found = debug_find_pixel_in_image(imagePtr, imageInfo, resultPtr,
                                           &actualX, &actualY, &actualZ, lod);
@@ -66,16 +68,16 @@ int determine_validation_error_offset(
         return TEST_FAIL;
     }
 
-    clamped = get_integer_coords_offset(x, y, z, xAddressOffset, yAddressOffset,
-                                        zAddressOffset, imageWidth, imageHeight,
-                                        imageDepth, imageSampler, imageInfo,
-                                        clampedX, clampedY, clampedZ);
+    clamped = get_integer_coords_offset(
+        x, y, image_type_3D ? z : 0.0f, xAddressOffset, yAddressOffset,
+        image_type_3D ? zAddressOffset : 0.0f, imageWidth, imageHeight,
+        imageDepth, imageSampler, imageInfo, clampedX, clampedY, clampedZ);
 
     if (found)
     {
         // Is it a clamping bug?
         if (clamped && clampedX == actualX && clampedY == actualY
-            && clampedZ == actualZ)
+            && (clampedZ == actualZ || !image_type_3D))
         {
             if ((--numClamped) == 0)
             {

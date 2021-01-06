@@ -35,21 +35,29 @@ cl_sampler create_sampler(cl_context context, image_sampler_data *sdata, bool te
 }
 
 bool get_image_dimensions(image_descriptor *imageInfo, size_t &width,
-                          size_t &height, size_t &depth)
+                          size_t &height, size_t &depth, int &num_dims)
 {
     width = imageInfo->width;
     height = 1;
     depth = 1;
     switch (imageInfo->type)
     {
-        case CL_MEM_OBJECT_IMAGE1D: break;
-        case CL_MEM_OBJECT_IMAGE1D_ARRAY: height = imageInfo->arraySize; break;
-        case CL_MEM_OBJECT_IMAGE2D: height = imageInfo->height; break;
+        case CL_MEM_OBJECT_IMAGE1D: num_dims = 1; break;
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            num_dims = 2;
+            height = imageInfo->arraySize;
+            break;
+        case CL_MEM_OBJECT_IMAGE2D:
+            num_dims = 2;
+            height = imageInfo->height;
+            break;
         case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            num_dims = 3;
             height = imageInfo->height;
             depth = imageInfo->arraySize;
             break;
         case CL_MEM_OBJECT_IMAGE3D:
+            num_dims = 3;
             height = imageInfo->height;
             depth = imageInfo->depth;
             break;
@@ -58,6 +66,13 @@ bool get_image_dimensions(image_descriptor *imageInfo, size_t &width,
             return TEST_FAIL;
     }
     return 0;
+}
+
+bool get_image_dimensions(image_descriptor *imageInfo, size_t &width,
+                          size_t &height, size_t &depth)
+{
+    int ignoreMe;
+    return get_image_dimensions(imageInfo, width, height, depth, ignoreMe);
 }
 
 static bool InitFloatCoordsCommon(image_descriptor *imageInfo,
@@ -210,6 +225,11 @@ cl_mem create_image_of_type(cl_context context, cl_mem_flags mem_flags,
     cl_mem image;
     switch (imageInfo->type)
     {
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            image = create_image_1d_array(
+                context, mem_flags, imageInfo->format, imageInfo->width,
+                imageInfo->arraySize, row_pitch, slice_pitch, host_ptr, error);
+            break;
         case CL_MEM_OBJECT_IMAGE2D_ARRAY:
             image = create_image_2d_array(context, mem_flags, imageInfo->format,
                                           imageInfo->width, imageInfo->height,
@@ -237,13 +257,16 @@ static size_t get_image_num_pixels(image_descriptor *imageInfo, size_t width,
     size_t image_size;
     switch (imageInfo->type)
     {
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            image_size = width * array_size;
+            break;
         case CL_MEM_OBJECT_IMAGE2D_ARRAY:
             image_size = width * height * array_size;
             break;
         case CL_MEM_OBJECT_IMAGE3D: image_size = width * height * depth; break;
         default:
-            log_error("Implementation is incomplete, only 3D images are "
-                      "supported so far");
+            log_error("Implementation is incomplete, 2D images are "
+                      "not yet supported here");
             return 0;
     }
     return image_size;
@@ -254,16 +277,20 @@ int test_read_image(cl_context context, cl_command_queue queue,
                     image_sampler_data *imageSampler, bool useFloatCoords,
                     ExplicitType outputType, MTdata d)
 {
+    bool image_type_3D = ((imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                          || (imageInfo->type == CL_MEM_OBJECT_IMAGE3D));
+
     int error;
-    size_t threads[3];
     static int initHalf = 0;
+    int num_dimensions;
 
     size_t image_size =
         get_image_num_pixels(imageInfo, imageInfo->width, imageInfo->height,
                              imageInfo->depth, imageInfo->arraySize);
     test_assert_error(0 != image_size, "Invalid image size");
     size_t width_size, height_size, depth_size;
-    if (get_image_dimensions(imageInfo, width_size, height_size, depth_size))
+    if (get_image_dimensions(imageInfo, width_size, height_size, depth_size,
+                             num_dimensions))
     {
         log_error("ERROR: invalid image dimensions");
         return CL_INVALID_VALUE;
@@ -442,10 +469,9 @@ int test_read_image(cl_context context, cl_command_queue queue,
         else
         {
             int nextLevelOffset = 0;
-
             for (int i = 0; i < imageInfo->num_mip_levels; i++)
             {
-                origin[3] = i;
+                origin[num_dimensions] = i;
                 error = clEnqueueWriteImage(
                     queue, image, CL_TRUE, origin, region, 0, 0,
                     ((char *)imageValues + nextLevelOffset), 0, NULL, NULL);
@@ -483,10 +509,13 @@ int test_read_image(cl_context context, cl_command_queue queue,
         clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
                        sizeof(cl_float) * image_size, yOffsetValues, &error);
     test_error(error, "Unable to create y offset buffer");
-    zOffsets =
-        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                       sizeof(cl_float) * image_size, zOffsetValues, &error);
-    test_error(error, "Unable to create y offset buffer");
+    if (image_type_3D)
+    {
+        zOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                  sizeof(cl_float) * image_size, zOffsetValues,
+                                  &error);
+        test_error(error, "Unable to create z offset buffer");
+    }
     results = clCreateBuffer(
         context, CL_MEM_READ_WRITE,
         get_explicit_type_size(outputType) * 4 * image_size, NULL, &error);
@@ -510,8 +539,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
     test_error(error, "Unable to set kernel arguments");
     error = clSetKernelArg(kernel, idx++, sizeof(cl_mem), &yOffsets);
     test_error(error, "Unable to set kernel arguments");
-    error = clSetKernelArg(kernel, idx++, sizeof(cl_mem), &zOffsets);
-    test_error(error, "Unable to set kernel arguments");
+    if (image_type_3D)
+    {
+        error = clSetKernelArg(kernel, idx++, sizeof(cl_mem), &zOffsets);
+        test_error(error, "Unable to set kernel arguments");
+    }
     error = clSetKernelArg(kernel, idx++, sizeof(cl_mem), &results);
     test_error(error, "Unable to set kernel arguments");
 
@@ -596,10 +628,13 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                          sizeof(cl_float) * image_size,
                                          yOffsetValues, 0, NULL, NULL);
             test_error(error, "Unable to write y offsets");
-            error = clEnqueueWriteBuffer(queue, zOffsets, CL_TRUE, 0,
-                                         sizeof(cl_float) * image_size,
-                                         zOffsetValues, 0, NULL, NULL);
-            test_error(error, "Unable to write z offsets");
+            if (image_type_3D)
+            {
+                error = clEnqueueWriteBuffer(queue, zOffsets, CL_TRUE, 0,
+                                             sizeof(cl_float) * image_size,
+                                             zOffsetValues, 0, NULL, NULL);
+                test_error(error, "Unable to write z offsets");
+            }
 
 
             memset(resultValues, 0xff, resultValuesSize);
@@ -607,13 +642,12 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                  resultValues, 0, NULL, NULL);
 
             // Figure out thread dimensions
-            threads[0] = (size_t)width_lod;
-            threads[1] = (size_t)height_lod;
-            threads[2] = (size_t)depth_lod;
+            size_t threads[] = { (size_t)width_lod, (size_t)height_lod,
+                                 (size_t)depth_lod };
 
             // Run the kernel
-            error = clEnqueueNDRangeKernel(queue, kernel, 3, NULL, threads,
-                                           NULL, 0, NULL, NULL);
+            error = clEnqueueNDRangeKernel(queue, kernel, num_dimensions, NULL,
+                                           threads, NULL, 0, NULL, NULL);
             test_error(error, "Unable to run kernel");
 
             // Get results
@@ -634,7 +668,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                 float *resultPtr = (float *)(char *)resultValues;
                 float expected[4], error = 0.0f;
                 float maxErr = get_max_relative_error(
-                    imageInfo->format, imageSampler, 1 /*3D*/,
+                    imageInfo->format, imageSampler, image_type_3D,
                     CL_FILTER_LINEAR == imageSampler->filter_mode);
 
                 for (size_t z = 0, j = 0; z < depth_lod; z++)
@@ -883,7 +917,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                 float *resultPtr = (float *)(char *)resultValues;
                 float expected[4], error = 0.0f;
                 float maxErr = get_max_relative_error(
-                    imageInfo->format, imageSampler, 1 /*3D*/,
+                    imageInfo->format, imageSampler, image_type_3D,
                     CL_FILTER_LINEAR == imageSampler->filter_mode);
 
                 for (size_t z = 0, j = 0; z < depth_lod; z++)
@@ -934,8 +968,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                 imagePtr, imageInfo,
                                                 xOffsetValues[j],
                                                 yOffsetValues[j],
-                                                zOffsetValues[j], norm_offset_x,
-                                                norm_offset_y, norm_offset_z,
+                                                image_type_3D ? zOffsetValues[j]
+                                                              : 0.0f,
+                                                norm_offset_x, norm_offset_y,
+                                                image_type_3D ? norm_offset_z
+                                                              : 0.0f,
                                                 imageSampler, expected, 0,
                                                 &hasDenormals, lod);
 
@@ -992,10 +1029,14 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         imagePtr, imageInfo,
                                                         xOffsetValues[j],
                                                         yOffsetValues[j],
-                                                        zOffsetValues[j],
+                                                        image_type_3D
+                                                            ? zOffsetValues[j]
+                                                            : 0.0f,
                                                         norm_offset_x,
                                                         norm_offset_y,
-                                                        norm_offset_z,
+                                                        image_type_3D
+                                                            ? norm_offset_z
+                                                            : 0.0f,
                                                         imageSampler, expected,
                                                         0, NULL, lod);
 
@@ -1047,6 +1088,20 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                              && !checkOnlyOnePixel;
                                              norm_offset_z += NORM_OFFSET)
                                         {
+                                            // If we are not on a GPU, or we are
+                                            // not normalized, then only test
+                                            // with offsets (0.0, 0.0, 0.0)
+                                            // E.g., test one pixel.
+                                            if (!imageSampler->normalized_coords
+                                                || gDeviceType
+                                                    != CL_DEVICE_TYPE_GPU
+                                                || NORM_OFFSET == 0)
+                                            {
+                                                norm_offset_x = 0.0f;
+                                                norm_offset_y = 0.0f;
+                                                norm_offset_z = 0.0f;
+                                                checkOnlyOnePixel = 1;
+                                            }
 
                                             int hasDenormals = 0;
                                             FloatPixel maxPixel =
@@ -1054,12 +1109,16 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                     imagePtr, imageInfo,
                                                     xOffsetValues[j],
                                                     yOffsetValues[j],
-                                                    zOffsetValues[j],
+                                                    image_type_3D
+                                                        ? zOffsetValues[j]
+                                                        : 0.0f,
                                                     norm_offset_x,
                                                     norm_offset_y,
-                                                    norm_offset_z, imageSampler,
-                                                    expected, 0, &hasDenormals,
-                                                    lod);
+                                                    image_type_3D
+                                                        ? norm_offset_z
+                                                        : 0.0f,
+                                                    imageSampler, expected, 0,
+                                                    &hasDenormals, lod);
 
                                             float err1 =
                                                 ABS_ERROR(sRGBmap(resultPtr[0]),
@@ -1134,11 +1193,15 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         expected, error,
                                                         xOffsetValues[j],
                                                         yOffsetValues[j],
-                                                        zOffsetValues[j],
+                                                        image_type_3D
+                                                            ? zOffsetValues[j]
+                                                            : 0.0f,
                                                         norm_offset_x,
                                                         norm_offset_y,
-                                                        norm_offset_z, j,
-                                                        numTries, numClamped,
+                                                        image_type_3D
+                                                            ? norm_offset_z
+                                                            : 0.0f,
+                                                        j, numTries, numClamped,
                                                         true, lod);
                                                 log_error("Step by step:\n");
                                                 FloatPixel temp =
@@ -1146,10 +1209,14 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         imagePtr, imageInfo,
                                                         xOffsetValues[j],
                                                         yOffsetValues[j],
-                                                        zOffsetValues[j],
+                                                        image_type_3D
+                                                            ? zOffsetValues[j]
+                                                            : 0.0f,
                                                         norm_offset_x,
                                                         norm_offset_y,
-                                                        norm_offset_z,
+                                                        image_type_3D
+                                                            ? norm_offset_z
+                                                            : 0.0f,
                                                         imageSampler, tempOut,
                                                         1 /*verbose*/,
                                                         &hasDenormals, lod);
@@ -1201,7 +1268,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                 float *resultPtr = (float *)(char *)resultValues;
                 float expected[4], error = 0.0f;
                 float maxErr = get_max_relative_error(
-                    imageInfo->format, imageSampler, 1 /*3D*/,
+                    imageInfo->format, imageSampler, image_type_3D,
                     CL_FILTER_LINEAR == imageSampler->filter_mode);
 
                 for (size_t z = 0, j = 0; z < depth_lod; z++)
@@ -1252,8 +1319,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                 imagePtr, imageInfo,
                                                 xOffsetValues[j],
                                                 yOffsetValues[j],
-                                                zOffsetValues[j], norm_offset_x,
-                                                norm_offset_y, norm_offset_z,
+                                                image_type_3D ? zOffsetValues[j]
+                                                              : 0.0f,
+                                                norm_offset_x, norm_offset_y,
+                                                image_type_3D ? norm_offset_z
+                                                              : 0.0f,
                                                 imageSampler, expected, 0,
                                                 &hasDenormals, lod);
 
@@ -1369,6 +1439,20 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                              && !checkOnlyOnePixel;
                                              norm_offset_z += NORM_OFFSET)
                                         {
+                                            // If we are not on a GPU, or we are
+                                            // not normalized, then only test
+                                            // with offsets (0.0, 0.0) E.g.,
+                                            // test one pixel.
+                                            if (!imageSampler->normalized_coords
+                                                || gDeviceType
+                                                    != CL_DEVICE_TYPE_GPU
+                                                || NORM_OFFSET == 0)
+                                            {
+                                                norm_offset_x = 0.0f;
+                                                norm_offset_y = 0.0f;
+                                                norm_offset_z = 0.0f;
+                                                checkOnlyOnePixel = 1;
+                                            }
 
                                             int hasDenormals = 0;
                                             FloatPixel maxPixel =
@@ -1376,12 +1460,16 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                     imagePtr, imageInfo,
                                                     xOffsetValues[j],
                                                     yOffsetValues[j],
-                                                    zOffsetValues[j],
+                                                    image_type_3D
+                                                        ? zOffsetValues[j]
+                                                        : 0.0f,
                                                     norm_offset_x,
                                                     norm_offset_y,
-                                                    norm_offset_z, imageSampler,
-                                                    expected, 0, &hasDenormals,
-                                                    lod);
+                                                    image_type_3D
+                                                        ? norm_offset_z
+                                                        : 0.0f,
+                                                    imageSampler, expected, 0,
+                                                    &hasDenormals, lod);
 
                                             float err1 = ABS_ERROR(resultPtr[0],
                                                                    expected[0]);
@@ -1423,7 +1511,10 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                             imagePtr, imageInfo,
                                                             xOffsetValues[j],
                                                             yOffsetValues[j],
-                                                            zOffsetValues[j],
+                                                            image_type_3D
+                                                                ? zOffsetValues
+                                                                    [j]
+                                                                : 0.0f,
                                                             imageSampler,
                                                             expected, 0, NULL,
                                                             lod);
@@ -1464,11 +1555,15 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         expected, error,
                                                         xOffsetValues[j],
                                                         yOffsetValues[j],
-                                                        zOffsetValues[j],
+                                                        image_type_3D
+                                                            ? zOffsetValues[j]
+                                                            : 0.0f,
                                                         norm_offset_x,
                                                         norm_offset_y,
-                                                        norm_offset_z, j,
-                                                        numTries, numClamped,
+                                                        image_type_3D
+                                                            ? norm_offset_z
+                                                            : 0.0f,
+                                                        j, numTries, numClamped,
                                                         true, lod);
                                                 log_error("Step by step:\n");
                                                 FloatPixel temp =
@@ -1476,10 +1571,14 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         imagePtr, imageInfo,
                                                         xOffsetValues[j],
                                                         yOffsetValues[j],
-                                                        zOffsetValues[j],
+                                                        image_type_3D
+                                                            ? zOffsetValues[j]
+                                                            : 0.0f,
                                                         norm_offset_x,
                                                         norm_offset_y,
-                                                        norm_offset_z,
+                                                        image_type_3D
+                                                            ? norm_offset_z
+                                                            : 0.0f,
                                                         imageSampler, tempOut,
                                                         1 /*verbose*/,
                                                         &hasDenormals, lod);
@@ -1579,8 +1678,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                         sample_image_pixel_offset<unsigned int>(
                                             imagePtr, imageInfo,
                                             xOffsetValues[j], yOffsetValues[j],
-                                            zOffsetValues[j], norm_offset_x,
-                                            norm_offset_y, norm_offset_z,
+                                            image_type_3D ? zOffsetValues[j]
+                                                          : 0.0f,
+                                            norm_offset_x, norm_offset_y,
+                                            image_type_3D ? norm_offset_z
+                                                          : 0.0f,
                                             imageSampler, expected, lod);
 
                                         error = errMax(
@@ -1646,8 +1748,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                 imagePtr, imageInfo,
                                                 xOffsetValues[j],
                                                 yOffsetValues[j],
-                                                zOffsetValues[j], norm_offset_x,
-                                                norm_offset_y, norm_offset_z,
+                                                image_type_3D ? zOffsetValues[j]
+                                                              : 0.0f,
+                                                norm_offset_x, norm_offset_y,
+                                                image_type_3D ? norm_offset_z
+                                                              : 0.0f,
                                                 imageSampler, expected, lod);
 
                                             error = errMax(
@@ -1762,8 +1867,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                         sample_image_pixel_offset<int>(
                                             imagePtr, imageInfo,
                                             xOffsetValues[j], yOffsetValues[j],
-                                            zOffsetValues[j], norm_offset_x,
-                                            norm_offset_y, norm_offset_z,
+                                            image_type_3D ? zOffsetValues[j]
+                                                          : 0.0f,
+                                            norm_offset_x, norm_offset_y,
+                                            image_type_3D ? norm_offset_z
+                                                          : 0.0f,
                                             imageSampler, expected, lod);
 
                                         error = errMax(
@@ -1829,8 +1937,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                 imagePtr, imageInfo,
                                                 xOffsetValues[j],
                                                 yOffsetValues[j],
-                                                zOffsetValues[j], norm_offset_x,
-                                                norm_offset_y, norm_offset_z,
+                                                image_type_3D ? zOffsetValues[j]
+                                                              : 0.0f,
+                                                norm_offset_x, norm_offset_y,
+                                                image_type_3D ? norm_offset_z
+                                                              : 0.0f,
                                                 imageSampler, expected, lod);
 
                                             error = errMax(
@@ -1862,11 +1973,15 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         expected, error,
                                                         xOffsetValues[j],
                                                         yOffsetValues[j],
-                                                        zOffsetValues[j],
+                                                        image_type_3D
+                                                            ? zOffsetValues[j]
+                                                            : 0.0f,
                                                         norm_offset_x,
                                                         norm_offset_y,
-                                                        norm_offset_z, j,
-                                                        numTries, numClamped,
+                                                        image_type_3D
+                                                            ? norm_offset_z
+                                                            : 0.0f,
+                                                        j, numTries, numClamped,
                                                         false, lod);
                                             }
                                             else
