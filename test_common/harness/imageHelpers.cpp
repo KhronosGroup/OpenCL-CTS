@@ -2962,7 +2962,6 @@ int DetectFloatToHalfRoundingMode(
                       err);
             clReleaseMemObject(inBuf);
             clReleaseMemObject(outImage);
-            clReleaseKernel(kernel);
             return err;
         }
 
@@ -2988,7 +2987,6 @@ int DetectFloatToHalfRoundingMode(
                       err);
             clReleaseMemObject(inBuf);
             clReleaseMemObject(outImage);
-            clReleaseKernel(kernel);
             return err;
         }
 
@@ -3006,7 +3004,6 @@ int DetectFloatToHalfRoundingMode(
                       err);
             clReleaseMemObject(inBuf);
             clReleaseMemObject(outImage);
-            clReleaseKernel(kernel);
             return err;
         }
 
@@ -3061,7 +3058,6 @@ int DetectFloatToHalfRoundingMode(
         // clean up
         clReleaseMemObject(inBuf);
         clReleaseMemObject(outImage);
-        clReleaseKernel(kernel);
         return err;
     }
 
