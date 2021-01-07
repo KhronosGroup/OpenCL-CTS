@@ -131,85 +131,90 @@ int test_get_platform_info(cl_device_id deviceID, cl_context context, cl_command
     return 0;
 }
 
-int test_get_sampler_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+template <typename T>
+int sampler_param_test(cl_sampler sampler, cl_sampler_info param_name,
+                       T expected, const char *name)
 {
-    int error;
     size_t size;
+    T val;
+    int error = clGetSamplerInfo(sampler, param_name, sizeof(val), &val, &size);
+    test_error(error, "Unable to get sampler info");
+    if (val != expected)
+    {
+        test_fail("ERROR: Sampler %s did not validate!\n", name);
+    }
+    if (size != sizeof(val))
+    {
+        test_fail("ERROR: Returned size of sampler %s does not validate! "
+                  "(expected %d, got %d)\n",
+                  name, (int)sizeof(val), (int)size);
+    }
+    return 0;
+}
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID )
+static cl_int normalized_coord_values[] = { CL_TRUE, CL_FALSE };
+static cl_addressing_mode addressing_mode_values[] = {
+    CL_ADDRESS_NONE, CL_ADDRESS_CLAMP_TO_EDGE, CL_ADDRESS_CLAMP,
+    CL_ADDRESS_REPEAT, CL_ADDRESS_MIRRORED_REPEAT
+};
+static cl_filter_mode filter_mode_values[] = { CL_FILTER_NEAREST,
+                                               CL_FILTER_LINEAR };
 
-    cl_sampler_properties properties[] = {
-        CL_SAMPLER_NORMALIZED_COORDS, CL_TRUE,
-        CL_SAMPLER_ADDRESSING_MODE, CL_ADDRESS_CLAMP,
-        CL_SAMPLER_FILTER_MODE, CL_FILTER_LINEAR,
-        0 };
-    clSamplerWrapper sampler = clCreateSamplerWithProperties(context, properties, &error);
-    test_error( error, "Unable to create sampler to test with" );
-
+int test_sampler_params(cl_device_id deviceID, cl_context context,
+                        bool is_compatibility, int norm_coord_num,
+                        int addr_mod_num, int filt_mod_num)
+{
     cl_uint refCount;
-    error = clGetSamplerInfo( sampler, CL_SAMPLER_REFERENCE_COUNT, sizeof( refCount ), &refCount, &size );
-    test_error( error, "Unable to get sampler ref count" );
-    if( size != sizeof( refCount ) )
+    size_t size;
+    int error;
+
+    clSamplerWrapper sampler;
+    cl_sampler_properties properties[] = {
+        CL_SAMPLER_NORMALIZED_COORDS,
+        normalized_coord_values[norm_coord_num],
+        CL_SAMPLER_ADDRESSING_MODE,
+        addressing_mode_values[addr_mod_num],
+        CL_SAMPLER_FILTER_MODE,
+        filter_mode_values[filt_mod_num],
+        0
+    };
+
+    if (is_compatibility)
     {
-        log_error( "ERROR: Returned size of sampler refcount does not validate! (expected %d, got %d)\n", (int)sizeof( refCount ), (int)size );
-        return -1;
+        sampler =
+            clCreateSampler(context, normalized_coord_values[norm_coord_num],
+                            addressing_mode_values[addr_mod_num],
+                            filter_mode_values[filt_mod_num], &error);
+        test_error(error, "Unable to create sampler to test with");
+    }
+    else
+    {
+        sampler = clCreateSamplerWithProperties(context, properties, &error);
+        test_error(error, "Unable to create sampler to test with");
     }
 
-    cl_context otherCtx;
-    error = clGetSamplerInfo( sampler, CL_SAMPLER_CONTEXT, sizeof( otherCtx ), &otherCtx, &size );
-    test_error( error, "Unable to get sampler context" );
-    if( otherCtx != context )
-    {
-        log_error( "ERROR: Sampler context does not validate! (expected %p, got %p)\n", context, otherCtx );
-        return -1;
-    }
-    if( size != sizeof( otherCtx ) )
-    {
-        log_error( "ERROR: Returned size of sampler context does not validate! (expected %d, got %d)\n", (int)sizeof( otherCtx ), (int)size );
-        return -1;
-    }
+    error = clGetSamplerInfo(sampler, CL_SAMPLER_REFERENCE_COUNT,
+                             sizeof(refCount), &refCount, &size);
+    test_error(error, "Unable to get sampler ref count");
+    test_assert_error(size == sizeof(refCount),
+                      "Returned size of sampler refcount does not validate!\n");
 
-    cl_addressing_mode mode;
-    error = clGetSamplerInfo( sampler, CL_SAMPLER_ADDRESSING_MODE, sizeof( mode ), &mode, &size );
-    test_error( error, "Unable to get sampler addressing mode" );
-    if( mode != CL_ADDRESS_CLAMP )
-    {
-        log_error( "ERROR: Sampler addressing mode does not validate! (expected %d, got %d)\n", (int)CL_ADDRESS_CLAMP, (int)mode );
-        return -1;
-    }
-    if( size != sizeof( mode ) )
-    {
-        log_error( "ERROR: Returned size of sampler addressing mode does not validate! (expected %d, got %d)\n", (int)sizeof( mode ), (int)size );
-        return -1;
-    }
+    error = sampler_param_test(sampler, CL_SAMPLER_CONTEXT, context, "context");
+    test_error(error, "param checking failed");
 
-    cl_filter_mode fmode;
-    error = clGetSamplerInfo( sampler, CL_SAMPLER_FILTER_MODE, sizeof( fmode ), &fmode, &size );
-    test_error( error, "Unable to get sampler filter mode" );
-    if( fmode != CL_FILTER_LINEAR )
-    {
-        log_error( "ERROR: Sampler filter mode does not validate! (expected %d, got %d)\n", (int)CL_FILTER_LINEAR, (int)fmode );
-        return -1;
-    }
-    if( size != sizeof( fmode ) )
-    {
-        log_error( "ERROR: Returned size of sampler filter mode does not validate! (expected %d, got %d)\n", (int)sizeof( fmode ), (int)size );
-        return -1;
-    }
+    error = sampler_param_test(sampler, CL_SAMPLER_ADDRESSING_MODE,
+                               addressing_mode_values[addr_mod_num],
+                               "addressing mode");
+    test_error(error, "param checking failed");
 
-    cl_int norm;
-    error = clGetSamplerInfo( sampler, CL_SAMPLER_NORMALIZED_COORDS, sizeof( norm ), &norm, &size );
-    test_error( error, "Unable to get sampler normalized flag" );
-    if( norm != CL_TRUE )
-    {
-        log_error( "ERROR: Sampler normalized flag does not validate! (expected %d, got %d)\n", (int)CL_TRUE, (int)norm );
-        return -1;
-    }
-    if( size != sizeof( norm ) )
-    {
-        log_error( "ERROR: Returned size of sampler normalized flag does not validate! (expected %d, got %d)\n", (int)sizeof( norm ), (int)size );
-        return -1;
-    }
+    error = sampler_param_test(sampler, CL_SAMPLER_FILTER_MODE,
+                               filter_mode_values[filt_mod_num], "filter mode");
+    test_error(error, "param checking failed");
+
+    error = sampler_param_test(sampler, CL_SAMPLER_NORMALIZED_COORDS,
+                               normalized_coord_values[norm_coord_num],
+                               "normalized coords");
+    test_error(error, "param checking failed");
 
     Version version = get_device_cl_version(deviceID);
     if (version >= Version(3, 0))
@@ -244,79 +249,203 @@ int test_get_sampler_info(cl_device_id deviceID, cl_context context, cl_command_
         error = compareProperties(check_properties, test_properties);
         test_error(error, "checkProperties mismatch.");
     }
+    return 0;
+}
+
+int get_sampler_info_params(cl_device_id deviceID, cl_context context,
+                            bool is_compatibility)
+{
+    for (int norm_coord_num = 0;
+         norm_coord_num < ARRAY_SIZE(normalized_coord_values); norm_coord_num++)
+    {
+        for (int addr_mod_num = 0;
+             addr_mod_num < ARRAY_SIZE(addressing_mode_values); addr_mod_num++)
+        {
+            if ((normalized_coord_values[norm_coord_num] == CL_FALSE)
+                && ((addressing_mode_values[addr_mod_num] == CL_ADDRESS_REPEAT)
+                    || (addressing_mode_values[addr_mod_num]
+                        == CL_ADDRESS_MIRRORED_REPEAT)))
+            {
+                continue;
+            }
+            for (int filt_mod_num = 0;
+                 filt_mod_num < ARRAY_SIZE(filter_mode_values); filt_mod_num++)
+            {
+                int err = test_sampler_params(deviceID, context,
+                                              is_compatibility, norm_coord_num,
+                                              addr_mod_num, filt_mod_num);
+                test_error(err, "testing clGetSamplerInfo params failed");
+            }
+        }
+    }
+    return 0;
+}
+int test_get_sampler_info(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue, int num_elements)
+{
+    int error;
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID)
+
+    error = get_sampler_info_params(deviceID, context, false);
+    test_error(error, "Test Failed");
 
     return 0;
 }
 
-#define TEST_COMMAND_QUEUE_PARAM( queue, paramName, val, expected, name, type, cast )    \
-error = clGetCommandQueueInfo( queue, paramName, sizeof( val ), &val, &size );        \
-test_error( error, "Unable to get command queue " name );                            \
-if( val != expected )                                                                \
-{                                                                                    \
-log_error( "ERROR: Command queue " name " did not validate! (expected " type ", got " type ")\n", (cast)expected, (cast)val );    \
-return -1;                                                                        \
-}            \
-if( size != sizeof( val ) )                \
-{                                        \
-log_error( "ERROR: Returned size of command queue " name " does not validate! (expected %d, got %d)\n", (int)sizeof( val ), (int)size );    \
-return -1;    \
+int test_get_sampler_info_compatibility(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements)
+{
+    int error;
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID)
+
+    error = get_sampler_info_params(deviceID, context, true);
+    test_error(error, "Test Failed");
+
+    return 0;
 }
 
-int test_get_command_queue_info(cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements)
+template <typename T>
+int command_queue_param_test(cl_command_queue queue,
+                             cl_command_queue_info param_name, T expected,
+                             const char *name)
+{
+    size_t size;
+    T val;
+    int error =
+        clGetCommandQueueInfo(queue, param_name, sizeof(val), &val, &size);
+    test_error(error, "Unable to get command queue info");
+    if (val != expected)
+    {
+        test_fail("ERROR: Command queue %s did not validate!\n", name);
+    }
+    if (size != sizeof(val))
+    {
+        test_fail("ERROR: Returned size of command queue %s does not validate! "
+                  "(expected %d, got %d)\n",
+                  name, (int)sizeof(val), (int)size);
+    }
+    return 0;
+}
+
+#define MIN_NUM_COMMAND_QUEUE_PROPERTIES 2
+#define OOO_NUM_COMMAND_QUEUE_PROPERTIES 4
+static cl_command_queue_properties property_options[] = {
+    0,
+
+    CL_QUEUE_PROFILING_ENABLE,
+
+    CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+
+    CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+
+    CL_QUEUE_ON_DEVICE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+
+    CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_ON_DEVICE
+        | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+
+    CL_QUEUE_ON_DEVICE | CL_QUEUE_ON_DEVICE_DEFAULT
+        | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+
+    CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_ON_DEVICE | CL_QUEUE_ON_DEVICE_DEFAULT
+        | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+};
+
+int check_get_command_queue_info_params(cl_device_id deviceID,
+                                        cl_context context,
+                                        bool is_compatibility)
 {
     int error;
     size_t size;
 
-    cl_queue_properties device_props;
-    cl_queue_properties queue_props[] = {CL_QUEUE_PROPERTIES,0,0};
+    cl_queue_properties host_queue_props, device_queue_props;
+    cl_queue_properties queue_props[] = { CL_QUEUE_PROPERTIES, 0, 0 };
 
-    clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_HOST_PROPERTIES, sizeof(device_props), &device_props, NULL);
-    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n", (int)device_props);
+    clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_HOST_PROPERTIES,
+                    sizeof(host_queue_props), &host_queue_props, NULL);
+    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n",
+             (int)host_queue_props);
+    clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES,
+                    sizeof(device_queue_props), &device_queue_props, NULL);
+    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n",
+             (int)device_queue_props);
 
-    // Mask off vendor extension properties.  Only test standard OpenCL properties
-    device_props &= CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE|CL_QUEUE_PROFILING_ENABLE;
+    auto version = get_device_cl_version(deviceID);
 
-    queue_props[1] = device_props;
-    clCommandQueueWrapper queue = clCreateCommandQueueWithProperties( context, deviceID, &queue_props[0], &error );
-    test_error( error, "Unable to create command queue to test with" );
+    // Are on device queues supported
+    bool on_device_supported =
+        (version >= Version(2, 0) && version < Version(3, 0))
+        || (version >= Version(3, 0) && device_queue_props != 0);
 
-    cl_uint refCount;
-    error = clGetCommandQueueInfo( queue, CL_QUEUE_REFERENCE_COUNT, sizeof( refCount ), &refCount, &size );
-    test_error( error, "Unable to get command queue reference count" );
-    if( size != sizeof( refCount ) )
+    int num_test_options = MIN_NUM_COMMAND_QUEUE_PROPERTIES;
+    if (host_queue_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
     {
-        log_error( "ERROR: Returned size of command queue reference count does not validate! (expected %d, got %d)\n", (int)sizeof( refCount ), (int)size );
-        return -1;
+        // Test out-of-order queues properties if supported
+        num_test_options = OOO_NUM_COMMAND_QUEUE_PROPERTIES;
     }
-
-    cl_context otherCtx;
-    TEST_COMMAND_QUEUE_PARAM( queue, CL_QUEUE_CONTEXT, otherCtx, context, "context", "%p", cl_context )
-
-    cl_device_id otherDevice;
-    error = clGetCommandQueueInfo( queue, CL_QUEUE_DEVICE, sizeof(otherDevice), &otherDevice, &size);
-    test_error(error, "clGetCommandQueue failed.");
-
-    if (size != sizeof(cl_device_id)) {
-        log_error( " ERROR: Returned size of command queue CL_QUEUE_DEVICE does not validate! (expected %d, got %d)\n", (int)sizeof( otherDevice ), (int)size );
-        return -1;
-    }
-
-    /* Since the device IDs are opaque types we check the CL_DEVICE_VENDOR_ID which is unique for identical hardware. */
-    cl_uint otherDevice_vid, deviceID_vid;
-    error = clGetDeviceInfo(otherDevice, CL_DEVICE_VENDOR_ID, sizeof(otherDevice_vid), &otherDevice_vid, NULL );
-    test_error( error, "Unable to get device CL_DEVICE_VENDOR_ID" );
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_VENDOR_ID, sizeof(deviceID_vid), &deviceID_vid, NULL );
-    test_error( error, "Unable to get device CL_DEVICE_VENDOR_ID" );
-
-    if( otherDevice_vid != deviceID_vid )
+    if (on_device_supported && !is_compatibility)
     {
-        log_error( "ERROR: Incorrect device returned for queue! (Expected vendor ID 0x%x, got 0x%x)\n", deviceID_vid, otherDevice_vid );
-        return -1;
+        // Test queue on device if supported (in this case out-of-order must
+        // also be supported)
+        num_test_options = ARRAY_SIZE(property_options);
     }
 
-    cl_command_queue_properties props;
-    TEST_COMMAND_QUEUE_PARAM( queue, CL_QUEUE_PROPERTIES, props, (unsigned int)( device_props ), "properties", "%d", unsigned int )
+    for (int i = 0; i < num_test_options; i++)
+    {
+        queue_props[1] = property_options[i];
+        clCommandQueueWrapper queue;
 
+        if (is_compatibility)
+        {
+            queue =
+                clCreateCommandQueue(context, deviceID, queue_props[1], &error);
+            test_error(error, "Unable to create command queue to test with");
+        }
+        else
+        {
+            queue = clCreateCommandQueueWithProperties(context, deviceID,
+                                                       &queue_props[0], &error);
+            test_error(error, "Unable to create command queue to test with");
+        }
+
+        cl_uint refCount;
+        error = clGetCommandQueueInfo(queue, CL_QUEUE_REFERENCE_COUNT,
+                                      sizeof(refCount), &refCount, &size);
+        test_error(error, "Unable to get command queue reference count");
+        test_assert_error(size == sizeof(refCount),
+                          "Returned size of command queue reference count does "
+                          "not validate!\n");
+
+        error = command_queue_param_test(queue, CL_QUEUE_CONTEXT, context,
+                                         "context");
+        test_error(error, "param checking failed");
+
+        error = command_queue_param_test(queue, CL_QUEUE_DEVICE, deviceID,
+                                         "deviceID");
+        test_error(error, "param checking failed");
+
+        error = command_queue_param_test(queue, CL_QUEUE_PROPERTIES,
+                                         queue_props[1], "properties");
+        test_error(error, "param checking failed");
+    }
+    return 0;
+}
+int test_get_command_queue_info(cl_device_id deviceID, cl_context context,
+                                cl_command_queue ignoreQueue, int num_elements)
+{
+    int error = check_get_command_queue_info_params(deviceID, context, false);
+    test_error(error, "Test Failed");
+    return 0;
+}
+
+int test_get_command_queue_info_compatibility(cl_device_id deviceID,
+                                              cl_context context,
+                                              cl_command_queue ignoreQueue,
+                                              int num_elements)
+{
+    int error = check_get_command_queue_info_params(deviceID, context, true);
+    test_error(error, "Test Failed");
     return 0;
 }
 

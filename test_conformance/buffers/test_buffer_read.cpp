@@ -621,11 +621,11 @@ static int verify_read_struct(TestStruct *outptr, int n)
 int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
                       const char *kernelCode[], const char *kernelName[], int (*fn)(void *,int) )
 {
-    cl_mem      buffers[5];
+    clMemWrapper buffers[5];
     void        *outptr[5];
     void        *inptr[5];
-    cl_program  program[5];
-    cl_kernel   kernel[5];
+    clProgramWrapper program[5];
+    clKernelWrapper kernel[5];
     size_t      global_work_size[3];
     cl_int      err;
     int         i;
@@ -650,10 +650,21 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
         return CL_SUCCESS;
     }
 
-    for (src_flag_id=0; src_flag_id < NUM_FLAGS; src_flag_id++) {
-        log_info("Testing with cl_mem_flags src: %s\n", flag_set_names[src_flag_id]);
+    for (i = 0; i < loops; i++)
+    {
 
-        for ( i = 0; i < loops; i++ ){
+        err = create_single_kernel_helper(context, &program[i], &kernel[i], 1,
+                                          &kernelCode[i], kernelName[i]);
+        if (err)
+        {
+            log_error("Creating program for %s\n", type);
+            print_error(err, " Error creating program ");
+            return -1;
+        }
+
+        for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
+        {
+
             outptr[i] = align_malloc( ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
                 log_error( " unable to allocate %d bytes for outptr\n", (int)( ptrSizes[i] * num_elements ) );
@@ -677,22 +688,9 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
                 return -1;
             }
 
-            err = create_single_kernel_helper(  context, &program[i], &kernel[i], 1, &kernelCode[i], kernelName[i] );
-            if ( err ){
-                log_error("Creating program for %s\n", type);
-                print_error(err,  " Error creating program " );
-                clReleaseMemObject(buffers[i]);
-                align_free( outptr[i] );
-                align_free( inptr[i] );
-                return -1;
-            }
-
             err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[i] );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArg failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
@@ -701,9 +699,6 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
             err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueNDRangeKernel failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
@@ -712,28 +707,24 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
             err = clEnqueueReadBuffer( queue, buffers[i], CL_TRUE, 0, ptrSizes[i]*num_elements, outptr[i], 0, NULL, NULL );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueReadBuffer failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
             }
 
             if (fn(outptr[i], num_elements*(1<<i))){
-                log_error( " %s%d test failed\n", type, 1<<i );
+                log_error(" %s%d test failed. cl_mem_flags src: %s\n", type,
+                          1 << i, flag_set_names[src_flag_id]);
                 total_errors++;
             }
             else{
-                log_info( " %s%d test passed\n", type, 1<<i );
+                log_info(" %s%d test passed. cl_mem_flags src: %s\n", type,
+                         1 << i, flag_set_names[src_flag_id]);
             }
 
             err = clEnqueueReadBuffer( queue, buffers[i], CL_TRUE, 0, ptrSizes[i]*num_elements, inptr[i], 0, NULL, NULL );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueReadBuffer failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
@@ -749,9 +740,6 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
 
 
             // cleanup
-            clReleaseMemObject( buffers[i] );
-            clReleaseKernel( kernel[i] );
-            clReleaseProgram( program[i] );
             align_free( outptr[i] );
             align_free( inptr[i] );
         }
@@ -764,10 +752,10 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
 int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
                             const char *kernelCode[], const char *kernelName[], int (*fn)(void *,int) )
 {
-    cl_mem      buffers[5];
-    cl_program  program[5];
-    cl_kernel   kernel[5];
-    cl_event    event;
+    clMemWrapper buffers[5];
+    clProgramWrapper program[5];
+    clKernelWrapper kernel[5];
+    clEventWrapper event;
     void        *outptr[5];
     void        *inptr[5];
     size_t      global_work_size[3];
@@ -795,10 +783,20 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
         return CL_SUCCESS;
     }
 
-    for (src_flag_id=0; src_flag_id < NUM_FLAGS; src_flag_id++) {
-        log_info("Testing with cl_mem_flags src: %s\n", flag_set_names[src_flag_id]);
+    for (i = 0; i < loops; i++)
+    {
 
-        for ( i = 0; i < loops; i++ ){
+        err = create_single_kernel_helper(context, &program[i], &kernel[i], 1,
+                                          &kernelCode[i], kernelName[i]);
+        if (err)
+        {
+            log_error(" Error creating program for %s\n", type);
+            return -1;
+        }
+
+        for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
+        {
+
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
                 log_error( " unable to allocate %d bytes for outptr\n", (int)(ptrSizes[i] * num_elements) );
@@ -824,21 +822,9 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
                 return -1;
             }
 
-            err = create_single_kernel_helper( context, &program[i], &kernel[i], 1, &kernelCode[i], kernelName[i]);
-            if ( err ){
-                log_error( " Error creating program for %s\n", type );
-                clReleaseMemObject( buffers[i] );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
-                return -1;
-            }
-
             err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[i] );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArg failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
@@ -847,9 +833,6 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
             err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueNDRangeKernel failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
@@ -865,9 +848,6 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
 #endif
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueReadBuffer failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
@@ -875,27 +855,22 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
             err = clWaitForEvents(1, &event );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clWaitForEvents() failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
             }
 
             if ( fn(outptr[i], num_elements*(1<<i)) ){
-                log_error( " %s%d test failed\n", type, 1<<i );
+                log_error(" %s%d test failed. cl_mem_flags src: %s\n", type,
+                          1 << i, flag_set_names[src_flag_id]);
                 total_errors++;
             }
             else{
-                log_info( " %s%d test passed\n", type, 1<<i );
+                log_info(" %s%d test passed. cl_mem_flags src: %s\n", type,
+                         1 << i, flag_set_names[src_flag_id]);
             }
 
             // cleanup
-            clReleaseEvent( event );
-            clReleaseMemObject( buffers[i] );
-            clReleaseKernel( kernel[i] );
-            clReleaseProgram( program[i] );
             align_free( outptr[i] );
             align_free( inptr[i] );
         }
@@ -910,10 +885,10 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
 int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
                                     const char *kernelCode[], const char *kernelName[], int (*fn)(void *,int) )
 {
-    cl_mem      buffers[5];
-    cl_program  program[5];
-    cl_kernel   kernel[5];
-    cl_event    event;
+    clMemWrapper buffers[5];
+    clProgramWrapper program[5];
+    clKernelWrapper kernel[5];
+    clEventWrapper event;
     void        *outptr[5], *inptr[5];
     size_t      global_work_size[3];
     cl_int      err;
@@ -940,10 +915,20 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
         return CL_SUCCESS;
     }
 
-    for (src_flag_id=0; src_flag_id < NUM_FLAGS; src_flag_id++) {
-        log_info("Testing with cl_mem_flags src: %s\n", flag_set_names[src_flag_id]);
+    for (i = 0; i < loops; i++)
+    {
 
-        for ( i = 0; i < loops; i++ ){
+        err = create_single_kernel_helper(context, &program[i], &kernel[i], 1,
+                                          &kernelCode[i], kernelName[i]);
+        if (err)
+        {
+            log_error(" Error creating program for %s\n", type);
+            return -1;
+        }
+
+        for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
+        {
+
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
                 log_error( " unable to allocate %d bytes for outptr\n", (int)(ptrSizes[i] * num_elements) );
@@ -968,21 +953,9 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
                 return -1;
             }
 
-            err = create_single_kernel_helper(  context, &program[i], &kernel[i], 1, &kernelCode[i], kernelName[i] );
-            if ( err ){
-                log_error( " Error creating program for %s\n", type );
-                clReleaseMemObject( buffers[i] );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
-                return -1;
-            }
-
             err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[i] );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArgs failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
@@ -991,9 +964,6 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
             err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueNDRangeKernel failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
@@ -1009,9 +979,6 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
 #endif
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueReadBuffer failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
@@ -1019,9 +986,6 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
             err = clEnqueueBarrierWithWaitList(queue, 0, NULL, NULL);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueBarrierWithWaitList() failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 return -1;
             }
@@ -1029,27 +993,22 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
             err = clWaitForEvents(1, &event);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clWaitForEvents() failed" );
-                clReleaseMemObject( buffers[i] );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
                 align_free( outptr[i] );
                 align_free( inptr[i] );
                 return -1;
             }
 
             if ( fn(outptr[i], num_elements*(1<<i)) ){
-                log_error(" %s%d test failed\n", type, 1<<i);
+                log_error(" %s%d test failed. cl_mem_flags src: %s\n", type,
+                          1 << i, flag_set_names[src_flag_id]);
                 total_errors++;
             }
             else{
-                log_info(" %s%d test passed\n", type, 1<<i);
+                log_info(" %s%d test passed. cl_mem_flags src: %s\n", type,
+                         1 << i, flag_set_names[src_flag_id]);
             }
 
             // cleanup
-            clReleaseEvent( event );
-            clReleaseMemObject( buffers[i] );
-            clReleaseKernel( kernel[i] );
-            clReleaseProgram( program[i] );
             align_free( outptr[i] );
             align_free( inptr[i] );
         }
