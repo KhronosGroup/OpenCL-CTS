@@ -207,7 +207,7 @@ int TestFunc_mad(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal2 = 0.0f;
     float maxErrorVal3 = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
-    uint64_t step = setTestStep(sizeof(float), bufferSize);
+    uint64_t step = getTestStep(sizeof(float), bufferSize);
 
     // Init the kernels
     BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
@@ -671,7 +671,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d, bool relaxedMode)
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
-    uint64_t step = setTestStep(sizeof(double), bufferSize);
+    uint64_t step = getTestStep(sizeof(double), bufferSize);
 
     // Init the kernels
     BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,

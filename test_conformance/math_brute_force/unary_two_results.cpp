@@ -203,7 +203,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal0 = 0.0f;
     float maxErrorVal1 = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
-    uint64_t step = setTestStep(sizeof(float), bufferSize);
+    uint64_t step = getTestStep(sizeof(float), bufferSize);
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( float )) + 1);
     cl_uchar overflow[BUFFER_SIZE / sizeof( float )];
     int isFract = 0 == strcmp( "fract", f->nameInCode );
@@ -662,7 +662,7 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
     double maxErrorVal0 = 0.0f;
     double maxErrorVal1 = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
-    uint64_t step = setTestStep(sizeof(cl_double), bufferSize);
+    uint64_t step = getTestStep(sizeof(cl_double), bufferSize);
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( cl_double )) + 1);
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);

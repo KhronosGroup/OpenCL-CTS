@@ -253,7 +253,7 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     memset( &test_info, 0, sizeof( test_info ) );
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE / (sizeof( cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.scale = setTestScale(sizeof(cl_float));
+    test_info.scale = getTestScale(sizeof(cl_float));
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize / (sizeof( cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
@@ -765,7 +765,7 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     memset( &test_info, 0, sizeof( test_info ) );
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE / (sizeof( cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.scale = setTestScale(sizeof(cl_double));
+    test_info.scale = getTestScale(sizeof(cl_double));
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize / (sizeof( cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));

@@ -228,7 +228,7 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal3 = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
 
-    uint64_t step = setTestStep(sizeof(float), bufferSize);
+    uint64_t step = getTestStep(sizeof(float), bufferSize);
     int skipNanInf = (0 == strcmp( "fma", f->nameInCode )) && ! gInfNanSupport;
     cl_uchar overflow[BUFFER_SIZE / sizeof( float )];
     float float_ulps;
@@ -870,7 +870,7 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
-    uint64_t step = setTestStep(sizeof(double), bufferSize);
+    uint64_t step = getTestStep(sizeof(double), bufferSize);
 
     Force64BitFPUPrecision();
 

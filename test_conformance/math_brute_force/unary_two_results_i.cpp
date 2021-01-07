@@ -209,7 +209,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal2 = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
     float float_ulps;
-    uint64_t step = setTestStep(sizeof(float), bufferSize);
+    uint64_t step = getTestStep(sizeof(float), bufferSize);
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( float )) + 1);
     cl_ulong  maxiError;
 
@@ -510,7 +510,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
     cl_ulong  maxiError = f->double_ulps == INFINITY ? CL_ULONG_MAX : 0;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
 
-    uint64_t step = setTestStep(sizeof(double), bufferSize);
+    uint64_t step = getTestStep(sizeof(double), bufferSize);
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( double )) + 1);
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);

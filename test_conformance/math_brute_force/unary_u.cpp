@@ -196,7 +196,7 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
 
-    uint64_t step = setTestStep(sizeof(float), bufferSize);
+    uint64_t step = getTestStep(sizeof(float), bufferSize);
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( double )) + 1);
     int isRangeLimited = 0;
     float float_ulps;
@@ -470,7 +470,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
     int ftz = f->ftz || gForceFTZ;
     double maxErrorVal = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
-    uint64_t step = setTestStep(sizeof(cl_double), bufferSize);
+    uint64_t step = getTestStep(sizeof(cl_double), bufferSize);
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 

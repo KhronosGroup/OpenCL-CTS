@@ -229,7 +229,7 @@ void logFunctionInfo(const char *fname, unsigned int float_size, unsigned int is
 
 float getAllowedUlpError(const Func *f, const bool relaxed);
 
-static inline cl_uint setTestScale(size_t typeSize)
+static inline cl_uint getTestScale(size_t typeSize)
 {
     if (gWimpyMode)
     {
@@ -245,7 +245,7 @@ static inline cl_uint setTestScale(size_t typeSize)
     }
 }
 
-static inline uint64_t setTestStep(size_t typeSize, size_t bufferSize)
+static inline uint64_t getTestStep(size_t typeSize, size_t bufferSize)
 {
     if (gWimpyMode)
     {
