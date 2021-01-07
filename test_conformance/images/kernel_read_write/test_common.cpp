@@ -34,6 +34,28 @@ cl_sampler create_sampler(cl_context context, image_sampler_data *sdata, bool te
     return sampler;
 }
 
+static void get_image_dimensions(image_descriptor *imageInfo, size_t &width,
+                                 size_t &height, size_t &depth)
+{
+    width = imageInfo->width;
+    height = 1;
+    depth = 1;
+    switch (imageInfo->type)
+    {
+        case CL_MEM_OBJECT_IMAGE1D: break;
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY: height = imageInfo->arraySize; break;
+        case CL_MEM_OBJECT_IMAGE2D: height = imageInfo->height; break;
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            height = imageInfo->height;
+            depth = imageInfo->arraySize;
+            break;
+        case CL_MEM_OBJECT_IMAGE3D:
+            height = imageInfo->height;
+            depth = imageInfo->depth;
+            break;
+    }
+}
+
 void InitFloatCoordsCommon(image_descriptor *imageInfo,
                            image_sampler_data *imageSampler, float *xOffsets,
                            float *yOffsets, float *zOffsets, float xfract,
@@ -41,13 +63,16 @@ void InitFloatCoordsCommon(image_descriptor *imageInfo,
                            MTdata d, int lod)
 {
     size_t i = 0;
+    size_t width_loop, height_loop, depth_loop;
+    get_image_dimensions(imageInfo, width_loop, height_loop, depth_loop);
+
     if (gDisableOffsets)
     {
-        for (size_t z = 0; z < imageInfo->depth; z++)
+        for (size_t z = 0; z < depth_loop; z++)
         {
-            for (size_t y = 0; y < imageInfo->height; y++)
+            for (size_t y = 0; y < height_loop; y++)
             {
-                for (size_t x = 0; x < imageInfo->width; x++, i++)
+                for (size_t x = 0; x < width_loop; x++, i++)
                 {
                     xOffsets[i] = (float)(xfract + (double)x);
                     yOffsets[i] = (float)(yfract + (double)y);
@@ -58,11 +83,11 @@ void InitFloatCoordsCommon(image_descriptor *imageInfo,
     }
     else
     {
-        for (size_t z = 0; z < imageInfo->depth; z++)
+        for (size_t z = 0; z < depth_loop; z++)
         {
-            for (size_t y = 0; y < imageInfo->height; y++)
+            for (size_t y = 0; y < height_loop; y++)
             {
-                for (size_t x = 0; x < imageInfo->width; x++, i++)
+                for (size_t x = 0; x < width_loop; x++, i++)
                 {
                     xOffsets[i] =
                         (float)(xfract
@@ -84,18 +109,18 @@ void InitFloatCoordsCommon(image_descriptor *imageInfo,
     if (imageSampler->addressing_mode == CL_ADDRESS_NONE)
     {
         i = 0;
-        for (size_t z = 0; z < imageInfo->depth; z++)
+        for (size_t z = 0; z < depth_loop; z++)
         {
-            for (size_t y = 0; y < imageInfo->height; y++)
+            for (size_t y = 0; y < height_loop; y++)
             {
-                for (size_t x = 0; x < imageInfo->width; x++, i++)
+                for (size_t x = 0; x < width_loop; x++, i++)
                 {
                     xOffsets[i] = (float)CLAMP((double)xOffsets[i], 0.0,
-                                               (double)imageInfo->width - 1.0);
+                                               (double)width_loop - 1.0);
                     yOffsets[i] = (float)CLAMP((double)yOffsets[i], 0.0,
-                                               (double)imageInfo->height - 1.0);
+                                               (double)height_loop - 1.0);
                     zOffsets[i] = (float)CLAMP((double)zOffsets[i], 0.0,
-                                               (double)imageInfo->depth - 1.0);
+                                               (double)depth_loop - 1.0);
                 }
             }
         }
@@ -106,45 +131,58 @@ void InitFloatCoordsCommon(image_descriptor *imageInfo,
         i = 0;
         if (lod == 0)
         {
-            for (size_t z = 0; z < imageInfo->depth; z++)
+            for (size_t z = 0; z < depth_loop; z++)
             {
-                for (size_t y = 0; y < imageInfo->height; y++)
+                for (size_t y = 0; y < height_loop; y++)
                 {
-                    for (size_t x = 0; x < imageInfo->width; x++, i++)
+                    for (size_t x = 0; x < width_loop; x++, i++)
                     {
-                        xOffsets[i] = (float)((double)xOffsets[i]
-                                              / (double)imageInfo->width);
-                        yOffsets[i] = (float)((double)yOffsets[i]
-                                              / (double)imageInfo->height);
-                        zOffsets[i] = (float)((double)zOffsets[i]
-                                              / (double)imageInfo->depth);
+                        xOffsets[i] =
+                            (float)((double)xOffsets[i] / (double)width_loop);
+                        if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
+                        {
+                            yOffsets[i] = (float)((double)yOffsets[i]
+                                                  / (double)height_loop);
+                        }
+                        if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                        {
+                            zOffsets[i] = (float)((double)zOffsets[i]
+                                                  / (double)depth_loop);
+                        }
                     }
                 }
             }
         }
         else if (gTestMipmaps)
         {
-            size_t width_lod, height_lod, depth_lod;
-
-            width_lod =
-                (imageInfo->width >> lod) ? (imageInfo->width >> lod) : 1;
-            height_lod =
-                (imageInfo->height >> lod) ? (imageInfo->height >> lod) : 1;
-            depth_lod =
-                (imageInfo->depth >> lod) ? (imageInfo->depth >> lod) : 1;
-
-            for (size_t z = 0; z < depth_lod; z++)
+            width_loop = (width_loop >> lod) ? (width_loop >> lod) : 1;
+            if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
             {
-                for (size_t y = 0; y < height_lod; y++)
+                height_loop = (height_loop >> lod) ? (height_loop >> lod) : 1;
+            }
+            if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+            {
+                depth_loop = (depth_loop >> lod) ? (depth_loop >> lod) : 1;
+            }
+
+            for (size_t z = 0; z < depth_loop; z++)
+            {
+                for (size_t y = 0; y < height_loop; y++)
                 {
-                    for (size_t x = 0; x < width_lod; x++, i++)
+                    for (size_t x = 0; x < width_loop; x++, i++)
                     {
                         xOffsets[i] =
-                            (float)((double)xOffsets[i] / (double)width_lod);
-                        yOffsets[i] =
-                            (float)((double)yOffsets[i] / (double)height_lod);
-                        zOffsets[i] =
-                            (float)((double)zOffsets[i] / (double)depth_lod);
+                            (float)((double)xOffsets[i] / (double)width_loop);
+                        if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
+                        {
+                            yOffsets[i] = (float)((double)yOffsets[i]
+                                                  / (double)height_loop);
+                        }
+                        if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                        {
+                            zOffsets[i] = (float)((double)zOffsets[i]
+                                                  / (double)depth_loop);
+                        }
                     }
                 }
             }
