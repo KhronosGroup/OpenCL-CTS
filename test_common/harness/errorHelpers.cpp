@@ -686,6 +686,8 @@ const char *subtests_to_skip_with_offline_compiler[] = {
     "unload_build_info",
     "unload_program_binaries",
     "features_macro",
+    "progvar_prog_scope_misc",
+    "library_function"
 };
 
 int check_functions_for_offline_compiler(const char *subtestname,

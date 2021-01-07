@@ -2917,7 +2917,7 @@ int DetectFloatToHalfRoundingMode(
         }
 
         // Create our program, and a kernel
-        const char *kernel[1] = {
+        const char *kernelSource[1] = {
             "kernel void detect_round( global float4 *in, write_only image2d_t "
             "out )\n"
             "{\n"
@@ -2927,8 +2927,9 @@ int DetectFloatToHalfRoundingMode(
         };
 
         clProgramWrapper program;
-        err = create_single_kernel_helper_create_program(context, &program, 1,
-                                                         kernel);
+        clKernelWrapper kernel;
+        err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                          kernelSource, "detect_round");
 
         if (NULL == program || err)
         {
@@ -2953,29 +2954,7 @@ int DetectFloatToHalfRoundingMode(
             return err;
         }
 
-        err = clBuildProgram(program, 1, &device, "", NULL, NULL);
-        if (err)
-        {
-            log_error("Error:  could not build program in "
-                      "DetectFloatToHalfRoundingMode  (%d)",
-                      err);
-            clReleaseMemObject(inBuf);
-            clReleaseMemObject(outImage);
-            return err;
-        }
-
-        cl_kernel k = clCreateKernel(program, "detect_round", &err);
-        if (NULL == k || err)
-        {
-            log_error("Error:  could not create kernel in "
-                      "DetectFloatToHalfRoundingMode  (%d)",
-                      err);
-            clReleaseMemObject(inBuf);
-            clReleaseMemObject(outImage);
-            return err;
-        }
-
-        err = clSetKernelArg(k, 0, sizeof(cl_mem), &inBuf);
+        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &inBuf);
         if (err)
         {
             log_error("Error: could not set argument 0 of kernel in "
@@ -2983,11 +2962,10 @@ int DetectFloatToHalfRoundingMode(
                       err);
             clReleaseMemObject(inBuf);
             clReleaseMemObject(outImage);
-            clReleaseKernel(k);
             return err;
         }
 
-        err = clSetKernelArg(k, 1, sizeof(cl_mem), &outImage);
+        err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &outImage);
         if (err)
         {
             log_error("Error: could not set argument 1 of kernel in "
@@ -2995,14 +2973,13 @@ int DetectFloatToHalfRoundingMode(
                       err);
             clReleaseMemObject(inBuf);
             clReleaseMemObject(outImage);
-            clReleaseKernel(k);
             return err;
         }
 
         // Run the kernel
         size_t global_work_size = count;
-        err = clEnqueueNDRangeKernel(q, k, 1, NULL, &global_work_size, NULL, 0,
-                                     NULL, NULL);
+        err = clEnqueueNDRangeKernel(q, kernel, 1, NULL, &global_work_size,
+                                     NULL, 0, NULL, NULL);
         if (err)
         {
             log_error("Error: could not enqueue kernel in "
@@ -3010,7 +2987,6 @@ int DetectFloatToHalfRoundingMode(
                       err);
             clReleaseMemObject(inBuf);
             clReleaseMemObject(outImage);
-            clReleaseKernel(k);
             return err;
         }
 
@@ -3028,7 +3004,6 @@ int DetectFloatToHalfRoundingMode(
                       err);
             clReleaseMemObject(inBuf);
             clReleaseMemObject(outImage);
-            clReleaseKernel(k);
             return err;
         }
 
@@ -3083,7 +3058,6 @@ int DetectFloatToHalfRoundingMode(
         // clean up
         clReleaseMemObject(inBuf);
         clReleaseMemObject(outImage);
-        clReleaseKernel(k);
         return err;
     }
 
