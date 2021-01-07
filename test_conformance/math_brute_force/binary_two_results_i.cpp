@@ -287,16 +287,12 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal = 0.0f;
     float maxErrorVal2 = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
-    uint64_t step = bufferSize / sizeof( float );
+    uint64_t step = getTestStep(sizeof(float), bufferSize);
 
 #if defined PARALLEL_REFERENCE
     cl_uint threadCount = GetThreadCount();
 #endif
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
-
-    if(gWimpyMode ){
-        step = (1ULL<<32) * gWimpyReductionFactor / (512);
-    }
 
     if( gIsEmbedded )
         float_ulps = f->float_embedded_ulps;
@@ -716,12 +712,9 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     double maxErrorVal = 0.0f;
     double maxErrorVal2 = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
-    uint64_t step = bufferSize / sizeof( double );
+    uint64_t step = getTestStep(sizeof(double), bufferSize);
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
-    if(gWimpyMode ){
-       step = (1ULL<<32) * gWimpyReductionFactor / (512);
-    }
 
 #if defined PARALLEL_REFERENCE
     cl_uint threadCount = GetThreadCount();

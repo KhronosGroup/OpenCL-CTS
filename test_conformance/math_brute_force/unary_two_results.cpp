@@ -203,7 +203,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal0 = 0.0f;
     float maxErrorVal1 = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
-    uint64_t step = bufferSize / sizeof( float );
+    uint64_t step = getTestStep(sizeof(float), bufferSize);
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( float )) + 1);
     cl_uchar overflow[BUFFER_SIZE / sizeof( float )];
     int isFract = 0 == strcmp( "fract", f->nameInCode );
@@ -211,10 +211,6 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
     float float_ulps = getAllowedUlpError(f, relaxedMode);
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
-    if( gWimpyMode )
-    {
-        step = (1ULL<<32) * gWimpyReductionFactor / (512);
-    }
 
     // Init the kernels
     BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
@@ -666,14 +662,10 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
     double maxErrorVal0 = 0.0f;
     double maxErrorVal1 = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
-    uint64_t step = bufferSize / sizeof( cl_double );
+    uint64_t step = getTestStep(sizeof(cl_double), bufferSize);
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( cl_double )) + 1);
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
-    if( gWimpyMode )
-    {
-        step = (1ULL<<32) * gWimpyReductionFactor / (512);
-    }
 
     Force64BitFPUPrecision();
 

@@ -196,17 +196,14 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
 
-    uint64_t step = bufferSize / sizeof( float );
+    uint64_t step = getTestStep(sizeof(float), bufferSize);
     int scale = (int)((1ULL<<32) / (16 * bufferSize / sizeof( double )) + 1);
     int isRangeLimited = 0;
     float float_ulps;
     float half_sin_cos_tan_limit = 0;
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
-    if( gWimpyMode )
-    {
-        step = (1ULL<<32) * gWimpyReductionFactor / (512);
-    }
+
     if( gIsEmbedded)
         float_ulps = f->float_embedded_ulps;
     else
@@ -473,13 +470,10 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
     int ftz = f->ftz || gForceFTZ;
     double maxErrorVal = 0.0f;
     size_t bufferSize = (gWimpyMode)? gWimpyBufferSize: BUFFER_SIZE;
-    uint64_t step = bufferSize / sizeof( cl_double );
+    uint64_t step = getTestStep(sizeof(cl_double), bufferSize);
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
-    if( gWimpyMode )
-    {
-        step = (1ULL<<32) * gWimpyReductionFactor / (512);
-    }
+
     Force64BitFPUPrecision();
 
     // Init the kernels

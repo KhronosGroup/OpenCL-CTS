@@ -31,6 +31,7 @@
 #include "harness/conversions.h"
 
 #define BUFFER_SIZE         (1024*1024*2)
+#define EMBEDDED_REDUCTION_FACTOR (64)
 
 #if defined( __GNUC__ )
     #define UNUSED  __attribute__ ((unused))
@@ -228,6 +229,36 @@ void logFunctionInfo(const char *fname, unsigned int float_size, unsigned int is
 
 float getAllowedUlpError(const Func *f, const bool relaxed);
 
+static inline cl_uint getTestScale(size_t typeSize)
+{
+    if (gWimpyMode)
+    {
+        return (cl_uint)typeSize * 2 * gWimpyReductionFactor;
+    }
+    else if (gIsEmbedded)
+    {
+        return EMBEDDED_REDUCTION_FACTOR;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+static inline uint64_t getTestStep(size_t typeSize, size_t bufferSize)
+{
+    if (gWimpyMode)
+    {
+        return (1ULL << 32) * gWimpyReductionFactor / (512);
+    }
+    else if (gIsEmbedded)
+    {
+        return (BUFFER_SIZE / typeSize) * EMBEDDED_REDUCTION_FACTOR;
+    }
+    else
+    {
+        return bufferSize / typeSize;
+    }
+}
+
 #endif /* UTILITY_H */
-
-

@@ -266,12 +266,13 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
     memset( &test_info, 0, sizeof( test_info ) );
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE / (sizeof( cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.scale =  1;
+    test_info.scale = getTestScale(sizeof(cl_float));
+
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize / (sizeof( cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-        test_info.scale =  (cl_uint) sizeof(cl_float) * 2 * gWimpyReductionFactor;
     }
+
     test_info.step = (cl_uint) test_info.subBufferSize * test_info.scale;
     if (test_info.step / test_info.subBufferSize != test_info.scale)
     {
@@ -780,12 +781,12 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d, bool relaxedMode)
     memset( &test_info, 0, sizeof( test_info ) );
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE / (sizeof( cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.scale =  1;
+    test_info.scale = getTestScale(sizeof(cl_double));
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize / (sizeof( cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-        test_info.scale =  (cl_uint) sizeof(cl_double) * 2 * gWimpyReductionFactor;
     }
+
     test_info.step = (cl_uint) test_info.subBufferSize * test_info.scale;
     if (test_info.step / test_info.subBufferSize != test_info.scale)
     {
