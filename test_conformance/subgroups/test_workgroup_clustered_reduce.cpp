@@ -33,6 +33,10 @@ static const char *redadd_clustered_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
+    "    xy[gid].w = 0;\n"
+    "    if (sizeof(in[gid]) == "
+    "sizeof(sub_group_clustered_reduce_add(in[gid], " CLUSTER_SIZE_STR ")))\n"
+    "    {xy[gid].w = sizeof(in[gid]);}\n"
     "    out[gid] = sub_group_clustered_reduce_add(in[gid], " CLUSTER_SIZE_STR
     ");\n"
     //"printf(\"gid = %d, sub group local id = %d, sub group id = %d, x form in
@@ -46,6 +50,10 @@ static const char *redmax_clustered_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
+    "    xy[gid].w = 0;\n"
+    "    if (sizeof(in[gid]) == "
+    "sizeof(sub_group_clustered_reduce_max(in[gid], " CLUSTER_SIZE_STR ")))\n"
+    "    {xy[gid].w = sizeof(in[gid]);}\n"
     "    out[gid] = sub_group_clustered_reduce_max(in[gid], " CLUSTER_SIZE_STR
     ");\n"
     "}\n";
@@ -56,6 +64,10 @@ static const char *redmin_clustered_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
+    "    xy[gid].w = 0;\n"
+    "    if (sizeof(in[gid]) == "
+    "sizeof(sub_group_clustered_reduce_min(in[gid], " CLUSTER_SIZE_STR ")))\n"
+    "    {xy[gid].w = sizeof(in[gid]);}\n"
     "    out[gid] = sub_group_clustered_reduce_min(in[gid], " CLUSTER_SIZE_STR
     ");\n"
     "}\n";
@@ -66,6 +78,10 @@ static const char *redmul_clustered_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
+    "    xy[gid].w = 0;\n"
+    "    if (sizeof(in[gid]) == "
+    "sizeof(sub_group_clustered_reduce_mul(in[gid], " CLUSTER_SIZE_STR ")))\n"
+    "    {xy[gid].w = sizeof(in[gid]);}\n"
     "    out[gid] = sub_group_clustered_reduce_mul(in[gid], " CLUSTER_SIZE_STR
     ");\n"
     "}\n";
@@ -76,6 +92,10 @@ static const char *redand_clustered_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
+    "    xy[gid].w = 0;\n"
+    "    if (sizeof(in[gid]) == "
+    "sizeof(sub_group_clustered_reduce_and(in[gid], " CLUSTER_SIZE_STR ")))\n"
+    "    {xy[gid].w = sizeof(in[gid]);}\n"
     "    out[gid] = sub_group_clustered_reduce_and(in[gid], " CLUSTER_SIZE_STR
     ");\n"
     "}\n";
@@ -86,6 +106,10 @@ static const char *redor_clustered_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
+    "    xy[gid].w = 0;\n"
+    "    if (sizeof(in[gid]) == "
+    "sizeof(sub_group_clustered_reduce_or(in[gid], " CLUSTER_SIZE_STR ")))\n"
+    "    {xy[gid].w = sizeof(in[gid]);}\n"
     "    out[gid] = sub_group_clustered_reduce_or(in[gid], " CLUSTER_SIZE_STR
     ");\n"
     "}\n";
@@ -96,6 +120,10 @@ static const char *redxor_clustered_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
+    "    xy[gid].w = 0;\n"
+    "    if (sizeof(in[gid]) == "
+    "sizeof(sub_group_clustered_reduce_xor(in[gid], " CLUSTER_SIZE_STR ")))\n"
+    "    {xy[gid].w = sizeof(in[gid]);}\n"
     "    out[gid] = sub_group_clustered_reduce_xor(in[gid], " CLUSTER_SIZE_STR
     ");\n"
     "}\n";
@@ -106,6 +134,11 @@ static const char *redand_clustered_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
+    "    xy[gid].w = 0;\n"
+    "    if (sizeof(in[gid]) == "
+    "sizeof(sub_group_clustered_reduce_logical_and(in[gid], " CLUSTER_SIZE_STR
+    ")))\n"
+    "    {xy[gid].w = sizeof(in[gid]);}\n"
     "    out[gid] = "
     "sub_group_clustered_reduce_logical_and(in[gid], " CLUSTER_SIZE_STR ");\n"
     "}\n";
@@ -116,6 +149,11 @@ static const char *redor_clustered_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
+    "    xy[gid].w = 0;\n"
+    "    if (sizeof(in[gid]) == "
+    "sizeof(sub_group_clustered_reduce_logical_or(in[gid], " CLUSTER_SIZE_STR
+    ")))\n"
+    "    {xy[gid].w = sizeof(in[gid]);}\n"
     "    out[gid] = "
     "sub_group_clustered_reduce_logical_or(in[gid], " CLUSTER_SIZE_STR ");\n"
     "}\n";
@@ -126,6 +164,11 @@ static const char *redxor_clustered_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
+    "    xy[gid].w = 0;\n"
+    "    if ( sizeof(in[gid]) == "
+    "sizeof(sub_group_clustered_reduce_logical_xor(in[gid], " CLUSTER_SIZE_STR
+    ")))\n"
+    "    {xy[gid].w = sizeof(in[gid]);}\n"
     "    out[gid] = "
     "sub_group_clustered_reduce_logical_xor(in[gid], " CLUSTER_SIZE_STR ");\n"
     "}\n";
@@ -144,18 +187,33 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
                    int ng)
     {
         int nj = (nw + ns - 1) / ns;
-
-        log_info("  sub_group_clustered_reduce_%s(%s)...\n",
-                 operation_names(operation), TypeManager<Ty>::name());
+        log_info("  sub_group_clustered_reduce_%s(%s, %d bytes) ...\n",
+                 operation_names(operation), TypeManager<Ty>::name(),
+                 sizeof(Ty));
 
         for (int k = 0; k < ng; ++k)
         {
+            std::vector<cl_int> data_type_sizes;
             // Map to array indexed to array indexed by local ID and sub group
             for (int j = 0; j < nw; ++j)
             {
                 int i = m[4 * j + 1] * ns + m[4 * j];
                 mx[i] = x[j];
                 my[i] = y[j];
+                data_type_sizes.push_back(m[4 * j + 3]);
+            }
+
+            for (cl_int dts : data_type_sizes)
+            {
+                if (dts != sizeof(Ty))
+                {
+                    log_error("ERROR: sub_group_clustered_reduce_%s(%s) "
+                              "wrong data type size detected, expected: %d, "
+                              "used by device %d, in group %d\n",
+                              operation_names(operation),
+                              TypeManager<Ty>::name(), sizeof(Ty), dts, k);
+                    return -1;
+                }
             }
 
             for (int j = 0; j < nj; ++j)
