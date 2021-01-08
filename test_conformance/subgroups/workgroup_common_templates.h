@@ -24,7 +24,7 @@
 
 typedef std::bitset<128> bs128;
 static cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
-                                  const char *mask_type,
+                                  const std::string &mask_type,
                                   cl_uint max_sub_group_size)
 {
     bs128 mask128;
@@ -244,7 +244,7 @@ template <typename Ty> inline Ty calculate(Ty a, Ty b, ArithmeticOp operation)
     }
     return 0;
 }
-// speciallize for floating points.
+// Specialize for floating points.
 template <>
 inline cl_double calculate(cl_double a, cl_double b, ArithmeticOp operation)
 {
