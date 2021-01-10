@@ -255,6 +255,13 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
         }
         else // Either CL_MEM_ALLOC_HOST_PTR, CL_MEM_COPY_HOST_PTR or none
         {
+            char *host_ptr = NULL;
+
+            if (gMemFlagsToUse & CL_MEM_COPY_HOST_PTR)
+            {
+                host_ptr = imageValues;
+            }
+
             if( gTestMipmaps )
             {
                 cl_image_desc image_desc = {0};
@@ -288,9 +295,12 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                 // Note: if ALLOC_HOST_PTR is used, the driver allocates memory that can be accessed by the host, but otherwise
                 // it works just as if no flag is specified, so we just do the same thing either way
                 // Note: if the flags is really CL_MEM_COPY_HOST_PTR, we want to remove it, because we don't want to copy any incoming data
-                unprotImage = create_image_2d( context, mem_flag_types[mem_flag_index] | ( gMemFlagsToUse & ~(CL_MEM_COPY_HOST_PTR) ), imageInfo->format,
-                                          imageInfo->width, imageInfo->height, 0,
-                                          imageValues, &error );
+                unprotImage = create_image_2d(
+                    context,
+                    mem_flag_types[mem_flag_index]
+                        | (gMemFlagsToUse & ~(CL_MEM_COPY_HOST_PTR)),
+                    imageInfo->format, imageInfo->width, imageInfo->height, 0,
+                    host_ptr, &error);
             }
             if( error != CL_SUCCESS )
             {
