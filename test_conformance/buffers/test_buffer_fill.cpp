@@ -566,7 +566,6 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
     void        *outptr[5];
     clProgramWrapper program[5];
     clKernelWrapper kernel[5];
-    clEventWrapper event[2];
     size_t      ptrSizes[5];
     size_t      global_work_size[3];
     int         err;
@@ -599,6 +598,7 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            clEventWrapper event[2];
 
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
                 buffers[ii] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, hostptr[i], &err);
@@ -699,7 +699,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
     TestStruct pattern;
     clProgramWrapper program;
     clKernelWrapper kernel;
-    clEventWrapper event[2];
     size_t      ptrSize = sizeof( TestStruct );
     size_t      global_work_size[3];
     int         n, err;
@@ -731,6 +730,8 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
         // Test with random offsets and fill sizes
         for (n = 0; n < 8; n++)
         {
+            clEventWrapper event[2];
+
             offset_elements =
                 (size_t)get_random_float(0.f, (float)(num_elements - 8), d);
             fill_elements = (size_t)get_random_float(
@@ -832,7 +833,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 free_mtdata(d);
                 return -1;
             }
-            clReleaseEvent( event[0] );
 
             err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, global_work_size, NULL, 0, NULL, NULL );
             if ( err != CL_SUCCESS ){
@@ -858,7 +858,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             if ( err != CL_SUCCESS ){
                 print_error( err, "clWaitForEvents() failed" );
             }
-            clReleaseEvent( event[1] );
 
             if ( verify_fill_struct( inptr, outptr, num_elements) ) {
                 log_error( " buffer_FILL async struct test failed\n" );
