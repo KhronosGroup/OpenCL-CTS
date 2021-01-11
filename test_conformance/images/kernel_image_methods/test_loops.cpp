@@ -16,7 +16,6 @@
 #include "../testBase.h"
 #include "../common.h"
 
-extern bool gDeviceLt20;
 
 extern int test_get_image_info_1D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
@@ -117,9 +116,6 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
 {
     int version_check;
     auto version = get_device_cl_version(device);
-    if (version < Version(2, 0)) {
-        gDeviceLt20 = true;
-    }
 
     if ((version_check = (version < Version(1, 2))))
     {

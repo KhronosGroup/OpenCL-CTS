@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -133,10 +133,14 @@ int test_host_queue_order(cl_device_id device, cl_context context, cl_command_qu
 
     cl_event kernel_event;
 
-    err_ret = create_single_kernel_helper_with_build_options(context, &program1, &kernel1,  arr_size(enqueue_block_first_kernel), enqueue_block_first_kernel, "enqueue_block_first_kernel", "-cl-std=CL2.0");
+    err_ret = create_single_kernel_helper(
+        context, &program1, &kernel1, arr_size(enqueue_block_first_kernel),
+        enqueue_block_first_kernel, "enqueue_block_first_kernel");
     if(check_error(err_ret, "Create single kernel failed")) return -1;
 
-    err_ret = create_single_kernel_helper_with_build_options(context, &program2, &kernel2, arr_size(enqueue_block_second_kernel), enqueue_block_second_kernel, "enqueue_block_second_kernel", "-cl-std=CL2.0");
+    err_ret = create_single_kernel_helper(
+        context, &program2, &kernel2, arr_size(enqueue_block_second_kernel),
+        enqueue_block_second_kernel, "enqueue_block_second_kernel");
     if(check_error(err_ret, "Create single kernel failed")) return -1;
 
     res_mem = clCreateBuffer(context, CL_MEM_READ_WRITE|CL_MEM_COPY_HOST_PTR, sizeof(kernel_results), kernel_results, &err_ret);

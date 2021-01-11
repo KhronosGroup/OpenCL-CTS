@@ -22,7 +22,6 @@
 extern bool gTestImage2DFromBuffer;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
-extern bool gDeviceLt20;
 
 extern int test_write_image_1D_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d );
 extern int test_write_image_3D_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d );
@@ -682,7 +681,8 @@ int test_write_image_set( cl_device_id device, cl_context context, cl_command_qu
              gTestMipmaps ? ", lod" : "" );
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     test_error( error, "Unable to create testing kernel" );
 
     // Run tests

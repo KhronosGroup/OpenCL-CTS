@@ -21,7 +21,6 @@
 
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
-extern bool gDeviceLt20;
 
 extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
 extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo );
@@ -630,7 +629,8 @@ int test_write_image_2D_array_set( cl_device_id device, cl_context context, cl_c
              gTestMipmaps ? ", lod" : "" );
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     test_error( error, "Unable to create testing kernel" );
 
     // Run tests

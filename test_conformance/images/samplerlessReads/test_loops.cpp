@@ -17,7 +17,6 @@
 #include "../common.h"
 
 extern int gTypesToTest;
-extern bool gDeviceLt20;
 extern bool gTestReadWrite;
 
 extern int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
@@ -99,10 +98,6 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
     cl_image_format *formatList;
     bool *filterFlags;
     unsigned int numFormats;
-    auto version = get_device_cl_version(device);
-    if (version < Version(2, 0)) {
-        gDeviceLt20 = true;
-    }
 
     if (gTestReadWrite && checkForReadWriteImageSupport(device))
     {

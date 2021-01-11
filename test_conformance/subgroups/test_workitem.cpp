@@ -227,9 +227,8 @@ int test_work_item_functions(cl_device_id device, cl_context context,
            "}";
     const std::string &kernel_str = kernel_sstr.str();
     const char *kernel_src = kernel_str.c_str();
-    error = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel, 1, &kernel_src, "get_test",
-        "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                        &kernel_src, "get_test");
     if (error != 0) return error;
 
     error = get_max_allowed_work_group_size(context, kernel, &local, NULL);

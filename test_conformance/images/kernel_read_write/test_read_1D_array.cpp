@@ -25,7 +25,6 @@
 extern uint64_t gRoundingStartValue;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
-extern bool gDeviceLt20;
 
 const char *read1DArrayKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_array_t input,%s __global float *xOffsets, __global float *yOffsets, __global %s4 *results %s)\n"
@@ -1165,7 +1164,8 @@ int test_read_image_set_1D_array( cl_device_id device, cl_context context, cl_co
             gTestMipmaps ? ", lod" : "" );
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     test_error( error, "Unable to create testing kernel" );
 
     if( gTestSmallImages )
