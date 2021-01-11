@@ -96,7 +96,6 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
 
     // Grab the list of supported image formats
     cl_image_format *formatList;
-    bool *filterFlags;
     unsigned int numFormats;
 
     if (gTestReadWrite && checkForReadWriteImageSupport(device))
@@ -104,14 +103,58 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
         return TEST_SKIPPED_ITSELF;
     }
 
-    // This flag is only for querying the list of supported formats
-    // The flag for creating image will be set explicitly in test functions
-    cl_mem_flags flags = (gTestReadWrite)? CL_MEM_KERNEL_READ_AND_WRITE : CL_MEM_READ_ONLY;
+    cl_image_format *readOnlyFormats;
+    unsigned int numReadOnlyFormats;
 
-    if ( get_format_list( context, imageType, formatList, numFormats, flags ) )
+    if (get_format_list(context, imageType, readOnlyFormats, numReadOnlyFormats,
+                        CL_MEM_READ_ONLY))
         return -1;
 
-    filterFlags = new bool[ numFormats ];
+    if (gTestReadWrite)
+    {
+        cl_image_format *readWriteFormats;
+        unsigned int numReadWriteFormats;
+
+        if (get_format_list(context, imageType, readWriteFormats,
+                            numReadWriteFormats, CL_MEM_KERNEL_READ_AND_WRITE))
+            return -1;
+
+        numFormats = numReadOnlyFormats;
+        formatList = new cl_image_format[numFormats];
+        unsigned int k = 0;
+
+        // Keep only intersecting formats with read only and read write flags
+        for (unsigned int i = 0; i < numReadOnlyFormats; i++)
+        {
+            for (unsigned int j = 0; j < numReadWriteFormats; j++)
+            {
+                if (readOnlyFormats[i].image_channel_data_type
+                        == readWriteFormats[j].image_channel_data_type
+                    && readOnlyFormats[i].image_channel_order
+                        == readWriteFormats[j].image_channel_order)
+                {
+                    formatList[k].image_channel_data_type =
+                        readOnlyFormats[i].image_channel_data_type;
+                    formatList[k].image_channel_order =
+                        readOnlyFormats[i].image_channel_order;
+                    k++;
+                    break;
+                }
+            }
+        }
+
+        numFormats = k;
+
+        delete[] readOnlyFormats;
+        delete[] readWriteFormats;
+    }
+    else
+    {
+        numFormats = numReadOnlyFormats;
+        formatList = readOnlyFormats;
+    }
+
+    bool *filterFlags = new bool[numFormats];
     if ( filterFlags == NULL )
     {
         log_error( "ERROR: Out of memory allocating filter flags list!\n" );
