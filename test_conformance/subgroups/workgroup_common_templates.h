@@ -297,9 +297,9 @@ inline subgroups::cl_half calculate(subgroups::cl_half a, subgroups::cl_half b,
     {
         case ArithmeticOp::add_: return to_half(to_float(a) + to_float(b));
         case ArithmeticOp::max_:
-            return to_float(a) > to_float(b) || isnan_half(b) ? a : b;
+            return to_float(a) > to_float(b) || is_half_nan(b.data) ? a : b;
         case ArithmeticOp::min_:
-            return to_float(a) < to_float(b) || isnan_half(b) ? a : b;
+            return to_float(a) < to_float(b) || is_half_nan(b.data) ? a : b;
         case ArithmeticOp::mul_: return to_half(to_float(a) * to_float(b));
         default: log_error("Unknown operation request"); break;
     }

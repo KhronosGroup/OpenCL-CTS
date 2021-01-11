@@ -19,6 +19,7 @@
 #include "testHarness.h"
 #include "kernelHelpers.h"
 #include "typeWrappers.h"
+#include "imageHelpers.h"
 
 #include <limits>
 #include <vector>
@@ -1129,12 +1130,6 @@ compare(const Ty &lhs, const Ty &rhs)
     return lhs.data == rhs.data;
 }
 
-
-inline bool isnan_half(const subgroups::cl_half &x)
-{
-    return (x.data & 0x7fff) > 0x7c00;
-}
-
 template <typename Ty> inline bool compare_ordered(const Ty &lhs, const Ty &rhs)
 {
     return lhs == rhs;
@@ -1144,7 +1139,7 @@ template <>
 inline bool compare_ordered(const subgroups::cl_half &lhs,
                             const subgroups::cl_half &rhs)
 {
-    return lhs.data == rhs.data && !isnan_half(lhs);
+    return lhs.data == rhs.data && !is_half_nan(lhs.data);
 }
 
 
