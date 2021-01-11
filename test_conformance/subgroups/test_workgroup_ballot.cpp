@@ -578,7 +578,7 @@ static const char *bcast_non_uniform_source =
     " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {\n" // broadcast 4 values , other
                                                 // values are
                                                 // 0
-    "    out[gid] = sub_group_broadcast(x, xy[gid].z);\n"
+    "    out[gid] = sub_group_non_uniform_broadcast(x, xy[gid].z);\n"
     " }\n"
     "}\n";
 static const char *bcast_first_source =
@@ -757,10 +757,9 @@ struct run_for_type
     {}
 
 
-    template <typename T> cl_int run_nu_bc()
+    template <typename T> int run_nu_bc()
     {
-        cl_int error;
-        error =
+        int error =
             test<T, BC<T, SubgroupsBroadcastOp::non_uniform_broadcast>, GWS,
                  LWS>::run(device_, context_, queue_, num_elements_,
                            "test_bcast_non_uniform", bcast_non_uniform_source,
@@ -768,21 +767,19 @@ struct run_for_type
         return error;
     }
 
-    template <typename T> cl_int run_bc_first()
+    template <typename T> int run_bc_first()
     {
-        cl_int error;
-        error = test<T, BC<T, SubgroupsBroadcastOp::broadcast_first>, GWS,
-                     LWS>::run(device_, context_, queue_, num_elements_,
-                               "test_bcast_first", bcast_first_source, 0,
-                               useCoreSubgroups_, required_extensions_);
+        int error = test<T, BC<T, SubgroupsBroadcastOp::broadcast_first>, GWS,
+                         LWS>::run(device_, context_, queue_, num_elements_,
+                                   "test_bcast_first", bcast_first_source, 0,
+                                   useCoreSubgroups_, required_extensions_);
         return error;
     }
 
 
-    cl_int run_smask()
+    int run_smask()
     {
-        cl_int error;
-        error =
+        int error =
             test<cl_uint4, SMASK<cl_uint4, BallotOp::eq_mask>, GWS, LWS>::run(
                 device_, context_, queue_, num_elements_,
                 "test_get_sub_group_eq_mask", get_subgroup_eq_mask_source, 0,
@@ -810,10 +807,9 @@ struct run_for_type
         return error;
     }
 
-    cl_int run_ballot()
+    int run_ballot()
     {
-        cl_int error;
-        error = test<cl_uint4, BALLOT<cl_uint4>, GWS, LWS>::run(
+        int error = test<cl_uint4, BALLOT<cl_uint4>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_sub_group_ballot",
             ballot_source, 0, useCoreSubgroups_, required_extensions_);
 
@@ -872,12 +868,11 @@ private:
 int test_work_group_functions_ballot(cl_device_id device, cl_context context,
                                      cl_command_queue queue, int num_elements)
 {
-    int error;
     std::vector<std::string> required_extensions = { "cl_khr_subgroup_ballot" };
     run_for_type rft(device, context, queue, num_elements, true,
                      required_extensions);
 
-    error = rft.run_nu_bc<cl_int>();
+    int error = rft.run_nu_bc<cl_int>();
     error |= rft.run_nu_bc<cl_int2>();
     error |= rft.run_nu_bc<subgroups::cl_int3>();
     error |= rft.run_nu_bc<cl_int4>();

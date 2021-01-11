@@ -275,38 +275,34 @@ struct run_for_type
           required_extensions_(required_extensions)
     {}
 
-    template <typename T> cl_int run_nu_all_eq()
+    template <typename T> int run_nu_all_eq()
     {
-        cl_int error;
-        error = test<T, AAN<T, NonUniformVoteOp::all_equal>, GWS, LWS>::run(
+        int error = test<T, AAN<T, NonUniformVoteOp::all_equal>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_,
             "test_non_uniform_all_equal", non_uniform_all_equal_source, 0,
             useCoreSubgroups_, required_extensions_);
         return error;
     }
 
-    template <typename T> cl_int run_elect()
+    template <typename T> int run_elect()
     {
-        cl_int error;
-        error = test<T, ELECT, GWS, LWS>::run(
+        int error = test<T, ELECT, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_elect",
             elect_source, 0, useCoreSubgroups_, required_extensions_);
         return error;
     }
 
-    template <typename T> cl_int run_nu_any()
+    template <typename T> int run_nu_any()
     {
-        cl_int error;
-        error = test<T, AAN<T, NonUniformVoteOp::any>, GWS, LWS>::run(
+        int error = test<T, AAN<T, NonUniformVoteOp::any>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_non_uniform_any",
             non_uniform_any_source, 0, useCoreSubgroups_, required_extensions_);
         return error;
     }
 
-    template <typename T> cl_int run_nu_all()
+    template <typename T> int run_nu_all()
     {
-        cl_int error;
-        error = test<T, AAN<T, NonUniformVoteOp::all>, GWS, LWS>::run(
+        int error = test<T, AAN<T, NonUniformVoteOp::all>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_non_uniform_all",
             non_uniform_all_source, 0, useCoreSubgroups_, required_extensions_);
         return error;
@@ -329,14 +325,13 @@ int test_work_group_functions_non_uniform_vote(cl_device_id device,
                                                cl_command_queue queue,
                                                int num_elements)
 {
-    int error;
     std::vector<std::string> required_extensions = {
         "cl_khr_subgroup_non_uniform_vote"
     };
     run_for_type rft(device, context, queue, num_elements, true,
                      required_extensions);
 
-    error = rft.run_nu_all_eq<cl_char>();
+    int error = rft.run_nu_all_eq<cl_char>();
     error |= rft.run_nu_all_eq<cl_uchar>();
     error |= rft.run_nu_all_eq<cl_short>();
     error |= rft.run_nu_all_eq<cl_ushort>();

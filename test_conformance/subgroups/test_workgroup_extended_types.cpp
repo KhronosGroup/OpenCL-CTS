@@ -35,18 +35,17 @@ struct run_for_type
           required_extensions_(required_extensions)
     {}
 
-    template <typename T> cl_int run_bc()
+    template <typename T> int run_bc()
     {
-        cl_int error;
-        error = test<T, BC<T, SubgroupsBroadcastOp::broadcast>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_bcast",
-            bcast_source, 0, useCoreSubgroups_, required_extensions_);
+        int error =
+            test<T, BC<T, SubgroupsBroadcastOp::broadcast>, GWS, LWS>::run(
+                device_, context_, queue_, num_elements_, "test_bcast",
+                bcast_source, 0, useCoreSubgroups_, required_extensions_);
         return error;
     }
-    template <typename T> cl_int run_red_scin_scex()
+    template <typename T> int run_red_scin_scex()
     {
-        cl_int error;
-        error = test<T, RED<T, ArithmeticOp::add_>, GWS, LWS>::run(
+        int error = test<T, RED<T, ArithmeticOp::add_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_redadd",
             redadd_source, 0, useCoreSubgroups_, required_extensions_);
         error |= test<T, RED<T, ArithmeticOp::max_>, GWS, LWS>::run(
@@ -92,14 +91,13 @@ int test_work_group_functions_extended_types(cl_device_id device,
                                              cl_command_queue queue,
                                              int num_elements)
 {
-    int error;
     std::vector<std::string> required_extensions = {
         "cl_khr_subgroup_extended_types"
     };
     run_for_type rft(device, context, queue, num_elements, true,
                      required_extensions);
 
-    error = rft.run_bc<cl_uint2>();
+    int error = rft.run_bc<cl_uint2>();
     error |= rft.run_bc<subgroups::cl_uint3>();
     error |= rft.run_bc<cl_uint4>();
     error |= rft.run_bc<cl_uint8>();

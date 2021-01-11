@@ -57,10 +57,9 @@ struct run_for_type
           required_extensions_(required_extensions)
     {}
 
-    template <typename T> cl_int run_shuffle()
+    template <typename T> int run_shuffle()
     {
-        cl_int error;
-        error = test<T, SHF<T, ShuffleOp::shuffle>, GWS, LWS>::run(
+        int error = test<T, SHF<T, ShuffleOp::shuffle>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_sub_group_shuffle",
             shuffle_source, 0, useCoreSubgroups_, required_extensions_);
         error |= test<T, SHF<T, ShuffleOp::shuffle_xor>, GWS, LWS>::run(
@@ -84,12 +83,11 @@ private:
 int test_work_group_functions_shuffle(cl_device_id device, cl_context context,
                                       cl_command_queue queue, int num_elements)
 {
-    int error;
     std::vector<std::string> required_extensions{ "cl_khr_subgroup_shuffle" };
     run_for_type rft(device, context, queue, num_elements, true,
                      required_extensions);
 
-    error = rft.run_shuffle<cl_int>();
+    int error = rft.run_shuffle<cl_int>();
     error |= rft.run_shuffle<cl_uint>();
     error |= rft.run_shuffle<cl_long>();
     error |= rft.run_shuffle<cl_ulong>();

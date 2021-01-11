@@ -555,10 +555,10 @@ struct run_for_type
           required_extensions_(required_extensions)
     {}
 
-    template <typename T> cl_int run_nu_scin_scex_red_not_logical_funcs()
+    template <typename T> int run_nu_scin_scex_red_not_logical_funcs()
     {
-        cl_int error;
-        error = test<T, SCIN_NU<T, ArithmeticOp::add_>, GWS, LWS>::run(
+
+        int error = test<T, SCIN_NU<T, ArithmeticOp::add_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_,
             "test_scinadd_non_uniform", scinadd_non_uniform_source, 0,
             useCoreSubgroups_, required_extensions_);
@@ -621,10 +621,9 @@ struct run_for_type
         return error;
     }
 
-    template <typename T> cl_int run_nu_scin_scex_red_all_funcs()
+    template <typename T> int run_nu_scin_scex_red_all_funcs()
     {
-        cl_int error;
-        error = run_nu_scin_scex_red_not_logical_funcs<T>();
+        int error = run_nu_scin_scex_red_not_logical_funcs<T>();
         error |= test<T, SCIN_NU<T, ArithmeticOp::and_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_,
             "test_scinand_non_uniform", scinand_non_uniform_source, 0,
@@ -672,14 +671,14 @@ struct run_for_type
         return error;
     }
 
-    cl_int run_nu_logical()
+    int run_nu_logical()
     {
-        cl_int error;
-        error = test<cl_int, SCIN_NU<cl_int, ArithmeticOp::logical_and>, GWS,
-                     LWS>::run(device_, context_, queue_, num_elements_,
-                               "test_scinand_non_uniform_logical",
-                               scinand_non_uniform_logical_source, 0,
-                               useCoreSubgroups_, required_extensions_);
+        int error =
+            test<cl_int, SCIN_NU<cl_int, ArithmeticOp::logical_and>, GWS,
+                 LWS>::run(device_, context_, queue_, num_elements_,
+                           "test_scinand_non_uniform_logical",
+                           scinand_non_uniform_logical_source, 0,
+                           useCoreSubgroups_, required_extensions_);
 
         error |= test<cl_int, SCIN_NU<cl_int, ArithmeticOp::logical_or>, GWS,
                       LWS>::run(device_, context_, queue_, num_elements_,
@@ -748,14 +747,13 @@ int test_work_group_functions_non_uniform_arithmetic(cl_device_id device,
                                                      cl_command_queue queue,
                                                      int num_elements)
 {
-    int error;
     std::vector<std::string> required_extensions = {
         "cl_khr_subgroup_non_uniform_arithmetic"
     };
     run_for_type rft(device, context, queue, num_elements, true,
                      required_extensions);
 
-    error = rft.run_nu_scin_scex_red_all_funcs<cl_int>();
+    int error = rft.run_nu_scin_scex_red_all_funcs<cl_int>();
     error |= rft.run_nu_scin_scex_red_all_funcs<cl_uint>();
     error |= rft.run_nu_scin_scex_red_all_funcs<cl_long>();
     error |= rft.run_nu_scin_scex_red_all_funcs<cl_ulong>();

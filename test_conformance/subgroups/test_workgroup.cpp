@@ -160,12 +160,12 @@ struct run_for_type
           num_elements_(num_elements), useCoreSubgroups_(useCoreSubgroups)
     {}
 
-    template <typename T> cl_int run()
+    template <typename T> int run()
     {
-        cl_int error;
-        error = test<T, BC<T, SubgroupsBroadcastOp::broadcast>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_bcast",
-            bcast_source, 0, useCoreSubgroups_);
+        int error =
+            test<T, BC<T, SubgroupsBroadcastOp::broadcast>, GWS, LWS>::run(
+                device_, context_, queue_, num_elements_, "test_bcast",
+                bcast_source, 0, useCoreSubgroups_);
         error |= test<T, RED<T, ArithmeticOp::add_>, GWS, LWS>::run(
             device_, context_, queue_, num_elements_, "test_redadd",
             redadd_source, 0, useCoreSubgroups_);
@@ -210,8 +210,7 @@ int test_work_group_functions(cl_device_id device, cl_context context,
                               cl_command_queue queue, int num_elements,
                               bool useCoreSubgroups)
 {
-    int error;
-    error = test<int, AA<NonUniformVoteOp::any>, GWS, LWS>::run(
+    int error = test<int, AA<NonUniformVoteOp::any>, GWS, LWS>::run(
         device, context, queue, num_elements, "test_any", any_source, 0,
         useCoreSubgroups);
     error |= test<int, AA<NonUniformVoteOp::all>, GWS, LWS>::run(
