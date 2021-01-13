@@ -164,7 +164,8 @@ int test_read_image_type(cl_device_id device, cl_context context,
 }
 
 int test_read_image_formats(cl_device_id device, cl_context context,
-                            cl_command_queue queue, const std::vector<cl_image_format> &formatList,
+                            cl_command_queue queue,
+                            const std::vector<cl_image_format> &formatList,
                             const std::vector<bool> &filterFlags,
                             image_sampler_data *imageSampler,
                             ExplicitType outputType,
@@ -323,8 +324,7 @@ int test_image_set(cl_device_id device, cl_context context,
 
     // Grab the list of supported image formats for integer reads
     std::vector<cl_image_format> formatList;
-    if ( get_format_list( context, imageType, formatList, flags ) )
-        return -1;
+    if (get_format_list(context, imageType, formatList, flags)) return -1;
 
     // First time through, we'll go ahead and print the formats supported,
     // regardless of type
@@ -356,8 +356,8 @@ int test_image_set(cl_device_id device, cl_context context,
         if (gTypesToTest & test.type)
         {
             std::vector<bool> filterFlags(formatList.size(), false);
-            if (filter_formats(formatList, filterFlags,
-                               test.channelTypes, gTestMipmaps)
+            if (filter_formats(formatList, filterFlags, test.channelTypes,
+                               gTestMipmaps)
                 == 0)
             {
                 log_info("No formats supported for %s type\n", test.name);

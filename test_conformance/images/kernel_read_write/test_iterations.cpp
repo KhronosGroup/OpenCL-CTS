@@ -1562,8 +1562,11 @@ int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel ke
     return numTries != MAX_TRIES || numClamped != MAX_CLAMPED;
 }
 
-int test_read_image_set_2D( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, image_sampler_data *imageSampler,
-                        bool floatCoords, ExplicitType outputType )
+int test_read_image_set_2D(cl_device_id device, cl_context context,
+                           cl_command_queue queue,
+                           const cl_image_format *format,
+                           image_sampler_data *imageSampler, bool floatCoords,
+                           ExplicitType outputType)
 {
     char programSrc[10240];
     const char *ptr;

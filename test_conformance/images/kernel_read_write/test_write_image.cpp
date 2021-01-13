@@ -23,10 +23,24 @@ extern bool gTestImage2DFromBuffer;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
 
-extern int test_write_image_1D_set( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, ExplicitType inputType, MTdata d );
-extern int test_write_image_3D_set( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, ExplicitType inputType, MTdata d );
-extern int test_write_image_1D_array_set( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, ExplicitType inputType, MTdata d );
-extern int test_write_image_2D_array_set( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, ExplicitType inputType, MTdata d );
+extern int test_write_image_1D_set(cl_device_id device, cl_context context,
+                                   cl_command_queue queue,
+                                   const cl_image_format *format,
+                                   ExplicitType inputType, MTdata d);
+extern int test_write_image_3D_set(cl_device_id device, cl_context context,
+                                   cl_command_queue queue,
+                                   const cl_image_format *format,
+                                   ExplicitType inputType, MTdata d);
+extern int test_write_image_1D_array_set(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         const cl_image_format *format,
+                                         ExplicitType inputType, MTdata d);
+extern int test_write_image_2D_array_set(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         const cl_image_format *format,
+                                         ExplicitType inputType, MTdata d);
 
 extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
 extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo );
@@ -595,7 +609,9 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
 }
 
 
-int test_write_image_set( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, ExplicitType inputType, MTdata d )
+int test_write_image_set(cl_device_id device, cl_context context,
+                         cl_command_queue queue, const cl_image_format *format,
+                         ExplicitType inputType, MTdata d)
 {
     char programSrc[10240];
     const char *ptr;
@@ -797,8 +813,13 @@ int test_write_image_set( cl_device_id device, cl_context context, cl_command_qu
     return 0;
 }
 
-int test_write_image_formats( cl_device_id device, cl_context context, cl_command_queue queue, const std::vector<cl_image_format> &formatList, const std::vector<bool> &filterFlags,
-                             image_sampler_data *imageSampler, ExplicitType inputType, cl_mem_object_type imageType )
+int test_write_image_formats(cl_device_id device, cl_context context,
+                             cl_command_queue queue,
+                             const std::vector<cl_image_format> &formatList,
+                             const std::vector<bool> &filterFlags,
+                             image_sampler_data *imageSampler,
+                             ExplicitType inputType,
+                             cl_mem_object_type imageType)
 {
     if( imageSampler->filter_mode == CL_FILTER_LINEAR )
         // No need to run for linear filters
@@ -811,9 +832,9 @@ int test_write_image_formats( cl_device_id device, cl_context context, cl_comman
 
     RandomSeed seed( gRandomSeed );
 
-    for( unsigned int i = 0; i < formatList.size(); i++ )
+    for (unsigned int i = 0; i < formatList.size(); i++)
     {
-        const cl_image_format &imageFormat = formatList[ i ];
+        const cl_image_format &imageFormat = formatList[i];
 
         if( filterFlags[ i ] )
             continue;

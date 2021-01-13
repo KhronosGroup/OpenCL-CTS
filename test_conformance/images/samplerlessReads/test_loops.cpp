@@ -19,15 +19,42 @@
 extern int gTypesToTest;
 extern bool gTestReadWrite;
 
-extern int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
-extern int test_read_image_set_1D_buffer( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
-extern int test_read_image_set_2D( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
-extern int test_read_image_set_3D( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
-extern int test_read_image_set_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
-extern int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, image_sampler_data *imageSampler, ExplicitType outputType );
+extern int test_read_image_set_1D(cl_device_id device, cl_context context,
+                                  cl_command_queue queue,
+                                  const cl_image_format *format,
+                                  image_sampler_data *imageSampler,
+                                  ExplicitType outputType);
+extern int test_read_image_set_1D_buffer(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         const cl_image_format *format,
+                                         image_sampler_data *imageSampler,
+                                         ExplicitType outputType);
+extern int test_read_image_set_2D(cl_device_id device, cl_context context,
+                                  cl_command_queue queue,
+                                  const cl_image_format *format,
+                                  image_sampler_data *imageSampler,
+                                  ExplicitType outputType);
+extern int test_read_image_set_3D(cl_device_id device, cl_context context,
+                                  cl_command_queue queue,
+                                  const cl_image_format *format,
+                                  image_sampler_data *imageSampler,
+                                  ExplicitType outputType);
+extern int test_read_image_set_1D_array(cl_device_id device, cl_context context,
+                                        cl_command_queue queue,
+                                        const cl_image_format *format,
+                                        image_sampler_data *imageSampler,
+                                        ExplicitType outputType);
+extern int test_read_image_set_2D_array(cl_device_id device, cl_context context,
+                                        cl_command_queue queue,
+                                        const cl_image_format *format,
+                                        image_sampler_data *imageSampler,
+                                        ExplicitType outputType);
 
-int test_read_image_type( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format,
-                          image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType )
+int test_read_image_type(cl_device_id device, cl_context context,
+                         cl_command_queue queue, const cl_image_format *format,
+                         image_sampler_data *imageSampler,
+                         ExplicitType outputType, cl_mem_object_type imageType)
 {
     int ret = 0;
     imageSampler->addressing_mode = CL_ADDRESS_NONE;
@@ -68,20 +95,25 @@ int test_read_image_type( cl_device_id device, cl_context context, cl_command_qu
     return ret;
 }
 
-int test_read_image_formats( cl_device_id device, cl_context context, cl_command_queue queue, const std::vector<cl_image_format> &formatList, const std::vector<bool> &filterFlags,
-                             image_sampler_data *imageSampler, ExplicitType outputType, cl_mem_object_type imageType )
+int test_read_image_formats(cl_device_id device, cl_context context,
+                            cl_command_queue queue,
+                            const std::vector<cl_image_format> &formatList,
+                            const std::vector<bool> &filterFlags,
+                            image_sampler_data *imageSampler,
+                            ExplicitType outputType,
+                            cl_mem_object_type imageType)
 {
     int ret = 0;
     imageSampler->normalized_coords = false;
     log_info( "read_image (%s coords, %s results) *****************************\n",
               "integer", get_explicit_type_name( outputType ) );
 
-    for ( unsigned int i = 0; i < formatList.size(); i++ )
+    for (unsigned int i = 0; i < formatList.size(); i++)
     {
         if ( filterFlags[i] )
             continue;
 
-        const cl_image_format &imageFormat = formatList[ i ];
+        const cl_image_format &imageFormat = formatList[i];
 
         ret |= test_read_image_type( device, context, queue, &imageFormat, imageSampler, outputType, imageType );
     }
@@ -103,8 +135,7 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
     }
 
     std::vector<cl_image_format> readOnlyFormats;
-    if (get_format_list(context, imageType, readOnlyFormats,
-                        CL_MEM_READ_ONLY))
+    if (get_format_list(context, imageType, readOnlyFormats, CL_MEM_READ_ONLY))
         return -1;
 
     if (gTestReadWrite)
@@ -139,7 +170,7 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
     if ( printedFormatList != (int)imageType )
     {
         log_info( "---- Supported %s read formats for this device ---- \n", convert_image_type_to_string(imageType) );
-        for ( unsigned int f = 0; f < formatList.size(); f++ )
+        for (unsigned int f = 0; f < formatList.size(); f++)
             log_info( "  %-7s %-24s %d\n", GetChannelOrderName( formatList[ f ].image_channel_order ),
                       GetChannelTypeName( formatList[ f ].image_channel_data_type ),
                       (int)get_format_channel_count( &formatList[ f ] ) );
@@ -154,9 +185,7 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
         if (gTypesToTest & test.type)
         {
             std::vector<bool> filterFlags(formatList.size(), false);
-            if (filter_formats(formatList, filterFlags,
-                               test.channelTypes)
-                == 0)
+            if (filter_formats(formatList, filterFlags, test.channelTypes) == 0)
             {
                 log_info("No formats supported for %s type\n", test.name);
             }

@@ -70,17 +70,14 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
 
     // Grab the list of supported image formats
     std::vector<cl_image_format> formatList;
-    if ( get_format_list( context, imageType, formatList, flags ) )
-        return -1;
+    if (get_format_list(context, imageType, formatList, flags)) return -1;
 
     for (auto test : imageTestTypes)
     {
         if (gTypesToTest & test.type)
         {
             std::vector<bool> filterFlags(formatList.size(), false);
-            if (filter_formats(formatList, filterFlags,
-                               test.channelTypes)
-                == 0)
+            if (filter_formats(formatList, filterFlags, test.channelTypes) == 0)
             {
                 log_info("No formats supported for %s type\n", test.name);
             }

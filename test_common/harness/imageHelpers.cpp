@@ -3571,8 +3571,8 @@ cl_float CoordWalker::Get(size_t idx, size_t el)
 }
 
 
-void print_read_header(const cl_image_format *format, image_sampler_data *sampler,
-                       bool err, int t)
+void print_read_header(const cl_image_format *format,
+                       image_sampler_data *sampler, bool err, int t)
 {
     const char *addressMode = NULL;
     const char *normalizedNames[2] = { "UNNORMALIZED", "NORMALIZED" };

@@ -43,14 +43,13 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
 
     // Grab the list of supported image formats for integer reads
     std::vector<cl_image_format> formatList;
-    if( get_format_list( context, imageType, formatList, flags ) )
-        return -1;
+    if (get_format_list(context, imageType, formatList, flags)) return -1;
 
     std::vector<bool> filterFlags(formatList.size(), false);
-    filter_formats( formatList, filterFlags, nullptr );
+    filter_formats(formatList, filterFlags, nullptr);
 
     // Run the format list
-    for( unsigned int i = 0; i < formatList.size(); i++ )
+    for (unsigned int i = 0; i < formatList.size(); i++)
     {
         int test_return = 0;
         if( filterFlags[i] )

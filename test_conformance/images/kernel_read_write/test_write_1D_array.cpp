@@ -542,7 +542,10 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
 }
 
 
-int test_write_image_1D_array_set( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, ExplicitType inputType, MTdata d )
+int test_write_image_1D_array_set(cl_device_id device, cl_context context,
+                                  cl_command_queue queue,
+                                  const cl_image_format *format,
+                                  ExplicitType inputType, MTdata d)
 {
     char programSrc[10240];
     const char *ptr;
