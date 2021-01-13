@@ -58,6 +58,8 @@ extern int        test_copy_image( cl_device_id device, cl_context context, cl_c
 extern int        test_copy_array_to_image( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
 extern int        test_execute( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
 extern int        test_parallel_kernels( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements );
+extern int test_profiling_timebase(cl_device_id device, cl_context context,
+                                   cl_command_queue queue, int num_elements);
 
 
 #endif    // #ifndef __PROCS_H__
