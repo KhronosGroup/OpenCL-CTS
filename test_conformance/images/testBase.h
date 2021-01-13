@@ -65,16 +65,16 @@ enum TestTypes
 };
 
 typedef int (*test_format_set_fn)( cl_device_id device, cl_context context, cl_command_queue queue,
-  cl_image_format *formatList, bool *filterFlags, unsigned int numFormats,
+  const std::vector<cl_image_format> &formatList, const std::vector<bool> &filterFlags,
   image_sampler_data *imageSampler, ExplicitType outputType,
   cl_mem_object_type imageType );
 
 extern int test_read_image_formats( cl_device_id device, cl_context context, cl_command_queue queue,
-  cl_image_format *formatList, bool *filterFlags, unsigned int numFormats,
+  const std::vector<cl_image_format> &formatList, const std::vector<bool> &filterFlags,
   image_sampler_data *imageSampler, ExplicitType outputType,
   cl_mem_object_type imageType );
 extern int test_write_image_formats( cl_device_id device, cl_context context, cl_command_queue queue,
-  cl_image_format *formatList, bool *filterFlags, unsigned int numFormats,
+  const std::vector<cl_image_format> &formatList, const std::vector<bool> &filterFlags,
   image_sampler_data *imageSampler, ExplicitType outputType,
   cl_mem_object_type imageType );
 

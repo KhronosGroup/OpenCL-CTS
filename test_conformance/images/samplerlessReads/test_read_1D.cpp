@@ -177,7 +177,7 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
     return 0;
 }
 
-int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler,
+int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, image_sampler_data *imageSampler,
                             ExplicitType outputType )
 {
     char programSrc[10240];

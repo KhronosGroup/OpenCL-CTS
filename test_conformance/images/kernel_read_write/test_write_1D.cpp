@@ -521,7 +521,7 @@ int test_write_image_1D( cl_device_id device, cl_context context, cl_command_que
     return totalErrors;
 }
 
-int test_write_image_1D_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d )
+int test_write_image_1D_set( cl_device_id device, cl_context context, cl_command_queue queue, const cl_image_format *format, ExplicitType inputType, MTdata d )
 {
     char programSrc[10240];
     const char *ptr;

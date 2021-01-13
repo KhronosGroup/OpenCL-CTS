@@ -29,28 +29,15 @@ int test_image_type( cl_device_id device, cl_context context, cl_mem_object_type
     int ret = 0;
 
     // Grab the list of supported image formats for integer reads
-    cl_image_format *formatList;
-    bool *filterFlags;
-    unsigned int numFormats;
-
-    if ( get_format_list( context, image_type, formatList, numFormats, flags ) )
+    std::vector<cl_image_format> formatList;
+    if ( get_format_list( context, image_type, formatList, flags ) )
         return -1;
 
-    BufferOwningPtr<cl_image_format> formatListBuf(formatList);
-
-    filterFlags = new bool[ numFormats ];
-    BufferOwningPtr<bool> filterFlagsBuf(filterFlags);
-
-    if( filterFlags == NULL )
-    {
-        log_error( "ERROR: Out of memory allocating filter flags list!\n" );
-        return -1;
-    }
-    memset( filterFlags, 0, sizeof( bool ) * numFormats );
-    filter_formats( formatList, filterFlags, numFormats, 0 );
+    std::vector<bool> filterFlags(formatList.size(), false);
+    filter_formats( formatList, filterFlags, nullptr );
 
     // Run the format list
-    for( unsigned int i = 0; i < numFormats; i++ )
+    for( unsigned int i = 0; i < formatList.size(); i++ )
     {
         int test_return = 0;
         if( filterFlags[i] )
