@@ -269,7 +269,7 @@ int is_format_signed(const cl_image_format *format)
     }
 }
 
-uint32_t get_pixel_size(cl_image_format *format)
+uint32_t get_pixel_size(const cl_image_format *format)
 {
     switch (format->image_channel_data_type)
     {
@@ -330,7 +330,7 @@ uint32_t next_power_of_two(uint32_t v)
     return v;
 }
 
-uint32_t get_pixel_alignment(cl_image_format *format)
+uint32_t get_pixel_alignment(const cl_image_format *format)
 {
     return next_power_of_two(get_pixel_size(format));
 }
@@ -533,7 +533,7 @@ bool is_sRGBA_order(cl_channel_order image_channel_order)
 
 // Format helpers
 
-int has_alpha(cl_image_format *format)
+int has_alpha(const cl_image_format *format)
 {
     switch (format->image_channel_order)
     {
@@ -586,7 +586,7 @@ void get_max_sizes(
     size_t maxWidth, size_t maxHeight, size_t maxDepth, size_t maxArraySize,
     const cl_ulong maxIndividualAllocSize, // CL_DEVICE_MAX_MEM_ALLOC_SIZE
     const cl_ulong maxTotalAllocSize, // CL_DEVICE_GLOBAL_MEM_SIZE
-    cl_mem_object_type image_type, cl_image_format *format,
+    cl_mem_object_type image_type, const cl_image_format *format,
     int usingMaxPixelSizeBuffer)
 {
 
@@ -797,7 +797,7 @@ void get_max_sizes(
     }
 }
 
-float get_max_absolute_error(cl_image_format *format,
+float get_max_absolute_error(const cl_image_format *format,
                              image_sampler_data *sampler)
 {
     if (sampler->filter_mode == CL_FILTER_NEAREST) return 0.0f;
@@ -816,7 +816,7 @@ float get_max_absolute_error(cl_image_format *format,
     }
 }
 
-float get_max_relative_error(cl_image_format *format,
+float get_max_relative_error(const cl_image_format *format,
                              image_sampler_data *sampler, int is3D,
                              int isLinearFilter)
 {
@@ -899,7 +899,7 @@ float get_max_relative_error(cl_image_format *format,
     return maxError;
 }
 
-size_t get_format_max_int(cl_image_format *format)
+size_t get_format_max_int(const cl_image_format *format)
 {
     switch (format->image_channel_data_type)
     {
@@ -932,7 +932,7 @@ size_t get_format_max_int(cl_image_format *format)
     }
 }
 
-int get_format_min_int(cl_image_format *format)
+int get_format_min_int(const cl_image_format *format)
 {
     switch (format->image_channel_data_type)
     {
@@ -1247,7 +1247,7 @@ void read_image_pixel_float(void *imageData, image_descriptor *imageInfo, int x,
         return;
     }
 
-    cl_image_format *format = imageInfo->format;
+    const cl_image_format *format = imageInfo->format;
 
     unsigned int i;
     float tempData[4];
@@ -3571,8 +3571,8 @@ cl_float CoordWalker::Get(size_t idx, size_t el)
 }
 
 
-void print_read_header(cl_image_format *format, image_sampler_data *sampler,
-                       bool err, int t)
+void print_read_header(const cl_image_format *format,
+                       image_sampler_data *sampler, bool err, int t)
 {
     const char *addressMode = NULL;
     const char *normalizedNames[2] = { "UNNORMALIZED", "NORMALIZED" };
@@ -3638,7 +3638,7 @@ void print_read_header(cl_image_format *format, image_sampler_data *sampler,
     }
 }
 
-void print_write_header(cl_image_format *format, bool err = false)
+void print_write_header(const cl_image_format *format, bool err = false)
 {
     if (err)
         log_error("[%-7s %-24s %d]\n",
@@ -3653,7 +3653,7 @@ void print_write_header(cl_image_format *format, bool err = false)
 }
 
 
-void print_header(cl_image_format *format, bool err = false)
+void print_header(const cl_image_format *format, bool err = false)
 {
     if (err)
     {

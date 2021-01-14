@@ -24,34 +24,34 @@ extern int gtestTypesToRun;
 
 extern int test_read_image_set_1D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
-                                  cl_image_format *format,
+                                  const cl_image_format *format,
                                   image_sampler_data *imageSampler,
                                   bool floatCoords, ExplicitType outputType);
 extern int test_read_image_set_2D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
-                                  cl_image_format *format,
+                                  const cl_image_format *format,
                                   image_sampler_data *imageSampler,
                                   bool floatCoords, ExplicitType outputType);
 extern int test_read_image_set_3D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
-                                  cl_image_format *format,
+                                  const cl_image_format *format,
                                   image_sampler_data *imageSampler,
                                   bool floatCoords, ExplicitType outputType);
 extern int test_read_image_set_1D_array(cl_device_id device, cl_context context,
                                         cl_command_queue queue,
-                                        cl_image_format *format,
+                                        const cl_image_format *format,
                                         image_sampler_data *imageSampler,
                                         bool floatCoords,
                                         ExplicitType outputType);
 extern int test_read_image_set_2D_array(cl_device_id device, cl_context context,
                                         cl_command_queue queue,
-                                        cl_image_format *format,
+                                        const cl_image_format *format,
                                         image_sampler_data *imageSampler,
                                         bool floatCoords,
                                         ExplicitType outputType);
 
 int test_read_image_type(cl_device_id device, cl_context context,
-                         cl_command_queue queue, cl_image_format *format,
+                         cl_command_queue queue, const cl_image_format *format,
                          bool floatCoords, image_sampler_data *imageSampler,
                          ExplicitType outputType, cl_mem_object_type imageType)
 {
@@ -164,8 +164,9 @@ int test_read_image_type(cl_device_id device, cl_context context,
 }
 
 int test_read_image_formats(cl_device_id device, cl_context context,
-                            cl_command_queue queue, cl_image_format *formatList,
-                            bool *filterFlags, unsigned int numFormats,
+                            cl_command_queue queue,
+                            const std::vector<cl_image_format> &formatList,
+                            const std::vector<bool> &filterFlags,
                             image_sampler_data *imageSampler,
                             ExplicitType outputType,
                             cl_mem_object_type imageType)
@@ -212,11 +213,11 @@ int test_read_image_formats(cl_device_id device, cl_context context,
                                              : "integer",
                      get_explicit_type_name(outputType));
 
-            for (unsigned int i = 0; i < numFormats; i++)
+            for (unsigned int i = 0; i < formatList.size(); i++)
             {
                 if (filterFlags[i]) continue;
 
-                cl_image_format &imageFormat = formatList[i];
+                const cl_image_format &imageFormat = formatList[i];
 
                 ret |=
                     test_read_image_type(device, context, queue, &imageFormat,
@@ -290,11 +291,6 @@ int test_image_set(cl_device_id device, cl_context context,
         }
     }
 
-    // Grab the list of supported image formats for integer reads
-    cl_image_format *formatList;
-    bool *filterFlags;
-    unsigned int numFormats;
-
     // This flag is only for querying the list of supported formats
     // The flag for creating image will be set explicitly in test functions
     cl_mem_flags flags;
@@ -326,19 +322,9 @@ int test_image_set(cl_device_id device, cl_context context,
         }
     }
 
-    if (get_format_list(context, imageType, formatList, numFormats, flags))
-        return -1;
-    BufferOwningPtr<cl_image_format> formatListBuf(formatList);
-
-
-    filterFlags = new bool[numFormats];
-    if (filterFlags == NULL)
-    {
-        log_error("ERROR: Out of memory allocating filter flags list!\n");
-        return -1;
-    }
-    BufferOwningPtr<bool> filterFlagsBuf(filterFlags);
-    memset(filterFlags, 0, sizeof(bool) * numFormats);
+    // Grab the list of supported image formats for integer reads
+    std::vector<cl_image_format> formatList;
+    if (get_format_list(context, imageType, formatList, flags)) return -1;
 
     // First time through, we'll go ahead and print the formats supported,
     // regardless of type
@@ -348,7 +334,7 @@ int test_image_set(cl_device_id device, cl_context context,
     {
         log_info("---- Supported %s %s formats for this device ---- \n",
                  convert_image_type_to_string(imageType), flagNames);
-        for (unsigned int f = 0; f < numFormats; f++)
+        for (unsigned int f = 0; f < formatList.size(); f++)
         {
             if (IsChannelOrderSupported(formatList[f].image_channel_order)
                 && IsChannelTypeSupported(
@@ -369,8 +355,9 @@ int test_image_set(cl_device_id device, cl_context context,
     {
         if (gTypesToTest & test.type)
         {
-            if (filter_formats(formatList, filterFlags, numFormats,
-                               test.channelTypes, gTestMipmaps)
+            std::vector<bool> filterFlags(formatList.size(), false);
+            if (filter_formats(formatList, filterFlags, test.channelTypes,
+                               gTestMipmaps)
                 == 0)
             {
                 log_info("No formats supported for %s type\n", test.name);
@@ -379,7 +366,7 @@ int test_image_set(cl_device_id device, cl_context context,
             {
                 imageSampler.filter_mode = CL_FILTER_NEAREST;
                 ret += formatTestFn(device, context, queue, formatList,
-                                    filterFlags, numFormats, &imageSampler,
+                                    filterFlags, &imageSampler,
                                     test.explicitType, imageType);
 
                 // Linear filtering is only supported with floats
@@ -387,7 +374,7 @@ int test_image_set(cl_device_id device, cl_context context,
                 {
                     imageSampler.filter_mode = CL_FILTER_LINEAR;
                     ret += formatTestFn(device, context, queue, formatList,
-                                        filterFlags, numFormats, &imageSampler,
+                                        filterFlags, &imageSampler,
                                         test.explicitType, imageType);
                 }
             }

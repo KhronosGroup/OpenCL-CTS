@@ -76,11 +76,11 @@ int round_to_even(float v);
 #define CONVERT_UINT(v, max, max_val)                                          \
     (v < 0 ? 0 : (v > max ? max_val : round_to_even(v)))
 
-extern void print_read_header(cl_image_format *format,
+extern void print_read_header(const cl_image_format *format,
                               image_sampler_data *sampler, bool err = false,
                               int t = 0);
-extern void print_write_header(cl_image_format *format, bool err);
-extern void print_header(cl_image_format *format, bool err);
+extern void print_write_header(const cl_image_format *format, bool err);
+extern void print_header(const cl_image_format *format, bool err);
 extern bool find_format(cl_image_format *formatList, unsigned int numFormats,
                         cl_image_format *formatToFind);
 extern bool is_image_format_required(cl_image_format format, cl_mem_flags flags,
@@ -98,7 +98,7 @@ extern uint32_t get_channel_order_channel_count(cl_channel_order order);
 cl_channel_type get_channel_type_from_name(const char *name);
 cl_channel_order get_channel_order_from_name(const char *name);
 extern int is_format_signed(const cl_image_format *format);
-extern uint32_t get_pixel_size(cl_image_format *format);
+extern uint32_t get_pixel_size(const cl_image_format *format);
 
 /* Helper to get any ol image format as long as it is 8-bits-per-channel */
 extern int get_8_bit_image_format(cl_context context,
@@ -123,7 +123,7 @@ typedef struct
     size_t rowPitch;
     size_t slicePitch;
     size_t arraySize;
-    cl_image_format *format;
+    const cl_image_format *format;
     cl_mem buffer;
     cl_mem_object_type type;
     cl_uint num_mip_levels;
@@ -139,9 +139,9 @@ void get_max_sizes(size_t *numberOfSizes, const int maxNumberOfSizes,
                    size_t maxDepth, size_t maxArraySize,
                    const cl_ulong maxIndividualAllocSize,
                    const cl_ulong maxTotalAllocSize,
-                   cl_mem_object_type image_type, cl_image_format *format,
+                   cl_mem_object_type image_type, const cl_image_format *format,
                    int usingMaxPixelSize = 0);
-extern size_t get_format_max_int(cl_image_format *format);
+extern size_t get_format_max_int(const cl_image_format *format);
 
 extern cl_ulong get_image_size(image_descriptor const *imageInfo);
 extern cl_ulong get_image_size_mb(image_descriptor const *imageInfo);
@@ -173,7 +173,7 @@ extern void copy_image_data(image_descriptor *srcImageInfo,
                             void *destImageValues, const size_t sourcePos[],
                             const size_t destPos[], const size_t regionSize[]);
 
-int has_alpha(cl_image_format *format);
+int has_alpha(const cl_image_format *format);
 
 extern bool is_sRGBA_order(cl_channel_order image_channel_order);
 
@@ -240,7 +240,7 @@ void read_image_pixel(void *imageData, image_descriptor *imageInfo, int x,
         return;
     }
 
-    cl_image_format *format = imageInfo->format;
+    const cl_image_format *format = imageInfo->format;
 
     unsigned int i;
     T tempData[4];
@@ -662,9 +662,9 @@ extern char *create_random_image_data(ExplicitType dataType,
 
 extern void get_sampler_kernel_code(image_sampler_data *imageSampler,
                                     char *outLine);
-extern float get_max_absolute_error(cl_image_format *format,
+extern float get_max_absolute_error(const cl_image_format *format,
                                     image_sampler_data *sampler);
-extern float get_max_relative_error(cl_image_format *format,
+extern float get_max_relative_error(const cl_image_format *format,
                                     image_sampler_data *sampler, int is3D,
                                     int isLinearFilter);
 
