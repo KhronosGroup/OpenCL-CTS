@@ -231,23 +231,39 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
             error,
             "clGetSamplerInfo failed asking for CL_SAMPLER_PROPERTIES size.");
 
-        if (set_size != test_properties.size() * sizeof(cl_sampler_properties))
+        if (is_compatibility)
         {
-            log_error("ERROR: CL_SAMPLER_PROPERTIES size is %d, expected %d.\n",
-                      set_size,
-                      test_properties.size() * sizeof(cl_sampler_properties));
-            return TEST_FAIL;
+            if (set_size != 0)
+            {
+                log_error(
+                    "ERROR: CL_SAMPLER_PROPERTIES size is %d, expected 0\n",
+                    set_size);
+                return TEST_FAIL;
+            }
         }
+        else
+        {
+            if (set_size
+                != test_properties.size() * sizeof(cl_sampler_properties))
+            {
+                log_error(
+                    "ERROR: CL_SAMPLER_PROPERTIES size is %d, expected %d.\n",
+                    set_size,
+                    test_properties.size() * sizeof(cl_sampler_properties));
+                return TEST_FAIL;
+            }
 
-        cl_uint number_of_props = set_size / sizeof(cl_sampler_properties);
-        check_properties.resize(number_of_props);
-        error = clGetSamplerInfo(sampler, CL_SAMPLER_PROPERTIES, set_size,
-                                 check_properties.data(), 0);
-        test_error(error,
-                   "clGetSamplerInfo failed asking for CL_SAMPLER_PROPERTIES.");
+            cl_uint number_of_props = set_size / sizeof(cl_sampler_properties);
+            check_properties.resize(number_of_props);
+            error = clGetSamplerInfo(sampler, CL_SAMPLER_PROPERTIES, set_size,
+                                     check_properties.data(), 0);
+            test_error(
+                error,
+                "clGetSamplerInfo failed asking for CL_SAMPLER_PROPERTIES.");
 
-        error = compareProperties(check_properties, test_properties);
-        test_error(error, "checkProperties mismatch.");
+            error = compareProperties(check_properties, test_properties);
+            test_error(error, "checkProperties mismatch.");
+        }
     }
     return 0;
 }
