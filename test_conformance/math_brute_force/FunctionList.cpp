@@ -16,13 +16,13 @@
 #include "FunctionList.h"
 #include "reference_math.h"
 
-#define FTZ_ON  1
+#define FTZ_ON 1
 #define FTZ_OFF 0
-#define EXACT    0.0f
+#define EXACT 0.0f
 #define RELAXED_ON 1
 #define RELAXED_OFF 0
 
-#define STRINGIFY( _s)                  #_s
+#define STRINGIFY(_s) #_s
 
 // Only use ulps information in spir test
 #ifdef FUNCTION_LIST_ULPS_ONLY
@@ -51,25 +51,25 @@
         STRINGIFY(_name), _operator, { NULL }, { NULL }, { NULL }, _ulp, _ulp, \
             _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
     }
-#define unaryF                NULL
-#define i_unaryF              NULL
-#define unaryF_u              NULL
-#define macro_unaryF          NULL
-#define binaryF               NULL
-#define binaryF_nextafter     NULL
-#define binaryOperatorF       NULL
-#define binaryF_i             NULL
-#define macro_binaryF         NULL
-#define ternaryF              NULL
-#define unaryF_two_results    NULL
-#define unaryF_two_results_i  NULL
+#define unaryF NULL
+#define i_unaryF NULL
+#define unaryF_u NULL
+#define macro_unaryF NULL
+#define binaryF NULL
+#define binaryF_nextafter NULL
+#define binaryOperatorF NULL
+#define binaryF_i NULL
+#define macro_binaryF NULL
+#define ternaryF NULL
+#define unaryF_two_results NULL
+#define unaryF_two_results_i NULL
 #define binaryF_two_results_i NULL
-#define mad_function          NULL
+#define mad_function NULL
 
-#define reference_sqrt        NULL
-#define reference_sqrtl       NULL
-#define reference_divide      NULL
-#define reference_dividel     NULL
+#define reference_sqrt NULL
+#define reference_sqrtl NULL
+#define reference_divide NULL
+#define reference_dividel NULL
 #define reference_relaxed_divide NULL
 
 #else // FUNCTION_LIST_ULPS_ONLY
@@ -102,24 +102,27 @@
             _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
     }
 
-extern const vtbl _unary;               // float foo( float )
-extern const vtbl _unary_u;             // float foo( uint ),  double foo( ulong )
-extern const vtbl _i_unary;             // int foo( float )
-extern const vtbl _macro_unary;         // int foo( float ),  returns {0,1} for scalar, { 0, -1 } for vector
-extern const vtbl _binary;              // float foo( float, float )
-extern const vtbl _binary_nextafter;    // float foo( float, float ), special handling for nextafter
-extern const vtbl _binary_operator;     // float .op. float
-extern const vtbl _macro_binary;        // int foo( float, float ), returns {0,1} for scalar, { 0, -1 } for vector
-extern const vtbl _binary_i;            // float foo( float, int )
-extern const vtbl _ternary;             // float foo( float, float, float )
-extern const vtbl _unary_two_results;   // float foo( float, float * )
+extern const vtbl _unary; // float foo( float )
+extern const vtbl _unary_u; // float foo( uint ),  double foo( ulong )
+extern const vtbl _i_unary; // int foo( float )
+extern const vtbl _macro_unary; // int foo( float ),  returns {0,1} for scalar,
+                                // { 0, -1 } for vector
+extern const vtbl _binary; // float foo( float, float )
+extern const vtbl _binary_nextafter; // float foo( float, float ), special
+                                     // handling for nextafter
+extern const vtbl _binary_operator; // float .op. float
+extern const vtbl _macro_binary; // int foo( float, float ), returns {0,1} for
+                                 // scalar, { 0, -1 } for vector
+extern const vtbl _binary_i; // float foo( float, int )
+extern const vtbl _ternary; // float foo( float, float, float )
+extern const vtbl _unary_two_results; // float foo( float, float * )
 extern const vtbl _unary_two_results_i; // float foo( float, int * )
 extern const vtbl _binary_two_results_i; // float foo( float, float, int * )
-extern const vtbl _mad_tbl;             // float mad( float, float, float )
+extern const vtbl _mad_tbl; // float mad( float, float, float )
 
 #define unaryF &_unary
 #define i_unaryF &_i_unary
-#define unaryF_u  &_unary_u
+#define unaryF_u &_unary_u
 #define macro_unaryF &_macro_unary
 #define binaryF &_binary
 #define binaryF_nextafter &_binary_nextafter
@@ -127,10 +130,10 @@ extern const vtbl _mad_tbl;             // float mad( float, float, float )
 #define binaryF_i &_binary_i
 #define macro_binaryF &_macro_binary
 #define ternaryF &_ternary
-#define unaryF_two_results  &_unary_two_results
-#define unaryF_two_results_i  &_unary_two_results_i
-#define binaryF_two_results_i  &_binary_two_results_i
-#define mad_function        &_mad_tbl
+#define unaryF_two_results &_unary_two_results
+#define unaryF_two_results_i &_unary_two_results_i
+#define binaryF_two_results_i &_binary_two_results_i
+#define mad_function &_mad_tbl
 
 #endif // FUNCTION_LIST_ULPS_ONLY
 
@@ -325,4 +328,4 @@ const Func functionList[] = {
     OPERATOR_ENTRY(not, "!", 0.0f, 0.0f, FTZ_OFF, macro_unaryF),
 };
 
-const size_t functionListCount = sizeof( functionList ) / sizeof( functionList[0] );
+const size_t functionListCount = sizeof(functionList) / sizeof(functionList[0]);
