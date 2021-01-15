@@ -42,12 +42,8 @@ extern int test_read_image(cl_context context, cl_command_queue queue,
                            bool useFloatCoords, ExplicitType outputType,
                            MTdata d);
 
-extern void InitFloatCoordsCommon(image_descriptor *imageInfo,
-                                  image_sampler_data *imageSampler,
-                                  float *xOffsets, float *yOffsets,
-                                  float *zOffsets, float xfract, float yfract,
-                                  float zfract, int normalized_coords, MTdata d,
-                                  int lod);
+extern void get_image_dimensions(image_descriptor *imageInfo, size_t &width,
+                                 size_t &height, size_t &depth);
 
 template <class T>
 int determine_validation_error_offset(
@@ -63,8 +59,8 @@ int determine_validation_error_offset(
     bool clampingErr = false, clamped = false, otherClampingBug = false;
     int clampedX, clampedY, clampedZ;
 
-    size_t imageWidth = imageInfo->width, imageHeight = imageInfo->height,
-           imageDepth = imageInfo->depth;
+    size_t imageWidth, imageHeight, imageDepth;
+    get_image_dimensions(imageInfo, imageWidth, imageHeight, imageDepth);
 
     clamped = get_integer_coords_offset(x, y, z, xAddressOffset, yAddressOffset,
                                         zAddressOffset, imageWidth, imageHeight,
