@@ -40,18 +40,14 @@ static const char *image_dim_kernel_code =
 
 static unsigned char *generate_8888_image(size_t w, size_t h, MTdata d)
 {
-    unsigned char *ptr =
-        (unsigned char *)malloc(sizeof(unsigned char) * 4 * w * h);
+    unsigned char *ptr = new unsigned char[sizeof(unsigned char) * 4 * w * h];
     size_t i;
-    if (ptr == NULL)
-    {
-        return ptr;
-    }
 
     for (i = 0; i < w * h * 4; i++)
     {
         ptr[i] = (unsigned char)genrand_int32(d);
     }
+
     return ptr;
 }
 
@@ -157,21 +153,8 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
     d = init_genrand( gRandomSeed );
     log_info("Initialized data\n");
     input_ptr = generate_8888_image(max_img_width, max_img_height, d);
-    if (input_ptr == NULL)
-    {
-        log_error("Malloc returned input_ptr as NULL\n");
-        free_mtdata(d);
-        return -1;
-    }
 
-    output_ptr = (unsigned char*)malloc(sizeof(unsigned char) * 4 * max_img_width * max_img_height);
-    if (output_ptr == NULL)
-    {
-        log_error("Malloc returned output_ptr as NULL\n");
-        free(input_ptr);
-        free_mtdata(d);
-        return -1;
-    }
+    output_ptr = new unsigned char[4 * max_img_width * max_img_height];
 
     // test power of 2 width, height starting at 1 to 4K
     for (i = 1, i2 = 0; i <= max_img_height; i <<= 1, i2++)
@@ -189,8 +172,8 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
             if (!streams[0])
             {
                 log_error("create_image_2d failed.  width = %d, height = %d\n", img_width, img_height);
-                free(input_ptr);
-                free(output_ptr);
+                delete[] input_ptr;
+                delete[] output_ptr;
                 free_mtdata(d);
                 return -1;
             }
@@ -203,8 +186,8 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
             {
                 log_error("create_image_2d failed.  width = %d, height = %d\n", img_width, img_height);
                 clReleaseMemObject(streams[0]);
-                free(input_ptr);
-                free(output_ptr);
+                delete[] input_ptr;
+                delete[] output_ptr;
                 free_mtdata(d);
                 return -1;
             }
@@ -217,8 +200,8 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
                 log_error("clWriteImage failed\n");
                 clReleaseMemObject(streams[0]);
                 clReleaseMemObject(streams[1]);
-                free(input_ptr);
-                free(output_ptr);
+                delete[] input_ptr;
+                delete[] output_ptr;
                 free_mtdata(d);
                 return -1;
             }
@@ -231,8 +214,8 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
                 log_error("clSetKernelArgs failed\n");
                 clReleaseMemObject(streams[0]);
                 clReleaseMemObject(streams[1]);
-                free(input_ptr);
-                free(output_ptr);
+                delete[] input_ptr;
+                delete[] output_ptr;
                 free_mtdata(d);
                 return -1;
             }
@@ -248,8 +231,8 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
                             img_width, img_height);
                 clReleaseMemObject(streams[0]);
                 clReleaseMemObject(streams[1]);
-                free(input_ptr);
-                free(output_ptr);
+                delete[] input_ptr;
+                delete[] output_ptr;
                 free_mtdata(d);
                 return -1;
             }
@@ -261,8 +244,8 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
                             img_width, img_height);
                 clReleaseMemObject(streams[0]);
                 clReleaseMemObject(streams[1]);
-                free(input_ptr);
-                free(output_ptr);
+                delete[] input_ptr;
+                delete[] output_ptr;
                 free_mtdata(d);
                 return -1;
             }
@@ -279,8 +262,8 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
     }
 
     // cleanup
-    free(input_ptr);
-    free(output_ptr);
+    delete[] input_ptr;
+    delete[] output_ptr;
     free_mtdata(d);
     clReleaseSampler(sampler);
     clReleaseKernel(kernel);
@@ -385,21 +368,7 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
 
     d = init_genrand( gRandomSeed );
     input_ptr = generate_8888_image(max_img_width, max_img_height, d);
-    if (input_ptr == NULL)
-    {
-        log_error("Malloc returned input_ptr as NULL\n");
-        free_mtdata(d);
-        return -1;
-    }
-
-    output_ptr = (unsigned char*)malloc(sizeof(unsigned char) * 4 * max_img_width * max_img_height);
-    if (output_ptr == NULL)
-    {
-        log_error("Malloc returned output_ptr as NULL\n");
-        free(input_ptr);
-        free_mtdata(d);
-        return -1;
-    }
+    output_ptr = new unsigned char[4 * max_img_width * max_img_height];
 
     int plus_minus;
     for (plus_minus = 0; plus_minus < 3; plus_minus++)
@@ -448,8 +417,8 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
                 if (!streams[0])
                 {
                     log_error("create_image_2d failed.  width = %d, height = %d\n", effective_img_width, effective_img_height);
-                    free(input_ptr);
-                    free(output_ptr);
+                    delete[] input_ptr;
+                    delete[] output_ptr;
                     free_mtdata(d);
                     return -1;
                 }
@@ -462,8 +431,8 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
                 {
                     log_error("create_image_2d failed.  width = %d, height = %d\n", effective_img_width, effective_img_height);
                     clReleaseMemObject(streams[0]);
-                    free(input_ptr);
-                    free(output_ptr);
+                    delete[] input_ptr;
+                    delete[] output_ptr;
                     free_mtdata(d);
                     return -1;
                 }
@@ -476,8 +445,8 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
                     log_error("clWriteImage failed\n");
                     clReleaseMemObject(streams[0]);
                     clReleaseMemObject(streams[1]);
-                    free(input_ptr);
-                    free(output_ptr);
+                    delete[] input_ptr;
+                    delete[] output_ptr;
                     free_mtdata(d);
                     return -1;
                 }
@@ -490,8 +459,8 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
                     log_error("clSetKernelArgs failed\n");
                     clReleaseMemObject(streams[0]);
                     clReleaseMemObject(streams[1]);
-                    free(input_ptr);
-                    free(output_ptr);
+                    delete[] input_ptr;
+                    delete[] output_ptr;
                     free_mtdata(d);
                     return -1;
                 }
@@ -508,8 +477,8 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
                                 effective_img_width, effective_img_height, (int)local_threads[0], (int)local_threads[1]);
                     clReleaseMemObject(streams[0]);
                     clReleaseMemObject(streams[1]);
-                    free(input_ptr);
-                    free(output_ptr);
+                    delete[] input_ptr;
+                    delete[] output_ptr;
                     free_mtdata(d);
                     return -1;
                 }
@@ -521,8 +490,8 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
                                 effective_img_width, effective_img_height, (int)local_threads[0], (int)local_threads[1]);
                     clReleaseMemObject(streams[0]);
                     clReleaseMemObject(streams[1]);
-                    free(input_ptr);
-                    free(output_ptr);
+                    delete[] input_ptr;
+                    delete[] output_ptr;
                     free_mtdata(d);
                     return -1;
                 }
@@ -540,15 +509,15 @@ test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue
 
   }
 
-    // cleanup
-    free(input_ptr);
-    free(output_ptr);
-    free_mtdata(d);
-    clReleaseSampler(sampler);
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
+  // cleanup
+  delete[] input_ptr;
+  delete[] output_ptr;
+  free_mtdata(d);
+  clReleaseSampler(sampler);
+  clReleaseKernel(kernel);
+  clReleaseProgram(program);
 
-    return total_errors;
+  return total_errors;
 }
 
 
