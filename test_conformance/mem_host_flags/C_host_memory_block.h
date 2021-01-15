@@ -69,31 +69,28 @@ C_host_memory_block<T>::C_host_memory_block()
 template < class T>
 C_host_memory_block<T>::~C_host_memory_block()
 {
-  if (pData!=NULL) delete[] pData;
-  num_elements = 0;
+    if (pData != NULL) delete[] pData;
+    num_elements = 0;
 }
 
 template < class T >
 void C_host_memory_block<T>::Init(int num_elem, T & value)
 {
-  if (pData!=NULL) delete[] pData;
-  pData= new T [num_elem];
-  for (int i=0; i<num_elem; i++)
-    pData[i] = value;
+    if (pData != NULL) delete[] pData;
+    pData = new T[num_elem];
+    for (int i = 0; i < num_elem; i++) pData[i] = value;
 
-  num_elements= num_elem;
+    num_elements = num_elem;
 }
 
 template < class T >
 void C_host_memory_block<T>::Init(int num_elem)
 {
-  if (pData!=NULL) delete[] pData;
-  pData = new T [num_elem];
-  for (int i=0; i<num_elem; i++)
-    pData[i]= (T) i;
+    if (pData != NULL) delete[] pData;
+    pData = new T[num_elem];
+    for (int i = 0; i < num_elem; i++) pData[i] = (T)i;
 
-  num_elements = num_elem;
-
+    num_elements = num_elem;
 }
 template < class T >
 void  C_host_memory_block<T>::Set_to_zero()
