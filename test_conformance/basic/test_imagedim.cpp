@@ -40,7 +40,7 @@ static const char *image_dim_kernel_code =
 
 static unsigned char *generate_8888_image(size_t w, size_t h, MTdata d)
 {
-    unsigned char *ptr = new unsigned char[sizeof(unsigned char) * 4 * w * h];
+    unsigned char *ptr = new unsigned char[4 * w * h];
     size_t i;
 
     for (i = 0; i < w * h * 4; i++)
@@ -151,7 +151,6 @@ test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue que
                 max_img_width, max_img_height, (max_img_width*max_img_height*4)/(1024.0*1024.0));
 
     d = init_genrand( gRandomSeed );
-    log_info("Initialized data\n");
     input_ptr = generate_8888_image(max_img_width, max_img_height, d);
 
     output_ptr = new unsigned char[4 * max_img_width * max_img_height];
