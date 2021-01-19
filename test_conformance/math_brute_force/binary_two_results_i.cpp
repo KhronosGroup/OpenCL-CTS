@@ -354,11 +354,6 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                                    &build_info)))
             return error;
     }
-    /*
-        for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
-            if( (error =  BuildKernel( f->nameInCode, (int) i, kernels + i,
-       programs + i) ) ) return error;
-    */
 
     for (i = 0; i < (1ULL << 32); i += step)
     {
@@ -867,11 +862,6 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             return error;
         }
     }
-    /*
-        for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
-            if( (error =  BuildKernelDouble( f->nameInCode, (int) i, kernels +
-       i, programs + i) ) ) return error;
-    */
 
     for (i = 0; i < (1ULL << 32); i += step)
     {
@@ -1034,8 +1024,6 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                     && t2[j] == q2[j])
                     continue;
 
-                // if( t[j] != q[j] || t2[j] != q2[j] )
-                {
                     double test = ((double *)q)[j];
                     int correct2 = INT_MIN;
                     long double correct =
@@ -1236,7 +1224,6 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                         error = -1;
                         goto exit;
                     }
-                }
             }
         }
 

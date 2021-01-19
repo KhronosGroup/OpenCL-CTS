@@ -252,11 +252,6 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
                                gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                &build_info)))
         return error;
-    /*
-        for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
-            if( (error =  BuildKernel( f->nameInCode, (int) i, kernels + i,
-       programs + i) ) ) return error;
-    */
 
     if (0 == strcmp(f->name, "half_sin") || 0 == strcmp(f->name, "half_cos"))
     {
@@ -563,11 +558,6 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
     {
         return error;
     }
-    /*
-        for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
-            if( (error =  BuildKernelDouble( f->nameInCode, (int) i, kernels +
-       i, programs + i) ) ) return error;
-    */
 
     for (i = 0; i < (1ULL << 32); i += step)
     {
