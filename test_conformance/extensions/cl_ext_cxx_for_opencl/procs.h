@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,10 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef SLEEP_H
-#define SLEEP_H
+#ifndef _procs_h
+#define _procs_h
 
-void PreventSleep(void);
-void ResumeSleep(void);
+#include "harness/typeWrappers.h"
 
-#endif /* SLEEP_H */
+extern int test_cxx_for_opencl_ext(cl_device_id device, cl_context context,
+                                   cl_command_queue queue, int);
+extern int test_cxx_for_opencl_ver(cl_device_id device, cl_context context,
+                                   cl_command_queue queue, int);
+
+#endif /*_procs_h*/

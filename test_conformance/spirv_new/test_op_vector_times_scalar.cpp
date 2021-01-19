@@ -82,14 +82,10 @@ int test_vector_times_scalar(cl_device_id deviceID,
     {
         // Run the cl kernel for reference results
         clProgramWrapper prog;
-        err = create_single_kernel_helper_create_program(context, &prog, 1, &kernelBuf, NULL);
+        clKernelWrapper kernel;
+        err = create_single_kernel_helper(context, &prog, &kernel, 1,
+                                          &kernelBuf, "vector_times_scalar");
         SPIRV_CHECK_ERROR(err, "Failed to create cl program");
-
-        err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
-        SPIRV_CHECK_ERROR(err, "Failed to build program");
-
-        clKernelWrapper kernel = clCreateKernel(prog, "vector_times_scalar", &err);
-        SPIRV_CHECK_ERROR(err, "Failed to create cl kernel");
 
         clMemWrapper ref = clCreateBuffer(context, CL_MEM_READ_WRITE, res_bytes, NULL, &err);
         SPIRV_CHECK_ERROR(err, "Failed to create ref buffer");

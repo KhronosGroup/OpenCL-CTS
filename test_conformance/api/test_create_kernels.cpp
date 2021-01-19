@@ -525,11 +525,10 @@ int test_repeated_setup_cleanup(cl_device_id deviceID, cl_context context, cl_co
         local_queue = clCreateCommandQueue(local_context, deviceID, 0, &error);
         test_error( error, "clCreateCommandQueue failed");
 
-        error = create_single_kernel_helper(local_context, &local_program, NULL, 1, &repeate_test_kernel, NULL);
-        test_error( error, "Unable to build test program" );
-
-        local_kernel = clCreateKernel(local_program, "test_kernel", &error);
-        test_error( error, "clCreateKernel failed");
+        error = create_single_kernel_helper(
+            local_context, &local_program, &local_kernel, 1,
+            &repeate_test_kernel, "test_kernel");
+        test_error(error, "Unable to create kernel");
 
         local_mem_in = clCreateBuffer(local_context, CL_MEM_READ_ONLY, TEST_SIZE*sizeof(cl_int), NULL, &error);
         test_error( error, "clCreateBuffer failed");

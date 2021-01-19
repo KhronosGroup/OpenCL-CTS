@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -177,7 +177,9 @@ test_work_group_scan_exclusive_min_int(cl_device_id device, cl_context context, 
     int          i;
     MTdata       d;
 
-    err = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &wg_scan_exclusive_min_kernel_code_int, "test_wg_scan_exclusive_min_int", "-cl-std=CL2.0" );
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &wg_scan_exclusive_min_kernel_code_int,
+                                      "test_wg_scan_exclusive_min_int");
     if (err)
         return -1;
 
@@ -289,7 +291,9 @@ test_work_group_scan_exclusive_min_uint(cl_device_id device, cl_context context,
     int          i;
     MTdata       d;
 
-    err = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &wg_scan_exclusive_min_kernel_code_uint, "test_wg_scan_exclusive_min_uint", "-cl-std=CL2.0" );
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &wg_scan_exclusive_min_kernel_code_uint,
+                                      "test_wg_scan_exclusive_min_uint");
     if (err)
         return -1;
 
@@ -400,7 +404,9 @@ test_work_group_scan_exclusive_min_long(cl_device_id device, cl_context context,
     int          i;
     MTdata       d;
 
-    err = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &wg_scan_exclusive_min_kernel_code_long, "test_wg_scan_exclusive_min_long", "-cl-std=CL2.0" );
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &wg_scan_exclusive_min_kernel_code_long,
+                                      "test_wg_scan_exclusive_min_long");
     if (err)
         return -1;
 
@@ -512,7 +518,9 @@ test_work_group_scan_exclusive_min_ulong(cl_device_id device, cl_context context
     int          i;
     MTdata       d;
 
-    err = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &wg_scan_exclusive_min_kernel_code_ulong, "test_wg_scan_exclusive_min_ulong", "-cl-std=CL2.0" );
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &wg_scan_exclusive_min_kernel_code_ulong,
+                                      "test_wg_scan_exclusive_min_ulong");
     if (err)
         return -1;
 

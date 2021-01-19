@@ -105,25 +105,14 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
     int ret = 0;
 
     // Grab the list of supported image formats for integer reads
-    cl_image_format *formatList;
-    bool *filterFlags;
-    unsigned int numFormats;
+    std::vector<cl_image_format> formatList;
+    if (get_format_list(context, imageType, formatList, flags)) return -1;
 
-    if( get_format_list( context, imageType, formatList, numFormats, flags ) )
-        return -1;
-
-    filterFlags = new bool[ numFormats ];
-    if( filterFlags == NULL )
-    {
-        log_error( "ERROR: Out of memory allocating filter flags list!\n" );
-        return -1;
-    }
-    memset( filterFlags, 0, sizeof( bool ) * numFormats );
-
-    filter_formats(formatList, filterFlags, numFormats, NULL);
+    std::vector<bool> filterFlags(formatList.size(), false);
+    filter_formats(formatList, filterFlags, nullptr);
 
     // Run the format list
-    for( unsigned int i = 0; i < numFormats; i++ )
+    for (unsigned int i = 0; i < formatList.size(); i++)
     {
         int test_return = 0;
         if( filterFlags[i] )
@@ -167,9 +156,6 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
 
         ret += test_return;
     }
-
-    delete filterFlags;
-    delete formatList;
 
     return ret;
 }

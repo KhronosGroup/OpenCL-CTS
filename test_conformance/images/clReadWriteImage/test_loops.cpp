@@ -16,11 +16,23 @@
 #include "../testBase.h"
 #include "../common.h"
 
-extern int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
-extern int test_read_image_set_2D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
-extern int test_read_image_set_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
-extern int test_read_image_set_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
-extern int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format );
+extern int test_read_image_set_1D(cl_device_id device, cl_context context,
+                                  cl_command_queue queue,
+                                  cl_image_format *format, cl_mem_flags flags);
+extern int test_read_image_set_2D(cl_device_id device, cl_context context,
+                                  cl_command_queue queue,
+                                  cl_image_format *format, cl_mem_flags flags);
+extern int test_read_image_set_3D(cl_device_id device, cl_context context,
+                                  cl_command_queue queue,
+                                  cl_image_format *format, cl_mem_flags flags);
+extern int test_read_image_set_1D_array(cl_device_id device, cl_context context,
+                                        cl_command_queue queue,
+                                        cl_image_format *format,
+                                        cl_mem_flags flags);
+extern int test_read_image_set_2D_array(cl_device_id device, cl_context context,
+                                        cl_command_queue queue,
+                                        cl_image_format *format,
+                                        cl_mem_flags flags);
 
 int test_image_type( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type imageType, cl_mem_flags flags )
 {
@@ -28,79 +40,75 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
 
     int ret = 0;
 
+    if (gTestMipmaps)
+    {
+        if (0 == is_extension_available(device, "cl_khr_mipmap_image"))
+        {
+            log_info("-----------------------------------------------------\n");
+            log_info("This device does not support "
+                     "cl_khr_mipmap_image.\nSkipping mipmapped image test. \n");
+            log_info(
+                "-----------------------------------------------------\n\n");
+            return 0;
+        }
+    }
+
     // Grab the list of supported image formats for integer reads
-    cl_image_format *formatList;
-    bool *filterFlags;
-    unsigned int numFormats;
+    std::vector<cl_image_format> formatList;
+    if (get_format_list(context, imageType, formatList, flags)) return -1;
 
-  if ( gTestMipmaps )
-  {
-    if ( 0 == is_extension_available( device, "cl_khr_mipmap_image" ))
-    {
-      log_info( "-----------------------------------------------------\n" );
-      log_info( "This device does not support cl_khr_mipmap_image.\nSkipping mipmapped image test. \n" );
-      log_info( "-----------------------------------------------------\n\n" );
-      return 0;
-    }
-  }
-
-    if( get_format_list( context, imageType, formatList, numFormats, flags ) )
-        return -1;
-
-    filterFlags = new bool[ numFormats ];
-    if( filterFlags == NULL )
-    {
-        log_error( "ERROR: Out of memory allocating filter flags list!\n" );
-        return -1;
-    }
-    memset( filterFlags, 0, sizeof( bool ) * numFormats );
-    filter_formats( formatList, filterFlags, numFormats, 0 );
+    std::vector<bool> filterFlags(formatList.size(), false);
+    filter_formats(formatList, filterFlags, nullptr);
 
     // Run the format list
-    for( unsigned int i = 0; i < numFormats; i++ )
+    for (unsigned int i = 0; i < formatList.size(); i++)
     {
         int test_return = 0;
-        if( filterFlags[i] )
+        if (filterFlags[i])
         {
-            log_info( "NOT RUNNING: " );
-            print_header( &formatList[ i ], false );
+            log_info("NOT RUNNING: ");
+            print_header(&formatList[i], false);
             continue;
         }
 
-        print_header( &formatList[ i ], false );
+        print_header(&formatList[i], false);
 
         gTestCount++;
 
-        switch (imageType) {
+        switch (imageType)
+        {
             case CL_MEM_OBJECT_IMAGE1D:
-                test_return = test_read_image_set_1D( device, context, queue, &formatList[ i ] );
+                test_return = test_read_image_set_1D(device, context, queue,
+                                                     &formatList[i], flags);
                 break;
             case CL_MEM_OBJECT_IMAGE2D:
-                test_return = test_read_image_set_2D( device, context, queue, &formatList[ i ] );
+                test_return = test_read_image_set_2D(device, context, queue,
+                                                     &formatList[i], flags);
                 break;
             case CL_MEM_OBJECT_IMAGE3D:
-                test_return = test_read_image_set_3D( device,context, queue,  &formatList[ i ] );
+                test_return = test_read_image_set_3D(device, context, queue,
+                                                     &formatList[i], flags);
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                test_return = test_read_image_set_1D_array( device, context, queue, &formatList[ i ] );
+                test_return = test_read_image_set_1D_array(
+                    device, context, queue, &formatList[i], flags);
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                test_return = test_read_image_set_2D_array( device, context, queue, &formatList[ i ] );
+                test_return = test_read_image_set_2D_array(
+                    device, context, queue, &formatList[i], flags);
                 break;
         }
 
-        if (test_return) {
+        if (test_return)
+        {
             gFailCount++;
-            log_error( "FAILED: " );
-            print_header( &formatList[ i ], true );
-            log_info( "\n" );
+            log_error("FAILED: ");
+            print_header(&formatList[i], true);
+            log_info("\n");
         }
 
         ret += test_return;
     }
-
-    delete[] filterFlags;
-    delete[] formatList;
 
     return ret;
 }

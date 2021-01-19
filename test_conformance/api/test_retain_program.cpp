@@ -28,13 +28,10 @@ int test_release_kernel_order(cl_device_id deviceID, cl_context context, cl_comm
     int error;
     const char *testProgram[] = { "__kernel void sample_test(__global int *data){}" };
 
-    /* Create a test program */
-    error = create_single_kernel_helper(context, &program, NULL, 1, testProgram, NULL);
+    /* Create a test program and kernel from it */
+    error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                        testProgram, "sample_test");
     test_error( error, "Unable to build sample program to test with" );
-
-    /* And create a kernel from it */
-    kernel = clCreateKernel( program, "sample_test", &error );
-    test_error( error, "Unable to create kernel" );
 
     /* Now try freeing the program first, then the kernel. If refcounts are right, this should work just fine */
     clReleaseProgram( program );

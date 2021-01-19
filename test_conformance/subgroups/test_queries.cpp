@@ -67,9 +67,8 @@ int test_sub_group_info(cl_device_id device, cl_context context,
 
     const std::string &kernel_str = kernel_sstr.str();
     const char *kernel_src = kernel_str.c_str();
-    error = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel, 1, &kernel_src, "query_kernel",
-        "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                        &kernel_src, "query_kernel");
     if (error != 0) return error;
 
     // Determine some local dimensions to use for the test.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,10 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef SLEEP_H
-#define SLEEP_H
 
-void PreventSleep(void);
-void ResumeSleep(void);
+#include "procs.h"
 
-#endif /* SLEEP_H */
+test_definition test_list[] = {
+    ADD_TEST_VERSION(cxx_for_opencl_ext, Version(2, 0)),
+    ADD_TEST_VERSION(cxx_for_opencl_ver, Version(2, 0))
+};
+
+int main(int argc, const char *argv[])
+{
+    return runTestHarnessWithCheck(argc, argv, ARRAY_SIZE(test_list), test_list,
+                                   false, 0, nullptr);
+}

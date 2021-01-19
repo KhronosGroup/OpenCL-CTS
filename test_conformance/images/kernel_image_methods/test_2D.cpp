@@ -15,7 +15,6 @@
 //
 #include "../testBase.h"
 
-extern bool gDeviceLt20;
 
 struct image_kernel_data
 {
@@ -133,7 +132,8 @@ int test_get_image_info_single(cl_context context, cl_command_queue queue,
     if (error)
         print_error(error, "clFinish failed.\n");
     const char *ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0" );
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     test_error( error, "Unable to create kernel to test against" );
 
     // Create an output buffer

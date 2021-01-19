@@ -22,7 +22,6 @@
     #include <setjmp.h>
 #endif
 
-extern bool gDeviceLt20;
 extern bool gTestReadWrite;
 
 const char *read1DArrayKernelSourcePattern =
@@ -176,8 +175,11 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
     return 0;
 }
 
-int test_read_image_set_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler,
-                            ExplicitType outputType )
+int test_read_image_set_1D_array(cl_device_id device, cl_context context,
+                                 cl_command_queue queue,
+                                 const cl_image_format *format,
+                                 image_sampler_data *imageSampler,
+                                 ExplicitType outputType)
 {
     char programSrc[10240];
     const char *ptr;
@@ -251,7 +253,8 @@ int test_read_image_set_1D_array( cl_device_id device, cl_context context, cl_co
 
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0" );
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     test_error( error, "Unable to create testing kernel" );
 
     if ( gTestSmallImages )
