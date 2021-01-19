@@ -36,9 +36,6 @@
 #define M_PI_4 (M_PI / 4)
 #endif
 
-#define EVALUATE(x) x
-#define CONCATENATE(x, y) x##EVALUATE(y)
-
 #pragma STDC FP_CONTRACT OFF
 static void __log2_ep(double *hi, double *lo, double x);
 
@@ -51,7 +48,6 @@ static const uint64d_t _CL_NAN = { 0x7ff8000000000000ULL };
 
 #define cl_make_nan() _CL_NAN.d
 
-static double reduce1(double x);
 static double reduce1(double x)
 {
     if (fabs(x) >= HEX_DBL(+, 1, 0, +, 53))
@@ -173,7 +169,6 @@ static float fallback_frexpf(float x, int *iptr)
     return fu;
 }
 
-static inline int extractf(float, cl_uint *);
 static inline int extractf(float x, cl_uint *mant)
 {
     static float (*frexppf)(float, int *) = NULL;
@@ -194,7 +189,6 @@ static inline int extractf(float x, cl_uint *mant)
 
 // Shift right by shift bits. Any bits lost on the right side are bitwise OR'd
 // together and ORd into the LSB of the result
-static inline void shift_right_sticky_64(cl_ulong *p, int shift);
 static inline void shift_right_sticky_64(cl_ulong *p, int shift)
 {
     cl_ulong sticky = 0;
@@ -217,7 +211,6 @@ static inline void shift_right_sticky_64(cl_ulong *p, int shift)
 
 // Add two 64 bit mantissas. Bits that are below the LSB of the result are OR'd
 // into the LSB of the result
-static inline void add64(cl_ulong *p, cl_ulong c, int *exponent);
 static inline void add64(cl_ulong *p, cl_ulong c, int *exponent)
 {
     cl_ulong carry;
@@ -237,7 +230,6 @@ static inline void add64(cl_ulong *p, cl_ulong c, int *exponent)
 }
 
 // IEEE-754 round to nearest, ties to even rounding
-static float round_to_nearest_even_float(cl_ulong p, int exponent);
 static float round_to_nearest_even_float(cl_ulong p, int exponent)
 {
     union {
@@ -289,7 +281,6 @@ static float round_to_nearest_even_float(cl_ulong p, int exponent)
     return u.d;
 }
 
-static float round_to_nearest_even_float_ftz(cl_ulong p, int exponent);
 static float round_to_nearest_even_float_ftz(cl_ulong p, int exponent)
 {
     extern int gCheckTininessBeforeRounding;
@@ -347,7 +338,6 @@ static float round_to_nearest_even_float_ftz(cl_ulong p, int exponent)
 
 
 // IEEE-754 round toward zero.
-static float round_toward_zero_float(cl_ulong p, int exponent);
 static float round_toward_zero_float(cl_ulong p, int exponent)
 {
     union {
@@ -388,7 +378,6 @@ static float round_toward_zero_float(cl_ulong p, int exponent)
     return u.d;
 }
 
-static float round_toward_zero_float_ftz(cl_ulong p, int exponent);
 static float round_toward_zero_float_ftz(cl_ulong p, int exponent)
 {
     extern int gCheckTininessBeforeRounding;
@@ -429,7 +418,6 @@ static float round_toward_zero_float_ftz(cl_ulong p, int exponent)
 }
 
 // Subtract two significands.
-static inline void sub64(cl_ulong *c, cl_ulong p, cl_uint *signC, int *expC);
 static inline void sub64(cl_ulong *c, cl_ulong p, cl_uint *signC, int *expC)
 {
     cl_ulong carry;
@@ -2652,7 +2640,6 @@ static double fallback_frexp(double x, int *iptr)
 }
 
 // Assumes zeros, infinities and NaNs handed elsewhere
-static inline int extract(double x, cl_ulong *mant);
 static inline int extract(double x, cl_ulong *mant)
 {
     static double (*frexpp)(double, int *) = NULL;
@@ -2672,7 +2659,6 @@ static inline int extract(double x, cl_ulong *mant)
 }
 
 // Return 128-bit product of a*b  as (hi << 64) + lo
-static inline void mul128(cl_ulong a, cl_ulong b, cl_ulong *hi, cl_ulong *lo);
 static inline void mul128(cl_ulong a, cl_ulong b, cl_ulong *hi, cl_ulong *lo)
 {
     cl_ulong alo = a & 0xffffffffULL;
@@ -2708,8 +2694,6 @@ static inline void renormalize(cl_ulong *hi, cl_ulong *lo, int *exponent)
     }
 }
 
-static double round_to_nearest_even_double(cl_ulong hi, cl_ulong lo,
-                                           int exponent);
 static double round_to_nearest_even_double(cl_ulong hi, cl_ulong lo,
                                            int exponent)
 {
@@ -2756,8 +2740,6 @@ static double round_to_nearest_even_double(cl_ulong hi, cl_ulong lo,
 
 // Shift right.  Bits lost on the right will be OR'd together and OR'd with the
 // LSB
-static inline void shift_right_sticky_128(cl_ulong *hi, cl_ulong *lo,
-                                          int shift);
 static inline void shift_right_sticky_128(cl_ulong *hi, cl_ulong *lo, int shift)
 {
     cl_ulong sticky = 0;
@@ -2797,8 +2779,6 @@ static inline void shift_right_sticky_128(cl_ulong *hi, cl_ulong *lo, int shift)
 // If the 129 bit result doesn't fit, bits lost off the right end will be OR'd
 // with the LSB
 static inline void add128(cl_ulong *hi, cl_ulong *lo, cl_ulong chi,
-                          cl_ulong clo, int *exp);
-static inline void add128(cl_ulong *hi, cl_ulong *lo, cl_ulong chi,
                           cl_ulong clo, int *exponent)
 {
     cl_ulong carry, carry2;
@@ -2825,8 +2805,6 @@ static inline void add128(cl_ulong *hi, cl_ulong *lo, cl_ulong chi,
 }
 
 // 128-bit subtract  of ((chi << 64) + clo)  - ((*hi << 64) + *lo)
-static inline void sub128(cl_ulong *chi, cl_ulong *clo, cl_ulong hi,
-                          cl_ulong lo, cl_ulong *signC, int *expC);
 static inline void sub128(cl_ulong *chi, cl_ulong *clo, cl_ulong hi,
                           cl_ulong lo, cl_ulong *signC, int *expC)
 {
@@ -3785,14 +3763,12 @@ long double reference_nanl(cl_ulong x)
 
 long double reference_reciprocall(long double x) { return 1.0L / x; }
 
-long double reference_remainderl(long double x, long double y);
 long double reference_remainderl(long double x, long double y)
 {
     int i;
     return reference_remquol(x, y, &i);
 }
 
-long double reference_lgammal(long double x);
 long double reference_lgammal(long double x)
 {
     // lgamma is currently not tested
@@ -3841,8 +3817,6 @@ typedef struct
     int sign; // sign of double
 } eprep_t;
 
-static eprep_t double_to_eprep(double x);
-
 static eprep_t double_to_eprep(double x)
 {
     eprep_t result;
@@ -3874,8 +3848,6 @@ static eprep_t double_to_eprep(double x)
     return result;
 }
 
-static double eprep_to_double(eprep_t epx);
-
 static double eprep_to_double(eprep_t epx)
 {
     double res = 0.0;
@@ -3886,8 +3858,6 @@ static double eprep_to_double(eprep_t epx)
 
     return copysign(res, epx.sign);
 }
-
-static int payne_hanek(double *y, int *exception);
 
 static int payne_hanek(double *y, int *exception)
 {
