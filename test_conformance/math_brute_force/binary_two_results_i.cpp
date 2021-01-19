@@ -19,8 +19,6 @@
 #include <string.h>
 #include "FunctionList.h"
 
-#define PARALLEL_REFERENCE
-
 int TestFunc_FloatI_Float_Float(const Func *f, MTdata, bool relaxedMode);
 int TestFunc_DoubleI_Double_Double(const Func *f, MTdata, bool relaxedMode);
 
@@ -248,7 +246,6 @@ static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
                              info->programs + i, info->relaxedMode);
 }
 
-#if defined PARALLEL_REFERENCE
 typedef struct ComputeReferenceInfoF_
 {
     const float *x;
@@ -315,8 +312,6 @@ static cl_int ReferenceD(cl_uint jid, cl_uint tid, void *userInfo)
     return CL_SUCCESS;
 }
 
-#endif
-
 int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 {
     uint64_t i;
@@ -333,9 +328,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
     uint64_t step = getTestStep(sizeof(float), bufferSize);
 
-#if defined PARALLEL_REFERENCE
     cl_uint threadCount = GetThreadCount();
-#endif
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
     if (gIsEmbedded)
@@ -452,7 +445,6 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         float *s = (float *)gIn;
         float *s2 = (float *)gIn2;
 
-#if defined PARALLEL_REFERENCE
         if (threadCount > 1)
         {
             ComputeReferenceInfoF cri;
@@ -467,14 +459,11 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         }
         else
         {
-#endif
             float *r = (float *)gOut_Ref;
             int *r2 = (int *)gOut_Ref2;
             for (j = 0; j < bufferSize / sizeof(float); j++)
                 r[j] = (float)f->func.f_ffpI(s[j], s2[j], r2 + j);
-#if defined PARALLEL_REFERENCE
         }
-#endif
 
         // Read the data back
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -843,9 +832,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
-#if defined PARALLEL_REFERENCE
     cl_uint threadCount = GetThreadCount();
-#endif
 
     Force64BitFPUPrecision();
 
@@ -960,7 +947,6 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         double *s = (double *)gIn;
         double *s2 = (double *)gIn2;
 
-#if defined PARALLEL_REFERENCE
         if (threadCount > 1)
         {
             ComputeReferenceInfoD cri;
@@ -975,14 +961,11 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         }
         else
         {
-#endif
             double *r = (double *)gOut_Ref;
             int *r2 = (int *)gOut_Ref2;
             for (j = 0; j < bufferSize / sizeof(double); j++)
                 r[j] = (double)f->dfunc.f_ffpI(s[j], s2[j], r2 + j);
-#if defined PARALLEL_REFERENCE
         }
-#endif
 
         // Read the data back
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
