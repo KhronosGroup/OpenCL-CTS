@@ -19,8 +19,6 @@
 #include <string.h>
 #include "FunctionList.h"
 
-#define PARALLEL_REFERENCE
-
 int TestFunc_FloatI_Float_Float(const Func *f, MTdata, bool relaxedMode);
 int TestFunc_DoubleI_Double_Double(const Func *f, MTdata, bool relaxedMode);
 
@@ -248,7 +246,6 @@ static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
                              info->programs + i, info->relaxedMode);
 }
 
-#if defined PARALLEL_REFERENCE
 typedef struct ComputeReferenceInfoF_
 {
     const float *x;
@@ -315,8 +312,6 @@ static cl_int ReferenceD(cl_uint jid, cl_uint tid, void *userInfo)
     return CL_SUCCESS;
 }
 
-#endif
-
 int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 {
     uint64_t i;
@@ -333,9 +328,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
     uint64_t step = getTestStep(sizeof(float), bufferSize);
 
-#if defined PARALLEL_REFERENCE
     cl_uint threadCount = GetThreadCount();
-#endif
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
     if (gIsEmbedded)
@@ -354,11 +347,6 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                                    &build_info)))
             return error;
     }
-    /*
-        for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
-            if( (error =  BuildKernel( f->nameInCode, (int) i, kernels + i,
-       programs + i) ) ) return error;
-    */
 
     for (i = 0; i < (1ULL << 32); i += step)
     {
@@ -457,7 +445,6 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         float *s = (float *)gIn;
         float *s2 = (float *)gIn2;
 
-#if defined PARALLEL_REFERENCE
         if (threadCount > 1)
         {
             ComputeReferenceInfoF cri;
@@ -472,14 +459,11 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         }
         else
         {
-#endif
             float *r = (float *)gOut_Ref;
             int *r2 = (int *)gOut_Ref2;
             for (j = 0; j < bufferSize / sizeof(float); j++)
                 r[j] = (float)f->func.f_ffpI(s[j], s2[j], r2 + j);
-#if defined PARALLEL_REFERENCE
         }
-#endif
 
         // Read the data back
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -848,9 +832,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
-#if defined PARALLEL_REFERENCE
     cl_uint threadCount = GetThreadCount();
-#endif
 
     Force64BitFPUPrecision();
 
@@ -867,11 +849,6 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             return error;
         }
     }
-    /*
-        for( i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++ )
-            if( (error =  BuildKernelDouble( f->nameInCode, (int) i, kernels +
-       i, programs + i) ) ) return error;
-    */
 
     for (i = 0; i < (1ULL << 32); i += step)
     {
@@ -970,7 +947,6 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         double *s = (double *)gIn;
         double *s2 = (double *)gIn2;
 
-#if defined PARALLEL_REFERENCE
         if (threadCount > 1)
         {
             ComputeReferenceInfoD cri;
@@ -985,14 +961,11 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         }
         else
         {
-#endif
             double *r = (double *)gOut_Ref;
             int *r2 = (int *)gOut_Ref2;
             for (j = 0; j < bufferSize / sizeof(double); j++)
                 r[j] = (double)f->dfunc.f_ffpI(s[j], s2[j], r2 + j);
-#if defined PARALLEL_REFERENCE
         }
-#endif
 
         // Read the data back
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -1034,180 +1007,164 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                     && t2[j] == q2[j])
                     continue;
 
-                // if( t[j] != q[j] || t2[j] != q2[j] )
+                double test = ((double *)q)[j];
+                int correct2 = INT_MIN;
+                long double correct = f->dfunc.f_ffpI(s[j], s2[j], &correct2);
+                float err = Bruteforce_Ulp_Error_Double(test, correct);
+                int64_t iErr;
+
+                // in case of remquo, we only care about the sign and last
+                // seven bits of integer as per the spec.
+                if (testingRemquo)
+                    iErr = (long long)(q2[j] & 0x0000007f)
+                        - (long long)(correct2 & 0x0000007f);
+                else
+                    iErr = (long long)q2[j] - (long long)correct2;
+
+                // For remquo, if y = 0, x is infinite, or either is NaN
+                // then the standard either neglects to say what is returned
+                // in iptr or leaves it undefined or implementation defined.
+                int iptrUndefined = fabs(((double *)gIn)[j]) == INFINITY
+                    || ((double *)gIn2)[j] == 0.0 || isnan(((double *)gIn2)[j])
+                    || isnan(((double *)gIn)[j]);
+                if (iptrUndefined) iErr = 0;
+
+                int fail = !(fabsf(err) <= f->double_ulps && iErr == 0);
+                if (ftz && fail)
                 {
-                    double test = ((double *)q)[j];
-                    int correct2 = INT_MIN;
-                    long double correct =
-                        f->dfunc.f_ffpI(s[j], s2[j], &correct2);
-                    float err = Bruteforce_Ulp_Error_Double(test, correct);
-                    int64_t iErr;
-
-                    // in case of remquo, we only care about the sign and last
-                    // seven bits of integer as per the spec.
-                    if (testingRemquo)
-                        iErr = (long long)(q2[j] & 0x0000007f)
-                            - (long long)(correct2 & 0x0000007f);
-                    else
-                        iErr = (long long)q2[j] - (long long)correct2;
-
-                    // For remquo, if y = 0, x is infinite, or either is NaN
-                    // then the standard either neglects to say what is returned
-                    // in iptr or leaves it undefined or implementation defined.
-                    int iptrUndefined = fabs(((double *)gIn)[j]) == INFINITY
-                        || ((double *)gIn2)[j] == 0.0
-                        || isnan(((double *)gIn2)[j])
-                        || isnan(((double *)gIn)[j]);
-                    if (iptrUndefined) iErr = 0;
-
-                    int fail = !(fabsf(err) <= f->double_ulps && iErr == 0);
-                    if (ftz && fail)
+                    // retry per section 6.5.3.2
+                    if (IsDoubleResultSubnormal(correct, f->double_ulps))
                     {
-                        // retry per section 6.5.3.2
-                        if (IsDoubleResultSubnormal(correct, f->double_ulps))
+                        fail = fail && !(test == 0.0f && iErr == 0);
+                        if (!fail) err = 0.0f;
+                    }
+
+                    // retry per section 6.5.3.3
+                    if (IsDoubleSubnormal(s[j]))
+                    {
+                        int correct3i, correct4i;
+                        long double correct3 =
+                            f->dfunc.f_ffpI(0.0, s2[j], &correct3i);
+                        long double correct4 =
+                            f->dfunc.f_ffpI(-0.0, s2[j], &correct4i);
+                        float err2 =
+                            Bruteforce_Ulp_Error_Double(test, correct3);
+                        float err3 =
+                            Bruteforce_Ulp_Error_Double(test, correct4);
+                        int64_t iErr3 = (long long)q2[j] - (long long)correct3i;
+                        int64_t iErr4 = (long long)q2[j] - (long long)correct4i;
+                        fail = fail
+                            && ((!(fabsf(err2) <= f->double_ulps && iErr3 == 0))
+                                && (!(fabsf(err3) <= f->double_ulps
+                                      && iErr4 == 0)));
+                        if (fabsf(err2) < fabsf(err)) err = err2;
+                        if (fabsf(err3) < fabsf(err)) err = err3;
+                        if (llabs(iErr3) < llabs(iErr)) iErr = iErr3;
+                        if (llabs(iErr4) < llabs(iErr)) iErr = iErr4;
+
+                        // retry per section 6.5.3.4
+                        if (IsDoubleResultSubnormal(correct2, f->double_ulps)
+                            || IsDoubleResultSubnormal(correct3,
+                                                       f->double_ulps))
                         {
-                            fail = fail && !(test == 0.0f && iErr == 0);
+                            fail = fail
+                                && !(test == 0.0f
+                                     && (iErr3 == 0 || iErr4 == 0));
                             if (!fail) err = 0.0f;
                         }
 
-                        // retry per section 6.5.3.3
-                        if (IsDoubleSubnormal(s[j]))
+                        // try with both args as zero
+                        if (IsDoubleSubnormal(s2[j]))
                         {
-                            int correct3i, correct4i;
-                            long double correct3 =
-                                f->dfunc.f_ffpI(0.0, s2[j], &correct3i);
-                            long double correct4 =
-                                f->dfunc.f_ffpI(-0.0, s2[j], &correct4i);
-                            float err2 =
-                                Bruteforce_Ulp_Error_Double(test, correct3);
-                            float err3 =
-                                Bruteforce_Ulp_Error_Double(test, correct4);
-                            int64_t iErr3 =
-                                (long long)q2[j] - (long long)correct3i;
-                            int64_t iErr4 =
-                                (long long)q2[j] - (long long)correct4i;
+                            int correct7i, correct8i;
+                            correct3 = f->dfunc.f_ffpI(0.0, 0.0, &correct3i);
+                            correct4 = f->dfunc.f_ffpI(-0.0, 0.0, &correct4i);
+                            long double correct7 =
+                                f->dfunc.f_ffpI(0.0, -0.0, &correct7i);
+                            long double correct8 =
+                                f->dfunc.f_ffpI(-0.0, -0.0, &correct8i);
+                            err2 = Bruteforce_Ulp_Error_Double(test, correct3);
+                            err3 = Bruteforce_Ulp_Error_Double(test, correct4);
+                            float err4 =
+                                Bruteforce_Ulp_Error_Double(test, correct7);
+                            float err5 =
+                                Bruteforce_Ulp_Error_Double(test, correct8);
+                            iErr3 = (long long)q2[j] - (long long)correct3i;
+                            iErr4 = (long long)q2[j] - (long long)correct4i;
+                            int64_t iErr7 =
+                                (long long)q2[j] - (long long)correct7i;
+                            int64_t iErr8 =
+                                (long long)q2[j] - (long long)correct8i;
                             fail = fail
                                 && ((!(fabsf(err2) <= f->double_ulps
                                        && iErr3 == 0))
                                     && (!(fabsf(err3) <= f->double_ulps
-                                          && iErr4 == 0)));
+                                          && iErr4 == 0))
+                                    && (!(fabsf(err4) <= f->double_ulps
+                                          && iErr7 == 0))
+                                    && (!(fabsf(err5) <= f->double_ulps
+                                          && iErr8 == 0)));
                             if (fabsf(err2) < fabsf(err)) err = err2;
                             if (fabsf(err3) < fabsf(err)) err = err3;
+                            if (fabsf(err4) < fabsf(err)) err = err4;
+                            if (fabsf(err5) < fabsf(err)) err = err5;
                             if (llabs(iErr3) < llabs(iErr)) iErr = iErr3;
                             if (llabs(iErr4) < llabs(iErr)) iErr = iErr4;
+                            if (llabs(iErr7) < llabs(iErr)) iErr = iErr7;
+                            if (llabs(iErr8) < llabs(iErr)) iErr = iErr8;
 
                             // retry per section 6.5.3.4
-                            if (IsDoubleResultSubnormal(correct2,
+                            if (IsDoubleResultSubnormal(correct3,
                                                         f->double_ulps)
-                                || IsDoubleResultSubnormal(correct3,
+                                || IsDoubleResultSubnormal(correct4,
+                                                           f->double_ulps)
+                                || IsDoubleResultSubnormal(correct7,
+                                                           f->double_ulps)
+                                || IsDoubleResultSubnormal(correct8,
                                                            f->double_ulps))
                             {
                                 fail = fail
                                     && !(test == 0.0f
-                                         && (iErr3 == 0 || iErr4 == 0));
-                                if (!fail) err = 0.0f;
-                            }
-
-                            // try with both args as zero
-                            if (IsDoubleSubnormal(s2[j]))
-                            {
-                                int correct7i, correct8i;
-                                correct3 =
-                                    f->dfunc.f_ffpI(0.0, 0.0, &correct3i);
-                                correct4 =
-                                    f->dfunc.f_ffpI(-0.0, 0.0, &correct4i);
-                                long double correct7 =
-                                    f->dfunc.f_ffpI(0.0, -0.0, &correct7i);
-                                long double correct8 =
-                                    f->dfunc.f_ffpI(-0.0, -0.0, &correct8i);
-                                err2 =
-                                    Bruteforce_Ulp_Error_Double(test, correct3);
-                                err3 =
-                                    Bruteforce_Ulp_Error_Double(test, correct4);
-                                float err4 =
-                                    Bruteforce_Ulp_Error_Double(test, correct7);
-                                float err5 =
-                                    Bruteforce_Ulp_Error_Double(test, correct8);
-                                iErr3 = (long long)q2[j] - (long long)correct3i;
-                                iErr4 = (long long)q2[j] - (long long)correct4i;
-                                int64_t iErr7 =
-                                    (long long)q2[j] - (long long)correct7i;
-                                int64_t iErr8 =
-                                    (long long)q2[j] - (long long)correct8i;
-                                fail = fail
-                                    && ((!(fabsf(err2) <= f->double_ulps
-                                           && iErr3 == 0))
-                                        && (!(fabsf(err3) <= f->double_ulps
-                                              && iErr4 == 0))
-                                        && (!(fabsf(err4) <= f->double_ulps
-                                              && iErr7 == 0))
-                                        && (!(fabsf(err5) <= f->double_ulps
-                                              && iErr8 == 0)));
-                                if (fabsf(err2) < fabsf(err)) err = err2;
-                                if (fabsf(err3) < fabsf(err)) err = err3;
-                                if (fabsf(err4) < fabsf(err)) err = err4;
-                                if (fabsf(err5) < fabsf(err)) err = err5;
-                                if (llabs(iErr3) < llabs(iErr)) iErr = iErr3;
-                                if (llabs(iErr4) < llabs(iErr)) iErr = iErr4;
-                                if (llabs(iErr7) < llabs(iErr)) iErr = iErr7;
-                                if (llabs(iErr8) < llabs(iErr)) iErr = iErr8;
-
-                                // retry per section 6.5.3.4
-                                if (IsDoubleResultSubnormal(correct3,
-                                                            f->double_ulps)
-                                    || IsDoubleResultSubnormal(correct4,
-                                                               f->double_ulps)
-                                    || IsDoubleResultSubnormal(correct7,
-                                                               f->double_ulps)
-                                    || IsDoubleResultSubnormal(correct8,
-                                                               f->double_ulps))
-                                {
-                                    fail = fail
-                                        && !(test == 0.0f
-                                             && (iErr3 == 0 || iErr4 == 0
-                                                 || iErr7 == 0 || iErr8 == 0));
-                                    if (!fail) err = 0.0f;
-                                }
-                            }
-                        }
-                        else if (IsDoubleSubnormal(s2[j]))
-                        {
-                            int correct3i, correct4i;
-                            long double correct3 =
-                                f->dfunc.f_ffpI(s[j], 0.0, &correct3i);
-                            long double correct4 =
-                                f->dfunc.f_ffpI(s[j], -0.0, &correct4i);
-                            float err2 =
-                                Bruteforce_Ulp_Error_Double(test, correct3);
-                            float err3 =
-                                Bruteforce_Ulp_Error_Double(test, correct4);
-                            int64_t iErr3 =
-                                (long long)q2[j] - (long long)correct3i;
-                            int64_t iErr4 =
-                                (long long)q2[j] - (long long)correct4i;
-                            fail = fail
-                                && ((!(fabsf(err2) <= f->double_ulps
-                                       && iErr3 == 0))
-                                    && (!(fabsf(err3) <= f->double_ulps
-                                          && iErr4 == 0)));
-                            if (fabsf(err2) < fabsf(err)) err = err2;
-                            if (fabsf(err3) < fabsf(err)) err = err3;
-                            if (llabs(iErr3) < llabs(iErr)) iErr = iErr3;
-                            if (llabs(iErr4) < llabs(iErr)) iErr = iErr4;
-
-                            // retry per section 6.5.3.4
-                            if (IsDoubleResultSubnormal(correct2,
-                                                        f->double_ulps)
-                                || IsDoubleResultSubnormal(correct3,
-                                                           f->double_ulps))
-                            {
-                                fail = fail
-                                    && !(test == 0.0f
-                                         && (iErr3 == 0 || iErr4 == 0));
+                                         && (iErr3 == 0 || iErr4 == 0
+                                             || iErr7 == 0 || iErr8 == 0));
                                 if (!fail) err = 0.0f;
                             }
                         }
                     }
+                    else if (IsDoubleSubnormal(s2[j]))
+                    {
+                        int correct3i, correct4i;
+                        long double correct3 =
+                            f->dfunc.f_ffpI(s[j], 0.0, &correct3i);
+                        long double correct4 =
+                            f->dfunc.f_ffpI(s[j], -0.0, &correct4i);
+                        float err2 =
+                            Bruteforce_Ulp_Error_Double(test, correct3);
+                        float err3 =
+                            Bruteforce_Ulp_Error_Double(test, correct4);
+                        int64_t iErr3 = (long long)q2[j] - (long long)correct3i;
+                        int64_t iErr4 = (long long)q2[j] - (long long)correct4i;
+                        fail = fail
+                            && ((!(fabsf(err2) <= f->double_ulps && iErr3 == 0))
+                                && (!(fabsf(err3) <= f->double_ulps
+                                      && iErr4 == 0)));
+                        if (fabsf(err2) < fabsf(err)) err = err2;
+                        if (fabsf(err3) < fabsf(err)) err = err3;
+                        if (llabs(iErr3) < llabs(iErr)) iErr = iErr3;
+                        if (llabs(iErr4) < llabs(iErr)) iErr = iErr4;
+
+                        // retry per section 6.5.3.4
+                        if (IsDoubleResultSubnormal(correct2, f->double_ulps)
+                            || IsDoubleResultSubnormal(correct3,
+                                                       f->double_ulps))
+                        {
+                            fail = fail
+                                && !(test == 0.0f
+                                     && (iErr3 == 0 || iErr4 == 0));
+                            if (!fail) err = 0.0f;
+                        }
+                    }
+                }
                     if (fabsf(err) > maxError)
                     {
                         maxError = fabsf(err);
@@ -1236,7 +1193,6 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                         error = -1;
                         goto exit;
                     }
-                }
             }
         }
 
