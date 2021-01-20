@@ -1,6 +1,10 @@
 # Remember current source directory (`test_conformance').
 set( CLConf_Install_Base_Dir "${CMAKE_CURRENT_SOURCE_DIR}" )
 
+if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    add_cxx_flag_if_supported(-Wno-narrowing)
+endif()
+
 set(HARNESS_LIB harness)
 
 add_subdirectory( allocations )
