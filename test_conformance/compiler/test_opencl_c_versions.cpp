@@ -193,7 +193,7 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_features(cl_device_id device,
     }
 
     const Version clc_version = get_device_cl_c_version(device);
-    if (clc_version >= Version(2, 0))
+    if (clc_version >= Version(2, 0) && clc_version < Version(3, 0))
     {
         bool has_all_OpenCL_C_20_features =
             features.supports__opencl_c_atomic_order_acq_rel
@@ -248,7 +248,7 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_versions(cl_device_id device,
                                                      / sizeof(cl_name_version));
     error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS, sz,
                             device_clc_versions.data(), NULL);
-    test_error(error, "Unable to query CL_DEVICE_OPENCL_C_FEATURES");
+    test_error(error, "Unable to query CL_DEVICE_OPENCL_ALL_VERSIONS");
 
     for (const auto& test_clc_version : test_clc_versions)
     {
@@ -275,9 +275,13 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_versions(cl_device_id device,
             }
             else
             {
-                log_error("Didn't find OpenCL C version '%s'!\n",
-                          test_clc_version.to_string().c_str());
-                return TEST_FAIL;
+                if (!(test_clc_version == Version(2, 0)
+                      && device_clc_version >= Version(3, 0)))
+                {
+                    log_error("Didn't find OpenCL C version '%s'!\n",
+                              test_clc_version.to_string().c_str());
+                    return TEST_FAIL;
+                }
             }
         }
     }
