@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017, 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -203,7 +203,7 @@ void *FlushToZero(void)
 #if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)
     union {
-        int i;
+        uint i;
         void *p;
     } u = { _mm_getcsr() };
     _mm_setcsr(u.i | 0x8040);
@@ -235,7 +235,7 @@ void UnFlushToZero(void *p)
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)
     union {
         void *p;
-        int i;
+        uint i;
     } u = { p };
     _mm_setcsr(u.i);
 #elif defined(__arm__) || defined(__aarch64__)

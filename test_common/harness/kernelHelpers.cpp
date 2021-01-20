@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017, 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1730,7 +1730,7 @@ Version get_device_cl_c_version(cl_device_id device)
                                  &opencl_c_version_size_in_bytes);
     test_error_ret(error,
                    "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_VERSION\n",
-                   (Version{ -1, 0 }));
+                   (Version{ 0, 0 }));
 
     std::string opencl_c_version(opencl_c_version_size_in_bytes, '\0');
     error =
@@ -1739,13 +1739,13 @@ Version get_device_cl_c_version(cl_device_id device)
 
     test_error_ret(error,
                    "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_VERSION\n",
-                   (Version{ -1, 0 }));
+                   (Version{ 0, 0 }));
 
     // Scrape out the major, minor pair from the string.
     auto major = opencl_c_version[opencl_c_version.find('.') - 1];
     auto minor = opencl_c_version[opencl_c_version.find('.') + 1];
 
-    return Version{ major - '0', minor - '0' };
+    return Version{ (uint)(major - '0'), (uint)(minor - '0') };
 }
 
 Version get_device_latest_cl_c_version(cl_device_id device)
@@ -1763,7 +1763,7 @@ Version get_device_latest_cl_c_version(cl_device_id device)
                             &opencl_c_all_versions_size_in_bytes);
         test_error_ret(
             error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
-            (Version{ -1, 0 }));
+            (Version{ 0, 0 }));
         std::vector<cl_name_version> name_versions(
             opencl_c_all_versions_size_in_bytes / sizeof(cl_name_version));
         error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS,
@@ -1771,7 +1771,7 @@ Version get_device_latest_cl_c_version(cl_device_id device)
                                 name_versions.data(), nullptr);
         test_error_ret(
             error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
-            (Version{ -1, 0 }));
+            (Version{ 0, 0 }));
 
         Version max_supported_cl_c_version{};
         for (const auto &name_version : name_versions)
@@ -1797,7 +1797,7 @@ Version get_max_OpenCL_C_for_context(cl_context context)
     auto error = clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, nullptr,
                                   &devices_size_in_bytes);
     test_error_ret(error, "clGetDeviceInfo failed for CL_CONTEXT_DEVICES",
-                   (Version{ -1, 0 }));
+                   (Version{ 0, 0 }));
     std::vector<cl_device_id> devices(devices_size_in_bytes
                                       / sizeof(cl_device_id));
     error = clGetContextInfo(context, CL_CONTEXT_DEVICES, devices_size_in_bytes,

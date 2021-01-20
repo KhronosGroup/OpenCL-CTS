@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2019 The Khronos Group Inc.
+// Copyright (c) 2017-2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 class Version {
 public:
     Version(): m_major(0), m_minor(0) {}
-    Version(int major, int minor): m_major(major), m_minor(minor) {}
+    Version(uint major, uint minor): m_major(major), m_minor(minor) {}
     bool operator>(const Version &rhs) const { return to_int() > rhs.to_int(); }
     bool operator<(const Version &rhs) const { return to_int() < rhs.to_int(); }
     bool operator<=(const Version &rhs) const
@@ -50,8 +50,8 @@ public:
     }
 
 private:
-    int m_major;
-    int m_minor;
+    uint m_major;
+    uint m_minor;
 };
 
 Version get_device_cl_version(cl_device_id device);
