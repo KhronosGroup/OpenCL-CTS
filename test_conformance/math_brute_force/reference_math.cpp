@@ -36,9 +36,6 @@
 #define M_PI_4 (M_PI / 4)
 #endif
 
-#define EVALUATE(x) x
-#define CONCATENATE(x, y) x##EVALUATE(y)
-
 #pragma STDC FP_CONTRACT OFF
 static void __log2_ep(double *hi, double *lo, double x);
 
@@ -51,7 +48,6 @@ static const uint64d_t _CL_NAN = { 0x7ff8000000000000ULL };
 
 #define cl_make_nan() _CL_NAN.d
 
-static double reduce1(double x);
 static double reduce1(double x)
 {
     if (fabs(x) >= HEX_DBL(+, 1, 0, +, 53))
@@ -70,29 +66,6 @@ static double reduce1(double x)
     // subtract it from x. Value is now in the range -1 <= x <= 1
     return x - z;
 }
-
-/*
-static double reduceHalf( double x );
-static double reduceHalf( double x )
-{
-    if( fabs(x) >= HEX_DBL( +, 1, 0, +, 52 ) )
-    {
-        if( fabs(x) == INFINITY )
-            return cl_make_nan();
-
-        return 0.0; //we patch up the sign for sinPi and cosPi later, since they
-need different signs
-    }
-
-    // Find the nearest multiple of 1
-    const double r = copysign( HEX_DBL( +, 1, 0, +, 52 ), x );
-    double z = x + r;
-    z -= r;
-
-    // subtract it from x. Value is now in the range -0.5 <= x <= 0.5
-    return x - z;
-}
-*/
 
 double reference_acospi(double x) { return reference_acos(x) / M_PI; }
 double reference_asinpi(double x) { return reference_asin(x) / M_PI; }
@@ -196,7 +169,6 @@ static float fallback_frexpf(float x, int *iptr)
     return fu;
 }
 
-static inline int extractf(float, cl_uint *);
 static inline int extractf(float x, cl_uint *mant)
 {
     static float (*frexppf)(float, int *) = NULL;
@@ -217,7 +189,6 @@ static inline int extractf(float x, cl_uint *mant)
 
 // Shift right by shift bits. Any bits lost on the right side are bitwise OR'd
 // together and ORd into the LSB of the result
-static inline void shift_right_sticky_64(cl_ulong *p, int shift);
 static inline void shift_right_sticky_64(cl_ulong *p, int shift)
 {
     cl_ulong sticky = 0;
@@ -240,7 +211,6 @@ static inline void shift_right_sticky_64(cl_ulong *p, int shift)
 
 // Add two 64 bit mantissas. Bits that are below the LSB of the result are OR'd
 // into the LSB of the result
-static inline void add64(cl_ulong *p, cl_ulong c, int *exponent);
 static inline void add64(cl_ulong *p, cl_ulong c, int *exponent)
 {
     cl_ulong carry;
@@ -260,7 +230,6 @@ static inline void add64(cl_ulong *p, cl_ulong c, int *exponent)
 }
 
 // IEEE-754 round to nearest, ties to even rounding
-static float round_to_nearest_even_float(cl_ulong p, int exponent);
 static float round_to_nearest_even_float(cl_ulong p, int exponent)
 {
     union {
@@ -312,7 +281,6 @@ static float round_to_nearest_even_float(cl_ulong p, int exponent)
     return u.d;
 }
 
-static float round_to_nearest_even_float_ftz(cl_ulong p, int exponent);
 static float round_to_nearest_even_float_ftz(cl_ulong p, int exponent)
 {
     extern int gCheckTininessBeforeRounding;
@@ -370,7 +338,6 @@ static float round_to_nearest_even_float_ftz(cl_ulong p, int exponent)
 
 
 // IEEE-754 round toward zero.
-static float round_toward_zero_float(cl_ulong p, int exponent);
 static float round_toward_zero_float(cl_ulong p, int exponent)
 {
     union {
@@ -411,7 +378,6 @@ static float round_toward_zero_float(cl_ulong p, int exponent)
     return u.d;
 }
 
-static float round_toward_zero_float_ftz(cl_ulong p, int exponent);
 static float round_toward_zero_float_ftz(cl_ulong p, int exponent)
 {
     extern int gCheckTininessBeforeRounding;
@@ -452,7 +418,6 @@ static float round_toward_zero_float_ftz(cl_ulong p, int exponent)
 }
 
 // Subtract two significands.
-static inline void sub64(cl_ulong *c, cl_ulong p, cl_uint *signC, int *expC);
 static inline void sub64(cl_ulong *c, cl_ulong p, cl_uint *signC, int *expC)
 {
     cl_ulong carry;
@@ -688,9 +653,6 @@ double reference_minmag(double x, double y)
     return reference_fmin(x, y);
 }
 
-// double my_nextafter( double x, double y ){  return (double) nextafterf(
-// (float) x, (float) y ); }
-
 double reference_relaxed_mad(double a, double b, double c)
 {
     return ((float)a) * ((float)b) + (float)c;
@@ -733,7 +695,7 @@ double reference_rootn(double x, int i)
 }
 
 double reference_rsqrt(double x) { return 1.0 / reference_sqrt(x); }
-// double reference_sincos( double x, double *c ){ *c = cos(x); return sin(x); }
+
 double reference_sinpi(double x)
 {
     double r = reduce1(x);
@@ -888,7 +850,6 @@ double reference_fract(double x, double *ip)
 }
 
 
-// double my_fdim( double x, double y){ return fdimf( (float) x, (float) y ); }
 double reference_add(double x, double y)
 {
     volatile float a = (float)x;
@@ -1005,8 +966,6 @@ double reference_subtract(double x, double y)
     return a;
 }
 
-// double reference_divide( double x, double y ){ return (float) x / (float) y;
-// }
 double reference_multiply(double x, double y)
 {
     volatile float a = (float)x;
@@ -1080,18 +1039,6 @@ double reference_multiply(double x, double y)
     return a;
 }
 
-/*double my_remquo( double x, double y, int *iptr )
-{
-    if( isnan(x) || isnan(y) ||
-        fabs(x) == INFINITY  ||
-        y == 0.0 )
-    {
-        *iptr = 0;
-        return NAN;
-    }
-
-    return (double) remquof( (float) x, (float) y, iptr );
-}*/
 double reference_lgamma_r(double x, int *signp)
 {
     // This is not currently tested
@@ -1187,22 +1134,6 @@ double reference_cbrt(double x)
 {
     return reference_copysignd(reference_pow(reference_fabs(x), 1.0 / 3.0), x);
 }
-
-/*
-double reference_scalbn(double x, int i)
-{ // suitable for checking single precision scalbnf only
-
-    if( i > 300 )
-        return copysign( INFINITY, x);
-    if( i < -300 )
-        return copysign( 0.0, x);
-
-    union{ cl_ulong u; double d;} u;
-    u.u = ((cl_ulong) i + 1023) << 52;
-
-    return x * u.d;
-}
-*/
 
 double reference_rint(double x)
 {
@@ -1762,12 +1693,6 @@ int reference_ilogbl(long double x)
 
     return exponent - 1023;
 }
-
-// double reference_log2( double x )
-//{
-//    return log( x ) * 1.44269504088896340735992468100189214;
-//}
-
 
 double reference_relaxed_log2(double x) { return reference_log2(x); }
 
@@ -2487,32 +2412,6 @@ static inline double_double mul_dd(double_double a, double_double b)
     // the last 3 terms are two low to appear in the result
 
 
-    // accumulate from bottom up
-#if 0
-    // works but slow
-    result.hi = pC;
-    result = accum_d( result, pB );
-    result = accum_d( result, p7 );
-    result = accum_d( result, pA );
-    result = accum_d( result, p9 );
-    result = accum_d( result, p6 );
-    result = accum_d( result, p5 );
-    result = accum_d( result, p8 );
-    result = accum_d( result, p4 );
-    result = accum_d( result, p3 );
-    result = accum_d( result, p2 );
-    result = accum_d( result, p1 );
-    result = accum_d( result, p0 );
-
-    // canonicalize the result
-    double temp = result.hi;
-    result.hi += result.lo;
-    result.lo -= (result.hi - temp);
-    if( isnan( result.lo ) )
-        result.lo = 0.0;
-
-    return result;
-#else
     // take advantage of the known relative magnitudes of the partial products
     // to avoid some sorting Combine 2**-78 and 2**-104 terms. Here we are a bit
     // sloppy about canonicalizing the double_doubles
@@ -2554,7 +2453,6 @@ static inline double_double mul_dd(double_double a, double_double b)
 
     // Add in MSB's, and round to precision
     return accum_d(t1, p0); // canonicalizes
-#endif
 }
 
 
@@ -2742,7 +2640,6 @@ static double fallback_frexp(double x, int *iptr)
 }
 
 // Assumes zeros, infinities and NaNs handed elsewhere
-static inline int extract(double x, cl_ulong *mant);
 static inline int extract(double x, cl_ulong *mant)
 {
     static double (*frexpp)(double, int *) = NULL;
@@ -2762,7 +2659,6 @@ static inline int extract(double x, cl_ulong *mant)
 }
 
 // Return 128-bit product of a*b  as (hi << 64) + lo
-static inline void mul128(cl_ulong a, cl_ulong b, cl_ulong *hi, cl_ulong *lo);
 static inline void mul128(cl_ulong a, cl_ulong b, cl_ulong *hi, cl_ulong *lo)
 {
     cl_ulong alo = a & 0xffffffffULL;
@@ -2798,8 +2694,6 @@ static inline void renormalize(cl_ulong *hi, cl_ulong *lo, int *exponent)
     }
 }
 
-static double round_to_nearest_even_double(cl_ulong hi, cl_ulong lo,
-                                           int exponent);
 static double round_to_nearest_even_double(cl_ulong hi, cl_ulong lo,
                                            int exponent)
 {
@@ -2846,8 +2740,6 @@ static double round_to_nearest_even_double(cl_ulong hi, cl_ulong lo,
 
 // Shift right.  Bits lost on the right will be OR'd together and OR'd with the
 // LSB
-static inline void shift_right_sticky_128(cl_ulong *hi, cl_ulong *lo,
-                                          int shift);
 static inline void shift_right_sticky_128(cl_ulong *hi, cl_ulong *lo, int shift)
 {
     cl_ulong sticky = 0;
@@ -2887,8 +2779,6 @@ static inline void shift_right_sticky_128(cl_ulong *hi, cl_ulong *lo, int shift)
 // If the 129 bit result doesn't fit, bits lost off the right end will be OR'd
 // with the LSB
 static inline void add128(cl_ulong *hi, cl_ulong *lo, cl_ulong chi,
-                          cl_ulong clo, int *exp);
-static inline void add128(cl_ulong *hi, cl_ulong *lo, cl_ulong chi,
                           cl_ulong clo, int *exponent)
 {
     cl_ulong carry, carry2;
@@ -2915,8 +2805,6 @@ static inline void add128(cl_ulong *hi, cl_ulong *lo, cl_ulong chi,
 }
 
 // 128-bit subtract  of ((chi << 64) + clo)  - ((*hi << 64) + *lo)
-static inline void sub128(cl_ulong *chi, cl_ulong *clo, cl_ulong hi,
-                          cl_ulong lo, cl_ulong *signC, int *expC);
 static inline void sub128(cl_ulong *chi, cl_ulong *clo, cl_ulong hi,
                           cl_ulong lo, cl_ulong *signC, int *expC)
 {
@@ -3096,9 +2984,6 @@ long double reference_madl(long double a, long double b, long double c)
     return a * b + c;
 }
 
-// long double my_nextafterl(long double x, long double y){  return (long
-// double) nextafter( (double) x, (double) y ); }
-
 long double reference_recipl(long double x) { return 1.0L / x; }
 
 long double reference_rootnl(long double x, int i)
@@ -3150,8 +3035,7 @@ long double reference_rootnl(long double x, int i)
 }
 
 long double reference_rsqrtl(long double x) { return 1.0L / sqrtl(x); }
-// long double reference_sincosl( long double x, long double *c ){ *c =
-// reference_cosl(x); return reference_sinl(x); }
+
 long double reference_sinpil(long double x)
 {
     double r = reduce1l(x);
@@ -3263,8 +3147,6 @@ long double reference_powrl(long double x, long double y)
     return reference_powl(x, y);
 }
 
-// long double my_fdiml( long double x, long double y){ return fdim( (double) x,
-// (double) y ); }
 long double reference_addl(long double x, long double y)
 {
     volatile double a = (double)x;
@@ -3316,26 +3198,11 @@ long double reference_multiplyl(long double x, long double y)
     return (long double)a;
 }
 
-/*long double my_remquol( long double x, long double y, int *iptr )
-{
-    if( isnan(x) || isnan(y) ||
-        fabs(x) == INFINITY  ||
-        y == 0.0 )
-    {
-        *iptr = 0;
-        return NAN;
-    }
-
-    return remquo( (double) x, (double) y, iptr );
-}*/
 long double reference_lgamma_rl(long double x, int *signp)
 {
-    //    long double lgamma_val = (long double)reference_lgamma( (double)x );
-    //    *signp = signgam;
     *signp = 0;
     return x;
 }
-
 
 int reference_isequall(long double x, long double y) { return x == y; }
 int reference_isfinitel(long double x) { return 0 != isfinite(x); }
@@ -3456,45 +3323,6 @@ long double reference_cbrtl(long double x)
 
     return reference_copysignl(powxy, x);
 }
-
-/*
-long double scalbnl( long double x, int i )
-{
-    //suitable for checking double precision scalbn only
-
-    if( i > 3000 )
-        return copysignl( INFINITY, x);
-    if( i < -3000 )
-        return copysignl( 0.0L, x);
-
-    if( i > 0 )
-    {
-        while( i >= 1000 )
-        {
-            x *= HEX_LDBL( +, 1, 0, +, 1000 );
-            i -= 1000;
-        }
-
-        union{ cl_ulong u; double d;}u;
-        u.u = (cl_ulong)( i + 1023 ) << 52;
-        x *= (long double) u.d;
-    }
-    else if( i < 0 )
-    {
-        while( i <= -1000 )
-        {
-            x *= HEX_LDBL( +, 1, 0, -, 1000 );
-            i += 1000;
-        }
-
-        union{ cl_ulong u; double d;}u;
-        u.u = (cl_ulong)( i + 1023 ) << 52;
-        x *= (long double) u.d;
-    }
-
-    return x;
-}
-*/
 
 long double reference_rintl(long double x)
 {
@@ -3845,11 +3673,6 @@ long double reference_hypotl(long double x, long double y)
     return sqrtl(x * x + y * y);
 }
 
-// long double reference_log2l( long double x )
-//{
-//    return log( x ) * 1.44269504088896340735992468100189214L;
-//}
-
 long double reference_log2l(long double x)
 {
     if (isnan(x) || x < 0.0 || x == -INFINITY) return NAN;
@@ -3940,14 +3763,12 @@ long double reference_nanl(cl_ulong x)
 
 long double reference_reciprocall(long double x) { return 1.0L / x; }
 
-long double reference_remainderl(long double x, long double y);
 long double reference_remainderl(long double x, long double y)
 {
     int i;
     return reference_remquol(x, y, &i);
 }
 
-long double reference_lgammal(long double x);
 long double reference_lgammal(long double x)
 {
     // lgamma is currently not tested
@@ -3996,8 +3817,6 @@ typedef struct
     int sign; // sign of double
 } eprep_t;
 
-static eprep_t double_to_eprep(double x);
-
 static eprep_t double_to_eprep(double x)
 {
     eprep_t result;
@@ -4029,88 +3848,6 @@ static eprep_t double_to_eprep(double x)
     return result;
 }
 
-/*
- double eprep_to_double( uint32_t *R, int digits, int index, int sgn )
- {
- d_ui64_t nb, rndcorr;
- uint64_t lowpart, roundbits, t1;
- int expo, expofinal, shift;
- double res;
-
- nb.d = (double) R[0];
-
- t1   = R[1];
- lowpart  = (t1 << RADIX) + R[2];
- expo = ((nb.u & 0x7ff0000000000000ULL) >> 52) - 1023;
-
- expofinal = expo + RADIX*index;
-
- if (expofinal >  1023) {
- d_ui64_t inf = { 0x7ff0000000000000ULL };
- res = inf.d;
- }
-
- else if (expofinal >= -1022){
- shift = expo + 2*RADIX - 53;
- roundbits = lowpart << (64-shift);
- lowpart = lowpart >> shift;
- if (lowpart & 0x0000000000000001ULL) {
- if(roundbits == 0) {
- int i;
- for (i=3; i < digits; i++)
- roundbits = roundbits | R[i];
- }
- if(roundbits == 0) {
- if (lowpart & 0x0000000000000002ULL)
- rndcorr.u = (uint64_t) (expo - 52 + 1023) << 52;
- else
- rndcorr.d = 0.0;
- }
- else
- rndcorr.u = (uint64_t) (expo - 52 + 1023) << 52;
- }
- else{
- rndcorr.d = 0.0;
- }
-
- lowpart = lowpart >> 1;
- nb.u = nb.u | lowpart;
- res  = nb.d + rndcorr.d;
-
- if(index*RADIX + 1023 > 0) {
- nb.u = 0;
- nb.u = (uint64_t) (index*RADIX + 1023) << 52;
- res *= nb.d;
- }
- else {
- nb.u = 0;
- nb.u = (uint64_t) (index*RADIX + 1023 + 2*RADIX) << 52;
- res *= two_pow_two_mradix.d;
- res *= nb.d;
- }
- }
- else {
- if (expofinal < -1022 - 53 ) {
- res = 0.0;
- }
- else {
- lowpart = lowpart >> (expo + (2*RADIX) - 52);
- nb.u = nb.u | lowpart;
- nb.u = (nb.u & 0x000FFFFFFFFFFFFFULL) | 0x0010000000000000ULL;
- nb.u = nb.u >> (-1023 - expofinal);
- if(nb.u & 0x0000000000000001ULL)
- rndcorr.u = 1;
- else
- rndcorr.d = 0.0;
- res  = 0.5*(nb.d + rndcorr.d);
- }
- }
-
- return sgn*res;
- }
- */
-static double eprep_to_double(eprep_t epx);
-
 static double eprep_to_double(eprep_t epx)
 {
     double res = 0.0;
@@ -4121,8 +3858,6 @@ static double eprep_to_double(eprep_t epx)
 
     return copysign(res, epx.sign);
 }
-
-static int payne_hanek(double *y, int *exception);
 
 static int payne_hanek(double *y, int *exception)
 {
@@ -4812,8 +4547,6 @@ static void __log2_ep(double *hi, double *lo, double x)
 
 long double reference_powl(long double x, long double y)
 {
-
-
     // this will be used for testing doubles i.e. arguments will
     // be doubles so cast the input back to double ... returned
     // result will be long double though .... > 53 bits of precision
@@ -4826,9 +4559,6 @@ long double reference_powl(long double x, long double y)
     // be double and is converted from long double to double, truncation
     // causes errors. So we need to tread y as long double and convert it
     // to hi, lo doubles when performing y*log2(x).
-
-    //    double x = (double) xx;
-    //    double y = (double) yy;
 
     static const double neg_epsilon = HEX_DBL(+, 1, 0, +, 53);
 
@@ -5094,8 +4824,6 @@ double reference_remquo(double xd, double yd, int *n)
 
         if (ex - ey >= 0)
         {
-
-
             int i;
             for (i = ex - ey; i > 0; i--)
             {
@@ -5137,7 +4865,6 @@ double reference_remquo(double xd, double yd, int *n)
 
 long double reference_remquol(long double xd, long double yd, int *n)
 {
-
     double xx = (double)xd;
     double yy = (double)yd;
 
@@ -5174,14 +4901,12 @@ long double reference_remquol(long double xd, long double yd, int *n)
 
     if (ex - ey >= -1)
     {
-
         yr = reference_ldexp(y, -ey);
         xr = reference_ldexp(x, -ex);
         int i;
 
         if (ex - ey >= 0)
         {
-
             for (i = ex - ey; i > 0; i--)
             {
                 q <<= 1;
@@ -5483,10 +5208,6 @@ long double reference_logl(long double x)
     double log2Lo = HEX_DBL(+, 1, abc9e3b39803f, -, 56);
     double logxHi, logxLo;
     __log2_ep(&logxHi, &logxLo, x);
-
-    // double rhi, rlo;
-    // MulDD(&rhi, &rlo, logxHi, logxLo, log2Hi, log2Lo);
-    // return (long double) rhi + (long double) rlo;
 
     long double lg2 = (long double)log2Hi + (long double)log2Lo;
     long double logx = (long double)logxHi + (long double)logxLo;
@@ -5871,10 +5592,6 @@ long double reference_log10l(long double x)
     double log2Lo = HEX_DBL(+, 1, e623e2566b02d, -, 55);
     double logxHi, logxLo;
     __log2_ep(&logxHi, &logxLo, x);
-
-    // double rhi, rlo;
-    // MulDD(&rhi, &rlo, logxHi, logxLo, log2Hi, log2Lo);
-    // return (long double) rhi + (long double) rlo;
 
     long double lg2 = (long double)log2Hi + (long double)log2Lo;
     long double logx = (long double)logxHi + (long double)logxLo;
