@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017,2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -550,6 +550,7 @@ int has_alpha(const cl_image_format *format)
         case CL_RGBA: return 1;
         case CL_BGRA: return 1;
         case CL_ARGB: return 1;
+        case CL_ABGR: return 1;
         case CL_INTENSITY: return 1;
         case CL_LUMINANCE: return 0;
 #ifdef CL_BGR1_APPLE
@@ -1414,6 +1415,12 @@ void read_image_pixel_float(void *imageData, image_descriptor *imageInfo, int x,
             outData[0] = tempData[1];
             outData[1] = tempData[2];
             outData[2] = tempData[3];
+            outData[3] = tempData[0];
+            break;
+        case CL_ABGR:
+            outData[0] = tempData[3];
+            outData[1] = tempData[2];
+            outData[2] = tempData[1];
             outData[3] = tempData[0];
             break;
         case CL_BGRA:
@@ -2397,6 +2404,14 @@ void swizzle_vector_for_image(T *srcVector, const cl_image_format *imageFormat)
             srcVector[2] = srcVector[1];
             srcVector[1] = srcVector[0];
             srcVector[0] = temp;
+            break;
+        case CL_ABGR:
+            temp = srcVector[3];
+            srcVector[3] = srcVector[0];
+            srcVector[0] = temp;
+            temp = srcVector[2];
+            srcVector[2] = srcVector[1];
+            srcVector[1] = temp;
             break;
         case CL_BGRA:
         case CL_sBGRA:
