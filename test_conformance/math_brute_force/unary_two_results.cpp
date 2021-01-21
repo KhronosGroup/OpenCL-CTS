@@ -36,7 +36,7 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
                         sizeNames[vectorSize],
                         "* out2, __global float",
                         sizeNames[vectorSize],
-                        "* in)\n"
+                        "* in )\n"
                         "{\n"
                         "   int i = get_global_id(0);\n"
                         "   out[i] = ",
@@ -93,6 +93,7 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
         "   }\n"
         "}\n"
     };
+
     const char **kern = c;
     size_t kernSize = sizeof(c) / sizeof(c[0]);
 
@@ -121,7 +122,7 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
                         sizeNames[vectorSize],
                         "* out2, __global double",
                         sizeNames[vectorSize],
-                        "* in)\n"
+                        "* in )\n"
                         "{\n"
                         "   int i = get_global_id(0);\n"
                         "   out[i] = ",
@@ -179,6 +180,7 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
         "   }\n"
         "}\n"
     };
+
     const char **kern = c;
     size_t kernSize = sizeof(c) / sizeof(c[0]);
 
@@ -242,17 +244,19 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
     cl_uchar overflow[BUFFER_SIZE / sizeof(float)];
     int isFract = 0 == strcmp("fract", f->nameInCode);
     int skipNanInf = isFract && !gInfNanSupport;
-    float float_ulps = getAllowedUlpError(f, relaxedMode);
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
+    float float_ulps = getAllowedUlpError(f, relaxedMode);
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode, relaxedMode };
-    if ((error = ThreadPool_Do(BuildKernel_FloatFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
-        return error;
+    {
+        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                       f->nameInCode, relaxedMode };
+        if ((error = ThreadPool_Do(BuildKernel_FloatFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
+    }
 
     for (i = 0; i < (1ULL << 32); i += step)
     {
@@ -282,6 +286,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
                 }
             }
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {
@@ -454,7 +459,6 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
                     if (relaxedMode || skipNanInf)
                     {
                         if (skipNanInf && overflow[j]) continue;
-
                         // Note: no double rounding here.  Reference functions
                         // calculate in single precision.
                         if (IsFloatInfinity(correct) || IsFloatNaN(correct)
@@ -670,6 +674,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
         uint32_t *p = (uint32_t *)gIn;
         for (j = 0; j < bufferSize / sizeof(float); j++)
             p[j] = genrand_int32(d);
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {
@@ -706,7 +711,6 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
             double bestTime = INFINITY;
             for (k = 0; k < PERF_LOOP_COUNT; k++)
             {
-
                 uint64_t startTime = GetTime();
                 if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
                                                     &localCount, NULL, 0, NULL,
@@ -775,13 +779,13 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
     Force64BitFPUPrecision();
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode, relaxedMode };
-    if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
     {
-        return error;
+        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                       f->nameInCode, relaxedMode };
+        if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
     }
 
     for (i = 0; i < (1ULL << 32); i += step)
@@ -1103,7 +1107,6 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
             double bestTime = INFINITY;
             for (k = 0; k < PERF_LOOP_COUNT; k++)
             {
-
                 uint64_t startTime = GetTime();
                 if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
                                                     &localCount, NULL, 0, NULL,

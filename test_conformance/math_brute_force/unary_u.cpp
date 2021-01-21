@@ -33,13 +33,14 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
                         sizeNames[vectorSize],
                         "* out, __global uint",
                         sizeNames[vectorSize],
-                        "* in)\n"
+                        "* in )\n"
                         "{\n"
                         "   int i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
                         "( in[i] );\n"
                         "}\n" };
+
     const char *c3[] = {
         "__kernel void math_kernel",
         sizeNames[vectorSize],
@@ -112,7 +113,7 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
                         sizeNames[vectorSize],
                         "* out, __global ulong",
                         sizeNames[vectorSize],
-                        "* in)\n"
+                        "* in )\n"
                         "{\n"
                         "   int i = get_global_id(0);\n"
                         "   out[i] = ",
@@ -175,7 +176,6 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
         kernSize = sizeof(c3) / sizeof(c3[0]);
     }
 
-
     char testName[32];
     snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
              sizeNames[vectorSize]);
@@ -221,27 +221,28 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
     float maxErrorVal = 0.0f;
     size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
-
     uint64_t step = getTestStep(sizeof(float), bufferSize);
     int scale = (int)((1ULL << 32) / (16 * bufferSize / sizeof(double)) + 1);
     int isRangeLimited = 0;
-    float float_ulps;
     float half_sin_cos_tan_limit = 0;
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
+    float float_ulps;
     if (gIsEmbedded)
         float_ulps = f->float_embedded_ulps;
     else
         float_ulps = f->float_ulps;
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode, relaxedMode };
-    if ((error = ThreadPool_Do(BuildKernel_FloatFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
-        return error;
+    {
+        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                       f->nameInCode, relaxedMode };
+        if ((error = ThreadPool_Do(BuildKernel_FloatFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
+    }
 
     if (0 == strcmp(f->name, "half_sin") || 0 == strcmp(f->name, "half_cos"))
     {
@@ -317,7 +318,7 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
                      clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
                                             &localCount, NULL, 0, NULL, NULL)))
             {
-                vlog_error("FAILURE -- could not execute kernel\n");
+                vlog_error("FAILED -- could not execute kernel\n");
                 goto exit;
             }
         }
@@ -419,7 +420,6 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
         }
     }
 
-
     if (!gSkipCorrectnessTesting)
     {
         if (gWimpyMode)
@@ -477,7 +477,7 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
                                                     &localCount, NULL, 0, NULL,
                                                     NULL)))
                 {
-                    vlog_error("FAILURE -- could not execute kernel\n");
+                    vlog_error("FAILED -- could not execute kernel\n");
                     goto exit;
                 }
 
@@ -540,13 +540,13 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
     Force64BitFPUPrecision();
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode, relaxedMode };
-    if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
     {
-        return error;
+        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                       f->nameInCode, relaxedMode };
+        if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
     }
 
     for (i = 0; i < (1ULL << 32); i += step)
@@ -599,7 +599,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
                      clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
                                             &localCount, NULL, 0, NULL, NULL)))
             {
-                vlog_error("FAILURE -- could not execute kernel\n");
+                vlog_error("FAILED -- could not execute kernel\n");
                 goto exit;
             }
         }
@@ -626,7 +626,6 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
         }
 
         if (gSkipCorrectnessTesting) break;
-
 
         // Verify data
         uint64_t *t = (uint64_t *)gOut_Ref;
@@ -741,7 +740,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
                                                     &localCount, NULL, 0, NULL,
                                                     NULL)))
                 {
-                    vlog_error("FAILURE -- could not execute kernel\n");
+                    vlog_error("FAILED -- could not execute kernel\n");
                     goto exit;
                 }
 

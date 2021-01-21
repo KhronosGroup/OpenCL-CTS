@@ -44,10 +44,11 @@ static int BuildKernel(const char *name, const char *operator_symbol,
                         "* in2 )\n"
                         "{\n"
                         "   size_t i = get_global_id(0);\n"
-                        "   out[i] =  in1[i] ",
+                        "   out[i] = in1[i] ",
                         operator_symbol,
                         " in2[i];\n"
                         "}\n" };
+
     const char *c3[] = {
         "__kernel void ",
         name,
@@ -70,7 +71,8 @@ static int BuildKernel(const char *name, const char *operator_symbol,
         "       size_t parity = i & 1;   // Figure out how many elements are "
         "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
         "buffer size \n"
-        "       float3 f0, f1;\n"
+        "       float3 f0;\n"
+        "       float3 f1;\n"
         "       switch( parity )\n"
         "       {\n"
         "           case 1:\n"
@@ -137,8 +139,9 @@ static int BuildKernelDouble(const char *name, const char *operator_symbol,
                         operator_symbol,
                         " in2[i];\n"
                         "}\n" };
+
     const char *c3[] = {
-        "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
+        "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
         "__kernel void ",
         name,
         "_kernel",
@@ -160,7 +163,8 @@ static int BuildKernelDouble(const char *name, const char *operator_symbol,
         "       size_t parity = i & 1;   // Figure out how many elements are "
         "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
         "buffer size \n"
-        "       double3 d0, d1;\n"
+        "       double3 d0;\n"
+        "       double3 d1;\n"
         "       switch( parity )\n"
         "       {\n"
         "           case 1:\n"
@@ -234,43 +238,6 @@ static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
                              info->kernel_count, info->kernels[i],
                              info->programs + i, info->relaxedMode);
 }
-
-// Thread specific data for a worker thread
-typedef struct ThreadInfo
-{
-    cl_mem inBuf; // input buffer for the thread
-    cl_mem inBuf2; // input buffer for the thread
-    cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
-    float maxError; // max error value. Init to 0.
-    double
-        maxErrorValue; // position of the max error value (param 1).  Init to 0.
-    double maxErrorValue2; // position of the max error value (param 2).  Init
-                           // to 0.
-    MTdata d;
-    cl_command_queue tQueue; // per thread command queue to improve performance
-} ThreadInfo;
-
-typedef struct TestInfo
-{
-    size_t subBufferSize; // Size of the sub-buffer in elements
-    const Func *f; // A pointer to the function info
-    cl_program programs[VECTOR_SIZE_COUNT]; // programs for various vector sizes
-    cl_kernel
-        *k[VECTOR_SIZE_COUNT]; // arrays of thread-specific kernels for each
-                               // worker thread:  k[vector_size][thread_id]
-    ThreadInfo *
-        tinfo; // An array of thread specific information for each worker thread
-    cl_uint threadCount; // Number of worker threads
-    cl_uint jobCount; // Number of jobs
-    cl_uint step; // step between each chunk and the next.
-    cl_uint scale; // stride between individual test values
-    float ulps; // max_allowed ulps
-    int ftz; // non-zero if running in flush to zero mode
-    bool relaxedMode; // True if the test is being run in relaxed mode, false
-                      // otherwise.
-
-    // no special fields
-} TestInfo;
 
 // A table of more difficult cases to get right
 static const float specialValuesFloat[] = {
@@ -375,8 +342,45 @@ static const float specialValuesFloat[] = {
     +0.0f
 };
 
-static size_t specialValuesFloatCount =
+static const size_t specialValuesFloatCount =
     sizeof(specialValuesFloat) / sizeof(specialValuesFloat[0]);
+
+// Thread specific data for a worker thread
+typedef struct ThreadInfo
+{
+    cl_mem inBuf; // input buffer for the thread
+    cl_mem inBuf2; // input buffer for the thread
+    cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
+    float maxError; // max error value. Init to 0.
+    double
+        maxErrorValue; // position of the max error value (param 1).  Init to 0.
+    double maxErrorValue2; // position of the max error value (param 2).  Init
+                           // to 0.
+    MTdata d;
+    cl_command_queue tQueue; // per thread command queue to improve performance
+} ThreadInfo;
+
+typedef struct TestInfo
+{
+    size_t subBufferSize; // Size of the sub-buffer in elements
+    const Func *f; // A pointer to the function info
+    cl_program programs[VECTOR_SIZE_COUNT]; // programs for various vector sizes
+    cl_kernel
+        *k[VECTOR_SIZE_COUNT]; // arrays of thread-specific kernels for each
+                               // worker thread:  k[vector_size][thread_id]
+    ThreadInfo *
+        tinfo; // An array of thread specific information for each worker thread
+    cl_uint threadCount; // Number of worker threads
+    cl_uint jobCount; // Number of jobs
+    cl_uint step; // step between each chunk and the next.
+    cl_uint scale; // stride between individual test values
+    float ulps; // max_allowed ulps
+    int ftz; // non-zero if running in flush to zero mode
+    bool relaxedMode; // True if the test is being run in relaxed mode, false
+                      // otherwise.
+
+    // no special fields
+} TestInfo;
 
 static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *p);
 
@@ -398,6 +402,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
     test_info.scale = getTestScale(sizeof(cl_float));
+
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize
@@ -405,7 +410,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
                * RoundUpToNextPowerOfTwo(test_info.threadCount));
     }
 
-    test_info.step = test_info.subBufferSize * test_info.scale;
+    test_info.step = (cl_uint)test_info.subBufferSize * test_info.scale;
     if (test_info.step / test_info.subBufferSize != test_info.scale)
     {
         // there was overflow
@@ -481,8 +486,8 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
                 &region, &error);
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
-                vlog_error("Error: Unable to create sub-buffer of gInBuffer "
-                           "for region {%zd, %zd}\n",
+                vlog_error("Error: Unable to create sub-buffer of "
+                           "gInBuffer for region {%zd, %zd}\n",
                            region.origin, region.size);
                 goto exit;
             }
@@ -513,6 +518,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
             goto exit;
     }
 
+    // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(TestFloat, test_info.jobCount, &test_info);
@@ -536,7 +542,6 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
             vlog("passed");
     }
 
-
     if (gMeasureTimes)
     {
         // Init input arrays
@@ -554,6 +559,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn2, 0, NULL, NULL)))
         {
@@ -626,7 +632,6 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
         vlog("\t%8.2f @ {%a, %a}", maxError, maxErrorVal, maxErrorVal2);
     vlog("\n");
 
-
 exit:
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
@@ -665,30 +670,31 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint base = job_id * (cl_uint)job->step;
     ThreadInfo *tinfo = job->tinfo + thread_id;
     fptr func = job->f->func;
+    int ftz = job->ftz;
     bool relaxedMode = job->relaxedMode;
     float ulps = getAllowedUlpError(job->f, relaxedMode);
-    if (relaxedMode)
-    {
-        func = job->f->rfunc;
-    }
-
-
-    int ftz = job->ftz;
     MTdata d = tinfo->d;
     cl_uint j, k;
     cl_int error;
     cl_uchar *overflow = (cl_uchar *)malloc(buffer_size);
     const char *name = job->f->name;
-    cl_uint *t;
-    cl_float *r, *s, *s2;
+    cl_uint *t = 0;
+    cl_float *r = 0;
+    cl_float *s = 0;
+    cl_float *s2 = 0;
     RoundingMode oldRoundMode;
+
+    if (relaxedMode)
+    {
+        func = job->f->rfunc;
+    }
 
     // start the map of the output arrays
     cl_event e[VECTOR_SIZE_COUNT];
     cl_uint *out[VECTOR_SIZE_COUNT];
     for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
-        out[j] = (uint32_t *)clEnqueueMapBuffer(
+        out[j] = (cl_uint *)clEnqueueMapBuffer(
             tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
             buffer_size, 0, NULL, e + j, &error);
         if (error || NULL == out[j])
@@ -710,7 +716,6 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     int totalSpecialValueCount =
         specialValuesFloatCount * specialValuesFloatCount;
     int indx = (totalSpecialValueCount - 1) / buffer_elements;
-
 
     if (job_id <= (cl_uint)indx)
     {
@@ -877,7 +882,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     // an in order queue.
     for (j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++)
     {
-        out[j] = (uint32_t *)clEnqueueMapBuffer(
+        out[j] = (cl_uint *)clEnqueueMapBuffer(
             tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_READ, 0,
             buffer_size, 0, NULL, NULL, &error);
         if (error || NULL == out[j])
@@ -889,9 +894,9 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     }
 
     // Wait for the last buffer
-    out[j] = (uint32_t *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
-                                            CL_TRUE, CL_MAP_READ, 0,
-                                            buffer_size, 0, NULL, NULL, &error);
+    out[j] = (cl_uint *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
+                                           CL_TRUE, CL_MAP_READ, 0, buffer_size,
+                                           0, NULL, NULL, &error);
     if (error || NULL == out[j])
     {
         vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error);
@@ -1136,6 +1141,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         }
         fflush(stdout);
     }
+
 exit:
     if (overflow) free(overflow);
     return error;
@@ -1267,6 +1273,7 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
     float maxError = 0.0f;
     double maxErrorVal = 0.0;
     double maxErrorVal2 = 0.0;
+
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
     // Init test_info
@@ -1275,6 +1282,7 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
     test_info.scale = getTestScale(sizeof(cl_double));
+
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize
@@ -1373,7 +1381,6 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
         test_info.tinfo[i].d = init_genrand(genrand_int32(d));
     }
 
-
     // Init the kernels
     {
         BuildKernelInfo build_info = { gMinVectorSizeIndex,
@@ -1389,6 +1396,7 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
             goto exit;
     }
 
+    // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(TestDouble, test_info.jobCount, &test_info);
@@ -1411,7 +1419,6 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
         else
             vlog("passed");
     }
-
 
     if (gMeasureTimes)
     {
@@ -1503,7 +1510,6 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
         vlog("\t%8.2f @ {%a, %a}", maxError, maxErrorVal, maxErrorVal2);
     vlog("\n");
 
-
 exit:
     // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
@@ -1551,7 +1557,9 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
     cl_int error;
     const char *name = job->f->name;
     cl_ulong *t;
-    cl_double *r, *s, *s2;
+    cl_double *r;
+    cl_double *s;
+    cl_double *s2;
 
     Force64BitFPUPrecision();
 

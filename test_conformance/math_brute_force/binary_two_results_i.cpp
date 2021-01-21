@@ -40,7 +40,7 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
                         sizeNames[vectorSize],
                         "* in1, __global float",
                         sizeNames[vectorSize],
-                        "* in2)\n"
+                        "* in2 )\n"
                         "{\n"
                         "   int i = get_global_id(0);\n"
                         "   out[i] = ",
@@ -71,7 +71,9 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
         "       size_t parity = i & 1;   // Figure out how many elements are "
         "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
         "buffer size \n"
-        "       float3 f0, f1;\n"
+        "       float3 f0;\n"
+        "       float3 f1;\n"
+        "       int3 i0 = 0xdeaddead;\n"
         "       switch( parity )\n"
         "       {\n"
         "           case 1:\n"
@@ -83,7 +85,6 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
         "               f1 = (float3)( in2[3*i], in2[3*i+1], NAN ); \n"
         "               break;\n"
         "       }\n"
-        "       int3 i0 = 0xdeaddead;\n"
         "       f0 = ",
         name,
         "( f0, f1, &i0 );\n"
@@ -132,12 +133,12 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
                         sizeNames[vectorSize],
                         "* in1, __global double",
                         sizeNames[vectorSize],
-                        "* in2)\n"
+                        "* in2 )\n"
                         "{\n"
                         "   int i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
-                        "( in1[i], in2[i], out2 + i );\n"
+                        "( in1[i], in2[i], out2[i] );\n"
                         "}\n" };
 
     const char *c3[] = {
@@ -164,7 +165,9 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
         "       size_t parity = i & 1;   // Figure out how many elements are "
         "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
         "buffer size \n"
-        "       double3 d0, d1;\n"
+        "       double3 d0;\n"
+        "       double3 d1;\n"
+        "       int3 i0 = 0xdeaddead;\n"
         "       switch( parity )\n"
         "       {\n"
         "           case 1:\n"
@@ -176,7 +179,6 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
         "               d1 = (double3)( in2[3*i], in2[3*i+1], NAN ); \n"
         "               break;\n"
         "       }\n"
-        "       int3 i0 = 0xdeaddead;\n"
         "       d0 = ",
         name,
         "( d0, d1, &i0 );\n"
@@ -309,20 +311,22 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     uint64_t i;
     uint32_t j, k;
     int error;
+
+    logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
+
     cl_program programs[VECTOR_SIZE_COUNT];
     cl_kernel kernels[VECTOR_SIZE_COUNT];
     float maxError = 0.0f;
-    float float_ulps;
-    int64_t maxError2 = 0;
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
+    int64_t maxError2 = 0;
     float maxErrorVal = 0.0f;
     float maxErrorVal2 = 0.0f;
     size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
     uint64_t step = getTestStep(sizeof(float), bufferSize);
 
     cl_uint threadCount = GetThreadCount();
-    logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
+    float float_ulps;
     if (gIsEmbedded)
         float_ulps = f->float_embedded_ulps;
     else
@@ -485,7 +489,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
-                uint32_t *q = (uint32_t *)gOut[k];
+                uint32_t *q = (uint32_t *)(gOut[k]);
                 int32_t *q2 = (int32_t *)gOut2[k];
 
                 // Check for exact match to correctly rounded result
@@ -695,9 +699,11 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     if (gMeasureTimes)
     {
         // Init input array
-        uint32_t *p = (uint32_t *)gIn;
+        cl_uint *p = (cl_uint *)gIn;
         for (j = 0; j < bufferSize / sizeof(float); j++)
+        {
             p[j] = genrand_int32(d);
+        }
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {
@@ -823,9 +829,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
-        {
             return error;
-        }
     }
 
     for (i = 0; i < (1ULL << 32); i += step)
@@ -1185,7 +1189,6 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             {
                 vlog(".");
             }
-
             fflush(stdout);
         }
     }
@@ -1202,7 +1205,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     {
         // Init input array
         double *p = (double *)gIn;
-        for (j = 0; j < bufferSize / sizeof(double); j++)
+        for (j = 0; j < bufferSize / sizeof(cl_double); j++)
             p[j] = DoubleFromUInt32(genrand_int32(d));
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_TRUE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
