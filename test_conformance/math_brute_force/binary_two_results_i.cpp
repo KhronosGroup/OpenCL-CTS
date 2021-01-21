@@ -713,7 +713,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           bufferSize, gIn2, 0, NULL, NULL)))
         {
-            vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
+            vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
         }
 
@@ -1216,7 +1216,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_TRUE, 0,
                                           bufferSize, gIn2, 0, NULL, NULL)))
         {
-            vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
+            vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
         }
 

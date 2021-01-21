@@ -1342,7 +1342,6 @@ static int TestFunc_Double_Double_Double_common(const Func *f, MTdata d,
         / (sizeof(cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
     test_info.scale = getTestScale(sizeof(cl_double));
 
-
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize
@@ -1412,9 +1411,9 @@ static int TestFunc_Double_Double_Double_common(const Func *f, MTdata d,
         test_info.tinfo[i].inBuf2 =
             clCreateSubBuffer(gInBuffer2, CL_MEM_READ_ONLY,
                               CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
-        if (error || NULL == test_info.tinfo[i].inBuf)
+        if (error || NULL == test_info.tinfo[i].inBuf2)
         {
-            vlog_error("Error: Unable to create sub-buffer of gInBuffer for "
+            vlog_error("Error: Unable to create sub-buffer of gInBuffer2 for "
                        "region {%zd, %zd}\n",
                        region.origin, region.size);
             goto exit;
