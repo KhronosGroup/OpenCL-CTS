@@ -526,7 +526,6 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             return error;
         }
 
-
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
@@ -590,6 +589,7 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
+    // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
@@ -934,7 +934,6 @@ exit:
     return error;
 }
 
-
 // A table of more difficult cases to get right
 static const double specialValuesDouble[] = {
     -NAN,
@@ -1207,13 +1206,13 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn2, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
         }
-
 
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)

@@ -567,7 +567,6 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
             return error;
         }
 
-
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
@@ -633,6 +632,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
     vlog("\n");
 
 exit:
+    // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
@@ -1147,7 +1147,6 @@ exit:
     return error;
 }
 
-
 // A table of more difficult cases to get right
 static const double specialValuesDouble[] = {
     -NAN,
@@ -1437,13 +1436,13 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn2, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
         }
-
 
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)

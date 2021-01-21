@@ -441,6 +441,7 @@ int TestMacro_Int_Float(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
+    // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
@@ -507,7 +508,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     // Get that moving
     if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
 
-    // Write the new values to the input array
+    // Init input array
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
     for (j = 0; j < buffer_elements; j++) p[j] = base + j * scale;
 

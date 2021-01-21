@@ -629,7 +629,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
             return error;
         }
 
-        // Run the kernel
+        // run the kernel
         size_t vectorCount =
             (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its

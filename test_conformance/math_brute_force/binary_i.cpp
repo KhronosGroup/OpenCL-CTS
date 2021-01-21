@@ -513,24 +513,23 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
     }
 
     // Run the kernels
-    error = ThreadPool_Do(TestFloat, test_info.jobCount, &test_info);
-
-
-    // Accumulate the arithmetic errors
-    for (i = 0; i < test_info.threadCount; i++)
-    {
-        if (test_info.tinfo[i].maxError > maxError)
-        {
-            maxError = test_info.tinfo[i].maxError;
-            maxErrorVal = test_info.tinfo[i].maxErrorValue;
-            maxErrorVal2 = test_info.tinfo[i].maxErrorValue2;
-        }
-    }
-
-    if (error) goto exit;
-
     if (!gSkipCorrectnessTesting)
     {
+        error = ThreadPool_Do(TestFloat, test_info.jobCount, &test_info);
+
+        // Accumulate the arithmetic errors
+        for (i = 0; i < test_info.threadCount; i++)
+        {
+            if (test_info.tinfo[i].maxError > maxError)
+            {
+                maxError = test_info.tinfo[i].maxError;
+                maxErrorVal = test_info.tinfo[i].maxErrorValue;
+                maxErrorVal2 = test_info.tinfo[i].maxErrorValue2;
+            }
+        }
+
+        if (error) goto exit;
+
         if (gWimpyMode)
             vlog("Wimp pass");
         else
@@ -561,7 +560,6 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
         }
-
 
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -628,6 +626,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
+    // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
@@ -1205,24 +1204,22 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d, bool relaxedMode)
 
     // Run the kernels
     if (!gSkipCorrectnessTesting)
+    {
         error = ThreadPool_Do(TestDouble, test_info.jobCount, &test_info);
 
-
-    // Accumulate the arithmetic errors
-    for (i = 0; i < test_info.threadCount; i++)
-    {
-        if (test_info.tinfo[i].maxError > maxError)
+        // Accumulate the arithmetic errors
+        for (i = 0; i < test_info.threadCount; i++)
         {
-            maxError = test_info.tinfo[i].maxError;
-            maxErrorVal = test_info.tinfo[i].maxErrorValue;
-            maxErrorVal2 = test_info.tinfo[i].maxErrorValue2;
+            if (test_info.tinfo[i].maxError > maxError)
+            {
+                maxError = test_info.tinfo[i].maxError;
+                maxErrorVal = test_info.tinfo[i].maxErrorValue;
+                maxErrorVal2 = test_info.tinfo[i].maxErrorValue2;
+            }
         }
-    }
 
-    if (error) goto exit;
+        if (error) goto exit;
 
-    if (!gSkipCorrectnessTesting)
-    {
         if (gWimpyMode)
             vlog("Wimp pass");
         else

@@ -676,25 +676,27 @@ int TestFunc_mad_Double(const Func *f, MTdata d, bool relaxedMode)
             p2[j] = DoubleFromUInt32(genrand_int32(d));
             p3[j] = DoubleFromUInt32(genrand_int32(d));
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           bufferSize, gIn2, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer3, CL_FALSE, 0,
                                           bufferSize, gIn3, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer3 ***\n", error);
             return error;
         }
-
 
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
