@@ -121,51 +121,53 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
                         "( in[i] );\n"
                         "}\n" };
 
-    const char *c3[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-                         "__kernel void math_kernel",
-                         sizeNames[vectorSize],
-                         "( __global double* out, __global ulong* in)\n"
-                         "{\n"
-                         "   size_t i = get_global_id(0);\n"
-                         "   if( i + 1 < get_global_size(0) )\n"
-                         "   {\n"
-                         "       ulong3 u0 = vload3( 0, in + 3 * i );\n"
-                         "       double3 f0 = ",
-                         name,
-                         "( u0 );\n"
-                         "       vstore3( f0, 0, out + 3*i );\n"
-                         "   }\n"
-                         "   else\n"
-                         "   {\n"
-                         "       size_t parity = i & 1;   // Figure out how "
-                         "many elements are left over after BUFFER_SIZE % "
-                         "(3*sizeof(float)). Assume power of two buffer size \n"
-                         "       ulong3 u0;\n"
-                         "       switch( parity )\n"
-                         "       {\n"
-                         "           case 1:\n"
-                         "               u0 = (ulong3)( in[3*i], "
-                         "0xdeaddeaddeaddeadUL, 0xdeaddeaddeaddeadUL ); \n"
-                         "               break;\n"
-                         "           case 0:\n"
-                         "               u0 = (ulong3)( in[3*i], in[3*i+1], "
-                         "0xdeaddeaddeaddeadUL ); \n"
-                         "               break;\n"
-                         "       }\n"
-                         "       double3 f0 = ",
-                         name,
-                         "( u0 );\n"
-                         "       switch( parity )\n"
-                         "       {\n"
-                         "           case 0:\n"
-                         "               out[3*i+1] = f0.y; \n"
-                         "               // fall through\n"
-                         "           case 1:\n"
-                         "               out[3*i] = f0.x; \n"
-                         "               break;\n"
-                         "       }\n"
-                         "   }\n"
-                         "}\n" };
+    const char *c3[] = {
+        "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
+        "__kernel void math_kernel",
+        sizeNames[vectorSize],
+        "( __global double* out, __global ulong* in                 )\n"
+        "{\n"
+        "   size_t i = get_global_id(0);\n"
+        "   if( i + 1 < get_global_size(0) )\n"
+        "   {\n"
+        "       ulong3 u0 = vload3( 0, in + 3 * i );\n"
+        "       double3 f0 = ",
+        name,
+        "( u0 );\n"
+        "       vstore3( f0, 0, out + 3*i );\n"
+        "   }\n"
+        "   else\n"
+        "   {\n"
+        "       size_t parity = i & 1;   // Figure out how many elements are "
+        "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
+        "buffer size \n"
+        "       ulong3 u0;\n"
+        "       switch( parity )\n"
+        "       {\n"
+        "           case 1:\n"
+        "               u0 = (ulong3)( in[3*i], 0xdeaddeaddeaddeadUL, "
+        "0xdeaddeaddeaddeadUL ); \n"
+        "               break;\n"
+        "           case 0:\n"
+        "               u0 = (ulong3)( in[3*i], in[3*i+1], "
+        "0xdeaddeaddeaddeadUL ); \n"
+        "               break;\n"
+        "       }\n"
+        "       double3 f0 = ",
+        name,
+        "( u0 );\n"
+        "       switch( parity )\n"
+        "       {\n"
+        "           case 0:\n"
+        "               out[3*i+1] = f0.y; \n"
+        "               // fall through\n"
+        "           case 1:\n"
+        "               out[3*i] = f0.x; \n"
+        "               break;\n"
+        "       }\n"
+        "   }\n"
+        "}\n"
+    };
 
     const char **kern = c;
     size_t kernSize = sizeof(c) / sizeof(c[0]);
