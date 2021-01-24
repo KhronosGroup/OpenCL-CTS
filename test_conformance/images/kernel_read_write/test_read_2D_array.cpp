@@ -406,11 +406,13 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
         {
             // Note: if ALLOC_HOST_PTR is used, the driver allocates memory that can be accessed by the host, but otherwise
             // it works just as if no flag is specified, so we just do the same thing either way
-            unprotImage = create_image_2d_array(
-                context, image_read_write_flags | gMemFlagsToUse,
-                imageInfo->format, imageInfo->width, imageInfo->height,
-                imageInfo->arraySize, (gEnablePitch ? imageInfo->rowPitch : 0),
-                (gEnablePitch ? imageInfo->slicePitch : 0), NULL, &error);
+            unprotImage = create_image_2d_array( context,
+                                          image_read_write_flags | gMemFlagsToUse,
+                                          imageInfo->format,
+                                          imageInfo->width, imageInfo->height, imageInfo->arraySize,
+                                          ( gEnablePitch ? imageInfo->rowPitch : 0 ),
+                                          ( gEnablePitch ? imageInfo->slicePitch : 0 ),
+                                          imageValues, &error );
             if( error != CL_SUCCESS )
             {
                 log_error( "ERROR: Unable to create 2D image array of size %d x %d x %d (pitch %d, %d ) (%s)", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->arraySize, (int)imageInfo->rowPitch, (int)imageInfo->slicePitch, IGetErrorString( error ) );

@@ -390,11 +390,13 @@ int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel ke
         // it works just as if no flag is specified, so we just do the same thing either way
         if ( !gTestMipmaps )
         {
-            unprotImage = create_image_3d(
-                context, image_read_write_flags | gMemFlagsToUse,
-                imageInfo->format, imageInfo->width, imageInfo->height,
-                imageInfo->depth, (gEnablePitch ? imageInfo->rowPitch : 0),
-                (gEnablePitch ? imageInfo->slicePitch : 0), NULL, &error);
+            unprotImage = create_image_3d( context,
+                                          image_read_write_flags | gMemFlagsToUse,
+                                          imageInfo->format,
+                                          imageInfo->width, imageInfo->height, imageInfo->depth,
+                                          ( gEnablePitch ? imageInfo->rowPitch : 0 ),
+                                          ( gEnablePitch ? imageInfo->slicePitch : 0 ),
+                                          imageValues, &error );
             if( error != CL_SUCCESS )
             {
                 log_error( "ERROR: Unable to create 3D image of size %d x %d x %d (pitch %d, %d ) (%s)", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->depth, (int)imageInfo->rowPitch, (int)imageInfo->slicePitch, IGetErrorString( error ) );
