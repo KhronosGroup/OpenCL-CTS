@@ -387,11 +387,13 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
         }
         else
         {
-            unprotImage = create_image_1d_array(
-                context, image_read_write_flags | gMemFlagsToUse,
-                imageInfo->format, imageInfo->width, imageInfo->arraySize,
-                (gEnablePitch ? imageInfo->rowPitch : 0),
-                (gEnablePitch ? imageInfo->slicePitch : 0), NULL, &error);
+            unprotImage = create_image_1d_array(context,
+                                                image_read_write_flags | gMemFlagsToUse,
+                                                imageInfo->format,
+                                                imageInfo->width, imageInfo->arraySize,
+                                                ( gEnablePitch ? imageInfo->rowPitch : 0 ),
+                                                ( gEnablePitch ? imageInfo->slicePitch : 0),
+                                                imageValues, &error);
 
             if( error != CL_SUCCESS )
             {
