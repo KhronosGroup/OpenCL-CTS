@@ -105,6 +105,9 @@ int test_get_image_info_3D(cl_device_id device, cl_context context,
         for( int i = 0; i < NUM_IMAGE_ITERATIONS; i++ )
         {
             cl_ulong size;
+            cl_ulong slicePitch;
+            cl_ulong rowPitch;
+
             // Loop until we get a size that a) will fit in the max alloc size and b) that an allocation of that
             // image, the result array, plus offset arrays, will fit in the global ram space
             do
@@ -113,22 +116,25 @@ int test_get_image_info_3D(cl_device_id device, cl_context context,
                 imageInfo.height = (size_t)random_log_in_range( 16, (int)maxHeight / 32, seed );
                 imageInfo.depth = (size_t)random_log_in_range( 16, (int)maxDepth / 32, seed );
 
-                imageInfo.rowPitch = imageInfo.width * pixelSize;
-                imageInfo.slicePitch = imageInfo.rowPitch * imageInfo.height;
+                rowPitch = imageInfo.width * pixelSize;
+                slicePitch = imageInfo.rowPitch * imageInfo.height;
 
                 size_t extraWidth = (int)random_log_in_range( 0, 64, seed );
-                imageInfo.rowPitch += extraWidth;
+                rowPitch += extraWidth;
 
                 do {
                     extraWidth++;
-                    imageInfo.rowPitch += extraWidth;
-                } while ((imageInfo.rowPitch % pixelSize) != 0);
+                    rowPitch += extraWidth;
+                } while ((rowPitch % pixelSize) != 0);
 
                 size_t extraHeight = (int)random_log_in_range( 0, 8, seed );
-                imageInfo.slicePitch = imageInfo.rowPitch * (imageInfo.height + extraHeight);
+                slicePitch = rowPitch * (imageInfo.height + extraHeight);
 
-                size = (cl_ulong)imageInfo.slicePitch * (cl_ulong)imageInfo.depth * 4 * 4;
+                size = (cl_ulong)slicePitch * (cl_ulong)imageInfo.depth * 4 * 4;
             } while(  size > maxAllocSize || ( size * 3 ) > memSize );
+
+            imageInfo.slicePitch = slicePitch;
+            imageInfo.rowPitch = rowPitch;
 
             if( gDebugTrace )
                 log_info( "   at size %d,%d,%d (pitch %d,%d) out of %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth, (int)imageInfo.rowPitch, (int)imageInfo.slicePitch, (int)maxWidth, (int)maxHeight, (int)maxDepth );
