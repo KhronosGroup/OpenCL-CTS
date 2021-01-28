@@ -620,15 +620,13 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
         return error;
     }
 
-    /**
-     * Call clFinish() to ensure the unmap call completes.
-     */
+    // Ensure the unmap call completes.
     error = clFinish(queue);
     if (error != CL_SUCCESS)
     {
         log_error("ERROR: clFinish() failed to return CL_SUCCESS: %s\n",
                   IGetErrorString(error));
-        return -1;
+        return error;
     }
 
     return 0;
