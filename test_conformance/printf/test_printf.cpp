@@ -306,25 +306,26 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
 
     if(allTestCase[testId]->_type == TYPE_VECTOR)
     {
-        err = create_single_kernel_helper(context, &program, NULL, sizeof(sourceVec) / sizeof(sourceVec[0]), sourceVec, NULL);
+        err = create_single_kernel_helper(
+            context, &program, kernel_ptr,
+            sizeof(sourceVec) / sizeof(sourceVec[0]), sourceVec, testname);
     }
     else if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
     {
-        err = create_single_kernel_helper(context, &program, NULL, sizeof(sourceAddrSpace) / sizeof(sourceAddrSpace[0]), sourceAddrSpace, NULL);
+        err = create_single_kernel_helper(context, &program, kernel_ptr,
+                                          sizeof(sourceAddrSpace)
+                                              / sizeof(sourceAddrSpace[0]),
+                                          sourceAddrSpace, testname);
     }
     else
     {
-        err = create_single_kernel_helper(context, &program, NULL, sizeof(sourceGen) / sizeof(sourceGen[0]), sourceGen, NULL);
+        err = create_single_kernel_helper(
+            context, &program, kernel_ptr,
+            sizeof(sourceGen) / sizeof(sourceGen[0]), sourceGen, testname);
     }
 
     if (!program || err) {
         log_error("create_single_kernel_helper failed\n");
-        return NULL;
-    }
-
-    *kernel_ptr = clCreateKernel(program, testname, &err);
-    if ( err ) {
-        log_error("clCreateKernel failed (%d)\n", err);
         return NULL;
     }
 

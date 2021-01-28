@@ -16,7 +16,6 @@
 #include "../testBase.h"
 #include "../common.h"
 
-extern bool gDeviceLt20;
 
 extern int test_get_image_info_1D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
@@ -43,24 +42,14 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
     int ret = 0;
 
     // Grab the list of supported image formats for integer reads
-    cl_image_format *formatList;
-    bool *filterFlags;
-    unsigned int numFormats;
+    std::vector<cl_image_format> formatList;
+    if (get_format_list(context, imageType, formatList, flags)) return -1;
 
-    if( get_format_list( context, imageType, formatList, numFormats, flags ) )
-        return -1;
-
-    filterFlags = new bool[ numFormats ];
-    if( filterFlags == NULL )
-    {
-        log_error( "ERROR: Out of memory allocating filter flags list!\n" );
-        return -1;
-    }
-    memset( filterFlags, 0, sizeof( bool ) * numFormats );
-    filter_formats( formatList, filterFlags, numFormats, 0 );
+    std::vector<bool> filterFlags(formatList.size(), false);
+    filter_formats(formatList, filterFlags, nullptr);
 
     // Run the format list
-    for( unsigned int i = 0; i < numFormats; i++ )
+    for (unsigned int i = 0; i < formatList.size(); i++)
     {
         int test_return = 0;
         if( filterFlags[i] )
@@ -107,9 +96,6 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
         ret += test_return;
     }
 
-    delete filterFlags;
-    delete formatList;
-
     return ret;
 }
 
@@ -117,9 +103,6 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
 {
     int version_check;
     auto version = get_device_cl_version(device);
-    if (version < Version(2, 0)) {
-        gDeviceLt20 = true;
-    }
 
     if ((version_check = (version < Version(1, 2))))
     {

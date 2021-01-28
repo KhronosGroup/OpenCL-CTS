@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -79,7 +79,8 @@ test_work_group_any(cl_device_id device, cl_context context, cl_command_queue qu
     int          i;
     MTdata       d;
 
-    err = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &wg_any_kernel_code, "test_wg_any", "-cl-std=CL2.0" );
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &wg_any_kernel_code, "test_wg_any");
     if (err)
         return -1;
 

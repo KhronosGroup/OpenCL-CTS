@@ -36,7 +36,6 @@ int                 gTypesToTest;
 cl_channel_type     gChannelTypeToUse = (cl_channel_type)-1;
 cl_channel_order    gChannelOrderToUse = (cl_channel_order)-1;
 bool                gEnablePitch = false;
-bool                gDeviceLt20 = false;
 
 static void printUsage( const char *execName );
 

@@ -30,12 +30,13 @@
 #include "harness/ThreadPool.h"
 #include "harness/conversions.h"
 
-#define BUFFER_SIZE         (1024*1024*2)
+#define BUFFER_SIZE (1024 * 1024 * 2)
+#define EMBEDDED_REDUCTION_FACTOR (64)
 
-#if defined( __GNUC__ )
-    #define UNUSED  __attribute__ ((unused))
+#if defined(__GNUC__)
+#define UNUSED __attribute__((unused))
 #else
-    #define UNUSED
+#define UNUSED
 #endif
 
 struct Func;
@@ -43,62 +44,62 @@ struct Func;
 extern int gWimpyBufferSize;
 extern int gWimpyReductionFactor;
 
-#define VECTOR_SIZE_COUNT   6
+#define VECTOR_SIZE_COUNT 6
 extern const char *sizeNames[VECTOR_SIZE_COUNT];
-extern const int   sizeValues[VECTOR_SIZE_COUNT];
+extern const int sizeValues[VECTOR_SIZE_COUNT];
 
-extern cl_device_id     gDevice;
-extern cl_context       gContext;
+extern cl_device_id gDevice;
+extern cl_context gContext;
 extern cl_command_queue gQueue;
-extern void             *gIn;
-extern void             *gIn2;
-extern void             *gIn3;
-extern void             *gOut_Ref;
-extern void             *gOut_Ref2;
-extern void             *gOut[VECTOR_SIZE_COUNT];
-extern void             *gOut2[VECTOR_SIZE_COUNT];
-extern cl_mem           gInBuffer;
-extern cl_mem           gInBuffer2;
-extern cl_mem           gInBuffer3;
-extern cl_mem           gOutBuffer[VECTOR_SIZE_COUNT];
-extern cl_mem           gOutBuffer2[VECTOR_SIZE_COUNT];
-extern uint32_t         gComputeDevices;
-extern uint32_t         gSimdSize;
-extern int              gSkipCorrectnessTesting;
-extern int              gMeasureTimes;
-extern int              gReportAverageTimes;
-extern int              gForceFTZ;
-extern int              gFastRelaxedDerived;
-extern int              gWimpyMode;
-extern int              gHasDouble;
-extern int              gIsInRTZMode;
-extern int              gInfNanSupport;
-extern int              gIsEmbedded;
-extern int              gVerboseBruteForce;
-extern uint32_t         gMaxVectorSizeIndex;
-extern uint32_t         gMinVectorSizeIndex;
-extern uint32_t         gDeviceFrequency;
+extern void *gIn;
+extern void *gIn2;
+extern void *gIn3;
+extern void *gOut_Ref;
+extern void *gOut_Ref2;
+extern void *gOut[VECTOR_SIZE_COUNT];
+extern void *gOut2[VECTOR_SIZE_COUNT];
+extern cl_mem gInBuffer;
+extern cl_mem gInBuffer2;
+extern cl_mem gInBuffer3;
+extern cl_mem gOutBuffer[VECTOR_SIZE_COUNT];
+extern cl_mem gOutBuffer2[VECTOR_SIZE_COUNT];
+extern uint32_t gComputeDevices;
+extern uint32_t gSimdSize;
+extern int gSkipCorrectnessTesting;
+extern int gMeasureTimes;
+extern int gReportAverageTimes;
+extern int gForceFTZ;
+extern int gFastRelaxedDerived;
+extern int gWimpyMode;
+extern int gHasDouble;
+extern int gIsInRTZMode;
+extern int gInfNanSupport;
+extern int gIsEmbedded;
+extern int gVerboseBruteForce;
+extern uint32_t gMaxVectorSizeIndex;
+extern uint32_t gMinVectorSizeIndex;
+extern uint32_t gDeviceFrequency;
 extern cl_device_fp_config gFloatCapabilities;
 extern cl_device_fp_config gDoubleCapabilities;
 
-#define LOWER_IS_BETTER     0
-#define HIGHER_IS_BETTER    1
+#define LOWER_IS_BETTER 0
+#define HIGHER_IS_BETTER 1
 
 #include "harness/errorHelpers.h"
 
-#if defined (_MSC_VER )
-    //Deal with missing scalbn on windows
-    #define scalbnf( _a, _i )       ldexpf( _a, _i )
-    #define scalbn( _a, _i )        ldexp( _a, _i )
-    #define scalbnl( _a, _i )       ldexpl( _a, _i )
+#if defined(_MSC_VER)
+// Deal with missing scalbn on windows
+#define scalbnf(_a, _i) ldexpf(_a, _i)
+#define scalbn(_a, _i) ldexp(_a, _i)
+#define scalbnl(_a, _i) ldexpl(_a, _i)
 #endif
 
-float Abs_Error( float test, double reference );
-float Ulp_Error( float test, double reference );
-float Bruteforce_Ulp_Error_Double( double test, long double reference );
+float Abs_Error(float test, double reference);
+float Ulp_Error(float test, double reference);
+float Bruteforce_Ulp_Error_Double(double test, long double reference);
 
-uint64_t GetTime( void );
-double SubtractTime( uint64_t endTime, uint64_t startTime );
+uint64_t GetTime(void);
+double SubtractTime(uint64_t endTime, uint64_t startTime);
 int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
                cl_program *p, bool relaxedMode);
 int MakeKernels(const char **c, cl_uint count, const char *name,
@@ -106,69 +107,84 @@ int MakeKernels(const char **c, cl_uint count, const char *name,
                 bool relaxedMode);
 
 // used to convert a bucket of bits into a search pattern through double
-static inline double DoubleFromUInt32( uint32_t bits );
-static inline double DoubleFromUInt32( uint32_t bits )
+static inline double DoubleFromUInt32(uint32_t bits);
+static inline double DoubleFromUInt32(uint32_t bits)
 {
-    union{ uint64_t u; double d;} u;
+    union {
+        uint64_t u;
+        double d;
+    } u;
 
     // split 0x89abcdef to 0x89abc00000000def
     u.u = bits & 0xfffU;
-    u.u |= (uint64_t) (bits & ~0xfffU) << 32;
+    u.u |= (uint64_t)(bits & ~0xfffU) << 32;
 
-    // sign extend the leading bit of def segment as sign bit so that the middle region consists of either all 1s or 0s
+    // sign extend the leading bit of def segment as sign bit so that the middle
+    // region consists of either all 1s or 0s
     u.u -= (bits & 0x800U) << 1;
 
     // return result
     return u.d;
 }
 
-void _LogBuildError( cl_program p, int line, const char *file );
-#define LogBuildError( program )        _LogBuildError( program, __LINE__, __FILE__ )
+void _LogBuildError(cl_program p, int line, const char *file);
+#define LogBuildError(program) _LogBuildError(program, __LINE__, __FILE__)
 
 #define PERF_LOOP_COUNT 100
 
-//The spec is fairly clear that we may enforce a hard cutoff to prevent premature flushing to zero.
-// However, to avoid conflict for 1.0, we are letting results at TYPE_MIN + ulp_limit to be flushed to zero.
-static inline int IsFloatResultSubnormal( double x, float ulps )
+// The spec is fairly clear that we may enforce a hard cutoff to prevent
+// premature flushing to zero.
+// However, to avoid conflict for 1.0, we are letting results at TYPE_MIN +
+// ulp_limit to be flushed to zero.
+static inline int IsFloatResultSubnormal(double x, float ulps)
 {
-    x = fabs(x) - MAKE_HEX_DOUBLE( 0x1.0p-149, 0x1, -149) * (double) ulps;
-    return x < MAKE_HEX_DOUBLE( 0x1.0p-126, 0x1, -126 );
+    x = fabs(x) - MAKE_HEX_DOUBLE(0x1.0p-149, 0x1, -149) * (double)ulps;
+    return x < MAKE_HEX_DOUBLE(0x1.0p-126, 0x1, -126);
 }
 
-static inline int IsFloatResultSubnormalAbsError( double x , float abs_err)
+static inline int IsFloatResultSubnormalAbsError(double x, float abs_err)
 {
-  x = x - abs_err;
-  return x < MAKE_HEX_DOUBLE( 0x1.0p-126, 0x1, -126 );
+    x = x - abs_err;
+    return x < MAKE_HEX_DOUBLE(0x1.0p-126, 0x1, -126);
 }
 
-static inline int IsDoubleResultSubnormal( long double x, float ulps )
+static inline int IsDoubleResultSubnormal(long double x, float ulps)
 {
-    x = fabsl(x) - MAKE_HEX_LONG( 0x1.0p-1074, 0x1, -1074) * (long double) ulps;
-    return x < MAKE_HEX_LONG( 0x1.0p-1022, 0x1, -1022 );
+    x = fabsl(x) - MAKE_HEX_LONG(0x1.0p-1074, 0x1, -1074) * (long double)ulps;
+    return x < MAKE_HEX_LONG(0x1.0p-1022, 0x1, -1022);
 }
 
 static inline int IsFloatInfinity(double x)
 {
-  union { cl_float d; cl_uint u; } u;
-  u.d = (cl_float) x;
-  return ((u.u & 0x7fffffffU) == 0x7F800000U);
+    union {
+        cl_float d;
+        cl_uint u;
+    } u;
+    u.d = (cl_float)x;
+    return ((u.u & 0x7fffffffU) == 0x7F800000U);
 }
 
 static inline int IsFloatMaxFloat(double x)
 {
-  union { cl_float d; cl_uint u; } u;
-  u.d = (cl_float) x;
-  return ((u.u & 0x7fffffffU) == 0x7F7FFFFFU);
+    union {
+        cl_float d;
+        cl_uint u;
+    } u;
+    u.d = (cl_float)x;
+    return ((u.u & 0x7fffffffU) == 0x7F7FFFFFU);
 }
 
 static inline int IsFloatNaN(double x)
 {
-  union { cl_float d; cl_uint u; } u;
-  u.d = (cl_float) x;
-  return ((u.u & 0x7fffffffU) > 0x7F800000U);
+    union {
+        cl_float d;
+        cl_uint u;
+    } u;
+    u.d = (cl_float)x;
+    return ((u.u & 0x7fffffffU) > 0x7F800000U);
 }
 
-extern cl_uint RoundUpToNextPowerOfTwo( cl_uint x );
+extern cl_uint RoundUpToNextPowerOfTwo(cl_uint x);
 
 // Windows (since long double got deprecated) sets the x87 to 53-bit precision
 // (that's x87 default state).  This causes problems with the tests that
@@ -185,49 +201,83 @@ static inline void Force64BitFPUPrecision(void)
     // divergent code just use inline assembly which works for both.
     unsigned short int orig_cw = 0;
     unsigned short int new_cw = 0;
-    __asm__ __volatile__ ("fstcw %0":"=m" (orig_cw));
-    new_cw = orig_cw | 0x0300;   // set precision to 64-bit
-    __asm__ __volatile__ ("fldcw  %0"::"m" (new_cw));
-#elif defined( _WIN32 ) && defined( __INTEL_COMPILER )
-    // Unfortunately, usual method (`_controlfp( _PC_64, _MCW_PC );') does *not* work on win.x64:
-    // > On the x64 architecture, changing the floating point precision is not supported.
-    // (Taken from http://msdn.microsoft.com/en-us/library/e9b52ceh%28v=vs.100%29.aspx)
+    __asm__ __volatile__("fstcw %0" : "=m"(orig_cw));
+    new_cw = orig_cw | 0x0300; // set precision to 64-bit
+    __asm__ __volatile__("fldcw  %0" ::"m"(new_cw));
+#elif defined(_WIN32) && defined(__INTEL_COMPILER)
+    // Unfortunately, usual method (`_controlfp( _PC_64, _MCW_PC );') does *not*
+    // work on win.x64: > On the x64 architecture, changing the floating point
+    // precision is not supported. (Taken from
+    // http://msdn.microsoft.com/en-us/library/e9b52ceh%28v=vs.100%29.aspx)
     int cw;
-    __asm { fnstcw cw };    // Get current value of FPU control word.
-    cw = cw & 0xfffffcff | ( 3 << 8 ); // Set Precision Control to Double Extended Precision.
-    __asm { fldcw cw };     // Set new value of FPU control word.
+    __asm { fnstcw cw }
+    ; // Get current value of FPU control word.
+    cw = cw & 0xfffffcff
+        | (3 << 8); // Set Precision Control to Double Extended Precision.
+    __asm { fldcw cw }
+    ; // Set new value of FPU control word.
 #else
     /* Implement for other platforms if needed */
 #endif
 }
 
-extern
-void memset_pattern4(void *dest, const void *src_pattern, size_t bytes );
+extern void memset_pattern4(void *dest, const void *src_pattern, size_t bytes);
 
-typedef union
-{
+typedef union {
     int32_t i;
-    float   f;
-}int32f_t;
+    float f;
+} int32f_t;
 
-typedef union
-{
+typedef union {
     int64_t l;
-    double  d;
-}int64d_t;
+    double d;
+} int64d_t;
 
 void MulD(double *rhi, double *rlo, double u, double v);
 void AddD(double *rhi, double *rlo, double a, double b);
-void MulDD(double *rhi, double *rlo, double xh, double xl, double yh, double yl);
-void AddDD(double *rhi, double *rlo, double xh, double xl, double yh, double yl);
+void MulDD(double *rhi, double *rlo, double xh, double xl, double yh,
+           double yl);
+void AddDD(double *rhi, double *rlo, double xh, double xl, double yh,
+           double yl);
 void DivideDD(double *chi, double *clo, double a, double b);
 int compareFloats(float x, float y);
 int compareDoubles(double x, double y);
 
-void logFunctionInfo(const char *fname, unsigned int float_size, unsigned int isFastRelaxed);
+void logFunctionInfo(const char *fname, unsigned int float_size,
+                     unsigned int isFastRelaxed);
 
 float getAllowedUlpError(const Func *f, const bool relaxed);
 
+static inline cl_uint getTestScale(size_t typeSize)
+{
+    if (gWimpyMode)
+    {
+        return (cl_uint)typeSize * 2 * gWimpyReductionFactor;
+    }
+    else if (gIsEmbedded)
+    {
+        return EMBEDDED_REDUCTION_FACTOR;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+static inline uint64_t getTestStep(size_t typeSize, size_t bufferSize)
+{
+    if (gWimpyMode)
+    {
+        return (1ULL << 32) * gWimpyReductionFactor / (512);
+    }
+    else if (gIsEmbedded)
+    {
+        return (BUFFER_SIZE / typeSize) * EMBEDDED_REDUCTION_FACTOR;
+    }
+    else
+    {
+        return bufferSize / typeSize;
+    }
+}
+
 #endif /* UTILITY_H */
-
-

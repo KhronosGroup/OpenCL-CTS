@@ -480,6 +480,7 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
                 case TEST_PASS: break;
                 case TEST_FAIL: return fail_init_info(testNum);
                 case TEST_SKIP: return skip_init_info(testNum);
+                case TEST_SKIPPED_ITSELF: return skip_init_info(testNum);
             }
         }
     }
@@ -493,6 +494,7 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
             case TEST_PASS: break;
             case TEST_FAIL: return fail_init_info(testNum);
             case TEST_SKIP: return skip_init_info(testNum);
+            case TEST_SKIPPED_ITSELF: return skip_init_info(testNum);
         }
     }
 

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -95,7 +95,9 @@ int test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_comman
         }
     }
 
-    error = create_single_kernel_helper_with_build_options(context, &program, &kernel, 1, subgroup_dispatch_kernel, "subgroup_dispatch_kernel", "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                        subgroup_dispatch_kernel,
+                                        "subgroup_dispatch_kernel");
     if (error != 0)
         return error;
 

@@ -18,7 +18,6 @@
 
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
-extern bool gDeviceLt20;
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.
@@ -1159,8 +1158,11 @@ int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel ke
     return numTries != MAX_TRIES || numClamped != MAX_CLAMPED;
 }
 
-int test_read_image_set_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler,
-                           bool floatCoords, ExplicitType outputType )
+int test_read_image_set_3D(cl_device_id device, cl_context context,
+                           cl_command_queue queue,
+                           const cl_image_format *format,
+                           image_sampler_data *imageSampler, bool floatCoords,
+                           ExplicitType outputType)
 {
     char programSrc[10240];
     const char *ptr;
@@ -1230,7 +1232,8 @@ int test_read_image_set_3D( cl_device_id device, cl_context context, cl_command_
             gTestMipmaps? ",lod":" ");
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     test_error( error, "Unable to create testing kernel" );
 
     // Run tests
