@@ -1390,4 +1390,22 @@ static void set_last_worgroup_params(int non_uniform_size,
     last_subgroup_size = non_uniform_size % subgroup_size;
     workgroup_size = non_uniform_size;
 }
+
+template <typename Ty>
+static void set_randomdata_for_subgroup(Ty *workgroup, int wg_offset,
+                                        int current_sbs)
+{
+    int randomize_data = (int)(genrand_int32(gMTdata) % 3);
+    // Initialize data matrix indexed by local id and sub group id
+    switch (randomize_data)
+    {
+        case 0: memset(&workgroup[wg_offset], 0, current_sbs * sizeof(Ty)); break;
+        case 1:
+            memset(&workgroup[wg_offset], 0, current_sbs * sizeof(Ty));
+            int wi_id = (int)(genrand_int32(gMTdata) % (cl_uint)current_sbs);
+            set_value(workgroup[wg_offset + wi_id], 41);
+            break;
+        case 2: memset(&workgroup[wg_offset], 0xff, current_sbs * sizeof(Ty)); break;
+    }
+}
 #endif

@@ -135,23 +135,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
                     m[midx] = (cl_int)index_for_odd;
                     m[++midx] = (cl_int)index_for_even;
                 }
-                int randomize_data = (int)(genrand_int32(gMTdata) % 3);
-                // Initialize data matrix indexed by local id and sub group id
-                switch (randomize_data)
-                {
-                    case 0:
-                        memset(&t[wg_offset], 0, current_sbs * sizeof(Ty));
-                        break;
-                    case 1:
-                        memset(&t[wg_offset], 0, current_sbs * sizeof(Ty));
-                        wi_id = (int)(genrand_int32(gMTdata)
-                                      % (cl_uint)current_sbs);
-                        set_value(t[wg_offset + wi_id], 41);
-                        break;
-                    case 2:
-                        memset(&t[wg_offset], 0xff, current_sbs * sizeof(Ty));
-                        break;
-                }
+                set_randomdata_for_subgroup<Ty>(t, wg_offset, current_sbs);
             }
 
             // Now map into work group using map from device
@@ -363,25 +347,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                     || operation == BallotOp::ballot_inclusive_scan
                     || operation == BallotOp::ballot_exclusive_scan)
                 {
-                    // Initialize data matrix indexed by local id and sub group
-                    // id
-                    int randomize_data = (int)(genrand_int32(gMTdata) % 3);
-                    switch (randomize_data)
-                    {
-                        case 0:
-                            memset(&t[wg_offset], 0, current_sbs * sizeof(Ty));
-                            break;
-                        case 1:
-                            memset(&t[wg_offset], 0, current_sbs * sizeof(Ty));
-                            wi_id = (int)(genrand_int32(gMTdata)
-                                          % (cl_uint)current_sbs);
-                            set_value(t[wg_offset + wi_id], 41);
-                            break;
-                        case 2:
-                            memset(&t[wg_offset], 0xff,
-                                   current_sbs * sizeof(Ty));
-                            break;
-                    }
+                    set_randomdata_for_subgroup<Ty>(t, wg_offset, current_sbs);
                 }
                 else if (operation == BallotOp::ballot_find_lsb
                          || operation == BallotOp::ballot_find_msb)
