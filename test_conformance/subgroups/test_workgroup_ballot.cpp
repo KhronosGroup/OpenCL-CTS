@@ -359,6 +359,8 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
             { // for each subgroup
                 int wg_offset = sb_id * sbs;
                 int current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                log_info("wg_offset = %d current_sbs = %d sbs = %d\n",
+                         wg_offset, current_sbs, sbs);
                 if (operation == BallotOp::ballot_bit_count
                     || operation == BallotOp::ballot_inclusive_scan
                     || operation == BallotOp::ballot_exclusive_scan)
@@ -389,18 +391,12 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                     // Regarding to the spec, find lsb and find msb result is
                     // undefined behavior if input value is zero, so generate
                     // only non-zero values.
-                    int randomize_data = (int)(genrand_int32(gMTdata) % 2);
-                    switch (randomize_data)
+                    for (wi_id = 0; wi_id < current_sbs; ++wi_id)
                     {
-                        case 0:
-                            memset(&t[wg_offset], 0xff,
-                                   current_sbs * sizeof(Ty));
-                            break;
-                        case 1:
-                            char x = (genrand_int32(gMTdata)) & 0xff;
-                            memset(&t[wg_offset], x ? x : 1,
-                                   current_sbs * sizeof(Ty));
-                            break;
+                        char x = (genrand_int32(gMTdata)) & 0xff;
+                        // undefined behaviour in case of 0;
+                        x = x ? x : 1;
+                        memset(&t[wg_offset + wi_id], x, sizeof(Ty));
                     }
                 }
                 else

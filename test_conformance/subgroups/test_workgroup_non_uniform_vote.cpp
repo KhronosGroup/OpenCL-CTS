@@ -224,7 +224,7 @@ template <typename Ty, NonUniformVoteOp operation> struct AAN
                     bool expected_result = i < NR_OF_ACTIVE_WORK_ITEMS
                         ? calculation_result[0]
                         : calculation_result[1];
-                    if (expected_result != expected_result)
+                    if (device_result != expected_result)
                     {
                         log_error("ERROR: sub_group_non_uniform_%s mismatch "
                                   "for local id %d in sub group %d in group "
