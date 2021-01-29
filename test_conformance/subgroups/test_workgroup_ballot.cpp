@@ -359,8 +359,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
             { // for each subgroup
                 int wg_offset = sb_id * sbs;
                 int current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
-                log_info("wg_offset = %d current_sbs = %d sbs = %d\n",
-                         wg_offset, current_sbs, sbs);
                 if (operation == BallotOp::ballot_bit_count
                     || operation == BallotOp::ballot_inclusive_scan
                     || operation == BallotOp::ballot_exclusive_scan)

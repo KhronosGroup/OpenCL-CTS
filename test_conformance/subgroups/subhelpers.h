@@ -267,7 +267,7 @@ struct cl_half16
 {
     ::cl_half16 data;
 };
-};
+}
 
 static bool int64_ok(cl_device_id device)
 {
@@ -342,9 +342,8 @@ template <typename Ty> struct CommonTypeManager
         return 0;
     }
 };
-template <typename T> struct TypeManager : public CommonTypeManager<T>
-{
-};
+
+template <typename> struct TypeManager;
 
 template <> struct TypeManager<cl_int> : public CommonTypeManager<cl_int>
 {
