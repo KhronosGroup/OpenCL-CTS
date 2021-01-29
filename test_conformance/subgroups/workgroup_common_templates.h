@@ -67,48 +67,101 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
 {
     static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     {
-        int i, ii, j, k, l, n;
+        int i, ii, j, k, n;
         int nj = (nw + ns - 1) / ns;
         int d = ns > 100 ? 100 : ns;
-
+        int non_uniform_size = ng % nw;
+        ng = ng / nw;
+        int last_subgroup_size = 0;
         ii = 0;
+
+        log_info("  sub_group_%s(%s)...\n", operation_names(operation),
+                 TypeManager<Ty>::name());
+        if (non_uniform_size)
+        {
+            log_info("  non uniform work group size mode ON\n");
+            ng++;
+        }
         for (k = 0; k < ng; ++k)
         { // for each work_group
+            if (non_uniform_size && k == ng - 1)
+            {
+                set_last_worgroup_params(non_uniform_size, nj, ns, nw,
+                                         last_subgroup_size);
+            }
             for (j = 0; j < nj; ++j)
             { // for each subgroup
                 ii = j * ns;
-                n = ii + ns > nw ? nw - ii : ns;
+                if (last_subgroup_size && j == nj - 1)
+                {
+                    n = last_subgroup_size;
+                }
+                else
+                {
+                    n = ii + ns > nw ? nw - ii : ns;
+                }
+                int bcast_if = 0;
+                int bcast_elseif = 0;
+                int bcast_index = (int)(genrand_int32(gMTdata) & 0x7fffffff)
+                    % (d > n ? n : d);
                 // l - calculate subgroup local id from which value will be
                 // broadcasted (one the same value for whole subgroup)
-                l = (int)(genrand_int32(gMTdata) & 0x7fffffff)
-                    % (d > n ? n : d);
-                if (operation == SubgroupsBroadcastOp::non_uniform_broadcast)
+                if (operation != SubgroupsBroadcastOp::broadcast)
                 {
-                    // only 4 work_items in subgroup will be active
-                    l = l % 4;
+                    // reduce brodcasting index in case of non_uniform and
+                    // last workgroup last subgroup
+                    if (last_subgroup_size && j == nj - 1
+                        && last_subgroup_size < NR_OF_ACTIVE_WORK_ITEMS)
+                    {
+                        bcast_if = bcast_index % last_subgroup_size;
+                        bcast_elseif = bcast_if;
+                    }
+                    else
+                    {
+                        bcast_if = bcast_index % NR_OF_ACTIVE_WORK_ITEMS;
+                        bcast_elseif = NR_OF_ACTIVE_WORK_ITEMS
+                            + bcast_index % (n - NR_OF_ACTIVE_WORK_ITEMS);
+                    }
                 }
 
                 for (i = 0; i < n; ++i)
                 {
-                    int midx = 4 * ii + 4 * i
-                        + 2; // index of the third element int the vector.
-                    m[midx] =
-                        (cl_int)l; // storing information about broadcasting
-                                   // index - earlier calculated
-                    cl_ulong number = genrand_int64(
-                        gMTdata); // calculate value for broadcasting
+                    if (operation == SubgroupsBroadcastOp::broadcast)
+                    {
+                        int midx = 4 * ii + 4 * i + 2;
+                        m[midx] = (cl_int)bcast_index;
+                    }
+                    else
+                    {
+                        if (i < NR_OF_ACTIVE_WORK_ITEMS)
+                        {
+                            // index of the third
+                            // element int the vector.
+                            int midx = 4 * ii + 4 * i + 2;
+                            // storing information about
+                            // broadcasting index -
+                            // earlier calculated
+                            m[midx] = (cl_int)bcast_if;
+                        }
+                        else
+                        { // index of the third
+                          // element int the vector.
+                            int midx = 4 * ii + 4 * i + 3;
+                            m[midx] = (cl_int)bcast_elseif;
+                        }
+                    }
+
+                    // calculate value for broadcasting
+                    cl_ulong number = genrand_int64(gMTdata);
                     set_value(t[ii + i], number);
-                    // log_info("wg = %d ,sg = %d, inside sg = %d, number == %d,
-                    // l = %d, midx = %d\n", k, j, i, number, l, midx);
                 }
             }
-
             // Now map into work group using map from device
             for (j = 0; j < nw; ++j)
             { // for each element in work_group
-                i = m[4 * j + 1] * ns
-                    + m[4 * j]; // calculate index as number of subgroup plus
-                                // subgroup local id
+                // calculate index as number of subgroup
+                // plus subgroup local id
+                i = m[4 * j + 1] * ns + m[4 * j];
                 x[j] = t[i];
             }
             x += nw;
@@ -122,11 +175,18 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
         int ii, i, j, k, l, n;
         int nj = (nw + ns - 1) / ns;
         Ty tr, rr;
-        log_info("  sub_group_%s(%s)...\n", operation_names(operation),
-                 TypeManager<Ty>::name());
+        int non_uniform_size = ng % nw;
+        ng = ng / nw;
+        int last_subgroup_size = 0;
+        if (non_uniform_size) ng++;
 
         for (k = 0; k < ng; ++k)
         { // for each work_group
+            if (non_uniform_size && k == ng - 1)
+            {
+                set_last_worgroup_params(non_uniform_size, nj, ns, nw,
+                                         last_subgroup_size);
+            }
             for (j = 0; j < nw; ++j)
             { // inside the work_group
                 i = m[4 * j + 1] * ns + m[4 * j];
@@ -137,13 +197,14 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
             for (j = 0; j < nj; ++j)
             { // for each subgroup
                 ii = j * ns;
-                n = ii + ns > nw ? nw - ii : ns;
-                int midx = 4 * ii
-                    + 2; // take index of array where info which work_item will
-                         // be broadcast its value is stored
-                l = (int)m[midx]; // take subgroup local id of this work_item
-                tr = mx[ii
-                        + l]; // take value generated on host for this work_item
+                if (last_subgroup_size && j == nj - 1)
+                {
+                    n = last_subgroup_size;
+                }
+                else
+                {
+                    n = ii + ns > nw ? nw - ii : ns;
+                }
 
                 // Check result
                 if (operation == SubgroupsBroadcastOp::broadcast_first)
@@ -151,35 +212,25 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                     int lowest_active_id = -1;
                     for (i = 0; i < n; ++i)
                     {
-                        tr = mx[ii + i];
+
+                        lowest_active_id = i < NR_OF_ACTIVE_WORK_ITEMS
+                            ? 0
+                            : NR_OF_ACTIVE_WORK_ITEMS;
+                        //  findout if broadcasted
+                        //  value is the same
+                        tr = mx[ii + lowest_active_id];
+                        //  findout if broadcasted to all
                         rr = my[ii + i];
-                        if (compare(rr, tr))
-                        { // find work_item id in subgroup which value could be
-                          // broadcasted
-                            lowest_active_id = i;
-                            break;
-                        }
-                    }
-                    if (lowest_active_id == -1)
-                    {
-                        log_error(
-                            "ERROR: sub_group_broadcast_first(%s) do not found "
-                            "any matching values in sub group %d in group %d\n",
-                            TypeManager<Ty>::name(), j, k);
-                        return -1;
-                    }
-                    for (i = 0; i < n; ++i)
-                    {
-                        tr = mx[ii
-                                + lowest_active_id]; //  findout if broadcasted
-                                                     //  value is the same
-                        rr = my[ii + i]; //  findout if broadcasted to all
+
                         if (!compare(rr, tr))
                         {
                             log_error(
-                                "ERROR: sub_group_broadcast_first(%s) mismatch "
-                                "for local id %d in sub group %d in group %d\n",
+                                "ERROR: sub_group_broadcast_first(%s) "
+                                "mismatch "
+                                "for local id %d in sub group %d in group "
+                                "%d\n",
                                 TypeManager<Ty>::name(), i, j, k);
+                            return TEST_FAIL;
                         }
                     }
                 }
@@ -187,23 +238,45 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                 {
                     for (i = 0; i < n; ++i)
                     {
-                        if (operation
-                                == SubgroupsBroadcastOp::non_uniform_broadcast
-                            && i >= NON_UNIFORM_WG_SIZE)
+                        if (operation == SubgroupsBroadcastOp::broadcast)
                         {
-                            break; // non uniform case - only first 4 workitems
-                                   // should broadcast. Others are undefined.
+                            int midx = 4 * ii + 4 * i + 2;
+                            l = (int)m[midx];
+                            tr = mx[ii + l];
                         }
-                        rr = my[ii + i]; // read device outputs for work_item in
-                                         // the subgroup
+                        else
+                        {
+                            if (i < NR_OF_ACTIVE_WORK_ITEMS)
+                            { // take index of array where info
+                              // which work_item will be
+                              // broadcast its value is stored
+                                int midx = 4 * ii + 4 * i + 2;
+                                // take subgroup local id of
+                                // this work_item
+                                l = (int)m[midx];
+                                // take value generated on host
+                                // for this work_item
+                                tr = mx[ii + l];
+                            }
+                            else
+                            {
+                                int midx = 4 * ii + 4 * i + 3;
+                                l = (int)m[midx];
+                                tr = mx[ii + l];
+                            }
+                        }
+                        rr = my[ii + i]; // read device outputs for
+                                         // work_item in the subgroup
+
                         if (!compare(rr, tr))
                         {
                             log_error("ERROR: sub_group_%s(%s) "
                                       "mismatch for local id %d in sub "
-                                      "group %d in group %d\n",
+                                      "group %d in group %d - got %lu "
+                                      "expected %lu\n",
                                       operation_names(operation),
-                                      TypeManager<Ty>::name(), i, j, k);
-                            return -1;
+                                      TypeManager<Ty>::name(), i, j, k, rr, tr);
+                            return TEST_FAIL;
                         }
                     }
                 }
@@ -212,7 +285,9 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
             y += nw;
             m += 4 * nw;
         }
-        return 0;
+        log_info("  sub_group_%s(%s)... passed\n", operation_names(operation),
+                 TypeManager<Ty>::name());
+        return TEST_PASS;
     }
 };
 
@@ -365,6 +440,9 @@ template <typename Ty, ArithmeticOp operation> struct RED
 {
     static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     {
+        ng = ng / nw;
+        log_info("  sub_group_reduce_%s(%s)... \n", operation_names(operation),
+                 TypeManager<Ty>::name());
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
@@ -374,13 +452,12 @@ template <typename Ty, ArithmeticOp operation> struct RED
         int ii, i, j, k, n;
         int nj = (nw + ns - 1) / ns;
         Ty tr, rr;
-
-        log_info("  sub_group_reduce_%s(%s)...\n", operation_names(operation),
-                 TypeManager<Ty>::name());
+        ng = ng / nw;
 
         for (k = 0; k < ng; ++k)
         {
-            // Map to array indexed to array indexed by local ID and sub group
+            // Map to array indexed to array indexed by local ID and sub
+            // group
             for (j = 0; j < nw; ++j)
             {
                 i = m[4 * j + 1] * ns + m[4 * j];
@@ -408,7 +485,7 @@ template <typename Ty, ArithmeticOp operation> struct RED
                                   "local id %d in sub group %d in group %d\n",
                                   operation_names(operation),
                                   TypeManager<Ty>::name(), i, j, k);
-                        return -1;
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -417,8 +494,9 @@ template <typename Ty, ArithmeticOp operation> struct RED
             y += nw;
             m += 4 * nw;
         }
-
-        return 0;
+        log_info("  sub_group_reduce_%s(%s)... passed\n",
+                 operation_names(operation), TypeManager<Ty>::name());
+        return TEST_PASS;
     }
 };
 
@@ -427,6 +505,9 @@ template <typename Ty, ArithmeticOp operation> struct SCIN
 {
     static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     {
+        ng = ng / nw;
+        log_info("  sub_group_scan_inclusive_%s(%s)...\n",
+                 operation_names(operation), TypeManager<Ty>::name());
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
@@ -436,13 +517,12 @@ template <typename Ty, ArithmeticOp operation> struct SCIN
         int ii, i, j, k, n;
         int nj = (nw + ns - 1) / ns;
         Ty tr, rr;
-
-        log_info("  sub_group_scan_inclusive_%s(%s)...\n",
-                 operation_names(operation), TypeManager<Ty>::name());
+        ng = ng / nw;
 
         for (k = 0; k < ng; ++k)
         {
-            // Map to array indexed to array indexed by local ID and sub group
+            // Map to array indexed to array indexed by local ID and sub
+            // group
             for (j = 0; j < nw; ++j)
             {
                 i = m[4 * j + 1] * ns + m[4 * j];
@@ -464,11 +544,12 @@ template <typename Ty, ArithmeticOp operation> struct SCIN
                     if (rr != tr)
                     {
                         log_error(
-                            "ERROR: sub_group_scan_inclusive_%s(%s) mismatch "
+                            "ERROR: sub_group_scan_inclusive_%s(%s) "
+                            "mismatch "
                             "for local id %d in sub group %d in group %d\n",
                             operation_names(operation), TypeManager<Ty>::name(),
                             i, j, k);
-                        return -1;
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -477,8 +558,9 @@ template <typename Ty, ArithmeticOp operation> struct SCIN
             y += nw;
             m += 4 * nw;
         }
-
-        return 0;
+        log_info("  sub_group_scan_inclusive_%s(%s)... passed\n",
+                 operation_names(operation), TypeManager<Ty>::name());
+        return TEST_PASS;
     }
 };
 
@@ -487,6 +569,9 @@ template <typename Ty, ArithmeticOp operation> struct SCEX
 {
     static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     {
+        ng = ng / nw;
+        log_info("  sub_group_scan_exclusive_%s(%s)...\n",
+                 operation_names(operation), TypeManager<Ty>::name());
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
@@ -496,13 +581,12 @@ template <typename Ty, ArithmeticOp operation> struct SCEX
         int ii, i, j, k, n;
         int nj = (nw + ns - 1) / ns;
         Ty tr, trt, rr;
-
-        log_info("  sub_group_scan_exclusive_%s(%s)...\n",
-                 operation_names(operation), TypeManager<Ty>::name());
+        ng = ng / nw;
 
         for (k = 0; k < ng; ++k)
         {
-            // Map to array indexed to array indexed by local ID and sub group
+            // Map to array indexed to array indexed by local ID and sub
+            // group
             for (j = 0; j < nw; ++j)
             {
                 i = m[4 * j + 1] * ns + m[4 * j];
@@ -542,11 +626,12 @@ template <typename Ty, ArithmeticOp operation> struct SCEX
                     if (rr != tr)
                     {
                         log_error(
-                            "ERROR: sub_group_scan_exclusive_%s(%s) mismatch "
+                            "ERROR: sub_group_scan_exclusive_%s(%s) "
+                            "mismatch "
                             "for local id %d in sub group %d in group %d\n",
                             operation_names(operation), TypeManager<Ty>::name(),
                             i, j, k);
-                        return -1;
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -555,8 +640,9 @@ template <typename Ty, ArithmeticOp operation> struct SCEX
             y += nw;
             m += 4 * nw;
         }
-
-        return 0;
+        log_info("  sub_group_scan_exclusive_%s(%s)... passed\n",
+                 operation_names(operation), TypeManager<Ty>::name());
+        return TEST_PASS;
     }
 };
 
@@ -568,6 +654,9 @@ template <typename Ty, ShuffleOp operation> struct SHF
         int nj = (nw + ns - 1) / ns;
         int d = ns > 100 ? 100 : ns;
         ii = 0;
+        ng = ng / nw;
+        log_info("  sub_group_%s(%s)...\n", operation_names(operation),
+                 TypeManager<Ty>::name());
         for (k = 0; k < ng; ++k)
         { // for each work_group
             for (j = 0; j < nj; ++j)
@@ -611,9 +700,9 @@ template <typename Ty, ShuffleOp operation> struct SHF
             // Now map into work group using map from device
             for (j = 0; j < nw; ++j)
             { // for each element in work_group
-                i = m[4 * j + 1] * ns
-                    + m[4 * j]; // calculate index as number of subgroup plus
-                                // subgroup local id
+                // calculate index as number of subgroup
+                // plus subgroup local id
+                i = m[4 * j + 1] * ns + m[4 * j];
                 x[j] = t[i];
             }
             x += nw;
@@ -627,10 +716,7 @@ template <typename Ty, ShuffleOp operation> struct SHF
         int ii, i, j, k, l, n;
         int nj = (nw + ns - 1) / ns;
         Ty tr, rr;
-
-
-        log_info("  sub_group_%s(%s)...\n", operation_names(operation),
-                 TypeManager<Ty>::name());
+        ng = ng / nw;
 
         for (k = 0; k < ng; ++k)
         { // for each work_group
@@ -648,29 +734,26 @@ template <typename Ty, ShuffleOp operation> struct SHF
 
                 for (i = 0; i < n; ++i)
                 { // inside the subgroup
-                    int midx = 4 * ii + 4 * i + 2; // shuffle index storage
+                  // shuffle index storage
+                    int midx = 4 * ii + 4 * i + 2;
                     l = (int)m[midx];
                     rr = my[ii + i];
                     switch (operation)
                     {
-                        case ShuffleOp::shuffle:
-                            tr = mx[ii + l]; // shuffle basic - treat l as index
-                            break;
-                        case ShuffleOp::shuffle_up:
-                            tr =
-                                mx[ii + i - l]; // shuffle up - treat l as delta
-                            break;
+                        // shuffle basic - treat l as index
+                        case ShuffleOp::shuffle: tr = mx[ii + l]; break;
+                        // shuffle up - treat l as delta
+                        case ShuffleOp::shuffle_up: tr = mx[ii + i - l]; break;
+                        // shuffle up - treat l as delta
                         case ShuffleOp::shuffle_down:
-                            tr = mx[ii + i
-                                    + l]; // shuffle down - treat l as delta
+                            tr = mx[ii + i + l];
                             break;
+                        // shuffle xor - treat l as mask
                         case ShuffleOp::shuffle_xor:
-                            tr = mx[ii
-                                    + (i ^ l)]; // shuffle xor - treat l as mask
+                            tr = mx[ii + (i ^ l)];
                             break;
                         default: break;
                     }
-
 
                     if (!compare(rr, tr))
                     {
@@ -678,7 +761,7 @@ template <typename Ty, ShuffleOp operation> struct SHF
                                   "local id %d in sub group %d in group %d\n",
                                   operation_names(operation),
                                   TypeManager<Ty>::name(), i, j, k);
-                        return -1;
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -686,7 +769,9 @@ template <typename Ty, ShuffleOp operation> struct SHF
             y += nw;
             m += 4 * nw;
         }
-        return 0;
+        log_info("  sub_group_%s(%s)... passed\n", operation_names(operation),
+                 TypeManager<Ty>::name());
+        return TEST_PASS;
     }
 };
 

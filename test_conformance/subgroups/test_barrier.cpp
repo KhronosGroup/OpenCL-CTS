@@ -63,6 +63,7 @@ template <int Which> struct BAR
     {
         int i, ii, j, k, n;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
         int e;
 
         ii = 0;
@@ -93,6 +94,7 @@ template <int Which> struct BAR
     {
         int ii, i, j, k, n;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
         cl_int tr, rr;
 
         if (Which == 0)

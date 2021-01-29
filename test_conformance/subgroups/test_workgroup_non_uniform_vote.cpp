@@ -21,57 +21,95 @@
 // Adjust these individually below if desired/needed
 #define GWS 2000
 #define LWS 200
+
+#define GWS_NON_UNIFORM 170
+#define LWS_NON_UNIFORM 64
 namespace {
-template <typename T> bool calculate(const T *mx, NonUniformVoteOp operation)
+template <typename T>
+void calculate(const T *mx, NonUniformVoteOp operation, int subgroup_size,
+               bool *compare_result)
 {
-    bool taa = 1;
+    compare_result[0] = 1;
+    compare_result[1] = 1;
     switch (operation)
     {
         case NonUniformVoteOp::all_equal:
-            for (int i = 0; i < NON_UNIFORM_WG_SIZE; ++i)
+            for (int i = 0; i < subgroup_size; ++i)
             {
-                taa &=
-                    compare_ordered(mx[i],
-                                    mx[0]); // return non zero if all the same
+                if (i < NR_OF_ACTIVE_WORK_ITEMS)
+                { // return non zero if all the same
+                    compare_result[0] &= compare_ordered(mx[i], mx[0]);
+                }
+                else
+                {
+                    compare_result[1] &=
+                        compare_ordered(mx[i], mx[NR_OF_ACTIVE_WORK_ITEMS]);
+                }
             }
             break;
         default: log_error("Unknown operation request"); break;
     }
-    return taa;
 }
-template <> bool calculate(const int *mx, NonUniformVoteOp operation)
+template <>
+void calculate(const int *mx, NonUniformVoteOp operation, int subgroup_size,
+               bool *compare_result)
 {
-    bool taa = false;
+    compare_result[0] = false;
+    compare_result[1] = false;
     switch (operation)
     {
         case NonUniformVoteOp::all_equal:
-            taa = 1;
-            for (int i = 0; i < NON_UNIFORM_WG_SIZE; ++i)
+            compare_result[0] = 1;
+            compare_result[1] = 1;
+            for (int i = 0; i < subgroup_size; ++i)
             {
-                taa &=
-                    compare_ordered(mx[i],
-                                    mx[0]); // return non zero if all the same
+                if (i < NR_OF_ACTIVE_WORK_ITEMS)
+                {
+                    // return non zero if all the same
+                    compare_result[0] &= compare_ordered(mx[i], mx[0]);
+                }
+                else
+                {
+                    compare_result[1] &=
+                        compare_ordered(mx[i], mx[NR_OF_ACTIVE_WORK_ITEMS]);
+                }
             }
             break;
         case NonUniformVoteOp::any:
-            taa = false;
-            for (int i = 0; i < NON_UNIFORM_WG_SIZE; ++i)
+            compare_result[0] = false;
+            compare_result[1] = false;
+            for (int i = 0; i < subgroup_size; ++i)
             {
-                // return non zero if value non zero at least for one
-                taa |= mx[i] != 0;
+                if (i < NR_OF_ACTIVE_WORK_ITEMS)
+                {
+                    // return non zero if value non zero at least for one
+                    compare_result[0] |= mx[i] != 0;
+                }
+                else
+                {
+
+                    compare_result[1] |= mx[i] != 0;
+                }
             }
             break;
         case NonUniformVoteOp::all:
-            taa = true;
-            for (int i = 0; i < NON_UNIFORM_WG_SIZE; ++i)
+            compare_result[0] = true;
+            compare_result[1] = true;
+            for (int i = 0; i < subgroup_size; ++i)
             {
-                // return non zero if value non zero for all
-                taa &= mx[i] != 0;
+                if (i < NR_OF_ACTIVE_WORK_ITEMS)
+                {
+                    // return non zero if value non zero for all
+                    compare_result[0] &= mx[i] != 0;
+                }
+                else
+                {
+                    compare_result[1] &= mx[i] != 0;
+                }
             }
             break;
         default: log_error("Unknown operation request"); break;
     }
-    return taa;
 }
 
 // Test any/all/all_equal non uniform test functions.
@@ -81,14 +119,37 @@ template <typename Ty, NonUniformVoteOp operation> struct AAN
     {
         int i, ii, j, k, n;
         int nj = (nw + ns - 1) / ns;
-
+        int non_uniform_size = ng % nw;
+        ng = ng / nw;
+        int last_subgroup_size = 0;
         ii = 0;
+        log_info("  sub_group_non_uniform_%s(%s)...\n",
+                 operation_names(operation), TypeManager<Ty>::name());
+        if (non_uniform_size)
+        {
+            log_info("  non uniform work group size mode ON\n");
+            ng++;
+        }
+
+
         for (k = 0; k < ng; ++k)
         { // for each work_group
+            if (non_uniform_size && k == ng - 1)
+            {
+                set_last_worgroup_params(non_uniform_size, nj, ns, nw,
+                                         last_subgroup_size);
+            }
             for (j = 0; j < nj; ++j)
             { // for each subgroup
                 ii = j * ns;
-                n = ii + ns > nw ? nw - ii : ns;
+                if (last_subgroup_size && j == nj - 1)
+                {
+                    n = last_subgroup_size;
+                }
+                else
+                {
+                    n = ii + ns > nw ? nw - ii : ns;
+                }
                 int e = genrand_int32(gMTdata) % 3;
 
                 // Initialize data matrix indexed by local id and sub group id
@@ -119,12 +180,18 @@ template <typename Ty, NonUniformVoteOp operation> struct AAN
     {
         int ii, i, j, k, n;
         int nj = (nw + ns - 1) / ns;
-
-        log_info("  sub_group_non_uniform_%s(%s)...\n",
-                 operation_names(operation), TypeManager<Ty>::name());
+        int non_uniform_size = ng % nw;
+        ng = ng / nw;
+        if (non_uniform_size) ng++;
+        int last_subgroup_size = 0;
 
         for (k = 0; k < ng; ++k)
         { // for each work_group
+            if (non_uniform_size && k == ng - 1)
+            {
+                set_last_worgroup_params(non_uniform_size, nj, ns, nw,
+                                         last_subgroup_size);
+            }
             // Map to array indexed to array indexed by local ID and sub group
             for (j = 0; j < nw; ++j)
             { // inside the work_group
@@ -136,24 +203,35 @@ template <typename Ty, NonUniformVoteOp operation> struct AAN
             for (j = 0; j < nj; ++j)
             { // for each subgroup
                 ii = j * ns;
-                n = ii + ns > nw ? nw - ii : ns;
+                if (last_subgroup_size && j == nj - 1)
+                {
+                    n = last_subgroup_size;
+                }
+                else
+                {
+                    n = ii + ns > nw ? nw - ii : ns;
+                }
 
                 // Compute target
-                bool taa = calculate<Ty>(mx + ii, operation);
+                bool calculation_result[2];
+                calculate<Ty>(mx + ii, operation, n, calculation_result);
 
                 // Check result
                 static const Ty false_value{};
-                for (i = 0; i < n && i < NON_UNIFORM_WG_SIZE; ++i)
+                for (i = 0; i < n; ++i)
                 {
-                    bool raa = !compare(my[ii + i], false_value);
-                    if (raa != taa)
+                    bool device_result = !compare(my[ii + i], false_value);
+                    bool expected_result = i < NR_OF_ACTIVE_WORK_ITEMS
+                        ? calculation_result[0]
+                        : calculation_result[1];
+                    if (expected_result != expected_result)
                     {
                         log_error("ERROR: sub_group_non_uniform_%s mismatch "
                                   "for local id %d in sub group %d in group "
                                   "%d, obtained %d, expected %d\n",
-                                  operation_names(operation), i, j, k, raa,
-                                  taa);
-                        return -1;
+                                  operation_names(operation), i, j, k,
+                                  device_result, expected_result);
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -161,7 +239,9 @@ template <typename Ty, NonUniformVoteOp operation> struct AAN
             y += nw;
             m += 4 * nw;
         }
-        return 0;
+        log_info("  sub_group_non_uniform_%s(%s)... passed\n",
+                 operation_names(operation), TypeManager<Ty>::name());
+        return TEST_PASS;
     }
 };
 
@@ -172,6 +252,12 @@ struct ELECT
 {
     static void gen(cl_int *x, cl_int *t, cl_int *m, int ns, int nw, int ng)
     {
+        int non_uniform_size = ng % nw;
+        log_info("  sub_group_elect...\n");
+        if (non_uniform_size)
+        {
+            log_info("  non uniform work group size mode ON\n");
+        }
         // no work here needed.
     }
 
@@ -181,10 +267,19 @@ struct ELECT
         int ii, i, j, k, n;
         int nj = (nw + ns - 1) / ns;
         cl_int tr, rr;
-        log_info("  sub_group_elect...\n");
+        int non_uniform_size = ng % nw;
+        ng = ng / nw;
+        if (non_uniform_size) ng++;
+        int last_subgroup_size = 0;
+
 
         for (k = 0; k < ng; ++k)
         { // for each work_group
+            if (non_uniform_size && k == ng - 1)
+            {
+                set_last_worgroup_params(non_uniform_size, nj, ns, nw,
+                                         last_subgroup_size);
+            }
             for (j = 0; j < nw; ++j)
             { // inside the work_group
                 i = m[4 * j + 1] * ns + m[4 * j];
@@ -194,22 +289,30 @@ struct ELECT
             for (j = 0; j < nj; ++j)
             { // for each subgroup
                 ii = j * ns;
-                n = ii + ns > nw ? nw - ii : ns;
+                if (last_subgroup_size && j == nj - 1)
+                {
+                    n = last_subgroup_size;
+                }
+                else
+                {
+                    n = ii + ns > nw ? nw - ii : ns;
+                }
                 rr = 0;
                 for (i = 0; i < n; ++i)
                 { // for each work_item in subgroup
-                    my[ii + i] > 0
-                        ? rr += 1
-                        : rr += 0; // sum of output values should be 1
+                  // sum of output values should be 1
+
+                    my[ii + i] > 0 ? rr += 1 : rr += 0;
                 }
-                tr = 1; // expectation is that only one elected returned true
+                // expectation is that only one elected returned true
+                tr = n <= NR_OF_ACTIVE_WORK_ITEMS ? 1 : 2;
                 if (rr != tr)
                 {
                     log_error(
                         "ERROR: sub_group_elect() mismatch for sub group %d in "
                         "work group %d. Expected: %d Obtained: %d  \n",
                         j, k, tr, rr);
-                    return -1;
+                    return TEST_FAIL;
                 }
             }
 
@@ -217,7 +320,8 @@ struct ELECT
             y += nw;
             m += 4 * nw;
         }
-        return 0;
+        log_info("  sub_group_elect... passed\n");
+        return TEST_PASS;
     }
 };
 
@@ -228,8 +332,12 @@ static const char *elect_source =
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
     "    Type x = in[gid];\n"
-    "    int am_i_elected = sub_group_elect();\n"
-    "    out[gid] = am_i_elected;\n" // one in subgroup true others false.
+    "    if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {\n"
+    // one in subgroup true others false.
+    "        out[gid] = sub_group_elect();\n"
+    "    } else {\n"
+    "        out[gid] = sub_group_elect();\n"
+    "    }\n"
     "}\n";
 
 static const char *non_uniform_any_source =
@@ -238,7 +346,9 @@ static const char *non_uniform_any_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    "    if (xy[gid].x < NON_UNIFORM_WG_SIZE) {\n"
+    "    if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {\n"
+    "        out[gid] = sub_group_non_uniform_any(in[gid]);\n"
+    "    } else {\n"
     "        out[gid] = sub_group_non_uniform_any(in[gid]);\n"
     "    }\n"
     "}\n";
@@ -248,9 +358,11 @@ static const char *non_uniform_all_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    "    if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    "    if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {\n"
     "        out[gid] = sub_group_non_uniform_all(in[gid]);\n"
-    "    }"
+    "    } else {\n"
+    "        out[gid] = sub_group_non_uniform_all(in[gid]);\n"
+    "    }\n"
     "}\n";
 static const char *non_uniform_all_equal_source =
     "__kernel void test_non_uniform_all_equal(const __global Type *in, "
@@ -258,9 +370,11 @@ static const char *non_uniform_all_equal_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
-    "    out[gid] = sub_group_non_uniform_all_equal(in[gid]);\n"
-    "}"
+    "    if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {\n"
+    "        out[gid] = sub_group_non_uniform_all_equal(in[gid]);\n"
+    "    } else {\n"
+    "        out[gid] = sub_group_non_uniform_all_equal(in[gid]);\n"
+    "    }\n"
     "}\n";
 
 
@@ -277,16 +391,18 @@ struct run_for_type
 
     template <typename T> int run_nu_all_eq()
     {
-        int error = test<T, AAN<T, NonUniformVoteOp::all_equal>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_,
-            "test_non_uniform_all_equal", non_uniform_all_equal_source, 0,
-            useCoreSubgroups_, required_extensions_);
+        int error =
+            test<T, AAN<T, NonUniformVoteOp::all_equal>, GWS_NON_UNIFORM,
+                 LWS_NON_UNIFORM>::run(device_, context_, queue_, num_elements_,
+                                       "test_non_uniform_all_equal",
+                                       non_uniform_all_equal_source, 0,
+                                       useCoreSubgroups_, required_extensions_);
         return error;
     }
 
     template <typename T> int run_elect()
     {
-        int error = test<T, ELECT, GWS, LWS>::run(
+        int error = test<T, ELECT, GWS_NON_UNIFORM, LWS_NON_UNIFORM>::run(
             device_, context_, queue_, num_elements_, "test_elect",
             elect_source, 0, useCoreSubgroups_, required_extensions_);
         return error;
@@ -294,17 +410,23 @@ struct run_for_type
 
     template <typename T> int run_nu_any()
     {
-        int error = test<T, AAN<T, NonUniformVoteOp::any>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_non_uniform_any",
-            non_uniform_any_source, 0, useCoreSubgroups_, required_extensions_);
+        int error =
+            test<T, AAN<T, NonUniformVoteOp::any>, GWS_NON_UNIFORM,
+                 LWS_NON_UNIFORM>::run(device_, context_, queue_, num_elements_,
+                                       "test_non_uniform_any",
+                                       non_uniform_any_source, 0,
+                                       useCoreSubgroups_, required_extensions_);
         return error;
     }
 
     template <typename T> int run_nu_all()
     {
-        int error = test<T, AAN<T, NonUniformVoteOp::all>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_non_uniform_all",
-            non_uniform_all_source, 0, useCoreSubgroups_, required_extensions_);
+        int error =
+            test<T, AAN<T, NonUniformVoteOp::all>, GWS_NON_UNIFORM,
+                 LWS_NON_UNIFORM>::run(device_, context_, queue_, num_elements_,
+                                       "test_non_uniform_all",
+                                       non_uniform_all_source, 0,
+                                       useCoreSubgroups_, required_extensions_);
         return error;
     }
 
@@ -317,7 +439,6 @@ private:
     bool useCoreSubgroups_;
     std::vector<std::string> required_extensions_;
 };
-
 }
 
 int test_work_group_functions_non_uniform_vote(cl_device_id device,

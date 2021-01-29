@@ -29,6 +29,9 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
 {
     static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     {
+        ng = ng / nw;
+        log_info("  sub_group_non_uniform_scan_inclusive_%s(%s)...\n",
+                 operation_names(operation), TypeManager<Ty>::name());
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
@@ -38,9 +41,7 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
         int ii, i, j, k, n;
         int nj = (nw + ns - 1) / ns;
         Ty tr, rr;
-
-        log_info("  sub_group_non_uniform_scan_inclusive_%s(%s)...\n",
-                 operation_names(operation), TypeManager<Ty>::name());
+        ng = ng / nw;
 
         for (k = 0; k < ng; ++k)
         { // for each work_group
@@ -58,7 +59,7 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
                 n = ii + ns > nw ? nw - ii : ns;
                 // Check result
                 tr = TypeManager<Ty>::identify_limits(operation);
-                for (i = 0; i < n && i < NON_UNIFORM_WG_SIZE; ++i)
+                for (i = 0; i < n && i < NR_OF_ACTIVE_WORK_ITEMS; ++i)
                 { // inside the subgroup
                     tr = calculate<Ty>(tr, mx[ii + i], operation);
                     rr = my[ii + i];
@@ -70,7 +71,7 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
                                   "group %d\n",
                                   operation_names(operation),
                                   TypeManager<Ty>::name(), i, j, k);
-                        return -1;
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -78,8 +79,9 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
             y += nw;
             m += 4 * nw;
         }
-
-        return 0;
+        log_info("  sub_group_non_uniform_scan_inclusive_%s(%s)... passed\n",
+                 operation_names(operation), TypeManager<Ty>::name());
+        return TEST_PASS;
     }
 };
 
@@ -89,6 +91,9 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
 {
     static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     {
+        ng = ng / nw;
+        log_info("  sub_group_non_uniform_scan_exclusive_%s(%s)...\n",
+                 operation_names(operation), TypeManager<Ty>::name());
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
@@ -97,10 +102,8 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
     {
         int ii, i, j, k, n;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
         Ty tr, rr;
-
-        log_info("  sub_group_non_uniform_scan_exclusive_%s(%s)...\n",
-                 operation_names(operation), TypeManager<Ty>::name());
 
         for (k = 0; k < ng; ++k)
         { // for each work_group
@@ -117,7 +120,7 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                 n = ii + ns > nw ? nw - ii : ns;
                 // Check result
                 tr = TypeManager<Ty>::identify_limits(operation);
-                for (i = 0; i < n && i < NON_UNIFORM_WG_SIZE; ++i)
+                for (i = 0; i < n && i < NR_OF_ACTIVE_WORK_ITEMS; ++i)
                 { // inside the subgroup
                     rr = my[ii + i];
 
@@ -129,7 +132,7 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                                   "group %d\n",
                                   operation_names(operation),
                                   TypeManager<Ty>::name(), i, j, k);
-                        return -1;
+                        return TEST_FAIL;
                     }
 
                     tr = calculate<Ty>(tr, mx[ii + i], operation);
@@ -139,8 +142,10 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
             y += nw;
             m += 4 * nw;
         }
+        log_info("  sub_group_non_uniform_scan_exclusive_%s(%s)... passed\n",
+                 operation_names(operation), TypeManager<Ty>::name());
 
-        return 0;
+        return TEST_PASS;
     }
 };
 
@@ -149,6 +154,9 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
 {
     static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     {
+        ng = ng / nw;
+        log_info("  sub_group_non_uniform_reduce_%s(%s)...\n",
+                 operation_names(operation), TypeManager<Ty>::name());
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
@@ -157,10 +165,8 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
     {
         int ii, i, j, k, n;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
         Ty tr, rr;
-
-        log_info("  sub_group_non_uniform_reduce_%s(%s)...\n",
-                 operation_names(operation), TypeManager<Ty>::name());
 
         for (k = 0; k < ng; ++k)
         {
@@ -176,7 +182,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
             {
                 ii = j * ns;
                 n = ii + ns > nw ? nw - ii : ns;
-                if (n > NON_UNIFORM_WG_SIZE) n = NON_UNIFORM_WG_SIZE;
+                if (n > NR_OF_ACTIVE_WORK_ITEMS) n = NR_OF_ACTIVE_WORK_ITEMS;
 
                 // Compute target
                 tr = mx[ii];
@@ -195,7 +201,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
                                   "group %d\n",
                                   operation_names(operation),
                                   TypeManager<Ty>::name(), i, j, k);
-                        return -1;
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -204,8 +210,10 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
             y += nw;
             m += 4 * nw;
         }
+        log_info("  sub_group_non_uniform_reduce_%s(%s)... passed\n",
+                 operation_names(operation), TypeManager<Ty>::name());
 
-        return 0;
+        return TEST_PASS;
     }
 };
 
@@ -215,7 +223,7 @@ static const char *scinadd_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_inclusive_add(in[gid]);\n"
     " }"
     //"printf(\"gid = %d, sub group local id = %d, sub group id = %d, x form in
@@ -228,7 +236,7 @@ static const char *scinmax_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_inclusive_max(in[gid]);\n"
     " }"
     "}\n";
@@ -238,7 +246,7 @@ static const char *scinmin_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_inclusive_min(in[gid]);\n"
     " }"
     "}\n";
@@ -248,7 +256,7 @@ static const char *scinmul_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_inclusive_mul(in[gid]);\n"
     " }"
     "}\n";
@@ -258,7 +266,7 @@ static const char *scinand_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_inclusive_and(in[gid]);\n"
     " }"
     "}\n";
@@ -268,7 +276,7 @@ static const char *scinor_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_inclusive_or(in[gid]);\n"
     " }"
     "}\n";
@@ -278,7 +286,7 @@ static const char *scinxor_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_inclusive_xor(in[gid]);\n"
     " }"
     "}\n";
@@ -288,7 +296,7 @@ static const char *scinand_non_uniform_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = "
     "sub_group_non_uniform_scan_inclusive_logical_and(in[gid]);\n"
     " }"
@@ -299,7 +307,7 @@ static const char *scinor_non_uniform_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_inclusive_logical_or(in[gid]);\n"
     " }"
     "}\n";
@@ -309,7 +317,7 @@ static const char *scinxor_non_uniform_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = "
     "sub_group_non_uniform_scan_inclusive_logical_xor(in[gid]);\n"
     " }"
@@ -321,7 +329,7 @@ static const char *scexadd_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_exclusive_add(in[gid]);\n"
     " }"
     //"printf(\"gid = %d, sub group local id = %d, sub group id = %d, x form in
@@ -335,7 +343,7 @@ static const char *scexmax_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_exclusive_max(in[gid]);\n"
     " }"
     "}\n";
@@ -346,7 +354,7 @@ static const char *scexmin_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_exclusive_min(in[gid]);\n"
     " }"
     "}\n";
@@ -357,7 +365,7 @@ static const char *scexmul_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_exclusive_mul(in[gid]);\n"
     " }"
     "}\n";
@@ -368,7 +376,7 @@ static const char *scexand_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_exclusive_and(in[gid]);\n"
     " }"
     "}\n";
@@ -379,7 +387,7 @@ static const char *scexor_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_exclusive_or(in[gid]);\n"
     " }"
     "}\n";
@@ -390,7 +398,7 @@ static const char *scexxor_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_exclusive_xor(in[gid]);\n"
     " }"
     "}\n";
@@ -401,7 +409,7 @@ static const char *scexand_non_uniform_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = "
     "sub_group_non_uniform_scan_exclusive_logical_and(in[gid]);\n"
     " }"
@@ -413,7 +421,7 @@ static const char *scexor_non_uniform_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_scan_exclusive_logical_or(in[gid]);\n"
     " }"
     "}\n";
@@ -424,7 +432,7 @@ static const char *scexxor_non_uniform_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = "
     "sub_group_non_uniform_scan_exclusive_logical_xor(in[gid]);\n"
     " }"
@@ -436,7 +444,7 @@ static const char *redadd_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_reduce_add(in[gid]);\n"
     " }"
     //"printf(\"gid = %d, sub group local id = %d, sub group id = %d, x form in
@@ -450,7 +458,7 @@ static const char *redmax_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_reduce_max(in[gid]);\n"
     " }"
     "}\n";
@@ -461,7 +469,7 @@ static const char *redmin_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_reduce_min(in[gid]);\n"
     " }"
     "}\n";
@@ -472,7 +480,7 @@ static const char *redmul_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_reduce_mul(in[gid]);\n"
     " }"
     "}\n";
@@ -483,7 +491,7 @@ static const char *redand_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_reduce_and(in[gid]);\n"
     " }"
     "}\n";
@@ -494,7 +502,7 @@ static const char *redor_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_reduce_or(in[gid]);\n"
     " }"
     "}\n";
@@ -505,7 +513,7 @@ static const char *redxor_non_uniform_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_reduce_xor(in[gid]);\n"
     " }"
     "}\n";
@@ -516,7 +524,7 @@ static const char *redand_non_uniform_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_reduce_logical_and(in[gid]);\n"
     " }"
     "}\n";
@@ -527,7 +535,7 @@ static const char *redor_non_uniform_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_reduce_logical_or(in[gid]);\n"
     " }"
     "}\n";
@@ -538,7 +546,7 @@ static const char *redxor_non_uniform_logical_source =
     "{\n"
     "    int gid = get_global_id(0);\n"
     "    XY(xy,gid);\n"
-    " if (xy[gid].x < NON_UNIFORM_WG_SIZE) {"
+    " if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {"
     "    out[gid] = sub_group_non_uniform_reduce_logical_xor(in[gid]);\n"
     " }"
     "}\n";

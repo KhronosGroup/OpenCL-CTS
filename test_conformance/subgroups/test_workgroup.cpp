@@ -34,8 +34,9 @@ template <NonUniformVoteOp operation> struct AA
         int i, ii, j, k, n;
         int nj = (nw + ns - 1) / ns;
         int e;
-
+        ng = ng / nw;
         ii = 0;
+        log_info("  sub_group_%s...\n", operation_names(operation));
         for (k = 0; k < ng; ++k)
         {
             for (j = 0; j < nj; ++j)
@@ -75,12 +76,7 @@ template <NonUniformVoteOp operation> struct AA
         int ii, i, j, k, n;
         int nj = (nw + ns - 1) / ns;
         cl_int taa, raa;
-
-        if (operation == NonUniformVoteOp::any)
-            log_info("  sub_group_any...\n");
-
-        if (operation == NonUniformVoteOp::all)
-            log_info("  sub_group_all...\n");
+        ng = ng / nw;
 
         for (k = 0; k < ng; ++k)
         {
@@ -118,10 +114,8 @@ template <NonUniformVoteOp operation> struct AA
                     {
                         log_error("ERROR: sub_group_%s mismatch for local id "
                                   "%d in sub group %d in group %d\n",
-                                  operation == NonUniformVoteOp::any ? "any"
-                                                                     : "all",
-                                  i, j, k);
-                        return -1;
+                                  operation_names(operation), i, j, k);
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -130,8 +124,8 @@ template <NonUniformVoteOp operation> struct AA
             y += nw;
             m += 4 * nw;
         }
-
-        return 0;
+        log_info("  sub_group_%s... passed\n", operation_names(operation));
+        return TEST_PASS;
     }
 };
 

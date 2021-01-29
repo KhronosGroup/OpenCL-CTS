@@ -229,6 +229,7 @@ struct IFP
     {
         int k;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
 
         // We need at least 2 sub groups per group for this test
         if (nj == 1) return;
@@ -245,6 +246,7 @@ struct IFP
     {
         int i, k;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
 
         // We need at least 2 sub groups per group for this tes
         if (nj == 1) return 0;

@@ -28,7 +28,7 @@
 #undef min
 #undef max
 
-#define NON_UNIFORM_WG_SIZE 4
+#define NR_OF_ACTIVE_WORK_ITEMS 4
 
 
 enum class SubgroupsBroadcastOp
@@ -1073,6 +1073,8 @@ compare(const Ty &lhs, const Ty &rhs)
     const int size = sizeof(Ty) / sizeof(typename TypeManager<Ty>::scalar_type);
     for (auto i = 0; i < size; ++i)
     {
+        // log_info("Values index i = %d got %lu expected %lu\n", i, lhs.s[i],
+        //         rhs.s[i]);
         if (lhs.s[i] != rhs.s[i])
         {
             return false;
@@ -1139,7 +1141,8 @@ template <>
 inline bool compare_ordered(const subgroups::cl_half &lhs,
                             const subgroups::cl_half &rhs)
 {
-    return cl_half_to_float(lhs.data) == (rhs.data) && !is_half_nan(lhs.data);
+    return cl_half_to_float(lhs.data) == cl_half_to_float(rhs.data)
+        && !is_half_nan(lhs.data);
 }
 
 
@@ -1193,7 +1196,6 @@ static int run_kernel(cl_context context, cl_command_queue queue,
     error = clEnqueueWriteBuffer(queue, xy, CL_FALSE, 0, msize, mdata, 0, NULL,
                                  NULL);
     test_error(error, "clEnqueueWriteBuffer failed");
-
     error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, &local, 0,
                                    NULL, NULL);
     test_error(error, "clEnqueueNDRangeKernel failed");
@@ -1236,8 +1238,8 @@ struct test
         Ty mapout[LSIZE];
         std::stringstream kernel_sstr;
 
-        kernel_sstr << "#define NON_UNIFORM_WG_SIZE ";
-        kernel_sstr << NON_UNIFORM_WG_SIZE << "\n";
+        kernel_sstr << "#define NR_OF_ACTIVE_WORK_ITEMS ";
+        kernel_sstr << NR_OF_ACTIVE_WORK_ITEMS << "\n";
         // Make sure a test of type Ty is supported by the device
         if (!TypeManager<Ty>::type_supported(device))
         {
@@ -1263,7 +1265,7 @@ struct test
                 log_info("The extension %s not supported on this device. SKIP "
                          "testing - kernel %s data type %s\n",
                          extension.c_str(), kname, TypeManager<Ty>::name());
-                return 0;
+                return TEST_PASS;
             }
             kernel_sstr << "#pragma OPENCL EXTENSION " + extension
                     + ": enable\n";
@@ -1361,23 +1363,32 @@ struct test
                            input_array_size * sizeof(Ty), sgmap,
                            global * sizeof(cl_int4), &odata[0],
                            output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
-        if (error) return error;
+        test_error(error, "Running kernel first time failed");
 
         // Generate the desired input for the kernel
         Fns::gen(&idata[0], mapin, sgmap, subgroup_size, (int)local,
-                 (int)global / (int)local);
+                 (int)global);
         error = run_kernel(context, queue, kernel, global, local, &idata[0],
                            input_array_size * sizeof(Ty), sgmap,
                            global * sizeof(cl_int4), &odata[0],
                            output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
-
-        if (error) return error;
-
+        test_error(error, "Running kernel second time failed");
 
         // Check the result
-        return Fns::chk(&idata[0], &odata[0], mapin, mapout, sgmap,
-                        subgroup_size, (int)local, (int)global / (int)local);
+        error = Fns::chk(&idata[0], &odata[0], mapin, mapout, sgmap,
+                         subgroup_size, (int)local, (int)global);
+        test_error(error, "Data verification failed");
+        return TEST_PASS;
     }
 };
 
+static void set_last_worgroup_params(int non_uniform_size,
+                                     int &number_of_subgroups,
+                                     int subgroup_size, int &workgroup_size,
+                                     int &last_subgroup_size)
+{
+    number_of_subgroups = 1 + non_uniform_size / subgroup_size;
+    last_subgroup_size = non_uniform_size % subgroup_size;
+    workgroup_size = non_uniform_size;
+}
 #endif
