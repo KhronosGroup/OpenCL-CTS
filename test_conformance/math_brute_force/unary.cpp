@@ -29,12 +29,6 @@ extern const vtbl _unary = { "unary", TestFunc_Float_Float,
                              TestFunc_Double_Double };
 
 static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
-                       cl_kernel *k, cl_program *p, bool relaxedMode);
-static int BuildKernelDouble(const char *name, int vectorSize,
-                             cl_uint kernel_count, cl_kernel *k, cl_program *p,
-                             bool relaxedMode);
-
-static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                        cl_kernel *k, cl_program *p, bool relaxedMode)
 {
     const char *c[] = { "__kernel void math_kernel",
@@ -207,8 +201,6 @@ typedef struct BuildKernelInfo
 } BuildKernelInfo;
 
 static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                  void *p);
-static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
                                   void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
@@ -217,8 +209,6 @@ static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
                        info->kernels[i], info->programs + i, info->relaxedMode);
 }
 
-static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                   void *p);
 static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
                                    void *p)
 {
