@@ -1399,13 +1399,17 @@ static void set_randomdata_for_subgroup(Ty *workgroup, int wg_offset,
     // Initialize data matrix indexed by local id and sub group id
     switch (randomize_data)
     {
-        case 0: memset(&workgroup[wg_offset], 0, current_sbs * sizeof(Ty)); break;
+        case 0:
+            memset(&workgroup[wg_offset], 0, current_sbs * sizeof(Ty));
+            break;
         case 1:
             memset(&workgroup[wg_offset], 0, current_sbs * sizeof(Ty));
             int wi_id = (int)(genrand_int32(gMTdata) % (cl_uint)current_sbs);
             set_value(workgroup[wg_offset + wi_id], 41);
             break;
-        case 2: memset(&workgroup[wg_offset], 0xff, current_sbs * sizeof(Ty)); break;
+        case 2:
+            memset(&workgroup[wg_offset], 0xff, current_sbs * sizeof(Ty));
+            break;
     }
 }
 #endif
