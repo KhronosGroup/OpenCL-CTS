@@ -269,8 +269,7 @@ int test_get_image_info_2D_array(cl_device_id device, cl_context context,
                 size_t extraHeight = (int)random_log_in_range( 0, 8, seed );
                 slicePitch = rowPitch * (imageInfo.height + extraHeight);
 
-                size = (cl_ulong)slicePitch * (cl_ulong)imageInfo.arraySize * 4
-                    * 4;
+                size = slicePitch * imageInfo.arraySize * 4 * 4;
             } while(  size > maxAllocSize || ( size * 3 ) > memSize );
 
             imageInfo.slicePitch = slicePitch;
