@@ -56,8 +56,8 @@ char appName[MAXPATHLEN] = "";
 cl_device_id gDevice = NULL;
 cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
-static int32_t gStartTestNumber;
-static int32_t gEndTestNumber;
+static int32_t gStartTestNumber = -1;
+static int32_t gEndTestNumber = -1;
 int gSkipCorrectnessTesting = 0;
 int gStopOnError = 0;
 static bool gSkipRestOfTests;
@@ -1005,7 +1005,7 @@ static int ParseArgs(int argc, const char **argv)
             long number = strtol(arg, &t, 0);
             if (t != arg)
             {
-                if (0 == gStartTestNumber)
+                if (-1 == gStartTestNumber)
                     gStartTestNumber = (int32_t)number;
                 else
                     gEndTestNumber = gStartTestNumber + (int32_t)number;
