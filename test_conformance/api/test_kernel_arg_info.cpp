@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 The Khronos Group Inc.
+// Copyright (c) 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -336,7 +336,7 @@ static std::string get_expected_arg_type(const std::string& type_string,
         ret.insert(0, "u");
     }
     /* Ensure that the data type is a pointer if it is not already when
-     * necessariry */
+     * necessary */
     if (is_pointer && ret.back() != '*')
     {
         ret += "*";
@@ -461,7 +461,8 @@ generate_all_type_arguments(cl_device_id deviceID)
     {
         vector_types.push_back("double");
     }
-    static const auto vector_values = { "2", "3", "4", "8", "16" };
+    static const std::vector<std::string> vector_values = { "2", "3", "4", "8",
+                                                            "16" };
     for (auto vector_type : vector_types)
     {
         for (auto vector_value : vector_values)
@@ -784,15 +785,6 @@ static int run_all_tests(cl_context context, cl_device_id deviceID)
 {
 
     int failed_scalar_tests = run_scalar_vector_tests(context, deviceID);
-
-    int failed_image_tests = 0;
-    if (checkForImageSupport(deviceID) == 0)
-    {
-        failed_image_tests = run_image_tests(context, deviceID);
-    }
-
-    int failed_boundary_tests = run_boundary_tests(context, deviceID);
-
     if (failed_scalar_tests == 0)
     {
         log_info("All Data Type Tests Passed\n");
@@ -801,15 +793,22 @@ static int run_all_tests(cl_context context, cl_device_id deviceID)
     {
         log_error("%d Data Type Test(s) Failed\n", failed_scalar_tests);
     }
-    if (failed_image_tests == 0)
+
+    int failed_image_tests = 0;
+    if (checkForImageSupport(deviceID) == 0)
     {
-        log_info("All Image Tests Passed\n");
-    }
-    else
-    {
-        log_error("%d Image Test(s) Failed\n", failed_image_tests);
+        failed_image_tests = run_image_tests(context, deviceID);
+        if (failed_image_tests == 0)
+        {
+            log_info("All Image Tests Passed\n");
+        }
+        else
+        {
+            log_error("%d Image Test(s) Failed\n", failed_image_tests);
+        }
     }
 
+    int failed_boundary_tests = run_boundary_tests(context, deviceID);
     if (failed_boundary_tests == 0)
     {
         log_info("All Edge Case Tests Passed\n");
