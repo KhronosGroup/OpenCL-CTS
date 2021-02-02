@@ -134,6 +134,11 @@ typedef struct
     float p[4];
 } FloatPixel;
 
+void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
+                                        const char *destPixel,
+                                        image_descriptor *imageInfo, size_t y,
+                                        size_t thirdDim);
+
 void get_max_sizes(size_t *numberOfSizes, const int maxNumberOfSizes,
                    size_t sizes[][3], size_t maxWidth, size_t maxHeight,
                    size_t maxDepth, size_t maxArraySize,
