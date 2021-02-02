@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017, 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
 //
 #include "test_common.h"
 #include <float.h>
-
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.
@@ -78,7 +75,6 @@ const char *float2DArrayUnnormalizedCoordKernelSource =
 
 static const char *samplerKernelArg = " sampler_t imageSampler,";
 
-extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo, int x, int y, int z, float *outData );
 template <class T> int determine_validation_error_offset_2D_array( void *imagePtr, image_descriptor *imageInfo, image_sampler_data *imageSampler,
                                                          T *resultPtr, T * expected, float error,
                                                          float x, float y, float z, float xAddressOffset, float yAddressOffset, float zAddressOffset, size_t j, int &numTries, int &numClamped, bool printAsFloat, int lod )

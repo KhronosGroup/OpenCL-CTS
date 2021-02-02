@@ -105,23 +105,41 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
 
     if ( *error != CL_SUCCESS )
     {
+        long long unsigned imageSize = get_image_size_mb(imageInfo);
         switch (imageInfo->type)
         {
             case CL_MEM_OBJECT_IMAGE1D:
-                log_error( "ERROR: Unable to create 1D image of size %d (%s)", (int)imageInfo->width, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 1D image of size %d (%llu "
+                          "MB):(%s)",
+                          (int)imageInfo->width, imageSize,
+                          IGetErrorString(*error));
                 break;
             case CL_MEM_OBJECT_IMAGE2D:
-                log_error( "ERROR: Unable to create 2D image of size %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->height, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 2D image of size %d x %d "
+                          "(%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->height,
+                          imageSize, IGetErrorString(*error));
                 break;
             case CL_MEM_OBJECT_IMAGE3D:
-                log_error( "ERROR: Unable to create 3D image of size %d x %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->depth, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 3D image of size %d x %d x "
+                          "%d (%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->height,
+                          (int)imageInfo->depth, imageSize,
+                          IGetErrorString(*error));
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                log_error( "ERROR: Unable to create 1D image array of size %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->arraySize, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 1D image array of size %d x "
+                          "%d (%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->arraySize,
+                          imageSize, IGetErrorString(*error));
                 break;
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                log_error( "ERROR: Unable to create 2D image array of size %d x %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->arraySize, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 2D image array of size %d x "
+                          "%d x %d (%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->height,
+                          (int)imageInfo->arraySize, imageSize,
+                          IGetErrorString(*error));
                 break;
         }
         log_error("ERROR: and %llu mip levels\n", (unsigned long long) imageInfo->num_mip_levels);
@@ -291,24 +309,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     }
     else
     {
-        switch (srcImageInfo->type)
-        {
-            case CL_MEM_OBJECT_IMAGE1D:
-                srcBytes = srcImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D:
-                srcBytes = srcImageInfo->height * srcImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE3D:
-                srcBytes = srcImageInfo->depth * srcImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                srcBytes = srcImageInfo->arraySize * srcImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                srcBytes = srcImageInfo->arraySize * srcImageInfo->slicePitch;
-                break;
-        }
+        srcBytes = get_image_size(srcImageInfo);
     }
 
     if (srcBytes > srcData.getSize())
@@ -344,24 +345,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     }
     else
     {
-        switch (dstImageInfo->type)
-        {
-            case CL_MEM_OBJECT_IMAGE1D:
-                destImageSize = dstImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D:
-                destImageSize = dstImageInfo->height * dstImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE3D:
-                destImageSize = dstImageInfo->depth * dstImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                destImageSize = dstImageInfo->arraySize * dstImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                destImageSize = dstImageInfo->arraySize * dstImageInfo->slicePitch;
-                break;
-        }
+        destImageSize = get_image_size(dstImageInfo);
     }
 
     if (destImageSize > dstData.getSize())
@@ -373,7 +357,11 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
             log_error( "ERROR: Unable to malloc %lu bytes for dstData\n", destImageSize );
             return -1;
         }
+    }
 
+    if (destImageSize > dstHost.getSize())
+    {
+        dstHost.reset(NULL);
         dstHost.reset(malloc(destImageSize),NULL,0,destImageSize);
         if (dstHost == NULL) {
             dstData.reset(NULL);
@@ -629,6 +617,15 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     if (error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to unmap image after verify: %s\n", IGetErrorString( error ) );
+        return error;
+    }
+
+    // Ensure the unmap call completes.
+    error = clFinish(queue);
+    if (error != CL_SUCCESS)
+    {
+        log_error("ERROR: clFinish() failed to return CL_SUCCESS: %s\n",
+                  IGetErrorString(error));
         return error;
     }
 

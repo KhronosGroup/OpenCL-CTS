@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017, 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,10 +22,6 @@
     #include <sys/signal.h>
     #include <setjmp.h>
 #endif
-
-extern uint64_t gRoundingStartValue;
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
 
 const char *read1DKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_t input,%s __global float *xOffsets, __global %s4 *results %s)\n"
@@ -55,8 +51,6 @@ const char *float1DKernelSource =
 
 static const char *samplerKernelArg = " sampler_t imageSampler,";
 
-extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
-                            int x, int y, int z, float *outData );
 template <class T> int determine_validation_error_1D( void *imagePtr, image_descriptor *imageInfo, image_sampler_data *imageSampler,
                                                 T *resultPtr, T * expected, float error,
                                 float x, float xAddressOffset, size_t j, int &numTries, int &numClamped, bool printAsFloat, int lod )

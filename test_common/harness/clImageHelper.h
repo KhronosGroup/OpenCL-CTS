@@ -37,6 +37,11 @@ static inline cl_mem create_image_2d(cl_context context, cl_mem_flags flags,
 {
     cl_mem mImage = NULL;
 
+    if (!(flags & (CL_MEM_USE_HOST_PTR | CL_MEM_COPY_HOST_PTR)))
+    {
+        host_ptr = NULL;
+    }
+
 #ifdef CL_VERSION_1_2
     cl_image_desc image_desc_dest;
     image_desc_dest.image_type = CL_MEM_OBJECT_IMAGE2D;
@@ -119,6 +124,11 @@ static inline cl_mem create_image_3d(cl_context context, cl_mem_flags flags,
 {
     cl_mem mImage;
 
+    if (!(flags & (CL_MEM_USE_HOST_PTR | CL_MEM_COPY_HOST_PTR)))
+    {
+        host_ptr = NULL;
+    }
+
 #ifdef CL_VERSION_1_2
     cl_image_desc image_desc;
     image_desc.image_type = CL_MEM_OBJECT_IMAGE3D;
@@ -166,6 +176,11 @@ create_image_2d_array(cl_context context, cl_mem_flags flags,
 {
     cl_mem mImage;
 
+    if (!(flags & (CL_MEM_USE_HOST_PTR | CL_MEM_COPY_HOST_PTR)))
+    {
+        host_ptr = NULL;
+    }
+
     cl_image_desc image_desc;
     image_desc.image_type = CL_MEM_OBJECT_IMAGE2D_ARRAY;
     image_desc.image_width = image_width;
@@ -195,6 +210,11 @@ static inline cl_mem create_image_1d_array(
     size_t image_slice_pitch, void *host_ptr, cl_int *errcode_ret)
 {
     cl_mem mImage;
+
+    if (!(flags & (CL_MEM_USE_HOST_PTR | CL_MEM_COPY_HOST_PTR)))
+    {
+        host_ptr = NULL;
+    }
 
     cl_image_desc image_desc;
     image_desc.image_type = CL_MEM_OBJECT_IMAGE1D_ARRAY;
@@ -226,6 +246,11 @@ static inline cl_mem create_image_1d(cl_context context, cl_mem_flags flags,
                                      cl_int *errcode_ret)
 {
     cl_mem mImage;
+
+    if (!(flags & (CL_MEM_USE_HOST_PTR | CL_MEM_COPY_HOST_PTR)))
+    {
+        host_ptr = NULL;
+    }
 
     cl_image_desc image_desc;
     image_desc.image_type =

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017, 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,9 +23,6 @@
 #endif
 
 extern bool gTestImage2DFromBuffer;
-extern uint64_t gRoundingStartValue;
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.
@@ -75,8 +72,6 @@ static const char *lodOffsetSource =
 static const char *offsetSource =
 "   int offset = tidY*get_image_width(input) + tidX;\n";
 
-extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
-                            int x, int y, int z, float *outData );
 template <class T> int determine_validation_error( void *imagePtr, image_descriptor *imageInfo, image_sampler_data *imageSampler,
                                                 T *resultPtr, T * expected, float error,
                                 float x, float y, float xAddressOffset, float yAddressOffset, size_t j, int &numTries, int &numClamped, bool printAsFloat, int lod = 0 )

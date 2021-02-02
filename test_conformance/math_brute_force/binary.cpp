@@ -24,10 +24,6 @@ int TestFunc_Float_Float_Float_nextafter(const Func *f, MTdata,
                                          bool relaxedMode);
 int TestFunc_Double_Double_Double_nextafter(const Func *f, MTdata,
                                             bool relaxedMode);
-int TestFunc_Float_Float_Float_common(const Func *f, MTdata, int isNextafter,
-                                      bool relaxedMode);
-int TestFunc_Double_Double_Double_common(const Func *f, MTdata, int isNextafter,
-                                         bool relaxedMode);
 
 const float twoToMinus126 = MAKE_HEX_FLOAT(0x1p-126f, 1, -126);
 const double twoToMinus1022 = MAKE_HEX_DOUBLE(0x1p-1022, 1, -1022);
@@ -40,8 +36,6 @@ extern const vtbl _binary_nextafter = {
     TestFunc_Double_Double_Double_nextafter
 };
 
-static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
-                       cl_kernel *k, cl_program *p, bool relaxedMode);
 
 static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                        cl_kernel *k, cl_program *p, bool relaxedMode)
@@ -331,8 +325,6 @@ typedef struct BuildKernelInfo
 } BuildKernelInfo;
 
 static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                  void *p);
-static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
                                   void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
@@ -341,8 +333,6 @@ static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
                        info->kernels[i], info->programs + i, info->relaxedMode);
 }
 
-static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                   void *p);
 static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
                                    void *p)
 {
@@ -394,8 +384,8 @@ typedef struct TestInfo
 
 static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *p);
 
-int TestFunc_Float_Float_Float_common(const Func *f, MTdata d, int isNextafter,
-                                      bool relaxedMode)
+static int TestFunc_Float_Float_Float_common(const Func *f, MTdata d,
+                                             int isNextafter, bool relaxedMode)
 {
     TestInfo test_info;
     cl_int error;
@@ -1336,8 +1326,9 @@ static size_t specialValuesDoubleCount =
 
 static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *p);
 
-int TestFunc_Double_Double_Double_common(const Func *f, MTdata d,
-                                         int isNextafter, bool relaxedMode)
+static int TestFunc_Double_Double_Double_common(const Func *f, MTdata d,
+                                                int isNextafter,
+                                                bool relaxedMode)
 {
     TestInfo test_info;
     cl_int error;

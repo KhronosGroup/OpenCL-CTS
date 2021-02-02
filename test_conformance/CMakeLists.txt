@@ -58,7 +58,10 @@ add_subdirectory( spir )
 
 file(GLOB CSV_FILES "opencl_conformance_tests_*.csv")
 
-set(PY_FILES run_conformance.py)
+set(PY_FILES
+    generate_spirv_offline.py
+    run_conformance.py
+)
 
 # Copy .csv files
 foreach(FILE ${CSV_FILES})
