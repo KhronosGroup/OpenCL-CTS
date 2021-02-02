@@ -86,3 +86,15 @@ std::string get_device_name(cl_device_id device)
 {
     return get_device_info_string(device, CL_DEVICE_NAME);
 }
+
+size_t get_max_param_size(cl_device_id device)
+{
+    size_t ret(0);
+    if (clGetDeviceInfo(device, CL_DEVICE_MAX_PARAMETER_SIZE, sizeof(ret), &ret,
+                        nullptr)
+        != CL_SUCCESS)
+    {
+        throw std::runtime_error("clGetDeviceInfo failed\n");
+    }
+    return ret;
+}

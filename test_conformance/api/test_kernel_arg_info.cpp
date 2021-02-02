@@ -28,7 +28,7 @@ static constexpr char KERNEL_ARGUMENT_NAME[] = "argument";
 static constexpr size_t KERNEL_ARGUMENT_NAME_LENGTH =
     sizeof(KERNEL_ARGUMENT_NAME) + 1;
 static constexpr int SINGLE_KERNEL_ARG_NUMBER = 0;
-static constexpr int MAX_NUMBER_OF_KERNEL_ARGS = 100;
+static constexpr int MAX_NUMBER_OF_KERNEL_ARGS = 128;
 
 static const std::vector<cl_kernel_arg_address_qualifier> address_qualifiers = {
     CL_KERNEL_ARG_ADDRESS_GLOBAL, CL_KERNEL_ARG_ADDRESS_LOCAL,
@@ -282,7 +282,7 @@ static bool device_supports_pipes(cl_device_id deviceID)
     cl_int err =
         clGetDeviceInfo(deviceID, CL_DEVICE_PIPE_MAX_PACKET_SIZE,
                         sizeof(max_packet_size), &max_packet_size, nullptr);
-    ASSERT_SUCCESS(err, "clGetDeviceInfo");
+    test_error_ret(err, "clGetDeviceInfo", false);
     if ((max_packet_size == 0) && (version >= Version(3, 0)))
     {
         return false;
@@ -484,38 +484,102 @@ compare_kernel_with_expected(cl_context context, cl_device_id deviceID,
     cl_int err = create_single_kernel_helper_with_build_options(
         context, &program, &kernel, 1, &kernel_src, "get_kernel_arg_info",
         get_build_options(deviceID).c_str());
-    ASSERT_SUCCESS(err, "create_single_kernel_helper_with_build_options");
+    test_error(err, "create_single_kernel_helper_with_build_options");
     for (int i = 0; i < expected_args.size(); ++i)
     {
         KernelArgInfo actual;
         err = clGetKernelArgInfo(kernel, i, CL_KERNEL_ARG_ADDRESS_QUALIFIER,
                                  sizeof(actual.address_qualifier),
                                  &(actual.address_qualifier), nullptr);
-        ASSERT_SUCCESS(err, "clGetKernelArgInfo");
+        test_error(err, "clGetKernelArgInfo");
 
         err = clGetKernelArgInfo(kernel, i, CL_KERNEL_ARG_ACCESS_QUALIFIER,
                                  sizeof(actual.access_qualifier),
                                  &(actual.access_qualifier), nullptr);
-        ASSERT_SUCCESS(err, "clGetKernelArgInfo");
+        test_error(err, "clGetKernelArgInfo");
 
         err = clGetKernelArgInfo(kernel, i, CL_KERNEL_ARG_TYPE_QUALIFIER,
                                  sizeof(actual.type_qualifier),
                                  &(actual.type_qualifier), nullptr);
-        ASSERT_SUCCESS(err, "clGetKernelArgInfo");
+        test_error(err, "clGetKernelArgInfo");
 
         err = clGetKernelArgInfo(kernel, i, CL_KERNEL_ARG_TYPE_NAME,
                                  sizeof(actual.arg_type), &(actual.arg_type),
                                  nullptr);
-        ASSERT_SUCCESS(err, "clGetKernelArgInfo");
+        test_error(err, "clGetKernelArgInfo");
 
         err = clGetKernelArgInfo(kernel, i, CL_KERNEL_ARG_NAME,
                                  sizeof(actual.arg_name), &(actual.arg_name),
                                  nullptr);
-        ASSERT_SUCCESS(err, "clGetKernelArgInfo");
+        test_error(err, "clGetKernelArgInfo");
 
         failed_tests += compare_expected_actual(expected_args[i], actual);
     }
     return failed_tests;
+}
+
+size_t get_param_size(const std::string& arg_type, cl_device_id deviceID)
+{
+    if (arg_type.find("*") != std::string::npos)
+    {
+        cl_uint device_address_bits = 0;
+        cl_int err = clGetDeviceInfo(deviceID, CL_DEVICE_ADDRESS_BITS,
+                                     sizeof(device_address_bits),
+                                     &device_address_bits, NULL);
+        return (device_address_bits / 8);
+    }
+
+    size_t ret(0);
+    if (arg_type.find("char") != std::string::npos)
+    {
+        ret += sizeof(cl_char);
+    }
+    if (arg_type.find("short") != std::string::npos)
+    {
+        ret += sizeof(cl_short);
+    }
+    if (arg_type.find("half") != std::string::npos)
+    {
+        ret += sizeof(cl_half);
+    }
+    if (arg_type.find("int") != std::string::npos)
+    {
+        ret += sizeof(cl_int);
+    }
+    if (arg_type.find("long") != std::string::npos)
+    {
+        ret += sizeof(cl_long);
+    }
+    if (arg_type.find("float") != std::string::npos)
+    {
+        ret += sizeof(cl_float);
+    }
+    if (arg_type.find("double") != std::string::npos)
+    {
+        ret += sizeof(cl_double);
+    }
+    if (arg_type.back() == '2')
+    {
+        ret *= 2;
+    }
+    if (arg_type.back() == '3')
+    {
+        ret *= 3;
+    }
+    if (arg_type.back() == '4')
+    {
+        ret *= 4;
+    }
+    if (arg_type.back() == '8')
+    {
+        ret *= 8;
+    }
+    // If the last character is a 6 it represents a vector of 16
+    if (arg_type.back() == '6')
+    {
+        ret *= 16;
+    }
+    return ret;
 }
 
 static int run_scalar_vector_tests(cl_context context, cl_device_id deviceID)
@@ -534,6 +598,8 @@ static int run_scalar_vector_tests(cl_context context, cl_device_id deviceID)
     };
 
     std::vector<KernelArgInfo> all_args, expected_args;
+    size_t max_param_size = get_max_param_size(deviceID);
+    size_t total_param_size(0);
     for (auto address_qualifier : address_qualifiers)
     {
         bool is_private = (address_qualifier == CL_KERNEL_ARG_ADDRESS_PRIVATE);
@@ -594,17 +660,9 @@ static int run_scalar_vector_tests(cl_context context, cl_device_id deviceID)
                     {
                         arg_type += "*";
                     }
-
-                    KernelArgInfo kernel_argument(
-                        address_qualifier, access_qualifier, type_qualifier,
-                        arg_type, all_args.size());
-
-                    expected_args.push_back(
-                        create_expected_arg_info(kernel_argument, is_pointer));
-
-                    all_args.push_back(kernel_argument);
-
-                    if (all_args.size() == MAX_NUMBER_OF_KERNEL_ARGS)
+                    size_t param_size = get_param_size(arg_type, deviceID);
+                    if (param_size + total_param_size >= max_param_size
+                        || all_args.size() == MAX_NUMBER_OF_KERNEL_ARGS)
                     {
                         const std::string kernel_src =
                             generate_kernel(all_args);
@@ -613,7 +671,28 @@ static int run_scalar_vector_tests(cl_context context, cl_device_id deviceID)
                             expected_args);
                         all_args.clear();
                         expected_args.clear();
+                        total_param_size = 0;
                     }
+                    total_param_size += param_size;
+
+                    KernelArgInfo kernel_argument(
+                        address_qualifier, access_qualifier, type_qualifier,
+                        arg_type, all_args.size());
+
+
+                    /* The OpenCL function shortens "unsigned" to
+                     * "u" so we need to check for "u<type>" rather
+                     * than "unsigned <type>" */
+                    if (arg_type.find("unsigned ") != std::string::npos)
+                    {
+                        static const size_t len = strlen("unsigned ");
+                        arg_type.replace(0, len, "u");
+                    }
+
+                    expected_args.push_back(
+                        create_expected_arg_info(kernel_argument, is_pointer));
+
+                    all_args.push_back(kernel_argument);
                 }
             }
         }
@@ -698,32 +777,31 @@ static int test_null_param(cl_context context, cl_device_id deviceID,
     cl_int err = create_single_kernel_helper_with_build_options(
         context, &program, &kernel, 1, &kernel_src, "get_kernel_arg_info",
         get_build_options(deviceID).c_str());
-    ASSERT_SUCCESS(err, "create_single_kernel_helper_with_build_options");
+    test_error_ret(err, "create_single_kernel_helper_with_build_options",
+                   TEST_FAIL);
 
     err = clGetKernelArgInfo(kernel, SINGLE_KERNEL_ARG_NUMBER,
                              CL_KERNEL_ARG_ADDRESS_QUALIFIER, 0, nullptr,
                              nullptr);
-    ASSERT_SUCCESS(err, "clGetKernelArgInfo");
+    test_error_ret(err, "clGetKernelArgInfo", TEST_FAIL);
 
     err =
         clGetKernelArgInfo(kernel, SINGLE_KERNEL_ARG_NUMBER,
                            CL_KERNEL_ARG_ACCESS_QUALIFIER, 0, nullptr, nullptr);
-    ASSERT_SUCCESS(err, "clGetKernelArgInfo");
+    test_error_ret(err, "clGetKernelArgInfo", TEST_FAIL);
 
     err = clGetKernelArgInfo(kernel, SINGLE_KERNEL_ARG_NUMBER,
                              CL_KERNEL_ARG_TYPE_QUALIFIER, 0, nullptr, nullptr);
-    ASSERT_SUCCESS(err, "clGetKernelArgInfo");
+    test_error_ret(err, "clGetKernelArgInfo", TEST_FAIL);
 
     err = clGetKernelArgInfo(kernel, SINGLE_KERNEL_ARG_NUMBER,
                              CL_KERNEL_ARG_TYPE_NAME, 0, nullptr, nullptr);
-    ASSERT_SUCCESS(err, "clGetKernelArgInfo");
+    test_error_ret(err, "clGetKernelArgInfo", TEST_FAIL);
 
     err = clGetKernelArgInfo(kernel, SINGLE_KERNEL_ARG_NUMBER,
                              CL_KERNEL_ARG_NAME, 0, nullptr, nullptr);
-    ASSERT_SUCCESS(err, "clGetKernelArgInfo");
+    test_error_ret(err, "clGetKernelArgInfo", TEST_FAIL);
 
-    /* If any of the ASSERT_SUCCESS fail then it will automatically return from
-     * the function with the error code */
     return TEST_PASS;
 }
 
@@ -742,12 +820,13 @@ static int test_arg_name_size(cl_context context, cl_device_id deviceID,
         context, &program, &kernel, 1, &kernel_src, "get_kernel_arg_info",
         get_build_options(deviceID).c_str());
 
-    ASSERT_SUCCESS(err, "create_single_kernel_helper_with_build_options");
+    test_error_ret(err, "create_single_kernel_helper_with_build_options",
+                   TEST_FAIL);
 
     err =
         clGetKernelArgInfo(kernel, SINGLE_KERNEL_ARG_NUMBER, CL_KERNEL_ARG_NAME,
                            sizeof(arg_return), &arg_return, &size);
-    ASSERT_SUCCESS(err, "clGetKernelArgInfo");
+    test_error_ret(err, "clGetKernelArgInfo", TEST_FAIL);
     if (size == sizeof(KERNEL_ARGUMENT_NAME) + 1)
     {
         return TEST_PASS;
@@ -824,8 +903,6 @@ static int run_all_tests(cl_context context, cl_device_id deviceID)
 int test_get_kernel_arg_info(cl_device_id deviceID, cl_context context,
                              cl_command_queue queue, int num_elements)
 {
-
-
     int failed_tests = run_all_tests(context, deviceID);
     if (failed_tests != 0)
     {
