@@ -178,21 +178,6 @@ extern int gHasLong; // This is set to 1 if the device suppots long and ulong
                      // types in OpenCL C.
 extern bool gCoreILProgram;
 
-#define negative_test(func, expected, msg, ...)                                \
-    (TEST_FAIL                                                                 \
-     == run_negative_test(func, expected, msg, __FILE__, __LINE__,             \
-                          __VA_ARGS__))
-
-template <typename Func, typename Error, typename... Args>
-static test_status run_negative_test(Func function, Error expected,
-                                     const char *msg, const char *file,
-                                     unsigned int line, Args... args)
-{
-    cl_int err = function(args...);
-    test_failure_error_ret_file_line(err, expected, msg, TEST_FAIL, file, line);
-    return TEST_PASS;
-}
-
 extern cl_platform_id getPlatformFromDevice(cl_device_id deviceID);
 
 #if !defined(__APPLE__)
