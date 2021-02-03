@@ -94,11 +94,17 @@ __kernel void test_vector_swizzle_xyzw(TYPE value, __global TYPE* dst) {
     int index = 0;
 
     // lvalue swizzles
-    dst[index++].x = value.x;
-    dst[index++].y = value.x;
-    dst[index++].z = value.x;
-    dst[index++].xyz = value;
-    dst[index++].zyx = value;
+    TYPE t;
+    t = dst[index]; t.x = value.x;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.y = value.x;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.z = value.x;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.xyz = value;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.zyx = value;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
 
     // rvalue swizzles
     vstore3(value.x, 0, (__global BASETYPE*)(dst + index++));
@@ -114,11 +120,17 @@ __kernel void test_vector_swizzle_rgba(TYPE value, __global TYPE* dst) {
     int index = 0;
 
     // lvalue swizzles
-    dst[index++].r = value.r;
-    dst[index++].g = value.r;
-    dst[index++].b = value.r;
-    dst[index++].rgb = value;
-    dst[index++].bgr = value;
+    TYPE t;
+    t = dst[index]; t.r = value.r;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.g = value.r;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.b = value.r;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.rgb = value;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.bgr = value;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
 
     // rvalue swizzles
     vstore3(value.r, 0, (__global BASETYPE*)(dst + index++));
@@ -134,11 +146,17 @@ __kernel void test_vector_swizzle_sN(TYPE value, __global TYPE* dst) {
     int index = 0;
 
     // lvalue swizzles
-    dst[index++].s0 = value.s0;
-    dst[index++].s1 = value.s0;
-    dst[index++].s2 = value.s0;
-    dst[index++].s012 = value;
-    dst[index++].s210 = value;
+    TYPE t;
+    t = dst[index]; t.s0 = value.s0;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.s1 = value.s0;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.s2 = value.s0;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.s012 = value;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
+    t = dst[index]; t.s210 = value;
+    vstore3(t, 0, (__global BASETYPE*)(dst + index++));
 
     // rvalue swizzles
     vstore3(value.s0, 0, (__global BASETYPE*)(dst + index++));
