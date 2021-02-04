@@ -23,28 +23,28 @@
 
 #include "procs.h"
 
-const char *kernel_code =
-"__kernel void test_kernel(\n"
-"char%s c, uchar%s uc, short%s s, ushort%s us, int%s i, uint%s ui, float%s f,\n"
-"__global float%s *result)\n"
-"{\n"
-"  result[0] = %s(c);\n"
-"  result[1] = %s(uc);\n"
-"  result[2] = %s(s);\n"
-"  result[3] = %s(us);\n"
-"  result[4] = %s(i);\n"
-"  result[5] = %s(ui);\n"
-"  result[6] = f;\n"
-"}\n";
+const char *kernel_code = R"(
+__kernel void test_kernel(
+char%s c, uchar%s uc, short%s s, ushort%s us, int%s i, uint%s ui, float%s f,
+__global float%s *result)
+{
+    result[0] = %s(c);
+    result[1] = %s(uc);
+    result[2] = %s(s);
+    result[3] = %s(us);
+    result[4] = %s(i);
+    result[5] = %s(ui);
+    result[6] = f;
+})";
 
-const char *kernel_code_long =
-"__kernel void test_kernel_long(\n"
-"long%s l, ulong%s ul,\n"
-"__global float%s *result)\n"
-"{\n"
-"  result[0] = %s(l);\n"
-"  result[1] = %s(ul);\n"
-"}\n";
+const char *kernel_code_long = R"(
+__kernel void test_kernel_long(
+long%s l, ulong%s ul,
+__global float%s *result)
+{
+    result[0] = %s(l);
+    result[1] = %s(ul);
+})";
 
 int test_parameter_types_long(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
