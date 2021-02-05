@@ -1670,8 +1670,7 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context, cl_co
     size_t    threads[1], localThreads[1];
     cl_int *localData, *resultData;
     cl_ulong maxSize, kernelLocalUsage, min_max_local_mem_size;
-    cl_char buffer[ 4098 ];
-    size_t length;
+    Version device_version;
     int i;
     int err = 0;
     MTdata d;
@@ -1680,31 +1679,33 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context, cl_co
     error = clGetDeviceInfo( deviceID, CL_DEVICE_LOCAL_MEM_SIZE, sizeof( maxSize ), &maxSize, 0 );
     test_error( error, "Unable to get max local buffer size" );
 
-    // Device version should fit the regex "OpenCL [0-9]+\.[0-9]+ *.*"
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_VERSION, sizeof( buffer ), buffer, &length );
-    test_error( error, "Unable to get device version string" );
-    if (!gIsEmbedded)
+    try
     {
-        if( memcmp( buffer, "OpenCL 2.0", strlen( "OpenCL 2.0" ) ) == 0 )
-            min_max_local_mem_size = 16L * 1024L;
-        else if( memcmp( buffer, "OpenCL 2.1", strlen( "OpenCL 2.1" ) ) != 0 )
-            min_max_local_mem_size = 16L * 1024L;
-        else if( memcmp( buffer, "OpenCL 1.2", strlen( "OpenCL 1.2" ) ) != 0 )
-            min_max_local_mem_size = 16L * 1024L;
-        else if( memcmp( buffer, "OpenCL 1.1", strlen( "OpenCL 1.1" ) ) != 0 )
-            min_max_local_mem_size = 16L * 1024L;
-        else if ( memcmp( buffer, "OpenCL 1.0", strlen( "OpenCL 1.0" ) ) != 0 )
-            min_max_local_mem_size = 32L * 1024L;
-        else
-        {
-            log_error( "ERROR: device version string does not match required format! (returned: %s)\n", (char *)buffer );
-            return -1;
-        }
+        device_version = get_device_cl_version(deviceID);
+    } catch (const std::runtime_error &e)
+    {
+        log_error("%s", e.what());
+        return -1;
     }
 
-    if( maxSize < (gIsEmbedded ? 1L * 1024L : min_max_local_mem_size) )
+    if (!gIsEmbedded)
     {
-        log_error( "ERROR: Reported local mem size less than required by OpenCL 1.1 (reported %dKb)\n", (int)( maxSize / 1024L ) );
+        if (device_version == Version(1, 0))
+            min_max_local_mem_size = 16L * 1024L;
+        else
+            min_max_local_mem_size = 32L * 1024L;
+    }
+    else
+    {
+        min_max_local_mem_size = 1L * 1024L;
+    }
+
+    if (maxSize < min_max_local_mem_size)
+    {
+        const std::string version_as_string = device_version.to_string();
+        log_error("ERROR: Reported local mem size less than required by OpenCL "
+                  "%s (reported %d KB)\n",
+                  version_as_string.c_str(), (int)(maxSize / 1024L));
         return -1;
     }
 
