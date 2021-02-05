@@ -1161,6 +1161,15 @@ test_status check_spirv_compilation_readiness(cl_device_id device)
     return TEST_PASS;
 }
 
+cl_platform_id getPlatformFromDevice(cl_device_id deviceID)
+{
+    cl_platform_id platform = nullptr;
+    cl_int err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform),
+                                 &platform, nullptr);
+    ASSERT_SUCCESS(err, "clGetDeviceInfo");
+    return platform;
+}
+
 void PrintArch(void)
 {
     vlog("sizeof( void*) = %ld\n", sizeof(void *));
