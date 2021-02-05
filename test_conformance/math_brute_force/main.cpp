@@ -140,7 +140,8 @@ int doTest(const char *name)
         const Func *const temp_func = functionList + i;
         if (strcmp(temp_func->name, name) == 0)
         {
-            if (i < gStartTestNumber || i > gEndTestNumber)
+            if ((gStartTestNumber != -1 && i < gStartTestNumber)
+                || i > gEndTestNumber)
             {
                 vlog("Skipping function #%d\n", i);
                 return 0;
@@ -844,10 +845,6 @@ int main(int argc, const char *argv[])
          "----------------------------------------\n");
 
     gMTdata = init_genrand(gRandomSeed);
-    if (gEndTestNumber == 0)
-    {
-        gEndTestNumber = functionListCount;
-    }
 
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
