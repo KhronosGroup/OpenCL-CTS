@@ -117,8 +117,17 @@ public:
 static std::string generate_argument(const KernelArgInfo& kernel_arg)
 {
     std::string ret;
-    std::string address_qualifier =
-        get_address_qualifier(kernel_arg.address_qualifier);
+
+    const bool is_image = strstr(kernel_arg.arg_type, "image")
+        || strstr(kernel_arg.arg_type, "sampler");
+    std::string address_qualifier = "";
+    // Image Objects are always allocated from the global address space so the
+    // qualifier should not be specified
+    if (!is_image)
+    {
+        address_qualifier = get_address_qualifier(kernel_arg.address_qualifier);
+    }
+
     std::string access_qualifier =
         get_access_qualifier(kernel_arg.access_qualifier);
     std::string type_qualifier_prefix =
@@ -564,7 +573,7 @@ size_t get_param_size(const std::string& arg_type, cl_device_id deviceID)
     }
     if (arg_type.back() == '3')
     {
-        ret *= 3;
+        ret *= 4;
     }
     if (arg_type.back() == '4')
     {
