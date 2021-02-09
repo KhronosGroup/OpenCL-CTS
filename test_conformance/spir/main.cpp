@@ -155,7 +155,8 @@ static void get_spir_version(cl_device_id device,
     {
         auto major = v[v.find('.') - 1];
         auto minor = v[v.find('.') + 1];
-        versions.push_back(Version{ major - '0', minor - '0' });
+        versions.push_back(
+            Version{ (cl_uint)(major - '0'), (cl_uint)(minor - '0') });
     }
 }
 
