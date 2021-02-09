@@ -14,6 +14,10 @@
 set(MODULE_NAME SPIRV_NEW)
 set(CMAKE_CXX_STANDARD 11)
 
+if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    add_cxx_flag_if_supported(-Wno-narrowing)
+endif()
+
 file(GLOB SPIRV_NEW_SOURCES "*.cpp")
 
 set(TEST_HARNESS_SOURCES

@@ -1011,8 +1011,15 @@ cl_long test_atomic_and_result_long( size_t size, cl_long *startRefValues, size_
 
 int test_atomic_and(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    TestFns set = { 0xffffffff, 0xffffffffffffffffLL, test_bitwise_num_results,
-        test_atomic_and_result_int, NULL, NULL, test_atomic_and_result_long, NULL, NULL };
+    TestFns set = { (int)0xffffffff,
+                    (long long)0xffffffffffffffffLL,
+                    test_bitwise_num_results,
+                    test_atomic_and_result_int,
+                    NULL,
+                    NULL,
+                    test_atomic_and_result_long,
+                    NULL,
+                    NULL };
 
     if( test_atomic_function_set( deviceID, context, queue, num_elements, atom_and_core, set, true, /*matchGroupSize*/ false, /*usingAtomicPrefix*/ false  ) != 0 )
         return -1;
