@@ -178,6 +178,8 @@ extern int gHasLong; // This is set to 1 if the device suppots long and ulong
                      // types in OpenCL C.
 extern bool gCoreILProgram;
 
+extern cl_platform_id getPlatformFromDevice(cl_device_id deviceID);
+
 #if !defined(__APPLE__)
 void memset_pattern4(void *, const void *, size_t);
 #endif

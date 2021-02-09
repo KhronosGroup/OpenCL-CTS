@@ -2,6 +2,7 @@ set(MODULE_NAME API)
 
 set(${MODULE_NAME}_SOURCES
          main.cpp
+         negative_platform.cpp
          test_api_consistency.cpp
          test_bool.cpp
          test_retain.cpp
