@@ -119,7 +119,6 @@ private:
   void showTestInfo ();
   size_t adjustLocalArraySize(size_t localArraySize);
   size_t adjustGlobalBufferSize(size_t globalBufferSize);
-  void adjustGlobalSize(size_t maxNumOfGlobalWorkItems);
 };
 
 // Class responsible for running subtest scenarios in test function

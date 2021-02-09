@@ -703,39 +703,47 @@ size_t TestNonUniformWorkGroup::adjustGlobalBufferSize(size_t globalBufferSize) 
   err = clGetDeviceInfo(_device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(deviceMaxAllocObjSize), &deviceMaxAllocObjSize, NULL);
   test_error(err, "clGetDeviceInfo failed");
 
-  size_t adjustedGlobalBufferSize = globalBufferSize;
-  if (deviceMaxAllocObjSize < globalBufferSize) {
-    adjustedGlobalBufferSize = deviceMaxAllocObjSize;
+  if (deviceMaxAllocObjSize >= globalBufferSize) return globalBufferSize;
+
+  // Adjust _GlobalSize and _numOfGlobalWorkItems as well in order to avoid
+  // out-of-bound access of global buffer in testBarriers.
+  size_t maxNumOfGlobalWorkItems = deviceMaxAllocObjSize / sizeof(cl_uint);
+  size_t oldNumOfGlobalWorkItems = _numOfGlobalWorkItems;
+  size_t oldGlobalSize[MAX_DIMS];
+  memcpy(oldGlobalSize, _globalSize, sizeof(_globalSize));
+  for (int i = (int)_dims - 1; i >= 0; --i)
+  {
+      size_t minGlobalSize = _localSize_IsNull ? 1 : _localSize[i];
+      while (_numOfGlobalWorkItems > maxNumOfGlobalWorkItems
+             && _globalSize[i] >= (2 * minGlobalSize))
+      {
+          _globalSize[i] /= 2;
+          _numOfGlobalWorkItems =
+              _globalSize[0] * _globalSize[1] * _globalSize[2];
+      }
+  }
+  // If _globalSize[0] is adjusted, make sure there is still non-uniform
+  // workgroup.
+  if (_globalSize[0] != oldGlobalSize[0])
+  {
+      if (_globalSize[0] % _localSize[0] == 0)
+      {
+          _globalSize[0]--;
+          _numOfGlobalWorkItems =
+              _globalSize[0] * _globalSize[1] * _globalSize[2];
+      }
   }
 
-  return adjustedGlobalBufferSize;
-}
+  size_t adjustedGlobalBufferSize = _numOfGlobalWorkItems * sizeof(cl_uint);
+  log_info("globalSize was adjusted from [%zu, %zu, %zu] to [%zu, %zu, %zu]\n",
+           oldGlobalSize[0], oldGlobalSize[1], oldGlobalSize[2], _globalSize[0],
+           _globalSize[1], _globalSize[2]);
+  log_info("numOfGlobalWorkItems was adjusted from %zu to %zu\n",
+           oldNumOfGlobalWorkItems, _numOfGlobalWorkItems);
+  log_info("globalBufferSize was adjusted from %zu to %zu\n", globalBufferSize,
+           adjustedGlobalBufferSize);
 
-void TestNonUniformWorkGroup::adjustGlobalSize(size_t maxNumOfGlobalWorkItems)
-{
-    size_t oldNumOfGlobalWorkItems = _numOfGlobalWorkItems;
-    size_t oldGlobalSize[MAX_DIMS];
-    memcpy(oldGlobalSize, _globalSize, sizeof(_globalSize));
-    // Adjusting _globalSize[1] and _globalSize[2] is enough.
-    // _globalSize[0] is unchanged because it controls non-uniform workgroup.
-    for (int i = (int)_dims - 1; i >= 1; --i)
-    {
-        while (_numOfGlobalWorkItems > maxNumOfGlobalWorkItems
-               && _globalSize[i] >= (2 * _localSize[i]))
-        {
-            _globalSize[i] /= 2;
-            _numOfGlobalWorkItems =
-                _globalSize[0] * _globalSize[1] * _globalSize[2];
-        }
-    }
-    assert(oldNumOfGlobalWorkItems != _numOfGlobalWorkItems
-           && "_numOfGlobalWorkItems should be adjusted");
-    log_info(
-        "globalSize was adjusted from [%zu, %zu, %zu] to [%zu, %zu, %zu]\n",
-        oldGlobalSize[0], oldGlobalSize[1], oldGlobalSize[2], _globalSize[0],
-        _globalSize[1], _globalSize[2]);
-    log_info("numOfGlobalWorkItems was adjusted from %zu to %zu\n",
-             oldNumOfGlobalWorkItems, _numOfGlobalWorkItems);
+  return adjustedGlobalBufferSize;
 }
 
 int TestNonUniformWorkGroup::runKernel () {
@@ -761,15 +769,6 @@ int TestNonUniformWorkGroup::runKernel () {
 
   size_t globalBufferSize =
       adjustGlobalBufferSize(_numOfGlobalWorkItems * sizeof(cl_uint));
-  if (globalBufferSize != _numOfGlobalWorkItems * sizeof(cl_uint))
-  {
-      // Adjust _globalSize and _numOfGlobalWorkItems accordingly if global
-      // buffer size is adjusted.
-      size_t maxNumOfGlobalWorkItems = globalBufferSize / sizeof(cl_uint);
-      adjustGlobalSize(maxNumOfGlobalWorkItems);
-      globalBufferSize = _numOfGlobalWorkItems * sizeof(cl_uint);
-      log_info("globalBufferSize was adjusted to %zu\n", globalBufferSize);
-  }
   clMemWrapper testGlobalArray = clCreateBuffer(_context, CL_MEM_READ_WRITE, globalBufferSize, NULL, &err);
   test_error(err, "clCreateBuffer failed");
 
