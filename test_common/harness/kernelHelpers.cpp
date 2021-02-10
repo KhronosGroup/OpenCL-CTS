@@ -1639,7 +1639,7 @@ Version get_device_cl_c_version(cl_device_id device)
     auto major = opencl_c_version[opencl_c_version.find('.') - 1];
     auto minor = opencl_c_version[opencl_c_version.find('.') + 1];
 
-    return Version{ (uint)(major - '0'), (uint)(minor - '0') };
+    return Version{ (cl_uint)(major - '0'), (cl_uint)(minor - '0') };
 }
 
 Version get_device_latest_cl_c_version(cl_device_id device)

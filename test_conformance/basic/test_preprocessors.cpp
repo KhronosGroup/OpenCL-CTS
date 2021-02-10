@@ -217,7 +217,7 @@ int test_kernel_preprocessor_macros(cl_device_id deviceID, cl_context context, c
     // The OpenCL version reported by the macro reports the feature level supported by the compiler. Since
     // this doesn't directly match any property we can query, we just check to see if it's a sane value
     auto device_cl_version = get_device_cl_version(deviceID);
-    int device_cl_version_int = device_cl_version.to_int() * 10;
+    int device_cl_version_int = device_cl_version.to_uint() * 10;
     if ((results[2] < 100) || (results[2] > device_cl_version_int))
     {
         log_error("ERROR: Kernel preprocessor __OPENCL_VERSION__ does not make "
@@ -241,14 +241,16 @@ int test_kernel_preprocessor_macros(cl_device_id deviceID, cl_context context, c
     int cl_c_minor_version = (results[3] / 10) % 10;
     if ((results[3] < 100)
         || (!device_supports_cl_c_version(
-            deviceID, Version{ cl_c_major_version, cl_c_minor_version })))
+            deviceID,
+            Version{ (cl_uint)cl_c_major_version,
+                     (cl_uint)cl_c_minor_version })))
     {
         auto device_version = get_device_cl_c_version(deviceID);
         log_error(
             "ERROR: Kernel preprocessor __OPENCL_C_VERSION__ does not make "
             "sense w.r.t. device's version string! "
             "(preprocessor states %d, CL_DEVICE_OPENCL_C_VERSION is %d (%s))\n",
-            results[3], device_version.to_int() * 10,
+            results[3], device_version.to_uint() * 10,
             device_version.to_string().c_str());
         log_error("This means that CL_DEVICE_OPENCL_C_VERSION < "
                   "__OPENCL_C_VERSION__");
