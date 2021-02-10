@@ -527,8 +527,13 @@ compare_kernel_with_expected(cl_context context, cl_device_id deviceID,
     return failed_tests;
 }
 
-size_t get_param_size(const std::string& arg_type, cl_device_id deviceID)
+size_t get_param_size(const std::string& arg_type, cl_device_id deviceID,
+                      bool is_pipe)
 {
+    if (is_pipe)
+    {
+        return (sizeof(int*));
+    }
     if (arg_type.find("*") != std::string::npos)
     {
         cl_uint device_address_bits = 0;
@@ -669,7 +674,8 @@ static int run_scalar_vector_tests(cl_context context, cl_device_id deviceID)
                     {
                         arg_type += "*";
                     }
-                    size_t param_size = get_param_size(arg_type, deviceID);
+                    size_t param_size =
+                        get_param_size(arg_type, deviceID, is_pipe);
                     if (param_size + total_param_size >= max_param_size
                         || all_args.size() == MAX_NUMBER_OF_KERNEL_ARGS)
                     {
