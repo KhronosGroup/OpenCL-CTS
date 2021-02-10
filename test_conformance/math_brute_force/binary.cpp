@@ -25,9 +25,6 @@ int TestFunc_Float_Float_Float_nextafter(const Func *f, MTdata,
 int TestFunc_Double_Double_Double_nextafter(const Func *f, MTdata,
                                             bool relaxedMode);
 
-const float twoToMinus126 = MAKE_HEX_FLOAT(0x1p-126f, 1, -126);
-const double twoToMinus1022 = MAKE_HEX_DOUBLE(0x1p-1022, 1, -1022);
-
 extern const vtbl _binary = { "binary", TestFunc_Float_Float_Float,
                               TestFunc_Double_Double_Double };
 
@@ -36,6 +33,8 @@ extern const vtbl _binary_nextafter = {
     TestFunc_Double_Double_Double_nextafter
 };
 
+const float twoToMinus126 = MAKE_HEX_FLOAT(0x1p-126f, 1, -126);
+const double twoToMinus1022 = MAKE_HEX_DOUBLE(0x1p-1022, 1, -1022);
 
 static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                        cl_kernel *k, cl_program *p, bool relaxedMode)
@@ -76,7 +75,8 @@ static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
         "       size_t parity = i & 1;   // Figure out how many elements are "
         "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
         "buffer size \n"
-        "       float3 f0, f1;\n"
+        "       float3 f0;\n"
+        "       float3 f1;\n"
         "       switch( parity )\n"
         "       {\n"
         "           case 1:\n"
@@ -163,7 +163,8 @@ static int BuildKernelDouble(const char *name, int vectorSize,
         "       size_t parity = i & 1;   // Figure out how many elements are "
         "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
         "buffer size \n"
-        "       double3 d0, d1;\n"
+        "       double3 d0;\n"
+        "       double3 d1;\n"
         "       switch( parity )\n"
         "       {\n"
         "           case 1:\n"
@@ -206,6 +207,35 @@ static int BuildKernelDouble(const char *name, int vectorSize,
 
     return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p,
                        relaxedMode);
+}
+
+typedef struct BuildKernelInfo
+{
+    cl_uint offset; // the first vector size to build
+    cl_uint kernel_count;
+    cl_kernel **kernels;
+    cl_program *programs;
+    const char *nameInCode;
+    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
+} BuildKernelInfo;
+
+static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
+                                  void *p)
+{
+    BuildKernelInfo *info = (BuildKernelInfo *)p;
+    cl_uint i = info->offset + job_id;
+    return BuildKernel(info->nameInCode, i, info->kernel_count,
+                       info->kernels[i], info->programs + i, info->relaxedMode);
+}
+
+static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
+                                   void *p)
+{
+    BuildKernelInfo *info = (BuildKernelInfo *)p;
+    cl_uint i = info->offset + job_id;
+    return BuildKernelDouble(info->nameInCode, i, info->kernel_count,
+                             info->kernels[i], info->programs + i,
+                             info->relaxedMode);
 }
 
 // A table of more difficult cases to get right
@@ -311,37 +341,8 @@ static const float specialValuesFloat[] = {
     +0.0f
 };
 
-static size_t specialValuesFloatCount =
+static const size_t specialValuesFloatCount =
     sizeof(specialValuesFloat) / sizeof(specialValuesFloat[0]);
-
-typedef struct BuildKernelInfo
-{
-    cl_uint offset; // the first vector size to build
-    cl_uint kernel_count;
-    cl_kernel **kernels;
-    cl_program *programs;
-    const char *nameInCode;
-    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
-} BuildKernelInfo;
-
-static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                  void *p)
-{
-    BuildKernelInfo *info = (BuildKernelInfo *)p;
-    cl_uint i = info->offset + job_id;
-    return BuildKernel(info->nameInCode, i, info->kernel_count,
-                       info->kernels[i], info->programs + i, info->relaxedMode);
-}
-
-static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                   void *p)
-{
-    BuildKernelInfo *info = (BuildKernelInfo *)p;
-    cl_uint i = info->offset + job_id;
-    return BuildKernelDouble(info->nameInCode, i, info->kernel_count,
-                             info->kernels[i], info->programs + i,
-                             info->relaxedMode);
-}
 
 // Thread specific data for a worker thread
 typedef struct ThreadInfo
@@ -426,11 +427,11 @@ static int TestFunc_Float_Float_Float_common(const Func *f, MTdata d,
     test_info.ulps = gIsEmbedded ? f->float_embedded_ulps : f->float_ulps;
     test_info.ftz =
         f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
-
+    test_info.relaxedMode = relaxedMode;
     test_info.isFDim = 0 == strcmp("fdim", f->nameInCode);
     test_info.skipNanInf = test_info.isFDim && !gInfNanSupport;
     test_info.isNextafter = isNextafter;
-    test_info.relaxedMode = relaxedMode;
+
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
@@ -543,12 +544,11 @@ static int TestFunc_Float_Float_Float_common(const Func *f, MTdata d,
             vlog("passed");
     }
 
-
     if (gMeasureTimes)
     {
         // Init input arrays
-        uint32_t *p = (uint32_t *)gIn;
-        uint32_t *p2 = (uint32_t *)gIn2;
+        cl_uint *p = (cl_uint *)gIn;
+        cl_uint *p2 = (cl_uint *)gIn2;
         for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
         {
             p[j] = (genrand_int32(d) & ~0x40000000) | 0x20000000;
@@ -561,13 +561,13 @@ static int TestFunc_Float_Float_Float_common(const Func *f, MTdata d,
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn2, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
         }
-
 
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -633,7 +633,6 @@ static int TestFunc_Float_Float_Float_common(const Func *f, MTdata d,
         vlog("\t%8.2f @ {%a, %a}", maxError, maxErrorVal, maxErrorVal2);
     vlog("\n");
 
-
 exit:
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
@@ -684,22 +683,20 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     int skipNanInf = job->skipNanInf;
     int isNextafter = job->isNextafter;
     cl_uint *t = 0;
-    float *r = 0, *s = 0, *s2 = 0;
+    cl_float *r = 0;
+    cl_float *s = 0;
+    cl_float *s2 = 0;
     cl_int copysign_test = 0;
     RoundingMode oldRoundMode;
     int skipVerification = 0;
 
     if (relaxedMode)
     {
+        func = job->f->rfunc;
         if (strcmp(name, "pow") == 0 && gFastRelaxedDerived)
         {
-            func = job->f->rfunc;
             ulps = INFINITY;
             skipVerification = 1;
-        }
-        else
-        {
-            func = job->f->rfunc;
         }
     }
 
@@ -744,7 +741,8 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         {
             fp[j] = specialValuesFloat[x];
             fp2[j] = specialValuesFloat[y];
-            if (++x >= specialValuesFloatCount)
+            ++x;
+            if (x >= specialValuesFloatCount)
             {
                 x = 0;
                 y++;
@@ -1203,12 +1201,10 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         fflush(stdout);
     }
 
-
 exit:
     if (overflow) free(overflow);
     return error;
 }
-
 
 // A table of more difficult cases to get right
 static const double specialValuesDouble[] = {
@@ -1444,9 +1440,9 @@ static int TestFunc_Double_Double_Double_common(const Func *f, MTdata d,
             vlog_error("clCreateCommandQueue failed. (%d)\n", error);
             goto exit;
         }
+
         test_info.tinfo[i].d = init_genrand(genrand_int32(d));
     }
-
 
     // Init the kernels
     {
@@ -1460,6 +1456,7 @@ static int TestFunc_Double_Double_Double_common(const Func *f, MTdata d,
             goto exit;
     }
 
+    // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(TestDouble, test_info.jobCount, &test_info);
@@ -1500,13 +1497,13 @@ static int TestFunc_Double_Double_Double_common(const Func *f, MTdata d,
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn2, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
         }
-
 
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -1573,7 +1570,6 @@ static int TestFunc_Double_Double_Double_common(const Func *f, MTdata d,
         vlog("\t%8.2f @ {%a, %a}", maxError, maxErrorVal, maxErrorVal2);
     vlog("\n");
 
-
 exit:
     // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
@@ -1622,7 +1618,9 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
 
     int isNextafter = job->isNextafter;
     cl_ulong *t;
-    cl_double *r, *s, *s2;
+    cl_double *r;
+    cl_double *s;
+    cl_double *s2;
 
     Force64BitFPUPrecision();
 
@@ -1970,6 +1968,7 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
         }
         fflush(stdout);
     }
+
 exit:
     return error;
 }

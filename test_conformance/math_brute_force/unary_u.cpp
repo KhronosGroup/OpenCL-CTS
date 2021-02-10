@@ -33,13 +33,14 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
                         sizeNames[vectorSize],
                         "* out, __global uint",
                         sizeNames[vectorSize],
-                        "* in)\n"
+                        "* in )\n"
                         "{\n"
                         "   int i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
                         "( in[i] );\n"
                         "}\n" };
+
     const char *c3[] = {
         "__kernel void math_kernel",
         sizeNames[vectorSize],
@@ -112,7 +113,7 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
                         sizeNames[vectorSize],
                         "* out, __global ulong",
                         sizeNames[vectorSize],
-                        "* in)\n"
+                        "* in )\n"
                         "{\n"
                         "   int i = get_global_id(0);\n"
                         "   out[i] = ",
@@ -120,51 +121,53 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
                         "( in[i] );\n"
                         "}\n" };
 
-    const char *c3[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-                         "__kernel void math_kernel",
-                         sizeNames[vectorSize],
-                         "( __global double* out, __global ulong* in)\n"
-                         "{\n"
-                         "   size_t i = get_global_id(0);\n"
-                         "   if( i + 1 < get_global_size(0) )\n"
-                         "   {\n"
-                         "       ulong3 u0 = vload3( 0, in + 3 * i );\n"
-                         "       double3 f0 = ",
-                         name,
-                         "( u0 );\n"
-                         "       vstore3( f0, 0, out + 3*i );\n"
-                         "   }\n"
-                         "   else\n"
-                         "   {\n"
-                         "       size_t parity = i & 1;   // Figure out how "
-                         "many elements are left over after BUFFER_SIZE % "
-                         "(3*sizeof(float)). Assume power of two buffer size \n"
-                         "       ulong3 u0;\n"
-                         "       switch( parity )\n"
-                         "       {\n"
-                         "           case 1:\n"
-                         "               u0 = (ulong3)( in[3*i], "
-                         "0xdeaddeaddeaddeadUL, 0xdeaddeaddeaddeadUL ); \n"
-                         "               break;\n"
-                         "           case 0:\n"
-                         "               u0 = (ulong3)( in[3*i], in[3*i+1], "
-                         "0xdeaddeaddeaddeadUL ); \n"
-                         "               break;\n"
-                         "       }\n"
-                         "       double3 f0 = ",
-                         name,
-                         "( u0 );\n"
-                         "       switch( parity )\n"
-                         "       {\n"
-                         "           case 0:\n"
-                         "               out[3*i+1] = f0.y; \n"
-                         "               // fall through\n"
-                         "           case 1:\n"
-                         "               out[3*i] = f0.x; \n"
-                         "               break;\n"
-                         "       }\n"
-                         "   }\n"
-                         "}\n" };
+    const char *c3[] = {
+        "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
+        "__kernel void math_kernel",
+        sizeNames[vectorSize],
+        "( __global double* out, __global ulong* in                 )\n"
+        "{\n"
+        "   size_t i = get_global_id(0);\n"
+        "   if( i + 1 < get_global_size(0) )\n"
+        "   {\n"
+        "       ulong3 u0 = vload3( 0, in + 3 * i );\n"
+        "       double3 f0 = ",
+        name,
+        "( u0 );\n"
+        "       vstore3( f0, 0, out + 3*i );\n"
+        "   }\n"
+        "   else\n"
+        "   {\n"
+        "       size_t parity = i & 1;   // Figure out how many elements are "
+        "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
+        "buffer size \n"
+        "       ulong3 u0;\n"
+        "       switch( parity )\n"
+        "       {\n"
+        "           case 1:\n"
+        "               u0 = (ulong3)( in[3*i], 0xdeaddeaddeaddeadUL, "
+        "0xdeaddeaddeaddeadUL ); \n"
+        "               break;\n"
+        "           case 0:\n"
+        "               u0 = (ulong3)( in[3*i], in[3*i+1], "
+        "0xdeaddeaddeaddeadUL ); \n"
+        "               break;\n"
+        "       }\n"
+        "       double3 f0 = ",
+        name,
+        "( u0 );\n"
+        "       switch( parity )\n"
+        "       {\n"
+        "           case 0:\n"
+        "               out[3*i+1] = f0.y; \n"
+        "               // fall through\n"
+        "           case 1:\n"
+        "               out[3*i] = f0.x; \n"
+        "               break;\n"
+        "       }\n"
+        "   }\n"
+        "}\n"
+    };
 
     const char **kern = c;
     size_t kernSize = sizeof(c) / sizeof(c[0]);
@@ -174,7 +177,6 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
         kern = c3;
         kernSize = sizeof(c3) / sizeof(c3[0]);
     }
-
 
     char testName[32];
     snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
@@ -221,27 +223,28 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
     float maxErrorVal = 0.0f;
     size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
-
     uint64_t step = getTestStep(sizeof(float), bufferSize);
     int scale = (int)((1ULL << 32) / (16 * bufferSize / sizeof(double)) + 1);
     int isRangeLimited = 0;
-    float float_ulps;
     float half_sin_cos_tan_limit = 0;
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
+    float float_ulps;
     if (gIsEmbedded)
         float_ulps = f->float_embedded_ulps;
     else
         float_ulps = f->float_ulps;
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode, relaxedMode };
-    if ((error = ThreadPool_Do(BuildKernel_FloatFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
-        return error;
+    {
+        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                       f->nameInCode, relaxedMode };
+        if ((error = ThreadPool_Do(BuildKernel_FloatFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
+    }
 
     if (0 == strcmp(f->name, "half_sin") || 0 == strcmp(f->name, "half_cos"))
     {
@@ -317,7 +320,7 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
                      clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
                                             &localCount, NULL, 0, NULL, NULL)))
             {
-                vlog_error("FAILURE -- could not execute kernel\n");
+                vlog_error("FAILED -- could not execute kernel\n");
                 goto exit;
             }
         }
@@ -419,7 +422,6 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
         }
     }
 
-
     if (!gSkipCorrectnessTesting)
     {
         if (gWimpyMode)
@@ -477,7 +479,7 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
                                                     &localCount, NULL, 0, NULL,
                                                     NULL)))
                 {
-                    vlog_error("FAILURE -- could not execute kernel\n");
+                    vlog_error("FAILED -- could not execute kernel\n");
                     goto exit;
                 }
 
@@ -540,13 +542,13 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
     Force64BitFPUPrecision();
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode, relaxedMode };
-    if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
     {
-        return error;
+        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                       f->nameInCode, relaxedMode };
+        if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
     }
 
     for (i = 0; i < (1ULL << 32); i += step)
@@ -599,7 +601,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
                      clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
                                             &localCount, NULL, 0, NULL, NULL)))
             {
-                vlog_error("FAILURE -- could not execute kernel\n");
+                vlog_error("FAILED -- could not execute kernel\n");
                 goto exit;
             }
         }
@@ -626,7 +628,6 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
         }
 
         if (gSkipCorrectnessTesting) break;
-
 
         // Verify data
         uint64_t *t = (uint64_t *)gOut_Ref;
@@ -741,7 +742,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
                                                     &localCount, NULL, 0, NULL,
                                                     NULL)))
                 {
-                    vlog_error("FAILURE -- could not execute kernel\n");
+                    vlog_error("FAILED -- could not execute kernel\n");
                     goto exit;
                 }
 

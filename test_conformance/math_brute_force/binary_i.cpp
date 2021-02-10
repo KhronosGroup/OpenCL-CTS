@@ -15,8 +15,8 @@
 //
 #include "Utility.h"
 
-#include <string.h>
 #include <limits.h>
+#include <string.h>
 #include "FunctionList.h"
 
 int TestFunc_Float_Float_Int(const Func *f, MTdata, bool relaxedMode);
@@ -228,7 +228,6 @@ static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
                              info->relaxedMode);
 }
 
-
 // A table of more difficult cases to get right
 static const float specialValuesFloat[] = {
     -NAN,
@@ -331,9 +330,9 @@ static const float specialValuesFloat[] = {
     MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150),
     +0.0f
 };
-static size_t specialValuesFloatCount =
-    sizeof(specialValuesFloat) / sizeof(specialValuesFloat[0]);
 
+static const size_t specialValuesFloatCount =
+    sizeof(specialValuesFloat) / sizeof(specialValuesFloat[0]);
 
 static const int specialValuesInt[] = {
     0,           1,           2,          3,          126,        127,
@@ -484,8 +483,8 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
                 &region, &error);
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
-                vlog_error("Error: Unable to create sub-buffer of gInBuffer "
-                           "for region {%zd, %zd}\n",
+                vlog_error("Error: Unable to create sub-buffer of "
+                           "gInBuffer for region {%zd, %zd}\n",
                            region.origin, region.size);
                 goto exit;
             }
@@ -497,6 +496,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
             vlog_error("clCreateCommandQueue failed. (%d)\n", error);
             goto exit;
         }
+
         test_info.tinfo[i].d = init_genrand(genrand_int32(d));
     }
 
@@ -537,7 +537,6 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
             vlog("passed");
     }
 
-
     if (gMeasureTimes)
     {
         // Init input arrays
@@ -555,6 +554,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn2, 0, NULL, NULL)))
         {
@@ -627,7 +627,6 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
         vlog("\t%8.2f @ {%a, %d}", maxError, maxErrorVal, maxErrorVal2);
     vlog("\n");
 
-
 exit:
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
@@ -658,7 +657,6 @@ exit:
     return error;
 }
 
-
 static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
 {
     const TestInfo *job = (const TestInfo *)data;
@@ -666,23 +664,24 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     size_t buffer_size = buffer_elements * sizeof(cl_float);
     cl_uint base = job_id * (cl_uint)job->step;
     ThreadInfo *tinfo = job->tinfo + thread_id;
-    float ulps = job->ulps;
     fptr func = job->f->func;
     int ftz = job->ftz;
+    float ulps = job->ulps;
     MTdata d = tinfo->d;
     cl_uint j, k;
     cl_int error;
     const char *name = job->f->name;
-    cl_uint *t;
-    cl_float *r, *s;
-    cl_int *s2;
+    cl_uint *t = 0;
+    cl_float *r = 0;
+    cl_float *s = 0;
+    cl_int *s2 = 0;
 
     // start the map of the output arrays
     cl_event e[VECTOR_SIZE_COUNT];
     cl_uint *out[VECTOR_SIZE_COUNT];
     for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
-        out[j] = (uint32_t *)clEnqueueMapBuffer(
+        out[j] = (cl_uint *)clEnqueueMapBuffer(
             tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
             buffer_size, 0, NULL, e + j, &error);
         if (error || NULL == out[j])
@@ -700,9 +699,11 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
     cl_uint *p2 = (cl_uint *)gIn2 + thread_id * buffer_elements;
     j = 0;
+
     int totalSpecialValueCount =
         specialValuesFloatCount * specialValuesIntCount;
     int indx = (totalSpecialValueCount - 1) / buffer_elements;
+
     if (job_id <= (cl_uint)indx)
     { // test edge cases
         float *fp = (float *)p;
@@ -716,7 +717,8 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         {
             fp[j] = specialValuesFloat[x];
             ip2[j] = specialValuesInt[y];
-            if (++x >= specialValuesFloatCount)
+            ++x;
+            if (x >= specialValuesFloatCount)
             {
                 x = 0;
                 y++;
@@ -820,7 +822,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     // an in order queue.
     for (j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++)
     {
-        out[j] = (uint32_t *)clEnqueueMapBuffer(
+        out[j] = (cl_uint *)clEnqueueMapBuffer(
             tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_READ, 0,
             buffer_size, 0, NULL, NULL, &error);
         if (error || NULL == out[j])
@@ -832,9 +834,9 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     }
 
     // Wait for the last buffer
-    out[j] = (uint32_t *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
-                                            CL_TRUE, CL_MAP_READ, 0,
-                                            buffer_size, 0, NULL, NULL, &error);
+    out[j] = (cl_uint *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
+                                           CL_TRUE, CL_MAP_READ, 0, buffer_size,
+                                           0, NULL, NULL, &error);
     if (error || NULL == out[j])
     {
         vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error);
@@ -1057,6 +1059,7 @@ static const double specialValuesDouble[] = {
     MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074),
     +0.0,
 };
+
 static size_t specialValuesDoubleCount =
     sizeof(specialValuesDouble) / sizeof(specialValuesDouble[0]);
 
@@ -1165,12 +1168,9 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d, bool relaxedMode)
 
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            /* Qualcomm fix: 9461 read-write flags must be compatible with
-             * parent buffer */
             test_info.tinfo[i].outBuf[j] = clCreateSubBuffer(
                 gOutBuffer[j], CL_MEM_WRITE_ONLY, CL_BUFFER_CREATE_TYPE_REGION,
                 &region, &error);
-            /* Qualcomm fix: end */
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
                 vlog_error("Error: Unable to create sub-buffer of gInBuffer "
@@ -1189,7 +1189,6 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d, bool relaxedMode)
 
         test_info.tinfo[i].d = init_genrand(genrand_int32(d));
     }
-
 
     // Init the kernels
     {
@@ -1320,7 +1319,6 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d, bool relaxedMode)
         vlog("\t%8.2f @ {%a, %d}", maxError, maxErrorVal, maxErrorVal2);
     vlog("\n");
 
-
 exit:
     // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
@@ -1367,7 +1365,8 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
     cl_int error;
     const char *name = job->f->name;
     cl_ulong *t;
-    cl_double *r, *s;
+    cl_double *r;
+    cl_double *s;
     cl_int *s2;
 
     Force64BitFPUPrecision();
@@ -1398,6 +1397,7 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
     int totalSpecialValueCount =
         specialValuesDoubleCount * specialValuesInt2Count;
     int indx = (totalSpecialValueCount - 1) / buffer_elements;
+
     if (job_id <= (cl_uint)indx)
     { // test edge cases
         cl_double *fp = (cl_double *)p;

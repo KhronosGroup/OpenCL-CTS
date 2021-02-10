@@ -52,7 +52,7 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
     const char *c3[] = {
         "__kernel void math_kernel",
         sizeNames[vectorSize],
-        "( __global float* out, __global float* in, __global float* in2 , "
+        "( __global float* out, __global float* in, __global float* in2, "
         "__global float* in3)\n"
         "{\n"
         "   size_t i = get_global_id(0);\n"
@@ -71,7 +71,9 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
         "       size_t parity = i & 1;   // Figure out how many elements are "
         "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
         "buffer size \n"
-        "       float3 f0, f1, f2;\n"
+        "       float3 f0;\n"
+        "       float3 f1;\n"
+        "       float3 f2;\n"
         "       switch( parity )\n"
         "       {\n"
         "           case 1:\n"
@@ -143,7 +145,7 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
         "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
         "__kernel void math_kernel",
         sizeNames[vectorSize],
-        "( __global double* out, __global double* in, __global double* in2 , "
+        "( __global double* out, __global double* in, __global double* in2, "
         "__global double* in3)\n"
         "{\n"
         "   size_t i = get_global_id(0);\n"
@@ -162,7 +164,9 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
         "       size_t parity = i & 1;   // Figure out how many elements are "
         "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
         "buffer size \n"
-        "       double3 d0, d1, d2;\n"
+        "       double3 d0;\n"
+        "       double3 d1;\n"
+        "       double3 d2;\n"
         "       switch( parity )\n"
         "       {\n"
         "           case 1:\n"
@@ -234,7 +238,6 @@ static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
     return BuildKernelDouble(info->nameInCode, i, info->kernels + i,
                              info->programs + i, info->relaxedMode);
 }
-
 
 // A table of more difficult cases to get right
 static const float specialValuesFloat[] = {
@@ -315,7 +318,7 @@ static const float specialValuesFloat[] = {
     +0.0f
 };
 
-static size_t specialValuesFloatCount =
+static const size_t specialValuesFloatCount =
     sizeof(specialValuesFloat) / sizeof(specialValuesFloat[0]);
 
 
@@ -324,6 +327,9 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     uint64_t i;
     uint32_t j, k;
     int error;
+
+    logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
+
     cl_program programs[VECTOR_SIZE_COUNT];
     cl_kernel kernels[VECTOR_SIZE_COUNT];
     float maxError = 0.0f;
@@ -332,33 +338,34 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal2 = 0.0f;
     float maxErrorVal3 = 0.0f;
     size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
-
     uint64_t step = getTestStep(sizeof(float), bufferSize);
-    int skipNanInf = (0 == strcmp("fma", f->nameInCode)) && !gInfNanSupport;
+
     cl_uchar overflow[BUFFER_SIZE / sizeof(float)];
+
     float float_ulps;
-
-    logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
-
     if (gIsEmbedded)
         float_ulps = f->float_embedded_ulps;
     else
         float_ulps = f->float_ulps;
 
+    int skipNanInf = (0 == strcmp("fma", f->nameInCode)) && !gInfNanSupport;
+
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode, relaxedMode };
-    if ((error = ThreadPool_Do(BuildKernel_FloatFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
-        return error;
+    {
+        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                       f->nameInCode, relaxedMode };
+        if ((error = ThreadPool_Do(BuildKernel_FloatFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
+    }
 
     for (i = 0; i < (1ULL << 32); i += step)
     {
         // Init input array
-        uint32_t *p = (uint32_t *)gIn;
-        uint32_t *p2 = (uint32_t *)gIn2;
-        uint32_t *p3 = (uint32_t *)gIn3;
+        cl_uint *p = (cl_uint *)gIn;
+        cl_uint *p2 = (cl_uint *)gIn2;
+        cl_uint *p3 = (cl_uint *)gIn3;
         j = 0;
         if (i == 0)
         { // test edge cases
@@ -393,18 +400,21 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             p2[j] = genrand_int32(d);
             p3[j] = genrand_int32(d);
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           bufferSize, gIn2, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer3, CL_FALSE, 0,
                                           bufferSize, gIn3, 0, NULL, NULL)))
         {
@@ -492,7 +502,6 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                 r[j] =
                     (float)f->func.f_fma(s[j], s2[j], s3[j], CORRECTLY_ROUNDED);
         }
-
 
         // Read the data back
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -963,9 +972,9 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     if (gMeasureTimes)
     {
         // Init input array
-        uint32_t *p = (uint32_t *)gIn;
-        uint32_t *p2 = (uint32_t *)gIn2;
-        uint32_t *p3 = (uint32_t *)gIn3;
+        cl_uint *p = (cl_uint *)gIn;
+        cl_uint *p2 = (cl_uint *)gIn2;
+        cl_uint *p3 = (cl_uint *)gIn3;
         for (j = 0; j < bufferSize / sizeof(float); j++)
         {
             p[j] = genrand_int32(d);
@@ -1160,21 +1169,21 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
     double maxErrorVal = 0.0f;
     double maxErrorVal2 = 0.0f;
     double maxErrorVal3 = 0.0f;
-    logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
-
     size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
     uint64_t step = getTestStep(sizeof(double), bufferSize);
+
+    logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
     Force64BitFPUPrecision();
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode, relaxedMode };
-    if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
     {
-        return error;
+        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                       f->nameInCode, relaxedMode };
+        if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
     }
 
     for (i = 0; i < (1ULL << 32); i += step)
@@ -1213,18 +1222,21 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
             p2[j] = DoubleFromUInt32(genrand_int32(d));
             p3[j] = DoubleFromUInt32(genrand_int32(d));
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           bufferSize, gIn2, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer3, CL_FALSE, 0,
                                           bufferSize, gIn3, 0, NULL, NULL)))
         {
@@ -1286,7 +1298,6 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                 goto exit;
             }
         }
-
 
         // Get that moving
         if ((error = clFlush(gQueue))) vlog("clFlush failed\n");

@@ -64,7 +64,8 @@ static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
         "       size_t parity = i & 1;   // Figure out how many elements are "
         "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
         "buffer size \n"
-        "       float3 f0, f1;\n"
+        "       float3 f0;\n"
+        "       float3 f1;\n"
         "       switch( parity )\n"
         "       {\n"
         "           case 1:\n"
@@ -92,7 +93,6 @@ static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
         "}\n"
     };
 
-
     const char **kern = c;
     size_t kernSize = sizeof(c) / sizeof(c[0]);
 
@@ -109,7 +109,6 @@ static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
     return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p,
                        relaxedMode);
 }
-
 
 static int BuildKernelDouble(const char *name, int vectorSize,
                              cl_uint kernel_count, cl_kernel *k, cl_program *p,
@@ -153,7 +152,8 @@ static int BuildKernelDouble(const char *name, int vectorSize,
         "       size_t parity = i & 1;   // Figure out how many elements are "
         "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
         "buffer size \n"
-        "       double3 f0, f1;\n"
+        "       double3 f0;\n"
+        "       double3 f1;\n"
         "       switch( parity )\n"
         "       {\n"
         "           case 1:\n"
@@ -189,7 +189,6 @@ static int BuildKernelDouble(const char *name, int vectorSize,
         kern = c3;
         kernSize = sizeof(c3) / sizeof(c3[0]);
     }
-
 
     char testName[32];
     snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
@@ -227,7 +226,6 @@ static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
                              info->kernels[i], info->programs + i,
                              info->relaxedMode);
 }
-
 
 // A table of more difficult cases to get right
 static const float specialValuesFloat[] = {
@@ -379,6 +377,7 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
     test_info.scale = getTestScale(sizeof(cl_float));
+
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize
@@ -460,8 +459,8 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                 &region, &error);
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
-                vlog_error("Error: Unable to create sub-buffer of gInBuffer "
-                           "for region {%zd, %zd}\n",
+                vlog_error("Error: Unable to create sub-buffer of "
+                           "gInBuffer for region {%zd, %zd}\n",
                            region.origin, region.size);
                 goto exit;
             }
@@ -489,7 +488,6 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
     }
 
-
     // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
@@ -506,8 +504,8 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     if (gMeasureTimes)
     {
         // Init input arrays
-        uint32_t *p = (uint32_t *)gIn;
-        uint32_t *p2 = (uint32_t *)gIn2;
+        cl_uint *p = (cl_uint *)gIn;
+        cl_uint *p2 = (cl_uint *)gIn2;
         for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
         {
             p[j] = genrand_int32(d);
@@ -520,6 +518,7 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn2, 0, NULL, NULL)))
         {
@@ -531,8 +530,9 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            size_t vectorSize = sizeValues[j] * sizeof(cl_float);
-            size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
+            size_t vectorSize = sizeof(cl_float) * sizeValues[j];
+            size_t localCount = (BUFFER_SIZE + vectorSize - 1)
+                / vectorSize; // BUFFER_SIZE / vectorSize  rounded up
             if ((error = clSetKernelArg(test_info.k[j][0], 0,
                                         sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
@@ -586,6 +586,7 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                       f->name, sizeNames[j]);
         }
     }
+
     vlog("\n");
 
 exit:
@@ -631,8 +632,10 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint j, k;
     cl_int error;
     const char *name = job->f->name;
-    cl_int *t, *r;
-    cl_float *s, *s2;
+    cl_int *t = 0;
+    cl_int *r = 0;
+    cl_float *s = 0;
+    cl_float *s2 = 0;
 
     // start the map of the output arrays
     cl_event e[VECTOR_SIZE_COUNT];
@@ -657,6 +660,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
     cl_uint *p2 = (cl_uint *)gIn2 + thread_id * buffer_elements;
     j = 0;
+
     int totalSpecialValueCount =
         specialValuesFloatCount * specialValuesFloatCount;
     int indx = (totalSpecialValueCount - 1) / buffer_elements;
@@ -674,7 +678,8 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         {
             fp[j] = specialValuesFloat[x];
             fp2[j] = specialValuesFloat[y];
-            if (++x >= specialValuesFloatCount)
+            ++x;
+            if (x >= specialValuesFloatCount)
             {
                 x = 0;
                 y++;
@@ -689,7 +694,6 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         p[j] = genrand_int32(d);
         p2[j] = genrand_int32(d);
     }
-
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
                                       buffer_size, p, 0, NULL, NULL)))
@@ -895,6 +899,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
             }
         }
     }
+
     for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
@@ -1044,7 +1049,6 @@ static const double specialValuesDouble[] = {
 static size_t specialValuesDoubleCount =
     sizeof(specialValuesDouble) / sizeof(specialValuesDouble[0]);
 
-
 static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *p);
 
 int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
@@ -1061,6 +1065,7 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
     test_info.scale = getTestScale(sizeof(cl_double));
+
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize
@@ -1136,12 +1141,9 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            /* Qualcomm fix: 9461 read-write flags must be compatible with
-             * parent buffer */
             test_info.tinfo[i].outBuf[j] = clCreateSubBuffer(
                 gOutBuffer[j], CL_MEM_WRITE_ONLY, CL_BUFFER_CREATE_TYPE_REGION,
                 &region, &error);
-            /* Qualcomm fix: end */
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
                 vlog_error("Error: Unable to create sub-buffer of gInBuffer "
@@ -1161,7 +1163,6 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         test_info.tinfo[i].d = init_genrand(genrand_int32(d));
     }
 
-
     // Init the kernels
     {
         BuildKernelInfo build_info = {
@@ -1174,6 +1175,7 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
     }
 
+    // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(TestDouble, test_info.jobCount, &test_info);
@@ -1189,8 +1191,8 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     if (gMeasureTimes)
     {
         // Init input arrays
-        uint64_t *p = (uint64_t *)gIn;
-        uint64_t *p2 = (uint64_t *)gIn2;
+        cl_ulong *p = (cl_ulong *)gIn;
+        cl_ulong *p2 = (cl_ulong *)gIn2;
         for (j = 0; j < BUFFER_SIZE / sizeof(double); j++)
         {
             p[j] =
@@ -1216,8 +1218,9 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            size_t vectorSize = sizeValues[j] * sizeof(cl_double);
-            size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
+            size_t vectorSize = sizeof(cl_double) * sizeValues[j];
+            size_t localCount = (BUFFER_SIZE + vectorSize - 1)
+                / vectorSize; // BUFFER_SIZE / vectorSize  rounded up
             if ((error = clSetKernelArg(test_info.k[j][0], 0,
                                         sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
@@ -1319,8 +1322,10 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint j, k;
     cl_int error;
     const char *name = job->f->name;
-    cl_long *t, *r;
-    cl_double *s, *s2;
+    cl_long *t;
+    cl_long *r;
+    cl_double *s;
+    cl_double *s2;
 
     Force64BitFPUPrecision();
 
@@ -1377,7 +1382,6 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
         ((cl_ulong *)p)[j] = genrand_int64(d);
         ((cl_ulong *)p2)[j] = genrand_int64(d);
     }
-
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
                                       buffer_size, p, 0, NULL, NULL)))
@@ -1493,11 +1497,12 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
     t = (cl_long *)r;
     for (j = 0; j < buffer_elements; j++)
     {
-        cl_long *q = (cl_long *)out[0];
+        cl_long *q = out[0];
 
         // If we aren't getting the correctly rounded result
         if (gMinVectorSizeIndex == 0 && t[j] != q[j])
         {
+            // If we aren't getting the correctly rounded result
             if (ftz)
             {
                 if (IsDoubleSubnormal(s[j]))
@@ -1528,7 +1533,7 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
                 }
             }
 
-            uint64_t err = t[j] - q[j];
+            cl_ulong err = t[j] - q[j];
             if (q[j] > t[j]) err = q[j] - t[j];
             vlog_error("\nERROR: %s: %lld ulp error at {%.13la, %.13la}: *%lld "
                        "vs. %lld  (index: %d)\n",
@@ -1575,7 +1580,7 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
                     }
                 }
 
-                uint64_t err = -t[j] - q[j];
+                cl_ulong err = -t[j] - q[j];
                 if (q[j] > -t[j]) err = q[j] + t[j];
                 vlog_error("\nERROR: %sD%s: %lld ulp error at {%.13la, "
                            "%.13la}: *%lld vs. %lld  (index: %d)\n",
