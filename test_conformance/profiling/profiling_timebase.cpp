@@ -21,7 +21,21 @@ const char *kernelCode = "__kernel void kernel_empty(){}";
 int test_profiling_timebase(cl_device_id device, cl_context context,
                             cl_command_queue queue, int num_elements)
 {
-    cl_int err;
+    Version version = get_device_cl_version(device);
+    cl_platform_id platform = getPlatformFromDevice(device);
+    cl_ulong timer_resolution = 0;
+    cl_int err =
+        clGetPlatformInfo(platform, CL_PLATFORM_HOST_TIMER_RESOLUTION,
+                          sizeof(timer_resolution), &timer_resolution, NULL);
+    test_error(err, "Unable to query CL_PLATFORM_HOST_TIMER_RESOLUTION");
+
+    // If CL_PLATFORM_HOST_TIMER_RESOLUTION returns 0, clGetDeviceAndHostTimer
+    // is not a supported feature
+    if (timer_resolution == 0 && version >= Version(3, 0))
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
+
     cl_ulong hostTime;
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -86,7 +100,5 @@ int test_profiling_timebase(cl_device_id device, cl_context context,
     test_assert_error((eventStart < deviceTimeAfterCompletion)
                           && (eventEnd < deviceTimeAfterCompletion),
                       "Device timestamp was taken after kernel was execution");
-
-
     return TEST_PASS;
 }
