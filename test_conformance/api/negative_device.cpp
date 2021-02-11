@@ -67,16 +67,9 @@ int test_negative_get_device_ids(cl_device_id deviceID, cl_context context,
     cl_platform_id platform = getPlatformFromDevice(deviceID);
 
     cl_device_id devices = nullptr;
-    cl_int err =
-        clGetDeviceIDs(nullptr, CL_DEVICE_TYPE_DEFAULT, 1, &devices, nullptr);
-    test_failure_error_ret(
-        err, CL_INVALID_PLATFORM,
-        "clGetDeviceIDs should return CL_INVALID_PLATFORM when: \"platform is "
-        "not a valid platform\" using a nullptr",
-        TEST_FAIL);
 
-    err = clGetDeviceIDs(reinterpret_cast<cl_platform_id>(context),
-                         CL_DEVICE_TYPE_DEFAULT, 1, &devices, nullptr);
+    cl_int err = clGetDeviceIDs(reinterpret_cast<cl_platform_id>(context),
+                                CL_DEVICE_TYPE_DEFAULT, 1, &devices, nullptr);
     test_failure_error_ret(
         err, CL_INVALID_PLATFORM,
         "clGetDeviceIDs should return CL_INVALID_PLATFORM when: \"platform is "
@@ -293,10 +286,10 @@ static int get_supported_properties(cl_device_id deviceID)
                               nullptr, &number_of_properties);
     test_error(err, "clGetDeviceInfo");
     std::vector<cl_device_partition_property> supported_properties(
-        number_of_properties);
+        number_of_properties / sizeof(cl_device_partition_property));
     err = clGetDeviceInfo(deviceID, CL_DEVICE_PARTITION_PROPERTIES,
-                          supported_properties.size(),
-                          &supported_properties.front(), nullptr);
+                          number_of_properties, &supported_properties.front(),
+                          nullptr);
     test_error(err, "clGetDeviceInfo");
     int ret = SupportedPartitionSchemes::None;
     for (auto property : supported_properties)
@@ -357,7 +350,7 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
     if (supported_properties == SupportedPartitionSchemes::None)
     {
         printf("Device does not support creating subdevices... Skipping\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     cl_device_partition_property properties[3] = {};
