@@ -471,9 +471,9 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
         test_info.tinfo[i].inBuf2 =
             clCreateSubBuffer(gInBuffer2, CL_MEM_READ_ONLY,
                               CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
-        if (error || NULL == test_info.tinfo[i].inBuf)
+        if (error || NULL == test_info.tinfo[i].inBuf2)
         {
-            vlog_error("Error: Unable to create sub-buffer of gInBuffer for "
+            vlog_error("Error: Unable to create sub-buffer of gInBuffer2 for "
                        "region {%zd, %zd}\n",
                        region.origin, region.size);
             goto exit;
@@ -1349,9 +1349,9 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
         test_info.tinfo[i].inBuf2 =
             clCreateSubBuffer(gInBuffer2, CL_MEM_READ_ONLY,
                               CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
-        if (error || NULL == test_info.tinfo[i].inBuf)
+        if (error || NULL == test_info.tinfo[i].inBuf2)
         {
-            vlog_error("Error: Unable to create sub-buffer of gInBuffer for "
+            vlog_error("Error: Unable to create sub-buffer of gInBuffer2 for "
                        "region {%zd, %zd}\n",
                        region.origin, region.size);
             goto exit;
