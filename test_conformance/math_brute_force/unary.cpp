@@ -39,7 +39,7 @@ static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                         sizeNames[vectorSize],
                         "* in )\n"
                         "{\n"
-                        "   int i = get_global_id(0);\n"
+                        "   size_t i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
                         "( in[i] );\n"
@@ -120,7 +120,7 @@ static int BuildKernelDouble(const char *name, int vectorSize,
                         sizeNames[vectorSize],
                         "* in )\n"
                         "{\n"
-                        "   int i = get_global_id(0);\n"
+                        "   size_t i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
                         "( in[i] );\n"
