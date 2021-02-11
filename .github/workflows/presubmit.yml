@@ -6,7 +6,6 @@ jobs:
     name: Build ${{ matrix.os }} ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     env:
-      JOB_CHECK_FORMAT: ${{ matrix.format }}
       JOB_ARCHITECTURE: ${{ matrix.arch }}
       JOB_ENABLE_GL: ${{ matrix.gl }}
     strategy:
@@ -19,10 +18,6 @@ jobs:
             gl: 1
           - os: ubuntu-20.04
             mainmatrix: false
-            name: Format
-            format: 1
-          - os: ubuntu-20.04
-            mainmatrix: false
             name: Arm
             arch: arm
           - os: ubuntu-20.04
@@ -30,11 +25,17 @@ jobs:
             name: AArch64
             arch: aarch64
     steps:
-      - name: Setup
-        run: if [[ "${{matrix.format}}" == "1" ]]; then sudo apt install -y clang-format; fi
+      - uses: actions/checkout@v2
+      - name: Build
+        run: ./presubmit.sh
+  formatcheck:
+    name: Check code format
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install packages
+        run: sudo apt install -y clang-format
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Build
-        run: ./presubmit.sh
-
+      - name: Check code format
+        run: ./check-format.sh
