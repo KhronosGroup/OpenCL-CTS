@@ -479,6 +479,47 @@ void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
     }
 }
 
+size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
+                         const char *bPtr)
+{
+    size_t pixel_size = get_pixel_size(imageInfo->format);
+    size_t column;
+
+    for (column = 0; column < imageInfo->width; column++)
+    {
+        switch (imageInfo->format->image_channel_data_type)
+        {
+            // If the data type is 101010, then ignore bits 31 and 32 when
+            // comparing the row
+            case CL_UNORM_INT_101010: {
+                cl_uint aPixel = *(cl_uint *)aPtr;
+                cl_uint bPixel = *(cl_uint *)bPtr;
+                if ((aPixel & 0x3fffffff) != (bPixel & 0x3fffffff))
+                    return column;
+            }
+            break;
+
+            // If the data type is 555, ignore bit 15 when comparing the row
+            case CL_UNORM_SHORT_555: {
+                cl_ushort aPixel = *(cl_ushort *)aPtr;
+                cl_ushort bPixel = *(cl_ushort *)bPtr;
+                if ((aPixel & 0x7fff) != (bPixel & 0x7fff)) return column;
+            }
+            break;
+
+            default:
+                if (memcmp(aPtr, bPtr, pixel_size) != 0) return column;
+                break;
+        }
+
+        aPtr += pixel_size;
+        bPtr += pixel_size;
+    }
+
+    // If we didn't find a difference, return the width of the image
+    return column;
+}
+
 int random_log_in_range(int minV, int maxV, MTdata d)
 {
     double v = log2(((double)genrand_int32(d) / (double)0xffffffff) + 1);
