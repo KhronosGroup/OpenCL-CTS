@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "Utility.h"
+#include "function_list.h"
+#include "utility.h"
 
 #include <limits.h>
 #include <string.h>
-#include "FunctionList.h"
 
 int TestFunc_FloatI_Float_Float(const Func *f, MTdata, bool relaxedMode);
 int TestFunc_DoubleI_Double_Double(const Func *f, MTdata, bool relaxedMode);
