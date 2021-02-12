@@ -515,34 +515,33 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                         }
                     }
                 }
-                    if (fabsf(err) > maxError)
-                    {
-                        maxError = fabsf(err);
-                        maxErrorVal = s[j];
-                    }
-                    if (llabs(iErr) > maxError2)
-                    {
-                        maxError2 = llabs(iErr);
-                        maxErrorVal2 = s[j];
-                    }
+                if (fabsf(err) > maxError)
+                {
+                    maxError = fabsf(err);
+                    maxErrorVal = s[j];
+                }
+                if (llabs(iErr) > maxError2)
+                {
+                    maxError2 = llabs(iErr);
+                    maxErrorVal2 = s[j];
+                }
 
-                    if (fail)
-                    {
-                        vlog_error(
-                            "\nERROR: %sD%s: {%f, %lld} ulp error at {%.13la, "
-                            "%.13la} ({ 0x%16.16llx, 0x%16.16llx}): *{%.13la, "
-                            "%d} ({ 0x%16.16llx, 0x%8.8x}) vs. {%.13la, %d} ({ "
-                            "0x%16.16llx, 0x%8.8x})\n",
-                            f->name, sizeNames[k], err, iErr,
-                            ((double *)gIn)[j], ((double *)gIn2)[j],
-                            ((cl_ulong *)gIn)[j], ((cl_ulong *)gIn2)[j],
-                            ((double *)gOut_Ref)[j], ((int *)gOut_Ref2)[j],
-                            ((cl_ulong *)gOut_Ref)[j],
-                            ((cl_uint *)gOut_Ref2)[j], test, q2[j],
-                            ((cl_ulong *)q)[j], ((cl_uint *)q2)[j]);
-                        error = -1;
-                        goto exit;
-                    }
+                if (fail)
+                {
+                    vlog_error(
+                        "\nERROR: %sD%s: {%f, %lld} ulp error at {%.13la, "
+                        "%.13la} ({ 0x%16.16llx, 0x%16.16llx}): *{%.13la, "
+                        "%d} ({ 0x%16.16llx, 0x%8.8x}) vs. {%.13la, %d} ({ "
+                        "0x%16.16llx, 0x%8.8x})\n",
+                        f->name, sizeNames[k], err, iErr, ((double *)gIn)[j],
+                        ((double *)gIn2)[j], ((cl_ulong *)gIn)[j],
+                        ((cl_ulong *)gIn2)[j], ((double *)gOut_Ref)[j],
+                        ((int *)gOut_Ref2)[j], ((cl_ulong *)gOut_Ref)[j],
+                        ((cl_uint *)gOut_Ref2)[j], test, q2[j],
+                        ((cl_ulong *)q)[j], ((cl_uint *)q2)[j]);
+                    error = -1;
+                    goto exit;
+                }
             }
         }
 

@@ -501,32 +501,32 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                         }
                     }
                 }
-                    if (fabsf(err) > maxError)
-                    {
-                        maxError = fabsf(err);
-                        maxErrorVal = s[j];
-                    }
-                    if (llabs(iErr) > maxError2)
-                    {
-                        maxError2 = llabs(iErr);
-                        maxErrorVal2 = s[j];
-                    }
+                if (fabsf(err) > maxError)
+                {
+                    maxError = fabsf(err);
+                    maxErrorVal = s[j];
+                }
+                if (llabs(iErr) > maxError2)
+                {
+                    maxError2 = llabs(iErr);
+                    maxErrorVal2 = s[j];
+                }
 
-                    if (fail)
-                    {
-                        vlog_error(
-                            "\nERROR: %s%s: {%f, %lld} ulp error at {%a, %a} "
-                            "({0x%8.8x, 0x%8.8x}): *{%a, %d} ({0x%8.8x, "
-                            "0x%8.8x}) vs. {%a, %d} ({0x%8.8x, 0x%8.8x})\n",
-                            f->name, sizeNames[k], err, iErr, ((float *)gIn)[j],
-                            ((float *)gIn2)[j], ((cl_uint *)gIn)[j],
-                            ((cl_uint *)gIn2)[j], ((float *)gOut_Ref)[j],
-                            ((int *)gOut_Ref2)[j], ((cl_uint *)gOut_Ref)[j],
-                            ((cl_uint *)gOut_Ref2)[j], test, q2[j],
-                            ((cl_uint *)&test)[0], ((cl_uint *)q2)[j]);
-                        error = -1;
-                        goto exit;
-                    }
+                if (fail)
+                {
+                    vlog_error(
+                        "\nERROR: %s%s: {%f, %lld} ulp error at {%a, %a} "
+                        "({0x%8.8x, 0x%8.8x}): *{%a, %d} ({0x%8.8x, "
+                        "0x%8.8x}) vs. {%a, %d} ({0x%8.8x, 0x%8.8x})\n",
+                        f->name, sizeNames[k], err, iErr, ((float *)gIn)[j],
+                        ((float *)gIn2)[j], ((cl_uint *)gIn)[j],
+                        ((cl_uint *)gIn2)[j], ((float *)gOut_Ref)[j],
+                        ((int *)gOut_Ref2)[j], ((cl_uint *)gOut_Ref)[j],
+                        ((cl_uint *)gOut_Ref2)[j], test, q2[j],
+                        ((cl_uint *)&test)[0], ((cl_uint *)q2)[j]);
+                    error = -1;
+                    goto exit;
+                }
             }
         }
 
