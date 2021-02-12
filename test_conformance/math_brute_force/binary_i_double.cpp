@@ -129,15 +129,6 @@ static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
                              info->relaxedMode);
 }
 
-static const int specialValuesInt[] = {
-    0,           1,           2,          3,          126,        127,
-    128,         0x02000001,  0x04000001, 1465264071, 1488522147, -1,
-    -2,          -3,          -126,       -127,       -128,       -0x02000001,
-    -0x04000001, -1465264071, -1488522147
-};
-static size_t specialValuesIntCount =
-    sizeof(specialValuesInt) / sizeof(specialValuesInt[0]);
-
 // Thread specific data for a worker thread
 typedef struct ThreadInfo
 {
@@ -291,8 +282,8 @@ static const int specialValuesInt2[] = { 0,       1,     2,      3,
                                          1022,    1023,  1024,   INT_MIN,
                                          INT_MAX, -1,    -2,     -3,
                                          -1022,   -1023, -11024, -INT_MAX };
-static size_t specialValuesInt2Count =
-    sizeof(specialValuesInt) / sizeof(specialValuesInt[0]);
+static constexpr size_t specialValuesInt2Count =
+    sizeof(specialValuesInt2) / sizeof(specialValuesInt2[0]);
 
 static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *p);
 
