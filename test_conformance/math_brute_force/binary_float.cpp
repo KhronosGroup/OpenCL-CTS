@@ -318,7 +318,8 @@ static int TestFunc_Float_Float_Float_common(const Func *f, MTdata d,
     test_info.relaxedMode = relaxedMode;
     test_info.isFDim = 0 == strcmp("fdim", f->nameInCode);
     test_info.skipNanInf = test_info.isFDim && !gInfNanSupport;
-    test_info.isNextafter = isNextafter;
+    test_info.isNextafter = 0 == strcmp("nextafter", f->nameInCode);
+    assert(isNextafter == test_info.isNextafter && "Unexpected parameter");
 
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
