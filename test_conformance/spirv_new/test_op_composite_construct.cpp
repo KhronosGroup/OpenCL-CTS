@@ -68,7 +68,7 @@ TEST_SPIRV_FUNC(op_composite_construct_struct)
     typedef AbstractStruct2<int, char> CustomType1;
     typedef AbstractStruct2<cl_int2, CustomType1> CustomType2;
 
-    CustomType1 value1 = {2100483600, 128};
+    CustomType1 value1 = { 2100483600, (char)128 };
     cl_int2 intvals = { { 2100480000, 2100480000 } };
     CustomType2 value2 = {intvals, value1};
 
