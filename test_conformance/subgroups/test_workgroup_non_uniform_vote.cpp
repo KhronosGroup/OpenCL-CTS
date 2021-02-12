@@ -248,12 +248,15 @@ template <typename Ty, NonUniformVoteOp operation> struct AAN
 // Test for elect function.
 // Discover only one elected work item in subgroup - with the
 // lowest subgroup local id
-struct ELECT
+template <const int work_items_mask> struct ELECT
 {
     static void gen(cl_int *x, cl_int *t, cl_int *m, int ns, int nw, int ng)
     {
         int non_uniform_size = ng % nw;
-        log_info("  sub_group_elect...\n");
+        log_info("  sub_group_elect... \n");
+        log_info(
+            "  test params:\n  subgroups size = %d work item mask = 0x%x\n", ns,
+            work_items_mask);
         if (non_uniform_size)
         {
             log_info("  non uniform work group size mode ON\n");
@@ -298,21 +301,41 @@ struct ELECT
                     n = ii + ns > nw ? nw - ii : ns;
                 }
                 rr = 0;
+                int remember_lowest_id = -1;
+                std::vector<int> state_of_work_itmes(n, -1);
                 for (i = 0; i < n; ++i)
                 { // for each work_item in subgroup
                   // sum of output values should be 1
 
-                    my[ii + i] > 0 ? rr += 1 : rr += 0;
+                    int elect_work_item = 1 << i % n;
+                    if (work_items_mask & elect_work_item)
+                    {
+                        remember_lowest_id = i;
+                        break;
+                    }
                 }
-                // expectation is that only one elected returned true
-                tr = n <= NR_OF_ACTIVE_WORK_ITEMS ? 1 : 2;
-                if (rr != tr)
+                if (remember_lowest_id == -1)
                 {
-                    log_error(
-                        "ERROR: sub_group_elect() mismatch for sub group %d in "
-                        "work group %d. Expected: %d Obtained: %d  \n",
-                        j, k, tr, rr);
-                    return TEST_FAIL;
+                    log_info("  no one elected... in workgroup id = %d "
+                             "subgroup id = %d\n",
+                             k, j);
+                }
+
+                for (i = 0; i < n; ++i)
+                {
+                    i == remember_lowest_id ? tr = 1 : tr = 0;
+
+                    rr = my[ii + i];
+                    if (rr != tr)
+                    {
+                        log_error(
+                            "ERROR: sub_group_elect() mismatch for work item"
+                            "%d sub group "
+                            "%d in "
+                            "work group %d. Expected: %d Obtained: %d  \n",
+                            i, j, k, tr, rr);
+                        return TEST_FAIL;
+                    }
                 }
             }
 
@@ -324,21 +347,16 @@ struct ELECT
         return TEST_PASS;
     }
 };
-
-static const char *elect_source =
-    "__kernel void test_elect(const __global Type *in, __global int4 *xy, "
-    "__global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    Type x = in[gid];\n"
-    "    if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {\n"
-    // one in subgroup true others false.
-    "        out[gid] = sub_group_elect();\n"
-    "    } else {\n"
-    "        out[gid] = sub_group_elect();\n"
-    "    }\n"
-    "}\n";
+static const char *elect_source = R"(
+__kernel void test_elect(const __global Type *in, __global int4 *xy, __global Type *out) {
+    int gid = get_global_id(0);
+    XY(xy,gid);
+    int elect_work_item = 1 << (get_sub_group_local_id() % get_sub_group_size());
+        if (elect_work_item & WORK_ITEMS_MASK){
+        out[gid] = sub_group_elect();
+        }
+}
+)";
 
 static const char *non_uniform_any_source =
     "__kernel void test_non_uniform_any(const __global Type *in, __global int4 "
@@ -400,11 +418,15 @@ struct run_for_type
         return error;
     }
 
-    template <typename T> int run_elect()
+    template <typename T, const int work_items_mask> int run_elect()
     {
-        int error = test<T, ELECT, GWS_NON_UNIFORM, LWS_NON_UNIFORM>::run(
-            device_, context_, queue_, num_elements_, "test_elect",
-            elect_source, 0, useCoreSubgroups_, required_extensions_);
+        int error =
+            test<T, ELECT<work_items_mask>, GWS_NON_UNIFORM,
+                 LWS_NON_UNIFORM>::run(device_, context_, queue_, num_elements_,
+                                       "test_elect", elect_source, 0,
+                                       useCoreSubgroups_, required_extensions_,
+                                       work_items_mask);
+
         return error;
     }
 
@@ -463,7 +485,18 @@ int test_work_group_functions_non_uniform_vote(cl_device_id device,
     error |= rft.run_nu_all_eq<cl_float>();
     error |= rft.run_nu_all_eq<cl_double>();
     error |= rft.run_nu_all_eq<subgroups::cl_half>();
-    error |= rft.run_elect<int>();
+    error |= rft.run_elect<int, 0xffffaaaa>();
+    error |= rft.run_elect<int, 0x00000000>();
+    error |= rft.run_elect<int, 0x80000000>();
+    error |= rft.run_elect<int, 0x00ffff00>();
+    error |= rft.run_elect<int, 0xff00ff00>();
+    error |= rft.run_elect<int, 0xff0000ff>();
+    error |= rft.run_elect<int, 0xff00ff00>();
+    error |= rft.run_elect<int, 0x0f0f0f0f>();
+    error |= rft.run_elect<int, 0x0f0ff0f0>();
+    error |= rft.run_elect<int, 0xaaaa5555>();
+    error |= rft.run_elect<int, 0x5555aaaa>();
+    error |= rft.run_elect<int, 0x55aaaa55>();
     error |= rft.run_nu_any<int>();
     error |= rft.run_nu_all<int>();
 

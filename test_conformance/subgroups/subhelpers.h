@@ -1222,7 +1222,8 @@ struct test
     static int run(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elements, const char *kname,
                    const char *src, int dynscl, bool useCoreSubgroups,
-                   std::vector<std::string> const &required_extensions = {})
+                   std::vector<std::string> const &required_extensions = {},
+                   int work_items_mask = -1)
     {
         size_t tmp;
         int error;
@@ -1237,6 +1238,12 @@ struct test
         Ty mapin[LSIZE];
         Ty mapout[LSIZE];
         std::stringstream kernel_sstr;
+        if (work_items_mask != -1)
+        {
+            kernel_sstr << "#define WORK_ITEMS_MASK ";
+            kernel_sstr << "0x" << std::hex << work_items_mask << "\n";
+        }
+
 
         kernel_sstr << "#define NR_OF_ACTIVE_WORK_ITEMS ";
         kernel_sstr << NR_OF_ACTIVE_WORK_ITEMS << "\n";
