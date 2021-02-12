@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "harness/compat.h"
 #include "reference_math.h"
 #include <limits.h>

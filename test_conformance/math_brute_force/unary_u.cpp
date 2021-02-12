@@ -13,16 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "function_list.h"
+#include "test_functions.h"
 #include "utility.h"
 
 #include <string.h>
-
-int TestFunc_Float_UInt(const Func *f, MTdata, bool relaxedMode);
-int TestFunc_Double_ULong(const Func *f, MTdata, bool relaxedMode);
-
-extern const vtbl _unary_u = { "unary_u", TestFunc_Float_UInt,
-                               TestFunc_Double_ULong };
 
 static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
                        cl_program *p, bool relaxedMode)

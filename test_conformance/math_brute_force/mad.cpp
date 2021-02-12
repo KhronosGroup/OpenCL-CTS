@@ -13,16 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "function_list.h"
+#include "test_functions.h"
 #include "utility.h"
 
 #include <string.h>
-
-int TestFunc_mad(const Func *f, MTdata, bool relaxedMode);
-int TestFunc_mad_Double(const Func *f, MTdata, bool relaxedMode);
-
-extern const vtbl _mad_tbl = { "ternary", TestFunc_mad, TestFunc_mad_Double };
-
 
 static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
                        cl_program *p, bool relaxedMode)
@@ -235,7 +231,7 @@ static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
                              info->programs + i, info->relaxedMode);
 }
 
-int TestFunc_mad(const Func *f, MTdata d, bool relaxedMode)
+int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
 {
     uint64_t i;
     uint32_t j, k;
