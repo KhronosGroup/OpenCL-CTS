@@ -89,7 +89,7 @@ int test_preprocessor_define_udef(cl_device_id deviceID, cl_context context, cl_
   error = clEnqueueWriteBuffer(queue, buffer[0], CL_TRUE, 0, num_elements*sizeof(cl_int), srcData, 0, NULL, NULL);
   test_error(error, "clEnqueueWriteBuffer failed");
 
-  size_t threads[3] = {num_elements, 0, 0};
+  size_t threads[3] = { (size_t)num_elements, 0, 0 };
   error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL);
   test_error(error, "clEnqueueNDRangeKernel failed");
 
@@ -175,7 +175,7 @@ int test_preprocessor_include(cl_device_id deviceID, cl_context context, cl_comm
   error = clSetKernelArg(kernel, 1, sizeof(buffer[1]), &buffer[1]);
   test_error(error, "clSetKernelArg failed");
 
-  size_t threads[3] = {num_elements, 0, 0};
+  size_t threads[3] = { (size_t)num_elements, 0, 0 };
   error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL);
   test_error(error, "clEnqueueNDRangeKernel failed");
 
@@ -272,7 +272,7 @@ int test_preprocessor_line_error(cl_device_id deviceID, cl_context context, cl_c
   error = clSetKernelArg(kernel, 0, sizeof(buffer[0]), &buffer[0]);
   test_error(error, "clSetKernelArg failed");
 
-  size_t threads[3] = {num_elements, 0, 0};
+  size_t threads[3] = { (size_t)num_elements, 0, 0 };
   error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL);
   test_error(error, "clEnqueueNDRangeKernel failed");
 
@@ -313,7 +313,7 @@ int test_preprocessor_pragma(cl_device_id deviceID, cl_context context, cl_comma
   error = clSetKernelArg(kernel, 0, sizeof(buffer[0]), &buffer[0]);
   test_error(error, "clSetKernelArg failed");
 
-  size_t threads[3] = {num_elements, 0, 0};
+  size_t threads[3] = { (size_t)num_elements, 0, 0 };
   error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL);
   test_error(error, "clEnqueueNDRangeKernel failed");
 
