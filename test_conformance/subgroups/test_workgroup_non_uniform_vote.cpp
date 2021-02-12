@@ -248,7 +248,7 @@ template <typename Ty, NonUniformVoteOp operation> struct AAN
 // Test for elect function.
 // Discover only one elected work item in subgroup - with the
 // lowest subgroup local id
-template <const int work_items_mask> struct ELECT
+template <unsigned int work_items_mask> struct ELECT
 {
     static void gen(cl_int *x, cl_int *t, cl_int *m, int ns, int nw, int ng)
     {
@@ -418,14 +418,14 @@ struct run_for_type
         return error;
     }
 
-    template <typename T, const int work_items_mask> int run_elect()
+    template <typename T, unsigned int work_items_mask> int run_elect()
     {
         int error =
             test<T, ELECT<work_items_mask>, GWS_NON_UNIFORM,
                  LWS_NON_UNIFORM>::run(device_, context_, queue_, num_elements_,
                                        "test_elect", elect_source, 0,
                                        useCoreSubgroups_, required_extensions_,
-                                       work_items_mask);
+                                       static_cast<int>(work_items_mask));
 
         return error;
     }
