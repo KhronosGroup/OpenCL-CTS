@@ -58,7 +58,6 @@
 #define unaryF_u NULL
 #define macro_unaryF NULL
 #define binaryF NULL
-#define binaryF_nextafter NULL
 #define binaryOperatorF NULL
 #define binaryF_i NULL
 #define macro_binaryF NULL
@@ -134,12 +133,6 @@ static constexpr vtbl _binary = {
     TestFunc_Double_Double_Double,
 };
 
-static constexpr vtbl _binary_nextafter = {
-    "binary_nextafter",
-    TestFunc_Float_Float_Float_nextafter,
-    TestFunc_Double_Double_Double_nextafter,
-};
-
 static constexpr vtbl _binary_operator = {
     "binaryOperator",
     TestFunc_Float_Float_Float_Operator,
@@ -193,7 +186,6 @@ static constexpr vtbl _mad_tbl = {
 #define unaryF_u &_unary_u
 #define macro_unaryF &_macro_unary
 #define binaryF &_binary
-#define binaryF_nextafter &_binary_nextafter
 #define binaryOperatorF &_binary_operator
 #define binaryF_i &_binary_i
 #define macro_binaryF &_macro_binary
@@ -285,7 +277,7 @@ const Func functionList[] = {
     ENTRY(minmag, 0.0f, 0.0f, FTZ_OFF, binaryF),
     ENTRY(modf, 0.0f, 0.0f, FTZ_OFF, unaryF_two_results),
     ENTRY(nan, 0.0f, 0.0f, FTZ_OFF, unaryF_u),
-    ENTRY(nextafter, 0.0f, 0.0f, FTZ_OFF, binaryF_nextafter),
+    ENTRY(nextafter, 0.0f, 0.0f, FTZ_OFF, binaryF),
     ENTRY_EXT(pow, 16.0f, 16.0f, 8192.0f, FTZ_OFF, binaryF,
               8192.0f), // in derived mode the ulp error is calculated as
                         // exp2(y*log2(x)) and in non-derived it is the same as
