@@ -45,6 +45,25 @@ static const std::vector<cl_kernel_arg_access_qualifier> access_qualifiers = {
     CL_KERNEL_ARG_ACCESS_WRITE_ONLY
 };
 
+static const std::vector<cl_kernel_arg_type_qualifier> type_qualifiers = {
+    CL_KERNEL_ARG_TYPE_NONE,
+    CL_KERNEL_ARG_TYPE_CONST,
+    CL_KERNEL_ARG_TYPE_VOLATILE,
+    CL_KERNEL_ARG_TYPE_RESTRICT,
+    CL_KERNEL_ARG_TYPE_CONST | CL_KERNEL_ARG_TYPE_VOLATILE,
+    CL_KERNEL_ARG_TYPE_CONST | CL_KERNEL_ARG_TYPE_RESTRICT,
+    CL_KERNEL_ARG_TYPE_VOLATILE | CL_KERNEL_ARG_TYPE_RESTRICT,
+    CL_KERNEL_ARG_TYPE_CONST | CL_KERNEL_ARG_TYPE_VOLATILE
+        | CL_KERNEL_ARG_TYPE_RESTRICT,
+};
+
+static const std::vector<cl_kernel_arg_type_qualifier> pipe_qualifiers = {
+    CL_KERNEL_ARG_TYPE_PIPE,
+    CL_KERNEL_ARG_TYPE_CONST | CL_KERNEL_ARG_TYPE_PIPE,
+    CL_KERNEL_ARG_TYPE_VOLATILE | CL_KERNEL_ARG_TYPE_PIPE,
+    CL_KERNEL_ARG_TYPE_CONST | CL_KERNEL_ARG_TYPE_VOLATILE
+        | CL_KERNEL_ARG_TYPE_PIPE,
+};
 
 static std::string
 get_address_qualifier(cl_kernel_arg_address_qualifier address_qualifier)
@@ -301,8 +320,22 @@ static bool device_supports_pipes(cl_device_id deviceID)
 
 static std::string get_build_options(cl_device_id deviceID)
 {
-    return device_supports_pipes(deviceID) ? "-cl-kernel-arg-info -cl-std=CL2.0"
-                                           : "-cl-kernel-arg-info";
+    std::string ret = "-cl-kernel-arg-info";
+    if (get_device_cl_version(deviceID) >= MINIMUM_OPENCL_PIPE_VERSION)
+    {
+        if (device_supports_pipes(deviceID))
+        {
+            if (get_device_cl_version(deviceID) >= Version(3, 0))
+            {
+                ret += " -cl-std=CL3.0";
+            }
+            else
+            {
+                ret += " -cl-std=CL2.0";
+            }
+        }
+    }
+    return ret;
 }
 
 static std::string get_expected_arg_type(const std::string& type_string,
@@ -398,42 +431,6 @@ create_expected_arg_info(const KernelArgInfo& kernel_argument, bool is_pointer)
     return ret;
 }
 
-static std::vector<cl_kernel_arg_type_qualifier>
-get_type_qualifiers(cl_device_id deviceID)
-{
-    std::vector<cl_kernel_arg_type_qualifier> type_qualifiers = {
-        CL_KERNEL_ARG_TYPE_NONE,
-        CL_KERNEL_ARG_TYPE_CONST,
-        CL_KERNEL_ARG_TYPE_VOLATILE,
-        CL_KERNEL_ARG_TYPE_RESTRICT,
-        CL_KERNEL_ARG_TYPE_CONST | CL_KERNEL_ARG_TYPE_VOLATILE,
-        CL_KERNEL_ARG_TYPE_CONST | CL_KERNEL_ARG_TYPE_RESTRICT,
-        CL_KERNEL_ARG_TYPE_VOLATILE | CL_KERNEL_ARG_TYPE_RESTRICT,
-        CL_KERNEL_ARG_TYPE_CONST | CL_KERNEL_ARG_TYPE_VOLATILE
-            | CL_KERNEL_ARG_TYPE_RESTRICT,
-    };
-
-    if (device_supports_pipes(deviceID))
-    {
-        type_qualifiers.insert(
-            type_qualifiers.end(),
-            {
-                CL_KERNEL_ARG_TYPE_PIPE,
-                CL_KERNEL_ARG_TYPE_CONST | CL_KERNEL_ARG_TYPE_PIPE,
-                CL_KERNEL_ARG_TYPE_VOLATILE | CL_KERNEL_ARG_TYPE_PIPE,
-                CL_KERNEL_ARG_TYPE_RESTRICT | CL_KERNEL_ARG_TYPE_PIPE,
-                CL_KERNEL_ARG_TYPE_CONST | CL_KERNEL_ARG_TYPE_VOLATILE
-                    | CL_KERNEL_ARG_TYPE_PIPE,
-                CL_KERNEL_ARG_TYPE_VOLATILE | CL_KERNEL_ARG_TYPE_RESTRICT
-                    | CL_KERNEL_ARG_TYPE_PIPE,
-                CL_KERNEL_ARG_TYPE_CONST | CL_KERNEL_ARG_TYPE_VOLATILE
-                    | CL_KERNEL_ARG_TYPE_RESTRICT | CL_KERNEL_ARG_TYPE_PIPE,
-            });
-    }
-
-    return type_qualifiers;
-}
-
 /* There are too many vector arguments for it to be worth writing down
  * statically and are instead generated here and combined with all of the scalar
  * and unsigned scalar types in a single data structure */
@@ -444,9 +441,9 @@ generate_all_type_arguments(cl_device_id deviceID)
         "char",           "short",        "int",           "float",
         "void",           "uchar",        "unsigned char", "ushort",
         "unsigned short", "uint",         "unsigned int",  "char unsigned",
-        "short unsigned", "int unsigned", "signed char",   "signed short",
-        "signed int",     "signed long",  "char signed",   "short signed",
-        "int signed",     "signed",       "unsigned"
+        "short unsigned", "int unsigned", "signed short",  "signed int",
+        "signed long",    "short signed", "int signed",    "signed",
+        "unsigned"
     };
 
     std::vector<std::string> vector_types = { "char",   "uchar", "short",
@@ -600,9 +597,6 @@ static int run_scalar_vector_tests(cl_context context, cl_device_id deviceID)
 {
     int failed_tests = 0;
 
-    const std::vector<cl_kernel_arg_type_qualifier> type_qualifiers =
-        get_type_qualifiers(deviceID);
-
     std::vector<std::string> type_arguments =
         generate_all_type_arguments(deviceID);
 
@@ -694,21 +688,85 @@ static int run_scalar_vector_tests(cl_context context, cl_device_id deviceID)
                         address_qualifier, access_qualifier, type_qualifier,
                         arg_type, all_args.size());
 
-
-                    /* The OpenCL function shortens "unsigned" to
-                     * "u" so we need to check for "u<type>" rather
-                     * than "unsigned <type>" */
-                    if (arg_type.find("unsigned ") != std::string::npos)
-                    {
-                        static const size_t len = strlen("unsigned ");
-                        arg_type.replace(0, len, "u");
-                    }
-
                     expected_args.push_back(
                         create_expected_arg_info(kernel_argument, is_pointer));
 
                     all_args.push_back(kernel_argument);
                 }
+            }
+        }
+    }
+    const std::string kernel_src = generate_kernel(all_args);
+    failed_tests += compare_kernel_with_expected(
+        context, deviceID, kernel_src.c_str(), expected_args);
+    return failed_tests;
+}
+
+static cl_uint get_max_number_of_pipes(cl_device_id deviceID, cl_int& err)
+{
+    cl_uint ret(0);
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_PIPE_ARGS, sizeof(ret), &ret,
+                          nullptr);
+    return ret;
+}
+
+static int run_pipe_tests(cl_context context, cl_device_id deviceID)
+{
+    int failed_tests = 0;
+
+    cl_kernel_arg_address_qualifier address_qualifier =
+        CL_KERNEL_ARG_ADDRESS_PRIVATE;
+    std::vector<std::string> type_arguments =
+        generate_all_type_arguments(deviceID);
+    const std::vector<cl_kernel_arg_access_qualifier> access_qualifiers = {
+        CL_KERNEL_ARG_ACCESS_READ_ONLY, CL_KERNEL_ARG_ACCESS_WRITE_ONLY
+    };
+    std::vector<KernelArgInfo> all_args, expected_args;
+    size_t max_param_size = get_max_param_size(deviceID);
+    size_t total_param_size(0);
+    cl_int err = CL_SUCCESS;
+    cl_uint max_number_of_pipes = get_max_number_of_pipes(deviceID, err);
+    test_error_ret(err, "get_max_number_of_pipes", TEST_FAIL);
+    cl_uint number_of_pipes(0);
+
+    const bool is_pointer = false;
+    const bool is_pipe = true;
+
+    for (auto type_qualifier : pipe_qualifiers)
+    {
+        for (auto access_qualifier : access_qualifiers)
+        {
+            for (auto arg_type : type_arguments)
+            {
+                /* We cannot have void pipes */
+                if (arg_type == "void")
+                {
+                    continue;
+                }
+
+                size_t param_size = get_param_size(arg_type, deviceID, is_pipe);
+                if (param_size + total_param_size >= max_param_size
+                    || number_of_pipes == max_number_of_pipes)
+                {
+                    const std::string kernel_src = generate_kernel(all_args);
+                    failed_tests += compare_kernel_with_expected(
+                        context, deviceID, kernel_src.c_str(), expected_args);
+                    all_args.clear();
+                    expected_args.clear();
+                    total_param_size = 0;
+                    number_of_pipes = 0;
+                }
+                total_param_size += param_size;
+                number_of_pipes++;
+
+                KernelArgInfo kernel_argument(address_qualifier,
+                                              access_qualifier, type_qualifier,
+                                              arg_type, all_args.size());
+
+                expected_args.push_back(
+                    create_expected_arg_info(kernel_argument, is_pointer));
+
+                all_args.push_back(kernel_argument);
             }
         }
     }
@@ -901,6 +959,19 @@ static int run_all_tests(cl_context context, cl_device_id deviceID)
             log_error("%d Image Test(s) Failed\n", failed_image_tests);
         }
     }
+    int failed_pipe_tests = 0;
+    if (device_supports_pipes(deviceID))
+    {
+        failed_pipe_tests = run_pipe_tests(context, deviceID);
+        if (failed_pipe_tests == 0)
+        {
+            log_info("All Pipe Tests Passed\n");
+        }
+        else
+        {
+            log_error("%d Pipe Test(s) Failed\n", failed_pipe_tests);
+        }
+    }
 
     int failed_boundary_tests = run_boundary_tests(context, deviceID);
     if (failed_boundary_tests == 0)
@@ -912,7 +983,8 @@ static int run_all_tests(cl_context context, cl_device_id deviceID)
         log_error("%d Edge Case Test(s) Failed\n", failed_boundary_tests);
     }
 
-    return (failed_scalar_tests + failed_image_tests + failed_boundary_tests);
+    return (failed_scalar_tests + failed_image_tests + failed_pipe_tests
+            + failed_boundary_tests);
 }
 
 int test_get_kernel_arg_info(cl_device_id deviceID, cl_context context,
