@@ -432,10 +432,6 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
       free(extensions_supported[i]);
     }
     free(extensions);
-    if( defines ) {
-        error = clReleaseMemObject( defines );
-        test_error( error, "Unable to release memory object" );
-    }
 
     if (total_errors)
         return -1;

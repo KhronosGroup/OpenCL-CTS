@@ -637,9 +637,7 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
                 queue, buffers[0], pattern[i], ptrSizes[i],
                 ptrSizes[i] * offset_elements, ptrSizes[i] * fill_elements, 0,
                 NULL, &(event[0]));
-            /* uncomment for test debugging
-             err = clEnqueueWriteBuffer(queue, buffers[ii], CL_FALSE, 0, ptrSizes[i]*num_elements, inptr[i], 0, NULL, &(event[0]));
-             */
+
             if ( err != CL_SUCCESS ){
                 print_error( err, " clEnqueueFillBuffer failed" );
                 align_free( outptr[i] );

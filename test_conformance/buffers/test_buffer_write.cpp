@@ -630,7 +630,7 @@ int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_que
     size_t      ptrSizes[5];
     size_t      global_work_size[3];
     cl_int      err;
-    int         i, ii;
+    int i;
     int         src_flag_id, dst_flag_id;
     int         total_errors = 0;
 
@@ -753,16 +753,10 @@ int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_que
                     return -1;
                 }
 
-                if ( ! strcmp( type, "half" ) ){
-                    err = clEnqueueReadBuffer(queue, buffers[1], true, 0,
-                                              ptrSizes[i] * num_elements,
-                                              outptr[i], 0, NULL, NULL);
-                }
-                else{
-                    err = clEnqueueReadBuffer(queue, buffers[1], true, 0,
-                                              ptrSizes[i] * num_elements,
-                                              outptr[i], 0, NULL, NULL);
-                }
+                err = clEnqueueReadBuffer(queue, buffers[1], true, 0,
+                                          ptrSizes[i] * num_elements, outptr[i],
+                                          0, NULL, NULL);
+
                 if ( err != CL_SUCCESS ){
                     align_free( outptr[i] );
                     print_error( err, " clEnqueueReadBuffer failed" );
@@ -806,7 +800,7 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
     size_t      size = sizeof( TestStruct );
     size_t      global_work_size[3];
     cl_int      err;
-    int         i, ii;
+    int i;
     cl_uint     j;
     int         loops = 1;      // no vector for structs
     int         src_flag_id, dst_flag_id;
@@ -895,7 +889,8 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
 
                     memcpy(dataPtr, inptr[i], ptrSizes[i]*num_elements);
 
-                    err = clEnqueueUnmapMemObject(queue, buffers[ii], dataPtr, 0, NULL, NULL);
+                    err = clEnqueueUnmapMemObject(queue, buffers[0], dataPtr, 0,
+                                                  NULL, NULL);
                     if (err) {
                         print_error(err, "clEnqueueUnmapMemObject failed");
                         align_free( outptr[i] );
@@ -915,8 +910,10 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
                     }
                 }
 
-                err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[ii] );
-                err |= clSetKernelArg( kernel[i], 1, sizeof( cl_mem ), (void *)&buffers[ii+1] );
+                err = clSetKernelArg(kernel[i], 0, sizeof(cl_mem),
+                                     (void *)&buffers[0]);
+                err |= clSetKernelArg(kernel[i], 1, sizeof(cl_mem),
+                                      (void *)&buffers[1]);
                 if ( err != CL_SUCCESS ){
                     align_free( outptr[i] );
                     print_error( err, " clSetKernelArg failed" );
