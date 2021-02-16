@@ -120,6 +120,7 @@ public:
 
     clMemWrapper &operator=(const cl_mem &rhs)
     {
+        if (mMem != NULL) clReleaseMemObject(mMem);
         mMem = rhs;
         return *this;
     }
