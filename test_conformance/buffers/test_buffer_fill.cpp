@@ -568,7 +568,7 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
     size_t      ptrSizes[5];
     size_t      global_work_size[3];
     int         err;
-    int         i, ii;
+    int i;
     int         src_flag_id;
     int         total_errors = 0;
 
