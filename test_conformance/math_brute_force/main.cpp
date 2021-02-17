@@ -1658,7 +1658,7 @@ static int IsInRTZMode(void)
             volatile float a = 0x1.0p23f;
             volatile float b = -0x1.0p23f;
             out[0] = (a + 0x1.fffffep-1f == a) && (b - 0x1.fffffep-1f == b);
-        "})";
+        })";
 
     clProgramWrapper query;
     clKernelWrapper kernel;
