@@ -36,13 +36,13 @@ int other_data_types(cl_device_id deviceID, cl_context context,
     const std::string PROGRAM_STR =
         "__kernel void TestFunction( read_only image2d_t imageIn, write_only "
         "image2d_t imageOut, " NL "                            sampler_t "
-                                  "sampler, __global int *imageRes)" NL "{" NL
+        "sampler, __global int *imageRes)" NL "{" NL
         "  int w = get_global_id(0);" NL "  int h = get_global_id(1);" NL
         "  int width = get_image_width(imageIn);" NL
         "  int height = get_image_height(imageOut);" NL
         "  float4 color0 = read_imagef(imageIn, sampler, (int2)(w,h)) - "
         "0.2f;" NL "  float4 color1 = read_imagef(imageIn, sampler, "
-                   "(float2)(w,h)) - 0.2f;" NL
+        "(float2)(w,h)) - 0.2f;" NL
         "  color0 = (color0 == color1) ? color0: (float4)(0.5, 0.5, 0.5, "
         "0.5);" NL "  write_imagef(imageOut, (int2)(w,h), color0);" NL
         "  if(w == 0 && h == 0)" NL "  {" NL "    imageRes[0] = width;" NL

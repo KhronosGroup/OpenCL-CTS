@@ -34,13 +34,13 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
     const std::string PROGRAM_STR =
         "__kernel void TestFunction( read_only image2d_t planeIn, write_only "
         "image2d_t planeOut, " NL "                            sampler_t "
-                                  "sampler, __global int *planeRes)" NL "{" NL
+        "sampler, __global int *planeRes)" NL "{" NL
         "  int w = get_global_id(0);" NL "  int h = get_global_id(1);" NL
         "  int width = get_image_width(planeIn);" NL
         "  int height = get_image_height(planeOut);" NL
         "  float4 color0 = read_imagef(planeIn, sampler, (int2)(w,h)) + "
         "0.2f;" NL "  float4 color1 = read_imagef(planeIn, sampler, "
-                   "(float2)(w,h)) + 0.2f;" NL
+        "(float2)(w,h)) + 0.2f;" NL
         "  color0 = (color0 == color1) ? color0: (float4)(0.5, 0.5, 0.5, "
         "0.5);" NL "  write_imagef(planeOut, (int2)(w,h), color0);" NL
         "  if(w == 0 && h == 0)" NL "  {" NL "    planeRes[0] = width;" NL
