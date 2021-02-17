@@ -634,6 +634,7 @@ static int TestFunc_Float_Float_Float_common(const Func *f, MTdata d,
     vlog("\n");
 
 exit:
+    // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
