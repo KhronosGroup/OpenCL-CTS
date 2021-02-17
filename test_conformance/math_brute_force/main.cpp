@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "Utility.h"
+#include "function_list.h"
+#include "sleep.h"
+#include "utility.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <time.h>
-#include "FunctionList.h"
-#include "Sleep.h"
 
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"

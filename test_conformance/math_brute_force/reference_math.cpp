@@ -21,7 +21,7 @@
 #include <string.h>
 #endif
 
-#include "Utility.h"
+#include "utility.h"
 
 #if defined(__SSE__)                                                           \
     || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
