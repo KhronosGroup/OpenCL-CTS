@@ -19,13 +19,20 @@
 #define __MEDIA_SHARING_PROCS_H__
 
 
-extern int test_context_create(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_get_device_ids(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_kernel(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_other_data_types(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_memory_access(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_interop_user_sync(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_context_create(cl_device_id deviceID, cl_context context,
+                               cl_command_queue queue, int num_elements);
+extern int test_get_device_ids(cl_device_id deviceID, cl_context context,
+                               cl_command_queue queue, int num_elements);
+extern int test_api(cl_device_id deviceID, cl_context context,
+                    cl_command_queue queue, int num_elements);
+extern int test_kernel(cl_device_id deviceID, cl_context context,
+                       cl_command_queue queue, int num_elements);
+extern int test_other_data_types(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+extern int test_memory_access(cl_device_id deviceID, cl_context context,
+                              cl_command_queue queue, int num_elements);
+extern int test_interop_user_sync(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements);
 
 
-#endif    // #ifndef __MEDIA_SHARING_PROCS_H__ 
+#endif // #ifndef __MEDIA_SHARING_PROCS_H__

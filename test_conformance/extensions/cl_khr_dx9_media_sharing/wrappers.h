@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,7 @@
 
 #if defined(_WIN32)
 #include <d3d9.h>
-#if defined (__MINGW32__)
+#if defined(__MINGW32__)
 #include <rpcsal.h>
 typedef unsigned char UINT8;
 #define __out
@@ -44,154 +44,152 @@ typedef unsigned char UINT8;
 
 enum TDeviceStatus
 {
-  DEVICE_NOTSUPPORTED,
-  DEVICE_PASS,
-  DEVICE_FAIL,
+    DEVICE_NOTSUPPORTED,
+    DEVICE_PASS,
+    DEVICE_FAIL,
 };
 
 class CDeviceWrapper {
 public:
-  enum TAccelerationType
-  {
-    ACCELERATION_HW,
-    ACCELERATION_SW,
-  };
+    enum TAccelerationType
+    {
+        ACCELERATION_HW,
+        ACCELERATION_SW,
+    };
 
-  CDeviceWrapper();
-  virtual ~CDeviceWrapper();
+    CDeviceWrapper();
+    virtual ~CDeviceWrapper();
 
-  virtual bool AdapterNext() = 0;
-  virtual unsigned int AdapterIdx() const = 0;
-  virtual void *Device() const = 0;
-  virtual TDeviceStatus Status() const = 0;
-  virtual void *D3D() const = 0;
+    virtual bool AdapterNext() = 0;
+    virtual unsigned int AdapterIdx() const = 0;
+    virtual void *Device() const = 0;
+    virtual TDeviceStatus Status() const = 0;
+    virtual void *D3D() const = 0;
 
 #if defined(_WIN32)
-  HWND WindowHandle() const;
+    HWND WindowHandle() const;
 #endif
-  int WindowWidth() const;
-  int WindowHeight() const;
-  void WindowInit();
+    int WindowWidth() const;
+    int WindowHeight() const;
+    void WindowInit();
 
 
-  static TAccelerationType AccelerationType();
-  static void AccelerationType(TAccelerationType accelerationTypeNew);
+    static TAccelerationType AccelerationType();
+    static void AccelerationType(TAccelerationType accelerationTypeNew);
 
 private:
-  static LPCTSTR WINDOW_TITLE;
-  static const int WINDOW_WIDTH;
-  static const int WINDOW_HEIGHT;
-  static TAccelerationType accelerationType;
+    static LPCTSTR WINDOW_TITLE;
+    static const int WINDOW_WIDTH;
+    static const int WINDOW_HEIGHT;
+    static TAccelerationType accelerationType;
 
 #if defined(_WIN32)
-  HMODULE _hInstance;
-  HWND _hWnd;
+    HMODULE _hInstance;
+    HWND _hWnd;
 #endif
 
-  void WindowDestroy();
+    void WindowDestroy();
 };
 
-class CSurfaceWrapper
-{
+class CSurfaceWrapper {
 public:
-  CSurfaceWrapper();
-  virtual ~CSurfaceWrapper();
+    CSurfaceWrapper();
+    virtual ~CSurfaceWrapper();
 };
 
 #if defined(_WIN32)
-//windows specific wrappers
-class CD3D9Wrapper: public CDeviceWrapper {
+// windows specific wrappers
+class CD3D9Wrapper : public CDeviceWrapper {
 public:
-  CD3D9Wrapper();
-  ~CD3D9Wrapper();
+    CD3D9Wrapper();
+    ~CD3D9Wrapper();
 
-  virtual bool AdapterNext();
-  virtual unsigned int AdapterIdx() const;
-  virtual void *Device() const;
-  virtual TDeviceStatus Status() const;
-  virtual void *D3D() const;
+    virtual bool AdapterNext();
+    virtual unsigned int AdapterIdx() const;
+    virtual void *Device() const;
+    virtual TDeviceStatus Status() const;
+    virtual void *D3D() const;
 
 private:
-  LPDIRECT3D9 _d3d9;
-  LPDIRECT3DDEVICE9 _d3dDevice;
-  D3DDISPLAYMODE _d3ddm;
-  D3DADAPTER_IDENTIFIER9 _adapter;
-  TDeviceStatus _status;
-  unsigned int _adapterIdx;
-  bool _adapterFound;
+    LPDIRECT3D9 _d3d9;
+    LPDIRECT3DDEVICE9 _d3dDevice;
+    D3DDISPLAYMODE _d3ddm;
+    D3DADAPTER_IDENTIFIER9 _adapter;
+    TDeviceStatus _status;
+    unsigned int _adapterIdx;
+    bool _adapterFound;
 
-  D3DFORMAT Format();
-  D3DADAPTER_IDENTIFIER9 Adapter();
-  int Init();
-  void Destroy();
+    D3DFORMAT Format();
+    D3DADAPTER_IDENTIFIER9 Adapter();
+    int Init();
+    void Destroy();
 };
 
-class CD3D9ExWrapper: public CDeviceWrapper {
+class CD3D9ExWrapper : public CDeviceWrapper {
 public:
-  CD3D9ExWrapper();
-  ~CD3D9ExWrapper();
+    CD3D9ExWrapper();
+    ~CD3D9ExWrapper();
 
-  virtual bool AdapterNext();
-  virtual unsigned int AdapterIdx() const;
-  virtual void *Device() const;
-  virtual TDeviceStatus Status() const;
-  virtual void *D3D() const;
+    virtual bool AdapterNext();
+    virtual unsigned int AdapterIdx() const;
+    virtual void *Device() const;
+    virtual TDeviceStatus Status() const;
+    virtual void *D3D() const;
 
 private:
-  LPDIRECT3D9EX _d3d9Ex;
-  LPDIRECT3DDEVICE9EX _d3dDeviceEx;
-  D3DDISPLAYMODEEX _d3ddmEx;
-  D3DADAPTER_IDENTIFIER9 _adapter;
-  TDeviceStatus _status;
-  unsigned int _adapterIdx;
-  bool _adapterFound;
+    LPDIRECT3D9EX _d3d9Ex;
+    LPDIRECT3DDEVICE9EX _d3dDeviceEx;
+    D3DDISPLAYMODEEX _d3ddmEx;
+    D3DADAPTER_IDENTIFIER9 _adapter;
+    TDeviceStatus _status;
+    unsigned int _adapterIdx;
+    bool _adapterFound;
 
-  D3DFORMAT Format();
-  D3DADAPTER_IDENTIFIER9 Adapter();
-  int Init();
-  void Destroy();
+    D3DFORMAT Format();
+    D3DADAPTER_IDENTIFIER9 Adapter();
+    int Init();
+    void Destroy();
 };
 
-class CDXVAWrapper: public CDeviceWrapper {
+class CDXVAWrapper : public CDeviceWrapper {
 public:
-  CDXVAWrapper();
-  ~CDXVAWrapper();
+    CDXVAWrapper();
+    ~CDXVAWrapper();
 
-  virtual bool AdapterNext();
-  virtual unsigned int AdapterIdx() const;
-  virtual void *Device() const;
-  virtual TDeviceStatus Status() const;
-  virtual void *D3D() const;
-  const CD3D9ExWrapper &D3D9() const;
+    virtual bool AdapterNext();
+    virtual unsigned int AdapterIdx() const;
+    virtual void *Device() const;
+    virtual TDeviceStatus Status() const;
+    virtual void *D3D() const;
+    const CD3D9ExWrapper &D3D9() const;
 
 private:
-  CD3D9ExWrapper _d3d9;
-  IDXVAHD_Device *_dxvaDevice;
-  TDeviceStatus _status;
-  bool _adapterFound;
+    CD3D9ExWrapper _d3d9;
+    IDXVAHD_Device *_dxvaDevice;
+    TDeviceStatus _status;
+    bool _adapterFound;
 
-  static const D3DFORMAT RENDER_TARGET_FORMAT;
-  static const D3DFORMAT VIDEO_FORMAT;
-  static const unsigned int VIDEO_FPS;
+    static const D3DFORMAT RENDER_TARGET_FORMAT;
+    static const D3DFORMAT VIDEO_FORMAT;
+    static const unsigned int VIDEO_FPS;
 
-  TDeviceStatus DXVAHDInit();
-  void DXVAHDDestroy();
+    TDeviceStatus DXVAHDInit();
+    void DXVAHDDestroy();
 };
 
-class CD3D9SurfaceWrapper: public CSurfaceWrapper
-{
+class CD3D9SurfaceWrapper : public CSurfaceWrapper {
 public:
-  CD3D9SurfaceWrapper();
-  CD3D9SurfaceWrapper( IDirect3DSurface9* mem );
-  ~CD3D9SurfaceWrapper();
+    CD3D9SurfaceWrapper();
+    CD3D9SurfaceWrapper(IDirect3DSurface9 *mem);
+    ~CD3D9SurfaceWrapper();
 
-  operator IDirect3DSurface9*() { return mMem; }
-  IDirect3DSurface9* * operator&() { return &mMem; }
-  IDirect3DSurface9* operator->() const { return mMem; }
+    operator IDirect3DSurface9 *() { return mMem; }
+    IDirect3DSurface9 **operator&() { return &mMem; }
+    IDirect3DSurface9 *operator->() const { return mMem; }
 
 private:
-  IDirect3DSurface9* mMem;
+    IDirect3DSurface9 *mMem;
 };
 #endif
 
-#endif  // __D3D_WRAPPERS
+#endif // __D3D_WRAPPERS
