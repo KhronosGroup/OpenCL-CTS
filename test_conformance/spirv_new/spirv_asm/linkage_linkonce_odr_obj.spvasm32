@@ -7,13 +7,8 @@
                OpCapability Linkage
                OpCapability Kernel
                OpExtension "SPV_KHR_linkonce_odr"
-
                OpMemoryModel Physical32 OpenCL
-               ; Use this for now, for testing:
-               OpDecorate %a LinkageAttributes "a_rename" Export
-               ; Really should use this though:
-               ; OpDecorate %a LinkageAttributes "a" LinkOnceODR
-
+               OpDecorate %a LinkageAttributes "a" LinkOnceODR
                OpDecorate %b LinkageAttributes "b" Export
        %uint = OpTypeInt 32 0
      %uint_5 = OpConstant %uint 5
