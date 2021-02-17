@@ -600,9 +600,12 @@ static int test_buffer_map_read( cl_device_id deviceID, cl_context context, cl_c
             }
 
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
-                buffer = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, outptr[i], &err);
+                buffer =
+                    clCreateBuffer(context, flag_set[src_flag_id],
+                                   ptrSizes[i] * num_elements, outptr[i], &err);
             else
-                buffer = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, NULL, &err);
+                buffer = clCreateBuffer(context, flag_set[src_flag_id],
+                                        ptrSizes[i] * num_elements, NULL, &err);
 
             if (!buffer || err)
             {
@@ -611,7 +614,8 @@ static int test_buffer_map_read( cl_device_id deviceID, cl_context context, cl_c
                 return -1;
             }
 
-            err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffer );
+            err = clSetKernelArg(kernel[i], 0, sizeof(cl_mem), (void *)&buffer);
+
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArg failed\n" );
                 align_free( outptr[i] );
@@ -630,8 +634,11 @@ static int test_buffer_map_read( cl_device_id deviceID, cl_context context, cl_c
                 return -1;
             }
 
-            mappedPtr = clEnqueueMapBuffer(queue, buffer, CL_TRUE, CL_MAP_READ, 0, ptrSizes[i]*num_elements, 0, NULL, NULL, &err);
-            if ( err != CL_SUCCESS ){
+            mappedPtr = clEnqueueMapBuffer(queue, buffer, CL_TRUE, CL_MAP_READ,
+                                           0, ptrSizes[i] * num_elements, 0,
+                                           NULL, NULL, &err);
+            if (err != CL_SUCCESS)
+            {
                 print_error( err, "clEnqueueMapBuffer failed" );
                 align_free( outptr[i] );
                 return -1;
@@ -647,7 +654,8 @@ static int test_buffer_map_read( cl_device_id deviceID, cl_context context, cl_c
                          1 << i, flag_set_names[src_flag_id]);
             }
 
-            err = clEnqueueUnmapMemObject(queue, buffer, mappedPtr, 0, NULL, NULL);
+            err = clEnqueueUnmapMemObject(queue, buffer, mappedPtr, 0, NULL,
+                                          NULL);
             test_error(err, "clEnqueueUnmapMemObject failed");
 
             // If we are using the outptr[i] as backing via USE_HOST_PTR we need to make sure we are done before freeing.
