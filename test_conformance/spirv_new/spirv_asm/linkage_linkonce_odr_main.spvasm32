@@ -12,12 +12,7 @@
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
                OpDecorate %18 FuncParamAttr NoCapture
-               
-               ; Use this for now, for testing:
-               OpDecorate %a LinkageAttributes "a" Export
-               ; Really should use this though:
-               ; OpDecorate %a LinkageAttributes "a" LinkOnceODR
-
+               OpDecorate %a LinkageAttributes "a" LinkOnceODR
                OpDecorate %b LinkageAttributes "b" Import
                OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
        %uint = OpTypeInt 32 0

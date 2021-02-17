@@ -8,18 +8,12 @@
                OpCapability Kernel
                OpCapability Int64
                OpExtension "SPV_KHR_linkonce_odr"
-
                OpMemoryModel Physical64 OpenCL
                OpEntryPoint Kernel %18 "test_linkonce_odr" %__spirv_BuiltInGlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
                OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
                OpDecorate %19 FuncParamAttr NoCapture
-               
-               ; Use this for now, for testing:
-               OpDecorate %a LinkageAttributes "a" Export
-               ; Really should use this though:
-               ; OpDecorate %a LinkageAttributes "a" LinkOnceODR
-
+               OpDecorate %a LinkageAttributes "a" LinkOnceODR
                OpDecorate %b LinkageAttributes "b" Import
                OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
       %ulong = OpTypeInt 64 0
