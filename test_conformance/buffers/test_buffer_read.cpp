@@ -621,7 +621,6 @@ static int verify_read_struct(TestStruct *outptr, int n)
 int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
                       const char *kernelCode[], const char *kernelName[], int (*fn)(void *,int) )
 {
-    clMemWrapper buffers[5];
     void        *outptr[5];
     void        *inptr[5];
     clProgramWrapper program[5];
@@ -664,7 +663,7 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
-
+            clMemWrapper buffer;
             outptr[i] = align_malloc( ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
                 log_error( " unable to allocate %d bytes for outptr\n", (int)( ptrSizes[i] * num_elements ) );
@@ -678,9 +677,9 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
 
 
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
-                buffers[i] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, inptr[i], &err);
+                buffer = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, inptr[i], &err);
             else
-                buffers[i] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, NULL, &err);
+                buffer = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, NULL, &err);
             if ( err != CL_SUCCESS ){
                 print_error(err, " clCreateBuffer failed\n" );
                 align_free( outptr[i] );
@@ -688,7 +687,7 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
                 return -1;
             }
 
-            err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[i] );
+            err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffer );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArg failed" );
                 align_free( outptr[i] );
@@ -704,7 +703,7 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
                 return -1;
             }
 
-            err = clEnqueueReadBuffer( queue, buffers[i], CL_TRUE, 0, ptrSizes[i]*num_elements, outptr[i], 0, NULL, NULL );
+            err = clEnqueueReadBuffer( queue, buffer, CL_TRUE, 0, ptrSizes[i]*num_elements, outptr[i], 0, NULL, NULL );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueReadBuffer failed" );
                 align_free( outptr[i] );
@@ -722,7 +721,7 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
                          1 << i, flag_set_names[src_flag_id]);
             }
 
-            err = clEnqueueReadBuffer( queue, buffers[i], CL_TRUE, 0, ptrSizes[i]*num_elements, inptr[i], 0, NULL, NULL );
+            err = clEnqueueReadBuffer( queue, buffer, CL_TRUE, 0, ptrSizes[i]*num_elements, inptr[i], 0, NULL, NULL );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueReadBuffer failed" );
                 align_free( outptr[i] );
@@ -752,7 +751,6 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
 int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
                             const char *kernelCode[], const char *kernelName[], int (*fn)(void *,int) )
 {
-    clMemWrapper buffers[5];
     clProgramWrapper program[5];
     clKernelWrapper kernel[5];
     clEventWrapper event;
@@ -796,7 +794,7 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
-
+            clMemWrapper buffer;
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
                 log_error( " unable to allocate %d bytes for outptr\n", (int)(ptrSizes[i] * num_elements) );
@@ -812,9 +810,9 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
 
 
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
-                buffers[i] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, inptr[i], &err);
+                buffer = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, inptr[i], &err);
             else
-                buffers[i] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, NULL, &err);
+                buffer = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, NULL, &err);
             if ( err != CL_SUCCESS ){
                 print_error(err, " clCreateBuffer failed\n" );
                 align_free( outptr[i] );
@@ -822,7 +820,7 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
                 return -1;
             }
 
-            err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[i] );
+            err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffer );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArg failed" );
                 align_free( outptr[i] );
@@ -839,7 +837,7 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
             }
 
             lastIndex = ( num_elements * ( 1 << i ) - 1 ) * ptrSizes[0];
-            err = clEnqueueReadBuffer( queue, buffers[i], false, 0, ptrSizes[i]*num_elements, outptr[i], 0, NULL, &event );
+            err = clEnqueueReadBuffer( queue, buffer, false, 0, ptrSizes[i]*num_elements, outptr[i], 0, NULL, &event );
 #ifdef CHECK_FOR_NON_WAIT
             if ( ((uchar *)outptr[i])[lastIndex] ){
                 log_error( "    clEnqueueReadBuffer() possibly returned only after inappropriately waiting for execution to be finished\n" );
@@ -885,7 +883,6 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
 int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
                                     const char *kernelCode[], const char *kernelName[], int (*fn)(void *,int) )
 {
-    clMemWrapper buffers[5];
     clProgramWrapper program[5];
     clKernelWrapper kernel[5];
     clEventWrapper event;
@@ -928,7 +925,7 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
-
+            clMemWrapper buffer;
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
                 log_error( " unable to allocate %d bytes for outptr\n", (int)(ptrSizes[i] * num_elements) );
@@ -943,9 +940,9 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
             memset( inptr[i], 0, ptrSizes[i] * num_elements );  // initialize to zero to tell difference
 
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
-                buffers[i] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, inptr[i], &err);
+                buffer = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, inptr[i], &err);
             else
-                buffers[i] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, NULL, &err);
+                buffer = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, NULL, &err);
             if ( err != CL_SUCCESS ){
                 print_error(err, " clCreateBuffer failed\n" );
                 align_free( outptr[i] );
@@ -953,7 +950,7 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
                 return -1;
             }
 
-            err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[i] );
+            err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffer );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArgs failed" );
                 align_free( outptr[i] );
@@ -970,7 +967,7 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
             }
 
             lastIndex = ( num_elements * ( 1 << i ) - 1 ) * ptrSizes[0];
-            err = clEnqueueReadBuffer( queue, buffers[i], false, 0, ptrSizes[i]*num_elements, (void *)(outptr[i]), 0, NULL, &event );
+            err = clEnqueueReadBuffer( queue, buffer, false, 0, ptrSizes[i]*num_elements, (void *)(outptr[i]), 0, NULL, &event );
 #ifdef CHECK_FOR_NON_WAIT
             if ( ((uchar *)outptr[i])[lastIndex] ){
                 log_error( "    clEnqueueReadBuffer() possibly returned only after inappropriately waiting for execution to be finished\n" );
