@@ -13,25 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "function_list.h"
+#include "test_functions.h"
 #include "utility.h"
 
 #include <string.h>
-
-int TestFunc_Float_Float_Float(const Func *f, MTdata, bool relaxedMode);
-int TestFunc_Double_Double_Double(const Func *f, MTdata, bool relaxedMode);
-int TestFunc_Float_Float_Float_nextafter(const Func *f, MTdata,
-                                         bool relaxedMode);
-int TestFunc_Double_Double_Double_nextafter(const Func *f, MTdata,
-                                            bool relaxedMode);
-
-extern const vtbl _binary = { "binary", TestFunc_Float_Float_Float,
-                              TestFunc_Double_Double_Double };
-
-extern const vtbl _binary_nextafter = {
-    "binary_nextafter", TestFunc_Float_Float_Float_nextafter,
-    TestFunc_Double_Double_Double_nextafter
-};
 
 const float twoToMinus126 = MAKE_HEX_FLOAT(0x1p-126f, 1, -126);
 const double twoToMinus1022 = MAKE_HEX_DOUBLE(0x1p-1022, 1, -1022);

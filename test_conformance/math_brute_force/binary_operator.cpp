@@ -13,19 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "function_list.h"
+#include "test_functions.h"
 #include "utility.h"
 
 #include <string.h>
-
-int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata,
-                                        bool relaxedMode);
-int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata,
-                                           bool relaxedMode);
-
-extern const vtbl _binary_operator = { "binaryOperator",
-                                       TestFunc_Float_Float_Float_Operator,
-                                       TestFunc_Double_Double_Double_Operator };
 
 static int BuildKernel(const char *name, const char *operator_symbol,
                        int vectorSize, cl_uint kernel_count, cl_kernel *k,

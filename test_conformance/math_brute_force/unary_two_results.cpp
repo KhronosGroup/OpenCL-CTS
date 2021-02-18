@@ -13,17 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "function_list.h"
+#include "test_functions.h"
 #include "utility.h"
 
 #include <string.h>
-
-int TestFunc_Float2_Float(const Func *f, MTdata, bool relaxedMode);
-int TestFunc_Double2_Double(const Func *f, MTdata, bool relaxedMode);
-
-extern const vtbl _unary_two_results = { "unary_two_results",
-                                         TestFunc_Float2_Float,
-                                         TestFunc_Double2_Double };
 
 static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
                        cl_program *p, bool relaxedMode)

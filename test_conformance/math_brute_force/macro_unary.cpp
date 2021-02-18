@@ -13,17 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "function_list.h"
+#include "test_functions.h"
 #include "utility.h"
 
 #include <string.h>
-
-int TestMacro_Int_Float(const Func *f, MTdata, bool relaxedMode);
-int TestMacro_Int_Double(const Func *f, MTdata, bool relaxedMode);
-
-extern const vtbl _macro_unary = { "macro_unary", TestMacro_Int_Float,
-                                   TestMacro_Int_Double };
-
 
 static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                        cl_kernel *k, cl_program *p, bool relaxedMode)

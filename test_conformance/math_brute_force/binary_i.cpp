@@ -13,18 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "function_list.h"
+#include "test_functions.h"
 #include "utility.h"
 
 #include <limits.h>
 #include <string.h>
-
-int TestFunc_Float_Float_Int(const Func *f, MTdata, bool relaxedMode);
-int TestFunc_Double_Double_Int(const Func *f, MTdata, bool relaxedMode);
-
-extern const vtbl _binary_i = { "binary_i", TestFunc_Float_Float_Int,
-                                TestFunc_Double_Double_Int };
-
 
 static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                        cl_kernel *k, cl_program *p, bool relaxedMode)
