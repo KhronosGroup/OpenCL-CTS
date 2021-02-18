@@ -132,7 +132,7 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
                         "   size_t i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
-                        "( in1[i], in2[i], out2[i] );\n"
+                        "( in1[i], in2[i], out2 + i );\n"
                         "}\n" };
 
     const char *c3[] = {
