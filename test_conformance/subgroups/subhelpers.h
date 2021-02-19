@@ -1145,6 +1145,11 @@ inline bool compare_ordered(const subgroups::cl_half &lhs,
         && !is_half_nan(lhs.data);
 }
 
+template <typename Ty>
+inline bool compare_ordered(const subgroups::cl_half &lhs, const int &rhs)
+{
+    return cl_half_to_float(lhs.data) == rhs;
+}
 
 // Run a test kernel to compute the result of a built-in on an input
 static int run_kernel(cl_context context, cl_command_queue queue,
@@ -1223,7 +1228,7 @@ struct test
                    cl_command_queue queue, int num_elements, const char *kname,
                    const char *src, int dynscl, bool useCoreSubgroups,
                    std::vector<std::string> const &required_extensions = {},
-                   int work_items_mask = -1)
+                   unsigned int work_items_mask = 0)
     {
         size_t tmp;
         int error;
@@ -1238,7 +1243,7 @@ struct test
         Ty mapin[LSIZE];
         Ty mapout[LSIZE];
         std::stringstream kernel_sstr;
-        if (work_items_mask != -1)
+        if (work_items_mask != 0)
         {
             kernel_sstr << "#define WORK_ITEMS_MASK ";
             kernel_sstr << "0x" << std::hex << work_items_mask << "\n";
