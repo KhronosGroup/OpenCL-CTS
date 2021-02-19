@@ -234,4 +234,3 @@ int determine_validation_error_offset(
 extern int filter_rounding_errors(int forceCorrectlyRoundedWrites,
                                   image_descriptor *imageInfo, float *errors);
 extern void filter_undefined_bits(image_descriptor *imageInfo, char *resultPtr);
-

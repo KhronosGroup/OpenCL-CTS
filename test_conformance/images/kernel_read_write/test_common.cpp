@@ -1579,4 +1579,3 @@ int filter_rounding_errors(int forceCorrectlyRoundedWrites,
 
     return 1;
 }
-
