@@ -265,7 +265,8 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     for( i = 0; i < TEST_SIZE; i++ )
         data[i] = genrand_int32(seed);
 
-    stream = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sizeof(cl_int) * TEST_SIZE, data, &error);
+    stream = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                            sizeof(cl_int) * TEST_SIZE, data, &error);
     test_error( error, "Unable to create test array" );
 
     // Update the expected results

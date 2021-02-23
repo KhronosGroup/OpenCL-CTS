@@ -17,7 +17,9 @@
 #include <math.h>
 #include "fplib.h"
 
+#if !defined(FLT_MANT_DIG)
 #define FLT_MANT_DIG    24
+#endif
 #define as_float(x)     (*((float *)(&x)))
 #define as_long(x)      (*((int64_t *)(&x)))
 
@@ -145,6 +147,9 @@ float qcom_s64_2_f32(int64_t data, bool sat, roundingMode rnd)
                     return as_float(result);
             }
         }
+        case qcomRoundingModeCount: {
+            break; // Avoid build error for unhandled enum value
+        }
     }
     return 0.0f;
 }
@@ -215,6 +220,9 @@ float qcom_u64_2_f32(uint64_t data, bool sat, roundingMode rnd)
 
             uint32_t result = exponent | mantissa;
             return as_float(result); // for positive inputs return RTZ result
+        }
+        case qcomRoundingModeCount: {
+            break; // Avoid build error for unhandled enum value
         }
     }
     return 0.0f;

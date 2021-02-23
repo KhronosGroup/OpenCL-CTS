@@ -243,13 +243,17 @@ int test_atomic_function(cl_device_id deviceID, cl_context context, cl_command_q
     for( size_t i = 0; i < numDestItems; i++ )
         memcpy( destItems + i * typeSize, startValue, typeSize );
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), typeSize * numDestItems, destItems, NULL);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                typeSize * numDestItems, destItems, NULL);
     if (!streams[0])
     {
         log_error("ERROR: Creating output array failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(( startRefValues != NULL ? CL_MEM_COPY_HOST_PTR : CL_MEM_READ_WRITE )), typeSize * threadSize, startRefValues, NULL);
+    streams[1] = clCreateBuffer(
+        context,
+        ((startRefValues != NULL ? CL_MEM_COPY_HOST_PTR : CL_MEM_READ_WRITE)),
+        typeSize * threadSize, startRefValues, NULL);
     if (!streams[1])
     {
         log_error("ERROR: Creating reference array failed!\n");
@@ -1000,8 +1004,7 @@ cl_long test_atomic_and_result_long( size_t size, cl_long *startRefValues, size_
     // Last item doesn't get and'ed on every bit, so we have to mask away
     size_t numBits = (size_t)size - whichResult * 64;
     cl_long bits = (cl_long)0xffffffffffffffffLL;
-    for( size_t i = 0; i < numBits; i++ )
-        bits &= ~( 1 << i );
+    for (size_t i = 0; i < numBits; i++) bits &= ~(1LL << i);
 
     return bits;
 }
@@ -1082,18 +1085,16 @@ int test_atomic_or(cl_device_id deviceID, cl_context context, cl_command_queue q
 #pragma mark ---- xor
 
 const char atom_xor_core[] =
-"    size_t numBits = sizeof( destMemory[0] ) * 8;\n"
-"    int  bitIndex = tid & ( numBits - 1 );\n"
-"\n"
-"    oldValues[tid] = atom_xor( &destMemory[0], 1 << bitIndex );\n"
-;
+    "    size_t numBits = sizeof( destMemory[0] ) * 8;\n"
+    "    int  bitIndex = tid & ( numBits - 1 );\n"
+    "\n"
+    "    oldValues[tid] = atom_xor( &destMemory[0], 1L << bitIndex );\n";
 
 const char atomic_xor_core[] =
-"    size_t numBits = sizeof( destMemory[0] ) * 8;\n"
-"    int  bitIndex = tid & ( numBits - 1 );\n"
-"\n"
-"    oldValues[tid] = atomic_xor( &destMemory[0], 1 << bitIndex );\n"
-;
+    "    size_t numBits = sizeof( destMemory[0] ) * 8;\n"
+    "    int  bitIndex = tid & ( numBits - 1 );\n"
+    "\n"
+    "    oldValues[tid] = atomic_xor( &destMemory[0], 1L << bitIndex );\n";
 
 cl_int test_atomic_xor_result_int( size_t size, cl_int *startRefValues, size_t whichResult )
 {

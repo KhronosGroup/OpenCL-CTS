@@ -126,6 +126,7 @@ int check_times(cl_ulong queueStart, cl_ulong commandSubmit, cl_ulong commandSta
 
 int main( int argc, const char *argv[] )
 {
-    return runTestHarness( argc, argv, test_num, test_list, false, false, CL_QUEUE_PROFILING_ENABLE );
+    return runTestHarness(argc, argv, test_num, test_list, false,
+                          CL_QUEUE_PROFILING_ENABLE);
 }
 

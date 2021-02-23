@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017, 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,19 +15,6 @@
 //
 #include "test_common.h"
 #include <float.h>
-
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool         gDebugTrace, gExtraValidateInfo, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestMipmaps;
-extern bool         gUseKernelSamplers;
-extern cl_filter_mode   gFilterModeToUse;
-extern cl_addressing_mode   gAddressModeToUse;
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
-extern bool gDeviceLt20;
-#define MAX_TRIES               1
-#define MAX_CLAMPED             1
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.
@@ -88,7 +75,6 @@ const char *float2DArrayUnnormalizedCoordKernelSource =
 
 static const char *samplerKernelArg = " sampler_t imageSampler,";
 
-extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo, int x, int y, int z, float *outData );
 template <class T> int determine_validation_error_offset_2D_array( void *imagePtr, image_descriptor *imageInfo, image_sampler_data *imageSampler,
                                                          T *resultPtr, T * expected, float error,
                                                          float x, float y, float z, float xAddressOffset, float yAddressOffset, float zAddressOffset, size_t j, int &numTries, int &numClamped, bool printAsFloat, int lod )
@@ -230,8 +216,6 @@ template <class T> int determine_validation_error_offset_2D_array( void *imagePt
     return 0;
 }
 
-#define CLAMP( _val, _min, _max )           ((_val) < (_min) ? (_min) : (_val) > (_max) ? (_max) : (_val))
-
 static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *imageSampler, float *xOffsets, float *yOffsets, float *zOffsets, float xfract, float yfract, float zfract, int normalized_coords, MTdata d , int lod)
 {
     size_t i = 0;
@@ -307,10 +291,6 @@ static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *im
         }
     }
 }
-
-#ifndef MAX
-#define MAX(_a, _b)             ((_a) > (_b) ? (_a) : (_b))
-#endif
 
 int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_kernel kernel,
                        image_descriptor *imageInfo, image_sampler_data *imageSampler,
@@ -478,13 +458,26 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
         }
     }
 
-    xOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height * imageInfo->arraySize, xOffsetValues, &error );
+    xOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width
+                                  * imageInfo->height * imageInfo->arraySize,
+                              xOffsetValues, &error);
     test_error( error, "Unable to create x offset buffer" );
-    yOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height * imageInfo->arraySize, yOffsetValues, &error );
+    yOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width
+                                  * imageInfo->height * imageInfo->arraySize,
+                              yOffsetValues, &error);
     test_error( error, "Unable to create y offset buffer" );
-    zOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width * imageInfo->height * imageInfo->arraySize, zOffsetValues, &error );
+    zOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width
+                                  * imageInfo->height * imageInfo->arraySize,
+                              zOffsetValues, &error);
     test_error( error, "Unable to create y offset buffer" );
-    results = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  get_explicit_type_size( outputType ) * 4 * imageInfo->width * imageInfo->height * imageInfo->arraySize, NULL, &error );
+    results =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       get_explicit_type_size(outputType) * 4 * imageInfo->width
+                           * imageInfo->height * imageInfo->arraySize,
+                       NULL, &error);
     test_error( error, "Unable to create result buffer" );
 
     // Create sampler to use
@@ -1304,8 +1297,11 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
     return numTries != MAX_TRIES || numClamped != MAX_CLAMPED;
 }
 
-int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler,
-                           bool floatCoords, ExplicitType outputType )
+int test_read_image_set_2D_array(cl_device_id device, cl_context context,
+                                 cl_command_queue queue,
+                                 const cl_image_format *format,
+                                 image_sampler_data *imageSampler,
+                                 bool floatCoords, ExplicitType outputType)
 {
     char programSrc[10240];
     const char *ptr;
@@ -1394,7 +1390,8 @@ int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_co
             gTestMipmaps ? ", lod" : " " );
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     test_error( error, "Unable to create testing kernel" );
 
     // Run tests

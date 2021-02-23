@@ -84,11 +84,10 @@ int test_single_param_integer_kernel(cl_command_queue queue, cl_context context,
                 useOpKernel ? fnName : "", useOpKernel ? "" : fnName, sizeName,
                 sizeName );
 
-    bool isOpenCL20Function = (strcmp(fnName,"ctz") == 0)? true: false;
-
     /* Create kernels */
     programPtr = kernelSource;
-    if( create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, (const char **)&programPtr, "sample_test", isOpenCL20Function ? "-cl-std=CL2.0": "" ) )
+    if (create_single_kernel_helper(context, &program, &kernel, 1,
+                                    (const char **)&programPtr, "sample_test"))
     {
         log_error("The program we attempted to compile was: \n%s\n", kernelSource);
         return -1;
@@ -97,9 +96,9 @@ int test_single_param_integer_kernel(cl_command_queue queue, cl_context context,
     /* Generate some streams */
     generate_random_data( vecType, vecSize * TEST_SIZE, d, inDataA );
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR),
-                                get_explicit_type_size( vecType ) * vecSize * TEST_SIZE,
-                                inDataA, NULL);
+    streams[0] = clCreateBuffer(
+        context, CL_MEM_COPY_HOST_PTR,
+        get_explicit_type_size(vecType) * vecSize * TEST_SIZE, inDataA, NULL);
     if( streams[0] == NULL )
     {
         log_error("ERROR: Creating input array A failed!\n");
@@ -111,9 +110,10 @@ int test_single_param_integer_kernel(cl_command_queue queue, cl_context context,
         // Op kernels use an r/w buffer for the second param, so we need to init it with data
         generate_random_data( vecType, vecSize * TEST_SIZE, d, inDataB );
     }
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE | ( useOpKernel ? CL_MEM_COPY_HOST_PTR : 0 )),
-                                 get_explicit_type_size( vecType ) * vecSize * TEST_SIZE,
-                                ( useOpKernel ) ? &inDataB : NULL, NULL );
+    streams[1] = clCreateBuffer(
+        context, (CL_MEM_READ_WRITE | (useOpKernel ? CL_MEM_COPY_HOST_PTR : 0)),
+        get_explicit_type_size(vecType) * vecSize * TEST_SIZE,
+        (useOpKernel) ? &inDataB : NULL, NULL);
     if( streams[1] == NULL )
     {
         log_error("ERROR: Creating output array failed!\n");
@@ -668,25 +668,25 @@ int test_two_param_integer_kernel(cl_command_queue queue, cl_context context, co
     generate_random_data( vecAType, vecSize * TEST_SIZE, d, inDataA );
     generate_random_data( vecBType, vecSize * TEST_SIZE, d, inDataB );
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR),
-                                get_explicit_type_size( vecAType ) * vecSize * TEST_SIZE,
-                                &inDataA, NULL);
+    streams[0] = clCreateBuffer(
+        context, CL_MEM_COPY_HOST_PTR,
+        get_explicit_type_size(vecAType) * vecSize * TEST_SIZE, &inDataA, NULL);
     if( streams[0] == NULL )
     {
         log_error("ERROR: Creating input array A failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR),
-                                get_explicit_type_size( vecBType ) * vecSize * TEST_SIZE,
-                                &inDataB, NULL);
+    streams[1] = clCreateBuffer(
+        context, CL_MEM_COPY_HOST_PTR,
+        get_explicit_type_size(vecBType) * vecSize * TEST_SIZE, &inDataB, NULL);
     if( streams[1] == NULL )
     {
         log_error("ERROR: Creating input array B failed!\n");
         return -1;
     }
-    streams[2] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),
-                                 get_explicit_type_size( vecAType ) * vecSize * TEST_SIZE,
-                                 NULL, NULL );
+    streams[2] = clCreateBuffer(
+        context, CL_MEM_READ_WRITE,
+        get_explicit_type_size(vecAType) * vecSize * TEST_SIZE, NULL, NULL);
     if( streams[2] == NULL )
     {
         log_error("ERROR: Creating output array failed!\n");
@@ -1325,25 +1325,33 @@ int test_three_param_integer_kernel(cl_command_queue queue, cl_context context, 
     generate_random_data( vecBType, vecSize * TEST_SIZE, d, inDataB );
     generate_random_data( vecCType, vecSize * TEST_SIZE, d, inDataC );
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), get_explicit_type_size( vecAType ) * vecSize * TEST_SIZE, &inDataA, NULL);
+    streams[0] = clCreateBuffer(
+        context, CL_MEM_COPY_HOST_PTR,
+        get_explicit_type_size(vecAType) * vecSize * TEST_SIZE, &inDataA, NULL);
     if( streams[0] == NULL )
     {
         log_error("ERROR: Creating input array A failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), get_explicit_type_size( vecBType ) * vecSize * TEST_SIZE, &inDataB, NULL);
+    streams[1] = clCreateBuffer(
+        context, CL_MEM_COPY_HOST_PTR,
+        get_explicit_type_size(vecBType) * vecSize * TEST_SIZE, &inDataB, NULL);
     if( streams[1] == NULL )
     {
         log_error("ERROR: Creating input array B failed!\n");
         return -1;
     }
-    streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), get_explicit_type_size( vecCType ) * vecSize * TEST_SIZE, &inDataC, NULL);
+    streams[2] = clCreateBuffer(
+        context, CL_MEM_COPY_HOST_PTR,
+        get_explicit_type_size(vecCType) * vecSize * TEST_SIZE, &inDataC, NULL);
     if( streams[2] == NULL )
     {
         log_error("ERROR: Creating input array C failed!\n");
         return -1;
     }
-    streams[3] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), get_explicit_type_size( destType ) * vecSize * TEST_SIZE, NULL, NULL );
+    streams[3] = clCreateBuffer(
+        context, CL_MEM_READ_WRITE,
+        get_explicit_type_size(destType) * vecSize * TEST_SIZE, NULL, NULL);
     if( streams[3] == NULL )
     {
         log_error("ERROR: Creating output array failed!\n");

@@ -129,13 +129,9 @@ int test_ext_cl_khr_spirv_no_integer_wrap_decoration(cl_device_id deviceID,
     {
         // Run the cl kernel for reference results
         clProgramWrapper prog;
-        err = create_single_kernel_helper_create_program(context, &prog, 1, &kernelBuf, NULL);
-        SPIRV_CHECK_ERROR(err, "Failed to create cl program");
-
-        err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
-        SPIRV_CHECK_ERROR(err, "Failed to build program");
-
-        clKernelWrapper kernel = clCreateKernel(prog, "fmath_cl", &err);
+        clKernelWrapper kernel;
+        err = create_single_kernel_helper(context, &prog, &kernel, 1,
+                                          &kernelBuf, "fmath_cl");
         SPIRV_CHECK_ERROR(err, "Failed to create cl kernel");
 
         clMemWrapper ref = clCreateBuffer(context, CL_MEM_READ_WRITE, bytes, NULL, &err);

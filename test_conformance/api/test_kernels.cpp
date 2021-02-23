@@ -192,10 +192,10 @@ int test_execute_kernel_local_sizes(cl_device_id deviceID, cl_context context, c
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                 sizeof(cl_float) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                 sizeof(cl_int) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
 
@@ -323,10 +323,10 @@ int test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_c
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                 sizeof(cl_float) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                 sizeof(cl_int) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
 
@@ -412,15 +412,15 @@ int test_set_kernel_arg_constant(cl_device_id deviceID, cl_context context, cl_c
     }
     free_mtdata(d); d = NULL;
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR),
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
                                 sizeof(cl_int) * num_elements,
                                 randomTestDataA.data(), &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR),
+    streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
                                 sizeof(cl_int) * num_elements,
                                 randomTestDataB.data(), &error);
     test_error( error, "Creating test array failed" );
-    streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
+    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                 sizeof(cl_int) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
 
@@ -496,11 +496,11 @@ int test_set_kernel_arg_struct_array(cl_device_id deviceID, cl_context context, 
     }
     free_mtdata(d); d = NULL;
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR),
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
                                 sizeof(image_pair_t) * num_elements,
                                 (void *)image_pair.data(), &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                 sizeof(cl_int) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
 
@@ -593,11 +593,11 @@ int test_kernel_global_constant(cl_device_id deviceID, cl_context context, cl_co
     }
     free_mtdata(d); d = NULL;
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR),
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
                                 sizeof(cl_int) * num_elements,
                                 randomTestDataA.data(), &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                 sizeof(cl_int) * num_elements, NULL, &error);
     test_error( error, "Creating test array failed" );
 

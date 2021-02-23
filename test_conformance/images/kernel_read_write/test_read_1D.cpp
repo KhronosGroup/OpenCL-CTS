@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017, 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,21 +22,6 @@
     #include <sys/signal.h>
     #include <setjmp.h>
 #endif
-
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool            gDebugTrace, gExtraValidateInfo, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestMipmaps;
-extern bool            gUseKernelSamplers;
-extern cl_filter_mode    gFilterModeToUse;
-extern cl_addressing_mode    gAddressModeToUse;
-extern uint64_t gRoundingStartValue;
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
-extern bool gDeviceLt20;
-
-#define MAX_TRIES               1
-#define MAX_CLAMPED             1
 
 const char *read1DKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_t input,%s __global float *xOffsets, __global %s4 *results %s)\n"
@@ -66,8 +51,6 @@ const char *float1DKernelSource =
 
 static const char *samplerKernelArg = " sampler_t imageSampler,";
 
-extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
-                            int x, int y, int z, float *outData );
 template <class T> int determine_validation_error_1D( void *imagePtr, image_descriptor *imageInfo, image_sampler_data *imageSampler,
                                                 T *resultPtr, T * expected, float error,
                                 float x, float xAddressOffset, size_t j, int &numTries, int &numClamped, bool printAsFloat, int lod )
@@ -184,8 +167,6 @@ template <class T> int determine_validation_error_1D( void *imagePtr, image_desc
     return 0;
 }
 
-#define CLAMP( _val, _min, _max )           ((_val) < (_min) ? (_min) : (_val) > (_max) ? (_max) : (_val))
-
 static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *imageSampler, float *xOffsets, float xfract, int normalized_coords, MTdata d, int lod)
 {
     size_t i = 0;
@@ -227,11 +208,6 @@ static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *im
         }
     }
 }
-
-#ifndef MAX
-    #define MAX( _a, _b )           ((_a) > (_b) ? (_a) : (_b))
-#endif
-
 
 int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel kernel,
                         image_descriptor *imageInfo, image_sampler_data *imageSampler,
@@ -394,9 +370,14 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
     if( gDebugTrace )
         log_info( " - Creating kernel arguments...\n" );
 
-    xOffsets = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ), sizeof( cl_float ) * imageInfo->width, xOffsetValues, &error );
+    xOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                              sizeof(cl_float) * imageInfo->width,
+                              xOffsetValues, &error);
     test_error( error, "Unable to create x offset buffer" );
-    results = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  get_explicit_type_size( outputType ) * 4 * imageInfo->width, NULL, &error );
+    results = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                             get_explicit_type_size(outputType) * 4
+                                 * imageInfo->width,
+                             NULL, &error);
     test_error( error, "Unable to create result buffer" );
 
     // Create sampler to use
@@ -998,8 +979,11 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
     return numTries != MAX_TRIES || numClamped != MAX_CLAMPED;
 }
 
-int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, image_sampler_data *imageSampler,
-                        bool floatCoords, ExplicitType outputType )
+int test_read_image_set_1D(cl_device_id device, cl_context context,
+                           cl_command_queue queue,
+                           const cl_image_format *format,
+                           image_sampler_data *imageSampler, bool floatCoords,
+                           ExplicitType outputType)
 {
     char programSrc[10240];
     const char *ptr;
@@ -1068,7 +1052,8 @@ int test_read_image_set_1D( cl_device_id device, cl_context context, cl_command_
 
     ptr = programSrc;
 
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     if(error)
     {
         exit(1);

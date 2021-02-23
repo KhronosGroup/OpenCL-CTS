@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -361,8 +361,8 @@ static int verify_readwrite_half(void *ptr1, void *ptr2, int n)
 {
     int            i;
     int            sum_input = 0, sum_output = 0;
-    cl_ushort    *inptr = (cl_ushort *)ptr1;
-    cl_ushort    *outptr = (cl_ushort *)ptr2;
+    cl_half *inptr = (cl_half *)ptr1;
+    cl_half *outptr = (cl_half *)ptr2;
 
     for(i = 0; i < n; i++)
     {
@@ -531,9 +531,8 @@ int test_pipe_readwrite( cl_device_id deviceID, cl_context context, cl_command_q
         std::string kernel_source = sourceCode[i].str();
         const char *sources[] = { kernel_source.c_str() };
         // Create producer kernel
-        err = create_single_kernel_helper_with_build_options(
-            context, &program[i], &kernel[ii], 1, sources, kernelName[ii],
-            "-cl-std=CL2.0");
+        err = create_single_kernel_helper(context, &program[i], &kernel[ii], 1,
+                                          sources, kernelName[ii]);
 
         test_error_ret(err, " Error creating program", -1);
 
@@ -659,7 +658,8 @@ int test_pipe_readwrite_struct_generic( cl_device_id deviceID, cl_context contex
     test_error_ret(err, " clCreatePipe failed", -1);
 
     // Create producer kernel
-    err = create_single_kernel_helper_with_build_options(context, &program, &kernel[0], 1, &kernelCode, kernelName[0], "-cl-std=CL2.0");
+    err = create_single_kernel_helper(context, &program, &kernel[0], 1,
+                                      &kernelCode, kernelName[0]);
     test_error_ret(err, " Error creating program", -1);
 
     //Create consumer kernel

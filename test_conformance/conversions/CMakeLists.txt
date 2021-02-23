@@ -4,7 +4,7 @@ set (${MODULE_NAME}_SOURCES
       Sleep.cpp test_conversions.cpp basic_test_conversions.cpp
 )
 
-if(CMAKE_COMPILER_IS_GNUCXX AND "${CLConform_TARGET_ARCH}" STREQUAL "ARM")
+if("${CLConform_TARGET_ARCH}" STREQUAL "ARM" OR "${CLConform_TARGET_ARCH}" STREQUAL "ARM64")
     list(APPEND ${MODULE_NAME}_SOURCES fplib.cpp)
 endif()
 

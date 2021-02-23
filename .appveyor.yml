@@ -34,7 +34,7 @@ before_build:
   - ps: cd OpenCL-ICD-Loader
   - ps: mkdir build
   - ps: cd build
-  - cmake -A%PLATFORM% -DOPENCL_ICD_LOADER_HEADERS_DIR=%TOP%/OpenCL-Headers/ ..
+  - cmake -A%PLATFORM% -DENABLE_OPENCL30_PROVISIONAL=1 -DOPENCL_ICD_LOADER_HEADERS_DIR=%TOP%/OpenCL-Headers/ ..
   - cmake --build . --config %CONFIGURATION%
   - ps: cd $env:TOP
   # Get the libclcxx standard library:

@@ -140,19 +140,22 @@ test_constant(cl_device_id device, cl_context context, cl_command_queue queue, i
     tmpI = (cl_int*)malloc(sizeof(cl_int) * constant_values);
     tmpF = (cl_float*)malloc(sizeof(cl_float) * constant_values);
     out  = (cl_float*)malloc(sizeof(cl_float) * constant_values);
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * constant_values, NULL, NULL);
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * constant_values, NULL, NULL);
     if (!streams[0])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * constant_values, NULL, NULL);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_float) * constant_values, NULL, NULL);
     if (!streams[1])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
-    streams[2] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * constant_values, NULL, NULL);
+    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * constant_values, NULL, NULL);
     if (!streams[2])
     {
         log_error("clCreateBuffer failed\n");

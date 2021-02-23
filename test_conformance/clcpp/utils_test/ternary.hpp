@@ -284,24 +284,20 @@ int test_ternary_func(cl_device_id device, cl_context context, cl_command_queue 
     std::vector<INPUT3> input3 = generate_input<INPUT3>(count, op.min3(), op.max3(), in3_spec_cases);
     std::vector<OUTPUT> output = generate_output<OUTPUT>(count);
 
-    buffers[0] = clCreateBuffer(
-        context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(INPUT1) * input1.size(), NULL, &err
-    );
+    buffers[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(INPUT1) * input1.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
-    buffers[1] = clCreateBuffer(
-        context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(INPUT2) * input2.size(), NULL, &err
-    );
+    buffers[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(INPUT2) * input2.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
-    buffers[2] = clCreateBuffer(
-        context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(INPUT3) * input3.size(), NULL, &err
-    );
+    buffers[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(INPUT3) * input3.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
-    buffers[3] = clCreateBuffer(
-        context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(OUTPUT) * output.size(), NULL, &err
-    );
+    buffers[3] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(OUTPUT) * output.size(), NULL, &err);
     RETURN_ON_CL_ERROR(err, "clCreateBuffer")
 
     err = clEnqueueWriteBuffer(

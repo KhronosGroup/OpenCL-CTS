@@ -277,7 +277,8 @@ int test_image_format_methods( cl_device_id device, cl_context context, cl_comma
     test_error( error, "Unable to create kernel to test against" );
 
     // Create an output buffer
-    outDataBuffer = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof( outKernelData ), NULL, &error );
+    outDataBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                   sizeof(outKernelData), NULL, &error);
     test_error( error, "Unable to create output buffer" );
 
     // Set up arguments and run
@@ -286,10 +287,10 @@ int test_image_format_methods( cl_device_id device, cl_context context, cl_comma
     error = clSetKernelArg( kernel, 1, sizeof( outDataBuffer ), &outDataBuffer );
     test_error( error, "Unable to set kernel argument" );
 
-  // Flush and Acquire.
-  glFlush();
-  error = (*clEnqueueAcquireGLObjects_ptr)( queue, 1, &image, 0, NULL, NULL);
-  test_error( error, "Unable to acquire GL obejcts");
+    // Finish and Acquire.
+    glFinish();
+    error = (*clEnqueueAcquireGLObjects_ptr)(queue, 1, &image, 0, NULL, NULL);
+    test_error(error, "Unable to acquire GL obejcts");
 
     size_t threads[1] = { 1 }, localThreads[1] = { 1 };
 

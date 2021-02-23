@@ -30,34 +30,37 @@ test_definition test_list[] = {
     ADD_TEST( device_and_host_timers ),
 };
 
-test_status InitCL(cl_device_id device) {
-	auto version = get_device_cl_version(device);
-	auto expected_min_version = Version(2, 1);
-	cl_platform_id platform;
-	cl_ulong timer_res;
-	cl_int error;
+test_status InitCL(cl_device_id device)
+{
+    auto version = get_device_cl_version(device);
+    auto expected_min_version = Version(2, 1);
+    cl_platform_id platform;
+    cl_ulong timer_res;
+    cl_int error;
 
-	if (version < expected_min_version)
-	{
-		version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
-		return TEST_SKIP;
-	}
+    if (version < expected_min_version)
+    {
+        version_expected_info("Test", "OpenCL",
+                              expected_min_version.to_string().c_str(),
+                              version.to_string().c_str());
+        return TEST_SKIP;
+    }
 
-	error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
-	                        sizeof(platform), &platform, NULL);
-	if (error != CL_SUCCESS)
-	{
-		print_error(error, "Unable to get device platform");
-		return TEST_FAIL;
-	}
+    error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
+                            &platform, NULL);
+    if (error != CL_SUCCESS)
+    {
+        print_error(error, "Unable to get device platform");
+        return TEST_FAIL;
+    }
 
-	error = clGetPlatformInfo(platform, CL_PLATFORM_HOST_TIMER_RESOLUTION,
-	                          sizeof(timer_res), &timer_res, NULL);
-	if (error != CL_SUCCESS)
-	{
-		print_error(error, "Unable to get host timer capabilities");
-		return TEST_FAIL;
-	}
+    error = clGetPlatformInfo(platform, CL_PLATFORM_HOST_TIMER_RESOLUTION,
+                              sizeof(timer_res), &timer_res, NULL);
+    if (error != CL_SUCCESS)
+    {
+        print_error(error, "Unable to get host timer capabilities");
+        return TEST_FAIL;
+    }
 
     if ((timer_res == 0) && (version >= Version(3, 0)))
     {

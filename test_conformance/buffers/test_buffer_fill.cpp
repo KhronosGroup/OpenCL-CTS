@@ -24,8 +24,6 @@
 #include "procs.h"
 #include "harness/errorHelpers.h"
 
-#define USE_LOCAL_WORK_GROUP    1
-
 #define TEST_PRIME_CHAR        0x77
 #define TEST_PRIME_INT        ((1<<16)+1)
 #define TEST_PRIME_UINT        ((1U<<16)+1U)
@@ -564,18 +562,13 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
                      int loops, void *inptr[5], void *hostptr[5], void *pattern[5], size_t offset_elements, size_t fill_elements,
                      const char *kernelCode[], const char *kernelName[], int (*fn)(void *,void *,int) )
 {
-    cl_mem      buffers[10];
     void        *outptr[5];
-    cl_program  program[5];
-    cl_kernel   kernel[5];
-    cl_event    event[2];
+    clProgramWrapper program[5];
+    clKernelWrapper kernel[5];
     size_t      ptrSizes[5];
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     int         err;
-    int         i, ii;
+    int i;
     int         src_flag_id;
     int         total_errors = 0;
 
@@ -589,23 +582,39 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
     ptrSizes[3] = ptrSizes[2] << 1;
     ptrSizes[4] = ptrSizes[3] << 1;
 
-    for (src_flag_id=0; src_flag_id < NUM_FLAGS; src_flag_id++) {
-        log_info("Testing with cl_mem_flags: %s\n", flag_set_names[src_flag_id]);
+    loops = (loops < 5 ? loops : 5);
+    for (i = 0; i < loops; i++)
+    {
+        err = create_single_kernel_helper(context, &program[i], &kernel[i], 1,
+                                          &kernelCode[i], kernelName[i]);
+        if (err)
+        {
+            log_error(" Error creating program for %s\n", type);
+            return -1;
+        }
 
-        loops = ( loops < 5 ? loops : 5 );
-        for ( i = 0; i < loops; i++ ){
-            ii = i << 1;
+        for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
+        {
+            clEventWrapper event[2];
+            clMemWrapper buffers[2];
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
-                buffers[ii] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, hostptr[i], &err);
+                buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],
+                                            ptrSizes[i] * num_elements,
+                                            hostptr[i], &err);
             else
-                buffers[ii] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, NULL, &err);
-            if ( !buffers[ii] || err){
+                buffers[0] =
+                    clCreateBuffer(context, flag_set[src_flag_id],
+                                   ptrSizes[i] * num_elements, NULL, &err);
+            if (!buffers[0] || err)
+            {
                 print_error(err, "clCreateBuffer failed\n" );
                 return -1;
             }
             // Initialize source buffer with 0, since the validation code expects 0(s) outside of the fill region.
             if (!((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))) {
-                err = clEnqueueWriteBuffer(queue, buffers[ii], CL_FALSE, 0, ptrSizes[i]*num_elements, hostptr[i], 0, NULL, NULL);
+                err = clEnqueueWriteBuffer(queue, buffers[0], CL_FALSE, 0,
+                                           ptrSizes[i] * num_elements,
+                                           hostptr[i], 0, NULL, NULL);
                 if ( err != CL_SUCCESS ){
                     print_error(err, "clEnqueueWriteBuffer failed\n" );
                     return -1;
@@ -614,50 +623,33 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
 
             outptr[i] = align_malloc( ptrSizes[i] * num_elements, min_alignment);
             memset(outptr[i], 0, ptrSizes[i] * num_elements);
-            buffers[ii+1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,  ptrSizes[i] * num_elements, outptr[i], &err);
-            if ( !buffers[ii+1] || err){
+            buffers[1] =
+                clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                               ptrSizes[i] * num_elements, outptr[i], &err);
+            if (!buffers[1] || err)
+            {
                 print_error(err, "clCreateBuffer failed\n" );
-                clReleaseMemObject( buffers[ii] );
                 align_free( outptr[i] );
                 return -1;
             }
 
-            err = clEnqueueFillBuffer(queue, buffers[ii], pattern[i], ptrSizes[i],
-                                      ptrSizes[i] * offset_elements, ptrSizes[i] * fill_elements,
-                                      0, NULL, &(event[0]));
-            /* uncomment for test debugging
-             err = clEnqueueWriteBuffer(queue, buffers[ii], CL_FALSE, 0, ptrSizes[i]*num_elements, inptr[i], 0, NULL, &(event[0]));
-             */
+            err = clEnqueueFillBuffer(
+                queue, buffers[0], pattern[i], ptrSizes[i],
+                ptrSizes[i] * offset_elements, ptrSizes[i] * fill_elements, 0,
+                NULL, &(event[0]));
+
             if ( err != CL_SUCCESS ){
                 print_error( err, " clEnqueueFillBuffer failed" );
-                clReleaseMemObject( buffers[ii] );
-                clReleaseMemObject( buffers[ii+1] );
                 align_free( outptr[i] );
                 return -1;
             }
 
-            err = create_single_kernel_helper( context, &program[i], &kernel[i], 1, &kernelCode[i], kernelName[i] );
-            if ( err ){
-                log_error( " Error creating program for %s\n", type );
-                clReleaseMemObject( buffers[ii] );
-                clReleaseMemObject( buffers[ii+1] );
-                align_free( outptr[i] );
-                return -1;
-            }
-
-#ifdef USE_LOCAL_WORK_GROUP
-            err = get_max_common_work_group_size( context, kernel[i], global_work_size[0], &local_work_size[0] );
-            test_error( err, "Unable to get work group size to use" );
-#endif
-
-            err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[ii] );
-            err |= clSetKernelArg( kernel[i], 1, sizeof( cl_mem ), (void *)&buffers[ii+1] );
+            err = clSetKernelArg(kernel[i], 0, sizeof(cl_mem),
+                                 (void *)&buffers[0]);
+            err |= clSetKernelArg(kernel[i], 1, sizeof(cl_mem),
+                                  (void *)&buffers[1]);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArg failed" );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
-                clReleaseMemObject( buffers[ii] );
-                clReleaseMemObject( buffers[ii+1] );
                 align_free( outptr[i] );
                 return -1;
             }
@@ -665,26 +657,19 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
             err = clWaitForEvents(  1, &(event[0]) );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clWaitForEvents() failed" );
-                clReleaseKernel( kernel[i] );
-                clReleaseProgram( program[i] );
-                clReleaseMemObject( buffers[ii] );
-                clReleaseMemObject( buffers[ii+1] );
                 align_free( outptr[i] );
                 return -1;
             }
-            clReleaseEvent(event[0]);
 
-#ifdef USE_LOCAL_WORK_GROUP
-            err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
             err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
             if (err != CL_SUCCESS){
                 print_error( err, "clEnqueueNDRangeKernel failed" );
                 return -1;
             }
 
-            err = clEnqueueReadBuffer( queue, buffers[ii+1], false, 0, ptrSizes[i]*num_elements, outptr[i], 0, NULL, &(event[1]) );
+            err = clEnqueueReadBuffer(queue, buffers[1], false, 0,
+                                      ptrSizes[i] * num_elements, outptr[i], 0,
+                                      NULL, &(event[1]));
             if (err != CL_SUCCESS){
                 print_error( err, "clEnqueueReadBuffer failed" );
                 return -1;
@@ -694,21 +679,18 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
             if ( err != CL_SUCCESS ){
                 print_error( err, "clWaitForEvents() failed" );
             }
-            clReleaseEvent(event[1]);
 
             if ( fn( inptr[i], outptr[i], (int)(ptrSizes[i] * (size_t)num_elements / ptrSizes[0]) ) ){
-                log_error( " %s%d test failed\n", type, 1<<i );
+                log_error(" %s%d test failed. (cl_mem_flags: %s)\n", type,
+                          1 << i, flag_set_names[src_flag_id]);
                 total_errors++;
             }
             else{
-                log_info( " %s%d test passed\n", type, 1<<i );
+                log_info(" %s%d test passed (cl_mem_flags: %s)\n", type, 1 << i,
+                         flag_set_names[src_flag_id]);
             }
 
             // cleanup
-            clReleaseMemObject( buffers[ii] );
-            clReleaseMemObject( buffers[ii+1] );
-            clReleaseKernel( kernel[i] );
-            clReleaseProgram( program[i] );
             align_free( outptr[i] );
         }
     } // src cl_mem_flag
@@ -720,19 +702,15 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
 
 int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    cl_mem      buffers[2];
+    clMemWrapper buffers[2];
     void        *outptr;
     TestStruct  *inptr;
     TestStruct  *hostptr;
-    TestStruct  *pattern;
-    cl_program  program;
-    cl_kernel   kernel;
-    cl_event    event[2];
+    TestStruct pattern;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
     size_t      ptrSize = sizeof( TestStruct );
     size_t      global_work_size[3];
-#ifdef USE_LOCAL_WORK_GROUP
-    size_t      local_work_size[3];
-#endif
     int         n, err;
     size_t      j, offset_elements, fill_elements;
     int         src_flag_id;
@@ -743,35 +721,59 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
 
     global_work_size[0] = (size_t)num_elements;
 
-    // Test with random offsets and fill sizes
-    for ( n = 0; n < 8; n++ ){
-        offset_elements = (size_t)get_random_float( 0.f, (float)(num_elements - 8), d );
-        fill_elements = (size_t)get_random_float( 8.f, (float)(num_elements - offset_elements), d );
-        log_info( "Testing random fill from offset %d for %d elements: \n", (int)offset_elements, (int)fill_elements );
 
-        pattern = (TestStruct *)malloc(ptrSize);
-        pattern->a = (cl_int)genrand_int32(d);
-        pattern->b = (cl_float)get_random_float( -FLT_MAX, FLT_MAX, d );
+    for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
+    {
+        log_info("Testing with cl_mem_flags: %s\n",
+                 flag_set_names[src_flag_id]);
 
-        inptr = (TestStruct *)align_malloc(ptrSize * num_elements, min_alignment);
-        for ( j = 0; j < offset_elements; j++ ) {
-            inptr[j].a = 0;
-            inptr[j].b =0;
-        }
-        for ( j = offset_elements; j < offset_elements + fill_elements; j++ ) {
-            inptr[j].a = pattern->a;
-            inptr[j].b = pattern->b;
-        }
-        for ( j = offset_elements + fill_elements; j < (size_t)num_elements; j++ ) {
-            inptr[j].a = 0;
-            inptr[j].b = 0;
+        err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                          &struct_kernel_code,
+                                          "read_fill_struct");
+        if (err)
+        {
+            log_error(" Error creating program for struct\n");
+            free_mtdata(d);
+            return -1;
         }
 
-        hostptr = (TestStruct *)align_malloc(ptrSize * num_elements, min_alignment);
-        memset(hostptr, 0, ptrSize * num_elements);
+        // Test with random offsets and fill sizes
+        for (n = 0; n < 8; n++)
+        {
+            clEventWrapper event[2];
 
-        for (src_flag_id=0; src_flag_id < NUM_FLAGS; src_flag_id++) {
-            log_info("Testing with cl_mem_flags: %s\n", flag_set_names[src_flag_id]);
+            offset_elements =
+                (size_t)get_random_float(0.f, (float)(num_elements - 8), d);
+            fill_elements = (size_t)get_random_float(
+                8.f, (float)(num_elements - offset_elements), d);
+            log_info("Testing random fill from offset %d for %d elements: \n",
+                     (int)offset_elements, (int)fill_elements);
+
+            pattern.a = (cl_int)genrand_int32(d);
+            pattern.b = (cl_float)get_random_float(-FLT_MAX, FLT_MAX, d);
+
+            inptr = (TestStruct *)align_malloc(ptrSize * num_elements,
+                                               min_alignment);
+            for (j = 0; j < offset_elements; j++)
+            {
+                inptr[j].a = 0;
+                inptr[j].b = 0;
+            }
+            for (j = offset_elements; j < offset_elements + fill_elements; j++)
+            {
+                inptr[j].a = pattern.a;
+                inptr[j].b = pattern.b;
+            }
+            for (j = offset_elements + fill_elements; j < (size_t)num_elements;
+                 j++)
+            {
+                inptr[j].a = 0;
+                inptr[j].b = 0;
+            }
+
+            hostptr = (TestStruct *)align_malloc(ptrSize * num_elements,
+                                                 min_alignment);
+            memset(hostptr, 0, ptrSize * num_elements);
 
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
                 buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSize * num_elements, hostptr, &err);
@@ -779,9 +781,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSize * num_elements, NULL, &err);
             if ( err ){
                 print_error(err, " clCreateBuffer failed\n" );
-                clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
@@ -791,9 +790,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 err = clEnqueueWriteBuffer(queue, buffers[0], CL_FALSE, 0, ptrSize * num_elements, hostptr, 0, NULL, NULL);
                 if ( err != CL_SUCCESS ){
                     print_error(err, " clEnqueueWriteBuffer failed\n" );
-                    clReleaseEvent( event[0] );
-                    clReleaseEvent( event[1] );
-                    free( (void *)pattern );
                     align_free( (void *)inptr );
                     align_free( (void *)hostptr );
                     free_mtdata(d);
@@ -806,68 +802,32 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             if ( ! buffers[1] || err){
                 print_error(err, " clCreateBuffer failed\n" );
                 align_free( outptr );
-                clReleaseMemObject(buffers[0]);
-                clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
                 return -1;
             }
 
-            err = clEnqueueFillBuffer(queue, buffers[0], pattern, ptrSize,
-                                      ptrSize * offset_elements, ptrSize * fill_elements,
-                                      0, NULL, &(event[0]));
+            err = clEnqueueFillBuffer(
+                queue, buffers[0], &pattern, ptrSize, ptrSize * offset_elements,
+                ptrSize * fill_elements, 0, NULL, &(event[0]));
             /* uncomment for test debugging
              err = clEnqueueWriteBuffer(queue, buffers[0], CL_FALSE, 0, ptrSize * num_elements, inptr, 0, NULL, &(event[0]));
              */
             if ( err != CL_SUCCESS ){
                 print_error( err, " clEnqueueFillBuffer failed" );
                 align_free( outptr );
-                clReleaseMemObject(buffers[0]);
-                clReleaseMemObject(buffers[1]);
-                clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
                 return -1;
             }
-
-            err = create_single_kernel_helper( context, &program, &kernel, 1, &struct_kernel_code, "read_fill_struct" );
-            if ( err ){
-                log_error( " Error creating program for struct\n" );
-                align_free( outptr );
-                clReleaseMemObject(buffers[0]);
-                clReleaseMemObject(buffers[1]);
-                clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
-                free( (void *)pattern );
-                align_free( (void *)inptr );
-                align_free( (void *)hostptr );
-                free_mtdata(d);
-                return -1;
-            }
-
-#ifdef USE_LOCAL_WORK_GROUP
-            err = get_max_common_work_group_size( context, kernel, global_work_size[0], &local_work_size[0] );
-            test_error( err, "Unable to get work group size to use" );
-#endif
 
             err = clSetKernelArg( kernel, 0, sizeof( cl_mem ), (void *)&buffers[0] );
             err |= clSetKernelArg( kernel, 1, sizeof( cl_mem ), (void *)&buffers[1] );
             if ( err != CL_SUCCESS ){
                 print_error( err, " clSetKernelArg failed" );
-                clReleaseKernel( kernel );
-                clReleaseProgram( program );
                 align_free( outptr );
-                clReleaseMemObject(buffers[0]);
-                clReleaseMemObject(buffers[1]);
-                clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
@@ -877,36 +837,17 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             err = clWaitForEvents(  1, &(event[0]) );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clWaitForEvents() failed" );
-                clReleaseKernel( kernel );
-                clReleaseProgram( program );
                 align_free( outptr );
-                clReleaseMemObject(buffers[0]);
-                clReleaseMemObject(buffers[1]);
-                clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
                 return -1;
             }
-            clReleaseEvent( event[0] );
 
-#ifdef USE_LOCAL_WORK_GROUP
-            err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL );
-#else
             err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, global_work_size, NULL, 0, NULL, NULL );
-#endif
             if ( err != CL_SUCCESS ){
                 print_error( err, " clEnqueueNDRangeKernel failed" );
-                clReleaseKernel( kernel );
-                clReleaseProgram( program );
                 align_free( outptr );
-                clReleaseMemObject(buffers[0]);
-                clReleaseMemObject(buffers[1]);
-                clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
@@ -916,14 +857,7 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             err = clEnqueueReadBuffer( queue, buffers[1], CL_FALSE, 0, ptrSize * num_elements, outptr, 0, NULL, &(event[1]) );
             if ( err != CL_SUCCESS ){
                 print_error( err, " clEnqueueReadBuffer failed" );
-                clReleaseKernel( kernel );
-                clReleaseProgram( program );
                 align_free( outptr );
-                clReleaseMemObject(buffers[0]);
-                clReleaseMemObject(buffers[1]);
-                clReleaseEvent( event[0] );
-                clReleaseEvent( event[1] );
-                free( (void *)pattern );
                 align_free( (void *)inptr );
                 align_free( (void *)hostptr );
                 free_mtdata(d);
@@ -934,7 +868,6 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
             if ( err != CL_SUCCESS ){
                 print_error( err, "clWaitForEvents() failed" );
             }
-            clReleaseEvent( event[1] );
 
             if ( verify_fill_struct( inptr, outptr, num_elements) ) {
                 log_error( " buffer_FILL async struct test failed\n" );
@@ -944,15 +877,10 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
                 log_info( " buffer_FILL async struct test passed\n" );
             }
             // cleanup
-            clReleaseKernel( kernel );
-            clReleaseProgram( program );
             align_free( outptr );
-            clReleaseMemObject( buffers[0] );
-            clReleaseMemObject( buffers[1] );
+            align_free((void *)inptr);
+            align_free((void *)hostptr);
         } // src cl_mem_flag
-        free( (void *)pattern );
-        align_free( (void *)inptr );
-        align_free( (void *)hostptr );
     }
 
     free_mtdata(d);

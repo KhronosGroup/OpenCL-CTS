@@ -145,9 +145,11 @@ cl_int NDRangeKernelAction::Setup( cl_device_id device, cl_context context, cl_c
     error = get_max_common_work_group_size( context, mKernel, threads[0], &mLocalThreads[0] );
     test_error( error, "Unable to get work group size to use" );
 
-    mStreams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_float) * 1000, NULL, &error );
+    mStreams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                 sizeof(cl_float) * 1000, NULL, &error);
     test_error( error, "Creating test array failed" );
-    mStreams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * 1000, NULL, &error );
+    mStreams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                 sizeof(cl_int) * 1000, NULL, &error);
     test_error( error, "Creating test array failed" );
 
     /* Set the arguments */

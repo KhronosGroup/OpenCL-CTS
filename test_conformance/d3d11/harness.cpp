@@ -400,41 +400,10 @@ cl_int HarnessD3D11_CreateKernelFromSource(
         const char *sourceTexts[] = {source};
         size_t sourceLengths[] = {strlen(source) };
 
-        status = create_single_kernel_helper_create_program(context, &program, 1, &sourceTexts[0]);
-        TestRequire(
-            CL_SUCCESS == status,
-            "clCreateProgramWithSource failed");
+        status = create_single_kernel_helper(context, &program, &kernel, 1,
+                                             &sourceTexts[0], entrypoint);
+        TestRequire(CL_SUCCESS == status, "Kernel creation failed");
     }
-    status = clBuildProgram(
-        program,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        NULL);
-    if (CL_SUCCESS != status)
-    {
-        char log[2048] = {0};
-        status = clGetProgramBuildInfo(
-            program,
-            device,
-            CL_PROGRAM_BUILD_LOG,
-            sizeof(log),
-            log,
-            NULL);
-        TestPrint("error: %s\n", log);
-        TestRequire(
-            CL_SUCCESS == status,
-            "Compilation error log:\n%s\n", log);
-    }
-
-    kernel = clCreateKernel(
-        program,
-        entrypoint,
-        &status);
-    TestRequire(
-        CL_SUCCESS == status,
-        "clCreateKernel failed");
 
     clReleaseProgram(program);
     *outKernel = kernel;

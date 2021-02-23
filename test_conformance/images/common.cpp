@@ -58,27 +58,13 @@ std::array<ImageTestTypes, 3> imageTestTypes = { {
     { kTestFloat, kFloat, floatFormats, "float" },
 } };
 
-const char *convert_image_type_to_string(cl_mem_object_type image_type)
-{
-    switch (image_type)
-    {
-        case CL_MEM_OBJECT_IMAGE1D: return "1D";
-        case CL_MEM_OBJECT_IMAGE2D: return "2D";
-        case CL_MEM_OBJECT_IMAGE3D: return "3D";
-        case CL_MEM_OBJECT_IMAGE1D_ARRAY: return "1D array";
-        case CL_MEM_OBJECT_IMAGE2D_ARRAY: return "2D array";
-        case CL_MEM_OBJECT_IMAGE1D_BUFFER: return "1D image buffer";
-        default: return "unrecognized object type";
-    }
-}
-
-int filter_formats(cl_image_format *formatList, bool *filterFlags,
-                   unsigned int formatCount,
+int filter_formats(const std::vector<cl_image_format> &formatList,
+                   std::vector<bool> &filterFlags,
                    cl_channel_type *channelDataTypesToFilter,
                    bool testMipmaps /*=false*/)
 {
     int numSupported = 0;
-    for (unsigned int j = 0; j < formatCount; j++)
+    for (unsigned int j = 0; j < formatList.size(); j++)
     {
         // If this format has been previously filtered, remove the filter
         if (filterFlags[j]) filterFlags[j] = false;
@@ -143,18 +129,18 @@ int filter_formats(cl_image_format *formatList, bool *filterFlags,
 }
 
 int get_format_list(cl_context context, cl_mem_object_type imageType,
-                    cl_image_format *&outFormatList,
-                    unsigned int &outFormatCount, cl_mem_flags flags)
+                    std::vector<cl_image_format> &outFormatList,
+                    cl_mem_flags flags)
 {
+    cl_uint formatCount;
     int error = clGetSupportedImageFormats(context, flags, imageType, 0, NULL,
-                                           &outFormatCount);
+                                           &formatCount);
     test_error(error, "Unable to get count of supported image formats");
 
-    outFormatList =
-        (outFormatCount > 0) ? new cl_image_format[outFormatCount] : NULL;
+    outFormatList.resize(formatCount);
 
-    error = clGetSupportedImageFormats(context, flags, imageType,
-                                       outFormatCount, outFormatList, NULL);
+    error = clGetSupportedImageFormats(context, flags, imageType, formatCount,
+                                       outFormatList.data(), NULL);
     test_error(error, "Unable to get list of supported image formats");
     return 0;
 }

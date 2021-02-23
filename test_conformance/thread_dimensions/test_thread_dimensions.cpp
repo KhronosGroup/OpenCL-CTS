@@ -501,7 +501,8 @@ test_thread_dimensions(cl_device_id device, cl_context context, cl_command_queue
     log_info("Memory allocation size to use is %gMB, max workgroup size is %d.\n", max_memory_size/(1024.0*1024.0), (int)max_workgroup_size);
 
     while (!found_size && memory_size >= max_memory_size/8) {
-        array = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), memory_size, NULL, &err);
+        array =
+            clCreateBuffer(context, CL_MEM_READ_WRITE, memory_size, NULL, &err);
         if (err == CL_MEM_OBJECT_ALLOCATION_FAILURE || err == CL_OUT_OF_HOST_MEMORY) {
             memory_size -= max_memory_size/16;
             continue;

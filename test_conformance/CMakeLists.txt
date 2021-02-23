@@ -21,6 +21,7 @@ if(D3D11_IS_SUPPORTED)
 endif(D3D11_IS_SUPPORTED)
 add_subdirectory( device_partition )
 add_subdirectory( events )
+add_subdirectory( extensions )
 add_subdirectory( geometrics )
 if(GL_IS_SUPPORTED)
    add_subdirectory( gl )
@@ -39,8 +40,7 @@ add_subdirectory( profiling )
 add_subdirectory( relationals )
 add_subdirectory( select )
 add_subdirectory( thread_dimensions )
-add_subdirectory( vec_align )
-add_subdirectory( vec_step )
+add_subdirectory( vectors )
 add_subdirectory( c11_atomics )
 add_subdirectory( device_execution )
 add_subdirectory( non_uniform_work_group )
@@ -50,13 +50,18 @@ add_subdirectory( subgroups )
 add_subdirectory( workgroups )
 add_subdirectory( pipes )
 add_subdirectory( device_timer )
-add_subdirectory( clcpp )
+if(KHRONOS_OFFLINE_COMPILER)
+    add_subdirectory( clcpp )
+endif()
 add_subdirectory( spirv_new )
 add_subdirectory( spir )
 
 file(GLOB CSV_FILES "opencl_conformance_tests_*.csv")
 
-set(PY_FILES run_conformance.py)
+set(PY_FILES
+    generate_spirv_offline.py
+    run_conformance.py
+)
 
 # Copy .csv files
 foreach(FILE ${CSV_FILES})

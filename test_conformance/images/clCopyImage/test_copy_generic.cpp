@@ -15,14 +15,6 @@
 //
 #include "../testBase.h"
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gTestMaxImages, gEnablePitch, gTestMipmaps;
-extern cl_filter_mode    gFilterModeToUse;
-extern cl_addressing_mode    gAddressModeToUse;
-extern uint64_t gRoundingStartValue;
-
 static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *buf )
 {
     free( buf );
@@ -113,23 +105,41 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
 
     if ( *error != CL_SUCCESS )
     {
+        long long unsigned imageSize = get_image_size_mb(imageInfo);
         switch (imageInfo->type)
         {
             case CL_MEM_OBJECT_IMAGE1D:
-                log_error( "ERROR: Unable to create 1D image of size %d (%s)", (int)imageInfo->width, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 1D image of size %d (%llu "
+                          "MB):(%s)",
+                          (int)imageInfo->width, imageSize,
+                          IGetErrorString(*error));
                 break;
             case CL_MEM_OBJECT_IMAGE2D:
-                log_error( "ERROR: Unable to create 2D image of size %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->height, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 2D image of size %d x %d "
+                          "(%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->height,
+                          imageSize, IGetErrorString(*error));
                 break;
             case CL_MEM_OBJECT_IMAGE3D:
-                log_error( "ERROR: Unable to create 3D image of size %d x %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->depth, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 3D image of size %d x %d x "
+                          "%d (%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->height,
+                          (int)imageInfo->depth, imageSize,
+                          IGetErrorString(*error));
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                log_error( "ERROR: Unable to create 1D image array of size %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->arraySize, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 1D image array of size %d x "
+                          "%d (%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->arraySize,
+                          imageSize, IGetErrorString(*error));
                 break;
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                log_error( "ERROR: Unable to create 2D image array of size %d x %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->arraySize, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 2D image array of size %d x "
+                          "%d x %d (%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->height,
+                          (int)imageInfo->arraySize, imageSize,
+                          IGetErrorString(*error));
                 break;
         }
         log_error("ERROR: and %llu mip levels\n", (unsigned long long) imageInfo->num_mip_levels);
@@ -299,24 +309,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     }
     else
     {
-        switch (srcImageInfo->type)
-        {
-            case CL_MEM_OBJECT_IMAGE1D:
-                srcBytes = srcImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D:
-                srcBytes = srcImageInfo->height * srcImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE3D:
-                srcBytes = srcImageInfo->depth * srcImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                srcBytes = srcImageInfo->arraySize * srcImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                srcBytes = srcImageInfo->arraySize * srcImageInfo->slicePitch;
-                break;
-        }
+        srcBytes = get_image_size(srcImageInfo);
     }
 
     if (srcBytes > srcData.getSize())
@@ -352,24 +345,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     }
     else
     {
-        switch (dstImageInfo->type)
-        {
-            case CL_MEM_OBJECT_IMAGE1D:
-                destImageSize = dstImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D:
-                destImageSize = dstImageInfo->height * dstImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE3D:
-                destImageSize = dstImageInfo->depth * dstImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                destImageSize = dstImageInfo->arraySize * dstImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                destImageSize = dstImageInfo->arraySize * dstImageInfo->slicePitch;
-                break;
-        }
+        destImageSize = get_image_size(dstImageInfo);
     }
 
     if (destImageSize > dstData.getSize())
@@ -381,7 +357,11 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
             log_error( "ERROR: Unable to malloc %lu bytes for dstData\n", destImageSize );
             return -1;
         }
+    }
 
+    if (destImageSize > dstHost.getSize())
+    {
+        dstHost.reset(NULL);
         dstHost.reset(malloc(destImageSize),NULL,0,destImageSize);
         if (dstHost == NULL) {
             dstData.reset(NULL);
@@ -640,113 +620,14 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
         return error;
     }
 
-    return 0;
-}
-
-int test_copy_image_size_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo, MTdata d )
-{
-    size_t sourcePos[ 3 ], destPos[ 3 ], regionSize[ 3 ];
-    int ret = 0, retCode;
-
-    for (int i = 0; i < 8; i++)
+    // Ensure the unmap call completes.
+    error = clFinish(queue);
+    if (error != CL_SUCCESS)
     {
-        switch (srcImageInfo->type)
-        {
-            case CL_MEM_OBJECT_IMAGE1D:
-                sourcePos[ 0 ] = random_in_range( 0, (int)(srcImageInfo->width - 4), d );
-                sourcePos[ 1 ] = 1;
-                sourcePos[ 2 ] = 1;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D:
-                sourcePos[ 0 ] = random_in_range( 0, (int)(srcImageInfo->width - 4), d );
-                sourcePos[ 1 ] = random_in_range( 0, (int)(srcImageInfo->height - 4), d );
-                sourcePos[ 2 ] = 1;
-                break;
-            case CL_MEM_OBJECT_IMAGE3D:
-                sourcePos[ 0 ] = random_in_range( 0, (int)(srcImageInfo->width - 4), d );
-                sourcePos[ 1 ] = random_in_range( 0, (int)(srcImageInfo->height - 4), d );
-                sourcePos[ 2 ] = random_in_range( 0, (int)(srcImageInfo->depth - 4), d );
-                break;
-            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                sourcePos[ 0 ] = random_in_range( 0, (int)(srcImageInfo->width - 4), d );
-                sourcePos[ 1 ] = random_in_range( 0, (int)(srcImageInfo->arraySize - 4), d );
-                sourcePos[ 2 ] = 1;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                sourcePos[ 0 ] = random_in_range( 0, (int)(srcImageInfo->width - 4), d );
-                sourcePos[ 1 ] = random_in_range( 0, (int)(srcImageInfo->height - 4), d );
-                sourcePos[ 2 ] = random_in_range( 0, (int)(srcImageInfo->arraySize - 4), d );
-                break;
-        }
-
-        switch (dstImageInfo->type)
-        {
-            case CL_MEM_OBJECT_IMAGE1D:
-                destPos[ 0 ] = random_in_range( 0, (int)(dstImageInfo->width - 4), d );
-                destPos[ 1 ] = 1;
-                destPos[ 2 ] = 1;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D:
-                destPos[ 0 ] = random_in_range( 0, (int)(dstImageInfo->width - 4), d );
-                destPos[ 1 ] = random_in_range( 0, (int)(dstImageInfo->height - 4), d );
-                destPos[ 2 ] = 1;
-                break;
-            case CL_MEM_OBJECT_IMAGE3D:
-                destPos[ 0 ] = random_in_range( 0, (int)(dstImageInfo->width - 4), d );
-                destPos[ 1 ] = random_in_range( 0, (int)(dstImageInfo->height - 4), d );
-                destPos[ 2 ] = random_in_range( 0, (int)(dstImageInfo->depth - 4), d );
-                break;
-            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                destPos[ 0 ] = random_in_range( 0, (int)(dstImageInfo->width - 4), d );
-                destPos[ 1 ] = random_in_range( 0, (int)(dstImageInfo->arraySize - 4), d );
-                destPos[ 2 ] = 1;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                destPos[ 0 ] = random_in_range( 0, (int)(dstImageInfo->width - 4), d );
-                destPos[ 1 ] = random_in_range( 0, (int)(dstImageInfo->height - 4), d );
-                destPos[ 2 ] = random_in_range( 0, (int)(dstImageInfo->arraySize - 4), d );
-                break;
-        }
-
-        if ( (dstImageInfo->width - destPos[0]) < (srcImageInfo->width - sourcePos[0]) )
-            regionSize[0] = random_in_range(1, (dstImageInfo->width - destPos[0]), d);
-        else
-            regionSize[0] = random_in_range(1, (srcImageInfo->width - sourcePos[0]), d);
-
-        if (srcImageInfo->type == CL_MEM_OBJECT_IMAGE1D || dstImageInfo->type == CL_MEM_OBJECT_IMAGE1D)
-            regionSize[1] = 0;
-        else
-        {
-            if ( (dstImageInfo->height - destPos[1]) < (srcImageInfo->height - sourcePos[1]) )
-                regionSize[1] = random_in_range(1, (dstImageInfo->height - destPos[1]), d);
-            else
-                regionSize[1] = random_in_range(1, (srcImageInfo->height - sourcePos[1]), d);
-        }
-
-        regionSize[2] = 0;
-        if (dstImageInfo->type == CL_MEM_OBJECT_IMAGE3D && srcImageInfo->type == CL_MEM_OBJECT_IMAGE3D)
-        {
-            if ( (dstImageInfo->depth - destPos[2]) < (srcImageInfo->depth - sourcePos[2]) )
-                regionSize[2] = random_in_range(1, (dstImageInfo->depth - destPos[2]), d);
-            else
-                regionSize[2] = random_in_range(1, (srcImageInfo->depth - sourcePos[2]), d);
-        }
-        else if ( (dstImageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY && srcImageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY) )
-        {
-            if ( (dstImageInfo->arraySize - destPos[2]) < (srcImageInfo->arraySize - sourcePos[2]) )
-                regionSize[2] = random_in_range(1, (dstImageInfo->arraySize - destPos[2]), d);
-            else
-                regionSize[2] = random_in_range(1, (srcImageInfo->arraySize - sourcePos[2]), d);
-        }
-
-        // Go for it!
-        retCode = test_copy_image_generic( context, queue, srcImageInfo, dstImageInfo, sourcePos, destPos, regionSize, d );
-        if( retCode < 0 )
-            return retCode;
-        else
-            ret += retCode;
+        log_error("ERROR: clFinish() failed to return CL_SUCCESS: %s\n",
+                  IGetErrorString(error));
+        return error;
     }
 
-    return ret;
+    return 0;
 }
-

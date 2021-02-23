@@ -124,7 +124,9 @@ AUTO_TEST_CASE(test_spec_consts_defaults)
 
     // host vector, size == 1, output[0] == 1
     std::vector<cl_int> output(1, cl_int(1));
-    output_buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_int) * output.size(), NULL, &error);
+    output_buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_int) * output.size(), NULL, &error);
     RETURN_ON_CL_ERROR(error, "clCreateBuffer")
 
     error = clEnqueueWriteBuffer(queue, output_buffer, CL_TRUE, 0, sizeof(cl_int) * output.size(), static_cast<void *>(output.data()), 0, NULL, NULL);
@@ -248,7 +250,9 @@ AUTO_TEST_CASE(test_spec_consts_many_constants)
 
     // host vector, size == 1, output[0] == 1
     std::vector<cl_int> output(1, cl_int(1));
-    output_buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_int) * output.size(), NULL, &error);
+    output_buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_int) * output.size(), NULL, &error);
     RETURN_ON_CL_ERROR(error, "clCreateBuffer")
 
     error = clEnqueueWriteBuffer(queue, output_buffer, CL_TRUE, 0, sizeof(cl_int) * output.size(), static_cast<void *>(output.data()), 0, NULL, NULL);
@@ -443,7 +447,9 @@ AUTO_TEST_CASE(test_spec_consts_different_types)
 
     // host vector, size == 1, output[0] == 1
     std::vector<cl_int> output(1, cl_int(1));
-    output_buffer = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_int) * output.size(), NULL, &error);
+    output_buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(cl_int) * output.size(), NULL, &error);
     RETURN_ON_CL_ERROR(error, "clCreateBuffer")
 
     error = clEnqueueWriteBuffer(queue, output_buffer, CL_TRUE, 0, sizeof(cl_int) * output.size(), static_cast<void *>(output.data()), 0, NULL, NULL);

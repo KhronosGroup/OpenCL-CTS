@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -213,14 +213,15 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
       return -1;
     }
     bool extensions_supported = true;
-    for (auto extension : extensions_list) 
+    for (auto extension : extensions_list)
     {
-      if (!is_extension_available(devices[i], extension.c_str())) 
-      {
-        log_error("Required extension not found - device id %d - %s\n", i, extension.c_str());
-        extensions_supported = false;
-        break;
-      }
+        if (!is_extension_available(devices[i], extension.c_str()))
+        {
+            log_error("Required extension not found - device id %d - %s\n", i,
+                      extension.c_str());
+            extensions_supported = false;
+            break;
+        }
     }
     if((caps & required_svm_caps) == required_svm_caps && extensions_supported)
     {
@@ -249,10 +250,11 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
     test_error(error, "clCreateCommandQueue failed");
   }
 
-  if(ppCodeString)
+  if (ppCodeString)
   {
-    error = create_single_kernel_helper(*context, program, 0, 1, ppCodeString, 0, "-cl-std=CL2.0");
-    test_error( error, "failed to create program" );
+      error =
+          create_single_kernel_helper(*context, program, 0, 1, ppCodeString, 0);
+      test_error(error, "failed to create program");
   }
 
   return 0;
@@ -280,9 +282,12 @@ const int test_num = ARRAY_SIZE( test_list );
 test_status InitCL(cl_device_id device) {
   auto version = get_device_cl_version(device);
   auto expected_min_version = Version(2, 0);
-  if (version < expected_min_version) {
-    version_expected_info("Test", expected_min_version.to_string().c_str(), version.to_string().c_str());
-    return TEST_SKIP;
+  if (version < expected_min_version)
+  {
+      version_expected_info("Test", "OpenCL",
+                            expected_min_version.to_string().c_str(),
+                            version.to_string().c_str());
+      return TEST_SKIP;
   }
 
   int error;

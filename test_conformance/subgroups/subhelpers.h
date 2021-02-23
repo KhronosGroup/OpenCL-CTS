@@ -377,8 +377,8 @@ struct test
         const std::string &kernel_str = kernel_sstr.str();
         const char *kernel_src = kernel_str.c_str();
 
-        error = create_single_kernel_helper_with_build_options(
-            context, &program, &kernel, 1, &kernel_src, kname, "-cl-std=CL2.0");
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &kernel_src, kname);
         if (error != 0) return error;
 
         // Determine some local dimensions to use for the test.

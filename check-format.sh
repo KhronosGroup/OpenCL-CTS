@@ -2,12 +2,10 @@
 
 # Arg used to specify non-'origin/master' comparison branch
 ORIGIN_BRANCH=${1:-"origin/master"}
+CLANG_BINARY=${2:-"`which clang-format-9`"}
 
 # Run git-clang-format to check for violations
-if [ "$TRAVIS" == "true" ]; then
-    EXTRA_OPTS="--binary `which clang-format-9`"
-fi
-CLANG_FORMAT_OUTPUT=$(git-clang-format --diff $ORIGIN_BRANCH --extensions c,cpp,h,hpp $EXTRA_OPTS)
+CLANG_FORMAT_OUTPUT=$(git-clang-format --diff $ORIGIN_BRANCH --extensions c,cpp,h,hpp --binary $CLANG_BINARY)
 
 # Check for no-ops
 grep '^no modified files to format$' <<<"$CLANG_FORMAT_OUTPUT" && exit 0

@@ -16,11 +16,7 @@
 #include "../testBase.h"
 #include <float.h>
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool             gDebugTrace, gTestSmallImages, gEnablePitch, gTestMaxImages, gDeviceLt20;
-extern bool             gTestReadWrite;
+extern bool gTestReadWrite;
 
 const char *read2DArrayKernelSourcePattern =
 "__kernel void sample_kernel( read_only %s input, sampler_t sampler, __global int *results )\n"
@@ -165,8 +161,11 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
     return 0;
 }
 
-int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format,
-                                  image_sampler_data *imageSampler, ExplicitType outputType )
+int test_read_image_set_2D_array(cl_device_id device, cl_context context,
+                                 cl_command_queue queue,
+                                 const cl_image_format *format,
+                                 image_sampler_data *imageSampler,
+                                 ExplicitType outputType)
 {
     char programSrc[10240];
     const char *ptr;
@@ -175,6 +174,11 @@ int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_co
     RandomSeed seed( gRandomSeed );
 
     int error;
+
+    if (gTestReadWrite && checkForReadWriteImageSupport(device))
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
 
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -239,7 +243,8 @@ int test_read_image_set_2D_array( cl_device_id device, cl_context context, cl_co
 
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0" );
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     test_error( error, "Unable to create testing kernel" );
 
 

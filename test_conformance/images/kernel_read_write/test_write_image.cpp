@@ -19,16 +19,28 @@
 #include <sys/mman.h>
 #endif
 
-extern bool            gDebugTrace, gDisableOffsets, gTestSmallImages, gEnablePitch, gTestMaxImages, gTestImage2DFromBuffer, gTestMipmaps;
-extern cl_filter_mode    gFilterModeToSkip;
+extern bool gTestImage2DFromBuffer;
 extern cl_mem_flags gMemFlagsToUse;
 extern int gtestTypesToRun;
-extern bool gDeviceLt20;
 
-extern int test_write_image_1D_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d );
-extern int test_write_image_3D_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d );
-extern int test_write_image_1D_array_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d );
-extern int test_write_image_2D_array_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d );
+extern int test_write_image_1D_set(cl_device_id device, cl_context context,
+                                   cl_command_queue queue,
+                                   const cl_image_format *format,
+                                   ExplicitType inputType, MTdata d);
+extern int test_write_image_3D_set(cl_device_id device, cl_context context,
+                                   cl_command_queue queue,
+                                   const cl_image_format *format,
+                                   ExplicitType inputType, MTdata d);
+extern int test_write_image_1D_array_set(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         const cl_image_format *format,
+                                         ExplicitType inputType, MTdata d);
+extern int test_write_image_2D_array_set(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         const cl_image_format *format,
+                                         ExplicitType inputType, MTdata d);
 
 extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
 extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo );
@@ -333,8 +345,11 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
 
             char *imagePtrOffset = imageValues + nextLevelOffset;
 
-            inputStream = clCreateBuffer( context, (cl_mem_flags)( CL_MEM_COPY_HOST_PTR ),
-                                     get_explicit_type_size( inputType ) * channel_scale * width_lod * height_lod, imagePtrOffset, &error );
+            inputStream =
+                clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                               get_explicit_type_size(inputType) * channel_scale
+                                   * width_lod * height_lod,
+                               imagePtrOffset, &error);
             test_error( error, "Unable to create input buffer" );
 
             // Set arguments
@@ -538,8 +553,18 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                                         log_error( "    Error:    %f %f %f %f\n", errors[0], errors[1], errors[2], errors[3] );
                                         break;
                                     case CL_HALF_FLOAT:
-                                        log_error( "    Expected: 0x%4.4x 0x%4.4x 0x%4.4x 0x%4.4x\n", ((cl_ushort*)resultBuffer)[0], ((cl_ushort*)resultBuffer)[1], ((cl_ushort*)resultBuffer)[2], ((cl_ushort*)resultBuffer)[3] );
-                                        log_error( "    Actual:   0x%4.4x 0x%4.4x 0x%4.4x 0x%4.4x\n", ((cl_ushort*)resultPtr)[0], ((cl_ushort*)resultPtr)[1], ((cl_ushort*)resultPtr)[2], ((cl_ushort*)resultPtr)[3] );
+                                        log_error("    Expected: 0x%4.4x "
+                                                  "0x%4.4x 0x%4.4x 0x%4.4x\n",
+                                                  ((cl_half *)resultBuffer)[0],
+                                                  ((cl_half *)resultBuffer)[1],
+                                                  ((cl_half *)resultBuffer)[2],
+                                                  ((cl_half *)resultBuffer)[3]);
+                                        log_error("    Actual:   0x%4.4x "
+                                                  "0x%4.4x 0x%4.4x 0x%4.4x\n",
+                                                  ((cl_half *)resultPtr)[0],
+                                                  ((cl_half *)resultPtr)[1],
+                                                  ((cl_half *)resultPtr)[2],
+                                                  ((cl_half *)resultPtr)[3]);
                                         log_error( "    Ulps:     %f %f %f %f\n", errors[0], errors[1], errors[2], errors[3] );
                                         break;
                                     case CL_UNSIGNED_INT32:
@@ -584,7 +609,9 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
 }
 
 
-int test_write_image_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType inputType, MTdata d )
+int test_write_image_set(cl_device_id device, cl_context context,
+                         cl_command_queue queue, const cl_image_format *format,
+                         ExplicitType inputType, MTdata d)
 {
     char programSrc[10240];
     const char *ptr;
@@ -670,7 +697,8 @@ int test_write_image_set( cl_device_id device, cl_context context, cl_command_qu
              gTestMipmaps ? ", lod" : "" );
 
     ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     test_error( error, "Unable to create testing kernel" );
 
     // Run tests
@@ -785,8 +813,13 @@ int test_write_image_set( cl_device_id device, cl_context context, cl_command_qu
     return 0;
 }
 
-int test_write_image_formats( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *formatList, bool *filterFlags, unsigned int numFormats,
-                             image_sampler_data *imageSampler, ExplicitType inputType, cl_mem_object_type imageType )
+int test_write_image_formats(cl_device_id device, cl_context context,
+                             cl_command_queue queue,
+                             const std::vector<cl_image_format> &formatList,
+                             const std::vector<bool> &filterFlags,
+                             image_sampler_data *imageSampler,
+                             ExplicitType inputType,
+                             cl_mem_object_type imageType)
 {
     if( imageSampler->filter_mode == CL_FILTER_LINEAR )
         // No need to run for linear filters
@@ -799,9 +832,9 @@ int test_write_image_formats( cl_device_id device, cl_context context, cl_comman
 
     RandomSeed seed( gRandomSeed );
 
-    for( unsigned int i = 0; i < numFormats; i++ )
+    for (unsigned int i = 0; i < formatList.size(); i++)
     {
-        cl_image_format &imageFormat = formatList[ i ];
+        const cl_image_format &imageFormat = formatList[i];
 
         if( filterFlags[ i ] )
             continue;

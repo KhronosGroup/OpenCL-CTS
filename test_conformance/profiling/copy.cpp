@@ -107,12 +107,14 @@ static int copy_size( cl_device_id device, cl_context context, cl_command_queue 
     int_input_ptr = (cl_int*)malloc(sizeof(cl_int) * num_elements);
     int_output_ptr = (cl_int*)malloc(sizeof(cl_int) * num_elements);
 
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * num_elements, NULL, &err );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, &err);
     if( !streams[0] ){
         log_error("clCreateBuffer failed\n");
         return -1;
     }
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof(cl_int) * num_elements, NULL, &err );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, &err);
     if( !streams[1] ){
         log_error("clCreateBuffer failed\n");
         return -1;
@@ -250,13 +252,15 @@ static int copy_partial_size( cl_device_id device, cl_context context, cl_comman
     inptr = (cl_int *)malloc(sizeof(cl_int) * num_elements);
     outptr = (cl_int *)malloc(sizeof(cl_int) * num_elements);
 
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * num_elements, NULL, &err );
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, &err);
     if (!streams[0])
     {
         log_error("clCreateBuffer failed\n");
         return -1;
     }
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  sizeof(cl_int) * num_elements, NULL, &err );
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(cl_int) * num_elements, NULL, &err);
     if (!streams[1])
     {
         log_error("clCreateBuffer failed\n");
@@ -436,9 +440,6 @@ static int copy_image_size( cl_device_id device, cl_context context,
     void                            *dst = NULL;
     cl_kernel                    kernel[1];
     size_t                        threads[2];
-#ifdef USE_LOCAL_THREADS
-    size_t                        localThreads[2];
-#endif
     int                                err = 0;
     cl_mem_flags            flags;
     unsigned int            num_channels = 4;
@@ -456,16 +457,6 @@ static int copy_image_size( cl_device_id device, cl_context context,
     threads[0] = (size_t)w;
     threads[1] = (size_t)h;
 
-#ifdef USE_LOCAL_THREADS
-    err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( cl_uint ), NULL );
-    test_error( err, "Unable to get thread group max size" );
-    localThreads[1] = localThreads[0];
-    if( localThreads[0] > threads[0] )
-        localThreads[0] = threads[0];
-    if( localThreads[1] > threads[1] )
-        localThreads[1] = threads[1];
-#endif
-
     inptr = (void *)generate_image( (int)num_bytes, d );
     if( ! inptr ){
         log_error("unable to allocate inptr at %d x %d\n", (int)w, (int)h );
@@ -480,7 +471,7 @@ static int copy_image_size( cl_device_id device, cl_context context,
     }
 
     // allocate the input image
-    flags = (cl_mem_flags)(CL_MEM_READ_WRITE);
+    flags = CL_MEM_READ_WRITE;
     memobjs[0] = create_image_2d(context, flags, &image_format_desc, w, h, 0, NULL, &err);
     if( memobjs[0] == (cl_mem)0 ) {
         free( dst );
@@ -489,7 +480,8 @@ static int copy_image_size( cl_device_id device, cl_context context,
         return -1;
     }
 
-    memobjs[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), num_bytes, NULL, &err );
+    memobjs[1] =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, num_bytes, NULL, &err);
     if( memobjs[1] == (cl_mem)0 ) {
         clReleaseMemObject(memobjs[0]);
         free( dst );
@@ -539,11 +531,8 @@ static int copy_image_size( cl_device_id device, cl_context context,
         return -1;
     }
 
-#ifdef USE_LOCAL_THREADS
-    err = clEnqueueNDRangeKernel( queue, kernel[0], 2, NULL, threads, localThreads, 0, NULL, NULL );
-#else
     err = clEnqueueNDRangeKernel( queue, kernel[0], 2, NULL, threads, NULL, 0, NULL, NULL );
-#endif
+
     if (err != CL_SUCCESS){
         print_error( err, "clEnqueueNDRangeKernel failed" );
         clReleaseKernel( kernel[0] );
@@ -800,7 +789,7 @@ int test_copy_array_to_image( cl_device_id device, cl_context context, cl_comman
     }
 
     // allocate the input image
-    flags = (cl_mem_flags)(CL_MEM_READ_WRITE);
+    flags = CL_MEM_READ_WRITE;
     memobjs[0] = create_image_2d( context, flags, &image_format_desc, w, h, 0, NULL, &err );
     if( memobjs[0] == (cl_mem)0 ){
         free( dst );
@@ -809,7 +798,9 @@ int test_copy_array_to_image( cl_device_id device, cl_context context, cl_comman
         return -1;
     }
 
-    memobjs[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), channel_nbytes * num_channels*w*h, NULL, &err );
+    memobjs[1] =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       channel_nbytes * num_channels * w * h, NULL, &err);
     if( memobjs[1] == (cl_mem)0 ) {
         clReleaseMemObject( memobjs[0] );
         free( dst );

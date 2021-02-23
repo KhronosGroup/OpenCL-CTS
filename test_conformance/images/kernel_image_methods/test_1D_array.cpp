@@ -15,10 +15,6 @@
 //
 #include "../testBase.h"
 
-#define MAX_ERR 0.005f
-#define MAX_HALF_LINEAR_ERR 0.3f
-
-extern bool            gDebugTrace, gTestSmallImages, gTestMaxImages, gDeviceLt20;
 
 struct image_kernel_data
 {
@@ -31,26 +27,30 @@ struct image_kernel_data
 };
 
 static const char *methodTestKernelPattern =
-"typedef struct {\n"
-"    int width;\n"
-"    int arraySize;\n"
-"    int channelType;\n"
-"    int channelOrder;\n"
-"    int expectedChannelType;\n"
-"    int expectedChannelOrder;\n"
-" } image_kernel_data;\n"
-"__kernel void sample_kernel( read_only image1d_array_t input, __global image_kernel_data *outData )\n"
-"{\n"
-"   outData->width = get_image_width( input );\n"
-"   outData->arraySize = get_image_array_size( input );\n"
-"   outData->channelType = get_image_channel_data_type( input );\n"
-"   outData->channelOrder = get_image_channel_order( input );\n"
-"\n"
-"   outData->expectedChannelType = %s;\n"
-"   outData->expectedChannelOrder = %s;\n"
-"}";
+    "typedef struct {\n"
+    "    int width;\n"
+    "    int arraySize;\n"
+    "    int channelType;\n"
+    "    int channelOrder;\n"
+    "    int expectedChannelType;\n"
+    "    int expectedChannelOrder;\n"
+    " } image_kernel_data;\n"
+    "__kernel void sample_kernel( %s image1d_array_t input, __global "
+    "image_kernel_data *outData )\n"
+    "{\n"
+    "   outData->width = get_image_width( input );\n"
+    "   outData->arraySize = get_image_array_size( input );\n"
+    "   outData->channelType = get_image_channel_data_type( input );\n"
+    "   outData->channelOrder = get_image_channel_order( input );\n"
+    "\n"
+    "   outData->expectedChannelType = %s;\n"
+    "   outData->expectedChannelOrder = %s;\n"
+    "}";
 
-int test_get_1Dimage_array_info_single( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d )
+int test_get_1Dimage_array_info_single(cl_context context,
+                                       cl_command_queue queue,
+                                       image_descriptor *imageInfo, MTdata d,
+                                       cl_mem_flags flags)
 {
     int error = 0;
 
@@ -69,7 +69,9 @@ int test_get_1Dimage_array_info_single( cl_context context, cl_command_queue que
     if( gDebugTrace )
         log_info( " - Creating 1D image array %d by %d...\n", (int)imageInfo->width, (int)imageInfo->arraySize );
 
-    image = create_image_1d_array( context, (cl_mem_flags)(CL_MEM_READ_ONLY), imageInfo->format, imageInfo->width, imageInfo->arraySize, 0, 0, NULL, &error );
+    image = create_image_1d_array(context, flags, imageInfo->format,
+                                  imageInfo->width, imageInfo->arraySize, 0, 0,
+                                  NULL, &error);
     if( image == NULL )
     {
         log_error( "ERROR: Unable to create 1D image array of size %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->arraySize, IGetErrorString( error ) );
@@ -81,6 +83,8 @@ int test_get_1Dimage_array_info_single( cl_context context, cl_command_queue que
 
     const char* channelTypeName = GetChannelTypeName( imageInfo->format->image_channel_data_type );
     const char* channelOrderName = GetChannelOrderName( imageInfo->format->image_channel_order );
+    const char *image_access_qualifier =
+        (flags == CL_MEM_READ_ONLY) ? "read_only" : "write_only";
 
     if(channelTypeName && strlen(channelTypeName))
         sprintf(channelTypeConstantString, "CLK_%s", &channelTypeName[3]);  // replace CL_* with CLK_*
@@ -89,7 +93,7 @@ int test_get_1Dimage_array_info_single( cl_context context, cl_command_queue que
         sprintf(channelOrderConstantString, "CLK_%s", &channelOrderName[3]); // replace CL_* with CLK_*
 
     // Create a program to run against
-    sprintf( programSrc, methodTestKernelPattern,
+    sprintf(programSrc, methodTestKernelPattern, image_access_qualifier,
             channelTypeConstantString, channelOrderConstantString);
 
     //log_info("-----------------------------------\n%s\n", programSrc);
@@ -97,11 +101,13 @@ int test_get_1Dimage_array_info_single( cl_context context, cl_command_queue que
     if (error)
         print_error(error, "clFinish failed.\n");
     const char *ptr = programSrc;
-    error = create_single_kernel_helper_with_build_options( context, &program, &kernel, 1, &ptr, "sample_kernel", gDeviceLt20 ? "" : "-cl-std=CL2.0");
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                        "sample_kernel");
     test_error( error, "Unable to create kernel to test against" );
 
     // Create an output buffer
-    outDataBuffer = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), sizeof( outKernelData ), NULL, &error );
+    outDataBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                   sizeof(outKernelData), NULL, &error);
     test_error( error, "Unable to create output buffer" );
 
     // Set up arguments and run
@@ -152,7 +158,9 @@ int test_get_1Dimage_array_info_single( cl_context context, cl_command_queue que
     return error;
 }
 
-int test_get_image_info_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format )
+int test_get_image_info_1D_array(cl_device_id device, cl_context context,
+                                 cl_command_queue queue,
+                                 cl_image_format *format, cl_mem_flags flags)
 {
     size_t maxWidth, maxArraySize;
     cl_ulong maxAllocSize, memSize;
@@ -186,7 +194,8 @@ int test_get_image_info_1D_array( cl_device_id device, cl_context context, cl_co
                 if( gDebugTrace )
                     log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.arraySize );
 
-                int ret = test_get_1Dimage_array_info_single( context, queue, &imageInfo, seed );
+                int ret = test_get_1Dimage_array_info_single(
+                    context, queue, &imageInfo, seed, flags);
                 if( ret )
                     return -1;
             }
@@ -210,7 +219,8 @@ int test_get_image_info_1D_array( cl_device_id device, cl_context context, cl_co
             log_info( "Testing %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 2 ]);
             if( gDebugTrace )
                 log_info( "   at max size %d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 2 ] );
-            if( test_get_1Dimage_array_info_single( context, queue, &imageInfo, seed ) )
+            if (test_get_1Dimage_array_info_single(context, queue, &imageInfo,
+                                                   seed, flags))
                 return -1;
         }
     }
@@ -242,7 +252,8 @@ int test_get_image_info_1D_array( cl_device_id device, cl_context context, cl_co
 
             if( gDebugTrace )
                 log_info( "   at size %d,%d (row pitch %d) out of %d,%d\n", (int)imageInfo.width, (int)imageInfo.arraySize, (int)imageInfo.rowPitch, (int)maxWidth, (int)maxArraySize );
-            int ret = test_get_1Dimage_array_info_single( context, queue, &imageInfo, seed );
+            int ret = test_get_1Dimage_array_info_single(
+                context, queue, &imageInfo, seed, flags);
             if( ret )
                 return -1;
         }

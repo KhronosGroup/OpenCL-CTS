@@ -92,19 +92,24 @@ int test_upsample_2_param_fn(cl_command_queue queue, cl_context context, const c
     }
 
     /* Set up parameters */
-    streams[0] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sourceATypeSize * sourceAVecSize * count, sourceA, NULL );
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sourceATypeSize * sourceAVecSize * count, sourceA, NULL);
     if (!streams[0])
     {
         log_error("ERROR: Creating input array A failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), sourceBTypeSize * sourceBVecSize * count, sourceB, NULL );
+    streams[1] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sourceBTypeSize * sourceBVecSize * count, sourceB, NULL);
     if (!streams[1])
     {
         log_error("ERROR: Creating input array B failed!\n");
         return -1;
     }
-    streams[2] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE), outStride * count, NULL, NULL );
+    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE, outStride * count,
+                                NULL, NULL);
     if (!streams[2])
     {
         log_error("ERROR: Creating output array failed!\n");

@@ -1481,8 +1481,8 @@ int
 verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, cl_uchar *outptr, size_t n)
 {
     cl_uchar r;
-    cl_uint  shift_mask = vector_size == 1 ? (cl_uint)(sizeof(cl_uint)*8)-1
-    : (cl_uint)(sizeof(cl_uchar)*8)-1;;
+    cl_uint shift_mask = vector_size == 1 ? (cl_uint)(sizeof(cl_uint) * 8) - 1
+                                          : (cl_uint)(sizeof(cl_uchar) * 8) - 1;
     size_t   i, j;
     int      count=0;
 

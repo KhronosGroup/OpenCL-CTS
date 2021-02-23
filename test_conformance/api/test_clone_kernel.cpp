@@ -113,15 +113,16 @@ int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_c
     clSamplerWrapper sampler;
     img_format.image_channel_order = CL_RGBA;
     img_format.image_channel_data_type = CL_UNSIGNED_INT8;
-	cl_image_desc imageDesc;
-	memset(&imageDesc, 0x0, sizeof(cl_image_desc));
+    cl_image_desc imageDesc;
+    memset(&imageDesc, 0x0, sizeof(cl_image_desc));
     imageDesc.image_type = CL_MEM_OBJECT_IMAGE2D;
     imageDesc.image_width = 512;
     imageDesc.image_height = 512;
 
     cl_uint color[4] = {1,3,5,7};
 
-    clProgramWrapper program;
+    clProgramWrapper program_read;
+    clProgramWrapper program_write;
     clKernelWrapper kernel_read;
     clKernelWrapper kernel_write;
     clKernelWrapper kernel_cloned;
@@ -129,12 +130,16 @@ int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_c
 
     clMemWrapper img;
 
-    if( create_single_kernel_helper( context, &program, &kernel_read, 1, clone_kernel_test_img, "img_read_kernel" ) != 0 )
+    if (create_single_kernel_helper(context, &program_read, &kernel_read, 1,
+                                    clone_kernel_test_img, "img_read_kernel")
+        != 0)
     {
         return -1;
     }
 
-    if( create_single_kernel_helper( context, &program, &kernel_write, 1, clone_kernel_test_img, "img_write_kernel" ) != 0 )
+    if (create_single_kernel_helper(context, &program_write, &kernel_write, 1,
+                                    clone_kernel_test_img, "img_write_kernel")
+        != 0)
     {
         return -1;
     }
@@ -241,6 +246,8 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
 {
     int error;
     clProgramWrapper program;
+    clProgramWrapper program_buf_read;
+    clProgramWrapper program_buf_write;
     clKernelWrapper kernel;
     clKernelWrapper kernel_pipe_read;
     clKernelWrapper kernel_buf_read;
@@ -272,12 +279,18 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
         return -1;
     }
 
-    if( create_single_kernel_helper( context, &program, &kernel_buf_read, 1, clone_kernel_test_kernel, "buf_read_kernel" ) != 0 )
+    if (create_single_kernel_helper(context, &program_buf_read,
+                                    &kernel_buf_read, 1,
+                                    clone_kernel_test_kernel, "buf_read_kernel")
+        != 0)
     {
         return -1;
     }
 
-    if( create_single_kernel_helper( context, &program, &kernel_buf_write, 1, clone_kernel_test_kernel, "buf_write_kernel" ) != 0 )
+    if (create_single_kernel_helper(
+            context, &program_buf_write, &kernel_buf_write, 1,
+            clone_kernel_test_kernel, "buf_write_kernel")
+        != 0)
     {
         return -1;
     }

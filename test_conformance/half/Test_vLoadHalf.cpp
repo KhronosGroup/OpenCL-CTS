@@ -20,44 +20,7 @@
 #include "cl_utils.h"
 #include "tests.h"
 
-static inline float half2float( cl_ushort us )
-{
-    uint32_t u = us;
-    uint32_t sign = (u << 16) & 0x80000000;
-    int32_t exponent = (u & 0x7c00) >> 10;
-    uint32_t mantissa = (u & 0x03ff) << 13;
-    union{ unsigned int u; float f;}uu;
-
-    if( exponent == 0 )
-    {
-        if( mantissa == 0 )
-            return sign ? -0.0f : 0.0f;
-
-        int shift = __builtin_clz( mantissa ) - 8;
-        exponent -= shift-1;
-        mantissa <<= shift;
-        mantissa &= 0x007fffff;
-    }
-    else
-        if( exponent == 31)
-        {
-            uu.u = mantissa | sign;
-            if( mantissa )
-                uu.u |= 0x7fc00000;
-            else
-                uu.u |= 0x7f800000;
-
-            return uu.f;
-        }
-
-    exponent += 127 - 15;
-    exponent <<= 23;
-
-    exponent |= mantissa;
-    uu.u = exponent | sign;
-
-    return uu.f;
-}
+#include <CL/cl_half.h>
 
 int Test_vLoadHalf_private( cl_device_id device, bool aligned )
 {
@@ -207,17 +170,38 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
         };
 
         const char *source_local2[] = {
-            "__kernel void test( const __global half *p, __global float", vector_size_name_extensions[vectorSize], " *f )\n"
+            "#define VECTOR_LEN (",
+            vector_size_names[vectorSize],
+            "/",
+            align_divisors[vectorSize],
+            ")\n"
+            "#define ALIGN_TYPE ",
+            align_types[vectorSize],
+            "\n"
+            "__kernel void test( const __global half *p, __global float",
+            vector_size_name_extensions[vectorSize],
+            " *f )\n"
             "{\n"
-            "   __local ", align_types[vectorSize], " data[", local_buf_size, "/", align_divisors[vectorSize], "];\n"
+            "   __local uchar data[",
+            local_buf_size,
+            "/",
+            align_divisors[vectorSize],
+            "*sizeof(ALIGN_TYPE)] ",
+            "__attribute__((aligned(sizeof(ALIGN_TYPE))));\n"
             "   __local half* hdata_p = (__local half*) data;\n"
-            "   __global ", align_types[vectorSize], "* i_p = (__global ", align_types[vectorSize],"*)p;\n"
+            "   __global ALIGN_TYPE* i_p = (__global ALIGN_TYPE*)p;\n"
             "   size_t i = get_global_id(0);\n"
             "   size_t lid = get_local_id(0);\n"
             "   int k;\n"
-            "   for (k=0; k<",vector_size_names[vectorSize],"/",align_divisors[vectorSize],"; k++)\n"
-            "     data[lid*",vector_size_names[vectorSize],"/",align_divisors[vectorSize],"+k] = i_p[i*",vector_size_names[vectorSize],"/",align_divisors[vectorSize],"+k];\n"
-            "   f[i] = vload", aligned ? "a" : "", "_half",vector_size_name_extensions[vectorSize],"( lid, hdata_p );\n"
+            "   for (k=0; k<VECTOR_LEN; k++)\n"
+            "     *(__local ",
+            "ALIGN_TYPE*)&(data[(lid*VECTOR_LEN+k)*sizeof(ALIGN_TYPE)]) = ",
+            "i_p[i*VECTOR_LEN+k];\n"
+            "   f[i] = vload",
+            aligned ? "a" : "",
+            "_half",
+            vector_size_name_extensions[vectorSize],
+            "( lid, hdata_p );\n"
             "}\n"
         };
 
@@ -482,8 +466,7 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
         //create the reference result
         const unsigned short *s = (const unsigned short *)gIn_half;
         float *d = (float *)gOut_single_reference;
-        for( j = 0; j < count; j++ )
-            d[j] = half2float( s[j] );
+        for (j = 0; j < count; j++) d[j] = cl_half_to_float(s[j]);
 
         //Check the vector lengths
         for( vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
@@ -544,7 +527,7 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
                                        (aligned?"aligned":"unaligned"));
                             gFailCount++;
                             error = -1;
-                            break; // goto exit;
+                            goto exit;
                         }
                     }
                 }

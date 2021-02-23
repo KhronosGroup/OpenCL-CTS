@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -218,9 +218,8 @@ int test_pipe_max_args(cl_device_id deviceID, cl_context context, cl_command_que
     const char *sources[] = { kernel_source.c_str() };
 
     // Create producer kernel
-    err = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel[0], 1, sources, kernelName[0],
-        "-cl-std=CL2.0");
+    err = create_single_kernel_helper(context, &program, &kernel[0], 1, sources,
+                                      kernelName[0]);
     test_error_ret(err, " Error creating program", -1);
 
     //Create consumer kernel
@@ -368,9 +367,8 @@ int test_pipe_max_packet_size(cl_device_id deviceID, cl_context context, cl_comm
     const char *sources[] = { kernel_source.c_str() };
 
     // Create producer kernel
-    err = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel[0], 1, sources, kernelName[0],
-        "-cl-std=CL2.0");
+    err = create_single_kernel_helper(context, &program, &kernel[0], 1, sources,
+                                      kernelName[0]);
     test_error_ret(err, " Error creating program", -1);
 
     //Create consumer kernel
@@ -533,9 +531,8 @@ int test_pipe_max_active_reservations(cl_device_id deviceID, cl_context context,
     const char *sources[] = { kernel_source.c_str() };
 
     // Create producer kernel
-    err = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel[0], 1, sources, kernelName[0],
-        "-cl-std=CL2.0");
+    err = create_single_kernel_helper(context, &program, &kernel[0], 1, sources,
+                                      kernelName[0]);
     test_error_ret(err, " Error creating program", -1);
 
     // Create consumer kernel

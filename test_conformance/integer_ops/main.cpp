@@ -212,6 +212,6 @@ void fill_test_values( cl_long *outBufferA, cl_long *outBufferB, size_t numEleme
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness( argc, argv, test_num, test_list, false, false, 0 );
+    return runTestHarness(argc, argv, test_num, test_list, false, 0);
 }
 

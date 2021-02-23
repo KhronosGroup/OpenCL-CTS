@@ -251,11 +251,9 @@ int test_retain_mem_object_set_kernel_arg(cl_device_id deviceID, cl_context cont
     err = clSetMemObjectDestructorCallback( buffer, callback, nullptr );
     test_error( err, "Unable to set destructor callback" );
 
-    err = create_single_kernel_helper( context, &program, nullptr, 1, testProgram, nullptr );
-    test_error( err, "Unable to build sample program" );
-
-    kernel = clCreateKernel( program, "sample_test", &err );
-    test_error( err, "Unable to create sample_test kernel" );
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      testProgram, "sample_test");
+    test_error(err, "Unable to build sample program and sample_test kernel");
 
     err = clSetKernelArg( kernel, 0, sizeof(cl_mem), &buffer );
     test_error( err, "Unable to set kernel argument" );

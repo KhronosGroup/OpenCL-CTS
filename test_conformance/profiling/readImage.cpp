@@ -130,9 +130,6 @@ int read_image( cl_device_id device, cl_context context, cl_command_queue queue,
     cl_event        readEvent;
     cl_ulong        queueStart, submitStart, readStart, readEnd;
     size_t          threads[2];
-#ifdef USE_LOCAL_THREADS
-    size_t          localThreads[2];
-#endif
     int                err;
     int                w = 64, h = 64;
     cl_mem_flags    flags;
@@ -149,16 +146,6 @@ int read_image( cl_device_id device, cl_context context, cl_command_queue queue,
 
     threads[0] = (size_t)w;
     threads[1] = (size_t)h;
-
-#ifdef USE_LOCAL_THREADS
-    err = clGetDeviceConfigInfo( id, CL_DEVICE_MAX_THREAD_GROUP_SIZE, localThreads, sizeof( unsigned int ), NULL );
-    test_error( err, "Unable to get thread group max size" );
-    localThreads[1] = localThreads[0];
-    if( localThreads[0] > threads[0] )
-        localThreads[0] = threads[0];
-    if( localThreads[1] > threads[1] )
-        localThreads[1] = threads[1];
-#endif
 
     d = init_genrand( gRandomSeed );
     if( image_format_desc.image_channel_data_type == CL_SIGNED_INT8 )
@@ -180,7 +167,7 @@ int read_image( cl_device_id device, cl_context context, cl_command_queue queue,
     }
 
     // allocate the input and output image memory objects
-    flags = (cl_mem_flags)(CL_MEM_READ_WRITE);
+    flags = CL_MEM_READ_WRITE;
     memobjs[0] = create_image_2d( context, flags, &image_format_desc, w, h, 0, NULL, &err );
     if( memobjs[0] == (cl_mem)0 ){
         free( dst );
@@ -189,7 +176,8 @@ int read_image( cl_device_id device, cl_context context, cl_command_queue queue,
         return -1;
     }
 
-    memobjs[1] = clCreateBuffer( context, (cl_mem_flags)(CL_MEM_READ_WRITE),  channel_nbytes * 4 * w * h, NULL, &err );
+    memobjs[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                channel_nbytes * 4 * w * h, NULL, &err);
     if( memobjs[1] == (cl_mem)0 ){
         free( dst );
         free( (void *)inptr );
@@ -231,11 +219,8 @@ int read_image( cl_device_id device, cl_context context, cl_command_queue queue,
         return -1;
     }
 
-#ifdef USE_LOCAL_THREADS
-    err = clEnqueueNDRangeKernel(queue, kernel[0], 2, NULL, threads, localThreads, 0, NULL, NULL );
-#else
     err = clEnqueueNDRangeKernel(queue, kernel[0], 2, NULL, threads, NULL, 0, NULL, NULL );
-#endif
+
     if( err != CL_SUCCESS ){
         print_error( err, "clEnqueueNDRangeKernel failed" );
         clReleaseKernel( kernel[0] );

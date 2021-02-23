@@ -146,9 +146,11 @@ int test_explicit_s2v_function(cl_device_id deviceID, cl_context context, cl_com
         return -1;
     }
 
-    streams[0] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_COPY_HOST_PTR), paramSize * count, inputData, &error);
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                paramSize * count, inputData, &error);
     test_error( error, "clCreateBuffer failed");
-    streams[1] = clCreateBuffer(context, (cl_mem_flags)(CL_MEM_READ_WRITE),  destStride * count, NULL, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, destStride * count,
+                                NULL, &error);
     test_error( error, "clCreateBuffer failed");
 
     /* Set the arguments */

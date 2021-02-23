@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,25 +18,20 @@
 
 #include <stdio.h>
 
-class genericThread
-{
-    public:
+class genericThread {
+public:
+    virtual ~genericThread() {}
 
-        virtual ~genericThread() {}
+    bool Start(void);
+    void* Join(void);
 
-        bool    Start( void );
-        void *    Join( void );
+protected:
+    virtual void* IRun(void) = 0;
 
-    protected:
+private:
+    void* mHandle;
 
-        virtual void *    IRun( void ) = 0;
-
-    private:
-
-        void* mHandle;
-
-        static void * IStaticReflector( void * data );
+    static void* IStaticReflector(void* data);
 };
 
 #endif // _genericThread_h
-
