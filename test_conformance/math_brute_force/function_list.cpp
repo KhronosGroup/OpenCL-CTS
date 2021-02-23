@@ -13,8 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "FunctionList.h"
+
+#include "function_list.h"
 #include "reference_math.h"
+#include "test_functions.h"
 
 #define FTZ_ON 1
 #define FTZ_OFF 0
@@ -102,23 +104,89 @@
             _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
     }
 
-extern const vtbl _unary; // float foo( float )
-extern const vtbl _unary_u; // float foo( uint ),  double foo( ulong )
-extern const vtbl _i_unary; // int foo( float )
-extern const vtbl _macro_unary; // int foo( float ),  returns {0,1} for scalar,
-                                // { 0, -1 } for vector
-extern const vtbl _binary; // float foo( float, float )
-extern const vtbl _binary_nextafter; // float foo( float, float ), special
-                                     // handling for nextafter
-extern const vtbl _binary_operator; // float .op. float
-extern const vtbl _macro_binary; // int foo( float, float ), returns {0,1} for
-                                 // scalar, { 0, -1 } for vector
-extern const vtbl _binary_i; // float foo( float, int )
-extern const vtbl _ternary; // float foo( float, float, float )
-extern const vtbl _unary_two_results; // float foo( float, float * )
-extern const vtbl _unary_two_results_i; // float foo( float, int * )
-extern const vtbl _binary_two_results_i; // float foo( float, float, int * )
-extern const vtbl _mad_tbl; // float mad( float, float, float )
+static constexpr vtbl _unary = {
+    "unary",
+    TestFunc_Float_Float,
+    TestFunc_Double_Double,
+};
+
+static constexpr vtbl _i_unary = {
+    "i_unary",
+    TestFunc_Int_Float,
+    TestFunc_Int_Double,
+};
+
+static constexpr vtbl _unary_u = {
+    "unary_u",
+    TestFunc_Float_UInt,
+    TestFunc_Double_ULong,
+};
+
+static constexpr vtbl _macro_unary = {
+    "macro_unary",
+    TestMacro_Int_Float,
+    TestMacro_Int_Double,
+};
+
+static constexpr vtbl _binary = {
+    "binary",
+    TestFunc_Float_Float_Float,
+    TestFunc_Double_Double_Double,
+};
+
+static constexpr vtbl _binary_nextafter = {
+    "binary_nextafter",
+    TestFunc_Float_Float_Float_nextafter,
+    TestFunc_Double_Double_Double_nextafter,
+};
+
+static constexpr vtbl _binary_operator = {
+    "binaryOperator",
+    TestFunc_Float_Float_Float_Operator,
+    TestFunc_Double_Double_Double_Operator,
+};
+
+static constexpr vtbl _binary_i = {
+    "binary_i",
+    TestFunc_Float_Float_Int,
+    TestFunc_Double_Double_Int,
+};
+
+static constexpr vtbl _macro_binary = {
+    "macro_binary",
+    TestMacro_Int_Float_Float,
+    TestMacro_Int_Double_Double,
+};
+
+static constexpr vtbl _ternary = {
+    "ternary",
+    TestFunc_Float_Float_Float_Float,
+    TestFunc_Double_Double_Double_Double,
+};
+
+static constexpr vtbl _unary_two_results = {
+    "unary_two_results",
+    TestFunc_Float2_Float,
+    TestFunc_Double2_Double,
+};
+
+static constexpr vtbl _unary_two_results_i = {
+    "unary_two_results_i",
+    TestFunc_FloatI_Float,
+    TestFunc_DoubleI_Double,
+};
+
+static constexpr vtbl _binary_two_results_i = {
+    "binary_two_results_i",
+    TestFunc_FloatI_Float_Float,
+    TestFunc_DoubleI_Double_Double,
+};
+
+static constexpr vtbl _mad_tbl = {
+    "ternary",
+    TestFunc_mad_Float,
+    TestFunc_mad_Double,
+};
 
 #define unaryF &_unary
 #define i_unaryF &_i_unary

@@ -223,7 +223,6 @@ endif(CMAKE_BUILD_TYPE STREQUAL "release")
 
 add_subdirectory(test_common)
 add_subdirectory(test_conformance)
-add_subdirectory(test_extensions)
 
 # Support both VS2008 and VS2012.
 set (DLL_FILES "${VS_BUILD_DIR}/Debug/*.dll")

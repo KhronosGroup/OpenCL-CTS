@@ -13,20 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "Utility.h"
+
+#include "function_list.h"
+#include "test_functions.h"
+#include "utility.h"
 
 #include <string.h>
-#include "FunctionList.h"
 
 #if defined(__APPLE__)
 #include <sys/time.h>
 #endif
-
-int TestFunc_Float_Float(const Func *f, MTdata, bool relaxedMode);
-int TestFunc_Double_Double(const Func *f, MTdata, bool relaxedMode);
-
-extern const vtbl _unary = { "unary", TestFunc_Float_Float,
-                             TestFunc_Double_Double };
 
 static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                        cl_kernel *k, cl_program *p, bool relaxedMode)
@@ -37,13 +33,14 @@ static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                         sizeNames[vectorSize],
                         "* out, __global float",
                         sizeNames[vectorSize],
-                        "* in)\n"
+                        "* in )\n"
                         "{\n"
-                        "   int i = get_global_id(0);\n"
+                        "   size_t i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
                         "( in[i] );\n"
                         "}\n" };
+
     const char *c3[] = {
         "__kernel void math_kernel",
         sizeNames[vectorSize],
@@ -89,7 +86,6 @@ static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
         "}\n"
     };
 
-
     const char **kern = c;
     size_t kernSize = sizeof(c) / sizeof(c[0]);
 
@@ -118,9 +114,9 @@ static int BuildKernelDouble(const char *name, int vectorSize,
                         sizeNames[vectorSize],
                         "* out, __global double",
                         sizeNames[vectorSize],
-                        "* in)\n"
+                        "* in )\n"
                         "{\n"
-                        "   int i = get_global_id(0);\n"
+                        "   size_t i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
                         "( in[i] );\n"
@@ -180,7 +176,6 @@ static int BuildKernelDouble(const char *name, int vectorSize,
         kern = c3;
         kernSize = sizeof(c3) / sizeof(c3[0]);
     }
-
 
     char testName[32];
     snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
@@ -249,7 +244,7 @@ typedef struct TestInfo
     int isRangeLimited; // 1 if the function is only to be evaluated over a
                         // range
     float half_sin_cos_tan_limit;
-    bool relaxedMode; // True if test is to be run in relaxed mode, false
+    bool relaxedMode; // True if test is running in relaxed mode, false
                       // otherwise.
 } TestInfo;
 
@@ -269,10 +264,10 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     // Init test_info
     memset(&test_info, 0, sizeof(test_info));
     test_info.threadCount = GetThreadCount();
-
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
     test_info.scale = getTestScale(sizeof(cl_float));
+
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize
@@ -345,8 +340,8 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                 &region, &error);
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
-                vlog_error("Error: Unable to create sub-buffer of gInBuffer "
-                           "for region {%zd, %zd}\n",
+                vlog_error("Error: Unable to create sub-buffer of "
+                           "gInBuffer for region {%zd, %zd}\n",
                            region.origin, region.size);
                 goto exit;
             }
@@ -390,6 +385,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
     }
 
+    // Run the kernels
     if (!gSkipCorrectnessTesting || skipTestingRelaxed)
     {
         error = ThreadPool_Do(TestFloat, test_info.jobCount, &test_info);
@@ -443,8 +439,9 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            size_t vectorSize = sizeValues[j] * sizeof(cl_float);
-            size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
+            size_t vectorSize = sizeof(cl_float) * sizeValues[j];
+            size_t localCount = (BUFFER_SIZE + vectorSize - 1)
+                / vectorSize; // BUFFER_SIZE / vectorSize  rounded up
             if ((error = clSetKernelArg(test_info.k[j][0], 0,
                                         sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
@@ -479,9 +476,9 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                 }
 
                 uint64_t endTime = GetTime();
-                double current_time = SubtractTime(endTime, startTime);
-                sum += current_time;
-                if (current_time < bestTime) bestTime = current_time;
+                double time = SubtractTime(endTime, startTime);
+                sum += time;
+                if (time < bestTime) bestTime = time;
             }
 
             if (gReportAverageTimes) bestTime = sum / PERF_LOOP_COUNT;
@@ -497,6 +494,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
+    // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
@@ -553,7 +551,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint *out[VECTOR_SIZE_COUNT];
     for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
-        out[j] = (uint32_t *)clEnqueueMapBuffer(
+        out[j] = (cl_uint *)clEnqueueMapBuffer(
             tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
             buffer_size, 0, NULL, e + j, &error);
         if (error || NULL == out[j])
@@ -655,7 +653,6 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-
     // Get that moving
     if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
 
@@ -670,7 +667,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     // an in order queue.
     for (j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++)
     {
-        out[j] = (uint32_t *)clEnqueueMapBuffer(
+        out[j] = (cl_uint *)clEnqueueMapBuffer(
             tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_READ, 0,
             buffer_size, 0, NULL, NULL, &error);
         if (error || NULL == out[j])
@@ -680,6 +677,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
             return error;
         }
     }
+
     // Wait for the last buffer
     out[j] = (uint32_t *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
                                             CL_TRUE, CL_MAP_READ, 0,
@@ -1246,12 +1244,9 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            /* Qualcomm fix: 9461 read-write flags must be compatible with
-             * parent buffer */
             test_info.tinfo[i].outBuf[j] = clCreateSubBuffer(
                 gOutBuffer[j], CL_MEM_WRITE_ONLY, CL_BUFFER_CREATE_TYPE_REGION,
                 &region, &error);
-            /* Qualcomm fix: end */
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
                 vlog_error("Error: Unable to create sub-buffer of gInBuffer "
@@ -1281,6 +1276,7 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
     }
 
+    // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(TestDouble, test_info.jobCount, &test_info);
@@ -1334,8 +1330,9 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            size_t vectorSize = sizeValues[j] * sizeof(cl_double);
-            size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
+            size_t vectorSize = sizeof(cl_double) * sizeValues[j];
+            size_t localCount = (BUFFER_SIZE + vectorSize - 1)
+                / vectorSize; // BUFFER_SIZE / vectorSize  rounded up
             if ((error = clSetKernelArg(test_info.k[j][0], 0,
                                         sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
@@ -1370,9 +1367,9 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                 }
 
                 uint64_t endTime = GetTime();
-                double current_time = SubtractTime(endTime, startTime);
-                sum += current_time;
-                if (current_time < bestTime) bestTime = current_time;
+                double time = SubtractTime(endTime, startTime);
+                sum += time;
+                if (time < bestTime) bestTime = time;
             }
 
             if (gReportAverageTimes) bestTime = sum / PERF_LOOP_COUNT;
@@ -1393,6 +1390,7 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
+    // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);

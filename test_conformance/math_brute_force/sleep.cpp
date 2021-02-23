@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "Sleep.h"
-#include "Utility.h"
+
+#include "sleep.h"
+#include "utility.h"
 
 #if defined(__APPLE__)
 #include <IOKit/pwr_mgt/IOPMLib.h>

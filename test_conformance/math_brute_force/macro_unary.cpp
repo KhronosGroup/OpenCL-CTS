@@ -13,17 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "Utility.h"
+
+#include "function_list.h"
+#include "test_functions.h"
+#include "utility.h"
 
 #include <string.h>
-#include "FunctionList.h"
-
-int TestMacro_Int_Float(const Func *f, MTdata, bool relaxedMode);
-int TestMacro_Int_Double(const Func *f, MTdata, bool relaxedMode);
-
-extern const vtbl _macro_unary = { "macro_unary", TestMacro_Int_Float,
-                                   TestMacro_Int_Double };
-
 
 static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                        cl_kernel *k, cl_program *p, bool relaxedMode)
@@ -34,13 +29,14 @@ static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                         sizeNames[vectorSize],
                         "* out, __global float",
                         sizeNames[vectorSize],
-                        "* in)\n"
+                        "* in )\n"
                         "{\n"
-                        "   int i = get_global_id(0);\n"
+                        "   size_t i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
                         "( in[i] );\n"
                         "}\n" };
+
     const char *c3[] = {
         "__kernel void math_kernel",
         sizeNames[vectorSize],
@@ -115,9 +111,9 @@ static int BuildKernelDouble(const char *name, int vectorSize,
                         sizeNames[vectorSize],
                         "* out, __global double",
                         sizeNames[vectorSize],
-                        "* in)\n"
+                        "* in )\n"
                         "{\n"
-                        "   int i = get_global_id(0);\n"
+                        "   size_t i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
                         "( in[i] );\n"
@@ -177,7 +173,6 @@ static int BuildKernelDouble(const char *name, int vectorSize,
         kern = c3;
         kernSize = sizeof(c3) / sizeof(c3[0]);
     }
-
 
     char testName[32];
     snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
@@ -258,6 +253,7 @@ int TestMacro_Int_Float(const Func *f, MTdata d, bool relaxedMode)
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
     test_info.scale = getTestScale(sizeof(cl_float));
+
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize
@@ -279,6 +275,7 @@ int TestMacro_Int_Float(const Func *f, MTdata d, bool relaxedMode)
     test_info.f = f;
     test_info.ftz =
         f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
+
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
@@ -328,8 +325,8 @@ int TestMacro_Int_Float(const Func *f, MTdata d, bool relaxedMode)
                 &region, &error);
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
-                vlog_error("Error: Unable to create sub-buffer of gOutBuffer "
-                           "for region {%zd, %zd}\n",
+                vlog_error("Error: Unable to create sub-buffer of "
+                           "gOutBuffer for region {%zd, %zd}\n",
                            region.origin, region.size);
                 goto exit;
             }
@@ -355,6 +352,7 @@ int TestMacro_Int_Float(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
     }
 
+    // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(TestFloat, test_info.jobCount, &test_info);
@@ -438,6 +436,7 @@ int TestMacro_Int_Float(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
+    // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
@@ -501,11 +500,10 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-
     // Get that moving
     if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
 
-    // Write the new values to the input array
+    // Init input array
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
     for (j = 0; j < buffer_elements; j++) p[j] = base + j * scale;
 
@@ -569,7 +567,6 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-
     // Get that moving
     if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
 
@@ -594,6 +591,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
             return error;
         }
     }
+
     // Wait for the last buffer
     out[j] = (cl_int *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
                                           CL_TRUE, CL_MAP_READ, 0, buffer_size,
@@ -711,12 +709,14 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
     size_t i, j;
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
+
     // Init test_info
     memset(&test_info, 0, sizeof(test_info));
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
     test_info.scale = getTestScale(sizeof(cl_double));
+
     if (gWimpyMode)
     {
         test_info.subBufferSize = gWimpyBufferSize
@@ -782,12 +782,9 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
 
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            /* Qualcomm fix: 9461 read-write flags must be compatible with
-             * parent buffer */
             test_info.tinfo[i].outBuf[j] = clCreateSubBuffer(
                 gOutBuffer[j], CL_MEM_WRITE_ONLY, CL_BUFFER_CREATE_TYPE_REGION,
                 &region, &error);
-            /* Qualcomm fix: end */
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
                 vlog_error("Error: Unable to create sub-buffer of gInBuffer "
@@ -817,6 +814,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
     }
 
+    // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(TestDouble, test_info.jobCount, &test_info);
@@ -846,8 +844,9 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            size_t vectorSize = sizeValues[j] * sizeof(cl_double);
-            size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
+            size_t vectorSize = sizeof(cl_double) * sizeValues[j];
+            size_t localCount = (BUFFER_SIZE + vectorSize - 1)
+                / vectorSize; // BUFFER_SIZE / vectorSize  rounded up
             if ((error = clSetKernelArg(test_info.k[j][0], 0,
                                         sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
@@ -900,6 +899,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
+    // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
@@ -936,9 +936,9 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint base = job_id * (cl_uint)job->step;
     ThreadInfo *tinfo = job->tinfo + thread_id;
     dptr dfunc = job->f->dfunc;
+    int ftz = job->ftz;
     cl_uint j, k;
     cl_int error;
-    int ftz = job->ftz;
     const char *name = job->f->name;
 
     Force64BitFPUPrecision();
@@ -1027,7 +1027,6 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-
     // Get that moving
     if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
 
@@ -1052,6 +1051,7 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
             return error;
         }
     }
+
     // Wait for the last buffer
     out[j] = (cl_long *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
                                            CL_TRUE, CL_MAP_READ, 0, buffer_size,
@@ -1062,13 +1062,11 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
         return error;
     }
 
-
     // Verify data
     cl_long *t = (cl_long *)r;
     for (j = 0; j < buffer_elements; j++)
     {
         cl_long *q = out[0];
-
 
         // If we aren't getting the correctly rounded result
         if (gMinVectorSizeIndex == 0 && t[j] != q[j])

@@ -335,10 +335,10 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
     strcat(kernel_code, kernel_strings[4]);
 
     // Now we need to execute the kernel
-    cl_mem defines;
+    clMemWrapper defines;
     cl_int *data;
-    cl_program program;
-    cl_kernel kernel;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
 
     Version version = get_device_cl_version(device);
 
@@ -432,10 +432,6 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
       free(extensions_supported[i]);
     }
     free(extensions);
-    if( defines ) {
-        error = clReleaseMemObject( defines );
-        test_error( error, "Unable to release memory object" );
-    }
 
     if (total_errors)
         return -1;

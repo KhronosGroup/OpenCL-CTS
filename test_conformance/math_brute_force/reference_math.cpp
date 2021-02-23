@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "harness/compat.h"
 #include "reference_math.h"
 #include <limits.h>
@@ -21,7 +22,7 @@
 #include <string.h>
 #endif
 
-#include "Utility.h"
+#include "utility.h"
 
 #if defined(__SSE__)                                                           \
     || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))

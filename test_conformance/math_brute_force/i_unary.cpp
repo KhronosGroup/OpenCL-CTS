@@ -13,18 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "Utility.h"
+
+#include "function_list.h"
+#include "test_functions.h"
+#include "utility.h"
 
 #include <string.h>
-#include "FunctionList.h"
-
-int TestFunc_Int_Float(const Func *f, MTdata, bool relaxedMode);
-int TestFunc_Int_Double(const Func *f, MTdata, bool relaxedMode);
-
-extern const vtbl _i_unary = { "i_unary", TestFunc_Int_Float,
-                               TestFunc_Int_Double };
-
-
 
 static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
                        cl_program *p, bool relaxedMode)
@@ -42,6 +36,7 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
                         name,
                         "( in[i] );\n"
                         "}\n" };
+
     const char *c3[] = {
         "__kernel void math_kernel",
         sizeNames[vectorSize],
@@ -87,7 +82,6 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
         "}\n"
     };
 
-
     const char **kern = c;
     size_t kernSize = sizeof(c) / sizeof(c[0]);
 
@@ -114,9 +108,9 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
                         sizeNames[vectorSize],
                         "* out, __global double",
                         sizeNames[vectorSize],
-                        "* in)\n"
+                        "* in )\n"
                         "{\n"
-                        "   int i = get_global_id(0);\n"
+                        "   size_t i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
                         "( in[i] );\n"
@@ -177,7 +171,6 @@ static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
         kernSize = sizeof(c3) / sizeof(c3[0]);
     }
 
-
     char testName[32];
     snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
              sizeNames[vectorSize]);
@@ -219,7 +212,7 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
     int error;
     cl_program programs[VECTOR_SIZE_COUNT];
     cl_kernel kernels[VECTOR_SIZE_COUNT];
-    int ftz = f->ftz || 0 == (gFloatCapabilities & CL_FP_DENORM) || gForceFTZ;
+    int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
     size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
     uint64_t step = getTestStep(sizeof(float), bufferSize);
     int scale = (int)((1ULL << 32) / (16 * bufferSize / sizeof(float)) + 1);
@@ -234,27 +227,30 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
     Force64BitFPUPrecision();
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode, relaxedMode };
-    if ((error = ThreadPool_Do(BuildKernel_FloatFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
-        return error;
+    {
+        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                       f->nameInCode, relaxedMode };
+        if ((error = ThreadPool_Do(BuildKernel_FloatFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
+    }
 
     for (i = 0; i < (1ULL << 32); i += step)
     {
         // Init input array
-        uint32_t *p = (uint32_t *)gIn;
+        cl_uint *p = (cl_uint *)gIn;
         if (gWimpyMode)
         {
             for (j = 0; j < bufferSize / sizeof(float); j++)
-                p[j] = (uint32_t)i + j * scale;
+                p[j] = (cl_uint)i + j * scale;
         }
         else
         {
             for (j = 0; j < bufferSize / sizeof(float); j++)
                 p[j] = (uint32_t)i + j;
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {
@@ -281,7 +277,8 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_float);
-            size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;
+            size_t localCount = (bufferSize + vectorSize - 1)
+                / vectorSize; // bufferSize / vectorSize  rounded up
             if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
                                         &gOutBuffer[j])))
             {
@@ -396,8 +393,9 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            size_t vectorSize = sizeValues[j] * sizeof(cl_float);
-            size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;
+            size_t vectorSize = sizeof(cl_float) * sizeValues[j];
+            size_t localCount = (bufferSize + vectorSize - 1)
+                / vectorSize; // bufferSize / vectorSize  rounded up
             if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
                                         &gOutBuffer[j])))
             {
@@ -447,6 +445,7 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
     }
 
     vlog("\n");
+
 exit:
     RestoreFPState(&oldMode);
     // Release
@@ -481,13 +480,13 @@ int TestFunc_Int_Double(const Func *f, MTdata d, bool relaxedMode)
     Force64BitFPUPrecision();
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode, relaxedMode };
-    if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
     {
-        return error;
+        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
+                                       f->nameInCode, relaxedMode };
+        if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
     }
 
     for (i = 0; i < (1ULL << 32); i += step)
@@ -504,6 +503,7 @@ int TestFunc_Int_Double(const Func *f, MTdata d, bool relaxedMode)
             for (j = 0; j < bufferSize / sizeof(cl_double); j++)
                 p[j] = DoubleFromUInt32((uint32_t)i + j);
         }
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {
@@ -529,8 +529,9 @@ int TestFunc_Int_Double(const Func *f, MTdata d, bool relaxedMode)
         // Run the kernels
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            size_t vectorSize = sizeValues[j] * sizeof(cl_double);
-            size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;
+            size_t vectorSize = sizeof(cl_double) * sizeValues[j];
+            size_t localCount = (bufferSize + vectorSize - 1)
+                / vectorSize; // bufferSize / vectorSize  rounded up
             if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
                                         &gOutBuffer[j])))
             {
@@ -616,6 +617,7 @@ int TestFunc_Int_Double(const Func *f, MTdata d, bool relaxedMode)
             {
                 vlog(".");
             }
+
             fflush(stdout);
         }
     }
@@ -697,7 +699,6 @@ int TestFunc_Int_Double(const Func *f, MTdata d, bool relaxedMode)
     }
 
     vlog("\n");
-
 
 exit:
     RestoreFPState(&oldMode);
