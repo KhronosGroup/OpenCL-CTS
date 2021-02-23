@@ -4,11 +4,6 @@ set -e
 
 export TOP=$(pwd)
 
-if [[ "${JOB_CHECK_FORMAT}" == "1" ]]; then
-    ./check-format.sh
-    exit $?
-fi
-
 TOOLCHAIN_URL_arm="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz"
 TOOLCHAIN_URL_aarch64="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz"
 
