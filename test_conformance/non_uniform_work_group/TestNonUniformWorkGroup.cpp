@@ -459,6 +459,8 @@ void TestNonUniformWorkGroup::calculateExpectedValues () {
   numberOfPossibleRegions[1] = (_globalSize[1]>1)?2:1;
   numberOfPossibleRegions[2] = (_globalSize[2]>1)?2:1;
 
+  memset(&_referenceRegionArray[0], 0,
+         _referenceRegionArray.size() * sizeof(_referenceRegionArray[0]));
   for (cl_ushort i = 0; i < NUMBER_OF_REGIONS; ++i) {
 
     if (i & 0x01 && numberOfPossibleRegions[0] == 1) {
@@ -722,6 +724,7 @@ size_t TestNonUniformWorkGroup::adjustGlobalBufferSize(size_t globalBufferSize) 
               _globalSize[0] * _globalSize[1] * _globalSize[2];
       }
   }
+
   // If _globalSize[0] is adjusted, make sure there is still non-uniform
   // workgroup.
   if (_globalSize[0] != oldGlobalSize[0])
@@ -734,6 +737,22 @@ size_t TestNonUniformWorkGroup::adjustGlobalBufferSize(size_t globalBufferSize) 
       }
   }
 
+  // Adjust _globalWorkOffset if necessary.
+  size_t oldGlobalWorkOffset[MAX_DIMS];
+  memcpy(oldGlobalWorkOffset, _globalWorkOffset, sizeof(_globalWorkOffset));
+  bool globalWorkOffsetAdjusted = false;
+  for (cl_uint i = 0; i < _dims; ++i)
+  {
+      if (_globalWorkOffset[i] >= _globalSize[i])
+      {
+          _globalWorkOffset[i] = _globalSize[i] / 2;
+          globalWorkOffsetAdjusted = true;
+      }
+  }
+
+  // Re-calculate expected values.
+  calculateExpectedValues();
+
   size_t adjustedGlobalBufferSize = _numOfGlobalWorkItems * sizeof(cl_uint);
   log_info("globalSize was adjusted from [%zu, %zu, %zu] to [%zu, %zu, %zu]\n",
            oldGlobalSize[0], oldGlobalSize[1], oldGlobalSize[2], _globalSize[0],
@@ -742,6 +761,12 @@ size_t TestNonUniformWorkGroup::adjustGlobalBufferSize(size_t globalBufferSize) 
            oldNumOfGlobalWorkItems, _numOfGlobalWorkItems);
   log_info("globalBufferSize was adjusted from %zu to %zu\n", globalBufferSize,
            adjustedGlobalBufferSize);
+  if (globalWorkOffsetAdjusted)
+      log_info("globalWorkOffset was adjusted from [%zu, %zu, %zu] to [%zu, "
+               "%zu, %zu]\n",
+               oldGlobalWorkOffset[0], oldGlobalWorkOffset[1],
+               oldGlobalWorkOffset[2], _globalWorkOffset[0],
+               _globalWorkOffset[1], _globalWorkOffset[2]);
 
   return adjustedGlobalBufferSize;
 }
