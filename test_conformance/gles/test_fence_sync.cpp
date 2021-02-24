@@ -160,7 +160,7 @@ GLuint createShaderProgram(GLint *posLoc, GLint *colLoc)
     glAttachShader(program, vpShader);
 
     GLuint fpShader;
-    char* fpstr = (char*)malloc(strlen(fragmentshader));
+    char* fpstr = (char*)malloc(sizeof(fragmentshader));
     strcpy(fpstr, fragmentshader);
     fpShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fpShader, 1, (const GLchar **)&fpstr, NULL);
