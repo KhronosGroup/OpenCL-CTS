@@ -64,7 +64,6 @@ set(${MODULE_NAME}_SOURCES
     test_global_linear_id.cpp
     test_local_linear_id.cpp
     test_progvar.cpp
-    test_extended_bit_ops.cpp
 )
 
 if(APPLE)
