@@ -13,6 +13,7 @@ set(${MODULE_NAME}_SOURCES
     test_popcount.cpp
     test_integer_dot_product.cpp
     test_extended_bit_ops.cpp
+    test_extended_bit_ops_reverse.cpp
 )
 
 include(../CMakeCommon.txt)
