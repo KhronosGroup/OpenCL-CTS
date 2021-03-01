@@ -199,53 +199,26 @@ static int test_type(const char* type_name, cl_device_id device,
         | test_vectype<T, 16>(type_name, device, context, queue);
 }
 
-int test_extended_bit_ops_insert(cl_device_id device, cl_context context,
-                                 cl_command_queue queue, int num_elements)
-{
-    if (is_extension_available(device, "cl_khr_extended_bit_ops"))
-    {
-        int result = TEST_PASS;
-
-#if 0
-        result |= test_type<cl_char>("char", device, context, queue);
-        result |= test_type<cl_uchar>("uchar", device, context, queue);
-        result |= test_type<cl_short>("short", device, context, queue);
-        result |= test_type<cl_ushort>("ushort", device, context, queue);
-        result |= test_type<cl_int>("int", device, context, queue);
-        result |= test_type<cl_uint>("uint", device, context, queue);
-        if (gHasLong)
-        {
-            result |= test_type<cl_long>("long", device, context, queue);
-            result |= test_type<cl_ulong>("ulong", device, context, queue);
-        }
-#endif
-        return result;
-    }
-
-    log_info("cl_khr_extended_bit_ops is not supported\n");
-    return TEST_SKIPPED_ITSELF;
-}
-
-int test_extended_bit_ops_extract(cl_device_id device, cl_context context,
+int test_extended_bit_ops_reverse(cl_device_id device, cl_context context,
                                   cl_command_queue queue, int num_elements)
 {
-    if (is_extension_available(device, "cl_khr_extended_bit_ops"))
+    // TODO: add back this check!
+    if (true || is_extension_available(device, "cl_khr_extended_bit_ops"))
     {
         int result = TEST_PASS;
 
-#if 0
-        result |= test_type<cl_char>("char", device, context, queue);
+        // TODO: Need to understand if we support signed types or not.
+        //result |= test_type<cl_char>("char", device, context, queue);
         result |= test_type<cl_uchar>("uchar", device, context, queue);
-        result |= test_type<cl_short>("short", device, context, queue);
+        //result |= test_type<cl_short>("short", device, context, queue);
         result |= test_type<cl_ushort>("ushort", device, context, queue);
-        result |= test_type<cl_int>("int", device, context, queue);
+        //result |= test_type<cl_int>("int", device, context, queue);
         result |= test_type<cl_uint>("uint", device, context, queue);
         if (gHasLong)
         {
-            result |= test_type<cl_long>("long", device, context, queue);
+        //    result |= test_type<cl_long>("long", device, context, queue);
             result |= test_type<cl_ulong>("ulong", device, context, queue);
         }
-#endif
         return result;
     }
 
