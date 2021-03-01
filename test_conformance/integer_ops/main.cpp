@@ -59,6 +59,10 @@ test_definition test_list[] = {
     ADD_TEST( integer_mul24 ),
     ADD_TEST( integer_mad24 ),
 
+    ADD_TEST( extended_bit_ops_extract ),
+    ADD_TEST( extended_bit_ops_insert ),
+    ADD_TEST( extended_bit_ops_reverse ),
+
     ADD_TEST( long_math ),
     ADD_TEST( long_logic ),
     ADD_TEST( long_shift ),

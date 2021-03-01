@@ -161,8 +161,6 @@ test_definition test_list[] = {
 
     ADD_TEST_VERSION(get_linear_ids, Version(2, 0)),
     ADD_TEST_VERSION(rw_image_access_qualifier, Version(2, 0)),
-
-    ADD_TEST(extended_bit_ops),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
