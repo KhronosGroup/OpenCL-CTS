@@ -269,30 +269,3 @@ int test_extended_bit_ops_insert(cl_device_id device, cl_context context,
     log_info("cl_khr_extended_bit_ops is not supported\n");
     return TEST_SKIPPED_ITSELF;
 }
-
-int test_extended_bit_ops_extract(cl_device_id device, cl_context context,
-                                  cl_command_queue queue, int num_elements)
-{
-    if (is_extension_available(device, "cl_khr_extended_bit_ops"))
-    {
-        int result = TEST_PASS;
-
-#if 0
-        result |= test_type<cl_char>("char", device, context, queue);
-        result |= test_type<cl_uchar>("uchar", device, context, queue);
-        result |= test_type<cl_short>("short", device, context, queue);
-        result |= test_type<cl_ushort>("ushort", device, context, queue);
-        result |= test_type<cl_int>("int", device, context, queue);
-        result |= test_type<cl_uint>("uint", device, context, queue);
-        if (gHasLong)
-        {
-            result |= test_type<cl_long>("long", device, context, queue);
-            result |= test_type<cl_ulong>("ulong", device, context, queue);
-        }
-#endif
-        return result;
-    }
-
-    log_info("cl_khr_extended_bit_ops is not supported\n");
-    return TEST_SKIPPED_ITSELF;
-}
