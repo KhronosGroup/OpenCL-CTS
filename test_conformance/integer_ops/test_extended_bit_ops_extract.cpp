@@ -17,92 +17,146 @@
 #include <algorithm>
 #include <numeric>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "procs.h"
+#include "extended_bit_ops.h"
 #include "harness/testHarness.h"
-#include "harness/conversions.h"
-
-// TODO: Move this to a common location?
-template <typename T> struct TestInfo
-{
-};
-template <> struct TestInfo<cl_char>
-{
-    static const ExplicitType explicitType = kChar;
-};
-template <> struct TestInfo<cl_uchar>
-{
-    static const ExplicitType explicitType = kUChar;
-};
-template <> struct TestInfo<cl_short>
-{
-    static const ExplicitType explicitType = kShort;
-};
-template <> struct TestInfo<cl_ushort>
-{
-    static const ExplicitType explicitType = kUShort;
-};
-template <> struct TestInfo<cl_int>
-{
-    static const ExplicitType explicitType = kInt;
-};
-template <> struct TestInfo<cl_uint>
-{
-    static const ExplicitType explicitType = kUInt;
-};
-template <> struct TestInfo<cl_long>
-{
-    static const ExplicitType explicitType = kLong;
-};
-template <> struct TestInfo<cl_ulong>
-{
-    static const ExplicitType explicitType = kULong;
-};
 
 template <typename T>
-static void generate_input(std::vector<T>& base)
+static typename std::make_signed<T>::type
+cpu_bit_extract_signed(T tbase, cl_uint offset, cl_uint count)
 {
-    // TODO: Should we generate the random data once and reuse it?
-    MTdata d = init_genrand(gRandomSeed);
-    generate_random_data(TestInfo<T>::explicitType, base.size(), d, base.data());
-    free_mtdata(d);
-    d = NULL;
-}
+    typedef typename std::make_signed<T>::type signed_t;
 
-template <typename T>
-static T cpu_bit_insert(T tbase, T tinsert, cl_uint offset, cl_uint count)
-{
     assert(offset <= sizeof(T) * 8);
     assert(count <= sizeof(T) * 8);
     assert(offset + count <= sizeof(T) * 8);
 
-    cl_ulong base = static_cast<cl_ulong>(tbase);
-    cl_ulong insert = static_cast<cl_ulong>(tinsert);
+    signed_t base = static_cast<signed_t>(tbase);
+    signed_t result;
 
-    cl_ulong mask = (count < 64) ? ((1ULL << count) - 1) << offset : ~0ULL;
-    cl_ulong result = ((insert << offset) & mask) | (base & ~mask);
+    if (count == 0)
+    {
+        result = 0;
+    }
+    else if (offset + count < sizeof(T) * 8)
+    {
+        result = base << (sizeof(T) * 8 - offset - count);
+        result = result >> (sizeof(T) * 8 - count);
+    }
+    else
+    {
+        result = base >> offset;
+    }
 
-    return static_cast<T>(result);
+    return result;
+}
+
+template <typename T>
+static typename std::make_unsigned<T>::type
+cpu_bit_extract_unsigned(T tbase, cl_uint offset, cl_uint count)
+{
+    typedef typename std::make_unsigned<T>::type unsigned_t;
+
+    assert(offset <= sizeof(T) * 8);
+    assert(count <= sizeof(T) * 8);
+    assert(offset + count <= sizeof(T) * 8);
+
+    unsigned_t base = static_cast<unsigned_t>(tbase);
+    unsigned_t result;
+
+    if (count == 0)
+    {
+        result = 0;
+    }
+    else if (offset + count < sizeof(T) * 8)
+    {
+        result = base << (sizeof(T) * 8 - offset - count);
+        result = result >> (sizeof(T) * 8 - count);
+    }
+    else
+    {
+        result = base >> offset;
+    }
+
+    return result;
 }
 
 template <typename T, size_t N>
-static void calculate_reference(std::vector<T>& ref, const std::vector<T>& base, const std::vector<T>& insert)
+static void
+calculate_reference(std::vector<typename std::make_signed<T>::type>& sref,
+                    std::vector<typename std::make_unsigned<T>::type>& uref,
+                    const std::vector<T>& base)
 {
-    ref.resize(base.size());
-    for (size_t i = 0; i < base.size(); i++) {
+    sref.resize(base.size());
+    uref.resize(base.size());
+    for (size_t i = 0; i < base.size(); i++)
+    {
         cl_uint offset = (i / N) / (sizeof(T) * 8 + 1);
         cl_uint count = (i / N) % (sizeof(T) * 8 + 1);
         if (offset + count > sizeof(T) * 8)
         {
             count = (sizeof(T) * 8) - offset;
         }
-        ref[i] = cpu_bit_insert(base[i], insert[i], offset, count);
+        sref[i] = cpu_bit_extract_signed(base[i], offset, count);
+        uref[i] = cpu_bit_extract_unsigned(base[i], offset, count);
     }
 }
 
 static constexpr const char* kernel_source = R"CLC(
-__kernel void test_bitfield_insert(__global TYPE* dst, __global TYPE* base, __global TYPE* insert)
+#define OVLD __attribute__((overloadable))
+
+char OVLD intel_sbfe(uchar base, uint offset, uint count) { return intel_sbfe(as_char(base), offset, count); }
+char2 OVLD intel_sbfe(uchar2 base, uint offset, uint count) { return intel_sbfe(as_char2(base), offset, count); }
+char4 OVLD intel_sbfe(uchar4 base, uint offset, uint count) { return intel_sbfe(as_char4(base), offset, count); }
+char8 OVLD intel_sbfe(uchar8 base, uint offset, uint count) { return intel_sbfe(as_char8(base), offset, count); }
+char16 OVLD intel_sbfe(uchar16 base, uint offset, uint count) { return intel_sbfe(as_char16(base), offset, count); }
+
+uchar OVLD intel_ubfe(char base, uint offset, uint count) { return intel_ubfe(as_uchar(base), offset, count); }
+uchar2 OVLD intel_ubfe(char2 base, uint offset, uint count) { return intel_ubfe(as_uchar2(base), offset, count); }
+uchar4 OVLD intel_ubfe(char4 base, uint offset, uint count) { return intel_ubfe(as_uchar4(base), offset, count); }
+uchar8 OVLD intel_ubfe(char8 base, uint offset, uint count) { return intel_ubfe(as_uchar8(base), offset, count); }
+uchar16 OVLD intel_ubfe(char16 base, uint offset, uint count) { return intel_ubfe(as_uchar16(base), offset, count); }
+
+short OVLD intel_sbfe(ushort base, uint offset, uint count) { return intel_sbfe(as_short(base), offset, count); }
+short2 OVLD intel_sbfe(ushort2 base, uint offset, uint count) { return intel_sbfe(as_short2(base), offset, count); }
+short4 OVLD intel_sbfe(ushort4 base, uint offset, uint count) { return intel_sbfe(as_short4(base), offset, count); }
+short8 OVLD intel_sbfe(ushort8 base, uint offset, uint count) { return intel_sbfe(as_short8(base), offset, count); }
+short16 OVLD intel_sbfe(ushort16 base, uint offset, uint count) { return intel_sbfe(as_short16(base), offset, count); }
+
+ushort OVLD intel_ubfe(short base, uint offset, uint count) { return intel_ubfe(as_ushort(base), offset, count); }
+ushort2 OVLD intel_ubfe(short2 base, uint offset, uint count) { return intel_ubfe(as_ushort2(base), offset, count); }
+ushort4 OVLD intel_ubfe(short4 base, uint offset, uint count) { return intel_ubfe(as_ushort4(base), offset, count); }
+ushort8 OVLD intel_ubfe(short8 base, uint offset, uint count) { return intel_ubfe(as_ushort8(base), offset, count); }
+ushort16 OVLD intel_ubfe(short16 base, uint offset, uint count) { return intel_ubfe(as_ushort16(base), offset, count); }
+
+int OVLD intel_sbfe(uint base, uint offset, uint count) { return intel_sbfe(as_int(base), offset, count); }
+int2 OVLD intel_sbfe(uint2 base, uint offset, uint count) { return intel_sbfe(as_int2(base), offset, count); }
+int4 OVLD intel_sbfe(uint4 base, uint offset, uint count) { return intel_sbfe(as_int4(base), offset, count); }
+int8 OVLD intel_sbfe(uint8 base, uint offset, uint count) { return intel_sbfe(as_int8(base), offset, count); }
+int16 OVLD intel_sbfe(uint16 base, uint offset, uint count) { return intel_sbfe(as_int16(base), offset, count); }
+
+uint OVLD intel_ubfe(int base, uint offset, uint count) { return intel_ubfe(as_uint(base), offset, count); }
+uint2 OVLD intel_ubfe(int2 base, uint offset, uint count) { return intel_ubfe(as_uint2(base), offset, count); }
+uint4 OVLD intel_ubfe(int4 base, uint offset, uint count) { return intel_ubfe(as_uint4(base), offset, count); }
+uint8 OVLD intel_ubfe(int8 base, uint offset, uint count) { return intel_ubfe(as_uint8(base), offset, count); }
+uint16 OVLD intel_ubfe(int16 base, uint offset, uint count) { return intel_ubfe(as_uint16(base), offset, count); }
+
+long OVLD intel_sbfe(ulong base, uint offset, uint count) { return intel_sbfe(as_long(base), offset, count); }
+long2 OVLD intel_sbfe(ulong2 base, uint offset, uint count) { return intel_sbfe(as_long2(base), offset, count); }
+long4 OVLD intel_sbfe(ulong4 base, uint offset, uint count) { return intel_sbfe(as_long4(base), offset, count); }
+long8 OVLD intel_sbfe(ulong8 base, uint offset, uint count) { return intel_sbfe(as_long8(base), offset, count); }
+long16 OVLD intel_sbfe(ulong16 base, uint offset, uint count) { return intel_sbfe(as_long16(base), offset, count); }
+
+ulong OVLD intel_ubfe(long base, uint offset, uint count) { return intel_ubfe(as_ulong(base), offset, count); }
+ulong2 OVLD intel_ubfe(long2 base, uint offset, uint count) { return intel_ubfe(as_ulong2(base), offset, count); }
+ulong4 OVLD intel_ubfe(long4 base, uint offset, uint count) { return intel_ubfe(as_ulong4(base), offset, count); }
+ulong8 OVLD intel_ubfe(long8 base, uint offset, uint count) { return intel_ubfe(as_ulong8(base), offset, count); }
+ulong16 OVLD intel_ubfe(long16 base, uint offset, uint count) { return intel_ubfe(as_ulong16(base), offset, count); }
+
+__kernel void test_bitfield_extract(__global SIGNED_TYPE* sdst, __global UNSIGNED_TYPE* udst, __global TYPE* base)
 {
     int index = get_global_id(0);
     uint offset = index / (sizeof(BASETYPE) * 8 + 1);
@@ -110,12 +164,27 @@ __kernel void test_bitfield_insert(__global TYPE* dst, __global TYPE* base, __gl
     if (offset + count > sizeof(BASETYPE) * 8) {
         count = (sizeof(BASETYPE) * 8) - offset;
     }
-    dst[index] = bitfield_insert(base[index], insert[index], offset, count);
+    sdst[index] = bitfield_extract_signed(base[index], offset, count);
+    udst[index] = bitfield_extract_unsigned(base[index], offset, count);
 }
 )CLC";
 
 static constexpr const char* kernel_source_vec3 = R"CLC(
-__kernel void test_bitfield_insert(__global BASETYPE* dst, __global BASETYPE* base, __global BASETYPE* insert)
+#define OVLD __attribute__((overloadable))
+
+char3 OVLD intel_sbfe(uchar3 base, uint offset, uint count) { return intel_sbfe(as_char3(base), offset, count); }
+uchar3 OVLD intel_ubfe(char3 base, uint offset, uint count) { return intel_ubfe(as_uchar3(base), offset, count); }
+
+short3 OVLD intel_sbfe(ushort3 base, uint offset, uint count) { return intel_sbfe(as_short3(base), offset, count); }
+ushort3 OVLD intel_ubfe(short3 base, uint offset, uint count) { return intel_ubfe(as_ushort3(base), offset, count); }
+
+int3 OVLD intel_sbfe(uint3 base, uint offset, uint count) { return intel_sbfe(as_int3(base), offset, count); }
+uint3 OVLD intel_ubfe(int3 base, uint offset, uint count) { return intel_ubfe(as_uint3(base), offset, count); }
+
+long3 OVLD intel_sbfe(ulong3 base, uint offset, uint count) { return intel_sbfe(as_long3(base), offset, count); }
+ulong3 OVLD intel_ubfe(long3 base, uint offset, uint count) { return intel_ubfe(as_ulong3(base), offset, count); }
+
+__kernel void test_bitfield_extract(__global SIGNED_BASETYPE* sdst, __global UNSIGNED_BASETYPE* udst, __global BASETYPE* base)
 {
     int index = get_global_id(0);
     uint offset = index / (sizeof(BASETYPE) * 8 + 1);
@@ -124,77 +193,85 @@ __kernel void test_bitfield_insert(__global BASETYPE* dst, __global BASETYPE* ba
         count = (sizeof(BASETYPE) * 8) - offset;
     }
     TYPE b = vload3(index, base);
-    TYPE i = vload3(index, insert);
-    TYPE d = bitfield_insert(b, i, offset, count);
-    vstore3(d, index, dst);
+    SIGNED_TYPE s = bitfield_extract_signed(b, offset, count);
+    UNSIGNED_TYPE u = bitfield_extract_unsigned(b, offset, count);
+    vstore3(s, index, sdst);
+    vstore3(u, index, udst);
 }
 )CLC";
 
 template <typename T, size_t N>
-static int test_vectype(const char* type_name, cl_device_id device,
-                        cl_context context, cl_command_queue queue)
+static int test_vectype(cl_device_id device, cl_context context,
+                        cl_command_queue queue)
 {
+    typedef typename std::make_signed<T>::type signed_t;
+    typedef typename std::make_unsigned<T>::type unsigned_t;
+
     cl_int error = CL_SUCCESS;
     int result = TEST_PASS;
 
     clProgramWrapper program;
     clKernelWrapper kernel;
 
-    std::string buildOptions{ "-DTYPE=" };
-    buildOptions += type_name;
-    if (N > 1)
-    {
-        buildOptions += std::to_string(N);
-    }
+    std::string buildOptions;
+    buildOptions += " -DTYPE=";
+    buildOptions +=
+        TestInfo<T>::deviceTypeName + ((N > 1) ? std::to_string(N) : "");
+    buildOptions += " -DSIGNED_TYPE=";
+    buildOptions +=
+        TestInfo<T>::deviceTypeNameSigned + ((N > 1) ? std::to_string(N) : "");
+    buildOptions += " -DUNSIGNED_TYPE=";
+    buildOptions += TestInfo<T>::deviceTypeNameUnsigned
+        + ((N > 1) ? std::to_string(N) : "");
     buildOptions += " -DBASETYPE=";
-    buildOptions += type_name;
+    buildOptions += TestInfo<T>::deviceTypeName;
+    buildOptions += " -DSIGNED_BASETYPE=";
+    buildOptions += TestInfo<T>::deviceTypeNameSigned;
+    buildOptions += " -DUNSIGNED_BASETYPE=";
+    buildOptions += TestInfo<T>::deviceTypeNameUnsigned;
     // TEMP: delete this when we've switched names!
-    buildOptions += " -Dcl_intel_bit_instructions -Dbitfield_insert=intel_bfi";
+    buildOptions +=
+        " -Dcl_intel_bit_instructions -Dbitfield_extract_signed=intel_sbfe "
+        "-Dbitfield_extract_unsigned=intel_ubfe";
 
     const size_t ELEMENTS_TO_TEST = (sizeof(T) * 8 + 1) * (sizeof(T) * 8 + 1);
 
     std::vector<T> base(ELEMENTS_TO_TEST * N);
-    std::fill(base.begin(), base.end(), static_cast<T>(0xA5A5A5A5A5A5A5A5ULL));
+    generate_input(base);
 
-    std::vector<T> insert(ELEMENTS_TO_TEST * N);
-    generate_input(insert);
-
-    std::vector<T> reference;
-    calculate_reference<T, N>(reference, base, insert);
+    std::vector<signed_t> sreference;
+    std::vector<unsigned_t> ureference;
+    calculate_reference<T, N>(sreference, ureference, base);
 
     const char* source = (N == 3) ? kernel_source_vec3 : kernel_source;
-    error = create_single_kernel_helper(
-        context, &program, &kernel, 1, &source, "test_bitfield_insert",
-        buildOptions.c_str());
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &source,
+                                        "test_bitfield_extract",
+                                        buildOptions.c_str());
     test_error(error, "Unable to create test_bitfield_insert kernel");
 
-    clMemWrapper dst;
-    clMemWrapper src_base;
-    clMemWrapper src_insert;
+    clMemWrapper sdst =
+        clCreateBuffer(context, 0, sreference.size() * sizeof(T), NULL, &error);
+    test_error(error, "Unable to create signed output buffer");
 
-    dst =
-        clCreateBuffer(context, 0, reference.size() * sizeof(T), NULL, &error);
-    test_error(error, "Unable to create output buffer");
+    clMemWrapper udst =
+        clCreateBuffer(context, 0, ureference.size() * sizeof(T), NULL, &error);
+    test_error(error, "Unable to create unsigned output buffer");
 
-    src_base = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                              base.size() * sizeof(T), base.data(), &error);
+    clMemWrapper src_base =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, base.size() * sizeof(T),
+                       base.data(), &error);
     test_error(error, "Unable to create base buffer");
 
-    src_insert =
-        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, insert.size() * sizeof(T),
-                       insert.data(), &error);
-    test_error(error, "Unable to create insert buffer");
+    error = clSetKernelArg(kernel, 0, sizeof(sdst), &sdst);
+    test_error(error, "Unable to set signed output buffer kernel arg");
 
-    error = clSetKernelArg(kernel, 0, sizeof(dst), &dst);
-    test_error(error, "Unable to set output buffer kernel arg");
+    error = clSetKernelArg(kernel, 1, sizeof(udst), &udst);
+    test_error(error, "Unable to set unsigned output buffer kernel arg");
 
-    error = clSetKernelArg(kernel, 1, sizeof(src_base), &src_base);
+    error = clSetKernelArg(kernel, 2, sizeof(src_base), &src_base);
     test_error(error, "Unable to set base buffer kernel arg");
 
-    error = clSetKernelArg(kernel, 2, sizeof(src_insert), &src_insert);
-    test_error(error, "Unable to set insert buffer kernel arg");
-
-    size_t global_work_size[] = { reference.size() / N };
+    size_t global_work_size[] = { sreference.size() / N };
     error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size,
                                    NULL, 0, NULL, NULL);
     test_error(error, "Unable to enqueue test kernel");
@@ -202,28 +279,27 @@ static int test_vectype(const char* type_name, cl_device_id device,
     error = clFinish(queue);
     test_error(error, "clFinish failed after test kernel");
 
-    std::vector<T> results(reference.size(), 99);
-    error =
-        clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, results.size() * sizeof(T),
-                            results.data(), 0, NULL, NULL);
-    test_error(error, "Unable to read data after test kernel");
+    std::vector<signed_t> sresults(sreference.size(), 99);
+    error = clEnqueueReadBuffer(queue, sdst, CL_TRUE, 0,
+                                sresults.size() * sizeof(T), sresults.data(), 0,
+                                NULL, NULL);
+    test_error(error, "Unable to read signed data after test kernel");
 
-    if (results != reference)
+    if (sresults != sreference)
     {
-#if 1
-        for (size_t i = 0; i < reference.size(); i++) {
-            if (results[i] != reference[i]) {
-                cl_uint offset = (i / N) / (sizeof(T) * 8 + 1);
-                cl_uint count = (i / N) % (sizeof(T) * 8 + 1);
-                if (offset + count > sizeof(T) * 8)
-                {
-                    count = (sizeof(T) * 8) - offset;
-                }
-                printf("At index %zu: wanted %llX, got %llX: base = %llX, insert = %llX, offset = %u, count = %u.\n", i, reference[i], results[i], base[i], insert[i], offset, count);
-            }
-        }
-#endif
-        log_error("Result buffer did not match reference buffer!\n");
+        log_error("Signed result buffer did not match reference buffer!\n");
+        return TEST_FAIL;
+    }
+
+    std::vector<unsigned_t> uresults(ureference.size(), 99);
+    error = clEnqueueReadBuffer(queue, udst, CL_TRUE, 0,
+                                uresults.size() * sizeof(T), uresults.data(), 0,
+                                NULL, NULL);
+    test_error(error, "Unable to read unsigned data after test kernel");
+
+    if (uresults != ureference)
+    {
+        log_error("Unsigned result buffer did not match reference buffer!\n");
         return TEST_FAIL;
     }
 
@@ -231,39 +307,38 @@ static int test_vectype(const char* type_name, cl_device_id device,
 }
 
 template <typename T>
-static int test_type(const char* type_name, cl_device_id device,
-                     cl_context context, cl_command_queue queue)
+static int test_type(cl_device_id device, cl_context context,
+                     cl_command_queue queue)
 {
-    log_info("    testing type %s\n", type_name);
+    log_info("    testing type %s\n", TestInfo<T>::deviceTypeName);
 
-    return test_vectype<T, 1>(type_name, device, context, queue)
-        | test_vectype<T, 2>(type_name, device, context, queue)
-        | test_vectype<T, 3>(type_name, device, context, queue)
-        | test_vectype<T, 4>(type_name, device, context, queue)
-        | test_vectype<T, 8>(type_name, device, context, queue)
-        | test_vectype<T, 16>(type_name, device, context, queue);
+    return test_vectype<T, 1>(device, context, queue)
+        | test_vectype<T, 2>(device, context, queue)
+        | test_vectype<T, 3>(device, context, queue)
+        | test_vectype<T, 4>(device, context, queue)
+        | test_vectype<T, 8>(device, context, queue)
+        | test_vectype<T, 16>(device, context, queue);
 }
 
 int test_extended_bit_ops_extract(cl_device_id device, cl_context context,
                                   cl_command_queue queue, int num_elements)
 {
-    if (is_extension_available(device, "cl_khr_extended_bit_ops"))
+    // TODO: add back this check!
+    if (true || is_extension_available(device, "cl_khr_extended_bit_ops"))
     {
         int result = TEST_PASS;
 
-#if 0
-        result |= test_type<cl_char>("char", device, context, queue);
-        result |= test_type<cl_uchar>("uchar", device, context, queue);
-        result |= test_type<cl_short>("short", device, context, queue);
-        result |= test_type<cl_ushort>("ushort", device, context, queue);
-        result |= test_type<cl_int>("int", device, context, queue);
-        result |= test_type<cl_uint>("uint", device, context, queue);
+        result |= test_type<cl_char>(device, context, queue);
+        result |= test_type<cl_uchar>(device, context, queue);
+        result |= test_type<cl_short>(device, context, queue);
+        result |= test_type<cl_ushort>(device, context, queue);
+        result |= test_type<cl_int>(device, context, queue);
+        result |= test_type<cl_uint>(device, context, queue);
         if (gHasLong)
         {
-            result |= test_type<cl_long>("long", device, context, queue);
-            result |= test_type<cl_ulong>("ulong", device, context, queue);
+            result |= test_type<cl_long>(device, context, queue);
+            result |= test_type<cl_ulong>(device, context, queue);
         }
-#endif
         return result;
     }
 

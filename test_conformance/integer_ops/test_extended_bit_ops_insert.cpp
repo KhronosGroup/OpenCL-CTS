@@ -20,55 +20,8 @@
 #include <vector>
 
 #include "procs.h"
+#include "extended_bit_ops.h"
 #include "harness/testHarness.h"
-#include "harness/conversions.h"
-
-// TODO: Move this to a common location?
-template <typename T> struct TestInfo
-{
-};
-template <> struct TestInfo<cl_char>
-{
-    static const ExplicitType explicitType = kChar;
-};
-template <> struct TestInfo<cl_uchar>
-{
-    static const ExplicitType explicitType = kUChar;
-};
-template <> struct TestInfo<cl_short>
-{
-    static const ExplicitType explicitType = kShort;
-};
-template <> struct TestInfo<cl_ushort>
-{
-    static const ExplicitType explicitType = kUShort;
-};
-template <> struct TestInfo<cl_int>
-{
-    static const ExplicitType explicitType = kInt;
-};
-template <> struct TestInfo<cl_uint>
-{
-    static const ExplicitType explicitType = kUInt;
-};
-template <> struct TestInfo<cl_long>
-{
-    static const ExplicitType explicitType = kLong;
-};
-template <> struct TestInfo<cl_ulong>
-{
-    static const ExplicitType explicitType = kULong;
-};
-
-template <typename T>
-static void generate_input(std::vector<T>& base)
-{
-    // TODO: Should we generate the random data once and reuse it?
-    MTdata d = init_genrand(gRandomSeed);
-    generate_random_data(TestInfo<T>::explicitType, base.size(), d, base.data());
-    free_mtdata(d);
-    d = NULL;
-}
 
 template <typename T>
 static T cpu_bit_insert(T tbase, T tinsert, cl_uint offset, cl_uint count)
@@ -87,10 +40,12 @@ static T cpu_bit_insert(T tbase, T tinsert, cl_uint offset, cl_uint count)
 }
 
 template <typename T, size_t N>
-static void calculate_reference(std::vector<T>& ref, const std::vector<T>& base, const std::vector<T>& insert)
+static void calculate_reference(std::vector<T>& ref, const std::vector<T>& base,
+                                const std::vector<T>& insert)
 {
     ref.resize(base.size());
-    for (size_t i = 0; i < base.size(); i++) {
+    for (size_t i = 0; i < base.size(); i++)
+    {
         cl_uint offset = (i / N) / (sizeof(T) * 8 + 1);
         cl_uint count = (i / N) % (sizeof(T) * 8 + 1);
         if (offset + count > sizeof(T) * 8)
@@ -102,6 +57,32 @@ static void calculate_reference(std::vector<T>& ref, const std::vector<T>& base,
 }
 
 static constexpr const char* kernel_source = R"CLC(
+#define OVLD __attribute__((overloadable))
+
+char OVLD intel_bfi(char base, char insert, uint offset, uint count) { return as_char(intel_bfi(as_uchar(base), as_uchar(insert), offset, count)); }
+char2 OVLD intel_bfi(char2 base, char2 insert, uint offset, uint count) { return as_char2(intel_bfi(as_uchar2(base), as_uchar2(insert), offset, count)); }
+char4 OVLD intel_bfi(char4 base, char4 insert, uint offset, uint count) { return as_char4(intel_bfi(as_uchar4(base), as_uchar4(insert), offset, count)); }
+char8 OVLD intel_bfi(char8 base, char8 insert, uint offset, uint count) { return as_char8(intel_bfi(as_uchar8(base), as_uchar8(insert), offset, count)); }
+char16 OVLD intel_bfi(char16 base, char16 insert, uint offset, uint count) { return as_char16(intel_bfi(as_uchar16(base), as_uchar16(insert), offset, count)); }
+
+short OVLD intel_bfi(short base, short insert, uint offset, uint count) { return as_short(intel_bfi(as_ushort(base), as_ushort(insert), offset, count)); }
+short2 OVLD intel_bfi(short2 base, short2 insert, uint offset, uint count) { return as_short2(intel_bfi(as_ushort2(base), as_ushort2(insert), offset, count)); }
+short4 OVLD intel_bfi(short4 base, short4 insert, uint offset, uint count) { return as_short4(intel_bfi(as_ushort4(base), as_ushort4(insert), offset, count)); }
+short8 OVLD intel_bfi(short8 base, short8 insert, uint offset, uint count) { return as_short8(intel_bfi(as_ushort8(base), as_ushort8(insert), offset, count)); }
+short16 OVLD intel_bfi(short16 base, short16 insert, uint offset, uint count) { return as_short16(intel_bfi(as_ushort16(base), as_ushort16(insert), offset, count)); }
+
+int OVLD intel_bfi(int base, int insert, uint offset, uint count) { return as_int(intel_bfi(as_uint(base), as_uint(insert), offset, count)); }
+int2 OVLD intel_bfi(int2 base, int2 insert, uint offset, uint count) { return as_int2(intel_bfi(as_uint2(base), as_uint2(insert), offset, count)); }
+int4 OVLD intel_bfi(int4 base, int4 insert, uint offset, uint count) { return as_int4(intel_bfi(as_uint4(base), as_uint4(insert), offset, count)); }
+int8 OVLD intel_bfi(int8 base, int8 insert, uint offset, uint count) { return as_int8(intel_bfi(as_uint8(base), as_uint8(insert), offset, count)); }
+int16 OVLD intel_bfi(int16 base, int16 insert, uint offset, uint count) { return as_int16(intel_bfi(as_uint16(base), as_uint16(insert), offset, count)); }
+
+long OVLD intel_bfi(long base, long insert, uint offset, uint count) { return as_long(intel_bfi(as_ulong(base), as_ulong(insert), offset, count)); }
+long2 OVLD intel_bfi(long2 base, long2 insert, uint offset, uint count) { return as_long2(intel_bfi(as_ulong2(base), as_ulong2(insert), offset, count)); }
+long4 OVLD intel_bfi(long4 base, long4 insert, uint offset, uint count) { return as_long4(intel_bfi(as_ulong4(base), as_ulong4(insert), offset, count)); }
+long8 OVLD intel_bfi(long8 base, long8 insert, uint offset, uint count) { return as_long8(intel_bfi(as_ulong8(base), as_ulong8(insert), offset, count)); }
+long16 OVLD intel_bfi(long16 base, long16 insert, uint offset, uint count) { return as_long16(intel_bfi(as_ulong16(base), as_ulong16(insert), offset, count)); }
+
 __kernel void test_bitfield_insert(__global TYPE* dst, __global TYPE* base, __global TYPE* insert)
 {
     int index = get_global_id(0);
@@ -115,6 +96,13 @@ __kernel void test_bitfield_insert(__global TYPE* dst, __global TYPE* base, __gl
 )CLC";
 
 static constexpr const char* kernel_source_vec3 = R"CLC(
+#define OVLD __attribute__((overloadable))
+
+char3 OVLD intel_bfi(char3 base, char3 insert, uint offset, uint count) { return as_char3(intel_bfi(as_uchar3(base), as_uchar3(insert), offset, count)); }
+short3 OVLD intel_bfi(short3 base, short3 insert, uint offset, uint count) { return as_short3(intel_bfi(as_ushort3(base), as_ushort3(insert), offset, count)); }
+int3 OVLD intel_bfi(int3 base, int3 insert, uint offset, uint count) { return as_int3(intel_bfi(as_uint3(base), as_uint3(insert), offset, count)); }
+long3 OVLD intel_bfi(long3 base, long3 insert, uint offset, uint count) { return as_long3(intel_bfi(as_ulong3(base), as_ulong3(insert), offset, count)); }
+
 __kernel void test_bitfield_insert(__global BASETYPE* dst, __global BASETYPE* base, __global BASETYPE* insert)
 {
     int index = get_global_id(0);
@@ -131,8 +119,8 @@ __kernel void test_bitfield_insert(__global BASETYPE* dst, __global BASETYPE* ba
 )CLC";
 
 template <typename T, size_t N>
-static int test_vectype(const char* type_name, cl_device_id device,
-                        cl_context context, cl_command_queue queue)
+static int test_vectype(cl_device_id device, cl_context context,
+                        cl_command_queue queue)
 {
     cl_int error = CL_SUCCESS;
     int result = TEST_PASS;
@@ -141,13 +129,13 @@ static int test_vectype(const char* type_name, cl_device_id device,
     clKernelWrapper kernel;
 
     std::string buildOptions{ "-DTYPE=" };
-    buildOptions += type_name;
+    buildOptions += TestInfo<T>::deviceTypeName;
     if (N > 1)
     {
         buildOptions += std::to_string(N);
     }
     buildOptions += " -DBASETYPE=";
-    buildOptions += type_name;
+    buildOptions += TestInfo<T>::deviceTypeName;
     // TEMP: delete this when we've switched names!
     buildOptions += " -Dcl_intel_bit_instructions -Dbitfield_insert=intel_bfi";
 
@@ -163,24 +151,21 @@ static int test_vectype(const char* type_name, cl_device_id device,
     calculate_reference<T, N>(reference, base, insert);
 
     const char* source = (N == 3) ? kernel_source_vec3 : kernel_source;
-    error = create_single_kernel_helper(
-        context, &program, &kernel, 1, &source, "test_bitfield_insert",
-        buildOptions.c_str());
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &source,
+                                        "test_bitfield_insert",
+                                        buildOptions.c_str());
     test_error(error, "Unable to create test_bitfield_insert kernel");
 
-    clMemWrapper dst;
-    clMemWrapper src_base;
-    clMemWrapper src_insert;
-
-    dst =
+    clMemWrapper dst =
         clCreateBuffer(context, 0, reference.size() * sizeof(T), NULL, &error);
     test_error(error, "Unable to create output buffer");
 
-    src_base = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                              base.size() * sizeof(T), base.data(), &error);
+    clMemWrapper src_base =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, base.size() * sizeof(T),
+                       base.data(), &error);
     test_error(error, "Unable to create base buffer");
 
-    src_insert =
+    clMemWrapper src_insert =
         clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, insert.size() * sizeof(T),
                        insert.data(), &error);
     test_error(error, "Unable to create insert buffer");
@@ -210,19 +195,6 @@ static int test_vectype(const char* type_name, cl_device_id device,
 
     if (results != reference)
     {
-#if 1
-        for (size_t i = 0; i < reference.size(); i++) {
-            if (results[i] != reference[i]) {
-                cl_uint offset = (i / N) / (sizeof(T) * 8 + 1);
-                cl_uint count = (i / N) % (sizeof(T) * 8 + 1);
-                if (offset + count > sizeof(T) * 8)
-                {
-                    count = (sizeof(T) * 8) - offset;
-                }
-                printf("At index %zu: wanted %llX, got %llX: base = %llX, insert = %llX, offset = %u, count = %u.\n", i, reference[i], results[i], base[i], insert[i], offset, count);
-            }
-        }
-#endif
         log_error("Result buffer did not match reference buffer!\n");
         return TEST_FAIL;
     }
@@ -231,17 +203,17 @@ static int test_vectype(const char* type_name, cl_device_id device,
 }
 
 template <typename T>
-static int test_type(const char* type_name, cl_device_id device,
-                     cl_context context, cl_command_queue queue)
+static int test_type(cl_device_id device, cl_context context,
+                     cl_command_queue queue)
 {
-    log_info("    testing type %s\n", type_name);
+    log_info("    testing type %s\n", TestInfo<T>::deviceTypeName);
 
-    return test_vectype<T, 1>(type_name, device, context, queue)
-        | test_vectype<T, 2>(type_name, device, context, queue)
-        | test_vectype<T, 3>(type_name, device, context, queue)
-        | test_vectype<T, 4>(type_name, device, context, queue)
-        | test_vectype<T, 8>(type_name, device, context, queue)
-        | test_vectype<T, 16>(type_name, device, context, queue);
+    return test_vectype<T, 1>(device, context, queue)
+        | test_vectype<T, 2>(device, context, queue)
+        | test_vectype<T, 3>(device, context, queue)
+        | test_vectype<T, 4>(device, context, queue)
+        | test_vectype<T, 8>(device, context, queue)
+        | test_vectype<T, 16>(device, context, queue);
 }
 
 int test_extended_bit_ops_insert(cl_device_id device, cl_context context,
@@ -252,16 +224,16 @@ int test_extended_bit_ops_insert(cl_device_id device, cl_context context,
     {
         int result = TEST_PASS;
 
-        //result |= test_type<cl_char>("char", device, context, queue);
-        result |= test_type<cl_uchar>("uchar", device, context, queue);
-        //result |= test_type<cl_short>("short", device, context, queue);
-        result |= test_type<cl_ushort>("ushort", device, context, queue);
-        //result |= test_type<cl_int>("int", device, context, queue);
-        result |= test_type<cl_uint>("uint", device, context, queue);
+        result |= test_type<cl_char>(device, context, queue);
+        result |= test_type<cl_uchar>(device, context, queue);
+        result |= test_type<cl_short>(device, context, queue);
+        result |= test_type<cl_ushort>(device, context, queue);
+        result |= test_type<cl_int>(device, context, queue);
+        result |= test_type<cl_uint>(device, context, queue);
         if (gHasLong)
         {
-        //    result |= test_type<cl_long>("long", device, context, queue);
-            result |= test_type<cl_ulong>("ulong", device, context, queue);
+            result |= test_type<cl_long>(device, context, queue);
+            result |= test_type<cl_ulong>(device, context, queue);
         }
         return result;
     }
