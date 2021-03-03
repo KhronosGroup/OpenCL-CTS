@@ -117,8 +117,7 @@ typedef struct BuildKernelInfo
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 } BuildKernelInfo;
 
-static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                  void *p)
+static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
@@ -166,7 +165,7 @@ typedef struct TestInfo
 } TestInfo;
 
 // A table of more difficult cases to get right
-static const float specialValuesFloat[] = {
+static const float specialValues[] = {
     -NAN,
     -INFINITY,
     -FLT_MAX,
@@ -268,11 +267,10 @@ static const float specialValuesFloat[] = {
     +0.0f,
 };
 
-static const size_t specialValuesFloatCount =
-    sizeof(specialValuesFloat) / sizeof(specialValuesFloat[0]);
+static const size_t specialValuesCount =
+    sizeof(specialValues) / sizeof(specialValues[0]);
 
-
-static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *p);
+static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data);
 
 int TestFunc_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 {
@@ -402,7 +400,7 @@ int TestFunc_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             gMinVectorSizeIndex, test_info.threadCount, test_info.k,
             test_info.programs,  f->nameInCode,         relaxedMode
         };
-        if ((error = ThreadPool_Do(BuildKernel_FloatFn,
+        if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
             goto exit;
@@ -411,7 +409,7 @@ int TestFunc_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
-        error = ThreadPool_Do(TestFloat, test_info.jobCount, &test_info);
+        error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
 
         // Accumulate the arithmetic errors
         for (i = 0; i < test_info.threadCount; i++)
@@ -552,7 +550,7 @@ exit:
     return error;
 }
 
-static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
+static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 {
     const TestInfo *job = (const TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
@@ -613,8 +611,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint *p2 = (cl_uint *)gIn2 + thread_id * buffer_elements;
     j = 0;
 
-    int totalSpecialValueCount =
-        specialValuesFloatCount * specialValuesFloatCount;
+    int totalSpecialValueCount = specialValuesCount * specialValuesCount;
     int indx = (totalSpecialValueCount - 1) / buffer_elements;
 
     if (job_id <= (cl_uint)indx)
@@ -623,19 +620,19 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         float *fp2 = (float *)p2;
         uint32_t x, y;
 
-        x = (job_id * buffer_elements) % specialValuesFloatCount;
-        y = (job_id * buffer_elements) / specialValuesFloatCount;
+        x = (job_id * buffer_elements) % specialValuesCount;
+        y = (job_id * buffer_elements) / specialValuesCount;
 
         for (; j < buffer_elements; j++)
         {
-            fp[j] = specialValuesFloat[x];
-            fp2[j] = specialValuesFloat[y];
+            fp[j] = specialValues[x];
+            fp2[j] = specialValues[y];
             ++x;
-            if (x >= specialValuesFloatCount)
+            if (x >= specialValuesCount)
             {
                 x = 0;
                 y++;
-                if (y >= specialValuesFloatCount) break;
+                if (y >= specialValuesCount) break;
             }
         }
     }

@@ -23,8 +23,8 @@
 #define CORRECTLY_ROUNDED 0
 #define FLUSHED 1
 
-static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
-                             cl_program *p, bool relaxedMode)
+static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
+                       cl_program *p, bool relaxedMode)
 {
     const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
                         "__kernel void math_kernel",
@@ -125,17 +125,16 @@ typedef struct BuildKernelInfo
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 } BuildKernelInfo;
 
-static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                   void *p)
+static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
-    return BuildKernelDouble(info->nameInCode, i, info->kernels + i,
-                             info->programs + i, info->relaxedMode);
+    return BuildKernel(info->nameInCode, i, info->kernels + i,
+                       info->programs + i, info->relaxedMode);
 }
 
 // A table of more difficult cases to get right
-static const double specialValuesDouble[] = {
+static const double specialValues[] = {
     -NAN,
     -INFINITY,
     -DBL_MAX,
@@ -203,8 +202,8 @@ static const double specialValuesDouble[] = {
     +0.0,
 };
 
-static const size_t specialValuesDoubleCount =
-    sizeof(specialValuesDouble) / sizeof(specialValuesDouble[0]);
+static const size_t specialValuesCount =
+    sizeof(specialValues) / sizeof(specialValues[0]);
 
 int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                                          bool relaxedMode)
@@ -230,7 +229,7 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
     {
         BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
                                        f->nameInCode, relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
+        if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
             return error;
@@ -249,16 +248,16 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
             x = y = z = 0;
             for (; j < bufferSize / sizeof(double); j++)
             {
-                p[j] = specialValuesDouble[x];
-                p2[j] = specialValuesDouble[y];
-                p3[j] = specialValuesDouble[z];
-                if (++x >= specialValuesDoubleCount)
+                p[j] = specialValues[x];
+                p2[j] = specialValues[y];
+                p3[j] = specialValues[z];
+                if (++x >= specialValuesCount)
                 {
                     x = 0;
-                    if (++y >= specialValuesDoubleCount)
+                    if (++y >= specialValuesCount)
                     {
                         y = 0;
-                        if (++z >= specialValuesDoubleCount) break;
+                        if (++z >= specialValuesCount) break;
                     }
                 }
             }

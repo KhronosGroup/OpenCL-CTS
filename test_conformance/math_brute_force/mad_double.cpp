@@ -20,8 +20,8 @@
 
 #include <cstring>
 
-static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
-                             cl_program *p, bool relaxedMode)
+static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
+                       cl_program *p, bool relaxedMode)
 {
     const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
                         "__kernel void math_kernel",
@@ -122,13 +122,12 @@ typedef struct BuildKernelInfo
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 } BuildKernelInfo;
 
-static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                   void *p)
+static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
-    return BuildKernelDouble(info->nameInCode, i, info->kernels + i,
-                             info->programs + i, info->relaxedMode);
+    return BuildKernel(info->nameInCode, i, info->kernels + i,
+                       info->programs + i, info->relaxedMode);
 }
 
 int TestFunc_mad_Double(const Func *f, MTdata d, bool relaxedMode)
@@ -151,7 +150,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d, bool relaxedMode)
     {
         BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
                                        f->nameInCode, relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
+        if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
             return error;

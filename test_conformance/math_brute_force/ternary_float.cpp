@@ -123,8 +123,7 @@ typedef struct BuildKernelInfo
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 } BuildKernelInfo;
 
-static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                  void *p)
+static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
@@ -133,7 +132,7 @@ static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
 }
 
 // A table of more difficult cases to get right
-static const float specialValuesFloat[] = {
+static const float specialValues[] = {
     -NAN,
     -INFINITY,
     -FLT_MAX,
@@ -211,8 +210,8 @@ static const float specialValuesFloat[] = {
     +0.0f,
 };
 
-static const size_t specialValuesFloatCount =
-    sizeof(specialValuesFloat) / sizeof(specialValuesFloat[0]);
+static const size_t specialValuesCount =
+    sizeof(specialValues) / sizeof(specialValues[0]);
 
 int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 {
@@ -246,7 +245,7 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     {
         BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
                                        f->nameInCode, relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernel_FloatFn,
+        if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
             return error;
@@ -268,17 +267,17 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             x = y = z = 0;
             for (; j < bufferSize / sizeof(float); j++)
             {
-                fp[j] = specialValuesFloat[x];
-                fp2[j] = specialValuesFloat[y];
-                fp3[j] = specialValuesFloat[z];
+                fp[j] = specialValues[x];
+                fp2[j] = specialValues[y];
+                fp3[j] = specialValues[z];
 
-                if (++x >= specialValuesFloatCount)
+                if (++x >= specialValuesCount)
                 {
                     x = 0;
-                    if (++y >= specialValuesFloatCount)
+                    if (++y >= specialValuesCount)
                     {
                         y = 0;
-                        if (++z >= specialValuesFloatCount) break;
+                        if (++z >= specialValuesCount) break;
                     }
                 }
             }

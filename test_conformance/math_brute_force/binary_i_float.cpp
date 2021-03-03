@@ -116,8 +116,7 @@ typedef struct BuildKernelInfo
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 } BuildKernelInfo;
 
-static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                  void *p)
+static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
@@ -161,7 +160,7 @@ typedef struct TestInfo
 } TestInfo;
 
 // A table of more difficult cases to get right
-static const float specialValuesFloat[] = {
+static const float specialValues[] = {
     -NAN,
     -INFINITY,
     -FLT_MAX,
@@ -263,19 +262,19 @@ static const float specialValuesFloat[] = {
     +0.0f,
 };
 
-static const size_t specialValuesFloatCount =
-    sizeof(specialValuesFloat) / sizeof(specialValuesFloat[0]);
+static const size_t specialValuesCount =
+    sizeof(specialValues) / sizeof(specialValues[0]);
 
 static const int specialValuesInt[] = {
-    0,           1,           2,          3,          126,        127,
-    128,         0x02000001,  0x04000001, 1465264071, 1488522147, -1,
-    -2,          -3,          -126,       -127,       -128,       -0x02000001,
-    -0x04000001, -1465264071, -1488522147
+    0,           1,           2,           3,          126,        127,
+    128,         0x02000001,  0x04000001,  1465264071, 1488522147, -1,
+    -2,          -3,          -126,        -127,       -128,       -0x02000001,
+    -0x04000001, -1465264071, -1488522147,
 };
 static size_t specialValuesIntCount =
     sizeof(specialValuesInt) / sizeof(specialValuesInt[0]);
 
-static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *p);
+static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data);
 
 int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
 {
@@ -403,7 +402,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
             gMinVectorSizeIndex, test_info.threadCount, test_info.k,
             test_info.programs,  f->nameInCode,         relaxedMode
         };
-        if ((error = ThreadPool_Do(BuildKernel_FloatFn,
+        if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
             goto exit;
@@ -412,7 +411,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
     // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
-        error = ThreadPool_Do(TestFloat, test_info.jobCount, &test_info);
+        error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
 
         // Accumulate the arithmetic errors
         for (i = 0; i < test_info.threadCount; i++)
@@ -553,7 +552,7 @@ exit:
     return error;
 }
 
-static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
+static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 {
     const TestInfo *job = (const TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
@@ -596,8 +595,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint *p2 = (cl_uint *)gIn2 + thread_id * buffer_elements;
     j = 0;
 
-    int totalSpecialValueCount =
-        specialValuesFloatCount * specialValuesIntCount;
+    int totalSpecialValueCount = specialValuesCount * specialValuesIntCount;
     int indx = (totalSpecialValueCount - 1) / buffer_elements;
 
     if (job_id <= (cl_uint)indx)
@@ -606,15 +604,15 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         cl_int *ip2 = (cl_int *)p2;
         uint32_t x, y;
 
-        x = (job_id * buffer_elements) % specialValuesFloatCount;
-        y = (job_id * buffer_elements) / specialValuesFloatCount;
+        x = (job_id * buffer_elements) % specialValuesCount;
+        y = (job_id * buffer_elements) / specialValuesCount;
 
         for (; j < buffer_elements; j++)
         {
-            fp[j] = specialValuesFloat[x];
+            fp[j] = specialValues[x];
             ip2[j] = specialValuesInt[y];
             ++x;
-            if (x >= specialValuesFloatCount)
+            if (x >= specialValuesCount)
             {
                 x = 0;
                 y++;
