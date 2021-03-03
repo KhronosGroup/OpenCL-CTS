@@ -18,7 +18,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
-#include <string.h>
+#include <cstring>
 
 const float twoToMinus126 = MAKE_HEX_FLOAT(0x1p-126f, 1, -126);
 

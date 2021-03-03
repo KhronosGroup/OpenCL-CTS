@@ -17,13 +17,6 @@
 #define UTILITY_H
 
 #include "harness/compat.h"
-
-#ifdef __APPLE__
-#include <OpenCL/opencl.h>
-#else
-#include <CL/opencl.h>
-#endif
-#include <stdio.h>
 #include "harness/rounding_mode.h"
 #include "harness/fpcontrol.h"
 #include "harness/testHarness.h"

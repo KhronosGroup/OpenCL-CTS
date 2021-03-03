@@ -18,7 +18,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
-#include <string.h>
+#include <cstring>
 
 static int BuildKernelDouble(const char *name, int vectorSize,
                              cl_uint kernel_count, cl_kernel *k, cl_program *p,

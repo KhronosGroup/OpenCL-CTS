@@ -14,12 +14,13 @@
 // limitations under the License.
 //
 
-#include "harness/compat.h"
 #include "reference_math.h"
-#include <limits.h>
+#include "harness/compat.h"
+
+#include <climits>
 
 #if !defined(_WIN32)
-#include <string.h>
+#include <cstring>
 #endif
 
 #include "utility.h"

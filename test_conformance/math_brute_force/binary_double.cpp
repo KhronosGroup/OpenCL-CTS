@@ -18,7 +18,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
-#include <string.h>
+#include <cstring>
 
 const double twoToMinus1022 = MAKE_HEX_DOUBLE(0x1p-1022, 1, -1022);
 

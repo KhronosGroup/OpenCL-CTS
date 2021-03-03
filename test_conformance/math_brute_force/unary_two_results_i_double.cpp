@@ -18,8 +18,8 @@
 #include "test_functions.h"
 #include "utility.h"
 
-#include <limits.h>
-#include <string.h>
+#include <climits>
+#include <cstring>
 
 static int BuildKernelDouble(const char *name, int vectorSize, cl_kernel *k,
                              cl_program *p, bool relaxedMode)
