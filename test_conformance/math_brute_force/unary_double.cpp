@@ -160,244 +160,7 @@ typedef struct TestInfo
                       // otherwise.
 } TestInfo;
 
-static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
-{
-    const TestInfo *job = (const TestInfo *)data;
-    size_t buffer_elements = job->subBufferSize;
-    size_t buffer_size = buffer_elements * sizeof(cl_double);
-    cl_uint scale = job->scale;
-    cl_uint base = job_id * (cl_uint)job->step;
-    ThreadInfo *tinfo = job->tinfo + thread_id;
-    float ulps = job->ulps;
-    dptr func = job->f->dfunc;
-    cl_uint j, k;
-    cl_int error;
-    int ftz = job->ftz;
-
-    Force64BitFPUPrecision();
-
-    // start the map of the output arrays
-    cl_event e[VECTOR_SIZE_COUNT];
-    cl_ulong *out[VECTOR_SIZE_COUNT];
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-    {
-        out[j] = (cl_ulong *)clEnqueueMapBuffer(
-            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
-            buffer_size, 0, NULL, e + j, &error);
-        if (error || NULL == out[j])
-        {
-            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
-                       error);
-            return error;
-        }
-    }
-
-    // Get that moving
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
-
-    // Write the new values to the input array
-    cl_double *p = (cl_double *)gIn + thread_id * buffer_elements;
-    for (j = 0; j < buffer_elements; j++)
-        p[j] = DoubleFromUInt32(base + j * scale);
-
-    if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
-                                      buffer_size, p, 0, NULL, NULL)))
-    {
-        vlog_error("Error: clEnqueueWriteBuffer failed! err: %d\n", error);
-        return error;
-    }
-
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-    {
-        // Wait for the map to finish
-        if ((error = clWaitForEvents(1, e + j)))
-        {
-            vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
-            return error;
-        }
-        if ((error = clReleaseEvent(e[j])))
-        {
-            vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
-            return error;
-        }
-
-        // Fill the result buffer with garbage, so that old results don't carry
-        // over
-        uint32_t pattern = 0xffffdead;
-        memset_pattern4(out[j], &pattern, buffer_size);
-        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
-                                             out[j], 0, NULL, NULL)))
-        {
-            vlog_error("Error: clEnqueueMapBuffer failed! err: %d\n", error);
-            return error;
-        }
-
-        // run the kernel
-        size_t vectorCount =
-            (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
-        cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
-                                                 // own copy of the cl_kernel
-        cl_program program = job->programs[j];
-
-        if ((error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
-                                    &tinfo->outBuf[j])))
-        {
-            LogBuildError(program);
-            return error;
-        }
-        if ((error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf),
-                                    &tinfo->inBuf)))
-        {
-            LogBuildError(program);
-            return error;
-        }
-
-        if ((error = clEnqueueNDRangeKernel(tinfo->tQueue, kernel, 1, NULL,
-                                            &vectorCount, NULL, 0, NULL, NULL)))
-        {
-            vlog_error("FAILED -- could not execute kernel\n");
-            return error;
-        }
-    }
-
-
-    // Get that moving
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
-
-    if (gSkipCorrectnessTesting) return CL_SUCCESS;
-
-    // Calculate the correctly rounded reference result
-    cl_double *r = (cl_double *)gOut_Ref + thread_id * buffer_elements;
-    cl_double *s = (cl_double *)p;
-    for (j = 0; j < buffer_elements; j++) r[j] = (cl_double)func.f_f(s[j]);
-
-    // Read the data back -- no need to wait for the first N-1 buffers. This is
-    // an in order queue.
-    for (j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++)
-    {
-        out[j] = (cl_ulong *)clEnqueueMapBuffer(
-            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_READ, 0,
-            buffer_size, 0, NULL, NULL, &error);
-        if (error || NULL == out[j])
-        {
-            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
-                       error);
-            return error;
-        }
-    }
-    // Wait for the last buffer
-    out[j] = (cl_ulong *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
-                                            CL_TRUE, CL_MAP_READ, 0,
-                                            buffer_size, 0, NULL, NULL, &error);
-    if (error || NULL == out[j])
-    {
-        vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error);
-        return error;
-    }
-
-
-    // Verify data
-    cl_ulong *t = (cl_ulong *)r;
-    for (j = 0; j < buffer_elements; j++)
-    {
-        for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
-        {
-            cl_ulong *q = out[k];
-
-            // If we aren't getting the correctly rounded result
-            if (t[j] != q[j])
-            {
-                cl_double test = ((cl_double *)q)[j];
-                long double correct = func.f_f(s[j]);
-                float err = Bruteforce_Ulp_Error_Double(test, correct);
-                int fail = !(fabsf(err) <= ulps);
-
-                if (fail)
-                {
-                    if (ftz)
-                    {
-                        // retry per section 6.5.3.2
-                        if (IsDoubleResultSubnormal(correct, ulps))
-                        {
-                            fail = fail && (test != 0.0f);
-                            if (!fail) err = 0.0f;
-                        }
-
-                        // retry per section 6.5.3.3
-                        if (IsDoubleSubnormal(s[j]))
-                        {
-                            long double correct2 = func.f_f(0.0L);
-                            long double correct3 = func.f_f(-0.0L);
-                            float err2 =
-                                Bruteforce_Ulp_Error_Double(test, correct2);
-                            float err3 =
-                                Bruteforce_Ulp_Error_Double(test, correct3);
-                            fail = fail
-                                && ((!(fabsf(err2) <= ulps))
-                                    && (!(fabsf(err3) <= ulps)));
-                            if (fabsf(err2) < fabsf(err)) err = err2;
-                            if (fabsf(err3) < fabsf(err)) err = err3;
-
-                            // retry per section 6.5.3.4
-                            if (IsDoubleResultSubnormal(correct2, ulps)
-                                || IsDoubleResultSubnormal(correct3, ulps))
-                            {
-                                fail = fail && (test != 0.0f);
-                                if (!fail) err = 0.0f;
-                            }
-                        }
-                    }
-                }
-                if (fabsf(err) > tinfo->maxError)
-                {
-                    tinfo->maxError = fabsf(err);
-                    tinfo->maxErrorValue = s[j];
-                }
-                if (fail)
-                {
-                    vlog_error("\nERROR: %s%s: %f ulp error at %.13la "
-                               "(0x%16.16llx): *%.13la vs. %.13la\n",
-                               job->f->name, sizeNames[k], err,
-                               ((cl_double *)gIn)[j], ((cl_ulong *)gIn)[j],
-                               ((cl_double *)gOut_Ref)[j], test);
-                    return -1;
-                }
-            }
-        }
-    }
-
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-    {
-        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
-                                             out[j], 0, NULL, NULL)))
-        {
-            vlog_error("Error: clEnqueueUnmapMemObject %d failed 2! err: %d\n",
-                       j, error);
-            return error;
-        }
-    }
-
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 3 failed\n");
-
-
-    if (0 == (base & 0x0fffffff))
-    {
-        if (gVerboseBruteForce)
-        {
-            vlog("base:%14u step:%10u scale:%10zd buf_elements:%10u ulps:%5.3f "
-                 "ThreadCount:%2u\n",
-                 base, job->step, buffer_elements, job->scale, job->ulps,
-                 job->threadCount);
-        }
-        else
-        {
-            vlog(".");
-        }
-        fflush(stdout);
-    }
-
-    return CL_SUCCESS;
-}
+static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data);
 
 int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 {
@@ -659,4 +422,243 @@ exit:
     }
 
     return error;
+}
+
+static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
+{
+    const TestInfo *job = (const TestInfo *)data;
+    size_t buffer_elements = job->subBufferSize;
+    size_t buffer_size = buffer_elements * sizeof(cl_double);
+    cl_uint scale = job->scale;
+    cl_uint base = job_id * (cl_uint)job->step;
+    ThreadInfo *tinfo = job->tinfo + thread_id;
+    float ulps = job->ulps;
+    dptr func = job->f->dfunc;
+    cl_uint j, k;
+    cl_int error;
+    int ftz = job->ftz;
+
+    Force64BitFPUPrecision();
+
+    // start the map of the output arrays
+    cl_event e[VECTOR_SIZE_COUNT];
+    cl_ulong *out[VECTOR_SIZE_COUNT];
+    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    {
+        out[j] = (cl_ulong *)clEnqueueMapBuffer(
+            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
+            buffer_size, 0, NULL, e + j, &error);
+        if (error || NULL == out[j])
+        {
+            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
+                       error);
+            return error;
+        }
+    }
+
+    // Get that moving
+    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+
+    // Write the new values to the input array
+    cl_double *p = (cl_double *)gIn + thread_id * buffer_elements;
+    for (j = 0; j < buffer_elements; j++)
+        p[j] = DoubleFromUInt32(base + j * scale);
+
+    if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
+                                      buffer_size, p, 0, NULL, NULL)))
+    {
+        vlog_error("Error: clEnqueueWriteBuffer failed! err: %d\n", error);
+        return error;
+    }
+
+    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    {
+        // Wait for the map to finish
+        if ((error = clWaitForEvents(1, e + j)))
+        {
+            vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
+            return error;
+        }
+        if ((error = clReleaseEvent(e[j])))
+        {
+            vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
+            return error;
+        }
+
+        // Fill the result buffer with garbage, so that old results don't carry
+        // over
+        uint32_t pattern = 0xffffdead;
+        memset_pattern4(out[j], &pattern, buffer_size);
+        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
+                                             out[j], 0, NULL, NULL)))
+        {
+            vlog_error("Error: clEnqueueMapBuffer failed! err: %d\n", error);
+            return error;
+        }
+
+        // run the kernel
+        size_t vectorCount =
+            (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
+        cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
+                                                 // own copy of the cl_kernel
+        cl_program program = job->programs[j];
+
+        if ((error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
+                                    &tinfo->outBuf[j])))
+        {
+            LogBuildError(program);
+            return error;
+        }
+        if ((error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf),
+                                    &tinfo->inBuf)))
+        {
+            LogBuildError(program);
+            return error;
+        }
+
+        if ((error = clEnqueueNDRangeKernel(tinfo->tQueue, kernel, 1, NULL,
+                                            &vectorCount, NULL, 0, NULL, NULL)))
+        {
+            vlog_error("FAILED -- could not execute kernel\n");
+            return error;
+        }
+    }
+
+
+    // Get that moving
+    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
+
+    if (gSkipCorrectnessTesting) return CL_SUCCESS;
+
+    // Calculate the correctly rounded reference result
+    cl_double *r = (cl_double *)gOut_Ref + thread_id * buffer_elements;
+    cl_double *s = (cl_double *)p;
+    for (j = 0; j < buffer_elements; j++) r[j] = (cl_double)func.f_f(s[j]);
+
+    // Read the data back -- no need to wait for the first N-1 buffers. This is
+    // an in order queue.
+    for (j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++)
+    {
+        out[j] = (cl_ulong *)clEnqueueMapBuffer(
+            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_READ, 0,
+            buffer_size, 0, NULL, NULL, &error);
+        if (error || NULL == out[j])
+        {
+            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
+                       error);
+            return error;
+        }
+    }
+    // Wait for the last buffer
+    out[j] = (cl_ulong *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
+                                            CL_TRUE, CL_MAP_READ, 0,
+                                            buffer_size, 0, NULL, NULL, &error);
+    if (error || NULL == out[j])
+    {
+        vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error);
+        return error;
+    }
+
+
+    // Verify data
+    cl_ulong *t = (cl_ulong *)r;
+    for (j = 0; j < buffer_elements; j++)
+    {
+        for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+        {
+            cl_ulong *q = out[k];
+
+            // If we aren't getting the correctly rounded result
+            if (t[j] != q[j])
+            {
+                cl_double test = ((cl_double *)q)[j];
+                long double correct = func.f_f(s[j]);
+                float err = Bruteforce_Ulp_Error_Double(test, correct);
+                int fail = !(fabsf(err) <= ulps);
+
+                if (fail)
+                {
+                    if (ftz)
+                    {
+                        // retry per section 6.5.3.2
+                        if (IsDoubleResultSubnormal(correct, ulps))
+                        {
+                            fail = fail && (test != 0.0f);
+                            if (!fail) err = 0.0f;
+                        }
+
+                        // retry per section 6.5.3.3
+                        if (IsDoubleSubnormal(s[j]))
+                        {
+                            long double correct2 = func.f_f(0.0L);
+                            long double correct3 = func.f_f(-0.0L);
+                            float err2 =
+                                Bruteforce_Ulp_Error_Double(test, correct2);
+                            float err3 =
+                                Bruteforce_Ulp_Error_Double(test, correct3);
+                            fail = fail
+                                && ((!(fabsf(err2) <= ulps))
+                                    && (!(fabsf(err3) <= ulps)));
+                            if (fabsf(err2) < fabsf(err)) err = err2;
+                            if (fabsf(err3) < fabsf(err)) err = err3;
+
+                            // retry per section 6.5.3.4
+                            if (IsDoubleResultSubnormal(correct2, ulps)
+                                || IsDoubleResultSubnormal(correct3, ulps))
+                            {
+                                fail = fail && (test != 0.0f);
+                                if (!fail) err = 0.0f;
+                            }
+                        }
+                    }
+                }
+                if (fabsf(err) > tinfo->maxError)
+                {
+                    tinfo->maxError = fabsf(err);
+                    tinfo->maxErrorValue = s[j];
+                }
+                if (fail)
+                {
+                    vlog_error("\nERROR: %s%s: %f ulp error at %.13la "
+                               "(0x%16.16llx): *%.13la vs. %.13la\n",
+                               job->f->name, sizeNames[k], err,
+                               ((cl_double *)gIn)[j], ((cl_ulong *)gIn)[j],
+                               ((cl_double *)gOut_Ref)[j], test);
+                    return -1;
+                }
+            }
+        }
+    }
+
+    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    {
+        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
+                                             out[j], 0, NULL, NULL)))
+        {
+            vlog_error("Error: clEnqueueUnmapMemObject %d failed 2! err: %d\n",
+                       j, error);
+            return error;
+        }
+    }
+
+    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 3 failed\n");
+
+
+    if (0 == (base & 0x0fffffff))
+    {
+        if (gVerboseBruteForce)
+        {
+            vlog("base:%14u step:%10u scale:%10zd buf_elements:%10u ulps:%5.3f "
+                 "ThreadCount:%2u\n",
+                 base, job->step, buffer_elements, job->scale, job->ulps,
+                 job->threadCount);
+        }
+        else
+        {
+            vlog(".");
+        }
+        fflush(stdout);
+    }
+
+    return CL_SUCCESS;
 }

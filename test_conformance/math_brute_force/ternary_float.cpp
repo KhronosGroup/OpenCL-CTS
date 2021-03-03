@@ -208,7 +208,7 @@ static const float specialValuesFloat[] = {
     MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150),
     MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150),
     MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150),
-    +0.0f
+    +0.0f,
 };
 
 static const size_t specialValuesFloatCount =
