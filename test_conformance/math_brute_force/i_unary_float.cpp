@@ -31,7 +31,7 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
                         sizeNames[vectorSize],
                         "* in)\n"
                         "{\n"
-                        "   int i = get_global_id(0);\n"
+                        "   size_t i = get_global_id(0);\n"
                         "   out[i] = ",
                         name,
                         "( in[i] );\n"
