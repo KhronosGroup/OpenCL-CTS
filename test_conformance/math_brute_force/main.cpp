@@ -62,11 +62,7 @@ static int32_t gEndTestNumber = -1;
 int gSkipCorrectnessTesting = 0;
 int gStopOnError = 0;
 static bool gSkipRestOfTests;
-#if defined(__APPLE__)
-int gMeasureTimes = 1;
-#else
 int gMeasureTimes = 0;
-#endif
 int gReportAverageTimes = 0;
 int gForceFTZ = 0;
 int gWimpyMode = 0;
@@ -805,11 +801,6 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-#if defined(__APPLE__)
-    struct timeval startTime;
-    gettimeofday(&startTime, NULL);
-#endif
-
     error = ParseArgs(argc, argv);
     if (error) return error;
 
@@ -865,14 +856,6 @@ int main(int argc, const char *argv[])
     }
 
     ReleaseCL();
-
-#if defined(__APPLE__)
-    struct timeval endTime;
-    gettimeofday(&endTime, NULL);
-    double time = (double)endTime.tv_sec - (double)startTime.tv_sec;
-    time += 1e-6 * ((double)endTime.tv_usec - (double)startTime.tv_usec);
-    vlog("time: %f s\n", time);
-#endif
 
     return ret;
 }
@@ -1211,9 +1194,6 @@ test_status InitCL(cl_device_id device)
         return TEST_FAIL;
     }
 
-#if defined(__APPLE__)
-    // FIXME: use clProtectedArray
-#endif
     // Allocate buffers
     cl_uint min_alignment = 0;
     error = clGetDeviceInfo(gDevice, CL_DEVICE_MEM_BASE_ADDR_ALIGN,

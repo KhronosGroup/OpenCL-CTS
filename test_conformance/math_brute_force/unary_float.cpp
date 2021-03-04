@@ -20,10 +20,6 @@
 
 #include <cstring>
 
-#if defined(__APPLE__)
-#include <sys/time.h>
-#endif
-
 static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                        cl_kernel *k, cl_program *p, bool relaxedMode)
 {

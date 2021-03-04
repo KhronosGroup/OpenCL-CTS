@@ -20,10 +20,6 @@
 
 #include <cstring>
 
-#if defined(__APPLE__)
-#include <sys/time.h>
-#endif
-
 static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                        cl_kernel *k, cl_program *p, bool relaxedMode)
 {
@@ -166,12 +162,6 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     size_t i, j;
     float maxError = 0.0f;
     double maxErrorVal = 0.0;
-#if defined(__APPLE__)
-    struct timeval time_val;
-    gettimeofday(&time_val, NULL);
-    double start_time = time_val.tv_sec + 1e-6 * time_val.tv_usec;
-    double end_time;
-#endif
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
     // Init test_info
@@ -302,12 +292,6 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             vlog("passed");
     }
 
-
-#if defined(__APPLE__)
-    gettimeofday(&time_val, NULL);
-    end_time = time_val.tv_sec + 1e-6 * time_val.tv_usec;
-#endif
-
     if (gMeasureTimes)
     {
         // Init input array
@@ -386,10 +370,6 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     }
 
     if (!gSkipCorrectnessTesting) vlog("\t%8.2f @ %a", maxError, maxErrorVal);
-
-#if defined(__APPLE__)
-    vlog("\t(%2.2f seconds)", end_time - start_time);
-#endif
     vlog("\n");
 
 exit:
