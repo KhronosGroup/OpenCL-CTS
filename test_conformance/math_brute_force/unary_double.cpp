@@ -382,7 +382,6 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             vlog_perf(clocksPerOp, LOWER_IS_BETTER, "clocks / element", "%sD%s",
                       f->name, sizeNames[j]);
         }
-        for (; j < gMaxVectorSizeIndex; j++) vlog("\t     -- ");
     }
 
     if (!gSkipCorrectnessTesting) vlog("\t%8.2f @ %a", maxError, maxErrorVal);
