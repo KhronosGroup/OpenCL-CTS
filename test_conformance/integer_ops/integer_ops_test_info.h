@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef EXTENDED_BIT_OPS_H
-#define EXTENDED_BIT_OPS_H
+#ifndef INTEGER_OPS_TEST_INFO_H
+#define INTEGER_OPS_TEST_INFO_H
 
 #include "harness/conversions.h"
 
@@ -89,4 +89,4 @@ static void generate_input(std::vector<T>& base)
     d = NULL;
 }
 
-#endif /* EXTENDED_BIT_OPS_H */
+#endif /* INTEGER_OPS_TEST_INFO_H */
