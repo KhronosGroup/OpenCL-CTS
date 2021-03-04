@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "procs.h"
-#include "extended_bit_ops.h"
+#include "integer_ops_test_info.h"
 #include "harness/testHarness.h"
 
 template <typename T>
