@@ -18,7 +18,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
-#include <string.h>
+#include <cstring>
 
 #if defined(__APPLE__)
 #include <sys/time.h>

@@ -18,7 +18,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
-#include <string.h>
+#include <cstring>
 
 #define CORRECTLY_ROUNDED 0
 #define FLUSHED 1
