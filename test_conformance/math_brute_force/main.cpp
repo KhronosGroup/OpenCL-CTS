@@ -20,8 +20,8 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include <string>
-#include <time.h>
 
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"
