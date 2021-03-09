@@ -408,6 +408,77 @@ int get_32_bit_image_format(cl_context context, cl_mem_object_type objType,
     return -1;
 }
 
+void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
+                                        const char *destPixel,
+                                        image_descriptor *imageInfo, size_t y,
+                                        size_t thirdDim)
+{
+    size_t pixel_size = get_pixel_size(imageInfo->format);
+
+    log_error("ERROR: Scanline %d did not verify for image size %d,%d,%d "
+              "pitch %d (extra %d bytes)\n",
+              (int)y, (int)imageInfo->width, (int)imageInfo->height,
+              (int)thirdDim, (int)imageInfo->rowPitch,
+              (int)imageInfo->rowPitch
+                  - (int)imageInfo->width * (int)pixel_size);
+    log_error("Failed at column: %ld   ", where);
+
+    switch (pixel_size)
+    {
+        case 1:
+            log_error("*0x%2.2x vs. 0x%2.2x\n", ((cl_uchar *)sourcePixel)[0],
+                      ((cl_uchar *)destPixel)[0]);
+            break;
+        case 2:
+            log_error("*0x%4.4x vs. 0x%4.4x\n", ((cl_ushort *)sourcePixel)[0],
+                      ((cl_ushort *)destPixel)[0]);
+            break;
+        case 3:
+            log_error("*{0x%2.2x, 0x%2.2x, 0x%2.2x} vs. "
+                      "{0x%2.2x, 0x%2.2x, 0x%2.2x}\n",
+                      ((cl_uchar *)sourcePixel)[0],
+                      ((cl_uchar *)sourcePixel)[1],
+                      ((cl_uchar *)sourcePixel)[2], ((cl_uchar *)destPixel)[0],
+                      ((cl_uchar *)destPixel)[1], ((cl_uchar *)destPixel)[2]);
+            break;
+        case 4:
+            log_error("*0x%8.8x vs. 0x%8.8x\n", ((cl_uint *)sourcePixel)[0],
+                      ((cl_uint *)destPixel)[0]);
+            break;
+        case 6:
+            log_error(
+                "*{0x%4.4x, 0x%4.4x, 0x%4.4x} vs. "
+                "{0x%4.4x, 0x%4.4x, 0x%4.4x}\n",
+                ((cl_ushort *)sourcePixel)[0], ((cl_ushort *)sourcePixel)[1],
+                ((cl_ushort *)sourcePixel)[2], ((cl_ushort *)destPixel)[0],
+                ((cl_ushort *)destPixel)[1], ((cl_ushort *)destPixel)[2]);
+            break;
+        case 8:
+            log_error("*0x%16.16llx vs. 0x%16.16llx\n",
+                      ((cl_ulong *)sourcePixel)[0], ((cl_ulong *)destPixel)[0]);
+            break;
+        case 12:
+            log_error("*{0x%8.8x, 0x%8.8x, 0x%8.8x} vs. "
+                      "{0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
+                      ((cl_uint *)sourcePixel)[0], ((cl_uint *)sourcePixel)[1],
+                      ((cl_uint *)sourcePixel)[2], ((cl_uint *)destPixel)[0],
+                      ((cl_uint *)destPixel)[1], ((cl_uint *)destPixel)[2]);
+            break;
+        case 16:
+            log_error("*{0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x} vs. "
+                      "{0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
+                      ((cl_uint *)sourcePixel)[0], ((cl_uint *)sourcePixel)[1],
+                      ((cl_uint *)sourcePixel)[2], ((cl_uint *)sourcePixel)[3],
+                      ((cl_uint *)destPixel)[0], ((cl_uint *)destPixel)[1],
+                      ((cl_uint *)destPixel)[2], ((cl_uint *)destPixel)[3]);
+            break;
+        default:
+            log_error("Don't know how to print pixel size of %ld\n",
+                      pixel_size);
+            break;
+    }
+}
+
 int random_log_in_range(int minV, int maxV, MTdata d)
 {
     double v = log2(((double)genrand_int32(d) / (double)0xffffffff) + 1);
