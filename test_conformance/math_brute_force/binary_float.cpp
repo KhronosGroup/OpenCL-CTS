@@ -273,8 +273,7 @@ typedef struct TestInfo
 
 static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *p);
 
-static int TestFunc_Float_Float_Float_common(const Func *f, MTdata d,
-                                             int isNextafter, bool relaxedMode)
+int TestFunc_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 {
     TestInfo test_info;
     cl_int error;
@@ -318,7 +317,7 @@ static int TestFunc_Float_Float_Float_common(const Func *f, MTdata d,
     test_info.relaxedMode = relaxedMode;
     test_info.isFDim = 0 == strcmp("fdim", f->nameInCode);
     test_info.skipNanInf = test_info.isFDim && !gInfNanSupport;
-    test_info.isNextafter = isNextafter;
+    test_info.isNextafter = 0 == strcmp("nextafter", f->nameInCode);
 
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
@@ -1093,15 +1092,4 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
 exit:
     if (overflow) free(overflow);
     return error;
-}
-
-int TestFunc_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
-{
-    return TestFunc_Float_Float_Float_common(f, d, 0, relaxedMode);
-}
-
-int TestFunc_Float_Float_Float_nextafter(const Func *f, MTdata d,
-                                         bool relaxedMode)
-{
-    return TestFunc_Float_Float_Float_common(f, d, 1, relaxedMode);
 }
