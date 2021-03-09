@@ -124,6 +124,34 @@ static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
                        info->kernels[i], info->programs + i, info->relaxedMode);
 }
 
+// Thread specific data for a worker thread
+typedef struct ThreadInfo
+{
+    cl_mem inBuf; // input buffer for the thread
+    cl_mem inBuf2; // input buffer for the thread
+    cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
+    MTdata d;
+    cl_command_queue tQueue; // per thread command queue to improve performance
+} ThreadInfo;
+
+typedef struct TestInfo
+{
+    size_t subBufferSize; // Size of the sub-buffer in elements
+    const Func *f; // A pointer to the function info
+    cl_program programs[VECTOR_SIZE_COUNT]; // programs for various vector sizes
+    cl_kernel
+        *k[VECTOR_SIZE_COUNT]; // arrays of thread-specific kernels for each
+                               // worker thread:  k[vector_size][thread_id]
+    ThreadInfo *
+        tinfo; // An array of thread specific information for each worker thread
+    cl_uint threadCount; // Number of worker threads
+    cl_uint jobCount; // Number of jobs
+    cl_uint step; // step between each chunk and the next.
+    cl_uint scale; // stride between individual test values
+    int ftz; // non-zero if running in flush to zero mode
+
+} TestInfo;
+
 // A table of more difficult cases to get right
 static const float specialValuesFloat[] = {
     -NAN,
@@ -224,39 +252,11 @@ static const float specialValuesFloat[] = {
     MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150),
     MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150),
     MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150),
-    +0.0f
+    +0.0f,
 };
 
 static const size_t specialValuesFloatCount =
     sizeof(specialValuesFloat) / sizeof(specialValuesFloat[0]);
-
-// Thread specific data for a worker thread
-typedef struct ThreadInfo
-{
-    cl_mem inBuf; // input buffer for the thread
-    cl_mem inBuf2; // input buffer for the thread
-    cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
-    MTdata d;
-    cl_command_queue tQueue; // per thread command queue to improve performance
-} ThreadInfo;
-
-typedef struct TestInfo
-{
-    size_t subBufferSize; // Size of the sub-buffer in elements
-    const Func *f; // A pointer to the function info
-    cl_program programs[VECTOR_SIZE_COUNT]; // programs for various vector sizes
-    cl_kernel
-        *k[VECTOR_SIZE_COUNT]; // arrays of thread-specific kernels for each
-                               // worker thread:  k[vector_size][thread_id]
-    ThreadInfo *
-        tinfo; // An array of thread specific information for each worker thread
-    cl_uint threadCount; // Number of worker threads
-    cl_uint jobCount; // Number of jobs
-    cl_uint step; // step between each chunk and the next.
-    cl_uint scale; // stride between individual test values
-    int ftz; // non-zero if running in flush to zero mode
-
-} TestInfo;
 
 static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *p);
 
