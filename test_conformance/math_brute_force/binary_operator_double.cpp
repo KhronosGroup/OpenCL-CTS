@@ -20,9 +20,9 @@
 
 #include <cstring>
 
-static int BuildKernelDouble(const char *name, const char *operator_symbol,
-                             int vectorSize, cl_uint kernel_count, cl_kernel *k,
-                             cl_program *p, bool relaxedMode)
+static int BuildKernel(const char *name, const char *operator_symbol,
+                       int vectorSize, cl_uint kernel_count, cl_kernel *k,
+                       cl_program *p, bool relaxedMode)
 {
     const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
                         "__kernel void ",
@@ -123,14 +123,12 @@ typedef struct BuildKernelInfo
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 } BuildKernelInfo;
 
-static cl_int BuildKernel_DoubleFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                   void *p)
+static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
-    return BuildKernelDouble(info->name, info->operator_symbol, i,
-                             info->kernel_count, info->kernels[i],
-                             info->programs + i, info->relaxedMode);
+    return BuildKernel(info->name, info->operator_symbol, i, info->kernel_count,
+                       info->kernels[i], info->programs + i, info->relaxedMode);
 }
 
 // Thread specific data for a worker thread
@@ -171,7 +169,7 @@ typedef struct TestInfo
 } TestInfo;
 
 // A table of more difficult cases to get right
-static const double specialValuesDouble[] = {
+static const double specialValues[] = {
     -NAN,
     -INFINITY,
     -DBL_MAX,
@@ -281,10 +279,10 @@ static const double specialValuesDouble[] = {
     +0.0,
 };
 
-static size_t specialValuesDoubleCount =
-    sizeof(specialValuesDouble) / sizeof(specialValuesDouble[0]);
+static const size_t specialValuesCount =
+    sizeof(specialValues) / sizeof(specialValues[0]);
 
-static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *p);
+static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data);
 
 int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
                                            bool relaxedMode)
@@ -412,7 +410,7 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
                                        f->name,
                                        f->nameInCode,
                                        relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernel_DoubleFn,
+        if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
             goto exit;
@@ -421,7 +419,7 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
     // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
-        error = ThreadPool_Do(TestDouble, test_info.jobCount, &test_info);
+        error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
 
         // Accumulate the arithmetic errors
         for (i = 0; i < test_info.threadCount; i++)
@@ -563,7 +561,7 @@ exit:
     return error;
 }
 
-static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
+static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 {
     const TestInfo *job = (const TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
@@ -608,8 +606,7 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
     cl_ulong *p = (cl_ulong *)gIn + thread_id * buffer_elements;
     cl_ulong *p2 = (cl_ulong *)gIn2 + thread_id * buffer_elements;
     j = 0;
-    int totalSpecialValueCount =
-        specialValuesDoubleCount * specialValuesDoubleCount;
+    int totalSpecialValueCount = specialValuesCount * specialValuesCount;
     int indx = (totalSpecialValueCount - 1) / buffer_elements;
 
     if (job_id <= (cl_uint)indx)
@@ -618,18 +615,18 @@ static cl_int TestDouble(cl_uint job_id, cl_uint thread_id, void *data)
         cl_double *fp2 = (cl_double *)p2;
         uint32_t x, y;
 
-        x = (job_id * buffer_elements) % specialValuesDoubleCount;
-        y = (job_id * buffer_elements) / specialValuesDoubleCount;
+        x = (job_id * buffer_elements) % specialValuesCount;
+        y = (job_id * buffer_elements) / specialValuesCount;
 
         for (; j < buffer_elements; j++)
         {
-            fp[j] = specialValuesDouble[x];
-            fp2[j] = specialValuesDouble[y];
-            if (++x >= specialValuesDoubleCount)
+            fp[j] = specialValues[x];
+            fp2[j] = specialValues[y];
+            if (++x >= specialValuesCount)
             {
                 x = 0;
                 y++;
-                if (y >= specialValuesDoubleCount) break;
+                if (y >= specialValuesCount) break;
             }
         }
     }

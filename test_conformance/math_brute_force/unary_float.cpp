@@ -113,8 +113,7 @@ typedef struct BuildKernelInfo
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 } BuildKernelInfo;
 
-static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                  void *p)
+static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
@@ -156,7 +155,7 @@ typedef struct TestInfo
                       // otherwise.
 } TestInfo;
 
-static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *p);
+static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data);
 
 int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 {
@@ -287,7 +286,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             gMinVectorSizeIndex, test_info.threadCount, test_info.k,
             test_info.programs,  f->nameInCode,         relaxedMode
         };
-        if ((error = ThreadPool_Do(BuildKernel_FloatFn,
+        if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
             goto exit;
@@ -296,7 +295,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     // Run the kernels
     if (!gSkipCorrectnessTesting || skipTestingRelaxed)
     {
-        error = ThreadPool_Do(TestFloat, test_info.jobCount, &test_info);
+        error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
 
         // Accumulate the arithmetic errors
         for (i = 0; i < test_info.threadCount; i++)
@@ -430,7 +429,7 @@ exit:
     return error;
 }
 
-static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
+static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 {
     const TestInfo *job = (const TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
