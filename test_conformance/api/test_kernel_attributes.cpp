@@ -60,12 +60,10 @@ AttributePermutations reqd_vect_work_tests;
 static KernelAttributes generate_vec_type_hint_data(cl_device_id deviceID)
 {
     KernelAttributes vec_type_hint_data;
-    std::vector<std::string> vector_types = { "char",   "uchar", "short",
-                                              "ushort", "int",   "uint",
+    std::vector<std::string> vector_types = { "uchar", "ushort", "uint",
                                               "float" };
     if (gHasLong)
     {
-        vector_types.push_back("long");
         vector_types.push_back("ulong");
     }
     if (device_supports_half(deviceID))
