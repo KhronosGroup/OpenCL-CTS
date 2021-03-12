@@ -42,15 +42,17 @@ int test_negative_get_platform_info(cl_device_id deviceID, cl_context context,
 {
     cl_platform_id platform = getPlatformFromDevice(deviceID);
 
-    cl_int err =
-        clGetPlatformInfo(reinterpret_cast<cl_platform_id>(deviceID),
-                          CL_PLATFORM_VERSION, sizeof(char*), nullptr, nullptr);
-    test_failure_error_ret(
-        err, CL_INVALID_PLATFORM,
-        "clGetPlatformInfo should return CL_INVALID_PLATFORM  when: \"platform "
-        "is not a valid platform\" using a valid object which is NOT a "
-        "platform",
-        TEST_FAIL);
+    cl_int err(CL_SUCCESS);
+    for (auto invalid_platform : get_invalid_objects<cl_platform_id>(deviceID))
+    {
+        err = clGetPlatformInfo(invalid_platform, CL_PLATFORM_VERSION,
+                                sizeof(char*), nullptr, nullptr);
+        test_failure_error_ret(err, CL_INVALID_PLATFORM,
+                               "clGetPlatformInfo should return "
+                               "CL_INVALID_PLATFORM  when: \"platform "
+                               "is not a valid platform\"",
+                               TEST_FAIL);
+    }
 
     constexpr cl_platform_info INVALID_PARAM_VALUE = 0;
     err = clGetPlatformInfo(platform, INVALID_PARAM_VALUE, 0, nullptr, nullptr);
