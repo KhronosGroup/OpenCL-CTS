@@ -21,6 +21,8 @@
 #include <sstream>
 
 #include <string>
+#include <vector>
+#include <type_traits>
 
 class Version {
 public:
@@ -185,6 +187,40 @@ extern int gHasLong; // This is set to 1 if the device suppots long and ulong
 extern bool gCoreILProgram;
 
 extern cl_platform_id getPlatformFromDevice(cl_device_id deviceID);
+extern std::vector<cl_device_id> get_all_available_devices();
+extern bool different_device_available(cl_device_id deviceID,
+                                       cl_device_id *different_device);
+enum InvalidObject
+{
+    Nullptr = 1 << 1,
+    ValidObjectWrongType = 1 << 2,
+
+};
+
+extern int gInvalidObject;
+
+
+template <typename T> std::vector<T> get_invalid_objects(cl_device_id device)
+{
+    std::vector<T> ret;
+    if (gInvalidObject & InvalidObject::Nullptr)
+    {
+        ret.push_back(nullptr);
+    }
+    if (gInvalidObject & InvalidObject::ValidObjectWrongType)
+    {
+        if (std::is_same<T, cl_device_id>::value)
+        {
+            cl_platform_id platform = getPlatformFromDevice(device);
+            ret.push_back(reinterpret_cast<T>(platform));
+        }
+        else
+        {
+            ret.push_back(reinterpret_cast<T>(device));
+        }
+    }
+    return ret;
+}
 
 #if !defined(__APPLE__)
 void memset_pattern4(void *, const void *, size_t);
