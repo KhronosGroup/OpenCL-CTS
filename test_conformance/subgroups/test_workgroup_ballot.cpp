@@ -58,8 +58,8 @@ template <typename Ty> struct BALLOT
         { // for each work_group
             if (non_uniform_size && wg_id == wg_number - 1)
             {
-                set_last_worgroup_params(non_uniform_size, sb_number, sbs, lws,
-                                         last_subgroup_size);
+                set_last_workgroup_params(non_uniform_size, sb_number, sbs, lws,
+                                          last_subgroup_size);
             }
 
             for (wi_id = 0; wi_id < lws; ++wi_id)

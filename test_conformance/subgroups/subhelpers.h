@@ -1394,10 +1394,10 @@ struct test
     }
 };
 
-static void set_last_worgroup_params(int non_uniform_size,
-                                     int &number_of_subgroups,
-                                     int subgroup_size, int &workgroup_size,
-                                     int &last_subgroup_size)
+static void set_last_workgroup_params(int non_uniform_size,
+                                      int &number_of_subgroups,
+                                      int subgroup_size, int &workgroup_size,
+                                      int &last_subgroup_size)
 {
     number_of_subgroups = 1 + non_uniform_size / subgroup_size;
     last_subgroup_size = non_uniform_size % subgroup_size;

@@ -86,8 +86,8 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
         { // for each work_group
             if (non_uniform_size && k == ng - 1)
             {
-                set_last_worgroup_params(non_uniform_size, nj, ns, nw,
-                                         last_subgroup_size);
+                set_last_workgroup_params(non_uniform_size, nj, ns, nw,
+                                          last_subgroup_size);
             }
             for (j = 0; j < nj; ++j)
             { // for each subgroup
@@ -184,8 +184,8 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
         { // for each work_group
             if (non_uniform_size && k == ng - 1)
             {
-                set_last_worgroup_params(non_uniform_size, nj, ns, nw,
-                                         last_subgroup_size);
+                set_last_workgroup_params(non_uniform_size, nj, ns, nw,
+                                          last_subgroup_size);
             }
             for (j = 0; j < nw; ++j)
             { // inside the work_group

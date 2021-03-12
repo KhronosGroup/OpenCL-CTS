@@ -39,9 +39,6 @@ static const char *redadd_clustered_source =
     "    {xy[gid].w = sizeof(in[gid]);}\n"
     "    out[gid] = sub_group_clustered_reduce_add(in[gid], " CLUSTER_SIZE_STR
     ");\n"
-    //"printf(\"gid = %d, sub group local id = %d, sub group id = %d, x form in
-    //= %d, new_set = %d, out[gid] = %d\\n\", gid, xy[gid].x, xy[gid].y,
-    // in[gid], xy[gid].z, out[gid]);"
     "}\n";
 
 static const char *redmax_clustered_source =
