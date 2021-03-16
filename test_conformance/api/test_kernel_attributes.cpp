@@ -60,6 +60,7 @@ AttributePermutations reqd_vect_work_tests;
 static KernelAttributes generate_vec_type_hint_data(cl_device_id deviceID)
 {
     KernelAttributes vec_type_hint_data;
+    // TODO Test for signed vectors (char/short/int/etc)
     std::vector<std::string> vector_types = { "uchar", "ushort", "uint",
                                               "float" };
     if (gHasLong)
