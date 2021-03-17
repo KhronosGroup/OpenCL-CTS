@@ -713,20 +713,20 @@ int parseAndCallCommandLineTests(int argc, const char *argv[],
             ret = saveResultsToJson(filename, argv[0], testList,
                                     selectedTestList, resultTestList, testNum);
         }
-    }
 
-    if (std::any_of(resultTestList, resultTestList + testNum,
-                    [](test_status result) {
-                        switch (result)
-                        {
-                            case TEST_PASS:
-                            case TEST_SKIP: return false;
-                            case TEST_FAIL:
-                            default: return true;
-                        };
-                    }))
-    {
-        ret = EXIT_FAILURE;
+        if (std::any_of(resultTestList, resultTestList + testNum,
+                        [](test_status result) {
+                            switch (result)
+                            {
+                                case TEST_PASS:
+                                case TEST_SKIP: return false;
+                                case TEST_FAIL:
+                                default: return true;
+                            };
+                        }))
+        {
+            ret = EXIT_FAILURE;
+        }
     }
 
     free(selectedTestList);
