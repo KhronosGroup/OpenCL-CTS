@@ -364,9 +364,9 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                 &region, &error);
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
-                vlog_error("Error: Unable to create sub-buffer of gInBuffer "
-                           "for region {%zd, %zd}\n",
-                           region.origin, region.size);
+                vlog_error("Error: Unable to create sub-buffer of "
+                           "gOutBuffer[%d] for region {%zd, %zd}\n",
+                           (int)j, region.origin, region.size);
                 goto exit;
             }
         }

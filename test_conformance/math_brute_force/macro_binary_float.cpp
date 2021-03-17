@@ -356,8 +356,8 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
                 vlog_error("Error: Unable to create sub-buffer of "
-                           "gInBuffer for region {%zd, %zd}\n",
-                           region.origin, region.size);
+                           "gOutBuffer[%d] for region {%zd, %zd}\n",
+                           (int)j, region.origin, region.size);
                 goto exit;
             }
         }
