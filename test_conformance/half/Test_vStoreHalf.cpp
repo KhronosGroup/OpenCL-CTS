@@ -357,14 +357,22 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
             "   switch (extra_last_thread) {\n"
             "   case 0: \n"
             "   default: \n"
-            "       vstore_half3",roundName,"( vload3(i, p), i, f );\n"
+            "       vstore_half3",
+            roundName,
+            "( vload3(i, p), i, f );\n"
             "       break; \n"
             "   case 2: \n"
-            "       vstore_half",roundName,"( p[i * 3 + 0], i * 3 + 0, f );\n"
-            "       vstore_half",roundName,"( p[i * 3 + 1], i * 3 + 1, f );\n"
+            "       vstore_half",
+            roundName,
+            "( p[i * 3 + 0], i * 3 + 0, f );\n"
+            "       vstore_half",
+            roundName,
+            "( p[i * 3 + 1], i * 3 + 1, f );\n"
             "       break; \n"
             "   case 1: \n"
-            "       vstore_half",roundName,"( p[i * 3], i * 3, f );\n"
+            "       vstore_half",
+            roundName,
+            "( p[i * 3], i * 3, f );\n"
             "       break; \n"
             "   } \n"
             "}\n"
@@ -504,14 +512,22 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
             "   switch (extra_last_thread) {\n"
             "   case 0: \n"
             "   default: \n"
-            "       vstore_half3",roundName,"( vload3(i, p), i, f );\n"
+            "       vstore_half3",
+            roundName,
+            "( vload3(i, p), i, f );\n"
             "       break; \n"
             "   case 2: \n"
-            "       vstore_half",roundName,"( p[i * 3 + 0], i * 3 + 0, f );\n"
-            "       vstore_half",roundName,"( p[i * 3 + 1], i * 3 + 1, f );\n"
+            "       vstore_half",
+            roundName,
+            "( p[i * 3 + 0], i * 3 + 0, f );\n"
+            "       vstore_half",
+            roundName,
+            "( p[i * 3 + 1], i * 3 + 1, f );\n"
             "       break; \n"
             "   case 1: \n"
-            "       vstore_half",roundName,"( p[i * 3], i * 3, f );\n"
+            "       vstore_half",
+            roundName,
+            "( p[i * 3], i * 3, f );\n"
             "       break; \n"
             "   } \n"
             "}\n"
