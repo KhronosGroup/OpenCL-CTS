@@ -125,17 +125,17 @@ static inline int inst(int op, int loc, int val)
         | (op << INST_OP_SHIFT);
 }
 
-void gen_insts(cl_int *x, cl_int *p, int n)
+void gen_insts(cl_int *x, cl_int *p, size_t n)
 {
-    int i, j0, j1;
+    size_t i, j0, j1;
     int val;
-    int ii[NUM_LOC];
+    size_t ii[NUM_LOC];
 
     // Create a random permutation of 0...NUM_LOC-1
     ii[0] = 0;
     for (i = 1; i < NUM_LOC; ++i)
     {
-        j0 = random_in_range(0, i, gMTdata);
+        j0 = get_random_size_t(0, i + 1, gMTdata);
         if (j0 != i) ii[i] = ii[j0];
         ii[j0] = i;
     }
@@ -147,17 +147,17 @@ void gen_insts(cl_int *x, cl_int *p, int n)
     {
         // Randomly choose 2 different sub groups
         // One does a random amount of work, and the other waits for it
-        j0 = random_in_range(0, n - 1, gMTdata);
+        j0 = get_random_size_t(0, n, gMTdata);
 
         do
         {
-            j1 = random_in_range(0, n - 1, gMTdata);
+            j1 = get_random_size_t(0, n, gMTdata);
         } while (j1 == j0);
 
         // Randomly choose a wait value and assign "instructions"
         val = random_in_range(100, 200 + 10 * NUM_LOC, gMTdata);
-        x[j0 * (NUM_LOC + 1) + p[j0]] = inst(INST_COUNT, ii[i], val);
-        x[j1 * (NUM_LOC + 1) + p[j1]] = inst(INST_WAIT, ii[i], val);
+        x[j0 * (NUM_LOC + 1) + p[j0]] = inst(INST_COUNT, static_cast<int>(ii[i]), val);
+        x[j1 * (NUM_LOC + 1) + p[j1]] = inst(INST_WAIT, static_cast<int>(ii[i]), val);
         ++p[j0];
         ++p[j1];
     }
@@ -167,9 +167,9 @@ void gen_insts(cl_int *x, cl_int *p, int n)
 }
 
 // Execute one group's "instructions"
-void run_insts(cl_int *x, cl_int *p, int n)
+void run_insts(cl_int *x, cl_int *p, size_t n)
 {
-    int i, nend;
+    size_t i, nend;
     bool scont;
     cl_int loc[NUM_LOC];
 
@@ -228,11 +228,11 @@ struct IFP
     static void gen(cl_int *x, cl_int *t, cl_int *,
                     const WorkGroupParams &test_params)
     {
-        int k;
-        int nw = test_params.local_workgroup_size;
-        int ns = test_params.subgroup_size;
-        int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        size_t k;
+        size_t nw = test_params.local_workgroup_size;
+        size_t ns = test_params.subgroup_size;
+        size_t ng = test_params.global_workgroup_size;
+        size_t nj = (nw + ns - 1) / ns;
         ng = ng / nw;
 
         // We need at least 2 sub groups per group for this test
@@ -248,11 +248,11 @@ struct IFP
     static int chk(cl_int *x, cl_int *y, cl_int *t, cl_int *, cl_int *,
                    const WorkGroupParams &test_params)
     {
-        int i, k;
-        int nw = test_params.local_workgroup_size;
-        int ns = test_params.subgroup_size;
-        int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        size_t i, k;
+        size_t nw = test_params.local_workgroup_size;
+        size_t ns = test_params.subgroup_size;
+        size_t ng = test_params.global_workgroup_size;
+        size_t nj = (nw + ns - 1) / ns;
         ng = ng / nw;
 
         // We need at least 2 sub groups per group for this tes
@@ -268,7 +268,7 @@ struct IFP
                 if (t[i] != y[i])
                 {
                     log_error(
-                        "ERROR: mismatch at element %d in work group %d\n", i,
+                        "ERROR: mismatch at element %zu in work group %zu\n", i,
                         k);
                     return -1;
                 }

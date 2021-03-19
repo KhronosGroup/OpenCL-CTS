@@ -599,7 +599,13 @@ static int create_single_kernel_helper_create_program_offline(
     if (error != CL_SUCCESS) return error;
 
     ifs.seekg(0, ifs.end);
-    size_t length = static_cast<size_t>(ifs.tellg());
+    std::streamoff _length = ifs.tellg();
+    if(_length == -1)
+    {
+        log_error("ERROR: ifstream::tellg failed\n");
+        return -1;
+    }
+    size_t length = static_cast<size_t>( _length );
     ifs.seekg(0, ifs.beg);
 
     // treat modifiedProgram as input for clCreateProgramWithBinary

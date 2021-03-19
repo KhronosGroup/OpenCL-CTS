@@ -24,26 +24,26 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
 {
     static void gen(T *x, T *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int i, ii, j, k, n;
-        int nw = test_params.local_workgroup_size;
-        int ns = test_params.subgroup_size;
-        int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
-        int non_uniform_size = ng % nw;
+        size_t i, ii, j, k, n;
+        size_t nw = test_params.local_workgroup_size;
+        size_t ns = test_params.subgroup_size;
+        size_t ng = test_params.global_workgroup_size;
+        size_t nj = (nw + ns - 1) / ns;
+        size_t non_uniform_size = ng % nw;
         ng = ng / nw;
-        int last_subgroup_size = 0;
+        size_t last_subgroup_size = 0;
         ii = 0;
 
         log_info("  sub_group_%s%s... \n",
                  (operation == NonUniformVoteOp::elect) ? "" : "non_uniform_",
                  operation_names(operation));
 
-        log_info("  test params: global size = %d local size = %d subgroups "
-                 "size = %d data type (%s)\n",
+        log_info("  test params: global size = %zu local size = %zu subgroups "
+                 "size = %zu data type (%s)\n",
                  test_params.global_workgroup_size, nw, ns,
                  TypeManager<T>::name());
-        log_info("               work items mask: %s\n",
-                 test_params.work_items_mask.to_string().c_str());
+        log_info("               work items mask: 0x%x\n",
+                 test_params.work_items_mask);
         if (non_uniform_size)
         {
             log_info("  non uniform work group size mode ON\n");
@@ -96,16 +96,16 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
     static int chk(T *x, T *y, T *mx, T *my, cl_int *m,
                    const WorkGroupParams &test_params)
     {
-        int ii, i, j, k, n;
-        int nw = test_params.local_workgroup_size;
-        int ns = test_params.subgroup_size;
-        int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        size_t ii, i, j, k, n;
+        size_t nw = test_params.local_workgroup_size;
+        size_t ns = test_params.subgroup_size;
+        size_t ng = test_params.global_workgroup_size;
+        size_t nj = (nw + ns - 1) / ns;
         cl_int tr, rr;
-        int non_uniform_size = ng % nw;
+        size_t non_uniform_size = ng % nw;
         ng = ng / nw;
         if (non_uniform_size) ng++;
-        int last_subgroup_size = 0;
+        size_t last_subgroup_size = 0;
 
         for (k = 0; k < ng; ++k)
         { // for each work_group
@@ -138,7 +138,7 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
                     tr = 1;
                 if (operation == NonUniformVoteOp::any) tr = 0;
 
-                std::set<int> active_work_items;
+                std::set<size_t> active_work_items;
                 for (i = 0; i < n; ++i)
                 {
                     if (test_params.work_items_mask.test(i))
@@ -171,14 +171,14 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
                 }
                 if (active_work_items.empty())
                 {
-                    log_info("  no one workitem acitve... in workgroup id = %d "
-                             "subgroup id = %d\n",
+                    log_info("  no one workitem acitve... in workgroup id = %zu "
+                             "subgroup id = %zu\n",
                              k, j);
                 }
                 else
                 {
                     auto lowest_active = active_work_items.begin();
-                    for (const int &active_work_item : active_work_items)
+                    for (const size_t &active_work_item : active_work_items)
                     {
                         i = active_work_item;
                         if (operation == NonUniformVoteOp::elect)
@@ -194,9 +194,11 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
                             log_error("ERROR: sub_group_%s() \n",
                                       operation_names(operation));
                             log_error(
-                                "mismatch for work item %d sub group %d in "
-                                "work group %d. Expected: %d Obtained: %d\n",
-                                i, j, k, tr, rr);
+                                "mismatch for work item %zu sub group %zu in "
+                                "work group %zu. Expected: 0x%x Obtained: 0x%x\n",
+                                i, j, k,
+                                *reinterpret_cast<cl_uint*>(&tr),
+                                *reinterpret_cast<cl_uint*>(&rr));
                             return TEST_FAIL;
                         }
                     }

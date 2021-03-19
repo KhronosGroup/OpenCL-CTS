@@ -62,13 +62,12 @@ template <int Which> struct BAR
     static void gen(cl_int *x, cl_int *t, cl_int *m,
                     const WorkGroupParams &test_params)
     {
-        int i, ii, j, k, n;
-        int nw = test_params.local_workgroup_size;
-        int ns = test_params.subgroup_size;
-        int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        size_t i, ii, j, k, n;
+        size_t nw = test_params.local_workgroup_size;
+        size_t ns = test_params.subgroup_size;
+        size_t ng = test_params.global_workgroup_size;
+        size_t nj = (nw + ns - 1) / ns;
         ng = ng / nw;
-        int e;
 
         ii = 0;
         for (k = 0; k < ng; ++k)
@@ -95,11 +94,11 @@ template <int Which> struct BAR
     static int chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my, cl_int *m,
                    const WorkGroupParams &test_params)
     {
-        int ii, i, j, k, n;
-        int nw = test_params.local_workgroup_size;
-        int ns = test_params.subgroup_size;
-        int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        size_t ii, i, j, k, n;
+        size_t nw = test_params.local_workgroup_size;
+        size_t ns = test_params.subgroup_size;
+        size_t ng = test_params.global_workgroup_size;
+        size_t nj = (nw + ns - 1) / ns;
         ng = ng / nw;
         cl_int tr, rr;
 
@@ -130,7 +129,7 @@ template <int Which> struct BAR
                     if (tr != rr)
                     {
                         log_error("ERROR: sub_group_barrier mismatch for local "
-                                  "id %d in sub group %d in group %d expected "
+                                  "id %zu in sub group %zu in group %zu expected "
                                   "%d got %d\n",
                                   i, j, k, tr, rr);
                         return -1;

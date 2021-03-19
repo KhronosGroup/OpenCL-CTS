@@ -26,10 +26,9 @@ template <typename Ty> struct BALLOT
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         // no work here
-        int gws = test_params.global_workgroup_size;
-        int lws = test_params.local_workgroup_size;
-        int sbs = test_params.subgroup_size;
-        int non_uniform_size = gws % lws;
+        size_t gws = test_params.global_workgroup_size;
+        size_t lws = test_params.local_workgroup_size;
+        size_t non_uniform_size = gws % lws;
         log_info("  sub_group_ballot...\n");
         if (non_uniform_size)
         {
@@ -40,17 +39,17 @@ template <typename Ty> struct BALLOT
     static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
                    const WorkGroupParams &test_params)
     {
-        int wi_id, wg_id, sb_id;
-        int gws = test_params.global_workgroup_size;
-        int lws = test_params.local_workgroup_size;
-        int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
-        int current_sbs = 0;
+        size_t wi_id, wg_id, sb_id;
+        size_t gws = test_params.global_workgroup_size;
+        size_t lws = test_params.local_workgroup_size;
+        size_t sbs = test_params.subgroup_size;
+        size_t sb_number = (lws + sbs - 1) / sbs;
+        size_t current_sbs = 0;
         cl_uint expected_result, device_result;
-        int non_uniform_size = gws % lws;
-        int wg_number = gws / lws;
+        size_t non_uniform_size = gws % lws;
+        size_t wg_number = gws / lws;
         wg_number = non_uniform_size ? wg_number + 1 : wg_number;
-        int last_subgroup_size = 0;
+        size_t last_subgroup_size = 0;
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
@@ -68,7 +67,7 @@ template <typename Ty> struct BALLOT
 
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             { // for each subgroup
-                int wg_offset = sb_id * sbs;
+                size_t wg_offset = sb_id * sbs;
                 if (last_subgroup_size && sb_id == sb_number - 1)
                 {
                     current_sbs = last_subgroup_size;
@@ -85,10 +84,10 @@ template <typename Ty> struct BALLOT
                     {
                         log_error(
                             "ERROR: sub_group_ballot mismatch for local id "
-                            "%d in sub group %d in group %d obtained {%d}, "
-                            "expected {%d} \n",
-                            wi_id, sb_id, wg_id, device_result,
-                            expected_result);
+                            "%zu in sub group %zu in group %zu obtained {0x%x}, "
+                            "expected {0x%x} \n",
+                            wi_id, sb_id, wg_id, *reinterpret_cast<cl_uint*>(&device_result),
+                            *reinterpret_cast<cl_uint*>(&expected_result));
                         return TEST_FAIL;
                     }
                 }
@@ -106,14 +105,14 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
 {
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int wi_id, sb_id, wg_id, l;
-        int gws = test_params.global_workgroup_size;
-        int lws = test_params.local_workgroup_size;
-        int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
-        int wg_number = gws / lws;
-        int limit_sbs = sbs > 100 ? 100 : sbs;
-        int non_uniform_size = gws % lws;
+        size_t wi_id, sb_id, wg_id;
+        size_t gws = test_params.global_workgroup_size;
+        size_t lws = test_params.local_workgroup_size;
+        size_t sbs = test_params.subgroup_size;
+        size_t sb_number = (lws + sbs - 1) / sbs;
+        size_t wg_number = gws / lws;
+        size_t limit_sbs = sbs > 100 ? 100 : sbs;
+        size_t non_uniform_size = gws % lws;
         log_info("  sub_group_%s(%s)...\n", operation_names(operation),
                  TypeManager<Ty>::name());
 
@@ -126,8 +125,8 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
         { // for each work_group
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             { // for each subgroup
-                int wg_offset = sb_id * sbs;
-                int current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                size_t wg_offset = sb_id * sbs;
+                size_t current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
                 // rand index to bit extract
                 int index_for_odd = (int)(genrand_int32(gMTdata) & 0x7fffffff)
                     % (limit_sbs > current_sbs ? current_sbs : limit_sbs);
@@ -136,7 +135,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
                 for (wi_id = 0; wi_id < current_sbs; ++wi_id)
                 {
                     // index of the third element int the vector.
-                    int midx = 4 * wg_offset + 4 * wi_id + 2;
+                    size_t midx = 4 * wg_offset + 4 * wi_id + 2;
                     // storing information about index to bit extract
                     m[midx] = (cl_int)index_for_odd;
                     m[++midx] = (cl_int)index_for_even;
@@ -158,16 +157,16 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
     static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
                    const WorkGroupParams &test_params)
     {
-        int wi_id, wg_id, l, sb_id;
-        int gws = test_params.global_workgroup_size;
-        int lws = test_params.local_workgroup_size;
-        int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
-        int wg_number = gws / lws;
+        size_t wi_id, wg_id, sb_id;
+        size_t gws = test_params.global_workgroup_size;
+        size_t lws = test_params.local_workgroup_size;
+        size_t sbs = test_params.subgroup_size;
+        size_t sb_number = (lws + sbs - 1) / sbs;
+        size_t wg_number = gws / lws;
         cl_uint4 expected_result, device_result;
-        int last_subgroup_size = 0;
-        int current_sbs = 0;
-        int non_uniform_size = gws % lws;
+        size_t last_subgroup_size = 0;
+        size_t current_sbs = 0;
+        size_t non_uniform_size = gws % lws;
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
@@ -187,7 +186,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
 
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             { // for each subgroup
-                int wg_offset = sb_id * sbs;
+                size_t wg_offset = sb_id * sbs;
                 if (last_subgroup_size && sb_id == sb_number - 1)
                 {
                     current_sbs = last_subgroup_size;
@@ -198,7 +197,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
                 }
                 // take index of array where info which work_item will
                 // be broadcast its value is stored
-                int midx = 4 * wg_offset + 2;
+                size_t midx = 4 * wg_offset + 2;
                 // take subgroup local id of this work_item
                 int index_for_odd = (int)m[midx];
                 int index_for_even = (int)m[++midx];
@@ -244,14 +243,18 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
                     if (!compare(device_result, expected_result))
                     {
                         log_error(
-                            "ERROR: sub_group_%s mismatch for local id %d in "
-                            "sub group %d in group %d obtained {%d, %d, %d, "
-                            "%d}, expected {%d, %d, %d, %d}\n",
+                            "ERROR: sub_group_%s mismatch for local id %zu in "
+                            "sub group %zu in group %zu obtained {0x%x, 0x%x, 0x%x, "
+                            "0x%x}, expected {0x%x, 0x%x, 0x%x, 0x%x}\n",
                             operation_names(operation), wi_id, sb_id, wg_id,
-                            device_result.s0, device_result.s1,
-                            device_result.s2, device_result.s3,
-                            expected_result.s0, expected_result.s1,
-                            expected_result.s2, expected_result.s3);
+                            *reinterpret_cast<cl_uint*>(&device_result.s0),
+                            *reinterpret_cast<cl_uint*>(&device_result.s1),
+                            *reinterpret_cast<cl_uint*>(&device_result.s2),
+                            *reinterpret_cast<cl_uint*>(&device_result.s3),
+                            *reinterpret_cast<cl_uint*>(&expected_result.s0),
+                            *reinterpret_cast<cl_uint*>(&expected_result.s1),
+                            *reinterpret_cast<cl_uint*>(&expected_result.s2),
+                            *reinterpret_cast<cl_uint*>(&expected_result.s3));
                         return TEST_FAIL;
                     }
                 }
@@ -270,10 +273,9 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
 {
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int gws = test_params.global_workgroup_size;
-        int lws = test_params.local_workgroup_size;
-        int sbs = test_params.subgroup_size;
-        int non_uniform_size = gws % lws;
+        size_t gws = test_params.global_workgroup_size;
+        size_t lws = test_params.local_workgroup_size;
+        size_t non_uniform_size = gws % lws;
         log_info("  sub_group_inverse_ballot...\n");
         if (non_uniform_size)
         {
@@ -285,16 +287,16 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
     static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
                    const WorkGroupParams &test_params)
     {
-        int wi_id, wg_id, sb_id;
-        int gws = test_params.global_workgroup_size;
-        int lws = test_params.local_workgroup_size;
-        int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
+        size_t wi_id, wg_id, sb_id;
+        size_t gws = test_params.global_workgroup_size;
+        size_t lws = test_params.local_workgroup_size;
+        size_t sbs = test_params.subgroup_size;
+        size_t sb_number = (lws + sbs - 1) / sbs;
         cl_uint4 expected_result, device_result;
-        int non_uniform_size = gws % lws;
-        int wg_number = gws / lws;
-        int last_subgroup_size = 0;
-        int current_sbs = 0;
+        size_t non_uniform_size = gws % lws;
+        size_t wg_number = gws / lws;
+        size_t last_subgroup_size = 0;
+        size_t current_sbs = 0;
         if (non_uniform_size) wg_number++;
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
@@ -313,7 +315,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
 
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             { // for each subgroup
-                int wg_offset = sb_id * sbs;
+                size_t wg_offset = sb_id * sbs;
                 if (last_subgroup_size && sb_id == sb_number - 1)
                 {
                     current_sbs = last_subgroup_size;
@@ -322,9 +324,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
                 {
                     current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
                 }
-                // take index of array where info which work_item will
-                // be broadcast its value is stored
-                int midx = 4 * wg_offset + 2;
                 // take subgroup local id of this work_item
                 // Check result
                 for (wi_id = 0; wi_id < current_sbs; ++wi_id)
@@ -337,14 +336,18 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
                     if (!compare(device_result, expected_result))
                     {
                         log_error(
-                            "ERROR: sub_group_%s mismatch for local id %d in "
-                            "sub group %d in group %d obtained {%d, %d, %d, "
-                            "%d}, expected {%d, %d, %d, %d}\n",
+                            "ERROR: sub_group_%s mismatch for local id %zu in "
+                            "sub group %zu in group %zu obtained {0x%x, 0x%x, 0x%x, "
+                            "0x%x}, expected {0x%x, 0x%x, 0x%x, 0x%x}\n",
                             operation_names(operation), wi_id, sb_id, wg_id,
-                            device_result.s0, device_result.s1,
-                            device_result.s2, device_result.s3,
-                            expected_result.s0, expected_result.s1,
-                            expected_result.s2, expected_result.s3);
+                            *reinterpret_cast<cl_uint*>(&device_result.s0),
+                            *reinterpret_cast<cl_uint*>(&device_result.s1),
+                            *reinterpret_cast<cl_uint*>(&device_result.s2),
+                            *reinterpret_cast<cl_uint*>(&device_result.s3),
+                            *reinterpret_cast<cl_uint*>(&expected_result.s0),
+                            *reinterpret_cast<cl_uint*>(&expected_result.s1),
+                            *reinterpret_cast<cl_uint*>(&expected_result.s2),
+                            *reinterpret_cast<cl_uint*>(&expected_result.s3));
                         return TEST_FAIL;
                     }
                 }
@@ -365,15 +368,15 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
 {
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int wi_id, wg_id, sb_id;
-        int gws = test_params.global_workgroup_size;
-        int lws = test_params.local_workgroup_size;
-        int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
-        int non_uniform_size = gws % lws;
-        int wg_number = gws / lws;
-        int last_subgroup_size = 0;
-        int current_sbs = 0;
+        size_t wi_id, wg_id, sb_id;
+        size_t gws = test_params.global_workgroup_size;
+        size_t lws = test_params.local_workgroup_size;
+        size_t sbs = test_params.subgroup_size;
+        size_t sb_number = (lws + sbs - 1) / sbs;
+        size_t non_uniform_size = gws % lws;
+        size_t wg_number = gws / lws;
+        size_t last_subgroup_size = 0;
+        size_t current_sbs = 0;
 
         log_info("  sub_group_%s(%s)...\n", operation_names(operation),
                  TypeManager<Ty>::name());
@@ -382,7 +385,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
             log_info("  non uniform work group size mode ON\n");
             wg_number++;
         }
-        int e;
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
             if (non_uniform_size && wg_id == wg_number - 1)
@@ -392,7 +394,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
             }
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             { // for each subgroup
-                int wg_offset = sb_id * sbs;
+                size_t wg_offset = sb_id * sbs;
                 if (last_subgroup_size && sb_id == sb_number - 1)
                 {
                     current_sbs = last_subgroup_size;
@@ -438,8 +440,8 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
         }
     }
 
-    static bs128 getImportantBits(cl_uint sub_group_local_id,
-                                  cl_uint sub_group_size)
+    static bs128 getImportantBits(size_t sub_group_local_id,
+                                  size_t sub_group_size)
     {
         bs128 mask;
         if (operation == BallotOp::ballot_bit_count
@@ -461,17 +463,17 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
     static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
                    const WorkGroupParams &test_params)
     {
-        int wi_id, wg_id, sb_id;
-        int gws = test_params.global_workgroup_size;
-        int lws = test_params.local_workgroup_size;
-        int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
-        int non_uniform_size = gws % lws;
-        int wg_number = gws / lws;
+        size_t wi_id, wg_id, sb_id;
+        size_t gws = test_params.global_workgroup_size;
+        size_t lws = test_params.local_workgroup_size;
+        size_t sbs = test_params.subgroup_size;
+        size_t sb_number = (lws + sbs - 1) / sbs;
+        size_t non_uniform_size = gws % lws;
+        size_t wg_number = gws / lws;
         wg_number = non_uniform_size ? wg_number + 1 : wg_number;
         cl_uint4 expected_result, device_result;
-        int last_subgroup_size = 0;
-        int current_sbs = 0;
+        size_t last_subgroup_size = 0;
+        size_t current_sbs = 0;
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
@@ -491,7 +493,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
 
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             { // for each subgroup
-                int wg_offset = sb_id * sbs;
+                size_t wg_offset = sb_id * sbs;
                 if (last_subgroup_size && sb_id == sb_number - 1)
                 {
                     current_sbs = last_subgroup_size;
@@ -516,66 +518,79 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                         || operation == BallotOp::ballot_exclusive_scan
                         || operation == BallotOp::ballot_bit_count)
                     {
-                        expected_result.s0 = bs.count();
+                        expected_result.s0 = static_cast<cl_uint>(bs.count());
                         if (!compare(device_result, expected_result))
                         {
                             log_error("ERROR: sub_group_%s "
-                                      "mismatch for local id %d in sub group "
-                                      "%d in group %d obtained {%d, %d, %d, "
-                                      "%d}, expected {%d, %d, %d, %d}\n",
+                                      "mismatch for local id %zu in sub group "
+                                      "%zu in group %zu obtained {0x%x, 0x%x, 0x%x, "
+                                      "0x%x}, expected {0x%x, 0x%x, 0x%x, 0x%x}\n",
                                       operation_names(operation), wi_id, sb_id,
-                                      wg_id, device_result.s0, device_result.s1,
-                                      device_result.s2, device_result.s3,
-                                      expected_result.s0, expected_result.s1,
-                                      expected_result.s2, expected_result.s3);
+                                      wg_id,
+                                      *reinterpret_cast<cl_uint*>(&device_result.s0),
+                                      *reinterpret_cast<cl_uint*>(&device_result.s1),
+                                      *reinterpret_cast<cl_uint*>(&device_result.s2),
+                                      *reinterpret_cast<cl_uint*>(&device_result.s3),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s0),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s1),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s2),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s3));
                             return TEST_FAIL;
                         }
                     }
                     else if (operation == BallotOp::ballot_find_lsb)
                     {
-                        for (int id = 0; id < current_sbs; ++id)
+                        for (size_t id = 0; id < current_sbs; ++id)
                         {
                             if (bs.test(id))
                             {
-                                expected_result.s0 = id;
+                                expected_result.s0 = static_cast<cl_uint>(id);
                                 break;
                             }
                         }
                         if (!compare(device_result, expected_result))
                         {
                             log_error("ERROR: sub_group_ballot_find_lsb "
-                                      "mismatch for local id %d in sub group "
-                                      "%d in group %d obtained {%d, %d, %d, "
-                                      "%d}, expected {%d, %d, %d, %d}\n",
-                                      wi_id, sb_id, wg_id, device_result.s0,
-                                      device_result.s1, device_result.s2,
-                                      device_result.s3, expected_result.s0,
-                                      expected_result.s1, expected_result.s2,
-                                      expected_result.s3);
+                                      "mismatch for local id %zu in sub group "
+                                      "%zu in group %zu obtained {0x%x, 0x%x, 0x%x, "
+                                      "0x%x}, expected {0x%x, 0x%x, 0x%x, 0x%x}\n",
+                                      wi_id, sb_id, wg_id,
+                                      *reinterpret_cast<cl_uint*>(&device_result.s0),
+                                      *reinterpret_cast<cl_uint*>(&device_result.s1),
+                                      *reinterpret_cast<cl_uint*>(&device_result.s2),
+                                      *reinterpret_cast<cl_uint*>(&device_result.s3),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s0),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s1),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s2),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s3));
                             return TEST_FAIL;
                         }
                     }
                     else if (operation == BallotOp::ballot_find_msb)
                     {
-                        for (int id = current_sbs - 1; id >= 0; --id)
+                        for (int id = static_cast<int>(current_sbs) - 1; id >= 0; --id)
                         {
                             if (bs.test(id))
                             {
-                                expected_result.s0 = id;
+                                expected_result.s0 = static_cast<cl_uint>(id);
                                 break;
                             }
                         }
                         if (!compare(device_result, expected_result))
                         {
                             log_error("ERROR: sub_group_ballot_find_msb "
-                                      "mismatch for local id %d in sub group "
-                                      "%d in group %d obtained {%d, %d, %d, "
-                                      "%d}, expected {%d, %d, %d, %d}\n",
-                                      wi_id, sb_id, wg_id, device_result.s0,
-                                      device_result.s1, device_result.s2,
-                                      device_result.s3, expected_result.s0,
-                                      expected_result.s1, expected_result.s2,
-                                      expected_result.s3);
+                                      "mismatch for local id %zu in sub group "
+                                      "%zu in group %zu obtained {0x%x, 0x%x, 0x%x, "
+                                      "0x%x}, expected {0x%x, 0x%x, 0x%x, 0x%x}\n",
+                                      wi_id, sb_id, wg_id,
+                                      *reinterpret_cast<cl_uint*>(&device_result.s0),
+                                      *reinterpret_cast<cl_uint*>(&device_result.s1),
+                                      *reinterpret_cast<cl_uint*>(&device_result.s2),
+                                      *reinterpret_cast<cl_uint*>(&device_result.s3),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s0),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s1),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s2),
+                                      *reinterpret_cast<cl_uint*>(&expected_result.s3));
                             return TEST_FAIL;
                         }
                     }
@@ -596,23 +611,23 @@ template <typename Ty, BallotOp operation> struct SMASK
 {
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int wi_id, wg_id, l, sb_id;
-        int gws = test_params.global_workgroup_size;
-        int lws = test_params.local_workgroup_size;
-        int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
-        int wg_number = gws / lws;
+        size_t wi_id, wg_id, sb_id;
+        size_t gws = test_params.global_workgroup_size;
+        size_t lws = test_params.local_workgroup_size;
+        size_t sbs = test_params.subgroup_size;
+        size_t sb_number = (lws + sbs - 1) / sbs;
+        size_t wg_number = gws / lws;
         log_info("  get_sub_group_%s_mask...\n", operation_names(operation));
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             { // for each subgroup
-                int wg_offset = sb_id * sbs;
-                int current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                size_t wg_offset = sb_id * sbs;
+                size_t current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
                 // Produce expected masks for each work item in the subgroup
                 for (wi_id = 0; wi_id < current_sbs; ++wi_id)
                 {
-                    int midx = 4 * wg_offset + 4 * wi_id;
+                    size_t midx = 4 * wg_offset + 4 * wi_id;
                     cl_uint max_sub_group_size = m[midx + 2];
                     cl_uint4 expected_mask = { 0 };
                     expected_mask = generate_bit_mask(
@@ -634,13 +649,13 @@ template <typename Ty, BallotOp operation> struct SMASK
     static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
                    const WorkGroupParams &test_params)
     {
-        int wi_id, wg_id, sb_id;
-        int gws = test_params.global_workgroup_size;
-        int lws = test_params.local_workgroup_size;
-        int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
+        size_t wi_id, wg_id, sb_id;
+        size_t gws = test_params.global_workgroup_size;
+        size_t lws = test_params.local_workgroup_size;
+        size_t sbs = test_params.subgroup_size;
+        size_t sb_number = (lws + sbs - 1) / sbs;
         Ty expected_result, device_result;
-        int wg_number = gws / lws;
+        size_t wg_number = gws / lws;
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
@@ -652,8 +667,8 @@ template <typename Ty, BallotOp operation> struct SMASK
 
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             {
-                int wg_offset = sb_id * sbs;
-                int current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                size_t wg_offset = sb_id * sbs;
+                size_t current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
 
                 // Check result
                 for (wi_id = 0; wi_id < current_sbs; ++wi_id)
@@ -666,10 +681,12 @@ template <typename Ty, BallotOp operation> struct SMASK
                     if (!compare(device_result, expected_result))
                     {
                         log_error("ERROR:  get_sub_group_%s_mask... mismatch "
-                                  "for local id %d in sub group %d in group "
-                                  "%d, obtained %d, expected %d\n",
+                                  "for local id %zu in sub group %zu in group "
+                                  "%zu, obtained 0x%x, expected 0x%x\n",
                                   operation_names(operation), wi_id, sb_id,
-                                  wg_id, device_result, expected_result);
+                                  wg_id,
+                                  *reinterpret_cast<cl_uint*>(&device_result),
+                                  *reinterpret_cast<cl_uint*>(&expected_result));
                         return TEST_FAIL;
                     }
                 }

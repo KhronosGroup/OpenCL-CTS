@@ -103,10 +103,9 @@ int compareProperties(const std::vector<cl_properties>& queried,
             }
             else if (check_value != queried_value)
             {
-                log_error(
-                    "ERROR: mis-matched value for property 0x%llx: wanted "
-                    "0x%llx, got 0x%llx\n",
-                    check_prop, check_value, queried_value);
+                log_error("ERROR: mis-matched value for property 0x%llx: wanted "
+                          "0x%llx, got 0x%llx\n",
+                          check_prop, check_value, queried_value);
                 return TEST_FAIL;
             }
         }

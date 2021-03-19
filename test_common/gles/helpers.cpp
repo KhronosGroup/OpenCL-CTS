@@ -299,7 +299,7 @@ void * ReadGLTexture( GLenum glTarget, GLuint glTexture,
         GetGLFormatName(readBackFormat),
         GetGLTypeName(readBackType));
 
-    DumpGLBuffer(readBackType, outWidth, outHeight, (void *)outBuffer);
+    DumpGLBuffer(readBackType, outWidth, outHeight, (void*)outBuffer);
 
 #endif
 

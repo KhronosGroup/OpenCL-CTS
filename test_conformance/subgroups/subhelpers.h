@@ -1395,7 +1395,6 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         size_t tmp;
         int error;
         int subgroup_size, num_subgroups;
-        size_t realSize;
         size_t global = test_params.global_workgroup_size;
         size_t local = test_params.local_workgroup_size;
         clProgramWrapper program;
@@ -1563,10 +1562,10 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
     }
 };
 
-static void set_last_workgroup_params(int non_uniform_size,
-                                      int &number_of_subgroups,
-                                      int subgroup_size, int &workgroup_size,
-                                      int &last_subgroup_size)
+static void set_last_workgroup_params(size_t non_uniform_size,
+                                      size_t &number_of_subgroups,
+                                      size_t subgroup_size, size_t &workgroup_size,
+                                      size_t &last_subgroup_size)
 {
     number_of_subgroups = 1 + non_uniform_size / subgroup_size;
     last_subgroup_size = non_uniform_size % subgroup_size;
@@ -1574,8 +1573,8 @@ static void set_last_workgroup_params(int non_uniform_size,
 }
 
 template <typename Ty>
-static void set_randomdata_for_subgroup(Ty *workgroup, int wg_offset,
-                                        int current_sbs)
+static void set_randomdata_for_subgroup(Ty *workgroup, size_t wg_offset,
+                                        size_t current_sbs)
 {
     int randomize_data = (int)(genrand_int32(gMTdata) % 3);
     // Initialize data matrix indexed by local id and sub group id
