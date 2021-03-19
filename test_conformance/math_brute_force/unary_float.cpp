@@ -315,9 +315,10 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             vlog(" (rlx skip correctness testing)\n");
             goto exit;
         }
+
+        vlog("\t%8.2f @ %a", maxError, maxErrorVal);
     }
 
-    if (!gSkipCorrectnessTesting) vlog("\t%8.2f @ %a", maxError, maxErrorVal);
     vlog("\n");
 
 exit:

@@ -436,10 +436,10 @@ int TestFunc_Double_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             vlog("Wimp pass");
         else
             vlog("passed");
+
+        vlog("\t%8.2f @ {%a, %a}", maxError, maxErrorVal, maxErrorVal2);
     }
 
-    if (!gSkipCorrectnessTesting)
-        vlog("\t%8.2f @ {%a, %a}", maxError, maxErrorVal, maxErrorVal2);
     vlog("\n");
 
 exit:

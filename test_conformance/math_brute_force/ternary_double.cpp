@@ -723,11 +723,11 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
             vlog("Wimp pass");
         else
             vlog("passed");
-    }
 
-    if (!gSkipCorrectnessTesting)
         vlog("\t%8.2f @ {%a, %a, %a}", maxError, maxErrorVal, maxErrorVal2,
              maxErrorVal3);
+    }
+
     vlog("\n");
 
 exit:

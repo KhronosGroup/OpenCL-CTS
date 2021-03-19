@@ -564,11 +564,11 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
             vlog("Wimp pass");
         else
             vlog("passed");
-    }
 
-    if (!gSkipCorrectnessTesting)
         vlog("\t{%8.2f, %8.2f} @ {%a, %a}", maxError0, maxError1, maxErrorVal0,
              maxErrorVal1);
+    }
+
     vlog("\n");
 
 exit:

@@ -422,10 +422,10 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
             vlog("Wimp pass");
         else
             vlog("passed");
+
+        vlog("\t%8.2f @ {%a, %a}", maxError, maxErrorVal, maxErrorVal2);
     }
 
-    if (!gSkipCorrectnessTesting)
-        vlog("\t%8.2f @ {%a, %a}", maxError, maxErrorVal, maxErrorVal2);
     vlog("\n");
 
 exit:
