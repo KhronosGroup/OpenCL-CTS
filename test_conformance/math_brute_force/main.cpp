@@ -1264,7 +1264,7 @@ test_status InitCL(cl_device_id device)
         clCreateBuffer(gContext, device_flags, BUFFER_SIZE, gIn2, &error);
     if (gInBuffer2 == NULL || error)
     {
-        vlog_error("clCreateArray2 failed for input (%d)\n", error);
+        vlog_error("clCreateBuffer2 failed for input (%d)\n", error);
         return TEST_FAIL;
     }
 
@@ -1272,7 +1272,7 @@ test_status InitCL(cl_device_id device)
         clCreateBuffer(gContext, device_flags, BUFFER_SIZE, gIn3, &error);
     if (gInBuffer3 == NULL || error)
     {
-        vlog_error("clCreateArray3 failed for input (%d)\n", error);
+        vlog_error("clCreateBuffer3 failed for input (%d)\n", error);
         return TEST_FAIL;
     }
 
@@ -1290,14 +1290,14 @@ test_status InitCL(cl_device_id device)
                                        gOut[i], &error);
         if (gOutBuffer[i] == NULL || error)
         {
-            vlog_error("clCreateArray failed for output (%d)\n", error);
+            vlog_error("clCreateBuffer failed for output (%d)\n", error);
             return TEST_FAIL;
         }
         gOutBuffer2[i] = clCreateBuffer(gContext, device_flags, BUFFER_SIZE,
                                         gOut2[i], &error);
         if (gOutBuffer2[i] == NULL || error)
         {
-            vlog_error("clCreateArray2 failed for output (%d)\n", error);
+            vlog_error("clCreateBuffer2 failed for output (%d)\n", error);
             return TEST_FAIL;
         }
     }
