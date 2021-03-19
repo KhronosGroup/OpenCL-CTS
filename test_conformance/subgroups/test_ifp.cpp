@@ -225,9 +225,13 @@ void run_insts(cl_int *x, cl_int *p, int n)
 
 struct IFP
 {
-    static void gen(cl_int *x, cl_int *t, cl_int *, int ns, int nw, int ng)
+    static void gen(cl_int *x, cl_int *t, cl_int *,
+                    const WorkGroupParams &test_params)
     {
         int k;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
         ng = ng / nw;
 
@@ -241,10 +245,13 @@ struct IFP
         }
     }
 
-    static int chk(cl_int *x, cl_int *y, cl_int *t, cl_int *, cl_int *, int ns,
-                   int nw, int ng)
+    static int chk(cl_int *x, cl_int *y, cl_int *t, cl_int *, cl_int *,
+                   const WorkGroupParams &test_params)
     {
         int i, k;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
         ng = ng / nw;
 
@@ -277,15 +284,17 @@ struct IFP
 int test_ifp(cl_device_id device, cl_context context, cl_command_queue queue,
              int num_elements, bool useCoreSubgroups)
 {
-    int error;
+    int error = TEST_PASS;
 
     // Global/local work group sizes
     // Adjust these individually below if desired/needed
-#define GWS 2000
-#define LWS 200
-    error = test<cl_int, IFP, GWS, LWS>::run(
-        device, context, queue, num_elements, "test_ifp", ifp_source,
-        NUM_LOC + 1, useCoreSubgroups);
+    constexpr size_t global_work_size = 2000;
+    constexpr size_t local_work_size = 200;
+    WorkGroupParams test_params(global_work_size, local_work_size);
+    test_params.use_core_subgroups = useCoreSubgroups;
+    test_params.dynsc = NUM_LOC + 1;
+    error = test<cl_int, IFP>::run(device, context, queue, num_elements,
+                                   "test_ifp", ifp_source, test_params);
     return error;
 }
 

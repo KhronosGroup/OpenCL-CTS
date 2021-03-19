@@ -18,19 +18,17 @@
 #include "harness/typeWrappers.h"
 #include <set>
 
-// Global/local work group sizes
-// Adjust these individually below if desired/needed
-#define GWS_NON_UNIFORM 170
-#define LWS_NON_UNIFORM 64
-
 namespace {
 
-template <typename T, NonUniformVoteOp operation, unsigned int work_items_mask>
-struct VOTE
+template <typename T, NonUniformVoteOp operation> struct VOTE
 {
-    static void gen(T *x, T *t, cl_int *m, int ns, int nw, int ng)
+    static void gen(T *x, T *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int i, ii, j, k, n;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
+        uint32_t work_items_mask = test_params.work_items_mask;
         int nj = (nw + ns - 1) / ns;
         int non_uniform_size = ng % nw;
         ng = ng / nw;
@@ -38,9 +36,10 @@ struct VOTE
         ii = 0;
 
         log_info("  sub_group_%s... \n", operation_names(operation));
-        log_info("  test params:\n  subgroups size = %d work item mask = 0x%x "
-                 "data type (%s)\n",
-                 ns, work_items_mask, TypeManager<T>::name());
+        log_info("  test params:\n global size = %d local size = %d subgroups "
+                 "size = %d work item mask = 0x%x data type (%s)\n\n",
+                 test_params.global_workgroup_size, nw, ns, work_items_mask,
+                 TypeManager<T>::name());
         if (non_uniform_size)
         {
             log_info("  non uniform work group size mode ON\n");
@@ -66,32 +65,37 @@ struct VOTE
                 }
                 int e = genrand_int32(gMTdata) % 3;
 
-                // Initialize data matrix indexed by local id and sub group id
-                switch (e)
+                for (i = 0; i < n; i++)
                 {
-                    case 0: memset(&t[ii], 0, n * sizeof(T)); break;
-                    case 1:
-                        memset(&t[ii], 0, n * sizeof(T));
-                        i = (int)(genrand_int32(gMTdata) % (cl_uint)n);
-                        set_value(t[ii + i], 41);
-                        break;
-                    case 2: memset(&t[ii], 0xff, n * sizeof(T)); break;
+                    if (e == 2)
+                    { // set once 0 and once 1 alternately
+                        int value = i % 2;
+                        set_value(t[ii + i], value);
+                    }
+                    else
+                    { // set 0/1 for all work items in subgroup
+                        set_value(t[ii + i], e);
+                    }
                 }
             }
             // Now map into work group using map from device
             for (j = 0; j < nw; ++j)
             {
-                i = m[4 * j + 1] * ns + m[4 * j];
-                x[j] = t[i];
+                x[j] = t[j];
             }
             x += nw;
             m += 4 * nw;
         }
     }
 
-    static int chk(T *x, T *y, T *mx, T *my, cl_int *m, int ns, int nw, int ng)
+    static int chk(T *x, T *y, T *mx, T *my, cl_int *m,
+                   const WorkGroupParams &test_params)
     {
         int ii, i, j, k, n;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
+        uint32_t work_items_mask = test_params.work_items_mask;
         int nj = (nw + ns - 1) / ns;
         cl_int tr, rr;
         int non_uniform_size = ng % nw;
@@ -108,9 +112,8 @@ struct VOTE
             }
             for (j = 0; j < nw; ++j)
             { // inside the work_group
-                i = m[4 * j + 1] * ns + m[4 * j];
-                mx[i] = x[j]; // read host inputs for work_group
-                my[i] = y[j]; // read device outputs for work_group
+                mx[j] = x[j]; // read host inputs for work_group
+                my[j] = y[j]; // read device outputs for work_group
             }
 
             for (j = 0; j < nj; ++j)
@@ -134,28 +137,32 @@ struct VOTE
                 std::set<int> active_work_items;
                 for (i = 0; i < n; ++i)
                 {
-                    int check_work_item = 1 << i % 32;
+                    uint32_t check_work_item = 1 << i % 32;
                     if (work_items_mask & check_work_item)
                     {
                         active_work_items.insert(i);
-
-                        if (operation == NonUniformVoteOp::all)
+                        switch (operation)
                         {
-                            tr &= !compare_ordered<T>(mx[ii + i], 0) ? 1 : 0;
-                        }
+                            case NonUniformVoteOp::elect: break;
 
-                        if (operation == NonUniformVoteOp::any)
-                        {
-                            tr |= !compare_ordered<T>(mx[ii + i], 0) ? 1 : 0;
-                        }
-
-                        if (operation == NonUniformVoteOp::all_equal)
-                        {
-                            tr &= compare_ordered<T>(
-                                      mx[ii + i],
-                                      mx[ii + *active_work_items.begin()])
-                                ? 1
-                                : 0;
+                            case NonUniformVoteOp::all:
+                                tr &=
+                                    !compare_ordered<T>(mx[ii + i], 0) ? 1 : 0;
+                                break;
+                            case NonUniformVoteOp::any:
+                                tr |=
+                                    !compare_ordered<T>(mx[ii + i], 0) ? 1 : 0;
+                                break;
+                            case NonUniformVoteOp::all_equal:
+                                tr &= compare_ordered<T>(
+                                          mx[ii + i],
+                                          mx[ii + *active_work_items.begin()])
+                                    ? 1
+                                    : 0;
+                                break;
+                            default:
+                                log_error("Unknown operation\n");
+                                return TEST_FAIL;
                         }
                     }
                 }
@@ -205,7 +212,7 @@ static const char *elect_source = R"(
     __kernel void test_elect(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
+        uint elect_work_item = 1 << (get_sub_group_local_id() % 32);
             if (elect_work_item & WORK_ITEMS_MASK){
                 out[gid] = sub_group_elect();
             }
@@ -216,7 +223,7 @@ static const char *non_uniform_any_source = R"(
     __kernel void test_non_uniform_any(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
+        uint elect_work_item = 1 << (get_sub_group_local_id() % 32);
             if (elect_work_item & WORK_ITEMS_MASK){
                 out[gid] = sub_group_non_uniform_any(in[gid]);
             }
@@ -227,7 +234,7 @@ static const char *non_uniform_all_source = R"(
     __kernel void test_non_uniform_all(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
+        uint elect_work_item = 1 << (get_sub_group_local_id() % 32);
             if (elect_work_item & WORK_ITEMS_MASK){
                 out[gid] = sub_group_non_uniform_all(in[gid]);
             }
@@ -238,90 +245,20 @@ static const char *non_uniform_all_equal_source = R"(
     __kernel void test_non_uniform_all_equal(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
+        uint elect_work_item = 1 << (get_sub_group_local_id() % 32);
             if (elect_work_item & WORK_ITEMS_MASK){
                 out[gid] = sub_group_non_uniform_all_equal(in[gid]);
             }
     }
 )";
 
-struct run_for_type
+template <typename T> int run_vote_all_equal_for_type(RunTestForType rft)
 {
-    run_for_type(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int num_elements,
-                 bool useCoreSubgroups,
-                 std::vector<std::string> required_extensions = {})
-        : device_(device), context_(context), queue_(queue),
-          num_elements_(num_elements), useCoreSubgroups_(useCoreSubgroups),
-          required_extensions_(required_extensions)
-    {}
+    int error = rft.run_impl<T, VOTE<T, NonUniformVoteOp::all_equal>>(
+        "test_non_uniform_all_equal", non_uniform_all_equal_source);
+    return error;
+}
 
-    template <typename T, unsigned int work_items_mask> int run_nu_all_eq()
-    {
-        int error =
-            test<T, VOTE<T, NonUniformVoteOp::all_equal, work_items_mask>,
-                 GWS_NON_UNIFORM,
-                 LWS_NON_UNIFORM>::run(device_, context_, queue_, num_elements_,
-                                       "test_non_uniform_all_equal",
-                                       non_uniform_all_equal_source, 0,
-                                       useCoreSubgroups_, required_extensions_,
-                                       work_items_mask);
-        return error;
-    }
-
-    template <typename T, unsigned int work_items_mask> int run_elect()
-    {
-        int error =
-            test<T, VOTE<T, NonUniformVoteOp::elect, work_items_mask>,
-                 GWS_NON_UNIFORM, LWS_NON_UNIFORM>::run(device_, context_,
-                                                        queue_, num_elements_,
-                                                        "test_elect",
-                                                        elect_source, 0,
-                                                        useCoreSubgroups_,
-                                                        required_extensions_,
-                                                        work_items_mask);
-
-        return error;
-    }
-
-    template <typename T, unsigned int work_items_mask> int run_nu_any()
-    {
-        int error =
-            test<T, VOTE<T, NonUniformVoteOp::any, work_items_mask>,
-                 GWS_NON_UNIFORM, LWS_NON_UNIFORM>::run(device_, context_,
-                                                        queue_, num_elements_,
-                                                        "test_non_uniform_any",
-                                                        non_uniform_any_source,
-                                                        0, useCoreSubgroups_,
-                                                        required_extensions_,
-                                                        work_items_mask);
-        return error;
-    }
-
-    template <typename T, unsigned int work_items_mask> int run_nu_all()
-    {
-        int error =
-            test<T, VOTE<T, NonUniformVoteOp::all, work_items_mask>,
-                 GWS_NON_UNIFORM, LWS_NON_UNIFORM>::run(device_, context_,
-                                                        queue_, num_elements_,
-                                                        "test_non_uniform_all",
-                                                        non_uniform_all_source,
-                                                        0, useCoreSubgroups_,
-                                                        required_extensions_,
-                                                        static_cast<int>(
-                                                            work_items_mask));
-        return error;
-    }
-
-
-private:
-    cl_device_id device_;
-    cl_context context_;
-    cl_command_queue queue_;
-    int num_elements_;
-    bool useCoreSubgroups_;
-    std::vector<std::string> required_extensions_;
-};
 }
 
 int test_work_group_functions_non_uniform_vote(cl_device_id device,
@@ -332,176 +269,29 @@ int test_work_group_functions_non_uniform_vote(cl_device_id device,
     std::vector<std::string> required_extensions = {
         "cl_khr_subgroup_non_uniform_vote"
     };
-    run_for_type rft(device, context, queue, num_elements, true,
-                     required_extensions);
 
-    int error = rft.run_nu_all_eq<cl_char, 0xffffaaaa>();
-    error |= rft.run_nu_all_eq<cl_uchar, 0xffffaaaa>();
-    error |= rft.run_nu_all_eq<cl_short, 0xffffaaaa>();
-    error |= rft.run_nu_all_eq<cl_ushort, 0xffffaaaa>();
-    error |= rft.run_nu_all_eq<cl_int, 0xffffaaaa>();
-    error |= rft.run_nu_all_eq<cl_uint, 0xffffaaaa>();
-    error |= rft.run_nu_all_eq<cl_long, 0xffffaaaa>();
-    error |= rft.run_nu_all_eq<cl_ulong, 0xffffaaaa>();
-    error |= rft.run_nu_all_eq<cl_float, 0xffffaaaa>();
-    error |= rft.run_nu_all_eq<cl_double, 0xffffaaaa>();
-    error |= rft.run_nu_all_eq<subgroups::cl_half, 0xffffaaaa>();
+    std::vector<uint32_t> masks{ 0xffffffff, 0x55aaaa55, 0x5555aaaa, 0xaaaa5555,
+                                 0x0f0ff0f0, 0x0f0f0f0f, 0xff0000ff, 0xff00ff00,
+                                 0x00ffff00, 0x80000000 };
+    constexpr size_t global_work_size = 170;
+    constexpr size_t local_work_size = 64;
+    WorkGroupParams test_params(global_work_size, local_work_size,
+                                required_extensions, masks);
+    RunTestForType rft(device, context, queue, num_elements, test_params);
 
-    error |= rft.run_nu_all_eq<cl_char, 0x80000000>();
-    error |= rft.run_nu_all_eq<cl_uchar, 0x80000000>();
-    error |= rft.run_nu_all_eq<cl_short, 0x80000000>();
-    error |= rft.run_nu_all_eq<cl_ushort, 0x80000000>();
-    error |= rft.run_nu_all_eq<cl_int, 0x80000000>();
-    error |= rft.run_nu_all_eq<cl_uint, 0x80000000>();
-    error |= rft.run_nu_all_eq<cl_long, 0x80000000>();
-    error |= rft.run_nu_all_eq<cl_ulong, 0x80000000>();
-    error |= rft.run_nu_all_eq<cl_float, 0x80000000>();
-    error |= rft.run_nu_all_eq<cl_double, 0x80000000>();
-    error |= rft.run_nu_all_eq<subgroups::cl_half, 0x80000000>();
+    int error = run_vote_all_equal_for_type<cl_int>(rft);
+    error |= run_vote_all_equal_for_type<cl_uint>(rft);
+    error |= run_vote_all_equal_for_type<cl_long>(rft);
+    error |= run_vote_all_equal_for_type<cl_ulong>(rft);
+    error |= run_vote_all_equal_for_type<cl_float>(rft);
+    error |= run_vote_all_equal_for_type<cl_double>(rft);
+    error |= run_vote_all_equal_for_type<subgroups::cl_half>(rft);
 
-    error |= rft.run_nu_all_eq<cl_char, 0x00ffff00>();
-    error |= rft.run_nu_all_eq<cl_uchar, 0x00ffff00>();
-    error |= rft.run_nu_all_eq<cl_short, 0x00ffff00>();
-    error |= rft.run_nu_all_eq<cl_ushort, 0x00ffff00>();
-    error |= rft.run_nu_all_eq<cl_int, 0x00ffff00>();
-    error |= rft.run_nu_all_eq<cl_uint, 0x00ffff00>();
-    error |= rft.run_nu_all_eq<cl_long, 0x00ffff00>();
-    error |= rft.run_nu_all_eq<cl_ulong, 0x00ffff00>();
-    error |= rft.run_nu_all_eq<cl_float, 0x00ffff00>();
-    error |= rft.run_nu_all_eq<cl_double, 0x00ffff00>();
-    error |= rft.run_nu_all_eq<subgroups::cl_half, 0x00ffff00>();
-
-    error |= rft.run_nu_all_eq<cl_char, 0xff00ff00>();
-    error |= rft.run_nu_all_eq<cl_uchar, 0xff00ff00>();
-    error |= rft.run_nu_all_eq<cl_short, 0xff00ff00>();
-    error |= rft.run_nu_all_eq<cl_ushort, 0xff00ff00>();
-    error |= rft.run_nu_all_eq<cl_int, 0xff00ff00>();
-    error |= rft.run_nu_all_eq<cl_uint, 0xff00ff00>();
-    error |= rft.run_nu_all_eq<cl_long, 0xff00ff00>();
-    error |= rft.run_nu_all_eq<cl_ulong, 0xff00ff00>();
-    error |= rft.run_nu_all_eq<cl_float, 0xff00ff00>();
-    error |= rft.run_nu_all_eq<cl_double, 0xff00ff00>();
-    error |= rft.run_nu_all_eq<subgroups::cl_half, 0xff00ff00>();
-
-    error |= rft.run_nu_all_eq<cl_char, 0xff0000ff>();
-    error |= rft.run_nu_all_eq<cl_uchar, 0xff0000ff>();
-    error |= rft.run_nu_all_eq<cl_short, 0xff0000ff>();
-    error |= rft.run_nu_all_eq<cl_ushort, 0xff0000ff>();
-    error |= rft.run_nu_all_eq<cl_int, 0xff0000ff>();
-    error |= rft.run_nu_all_eq<cl_uint, 0xff0000ff>();
-    error |= rft.run_nu_all_eq<cl_long, 0xff0000ff>();
-    error |= rft.run_nu_all_eq<cl_ulong, 0xff0000ff>();
-    error |= rft.run_nu_all_eq<cl_float, 0xff0000ff>();
-    error |= rft.run_nu_all_eq<cl_double, 0xff0000ff>();
-    error |= rft.run_nu_all_eq<subgroups::cl_half, 0xff0000ff>();
-
-    error |= rft.run_nu_all_eq<cl_char, 0x0f0f0f0f>();
-    error |= rft.run_nu_all_eq<cl_uchar, 0x0f0f0f0f>();
-    error |= rft.run_nu_all_eq<cl_short, 0x0f0f0f0f>();
-    error |= rft.run_nu_all_eq<cl_ushort, 0x0f0f0f0f>();
-    error |= rft.run_nu_all_eq<cl_int, 0x0f0f0f0f>();
-    error |= rft.run_nu_all_eq<cl_uint, 0x0f0f0f0f>();
-    error |= rft.run_nu_all_eq<cl_long, 0x0f0f0f0f>();
-    error |= rft.run_nu_all_eq<cl_ulong, 0x0f0f0f0f>();
-    error |= rft.run_nu_all_eq<cl_float, 0x0f0f0f0f>();
-    error |= rft.run_nu_all_eq<cl_double, 0x0f0f0f0f>();
-    error |= rft.run_nu_all_eq<subgroups::cl_half, 0x0f0f0f0f>();
-
-    error |= rft.run_nu_all_eq<cl_char, 0x0f0ff0f0>();
-    error |= rft.run_nu_all_eq<cl_uchar, 0x0f0ff0f0>();
-    error |= rft.run_nu_all_eq<cl_short, 0x0f0ff0f0>();
-    error |= rft.run_nu_all_eq<cl_ushort, 0x0f0ff0f0>();
-    error |= rft.run_nu_all_eq<cl_int, 0x0f0ff0f0>();
-    error |= rft.run_nu_all_eq<cl_uint, 0x0f0ff0f0>();
-    error |= rft.run_nu_all_eq<cl_long, 0x0f0ff0f0>();
-    error |= rft.run_nu_all_eq<cl_ulong, 0x0f0ff0f0>();
-    error |= rft.run_nu_all_eq<cl_float, 0x0f0ff0f0>();
-    error |= rft.run_nu_all_eq<cl_double, 0x0f0ff0f0>();
-    error |= rft.run_nu_all_eq<subgroups::cl_half, 0x0f0ff0f0>();
-
-    error |= rft.run_nu_all_eq<cl_char, 0xaaaa5555>();
-    error |= rft.run_nu_all_eq<cl_uchar, 0xaaaa5555>();
-    error |= rft.run_nu_all_eq<cl_short, 0xaaaa5555>();
-    error |= rft.run_nu_all_eq<cl_ushort, 0xaaaa5555>();
-    error |= rft.run_nu_all_eq<cl_int, 0xaaaa5555>();
-    error |= rft.run_nu_all_eq<cl_uint, 0xaaaa5555>();
-    error |= rft.run_nu_all_eq<cl_long, 0xaaaa5555>();
-    error |= rft.run_nu_all_eq<cl_ulong, 0xaaaa5555>();
-    error |= rft.run_nu_all_eq<cl_float, 0xaaaa5555>();
-    error |= rft.run_nu_all_eq<cl_double, 0xaaaa5555>();
-    error |= rft.run_nu_all_eq<subgroups::cl_half, 0xaaaa5555>();
-
-    error |= rft.run_nu_all_eq<cl_char, 0x5555aaaa>();
-    error |= rft.run_nu_all_eq<cl_uchar, 0x5555aaaa>();
-    error |= rft.run_nu_all_eq<cl_short, 0x5555aaaa>();
-    error |= rft.run_nu_all_eq<cl_ushort, 0x5555aaaa>();
-    error |= rft.run_nu_all_eq<cl_int, 0x5555aaaa>();
-    error |= rft.run_nu_all_eq<cl_uint, 0x5555aaaa>();
-    error |= rft.run_nu_all_eq<cl_long, 0x5555aaaa>();
-    error |= rft.run_nu_all_eq<cl_ulong, 0x5555aaaa>();
-    error |= rft.run_nu_all_eq<cl_float, 0x5555aaaa>();
-    error |= rft.run_nu_all_eq<cl_double, 0x5555aaaa>();
-    error |= rft.run_nu_all_eq<subgroups::cl_half, 0x5555aaaa>();
-
-    error |= rft.run_nu_all_eq<cl_char, 0x55aaaa55>();
-    error |= rft.run_nu_all_eq<cl_uchar, 0x55aaaa55>();
-    error |= rft.run_nu_all_eq<cl_short, 0x55aaaa55>();
-    error |= rft.run_nu_all_eq<cl_ushort, 0x55aaaa55>();
-    error |= rft.run_nu_all_eq<cl_int, 0x55aaaa55>();
-    error |= rft.run_nu_all_eq<cl_uint, 0x55aaaa55>();
-    error |= rft.run_nu_all_eq<cl_long, 0x55aaaa55>();
-    error |= rft.run_nu_all_eq<cl_ulong, 0x55aaaa55>();
-    error |= rft.run_nu_all_eq<cl_float, 0x55aaaa55>();
-    error |= rft.run_nu_all_eq<cl_double, 0x55aaaa55>();
-    error |= rft.run_nu_all_eq<subgroups::cl_half, 0x55aaaa55>();
-
-    error |= rft.run_nu_all_eq<cl_char, 0xffffffff>();
-    error |= rft.run_nu_all_eq<cl_uchar, 0xffffffff>();
-    error |= rft.run_nu_all_eq<cl_short, 0xffffffff>();
-    error |= rft.run_nu_all_eq<cl_ushort, 0xffffffff>();
-    error |= rft.run_nu_all_eq<cl_int, 0xffffffff>();
-    error |= rft.run_nu_all_eq<cl_uint, 0xffffffff>();
-    error |= rft.run_nu_all_eq<cl_long, 0xffffffff>();
-    error |= rft.run_nu_all_eq<cl_ulong, 0xffffffff>();
-    error |= rft.run_nu_all_eq<cl_float, 0xffffffff>();
-    error |= rft.run_nu_all_eq<cl_double, 0xffffffff>();
-    error |= rft.run_nu_all_eq<subgroups::cl_half, 0xffffffff>();
-
-    error |= rft.run_elect<int, 0xffffffff>();
-    error |= rft.run_elect<int, 0xffffaaaa>();
-    error |= rft.run_elect<int, 0x80000000>();
-    error |= rft.run_elect<int, 0x00ffff00>();
-    error |= rft.run_elect<int, 0xff00ff00>();
-    error |= rft.run_elect<int, 0xff0000ff>();
-    error |= rft.run_elect<int, 0x0f0f0f0f>();
-    error |= rft.run_elect<int, 0x0f0ff0f0>();
-    error |= rft.run_elect<int, 0xaaaa5555>();
-    error |= rft.run_elect<int, 0x5555aaaa>();
-    error |= rft.run_elect<int, 0x55aaaa55>();
-
-    error |= rft.run_nu_any<int, 0xffffffff>();
-    error |= rft.run_nu_any<int, 0xffffaaaa>();
-    error |= rft.run_nu_any<int, 0x80000000>();
-    error |= rft.run_nu_any<int, 0x00ffff00>();
-    error |= rft.run_nu_any<int, 0xff00ff00>();
-    error |= rft.run_nu_any<int, 0xff0000ff>();
-    error |= rft.run_nu_any<int, 0x0f0f0f0f>();
-    error |= rft.run_nu_any<int, 0x0f0ff0f0>();
-    error |= rft.run_nu_any<int, 0xaaaa5555>();
-    error |= rft.run_nu_any<int, 0x5555aaaa>();
-    error |= rft.run_nu_any<int, 0x55aaaa55>();
-
-    error |= rft.run_nu_all<int, 0xffffffff>();
-    error |= rft.run_nu_all<int, 0xffffaaaa>();
-    error |= rft.run_nu_all<int, 0x80000000>();
-    error |= rft.run_nu_all<int, 0x00ffff00>();
-    error |= rft.run_nu_all<int, 0xff00ff00>();
-    error |= rft.run_nu_all<int, 0xff0000ff>();
-    error |= rft.run_nu_all<int, 0x0f0f0f0f>();
-    error |= rft.run_nu_all<int, 0x0f0ff0f0>();
-    error |= rft.run_nu_all<int, 0xaaaa5555>();
-    error |= rft.run_nu_all<int, 0x5555aaaa>();
-    error |= rft.run_nu_all<int, 0x55aaaa55>();
-
+    error |= rft.run_impl<cl_int, VOTE<cl_int, NonUniformVoteOp::all>>(
+        "test_non_uniform_all", non_uniform_all_source);
+    error |= rft.run_impl<cl_int, VOTE<cl_int, NonUniformVoteOp::elect>>(
+        "test_elect", elect_source);
+    error |= rft.run_impl<cl_int, VOTE<cl_int, NonUniformVoteOp::any>>(
+        "test_non_uniform_any", non_uniform_any_source);
     return error;
 }

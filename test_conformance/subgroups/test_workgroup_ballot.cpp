@@ -19,21 +19,16 @@
 #include "harness/typeWrappers.h"
 #include <bitset>
 
-// Global/local work group sizes
-// Adjust these individually below if desired/needed
-#define GWS 2000
-#define LWS 200
-
-#define GWS_NON_UNIFORM 170
-#define LWS_NON_UNIFORM 64
-
 namespace {
 // Test for ballot functions
 template <typename Ty> struct BALLOT
 {
-    static void gen(Ty *x, Ty *t, cl_int *m, int sbs, int lws, int gws)
+    static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         // no work here
+        int gws = test_params.global_workgroup_size;
+        int lws = test_params.local_workgroup_size;
+        int sbs = test_params.subgroup_size;
         int non_uniform_size = gws % lws;
         log_info("  sub_group_ballot...\n");
         if (non_uniform_size)
@@ -42,10 +37,13 @@ template <typename Ty> struct BALLOT
         }
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int sbs, int lws,
-                   int gws)
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                   const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, sb_id;
+        int gws = test_params.global_workgroup_size;
+        int lws = test_params.local_workgroup_size;
+        int sbs = test_params.subgroup_size;
         int sb_number = (lws + sbs - 1) / sbs;
         int current_sbs = 0;
         cl_uint expected_result, device_result;
@@ -64,9 +62,8 @@ template <typename Ty> struct BALLOT
 
             for (wi_id = 0; wi_id < lws; ++wi_id)
             { // inside the work_group
-                int offset = m[4 * wi_id + 1] * sbs + m[4 * wi_id];
                 // read device outputs for work_group
-                my[wi_id] = y[offset];
+                my[wi_id] = y[wi_id];
             }
 
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
@@ -107,14 +104,23 @@ template <typename Ty> struct BALLOT
 // Test for bit extract ballot functions
 template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
 {
-    static void gen(Ty *x, Ty *t, cl_int *m, int sbs, int lws, int gws)
+    static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int wi_id, sb_id, wg_id, l;
+        int gws = test_params.global_workgroup_size;
+        int lws = test_params.local_workgroup_size;
+        int sbs = test_params.subgroup_size;
         int sb_number = (lws + sbs - 1) / sbs;
         int wg_number = gws / lws;
         int limit_sbs = sbs > 100 ? 100 : sbs;
+        int non_uniform_size = gws % lws;
         log_info("  sub_group_%s(%s)...\n", operation_names(operation),
                  TypeManager<Ty>::name());
+
+        if (non_uniform_size)
+        {
+            log_info("  non uniform work group size mode ON\n");
+        }
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
@@ -141,8 +147,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
             // Now map into work group using map from device
             for (wi_id = 0; wi_id < lws; ++wi_id)
             {
-                int offset = m[4 * wi_id + 1] * sbs + m[4 * wi_id];
-                x[wi_id] = t[offset];
+                x[wi_id] = t[wi_id];
             }
 
             x += lws;
@@ -150,30 +155,47 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
         }
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int sbs, int lws,
-                   int gws)
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                   const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, l, sb_id;
+        int gws = test_params.global_workgroup_size;
+        int lws = test_params.local_workgroup_size;
+        int sbs = test_params.subgroup_size;
         int sb_number = (lws + sbs - 1) / sbs;
         int wg_number = gws / lws;
         cl_uint4 expected_result, device_result;
+        int last_subgroup_size = 0;
+        int current_sbs = 0;
+        int non_uniform_size = gws % lws;
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
+            if (non_uniform_size && wg_id == wg_number - 1)
+            {
+                set_last_workgroup_params(non_uniform_size, sb_number, sbs, lws,
+                                          last_subgroup_size);
+            }
             // Map to array indexed to array indexed by local ID and sub group
             for (wi_id = 0; wi_id < lws; ++wi_id)
             { // inside the work_group
-                int offset = m[4 * wi_id + 1] * sbs + m[4 * wi_id];
                 // read host inputs for work_group
-                mx[wi_id] = x[offset];
+                mx[wi_id] = x[wi_id];
                 // read device outputs for work_group
-                my[wi_id] = y[offset];
+                my[wi_id] = y[wi_id];
             }
 
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             { // for each subgroup
                 int wg_offset = sb_id * sbs;
-                int current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                if (last_subgroup_size && sb_id == sb_number - 1)
+                {
+                    current_sbs = last_subgroup_size;
+                }
+                else
+                {
+                    current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                }
                 // take index of array where info which work_item will
                 // be broadcast its value is stored
                 int midx = 4 * wg_offset + 2;
@@ -246,8 +268,11 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
 
 template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
 {
-    static void gen(Ty *x, Ty *t, cl_int *m, int sbs, int lws, int gws)
+    static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
+        int gws = test_params.global_workgroup_size;
+        int lws = test_params.local_workgroup_size;
+        int sbs = test_params.subgroup_size;
         int non_uniform_size = gws % lws;
         log_info("  sub_group_inverse_ballot...\n");
         if (non_uniform_size)
@@ -257,30 +282,46 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
         // no work here
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int sbs, int lws,
-                   int gws)
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                   const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, sb_id;
+        int gws = test_params.global_workgroup_size;
+        int lws = test_params.local_workgroup_size;
+        int sbs = test_params.subgroup_size;
         int sb_number = (lws + sbs - 1) / sbs;
         cl_uint4 expected_result, device_result;
         int non_uniform_size = gws % lws;
         int wg_number = gws / lws;
+        int last_subgroup_size = 0;
+        int current_sbs = 0;
         if (non_uniform_size) wg_number++;
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
+            if (non_uniform_size && wg_id == wg_number - 1)
+            {
+                set_last_workgroup_params(non_uniform_size, sb_number, sbs, lws,
+                                          last_subgroup_size);
+            }
             // Map to array indexed to array indexed by local ID and sub group
             for (wi_id = 0; wi_id < lws; ++wi_id)
             { // inside the work_group
-                int offset = m[4 * wi_id + 1] * sbs + m[4 * wi_id];
-                mx[wi_id] = x[offset]; // read host inputs for work_group
-                my[wi_id] = y[offset]; // read device outputs for work_group
+                mx[wi_id] = x[wi_id]; // read host inputs for work_group
+                my[wi_id] = y[wi_id]; // read device outputs for work_group
             }
 
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             { // for each subgroup
                 int wg_offset = sb_id * sbs;
-                int current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                if (last_subgroup_size && sb_id == sb_number - 1)
+                {
+                    current_sbs = last_subgroup_size;
+                }
+                else
+                {
+                    current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                }
                 // take index of array where info which work_item will
                 // be broadcast its value is stored
                 int midx = 4 * wg_offset + 2;
@@ -322,12 +363,17 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
 // Test for bit count/inclusive and exclusive scan/ find lsb msb ballot function
 template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
 {
-    static void gen(Ty *x, Ty *t, cl_int *m, int sbs, int lws, int gws)
+    static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, sb_id;
+        int gws = test_params.global_workgroup_size;
+        int lws = test_params.local_workgroup_size;
+        int sbs = test_params.subgroup_size;
         int sb_number = (lws + sbs - 1) / sbs;
         int non_uniform_size = gws % lws;
         int wg_number = gws / lws;
+        int last_subgroup_size = 0;
+        int current_sbs = 0;
 
         log_info("  sub_group_%s(%s)...\n", operation_names(operation),
                  TypeManager<Ty>::name());
@@ -339,10 +385,22 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
         int e;
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
+            if (non_uniform_size && wg_id == wg_number - 1)
+            {
+                set_last_workgroup_params(non_uniform_size, sb_number, sbs, lws,
+                                          last_subgroup_size);
+            }
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             { // for each subgroup
                 int wg_offset = sb_id * sbs;
-                int current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                if (last_subgroup_size && sb_id == sb_number - 1)
+                {
+                    current_sbs = last_subgroup_size;
+                }
+                else
+                {
+                    current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                }
                 if (operation == BallotOp::ballot_bit_count
                     || operation == BallotOp::ballot_inclusive_scan
                     || operation == BallotOp::ballot_exclusive_scan)
@@ -372,8 +430,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
             // Now map into work group using map from device
             for (wi_id = 0; wi_id < lws; ++wi_id)
             {
-                int offset = m[4 * wi_id + 1] * sbs + m[4 * wi_id];
-                x[wi_id] = t[offset];
+                x[wi_id] = t[wi_id];
             }
 
             x += lws;
@@ -401,32 +458,48 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
         return mask;
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int sbs, int lws,
-                   int gws)
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                   const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, sb_id;
+        int gws = test_params.global_workgroup_size;
+        int lws = test_params.local_workgroup_size;
+        int sbs = test_params.subgroup_size;
         int sb_number = (lws + sbs - 1) / sbs;
         int non_uniform_size = gws % lws;
         int wg_number = gws / lws;
         wg_number = non_uniform_size ? wg_number + 1 : wg_number;
         cl_uint4 expected_result, device_result;
+        int last_subgroup_size = 0;
+        int current_sbs = 0;
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
+            if (non_uniform_size && wg_id == wg_number - 1)
+            {
+                set_last_workgroup_params(non_uniform_size, sb_number, sbs, lws,
+                                          last_subgroup_size);
+            }
             // Map to array indexed to array indexed by local ID and sub group
             for (wi_id = 0; wi_id < lws; ++wi_id)
             { // inside the work_group
-                int offset = m[4 * wi_id + 1] * sbs + m[4 * wi_id];
                 // read host inputs for work_group
-                mx[wi_id] = x[offset];
+                mx[wi_id] = x[wi_id];
                 // read device outputs for work_group
-                my[wi_id] = y[offset];
+                my[wi_id] = y[wi_id];
             }
 
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
             { // for each subgroup
                 int wg_offset = sb_id * sbs;
-                int current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                if (last_subgroup_size && sb_id == sb_number - 1)
+                {
+                    current_sbs = last_subgroup_size;
+                }
+                else
+                {
+                    current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
+                }
                 // Check result
                 expected_result = { 0, 0, 0, 0 };
                 for (wi_id = 0; wi_id < current_sbs; ++wi_id)
@@ -521,9 +594,12 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
 // test mask functions
 template <typename Ty, BallotOp operation> struct SMASK
 {
-    static void gen(Ty *x, Ty *t, cl_int *m, int sbs, int lws, int gws)
+    static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, l, sb_id;
+        int gws = test_params.global_workgroup_size;
+        int lws = test_params.local_workgroup_size;
+        int sbs = test_params.subgroup_size;
         int sb_number = (lws + sbs - 1) / sbs;
         int wg_number = gws / lws;
         log_info("  get_sub_group_%s_mask...\n", operation_names(operation));
@@ -548,18 +624,20 @@ template <typename Ty, BallotOp operation> struct SMASK
             // Now map into work group using map from device
             for (wi_id = 0; wi_id < lws; ++wi_id)
             {
-                int offset = m[4 * wi_id + 1] * sbs + m[4 * wi_id];
-                x[wi_id] = t[offset];
+                x[wi_id] = t[wi_id];
             }
             x += lws;
             m += 4 * lws;
         }
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int sbs, int lws,
-                   int gws)
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                   const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, sb_id;
+        int gws = test_params.global_workgroup_size;
+        int lws = test_params.local_workgroup_size;
+        int sbs = test_params.subgroup_size;
         int sb_number = (lws + sbs - 1) / sbs;
         Ty expected_result, device_result;
         int wg_number = gws / lws;
@@ -568,9 +646,8 @@ template <typename Ty, BallotOp operation> struct SMASK
         { // for each work_group
             for (wi_id = 0; wi_id < lws; ++wi_id)
             { // inside the work_group
-                int offset = m[4 * wi_id + 1] * sbs + m[4 * wi_id];
-                mx[wi_id] = x[offset]; // read host inputs for work_group
-                my[wi_id] = y[offset]; // read device outputs for work_group
+                mx[wi_id] = x[wi_id]; // read host inputs for work_group
+                my[wi_id] = y[wi_id]; // read device outputs for work_group
             }
 
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
@@ -835,139 +912,14 @@ static const char *ballot_bit_extract_source =
     "    out[gid] = value;\n"
     "}\n";
 
-struct run_for_type
+template <typename T> int run_non_uniform_broadcast_for_type(RunTestForType rft)
 {
-    run_for_type(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int num_elements,
-                 bool useCoreSubgroups,
-                 std::vector<std::string> required_extensions = {})
-        : device_(device), context_(context), queue_(queue),
-          num_elements_(num_elements), useCoreSubgroups_(useCoreSubgroups),
-          required_extensions_(required_extensions)
-    {}
+    int error =
+        rft.run_impl<T, BC<T, SubgroupsBroadcastOp::non_uniform_broadcast>>(
+            "test_bcast_non_uniform", bcast_non_uniform_source);
+    return error;
+}
 
-
-    template <typename T> int run_nu_bc()
-    {
-        int error =
-            test<T, BC<T, SubgroupsBroadcastOp::non_uniform_broadcast>,
-                 GWS_NON_UNIFORM,
-                 LWS_NON_UNIFORM>::run(device_, context_, queue_, num_elements_,
-                                       "test_bcast_non_uniform",
-                                       bcast_non_uniform_source, 0,
-                                       useCoreSubgroups_, required_extensions_);
-        return error;
-    }
-
-    template <typename T> int run_bc_first()
-    {
-        int error =
-            test<T, BC<T, SubgroupsBroadcastOp::broadcast_first>, 64, 32>::run(
-                device_, context_, queue_, num_elements_, "test_bcast_first",
-                bcast_first_source, 0, useCoreSubgroups_, required_extensions_);
-        return error;
-    }
-
-
-    int run_smask()
-    {
-        int error =
-            test<cl_uint4, SMASK<cl_uint4, BallotOp::eq_mask>, GWS, LWS>::run(
-                device_, context_, queue_, num_elements_,
-                "test_get_sub_group_eq_mask", get_subgroup_eq_mask_source, 0,
-                useCoreSubgroups_, required_extensions_);
-        error |=
-            test<cl_uint4, SMASK<cl_uint4, BallotOp::ge_mask>, GWS, LWS>::run(
-                device_, context_, queue_, num_elements_,
-                "test_get_sub_group_ge_mask", get_subgroup_ge_mask_source, 0,
-                useCoreSubgroups_, required_extensions_);
-        error |=
-            test<cl_uint4, SMASK<cl_uint4, BallotOp::gt_mask>, GWS, LWS>::run(
-                device_, context_, queue_, num_elements_,
-                "test_get_sub_group_gt_mask", get_subgroup_gt_mask_source, 0,
-                useCoreSubgroups_, required_extensions_);
-        error |=
-            test<cl_uint4, SMASK<cl_uint4, BallotOp::le_mask>, GWS, LWS>::run(
-                device_, context_, queue_, num_elements_,
-                "test_get_sub_group_le_mask", get_subgroup_le_mask_source, 0,
-                useCoreSubgroups_, required_extensions_);
-        error |=
-            test<cl_uint4, SMASK<cl_uint4, BallotOp::lt_mask>, GWS, LWS>::run(
-                device_, context_, queue_, num_elements_,
-                "test_get_sub_group_lt_mask", get_subgroup_lt_mask_source, 0,
-                useCoreSubgroups_, required_extensions_);
-        return error;
-    }
-
-    int run_ballot()
-    {
-        int error =
-            test<cl_uint, BALLOT<cl_uint>, GWS_NON_UNIFORM,
-                 LWS_NON_UNIFORM>::run(device_, context_, queue_, num_elements_,
-                                       "test_sub_group_ballot", ballot_source,
-                                       0, useCoreSubgroups_,
-                                       required_extensions_);
-
-        error |=
-            test<cl_uint4, BALLOT_INVERSE<cl_uint4, BallotOp::inverse_ballot>,
-                 GWS, LWS>::run(device_, context_, queue_, num_elements_,
-                                "test_sub_group_ballot_inverse",
-                                ballot_source_inverse, 0, useCoreSubgroups_,
-                                required_extensions_);
-        error |=
-            test<cl_uint4,
-                 BALLOT_BIT_EXTRACT<cl_uint4, BallotOp::ballot_bit_extract>,
-                 GWS, LWS>::run(device_, context_, queue_, num_elements_,
-                                "test_sub_group_ballot_bit_extract",
-                                ballot_bit_extract_source, 0, useCoreSubgroups_,
-                                required_extensions_);
-
-        error |=
-            test<cl_uint4,
-                 BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_bit_count>,
-                 GWS, LWS>::run(device_, context_, queue_, num_elements_,
-                                "test_sub_group_ballot_bit_count",
-                                ballot_bit_count_source, 0, useCoreSubgroups_,
-                                required_extensions_);
-        error |= test<
-            cl_uint4,
-            BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_inclusive_scan>,
-            GWS, LWS>::run(device_, context_, queue_, num_elements_,
-                           "test_sub_group_ballot_inclusive_scan",
-                           ballot_inclusive_scan_source, 0, useCoreSubgroups_,
-                           required_extensions_);
-        error |= test<
-            cl_uint4,
-            BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_exclusive_scan>,
-            GWS, LWS>::run(device_, context_, queue_, num_elements_,
-                           "test_sub_group_ballot_exclusive_scan",
-                           ballot_exclusive_scan_source, 0, useCoreSubgroups_,
-                           required_extensions_);
-        error |=
-            test<cl_uint4,
-                 BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_find_lsb>,
-                 GWS, LWS>::run(device_, context_, queue_, num_elements_,
-                                "test_sub_group_ballot_find_lsb",
-                                ballot_find_lsb_source, 0, useCoreSubgroups_,
-                                required_extensions_);
-        error |=
-            test<cl_uint4,
-                 BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_find_msb>,
-                 GWS, LWS>::run(device_, context_, queue_, num_elements_,
-                                "test_sub_group_ballot_find_msb",
-                                ballot_find_msb_source, 0, useCoreSubgroups_,
-                                required_extensions_);
-        return error;
-    }
-
-private:
-    cl_device_id device_;
-    cl_context context_;
-    cl_command_queue queue_;
-    int num_elements_;
-    bool useCoreSubgroups_;
-    std::vector<std::string> required_extensions_;
-};
 
 }
 
@@ -975,98 +927,163 @@ int test_work_group_functions_ballot(cl_device_id device, cl_context context,
                                      cl_command_queue queue, int num_elements)
 {
     std::vector<std::string> required_extensions = { "cl_khr_subgroup_ballot" };
-    run_for_type rft(device, context, queue, num_elements, true,
-                     required_extensions);
+    constexpr size_t global_work_size = 170;
+    constexpr size_t local_work_size = 64;
+    WorkGroupParams test_params(global_work_size, local_work_size,
+                                required_extensions);
+    RunTestForType rft(device, context, queue, num_elements, test_params);
 
-    int error = rft.run_nu_bc<cl_int>();
-    error |= rft.run_nu_bc<cl_int2>();
-    error |= rft.run_nu_bc<subgroups::cl_int3>();
-    error |= rft.run_nu_bc<cl_int4>();
-    error |= rft.run_nu_bc<cl_int8>();
-    error |= rft.run_nu_bc<cl_int16>();
+    // non uniform broadcast functions
+    int error = run_non_uniform_broadcast_for_type<cl_int>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_int2>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_int3>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_int4>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_int8>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_int16>(rft);
 
-    error |= rft.run_nu_bc<cl_uint>();
-    error |= rft.run_nu_bc<cl_uint2>();
-    error |= rft.run_nu_bc<subgroups::cl_uint3>();
-    error |= rft.run_nu_bc<cl_uint4>();
-    error |= rft.run_nu_bc<cl_uint8>();
-    error |= rft.run_nu_bc<cl_uint16>();
+    error |= run_non_uniform_broadcast_for_type<cl_uint>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_uint2>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_uint3>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_uint4>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_uint8>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_uint16>(rft);
 
-    error |= rft.run_nu_bc<cl_long>();
-    error |= rft.run_nu_bc<cl_long2>();
-    error |= rft.run_nu_bc<subgroups::cl_long3>();
-    error |= rft.run_nu_bc<cl_long4>();
-    error |= rft.run_nu_bc<cl_long8>();
-    error |= rft.run_nu_bc<cl_long16>();
+    error |= run_non_uniform_broadcast_for_type<cl_char>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_char2>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_char3>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_char4>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_char8>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_char16>(rft);
 
-    error |= rft.run_nu_bc<cl_ulong>();
-    error |= rft.run_nu_bc<cl_ulong2>();
-    error |= rft.run_nu_bc<subgroups::cl_ulong3>();
-    error |= rft.run_nu_bc<cl_ulong4>();
-    error |= rft.run_nu_bc<cl_ulong8>();
-    error |= rft.run_nu_bc<cl_ulong16>();
+    error |= run_non_uniform_broadcast_for_type<cl_uchar>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_uchar2>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_uchar3>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_uchar4>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_uchar8>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_uchar16>(rft);
 
-    error |= rft.run_nu_bc<cl_short>();
-    error |= rft.run_nu_bc<cl_short2>();
-    error |= rft.run_nu_bc<subgroups::cl_short3>();
-    error |= rft.run_nu_bc<cl_short4>();
-    error |= rft.run_nu_bc<cl_short8>();
-    error |= rft.run_nu_bc<cl_short16>();
+    error |= run_non_uniform_broadcast_for_type<cl_short>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_short2>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_short3>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_short4>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_short8>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_short16>(rft);
 
-    error |= rft.run_nu_bc<cl_ushort>();
-    error |= rft.run_nu_bc<cl_ushort2>();
-    error |= rft.run_nu_bc<subgroups::cl_ushort3>();
-    error |= rft.run_nu_bc<cl_ushort4>();
-    error |= rft.run_nu_bc<cl_ushort8>();
-    error |= rft.run_nu_bc<cl_ushort16>();
+    error |= run_non_uniform_broadcast_for_type<cl_ushort>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_ushort2>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_ushort3>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_ushort4>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_ushort8>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_ushort16>(rft);
 
-    error |= rft.run_nu_bc<cl_char>();
-    error |= rft.run_nu_bc<cl_char2>();
-    error |= rft.run_nu_bc<subgroups::cl_char3>();
-    error |= rft.run_nu_bc<cl_char4>();
-    error |= rft.run_nu_bc<cl_char8>();
-    error |= rft.run_nu_bc<cl_char16>();
+    error |= run_non_uniform_broadcast_for_type<cl_long>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_long2>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_long3>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_long4>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_long8>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_long16>(rft);
 
-    error |= rft.run_nu_bc<cl_uchar>();
-    error |= rft.run_nu_bc<cl_uchar2>();
-    error |= rft.run_nu_bc<subgroups::cl_uchar3>();
-    error |= rft.run_nu_bc<cl_uchar4>();
-    error |= rft.run_nu_bc<cl_uchar8>();
-    error |= rft.run_nu_bc<cl_uchar16>();
+    error |= run_non_uniform_broadcast_for_type<cl_ulong>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_ulong2>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_ulong3>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_ulong4>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_ulong8>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_ulong16>(rft);
 
-    error |= rft.run_nu_bc<cl_float>();
-    error |= rft.run_nu_bc<cl_float2>();
-    error |= rft.run_nu_bc<subgroups::cl_float3>();
-    error |= rft.run_nu_bc<cl_float4>();
-    error |= rft.run_nu_bc<cl_float8>();
-    error |= rft.run_nu_bc<cl_float16>();
+    error |= run_non_uniform_broadcast_for_type<cl_float>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_float2>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_float3>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_float4>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_float8>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_float16>(rft);
 
-    error |= rft.run_nu_bc<cl_double>();
-    error |= rft.run_nu_bc<cl_double2>();
-    error |= rft.run_nu_bc<subgroups::cl_double3>();
-    error |= rft.run_nu_bc<cl_double4>();
-    error |= rft.run_nu_bc<cl_double8>();
-    error |= rft.run_nu_bc<cl_double16>();
+    error |= run_non_uniform_broadcast_for_type<cl_double>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_double2>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_double3>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_double4>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_double8>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_double16>(rft);
 
-    error |= rft.run_nu_bc<subgroups::cl_half>();
-    error |= rft.run_nu_bc<subgroups::cl_half2>();
-    error |= rft.run_nu_bc<subgroups::cl_float3>();
-    error |= rft.run_nu_bc<subgroups::cl_half4>();
-    error |= rft.run_nu_bc<subgroups::cl_half8>();
-    error |= rft.run_nu_bc<subgroups::cl_half16>();
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_half>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_half2>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_half3>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_half4>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_half8>(rft);
+    error |= run_non_uniform_broadcast_for_type<subgroups::cl_half16>(rft);
 
-    error |= rft.run_bc_first<cl_int>();
-    error |= rft.run_bc_first<cl_uint>();
-    error |= rft.run_bc_first<cl_long>();
-    error |= rft.run_bc_first<cl_ulong>();
-    error |= rft.run_bc_first<cl_short>();
-    error |= rft.run_bc_first<cl_ushort>();
-    error |= rft.run_bc_first<cl_char>();
-    error |= rft.run_bc_first<cl_uchar>();
-    error |= rft.run_bc_first<cl_float>();
-    error |= rft.run_bc_first<cl_double>();
-    error |= rft.run_bc_first<subgroups::cl_half>();
-    error |= rft.run_smask();
-    error |= rft.run_ballot();
+    // broadcast first functions
+    error |=
+        rft.run_impl<cl_int, BC<cl_int, SubgroupsBroadcastOp::broadcast_first>>(
+            "test_bcast_first", bcast_first_source);
+    error |= rft.run_impl<cl_uint,
+                          BC<cl_uint, SubgroupsBroadcastOp::broadcast_first>>(
+        "test_bcast_first", bcast_first_source);
+    error |= rft.run_impl<cl_long,
+                          BC<cl_long, SubgroupsBroadcastOp::broadcast_first>>(
+        "test_bcast_first", bcast_first_source);
+    error |= rft.run_impl<cl_ulong,
+                          BC<cl_ulong, SubgroupsBroadcastOp::broadcast_first>>(
+        "test_bcast_first", bcast_first_source);
+    error |= rft.run_impl<cl_short,
+                          BC<cl_short, SubgroupsBroadcastOp::broadcast_first>>(
+        "test_bcast_first", bcast_first_source);
+    error |= rft.run_impl<cl_ushort,
+                          BC<cl_ushort, SubgroupsBroadcastOp::broadcast_first>>(
+        "test_bcast_first", bcast_first_source);
+    error |= rft.run_impl<cl_char,
+                          BC<cl_char, SubgroupsBroadcastOp::broadcast_first>>(
+        "test_bcast_first", bcast_first_source);
+    error |= rft.run_impl<cl_uchar,
+                          BC<cl_uchar, SubgroupsBroadcastOp::broadcast_first>>(
+        "test_bcast_first", bcast_first_source);
+    error |= rft.run_impl<cl_float,
+                          BC<cl_float, SubgroupsBroadcastOp::broadcast_first>>(
+        "test_bcast_first", bcast_first_source);
+    error |= rft.run_impl<cl_double,
+                          BC<cl_double, SubgroupsBroadcastOp::broadcast_first>>(
+        "test_bcast_first", bcast_first_source);
+    error |= rft.run_impl<
+        subgroups::cl_half,
+        BC<subgroups::cl_half, SubgroupsBroadcastOp::broadcast_first>>(
+        "test_bcast_first", bcast_first_source);
+
+    // mask functions
+    error |= rft.run_impl<cl_uint4, SMASK<cl_uint4, BallotOp::eq_mask>>(
+        "test_get_sub_group_eq_mask", get_subgroup_eq_mask_source);
+    error |= rft.run_impl<cl_uint4, SMASK<cl_uint4, BallotOp::ge_mask>>(
+        "test_get_sub_group_ge_mask", get_subgroup_ge_mask_source);
+    error |= rft.run_impl<cl_uint4, SMASK<cl_uint4, BallotOp::gt_mask>>(
+        "test_get_sub_group_gt_mask", get_subgroup_gt_mask_source);
+    error |= rft.run_impl<cl_uint4, SMASK<cl_uint4, BallotOp::le_mask>>(
+        "test_get_sub_group_le_mask", get_subgroup_le_mask_source);
+    error |= rft.run_impl<cl_uint4, SMASK<cl_uint4, BallotOp::lt_mask>>(
+        "test_get_sub_group_lt_mask", get_subgroup_lt_mask_source);
+
+    // ballot functions
+    error |= rft.run_impl<cl_uint, BALLOT<cl_uint>>("test_sub_group_ballot",
+                                                    ballot_source);
+    error |= rft.run_impl<cl_uint4,
+                          BALLOT_INVERSE<cl_uint4, BallotOp::inverse_ballot>>(
+        "test_sub_group_ballot_inverse", ballot_source_inverse);
+    error |= rft.run_impl<
+        cl_uint4, BALLOT_BIT_EXTRACT<cl_uint4, BallotOp::ballot_bit_extract>>(
+        "test_sub_group_ballot_bit_extract", ballot_bit_extract_source);
+    error |= rft.run_impl<
+        cl_uint4, BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_bit_count>>(
+        "test_sub_group_ballot_bit_count", ballot_bit_count_source);
+    error |= rft.run_impl<
+        cl_uint4,
+        BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_inclusive_scan>>(
+        "test_sub_group_ballot_inclusive_scan", ballot_inclusive_scan_source);
+    error |= rft.run_impl<
+        cl_uint4,
+        BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_exclusive_scan>>(
+        "test_sub_group_ballot_exclusive_scan", ballot_exclusive_scan_source);
+    error |= rft.run_impl<
+        cl_uint4, BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_find_lsb>>(
+        "test_sub_group_ballot_find_lsb", ballot_find_lsb_source);
+    error |= rft.run_impl<
+        cl_uint4, BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_find_msb>>(
+        "test_sub_group_ballot_find_msb", ballot_find_msb_source);
     return error;
 }

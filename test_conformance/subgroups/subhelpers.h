@@ -32,6 +32,63 @@
 
 extern MTdata gMTdata;
 
+struct WorkGroupParams
+{
+    WorkGroupParams(size_t gws, size_t lws,
+                    const std::vector<std::string> &req_ext = {},
+                    const std::vector<uint32_t> &all_wim = {})
+        : global_workgroup_size(gws), local_workgroup_size(lws),
+          required_extensions(req_ext), all_work_item_masks(all_wim)
+    {
+        subgroup_size = 0;
+        work_items_mask = 0;
+        use_core_subgroups = true;
+        dynsc = 0;
+    }
+    size_t global_workgroup_size;
+    size_t local_workgroup_size;
+    size_t subgroup_size;
+    uint32_t work_items_mask;
+    int dynsc;
+    bool use_core_subgroups;
+    const std::vector<std::string> &required_extensions;
+    const std::vector<uint32_t> &all_work_item_masks;
+};
+
+struct RunTestForType
+{
+    RunTestForType(cl_device_id device, cl_context context,
+                   cl_command_queue queue, int num_elements,
+                   WorkGroupParams test_params)
+        : device_(device), context_(context), queue_(queue),
+          num_elements_(num_elements), test_params_(test_params)
+    {}
+    template <typename T, typename U>
+    int run_impl(const char *kernel_name, const char *source)
+    {
+        int error = TEST_PASS;
+        if (test_params_.all_work_item_masks.size() > 0)
+        {
+            error = test<T, U>::mrun(device_, context_, queue_, num_elements_,
+                                     kernel_name, source, test_params_);
+        }
+        else
+        {
+            error = test<T, U>::run(device_, context_, queue_, num_elements_,
+                                    kernel_name, source, test_params_);
+        }
+
+        return error;
+    }
+
+private:
+    cl_device_id device_;
+    cl_context context_;
+    cl_command_queue queue_;
+    int num_elements_;
+    WorkGroupParams test_params_;
+};
+
 enum class SubgroupsBroadcastOp
 {
     broadcast,
@@ -168,7 +225,7 @@ static const char *const operation_names(SubgroupsBroadcastOp operation)
 
 class subgroupsAPI {
 public:
-    subgroupsAPI(cl_platform_id platform, bool useCoreSubgroups)
+    subgroupsAPI(cl_platform_id platform, bool use_core_subgroups)
     {
         static_assert(CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE
                           == CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE_KHR,
@@ -176,7 +233,7 @@ public:
         static_assert(CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE
                           == CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR,
                       "Enums have to be the same");
-        if (useCoreSubgroups)
+        if (use_core_subgroups)
         {
             _clGetKernelSubGroupInfo_ptr = &clGetKernelSubGroupInfo;
             clGetKernelSubGroupInfo_name = "clGetKernelSubGroupInfo";
@@ -1002,7 +1059,6 @@ struct TypeManager<subgroups::cl_half16>
 };
 
 // set scalar value to vector of halfs
-
 template <typename Ty, int N = 0>
 typename std::enable_if<TypeManager<Ty>::is_sb_vector_type::value>::type
 set_value(Ty &lhs, const cl_ulong &rhs)
@@ -1027,7 +1083,6 @@ set_value(Ty &lhs, const cl_ulong &rhs)
     }
 }
 
-
 // set vector to vector value
 template <typename Ty>
 typename std::enable_if<TypeManager<Ty>::is_vector_type::value>::type
@@ -1035,7 +1090,6 @@ set_value(Ty &lhs, const Ty &rhs)
 {
     lhs = rhs;
 }
-
 
 // set scalar value to vector size 3
 template <typename Ty, int N = 0>
@@ -1064,7 +1118,6 @@ set_value(Ty &lhs, const cl_ulong &rhs)
     lhs.data = rhs;
 }
 
-
 // compare for common vectors
 template <typename Ty>
 typename std::enable_if<TypeManager<Ty>::is_vector_type::value, bool>::type
@@ -1082,7 +1135,6 @@ compare(const Ty &lhs, const Ty &rhs)
     }
     return true;
 }
-
 
 // compare for vectors 3
 template <typename Ty>
@@ -1114,7 +1166,6 @@ compare(const Ty &lhs, const Ty &rhs)
     }
     return true;
 }
-
 
 // compare for scalars
 template <typename Ty>
@@ -1220,33 +1271,43 @@ static int run_kernel(cl_context context, cl_command_queue queue,
 }
 
 // Driver for testing a single built in function
-template <typename Ty, typename Fns, size_t GSIZE, size_t LSIZE,
-          size_t TSIZE = 0>
-struct test
+template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
 {
+    static int mrun(cl_device_id device, cl_context context,
+                    cl_command_queue queue, int num_elements, const char *kname,
+                    const char *src, WorkGroupParams test_params)
+    {
+        int error = TEST_PASS;
+        for (auto &mask : test_params.all_work_item_masks)
+        {
+            test_params.work_items_mask = mask;
+            error |= run(device, context, queue, num_elements, kname, src,
+                         test_params);
+        }
+        return error;
+    };
     static int run(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elements, const char *kname,
-                   const char *src, int dynscl, bool useCoreSubgroups,
-                   std::vector<std::string> const &required_extensions = {},
-                   unsigned int work_items_mask = 0)
+                   const char *src, WorkGroupParams test_params)
     {
         size_t tmp;
         int error;
         int subgroup_size, num_subgroups;
         size_t realSize;
-        size_t global;
-        size_t local;
+        size_t global = test_params.global_workgroup_size;
+        size_t local = test_params.local_workgroup_size;
         clProgramWrapper program;
         clKernelWrapper kernel;
         cl_platform_id platform;
-        cl_int sgmap[4 * GSIZE];
-        Ty mapin[LSIZE];
-        Ty mapout[LSIZE];
+        cl_int sgmap[4 * global];
+        Ty mapin[local];
+        Ty mapout[local];
         std::stringstream kernel_sstr;
-        if (work_items_mask != 0)
+        if (test_params.work_items_mask != 0)
         {
             kernel_sstr << "#define WORK_ITEMS_MASK ";
-            kernel_sstr << "0x" << std::hex << work_items_mask << "\n";
+            kernel_sstr << "0x" << std::hex << test_params.work_items_mask
+                        << "\n";
         }
 
 
@@ -1270,14 +1331,15 @@ struct test
             }
         }
 
-        for (std::string extension : required_extensions)
+        for (std::string extension : test_params.required_extensions)
         {
             if (!is_extension_available(device, extension.c_str()))
             {
-                log_info("The extension %s not supported on this device. SKIP "
-                         "testing - kernel %s data type %s\n",
-                         extension.c_str(), kname, TypeManager<Ty>::name());
-                return TEST_PASS;
+                // log_info("The extension %s not supported on this device. SKIP
+                // "
+                //          "testing - kernel %s data type %s\n",
+                //          extension.c_str(), kname, TypeManager<Ty>::name());
+                // return TEST_PASS;
             }
             kernel_sstr << "#pragma OPENCL EXTENSION " + extension
                     + ": enable\n";
@@ -1286,7 +1348,7 @@ struct test
         error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
                                 (void *)&platform, NULL);
         test_error(error, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
-        if (useCoreSubgroups)
+        if (test_params.use_core_subgroups)
         {
             kernel_sstr
                 << "#pragma OPENCL EXTENSION cl_khr_subgroups : enable\n";
@@ -1303,16 +1365,18 @@ struct test
         if (error != 0) return error;
 
         // Determine some local dimensions to use for the test.
-        global = GSIZE;
-        error = get_max_common_work_group_size(context, kernel, GSIZE, &local);
+        error = get_max_common_work_group_size(
+            context, kernel, test_params.global_workgroup_size, &local);
         test_error(error, "get_max_common_work_group_size failed");
 
         // Limit it a bit so we have muliple work groups
-        // Ideally this will still be large enough to give us multiple subgroups
-        if (local > LSIZE) local = LSIZE;
+        // Ideally this will still be large enough to give us multiple
+        if (local > test_params.local_workgroup_size)
+            local = test_params.local_workgroup_size;
+
 
         // Get the sub group info
-        subgroupsAPI subgroupsApiSet(platform, useCoreSubgroups);
+        subgroupsAPI subgroupsApiSet(platform, test_params.use_core_subgroups);
         clGetKernelSubGroupInfoKHR_fn clGetKernelSubGroupInfo_ptr =
             subgroupsApiSet.clGetKernelSubGroupInfo_ptr();
         if (clGetKernelSubGroupInfo_ptr == NULL)
@@ -1356,8 +1420,9 @@ struct test
 
         std::vector<Ty> idata;
         std::vector<Ty> odata;
-        size_t input_array_size = GSIZE;
-        size_t output_array_size = GSIZE;
+        size_t input_array_size = global;
+        size_t output_array_size = global;
+        int dynscl = test_params.dynsc;
 
         if (dynscl != 0)
         {
@@ -1378,8 +1443,9 @@ struct test
         test_error(error, "Running kernel first time failed");
 
         // Generate the desired input for the kernel
-        Fns::gen(&idata[0], mapin, sgmap, subgroup_size, (int)local,
-                 (int)global);
+
+        test_params.subgroup_size = subgroup_size;
+        Fns::gen(&idata[0], mapin, sgmap, test_params);
         error = run_kernel(context, queue, kernel, global, local, &idata[0],
                            input_array_size * sizeof(Ty), sgmap,
                            global * sizeof(cl_int4), &odata[0],
@@ -1387,8 +1453,8 @@ struct test
         test_error(error, "Running kernel second time failed");
 
         // Check the result
-        error = Fns::chk(&idata[0], &odata[0], mapin, mapout, sgmap,
-                         subgroup_size, (int)local, (int)global);
+        error =
+            Fns::chk(&idata[0], &odata[0], mapin, mapout, sgmap, test_params);
         test_error(error, "Data verification failed");
         return TEST_PASS;
     }

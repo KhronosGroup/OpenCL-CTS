@@ -19,11 +19,6 @@
 #include "harness/typeWrappers.h"
 #include <bitset>
 
-// Global/local work group sizes
-// Adjust these individually below if desired/needed
-#define GWS 2000
-#define LWS 200
-
 namespace {
 
 static const char* shuffle_xor_source =
@@ -46,37 +41,14 @@ static const char* shuffle_source =
     "    out[gid] = sub_group_shuffle(x, xy[gid].z);"
     "}\n";
 
-struct run_for_type
+template <typename T> int run_shuffle_for_type(RunTestForType rft)
 {
-    run_for_type(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int num_elements,
-                 bool useCoreSubgroups,
-                 std::vector<std::string> required_extensions = {})
-        : device_(device), context_(context), queue_(queue),
-          num_elements_(num_elements), useCoreSubgroups_(useCoreSubgroups),
-          required_extensions_(required_extensions)
-    {}
-
-    template <typename T> int run_shuffle()
-    {
-        int error = test<T, SHF<T, ShuffleOp::shuffle>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_sub_group_shuffle",
-            shuffle_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SHF<T, ShuffleOp::shuffle_xor>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_,
-            "test_sub_group_shuffle_xor", shuffle_xor_source, 0,
-            useCoreSubgroups_, required_extensions_);
-        return error;
-    }
-
-private:
-    cl_device_id device_;
-    cl_context context_;
-    cl_command_queue queue_;
-    int num_elements_;
-    bool useCoreSubgroups_;
-    std::vector<std::string> required_extensions_;
-};
+    int error = rft.run_impl<T, SHF<T, ShuffleOp::shuffle>>(
+        "test_sub_group_shuffle", shuffle_source);
+    error |= rft.run_impl<T, SHF<T, ShuffleOp::shuffle_xor>>(
+        "test_sub_group_shuffle_xor", shuffle_xor_source);
+    return error;
+}
 
 }
 
@@ -84,20 +56,23 @@ int test_work_group_functions_shuffle(cl_device_id device, cl_context context,
                                       cl_command_queue queue, int num_elements)
 {
     std::vector<std::string> required_extensions{ "cl_khr_subgroup_shuffle" };
-    run_for_type rft(device, context, queue, num_elements, true,
-                     required_extensions);
+    constexpr size_t global_work_size = 2000;
+    constexpr size_t local_work_size = 200;
+    WorkGroupParams test_params(global_work_size, local_work_size,
+                                required_extensions);
+    RunTestForType rft(device, context, queue, num_elements, test_params);
 
-    int error = rft.run_shuffle<cl_int>();
-    error |= rft.run_shuffle<cl_uint>();
-    error |= rft.run_shuffle<cl_long>();
-    error |= rft.run_shuffle<cl_ulong>();
-    error |= rft.run_shuffle<cl_short>();
-    error |= rft.run_shuffle<cl_ushort>();
-    error |= rft.run_shuffle<cl_char>();
-    error |= rft.run_shuffle<cl_uchar>();
-    error |= rft.run_shuffle<cl_float>();
-    error |= rft.run_shuffle<cl_double>();
-    error |= rft.run_shuffle<subgroups::cl_half>();
+    int error = run_shuffle_for_type<cl_int>(rft);
+    error |= run_shuffle_for_type<cl_uint>(rft);
+    error |= run_shuffle_for_type<cl_long>(rft);
+    error |= run_shuffle_for_type<cl_ulong>(rft);
+    error |= run_shuffle_for_type<cl_short>(rft);
+    error |= run_shuffle_for_type<cl_ushort>(rft);
+    error |= run_shuffle_for_type<cl_char>(rft);
+    error |= run_shuffle_for_type<cl_uchar>(rft);
+    error |= run_shuffle_for_type<cl_float>(rft);
+    error |= run_shuffle_for_type<cl_double>(rft);
+    error |= run_shuffle_for_type<subgroups::cl_half>(rft);
 
     return error;
 }

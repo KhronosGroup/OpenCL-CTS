@@ -20,18 +20,17 @@
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
-// Global/local work group sizes
-// Adjust these individually below if desired/needed
-#define GWS 2000
-#define LWS 200
-
 namespace {
 // Any/All test functions
 template <NonUniformVoteOp operation> struct AA
 {
-    static void gen(cl_int *x, cl_int *t, cl_int *m, int ns, int nw, int ng)
+    static void gen(cl_int *x, cl_int *t, cl_int *m,
+                    const WorkGroupParams &test_params)
     {
         int i, ii, j, k, n;
+        int ng = test_params.global_workgroup_size;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
         int nj = (nw + ns - 1) / ns;
         int e;
         ng = ng / nw;
@@ -61,8 +60,7 @@ template <NonUniformVoteOp operation> struct AA
             // Now map into work group using map from device
             for (j = 0; j < nw; ++j)
             {
-                i = m[4 * j + 1] * ns + m[4 * j];
-                x[j] = t[i];
+                x[j] = t[j];
             }
 
             x += nw;
@@ -71,9 +69,12 @@ template <NonUniformVoteOp operation> struct AA
     }
 
     static int chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my, cl_int *m,
-                   int ns, int nw, int ng)
+                   const WorkGroupParams &test_params)
     {
         int ii, i, j, k, n;
+        int ng = test_params.global_workgroup_size;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
         int nj = (nw + ns - 1) / ns;
         cl_int taa, raa;
         ng = ng / nw;
@@ -83,9 +84,8 @@ template <NonUniformVoteOp operation> struct AA
             // Map to array indexed to array indexed by local ID and sub group
             for (j = 0; j < nw; ++j)
             {
-                i = m[4 * j + 1] * ns + m[4 * j];
-                mx[i] = x[j];
-                my[i] = y[j];
+                mx[j] = x[j];
+                my[j] = y[j];
             }
 
             for (j = 0; j < nj; ++j)
@@ -145,79 +145,54 @@ static const char *all_source = "__kernel void test_all(const __global Type "
                                 "    out[gid] = sub_group_all(in[gid]);\n"
                                 "}\n";
 
-struct run_for_type
+
+template <typename T>
+int run_broadcast_scan_reduction_for_type(RunTestForType rft)
 {
-    run_for_type(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int num_elements,
-                 bool useCoreSubgroups)
-        : device_(device), context_(context), queue_(queue),
-          num_elements_(num_elements), useCoreSubgroups_(useCoreSubgroups)
-    {}
+    int error = rft.run_impl<T, BC<T, SubgroupsBroadcastOp::broadcast>>(
+        "test_bcast", bcast_source);
+    error |= rft.run_impl<T, RED_NU<T, ArithmeticOp::add_>>("test_redadd",
+                                                            redadd_source);
+    error |= rft.run_impl<T, RED_NU<T, ArithmeticOp::max_>>("test_redmax",
+                                                            redmax_source);
+    error |= rft.run_impl<T, RED_NU<T, ArithmeticOp::min_>>("test_redmin",
+                                                            redmin_source);
+    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::add_>>("test_scinadd",
+                                                             scinadd_source);
+    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::max_>>("test_scinmax",
+                                                             scinmax_source);
+    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::min_>>("test_scinmin",
+                                                             scinmin_source);
+    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::add_>>("test_scexadd",
+                                                             scexadd_source);
+    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::max_>>("test_scexmax",
+                                                             scexmax_source);
+    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::min_>>("test_scexmin",
+                                                             scexmin_source);
+    return error;
+}
 
-    template <typename T> int run()
-    {
-        int error =
-            test<T, BC<T, SubgroupsBroadcastOp::broadcast>, GWS, LWS>::run(
-                device_, context_, queue_, num_elements_, "test_bcast",
-                bcast_source, 0, useCoreSubgroups_);
-        error |= test<T, RED<T, ArithmeticOp::add_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redadd",
-            redadd_source, 0, useCoreSubgroups_);
-        error |= test<T, RED<T, ArithmeticOp::max_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redmax",
-            redmax_source, 0, useCoreSubgroups_);
-        error |= test<T, RED<T, ArithmeticOp::min_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redmin",
-            redmin_source, 0, useCoreSubgroups_);
-        error |= test<T, SCIN<T, ArithmeticOp::add_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scinadd",
-            scinadd_source, 0, useCoreSubgroups_);
-        error |= test<T, SCIN<T, ArithmeticOp::max_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scinmax",
-            scinmax_source, 0, useCoreSubgroups_);
-        error |= test<T, SCIN<T, ArithmeticOp::min_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scinmin",
-            scinmin_source, 0, useCoreSubgroups_);
-        error |= test<T, SCEX<T, ArithmeticOp::add_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scexadd",
-            scexadd_source, 0, useCoreSubgroups_);
-        error |= test<T, SCEX<T, ArithmeticOp::max_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scexmax",
-            scexmax_source, 0, useCoreSubgroups_);
-        error |= test<T, SCEX<T, ArithmeticOp::min_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scexmin",
-            scexmin_source, 0, useCoreSubgroups_);
-
-        return error;
-    }
-
-private:
-    cl_device_id device_;
-    cl_context context_;
-    cl_command_queue queue_;
-    int num_elements_;
-    bool useCoreSubgroups_;
-};
 }
 // Entry point from main
 int test_work_group_functions(cl_device_id device, cl_context context,
                               cl_command_queue queue, int num_elements,
                               bool useCoreSubgroups)
 {
-    int error = test<int, AA<NonUniformVoteOp::any>, GWS, LWS>::run(
-        device, context, queue, num_elements, "test_any", any_source, 0,
-        useCoreSubgroups);
-    error |= test<int, AA<NonUniformVoteOp::all>, GWS, LWS>::run(
-        device, context, queue, num_elements, "test_all", all_source, 0,
-        useCoreSubgroups);
-    run_for_type rft(device, context, queue, num_elements, useCoreSubgroups);
-    error |= rft.run<cl_uint>();
-    error |= rft.run<cl_int>();
-    error |= rft.run<cl_ulong>();
-    error |= rft.run<cl_long>();
-    error |= rft.run<cl_float>();
-    error |= rft.run<cl_double>();
-    // error |= rft.run<cl_half>();
+    constexpr size_t global_work_size = 2000;
+    constexpr size_t local_work_size = 200;
+    WorkGroupParams test_params(global_work_size, local_work_size);
+    RunTestForType rft(device, context, queue, num_elements, test_params);
+    int error =
+        rft.run_impl<cl_int, AA<NonUniformVoteOp::any>>("test_any", any_source);
+    error |=
+        rft.run_impl<cl_int, AA<NonUniformVoteOp::all>>("test_all", all_source);
+    error |= run_broadcast_scan_reduction_for_type<cl_int>(rft);
+    error |= run_broadcast_scan_reduction_for_type<cl_uint>(rft);
+    error |= run_broadcast_scan_reduction_for_type<cl_long>(rft);
+    error |= run_broadcast_scan_reduction_for_type<cl_ulong>(rft);
+    error |= run_broadcast_scan_reduction_for_type<cl_float>(rft);
+    error |= run_broadcast_scan_reduction_for_type<cl_double>(rft);
+    error |= run_broadcast_scan_reduction_for_type<subgroups::cl_half>(rft);
     return error;
 }
 

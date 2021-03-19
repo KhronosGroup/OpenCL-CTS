@@ -19,71 +19,39 @@
 #include "workgroup_common_templates.h"
 #include "harness/typeWrappers.h"
 
-// Global/local work group sizes
-// Adjust these individually below if desired/needed
-#define GWS 2000
-#define LWS 200
 namespace {
-struct run_for_type
+
+template <typename T> int run_broadcast_for_extended_type(RunTestForType rft)
 {
-    run_for_type(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int num_elements,
-                 bool useCoreSubgroups,
-                 std::vector<std::string> required_extensions = {})
-        : device_(device), context_(context), queue_(queue),
-          num_elements_(num_elements), useCoreSubgroups_(useCoreSubgroups),
-          required_extensions_(required_extensions)
-    {}
+    int error = rft.run_impl<T, BC<T, SubgroupsBroadcastOp::broadcast>>(
+        "test_bcast", bcast_source);
+    return error;
+}
 
-    template <typename T> int run_bc()
-    {
-        int error =
-            test<T, BC<T, SubgroupsBroadcastOp::broadcast>, GWS, LWS>::run(
-                device_, context_, queue_, num_elements_, "test_bcast",
-                bcast_source, 0, useCoreSubgroups_, required_extensions_);
-        return error;
-    }
-    template <typename T> int run_red_scin_scex()
-    {
-        int error = test<T, RED<T, ArithmeticOp::add_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redadd",
-            redadd_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, RED<T, ArithmeticOp::max_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redmax",
-            redmax_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, RED<T, ArithmeticOp::min_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redmin",
-            redmin_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCIN<T, ArithmeticOp::add_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scinadd",
-            scinadd_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCIN<T, ArithmeticOp::max_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scinmax",
-            scinmax_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCIN<T, ArithmeticOp::min_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scinmin",
-            scinmin_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCEX<T, ArithmeticOp::add_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scexadd",
-            scexadd_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCEX<T, ArithmeticOp::max_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scexmax",
-            scexmax_source, 0, useCoreSubgroups_, required_extensions_);
-        error |= test<T, SCEX<T, ArithmeticOp::min_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_scexmin",
-            scexmin_source, 0, useCoreSubgroups_, required_extensions_);
+template <typename T> int run_scan_reduction_for_type(RunTestForType rft)
+{
+    int error = rft.run_impl<T, RED_NU<T, ArithmeticOp::add_>>("test_redadd",
+                                                               redadd_source);
+    error |= rft.run_impl<T, RED_NU<T, ArithmeticOp::max_>>("test_redmax",
+                                                            redmax_source);
+    error |= rft.run_impl<T, RED_NU<T, ArithmeticOp::min_>>("test_redmin",
+                                                            redmin_source);
+    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::add_>>("test_scinadd",
+                                                             scinadd_source);
+    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::max_>>("test_scinmax",
+                                                             scinmax_source);
+    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::min_>>("test_scinmin",
+                                                             scinmin_source);
+    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::add_>>("test_scexadd",
+                                                             scexadd_source);
+    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::max_>>("test_scexmax",
+                                                             scexmax_source);
+    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::min_>>("test_scexmin",
+                                                             scexmin_source);
+    return error;
+}
 
-        return error;
-    }
 
-private:
-    cl_device_id device_;
-    cl_context context_;
-    cl_command_queue queue_;
-    int num_elements_;
-    bool useCoreSubgroups_;
-    std::vector<std::string> required_extensions_;
-};
 }
 
 int test_work_group_functions_extended_types(cl_device_id device,
@@ -94,74 +62,77 @@ int test_work_group_functions_extended_types(cl_device_id device,
     std::vector<std::string> required_extensions = {
         "cl_khr_subgroup_extended_types"
     };
-    run_for_type rft(device, context, queue, num_elements, true,
-                     required_extensions);
+    constexpr size_t global_work_size = 2000;
+    constexpr size_t local_work_size = 200;
+    WorkGroupParams test_params(global_work_size, local_work_size,
+                                required_extensions);
+    RunTestForType rft(device, context, queue, num_elements, test_params);
 
-    int error = rft.run_bc<cl_uint2>();
-    error |= rft.run_bc<subgroups::cl_uint3>();
-    error |= rft.run_bc<cl_uint4>();
-    error |= rft.run_bc<cl_uint8>();
-    error |= rft.run_bc<cl_uint16>();
-    error |= rft.run_bc<cl_int2>();
-    error |= rft.run_bc<subgroups::cl_int3>();
-    error |= rft.run_bc<cl_int4>();
-    error |= rft.run_bc<cl_int8>();
-    error |= rft.run_bc<cl_int16>();
+    int error = run_broadcast_for_extended_type<cl_uint2>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_uint3>(rft);
+    error |= run_broadcast_for_extended_type<cl_uint4>(rft);
+    error |= run_broadcast_for_extended_type<cl_uint8>(rft);
+    error |= run_broadcast_for_extended_type<cl_uint16>(rft);
+    error |= run_broadcast_for_extended_type<cl_int2>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_int3>(rft);
+    error |= run_broadcast_for_extended_type<cl_int4>(rft);
+    error |= run_broadcast_for_extended_type<cl_int8>(rft);
+    error |= run_broadcast_for_extended_type<cl_int16>(rft);
 
-    error |= rft.run_bc<cl_ulong2>();
-    error |= rft.run_bc<subgroups::cl_ulong3>();
-    error |= rft.run_bc<cl_ulong4>();
-    error |= rft.run_bc<cl_ulong8>();
-    error |= rft.run_bc<cl_ulong16>();
-    error |= rft.run_bc<cl_long2>();
-    error |= rft.run_bc<subgroups::cl_long3>();
-    error |= rft.run_bc<cl_long4>();
-    error |= rft.run_bc<cl_long8>();
-    error |= rft.run_bc<cl_long16>();
+    error |= run_broadcast_for_extended_type<cl_ulong2>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_ulong3>(rft);
+    error |= run_broadcast_for_extended_type<cl_ulong4>(rft);
+    error |= run_broadcast_for_extended_type<cl_ulong8>(rft);
+    error |= run_broadcast_for_extended_type<cl_ulong16>(rft);
+    error |= run_broadcast_for_extended_type<cl_long2>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_long3>(rft);
+    error |= run_broadcast_for_extended_type<cl_long4>(rft);
+    error |= run_broadcast_for_extended_type<cl_long8>(rft);
+    error |= run_broadcast_for_extended_type<cl_long16>(rft);
 
-    error |= rft.run_bc<cl_float2>();
-    error |= rft.run_bc<subgroups::cl_float3>();
-    error |= rft.run_bc<cl_float4>();
-    error |= rft.run_bc<cl_float8>();
-    error |= rft.run_bc<cl_float16>();
+    error |= run_broadcast_for_extended_type<cl_float2>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_float3>(rft);
+    error |= run_broadcast_for_extended_type<cl_float4>(rft);
+    error |= run_broadcast_for_extended_type<cl_float8>(rft);
+    error |= run_broadcast_for_extended_type<cl_float16>(rft);
 
-    error |= rft.run_bc<cl_double2>();
-    error |= rft.run_bc<subgroups::cl_double3>();
-    error |= rft.run_bc<cl_double4>();
-    error |= rft.run_bc<cl_double8>();
-    error |= rft.run_bc<cl_double16>();
+    error |= run_broadcast_for_extended_type<cl_double2>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_double3>(rft);
+    error |= run_broadcast_for_extended_type<cl_double4>(rft);
+    error |= run_broadcast_for_extended_type<cl_double8>(rft);
+    error |= run_broadcast_for_extended_type<cl_double16>(rft);
 
-    error |= rft.run_bc<cl_ushort2>();
-    error |= rft.run_bc<subgroups::cl_ushort3>();
-    error |= rft.run_bc<cl_ushort4>();
-    error |= rft.run_bc<cl_ushort8>();
-    error |= rft.run_bc<cl_ushort16>();
-    error |= rft.run_bc<cl_short2>();
-    error |= rft.run_bc<subgroups::cl_short3>();
-    error |= rft.run_bc<cl_short4>();
-    error |= rft.run_bc<cl_short8>();
-    error |= rft.run_bc<cl_short16>();
+    error |= run_broadcast_for_extended_type<cl_ushort2>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_ushort3>(rft);
+    error |= run_broadcast_for_extended_type<cl_ushort4>(rft);
+    error |= run_broadcast_for_extended_type<cl_ushort8>(rft);
+    error |= run_broadcast_for_extended_type<cl_ushort16>(rft);
+    error |= run_broadcast_for_extended_type<cl_short2>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_short3>(rft);
+    error |= run_broadcast_for_extended_type<cl_short4>(rft);
+    error |= run_broadcast_for_extended_type<cl_short8>(rft);
+    error |= run_broadcast_for_extended_type<cl_short16>(rft);
 
-    error |= rft.run_bc<cl_uchar2>();
-    error |= rft.run_bc<subgroups::cl_uchar3>();
-    error |= rft.run_bc<cl_uchar4>();
-    error |= rft.run_bc<cl_uchar8>();
-    error |= rft.run_bc<cl_uchar16>();
-    error |= rft.run_bc<cl_char2>();
-    error |= rft.run_bc<subgroups::cl_char3>();
-    error |= rft.run_bc<cl_char4>();
-    error |= rft.run_bc<cl_char8>();
-    error |= rft.run_bc<cl_char16>();
+    error |= run_broadcast_for_extended_type<cl_uchar2>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_uchar3>(rft);
+    error |= run_broadcast_for_extended_type<cl_uchar4>(rft);
+    error |= run_broadcast_for_extended_type<cl_uchar8>(rft);
+    error |= run_broadcast_for_extended_type<cl_uchar16>(rft);
+    error |= run_broadcast_for_extended_type<cl_char2>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_char3>(rft);
+    error |= run_broadcast_for_extended_type<cl_char4>(rft);
+    error |= run_broadcast_for_extended_type<cl_char8>(rft);
+    error |= run_broadcast_for_extended_type<cl_char16>(rft);
 
-    error |= rft.run_bc<subgroups::cl_half2>();
-    error |= rft.run_bc<subgroups::cl_half3>();
-    error |= rft.run_bc<subgroups::cl_half4>();
-    error |= rft.run_bc<subgroups::cl_half8>();
-    error |= rft.run_bc<subgroups::cl_half16>();
+    error |= run_broadcast_for_extended_type<subgroups::cl_half2>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_half3>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_half4>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_half8>(rft);
+    error |= run_broadcast_for_extended_type<subgroups::cl_half16>(rft);
 
-    error |= rft.run_red_scin_scex<cl_uchar>();
-    error |= rft.run_red_scin_scex<cl_char>();
-    error |= rft.run_red_scin_scex<cl_ushort>();
-    error |= rft.run_red_scin_scex<cl_short>();
+    error |= run_scan_reduction_for_type<cl_uchar>(rft);
+    error |= run_scan_reduction_for_type<cl_char>(rft);
+    error |= run_scan_reduction_for_type<cl_ushort>(rft);
+    error |= run_scan_reduction_for_type<cl_short>(rft);
     return error;
 }

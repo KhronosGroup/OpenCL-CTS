@@ -21,11 +21,6 @@
 #define CLUSTER_SIZE 4
 #define CLUSTER_SIZE_STR "4"
 
-// Global/local work group sizes
-// Adjust these individually below if desired/needed
-#define GWS 2000
-#define LWS 200
-
 namespace {
 static const char *redadd_clustered_source =
     "__kernel void test_redadd_clustered(const __global Type *in, __global "
@@ -175,8 +170,11 @@ static const char *redxor_clustered_logical_source =
 // Test for reduce cluster functions
 template <typename Ty, ArithmeticOp operation> struct RED_CLU
 {
-    static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
+    static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         ng = ng / nw;
         log_info("  sub_group_clustered_reduce_%s(%s, %d bytes) ...\n",
                  operation_names(operation), TypeManager<Ty>::name(),
@@ -184,9 +182,12 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int ns, int nw,
-                   int ng)
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                   const WorkGroupParams &test_params)
     {
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
         ng = ng / nw;
 
@@ -196,9 +197,8 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
             // Map to array indexed to array indexed by local ID and sub group
             for (int j = 0; j < nw; ++j)
             {
-                int i = m[4 * j + 1] * ns + m[4 * j];
-                mx[i] = x[j];
-                my[i] = y[j];
+                mx[j] = x[j];
+                my[j] = y[j];
                 data_type_sizes.push_back(m[4 * j + 3]);
             }
 
@@ -228,8 +228,6 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
                 Ty tr = mx[ii];
                 for (int i = 0; i < n; ++i)
                 {
-                    // log_info("i=%d mx=%d my=%d cluster_size=%d\n", i, mx[ii +
-                    // i], my[ii + i], cluster_size);
                     if (i % CLUSTER_SIZE == 0)
                         tr = mx[ii + i];
                     else
@@ -265,94 +263,41 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
     }
 };
 
-struct run_for_type
+template <typename T>
+int run_cluster_red_add_max_min_mul_for_type(RunTestForType rft)
 {
-    run_for_type(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int num_elements,
-                 bool useCoreSubgroups,
-                 std::vector<std::string> required_extensions = {})
-        : device_(device), context_(context), queue_(queue),
-          num_elements_(num_elements), useCoreSubgroups_(useCoreSubgroups),
-          required_extensions_(required_extensions)
-    {}
+    int error = rft.run_impl<T, RED_CLU<T, ArithmeticOp::add_>>(
+        "test_redadd_clustered", redadd_clustered_source);
+    error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::max_>>(
+        "test_redmax_clustered", redmax_clustered_source);
+    error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::min_>>(
+        "test_redmin_clustered", redmin_clustered_source);
+    error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::mul_>>(
+        "test_redmul_clustered", redmul_clustered_source);
+    return error;
+}
+template <typename T> int run_cluster_and_or_xor_for_type(RunTestForType rft)
+{
+    int error = rft.run_impl<T, RED_CLU<T, ArithmeticOp::and_>>(
+        "test_redand_clustered", redand_clustered_source);
+    error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::or_>>(
+        "test_redor_clustered", redor_clustered_source);
+    error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::xor_>>(
+        "test_redxor_clustered", redxor_clustered_source);
+    return error;
+}
+template <typename T>
+int run_cluster_logical_and_or_xor_for_type(RunTestForType rft)
+{
+    int error = rft.run_impl<T, RED_CLU<T, ArithmeticOp::logical_and>>(
+        "test_redand_clustered_logical", redand_clustered_logical_source);
+    error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::logical_or>>(
+        "test_redor_clustered_logical", redor_clustered_logical_source);
+    error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::logical_xor>>(
+        "test_redxor_clustered_logical", redxor_clustered_logical_source);
 
-    template <typename T> int run_clustered_red_not_logical_funcs()
-    {
-        int error = test<T, RED_CLU<T, ArithmeticOp::add_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redadd_clustered",
-            redadd_clustered_source, 0, useCoreSubgroups_,
-            required_extensions_);
-
-        error |= test<T, RED_CLU<T, ArithmeticOp::max_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redmax_clustered",
-            redmax_clustered_source, 0, useCoreSubgroups_,
-            required_extensions_);
-
-        error |= test<T, RED_CLU<T, ArithmeticOp::min_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redmin_clustered",
-            redmin_clustered_source, 0, useCoreSubgroups_,
-            required_extensions_);
-
-        error |= test<T, RED_CLU<T, ArithmeticOp::mul_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redmul_clustered",
-            redmul_clustered_source, 0, useCoreSubgroups_,
-            required_extensions_);
-
-        return error;
-    }
-
-    template <typename T> int run_clustered_red_all_funcs()
-    {
-        int error = run_clustered_red_not_logical_funcs<T>();
-        error |= test<T, RED_CLU<T, ArithmeticOp::and_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redand_clustered",
-            redand_clustered_source, 0, useCoreSubgroups_,
-            required_extensions_);
-
-        error |= test<T, RED_CLU<T, ArithmeticOp::or_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redor_clustered",
-            redor_clustered_source, 0, useCoreSubgroups_, required_extensions_);
-
-        error |= test<T, RED_CLU<T, ArithmeticOp::xor_>, GWS, LWS>::run(
-            device_, context_, queue_, num_elements_, "test_redxor_clustered",
-            redxor_clustered_source, 0, useCoreSubgroups_,
-            required_extensions_);
-
-        return error;
-    }
-
-    int run_clustered_red_logical()
-    {
-        int error =
-            test<cl_int, RED_CLU<cl_int, ArithmeticOp::logical_and>, GWS,
-                 LWS>::run(device_, context_, queue_, num_elements_,
-                           "test_redand_clustered_logical",
-                           redand_clustered_logical_source, 0,
-                           useCoreSubgroups_, required_extensions_);
-
-        error |= test<cl_int, RED_CLU<cl_int, ArithmeticOp::logical_or>, GWS,
-                      LWS>::run(device_, context_, queue_, num_elements_,
-                                "test_redor_clustered_logical",
-                                redor_clustered_logical_source, 0,
-                                useCoreSubgroups_, required_extensions_);
-
-        error |= test<cl_int, RED_CLU<cl_int, ArithmeticOp::logical_xor>, GWS,
-                      LWS>::run(device_, context_, queue_, num_elements_,
-                                "test_redxor_clustered_logical",
-                                redxor_clustered_logical_source, 0,
-                                useCoreSubgroups_, required_extensions_);
-
-        return error;
-    }
-
-private:
-    cl_device_id device_;
-    cl_context context_;
-    cl_command_queue queue_;
-    int num_elements_;
-    bool useCoreSubgroups_;
-    std::vector<std::string> required_extensions_;
-};
+    return error;
+}
 }
 
 int test_work_group_functions_clustered_reduce(cl_device_id device,
@@ -361,21 +306,35 @@ int test_work_group_functions_clustered_reduce(cl_device_id device,
                                                int num_elements)
 {
     std::vector<std::string> required_extensions = {
-        "cl_khr_subgroup_non_uniform_arithmetic"
+        "cl_khr_subgroup_clustered_reduce"
     };
-    run_for_type rft(device, context, queue, num_elements, true,
-                     required_extensions);
+    constexpr size_t global_work_size = 2000;
+    constexpr size_t local_work_size = 200;
+    WorkGroupParams test_params(global_work_size, local_work_size,
+                                required_extensions);
+    RunTestForType rft(device, context, queue, num_elements, test_params);
 
-    int error = rft.run_clustered_red_all_funcs<cl_int>();
-    error |= rft.run_clustered_red_all_funcs<cl_uint>();
-    error |= rft.run_clustered_red_all_funcs<cl_long>();
-    error |= rft.run_clustered_red_all_funcs<cl_ulong>();
-    error |= rft.run_clustered_red_all_funcs<cl_short>();
-    error |= rft.run_clustered_red_all_funcs<cl_ushort>();
-    error |= rft.run_clustered_red_all_funcs<cl_uchar>();
-    error |= rft.run_clustered_red_not_logical_funcs<cl_float>();
-    error |= rft.run_clustered_red_not_logical_funcs<cl_double>();
-    error |= rft.run_clustered_red_not_logical_funcs<subgroups::cl_half>();
-    error |= rft.run_clustered_red_logical();
+    int error = run_cluster_red_add_max_min_mul_for_type<cl_int>(rft);
+    error |= run_cluster_red_add_max_min_mul_for_type<cl_uint>(rft);
+    error |= run_cluster_red_add_max_min_mul_for_type<cl_long>(rft);
+    error |= run_cluster_red_add_max_min_mul_for_type<cl_ulong>(rft);
+    error |= run_cluster_red_add_max_min_mul_for_type<cl_short>(rft);
+    error |= run_cluster_red_add_max_min_mul_for_type<cl_ushort>(rft);
+    error |= run_cluster_red_add_max_min_mul_for_type<cl_char>(rft);
+    error |= run_cluster_red_add_max_min_mul_for_type<cl_uchar>(rft);
+    error |= run_cluster_red_add_max_min_mul_for_type<cl_float>(rft);
+    error |= run_cluster_red_add_max_min_mul_for_type<cl_double>(rft);
+    error |= run_cluster_red_add_max_min_mul_for_type<subgroups::cl_half>(rft);
+
+    error |= run_cluster_and_or_xor_for_type<cl_int>(rft);
+    error |= run_cluster_and_or_xor_for_type<cl_uint>(rft);
+    error |= run_cluster_and_or_xor_for_type<cl_long>(rft);
+    error |= run_cluster_and_or_xor_for_type<cl_ulong>(rft);
+    error |= run_cluster_and_or_xor_for_type<cl_short>(rft);
+    error |= run_cluster_and_or_xor_for_type<cl_ushort>(rft);
+    error |= run_cluster_and_or_xor_for_type<cl_char>(rft);
+    error |= run_cluster_and_or_xor_for_type<cl_uchar>(rft);
+
+    error |= run_cluster_logical_and_or_xor_for_type<cl_int>(rft);
     return error;
 }

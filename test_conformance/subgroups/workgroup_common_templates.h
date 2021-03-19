@@ -21,6 +21,7 @@
 #include "CL/cl_half.h"
 #include "subhelpers.h"
 
+#include <set>
 
 typedef std::bitset<128> bs128;
 static cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
@@ -65,9 +66,12 @@ static cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
 // only 4 work_items from subgroup enter the code (are active)
 template <typename Ty, SubgroupsBroadcastOp operation> struct BC
 {
-    static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
+    static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int i, ii, j, k, n;
+        int ng = test_params.global_workgroup_size;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
         int nj = (nw + ns - 1) / ns;
         int d = ns > 100 ? 100 : ns;
         int non_uniform_size = ng % nw;
@@ -161,18 +165,20 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
             { // for each element in work_group
                 // calculate index as number of subgroup
                 // plus subgroup local id
-                i = m[4 * j + 1] * ns + m[4 * j];
-                x[j] = t[i];
+                x[j] = t[j];
             }
             x += nw;
             m += 4 * nw;
         }
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int ns, int nw,
-                   int ng)
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                   const WorkGroupParams &test_params)
     {
         int ii, i, j, k, l, n;
+        int ng = test_params.global_workgroup_size;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
         int nj = (nw + ns - 1) / ns;
         Ty tr, rr;
         int non_uniform_size = ng % nw;
@@ -189,9 +195,8 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
             }
             for (j = 0; j < nw; ++j)
             { // inside the work_group
-                i = m[4 * j + 1] * ns + m[4 * j];
-                mx[i] = x[j]; // read host inputs for work_group
-                my[i] = y[j]; // read device outputs for work_group
+                mx[j] = x[j]; // read host inputs for work_group
+                my[j] = y[j]; // read device outputs for work_group
             }
 
             for (j = 0; j < nj; ++j)
@@ -401,33 +406,32 @@ void genrand(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
 
             for (int i = 0; i < n; ++i)
             {
-                cl_ulong x;
-                if ((operation == ArithmeticOp::add_
-                     || operation == ArithmeticOp::mul_)
-                    && is_floating_point<Ty>())
+                cl_ulong out_value;
+                double y;
+                if (operation == ArithmeticOp::mul_
+                    || operation == ArithmeticOp::add_)
                 {
-                    // work around different results depending on operation
-                    // order by having input with little precision
-                    x = genrand_int32(gMTdata) % 64;
+                    // work around to avoid overflow, do not use 0 for
+                    // multiplication
+                    out_value = (genrand_int32(gMTdata) % 4) + 1;
                 }
                 else
                 {
-                    x = genrand_int64(gMTdata);
+                    out_value = genrand_int64(gMTdata) % (32 * n);
                     if ((operation == ArithmeticOp::logical_and
                          || operation == ArithmeticOp::logical_or
                          || operation == ArithmeticOp::logical_xor)
-                        && ((x >> 32) & 1) == 0)
-                        x = 0; // increase probability of false
+                        && ((out_value >> 32) & 1) == 0)
+                        out_value = 0; // increase probability of false
                 }
-                set_value(t[ii + i], x);
+                set_value(t[ii + i], out_value);
             }
         }
 
         // Now map into work group using map from device
         for (int j = 0; j < nw; ++j)
         {
-            int i = m[4 * j + 1] * ns + m[4 * j];
-            x[j] = t[i];
+            x[j] = t[j];
         }
 
         x += nw;
@@ -435,222 +439,14 @@ void genrand(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     }
 }
 
-// Reduce functions
-template <typename Ty, ArithmeticOp operation> struct RED
-{
-    static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
-    {
-        ng = ng / nw;
-        log_info("  sub_group_reduce_%s(%s)... \n", operation_names(operation),
-                 TypeManager<Ty>::name());
-        genrand<Ty, operation>(x, t, m, ns, nw, ng);
-    }
-
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int ns, int nw,
-                   int ng)
-    {
-        int ii, i, j, k, n;
-        int nj = (nw + ns - 1) / ns;
-        Ty tr, rr;
-        ng = ng / nw;
-
-        for (k = 0; k < ng; ++k)
-        {
-            // Map to array indexed to array indexed by local ID and sub
-            // group
-            for (j = 0; j < nw; ++j)
-            {
-                i = m[4 * j + 1] * ns + m[4 * j];
-                mx[i] = x[j];
-                my[i] = y[j];
-            }
-
-            for (j = 0; j < nj; ++j)
-            {
-                ii = j * ns;
-                n = ii + ns > nw ? nw - ii : ns;
-
-                // Compute target
-                tr = mx[ii];
-                for (i = 1; i < n; ++i)
-                    tr = calculate<Ty>(tr, mx[ii + i], operation);
-
-                // Check result
-                for (i = 0; i < n; ++i)
-                {
-                    rr = my[ii + i];
-                    if (rr != tr)
-                    {
-                        log_error("ERROR: sub_group_reduce_%s(%s) mismatch for "
-                                  "local id %d in sub group %d in group %d\n",
-                                  operation_names(operation),
-                                  TypeManager<Ty>::name(), i, j, k);
-                        return TEST_FAIL;
-                    }
-                }
-            }
-
-            x += nw;
-            y += nw;
-            m += 4 * nw;
-        }
-        log_info("  sub_group_reduce_%s(%s)... passed\n",
-                 operation_names(operation), TypeManager<Ty>::name());
-        return TEST_PASS;
-    }
-};
-
-// Scan Inclusive functions
-template <typename Ty, ArithmeticOp operation> struct SCIN
-{
-    static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
-    {
-        ng = ng / nw;
-        log_info("  sub_group_scan_inclusive_%s(%s)...\n",
-                 operation_names(operation), TypeManager<Ty>::name());
-        genrand<Ty, operation>(x, t, m, ns, nw, ng);
-    }
-
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int ns, int nw,
-                   int ng)
-    {
-        int ii, i, j, k, n;
-        int nj = (nw + ns - 1) / ns;
-        Ty tr, rr;
-        ng = ng / nw;
-
-        for (k = 0; k < ng; ++k)
-        {
-            // Map to array indexed to array indexed by local ID and sub
-            // group
-            for (j = 0; j < nw; ++j)
-            {
-                i = m[4 * j + 1] * ns + m[4 * j];
-                mx[i] = x[j];
-                my[i] = y[j];
-            }
-
-            for (j = 0; j < nj; ++j)
-            {
-                ii = j * ns;
-                n = ii + ns > nw ? nw - ii : ns;
-
-                // Check result
-                for (i = 0; i < n; ++i)
-                {
-                    tr = i == 0 ? mx[ii] : calculate(tr, mx[ii + i], operation);
-
-                    rr = my[ii + i];
-                    if (rr != tr)
-                    {
-                        log_error(
-                            "ERROR: sub_group_scan_inclusive_%s(%s) "
-                            "mismatch "
-                            "for local id %d in sub group %d in group %d\n",
-                            operation_names(operation), TypeManager<Ty>::name(),
-                            i, j, k);
-                        return TEST_FAIL;
-                    }
-                }
-            }
-
-            x += nw;
-            y += nw;
-            m += 4 * nw;
-        }
-        log_info("  sub_group_scan_inclusive_%s(%s)... passed\n",
-                 operation_names(operation), TypeManager<Ty>::name());
-        return TEST_PASS;
-    }
-};
-
-// Scan Exclusive functions
-template <typename Ty, ArithmeticOp operation> struct SCEX
-{
-    static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
-    {
-        ng = ng / nw;
-        log_info("  sub_group_scan_exclusive_%s(%s)...\n",
-                 operation_names(operation), TypeManager<Ty>::name());
-        genrand<Ty, operation>(x, t, m, ns, nw, ng);
-    }
-
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int ns, int nw,
-                   int ng)
-    {
-        int ii, i, j, k, n;
-        int nj = (nw + ns - 1) / ns;
-        Ty tr, trt, rr;
-        ng = ng / nw;
-
-        for (k = 0; k < ng; ++k)
-        {
-            // Map to array indexed to array indexed by local ID and sub
-            // group
-            for (j = 0; j < nw; ++j)
-            {
-                i = m[4 * j + 1] * ns + m[4 * j];
-                mx[i] = x[j];
-                my[i] = y[j];
-            }
-
-            for (j = 0; j < nj; ++j)
-            {
-                ii = j * ns;
-                n = ii + ns > nw ? nw - ii : ns;
-
-                // Check result
-                for (i = 0; i < n; ++i)
-                {
-                    switch (operation)
-                    {
-                        case ArithmeticOp::add_:
-                            tr = i == 0 ? TypeManager<Ty>::identify_limits(
-                                     ArithmeticOp::add_)
-                                        : tr + trt;
-                            break;
-                        case ArithmeticOp::max_:
-                            tr = i == 0 ? TypeManager<Ty>::identify_limits(
-                                     ArithmeticOp::max_)
-                                        : (trt > tr ? trt : tr);
-                            break;
-                        default:
-                            tr = i == 0
-                                ? TypeManager<Ty>::identify_limits(operation)
-                                : (trt > tr ? tr : trt);
-                            break;
-                    }
-                    trt = mx[ii + i];
-                    rr = my[ii + i];
-
-                    if (rr != tr)
-                    {
-                        log_error(
-                            "ERROR: sub_group_scan_exclusive_%s(%s) "
-                            "mismatch "
-                            "for local id %d in sub group %d in group %d\n",
-                            operation_names(operation), TypeManager<Ty>::name(),
-                            i, j, k);
-                        return TEST_FAIL;
-                    }
-                }
-            }
-
-            x += nw;
-            y += nw;
-            m += 4 * nw;
-        }
-        log_info("  sub_group_scan_exclusive_%s(%s)... passed\n",
-                 operation_names(operation), TypeManager<Ty>::name());
-        return TEST_PASS;
-    }
-};
-
 template <typename Ty, ShuffleOp operation> struct SHF
 {
-    static void gen(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
+    static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int i, ii, j, k, l, n, delta;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
         int d = ns > 100 ? 100 : ns;
         ii = 0;
@@ -700,20 +496,20 @@ template <typename Ty, ShuffleOp operation> struct SHF
             // Now map into work group using map from device
             for (j = 0; j < nw; ++j)
             { // for each element in work_group
-                // calculate index as number of subgroup
-                // plus subgroup local id
-                i = m[4 * j + 1] * ns + m[4 * j];
-                x[j] = t[i];
+                x[j] = t[j];
             }
             x += nw;
             m += 4 * nw;
         }
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m, int ns, int nw,
-                   int ng)
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                   const WorkGroupParams &test_params)
     {
         int ii, i, j, k, l, n;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
         Ty tr, rr;
         ng = ng / nw;
@@ -722,9 +518,8 @@ template <typename Ty, ShuffleOp operation> struct SHF
         { // for each work_group
             for (j = 0; j < nw; ++j)
             { // inside the work_group
-                i = m[4 * j + 1] * ns + m[4 * j];
-                mx[i] = x[j]; // read host inputs for work_group
-                my[i] = y[j]; // read device outputs for work_group
+                mx[j] = x[j]; // read host inputs for work_group
+                my[j] = y[j]; // read device outputs for work_group
             }
 
             for (j = 0; j < nj; ++j)
@@ -771,6 +566,344 @@ template <typename Ty, ShuffleOp operation> struct SHF
         }
         log_info("  sub_group_%s(%s)... passed\n", operation_names(operation),
                  TypeManager<Ty>::name());
+        return TEST_PASS;
+    }
+};
+
+template <typename Ty, ArithmeticOp operation> struct SCEX_NU
+{
+    static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
+    {
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
+        uint32_t work_items_mask = test_params.work_items_mask;
+        ng = ng / nw;
+        std::string func_name;
+        work_items_mask ? func_name = "sub_group_non_uniform_scan_exclusive"
+                        : func_name = "sub_group_scan_exclusive";
+        log_info("  %s_%s(%s)...\n", func_name.c_str(),
+                 operation_names(operation), TypeManager<Ty>::name());
+        log_info("  test params:\n global size = %d local size = %d subgroups "
+                 "size = %d work item mask = 0x%x \n",
+                 test_params.global_workgroup_size, nw, ns, work_items_mask);
+        genrand<Ty, operation>(x, t, m, ns, nw, ng);
+    }
+
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                   const WorkGroupParams &test_params)
+    {
+        int ii, i, j, k, n;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
+        uint32_t work_items_mask = test_params.work_items_mask;
+        int nj = (nw + ns - 1) / ns;
+        Ty tr, rr;
+        ng = ng / nw;
+
+        std::string func_name;
+        work_items_mask ? func_name = "sub_group_non_uniform_scan_exclusive"
+                        : func_name = "sub_group_scan_exclusive";
+
+        uint32_t use_work_items_mask;
+        // for uniform case take into consideration all workitems
+        use_work_items_mask = !work_items_mask ? 0xFFFFFFFF : work_items_mask;
+        for (k = 0; k < ng; ++k)
+        { // for each work_group
+            // Map to array indexed to array indexed by local ID and sub group
+            for (j = 0; j < nw; ++j)
+            { // inside the work_group
+                mx[j] = x[j]; // read host inputs for work_group
+                my[j] = y[j]; // read device outputs for work_group
+            }
+            for (j = 0; j < nj; ++j)
+            {
+                ii = j * ns;
+                n = ii + ns > nw ? nw - ii : ns;
+                std::set<int> active_work_items;
+                for (i = 0; i < n; ++i)
+                {
+                    uint32_t check_work_item = 1 << i % 32;
+                    if (use_work_items_mask & check_work_item)
+                    {
+                        active_work_items.insert(i);
+                    }
+                }
+                if (active_work_items.empty())
+                {
+                    log_info("  No acitve workitems in workgroup id = %d "
+                             "subgroup id = %d - no calculation\n",
+                             k, j);
+                    continue;
+                }
+                else if (active_work_items.size() == 1)
+                {
+                    log_info("  One active workitem in workgroup id = %d "
+                             "subgroup id = %d - no calculation\n",
+                             k, j);
+                    continue;
+                }
+                else
+                {
+                    tr = TypeManager<Ty>::identify_limits(operation);
+                    int idx = 0;
+                    for (const int &active_work_item : active_work_items)
+                    {
+                        rr = my[ii + active_work_item];
+                        if (idx == 0) continue;
+
+                        if (!compare_ordered(rr, tr))
+                        {
+                            log_error(
+                                "ERROR: %s_%s(%s) "
+                                "mismatch for local id %d in sub group %d in "
+                                "group %d Expected: %d Obtained: %d\n",
+                                func_name.c_str(), operation_names(operation),
+                                TypeManager<Ty>::name(), i, j, k, tr, rr);
+                            return TEST_FAIL;
+                        }
+                        tr = calculate<Ty>(tr, mx[ii + active_work_item],
+                                           operation);
+                        idx++;
+                    }
+                }
+            }
+            x += nw;
+            y += nw;
+            m += 4 * nw;
+        }
+
+        log_info("  %s_%s(%s)... passed\n", func_name.c_str(),
+                 operation_names(operation), TypeManager<Ty>::name());
+        return TEST_PASS;
+    }
+};
+
+// Test for scan inclusive non uniform functions
+template <typename Ty, ArithmeticOp operation> struct SCIN_NU
+{
+    static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
+    {
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
+        uint32_t work_items_mask = test_params.work_items_mask;
+        ng = ng / nw;
+        std::string func_name;
+        work_items_mask ? func_name = "sub_group_non_uniform_scan_inclusive"
+                        : func_name = "sub_group_scan_inclusive";
+
+        genrand<Ty, operation>(x, t, m, ns, nw, ng);
+        log_info("  %s_%s(%s)...\n", func_name.c_str(),
+                 operation_names(operation), TypeManager<Ty>::name());
+        log_info("  test params:\n global size = %d local size = %d subgroups "
+                 "size = %d work item mask = 0x%x \n",
+                 test_params.global_workgroup_size, nw, ns, work_items_mask);
+    }
+
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                   const WorkGroupParams &test_params)
+    {
+        int ii, i, j, k, n;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
+        uint32_t work_items_mask = test_params.work_items_mask;
+        int nj = (nw + ns - 1) / ns;
+        Ty tr, rr;
+        ng = ng / nw;
+
+        std::string func_name;
+        work_items_mask ? func_name = "sub_group_non_uniform_scan_inclusive"
+                        : func_name = "sub_group_scan_inclusive";
+
+        uint32_t use_work_items_mask;
+        // for uniform case take into consideration all workitems
+        use_work_items_mask = !work_items_mask ? 0xFFFFFFFF : work_items_mask;
+        // std::bitset<32> mask32(use_work_items_mask);
+        // for (int k) mask32.count();
+        for (k = 0; k < ng; ++k)
+        { // for each work_group
+            // Map to array indexed to array indexed by local ID and sub group
+            for (j = 0; j < nw; ++j)
+            { // inside the work_group
+                mx[j] = x[j]; // read host inputs for work_group
+                my[j] = y[j]; // read device outputs for work_group
+            }
+            for (j = 0; j < nj; ++j)
+            {
+                ii = j * ns;
+                n = ii + ns > nw ? nw - ii : ns;
+                std::set<int> active_work_items;
+                int catch_frist_active = -1;
+
+                for (i = 0; i < n; ++i)
+                {
+                    uint32_t check_work_item = 1 << i % 32;
+                    if (use_work_items_mask & check_work_item)
+                    {
+                        if (catch_frist_active == -1)
+                        {
+                            catch_frist_active = i;
+                        }
+                        active_work_items.insert(i);
+                    }
+                }
+                if (active_work_items.empty())
+                {
+                    log_info("  No acitve workitems in workgroup id = %d "
+                             "subgroup id = %d - no calculation\n",
+                             k, j);
+                    continue;
+                }
+                else
+                {
+                    tr = TypeManager<Ty>::identify_limits(operation);
+                    for (const int &active_work_item : active_work_items)
+                    {
+                        rr = my[ii + active_work_item];
+                        if (active_work_items.size() == 1)
+                        {
+                            tr = mx[ii + catch_frist_active];
+                        }
+                        else
+                        {
+                            tr = calculate<Ty>(tr, mx[ii + active_work_item],
+                                               operation);
+                        }
+                        if (!compare_ordered<Ty>(rr, tr))
+                        {
+                            log_error(
+                                "ERROR: %s_%s(%s) "
+                                "mismatch for local id %d in sub group %d "
+                                "in "
+                                "group %d Expected: %d Obtained: %d\n",
+                                func_name.c_str(), operation_names(operation),
+                                TypeManager<Ty>::name(), active_work_item, j, k,
+                                tr, rr);
+                            return TEST_FAIL;
+                        }
+                    }
+                }
+            }
+            x += nw;
+            y += nw;
+            m += 4 * nw;
+        }
+
+        log_info("  %s_%s(%s)... passed\n", func_name.c_str(),
+                 operation_names(operation), TypeManager<Ty>::name());
+        return TEST_PASS;
+    }
+};
+
+// Test for reduce non uniform functions
+template <typename Ty, ArithmeticOp operation> struct RED_NU
+{
+
+    static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
+    {
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
+        uint32_t work_items_mask = test_params.work_items_mask;
+        ng = ng / nw;
+        std::string func_name;
+
+        work_items_mask ? func_name = "sub_group_non_uniform_reduce"
+                        : func_name = "sub_group_reduce";
+        log_info("  %s_%s(%s)...\n", func_name.c_str(),
+                 operation_names(operation), TypeManager<Ty>::name());
+        log_info("  test params:\n global size = %d local size = %d subgroups "
+                 "size = %d work item mask = 0x%x \n",
+                 test_params.global_workgroup_size, nw, ns, work_items_mask);
+        genrand<Ty, operation>(x, t, m, ns, nw, ng);
+    }
+
+    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                   const WorkGroupParams &test_params)
+    {
+        int ii, i, j, k, n;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
+        uint32_t work_items_mask = test_params.work_items_mask;
+        int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
+        Ty tr, rr;
+
+        std::string func_name;
+        work_items_mask ? func_name = "sub_group_non_uniform_reduce"
+                        : func_name = "sub_group_reduce";
+
+        for (k = 0; k < ng; ++k)
+        {
+            // Map to array indexed to array indexed by local ID and sub
+            // group
+            for (j = 0; j < nw; ++j)
+            {
+                mx[j] = x[j];
+                my[j] = y[j];
+            }
+
+            uint32_t use_work_items_mask;
+            use_work_items_mask =
+                !work_items_mask ? 0xFFFFFFFF : work_items_mask;
+
+            for (j = 0; j < nj; ++j)
+            {
+                ii = j * ns;
+                n = ii + ns > nw ? nw - ii : ns;
+                std::set<int> active_work_items;
+                int catch_frist_active = -1;
+                for (i = 0; i < n; ++i)
+                {
+                    uint32_t check_work_item = 1 << i % 32;
+                    if (use_work_items_mask & check_work_item)
+                    {
+                        if (catch_frist_active == -1)
+                        {
+                            catch_frist_active = i;
+                            tr = mx[ii + i];
+                            active_work_items.insert(i);
+                            continue;
+                        }
+                        active_work_items.insert(i);
+                        tr = calculate<Ty>(tr, mx[ii + i], operation);
+                    }
+                }
+
+                if (active_work_items.empty())
+                {
+                    log_info("  No acitve workitems in workgroup id = %d "
+                             "subgroup id = %d - no calculation\n",
+                             k, j);
+                    continue;
+                }
+
+                for (const int &active_work_item : active_work_items)
+                {
+                    rr = my[ii + active_work_item];
+                    if (!compare_ordered<Ty>(rr, tr))
+                    {
+                        log_error("ERROR: %s_%s(%s) "
+                                  "mismatch for local id %d in sub group %d in "
+                                  "group %d Expected: %d Obtained: %d\n",
+                                  func_name.c_str(), operation_names(operation),
+                                  TypeManager<Ty>::name(), active_work_item, j,
+                                  k, tr, rr);
+                        return TEST_FAIL;
+                    }
+                }
+            }
+            x += nw;
+            y += nw;
+            m += 4 * nw;
+        }
+
+        log_info("  %s_%s(%s)... passed\n", func_name.c_str(),
+                 operation_names(operation), TypeManager<Ty>::name());
         return TEST_PASS;
     }
 };
