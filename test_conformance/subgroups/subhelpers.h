@@ -51,42 +51,8 @@ struct WorkGroupParams
     uint32_t work_items_mask;
     int dynsc;
     bool use_core_subgroups;
-    const std::vector<std::string> &required_extensions;
-    const std::vector<uint32_t> &all_work_item_masks;
-};
-
-struct RunTestForType
-{
-    RunTestForType(cl_device_id device, cl_context context,
-                   cl_command_queue queue, int num_elements,
-                   WorkGroupParams test_params)
-        : device_(device), context_(context), queue_(queue),
-          num_elements_(num_elements), test_params_(test_params)
-    {}
-    template <typename T, typename U>
-    int run_impl(const char *kernel_name, const char *source)
-    {
-        int error = TEST_PASS;
-        if (test_params_.all_work_item_masks.size() > 0)
-        {
-            error = test<T, U>::mrun(device_, context_, queue_, num_elements_,
-                                     kernel_name, source, test_params_);
-        }
-        else
-        {
-            error = test<T, U>::run(device_, context_, queue_, num_elements_,
-                                    kernel_name, source, test_params_);
-        }
-
-        return error;
-    }
-
-private:
-    cl_device_id device_;
-    cl_context context_;
-    cl_command_queue queue_;
-    int num_elements_;
-    WorkGroupParams test_params_;
+    std::vector<std::string> required_extensions;
+    std::vector<uint32_t> all_work_item_masks;
 };
 
 enum class SubgroupsBroadcastOp
@@ -1492,4 +1458,39 @@ static void set_randomdata_for_subgroup(Ty *workgroup, int wg_offset,
             break;
     }
 }
+
+struct RunTestForType
+{
+    RunTestForType(cl_device_id device, cl_context context,
+                   cl_command_queue queue, int num_elements,
+                   WorkGroupParams test_params)
+        : device_(device), context_(context), queue_(queue),
+          num_elements_(num_elements), test_params_(test_params)
+    {}
+    template <typename T, typename U>
+    int run_impl(const char *kernel_name, const char *source)
+    {
+        int error = TEST_PASS;
+        if (test_params_.all_work_item_masks.size() > 0)
+        {
+            error = test<T, U>::mrun(device_, context_, queue_, num_elements_,
+                                     kernel_name, source, test_params_);
+        }
+        else
+        {
+            error = test<T, U>::run(device_, context_, queue_, num_elements_,
+                                    kernel_name, source, test_params_);
+        }
+
+        return error;
+    }
+
+private:
+    cl_device_id device_;
+    cl_context context_;
+    cl_command_queue queue_;
+    int num_elements_;
+    WorkGroupParams test_params_;
+};
+
 #endif
