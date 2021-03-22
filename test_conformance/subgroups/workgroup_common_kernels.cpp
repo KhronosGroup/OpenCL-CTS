@@ -15,15 +15,17 @@
 //
 #include "workgroup_common_kernels.h"
 
-const char* bcast_source = "__kernel void test_bcast(const __global Type *in, "
-                           "__global int4 *xy, __global Type *out)\n"
-                           "{\n"
-                           "    int gid = get_global_id(0);\n"
-                           "    XY(xy,gid);\n"
-                           "    Type x = in[gid];\n"
-                           "    out[gid] = sub_group_broadcast(x, xy[gid].z);\n"
+const char* bcast_source =
+    "__kernel void test_bcast(const __global Type *in, "
+    "__global int4 *xy, __global Type *out)\n"
+    "{\n"
+    "    int gid = get_global_id(0);\n"
+    "    XY(xy,gid);\n"
+    "    Type x = in[gid];\n"
+    "    uint which_sub_group_local_id = xy[gid].z;\n"
+    "    out[gid] = sub_group_broadcast(x, which_sub_group_local_id);\n"
 
-                           "}\n";
+    "}\n";
 
 const char* redadd_source = "__kernel void test_redadd(const __global Type "
                             "*in, __global int4 *xy, __global Type *out)\n"
