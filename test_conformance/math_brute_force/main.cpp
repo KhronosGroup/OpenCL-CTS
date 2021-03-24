@@ -51,21 +51,21 @@
     (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO                  \
      | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM)
 
-const char **gTestNames = NULL;
-unsigned int gTestNameCount = 0;
-char appName[MAXPATHLEN] = "";
+static const char **gTestNames = NULL;
+static unsigned int gTestNameCount = 0;
+static char appName[MAXPATHLEN] = "";
 cl_device_id gDevice = NULL;
 cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
 static int32_t gStartTestNumber = -1;
 static int32_t gEndTestNumber = -1;
 int gSkipCorrectnessTesting = 0;
-int gStopOnError = 0;
+static int gStopOnError = 0;
 static bool gSkipRestOfTests;
 int gForceFTZ = 0;
 int gWimpyMode = 0;
-int gHasDouble = 0;
-int gTestFloat = 1;
+static int gHasDouble = 0;
+static int gTestFloat = 1;
 // This flag should be 'ON' by default and it can be changed through the command
 // line arguments.
 static int gTestFastRelaxed = 1;
@@ -78,7 +78,7 @@ static int gTestFastRelaxed = 1;
   OpenCL 2.0 spec then it has to be changed through a command line argument.
 */
 int gFastRelaxedDerived = 1;
-int gToggleCorrectlyRoundedDivideSqrt = 0;
+static int gToggleCorrectlyRoundedDivideSqrt = 0;
 int gDeviceILogb0 = 1;
 int gDeviceILogbNaN = 1;
 int gCheckTininessBeforeRounding = 1;
@@ -97,12 +97,9 @@ cl_mem gInBuffer2 = NULL;
 cl_mem gInBuffer3 = NULL;
 cl_mem gOutBuffer[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
 cl_mem gOutBuffer2[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
-uint32_t gComputeDevices = 0;
-uint32_t gSimdSize = 1;
-uint32_t gDeviceFrequency = 0;
 static MTdata gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
-cl_device_fp_config gDoubleCapabilities = 0;
+static cl_device_fp_config gDoubleCapabilities = 0;
 int gWimpyReductionFactor = 32;
 int gWimpyBufferSize = BUFFER_SIZE;
 int gVerboseBruteForce = 0;
@@ -110,15 +107,14 @@ int gVerboseBruteForce = 0;
 static int ParseArgs(int argc, const char **argv);
 static void PrintUsage(void);
 static void PrintFunctions(void);
-test_status InitCL(cl_device_id device);
+static test_status InitCL(cl_device_id device);
 static void ReleaseCL(void);
 static int InitILogbConstants(void);
 static int IsTininessDetectedBeforeRounding(void);
 static int
 IsInRTZMode(void); // expensive. Please check gIsInRTZMode global instead.
 
-
-int doTest(const char *name)
+static int doTest(const char *name)
 {
     if (gSkipRestOfTests)
     {
@@ -747,7 +743,7 @@ int test_not(cl_device_id deviceID, cl_context context, cl_command_queue queue,
     return doTest("not");
 }
 
-test_definition test_list[] = {
+static test_definition test_list[] = {
     ADD_TEST(acos),          ADD_TEST(acosh),      ADD_TEST(acospi),
     ADD_TEST(asin),          ADD_TEST(asinh),      ADD_TEST(asinpi),
     ADD_TEST(atan),          ADD_TEST(atanh),      ADD_TEST(atanpi),
@@ -784,7 +780,7 @@ test_definition test_list[] = {
     ADD_TEST(not),
 };
 
-const int test_num = ARRAY_SIZE(test_list);
+static const int test_num = ARRAY_SIZE(test_list);
 
 #pragma mark -
 
@@ -1080,7 +1076,6 @@ test_status InitCL(cl_device_id device)
 {
     int error;
     uint32_t i;
-    size_t configSize = sizeof(gComputeDevices);
     cl_device_type device_type;
 
     error = clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(device_type),
@@ -1092,9 +1087,12 @@ test_status InitCL(cl_device_id device)
     }
 
     gDevice = device;
+
+    uint32_t computeDevices = 0;
+    size_t configSize = sizeof(computeDevices);
     if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_MAX_COMPUTE_UNITS,
-                                 configSize, &gComputeDevices, NULL)))
-        gComputeDevices = 1;
+                                 configSize, &computeDevices, NULL)))
+        computeDevices = 1;
 
     // Check extensions
     if (is_extension_available(gDevice, "cl_khr_fp64"))
@@ -1138,10 +1136,11 @@ test_status InitCL(cl_device_id device)
 #endif
     }
 
-    configSize = sizeof(gDeviceFrequency);
+    uint32_t deviceFrequency = 0;
+    configSize = sizeof(deviceFrequency);
     if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY,
-                                 configSize, &gDeviceFrequency, NULL)))
-        gDeviceFrequency = 0;
+                                 configSize, &deviceFrequency, NULL)))
+        deviceFrequency = 0;
 
     if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_SINGLE_FP_CONFIG,
                                  sizeof(gFloatCapabilities),
@@ -1288,7 +1287,7 @@ test_status InitCL(cl_device_id device)
     vlog("\tCL C Version: %s\n", c);
     clGetDeviceInfo(gDevice, CL_DRIVER_VERSION, sizeof(c), &c, NULL);
     vlog("\tDriver Version: %s\n", c);
-    vlog("\tDevice Frequency: %d MHz\n", gDeviceFrequency);
+    vlog("\tDevice Frequency: %d MHz\n", deviceFrequency);
     vlog("\tSubnormal values supported for floats? %s\n",
          no_yes[0 != (CL_FP_DENORM & gFloatCapabilities)]);
     vlog("\tCorrectly rounded divide and sqrt supported for floats? %s\n",
