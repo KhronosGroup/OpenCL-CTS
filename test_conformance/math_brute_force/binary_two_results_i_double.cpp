@@ -210,14 +210,14 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             p2[j] = DoubleFromUInt32(genrand_int32(d));
         }
 
-        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_TRUE, 0,
+        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
 
-        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_TRUE, 0,
+        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           bufferSize, gIn2, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
@@ -230,7 +230,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             uint32_t pattern = 0xffffdead;
             memset_pattern4(gOut[j], &pattern, bufferSize);
             if ((error =
-                     clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
+                     clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
                                           bufferSize, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
@@ -240,7 +240,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 
             memset_pattern4(gOut2[j], &pattern, bufferSize);
             if ((error =
-                     clEnqueueWriteBuffer(gQueue, gOutBuffer2[j], CL_TRUE, 0,
+                     clEnqueueWriteBuffer(gQueue, gOutBuffer2[j], CL_FALSE, 0,
                                           bufferSize, gOut2[j], 0, NULL, NULL)))
             {
                 vlog_error("\n*** Error %d in clEnqueueWriteBuffer2b(%d) ***\n",
@@ -573,13 +573,13 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         double *p = (double *)gIn;
         for (j = 0; j < bufferSize / sizeof(cl_double); j++)
             p[j] = DoubleFromUInt32(genrand_int32(d));
-        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_TRUE, 0,
+        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
-        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_TRUE, 0,
+        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
                                           bufferSize, gIn2, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
