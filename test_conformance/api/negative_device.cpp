@@ -24,22 +24,17 @@ int test_negative_get_device_info(cl_device_id deviceID, cl_context context,
 {
 
     cl_device_type device_type = 0;
-    cl_int err = clGetDeviceInfo(nullptr, CL_DEVICE_TYPE, sizeof(device_type),
-                                 &device_type, nullptr);
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clGetDeviceInfo should return CL_INVALID_DEVICE when: \"device is not "
-        "a valid device\" with a nullptr",
-        TEST_FAIL);
-
-    err =
-        clGetDeviceInfo(reinterpret_cast<cl_device_id>(context), CL_DEVICE_TYPE,
-                        sizeof(device_type), &device_type, nullptr);
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clGetDeviceInfo should return CL_INVALID_DEVICE when: \"device is not "
-        "a valid device\" with a with a valid object which is NOT a device",
-        TEST_FAIL);
+    cl_int err(CL_SUCCESS);
+    for (auto invalid_device : get_invalid_objects<cl_device_id>(deviceID))
+    {
+        err = clGetDeviceInfo(invalid_device, CL_DEVICE_TYPE,
+                              sizeof(device_type), &device_type, nullptr);
+        test_failure_error_ret(err, CL_INVALID_DEVICE,
+                               "clGetDeviceInfo should return "
+                               "CL_INVALID_DEVICE when: \"device is not "
+                               "a valid device\"",
+                               TEST_FAIL);
+    }
 
     constexpr cl_device_info INVALID_PARAM_VALUE = 0;
     err = clGetDeviceInfo(deviceID, INVALID_PARAM_VALUE, 0, nullptr, nullptr);
@@ -68,13 +63,17 @@ int test_negative_get_device_ids(cl_device_id deviceID, cl_context context,
 
     cl_device_id devices = nullptr;
 
-    cl_int err = clGetDeviceIDs(reinterpret_cast<cl_platform_id>(context),
-                                CL_DEVICE_TYPE_DEFAULT, 1, &devices, nullptr);
-    test_failure_error_ret(
-        err, CL_INVALID_PLATFORM,
-        "clGetDeviceIDs should return CL_INVALID_PLATFORM when: \"platform is "
-        "not a valid platform\" using a valid object which is NOT a platform",
-        TEST_FAIL);
+    cl_int err(CL_SUCCESS);
+    for (auto invalid_platform : get_invalid_objects<cl_platform_id>(deviceID))
+    {
+        err = clGetDeviceIDs(invalid_platform, CL_DEVICE_TYPE_DEFAULT, 1,
+                             &devices, nullptr);
+        test_failure_error_ret(err, CL_INVALID_PLATFORM,
+                               "clGetDeviceIDs should return "
+                               "CL_INVALID_PLATFORM when: \"platform is "
+                               "not a valid platform\"",
+                               TEST_FAIL);
+    }
 
     cl_device_type INVALID_DEVICE_TYPE = 0;
     err = clGetDeviceIDs(platform, INVALID_DEVICE_TYPE, 1, &devices, nullptr);
@@ -140,22 +139,17 @@ int test_negative_get_device_and_host_timer(cl_device_id deviceID,
                                             int num_elements)
 {
     cl_ulong *device_timestamp = nullptr, *host_timestamp = nullptr;
-    cl_int err =
-        clGetDeviceAndHostTimer(nullptr, device_timestamp, host_timestamp);
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clGetDeviceAndHostTimer should return CL_INVALID_DEVICE when: "
-        "\"device is not a valid device\" using a nullptr",
-        TEST_FAIL);
-
-    err = clGetDeviceAndHostTimer(reinterpret_cast<cl_device_id>(context),
-                                  device_timestamp, host_timestamp);
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clGetDeviceAndHostTimer should return CL_INVALID_DEVICE when: "
-        "\"device is not a valid device\" using a valid object which is NOT a "
-        "device",
-        TEST_FAIL);
+    cl_int err(CL_SUCCESS);
+    for (auto invalid_device : get_invalid_objects<cl_device_id>(deviceID))
+    {
+        err = clGetDeviceAndHostTimer(invalid_device, device_timestamp,
+                                      host_timestamp);
+        test_failure_error_ret(
+            err, CL_INVALID_DEVICE,
+            "clGetDeviceAndHostTimer should return CL_INVALID_DEVICE when: "
+            "\"device is not a valid device\"",
+            TEST_FAIL);
+    }
 
     cl_platform_id platform = getPlatformFromDevice(deviceID);
 
@@ -214,20 +208,16 @@ int test_negative_get_host_timer(cl_device_id deviceID, cl_context context,
                                  cl_command_queue queue, int num_elements)
 {
     cl_ulong *host_timestamp = nullptr;
-    cl_int err = clGetHostTimer(nullptr, host_timestamp);
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clGetHostTimer should return CL_INVALID_DEVICE when: \"device is not "
-        "a valid device\" using a nullptr",
-        TEST_FAIL);
-
-    err =
-        clGetHostTimer(reinterpret_cast<cl_device_id>(context), host_timestamp);
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clGetHostTimer should return CL_INVALID_DEVICE when: \"device is not "
-        "a valid device\" using a valid object which is NOT a device",
-        TEST_FAIL);
+    cl_int err(CL_SUCCESS);
+    for (auto invalid_device : get_invalid_objects<cl_device_id>(deviceID))
+    {
+        err = clGetHostTimer(invalid_device, host_timestamp);
+        test_failure_error_ret(err, CL_INVALID_DEVICE,
+                               "clGetHostTimer should return CL_INVALID_DEVICE "
+                               "when: \"device is not "
+                               "a valid device\"",
+                               TEST_FAIL);
+    }
 
     cl_platform_id platform = getPlatformFromDevice(deviceID);
     // Initialise timer_resolution to a Non-0 value as CL2.1/2 devices must
@@ -377,21 +367,17 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
     properties[2] = 0;
     cl_device_id *out_devices = nullptr;
 
-    cl_int err =
-        clCreateSubDevices(nullptr, properties, 1, out_devices, nullptr);
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clCreateSubDevices should return CL_INVALID_DEVICE when: \"in_device "
-        "is not a valid device\" using a nullptr",
-        TEST_FAIL);
-
-    err = clCreateSubDevices(reinterpret_cast<cl_device_id>(context),
-                             properties, 1, out_devices, nullptr);
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clCreateSubDevices should return CL_INVALID_DEVICE when: \"in_device "
-        "is not a valid device\" using a valid object which is NOT a device",
-        TEST_FAIL);
+    cl_int err(CL_SUCCESS);
+    for (auto invalid_device : get_invalid_objects<cl_device_id>(deviceID))
+    {
+        err = clCreateSubDevices(invalid_device, properties, 1, out_devices,
+                                 nullptr);
+        test_failure_error_ret(err, CL_INVALID_DEVICE,
+                               "clCreateSubDevices should return "
+                               "CL_INVALID_DEVICE when: \"in_device "
+                               "is not a valid device\"",
+                               TEST_FAIL);
+    }
 
     err = clCreateSubDevices(deviceID, nullptr, 1, out_devices, nullptr);
     test_failure_error_ret(
@@ -490,19 +476,16 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
 int test_negative_retain_device(cl_device_id deviceID, cl_context context,
                                 cl_command_queue queue, int num_elements)
 {
-    cl_int err = clRetainDevice(nullptr);
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clRetainDevice should return CL_INVALID_DEVICE when: \"device is not "
-        "a valid device\" using a nullptr",
-        TEST_FAIL);
-
-    err = clRetainDevice(reinterpret_cast<cl_device_id>(context));
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clRetainDevice should return CL_INVALID_DEVICE when: \"device is not "
-        "a valid device\" using a valid object that is NOT a device",
-        TEST_FAIL);
+    cl_int err(CL_SUCCESS);
+    for (auto invalid_device : get_invalid_objects<cl_device_id>(deviceID))
+    {
+        err = clRetainDevice(invalid_device);
+        test_failure_error_ret(err, CL_INVALID_DEVICE,
+                               "clRetainDevice should return CL_INVALID_DEVICE "
+                               "when: \"device is not "
+                               "a valid device\"",
+                               TEST_FAIL);
+    }
 
     return TEST_PASS;
 }
@@ -511,19 +494,16 @@ int test_negative_retain_device(cl_device_id deviceID, cl_context context,
 int test_negative_release_device(cl_device_id deviceID, cl_context context,
                                  cl_command_queue queue, int num_elements)
 {
-    cl_int err = clReleaseDevice(nullptr);
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clReleaseDevice should return CL_INVALID_DEVICE when: \"device is not "
-        "a valid device\" using a nullptr",
-        TEST_FAIL);
-
-    err = clReleaseDevice(reinterpret_cast<cl_device_id>(context));
-    test_failure_error_ret(
-        err, CL_INVALID_DEVICE,
-        "clReleaseDevice should return CL_INVALID_DEVICE when: \"device is not "
-        "a valid device\" using a valid object which is NOT a device",
-        TEST_FAIL);
+    cl_int err(CL_SUCCESS);
+    for (auto invalid_device : get_invalid_objects<cl_device_id>(deviceID))
+    {
+        err = clReleaseDevice(invalid_device);
+        test_failure_error_ret(err, CL_INVALID_DEVICE,
+                               "clReleaseDevice should return "
+                               "CL_INVALID_DEVICE when: \"device is not "
+                               "a valid device\"",
+                               TEST_FAIL);
+    }
 
     return TEST_PASS;
 }
