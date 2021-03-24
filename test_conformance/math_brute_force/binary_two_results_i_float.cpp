@@ -177,8 +177,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     int64_t maxError2 = 0;
     float maxErrorVal = 0.0f;
     float maxErrorVal2 = 0.0f;
-    size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
-    uint64_t step = getTestStep(sizeof(float), bufferSize);
+    uint64_t step = getTestStep(sizeof(float), BUFFER_SIZE);
 
     cl_uint threadCount = GetThreadCount();
 
@@ -205,21 +204,21 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         // Init input array
         cl_uint *p = (cl_uint *)gIn;
         cl_uint *p2 = (cl_uint *)gIn2;
-        for (j = 0; j < bufferSize / sizeof(float); j++)
+        for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
         {
             p[j] = genrand_int32(d);
             p2[j] = genrand_int32(d);
         }
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
-                                          bufferSize, gIn, 0, NULL, NULL)))
+                                          BUFFER_SIZE, gIn, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
-                                          bufferSize, gIn2, 0, NULL, NULL)))
+                                          BUFFER_SIZE, gIn2, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
@@ -229,20 +228,20 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
-            memset_pattern4(gOut[j], &pattern, bufferSize);
+            memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
             if ((error =
                      clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
-                                          bufferSize, gOut[j], 0, NULL, NULL)))
+                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
                            error, j);
                 goto exit;
             }
 
-            memset_pattern4(gOut2[j], &pattern, bufferSize);
-            if ((error =
-                     clEnqueueWriteBuffer(gQueue, gOutBuffer2[j], CL_FALSE, 0,
-                                          bufferSize, gOut2[j], 0, NULL, NULL)))
+            memset_pattern4(gOut2[j], &pattern, BUFFER_SIZE);
+            if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer2[j], CL_FALSE,
+                                              0, BUFFER_SIZE, gOut2[j], 0, NULL,
+                                              NULL)))
             {
                 vlog_error("\n*** Error %d in clEnqueueWriteBuffer2b(%d) ***\n",
                            error, j);
@@ -254,8 +253,8 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeof(cl_float) * sizeValues[j];
-            size_t localCount = (bufferSize + vectorSize - 1)
-                / vectorSize; // bufferSize / vectorSize  rounded up
+            size_t localCount = (BUFFER_SIZE + vectorSize - 1)
+                / vectorSize; // BUFFER_SIZE / vectorSize  rounded up
             if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
                                         &gOutBuffer[j])))
             {
@@ -305,7 +304,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             cri.r = (float *)gOut_Ref;
             cri.i = (int *)gOut_Ref2;
             cri.f_ffpI = f->func.f_ffpI;
-            cri.lim = bufferSize / sizeof(float);
+            cri.lim = BUFFER_SIZE / sizeof(float);
             cri.count = (cri.lim + threadCount - 1) / threadCount;
             ThreadPool_Do(ReferenceF, threadCount, &cri);
         }
@@ -313,7 +312,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             float *r = (float *)gOut_Ref;
             int *r2 = (int *)gOut_Ref2;
-            for (j = 0; j < bufferSize / sizeof(float); j++)
+            for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
                 r[j] = (float)f->func.f_ffpI(s[j], s2[j], r2 + j);
         }
 
@@ -322,14 +321,14 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
-                                         bufferSize, gOut[j], 0, NULL, NULL)))
+                                         BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
                 goto exit;
             }
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer2[j], CL_TRUE, 0,
-                                         bufferSize, gOut2[j], 0, NULL, NULL)))
+                                         BUFFER_SIZE, gOut2[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray2 failed %d\n", error);
                 goto exit;
@@ -341,7 +340,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         // Verify data
         uint32_t *t = (uint32_t *)gOut_Ref;
         int32_t *t2 = (int32_t *)gOut_Ref2;
-        for (j = 0; j < bufferSize / sizeof(float); j++)
+        for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
         {
             for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
@@ -534,7 +533,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             if (gVerboseBruteForce)
             {
                 vlog("base:%14u step:%10zu  bufferSize:%10zd \n", i, step,
-                     bufferSize);
+                     BUFFER_SIZE);
             }
             else
             {

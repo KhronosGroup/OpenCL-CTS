@@ -104,7 +104,6 @@ static MTdata gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
 cl_device_fp_config gDoubleCapabilities = 0;
 int gWimpyReductionFactor = 32;
-int gWimpyBufferSize = BUFFER_SIZE;
 int gVerboseBruteForce = 0;
 
 static int ParseArgs(int argc, const char **argv);

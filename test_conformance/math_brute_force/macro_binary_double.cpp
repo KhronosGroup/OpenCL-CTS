@@ -284,13 +284,6 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         / (sizeof(cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
     test_info.scale = getTestScale(sizeof(cl_double));
 
-    if (gWimpyMode)
-    {
-        test_info.subBufferSize = gWimpyBufferSize
-            / (sizeof(cl_double)
-               * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    }
-
     test_info.step = (cl_uint)test_info.subBufferSize * test_info.scale;
     if (test_info.step / test_info.subBufferSize != test_info.scale)
     {

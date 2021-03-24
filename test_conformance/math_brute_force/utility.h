@@ -34,7 +34,6 @@
 
 struct Func;
 
-extern int gWimpyBufferSize;
 extern int gWimpyReductionFactor;
 
 #define VECTOR_SIZE_COUNT 6

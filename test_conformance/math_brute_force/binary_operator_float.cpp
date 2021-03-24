@@ -288,13 +288,6 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
         / (sizeof(cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
     test_info.scale = getTestScale(sizeof(cl_float));
 
-    if (gWimpyMode)
-    {
-        test_info.subBufferSize = gWimpyBufferSize
-            / (sizeof(cl_float)
-               * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    }
-
     test_info.step = (cl_uint)test_info.subBufferSize * test_info.scale;
     if (test_info.step / test_info.subBufferSize != test_info.scale)
     {
