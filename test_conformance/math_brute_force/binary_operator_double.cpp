@@ -20,14 +20,12 @@
 
 #include <cstring>
 
-static int BuildKernel(const char *name, const char *operator_symbol,
-                       int vectorSize, cl_uint kernel_count, cl_kernel *k,
-                       cl_program *p, bool relaxedMode)
+static int BuildKernel(const char *operator_symbol, int vectorSize,
+                       cl_uint kernel_count, cl_kernel *k, cl_program *p,
+                       bool relaxedMode)
 {
     const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-                        "__kernel void ",
-                        name,
-                        "_kernel",
+                        "__kernel void math_kernel",
                         sizeNames[vectorSize],
                         "( __global double",
                         sizeNames[vectorSize],
@@ -38,16 +36,14 @@ static int BuildKernel(const char *name, const char *operator_symbol,
                         "* in2 )\n"
                         "{\n"
                         "   size_t i = get_global_id(0);\n"
-                        "   out[i] =  in1[i] ",
+                        "   out[i] = in1[i] ",
                         operator_symbol,
                         " in2[i];\n"
                         "}\n" };
 
     const char *c3[] = {
         "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-        "__kernel void ",
-        name,
-        "_kernel",
+        "__kernel void math_kernel",
         sizeNames[vectorSize],
         "( __global double* out, __global double* in, __global double* in2)\n"
         "{\n"
@@ -105,7 +101,7 @@ static int BuildKernel(const char *name, const char *operator_symbol,
     }
 
     char testName[32];
-    snprintf(testName, sizeof(testName) - 1, "%s_kernel%s", name,
+    snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
              sizeNames[vectorSize]);
 
     return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p,
@@ -118,7 +114,6 @@ typedef struct BuildKernelInfo
     cl_uint kernel_count;
     cl_kernel **kernels;
     cl_program *programs;
-    const char *name;
     const char *operator_symbol;
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 } BuildKernelInfo;
@@ -127,7 +122,7 @@ static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
-    return BuildKernel(info->name, info->operator_symbol, i, info->kernel_count,
+    return BuildKernel(info->operator_symbol, i, info->kernel_count,
                        info->kernels[i], info->programs + i, info->relaxedMode);
 }
 
@@ -403,13 +398,10 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = { gMinVectorSizeIndex,
-                                       test_info.threadCount,
-                                       test_info.k,
-                                       test_info.programs,
-                                       f->name,
-                                       f->nameInCode,
-                                       relaxedMode };
+        BuildKernelInfo build_info = {
+            gMinVectorSizeIndex, test_info.threadCount, test_info.k,
+            test_info.programs,  f->nameInCode,         relaxedMode
+        };
         if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
