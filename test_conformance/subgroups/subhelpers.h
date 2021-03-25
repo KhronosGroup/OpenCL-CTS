@@ -1265,9 +1265,12 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         clProgramWrapper program;
         clKernelWrapper kernel;
         cl_platform_id platform;
-        std::vector<cl_int> sgmap(4 * global);
-        std::vector<Ty> mapin(local);
-        std::vector<Ty> mapout(local);
+        std::vector<cl_int> sgmap;
+        sgmap.resize(4 * global);
+        std::vector<Ty> mapin;
+        mapin.resize(local);
+        std::vector<Ty> mapout;
+        mapout.resize(local);
         std::stringstream kernel_sstr;
         if (test_params.work_items_mask != 0)
         {
@@ -1301,11 +1304,11 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         {
             if (!is_extension_available(device, extension.c_str()))
             {
-                // log_info("The extension %s not supported on this device. SKIP
-                // "
-                //          "testing - kernel %s data type %s\n",
-                //          extension.c_str(), kname, TypeManager<Ty>::name());
-                // return TEST_PASS;
+                log_info("The extension %s not supported on this device. SKIP
+                         "
+                         "testing - kernel %s data type %s\n",
+                         extension.c_str(), kname, TypeManager<Ty>::name());
+                return TEST_PASS;
             }
             kernel_sstr << "#pragma OPENCL EXTENSION " + extension
                     + ": enable\n";
