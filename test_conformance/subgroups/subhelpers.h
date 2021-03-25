@@ -1265,9 +1265,9 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         clProgramWrapper program;
         clKernelWrapper kernel;
         cl_platform_id platform;
-        cl_int sgmap[4 * global];
-        Ty mapin[local];
-        Ty mapout[local];
+        std::vector<cl_int> sgmap(4 * global);
+        std::vector<Ty> mapin(local);
+        std::vector<Ty> mapout(local);
         std::stringstream kernel_sstr;
         if (test_params.work_items_mask != 0)
         {
@@ -1401,26 +1401,26 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         odata.resize(output_array_size);
 
         // Run the kernel once on zeroes to get the map
-        memset(&idata[0], 0, input_array_size * sizeof(Ty));
-        error = run_kernel(context, queue, kernel, global, local, &idata[0],
-                           input_array_size * sizeof(Ty), sgmap,
-                           global * sizeof(cl_int4), &odata[0],
+        memset(idata.data(), 0, input_array_size * sizeof(Ty));
+        error = run_kernel(context, queue, kernel, global, local, idata.data(),
+                           input_array_size * sizeof(Ty), sgmap.data(),
+                           global * sizeof(cl_int4), odata.data(),
                            output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
         test_error(error, "Running kernel first time failed");
 
         // Generate the desired input for the kernel
 
         test_params.subgroup_size = subgroup_size;
-        Fns::gen(&idata[0], mapin, sgmap, test_params);
-        error = run_kernel(context, queue, kernel, global, local, &idata[0],
-                           input_array_size * sizeof(Ty), sgmap,
-                           global * sizeof(cl_int4), &odata[0],
+        Fns::gen(idata.data(), mapin.data(), sgmap.data(), test_params);
+        error = run_kernel(context, queue, kernel, global, local, idata.data(),
+                           input_array_size * sizeof(Ty), sgmap.data(),
+                           global * sizeof(cl_int4), odata.data(),
                            output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
         test_error(error, "Running kernel second time failed");
 
         // Check the result
-        error =
-            Fns::chk(&idata[0], &odata[0], mapin, mapout, sgmap, test_params);
+        error = Fns::chk(idata.data(), odata.data(), mapin.data(),
+                         mapout.data(), sgmap.data(), test_params);
         test_error(error, "Data verification failed");
         return TEST_PASS;
     }
