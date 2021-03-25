@@ -223,7 +223,7 @@ private:
 };
 
 // Need to defined custom type for vector size = 3 and half type. This is
-// because because of 3-component types are otherwise indistinguishable from the
+// because of 3-component types are otherwise indistinguishable from the
 // 4-component types, and because the half type is indistinguishable from some
 // other 16-bit type (ushort)
 namespace subgroups {
@@ -1304,8 +1304,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         {
             if (!is_extension_available(device, extension.c_str()))
             {
-                log_info("The extension %s not supported on this device. SKIP
-                         "
+                log_info("The extension %s not supported on this device. SKIP "
                          "testing - kernel %s data type %s\n",
                          extension.c_str(), kname, TypeManager<Ty>::name());
                 return TEST_PASS;
