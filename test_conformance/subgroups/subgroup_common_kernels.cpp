@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "workgroup_common_kernels.h"
+#include "subgroup_common_kernels.h"
 
 const char* bcast_source =
     "__kernel void test_bcast(const __global Type *in, "

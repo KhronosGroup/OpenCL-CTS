@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef WORKGROUPCOMMONTEMPLATES_H
-#define WORKGROUPCOMMONTEMPLATES_H
+#ifndef SUBGROUPCOMMONTEMPLATES_H
+#define SUBGROUPCOMMONTEMPLATES_H
 
 #include "typeWrappers.h"
 #include <bitset>

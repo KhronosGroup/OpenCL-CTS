@@ -15,7 +15,7 @@
 //
 #include "procs.h"
 #include "subhelpers.h"
-#include "workgroup_common_templates.h"
+#include "subgroup_common_templates.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
@@ -51,10 +51,10 @@ template <typename T> int run_shuffle_relative_for_type(RunTestForType rft)
 
 }
 
-int test_work_group_functions_shuffle_relative(cl_device_id device,
-                                               cl_context context,
-                                               cl_command_queue queue,
-                                               int num_elements)
+int test_subgroup_functions_shuffle_relative(cl_device_id device,
+                                             cl_context context,
+                                             cl_command_queue queue,
+                                             int num_elements)
 {
     std::vector<std::string> required_extensions = {
         "cl_khr_subgroup_shuffle_relative"

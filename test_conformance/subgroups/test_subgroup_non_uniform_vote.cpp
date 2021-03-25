@@ -261,10 +261,10 @@ template <typename T> int run_vote_all_equal_for_type(RunTestForType rft)
 
 }
 
-int test_work_group_functions_non_uniform_vote(cl_device_id device,
-                                               cl_context context,
-                                               cl_command_queue queue,
-                                               int num_elements)
+int test_subgroup_functions_non_uniform_vote(cl_device_id device,
+                                             cl_context context,
+                                             cl_command_queue queue,
+                                             int num_elements)
 {
     std::vector<std::string> required_extensions = {
         "cl_khr_subgroup_non_uniform_vote"

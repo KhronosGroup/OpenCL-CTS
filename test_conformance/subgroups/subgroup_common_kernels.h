@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef WORKGROUPKERNELSOURCES_H
-#define WORKGROUPKERNELSOURCES_H
+#ifndef SUBGROUPKERNELSOURCES_H
+#define SUBGROUPKERNELSOURCES_H
 #include "subhelpers.h"
 
 

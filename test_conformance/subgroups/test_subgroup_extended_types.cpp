@@ -15,8 +15,8 @@
 //
 #include "procs.h"
 #include "subhelpers.h"
-#include "workgroup_common_kernels.h"
-#include "workgroup_common_templates.h"
+#include "subgroup_common_kernels.h"
+#include "subgroup_common_templates.h"
 #include "harness/typeWrappers.h"
 
 namespace {
@@ -54,10 +54,10 @@ template <typename T> int run_scan_reduction_for_type(RunTestForType rft)
 
 }
 
-int test_work_group_functions_extended_types(cl_device_id device,
-                                             cl_context context,
-                                             cl_command_queue queue,
-                                             int num_elements)
+int test_subgroup_functions_extended_types(cl_device_id device,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements)
 {
     std::vector<std::string> required_extensions = {
         "cl_khr_subgroup_extended_types"

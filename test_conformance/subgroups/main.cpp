@@ -27,19 +27,19 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(sub_group_info_core, Version(2, 1)),
     ADD_TEST_VERSION(work_item_functions_ext, Version(2, 0)),
     ADD_TEST_VERSION(work_item_functions_core, Version(2, 1)),
-    ADD_TEST_VERSION(work_group_functions_ext, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_functions_core, Version(2, 1)),
+    ADD_TEST_VERSION(subgroup_functions_ext, Version(2, 0)),
+    ADD_TEST_VERSION(subgroup_functions_core, Version(2, 1)),
     ADD_TEST_VERSION(barrier_functions_ext, Version(2, 0)),
     ADD_TEST_VERSION(barrier_functions_core, Version(2, 1)),
     ADD_TEST_VERSION(ifp_ext, Version(2, 0)),
     ADD_TEST_VERSION(ifp_core, Version(2, 1)),
-    ADD_TEST(work_group_functions_extended_types),
-    ADD_TEST(work_group_functions_non_uniform_vote),
-    ADD_TEST(work_group_functions_non_uniform_arithmetic),
-    ADD_TEST(work_group_functions_ballot),
-    ADD_TEST(work_group_functions_clustered_reduce),
-    ADD_TEST(work_group_functions_shuffle),
-    ADD_TEST(work_group_functions_shuffle_relative)
+    ADD_TEST(subgroup_functions_extended_types),
+    ADD_TEST(subgroup_functions_non_uniform_vote),
+    ADD_TEST(subgroup_functions_non_uniform_arithmetic),
+    ADD_TEST(subgroup_functions_ballot),
+    ADD_TEST(subgroup_functions_clustered_reduce),
+    ADD_TEST(subgroup_functions_shuffle),
+    ADD_TEST(subgroup_functions_shuffle_relative)
 };
 
 const int test_num = ARRAY_SIZE(test_list);

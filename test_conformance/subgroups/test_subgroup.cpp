@@ -15,8 +15,8 @@
 //
 #include "procs.h"
 #include "subhelpers.h"
-#include "workgroup_common_kernels.h"
-#include "workgroup_common_templates.h"
+#include "subgroup_common_kernels.h"
+#include "subgroup_common_templates.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
@@ -174,9 +174,9 @@ int run_broadcast_scan_reduction_for_type(RunTestForType rft)
 
 }
 // Entry point from main
-int test_work_group_functions(cl_device_id device, cl_context context,
-                              cl_command_queue queue, int num_elements,
-                              bool useCoreSubgroups)
+int test_subgroup_functions(cl_device_id device, cl_context context,
+                            cl_command_queue queue, int num_elements,
+                            bool useCoreSubgroups)
 {
     constexpr size_t global_work_size = 2000;
     constexpr size_t local_work_size = 200;
@@ -196,15 +196,14 @@ int test_work_group_functions(cl_device_id device, cl_context context,
     return error;
 }
 
-int test_work_group_functions_core(cl_device_id device, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+int test_subgroup_functions_core(cl_device_id device, cl_context context,
+                                 cl_command_queue queue, int num_elements)
 {
-    return test_work_group_functions(device, context, queue, num_elements,
-                                     true);
+    return test_subgroup_functions(device, context, queue, num_elements, true);
 }
 
-int test_work_group_functions_ext(cl_device_id device, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+int test_subgroup_functions_ext(cl_device_id device, cl_context context,
+                                cl_command_queue queue, int num_elements)
 {
     bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
 
@@ -214,6 +213,5 @@ int test_work_group_functions_ext(cl_device_id device, cl_context context,
             "Device does not support 'cl_khr_subgroups'. Skipping the test.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    return test_work_group_functions(device, context, queue, num_elements,
-                                     false);
+    return test_subgroup_functions(device, context, queue, num_elements, false);
 }

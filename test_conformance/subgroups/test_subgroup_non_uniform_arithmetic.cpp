@@ -16,7 +16,7 @@
 #include "procs.h"
 #include "subhelpers.h"
 #include "harness/typeWrappers.h"
-#include "workgroup_common_templates.h"
+#include "subgroup_common_templates.h"
 
 namespace {
 
@@ -429,10 +429,10 @@ int run_functions_logical_and_or_xor_for_type(RunTestForType rft)
 
 }
 
-int test_work_group_functions_non_uniform_arithmetic(cl_device_id device,
-                                                     cl_context context,
-                                                     cl_command_queue queue,
-                                                     int num_elements)
+int test_subgroup_functions_non_uniform_arithmetic(cl_device_id device,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int num_elements)
 {
     std::vector<std::string> required_extensions = {
         "cl_khr_subgroup_non_uniform_arithmetic"

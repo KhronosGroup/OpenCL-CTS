@@ -15,7 +15,7 @@
 //
 #include "procs.h"
 #include "subhelpers.h"
-#include "workgroup_common_templates.h"
+#include "subgroup_common_templates.h"
 #include "harness/typeWrappers.h"
 #include <bitset>
 
@@ -923,8 +923,8 @@ template <typename T> int run_non_uniform_broadcast_for_type(RunTestForType rft)
 
 }
 
-int test_work_group_functions_ballot(cl_device_id device, cl_context context,
-                                     cl_command_queue queue, int num_elements)
+int test_subgroup_functions_ballot(cl_device_id device, cl_context context,
+                                   cl_command_queue queue, int num_elements)
 {
     std::vector<std::string> required_extensions = { "cl_khr_subgroup_ballot" };
     constexpr size_t global_work_size = 170;

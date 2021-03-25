@@ -15,7 +15,7 @@
 //
 #include "procs.h"
 #include "subhelpers.h"
-#include "workgroup_common_templates.h"
+#include "subgroup_common_templates.h"
 #include "harness/typeWrappers.h"
 
 #define CLUSTER_SIZE 4
@@ -300,10 +300,10 @@ int run_cluster_logical_and_or_xor_for_type(RunTestForType rft)
 }
 }
 
-int test_work_group_functions_clustered_reduce(cl_device_id device,
-                                               cl_context context,
-                                               cl_command_queue queue,
-                                               int num_elements)
+int test_subgroup_functions_clustered_reduce(cl_device_id device,
+                                             cl_context context,
+                                             cl_command_queue queue,
+                                             int num_elements)
 {
     std::vector<std::string> required_extensions = {
         "cl_khr_subgroup_clustered_reduce"
