@@ -35,15 +35,19 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
         int last_subgroup_size = 0;
         ii = 0;
 
-        log_info("  sub_group_%s... \n", operation_names(operation));
-        log_info("  test params:\n global size = %d local size = %d subgroups "
-                 "size = %d work item mask = 0x%x data type (%s)\n\n",
+        log_info("  sub_group_%s%s... \n",
+                 (operation == NonUniformVoteOp::elect) ? "" : "non_uniform_",
+                 operation_names(operation));
+
+        log_info("  test params: global size = %d local size = %d subgroups "
+                 "size = %d work item mask = 0x%x data type (%s)\n",
                  test_params.global_workgroup_size, nw, ns, work_items_mask,
                  TypeManager<T>::name());
         if (non_uniform_size)
         {
             log_info("  non uniform work group size mode ON\n");
         }
+        if (operation == NonUniformVoteOp::elect) return;
 
         for (k = 0; k < ng; ++k)
         { // for each work_group
@@ -137,7 +141,7 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
                 std::set<int> active_work_items;
                 for (i = 0; i < n; ++i)
                 {
-                    uint32_t check_work_item = 1 << i % 32;
+                    uint32_t check_work_item = 1 << (i % 32);
                     if (work_items_mask & check_work_item)
                     {
                         active_work_items.insert(i);
@@ -204,7 +208,10 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
             y += nw;
             m += 4 * nw;
         }
-        log_info("  sub_group_%s... passed\n", operation_names(operation));
+
+        log_info("  sub_group_%s%s... passed\n",
+                 (operation == NonUniformVoteOp::elect) ? "" : "non_uniform_",
+                 operation_names(operation));
         return TEST_PASS;
     }
 };
@@ -258,7 +265,6 @@ template <typename T> int run_vote_all_equal_for_type(RunTestForType rft)
         "test_non_uniform_all_equal", non_uniform_all_equal_source);
     return error;
 }
-
 }
 
 int test_subgroup_functions_non_uniform_vote(cl_device_id device,

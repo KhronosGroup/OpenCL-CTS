@@ -584,7 +584,7 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                         : func_name = "sub_group_scan_exclusive";
         log_info("  %s_%s(%s)...\n", func_name.c_str(),
                  operation_names(operation), TypeManager<Ty>::name());
-        log_info("  test params:\n global size = %d local size = %d subgroups "
+        log_info("  test params: global size = %d local size = %d subgroups "
                  "size = %d work item mask = 0x%x \n",
                  test_params.global_workgroup_size, nw, ns, work_items_mask);
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
@@ -624,7 +624,7 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                 std::set<int> active_work_items;
                 for (i = 0; i < n; ++i)
                 {
-                    uint32_t check_work_item = 1 << i % 32;
+                    uint32_t check_work_item = 1 << (i % 32);
                     if (use_work_items_mask & check_work_item)
                     {
                         active_work_items.insert(i);
@@ -697,7 +697,7 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
         log_info("  %s_%s(%s)...\n", func_name.c_str(),
                  operation_names(operation), TypeManager<Ty>::name());
-        log_info("  test params:\n global size = %d local size = %d subgroups "
+        log_info("  test params: global size = %d local size = %d subgroups "
                  "size = %d work item mask = 0x%x \n",
                  test_params.global_workgroup_size, nw, ns, work_items_mask);
     }
@@ -740,7 +740,7 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
 
                 for (i = 0; i < n; ++i)
                 {
-                    uint32_t check_work_item = 1 << i % 32;
+                    uint32_t check_work_item = 1 << (i % 32);
                     if (use_work_items_mask & check_work_item)
                     {
                         if (catch_frist_active == -1)
@@ -815,7 +815,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
                         : func_name = "sub_group_reduce";
         log_info("  %s_%s(%s)...\n", func_name.c_str(),
                  operation_names(operation), TypeManager<Ty>::name());
-        log_info("  test params:\n global size = %d local size = %d subgroups "
+        log_info("  test params: global size = %d local size = %d subgroups "
                  "size = %d work item mask = 0x%x \n",
                  test_params.global_workgroup_size, nw, ns, work_items_mask);
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
@@ -859,7 +859,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
                 int catch_frist_active = -1;
                 for (i = 0; i < n; ++i)
                 {
-                    uint32_t check_work_item = 1 << i % 32;
+                    uint32_t check_work_item = 1 << (i % 32);
                     if (use_work_items_mask & check_work_item)
                     {
                         if (catch_frist_active == -1)
