@@ -25,9 +25,6 @@
 #include <vector>
 #include <type_traits>
 
-#undef min
-#undef max
-
 #define NR_OF_ACTIVE_WORK_ITEMS 4
 
 extern MTdata gMTdata;
@@ -355,8 +352,8 @@ template <typename Ty> struct CommonTypeManager
         switch (operation)
         {
             case ArithmeticOp::add_: return (Ty)0;
-            case ArithmeticOp::max_: return std::numeric_limits<Ty>::min();
-            case ArithmeticOp::min_: return std::numeric_limits<Ty>::max();
+            case ArithmeticOp::max_: return (std::numeric_limits<Ty>::min)();
+            case ArithmeticOp::min_: return (std::numeric_limits<Ty>::max)();
             case ArithmeticOp::mul_: return (Ty)1;
             case ArithmeticOp::and_: return (Ty)~0;
             case ArithmeticOp::or_: return (Ty)0;
@@ -378,8 +375,10 @@ template <> struct TypeManager<cl_int> : public CommonTypeManager<cl_int>
         switch (operation)
         {
             case ArithmeticOp::add_: return (cl_int)0;
-            case ArithmeticOp::max_: return std::numeric_limits<cl_int>::min();
-            case ArithmeticOp::min_: return std::numeric_limits<cl_int>::max();
+            case ArithmeticOp::max_:
+                return (std::numeric_limits<cl_int>::min)();
+            case ArithmeticOp::min_:
+                return (std::numeric_limits<cl_int>::max)();
             case ArithmeticOp::mul_: return (cl_int)1;
             case ArithmeticOp::and_: return (cl_int)~0;
             case ArithmeticOp::or_: return (cl_int)0;
@@ -1092,8 +1091,6 @@ compare(const Ty &lhs, const Ty &rhs)
     const int size = sizeof(Ty) / sizeof(typename TypeManager<Ty>::scalar_type);
     for (auto i = 0; i < size; ++i)
     {
-        // log_info("Values index i = %d got %lu expected %lu\n", i, lhs.s[i],
-        //         rhs.s[i]);
         if (lhs.s[i] != rhs.s[i])
         {
             return false;
