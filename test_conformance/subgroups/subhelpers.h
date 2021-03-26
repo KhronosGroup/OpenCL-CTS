@@ -1158,8 +1158,7 @@ template <>
 inline bool compare_ordered(const subgroups::cl_half &lhs,
                             const subgroups::cl_half &rhs)
 {
-    return cl_half_to_float(lhs.data) == cl_half_to_float(rhs.data)
-        && !is_half_nan(lhs.data);
+    return cl_half_to_float(lhs.data) == cl_half_to_float(rhs.data);
 }
 
 template <typename Ty>
