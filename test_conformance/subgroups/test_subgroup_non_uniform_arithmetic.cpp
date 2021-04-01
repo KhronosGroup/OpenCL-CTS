@@ -24,10 +24,21 @@ static const char *scinadd_non_uniform_source = R"(
     __kernel void test_scinadd_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_inclusive_add(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_inclusive_add(in[gid]);
+        }
     }
 )";
 
@@ -35,10 +46,21 @@ static const char *scinmax_non_uniform_source = R"(
     __kernel void test_scinmax_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_inclusive_max(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_inclusive_max(in[gid]);
+        }
     }
 )";
 
@@ -46,10 +68,21 @@ static const char *scinmin_non_uniform_source = R"(
     __kernel void test_scinmin_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_inclusive_min(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_inclusive_min(in[gid]);
+        }
     }
 )";
 
@@ -57,10 +90,21 @@ static const char *scinmul_non_uniform_source = R"(
     __kernel void test_scinmul_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_inclusive_mul(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_inclusive_mul(in[gid]);
+        }
     }
 )";
 
@@ -68,10 +112,21 @@ static const char *scinand_non_uniform_source = R"(
     __kernel void test_scinand_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_inclusive_and(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_inclusive_and(in[gid]);
+        }
     }
 )";
 
@@ -79,10 +134,21 @@ static const char *scinor_non_uniform_source = R"(
     __kernel void test_scinor_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_inclusive_or(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_inclusive_or(in[gid]);
+        }
     }
 )";
 
@@ -90,10 +156,21 @@ static const char *scinxor_non_uniform_source = R"(
     __kernel void test_scinxor_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_inclusive_xor(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_inclusive_xor(in[gid]);
+        }
     }
 )";
 
@@ -101,10 +178,21 @@ static const char *scinand_non_uniform_logical_source = R"(
     __kernel void test_scinand_non_uniform_logical(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_inclusive_logical_and(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_inclusive_logical_and(in[gid]);
+        }
     }
 )";
 
@@ -112,10 +200,21 @@ static const char *scinor_non_uniform_logical_source = R"(
     __kernel void test_scinor_non_uniform_logical(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_inclusive_logical_or(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_inclusive_logical_or(in[gid]);
+        }
     }
 )";
 
@@ -123,10 +222,21 @@ static const char *scinxor_non_uniform_logical_source = R"(
     __kernel void test_scinxor_non_uniform_logical(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_inclusive_logical_xor(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_inclusive_logical_xor(in[gid]);
+        }
     }
 )";
 
@@ -134,10 +244,21 @@ static const char *scexadd_non_uniform_source = R"(
     __kernel void test_scexadd_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_exclusive_add(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_exclusive_add(in[gid]);
+        }
     }
 )";
 
@@ -145,10 +266,21 @@ static const char *scexmax_non_uniform_source = R"(
     __kernel void test_scexmax_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_exclusive_max(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_exclusive_max(in[gid]);
+        }
     }
 )";
 
@@ -156,10 +288,21 @@ static const char *scexmin_non_uniform_source = R"(
     __kernel void test_scexmin_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_exclusive_min(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_exclusive_min(in[gid]);
+        }
     }
 )";
 
@@ -167,10 +310,21 @@ static const char *scexmul_non_uniform_source = R"(
     __kernel void test_scexmul_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_exclusive_mul(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_exclusive_mul(in[gid]);
+        }
     }
 )";
 
@@ -178,10 +332,21 @@ static const char *scexand_non_uniform_source = R"(
     __kernel void test_scexand_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_exclusive_and(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_exclusive_and(in[gid]);
+        }
     }
 )";
 
@@ -189,10 +354,21 @@ static const char *scexor_non_uniform_source = R"(
     __kernel void test_scexor_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_exclusive_or(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_exclusive_or(in[gid]);
+        }
     }
 )";
 
@@ -200,10 +376,21 @@ static const char *scexxor_non_uniform_source = R"(
     __kernel void test_scexxor_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_exclusive_xor(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_exclusive_xor(in[gid]);
+        }
     }
 )";
 
@@ -211,10 +398,21 @@ static const char *scexand_non_uniform_logical_source = R"(
     __kernel void test_scexand_non_uniform_logical(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_exclusive_logical_and(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_exclusive_logical_and(in[gid]);
+        }
     }
 )";
 
@@ -222,10 +420,21 @@ static const char *scexor_non_uniform_logical_source = R"(
     __kernel void test_scexor_non_uniform_logical(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_exclusive_logical_or(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_exclusive_logical_or(in[gid]);
+        }
     }
 )";
 
@@ -233,10 +442,21 @@ static const char *scexxor_non_uniform_logical_source = R"(
     __kernel void test_scexxor_non_uniform_logical(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_scan_exclusive_logical_xor(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_scan_exclusive_logical_xor(in[gid]);
+        }
     }
 )";
 
@@ -244,10 +464,21 @@ static const char *redadd_non_uniform_source = R"(
     __kernel void test_redadd_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_reduce_add(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_reduce_add(in[gid]);
+        }
     }
 )";
 
@@ -255,10 +486,21 @@ static const char *redmax_non_uniform_source = R"(
     __kernel void test_redmax_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_reduce_max(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_reduce_max(in[gid]);
+        }
     }
 )";
 
@@ -266,10 +508,21 @@ static const char *redmin_non_uniform_source = R"(
     __kernel void test_redmin_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_reduce_min(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_reduce_min(in[gid]);
+        }
     }
 )";
 
@@ -277,10 +530,21 @@ static const char *redmul_non_uniform_source = R"(
     __kernel void test_redmul_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_reduce_mul(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_reduce_mul(in[gid]);
+        }
     }
 )";
 
@@ -288,10 +552,21 @@ static const char *redand_non_uniform_source = R"(
     __kernel void test_redand_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_reduce_and(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_reduce_and(in[gid]);
+        }
     }
 )";
 
@@ -299,10 +574,21 @@ static const char *redor_non_uniform_source = R"(
     __kernel void test_redor_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_reduce_or(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_reduce_or(in[gid]);
+        }
     }
 )";
 
@@ -310,10 +596,21 @@ static const char *redxor_non_uniform_source = R"(
     __kernel void test_redxor_non_uniform(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_reduce_xor(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_reduce_xor(in[gid]);
+        }
     }
 )";
 
@@ -321,10 +618,21 @@ static const char *redand_non_uniform_logical_source = R"(
     __kernel void test_redand_non_uniform_logical(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_reduce_logical_and(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_reduce_logical_and(in[gid]);
+        }
     }
 )";
 
@@ -332,10 +640,21 @@ static const char *redor_non_uniform_logical_source = R"(
     __kernel void test_redor_non_uniform_logical(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_reduce_logical_or(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_reduce_logical_or(in[gid]);
+        }
     }
 )";
 
@@ -343,10 +662,21 @@ static const char *redxor_non_uniform_logical_source = R"(
     __kernel void test_redxor_non_uniform_logical(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
-        int elect_work_item = 1 << (get_sub_group_local_id() % 32);
-            if (elect_work_item & WORK_ITEMS_MASK){
-                out[gid] = sub_group_non_uniform_reduce_logical_xor(in[gid]);
-            }
+        uint subgroup_local_id = get_sub_group_local_id();
+        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint work_item_mask;
+        if(subgroup_local_id < 32) {
+            work_item_mask = work_item_mask_vector.x;
+        } else if(subgroup_local_id < 64) {
+            work_item_mask = work_item_mask_vector.y;
+        } else if(subgroup_local_id < 96) {
+            work_item_mask = work_item_mask_vector.w;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.z;
+        }
+        if (elect_work_item & work_item_mask){
+            out[gid] = sub_group_non_uniform_reduce_logical_xor(in[gid]);
+        }
     }
 )";
 
@@ -437,14 +767,11 @@ int test_subgroup_functions_non_uniform_arithmetic(cl_device_id device,
     std::vector<std::string> required_extensions = {
         "cl_khr_subgroup_non_uniform_arithmetic"
     };
-    std::vector<uint32_t> masks{ 0xffffffff, 0x55aaaa55, 0x5555aaaa, 0xaaaa5555,
-                                 0x0f0ff0f0, 0x0f0f0f0f, 0xff0000ff, 0xff00ff00,
-                                 0x00ffff00, 0x80000000, 0xaaaaaaaa };
 
     constexpr size_t global_work_size = 2000;
     constexpr size_t local_work_size = 200;
     WorkGroupParams test_params(global_work_size, local_work_size,
-                                required_extensions, masks);
+                                required_extensions, true);
     RunTestForType rft(device, context, queue, num_elements, test_params);
 
     int error = run_functions_add_mul_max_min_for_type<cl_int>(rft);
