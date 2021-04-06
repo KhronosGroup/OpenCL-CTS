@@ -61,10 +61,6 @@ const char *optimization_options[] = {
     "-cl-fast-relaxed-math",
     "-w",
     "-Werror",
-#if defined( __APPLE__ )
-    "-cl-opt-enable",
-    "-cl-auto-vectorize-enable"
-#endif
     };
 
 cl_int get_result_from_program( cl_context context, cl_command_queue queue, cl_program program, cl_int *outValue )
