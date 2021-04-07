@@ -810,6 +810,8 @@ int main(int argc, const char *argv[])
     else if (gStopOnError)
         vlog("Stopping at first error.\n");
 
+    vlog("   \t                                        ");
+    if (gWimpyMode) vlog("   ");
     if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
 
     vlog("\n-------------------------------------------------------------------"
