@@ -1826,11 +1826,11 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context,
     test_error(error, "Unable to get max constant buffer size");
     individualBufferSize = (maxSize / 2) / maxArgs;
 
-    log_info("Reported max constant arg count of %d and max constant buffer "
-             "size of %d. Test will attempt to allocate half of that, or %d "
-             "buffers of size %d.\n",
-             (int)maxArgs, (int)maxSize, (int)maxArgs,
-             (int)individualBufferSize);
+    log_info(
+        "Reported max constant arg count of %llu and max constant buffer "
+        "size of %llu. Test will attempt to allocate half of that, or %llu "
+        "buffers of size %llu.\n",
+        maxArgs, maxSize, maxArgs, individualBufferSize);
 
     str2 = (char *)malloc(sizeof(char) * 32 * (maxArgs + 2));
     constArgs = (char *)malloc(sizeof(char) * 32 * (maxArgs + 2));
@@ -2139,8 +2139,8 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context,
     /* Test running the kernel and verifying it */
     threads[0] = numberOfInts;
     localThreads[0] = 1;
-    log_info("Creating local buffer with %d cl_ints (%d bytes).\n",
-             (int)numberOfInts, (int)sizeToAllocate);
+    log_info("Creating local buffer with %d cl_ints (%llu bytes).\n",
+             (int)numberOfInts, sizeToAllocate);
 
     cl_event evt;
     cl_int evt_err;
