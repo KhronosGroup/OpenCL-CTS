@@ -124,8 +124,6 @@ static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 
 int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
 {
-    uint64_t i;
-    uint32_t j, k;
     uint32_t l;
     int error;
     char const *testing_mode;
@@ -155,13 +153,13 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
             return error;
     }
 
-    for (i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
         // Init input array
         uint32_t *p = (uint32_t *)gIn;
         if (gWimpyMode)
         {
-            for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+            for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
             {
                 p[j] = (uint32_t)i + j * scale;
                 if (relaxedMode && strcmp(f->name, "sincos") == 0)
@@ -173,7 +171,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
         }
         else
         {
-            for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+            for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
             {
                 p[j] = (uint32_t)i + j;
                 if (relaxedMode && strcmp(f->name, "sincos") == 0)
@@ -192,7 +190,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // write garbage into output arrays
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
             memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
@@ -217,7 +215,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_float);
             size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
@@ -272,7 +270,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
 
         if (skipNanInf)
         {
-            for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+            for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
             {
                 double dd;
                 feclearexcept(FE_OVERFLOW);
@@ -289,7 +287,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
         }
         else
         {
-            for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+            for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
             {
                 double dd;
                 if (relaxedMode)
@@ -304,7 +302,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
         if (isFract && ftz) RestoreFPState(&oldMode);
 
         // Read the data back
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
@@ -331,9 +329,9 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
         // Verify data
         uint32_t *t = (uint32_t *)gOut_Ref;
         uint32_t *t2 = (uint32_t *)gOut_Ref2;
-        for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
         {
-            for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+            for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
                 uint32_t *q = (uint32_t *)gOut[k];
                 uint32_t *q2 = (uint32_t *)gOut2[k];
@@ -572,7 +570,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
 
 exit:
     // Release
-    for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
     {
         clReleaseKernel(kernels[k]);
         clReleaseProgram(programs[k]);

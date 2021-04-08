@@ -130,8 +130,6 @@ static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 
 int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
 {
-    uint64_t i;
-    uint32_t j, k;
     int error;
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
@@ -154,13 +152,13 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
             return error;
     }
 
-    for (i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
         // Init input array
         cl_uint *p = (cl_uint *)gIn;
         cl_uint *p2 = (cl_uint *)gIn2;
         cl_uint *p3 = (cl_uint *)gIn3;
-        for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
         {
             p[j] = genrand_int32(d);
             p2[j] = genrand_int32(d);
@@ -189,7 +187,7 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // write garbage into output arrays
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
             memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
@@ -204,7 +202,7 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeof(cl_float) * sizeValues[j];
             size_t localCount = (BUFFER_SIZE + vectorSize - 1)
@@ -251,11 +249,11 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
         float *s = (float *)gIn;
         float *s2 = (float *)gIn2;
         float *s3 = (float *)gIn3;
-        for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
             r[j] = (float)f->func.f_fff(s[j], s2[j], s3[j]);
 
         // Read the data back
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
@@ -292,7 +290,7 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
 
 exit:
     // Release
-    for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
     {
         clReleaseKernel(kernels[k]);
         clReleaseProgram(programs[k]);

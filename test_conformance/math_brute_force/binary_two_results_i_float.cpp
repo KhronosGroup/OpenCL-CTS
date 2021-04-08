@@ -152,11 +152,10 @@ static cl_int ReferenceF(cl_uint jid, cl_uint tid, void *userInfo)
     float *r = cri->r + off;
     int *i = cri->i + off;
     double (*f)(double, double, int *) = cri->f_ffpI;
-    cl_uint j;
 
     if (off + count > lim) count = lim - off;
 
-    for (j = 0; j < count; ++j)
+    for (cl_uint j = 0; j < count; ++j)
         r[j] = (float)f((double)x[j], (double)y[j], i + j);
 
     return CL_SUCCESS;
@@ -164,8 +163,6 @@ static cl_int ReferenceF(cl_uint jid, cl_uint tid, void *userInfo)
 
 int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 {
-    uint64_t i;
-    uint32_t j, k;
     int error;
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
@@ -199,12 +196,12 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             return error;
     }
 
-    for (i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
         // Init input array
         cl_uint *p = (cl_uint *)gIn;
         cl_uint *p2 = (cl_uint *)gIn2;
-        for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
         {
             p[j] = genrand_int32(d);
             p2[j] = genrand_int32(d);
@@ -225,7 +222,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // write garbage into output arrays
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
             memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
@@ -250,7 +247,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeof(cl_float) * sizeValues[j];
             size_t localCount = (BUFFER_SIZE + vectorSize - 1)
@@ -312,12 +309,12 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             float *r = (float *)gOut_Ref;
             int *r2 = (int *)gOut_Ref2;
-            for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+            for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
                 r[j] = (float)f->func.f_ffpI(s[j], s2[j], r2 + j);
         }
 
         // Read the data back
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
@@ -340,9 +337,9 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         // Verify data
         uint32_t *t = (uint32_t *)gOut_Ref;
         int32_t *t2 = (int32_t *)gOut_Ref2;
-        for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
         {
-            for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+            for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
                 uint32_t *q = (uint32_t *)(gOut[k]);
                 int32_t *q2 = (int32_t *)gOut2[k];
@@ -557,7 +554,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 
 exit:
     // Release
-    for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
     {
         clReleaseKernel(kernels[k]);
         clReleaseProgram(programs[k]);

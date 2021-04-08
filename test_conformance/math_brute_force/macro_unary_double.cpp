@@ -151,7 +151,6 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
 {
     TestInfo test_info;
     cl_int error;
-    size_t i, j;
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
@@ -178,7 +177,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
 
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
-    for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
+    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         size_t array_size = test_info.threadCount * sizeof(cl_kernel);
         test_info.k[i] = (cl_kernel *)malloc(array_size);
@@ -201,7 +200,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
     }
     memset(test_info.tinfo, 0,
            test_info.threadCount * sizeof(*test_info.tinfo));
-    for (i = 0; i < test_info.threadCount; i++)
+    for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {
             i * test_info.subBufferSize * sizeof(cl_double),
@@ -218,7 +217,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
         }
 
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             test_info.tinfo[i].outBuf[j] = clCreateSubBuffer(
                 gOutBuffer[j], CL_MEM_WRITE_ONLY, CL_BUFFER_CREATE_TYPE_REGION,
@@ -269,12 +268,12 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
 
 exit:
     // Release
-    for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
+    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
         if (test_info.k[i])
         {
-            for (j = 0; j < test_info.threadCount; j++)
+            for (cl_uint j = 0; j < test_info.threadCount; j++)
                 clReleaseKernel(test_info.k[i][j]);
 
             free(test_info.k[i]);
@@ -282,10 +281,10 @@ exit:
     }
     if (test_info.tinfo)
     {
-        for (i = 0; i < test_info.threadCount; i++)
+        for (cl_uint i = 0; i < test_info.threadCount; i++)
         {
             clReleaseMemObject(test_info.tinfo[i].inBuf);
-            for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+            for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
                 clReleaseMemObject(test_info.tinfo[i].outBuf[j]);
             clReleaseCommandQueue(test_info.tinfo[i].tQueue);
         }
@@ -306,7 +305,6 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     ThreadInfo *tinfo = job->tinfo + thread_id;
     dptr dfunc = job->f->dfunc;
     int ftz = job->ftz;
-    cl_uint j, k;
     cl_int error;
     const char *name = job->f->name;
 
@@ -315,7 +313,7 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // start the map of the output arrays
     cl_event e[VECTOR_SIZE_COUNT];
     cl_long *out[VECTOR_SIZE_COUNT];
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         out[j] = (cl_long *)clEnqueueMapBuffer(
             tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
@@ -333,7 +331,7 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     // Write the new values to the input array
     cl_double *p = (cl_double *)gIn + thread_id * buffer_elements;
-    for (j = 0; j < buffer_elements; j++)
+    for (size_t j = 0; j < buffer_elements; j++)
         p[j] = DoubleFromUInt32(base + j * scale);
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
@@ -343,7 +341,7 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         return error;
     }
 
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         // Wait for the map to finish
         if ((error = clWaitForEvents(1, e + j)))
@@ -404,11 +402,11 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // Calculate the correctly rounded reference result
     cl_long *r = (cl_long *)gOut_Ref + thread_id * buffer_elements;
     cl_double *s = (cl_double *)p;
-    for (j = 0; j < buffer_elements; j++) r[j] = dfunc.i_f(s[j]);
+    for (size_t j = 0; j < buffer_elements; j++) r[j] = dfunc.i_f(s[j]);
 
     // Read the data back -- no need to wait for the first N-1 buffers but wait
     // for the last buffer. This is an in order queue.
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         cl_bool blocking = (j + 1 < gMaxVectorSizeIndex) ? CL_FALSE : CL_TRUE;
         out[j] = (cl_long *)clEnqueueMapBuffer(
@@ -424,7 +422,7 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     // Verify data
     cl_long *t = (cl_long *)r;
-    for (j = 0; j < buffer_elements; j++)
+    for (size_t j = 0; j < buffer_elements; j++)
     {
         cl_long *q = out[0];
 
@@ -450,7 +448,7 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         }
 
 
-        for (k = MAX(1, gMinVectorSizeIndex); k < gMaxVectorSizeIndex; k++)
+        for (auto k = MAX(1, gMinVectorSizeIndex); k < gMaxVectorSizeIndex; k++)
         {
             q = out[k];
             // If we aren't getting the correctly rounded result
@@ -476,7 +474,7 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
                                              out[j], 0, NULL, NULL)))

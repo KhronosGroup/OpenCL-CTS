@@ -274,7 +274,6 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
 {
     TestInfo test_info;
     cl_int error;
-    size_t i, j;
     float maxError = 0.0f;
     double maxErrorVal = 0.0;
     double maxErrorVal2 = 0.0;
@@ -307,7 +306,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
 
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
-    for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
+    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         size_t array_size = test_info.threadCount * sizeof(cl_kernel);
         test_info.k[i] = (cl_kernel *)malloc(array_size);
@@ -330,7 +329,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
     }
     memset(test_info.tinfo, 0,
            test_info.threadCount * sizeof(*test_info.tinfo));
-    for (i = 0; i < test_info.threadCount; i++)
+    for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {
             i * test_info.subBufferSize * sizeof(cl_float),
@@ -357,7 +356,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
             goto exit;
         }
 
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             test_info.tinfo[i].outBuf[j] = clCreateSubBuffer(
                 gOutBuffer[j], CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION,
@@ -399,7 +398,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
         error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
 
         // Accumulate the arithmetic errors
-        for (i = 0; i < test_info.threadCount; i++)
+        for (cl_uint i = 0; i < test_info.threadCount; i++)
         {
             if (test_info.tinfo[i].maxError > maxError)
             {
@@ -423,12 +422,12 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
 
 exit:
     // Release
-    for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
+    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
         if (test_info.k[i])
         {
-            for (j = 0; j < test_info.threadCount; j++)
+            for (cl_uint j = 0; j < test_info.threadCount; j++)
                 clReleaseKernel(test_info.k[i][j]);
 
             free(test_info.k[i]);
@@ -436,12 +435,12 @@ exit:
     }
     if (test_info.tinfo)
     {
-        for (i = 0; i < test_info.threadCount; i++)
+        for (cl_uint i = 0; i < test_info.threadCount; i++)
         {
             free_mtdata(test_info.tinfo[i].d);
             clReleaseMemObject(test_info.tinfo[i].inBuf);
             clReleaseMemObject(test_info.tinfo[i].inBuf2);
-            for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+            for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
                 clReleaseMemObject(test_info.tinfo[i].outBuf[j]);
             clReleaseCommandQueue(test_info.tinfo[i].tQueue);
         }
@@ -464,7 +463,6 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     bool relaxedMode = job->relaxedMode;
     float ulps = getAllowedUlpError(job->f, relaxedMode);
     MTdata d = tinfo->d;
-    cl_uint j, k;
     cl_int error;
     cl_uchar *overflow = (cl_uchar *)malloc(buffer_size);
     const char *name = job->f->name;
@@ -482,7 +480,7 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // start the map of the output arrays
     cl_event e[VECTOR_SIZE_COUNT];
     cl_uint *out[VECTOR_SIZE_COUNT];
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         out[j] = (cl_uint *)clEnqueueMapBuffer(
             tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
@@ -501,12 +499,11 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // Init input array
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
     cl_uint *p2 = (cl_uint *)gIn2 + thread_id * buffer_elements;
-    j = 0;
-
+    cl_uint idx = 0;
     int totalSpecialValueCount = specialValuesCount * specialValuesCount;
-    int indx = (totalSpecialValueCount - 1) / buffer_elements;
+    int lastSpecialJobIndex = (totalSpecialValueCount - 1) / buffer_elements;
 
-    if (job_id <= (cl_uint)indx)
+    if (job_id <= (cl_uint)lastSpecialJobIndex)
     {
         // Insert special values
         uint32_t x, y;
@@ -514,10 +511,10 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         x = (job_id * buffer_elements) % specialValuesCount;
         y = (job_id * buffer_elements) / specialValuesCount;
 
-        for (; j < buffer_elements; j++)
+        for (; idx < buffer_elements; idx++)
         {
-            p[j] = ((cl_uint *)specialValues)[x];
-            p2[j] = ((cl_uint *)specialValues)[y];
+            p[idx] = ((cl_uint *)specialValues)[x];
+            p2[idx] = ((cl_uint *)specialValues)[y];
             ++x;
             if (x >= specialValuesCount)
             {
@@ -527,28 +524,28 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             }
             if (relaxedMode && strcmp(name, "divide") == 0)
             {
-                cl_uint pj = p[j] & 0x7fffffff;
-                cl_uint p2j = p2[j] & 0x7fffffff;
+                cl_uint pj = p[idx] & 0x7fffffff;
+                cl_uint p2j = p2[idx] & 0x7fffffff;
                 // Replace values outside [2^-62, 2^62] with QNaN
-                if (pj < 0x20800000 || pj > 0x5e800000) p[j] = 0x7fc00000;
-                if (p2j < 0x20800000 || p2j > 0x5e800000) p2[j] = 0x7fc00000;
+                if (pj < 0x20800000 || pj > 0x5e800000) p[idx] = 0x7fc00000;
+                if (p2j < 0x20800000 || p2j > 0x5e800000) p2[idx] = 0x7fc00000;
             }
         }
     }
 
     // Init any remaining values.
-    for (; j < buffer_elements; j++)
+    for (; idx < buffer_elements; idx++)
     {
-        p[j] = genrand_int32(d);
-        p2[j] = genrand_int32(d);
+        p[idx] = genrand_int32(d);
+        p2[idx] = genrand_int32(d);
 
         if (relaxedMode && strcmp(name, "divide") == 0)
         {
-            cl_uint pj = p[j] & 0x7fffffff;
-            cl_uint p2j = p2[j] & 0x7fffffff;
+            cl_uint pj = p[idx] & 0x7fffffff;
+            cl_uint p2j = p2[idx] & 0x7fffffff;
             // Replace values outside [2^-62, 2^62] with QNaN
-            if (pj < 0x20800000 || pj > 0x5e800000) p[j] = 0x7fc00000;
-            if (p2j < 0x20800000 || p2j > 0x5e800000) p2[j] = 0x7fc00000;
+            if (pj < 0x20800000 || pj > 0x5e800000) p[idx] = 0x7fc00000;
+            if (p2j < 0x20800000 || p2j > 0x5e800000) p2[idx] = 0x7fc00000;
         }
     }
 
@@ -566,7 +563,7 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         goto exit;
     }
 
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         // Wait for the map to finish
         if ((error = clWaitForEvents(1, e + j)))
@@ -649,12 +646,12 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     s2 = (float *)gIn2 + thread_id * buffer_elements;
     if (gInfNanSupport)
     {
-        for (j = 0; j < buffer_elements; j++)
+        for (size_t j = 0; j < buffer_elements; j++)
             r[j] = (float)func.f_ff(s[j], s2[j]);
     }
     else
     {
-        for (j = 0; j < buffer_elements; j++)
+        for (size_t j = 0; j < buffer_elements; j++)
         {
             feclearexcept(FE_OVERFLOW);
             r[j] = (float)func.f_ff(s[j], s2[j]);
@@ -669,7 +666,7 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     // Read the data back -- no need to wait for the first N-1 buffers but wait
     // for the last buffer. This is an in order queue.
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         cl_bool blocking = (j + 1 < gMaxVectorSizeIndex) ? CL_FALSE : CL_TRUE;
         out[j] = (cl_uint *)clEnqueueMapBuffer(
@@ -685,9 +682,9 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     // Verify data
     t = (cl_uint *)r;
-    for (j = 0; j < buffer_elements; j++)
+    for (size_t j = 0; j < buffer_elements; j++)
     {
-        for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+        for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
         {
             cl_uint *q = out[k];
 
@@ -892,7 +889,7 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
                                              out[j], 0, NULL, NULL)))
