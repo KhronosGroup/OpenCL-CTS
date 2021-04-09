@@ -469,7 +469,6 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     float ulps = job->ulps;
     dptr func = job->f->dfunc;
     int ftz = job->ftz;
-    bool relaxedMode = job->relaxedMode;
     MTdata d = tinfo->d;
     cl_int error;
     const char *name = job->f->name;

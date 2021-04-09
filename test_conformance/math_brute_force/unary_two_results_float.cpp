@@ -124,9 +124,7 @@ static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 
 int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
 {
-    uint32_t l;
     int error;
-    char const *testing_mode;
     cl_program programs[VECTOR_SIZE_COUNT];
     cl_kernel kernels[VECTOR_SIZE_COUNT];
     float maxError0 = 0.0f;
