@@ -565,96 +565,10 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             vlog("Wimp pass");
         else
             vlog("passed");
-    }
 
-    if (gMeasureTimes)
-    {
-        // Init input array
-        double *p = (double *)gIn;
-        for (j = 0; j < bufferSize / sizeof(cl_double); j++)
-            p[j] = DoubleFromUInt32(genrand_int32(d));
-        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
-                                          bufferSize, gIn, 0, NULL, NULL)))
-        {
-            vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
-            return error;
-        }
-        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
-                                          bufferSize, gIn2, 0, NULL, NULL)))
-        {
-            vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
-            return error;
-        }
-
-
-        // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-        {
-            size_t vectorSize = sizeof(cl_double) * sizeValues[j];
-            size_t localCount = (bufferSize + vectorSize - 1)
-                / vectorSize; // bufferSize / vectorSize  rounded up
-            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
-                                        &gOutBuffer[j])))
-            {
-                LogBuildError(programs[j]);
-                goto exit;
-            }
-            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gOutBuffer2[j]),
-                                        &gOutBuffer2[j])))
-            {
-                LogBuildError(programs[j]);
-                goto exit;
-            }
-            if ((error = clSetKernelArg(kernels[j], 2, sizeof(gInBuffer),
-                                        &gInBuffer)))
-            {
-                LogBuildError(programs[j]);
-                goto exit;
-            }
-            if ((error = clSetKernelArg(kernels[j], 3, sizeof(gInBuffer2),
-                                        &gInBuffer2)))
-            {
-                LogBuildError(programs[j]);
-                goto exit;
-            }
-
-            double sum = 0.0;
-            double bestTime = INFINITY;
-            for (k = 0; k < PERF_LOOP_COUNT; k++)
-            {
-                uint64_t startTime = GetTime();
-                if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
-                                                    &localCount, NULL, 0, NULL,
-                                                    NULL)))
-                {
-                    vlog_error("FAILED -- could not execute kernel\n");
-                    goto exit;
-                }
-
-                // Make sure OpenCL is done
-                if ((error = clFinish(gQueue)))
-                {
-                    vlog_error("Error %d at clFinish\n", error);
-                    goto exit;
-                }
-
-                uint64_t endTime = GetTime();
-                double time = SubtractTime(endTime, startTime);
-                sum += time;
-                if (time < bestTime) bestTime = time;
-            }
-
-            if (gReportAverageTimes) bestTime = sum / PERF_LOOP_COUNT;
-            double clocksPerOp = bestTime * (double)gDeviceFrequency
-                * gComputeDevices * gSimdSize * 1e6
-                / (bufferSize / sizeof(double));
-            vlog_perf(clocksPerOp, LOWER_IS_BETTER, "clocks / element", "%sD%s",
-                      f->name, sizeNames[j]);
-        }
-    }
-
-    if (!gSkipCorrectnessTesting)
         vlog("\t{%8.2f, %lld} @ %a", maxError, maxError2, maxErrorVal);
+    }
+
     vlog("\n");
 
 exit:

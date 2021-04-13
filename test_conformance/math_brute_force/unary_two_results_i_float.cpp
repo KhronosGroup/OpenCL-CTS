@@ -400,83 +400,10 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
             vlog("Wimp pass");
         else
             vlog("passed");
-    }
 
-    if (gMeasureTimes)
-    {
-        // Init input array
-        uint32_t *p = (uint32_t *)gIn;
-        for (j = 0; j < bufferSize / sizeof(float); j++)
-            p[j] = genrand_int32(d);
-        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
-                                          bufferSize, gIn, 0, NULL, NULL)))
-        {
-            vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
-            return error;
-        }
-
-
-        // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-        {
-            size_t vectorSize = sizeValues[j] * sizeof(cl_float);
-            size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;
-            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
-                                        &gOutBuffer[j])))
-            {
-                LogBuildError(programs[j]);
-                goto exit;
-            }
-            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gOutBuffer2[j]),
-                                        &gOutBuffer2[j])))
-            {
-                LogBuildError(programs[j]);
-                goto exit;
-            }
-            if ((error = clSetKernelArg(kernels[j], 2, sizeof(gInBuffer),
-                                        &gInBuffer)))
-            {
-                LogBuildError(programs[j]);
-                goto exit;
-            }
-
-            double sum = 0.0;
-            double bestTime = INFINITY;
-            for (k = 0; k < PERF_LOOP_COUNT; k++)
-            {
-                uint64_t startTime = GetTime();
-                if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
-                                                    &localCount, NULL, 0, NULL,
-                                                    NULL)))
-                {
-                    vlog_error("FAILED -- could not execute kernel\n");
-                    goto exit;
-                }
-
-                // Make sure OpenCL is done
-                if ((error = clFinish(gQueue)))
-                {
-                    vlog_error("Error %d at clFinish\n", error);
-                    goto exit;
-                }
-
-                uint64_t endTime = GetTime();
-                double time = SubtractTime(endTime, startTime);
-                sum += time;
-                if (time < bestTime) bestTime = time;
-            }
-
-            if (gReportAverageTimes) bestTime = sum / PERF_LOOP_COUNT;
-            double clocksPerOp = bestTime * (double)gDeviceFrequency
-                * gComputeDevices * gSimdSize * 1e6
-                / (bufferSize / sizeof(float));
-            vlog_perf(clocksPerOp, LOWER_IS_BETTER, "clocks / element", "%sf%s",
-                      f->name, sizeNames[j]);
-        }
-    }
-
-    if (!gSkipCorrectnessTesting)
         vlog("\t{%8.2f, %lld} @ %a", maxError, maxError2, maxErrorVal);
+    }
+
     vlog("\n");
 
 exit:

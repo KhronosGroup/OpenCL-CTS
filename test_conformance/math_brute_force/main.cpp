@@ -62,8 +62,6 @@ static int32_t gEndTestNumber = -1;
 int gSkipCorrectnessTesting = 0;
 int gStopOnError = 0;
 static bool gSkipRestOfTests;
-int gMeasureTimes = 0;
-int gReportAverageTimes = 0;
 int gForceFTZ = 0;
 int gWimpyMode = 0;
 int gHasDouble = 0;
@@ -87,7 +85,6 @@ int gCheckTininessBeforeRounding = 1;
 int gIsInRTZMode = 0;
 uint32_t gMaxVectorSizeIndex = VECTOR_SIZE_COUNT;
 uint32_t gMinVectorSizeIndex = 0;
-const char *method[] = { "Best", "Average" };
 void *gIn = NULL;
 void *gIn2 = NULL;
 void *gIn3 = NULL;
@@ -813,24 +810,8 @@ int main(int argc, const char *argv[])
     else if (gStopOnError)
         vlog("Stopping at first error.\n");
 
-    if (gMeasureTimes)
-    {
-        vlog("%s times are reported at right (cycles per element):\n",
-             method[gReportAverageTimes]);
-        vlog("\n");
-        if (gSkipCorrectnessTesting)
-            vlog("   \t               ");
-        else
-            vlog("   \t                                        ");
-        if (gWimpyMode) vlog("   ");
-        for (int i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
-            vlog("\t  float%s", sizeNames[i]);
-    }
-    else
-    {
-        vlog("   \t                                        ");
-        if (gWimpyMode) vlog("   ");
-    }
+    vlog("   \t                                        ");
+    if (gWimpyMode) vlog("   ");
     if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
 
     vlog("\n-------------------------------------------------------------------"
@@ -905,8 +886,6 @@ static int ParseArgs(int argc, const char **argv)
                 optionFound = 1;
                 switch (*arg)
                 {
-                    case 'a': gReportAverageTimes ^= 1; break;
-
                     case 'c': gToggleCorrectlyRoundedDivideSqrt ^= 1; break;
 
                     case 'd': gHasDouble ^= 1; break;
@@ -926,8 +905,6 @@ static int ParseArgs(int argc, const char **argv)
                     case 'r': gTestFastRelaxed ^= 1; break;
 
                     case 's': gStopOnError ^= 1; break;
-
-                    case 't': gMeasureTimes ^= 1; break;
 
                     case 'v': gVerboseBruteForce ^= 1; break;
 
@@ -969,7 +946,6 @@ static int ParseArgs(int argc, const char **argv)
                     case '8':
                         gMinVectorSizeIndex = 4;
                         gMaxVectorSizeIndex = gMinVectorSizeIndex + 1;
-                        break;
                         break;
 
                     default:
@@ -1053,9 +1029,8 @@ static void PrintFunctions(void)
 
 static void PrintUsage(void)
 {
-    vlog("%s [-acglstz]: <optional: math function names>\n", appName);
+    vlog("%s [-cglsz]: <optional: math function names>\n", appName);
     vlog("\toptions:\n");
-    vlog("\t\t-a\tReport average times instead of best times\n");
     vlog("\t\t-c\tToggle test fp correctly rounded divide and sqrt (Default: "
          "off)\n");
     vlog("\t\t-d\tToggle double precision testing. (Default: on iff khr_fp_64 "
@@ -1070,7 +1045,6 @@ static void PrintUsage(void)
          "accuracy checks.)\n");
     vlog("\t\t-m\tToggle run multi-threaded. (Default: on) )\n");
     vlog("\t\t-s\tStop on error\n");
-    vlog("\t\t-t\tToggle timing  (on by default)\n");
     vlog("\t\t-w\tToggle Wimpy Mode, * Not a valid test * \n");
     vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-10, default factor(%u)\n",
@@ -1808,51 +1782,6 @@ float Abs_Error(float test, double reference)
     if (isnan(test) && isnan(reference)) return 0.0f;
     return fabs((float)(reference - (double)test));
 }
-
-#if defined(__APPLE__)
-#include <mach/mach_time.h>
-#endif
-
-uint64_t GetTime(void)
-{
-#if defined(__APPLE__)
-    return mach_absolute_time();
-#elif defined(_WIN32) && defined(_MSC_VER)
-    return ReadTime();
-#else
-// mach_absolute_time is a high precision timer with precision < 1 microsecond.
-#warning need accurate clock here.  Times are invalid.
-    return 0;
-#endif
-}
-
-
-#if defined(_WIN32) && defined(_MSC_VER)
-/* function is defined in "compat.h" */
-#else
-double SubtractTime(uint64_t endTime, uint64_t startTime)
-{
-    uint64_t diff = endTime - startTime;
-    static double conversion = 0.0;
-
-    if (0.0 == conversion)
-    {
-#if defined(__APPLE__)
-        mach_timebase_info_data_t info = { 0, 0 };
-        kern_return_t err = mach_timebase_info(&info);
-        if (0 == err)
-            conversion = 1e-9 * (double)info.numer / (double)info.denom;
-#else
-// This function consumes output from GetTime() above, and converts the time to
-// secionds.
-#warning need accurate ticks to seconds conversion factor here. Times are invalid.
-#endif
-    }
-
-    // strictly speaking we should also be subtracting out timer latency here
-    return conversion * (double)diff;
-}
-#endif
 
 cl_uint RoundUpToNextPowerOfTwo(cl_uint x)
 {
