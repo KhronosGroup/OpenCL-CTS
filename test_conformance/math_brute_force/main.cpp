@@ -99,7 +99,6 @@ cl_mem gOutBuffer[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
 cl_mem gOutBuffer2[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
 static MTdata gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
-static cl_device_fp_config gDoubleCapabilities = 0;
 int gWimpyReductionFactor = 32;
 int gWimpyBufferSize = BUFFER_SIZE;
 int gVerboseBruteForce = 0;
@@ -1088,20 +1087,15 @@ test_status InitCL(cl_device_id device)
 
     gDevice = device;
 
-    uint32_t computeDevices = 0;
-    size_t configSize = sizeof(computeDevices);
-    if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_MAX_COMPUTE_UNITS,
-                                 configSize, &computeDevices, NULL)))
-        computeDevices = 1;
-
     // Check extensions
     if (is_extension_available(gDevice, "cl_khr_fp64"))
     {
         gHasDouble ^= 1;
 #if defined(CL_DEVICE_DOUBLE_FP_CONFIG)
+        cl_device_fp_config doubleCapabilities = 0;
         if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_DOUBLE_FP_CONFIG,
-                                     sizeof(gDoubleCapabilities),
-                                     &gDoubleCapabilities, NULL)))
+                                     sizeof(doubleCapabilities),
+                                     &doubleCapabilities, NULL)))
         {
             vlog_error("ERROR: Unable to get device "
                        "CL_DEVICE_DOUBLE_FP_CONFIG. (%d)\n",
@@ -1110,19 +1104,19 @@ test_status InitCL(cl_device_id device)
         }
 
         if (DOUBLE_REQUIRED_FEATURES
-            != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES))
+            != (doubleCapabilities & DOUBLE_REQUIRED_FEATURES))
         {
             std::string list;
-            if (0 == (gDoubleCapabilities & CL_FP_FMA)) list += "CL_FP_FMA, ";
-            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_NEAREST))
+            if (0 == (doubleCapabilities & CL_FP_FMA)) list += "CL_FP_FMA, ";
+            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_NEAREST))
                 list += "CL_FP_ROUND_TO_NEAREST, ";
-            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_ZERO))
+            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_ZERO))
                 list += "CL_FP_ROUND_TO_ZERO, ";
-            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_INF))
+            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_INF))
                 list += "CL_FP_ROUND_TO_INF, ";
-            if (0 == (gDoubleCapabilities & CL_FP_INF_NAN))
+            if (0 == (doubleCapabilities & CL_FP_INF_NAN))
                 list += "CL_FP_INF_NAN, ";
-            if (0 == (gDoubleCapabilities & CL_FP_DENORM))
+            if (0 == (doubleCapabilities & CL_FP_DENORM))
                 list += "CL_FP_DENORM, ";
             vlog_error("ERROR: required double features are missing: %s\n",
                        list.c_str());
@@ -1137,7 +1131,7 @@ test_status InitCL(cl_device_id device)
     }
 
     uint32_t deviceFrequency = 0;
-    configSize = sizeof(deviceFrequency);
+    size_t configSize = sizeof(deviceFrequency);
     if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY,
                                  configSize, &deviceFrequency, NULL)))
         deviceFrequency = 0;
