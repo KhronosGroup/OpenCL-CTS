@@ -56,22 +56,17 @@ extern cl_mem gInBuffer2;
 extern cl_mem gInBuffer3;
 extern cl_mem gOutBuffer[VECTOR_SIZE_COUNT];
 extern cl_mem gOutBuffer2[VECTOR_SIZE_COUNT];
-extern uint32_t gComputeDevices;
-extern uint32_t gSimdSize;
 extern int gSkipCorrectnessTesting;
 extern int gForceFTZ;
 extern int gFastRelaxedDerived;
 extern int gWimpyMode;
-extern int gHasDouble;
 extern int gIsInRTZMode;
 extern int gInfNanSupport;
 extern int gIsEmbedded;
 extern int gVerboseBruteForce;
 extern uint32_t gMaxVectorSizeIndex;
 extern uint32_t gMinVectorSizeIndex;
-extern uint32_t gDeviceFrequency;
 extern cl_device_fp_config gFloatCapabilities;
-extern cl_device_fp_config gDoubleCapabilities;
 
 #define LOWER_IS_BETTER 0
 #define HIGHER_IS_BETTER 1
