@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2017-2025 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -52,37 +52,37 @@ const char *clone_kernel_test_double[] =
     "}\n"
 };
 
-const char *clone_kernel_test_kernel[] = {
-"typedef struct\n"
-"{\n"
-"    int i;\n"
-"    float f;\n"
-"} structArg;\n"
-"\n"
-"// value type test\n"
-"__kernel void clone_kernel_test0(int iarg, float farg, structArg sarg, __local int* localbuf, __global int* outbuf)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    outbuf[0] = iarg;\n"
-"    outbuf[1] = sarg.i;\n"
-"    \n"
-"    ((__global float*)outbuf)[2] = farg;\n"
-"    ((__global float*)outbuf)[3] = sarg.f;\n"
-"}\n"
-"\n"
-"__kernel void buf_read_kernel(__global int* buf, __global int* outbuf)\n"
-"{\n"
-"    // 6th DWORD\n"
-"    outbuf[6] = buf[0];\n"
-"}\n"
-"\n"
-"__kernel void buf_write_kernel(__global int* buf, int write_val)\n"
-"{\n"
-"    buf[0] = write_val;\n"
-"}\n"
+const char* clone_kernel_test_kernel[] = {
+    R"(typedef struct
+    {
+        int i;
+        float f;
+    } structArg;
 
- };
+    // value type test
+    __kernel void clone_kernel_test0(int iarg, float farg, structArg sarg,
+    __local int* localbuf, __global int* outbuf)
+    {
+        int  tid = get_global_id(0);
+
+        outbuf[0] = iarg;
+        outbuf[1] = sarg.i;
+
+        ((__global float*)outbuf)[2] = farg;
+        ((__global float*)outbuf)[3] = sarg.f;
+    }
+
+    __kernel void buf_read_kernel(__global int* buf, __global int* outbuf)
+    {
+        // 6th DWORD
+        outbuf[6] = buf[0];
+    }
+
+    __kernel void buf_write_kernel(__global int* buf, int write_val)
+    {
+        buf[0] = write_val;
+    })"
+};
 
 const int BUF_SIZE = 128;
 
@@ -166,31 +166,19 @@ int test_image_arg_shallow_clone(cl_device_id device, cl_context context,
     error = clEnqueueReadBuffer(queue, bufOut, CL_TRUE, 0, 128, pbufRes, 0, NULL, NULL);
     test_error( error, "clEnqueueReadBuffer failed." );
 
-    if (((cl_uint*)pbufRes)[7] != color[0])
-    {
-        test_error( error, "clCloneKernel test failed." );
-        return -1;
-    }
+    test_assert_error(((cl_uint*)pbufRes)[7] == color[0],
+                      "clCloneKernel test failed.");
 
-    if (((cl_uint*)pbufRes)[8] != color[1])
-    {
-        test_error( error, "clCloneKernel test failed." );
-        return -1;
-    }
+    test_assert_error(((cl_uint*)pbufRes)[8] == color[1],
+                      "clCloneKernel test failed.");
 
-    if (((cl_uint*)pbufRes)[9] != color[2])
-    {
-        test_error( error, "clCloneKernel test failed." );
-        return -1;
-    }
+    test_assert_error(((cl_uint*)pbufRes)[9] == color[2],
+                      "clCloneKernel test failed.");
 
-    if (((cl_uint*)pbufRes)[10] != color[3])
-    {
-        test_error( error, "clCloneKernel test failed." );
-        return -1;
-    }
+    test_assert_error(((cl_uint*)pbufRes)[10] == color[3],
+                      "clCloneKernel test failed.");
 
-    return 0;
+    return TEST_PASS;
 }
 
 int test_double_arg_clone(cl_device_id device, cl_context context,
@@ -223,16 +211,125 @@ int test_double_arg_clone(cl_device_id device, cl_context context,
     error = clEnqueueReadBuffer(queue, bufOut, CL_TRUE, 0, BUF_SIZE, pbufRes, 0, NULL, NULL);
     test_error( error, "clEnqueueReadBuffer failed." );
 
-    if (abs(((cl_double*)pbufRes)[2] - d) > 0.0000001)
-    {
-        test_error( error, "clCloneKernel test failed." );
-        return -1;
-    }
+    test_assert_error(abs(((cl_double*)pbufRes)[2] - d) <= 0.0000001,
+                      "clCloneKernel test failed.");
 
-    return 0;
+    return TEST_PASS;
 }
 
-REGISTER_TEST_VERSION(clone_kernel, Version(2, 1))
+int test_args_enqueue_helper(cl_context context, cl_command_queue queue,
+                             cl_kernel srcKernel, cl_int value, cl_mem bufOut)
+{
+    cl_int error;
+    size_t ndrange1 = 1;
+    cl_int bufRes;
+
+    // enqueue - srcKernel
+    error = clEnqueueNDRangeKernel(queue, srcKernel, 1, NULL, &ndrange1, NULL,
+                                   0, NULL, NULL);
+    test_error(error, "clEnqueueNDRangeKernel failed");
+    error = clEnqueueReadBuffer(queue, bufOut, CL_TRUE, 0, sizeof(cl_int),
+                                &bufRes, 0, NULL, NULL);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    test_assert_error(bufRes == value,
+                      "clCloneKernel test failed to verify integer value.\n");
+
+    return TEST_PASS;
+}
+
+
+REGISTER_TEST_VERSION(clone_kernel_with_different_args, Version(2, 1))
+{
+    cl_int error;
+    clProgramWrapper program;
+    clKernelWrapper srcKernel;
+    cl_int intargs[] = { 1, 2, 3, 4 };
+    clMemWrapper bufOut;
+
+    // Create srcKernel to test with
+    error = create_single_kernel_helper(context, &program, &srcKernel, 1,
+                                        clone_kernel_test_kernel,
+                                        "buf_write_kernel");
+    test_error(error, "Unable to create srcKernel for test_cloned_kernel_args");
+
+    bufOut = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int), NULL,
+                            &error);
+    test_error(error, "clCreateBuffer failed.");
+
+    // srcKernel, set args
+    error = clSetKernelArg(srcKernel, 1, sizeof(cl_int), &intargs[0]);
+    error |= clSetKernelArg(srcKernel, 0, sizeof(cl_mem), &bufOut);
+    test_error(error, "clSetKernelArg failed for srcKernel");
+
+    // clone the srcKernel and set different arg
+    clKernelWrapper cloneKernel_1 = clCloneKernel(srcKernel, &error);
+    test_error(error, "clCloneKernel failed for cloneKernel_1");
+    error = clSetKernelArg(cloneKernel_1, 1, sizeof(cl_int), &intargs[1]);
+    test_error(error, "clSetKernelArg failed for cloneKernel_1");
+
+    // clone the cloneKernel_1 and set different arg
+    clKernelWrapper cloneKernel_2 = clCloneKernel(cloneKernel_1, &error);
+    test_error(error, "clCloneKernel failed for cloneKernel_2");
+    error = clSetKernelArg(cloneKernel_2, 1, sizeof(cl_int), &intargs[2]);
+    test_error(error, "clSetKernelArg failed for cloneKernel_2");
+
+    // enqueue - srcKernel
+    if (test_args_enqueue_helper(context, queue, srcKernel, intargs[0], bufOut)
+        != TEST_PASS)
+    {
+        test_fail("test_args_enqueue_helper failed for srcKernel.\n");
+    }
+
+    // enqueue - cloneKernel_1
+    if (test_args_enqueue_helper(context, queue, cloneKernel_1, intargs[1],
+                                 bufOut)
+        != TEST_PASS)
+    {
+        test_fail("test_args_enqueue_helper failed for cloneKernel_1.\n");
+    }
+
+    // enqueue - cloneKernel_2
+    if (test_args_enqueue_helper(context, queue, cloneKernel_2, intargs[2],
+                                 bufOut)
+        != TEST_PASS)
+    {
+        test_fail("test_args_enqueue_helper failed for cloneKernel_2.\n");
+    }
+
+    // srcKernel, set different arg and enqueue
+    error = clSetKernelArg(srcKernel, 1, sizeof(cl_int), &intargs[3]);
+    test_error(error,
+               "clSetKernelArg failed for srcKernel with different value");
+    if (test_args_enqueue_helper(context, queue, srcKernel, intargs[3], bufOut)
+        != TEST_PASS)
+    {
+        test_fail("test_args_enqueue_helper failed for srcKernel on retry.\n");
+    }
+
+    // enqueue - cloneKernel_1 again, to check if the args were not modified
+    if (test_args_enqueue_helper(context, queue, cloneKernel_1, intargs[1],
+                                 bufOut)
+        != TEST_PASS)
+    {
+        test_fail(
+            "test_args_enqueue_helper failed for cloneKernel_1 on retry.\n");
+    }
+
+    // enqueue - cloneKernel_2 again, to check if the args were not modified
+    if (test_args_enqueue_helper(context, queue, cloneKernel_2, intargs[2],
+                                 bufOut)
+        != TEST_PASS)
+    {
+        test_fail(
+            "test_args_enqueue_helper failed for cloneKernel_2 on retry.\n");
+    }
+
+    return TEST_PASS;
+}
+
+
+REGISTER_TEST_VERSION(clone_kernel_with_buf_image_kernels, Version(2, 1))
 {
     int error;
     clProgramWrapper program;
@@ -295,8 +392,8 @@ REGISTER_TEST_VERSION(clone_kernel, Version(2, 1))
     // cl_mem
     clMemWrapper buf, bufOut;
 
-    char* pbuf = new char[BUF_SIZE];
-    char* pbufRes = new char[BUF_SIZE];
+    char pbuf[BUF_SIZE] = { 0 };
+    char pbufRes[BUF_SIZE] = { 0 };
     buf = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, BUF_SIZE, pbuf, &error);
     test_error( error, "clCreateBuffer failed." );
 
@@ -350,52 +447,41 @@ REGISTER_TEST_VERSION(clone_kernel, Version(2, 1))
     test_error( error, "clEnqueueReadBuffer failed." );
 
     // Compare the results
-    if (((int*)pbufRes)[0] != intarg)
-    {
-        test_error( error, "clCloneKernel test failed. Failed to clone integer type argument." );
-        return -1;
-    }
+    test_assert_error(((int*)pbufRes)[0] == intarg,
+                      "clCloneKernel test failed. Failed to clone integer type "
+                      "argument.");
 
-    if (((int*)pbufRes)[1] != sa.i)
-    {
-        test_error( error, "clCloneKernel test failed. Failed to clone structure type argument." );
-        return -1;
-    }
+    test_assert_error(
+        ((int*)pbufRes)[1] == sa.i,
+        "clCloneKernel test failed. Failed to clone structure type "
+        "argument.");
 
-    if (((float*)pbufRes)[2] != farg)
-    {
-        test_error( error, "clCloneKernel test failed. Failed to clone structure type argument." );
-        return -1;
-    }
+    test_assert_error(
+        ((float*)pbufRes)[2] == farg,
+        "clCloneKernel test failed. Failed to clone float type argument.");
 
-    if (((float*)pbufRes)[3] != sa.f)
-    {
-        test_error( error, "clCloneKernel test failed. Failed to clone float type argument." );
-        return -1;
-    }
+    test_assert_error(
+        ((float*)pbufRes)[3] == sa.f,
+        "clCloneKernel test failed. Failed to clone structure type "
+        "argument.");
 
-    if (((int*)pbufRes)[6] != write_val)
-    {
-        test_error( error, "clCloneKernel test failed.  Failed to clone cl_mem argument." );
-        return -1;
-    }
+    test_assert_error(
+        ((int*)pbufRes)[6] == write_val,
+        "clCloneKernel test failed.  Failed to clone cl_mem argument.");
 
     if (bimg)
     {
         error = test_image_arg_shallow_clone(device, context, queue,
                                              num_elements, pbufRes, bufOut);
-        test_error( error, "image arg shallow clone test failed." );
+        test_error(error, "image arg shallow clone test failed.");
     }
 
     if (bdouble)
     {
         error = test_double_arg_clone(device, context, queue, num_elements,
                                       pbufRes, bufOut);
-        test_error( error, "double arg clone test failed." );
+        test_error(error, "double arg clone test failed.");
     }
 
-    delete [] pbuf;
-    delete [] pbufRes;
-
-    return 0;
+    return TEST_PASS;
 }
