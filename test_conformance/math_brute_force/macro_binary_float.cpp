@@ -589,13 +589,13 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     s2 = (float *)gIn2 + thread_id * buffer_elements;
     for (j = 0; j < buffer_elements; j++) r[j] = func.i_ff(s[j], s2[j]);
 
-
-    // Read the data back -- no need to wait for the first N-1 buffers. This is
-    // an in order queue.
-    for (j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++)
+    // Read the data back -- no need to wait for the first N-1 buffers but wait
+    // for the last buffer. This is an in order queue.
+    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
+        cl_bool blocking = (j + 1 < gMaxVectorSizeIndex) ? CL_FALSE : CL_TRUE;
         out[j] = (cl_int *)clEnqueueMapBuffer(
-            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_READ, 0,
+            tinfo->tQueue, tinfo->outBuf[j], blocking, CL_MAP_READ, 0,
             buffer_size, 0, NULL, NULL, &error);
         if (error || NULL == out[j])
         {
@@ -603,16 +603,6 @@ static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                        error);
             goto exit;
         }
-    }
-
-    // Wait for the last buffer
-    out[j] = (cl_int *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
-                                          CL_TRUE, CL_MAP_READ, 0, buffer_size,
-                                          0, NULL, NULL, &error);
-    if (error || NULL == out[j])
-    {
-        vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error);
-        goto exit;
     }
 
     // Verify data
