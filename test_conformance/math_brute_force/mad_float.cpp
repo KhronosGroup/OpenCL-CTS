@@ -142,8 +142,7 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal = 0.0f;
     float maxErrorVal2 = 0.0f;
     float maxErrorVal3 = 0.0f;
-    size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
-    uint64_t step = getTestStep(sizeof(float), bufferSize);
+    uint64_t step = getTestStep(sizeof(float), BUFFER_SIZE);
 
     // Init the kernels
     {
@@ -161,7 +160,7 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
         cl_uint *p = (cl_uint *)gIn;
         cl_uint *p2 = (cl_uint *)gIn2;
         cl_uint *p3 = (cl_uint *)gIn3;
-        for (j = 0; j < bufferSize / sizeof(float); j++)
+        for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
         {
             p[j] = genrand_int32(d);
             p2[j] = genrand_int32(d);
@@ -169,21 +168,21 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
         }
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
-                                          bufferSize, gIn, 0, NULL, NULL)))
+                                          BUFFER_SIZE, gIn, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer2, CL_FALSE, 0,
-                                          bufferSize, gIn2, 0, NULL, NULL)))
+                                          BUFFER_SIZE, gIn2, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer2 ***\n", error);
             return error;
         }
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer3, CL_FALSE, 0,
-                                          bufferSize, gIn3, 0, NULL, NULL)))
+                                          BUFFER_SIZE, gIn3, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer3 ***\n", error);
             return error;
@@ -193,10 +192,10 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
-            memset_pattern4(gOut[j], &pattern, bufferSize);
+            memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
             if ((error =
                      clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
-                                          bufferSize, gOut[j], 0, NULL, NULL)))
+                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
                            error, j);
@@ -208,8 +207,8 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeof(cl_float) * sizeValues[j];
-            size_t localCount = (bufferSize + vectorSize - 1)
-                / vectorSize; // bufferSize / vectorSize  rounded up
+            size_t localCount = (BUFFER_SIZE + vectorSize - 1)
+                / vectorSize; // BUFFER_SIZE / vectorSize  rounded up
             if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
                                         &gOutBuffer[j])))
             {
@@ -252,7 +251,7 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
         float *s = (float *)gIn;
         float *s2 = (float *)gIn2;
         float *s3 = (float *)gIn3;
-        for (j = 0; j < bufferSize / sizeof(float); j++)
+        for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
             r[j] = (float)f->func.f_fff(s[j], s2[j], s3[j]);
 
         // Read the data back
@@ -260,7 +259,7 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
-                                         bufferSize, gOut[j], 0, NULL, NULL)))
+                                         BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
                 goto exit;

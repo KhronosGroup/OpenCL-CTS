@@ -100,7 +100,6 @@ cl_mem gOutBuffer2[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
 static MTdata gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
 int gWimpyReductionFactor = 32;
-int gWimpyBufferSize = BUFFER_SIZE;
 int gVerboseBruteForce = 0;
 
 static int ParseArgs(int argc, const char **argv);

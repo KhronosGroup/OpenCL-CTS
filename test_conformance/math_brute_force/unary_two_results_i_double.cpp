@@ -144,9 +144,9 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
     double maxErrorVal = 0.0f;
     double maxErrorVal2 = 0.0f;
     cl_ulong maxiError = f->double_ulps == INFINITY ? CL_ULONG_MAX : 0;
-    size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
-    uint64_t step = getTestStep(sizeof(cl_double), bufferSize);
-    int scale = (int)((1ULL << 32) / (16 * bufferSize / sizeof(cl_double)) + 1);
+    uint64_t step = getTestStep(sizeof(cl_double), BUFFER_SIZE);
+    int scale =
+        (int)((1ULL << 32) / (16 * BUFFER_SIZE / sizeof(cl_double)) + 1);
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
@@ -168,16 +168,16 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
         double *p = (double *)gIn;
         if (gWimpyMode)
         {
-            for (j = 0; j < bufferSize / sizeof(cl_double); j++)
+            for (j = 0; j < BUFFER_SIZE / sizeof(cl_double); j++)
                 p[j] = DoubleFromUInt32((uint32_t)i + j * scale);
         }
         else
         {
-            for (j = 0; j < bufferSize / sizeof(cl_double); j++)
+            for (j = 0; j < BUFFER_SIZE / sizeof(cl_double); j++)
                 p[j] = DoubleFromUInt32((uint32_t)i + j);
         }
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
-                                          bufferSize, gIn, 0, NULL, NULL)))
+                                          BUFFER_SIZE, gIn, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
@@ -187,20 +187,20 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
-            memset_pattern4(gOut[j], &pattern, bufferSize);
+            memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
             if ((error =
                      clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
-                                          bufferSize, gOut[j], 0, NULL, NULL)))
+                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
                            error, j);
                 goto exit;
             }
 
-            memset_pattern4(gOut2[j], &pattern, bufferSize);
-            if ((error =
-                     clEnqueueWriteBuffer(gQueue, gOutBuffer2[j], CL_FALSE, 0,
-                                          bufferSize, gOut2[j], 0, NULL, NULL)))
+            memset_pattern4(gOut2[j], &pattern, BUFFER_SIZE);
+            if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer2[j], CL_FALSE,
+                                              0, BUFFER_SIZE, gOut2[j], 0, NULL,
+                                              NULL)))
             {
                 vlog_error("\n*** Error %d in clEnqueueWriteBuffer2b(%d) ***\n",
                            error, j);
@@ -212,7 +212,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_double);
-            size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;
+            size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
             if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
                                         &gOutBuffer[j])))
             {
@@ -248,7 +248,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
         double *r = (double *)gOut_Ref;
         int *r2 = (int *)gOut_Ref2;
         double *s = (double *)gIn;
-        for (j = 0; j < bufferSize / sizeof(double); j++)
+        for (j = 0; j < BUFFER_SIZE / sizeof(double); j++)
             r[j] = (double)f->dfunc.f_fpI(s[j], r2 + j);
 
         // Read the data back
@@ -256,14 +256,14 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
-                                         bufferSize, gOut[j], 0, NULL, NULL)))
+                                         BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
                 goto exit;
             }
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer2[j], CL_TRUE, 0,
-                                         bufferSize, gOut2[j], 0, NULL, NULL)))
+                                         BUFFER_SIZE, gOut2[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray2 failed %d\n", error);
                 goto exit;
@@ -275,7 +275,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
         // Verify data
         uint64_t *t = (uint64_t *)gOut_Ref;
         int32_t *t2 = (int32_t *)gOut_Ref2;
-        for (j = 0; j < bufferSize / sizeof(double); j++)
+        for (j = 0; j < BUFFER_SIZE / sizeof(double); j++)
         {
             for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
@@ -385,7 +385,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
             if (gVerboseBruteForce)
             {
                 vlog("base:%14u step:%10zu  bufferSize:%10zd \n", i, step,
-                     bufferSize);
+                     BUFFER_SIZE);
             }
             else
             {
