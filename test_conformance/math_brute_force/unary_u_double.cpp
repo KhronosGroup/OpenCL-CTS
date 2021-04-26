@@ -243,7 +243,6 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
                     float err = Bruteforce_Ulp_Error_Double(test, correct);
                     int fail = !(fabsf(err) <= f->double_ulps);
 
-                    // half_sin/cos/tan are only valid between +-2**16, Inf, NaN
                     if (fail)
                     {
                         if (ftz)
