@@ -144,24 +144,29 @@ TEST_SPIRV_FUNC(linkage_import_function_link)
 
 TEST_SPIRV_FUNC(linkage_linkonce_odr)
 {
-    if (!is_extension_available(deviceID, "cl_khr_spirv_linkonce_odr")) {
-        log_info("Extension cl_khr_spirv_linkonce_odr not supported; skipping tests.\n");
+    if (!is_extension_available(deviceID, "cl_khr_spirv_linkonce_odr"))
+    {
+        log_info("Extension cl_khr_spirv_linkonce_odr not supported; skipping "
+                 "tests.\n");
         return 0;
     }
 
     int err = 0;
 
     clProgramWrapper prog_obj;
-    err = test_linkage_compile(deviceID, context, queue, "linkage_linkonce_odr_obj", prog_obj);
+    err = test_linkage_compile(deviceID, context, queue,
+                               "linkage_linkonce_odr_obj", prog_obj);
     SPIRV_CHECK_ERROR(err, "Failed to compile export program");
 
     clProgramWrapper prog_main;
-    err = test_linkage_compile(deviceID, context, queue, "linkage_linkonce_odr_main", prog_main);
+    err = test_linkage_compile(deviceID, context, queue,
+                               "linkage_linkonce_odr_main", prog_main);
     SPIRV_CHECK_ERROR(err, "Failed to compile import program");
 
-    cl_program progs[] = {prog_obj, prog_main};
+    cl_program progs[] = { prog_obj, prog_main };
 
-    clProgramWrapper prog = clLinkProgram(context, 1, &deviceID, NULL, 2, progs, NULL, NULL, &err);
+    clProgramWrapper prog =
+        clLinkProgram(context, 1, &deviceID, NULL, 2, progs, NULL, NULL, &err);
     SPIRV_CHECK_ERROR(err, "Failed to link programs");
 
     clKernelWrapper kernel = clCreateKernel(prog, "test_linkonce_odr", &err);
@@ -170,30 +175,37 @@ TEST_SPIRV_FUNC(linkage_linkonce_odr)
     const int num = 256;
     std::vector<cl_int> h_in(num);
     RandomSeed seed(gRandomSeed);
-    for (int i = 0; i < num; i++) {
+    for (int i = 0; i < num; i++)
+    {
         h_in[i] = genrand<cl_int>(seed) % 2048;
     }
 
     size_t bytes = sizeof(cl_int) * num;
-    clMemWrapper in = clCreateBuffer(context, CL_MEM_READ_WRITE, bytes, NULL, &err);
+    clMemWrapper in =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, bytes, NULL, &err);
     SPIRV_CHECK_ERROR(err, "Failed to create  in buffer");
 
-    err = clEnqueueWriteBuffer(queue, in, CL_TRUE, 0, bytes, &h_in[0], 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queue, in, CL_TRUE, 0, bytes, &h_in[0], 0, NULL,
+                               NULL);
     SPIRV_CHECK_ERROR(err, "Failed to copy to in buffer");
 
     err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &in);
     SPIRV_CHECK_ERROR(err, "Failed to set arg 1");
 
     size_t global = num;
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL,
+                                 NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue cl kernel");
 
     std::vector<cl_int> h_out(num);
-    err = clEnqueueReadBuffer(queue, in, CL_TRUE, 0, bytes, &h_out[0], 0, NULL, NULL);
+    err = clEnqueueReadBuffer(queue, in, CL_TRUE, 0, bytes, &h_out[0], 0, NULL,
+                              NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read to output");
 
-    for (int i = 0; i < num; i++) {
-        if (h_out[i] != 5) {
+    for (int i = 0; i < num; i++)
+    {
+        if (h_out[i] != 5)
+        {
             log_error("Incorrect values at location %d\n", i);
             return -1;
         }
