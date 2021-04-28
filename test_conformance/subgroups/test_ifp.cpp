@@ -46,7 +46,7 @@ static const char *ifp_source =
     "#define INST_COUNT 0x3\n"
     "\n"
     "__kernel void\n"
-    "test_ifp(const __global int *in, __global int2 *xy, __global int *out)\n"
+    "test_ifp(const __global int *in, __global int4 *xy, __global int *out)\n"
     "{\n"
     "    __local atomic_int loc[NUM_LOC];\n"
     "\n"
@@ -225,10 +225,15 @@ void run_insts(cl_int *x, cl_int *p, int n)
 
 struct IFP
 {
-    static void gen(cl_int *x, cl_int *t, cl_int *, int ns, int nw, int ng)
+    static void gen(cl_int *x, cl_int *t, cl_int *,
+                    const WorkGroupParams &test_params)
     {
         int k;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
 
         // We need at least 2 sub groups per group for this test
         if (nj == 1) return;
@@ -240,11 +245,15 @@ struct IFP
         }
     }
 
-    static int chk(cl_int *x, cl_int *y, cl_int *t, cl_int *, cl_int *, int ns,
-                   int nw, int ng)
+    static int chk(cl_int *x, cl_int *y, cl_int *t, cl_int *, cl_int *,
+                   const WorkGroupParams &test_params)
     {
         int i, k;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
 
         // We need at least 2 sub groups per group for this tes
         if (nj == 1) return 0;
@@ -275,14 +284,17 @@ struct IFP
 int test_ifp(cl_device_id device, cl_context context, cl_command_queue queue,
              int num_elements, bool useCoreSubgroups)
 {
-    int error;
+    int error = TEST_PASS;
 
+    // Global/local work group sizes
     // Adjust these individually below if desired/needed
-#define G 2000
-#define L 200
-    error = test<cl_int, IFP, G, L>::run(device, context, queue, num_elements,
-                                         "test_ifp", ifp_source, NUM_LOC + 1,
-                                         useCoreSubgroups);
+    constexpr size_t global_work_size = 2000;
+    constexpr size_t local_work_size = 200;
+    WorkGroupParams test_params(global_work_size, local_work_size);
+    test_params.use_core_subgroups = useCoreSubgroups;
+    test_params.dynsc = NUM_LOC + 1;
+    error = test<cl_int, IFP>::run(device, context, queue, num_elements,
+                                   "test_ifp", ifp_source, test_params);
     return error;
 }
 

@@ -37,14 +37,12 @@ extern int test_work_item_functions_core(cl_device_id device,
                                          cl_context context,
                                          cl_command_queue queue,
                                          int num_elements);
-extern int test_work_group_functions_ext(cl_device_id device,
-                                         cl_context context,
-                                         cl_command_queue queue,
-                                         int num_elements);
-extern int test_work_group_functions_core(cl_device_id device,
-                                          cl_context context,
-                                          cl_command_queue queue,
-                                          int num_elements);
+extern int test_subgroup_functions_ext(cl_device_id device, cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+extern int test_subgroup_functions_core(cl_device_id device, cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
 extern int test_barrier_functions_ext(cl_device_id device, cl_context context,
                                       cl_command_queue queue, int num_elements);
 extern int test_barrier_functions_core(cl_device_id device, cl_context context,
@@ -56,5 +54,31 @@ extern int test_ifp_ext(cl_device_id device, cl_context context,
                         cl_command_queue queue, int num_elements);
 extern int test_ifp_core(cl_device_id device, cl_context context,
                          cl_command_queue queue, int num_elements);
-
+extern int test_subgroup_functions_extended_types(cl_device_id device,
+                                                  cl_context context,
+                                                  cl_command_queue queue,
+                                                  int num_elements);
+extern int test_subgroup_functions_non_uniform_vote(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements);
+extern int test_subgroup_functions_non_uniform_arithmetic(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_subgroup_functions_ballot(cl_device_id device,
+                                          cl_context context,
+                                          cl_command_queue queue,
+                                          int num_elements);
+extern int test_subgroup_functions_clustered_reduce(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements);
+extern int test_subgroup_functions_shuffle(cl_device_id device,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements);
+extern int test_subgroup_functions_shuffle_relative(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements);
 #endif /*_procs_h*/

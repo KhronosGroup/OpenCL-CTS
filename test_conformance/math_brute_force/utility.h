@@ -34,7 +34,6 @@
 
 struct Func;
 
-extern int gWimpyBufferSize;
 extern int gWimpyReductionFactor;
 
 #define VECTOR_SIZE_COUNT 6
@@ -56,24 +55,17 @@ extern cl_mem gInBuffer2;
 extern cl_mem gInBuffer3;
 extern cl_mem gOutBuffer[VECTOR_SIZE_COUNT];
 extern cl_mem gOutBuffer2[VECTOR_SIZE_COUNT];
-extern uint32_t gComputeDevices;
-extern uint32_t gSimdSize;
 extern int gSkipCorrectnessTesting;
-extern int gMeasureTimes;
-extern int gReportAverageTimes;
 extern int gForceFTZ;
 extern int gFastRelaxedDerived;
 extern int gWimpyMode;
-extern int gHasDouble;
 extern int gIsInRTZMode;
 extern int gInfNanSupport;
 extern int gIsEmbedded;
 extern int gVerboseBruteForce;
 extern uint32_t gMaxVectorSizeIndex;
 extern uint32_t gMinVectorSizeIndex;
-extern uint32_t gDeviceFrequency;
 extern cl_device_fp_config gFloatCapabilities;
-extern cl_device_fp_config gDoubleCapabilities;
 
 #define LOWER_IS_BETTER 0
 #define HIGHER_IS_BETTER 1
@@ -91,8 +83,6 @@ float Abs_Error(float test, double reference);
 float Ulp_Error(float test, double reference);
 float Bruteforce_Ulp_Error_Double(double test, long double reference);
 
-uint64_t GetTime(void);
-double SubtractTime(uint64_t endTime, uint64_t startTime);
 int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
                cl_program *p, bool relaxedMode);
 int MakeKernels(const char **c, cl_uint count, const char *name,
@@ -122,8 +112,6 @@ static inline double DoubleFromUInt32(uint32_t bits)
 
 void _LogBuildError(cl_program p, int line, const char *file);
 #define LogBuildError(program) _LogBuildError(program, __LINE__, __FILE__)
-
-#define PERF_LOOP_COUNT 100
 
 // The spec is fairly clear that we may enforce a hard cutoff to prevent
 // premature flushing to zero.

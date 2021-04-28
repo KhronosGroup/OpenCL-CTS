@@ -51,27 +51,21 @@
     (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO                  \
      | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM)
 
-const char **gTestNames = NULL;
-unsigned int gTestNameCount = 0;
-char appName[MAXPATHLEN] = "";
+static const char **gTestNames = NULL;
+static unsigned int gTestNameCount = 0;
+static char appName[MAXPATHLEN] = "";
 cl_device_id gDevice = NULL;
 cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
 static int32_t gStartTestNumber = -1;
 static int32_t gEndTestNumber = -1;
 int gSkipCorrectnessTesting = 0;
-int gStopOnError = 0;
+static int gStopOnError = 0;
 static bool gSkipRestOfTests;
-#if defined(__APPLE__)
-int gMeasureTimes = 1;
-#else
-int gMeasureTimes = 0;
-#endif
-int gReportAverageTimes = 0;
 int gForceFTZ = 0;
 int gWimpyMode = 0;
-int gHasDouble = 0;
-int gTestFloat = 1;
+static int gHasDouble = 0;
+static int gTestFloat = 1;
 // This flag should be 'ON' by default and it can be changed through the command
 // line arguments.
 static int gTestFastRelaxed = 1;
@@ -84,14 +78,13 @@ static int gTestFastRelaxed = 1;
   OpenCL 2.0 spec then it has to be changed through a command line argument.
 */
 int gFastRelaxedDerived = 1;
-int gToggleCorrectlyRoundedDivideSqrt = 0;
+static int gToggleCorrectlyRoundedDivideSqrt = 0;
 int gDeviceILogb0 = 1;
 int gDeviceILogbNaN = 1;
 int gCheckTininessBeforeRounding = 1;
 int gIsInRTZMode = 0;
 uint32_t gMaxVectorSizeIndex = VECTOR_SIZE_COUNT;
 uint32_t gMinVectorSizeIndex = 0;
-const char *method[] = { "Best", "Average" };
 void *gIn = NULL;
 void *gIn2 = NULL;
 void *gIn3 = NULL;
@@ -104,28 +97,22 @@ cl_mem gInBuffer2 = NULL;
 cl_mem gInBuffer3 = NULL;
 cl_mem gOutBuffer[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
 cl_mem gOutBuffer2[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
-uint32_t gComputeDevices = 0;
-uint32_t gSimdSize = 1;
-uint32_t gDeviceFrequency = 0;
 static MTdata gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
-cl_device_fp_config gDoubleCapabilities = 0;
 int gWimpyReductionFactor = 32;
-int gWimpyBufferSize = BUFFER_SIZE;
 int gVerboseBruteForce = 0;
 
 static int ParseArgs(int argc, const char **argv);
 static void PrintUsage(void);
 static void PrintFunctions(void);
-test_status InitCL(cl_device_id device);
+static test_status InitCL(cl_device_id device);
 static void ReleaseCL(void);
 static int InitILogbConstants(void);
 static int IsTininessDetectedBeforeRounding(void);
 static int
 IsInRTZMode(void); // expensive. Please check gIsInRTZMode global instead.
 
-
-int doTest(const char *name)
+static int doTest(const char *name)
 {
     if (gSkipRestOfTests)
     {
@@ -253,508 +240,20 @@ int doTest(const char *name)
     return error;
 }
 
-int test_acos(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("acos");
-}
-int test_acosh(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("acosh");
-}
-int test_acospi(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest("acospi");
-}
-int test_asin(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("asin");
-}
-int test_asinh(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("asinh");
-}
-int test_asinpi(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest("asinpi");
-}
-int test_atan(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("atan");
-}
-int test_atanh(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("atanh");
-}
-int test_atanpi(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest("atanpi");
-}
-int test_atan2(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("atan2");
-}
-int test_atan2pi(cl_device_id deviceID, cl_context context,
-                 cl_command_queue queue, int num_elements)
-{
-    return doTest("atan2pi");
-}
-int test_cbrt(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("cbrt");
-}
-int test_ceil(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("ceil");
-}
-int test_copysign(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest("copysign");
-}
-int test_cos(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
-{
-    return doTest("cos");
-}
-int test_cosh(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("cosh");
-}
-int test_cospi(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("cospi");
-}
-int test_exp(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
-{
-    return doTest("exp");
-}
-int test_exp2(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("exp2");
-}
-int test_exp10(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("exp10");
-}
-int test_expm1(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("expm1");
-}
-int test_fabs(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("fabs");
-}
-int test_fdim(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("fdim");
-}
-int test_floor(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("floor");
-}
-int test_fma(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
-{
-    return doTest("fma");
-}
-int test_fmax(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("fmax");
-}
-int test_fmin(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("fmin");
-}
-int test_fmod(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("fmod");
-}
-int test_fract(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("fract");
-}
-int test_frexp(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("frexp");
-}
-int test_hypot(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("hypot");
-}
-int test_ilogb(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("ilogb");
-}
-int test_isequal(cl_device_id deviceID, cl_context context,
-                 cl_command_queue queue, int num_elements)
-{
-    return doTest("isequal");
-}
-int test_isfinite(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest("isfinite");
-}
-int test_isgreater(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
-{
-    return doTest("isgreater");
-}
-int test_isgreaterequal(cl_device_id deviceID, cl_context context,
-                        cl_command_queue queue, int num_elements)
-{
-    return doTest("isgreaterequal");
-}
-int test_isinf(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("isinf");
-}
-int test_isless(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest("isless");
-}
-int test_islessequal(cl_device_id deviceID, cl_context context,
-                     cl_command_queue queue, int num_elements)
-{
-    return doTest("islessequal");
-}
-int test_islessgreater(cl_device_id deviceID, cl_context context,
-                       cl_command_queue queue, int num_elements)
-{
-    return doTest("islessgreater");
-}
-int test_isnan(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("isnan");
-}
-int test_isnormal(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest("isnormal");
-}
-int test_isnotequal(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
-{
-    return doTest("isnotequal");
-}
-int test_isordered(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
-{
-    return doTest("isordered");
-}
-int test_isunordered(cl_device_id deviceID, cl_context context,
-                     cl_command_queue queue, int num_elements)
-{
-    return doTest("isunordered");
-}
-int test_ldexp(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("ldexp");
-}
-int test_lgamma(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest("lgamma");
-}
-int test_lgamma_r(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest("lgamma_r");
-}
-int test_log(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
-{
-    return doTest("log");
-}
-int test_log2(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("log2");
-}
-int test_log10(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("log10");
-}
-int test_log1p(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("log1p");
-}
-int test_logb(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("logb");
-}
-int test_mad(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
-{
-    return doTest("mad");
-}
-int test_maxmag(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest("maxmag");
-}
-int test_minmag(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest("minmag");
-}
-int test_modf(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("modf");
-}
-int test_nan(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
-{
-    return doTest("nan");
-}
-int test_nextafter(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
-{
-    return doTest("nextafter");
-}
-int test_pow(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
-{
-    return doTest("pow");
-}
-int test_pown(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("pown");
-}
-int test_powr(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("powr");
-}
-int test_remainder(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
-{
-    return doTest("remainder");
-}
-int test_remquo(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest("remquo");
-}
-int test_rint(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("rint");
-}
-int test_rootn(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("rootn");
-}
-int test_round(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("round");
-}
-int test_rsqrt(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("rsqrt");
-}
-int test_signbit(cl_device_id deviceID, cl_context context,
-                 cl_command_queue queue, int num_elements)
-{
-    return doTest("signbit");
-}
-int test_sin(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
-{
-    return doTest("sin");
-}
-int test_sincos(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest("sincos");
-}
-int test_sinh(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("sinh");
-}
-int test_sinpi(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("sinpi");
-}
-int test_sqrt(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("sqrt");
-}
-int test_sqrt_cr(cl_device_id deviceID, cl_context context,
-                 cl_command_queue queue, int num_elements)
-{
-    return doTest("sqrt_cr");
-}
-int test_tan(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
-{
-    return doTest("tan");
-}
-int test_tanh(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest("tanh");
-}
-int test_tanpi(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("tanpi");
-}
-int test_trunc(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
-{
-    return doTest("trunc");
-}
-int test_half_cos(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest("half_cos");
-}
-int test_half_divide(cl_device_id deviceID, cl_context context,
-                     cl_command_queue queue, int num_elements)
-{
-    return doTest("half_divide");
-}
-int test_half_exp(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest("half_exp");
-}
-int test_half_exp2(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
-{
-    return doTest("half_exp2");
-}
-int test_half_exp10(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
-{
-    return doTest("half_exp10");
-}
-int test_half_log(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest("half_log");
-}
-int test_half_log2(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
-{
-    return doTest("half_log2");
-}
-int test_half_log10(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
-{
-    return doTest("half_log10");
-}
-int test_half_powr(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
-{
-    return doTest("half_powr");
-}
-int test_half_recip(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
-{
-    return doTest("half_recip");
-}
-int test_half_rsqrt(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
-{
-    return doTest("half_rsqrt");
-}
-int test_half_sin(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest("half_sin");
-}
-int test_half_sqrt(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
-{
-    return doTest("half_sqrt");
-}
-int test_half_tan(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest("half_tan");
-}
-int test_add(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
-{
-    return doTest("add");
-}
-int test_subtract(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest("subtract");
-}
-int test_divide(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest("divide");
-}
-int test_divide_cr(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
-{
-    return doTest("divide_cr");
-}
-int test_multiply(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest("multiply");
-}
-int test_assignment(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
-{
-    return doTest("assignment");
-}
-int test_not(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
-{
-    return doTest("not");
-}
 
-test_definition test_list[] = {
+#define TEST_LAMBDA(name)                                                      \
+    [](cl_device_id, cl_context, cl_command_queue, int) {                      \
+        return doTest(#name);                                                  \
+    }
+
+// Redefine ADD_TEST to use TEST_LAMBDA.
+#undef ADD_TEST
+#define ADD_TEST(name)                                                         \
+    {                                                                          \
+        TEST_LAMBDA(name), #name, Version(1, 0)                                \
+    }
+
+static test_definition test_list[] = {
     ADD_TEST(acos),          ADD_TEST(acosh),      ADD_TEST(acospi),
     ADD_TEST(asin),          ADD_TEST(asinh),      ADD_TEST(asinpi),
     ADD_TEST(atan),          ADD_TEST(atanh),      ADD_TEST(atanpi),
@@ -791,7 +290,10 @@ test_definition test_list[] = {
     ADD_TEST(not),
 };
 
-const int test_num = ARRAY_SIZE(test_list);
+#undef ADD_TEST
+#undef TEST_LAMBDA
+
+static const int test_num = ARRAY_SIZE(test_list);
 
 #pragma mark -
 
@@ -805,11 +307,6 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-#if defined(__APPLE__)
-    struct timeval startTime;
-    gettimeofday(&startTime, NULL);
-#endif
-
     error = ParseArgs(argc, argv);
     if (error) return error;
 
@@ -822,24 +319,8 @@ int main(int argc, const char *argv[])
     else if (gStopOnError)
         vlog("Stopping at first error.\n");
 
-    if (gMeasureTimes)
-    {
-        vlog("%s times are reported at right (cycles per element):\n",
-             method[gReportAverageTimes]);
-        vlog("\n");
-        if (gSkipCorrectnessTesting)
-            vlog("   \t               ");
-        else
-            vlog("   \t                                        ");
-        if (gWimpyMode) vlog("   ");
-        for (int i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
-            vlog("\t  float%s", sizeNames[i]);
-    }
-    else
-    {
-        vlog("   \t                                        ");
-        if (gWimpyMode) vlog("   ");
-    }
+    vlog("   \t                                        ");
+    if (gWimpyMode) vlog("   ");
     if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
 
     vlog("\n-------------------------------------------------------------------"
@@ -865,14 +346,6 @@ int main(int argc, const char *argv[])
     }
 
     ReleaseCL();
-
-#if defined(__APPLE__)
-    struct timeval endTime;
-    gettimeofday(&endTime, NULL);
-    double time = (double)endTime.tv_sec - (double)startTime.tv_sec;
-    time += 1e-6 * ((double)endTime.tv_usec - (double)startTime.tv_usec);
-    vlog("time: %f s\n", time);
-#endif
 
     return ret;
 }
@@ -922,8 +395,6 @@ static int ParseArgs(int argc, const char **argv)
                 optionFound = 1;
                 switch (*arg)
                 {
-                    case 'a': gReportAverageTimes ^= 1; break;
-
                     case 'c': gToggleCorrectlyRoundedDivideSqrt ^= 1; break;
 
                     case 'd': gHasDouble ^= 1; break;
@@ -943,8 +414,6 @@ static int ParseArgs(int argc, const char **argv)
                     case 'r': gTestFastRelaxed ^= 1; break;
 
                     case 's': gStopOnError ^= 1; break;
-
-                    case 't': gMeasureTimes ^= 1; break;
 
                     case 'v': gVerboseBruteForce ^= 1; break;
 
@@ -986,7 +455,6 @@ static int ParseArgs(int argc, const char **argv)
                     case '8':
                         gMinVectorSizeIndex = 4;
                         gMaxVectorSizeIndex = gMinVectorSizeIndex + 1;
-                        break;
                         break;
 
                     default:
@@ -1070,9 +538,8 @@ static void PrintFunctions(void)
 
 static void PrintUsage(void)
 {
-    vlog("%s [-acglstz]: <optional: math function names>\n", appName);
+    vlog("%s [-cglsz]: <optional: math function names>\n", appName);
     vlog("\toptions:\n");
-    vlog("\t\t-a\tReport average times instead of best times\n");
     vlog("\t\t-c\tToggle test fp correctly rounded divide and sqrt (Default: "
          "off)\n");
     vlog("\t\t-d\tToggle double precision testing. (Default: on iff khr_fp_64 "
@@ -1087,7 +554,6 @@ static void PrintUsage(void)
          "accuracy checks.)\n");
     vlog("\t\t-m\tToggle run multi-threaded. (Default: on) )\n");
     vlog("\t\t-s\tStop on error\n");
-    vlog("\t\t-t\tToggle timing  (on by default)\n");
     vlog("\t\t-w\tToggle Wimpy Mode, * Not a valid test * \n");
     vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-10, default factor(%u)\n",
@@ -1123,7 +589,6 @@ test_status InitCL(cl_device_id device)
 {
     int error;
     uint32_t i;
-    size_t configSize = sizeof(gComputeDevices);
     cl_device_type device_type;
 
     error = clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(device_type),
@@ -1135,18 +600,16 @@ test_status InitCL(cl_device_id device)
     }
 
     gDevice = device;
-    if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_MAX_COMPUTE_UNITS,
-                                 configSize, &gComputeDevices, NULL)))
-        gComputeDevices = 1;
 
     // Check extensions
     if (is_extension_available(gDevice, "cl_khr_fp64"))
     {
         gHasDouble ^= 1;
 #if defined(CL_DEVICE_DOUBLE_FP_CONFIG)
+        cl_device_fp_config doubleCapabilities = 0;
         if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_DOUBLE_FP_CONFIG,
-                                     sizeof(gDoubleCapabilities),
-                                     &gDoubleCapabilities, NULL)))
+                                     sizeof(doubleCapabilities),
+                                     &doubleCapabilities, NULL)))
         {
             vlog_error("ERROR: Unable to get device "
                        "CL_DEVICE_DOUBLE_FP_CONFIG. (%d)\n",
@@ -1155,19 +618,19 @@ test_status InitCL(cl_device_id device)
         }
 
         if (DOUBLE_REQUIRED_FEATURES
-            != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES))
+            != (doubleCapabilities & DOUBLE_REQUIRED_FEATURES))
         {
             std::string list;
-            if (0 == (gDoubleCapabilities & CL_FP_FMA)) list += "CL_FP_FMA, ";
-            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_NEAREST))
+            if (0 == (doubleCapabilities & CL_FP_FMA)) list += "CL_FP_FMA, ";
+            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_NEAREST))
                 list += "CL_FP_ROUND_TO_NEAREST, ";
-            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_ZERO))
+            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_ZERO))
                 list += "CL_FP_ROUND_TO_ZERO, ";
-            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_INF))
+            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_INF))
                 list += "CL_FP_ROUND_TO_INF, ";
-            if (0 == (gDoubleCapabilities & CL_FP_INF_NAN))
+            if (0 == (doubleCapabilities & CL_FP_INF_NAN))
                 list += "CL_FP_INF_NAN, ";
-            if (0 == (gDoubleCapabilities & CL_FP_DENORM))
+            if (0 == (doubleCapabilities & CL_FP_DENORM))
                 list += "CL_FP_DENORM, ";
             vlog_error("ERROR: required double features are missing: %s\n",
                        list.c_str());
@@ -1181,10 +644,11 @@ test_status InitCL(cl_device_id device)
 #endif
     }
 
-    configSize = sizeof(gDeviceFrequency);
+    uint32_t deviceFrequency = 0;
+    size_t configSize = sizeof(deviceFrequency);
     if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY,
-                                 configSize, &gDeviceFrequency, NULL)))
-        gDeviceFrequency = 0;
+                                 configSize, &deviceFrequency, NULL)))
+        deviceFrequency = 0;
 
     if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_SINGLE_FP_CONFIG,
                                  sizeof(gFloatCapabilities),
@@ -1211,9 +675,6 @@ test_status InitCL(cl_device_id device)
         return TEST_FAIL;
     }
 
-#if defined(__APPLE__)
-    // FIXME: use clProtectedArray
-#endif
     // Allocate buffers
     cl_uint min_alignment = 0;
     error = clGetDeviceInfo(gDevice, CL_DEVICE_MEM_BASE_ADDR_ALIGN,
@@ -1264,7 +725,7 @@ test_status InitCL(cl_device_id device)
         clCreateBuffer(gContext, device_flags, BUFFER_SIZE, gIn2, &error);
     if (gInBuffer2 == NULL || error)
     {
-        vlog_error("clCreateArray2 failed for input (%d)\n", error);
+        vlog_error("clCreateBuffer2 failed for input (%d)\n", error);
         return TEST_FAIL;
     }
 
@@ -1272,7 +733,7 @@ test_status InitCL(cl_device_id device)
         clCreateBuffer(gContext, device_flags, BUFFER_SIZE, gIn3, &error);
     if (gInBuffer3 == NULL || error)
     {
-        vlog_error("clCreateArray3 failed for input (%d)\n", error);
+        vlog_error("clCreateBuffer3 failed for input (%d)\n", error);
         return TEST_FAIL;
     }
 
@@ -1290,14 +751,14 @@ test_status InitCL(cl_device_id device)
                                        gOut[i], &error);
         if (gOutBuffer[i] == NULL || error)
         {
-            vlog_error("clCreateArray failed for output (%d)\n", error);
+            vlog_error("clCreateBuffer failed for output (%d)\n", error);
             return TEST_FAIL;
         }
         gOutBuffer2[i] = clCreateBuffer(gContext, device_flags, BUFFER_SIZE,
                                         gOut2[i], &error);
         if (gOutBuffer2[i] == NULL || error)
         {
-            vlog_error("clCreateArray2 failed for output (%d)\n", error);
+            vlog_error("clCreateBuffer2 failed for output (%d)\n", error);
             return TEST_FAIL;
         }
     }
@@ -1334,7 +795,7 @@ test_status InitCL(cl_device_id device)
     vlog("\tCL C Version: %s\n", c);
     clGetDeviceInfo(gDevice, CL_DRIVER_VERSION, sizeof(c), &c, NULL);
     vlog("\tDriver Version: %s\n", c);
-    vlog("\tDevice Frequency: %d MHz\n", gDeviceFrequency);
+    vlog("\tDevice Frequency: %d MHz\n", deviceFrequency);
     vlog("\tSubnormal values supported for floats? %s\n",
          no_yes[0 != (CL_FP_DENORM & gFloatCapabilities)]);
     vlog("\tCorrectly rounded divide and sqrt supported for floats? %s\n",
@@ -1828,51 +1289,6 @@ float Abs_Error(float test, double reference)
     if (isnan(test) && isnan(reference)) return 0.0f;
     return fabs((float)(reference - (double)test));
 }
-
-#if defined(__APPLE__)
-#include <mach/mach_time.h>
-#endif
-
-uint64_t GetTime(void)
-{
-#if defined(__APPLE__)
-    return mach_absolute_time();
-#elif defined(_WIN32) && defined(_MSC_VER)
-    return ReadTime();
-#else
-// mach_absolute_time is a high precision timer with precision < 1 microsecond.
-#warning need accurate clock here.  Times are invalid.
-    return 0;
-#endif
-}
-
-
-#if defined(_WIN32) && defined(_MSC_VER)
-/* function is defined in "compat.h" */
-#else
-double SubtractTime(uint64_t endTime, uint64_t startTime)
-{
-    uint64_t diff = endTime - startTime;
-    static double conversion = 0.0;
-
-    if (0.0 == conversion)
-    {
-#if defined(__APPLE__)
-        mach_timebase_info_data_t info = { 0, 0 };
-        kern_return_t err = mach_timebase_info(&info);
-        if (0 == err)
-            conversion = 1e-9 * (double)info.numer / (double)info.denom;
-#else
-// This function consumes output from GetTime() above, and converts the time to
-// secionds.
-#warning need accurate ticks to seconds conversion factor here. Times are invalid.
-#endif
-    }
-
-    // strictly speaking we should also be subtracting out timer latency here
-    return conversion * (double)diff;
-}
-#endif
 
 cl_uint RoundUpToNextPowerOfTwo(cl_uint x)
 {

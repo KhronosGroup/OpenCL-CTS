@@ -20,10 +20,6 @@
 
 #include <cstring>
 
-#if defined(__APPLE__)
-#include <sys/time.h>
-#endif
-
 static int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                        cl_kernel *k, cl_program *p, bool relaxedMode)
 {
@@ -113,8 +109,7 @@ typedef struct BuildKernelInfo
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 } BuildKernelInfo;
 
-static cl_int BuildKernel_FloatFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                  void *p)
+static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
@@ -156,13 +151,12 @@ typedef struct TestInfo
                       // otherwise.
 } TestInfo;
 
-static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *p);
+static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data);
 
 int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 {
     TestInfo test_info;
     cl_int error;
-    size_t i, j;
     float maxError = 0.0f;
     double maxErrorVal = 0.0;
     int skipTestingRelaxed = (relaxedMode && strcmp(f->name, "tan") == 0);
@@ -175,13 +169,6 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
     test_info.scale = getTestScale(sizeof(cl_float));
-
-    if (gWimpyMode)
-    {
-        test_info.subBufferSize = gWimpyBufferSize
-            / (sizeof(cl_float)
-               * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    }
 
     test_info.step = (cl_uint)test_info.subBufferSize * test_info.scale;
     if (test_info.step / test_info.subBufferSize != test_info.scale)
@@ -201,7 +188,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     test_info.relaxedMode = relaxedMode;
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
-    for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
+    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         size_t array_size = test_info.threadCount * sizeof(cl_kernel);
         test_info.k[i] = (cl_kernel *)malloc(array_size);
@@ -224,7 +211,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     }
     memset(test_info.tinfo, 0,
            test_info.threadCount * sizeof(*test_info.tinfo));
-    for (i = 0; i < test_info.threadCount; i++)
+    for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {
             i * test_info.subBufferSize * sizeof(cl_float),
@@ -241,7 +228,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
         }
 
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             test_info.tinfo[i].outBuf[j] = clCreateSubBuffer(
                 gOutBuffer[j], CL_MEM_WRITE_ONLY, CL_BUFFER_CREATE_TYPE_REGION,
@@ -249,8 +236,8 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
                 vlog_error("Error: Unable to create sub-buffer of "
-                           "gInBuffer for region {%zd, %zd}\n",
-                           region.origin, region.size);
+                           "gOutBuffer[%d] for region {%zd, %zd}\n",
+                           (int)j, region.origin, region.size);
                 goto exit;
             }
         }
@@ -287,7 +274,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             gMinVectorSizeIndex, test_info.threadCount, test_info.k,
             test_info.programs,  f->nameInCode,         relaxedMode
         };
-        if ((error = ThreadPool_Do(BuildKernel_FloatFn,
+        if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
             goto exit;
@@ -296,10 +283,10 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     // Run the kernels
     if (!gSkipCorrectnessTesting || skipTestingRelaxed)
     {
-        error = ThreadPool_Do(TestFloat, test_info.jobCount, &test_info);
+        error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
 
         // Accumulate the arithmetic errors
-        for (i = 0; i < test_info.threadCount; i++)
+        for (cl_uint i = 0; i < test_info.threadCount; i++)
         {
             if (test_info.tinfo[i].maxError > maxError)
             {
@@ -320,95 +307,20 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             vlog(" (rlx skip correctness testing)\n");
             goto exit;
         }
+
+        vlog("\t%8.2f @ %a", maxError, maxErrorVal);
     }
 
-    if (gMeasureTimes)
-    {
-        // Init input array
-        uint32_t *p = (uint32_t *)gIn;
-        if (strstr(f->name, "exp") || strstr(f->name, "sin")
-            || strstr(f->name, "cos") || strstr(f->name, "tan"))
-            for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
-                ((float *)p)[j] = (float)genrand_real1(d);
-        else if (strstr(f->name, "log"))
-            for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
-                p[j] = genrand_int32(d) & 0x7fffffff;
-        else
-            for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
-                p[j] = genrand_int32(d);
-        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
-                                          BUFFER_SIZE, gIn, 0, NULL, NULL)))
-        {
-            vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
-            return error;
-        }
-
-
-        // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-        {
-            size_t vectorSize = sizeof(cl_float) * sizeValues[j];
-            size_t localCount = (BUFFER_SIZE + vectorSize - 1)
-                / vectorSize; // BUFFER_SIZE / vectorSize  rounded up
-            if ((error = clSetKernelArg(test_info.k[j][0], 0,
-                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
-            {
-                LogBuildError(test_info.programs[j]);
-                goto exit;
-            }
-            if ((error = clSetKernelArg(test_info.k[j][0], 1, sizeof(gInBuffer),
-                                        &gInBuffer)))
-            {
-                LogBuildError(test_info.programs[j]);
-                goto exit;
-            }
-
-            double sum = 0.0;
-            double bestTime = INFINITY;
-            for (i = 0; i < PERF_LOOP_COUNT; i++)
-            {
-                uint64_t startTime = GetTime();
-                if ((error = clEnqueueNDRangeKernel(gQueue, test_info.k[j][0],
-                                                    1, NULL, &localCount, NULL,
-                                                    0, NULL, NULL)))
-                {
-                    vlog_error("FAILED -- could not execute kernel\n");
-                    goto exit;
-                }
-
-                // Make sure OpenCL is done
-                if ((error = clFinish(gQueue)))
-                {
-                    vlog_error("Error %d at clFinish\n", error);
-                    goto exit;
-                }
-
-                uint64_t endTime = GetTime();
-                double time = SubtractTime(endTime, startTime);
-                sum += time;
-                if (time < bestTime) bestTime = time;
-            }
-
-            if (gReportAverageTimes) bestTime = sum / PERF_LOOP_COUNT;
-            double clocksPerOp = bestTime * (double)gDeviceFrequency
-                * gComputeDevices * gSimdSize * 1e6
-                / (BUFFER_SIZE / sizeof(float));
-            vlog_perf(clocksPerOp, LOWER_IS_BETTER, "clocks / element", "%sf%s",
-                      f->name, sizeNames[j]);
-        }
-    }
-
-    if (!gSkipCorrectnessTesting) vlog("\t%8.2f @ %a", maxError, maxErrorVal);
     vlog("\n");
 
 exit:
     // Release
-    for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
+    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
         if (test_info.k[i])
         {
-            for (j = 0; j < test_info.threadCount; j++)
+            for (cl_uint j = 0; j < test_info.threadCount; j++)
                 clReleaseKernel(test_info.k[i][j]);
 
             free(test_info.k[i]);
@@ -416,10 +328,10 @@ exit:
     }
     if (test_info.tinfo)
     {
-        for (i = 0; i < test_info.threadCount; i++)
+        for (cl_uint i = 0; i < test_info.threadCount; i++)
         {
             clReleaseMemObject(test_info.tinfo[i].inBuf);
-            for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+            for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
                 clReleaseMemObject(test_info.tinfo[i].outBuf[j]);
             clReleaseCommandQueue(test_info.tinfo[i].tQueue);
         }
@@ -430,7 +342,7 @@ exit:
     return error;
 }
 
-static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
+static cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 {
     const TestInfo *job = (const TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
@@ -447,7 +359,6 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         func = job->f->rfunc;
     }
 
-    cl_uint j, k;
     cl_int error;
 
     int isRangeLimited = job->isRangeLimited;
@@ -457,7 +368,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     // start the map of the output arrays
     cl_event e[VECTOR_SIZE_COUNT];
     cl_uint *out[VECTOR_SIZE_COUNT];
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         out[j] = (cl_uint *)clEnqueueMapBuffer(
             tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
@@ -475,7 +386,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
 
     // Write the new values to the input array
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
-    for (j = 0; j < buffer_elements; j++)
+    for (size_t j = 0; j < buffer_elements; j++)
     {
         p[j] = base + j * scale;
         if (relaxedMode)
@@ -508,7 +419,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         return error;
     }
 
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         // Wait for the map to finish
         if ((error = clWaitForEvents(1, e + j)))
@@ -569,14 +480,15 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
     // Calculate the correctly rounded reference result
     float *r = (float *)gOut_Ref + thread_id * buffer_elements;
     float *s = (float *)p;
-    for (j = 0; j < buffer_elements; j++) r[j] = (float)func.f_f(s[j]);
+    for (size_t j = 0; j < buffer_elements; j++) r[j] = (float)func.f_f(s[j]);
 
-    // Read the data back -- no need to wait for the first N-1 buffers. This is
-    // an in order queue.
-    for (j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++)
+    // Read the data back -- no need to wait for the first N-1 buffers but wait
+    // for the last buffer. This is an in order queue.
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
+        cl_bool blocking = (j + 1 < gMaxVectorSizeIndex) ? CL_FALSE : CL_TRUE;
         out[j] = (cl_uint *)clEnqueueMapBuffer(
-            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_READ, 0,
+            tinfo->tQueue, tinfo->outBuf[j], blocking, CL_MAP_READ, 0,
             buffer_size, 0, NULL, NULL, &error);
         if (error || NULL == out[j])
         {
@@ -586,21 +498,11 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-    // Wait for the last buffer
-    out[j] = (uint32_t *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
-                                            CL_TRUE, CL_MAP_READ, 0,
-                                            buffer_size, 0, NULL, NULL, &error);
-    if (error || NULL == out[j])
-    {
-        vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error);
-        return error;
-    }
-
     // Verify data
     uint32_t *t = (uint32_t *)r;
-    for (j = 0; j < buffer_elements; j++)
+    for (size_t j = 0; j < buffer_elements; j++)
     {
-        for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+        for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
         {
             uint32_t *q = out[k];
 
@@ -791,7 +693,7 @@ static cl_int TestFloat(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
                                              out[j], 0, NULL, NULL)))

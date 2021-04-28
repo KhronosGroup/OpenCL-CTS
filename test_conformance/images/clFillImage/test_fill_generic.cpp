@@ -478,58 +478,16 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
 
             if (memcmp( sourcePtr, destPtr, scanlineSize ) != 0)
             {
-                log_error( "ERROR: Scanline %d did not verify for image size %d,%d,%d pitch %d (extra %d bytes)\n", (int)y, (int)imageInfo->width, (int)imageInfo->height, (int)thirdDim, (int)imageInfo->rowPitch, (int)imageInfo->rowPitch - (int)imageInfo->width * (int)get_pixel_size( imageInfo->format ) );
-
                 // Find the first missing pixel
                 size_t pixel_size = get_pixel_size( imageInfo->format );
                 size_t where = 0;
                 for ( where = 0; where < imageInfo->width; where++ )
                     if ( memcmp( sourcePtr + pixel_size * where, destPtr + pixel_size * where, pixel_size) )
                         break;
-                log_error( "Failed at column: %ld   ", where );
-                switch ( pixel_size )
-                {
-                case 1:
-                    log_error( "*0x%2.2x vs. 0x%2.2x\n", ((cl_uchar*)(sourcePtr + pixel_size * where))[0], ((cl_uchar*)(destPtr + pixel_size * where))[0] );
-                    break;
-                case 2:
-                    log_error( "*0x%4.4x vs. 0x%4.4x\n", ((cl_ushort*)(sourcePtr + pixel_size * where))[0], ((cl_ushort*)(destPtr + pixel_size * where))[0] );
-                    break;
-                case 3:
-                    log_error( "*{0x%2.2x, 0x%2.2x, 0x%2.2x} vs. {0x%2.2x, 0x%2.2x, 0x%2.2x}\n",
-                               ((cl_uchar*)(sourcePtr + pixel_size * where))[0], ((cl_uchar*)(sourcePtr + pixel_size * where))[1], ((cl_uchar*)(sourcePtr + pixel_size * where))[2],
-                               ((cl_uchar*)(destPtr + pixel_size * where))[0], ((cl_uchar*)(destPtr + pixel_size * where))[1], ((cl_uchar*)(destPtr + pixel_size * where))[2]
-                             );
-                    break;
-                case 4:
-                    log_error( "*0x%8.8x vs. 0x%8.8x\n", ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[0] );
-                    break;
-                case 6:
-                    log_error( "*{0x%4.4x, 0x%4.4x, 0x%4.4x} vs. {0x%4.4x, 0x%4.4x, 0x%4.4x}\n",
-                               ((cl_ushort*)(sourcePtr + pixel_size * where))[0], ((cl_ushort*)(sourcePtr + pixel_size * where))[1], ((cl_ushort*)(sourcePtr + pixel_size * where))[2],
-                               ((cl_ushort*)(destPtr + pixel_size * where))[0], ((cl_ushort*)(destPtr + pixel_size * where))[1], ((cl_ushort*)(destPtr + pixel_size * where))[2]
-                             );
-                    break;
-                case 8:
-                    log_error( "*0x%16.16llx vs. 0x%16.16llx\n", ((cl_ulong*)(sourcePtr + pixel_size * where))[0], ((cl_ulong*)(destPtr + pixel_size * where))[0] );
-                    break;
-                case 12:
-                    log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
-                               ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(sourcePtr + pixel_size * where))[1], ((cl_uint*)(sourcePtr + pixel_size * where))[2],
-                               ((cl_uint*)(destPtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[1], ((cl_uint*)(destPtr + pixel_size * where))[2]
-                             );
-                    break;
-                case 16:
-                    log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
-                               ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(sourcePtr + pixel_size * where))[1], ((cl_uint*)(sourcePtr + pixel_size * where))[2], ((cl_uint*)(sourcePtr + pixel_size * where))[3],
-                               ((cl_uint*)(destPtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[1], ((cl_uint*)(destPtr + pixel_size * where))[2], ((cl_uint*)(destPtr + pixel_size * where))[3]
-                             );
-                    break;
-                default:
-                    log_error( "Don't know how to print pixel size of %ld\n", pixel_size );
-                    break;
-                }
 
+                print_first_pixel_difference_error(
+                    where, sourcePtr + pixel_size * where,
+                    destPtr + pixel_size * where, imageInfo, y, thirdDim);
                 return -1;
             }
 

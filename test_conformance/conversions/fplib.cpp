@@ -29,8 +29,8 @@ static uint32_t clz(uint64_t value)
 
     for( num_zeros = 0; num_zeros < (sizeof(uint64_t)*8); num_zeros++)
     {
-        if(0x8000000000000000 & (value << num_zeros))
-            break;
+        volatile uint64_t v = 0x8000000000000000ull & (value << num_zeros);
+        if (v) break;
     }
     return num_zeros;
 }
