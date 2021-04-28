@@ -126,8 +126,6 @@ static cl_ulong random64(MTdata d)
 
 int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
 {
-    uint64_t i;
-    uint32_t j, k;
     int error;
     cl_program programs[VECTOR_SIZE_COUNT];
     cl_kernel kernels[VECTOR_SIZE_COUNT];
@@ -150,11 +148,12 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
             return error;
     }
 
-    for (i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
         // Init input array
         cl_ulong *p = (cl_ulong *)gIn;
-        for (j = 0; j < BUFFER_SIZE / sizeof(cl_ulong); j++) p[j] = random64(d);
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(cl_ulong); j++)
+            p[j] = random64(d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))
@@ -164,7 +163,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // write garbage into output arrays
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
             memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
@@ -179,7 +178,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_double);
             size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
@@ -211,11 +210,11 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
         // Calculate the correctly rounded reference result
         double *r = (double *)gOut_Ref;
         cl_ulong *s = (cl_ulong *)gIn;
-        for (j = 0; j < BUFFER_SIZE / sizeof(cl_double); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(cl_double); j++)
             r[j] = (double)f->dfunc.f_u(s[j]);
 
         // Read the data back
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
@@ -230,9 +229,9 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
 
         // Verify data
         uint64_t *t = (uint64_t *)gOut_Ref;
-        for (j = 0; j < BUFFER_SIZE / sizeof(cl_double); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(cl_double); j++)
         {
-            for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+            for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
                 uint64_t *q = (uint64_t *)(gOut[k]);
 
@@ -306,7 +305,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
 
 exit:
     // Release
-    for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
     {
         clReleaseKernel(kernels[k]);
         clReleaseProgram(programs[k]);

@@ -154,13 +154,12 @@ static cl_int ReferenceD(cl_uint jid, cl_uint tid, void *userInfo)
     double *r = cri->r + off;
     int *i = cri->i + off;
     long double (*f)(long double, long double, int *) = cri->f_ffpI;
-    cl_uint j;
 
     if (off + count > lim) count = lim - off;
 
     Force64BitFPUPrecision();
 
-    for (j = 0; j < count; ++j)
+    for (cl_uint j = 0; j < count; ++j)
         r[j] = (double)f((long double)x[j], (long double)y[j], i + j);
 
     return CL_SUCCESS;
@@ -168,8 +167,6 @@ static cl_int ReferenceD(cl_uint jid, cl_uint tid, void *userInfo)
 
 int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 {
-    uint64_t i;
-    uint32_t j, k;
     int error;
     cl_program programs[VECTOR_SIZE_COUNT];
     cl_kernel kernels[VECTOR_SIZE_COUNT];
@@ -198,12 +195,12 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             return error;
     }
 
-    for (i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
         // Init input array
         double *p = (double *)gIn;
         double *p2 = (double *)gIn2;
-        for (j = 0; j < BUFFER_SIZE / sizeof(double); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(double); j++)
         {
             p[j] = DoubleFromUInt32(genrand_int32(d));
             p2[j] = DoubleFromUInt32(genrand_int32(d));
@@ -224,7 +221,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // write garbage into output arrays
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
             memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
@@ -249,7 +246,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeof(cl_double) * sizeValues[j];
             size_t localCount = (BUFFER_SIZE + vectorSize - 1)
@@ -311,12 +308,12 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         {
             double *r = (double *)gOut_Ref;
             int *r2 = (int *)gOut_Ref2;
-            for (j = 0; j < BUFFER_SIZE / sizeof(double); j++)
+            for (size_t j = 0; j < BUFFER_SIZE / sizeof(double); j++)
                 r[j] = (double)f->dfunc.f_ffpI(s[j], s2[j], r2 + j);
         }
 
         // Read the data back
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
@@ -339,9 +336,9 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         // Verify data
         uint64_t *t = (uint64_t *)gOut_Ref;
         int32_t *t2 = (int32_t *)gOut_Ref2;
-        for (j = 0; j < BUFFER_SIZE / sizeof(double); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(double); j++)
         {
-            for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+            for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
                 uint64_t *q = (uint64_t *)gOut[k];
                 int32_t *q2 = (int32_t *)gOut2[k];
@@ -572,7 +569,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 
 exit:
     // Release
-    for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
     {
         clReleaseKernel(kernels[k]);
         clReleaseProgram(programs[k]);

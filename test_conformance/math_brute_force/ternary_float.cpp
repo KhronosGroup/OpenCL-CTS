@@ -215,8 +215,6 @@ static const size_t specialValuesCount =
 
 int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 {
-    uint64_t i;
-    uint32_t j, k;
     int error;
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
@@ -250,13 +248,14 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             return error;
     }
 
-    for (i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
         // Init input array
         cl_uint *p = (cl_uint *)gIn;
         cl_uint *p2 = (cl_uint *)gIn2;
         cl_uint *p3 = (cl_uint *)gIn3;
-        j = 0;
+        size_t idx = 0;
+
         if (i == 0)
         { // test edge cases
             float *fp = (float *)gIn;
@@ -264,11 +263,11 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             float *fp3 = (float *)gIn3;
             uint32_t x, y, z;
             x = y = z = 0;
-            for (; j < BUFFER_SIZE / sizeof(float); j++)
+            for (; idx < BUFFER_SIZE / sizeof(float); idx++)
             {
-                fp[j] = specialValues[x];
-                fp2[j] = specialValues[y];
-                fp3[j] = specialValues[z];
+                fp[idx] = specialValues[x];
+                fp2[idx] = specialValues[y];
+                fp3[idx] = specialValues[z];
 
                 if (++x >= specialValuesCount)
                 {
@@ -280,15 +279,15 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                     }
                 }
             }
-            if (j == BUFFER_SIZE / sizeof(float))
+            if (idx == BUFFER_SIZE / sizeof(float))
                 vlog_error("Test Error: not all special cases tested!\n");
         }
 
-        for (; j < BUFFER_SIZE / sizeof(float); j++)
+        for (; idx < BUFFER_SIZE / sizeof(float); idx++)
         {
-            p[j] = genrand_int32(d);
-            p2[j] = genrand_int32(d);
-            p3[j] = genrand_int32(d);
+            p[idx] = genrand_int32(d);
+            p2[idx] = genrand_int32(d);
+            p3[idx] = genrand_int32(d);
         }
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
@@ -313,7 +312,7 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // write garbage into output arrays
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
             memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
@@ -328,7 +327,7 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeof(cl_float) * sizeValues[j];
             size_t localCount = (BUFFER_SIZE + vectorSize - 1)
@@ -377,7 +376,7 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         float *s3 = (float *)gIn3;
         if (skipNanInf)
         {
-            for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+            for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
             {
                 feclearexcept(FE_OVERFLOW);
                 r[j] =
@@ -388,13 +387,13 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         }
         else
         {
-            for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+            for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
                 r[j] =
                     (float)f->func.f_fma(s[j], s2[j], s3[j], CORRECTLY_ROUNDED);
         }
 
         // Read the data back
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
@@ -409,9 +408,9 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 
         // Verify data
         uint32_t *t = (uint32_t *)gOut_Ref;
-        for (j = 0; j < BUFFER_SIZE / sizeof(float); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
         {
-            for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+            for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
                 uint32_t *q = (uint32_t *)(gOut[k]);
 
@@ -866,7 +865,7 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 
 exit:
     // Release
-    for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
     {
         clReleaseKernel(kernels[k]);
         clReleaseProgram(programs[k]);
