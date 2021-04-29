@@ -203,7 +203,8 @@ extern int gInvalidObject;
 template <typename T> std::vector<T> get_invalid_objects(cl_device_id device)
 {
     std::vector<T> ret;
-    if (gInvalidObject & InvalidObject::Nullptr)
+    if ((gInvalidObject & InvalidObject::Nullptr)
+        && !(std::is_same<T, cl_platform_id>::value))
     {
         ret.push_back(nullptr);
     }
