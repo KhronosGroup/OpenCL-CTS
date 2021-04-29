@@ -1829,7 +1829,7 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context,
     log_info(
         "Reported max constant arg count of %llu and max constant buffer "
         "size of %llu. Test will attempt to allocate half of that, or %llu "
-        "buffers of size %z.\n",
+        "buffers of size %zu.\n",
         maxArgs, maxSize, maxArgs, individualBufferSize);
 
     str2 = (char *)malloc(sizeof(char) * 32 * (maxArgs + 2));
@@ -2109,7 +2109,7 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context,
         * sizeof(cl_int);
     size_t numberOfInts = sizeToAllocate / sizeof(cl_int);
 
-    log_info("Attempting to use %z bytes of local memory.\n", sizeToAllocate);
+    log_info("Attempting to use %zu bytes of local memory.\n", sizeToAllocate);
 
     localData = (cl_int *)malloc(sizeToAllocate);
     d = init_genrand(gRandomSeed);
@@ -2138,7 +2138,7 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context,
     /* Test running the kernel and verifying it */
     threads[0] = numberOfInts;
     localThreads[0] = 1;
-    log_info("Creating local buffer with %d cl_ints (%z bytes).\n",
+    log_info("Creating local buffer with %d cl_ints (%zu bytes).\n",
              (int)numberOfInts, sizeToAllocate);
 
     cl_event evt;
