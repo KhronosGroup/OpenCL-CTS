@@ -196,3 +196,4 @@ extern int test_queue_priority(cl_device_id device, cl_context context, cl_comma
 
 extern int test_get_linear_ids(cl_device_id device, cl_context cl_context_, cl_command_queue q, int num_elements);
 extern int test_rw_image_access_qualifier(cl_device_id device_id, cl_context context, cl_command_queue commands, int num_elements);
+

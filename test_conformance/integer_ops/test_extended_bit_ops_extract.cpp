@@ -106,56 +106,6 @@ calculate_reference(std::vector<typename std::make_signed<T>::type>& sref,
 }
 
 static constexpr const char* kernel_source = R"CLC(
-#define OVLD __attribute__((overloadable))
-
-char OVLD intel_sbfe(uchar base, uint offset, uint count) { return intel_sbfe(as_char(base), offset, count); }
-char2 OVLD intel_sbfe(uchar2 base, uint offset, uint count) { return intel_sbfe(as_char2(base), offset, count); }
-char4 OVLD intel_sbfe(uchar4 base, uint offset, uint count) { return intel_sbfe(as_char4(base), offset, count); }
-char8 OVLD intel_sbfe(uchar8 base, uint offset, uint count) { return intel_sbfe(as_char8(base), offset, count); }
-char16 OVLD intel_sbfe(uchar16 base, uint offset, uint count) { return intel_sbfe(as_char16(base), offset, count); }
-
-uchar OVLD intel_ubfe(char base, uint offset, uint count) { return intel_ubfe(as_uchar(base), offset, count); }
-uchar2 OVLD intel_ubfe(char2 base, uint offset, uint count) { return intel_ubfe(as_uchar2(base), offset, count); }
-uchar4 OVLD intel_ubfe(char4 base, uint offset, uint count) { return intel_ubfe(as_uchar4(base), offset, count); }
-uchar8 OVLD intel_ubfe(char8 base, uint offset, uint count) { return intel_ubfe(as_uchar8(base), offset, count); }
-uchar16 OVLD intel_ubfe(char16 base, uint offset, uint count) { return intel_ubfe(as_uchar16(base), offset, count); }
-
-short OVLD intel_sbfe(ushort base, uint offset, uint count) { return intel_sbfe(as_short(base), offset, count); }
-short2 OVLD intel_sbfe(ushort2 base, uint offset, uint count) { return intel_sbfe(as_short2(base), offset, count); }
-short4 OVLD intel_sbfe(ushort4 base, uint offset, uint count) { return intel_sbfe(as_short4(base), offset, count); }
-short8 OVLD intel_sbfe(ushort8 base, uint offset, uint count) { return intel_sbfe(as_short8(base), offset, count); }
-short16 OVLD intel_sbfe(ushort16 base, uint offset, uint count) { return intel_sbfe(as_short16(base), offset, count); }
-
-ushort OVLD intel_ubfe(short base, uint offset, uint count) { return intel_ubfe(as_ushort(base), offset, count); }
-ushort2 OVLD intel_ubfe(short2 base, uint offset, uint count) { return intel_ubfe(as_ushort2(base), offset, count); }
-ushort4 OVLD intel_ubfe(short4 base, uint offset, uint count) { return intel_ubfe(as_ushort4(base), offset, count); }
-ushort8 OVLD intel_ubfe(short8 base, uint offset, uint count) { return intel_ubfe(as_ushort8(base), offset, count); }
-ushort16 OVLD intel_ubfe(short16 base, uint offset, uint count) { return intel_ubfe(as_ushort16(base), offset, count); }
-
-int OVLD intel_sbfe(uint base, uint offset, uint count) { return intel_sbfe(as_int(base), offset, count); }
-int2 OVLD intel_sbfe(uint2 base, uint offset, uint count) { return intel_sbfe(as_int2(base), offset, count); }
-int4 OVLD intel_sbfe(uint4 base, uint offset, uint count) { return intel_sbfe(as_int4(base), offset, count); }
-int8 OVLD intel_sbfe(uint8 base, uint offset, uint count) { return intel_sbfe(as_int8(base), offset, count); }
-int16 OVLD intel_sbfe(uint16 base, uint offset, uint count) { return intel_sbfe(as_int16(base), offset, count); }
-
-uint OVLD intel_ubfe(int base, uint offset, uint count) { return intel_ubfe(as_uint(base), offset, count); }
-uint2 OVLD intel_ubfe(int2 base, uint offset, uint count) { return intel_ubfe(as_uint2(base), offset, count); }
-uint4 OVLD intel_ubfe(int4 base, uint offset, uint count) { return intel_ubfe(as_uint4(base), offset, count); }
-uint8 OVLD intel_ubfe(int8 base, uint offset, uint count) { return intel_ubfe(as_uint8(base), offset, count); }
-uint16 OVLD intel_ubfe(int16 base, uint offset, uint count) { return intel_ubfe(as_uint16(base), offset, count); }
-
-long OVLD intel_sbfe(ulong base, uint offset, uint count) { return intel_sbfe(as_long(base), offset, count); }
-long2 OVLD intel_sbfe(ulong2 base, uint offset, uint count) { return intel_sbfe(as_long2(base), offset, count); }
-long4 OVLD intel_sbfe(ulong4 base, uint offset, uint count) { return intel_sbfe(as_long4(base), offset, count); }
-long8 OVLD intel_sbfe(ulong8 base, uint offset, uint count) { return intel_sbfe(as_long8(base), offset, count); }
-long16 OVLD intel_sbfe(ulong16 base, uint offset, uint count) { return intel_sbfe(as_long16(base), offset, count); }
-
-ulong OVLD intel_ubfe(long base, uint offset, uint count) { return intel_ubfe(as_ulong(base), offset, count); }
-ulong2 OVLD intel_ubfe(long2 base, uint offset, uint count) { return intel_ubfe(as_ulong2(base), offset, count); }
-ulong4 OVLD intel_ubfe(long4 base, uint offset, uint count) { return intel_ubfe(as_ulong4(base), offset, count); }
-ulong8 OVLD intel_ubfe(long8 base, uint offset, uint count) { return intel_ubfe(as_ulong8(base), offset, count); }
-ulong16 OVLD intel_ubfe(long16 base, uint offset, uint count) { return intel_ubfe(as_ulong16(base), offset, count); }
-
 __kernel void test_bitfield_extract(__global SIGNED_TYPE* sdst, __global UNSIGNED_TYPE* udst, __global TYPE* base)
 {
     int index = get_global_id(0);
@@ -170,20 +120,6 @@ __kernel void test_bitfield_extract(__global SIGNED_TYPE* sdst, __global UNSIGNE
 )CLC";
 
 static constexpr const char* kernel_source_vec3 = R"CLC(
-#define OVLD __attribute__((overloadable))
-
-char3 OVLD intel_sbfe(uchar3 base, uint offset, uint count) { return intel_sbfe(as_char3(base), offset, count); }
-uchar3 OVLD intel_ubfe(char3 base, uint offset, uint count) { return intel_ubfe(as_uchar3(base), offset, count); }
-
-short3 OVLD intel_sbfe(ushort3 base, uint offset, uint count) { return intel_sbfe(as_short3(base), offset, count); }
-ushort3 OVLD intel_ubfe(short3 base, uint offset, uint count) { return intel_ubfe(as_ushort3(base), offset, count); }
-
-int3 OVLD intel_sbfe(uint3 base, uint offset, uint count) { return intel_sbfe(as_int3(base), offset, count); }
-uint3 OVLD intel_ubfe(int3 base, uint offset, uint count) { return intel_ubfe(as_uint3(base), offset, count); }
-
-long3 OVLD intel_sbfe(ulong3 base, uint offset, uint count) { return intel_sbfe(as_long3(base), offset, count); }
-ulong3 OVLD intel_ubfe(long3 base, uint offset, uint count) { return intel_ubfe(as_ulong3(base), offset, count); }
-
 __kernel void test_bitfield_extract(__global SIGNED_BASETYPE* sdst, __global UNSIGNED_BASETYPE* udst, __global BASETYPE* base)
 {
     int index = get_global_id(0);
@@ -229,10 +165,6 @@ static int test_vectype(cl_device_id device, cl_context context,
     buildOptions += TestInfo<T>::deviceTypeNameSigned;
     buildOptions += " -DUNSIGNED_BASETYPE=";
     buildOptions += TestInfo<T>::deviceTypeNameUnsigned;
-    // TEMP: delete this when we've switched names!
-    buildOptions +=
-        " -Dcl_intel_bit_instructions -Dbitfield_extract_signed=intel_sbfe "
-        "-Dbitfield_extract_unsigned=intel_ubfe";
 
     const size_t ELEMENTS_TO_TEST = (sizeof(T) * 8 + 1) * (sizeof(T) * 8 + 1);
 
@@ -323,8 +255,7 @@ static int test_type(cl_device_id device, cl_context context,
 int test_extended_bit_ops_extract(cl_device_id device, cl_context context,
                                   cl_command_queue queue, int num_elements)
 {
-    // TODO: add back this check!
-    if (true || is_extension_available(device, "cl_khr_extended_bit_ops"))
+    if (is_extension_available(device, "cl_khr_extended_bit_ops"))
     {
         int result = TEST_PASS;
 

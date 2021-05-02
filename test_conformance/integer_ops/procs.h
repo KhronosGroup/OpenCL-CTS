@@ -61,7 +61,6 @@ extern int test_integer_sub_sat(cl_device_id deviceID, cl_context context, cl_co
 extern int test_integer_mul24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_integer_mad24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-// TODO: Break these out into different functions for each type?
 extern int test_extended_bit_ops_extract(cl_device_id device_id,
                                          cl_context context,
                                          cl_command_queue commands,

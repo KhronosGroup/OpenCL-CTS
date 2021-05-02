@@ -19,7 +19,6 @@
 
 #include "harness/conversions.h"
 
-// TODO: Move this to an even more common location?
 template <typename T> struct TestInfo
 {
 };
