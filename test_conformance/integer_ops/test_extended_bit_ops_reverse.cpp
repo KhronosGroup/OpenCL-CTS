@@ -49,32 +49,6 @@ static void calculate_reference(std::vector<T>& ref, const std::vector<T>& base)
 }
 
 static constexpr const char* kernel_source = R"CLC(
-#define OVLD __attribute__((overloadable))
-
-char OVLD bit_reverse(char base) { return as_char(bit_reverse(as_uchar(base))); }
-char2 OVLD bit_reverse(char2 base) { return as_char2(bit_reverse(as_uchar2(base))); }
-char4 OVLD bit_reverse(char4 base) { return as_char4(bit_reverse(as_uchar4(base))); }
-char8 OVLD bit_reverse(char8 base) { return as_char8(bit_reverse(as_uchar8(base))); }
-char16 OVLD bit_reverse(char16 base) { return as_char16(bit_reverse(as_uchar16(base))); }
-
-short OVLD bit_reverse(short base) { return as_short(bit_reverse(as_ushort(base))); }
-short2 OVLD bit_reverse(short2 base) { return as_short2(bit_reverse(as_ushort2(base))); }
-short4 OVLD bit_reverse(short4 base) { return as_short4(bit_reverse(as_ushort4(base))); }
-short8 OVLD bit_reverse(short8 base) { return as_short8(bit_reverse(as_ushort8(base))); }
-short16 OVLD bit_reverse(short16 base) { return as_short16(bit_reverse(as_ushort16(base))); }
-
-int OVLD bit_reverse(int base) { return as_int(bit_reverse(as_uint(base))); }
-int2 OVLD bit_reverse(int2 base) { return as_int2(bit_reverse(as_uint2(base))); }
-int4 OVLD bit_reverse(int4 base) { return as_int4(bit_reverse(as_uint4(base))); }
-int8 OVLD bit_reverse(int8 base) { return as_int8(bit_reverse(as_uint8(base))); }
-int16 OVLD bit_reverse(int16 base) { return as_int16(bit_reverse(as_uint16(base))); }
-
-long OVLD bit_reverse(long base) { return as_long(bit_reverse(as_ulong(base))); }
-long2 OVLD bit_reverse(long2 base) { return as_long2(bit_reverse(as_ulong2(base))); }
-long4 OVLD bit_reverse(long4 base) { return as_long4(bit_reverse(as_ulong4(base))); }
-long8 OVLD bit_reverse(long8 base) { return as_long8(bit_reverse(as_ulong8(base))); }
-long16 OVLD bit_reverse(long16 base) { return as_long16(bit_reverse(as_ulong16(base))); }
-
 __kernel void test_bit_reverse(__global TYPE* dst, __global TYPE* base)
 {
     int index = get_global_id(0);
@@ -83,13 +57,6 @@ __kernel void test_bit_reverse(__global TYPE* dst, __global TYPE* base)
 )CLC";
 
 static constexpr const char* kernel_source_vec3 = R"CLC(
-#define OVLD __attribute__((overloadable))
-
-char3 OVLD bit_reverse(char3 base) { return as_char3(bit_reverse(as_uchar3(base))); }
-short3 OVLD bit_reverse(short3 base) { return as_short3(bit_reverse(as_ushort3(base))); }
-int3 OVLD bit_reverse(int3 base) { return as_int3(bit_reverse(as_uint3(base))); }
-long3 OVLD bit_reverse(long3 base) { return as_long3(bit_reverse(as_ulong3(base))); }
-
 __kernel void test_bit_reverse(__global BASETYPE* dst, __global BASETYPE* base)
 {
     int index = get_global_id(0);
@@ -117,8 +84,6 @@ static int test_vectype(cl_device_id device, cl_context context,
     }
     buildOptions += " -DBASETYPE=";
     buildOptions += TestInfo<T>::deviceTypeName;
-    // TEMP: delete this when we've switched names!
-    buildOptions += " -Dcl_intel_bit_instructions -Dbit_reverse=intel_bfrev";
 
     const size_t ELEMENTS_TO_TEST = 65536;
     std::vector<T> base(ELEMENTS_TO_TEST * N);
@@ -190,8 +155,7 @@ static int test_type(cl_device_id device, cl_context context,
 int test_extended_bit_ops_reverse(cl_device_id device, cl_context context,
                                   cl_command_queue queue, int num_elements)
 {
-    // TODO: add back this check!
-    if (true || is_extension_available(device, "cl_khr_extended_bit_ops"))
+    if (is_extension_available(device, "cl_khr_extended_bit_ops"))
     {
         int result = TEST_PASS;
 

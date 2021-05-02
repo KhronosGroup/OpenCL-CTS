@@ -57,32 +57,6 @@ static void calculate_reference(std::vector<T>& ref, const std::vector<T>& base,
 }
 
 static constexpr const char* kernel_source = R"CLC(
-#define OVLD __attribute__((overloadable))
-
-char OVLD intel_bfi(char base, char insert, uint offset, uint count) { return as_char(intel_bfi(as_uchar(base), as_uchar(insert), offset, count)); }
-char2 OVLD intel_bfi(char2 base, char2 insert, uint offset, uint count) { return as_char2(intel_bfi(as_uchar2(base), as_uchar2(insert), offset, count)); }
-char4 OVLD intel_bfi(char4 base, char4 insert, uint offset, uint count) { return as_char4(intel_bfi(as_uchar4(base), as_uchar4(insert), offset, count)); }
-char8 OVLD intel_bfi(char8 base, char8 insert, uint offset, uint count) { return as_char8(intel_bfi(as_uchar8(base), as_uchar8(insert), offset, count)); }
-char16 OVLD intel_bfi(char16 base, char16 insert, uint offset, uint count) { return as_char16(intel_bfi(as_uchar16(base), as_uchar16(insert), offset, count)); }
-
-short OVLD intel_bfi(short base, short insert, uint offset, uint count) { return as_short(intel_bfi(as_ushort(base), as_ushort(insert), offset, count)); }
-short2 OVLD intel_bfi(short2 base, short2 insert, uint offset, uint count) { return as_short2(intel_bfi(as_ushort2(base), as_ushort2(insert), offset, count)); }
-short4 OVLD intel_bfi(short4 base, short4 insert, uint offset, uint count) { return as_short4(intel_bfi(as_ushort4(base), as_ushort4(insert), offset, count)); }
-short8 OVLD intel_bfi(short8 base, short8 insert, uint offset, uint count) { return as_short8(intel_bfi(as_ushort8(base), as_ushort8(insert), offset, count)); }
-short16 OVLD intel_bfi(short16 base, short16 insert, uint offset, uint count) { return as_short16(intel_bfi(as_ushort16(base), as_ushort16(insert), offset, count)); }
-
-int OVLD intel_bfi(int base, int insert, uint offset, uint count) { return as_int(intel_bfi(as_uint(base), as_uint(insert), offset, count)); }
-int2 OVLD intel_bfi(int2 base, int2 insert, uint offset, uint count) { return as_int2(intel_bfi(as_uint2(base), as_uint2(insert), offset, count)); }
-int4 OVLD intel_bfi(int4 base, int4 insert, uint offset, uint count) { return as_int4(intel_bfi(as_uint4(base), as_uint4(insert), offset, count)); }
-int8 OVLD intel_bfi(int8 base, int8 insert, uint offset, uint count) { return as_int8(intel_bfi(as_uint8(base), as_uint8(insert), offset, count)); }
-int16 OVLD intel_bfi(int16 base, int16 insert, uint offset, uint count) { return as_int16(intel_bfi(as_uint16(base), as_uint16(insert), offset, count)); }
-
-long OVLD intel_bfi(long base, long insert, uint offset, uint count) { return as_long(intel_bfi(as_ulong(base), as_ulong(insert), offset, count)); }
-long2 OVLD intel_bfi(long2 base, long2 insert, uint offset, uint count) { return as_long2(intel_bfi(as_ulong2(base), as_ulong2(insert), offset, count)); }
-long4 OVLD intel_bfi(long4 base, long4 insert, uint offset, uint count) { return as_long4(intel_bfi(as_ulong4(base), as_ulong4(insert), offset, count)); }
-long8 OVLD intel_bfi(long8 base, long8 insert, uint offset, uint count) { return as_long8(intel_bfi(as_ulong8(base), as_ulong8(insert), offset, count)); }
-long16 OVLD intel_bfi(long16 base, long16 insert, uint offset, uint count) { return as_long16(intel_bfi(as_ulong16(base), as_ulong16(insert), offset, count)); }
-
 __kernel void test_bitfield_insert(__global TYPE* dst, __global TYPE* base, __global TYPE* insert)
 {
     int index = get_global_id(0);
@@ -96,13 +70,6 @@ __kernel void test_bitfield_insert(__global TYPE* dst, __global TYPE* base, __gl
 )CLC";
 
 static constexpr const char* kernel_source_vec3 = R"CLC(
-#define OVLD __attribute__((overloadable))
-
-char3 OVLD intel_bfi(char3 base, char3 insert, uint offset, uint count) { return as_char3(intel_bfi(as_uchar3(base), as_uchar3(insert), offset, count)); }
-short3 OVLD intel_bfi(short3 base, short3 insert, uint offset, uint count) { return as_short3(intel_bfi(as_ushort3(base), as_ushort3(insert), offset, count)); }
-int3 OVLD intel_bfi(int3 base, int3 insert, uint offset, uint count) { return as_int3(intel_bfi(as_uint3(base), as_uint3(insert), offset, count)); }
-long3 OVLD intel_bfi(long3 base, long3 insert, uint offset, uint count) { return as_long3(intel_bfi(as_ulong3(base), as_ulong3(insert), offset, count)); }
-
 __kernel void test_bitfield_insert(__global BASETYPE* dst, __global BASETYPE* base, __global BASETYPE* insert)
 {
     int index = get_global_id(0);
@@ -136,8 +103,6 @@ static int test_vectype(cl_device_id device, cl_context context,
     }
     buildOptions += " -DBASETYPE=";
     buildOptions += TestInfo<T>::deviceTypeName;
-    // TEMP: delete this when we've switched names!
-    buildOptions += " -Dcl_intel_bit_instructions -Dbitfield_insert=intel_bfi";
 
     const size_t ELEMENTS_TO_TEST = (sizeof(T) * 8 + 1) * (sizeof(T) * 8 + 1);
 
@@ -219,8 +184,7 @@ static int test_type(cl_device_id device, cl_context context,
 int test_extended_bit_ops_insert(cl_device_id device, cl_context context,
                                  cl_command_queue queue, int num_elements)
 {
-    // TODO: add back this check!
-    if (true || is_extension_available(device, "cl_khr_extended_bit_ops"))
+    if (is_extension_available(device, "cl_khr_extended_bit_ops"))
     {
         int result = TEST_PASS;
 
