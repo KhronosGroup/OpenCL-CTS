@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2021 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -79,11 +79,11 @@ template <> struct TestInfo<cl_ulong>
     static constexpr const char* deviceTypeNameUnsigned = "ulong";
 };
 
-template <typename T>
-static void generate_input(std::vector<T>& base)
+template <typename T> static void generate_input(std::vector<T>& base)
 {
     MTdata d = init_genrand(gRandomSeed);
-    generate_random_data(TestInfo<T>::explicitType, base.size(), d, base.data());
+    generate_random_data(TestInfo<T>::explicitType, base.size(), d,
+                         base.data());
     free_mtdata(d);
     d = NULL;
 }
