@@ -398,7 +398,8 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
         else
             vlog("passed");
 
-        vlog("\t{%8.2f, %lld} @ %a", maxError, maxError2, maxErrorVal);
+        vlog("\t{%8.2f, %lld} @ {%a, %a}", maxError, maxError2, maxErrorVal,
+             maxErrorVal2);
     }
 
     vlog("\n");
