@@ -382,8 +382,6 @@ static float round_toward_zero_float(cl_ulong p, int exponent)
 
 static float round_toward_zero_float_ftz(cl_ulong p, int exponent)
 {
-    extern int gCheckTininessBeforeRounding;
-
     union {
         cl_uint u;
         cl_float d;
@@ -2682,20 +2680,6 @@ static inline void mul128(cl_ulong a, cl_ulong b, cl_ulong *hi, cl_ulong *lo)
     *lo = (aloblo & 0xffffffffULL) | (alobhi << 32);
 }
 
-// Move the most significant non-zero bit to the MSB
-// Note: not general. Only works if the most significant non-zero bit is at
-// MSB-1
-static inline void renormalize(cl_ulong *hi, cl_ulong *lo, int *exponent)
-{
-    if (0 == (0x8000000000000000ULL & *hi))
-    {
-        *hi <<= 1;
-        *hi |= *lo >> 63;
-        *lo <<= 1;
-        *exponent -= 1;
-    }
-}
-
 static double round_to_nearest_even_double(cl_ulong hi, cl_ulong lo,
                                            int exponent)
 {
@@ -2990,8 +2974,6 @@ long double reference_recipl(long double x) { return 1.0L / x; }
 
 long double reference_rootnl(long double x, int i)
 {
-    double hi, lo;
-    long double l;
     // rootn ( x, 0 )  returns a NaN.
     if (0 == i) return cl_make_nan();
 
@@ -3290,7 +3272,6 @@ long double reference_cbrtl(long double x)
 
     if (isnan(x) || fabsx == 1.0 || fabsx == 0.0 || isinf(x)) return x;
 
-    double iy = 0.0;
     double log2x_hi, log2x_lo;
 
     // extended precision log .... accurate to at least 64-bits + couple of
@@ -3604,12 +3585,6 @@ long double reference_expm1l(long double x)
     // unimplemented
     return x;
 #else
-    union {
-        double f;
-        cl_ulong u;
-    } u;
-    u.f = (double)x;
-
     if (reference_isnanl(x)) return x;
 
     if (x > 710) return INFINITY;

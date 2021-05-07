@@ -279,7 +279,6 @@ int TestFunc_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxError = 0.0f;
     double maxErrorVal = 0.0;
     double maxErrorVal2 = 0.0;
-    int skipTestingRelaxed = 0;
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
