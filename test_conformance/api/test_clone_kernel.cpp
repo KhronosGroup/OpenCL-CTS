@@ -89,7 +89,10 @@ const char* clone_kernel_test_kernel[] = {
     __kernel void set_kernel_exec_info_kernel(int iarg, __global BufPtr* buffer)
     {
         buffer->store[0] = iarg;
-    })"
+    }
+    
+    __kernel void test_kernel_empty(){}
+    )"
 };
 
 typedef struct
@@ -691,4 +694,58 @@ REGISTER_TEST_VERSION(clone_kernel_with_exec_info, Version(2, 1))
     {
         return TEST_SKIPPED_ITSELF;
     }
+}
+
+int test_empty_enqueue_helper(cl_command_queue queue, cl_kernel srcKernel)
+{
+    cl_int error;
+    size_t ndrange1 = 1;
+
+    // enqueue - srcKernel
+    error = clEnqueueNDRangeKernel(queue, srcKernel, 1, NULL, &ndrange1, NULL,
+                                   0, NULL, NULL);
+    test_error(error, "clEnqueueNDRangeKernel failed");
+
+    error = clFinish(queue);
+    test_error(error, "clFinish failed");
+
+    return TEST_PASS;
+}
+
+
+REGISTER_TEST_VERSION(clone_kernel_with_no_args, Version(2, 1))
+{
+    cl_int error;
+    clProgramWrapper program;
+    clKernelWrapper srcKernel;
+
+    // Create srcKernel to test with
+    error = create_single_kernel_helper(context, &program, &srcKernel, 1,
+                                        clone_kernel_test_kernel,
+                                        "test_kernel_empty");
+    test_error(error,
+               "Unable to create srcKernel for test_cloned_kernel_empty_args");
+
+    // enqueue - srcKernel
+    if (test_empty_enqueue_helper(queue, srcKernel) != TEST_PASS)
+    {
+        test_fail("test_empty_enqueue_helper failed for srcKernel.\n");
+    }
+
+    // clone the srcKernel
+    clKernelWrapper cloneKernel_1 = clCloneKernel(srcKernel, &error);
+    test_error(error, "clCloneKernel failed for cloneKernel_1");
+
+    if (test_empty_enqueue_helper(queue, cloneKernel_1) != TEST_PASS)
+    {
+        test_fail("test_empty_enqueue_helper failed for cloneKernel_1.\n");
+    }
+
+    // enqueue - srcKernel again
+    if (test_empty_enqueue_helper(queue, srcKernel) != TEST_PASS)
+    {
+        test_fail("test_empty_enqueue_helper failed for srcKernel on retry.\n");
+    }
+
+    return TEST_PASS;
 }
