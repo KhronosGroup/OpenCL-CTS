@@ -56,6 +56,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DOPENCL_ICD_LOADER_HEADERS_DIR=$
 make
 
 # Build CTS
+cd ${TOP}
 ls -l
 mkdir build
 cd build
