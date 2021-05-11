@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <string>
+#include <vector>
 
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"
@@ -51,8 +52,7 @@
     (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO                  \
      | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM)
 
-static const char **gTestNames = NULL;
-static unsigned int gTestNameCount = 0;
+static std::vector<const char *> gTestNames;
 static char appName[MAXPATHLEN] = "";
 cl_device_id gDevice = NULL;
 cl_context gContext = NULL;
@@ -331,13 +331,12 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = runTestHarnessWithCheck(gTestNameCount, gTestNames, test_num,
-                                      test_list, true, 0, InitCL);
+    int ret = runTestHarnessWithCheck(gTestNames.size(), gTestNames.data(),
+                                      test_num, test_list, true, 0, InitCL);
 
     RestoreFPState(&oldMode);
 
     free_mtdata(gMTdata);
-    free(gTestNames);
 
     if (gQueue)
     {
@@ -352,15 +351,12 @@ int main(int argc, const char *argv[])
 
 static int ParseArgs(int argc, const char **argv)
 {
-    int i;
-    gTestNames = (const char **)calloc(argc - 1, sizeof(char *));
-    if (NULL == gTestNames)
-    {
-        vlog("Failed to allocate memory for gTestNames array.\n");
-        return 1;
-    }
-    gTestNames[0] = argv[0];
-    gTestNameCount = 1;
+    // We only pass test names to runTestHarnessWithCheck, hence global command
+    // line options defined by the harness cannot be used by the user.
+    // To respect the implementation details of runTestHarnessWithCheck,
+    // gTestNames[0] has to exist although its value is not important.
+    gTestNames.push_back("");
+
     int singleThreaded = 0;
 
     { // Extract the app name
@@ -380,7 +376,7 @@ static int ParseArgs(int argc, const char **argv)
     }
 
     vlog("\n%s\t", appName);
-    for (i = 1; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         const char *arg = argv[i];
         if (NULL == arg) break;
@@ -485,16 +481,14 @@ static int ParseArgs(int argc, const char **argv)
                     const Func *f = functionList + k;
                     if (strcmp(arg, f->name) == 0)
                     {
-                        gTestNames[gTestNameCount] = arg;
-                        gTestNameCount++;
+                        gTestNames.push_back(arg);
                         break;
                     }
                 }
                 // If we didn't find it in the list of test names
                 if (k >= functionListCount)
                 {
-                    gTestNames[gTestNameCount] = arg;
-                    gTestNameCount++;
+                    gTestNames.push_back(arg);
                 }
             }
         }
