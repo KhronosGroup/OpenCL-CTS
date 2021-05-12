@@ -960,7 +960,8 @@ static int run_all_tests(cl_context context, cl_device_id deviceID)
         }
     }
     int failed_pipe_tests = 0;
-    if (device_supports_pipes(deviceID))
+    // TODO https://github.com/KhronosGroup/OpenCL-CTS/issues/1244
+    if (false)
     {
         failed_pipe_tests = run_pipe_tests(context, deviceID);
         if (failed_pipe_tests == 0)
