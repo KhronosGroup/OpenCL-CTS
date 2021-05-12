@@ -360,14 +360,6 @@ int test_copy_fence(cl_device_id deviceID, cl_context context,
     size_t elementSize = get_explicit_type_size(vecType) * vecSize;
     log_info("Testing %s\n", vecNameString);
 
-    if (!is_extension_available(deviceID, "cl_khr_async_work_group_copy_fence"))
-    {
-        log_info(
-            "Device does not support extended async copies fence. Skipping "
-            "test.\n");
-        return 0;
-    }
-
     cl_long max_local_mem_size;
     error =
         clGetDeviceInfo(deviceID, CL_DEVICE_LOCAL_MEM_SIZE,
@@ -731,6 +723,14 @@ int test_copy_fence_all_types(cl_device_id deviceID, cl_context context,
     unsigned int size, typeIndex;
 
     int errors = 0;
+
+    if (!is_extension_available(deviceID, "cl_khr_async_work_group_copy_fence"))
+    {
+        log_info(
+            "Device does not support extended async copies fence. Skipping "
+            "test.\n");
+        return 0;
+    }
 
     for (typeIndex = 0; vecType[typeIndex] != kNumExplicitTypes; typeIndex++)
     {
