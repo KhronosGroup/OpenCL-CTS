@@ -2768,7 +2768,7 @@ void pack_image_pixel(float *srcVector, const cl_image_format *imageFormat,
                 ptr[i] = (int)CONVERT_INT(
                     srcVector[i], MAKE_HEX_FLOAT(-0x1.0p31f, -1, 31),
                     MAKE_HEX_FLOAT(0x1.fffffep30f, 0x1fffffe, 30 - 23),
-                    CL_INT_MAX);
+                    (cl_float)CL_INT_MAX);
             break;
         }
         case CL_UNSIGNED_INT8: {
@@ -2937,7 +2937,7 @@ void pack_image_pixel_error(const float *srcVector,
                     - (cl_long)CONVERT_INT(
                         srcVector[i], MAKE_HEX_FLOAT(-0x1.0p31f, -1, 31),
                         MAKE_HEX_FLOAT(0x1.fffffep30f, 0x1fffffe, 30 - 23),
-                        CL_INT_MAX));
+                        (cl_float)CL_INT_MAX));
             break;
         }
         case CL_UNSIGNED_INT8: {
