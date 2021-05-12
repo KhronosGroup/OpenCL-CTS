@@ -117,13 +117,6 @@ int test_copy2D(cl_device_id deviceID, cl_context context,
     log_info("Testing %s with srcStride = %d, dstStride = %d\n", vecNameString,
              srcStride, dstStride);
 
-    if (!is_extension_available(deviceID, "cl_khr_extended_async_copies"))
-    {
-        log_info(
-            "Device does not support extended async copies. Skipping test.\n");
-        return 0;
-    }
-
     cl_long max_local_mem_size;
     error =
         clGetDeviceInfo(deviceID, CL_DEVICE_LOCAL_MEM_SIZE,
@@ -385,6 +378,13 @@ int test_copy2D_all_types(cl_device_id deviceID, cl_context context,
     unsigned int size, typeIndex, srcStride, dstStride;
 
     int errors = 0;
+
+    if (!is_extension_available(deviceID, "cl_khr_extended_async_copies"))
+    {
+        log_info(
+            "Device does not support extended async copies. Skipping test.\n");
+        return 0;
+    }
 
     for (typeIndex = 0; vecType[typeIndex] != kNumExplicitTypes; typeIndex++)
     {
