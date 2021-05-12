@@ -861,7 +861,7 @@ test_status callSingleTestFunction(test_definition test,
         int error = clFinish(queue);
         if (error)
         {
-            log_error("clFinish failed: %d", error);
+            log_error("clFinish failed: %s\n", IGetErrorString(error));
             status = TEST_FAIL;
         }
         clReleaseCommandQueue(queue);
