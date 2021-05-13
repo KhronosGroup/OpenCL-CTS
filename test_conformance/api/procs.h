@@ -202,3 +202,5 @@ extern int test_negative_get_platform_ids(cl_device_id deviceID,
                                           cl_context context,
                                           cl_command_queue queue,
                                           int num_elements);
+extern int test_kernel_attributes(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements);

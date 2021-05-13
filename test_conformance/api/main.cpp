@@ -59,6 +59,7 @@ test_definition test_list[] = {
     ADD_TEST(set_kernel_arg_constant),
     ADD_TEST(set_kernel_arg_struct_array),
     ADD_TEST(kernel_global_constant),
+    ADD_TEST(kernel_attributes),
 
     ADD_TEST(min_max_thread_dimensions),
     ADD_TEST(min_max_work_items_sizes),
