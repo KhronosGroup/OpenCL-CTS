@@ -72,24 +72,21 @@ extern int
 create_single_kernel_helper(cl_context context, cl_program *outProgram,
                             cl_kernel *outKernel, unsigned int numKernelLines,
                             const char **kernelProgram, const char *kernelName,
-                            const char *buildOptions = NULL,
-                            const bool openclCXX = false);
+                            const char *buildOptions = NULL);
 
 extern int create_single_kernel_helper_with_build_options(
     cl_context context, cl_program *outProgram, cl_kernel *outKernel,
     unsigned int numKernelLines, const char **kernelProgram,
-    const char *kernelName, const char *buildOptions,
-    const bool openclCXX = false);
+    const char *kernelName, const char *buildOptions);
 
 extern int create_single_kernel_helper_create_program(
     cl_context context, cl_program *outProgram, unsigned int numKernelLines,
-    const char **kernelProgram, const char *buildOptions = NULL,
-    const bool openclCXX = false);
+    const char **kernelProgram, const char *buildOptions = NULL);
 
 extern int create_single_kernel_helper_create_program_for_device(
     cl_context context, cl_device_id device, cl_program *outProgram,
     unsigned int numKernelLines, const char **kernelProgram,
-    const char *buildOptions = NULL, const bool openclCXX = false);
+    const char *buildOptions = NULL);
 
 /* Creates OpenCL C++ program. This one must be used for creating OpenCL C++
  * program. */
