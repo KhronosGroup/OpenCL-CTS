@@ -178,7 +178,7 @@ cl_device_fp_config get_default_rounding_mode(cl_device_id device);
     }
 
 #define PASSIVE_REQUIRE_FP16_SUPPORT(device)                                   \
-    if (!is_extension_available(device, "cl_khr_fp16"))                        \
+    if (!device_supports_half(device))                                         \
     {                                                                          \
         log_info(                                                              \
             "\n\tNote: device does not support fp16. Skipping test...\n");     \
@@ -207,5 +207,11 @@ bool device_supports_cl_c_version(cl_device_id device, Version version);
 // Poll fn every interval_ms until timeout_ms or it returns true
 bool poll_until(unsigned timeout_ms, unsigned interval_ms,
                 std::function<bool()> fn);
+
+// Checks whether the device supports double data types
+bool device_supports_double(cl_device_id device);
+
+// Checks whether the device supports half data types
+bool device_supports_half(cl_device_id device);
 
 #endif // _kernelHelpers_h

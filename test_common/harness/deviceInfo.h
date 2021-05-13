@@ -42,4 +42,8 @@ std::string get_device_version_string(cl_device_id device);
 
 /* Returns a string containing the device name. */
 std::string get_device_name(cl_device_id device);
+
+// Returns the maximum size in bytes for Kernel Parameters
+size_t get_max_param_size(cl_device_id device);
+
 #endif // _deviceInfo_h

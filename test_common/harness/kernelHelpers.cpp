@@ -1756,3 +1756,26 @@ bool poll_until(unsigned timeout_ms, unsigned interval_ms,
 
     return ret;
 }
+
+bool device_supports_double(cl_device_id device)
+{
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        return true;
+    }
+    else
+    {
+        cl_device_fp_config double_fp_config;
+        cl_int err = clGetDeviceInfo(device, CL_DEVICE_DOUBLE_FP_CONFIG,
+                                     sizeof(double_fp_config),
+                                     &double_fp_config, nullptr);
+        test_error(err,
+                   "clGetDeviceInfo for CL_DEVICE_DOUBLE_FP_CONFIG failed");
+        return double_fp_config != 0;
+    }
+}
+
+bool device_supports_half(cl_device_id device)
+{
+    return is_extension_available(device, "cl_khr_fp16");
+}

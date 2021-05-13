@@ -623,7 +623,6 @@ cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
 
 const char *subtests_to_skip_with_offline_compiler[] = {
     "get_kernel_arg_info",
-    "get_kernel_arg_info_compatibility",
     "binary_create",
     "load_program_source",
     "load_multistring_source",
