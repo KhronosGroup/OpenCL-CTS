@@ -702,10 +702,6 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
 
 int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    clMemWrapper buffers[2];
-    void        *outptr;
-    TestStruct  *inptr;
-    TestStruct  *hostptr;
     TestStruct pattern;
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -741,6 +737,10 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
         for (n = 0; n < 8; n++)
         {
             clEventWrapper event[2];
+            clMemWrapper buffers[2];
+            void *outptr;
+            TestStruct *inptr;
+            TestStruct *hostptr;
 
             offset_elements =
                 (size_t)get_random_float(0.f, (float)(num_elements - 8), d);
