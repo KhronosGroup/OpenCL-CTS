@@ -53,6 +53,7 @@
         STRINGIFY(_name), _operator, { NULL }, { NULL }, { NULL }, _ulp, _ulp, \
             _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
     }
+
 #define unaryF NULL
 #define i_unaryF NULL
 #define unaryF_u NULL
