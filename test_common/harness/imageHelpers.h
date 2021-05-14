@@ -489,12 +489,14 @@ void read_image_pixel(void *imageData, image_descriptor *imageInfo, int x,
     }
     else if (format->image_channel_order == CL_INTENSITY)
     {
+        outData[0] = tempData[0];
         outData[1] = tempData[0];
         outData[2] = tempData[0];
         outData[3] = tempData[0];
     }
     else if (format->image_channel_order == CL_LUMINANCE)
     {
+        outData[0] = tempData[0];
         outData[1] = tempData[0];
         outData[2] = tempData[0];
     }
