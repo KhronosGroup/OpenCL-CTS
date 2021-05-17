@@ -546,7 +546,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
 int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 {
-    TestInfo test_info;
+    TestInfo test_info{};
     cl_int error;
     float maxError = 0.0f;
     double maxErrorVal = 0.0;
@@ -555,7 +555,6 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
     // Init test_info
-    memset(&test_info, 0, sizeof(test_info));
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));

@@ -367,13 +367,12 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
 int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
 {
-    TestInfo test_info;
+    TestInfo test_info{};
     cl_int error;
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
     // Init test_info
-    memset(&test_info, 0, sizeof(test_info));
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
