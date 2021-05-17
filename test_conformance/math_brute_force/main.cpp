@@ -167,7 +167,6 @@ static int doTest(const char *name)
     }
 
     {
-        extern int my_ilogb(double);
         if (0 == strcmp("ilogb", func_data->name))
         {
             InitILogbConstants();

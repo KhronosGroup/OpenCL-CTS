@@ -41,10 +41,10 @@
 #pragma STDC FP_CONTRACT OFF
 static void __log2_ep(double *hi, double *lo, double x);
 
-typedef union {
+union uint64d_t {
     uint64_t i;
     double d;
-} uint64d_t;
+};
 
 static const uint64d_t _CL_NAN = { 0x7ff8000000000000ULL };
 
@@ -2259,10 +2259,10 @@ long double reference_dividel(long double x, long double y)
     return dx / dy;
 }
 
-typedef struct
+struct double_double
 {
     double hi, lo;
-} double_double;
+};
 
 // Split doubles_double into a series of consecutive 26-bit precise doubles and
 // a remainder. Note for later -- for multiplication, it might be better to
@@ -3767,10 +3767,10 @@ static uint32_t two_over_pi[] = {
 static uint32_t pi_over_two[] = { 0x1,        0x2487ed51, 0x42d1846,
                                   0x26263314, 0x1701b839, 0x28948127 };
 
-typedef union {
+union d_ui64_t {
     uint64_t u;
     double d;
-} d_ui64_t;
+};
 
 // radix or base of representation
 #define RADIX (30)
@@ -3786,13 +3786,13 @@ d_ui64_t two_pow_two_mradix = { (uint64_t)(1023 - 2 * RADIX) << 52 };
 // extended fixed point representation of double precision
 // floating point number.
 // x = sign * [ sum_{i = 0 to 2} ( X[i] * 2^(index - i)*RADIX ) ]
-typedef struct
+struct eprep_t
 {
     uint32_t X[3]; // three 32 bit integers are sufficient to represnt double in
                    // base_30
     int index; // exponent bias
     int sign; // sign of double
-} eprep_t;
+};
 
 static eprep_t double_to_eprep(double x)
 {

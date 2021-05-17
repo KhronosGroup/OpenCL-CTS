@@ -90,8 +90,7 @@ int MakeKernels(const char **c, cl_uint count, const char *name,
                 bool relaxedMode);
 
 // used to convert a bucket of bits into a search pattern through double
-static inline double DoubleFromUInt32(uint32_t bits);
-static inline double DoubleFromUInt32(uint32_t bits)
+inline double DoubleFromUInt32(uint32_t bits)
 {
     union {
         uint64_t u;
@@ -117,25 +116,25 @@ void _LogBuildError(cl_program p, int line, const char *file);
 // premature flushing to zero.
 // However, to avoid conflict for 1.0, we are letting results at TYPE_MIN +
 // ulp_limit to be flushed to zero.
-static inline int IsFloatResultSubnormal(double x, float ulps)
+inline int IsFloatResultSubnormal(double x, float ulps)
 {
     x = fabs(x) - MAKE_HEX_DOUBLE(0x1.0p-149, 0x1, -149) * (double)ulps;
     return x < MAKE_HEX_DOUBLE(0x1.0p-126, 0x1, -126);
 }
 
-static inline int IsFloatResultSubnormalAbsError(double x, float abs_err)
+inline int IsFloatResultSubnormalAbsError(double x, float abs_err)
 {
     x = x - abs_err;
     return x < MAKE_HEX_DOUBLE(0x1.0p-126, 0x1, -126);
 }
 
-static inline int IsDoubleResultSubnormal(long double x, float ulps)
+inline int IsDoubleResultSubnormal(long double x, float ulps)
 {
     x = fabsl(x) - MAKE_HEX_LONG(0x1.0p-1074, 0x1, -1074) * (long double)ulps;
     return x < MAKE_HEX_LONG(0x1.0p-1022, 0x1, -1022);
 }
 
-static inline int IsFloatInfinity(double x)
+inline int IsFloatInfinity(double x)
 {
     union {
         cl_float d;
@@ -145,7 +144,7 @@ static inline int IsFloatInfinity(double x)
     return ((u.u & 0x7fffffffU) == 0x7F800000U);
 }
 
-static inline int IsFloatMaxFloat(double x)
+inline int IsFloatMaxFloat(double x)
 {
     union {
         cl_float d;
@@ -155,7 +154,7 @@ static inline int IsFloatMaxFloat(double x)
     return ((u.u & 0x7fffffffU) == 0x7F7FFFFFU);
 }
 
-static inline int IsFloatNaN(double x)
+inline int IsFloatNaN(double x)
 {
     union {
         cl_float d;
@@ -165,13 +164,13 @@ static inline int IsFloatNaN(double x)
     return ((u.u & 0x7fffffffU) > 0x7F800000U);
 }
 
-extern cl_uint RoundUpToNextPowerOfTwo(cl_uint x);
+cl_uint RoundUpToNextPowerOfTwo(cl_uint x);
 
 // Windows (since long double got deprecated) sets the x87 to 53-bit precision
 // (that's x87 default state).  This causes problems with the tests that
 // convert long and ulong to float and double or otherwise deal with values
 // that need more precision than 53-bit. So, set the x87 to 64-bit precision.
-static inline void Force64BitFPUPrecision(void)
+inline void Force64BitFPUPrecision(void)
 {
 #if __MINGW32__
     // The usual method is to use _controlfp as follows:
@@ -202,17 +201,17 @@ static inline void Force64BitFPUPrecision(void)
 #endif
 }
 
-extern void memset_pattern4(void *dest, const void *src_pattern, size_t bytes);
+void memset_pattern4(void *dest, const void *src_pattern, size_t bytes);
 
-typedef union {
+union int32f_t {
     int32_t i;
     float f;
-} int32f_t;
+};
 
-typedef union {
+union int64d_t {
     int64_t l;
     double d;
-} int64d_t;
+};
 
 void MulD(double *rhi, double *rlo, double u, double v);
 void AddD(double *rhi, double *rlo, double a, double b);
@@ -229,7 +228,7 @@ void logFunctionInfo(const char *fname, unsigned int float_size,
 
 float getAllowedUlpError(const Func *f, const bool relaxed);
 
-static inline cl_uint getTestScale(size_t typeSize)
+inline cl_uint getTestScale(size_t typeSize)
 {
     if (gWimpyMode)
     {
@@ -245,7 +244,7 @@ static inline cl_uint getTestScale(size_t typeSize)
     }
 }
 
-static inline uint64_t getTestStep(size_t typeSize, size_t bufferSize)
+inline uint64_t getTestStep(size_t typeSize, size_t bufferSize)
 {
     if (gWimpyMode)
     {
