@@ -112,6 +112,8 @@ int doTest( cl_device_id device, cl_context context, cl_command_queue queue, All
     int number_of_mems_used;
     cl_ulong max_individual_allocation_size = g_max_individual_allocation_size;
     cl_ulong global_mem_size = g_global_mem_size ;
+    const bool allocate_image =
+        (alloc_type != BUFFER) && (alloc_type != BUFFER_NON_BLOCKING);
 
     static const char* alloc_description[] = {
         "buffer(s)",
@@ -123,7 +125,7 @@ int doTest( cl_device_id device, cl_context context, cl_command_queue queue, All
     };
 
     // Skip image tests if we don't support images on the device
-    if( alloc_type > BUFFER && checkForImageSupport( device ) )
+    if (allocate_image && checkForImageSupport(device))
     {
         log_info( "Can not test image allocation because device does not support images.\n" );
         return 0;
@@ -132,7 +134,7 @@ int doTest( cl_device_id device, cl_context context, cl_command_queue queue, All
     // This section was added in order to fix a bug in the test
     // If CL_DEVICE_MAX_MEM_ALLOC_SIZE is much grater than CL_DEVICE_IMAGE2D_MAX_WIDTH * CL_DEVICE_IMAGE2D_MAX_HEIGHT
     // The test will fail in image allocations as the size requested for the allocation will be much grater than the maximum size allowed for image
-    if( ( alloc_type != BUFFER ) && ( alloc_type != BUFFER_NON_BLOCKING ) )
+    if (allocate_image)
     {
         size_t max_width, max_height;
 
