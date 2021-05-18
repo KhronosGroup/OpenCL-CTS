@@ -39,7 +39,7 @@ typedef int FPU_mode_type;
 extern __thread fpu_control_t fpu_control;
 #endif
 // Set the reference hardware floating point unit to FTZ mode
-static inline void ForceFTZ(FPU_mode_type *mode)
+inline void ForceFTZ(FPU_mode_type *mode)
 {
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
     || defined(__MINGW32__)
@@ -65,7 +65,7 @@ static inline void ForceFTZ(FPU_mode_type *mode)
 }
 
 // Disable the denorm flush to zero
-static inline void DisableFTZ(FPU_mode_type *mode)
+inline void DisableFTZ(FPU_mode_type *mode)
 {
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
     || defined(__MINGW32__)
@@ -91,7 +91,7 @@ static inline void DisableFTZ(FPU_mode_type *mode)
 }
 
 // Restore the reference hardware to floating point state indicated by *mode
-static inline void RestoreFPState(FPU_mode_type *mode)
+inline void RestoreFPState(FPU_mode_type *mode)
 {
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
     || defined(__MINGW32__)

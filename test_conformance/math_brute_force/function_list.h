@@ -30,7 +30,7 @@
 
 #include "harness/mt19937.h"
 
-typedef union fptr {
+union fptr {
     void *p;
     double (*f_f)(double);
     double (*f_u)(cl_uint);
@@ -45,9 +45,9 @@ typedef union fptr {
     double (*f_ffpI)(double, double, int *);
     double (*f_fff)(double, double, double);
     float (*f_fma)(float, float, float, int);
-} fptr;
+};
 
-typedef union dptr {
+union dptr {
     void *p;
     long double (*f_f)(long double);
     long double (*f_u)(cl_ulong);
@@ -59,20 +59,20 @@ typedef union dptr {
     long double (*f_fpI)(long double, int *);
     long double (*f_ffpI)(long double, long double, int *);
     long double (*f_fff)(long double, long double, long double);
-} dptr;
+};
 
 struct Func;
 
-typedef struct vtbl
+struct vtbl
 {
     const char *type_name;
     int (*TestFunc)(const struct Func *, MTdata, bool);
     int (*DoubleTestFunc)(
         const struct Func *, MTdata,
         bool); // may be NULL if function is single precision only
-} vtbl;
+};
 
-typedef struct Func
+struct Func
 {
     const char *name; // common name, to be used as an argument in the shell
     const char *nameInCode; // name as it appears in the __kernel, usually the
@@ -88,7 +88,7 @@ typedef struct Func
     int ftz;
     int relaxed;
     const vtbl *vtbl_ptr;
-} Func;
+};
 
 
 extern const Func functionList[];
