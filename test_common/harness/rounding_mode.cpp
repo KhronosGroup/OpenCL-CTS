@@ -48,7 +48,7 @@ RoundingMode set_round(RoundingMode r, Type outType)
     const int *p = int_rounds;
     if (outType == kfloat || outType == kdouble) p = flt_rounds;
 
-    int fpscr = 0;
+    int64_t fpscr = 0;
     RoundingMode oldRound = get_round();
 
     _FPU_GETCW(fpscr);
@@ -59,7 +59,7 @@ RoundingMode set_round(RoundingMode r, Type outType)
 
 RoundingMode get_round(void)
 {
-    int fpscr;
+    int64_t fpscr;
     int oldRound;
 
     _FPU_GETCW(fpscr);
@@ -203,13 +203,13 @@ void *FlushToZero(void)
 #if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)
     union {
-        int i;
+        unsigned int i;
         void *p;
     } u = { _mm_getcsr() };
     _mm_setcsr(u.i | 0x8040);
     return u.p;
 #elif defined(__arm__) || defined(__aarch64__)
-    int fpscr;
+    int64_t fpscr;
     _FPU_GETCW(fpscr);
     _FPU_SETCW(fpscr | FPSCR_FZ);
     return NULL;
@@ -239,7 +239,7 @@ void UnFlushToZero(void *p)
     } u = { p };
     _mm_setcsr(u.i);
 #elif defined(__arm__) || defined(__aarch64__)
-    int fpscr;
+    int64_t fpscr;
     _FPU_GETCW(fpscr);
     _FPU_SETCW(fpscr & ~FPSCR_FZ);
 #elif defined(__PPC__)

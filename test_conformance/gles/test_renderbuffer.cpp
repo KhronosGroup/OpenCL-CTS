@@ -197,7 +197,9 @@ int test_renderbuffer_read( cl_device_id device, cl_context context, cl_command_
 }
 
 
+#ifdef __APPLE__
 #pragma mark -------------------- Write tests -------------------------
+#endif
 
 int test_attach_renderbuffer_write_to_image( cl_context context, cl_command_queue queue, GLenum glTarget, GLuint glRenderbuffer,
                      size_t imageWidth, size_t imageHeight, cl_image_format *outFormat, ExplicitType *outType, MTdata d, void **outSourceBuffer )

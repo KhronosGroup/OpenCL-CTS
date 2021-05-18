@@ -404,7 +404,8 @@ std::string exe_path()
     for (;;)
     {
 
-        DWORD len = GetModuleFileNameA(NULL, &path.front(), path.size());
+        DWORD len = GetModuleFileNameA(NULL, &path.front(),
+                                       static_cast<DWORD>(path.size()));
 
         if (len == 0)
         {

@@ -523,7 +523,7 @@ void ThreadPool_Init(void)
                     {
                         // Count the number of bits in ProcessorMask (number of
                         // logical cores)
-                        ULONG mask = ptr->ProcessorMask;
+                        ULONG_PTR mask = ptr->ProcessorMask;
                         while (mask)
                         {
                             ++gThreadCount;
@@ -688,7 +688,10 @@ static BOOL CALLBACK _ThreadPool_Init(_PINIT_ONCE InitOnce, PVOID Parameter,
 
 void ThreadPool_Exit(void)
 {
-    int err, count;
+#ifndef _WIN32
+    int err;
+#endif
+    int count;
     gRunCount = CL_INT_MAX;
 
 #if defined(__GNUC__)
@@ -738,7 +741,9 @@ void ThreadPool_Exit(void)
 // all available then it would make more sense to use those features.
 cl_int ThreadPool_Do(TPFuncPtr func_ptr, cl_uint count, void *userInfo)
 {
+#ifndef _WIN32
     cl_int newErr;
+#endif
     cl_int err = 0;
     // Lazily set up our threads
 #if defined(_MSC_VER) && (_WIN32_WINNT >= 0x600)
@@ -913,7 +918,9 @@ cl_int ThreadPool_Do(TPFuncPtr func_ptr, cl_uint count, void *userInfo)
 
     err = jobError;
 
+#ifndef _WIN32
 exit:
+#endif
     // exit critical region
 #if defined(_WIN32)
     LeaveCriticalSection(gThreadPoolLock);

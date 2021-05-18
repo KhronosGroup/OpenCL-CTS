@@ -56,11 +56,6 @@ static int vlog_win32(const char *format, ...);
 #define vlog printf
 #endif
 
-#define ct_assert(b) ct_assert_i(b, __LINE__)
-#define ct_assert_i(b, line) ct_assert_ii(b, line)
-#define ct_assert_ii(b, line)                                                  \
-    int _compile_time_assertion_on_line_##line[b ? 1 : -1];
-
 #define test_fail(msg, ...)                                                    \
     {                                                                          \
         log_error(msg, ##__VA_ARGS__);                                         \
