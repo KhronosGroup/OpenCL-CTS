@@ -16,6 +16,8 @@
 #ifndef _fpcontrol_h
 #define _fpcontrol_h
 
+#include <cstdint>
+
 // In order to get tests for correctly rounded operations (e.g. multiply) to
 // work properly we need to be able to set the reference hardware to FTZ mode if
 // the device hardware is running in that mode.  We have explored all other
