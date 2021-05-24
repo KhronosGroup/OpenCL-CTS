@@ -1055,8 +1055,6 @@ int MakeKernels(const char **c, cl_uint count, const char *name,
                 cl_uint kernel_count, cl_kernel *k, cl_program *p,
                 bool relaxedMode)
 {
-    int error = 0;
-    cl_uint i;
     char options[200] = "";
 
     if (gForceFTZ)
@@ -1074,7 +1072,7 @@ int MakeKernels(const char **c, cl_uint count, const char *name,
         strcat(options, " -cl-fast-relaxed-math");
     }
 
-    error =
+    int error =
         create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
     if (error != CL_SUCCESS)
     {
@@ -1082,9 +1080,7 @@ int MakeKernels(const char **c, cl_uint count, const char *name,
         return error;
     }
 
-
-    memset(k, 0, kernel_count * sizeof(*k));
-    for (i = 0; i < kernel_count; i++)
+    for (cl_uint i = 0; i < kernel_count; i++)
     {
         k[i] = clCreateKernel(*p, name, &error);
         if (NULL == k[i] || error)

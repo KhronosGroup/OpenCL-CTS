@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+#include "common.h"
 #include "function_list.h"
 #include "test_functions.h"
 #include "utility.h"
@@ -112,7 +113,7 @@ struct BuildKernelInfo
 {
     cl_uint offset; // the first vector size to build
     cl_uint kernel_count;
-    cl_kernel **kernels;
+    KernelMatrix &kernels;
     cl_program *programs;
     const char *operator_symbol;
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
@@ -123,7 +124,8 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
     return BuildKernel(info->operator_symbol, i, info->kernel_count,
-                       info->kernels[i], info->programs + i, info->relaxedMode);
+                       info->kernels[i].data(), info->programs + i,
+                       info->relaxedMode);
 }
 
 // Thread specific data for a worker thread
@@ -146,11 +148,14 @@ struct TestInfo
     size_t subBufferSize; // Size of the sub-buffer in elements
     const Func *f; // A pointer to the function info
     cl_program programs[VECTOR_SIZE_COUNT]; // programs for various vector sizes
-    cl_kernel
-        *k[VECTOR_SIZE_COUNT]; // arrays of thread-specific kernels for each
-                               // worker thread:  k[vector_size][thread_id]
-    ThreadInfo *
-        tinfo; // An array of thread specific information for each worker thread
+
+    // Thread-specific kernels for each vector size:
+    // k[vector_size][thread_id]
+    KernelMatrix k;
+
+    // Array of thread specific information
+    std::vector<ThreadInfo> tinfo;
+
     cl_uint threadCount; // Number of worker threads
     cl_uint jobCount; // Number of jobs
     cl_uint step; // step between each chunk and the next.
@@ -271,18 +276,18 @@ constexpr size_t specialValuesCount =
 
 cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 {
-    const TestInfo *job = (const TestInfo *)data;
+    TestInfo *job = (TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
     size_t buffer_size = buffer_elements * sizeof(cl_float);
     cl_uint base = job_id * (cl_uint)job->step;
-    ThreadInfo *tinfo = job->tinfo + thread_id;
+    ThreadInfo *tinfo = &(job->tinfo[thread_id]);
     fptr func = job->f->func;
     int ftz = job->ftz;
     bool relaxedMode = job->relaxedMode;
     float ulps = getAllowedUlpError(job->f, relaxedMode);
     MTdata d = tinfo->d;
     cl_int error;
-    cl_uchar *overflow = (cl_uchar *)malloc(buffer_size);
+    std::vector<bool> overflow(buffer_elements, false);
     const char *name = job->f->name;
     cl_uint *t = 0;
     cl_float *r = 0;
@@ -445,7 +450,6 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     if (gSkipCorrectnessTesting)
     {
-        free(overflow);
         return CL_SUCCESS;
     }
 
@@ -738,7 +742,6 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     }
 
 exit:
-    if (overflow) free(overflow);
     return error;
 }
 
@@ -747,7 +750,7 @@ exit:
 int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
                                         bool relaxedMode)
 {
-    TestInfo test_info;
+    TestInfo test_info{};
     cl_int error;
     float maxError = 0.0f;
     double maxErrorVal = 0.0;
@@ -756,7 +759,6 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
     // Init test_info
-    memset(&test_info, 0, sizeof(test_info));
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
@@ -783,27 +785,10 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
     // every thread
     for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
-        size_t array_size = test_info.threadCount * sizeof(cl_kernel);
-        test_info.k[i] = (cl_kernel *)malloc(array_size);
-        if (NULL == test_info.k[i])
-        {
-            vlog_error("Error: Unable to allocate storage for kernels!\n");
-            error = CL_OUT_OF_HOST_MEMORY;
-            goto exit;
-        }
-        memset(test_info.k[i], 0, array_size);
+        test_info.k[i].resize(test_info.threadCount, nullptr);
     }
-    test_info.tinfo =
-        (ThreadInfo *)malloc(test_info.threadCount * sizeof(*test_info.tinfo));
-    if (NULL == test_info.tinfo)
-    {
-        vlog_error(
-            "Error: Unable to allocate storage for thread specific data.\n");
-        error = CL_OUT_OF_HOST_MEMORY;
-        goto exit;
-    }
-    memset(test_info.tinfo, 0,
-           test_info.threadCount * sizeof(*test_info.tinfo));
+
+    test_info.tinfo.resize(test_info.threadCount, ThreadInfo{});
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {
@@ -900,27 +885,20 @@ exit:
     for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
         clReleaseProgram(test_info.programs[i]);
-        if (test_info.k[i])
+        for (auto &kernel : test_info.k[i])
         {
-            for (cl_uint j = 0; j < test_info.threadCount; j++)
-                clReleaseKernel(test_info.k[i][j]);
-
-            free(test_info.k[i]);
+            clReleaseKernel(kernel);
         }
     }
-    if (test_info.tinfo)
-    {
-        for (cl_uint i = 0; i < test_info.threadCount; i++)
-        {
-            free_mtdata(test_info.tinfo[i].d);
-            clReleaseMemObject(test_info.tinfo[i].inBuf);
-            clReleaseMemObject(test_info.tinfo[i].inBuf2);
-            for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-                clReleaseMemObject(test_info.tinfo[i].outBuf[j]);
-            clReleaseCommandQueue(test_info.tinfo[i].tQueue);
-        }
 
-        free(test_info.tinfo);
+    for (auto &threadInfo : test_info.tinfo)
+    {
+        free_mtdata(threadInfo.d);
+        clReleaseMemObject(threadInfo.inBuf);
+        clReleaseMemObject(threadInfo.inBuf2);
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+            clReleaseMemObject(threadInfo.outBuf[j]);
+        clReleaseCommandQueue(threadInfo.tQueue);
     }
 
     return error;
