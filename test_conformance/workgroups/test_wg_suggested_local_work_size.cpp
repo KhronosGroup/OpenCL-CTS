@@ -203,7 +203,7 @@ int do_test(cl_device_id device, cl_context context, cl_command_queue queue,
 
     if (kernel_work_size[0] != local_work_size[0]
         || kernel_work_size[1] != local_work_size[1]
-        || kernel_work_size[2] != kernel_work_size[2])
+        || kernel_work_size[2] != local_work_size[2])
     {
         std::cout
             << "Kernel work size differs from local work size suggested:\n"
