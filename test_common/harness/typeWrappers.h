@@ -49,8 +49,6 @@ public:
 
     cl_context *operator&() { return &mContext; }
 
-    bool operator==(const cl_context &rhs) { return mContext == rhs; }
-
 protected:
     cl_context mContext;
 };
@@ -74,8 +72,6 @@ public:
     operator cl_program() const { return mProgram; }
 
     cl_program *operator&() { return &mProgram; }
-
-    bool operator==(const cl_program &rhs) { return mProgram == rhs; }
 
 protected:
     cl_program mProgram;
@@ -101,8 +97,6 @@ public:
 
     cl_kernel *operator&() { return &mKernel; }
 
-    bool operator==(const cl_kernel &rhs) { return mKernel == rhs; }
-
 protected:
     cl_kernel mKernel;
 };
@@ -126,8 +120,6 @@ public:
     operator cl_mem() const { return mMem; }
 
     cl_mem *operator&() { return &mMem; }
-
-    bool operator==(const cl_mem &rhs) { return mMem == rhs; }
 
 protected:
     cl_mem mMem;
@@ -183,8 +175,6 @@ public:
 
     cl_mem *operator&() { return &image; }
 
-    bool operator==(const cl_mem &rhs) { return image == rhs; }
-
 protected:
     void *backingStore;
     size_t backingStoreSize;
@@ -213,8 +203,6 @@ public:
 
     cl_command_queue *operator&() { return &mMem; }
 
-    bool operator==(const cl_command_queue &rhs) { return mMem == rhs; }
-
 protected:
     cl_command_queue mMem;
 };
@@ -238,8 +226,6 @@ public:
 
     cl_sampler *operator&() { return &mMem; }
 
-    bool operator==(const cl_sampler &rhs) { return mMem == rhs; }
-
 protected:
     cl_sampler mMem;
 };
@@ -262,8 +248,6 @@ public:
     operator cl_event() const { return mMem; }
 
     cl_event *operator&() { return &mMem; }
-
-    bool operator==(const cl_event &rhs) { return mMem == rhs; }
 
 protected:
     cl_event mMem;
