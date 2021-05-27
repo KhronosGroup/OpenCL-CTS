@@ -39,7 +39,8 @@ public:
         region.size = mSize;
 
         cl_int error;
-        mMem = clCreateSubBuffer( mParentBuffer, flags, CL_BUFFER_CREATE_TYPE_REGION, &region, &error );
+        reset(clCreateSubBuffer(mParentBuffer, flags,
+                                CL_BUFFER_CREATE_TYPE_REGION, &region, &error));
         return error;
     }
 };
