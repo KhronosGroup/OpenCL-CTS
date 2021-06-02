@@ -32,7 +32,7 @@ namespace wrapper_details {
 
 // clRetain*() and clRelease*() functions share the same type.
 template <typename T> // T should be cl_context, cl_program, ...
-using RetainReleaseType = cl_int(T);
+using RetainReleaseType = cl_int CL_API_CALL(T);
 
 // A generic wrapper class that follows OpenCL retain/release semantics.
 //
