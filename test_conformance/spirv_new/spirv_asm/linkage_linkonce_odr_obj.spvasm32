@@ -1,0 +1,28 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 14
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpExtension "SPV_KHR_linkonce_odr"
+               OpMemoryModel Physical32 OpenCL
+               OpDecorate %a LinkageAttributes "a" LinkOnceODR
+               OpDecorate %b LinkageAttributes "b" Export
+       %uint = OpTypeInt 32 0
+     %uint_5 = OpConstant %uint 5
+     %uint_0 = OpConstant %uint 0
+          %3 = OpTypeFunction %uint %uint
+          %a = OpFunction %uint Pure %3
+          %5 = OpFunctionParameter %uint
+          %6 = OpLabel
+          %8 = OpIAdd %uint %5 %uint_5
+               OpReturnValue %8
+               OpFunctionEnd
+          %b = OpFunction %uint Pure %3
+         %10 = OpFunctionParameter %uint
+         %11 = OpLabel
+         %13 = OpISub %uint %uint_0 %10
+               OpReturnValue %13
+               OpFunctionEnd
