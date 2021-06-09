@@ -92,21 +92,6 @@ static int vlog_win32(const char *format, ...);
                         "the device version! (from %s:%d)\n",                  \
                         msg, __FILE__, __LINE__);
 
-#define test_missing_support_offline_cmpiler(errCode, msg)                     \
-    test_missing_support_offline_cmpiler_ret(errCode, msg, errCode)
-// this macro should always return CL_SUCCESS, but print the skip message on
-// test not supported with offline compiler
-#define test_missing_support_offline_cmpiler_ret(errCode, msg, retValue)       \
-    {                                                                          \
-        if (errCode != CL_SUCCESS)                                             \
-        {                                                                      \
-            log_info("INFO: Subtest %s tests is not supported in offline "     \
-                     "compiler execution path! (from %s:%d)\n",                \
-                     msg, __FILE__, __LINE__);                                 \
-            return TEST_SKIP;                                                  \
-        }                                                                      \
-    }
-
 // expected error code vs. what we got
 #define test_failure_error(errCode, expectedErrCode, msg)                      \
     test_failure_error_ret(errCode, expectedErrCode, msg,                      \
@@ -181,8 +166,7 @@ extern const char *GetAddressModeName(cl_addressing_mode mode);
 extern const char *GetQueuePropertyName(cl_command_queue_properties properties);
 
 extern const char *GetDeviceTypeName(cl_device_type type);
-int check_functions_for_offline_compiler(const char *subtestname,
-                                         cl_device_id device);
+bool check_functions_for_offline_compiler(const char *subtestname);
 cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
                        cl_device_id *device_list);
 

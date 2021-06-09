@@ -783,6 +783,14 @@ test_status callSingleTestFunction(test_definition test,
         return TEST_SKIP;
     }
 
+    if (!check_functions_for_offline_compiler(test.name))
+    {
+        log_info("Subtest %s tests is not supported in offline compiler "
+                 "execution path!\n",
+                 test.name);
+        return TEST_SKIP;
+    }
+
     /* Create a context to work with, unless we're told not to */
     if (!forceNoContextCreation)
     {
@@ -812,14 +820,12 @@ test_status callSingleTestFunction(test_definition test,
         if (queue == NULL)
         {
             print_error(error, "Unable to create testing command queue");
+            clReleaseContext(context);
             return TEST_FAIL;
         }
     }
 
     /* Run the test and print the result */
-    error = check_functions_for_offline_compiler(test.name, deviceToUse);
-    test_missing_support_offline_cmpiler(error, test.name);
-
     if (test.func == NULL)
     {
         // Skip unimplemented test, can happen when all of the tests are

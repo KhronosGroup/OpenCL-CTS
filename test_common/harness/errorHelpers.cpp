@@ -21,6 +21,7 @@
 #include "errorHelpers.h"
 
 #include "parseParameters.h"
+#include "testHarness.h"
 
 #include <CL/cl_half.h>
 
@@ -690,21 +691,19 @@ const char *subtests_to_skip_with_offline_compiler[] = {
     "library_function"
 };
 
-int check_functions_for_offline_compiler(const char *subtestname,
-                                         cl_device_id device)
+bool check_functions_for_offline_compiler(const char *subtestname)
 {
     if (gCompilationMode != kOnline)
     {
         size_t nNotRequiredWithOfflineCompiler =
-            sizeof(subtests_to_skip_with_offline_compiler) / sizeof(char *);
-        size_t i;
-        for (i = 0; i < nNotRequiredWithOfflineCompiler; ++i)
+            ARRAY_SIZE(subtests_to_skip_with_offline_compiler);
+        for (size_t i = 0; i < nNotRequiredWithOfflineCompiler; ++i)
         {
             if (!strcmp(subtestname, subtests_to_skip_with_offline_compiler[i]))
             {
-                return 1;
+                return false;
             }
         }
     }
-    return 0;
+    return true;
 }
