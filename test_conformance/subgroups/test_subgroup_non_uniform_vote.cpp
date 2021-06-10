@@ -214,8 +214,9 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
         return TEST_PASS;
     }
 };
-static const char *elect_source = R"(
-    __kernel void test_elect(const __global Type *in, __global int4 *xy, __global Type *out) {
+
+std::string sub_group_elect_source = R"(
+    __kernel void test_sub_group_elect(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
         uint subgroup_local_id = get_sub_group_local_id();
@@ -236,8 +237,8 @@ static const char *elect_source = R"(
     }
 )";
 
-static const char *non_uniform_any_source = R"(
-    __kernel void test_non_uniform_any(const __global Type *in, __global int4 *xy, __global Type *out) {
+std::string sub_group_non_uniform_any_all_all_equal_source = R"(
+    __kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type *out) {
         int gid = get_global_id(0);
         XY(xy,gid);
         uint subgroup_local_id = get_sub_group_local_id();
@@ -253,59 +254,15 @@ static const char *non_uniform_any_source = R"(
             work_item_mask = work_item_mask_vector.z;
         }
         if (elect_work_item & work_item_mask){
-                out[gid] = sub_group_non_uniform_any(in[gid]);
+                out[gid] = %s(in[gid]);
             }
-    }
-)";
-
-static const char *non_uniform_all_source = R"(
-    __kernel void test_non_uniform_all(const __global Type *in, __global int4 *xy, __global Type *out) {
-        int gid = get_global_id(0);
-        XY(xy,gid);
-        uint subgroup_local_id = get_sub_group_local_id();
-        uint elect_work_item = 1 << (subgroup_local_id % 32);
-        uint work_item_mask;
-        if(subgroup_local_id < 32) {
-            work_item_mask = work_item_mask_vector.x;
-        } else if(subgroup_local_id < 64) {
-            work_item_mask = work_item_mask_vector.y;
-        } else if(subgroup_local_id < 96) {
-            work_item_mask = work_item_mask_vector.w;
-        } else if(subgroup_local_id < 128) {
-            work_item_mask = work_item_mask_vector.z;
-        }
-        if (elect_work_item & work_item_mask){
-                out[gid] = sub_group_non_uniform_all(in[gid]);
-        }
-    }
-)";
-
-static const char *non_uniform_all_equal_source = R"(
-    __kernel void test_non_uniform_all_equal(const __global Type *in, __global int4 *xy, __global Type *out) {
-        int gid = get_global_id(0);
-        XY(xy,gid);
-        uint subgroup_local_id = get_sub_group_local_id();
-        uint elect_work_item = 1 << (subgroup_local_id % 32);
-        uint work_item_mask;
-        if(subgroup_local_id < 32) {
-            work_item_mask = work_item_mask_vector.x;
-        } else if(subgroup_local_id < 64) {
-            work_item_mask = work_item_mask_vector.y;
-        } else if(subgroup_local_id < 96) {
-            work_item_mask = work_item_mask_vector.w;
-        } else if(subgroup_local_id < 128) {
-            work_item_mask = work_item_mask_vector.z;
-        }
-        if (elect_work_item & work_item_mask){
-                out[gid] = sub_group_non_uniform_all_equal(in[gid]);
-        }
     }
 )";
 
 template <typename T> int run_vote_all_equal_for_type(RunTestForType rft)
 {
     int error = rft.run_impl<T, VOTE<T, NonUniformVoteOp::all_equal>>(
-        "test_non_uniform_all_equal", non_uniform_all_equal_source);
+        "sub_group_non_uniform_all_equal");
     return error;
 }
 }
@@ -324,6 +281,9 @@ int test_subgroup_functions_non_uniform_vote(cl_device_id device,
     constexpr size_t local_work_size = 64;
     WorkGroupParams test_params(global_work_size, local_work_size,
                                 required_extensions, true);
+    test_params.save_kernel_source(
+        sub_group_non_uniform_any_all_all_equal_source);
+    test_params.save_kernel_source(sub_group_elect_source, "sub_group_elect");
     RunTestForType rft(device, context, queue, num_elements, test_params);
 
     int error = run_vote_all_equal_for_type<cl_int>(rft);
@@ -335,10 +295,10 @@ int test_subgroup_functions_non_uniform_vote(cl_device_id device,
     error |= run_vote_all_equal_for_type<subgroups::cl_half>(rft);
 
     error |= rft.run_impl<cl_int, VOTE<cl_int, NonUniformVoteOp::all>>(
-        "test_non_uniform_all", non_uniform_all_source);
+        "sub_group_non_uniform_all");
     error |= rft.run_impl<cl_int, VOTE<cl_int, NonUniformVoteOp::elect>>(
-        "test_elect", elect_source);
+        "sub_group_elect");
     error |= rft.run_impl<cl_int, VOTE<cl_int, NonUniformVoteOp::any>>(
-        "test_non_uniform_any", non_uniform_any_source);
+        "sub_group_non_uniform_any");
     return error;
 }

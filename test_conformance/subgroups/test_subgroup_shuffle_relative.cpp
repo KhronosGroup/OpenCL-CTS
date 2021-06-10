@@ -15,37 +15,19 @@
 //
 #include "procs.h"
 #include "subhelpers.h"
+#include "subgroup_common_kernels.h"
 #include "subgroup_common_templates.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
 namespace {
 
-static const char* shuffle_down_source =
-    "__kernel void test_sub_group_shuffle_down(const __global Type *in, "
-    "__global int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    Type x = in[gid];\n"
-    "    out[gid] = sub_group_shuffle_down(x, xy[gid].z);"
-    "}\n";
-static const char* shuffle_up_source =
-    "__kernel void test_sub_group_shuffle_up(const __global Type *in, __global "
-    "int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    Type x = in[gid];\n"
-    "    out[gid] = sub_group_shuffle_up(x, xy[gid].z);"
-    "}\n";
-
 template <typename T> int run_shuffle_relative_for_type(RunTestForType rft)
 {
-    int error = rft.run_impl<T, SHF<T, ShuffleOp::shuffle_up>>(
-        "test_sub_group_shuffle_up", shuffle_up_source);
+    int error =
+        rft.run_impl<T, SHF<T, ShuffleOp::shuffle_up>>("sub_group_shuffle_up");
     error |= rft.run_impl<T, SHF<T, ShuffleOp::shuffle_down>>(
-        "test_sub_group_shuffle_down", shuffle_down_source);
+        "sub_group_shuffle_down");
     return error;
 }
 
@@ -63,6 +45,7 @@ int test_subgroup_functions_shuffle_relative(cl_device_id device,
     constexpr size_t local_work_size = 200;
     WorkGroupParams test_params(global_work_size, local_work_size,
                                 required_extensions);
+    test_params.save_kernel_source(sub_group_generic_source);
     RunTestForType rft(device, context, queue, num_elements, test_params);
 
     int error = run_shuffle_relative_for_type<cl_int>(rft);

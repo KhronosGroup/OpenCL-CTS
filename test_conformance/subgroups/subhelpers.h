@@ -25,6 +25,8 @@
 #include <vector>
 #include <type_traits>
 #include <bitset>
+#include <regex>
+#include <map>
 
 #define NR_OF_ACTIVE_WORK_ITEMS 4
 
@@ -54,8 +56,33 @@ struct WorkGroupParams
     std::vector<std::string> required_extensions;
     std::vector<bs128> all_work_item_masks;
     bool use_masks;
+    void save_kernel_source(const std::string &source, std::string name = "")
+    {
+        if (name == "")
+        {
+            name = "default";
+        }
+        if (kernel_function_name.find(name) != kernel_function_name.end())
+        {
+            log_info("Kernel definition duplication. Source will be "
+                     "overwritten for function name %s",
+                     name.c_str());
+        }
+        kernel_function_name[name] = source;
+    };
+    // return specific defined kernel or default.
+    std::string get_kernel_source(std::string name)
+    {
+        if (kernel_function_name.find(name) == kernel_function_name.end())
+        {
+            return kernel_function_name["default"];
+        }
+        return kernel_function_name[name];
+    }
+
 
 private:
+    std::map<std::string, std::string> kernel_function_name;
     void load_masks()
     {
         if (use_masks)
@@ -1592,18 +1619,24 @@ struct RunTestForType
           num_elements_(num_elements), test_params_(test_params)
     {}
     template <typename T, typename U>
-    int run_impl(const char *kernel_name, const char *source)
+    int run_impl(const std::string &function_name)
     {
         int error = TEST_PASS;
+        std::string source =
+            std::regex_replace(test_params_.get_kernel_source(function_name),
+                               std::regex("\\%s"), function_name);
+        std::string kernel_name = "test_" + function_name;
         if (test_params_.all_work_item_masks.size() > 0)
         {
             error = test<T, U>::mrun(device_, context_, queue_, num_elements_,
-                                     kernel_name, source, test_params_);
+                                     kernel_name.c_str(), source.c_str(),
+                                     test_params_);
         }
         else
         {
             error = test<T, U>::run(device_, context_, queue_, num_elements_,
-                                    kernel_name, source, test_params_);
+                                    kernel_name.c_str(), source.c_str(),
+                                    test_params_);
         }
 
         return error;
