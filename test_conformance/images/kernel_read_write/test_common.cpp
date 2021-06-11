@@ -1544,3 +1544,38 @@ int test_read_image(cl_context context, cl_command_queue queue,
 
     return numTries != MAX_TRIES || numClamped != MAX_CLAMPED;
 }
+
+void filter_undefined_bits(image_descriptor *imageInfo, char *resultPtr)
+{
+    // mask off the top bit (bit 15) if the image format is (CL_UNORM_SHORT_555,
+    // CL_RGB). (Note: OpenCL says: the top bit is undefined meaning it can be
+    // either 0 or 1.)
+    if (imageInfo->format->image_channel_data_type == CL_UNORM_SHORT_555)
+    {
+        cl_ushort *temp = (cl_ushort *)resultPtr;
+        temp[0] &= 0x7fff;
+    }
+}
+
+int filter_rounding_errors(int forceCorrectlyRoundedWrites,
+                           image_descriptor *imageInfo, float *errors)
+{
+    // We are allowed 0.6 absolute error vs. infinitely precise for some
+    // normalized formats
+    if (0 == forceCorrectlyRoundedWrites
+        && (imageInfo->format->image_channel_data_type == CL_UNORM_INT8
+            || imageInfo->format->image_channel_data_type == CL_UNORM_INT_101010
+            || imageInfo->format->image_channel_data_type == CL_UNORM_INT16
+            || imageInfo->format->image_channel_data_type == CL_SNORM_INT8
+            || imageInfo->format->image_channel_data_type == CL_SNORM_INT16
+            || imageInfo->format->image_channel_data_type == CL_UNORM_SHORT_555
+            || imageInfo->format->image_channel_data_type
+                == CL_UNORM_SHORT_565))
+    {
+        if (!(fabsf(errors[0]) > 0.6f) && !(fabsf(errors[1]) > 0.6f)
+            && !(fabsf(errors[2]) > 0.6f) && !(fabsf(errors[3]) > 0.6f))
+            return 0;
+    }
+
+    return 1;
+}
