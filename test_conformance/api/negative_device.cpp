@@ -310,7 +310,8 @@ get_invalid_properties(int unsupported_properties)
     }
     else if (unsupported_properties & SupportedPartitionSchemes::Counts)
     {
-        return { CL_DEVICE_PARTITION_BY_COUNTS, 1, 0 };
+        return { CL_DEVICE_PARTITION_BY_COUNTS, 1,
+                 CL_DEVICE_PARTITION_BY_COUNTS_LIST_END };
     }
     else if (unsupported_properties & SupportedPartitionSchemes::Affinity)
     {
@@ -343,7 +344,7 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    cl_device_partition_property properties[3] = {};
+    cl_device_partition_property properties[4] = {};
     cl_uint max_compute_units =
         get_uint_device_info(deviceID, CL_DEVICE_MAX_COMPUTE_UNITS);
     cl_uint max_sub_devices =
@@ -352,19 +353,22 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
     {
         properties[0] = CL_DEVICE_PARTITION_EQUALLY;
         properties[1] = max_compute_units;
+        properties[2] = 0;
     }
     else if (supported_properties & SupportedPartitionSchemes::Counts)
     {
-        properties[0] = CL_INVALID_DEVICE_PARTITION_COUNT;
+        properties[0] = CL_DEVICE_PARTITION_BY_COUNTS;
         properties[1] = max_sub_devices;
+        properties[2] = CL_DEVICE_PARTITION_BY_COUNTS_LIST_END;
     }
     else
     {
         properties[0] = CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN;
         properties[1] = CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE;
+        properties[2] = 0;
     }
 
-    properties[2] = 0;
+    properties[3] = 0;
     cl_device_id *out_devices = nullptr;
 
     cl_int err(CL_SUCCESS);
