@@ -28,11 +28,14 @@
 using namespace std;
 
 #define DEFAULT_COMPILATION_PROGRAM "cl_offline_compiler"
+#define DEFAULT_SPIRV_VALIDATOR "spirv-val"
 
 CompilationMode gCompilationMode = kOnline;
 CompilationCacheMode gCompilationCacheMode = kCacheModeCompileIfAbsent;
 std::string gCompilationCachePath = ".";
 std::string gCompilationProgram = DEFAULT_COMPILATION_PROGRAM;
+bool gDisableSPIRVValidation = false;
+std::string gSPIRVValidator = DEFAULT_SPIRV_VALIDATOR;
 
 void helpInfo()
 {
@@ -62,7 +65,14 @@ For offline compilation (binary and spir-v modes) only:
         Path for offline compiler output and CL source
     --compilation-program <prog>
         Program to use for offline compilation, defaults to:
-            )" DEFAULT_COMPILATION_PROGRAM "\n\n");
+            )" DEFAULT_COMPILATION_PROGRAM R"(
+
+For spir-v mode only:
+    --disable-spirv-validation
+        Disable validation of SPIR-V using the SPIR-V validator
+    --spirv-validator
+        Path for SPIR-V validator, defaults to )" DEFAULT_SPIRV_VALIDATOR "\n"
+        "\n");
 }
 
 int parseCustomParam(int argc, const char *argv[], const char *ignore)
@@ -194,6 +204,26 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
             else
             {
                 log_error("Program argument for --compilation-program was not "
+                          "specified.\n");
+                return -1;
+            }
+        }
+        else if (!strcmp(argv[i], "--disable-spirv-validation"))
+        {
+            delArg++;
+            gDisableSPIRVValidation = true;
+        }
+        else if (!strcmp(argv[i], "--spirv-validator"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                gSPIRVValidator = argv[i + 1];
+            }
+            else
+            {
+                log_error("Program argument for --spirv-validator was not "
                           "specified.\n");
                 return -1;
             }
