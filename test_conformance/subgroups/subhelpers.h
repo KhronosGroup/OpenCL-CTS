@@ -1080,7 +1080,7 @@ template <typename Ty>
 typename std::enable_if<TypeManager<Ty>::is_sb_scalar_type::value>::type
 set_value(Ty &lhs, const cl_ulong &rhs)
 {
-    lhs.data = rhs;
+    lhs.data = cl_half_from_float(static_cast<cl_float>(rhs), CL_HALF_RTE);
 }
 
 // compare for common vectors

@@ -302,16 +302,27 @@ static test_status checkIFPSupport(cl_device_id device, bool &ifpSupport)
 {
     cl_uint ifp_supported;
     cl_uint error;
-    error = clGetDeviceInfo(device,
-                            CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
-                            sizeof(ifp_supported), &ifp_supported, NULL);
-    if (error != CL_SUCCESS)
+    auto device_cl_version = get_device_cl_version(device);
+    if (device_cl_version < Version(2, 1))
     {
-        print_error(
-            error,
-            "Unable to get CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS "
-            "capability");
-        return TEST_FAIL;
+        // OpenCL 2.0 and below don't provide the CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS property. Instead,
+        // support is determined by the presence of cl_khr_subgroups.
+        ifp_supported = is_extension_available(device, "cl_khr_subgroups");
+    }
+    else
+    {
+        // OpenCL 2.1 and above optionally support subgroups more flexibly without needing an extension.
+        error = clGetDeviceInfo(device,
+                                CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
+                                sizeof(ifp_supported), &ifp_supported, NULL);
+        if (error != CL_SUCCESS)
+        {
+            print_error(
+                error,
+                "Unable to get CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS "
+                "capability");
+            return TEST_FAIL;
+        }
     }
     // skip testing ifp
     if (ifp_supported != 1)
