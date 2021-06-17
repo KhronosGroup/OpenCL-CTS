@@ -147,11 +147,22 @@ int do_test(cl_device_id device, cl_context context, cl_command_queue queue,
     if (clGetKernelSuggestedLocalWorkSizeKHR == NULL)
     {
         log_info(
-            "Extension 'cl_khr_suggested_local_work_size' could not be found. "
-            "Skipping the test.\n");
-        return TEST_SKIPPED_ITSELF;
+            "Extension 'cl_khr_suggested_local_work_size' could not be found.\n");
+        return TEST_FAIL;
     }
 
+    /* Create the actual buffer, using local_buffer as the host pointer, and ask
+     * to copy that into the buffer */
+    buffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                            sizeof(kernel_work_size), NULL, &err);
+    test_error_ret(err, "clCreateBuffer failed", -1);
+    err = clSetKernelArg(scan_kernel, 0, sizeof(buffer), &buffer);
+    test_error_ret(err, "clSetKernelArg failed", -1);
+    if (dyn_mem_size)
+    {
+        err = clSetKernelArg(scan_kernel, 1, dyn_mem_size, NULL);
+        test_error_ret(err, "clSetKernelArg failed", -1);
+    }
     err = clGetKernelSuggestedLocalWorkSizeKHR(queue, scan_kernel, work_dim,
                                                global_work_offset, test_values,
                                                local_work_size);
@@ -177,18 +188,6 @@ int do_test(cl_device_id device, cl_context context, cl_command_queue queue,
         return -1;
     }
 
-    /* Create the actual buffer, using local_buffer as the host pointer, and ask
-     * to copy that into the buffer */
-    buffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                            sizeof(kernel_work_size), NULL, &err);
-    test_error_ret(err, "clCreateBuffer failed", -1);
-    err = clSetKernelArg(scan_kernel, 0, sizeof(buffer), &buffer);
-    test_error_ret(err, "clSetKernelArg failed", -1);
-    if (dyn_mem_size)
-    {
-        err = clSetKernelArg(scan_kernel, 1, dyn_mem_size, NULL);
-        test_error_ret(err, "clSetKernelArg failed", -1);
-    }
     err =
         clEnqueueNDRangeKernel(queue, scan_kernel, work_dim, global_work_offset,
                                test_values, // global work size
