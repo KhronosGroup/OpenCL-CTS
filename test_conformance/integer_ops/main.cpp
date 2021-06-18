@@ -143,6 +143,8 @@ test_definition test_list[] = {
     ADD_TEST( quick_uchar_compare ),
 
     ADD_TEST( vector_scalar ),
+
+    ADD_TEST( integer_dot_product ),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

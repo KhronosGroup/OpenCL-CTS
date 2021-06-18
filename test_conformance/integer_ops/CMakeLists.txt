@@ -11,6 +11,7 @@ set(${MODULE_NAME}_SOURCES
     test_unary_ops.cpp
     verification_and_generation_functions.cpp
     test_popcount.cpp
+    test_integer_dot_product.cpp
 )
 
 include(../CMakeCommon.txt)
