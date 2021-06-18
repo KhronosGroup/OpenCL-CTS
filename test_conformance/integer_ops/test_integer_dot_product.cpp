@@ -136,22 +136,6 @@ template <> struct PackedTestInfo<cl_uchar>
 };
 
 static constexpr const char* kernel_source_dot = R"CLC(
-// TODO: Delete these emulated versions!
-#ifndef __opencl_c_integer_dot_product_input_4x8bit
-#define OVLD __attribute__((overloadable))
-
-#define dot emulated_dot
-uint OVLD dot(uchar4 a, uchar4 b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
-int  OVLD dot( char4 a,  char4 b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
-int  OVLD dot(uchar4 a,  char4 b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
-int  OVLD dot( char4 a, uchar4 b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
-
-uint OVLD dot_4x8packed_uu_uint(uint a, uint b) { return dot(as_uchar4(a), as_uchar4(b)); }
-int  OVLD dot_4x8packed_ss_int (uint a, uint b) { return dot( as_char4(a),  as_char4(b)); }
-int  OVLD dot_4x8packed_us_int (uint a, uint b) { return dot(as_uchar4(a),  as_char4(b)); }
-int  OVLD dot_4x8packed_su_int (uint a, uint b) { return dot( as_char4(a), as_uchar4(b)); }
-#endif
-
 __kernel void test_dot(__global DSTTYPE* dst, __global SRCTYPEA* a, __global SRCTYPEB* b)
 {
     int index = get_global_id(0);
@@ -160,22 +144,6 @@ __kernel void test_dot(__global DSTTYPE* dst, __global SRCTYPEA* a, __global SRC
 )CLC";
 
 static constexpr const char* kernel_source_dot_acc_sat = R"CLC(
-// TODO: Delete these emulated versions!
-#ifndef __opencl_c_integer_dot_product_input_4x8bit
-#define OVLD __attribute__((overloadable))
-
-#define dot emulated_dot
-uint OVLD dot_acc_sat(uchar4 a, uchar4 b, uint acc) { return add_sat((uint)(a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w), acc); }
-int  OVLD dot_acc_sat( char4 a,  char4 b,  int acc) { return add_sat( (int)(a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w), acc); }
-int  OVLD dot_acc_sat(uchar4 a,  char4 b,  int acc) { return add_sat( (int)(a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w), acc); }
-int  OVLD dot_acc_sat( char4 a, uchar4 b,  int acc) { return add_sat( (int)(a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w), acc); }
-
-uint OVLD dot_acc_sat_4x8packed_uu_uint(uint a, uint b, uint acc) { return dot_acc_sat(as_uchar4(a), as_uchar4(b), acc); }
-int  OVLD dot_acc_sat_4x8packed_ss_int (uint a, uint b,  int acc) { return dot_acc_sat( as_char4(a),  as_char4(b), acc); }
-int  OVLD dot_acc_sat_4x8packed_us_int (uint a, uint b,  int acc) { return dot_acc_sat(as_uchar4(a),  as_char4(b), acc); }
-int  OVLD dot_acc_sat_4x8packed_su_int (uint a, uint b,  int acc) { return dot_acc_sat( as_char4(a), as_uchar4(b), acc); }
-#endif
-
 __kernel void test_dot_acc_sat(
     __global DSTTYPE* dst,
     __global SRCTYPEA* a, __global SRCTYPEB* b, __global DSTTYPE* acc)
@@ -382,12 +350,7 @@ static int test_vectype_packed(cl_device_id deviceID, cl_context context,
 int test_integer_dot_product(cl_device_id deviceID, cl_context context,
                              cl_command_queue queue, int num_elements)
 {
-    // TODO: add back this check!
-#if 0
     if (is_extension_available(deviceID, "cl_khr_integer_dot_product"))
-#else
-    if (true)
-#endif
     {
         cl_int error = CL_SUCCESS;
         int result = TEST_PASS;
@@ -396,17 +359,9 @@ int test_integer_dot_product(cl_device_id deviceID, cl_context context,
         error = clGetDeviceInfo(deviceID,
                                 CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR,
                                 sizeof(dotCaps), &dotCaps, NULL);
-#if 0
         test_error(
             error,
             "Unable to query CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR");
-#else
-        dotCaps = CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR
-            | CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR;
-#endif
-        test_assert_error(
-            dotCaps != 0,
-            "CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR returned 0");
         test_assert_error(
             dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR,
             "When cl_khr_integer_dot_product is supported "
