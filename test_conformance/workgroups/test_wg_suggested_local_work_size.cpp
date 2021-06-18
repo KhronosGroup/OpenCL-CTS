@@ -51,7 +51,7 @@ const char* wg_scan_local_work_group_size = R"(
         return linear_id == 0;
     }
 
-    size_t get_l_size(size_t dim)
+    uint get_l_size(size_t dim)
     {
 #if __OPENCL_VERSION__ < CL_VERSION_2_0
         return get_local_size(dim);
@@ -60,7 +60,7 @@ const char* wg_scan_local_work_group_size = R"(
 #endif
     }
 
-    __kernel void test_wg_scan_local_work_group_size(global size_t *output)
+    __kernel void test_wg_scan_local_work_group_size(global uint *output)
     {
         if(!is_zero_linear_id()) return;
         for (uint i = 0; i < 3; i++)
@@ -69,7 +69,7 @@ const char* wg_scan_local_work_group_size = R"(
         }
     }
     __kernel void test_wg_scan_local_work_group_size_static_local(
-                                            global size_t *output)
+                                            global uint *output)
     {
         __local char c[LOCAL_MEM_SIZE];
     
@@ -80,7 +80,7 @@ const char* wg_scan_local_work_group_size = R"(
         }
     }
     __kernel void test_wg_scan_local_work_group_size_dynlocal(
-                                        global size_t *output,
+                                        global uint *output,
                                         __local char * c)
     {
         if(!is_zero_linear_id()) return;
@@ -131,7 +131,7 @@ int do_test(cl_device_id device, cl_context context, cl_command_queue queue,
     size_t local_work_size[] = { 1, 1, 1 };
     size_t suggested_total_size;
     size_t workgroupinfo_size;
-    size_t kernel_work_size[3] = { 0 };
+    cl_uint kernel_work_size[3] = { 0 };
     clMemWrapper buffer;
     cl_platform_id platform;
 
@@ -146,8 +146,8 @@ int do_test(cl_device_id device, cl_context context, cl_command_queue queue,
 
     if (clGetKernelSuggestedLocalWorkSizeKHR == NULL)
     {
-        log_info(
-            "Extension 'cl_khr_suggested_local_work_size' could not be found.\n");
+        log_info("Extension 'cl_khr_suggested_local_work_size' could not be "
+                 "found.\n");
         return TEST_FAIL;
     }
 
@@ -222,90 +222,69 @@ int do_test_work_group_suggested_local_size(
 {
     clProgramWrapper scan_program;
     clKernelWrapper scan_kernel;
-    clProgramWrapper scan1kb_program;
-    clKernelWrapper scan1kb_kernel;
-    clProgramWrapper scan4kb_program;
-    clKernelWrapper scan4kb_kernel;
-    clProgramWrapper scan16kb_program;
-    clKernelWrapper scan16kb_kernel;
-    clProgramWrapper scan32kb_program;
-    clKernelWrapper scan32kb_kernel;
-    clProgramWrapper scan_dyn_program;
-    clKernelWrapper scan_dyn_kernel;
     int err;
     size_t test_values[] = { 1, 1, 1 };
-
-    // Create the kernels needed
-    err = create_single_kernel_helper(
-        context, &scan_program, &scan_kernel, 1, &wg_scan_local_work_group_size,
-        "test_wg_scan_local_work_group_size", "-DLOCAL_MEM_SIZE=1");
-    test_error_ret(err, "create_single_kernel_helper failed", -1);
-    err = create_single_kernel_helper(
-        context, &scan1kb_program, &scan1kb_kernel, 1,
-        &wg_scan_local_work_group_size,
+    std::string kernel_names[6] = {
+        "test_wg_scan_local_work_group_size",
         "test_wg_scan_local_work_group_size_static_local",
-        "-DLOCAL_MEM_SIZE=1024");
-    test_error_ret(err, "create_single_kernel_helper failed", -1);
-    err = create_single_kernel_helper(
-        context, &scan4kb_program, &scan4kb_kernel, 1,
-        &wg_scan_local_work_group_size,
         "test_wg_scan_local_work_group_size_static_local",
-        "-DLOCAL_MEM_SIZE=4096");
-    test_error_ret(err, "create_single_kernel_helper failed", -1);
-    err = create_single_kernel_helper(
-        context, &scan16kb_program, &scan16kb_kernel, 1,
-        &wg_scan_local_work_group_size,
         "test_wg_scan_local_work_group_size_static_local",
-        "-DLOCAL_MEM_SIZE=16384");
-    test_error_ret(err, "create_single_kernel_helper failed", -1);
-    err = create_single_kernel_helper(
-        context, &scan32kb_program, &scan32kb_kernel, 1,
-        &wg_scan_local_work_group_size,
         "test_wg_scan_local_work_group_size_static_local",
-        "-DLOCAL_MEM_SIZE=32768");
-    test_error_ret(err, "create_single_kernel_helper failed", -1);
-    err = create_single_kernel_helper(
-        context, &scan_dyn_program, &scan_dyn_kernel, 1,
-        &wg_scan_local_work_group_size,
-        "test_wg_scan_local_work_group_size_dynlocal", "-DLOCAL_MEM_SIZE=1");
-    test_error_ret(err, "create_single_kernel_helper failed", -1);
-
-    err = -1; // return error if no number is found due to the skip condition
-    uint j = 0;
-    size_t num_elems = NELEMS(value_range);
-    for (size_t i = start; i < end; i += incr)
+        "test_wg_scan_local_work_group_size_dynlocal"
+    };
+    std::string str_local_mem_size[6] = {
+        "-DLOCAL_MEM_SIZE=1",     "-DLOCAL_MEM_SIZE=1024",
+        "-DLOCAL_MEM_SIZE=4096",  "-DLOCAL_MEM_SIZE=16384",
+        "-DLOCAL_MEM_SIZE=32768", "-DLOCAL_MEM_SIZE=1"
+    };
+    size_t local_mem_size[6] = { 1, 1024, 4096, 16384, 32768, 1 };
+    size_t dyn_mem_size[6] = { 0, 0, 0, 0, 0, 1024 };
+    cl_ulong kernel_local_mem_size;
+    for (int kernel_num = 0; kernel_num < 6; kernel_num++)
     {
-        if (skip_cond(i)) continue;
-        test_values[0] = i;
-        if (dim == _2D) test_values[1] = value_range[j++ % num_elems];
-        if (dim == _3D)
+        if (max_local_mem_size < local_mem_size[kernel_num]) continue;
+        // Create the kernel
+        err = create_single_kernel_helper(
+            context, &scan_program, &scan_kernel, 1,
+            &wg_scan_local_work_group_size, (kernel_names[kernel_num]).c_str(),
+            (str_local_mem_size[kernel_num]).c_str());
+        test_error_ret(err,
+                       ("create_single_kernel_helper failed for kernel "
+                        + kernel_names[kernel_num])
+                           .c_str(),
+                       -1);
+
+        // Check if the local memory used by the kernel is going to exceed the
+        // max_local_mem_size
+        err = clGetKernelWorkGroupInfo(
+            scan_kernel, device, CL_KERNEL_LOCAL_MEM_SIZE,
+            sizeof(kernel_local_mem_size), &kernel_local_mem_size, NULL);
+        test_error_ret(err, "clGetKernelWorkGroupInfo failed", -1);
+        if (kernel_local_mem_size > max_local_mem_size) continue;
+        // return error if no number is found due to the skip condition
+        err = -1;
+        unsigned int j = 0;
+        size_t num_elems = NELEMS(value_range);
+        for (size_t i = start; i < end; i += incr)
         {
-            test_values[1] = value_range[j++ % num_elems];
-            test_values[2] = value_range[rand() % num_elems];
+            if (skip_cond(i)) continue;
+            err = 0;
+            test_values[0] = i;
+            if (dim == _2D) test_values[1] = value_range[j++ % num_elems];
+            if (dim == _3D)
+            {
+                test_values[1] = value_range[j++ % num_elems];
+                test_values[2] = value_range[rand() % num_elems];
+            }
+            err |= do_test(device, context, queue, scan_kernel, dim,
+                           global_work_offset, test_values,
+                           dyn_mem_size[kernel_num]);
+            test_error_ret(
+                err,
+                ("do_test failed for kernel " + kernel_names[kernel_num])
+                    .c_str(),
+                -1);
         }
-        err = do_test(device, context, queue, scan_kernel, dim,
-                      global_work_offset, test_values, 0);
-        test_error_ret(err, "do_test failed", -1);
-        err = 0;
-        if (max_local_mem_size < 1024) continue;
-        err = do_test(device, context, queue, scan_dyn_kernel, dim,
-                      global_work_offset, test_values, 1024);
-        test_error_ret(err, "do_test failed", -1);
-        err = do_test(device, context, queue, scan1kb_kernel, dim,
-                      global_work_offset, test_values, 0);
-        test_error_ret(err, "do_test failed", -1);
-        if (max_local_mem_size < 4096) continue;
-        err = do_test(device, context, queue, scan4kb_kernel, dim,
-                      global_work_offset, test_values, 0);
-        test_error_ret(err, "do_test failed", -1);
-        if (max_local_mem_size < 16384) continue;
-        err = do_test(device, context, queue, scan16kb_kernel, dim,
-                      global_work_offset, test_values, 0);
-        test_error_ret(err, "do_test failed", -1);
-        if (max_local_mem_size < 32768) continue;
-        err = do_test(device, context, queue, scan32kb_kernel, dim,
-                      global_work_offset, test_values, 0);
-        test_error_ret(err, "do_test failed", -1);
     }
     return err;
 }
