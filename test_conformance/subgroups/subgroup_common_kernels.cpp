@@ -15,92 +15,20 @@
 //
 #include "subgroup_common_kernels.h"
 
-const char* bcast_source =
-    "__kernel void test_bcast(const __global Type *in, "
-    "__global int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    Type x = in[gid];\n"
-    "    uint which_sub_group_local_id = xy[gid].z;\n"
-    "    out[gid] = sub_group_broadcast(x, which_sub_group_local_id);\n"
 
-    "}\n";
+std::string sub_group_reduction_scan_source = R"(
+    __kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type *out) {
+        int gid = get_global_id(0);
+        XY(xy,gid);
+        out[gid] = %s(in[gid]);
+    }
+)";
 
-const char* redadd_source = "__kernel void test_redadd(const __global Type "
-                            "*in, __global int4 *xy, __global Type *out)\n"
-                            "{\n"
-                            "    int gid = get_global_id(0);\n"
-                            "    XY(xy,gid);\n"
-                            "    out[gid] = sub_group_reduce_add(in[gid]);\n"
-                            "}\n";
-
-const char* redmax_source = "__kernel void test_redmax(const __global Type "
-                            "*in, __global int4 *xy, __global Type *out)\n"
-                            "{\n"
-                            "    int gid = get_global_id(0);\n"
-                            "    XY(xy,gid);\n"
-                            "    out[gid] = sub_group_reduce_max(in[gid]);\n"
-                            "}\n";
-
-const char* redmin_source = "__kernel void test_redmin(const __global Type "
-                            "*in, __global int4 *xy, __global Type *out)\n"
-                            "{\n"
-                            "    int gid = get_global_id(0);\n"
-                            "    XY(xy,gid);\n"
-                            "    out[gid] = sub_group_reduce_min(in[gid]);\n"
-                            "}\n";
-
-const char* scinadd_source =
-    "__kernel void test_scinadd(const __global Type *in, __global int4 *xy, "
-    "__global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    out[gid] = sub_group_scan_inclusive_add(in[gid]);\n"
-    "}\n";
-
-const char* scinmax_source =
-    "__kernel void test_scinmax(const __global Type *in, __global int4 *xy, "
-    "__global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    out[gid] = sub_group_scan_inclusive_max(in[gid]);\n"
-    "}\n";
-
-const char* scinmin_source =
-    "__kernel void test_scinmin(const __global Type *in, __global int4 *xy, "
-    "__global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    out[gid] = sub_group_scan_inclusive_min(in[gid]);\n"
-    "}\n";
-
-const char* scexadd_source =
-    "__kernel void test_scexadd(const __global Type *in, __global int4 *xy, "
-    "__global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    out[gid] = sub_group_scan_exclusive_add(in[gid]);\n"
-    "}\n";
-
-const char* scexmax_source =
-    "__kernel void test_scexmax(const __global Type *in, __global int4 *xy, "
-    "__global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    out[gid] = sub_group_scan_exclusive_max(in[gid]);\n"
-    "}\n";
-
-const char* scexmin_source =
-    "__kernel void test_scexmin(const __global Type *in, __global int4 *xy, "
-    "__global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    out[gid] = sub_group_scan_exclusive_min(in[gid]);\n"
-    "}\n";
+std::string sub_group_generic_source = R"(
+    __kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type *out) {
+        int gid = get_global_id(0);
+        XY(xy,gid);
+        Type x = in[gid];
+        out[gid] = %s(x, xy[gid].z);
+    }
+)";

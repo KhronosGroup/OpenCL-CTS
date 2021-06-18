@@ -24,30 +24,30 @@ namespace {
 template <typename T> int run_broadcast_for_extended_type(RunTestForType rft)
 {
     int error = rft.run_impl<T, BC<T, SubgroupsBroadcastOp::broadcast>>(
-        "test_bcast", bcast_source);
+        "sub_group_broadcast");
     return error;
 }
 
 template <typename T> int run_scan_reduction_for_type(RunTestForType rft)
 {
-    int error = rft.run_impl<T, RED_NU<T, ArithmeticOp::add_>>("test_redadd",
-                                                               redadd_source);
-    error |= rft.run_impl<T, RED_NU<T, ArithmeticOp::max_>>("test_redmax",
-                                                            redmax_source);
-    error |= rft.run_impl<T, RED_NU<T, ArithmeticOp::min_>>("test_redmin",
-                                                            redmin_source);
-    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::add_>>("test_scinadd",
-                                                             scinadd_source);
-    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::max_>>("test_scinmax",
-                                                             scinmax_source);
-    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::min_>>("test_scinmin",
-                                                             scinmin_source);
-    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::add_>>("test_scexadd",
-                                                             scexadd_source);
-    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::max_>>("test_scexmax",
-                                                             scexmax_source);
-    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::min_>>("test_scexmin",
-                                                             scexmin_source);
+    int error =
+        rft.run_impl<T, RED_NU<T, ArithmeticOp::add_>>("sub_group_reduce_add");
+    error |=
+        rft.run_impl<T, RED_NU<T, ArithmeticOp::max_>>("sub_group_reduce_max");
+    error |=
+        rft.run_impl<T, RED_NU<T, ArithmeticOp::min_>>("sub_group_reduce_min");
+    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::add_>>(
+        "sub_group_scan_inclusive_add");
+    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::max_>>(
+        "sub_group_scan_inclusive_max");
+    error |= rft.run_impl<T, SCIN_NU<T, ArithmeticOp::min_>>(
+        "sub_group_scan_inclusive_min");
+    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::add_>>(
+        "sub_group_scan_exclusive_add");
+    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::max_>>(
+        "sub_group_scan_exclusive_max");
+    error |= rft.run_impl<T, SCEX_NU<T, ArithmeticOp::min_>>(
+        "sub_group_scan_exclusive_min");
     return error;
 }
 
@@ -66,8 +66,11 @@ int test_subgroup_functions_extended_types(cl_device_id device,
     constexpr size_t local_work_size = 200;
     WorkGroupParams test_params(global_work_size, local_work_size,
                                 required_extensions);
-    RunTestForType rft(device, context, queue, num_elements, test_params);
+    test_params.save_kernel_source(sub_group_reduction_scan_source);
+    test_params.save_kernel_source(sub_group_generic_source,
+                                   "sub_group_broadcast");
 
+    RunTestForType rft(device, context, queue, num_elements, test_params);
     int error = run_broadcast_for_extended_type<cl_uint2>(rft);
     error |= run_broadcast_for_extended_type<subgroups::cl_uint3>(rft);
     error |= run_broadcast_for_extended_type<cl_uint4>(rft);
