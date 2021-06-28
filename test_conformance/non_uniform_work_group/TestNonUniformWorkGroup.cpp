@@ -459,6 +459,8 @@ void TestNonUniformWorkGroup::calculateExpectedValues () {
   numberOfPossibleRegions[1] = (_globalSize[1]>1)?2:1;
   numberOfPossibleRegions[2] = (_globalSize[2]>1)?2:1;
 
+  memset(&_referenceRegionArray[0], 0,
+         _referenceRegionArray.size() * sizeof(_referenceRegionArray[0]));
   for (cl_ushort i = 0; i < NUMBER_OF_REGIONS; ++i) {
 
     if (i & 0x01 && numberOfPossibleRegions[0] == 1) {
@@ -703,11 +705,68 @@ size_t TestNonUniformWorkGroup::adjustGlobalBufferSize(size_t globalBufferSize) 
   err = clGetDeviceInfo(_device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(deviceMaxAllocObjSize), &deviceMaxAllocObjSize, NULL);
   test_error(err, "clGetDeviceInfo failed");
 
-  size_t adjustedGlobalBufferSize = globalBufferSize;
-  if (deviceMaxAllocObjSize < globalBufferSize) {
-    adjustedGlobalBufferSize = deviceMaxAllocObjSize;
-    log_info("globalBufferSize was adjusted from %lu to %lu\n", globalBufferSize, adjustedGlobalBufferSize);
+  if (deviceMaxAllocObjSize >= globalBufferSize) return globalBufferSize;
+
+  // Adjust _GlobalSize and _numOfGlobalWorkItems as well in order to avoid
+  // out-of-bound access of global buffer in testBarriers.
+  size_t maxNumOfGlobalWorkItems = deviceMaxAllocObjSize / sizeof(cl_uint);
+  size_t oldNumOfGlobalWorkItems = _numOfGlobalWorkItems;
+  size_t oldGlobalSize[MAX_DIMS];
+  memcpy(oldGlobalSize, _globalSize, sizeof(_globalSize));
+  for (int i = (int)_dims - 1; i >= 0; --i)
+  {
+      size_t minGlobalSize = _localSize_IsNull ? 1 : _localSize[i];
+      while (_numOfGlobalWorkItems > maxNumOfGlobalWorkItems
+             && _globalSize[i] >= (2 * minGlobalSize))
+      {
+          _globalSize[i] /= 2;
+          _numOfGlobalWorkItems =
+              _globalSize[0] * _globalSize[1] * _globalSize[2];
+      }
   }
+
+  // If _globalSize[0] is adjusted, make sure there is still non-uniform
+  // workgroup.
+  if (_globalSize[0] != oldGlobalSize[0])
+  {
+      if (_globalSize[0] % _localSize[0] == 0)
+      {
+          _globalSize[0]--;
+          _numOfGlobalWorkItems =
+              _globalSize[0] * _globalSize[1] * _globalSize[2];
+      }
+  }
+
+  // Adjust _globalWorkOffset if necessary.
+  size_t oldGlobalWorkOffset[MAX_DIMS];
+  memcpy(oldGlobalWorkOffset, _globalWorkOffset, sizeof(_globalWorkOffset));
+  bool globalWorkOffsetAdjusted = false;
+  for (cl_uint i = 0; i < _dims; ++i)
+  {
+      if (_globalWorkOffset[i] >= _globalSize[i])
+      {
+          _globalWorkOffset[i] = _globalSize[i] / 2;
+          globalWorkOffsetAdjusted = true;
+      }
+  }
+
+  // Re-calculate expected values.
+  calculateExpectedValues();
+
+  size_t adjustedGlobalBufferSize = _numOfGlobalWorkItems * sizeof(cl_uint);
+  log_info("globalSize was adjusted from [%zu, %zu, %zu] to [%zu, %zu, %zu]\n",
+           oldGlobalSize[0], oldGlobalSize[1], oldGlobalSize[2], _globalSize[0],
+           _globalSize[1], _globalSize[2]);
+  log_info("numOfGlobalWorkItems was adjusted from %zu to %zu\n",
+           oldNumOfGlobalWorkItems, _numOfGlobalWorkItems);
+  log_info("globalBufferSize was adjusted from %zu to %zu\n", globalBufferSize,
+           adjustedGlobalBufferSize);
+  if (globalWorkOffsetAdjusted)
+      log_info("globalWorkOffset was adjusted from [%zu, %zu, %zu] to [%zu, "
+               "%zu, %zu]\n",
+               oldGlobalWorkOffset[0], oldGlobalWorkOffset[1],
+               oldGlobalWorkOffset[2], _globalWorkOffset[0],
+               _globalWorkOffset[1], _globalWorkOffset[2]);
 
   return adjustedGlobalBufferSize;
 }
@@ -733,7 +792,8 @@ int TestNonUniformWorkGroup::runKernel () {
   err = clSetKernelArg(_testKernel, 1, localArraySize, NULL);
   test_error(err, "clSetKernelArg failed");
 
-  size_t globalBufferSize = adjustGlobalBufferSize(_numOfGlobalWorkItems*sizeof(cl_uint));
+  size_t globalBufferSize =
+      adjustGlobalBufferSize(_numOfGlobalWorkItems * sizeof(cl_uint));
   clMemWrapper testGlobalArray = clCreateBuffer(_context, CL_MEM_READ_WRITE, globalBufferSize, NULL, &err);
   test_error(err, "clCreateBuffer failed");
 
