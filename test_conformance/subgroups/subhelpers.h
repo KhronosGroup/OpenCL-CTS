@@ -1080,7 +1080,7 @@ template <typename Ty>
 typename std::enable_if<TypeManager<Ty>::is_sb_scalar_type::value>::type
 set_value(Ty &lhs, const cl_ulong &rhs)
 {
-    lhs.data = cl_half_from_float(static_cast<cl_float>(rhs), CL_HALF_RTE);
+    lhs.data = convert_float_to_half(static_cast<cl_float>(rhs));
 }
 
 // compare for common vectors
@@ -1292,6 +1292,11 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
             }
             else if (strstr(TypeManager<Ty>::name(), "half"))
             {
+                if( DetectFloatToHalfRoundingMode(queue) )
+                {
+                    log_error("Unable to detect rounding mode\n");
+                    return TEST_FAIL;
+                }
                 kernel_sstr << "#pragma OPENCL EXTENSION cl_khr_fp16: enable\n";
             }
         }

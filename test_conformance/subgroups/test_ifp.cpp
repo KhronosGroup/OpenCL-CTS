@@ -302,27 +302,16 @@ static test_status checkIFPSupport(cl_device_id device, bool &ifpSupport)
 {
     cl_uint ifp_supported;
     cl_uint error;
-    auto device_cl_version = get_device_cl_version(device);
-    if (device_cl_version < Version(2, 1))
+    error = clGetDeviceInfo(device,
+                            CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
+                            sizeof(ifp_supported), &ifp_supported, NULL);
+    if (error != CL_SUCCESS)
     {
-        // OpenCL 2.0 and below don't provide the CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS property. Instead,
-        // support is determined by the presence of cl_khr_subgroups.
-        ifp_supported = is_extension_available(device, "cl_khr_subgroups");
-    }
-    else
-    {
-        // OpenCL 2.1 and above optionally support subgroups more flexibly without needing an extension.
-        error = clGetDeviceInfo(device,
-                                CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS,
-                                sizeof(ifp_supported), &ifp_supported, NULL);
-        if (error != CL_SUCCESS)
-        {
-            print_error(
-                error,
-                "Unable to get CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS "
-                "capability");
-            return TEST_FAIL;
-        }
+        print_error(
+            error,
+            "Unable to get CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS "
+            "capability");
+        return TEST_FAIL;
     }
     // skip testing ifp
     if (ifp_supported != 1)
@@ -371,17 +360,21 @@ int test_ifp_ext(cl_device_id device, cl_context context,
     }
     // ifp only in subgroup functions tests:
     test_status error;
-    error = checkIFPSupport(device, ifpSupport);
-    if (error != TEST_PASS)
+    auto device_cl_version = get_device_cl_version(device);
+    if (device_cl_version >= Version(2, 1))
     {
-        return error;
-    }
-    if (ifpSupport == false)
-    {
-        log_info(
-            "Error reason: the extension cl_khr_subgroups requires that "
-            "Independed forward progress has to be supported by device.\n");
-        return TEST_FAIL;
+        error = checkIFPSupport(device, ifpSupport);
+        if (error != TEST_PASS)
+        {
+            return error;
+        }
+        if (ifpSupport == false)
+        {
+            log_info(
+                "Error reason: the extension cl_khr_subgroups requires that "
+                "Independed forward progress has to be supported by device.\n");
+            return TEST_FAIL;
+        }
     }
     return test_ifp(device, context, queue, num_elements, false);
 }
