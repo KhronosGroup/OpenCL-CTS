@@ -1292,7 +1292,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
             }
             else if (strstr(TypeManager<Ty>::name(), "half"))
             {
-                if( DetectFloatToHalfRoundingMode(queue) )
+                if (DetectFloatToHalfRoundingMode(queue))
                 {
                     log_error("Unable to detect rounding mode\n");
                     return TEST_FAIL;
