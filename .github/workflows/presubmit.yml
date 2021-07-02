@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         mainmatrix: [true]
-        os: [ubuntu-20.04, macos-11.0]
+        os: [ubuntu-20.04, macos-latest]
         include:
           - os: ubuntu-20.04
             mainmatrix: true
