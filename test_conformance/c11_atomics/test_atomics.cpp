@@ -1684,11 +1684,16 @@ public:
       "      }\n";
 
     if (MemoryOrder() == MEMORY_ORDER_ACQUIRE || MemoryOrder() == MEMORY_ORDER_RELAXED)
-      program += "      atomic_work_item_fence(" +
-                 std::string(LocalMemory() ? "CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE, " : "CLK_GLOBAL_MEM_FENCE, ") +
-                 "memory_order_release," +
-                 std::string(LocalMemory() ? "memory_scope_work_group" : (UseSVM() ? "memory_scope_all_svm_devices" : "memory_scope_device") ) +
-                 ");\n";
+        program += "      atomic_work_item_fence("
+            + std::string(LocalMemory()
+                              ? "CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE, "
+                              : "CLK_GLOBAL_MEM_FENCE, ")
+            + "memory_order_release,"
+            + std::string(LocalMemory()
+                              ? "memory_scope_work_group"
+                              : (UseSVM() ? "memory_scope_all_svm_devices"
+                                          : "memory_scope_device"))
+            + ");\n";
 
     program +=
       "      atomic_flag_clear" + postfix + "(&destMemory[cnt]" + MemoryOrderScopeStrForClear() + ");\n"
