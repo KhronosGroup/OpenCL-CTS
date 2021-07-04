@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#if (defined(__linux__) || defined(__APPLE__)) && (!defined(__ANDROID__))
+#include <climits> // PATH_MAX
+#endif
 #if defined(_WIN32)
 #include <time.h>
 #elif  defined(__linux__) || defined(__APPLE__)
@@ -24,6 +27,11 @@
 
 #define MAX_LINE_SIZE_IN_PROGRAM 1024
 #define MAX_LOG_SIZE_IN_PROGRAM  2048
+
+#if ((!defined(PATH_MAX)) && (defined(__linux__) || defined(__APPLE__))        \
+     && (!defined(__ANDROID__)))
+#define PATH_MAX 1000
+#endif
 
 const char *sample_kernel_start =
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
@@ -2513,8 +2521,39 @@ int test_execute_after_embedded_header_link(cl_device_id deviceID, cl_context co
 #define _chdir chdir
 #define _rmdir rmdir
 #define _unlink unlink
+#define _getcwd getcwd
 #else
 #include <direct.h>
+#endif
+
+#if (defined(__linux__) || defined(__APPLE__)) && (!defined(__ANDROID__))
+class CWDHolder {
+public:
+    CWDHolder()
+    {
+        if (_getcwd(m_cwd, sizeof(m_cwd)) == NULL)
+        {
+            log_error(
+                "ERROR: Unable to record the current working directory! (in "
+                "%s:%d)\n",
+                __FILE__, __LINE__);
+            abort();
+        }
+    }
+    ~CWDHolder()
+    {
+        if (_chdir(m_cwd) != 0)
+        {
+            log_error("ERROR: Unable to change the current working directory "
+                      "back to original! (in %s:%d)\n",
+                      __FILE__, __LINE__);
+            abort();
+        }
+    }
+
+private:
+    char m_cwd[PATH_MAX];
+};
 #endif
 
 int test_execute_after_included_header_link(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
@@ -2534,6 +2573,8 @@ int test_execute_after_included_header_link(cl_device_id deviceID, cl_context co
     /* setup */
 #if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
     /* Some tests systems doesn't allow one to write in the test directory */
+    /* Record the current working directory in the cwd_holder */
+    CWDHolder cwd_holder;
     if (_chdir("/tmp") != 0) {
         log_error( "ERROR: Unable to remove directory foo/bar! (in %s:%d)\n", __FILE__, __LINE__ );
         return -1;
@@ -2642,6 +2683,9 @@ int test_execute_after_included_header_link(cl_device_id deviceID, cl_context co
     test_error( error, "Unable to release program object" );
 
     return 0;
+
+    /* At this point, or upon any of the above returns, cwd_holder's destructor
+     * is called so the current working directory is changed back to original */
 }
 
 int test_program_binary_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
