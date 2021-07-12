@@ -1016,7 +1016,7 @@ int test_execute_block(cl_device_id device, cl_context context, cl_command_queue
     size_t ret_len;
     cl_int n, err_ret, res = 0;
     clCommandQueueWrapper dev_queue;
-    cl_int kernel_results[MAX_GWS] = {0xDEADBEEF};
+    cl_int kernel_results[MAX_GWS] = { (cl_int)0xDEADBEEF };
 
     size_t max_local_size = 1;
     err_ret = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_local_size), &max_local_size, &ret_len);
