@@ -1689,7 +1689,8 @@ public:
       "        stop = 1;\n"
       "      }\n";
 
-    if (MemoryOrder() == MEMORY_ORDER_ACQUIRE || MemoryOrder() == MEMORY_ORDER_RELAXED)
+    if (MemoryOrder() == MEMORY_ORDER_ACQUIRE
+        || MemoryOrder() == MEMORY_ORDER_RELAXED || LocalMemory())
         program += "      atomic_work_item_fence("
             + std::string(LocalMemory()
                               ? "CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE, "
