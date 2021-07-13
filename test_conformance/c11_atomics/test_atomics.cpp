@@ -1657,9 +1657,9 @@ public:
       "  for(cnt = 0; !stop && cnt < threadCount; cnt++) // each thread must find critical section where it is the first visitor\n"
       "  {\n"
       "    bool set = atomic_flag_test_and_set" + postfix + "(&destMemory[cnt]" + memoryOrderScope + ");\n";
-    if (MemoryOrder() == MEMORY_ORDER_RELAXED || MemoryOrder() == MEMORY_ORDER_RELEASE)
+    if (MemoryOrder() == MEMORY_ORDER_RELAXED || MemoryOrder() == MEMORY_ORDER_RELEASE || LocalMemory())
       program += "    atomic_work_item_fence(" +
-                 std::string(LocalMemory() ? "CLK_LOCAL_MEM_FENCE, " : "CLK_GLOBAL_MEM_FENCE, ") +
+                 std::string(LocalMemory() ? "CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE, " : "CLK_GLOBAL_MEM_FENCE, ") +
                  "memory_order_acquire," +
                  std::string(LocalMemory() ? "memory_scope_work_group" : (UseSVM() ? "memory_scope_all_svm_devices" : "memory_scope_device") ) +
                  ");\n";
