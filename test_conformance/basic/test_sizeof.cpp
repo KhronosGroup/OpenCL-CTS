@@ -292,11 +292,11 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
             continue;
         }
 
-        if( gIsEmbedded &&
-           0 == strcmp(other_types[i], "image3d_t") &&
-           checkFor3DImageSupport( device ) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
+        if (0 == strcmp(other_types[i], "image3d_t")
+            && checkFor3DImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
         {
-            log_info("\n3D images are not supported by this device. Skipping test.\t");
+            log_info("\n3D images are not supported by this device. "
+                     "Skipping test.\t");
             continue;
         }
 
