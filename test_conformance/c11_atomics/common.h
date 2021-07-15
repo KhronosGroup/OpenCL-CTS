@@ -1521,15 +1521,14 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     if (UseSVM())
     {
         // the buffer object must first be released before the SVM buffer is
-        // freed
-        error = clReleaseMemObject(streams[0]);
+        // freed. Assignment value 0 runs Wrapper Class method reset() defined
+        // in typeWrappers.h which release old object
         streams[0] = 0;
         test_error(error, "clReleaseMemObject failed");
         if (gUseHostPtr)
             free(svmAtomicBuffer);
         else
             clSVMFree(context, svmAtomicBuffer);
-        error = clReleaseMemObject(streams[1]);
         streams[1] = 0;
         test_error(error, "clReleaseMemObject failed");
         if (gUseHostPtr)
