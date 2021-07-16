@@ -52,12 +52,7 @@ int test_context_destructor_callback(cl_device_id deviceID, cl_context context,
     test_error(error, "Unable to set destructor callback");
 
     // Now release the context, which SHOULD call the callbacks
-    error = clReleaseContext(localContext);
-    test_error(error, "Unable to release local context");
-
-    // Note: since we manually released the context, we need to set it to NULL
-    // to prevent a double-release
-    localContext = NULL;
+    localContext.reset();
 
     // At this point, all three callbacks should have already been called
     int numErrors = 0;
