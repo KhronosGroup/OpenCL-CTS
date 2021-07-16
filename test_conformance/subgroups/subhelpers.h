@@ -28,6 +28,7 @@
 #define NR_OF_ACTIVE_WORK_ITEMS 4
 
 extern MTdata gMTdata;
+extern cl_half_rounding_mode g_rounding_mode;
 
 struct WorkGroupParams
 {
@@ -1080,7 +1081,7 @@ template <typename Ty>
 typename std::enable_if<TypeManager<Ty>::is_sb_scalar_type::value>::type
 set_value(Ty &lhs, const cl_ulong &rhs)
 {
-    lhs.data = rhs;
+    lhs.data = cl_half_from_float(static_cast<cl_float>(rhs), g_rounding_mode);
 }
 
 // compare for common vectors
