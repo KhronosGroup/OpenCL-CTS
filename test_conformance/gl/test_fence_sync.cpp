@@ -561,11 +561,7 @@ int test_fence_sync_single(cl_device_id device, cl_context context,
 
         if (separateThreads)
         {
-            if (fenceEvent != NULL)
-            {
-                clReleaseEvent(fenceEvent);
-                glDeleteSyncFunc(glFence);
-            }
+            glDeleteSyncFunc(glFence);
 
             glFence = glFenceSyncFunc(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
             fenceEvent =
@@ -612,11 +608,8 @@ int test_fence_sync_single(cl_device_id device, cl_context context,
         {
             // If we're on the same thread, then we're testing implicit syncing,
             // so we don't need the actual fence code
-            if (fenceEvent != NULL)
-            {
-                clReleaseEvent(fenceEvent);
-                glDeleteSyncFunc(glFence);
-            }
+            glDeleteSyncFunc(glFence);
+
 
             glFence = glFenceSyncFunc(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
             fenceEvent =

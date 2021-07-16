@@ -212,8 +212,7 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue,
                                           (GLuint)outGLBuffer, (GLenum)0, 0));
         for (i = 0; i < 3; i++)
         {
-            clReleaseMemObject(streams[i]);
-            streams[i] = NULL;
+            streams[i].reset();
         }
 
         glDeleteBuffers(1, &inGLBuffer);
@@ -322,8 +321,7 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue,
 
     for (i = 0; i < 3; i++)
     {
-        clReleaseMemObject(streams[i]);
-        streams[i] = NULL;
+        streams[i].reset();
     }
 
     glDeleteBuffers(1, &inGLBuffer);
