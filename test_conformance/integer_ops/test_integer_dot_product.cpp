@@ -96,9 +96,8 @@ void generate_inputs_with_special_values(std::vector<SrcTypeA>& a,
 template <typename SrcType>
 void generate_acc_sat_inputs(std::vector<SrcType>& acc)
 {
-    // First generate random uchar data:
-    MTdataHolder d(gRandomSeed);
-    generate_random_data(kUChar, acc.size(), d, acc.data());
+    // First generate random data:
+    fill_vector_with_random_data(acc);
 
     // Now go through the generated data, and make every other element large.
     // This ensures we have some elements that need saturation.

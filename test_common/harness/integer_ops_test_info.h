@@ -81,4 +81,11 @@ template <> struct TestInfo<cl_ulong>
     static constexpr const char* deviceTypeNameUnsigned = "ulong";
 };
 
+template <typename T>
+static void fill_vector_with_random_data(std::vector<T>& v)
+{
+    MTdataHolder d(gRandomSeed);
+    generate_random_data(TestInfo<T>::explicitType, v.size(), d, v.data());
+}
+
 #endif /* INTEGER_OPS_TEST_INFO_H */
