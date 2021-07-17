@@ -17,9 +17,10 @@
 #ifndef INTEGER_OPS_TEST_INFO_H
 #define INTEGER_OPS_TEST_INFO_H
 
-#include "harness/conversions.h"
+#include "conversions.h"
 
-// TODO: Move this to an even more common location?
+// TODO: expand usage to other tests.
+
 template <typename T> struct TestInfo
 {
 };
@@ -79,14 +80,5 @@ template <> struct TestInfo<cl_ulong>
     static constexpr const char* deviceTypeNameSigned = "long";
     static constexpr const char* deviceTypeNameUnsigned = "ulong";
 };
-
-template <typename T> static void generate_input(std::vector<T>& base)
-{
-    MTdata d = init_genrand(gRandomSeed);
-    generate_random_data(TestInfo<T>::explicitType, base.size(), d,
-                         base.data());
-    free_mtdata(d);
-    d = NULL;
-}
 
 #endif /* INTEGER_OPS_TEST_INFO_H */

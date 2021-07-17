@@ -15,7 +15,9 @@
 //
 
 // This is needed for std::numeric_limits<>::min() and max() to work on Windows.
+#if defined(_WIN32)
 #define NOMINMAX
+#endif
 
 #include <algorithm>
 #include <limits>
@@ -24,20 +26,8 @@
 #include <vector>
 
 #include "procs.h"
-#include "integer_ops_test_info.h"
+#include "harness/integer_ops_test_info.h"
 #include "harness/testHarness.h"
-
-// TODO: Delete this when support is available in the official headers:
-#ifndef cl_khr_integer_dot_product
-
-typedef cl_bitfield cl_device_integer_dot_product_capabilities_khr;
-
-#define CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR (1 << 0)
-#define CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR (1 << 1)
-
-#define CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR 0x1073
-
-#endif
 
 template <size_t N, typename DstType, typename SrcTypeA, typename SrcTypeB>
 static void
@@ -96,23 +86,19 @@ void generate_inputs_with_special_values(std::vector<SrcTypeA>& a,
     }
 
     // Generate random data for the rest of the inputs:
-    MTdata d = init_genrand(gRandomSeed);
+    MTdataHolder d(gRandomSeed);
     generate_random_data(TestInfo<SrcTypeA>::explicitType, a.size() - count, d,
                          a.data() + count);
     generate_random_data(TestInfo<SrcTypeB>::explicitType, b.size() - count, d,
                          b.data() + count);
-    free_mtdata(d);
-    d = NULL;
 }
 
 template <typename SrcType>
 void generate_acc_sat_inputs(std::vector<SrcType>& acc)
 {
     // First generate random uchar data:
-    MTdata d = init_genrand(gRandomSeed);
+    MTdataHolder d(gRandomSeed);
     generate_random_data(kUChar, acc.size(), d, acc.data());
-    free_mtdata(d);
-    d = NULL;
 
     // Now go through the generated data, and make every other element large.
     // This ensures we have some elements that need saturation.
@@ -136,6 +122,20 @@ template <> struct PackedTestInfo<cl_uchar>
 };
 
 static constexpr const char* kernel_source_dot = R"CLC(
+// TODO: Delete these emulated versions!
+#ifndef __opencl_c_integer_dot_product_input_4x8bit
+#define OVLD __attribute__((overloadable))
+#define dot emulated_dot
+uint OVLD dot(uchar4 a, uchar4 b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
+int  OVLD dot( char4 a,  char4 b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
+int  OVLD dot(uchar4 a,  char4 b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
+int  OVLD dot( char4 a, uchar4 b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
+uint OVLD dot_4x8packed_uu_uint(uint a, uint b) { return dot(as_uchar4(a), as_uchar4(b)); }
+int  OVLD dot_4x8packed_ss_int (uint a, uint b) { return dot( as_char4(a),  as_char4(b)); }
+int  OVLD dot_4x8packed_us_int (uint a, uint b) { return dot(as_uchar4(a),  as_char4(b)); }
+int  OVLD dot_4x8packed_su_int (uint a, uint b) { return dot( as_char4(a), as_uchar4(b)); }
+#endif
+
 __kernel void test_dot(__global DSTTYPE* dst, __global SRCTYPEA* a, __global SRCTYPEB* b)
 {
     int index = get_global_id(0);
@@ -144,6 +144,20 @@ __kernel void test_dot(__global DSTTYPE* dst, __global SRCTYPEA* a, __global SRC
 )CLC";
 
 static constexpr const char* kernel_source_dot_acc_sat = R"CLC(
+// TODO: Delete these emulated versions!
+#ifndef __opencl_c_integer_dot_product_input_4x8bit
+#define OVLD __attribute__((overloadable))
+#define dot emulated_dot
+uint OVLD dot_acc_sat(uchar4 a, uchar4 b, uint acc) { return add_sat((uint)(a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w), acc); }
+int  OVLD dot_acc_sat( char4 a,  char4 b,  int acc) { return add_sat( (int)(a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w), acc); }
+int  OVLD dot_acc_sat(uchar4 a,  char4 b,  int acc) { return add_sat( (int)(a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w), acc); }
+int  OVLD dot_acc_sat( char4 a, uchar4 b,  int acc) { return add_sat( (int)(a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w), acc); }
+uint OVLD dot_acc_sat_4x8packed_uu_uint(uint a, uint b, uint acc) { return dot_acc_sat(as_uchar4(a), as_uchar4(b), acc); }
+int  OVLD dot_acc_sat_4x8packed_ss_int (uint a, uint b,  int acc) { return dot_acc_sat( as_char4(a),  as_char4(b), acc); }
+int  OVLD dot_acc_sat_4x8packed_us_int (uint a, uint b,  int acc) { return dot_acc_sat(as_uchar4(a),  as_char4(b), acc); }
+int  OVLD dot_acc_sat_4x8packed_su_int (uint a, uint b,  int acc) { return dot_acc_sat( as_char4(a), as_uchar4(b), acc); }
+#endif
+
 __kernel void test_dot_acc_sat(
     __global DSTTYPE* dst,
     __global SRCTYPEA* a, __global SRCTYPEB* b, __global DSTTYPE* acc)
@@ -350,46 +364,53 @@ static int test_vectype_packed(cl_device_id deviceID, cl_context context,
 int test_integer_dot_product(cl_device_id deviceID, cl_context context,
                              cl_command_queue queue, int num_elements)
 {
-    if (is_extension_available(deviceID, "cl_khr_integer_dot_product"))
+    if (!is_extension_available(deviceID, "cl_khr_integer_dot_product"))
     {
-        cl_int error = CL_SUCCESS;
-        int result = TEST_PASS;
-
-        cl_device_integer_dot_product_capabilities_khr dotCaps = 0;
-        error = clGetDeviceInfo(deviceID,
-                                CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR,
-                                sizeof(dotCaps), &dotCaps, NULL);
-        test_error(
-            error,
-            "Unable to query CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR");
-        test_assert_error(
-            dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR,
-            "When cl_khr_integer_dot_product is supported "
-            "CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR must be "
-            "supported");
-
-        if (dotCaps
-            & ~(CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR
-                | CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR))
-        {
-            log_info("NOTE: found an unknown / untested capability!\n");
-        }
-
-        if (dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR)
-        {
-            result |= test_vectype<cl_uchar, cl_uint, 4>(deviceID, context,
-                                                         queue, num_elements);
-        }
-
-        if (dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR)
-        {
-            result |= test_vectype_packed<cl_uchar, cl_uint, 4>(
-                deviceID, context, queue, num_elements);
-        }
-
-        return result;
+        log_info("cl_khr_integer_dot_product is not supported\n");
+#if 0
+        return TEST_SKIPPED_ITSELF;
+#endif
     }
 
-    log_info("cl_khr_integer_dot_product is not supported\n");
-    return TEST_SKIPPED_ITSELF;
+    cl_int error = CL_SUCCESS;
+    int result = TEST_PASS;
+
+    cl_device_integer_dot_product_capabilities_khr dotCaps = 0;
+    error = clGetDeviceInfo(deviceID,
+                            CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR,
+                            sizeof(dotCaps), &dotCaps, NULL);
+#if 0
+    test_error(
+        error,
+        "Unable to query CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR");
+#else
+    dotCaps = CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR
+        | CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR;
+#endif
+    test_assert_error(
+        dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR,
+        "When cl_khr_integer_dot_product is supported "
+        "CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR must be "
+        "supported");
+
+    if (dotCaps
+        & ~(CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR
+            | CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR))
+    {
+        log_info("NOTE: found an unknown / untested capability!\n");
+    }
+
+    if (dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR)
+    {
+        result |= test_vectype<cl_uchar, cl_uint, 4>(deviceID, context, queue,
+                                                     num_elements);
+    }
+
+    if (dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR)
+    {
+        result |= test_vectype_packed<cl_uchar, cl_uint, 4>(
+            deviceID, context, queue, num_elements);
+    }
+
+    return result;
 }
