@@ -349,17 +349,23 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
         get_uint_device_info(deviceID, CL_DEVICE_MAX_COMPUTE_UNITS);
     cl_uint max_sub_devices =
         get_uint_device_info(deviceID, CL_DEVICE_PARTITION_MAX_SUB_DEVICES);
+    std::vector<cl_device_id> out_devices;
+    cl_uint max_for_partition = 0;
     if (supported_properties & SupportedPartitionSchemes::Equally)
     {
         properties[0] = CL_DEVICE_PARTITION_EQUALLY;
-        properties[1] = max_compute_units;
+        properties[1] = 1;
         properties[2] = 0;
+        out_devices.resize(static_cast<size_t>(max_compute_units));
+        max_for_partition = max_compute_units;
     }
     else if (supported_properties & SupportedPartitionSchemes::Counts)
     {
         properties[0] = CL_DEVICE_PARTITION_BY_COUNTS;
-        properties[1] = max_sub_devices;
+        properties[1] = 1;
         properties[2] = CL_DEVICE_PARTITION_BY_COUNTS_LIST_END;
+        out_devices.resize(static_cast<size_t>(max_sub_devices));
+        max_for_partition = max_sub_devices;
     }
     else
     {
@@ -369,13 +375,12 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
     }
 
     properties[3] = 0;
-    cl_device_id *out_devices = nullptr;
 
     cl_int err(CL_SUCCESS);
     for (auto invalid_device : get_invalid_objects<cl_device_id>(deviceID))
     {
-        err = clCreateSubDevices(invalid_device, properties, 1, out_devices,
-                                 nullptr);
+        err = clCreateSubDevices(invalid_device, properties, 1,
+                                 out_devices.data(), nullptr);
         test_failure_error_ret(err, CL_INVALID_DEVICE,
                                "clCreateSubDevices should return "
                                "CL_INVALID_DEVICE when: \"in_device "
@@ -383,14 +388,15 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
                                TEST_FAIL);
     }
 
-    err = clCreateSubDevices(deviceID, nullptr, 1, out_devices, nullptr);
+    err = clCreateSubDevices(deviceID, nullptr, 1, out_devices.data(), nullptr);
     test_failure_error_ret(
         err, CL_INVALID_VALUE,
         "clCreateSubDevices should return CL_INVALID_VALUE when: \"values "
         "specified in properties are not valid\" using a nullptr",
         TEST_FAIL);
 
-    err = clCreateSubDevices(deviceID, properties, 0, out_devices, nullptr);
+    err = clCreateSubDevices(deviceID, properties, 0, out_devices.data(),
+                             nullptr);
     test_failure_error_ret(
         err, CL_INVALID_VALUE,
         "clCreateSubDevices should return CL_INVALID_VALUE when: \"out_devices "
@@ -404,7 +410,7 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
             get_invalid_properties(supported_properties
                                    ^ SupportedPartitionSchemes::All_Schemes);
         err = clCreateSubDevices(deviceID, invalid_properties.data(), 1,
-                                 out_devices, nullptr);
+                                 out_devices.data(), nullptr);
         test_failure_error_ret(
             err, CL_INVALID_VALUE,
             "clCreateSubDevices should return CL_INVALID_VALUE when: \"values "
@@ -413,19 +419,20 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
             TEST_FAIL);
     }
 
-    err = clCreateSubDevices(deviceID, properties, properties[1], out_devices,
-                             nullptr);
+    err = clCreateSubDevices(deviceID, properties, max_for_partition + 1,
+                             out_devices.data(), nullptr);
     test_failure_error_ret(
         err, CL_DEVICE_PARTITION_FAILED,
         "clCreateSubDevices should return CL_DEVICE_PARTITION_FAILED when: "
-        "\"if the partition name is supported by the implementation but "
+        "\"the partition name is supported by the implementation but "
         "in_device could not be further partitioned\"",
         TEST_FAIL);
 
     constexpr cl_device_partition_property INVALID_PARTITION_PROPERTY =
         -1; // Aribitrary Invalid number
     properties[0] = INVALID_PARTITION_PROPERTY;
-    err = clCreateSubDevices(deviceID, properties, 1, out_devices, nullptr);
+    err = clCreateSubDevices(deviceID, properties, 1, out_devices.data(),
+                             nullptr);
     test_failure_error_ret(
         err, CL_INVALID_VALUE,
         "clCreateSubDevices should return CL_INVALID_VALUE when: \"values "
@@ -437,7 +444,7 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
         properties[0] = CL_DEVICE_PARTITION_BY_COUNTS;
         properties[1] = max_sub_devices + 1;
         err = clCreateSubDevices(deviceID, properties, max_sub_devices + 1,
-                                 out_devices, nullptr);
+                                 out_devices.data(), nullptr);
         test_failure_error_ret(
             err, CL_INVALID_DEVICE_PARTITION_COUNT,
             "clCreateSubDevices should return "
@@ -448,8 +455,8 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
             TEST_FAIL);
 
         properties[1] = -1;
-        err =
-            clCreateSubDevices(deviceID, properties, -1, out_devices, nullptr);
+        err = clCreateSubDevices(deviceID, properties, -1, out_devices.data(),
+                                 nullptr);
         test_failure_error_ret(
             err, CL_INVALID_DEVICE_PARTITION_COUNT,
             "clCreateSubDevices should return "
@@ -463,7 +470,7 @@ int test_negative_create_sub_devices(cl_device_id deviceID, cl_context context,
         properties[0] = CL_DEVICE_PARTITION_EQUALLY;
         properties[1] = max_compute_units + 1;
         err = clCreateSubDevices(deviceID, properties, max_compute_units + 1,
-                                 out_devices, nullptr);
+                                 out_devices.data(), nullptr);
         test_failure_error_ret(
             err, CL_INVALID_DEVICE_PARTITION_COUNT,
             "clCreateSubDevices should return "
