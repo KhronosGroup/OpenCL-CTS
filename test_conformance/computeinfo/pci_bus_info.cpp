@@ -27,7 +27,7 @@ int test_pci_bus_info(cl_device_id deviceID, cl_context context,
     if (!is_extension_available(deviceID, "cl_khr_pci_bus_info"))
     {
         log_info("cl_khr_pci_bus_info not supported. Skipping test...\n");
-        return 0;
+        return TEST_SKIPPED_ITSELF;
     }
 
     cl_int error;
