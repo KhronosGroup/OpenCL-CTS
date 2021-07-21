@@ -301,7 +301,7 @@ static float to_float(subgroups::cl_half x) { return cl_half_to_float(x.data); }
 static subgroups::cl_half to_half(float x)
 {
     subgroups::cl_half value;
-    value.data = cl_half_from_float(x, CL_HALF_RTE);
+    value.data = cl_half_from_float(x, g_rounding_mode);
     return value;
 }
 

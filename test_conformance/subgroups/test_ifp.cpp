@@ -360,17 +360,21 @@ int test_ifp_ext(cl_device_id device, cl_context context,
     }
     // ifp only in subgroup functions tests:
     test_status error;
-    error = checkIFPSupport(device, ifpSupport);
-    if (error != TEST_PASS)
+    auto device_cl_version = get_device_cl_version(device);
+    if (device_cl_version >= Version(2, 1))
     {
-        return error;
-    }
-    if (ifpSupport == false)
-    {
-        log_info(
-            "Error reason: the extension cl_khr_subgroups requires that "
-            "Independed forward progress has to be supported by device.\n");
-        return TEST_FAIL;
+        error = checkIFPSupport(device, ifpSupport);
+        if (error != TEST_PASS)
+        {
+            return error;
+        }
+        if (ifpSupport == false)
+        {
+            log_info(
+                "Error reason: the extension cl_khr_subgroups requires that "
+                "Independed forward progress has to be supported by device.\n");
+            return TEST_FAIL;
+        }
     }
     return test_ifp(device, context, queue, num_elements, false);
 }
