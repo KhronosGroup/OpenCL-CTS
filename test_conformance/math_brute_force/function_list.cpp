@@ -218,8 +218,8 @@ const Func functionList[] = {
     ENTRY(cosh, 4.0f, 4.0f, FTZ_OFF, unaryF),
     ENTRY_EXT(cospi, 4.0f, 4.0f, 0.00048828125f, FTZ_OFF, unaryF,
               0.00048828125f), // relaxed ulp 2^-11
-    ENTRY( erfc, 16.0f, 16.0f, FTZ_OFF, unaryF),
-    ENTRY( erf, 16.0f, 16.0f, FTZ_OFF, unaryF),
+    ENTRY(erfc, 16.0f, 16.0f, FTZ_OFF, unaryF),
+    ENTRY(erf, 16.0f, 16.0f, FTZ_OFF, unaryF),
     ENTRY_EXT(exp, 3.0f, 4.0f, 3.0f, FTZ_OFF, unaryF,
               4.0f), // relaxed error is actually overwritten in unary.c as it
                      // is 3+floor(fabs(2*x))
