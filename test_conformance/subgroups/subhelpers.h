@@ -1277,8 +1277,10 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         }
 
 
+#ifdef CL_EXPERIMENTAL
         kernel_sstr << "#define NR_OF_ACTIVE_WORK_ITEMS ";
         kernel_sstr << NR_OF_ACTIVE_WORK_ITEMS << "\n";
+#endif /* CL_EXPERIMENTAL */
         // Make sure a test of type Ty is supported by the device
         if (!TypeManager<Ty>::type_supported(device))
         {
