@@ -272,17 +272,18 @@ int test_subgroup_functions_non_uniform_vote(cl_device_id device,
                                              cl_command_queue queue,
                                              int num_elements)
 {
-    std::vector<std::string> required_extensions = {
-        "cl_khr_subgroup_non_uniform_vote"
-    };
-
+    if (!is_extension_available(device, "cl_khr_subgroup_non_uniform_vote"))
+    {
+        log_info("cl_khr_subgroup_non_uniform_vote is not supported on this "
+                 "device, skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
     std::vector<uint32_t> masks{ 0xffffffff, 0x55aaaa55, 0x5555aaaa, 0xaaaa5555,
                                  0x0f0ff0f0, 0x0f0f0f0f, 0xff0000ff, 0xff00ff00,
                                  0x00ffff00, 0x80000000 };
     constexpr size_t global_work_size = 170;
     constexpr size_t local_work_size = 64;
-    WorkGroupParams test_params(global_work_size, local_work_size,
-                                required_extensions, masks);
+    WorkGroupParams test_params(global_work_size, local_work_size, {}, masks);
     RunTestForType rft(device, context, queue, num_elements, test_params);
 
     int error = run_vote_all_equal_for_type<cl_int>(rft);

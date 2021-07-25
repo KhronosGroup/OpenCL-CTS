@@ -1304,7 +1304,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
                 log_info("The extension %s not supported on this device. SKIP "
                          "testing - kernel %s data type %s\n",
                          extension.c_str(), kname, TypeManager<Ty>::name());
-                return TEST_PASS;
+                return TEST_SKIPPED_ITSELF;
             }
             kernel_sstr << "#pragma OPENCL EXTENSION " + extension
                     + ": enable\n";
