@@ -37,14 +37,12 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
     const char *vector_size_names[]   = {"1", "2", "4", "8", "16", "3"};
 
     int minVectorSize = kMinVectorSize;
-    // There is no aligned scalar vloada_half in CL 1.1
-#if ! defined( CL_VERSION_1_1 ) && ! defined(__APPLE__)
-    vlog("Note: testing vloada_half.\n");
-    if (aligned && minVectorSize == 0)
-        minVectorSize = 1;
-#endif
 
-    for( vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
+    // There is no aligned scalar vloada_half
+    if (aligned && minVectorSize == 0) minVectorSize = 1;
+
+    for (vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest;
+         vectorSize++)
     {
 
         int effectiveVectorSize = g_arrVecSizes[vectorSize];
@@ -81,7 +79,7 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
             "{\n"
             "   size_t i = get_global_id(0);\n"
             "   f[i] = vloada_half3( i, p );\n"
-            "   ((__global float *)f)[4*i+3] = vloada_half(4*i+3,p);\n"
+            "   ((__global float *)f)[4*i+3] = vload_half(4*i+3,p);\n"
             "}\n"
         };
 
