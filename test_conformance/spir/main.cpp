@@ -6462,7 +6462,7 @@ test_kernel_attributes(cl_device_id device, cl_uint width, const char *folder)
     std::cout << "Running tests:" << std::endl;
     bool success = true;
     clContextWrapper context;
-    std::string bc_file_path;
+    std::string cl_file_path;
     clCommandQueueWrapper queue;
     clKernelWrapper kernel;
     char attributes[256] = {0};
@@ -6479,11 +6479,11 @@ test_kernel_attributes(cl_device_id device, cl_uint width, const char *folder)
     try
     {
         create_context_and_queue(device, &context, &queue);
-        get_bc_file_path(folder, "kernel_attributes", bc_file_path, width);
-        clProgramWrapper bcprog = create_program_from_bc(context, bc_file_path);
+        get_cl_file_path(folder, "kernel_attributes", cl_file_path);
+        clProgramWrapper clprog = create_program_from_cl(context, cl_file_path);
 
         // Building the program, so we could create the kernel.
-        SpirBuildTask build_task(bcprog, device, "-x spir -spir-std=1.2 -cl-kernel-arg-info");
+        SpirBuildTask build_task(clprog, device, "-cl-kernel-arg-info");
         if (!build_task.execute())
         {
             std::cerr << "Cannot run kernel_attributes suite due to the following build error: "
@@ -6493,7 +6493,7 @@ test_kernel_attributes(cl_device_id device, cl_uint width, const char *folder)
         }
 
         // Querying the kernel for its attributes.
-        kernel = create_kernel_helper(bcprog, "test");
+        kernel = create_kernel_helper(clprog, "test");
         cl_int err_code = clGetKernelInfo(kernel, CL_KERNEL_ATTRIBUTES, sizeof(attributes), attributes, &res_size);
         if (err_code != CL_SUCCESS)
         {
