@@ -6647,7 +6647,8 @@ static const sub_suite spir_suites[] = {
     {"compile_and_link",            "compile_and_link",          test_compile_and_link},
     {"sampler_enumeration",         "sampler_enumeration",       test_sampler_enumeration},
     {"enum_values",                 "enum_values",               test_enum_values},
-    {"kernel_attributes",           "kernel_attributes",         test_kernel_attributes},
+    // disabling temporarily, see GitHub #1284
+    // {"kernel_attributes",           "kernel_attributes",         test_kernel_attributes},
     {"binary_type",                  "binary_type",              test_binary_type},
 };
 
