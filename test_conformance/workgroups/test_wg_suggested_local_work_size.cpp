@@ -42,9 +42,9 @@ const char* wg_scan_local_work_group_size = R"(
     {
         size_t linear_id;
 #if __OPENCL_VERSION__ < CL_VERSION_2_0
-        linear_id = ((get_global_id(2) – get_global_offset(2)) * get_global_size(1) * get_global_size(0)) + 
-                    ((get_global_id(1) – get_global_offset(1)) * get_global_size(0)) + 
-                    (get_global_id(0) – get_global_offset(0));
+        linear_id = ((get_global_id(2) - get_global_offset(2)) * get_global_size(1) * get_global_size(0)) +
+                    ((get_global_id(1) - get_global_offset(1)) * get_global_size(0)) +
+                    (get_global_id(0) - get_global_offset(0));
 #else
         linear_id = get_global_linear_id();
 #endif
