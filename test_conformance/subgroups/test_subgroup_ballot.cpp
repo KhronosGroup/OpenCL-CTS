@@ -926,7 +926,7 @@ template <typename T> int run_non_uniform_broadcast_for_type(RunTestForType rft)
 int test_subgroup_functions_ballot(cl_device_id device, cl_context context,
                                    cl_command_queue queue, int num_elements)
 {
-    if (!is_extension_available(device, "cl_khr_subgroup_extended_types"))
+    if (!is_extension_available(device, "cl_khr_subgroup_ballot"))
     {
         log_info("cl_khr_subgroup_ballot is not supported on this device, "
                  "skipping test.\n");

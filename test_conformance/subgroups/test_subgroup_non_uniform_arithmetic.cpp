@@ -447,7 +447,7 @@ int test_subgroup_functions_non_uniform_arithmetic(cl_device_id device,
 
     constexpr size_t global_work_size = 2000;
     constexpr size_t local_work_size = 200;
-    WorkGroupParams test_params(global_work_size, local_work_size, {}, masks);
+    WorkGroupParams test_params(global_work_size, local_work_size, masks);
     RunTestForType rft(device, context, queue, num_elements, test_params);
 
     int error = run_functions_add_mul_max_min_for_type<cl_int>(rft);

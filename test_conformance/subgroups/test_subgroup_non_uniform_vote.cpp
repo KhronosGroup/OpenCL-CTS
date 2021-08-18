@@ -283,7 +283,7 @@ int test_subgroup_functions_non_uniform_vote(cl_device_id device,
                                  0x00ffff00, 0x80000000 };
     constexpr size_t global_work_size = 170;
     constexpr size_t local_work_size = 64;
-    WorkGroupParams test_params(global_work_size, local_work_size, {}, masks);
+    WorkGroupParams test_params(global_work_size, local_work_size, masks);
     RunTestForType rft(device, context, queue, num_elements, test_params);
 
     int error = run_vote_all_equal_for_type<cl_int>(rft);
