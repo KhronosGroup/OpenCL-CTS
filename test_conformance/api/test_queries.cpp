@@ -345,25 +345,21 @@ int command_queue_param_test(cl_command_queue queue,
     return 0;
 }
 
-#define MIN_NUM_COMMAND_QUEUE_PROPERTIES 2
-#define OOO_NUM_COMMAND_QUEUE_PROPERTIES 4
-static cl_command_queue_properties property_options[] = {
-    0,
+static cl_command_queue_properties host_required_options[] = {
+    0, CL_QUEUE_PROFILING_ENABLE
+};
 
-    CL_QUEUE_PROFILING_ENABLE,
-
+static cl_command_queue_properties host_out_of_order_options[] = {
     CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+    CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+};
 
-    CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-
+static cl_command_queue_properties device_options[] = {
     CL_QUEUE_ON_DEVICE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-
     CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_ON_DEVICE
         | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-
     CL_QUEUE_ON_DEVICE | CL_QUEUE_ON_DEVICE_DEFAULT
         | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-
     CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_ON_DEVICE | CL_QUEUE_ON_DEVICE_DEFAULT
         | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
 };
@@ -384,32 +380,47 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
              (int)host_queue_props);
     clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES,
                     sizeof(device_queue_props), &device_queue_props, NULL);
-    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n",
+    log_info("CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES is %d\n",
              (int)device_queue_props);
 
     auto version = get_device_cl_version(deviceID);
 
-    // Are on device queues supported
+    bool out_of_order_supported =
+        host_queue_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
+
     bool on_device_supported =
         (version >= Version(2, 0) && version < Version(3, 0))
         || (version >= Version(3, 0) && device_queue_props != 0);
 
-    int num_test_options = MIN_NUM_COMMAND_QUEUE_PROPERTIES;
-    if (host_queue_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
-    {
-        // Test out-of-order queues properties if supported
-        num_test_options = OOO_NUM_COMMAND_QUEUE_PROPERTIES;
-    }
-    if (on_device_supported && !is_compatibility)
-    {
-        // Test queue on device if supported (in this case out-of-order must
-        // also be supported)
-        num_test_options = ARRAY_SIZE(property_options);
-    }
+    // test device queues if the device and the API under test support it
+    bool test_on_device = on_device_supported && !is_compatibility;
 
-    for (int i = 0; i < num_test_options; i++)
+    int num_required_options = ARRAY_SIZE(host_required_options);
+    int num_out_of_order_options = ARRAY_SIZE(host_out_of_order_options);
+    int num_device_options = ARRAY_SIZE(device_options);
+
+    for (int i = 0; i
+         < num_required_options + num_out_of_order_options + num_device_options;
+         i++)
     {
-        queue_props[1] = property_options[i];
+        if (i < num_required_options)
+        {
+            queue_props[1] = host_required_options[i];
+        }
+        else if (i < num_required_options + num_out_of_order_options)
+        {
+            if (!out_of_order_supported) continue;
+            queue_props[1] =
+                host_out_of_order_options[i - num_required_options];
+        }
+        else
+        {
+            if (!test_on_device) continue;
+            queue_props[1] = device_options[i
+                                            - (num_required_options
+                                               + num_out_of_order_options)];
+        }
+
         clCommandQueueWrapper queue;
 
         if (is_compatibility)
