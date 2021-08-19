@@ -835,7 +835,6 @@ int test_cloned_kernel_svm_ptr(cl_device_id deviceID, cl_context context,
         {
             test_fail("test_svm_ptr_helper failed for srcKernel.\n");
         }
-        clSVMFree(context, svmPtr_srcKernel);
 
         // clone the srcKernel and set args
         clKernelWrapper cloneKernel_1 = clCloneKernel(srcKernel, &error);
@@ -865,7 +864,6 @@ int test_cloned_kernel_svm_ptr(cl_device_id deviceID, cl_context context,
             test_fail("test_svm_ptr_helper failed for srcKernel with "
                       "different values.\n");
         }
-        clSVMFree(context, svmPtr_srcKernel_1);
 
         // enqueue - cloneKernel_1 again, to check if the args were not modified
         if (test_svm_enqueue_helper(context, queue, svmPtr_cloneKernel_1,
@@ -875,7 +873,6 @@ int test_cloned_kernel_svm_ptr(cl_device_id deviceID, cl_context context,
             test_fail(
                 "test_svm_enqueue_helper failed for cloneKernel_1 on retry.\n");
         }
-        clSVMFree(context, svmPtr_cloneKernel_1);
 
         // enqueue - cloneKernel_2 again, to check if the args were not modified
         if (test_svm_enqueue_helper(context, queue, svmPtr_cloneKernel_2,
@@ -885,10 +882,18 @@ int test_cloned_kernel_svm_ptr(cl_device_id deviceID, cl_context context,
             test_fail("test_svm_enqueue_helper failed for cloneKernel_2 on "
                       "retry.\n");
         }
-        clSVMFree(context, svmPtr_cloneKernel_2);
-    }
 
-    return TEST_PASS;
+        clSVMFree(context, svmPtr_srcKernel);
+        clSVMFree(context, svmPtr_srcKernel_1);
+        clSVMFree(context, svmPtr_cloneKernel_1);
+        clSVMFree(context, svmPtr_cloneKernel_2);
+
+        return TEST_PASS;
+    }
+    else
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
 }
 
 int test_clone_kernel(cl_device_id deviceID, cl_context context,
@@ -917,7 +922,8 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context,
         test_fail("clCloneKernel test_cloned_kernel_empty_args failed.\n");
     }
 
-    if (test_cloned_kernel_svm_ptr(deviceID, context, queue, num_elements) != 0)
+    if (test_cloned_kernel_svm_ptr(deviceID, context, queue, num_elements)
+        == TEST_FAIL)
     {
         test_fail("clCloneKernel test_cloned_kernel_svm_ptr failed.\n");
     }
