@@ -10,12 +10,6 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(CMAKE_BUILD_TYPE STREQUAL "release")
-    set (BUILD_FLAVOR "release")
-else(CMAKE_BUILD_TYPE STREQUAL "release")
-    set (BUILD_FLAVOR "debug")
-endif(CMAKE_BUILD_TYPE STREQUAL "release")
-
 add_definitions(-DCL_TARGET_OPENCL_VERSION=300)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_2_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_1_APIS=1)
@@ -28,14 +22,6 @@ option(USE_CL_EXPERIMENTAL "Use Experimental definitions" OFF)
 if(USE_CL_EXPERIMENTAL)
   add_definitions(-DCL_EXPERIMENTAL)
 endif(USE_CL_EXPERIMENTAL)
-
-# Support both VS2008 and VS2012.
-set(BUILD_DIR "$ENV{ADRENO_DRIVER}/build")
-if(MSVC90)
-  set(VS_BUILD_DIR "${BUILD_DIR}/vs2008")
-else(MSVC110)
-  set(VS_BUILD_DIR "${BUILD_DIR}/vs2012")
-endif(MSVC90)
 
 #-----------------------------------------------------------
 # Default Configurable Test Set
@@ -164,38 +150,5 @@ include_directories(${CLConform_SOURCE_DIR}/test_common/harness
                     ${CLConform_SOURCE_DIR}/test_common/gl
                     ${CLConform_SOURCE_DIR}/test_common)
 
-if(CMAKE_BUILD_TYPE STREQUAL "release")
-    set (BUILD_FLAVOR "release")
-elseif (CMAKE_BUILD_TYPE STREQUAL "debug")
-    set (BUILD_FLAVOR "debug")
-endif(CMAKE_BUILD_TYPE STREQUAL "release")
-
-
 add_subdirectory(test_common)
 add_subdirectory(test_conformance)
-
-# Support both VS2008 and VS2012.
-set (DLL_FILES "${VS_BUILD_DIR}/Debug/*.dll")
-set (DST_DIR   "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/")
-
-if (WIN32)
-    set (COPY "echo")
-    add_custom_target(COPY_DLL${CONFORMANCE_SUFFIX} ALL
-                      COMMAND ${COPY} "${DLL_FILES}" "${DST_DIR}"
-                      COMMENT "Copying dll files.. ")
-else (WIN32)
-    set (COPY cp)
-    add_custom_target(COPY_DLL${CONFORMANCE_SUFFIX})
-endif(WIN32)
-
-set_property(TARGET COPY_DLL${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
-
-if(WIN32)
-  add_custom_target( COPY_FILES${CONFORMANCE_SUFFIX} ALL
-                     COMMAND ${COPY} ${DLL_FILES} ${DST_DIR}
-                     COMMENT "Copying other files to output folder..." )
-else(WIN32)
-  add_custom_target( COPY_FILES${CONFORMANCE_SUFFIX} )
-endif(WIN32)
-
-set_property(TARGET COPY_FILES${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
