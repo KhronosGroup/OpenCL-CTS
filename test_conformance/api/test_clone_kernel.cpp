@@ -542,8 +542,6 @@ int test_svm_exec_info_helper(cl_context context, cl_command_queue queue,
     error = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, pBuf,
                             sizeof(BufPtr), 0, NULL, NULL);
     test_error(error, "clEnqueueSVMMap failed");
-    error = clFinish(queue);
-    test_error(error, "clFinish failed");
 
     pBuf->store = svmPtr_Kernel;
 
@@ -619,7 +617,6 @@ int test_cloned_kernel_exec_info(cl_device_id deviceID, cl_context context,
         {
             test_fail("test_svm_exec_info_helper failed for srcKernel.\n");
         }
-        clSVMFree(context, svmPtr_srcKernel);
 
         // clone the srcKernel and set args
         clKernelWrapper cloneKernel_1 = clCloneKernel(srcKernel, &error);
@@ -651,7 +648,6 @@ int test_cloned_kernel_exec_info(cl_device_id deviceID, cl_context context,
             test_fail("test_svm_exec_info_helper failed for srcKernel with "
                       "different values.\n");
         }
-        clSVMFree(context, svmPtr_srcKernel_1);
 
         // enqueue - cloneKernel_1 again, to check if the args were not modified
         if (test_exec_enqueue_helper(context, queue, pBuf, svmPtr_cloneKernel_1,
@@ -661,7 +657,6 @@ int test_cloned_kernel_exec_info(cl_device_id deviceID, cl_context context,
             test_fail("test_exec_enqueue_helper failed for cloneKernel_1 on "
                       "retry.\n");
         }
-        clSVMFree(context, svmPtr_cloneKernel_1);
 
         // enqueue - cloneKernel_2 again, to check if the args were not modified
         if (test_exec_enqueue_helper(context, queue, pBuf, svmPtr_cloneKernel_2,
@@ -671,12 +666,19 @@ int test_cloned_kernel_exec_info(cl_device_id deviceID, cl_context context,
             test_fail("test_exec_enqueue_helper failed for cloneKernel_2 on "
                       "retry.\n");
         }
+
+        clSVMFree(context, svmPtr_srcKernel);
+        clSVMFree(context, svmPtr_srcKernel_1);
+        clSVMFree(context, svmPtr_cloneKernel_1);
         clSVMFree(context, svmPtr_cloneKernel_2);
-
         clSVMFree(context, pBuf);
-    }
 
-    return TEST_PASS;
+        return TEST_PASS;
+    }
+    else
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
 }
 
 int test_empty_enqueue_helper(cl_command_queue queue, cl_kernel* srcKernel)
@@ -900,7 +902,7 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context,
     }
 
     if (test_cloned_kernel_exec_info(deviceID, context, queue, num_elements)
-        != 0)
+        == TEST_FAIL)
     {
         test_fail("clCloneKernel test_cloned_kernel_exec_info failed.\n");
     }
