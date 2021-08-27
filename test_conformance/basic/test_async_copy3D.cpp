@@ -230,13 +230,13 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
     size_t maxTotalPlanesOut = ((max_alloc_size / elementSize) + dstPlaneStride)
         / ((numLines * numElementsPerLine + numLines * dstLineStride)
            + dstPlaneStride);
-    size_t maxTotalPlanes = (std::min)(maxTotalPlanesIn, maxTotalPlanesOut);
+    size_t maxTotalPlanes = std::min(maxTotalPlanesIn, maxTotalPlanesOut);
     size_t maxLocalWorkgroups =
         maxTotalPlanes / (localWorkgroupSize * planesCopiesPerWorkItem);
 
     size_t localBufferSize = localWorkgroupSize * localStorageSpacePerWorkitem
         - (localIsDst ? dstPlaneStride : srcPlaneStride);
-    size_t numberOfLocalWorkgroups = (std::min)(1111, (int)maxLocalWorkgroups);
+    size_t numberOfLocalWorkgroups = std::min(1111, (int)maxLocalWorkgroups);
     size_t totalPlanes =
         numberOfLocalWorkgroups * localWorkgroupSize * planesCopiesPerWorkItem;
     size_t inBufferSize = elementSize

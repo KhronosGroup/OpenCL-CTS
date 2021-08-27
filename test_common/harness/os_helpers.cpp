@@ -333,9 +333,6 @@ std::string exe_dir()
 
 
 #include <windows.h>
-#if defined(max)
-#undef max
-#endif
 
 #include <cctype>
 #include <algorithm>
