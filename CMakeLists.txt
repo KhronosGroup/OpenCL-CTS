@@ -115,6 +115,8 @@ endif()
 if(MSVC)
     # Don't warn when using standard non-secure functions.
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    # Fix std::min and std::max handling with windows.harness.
+    add_compile_definitions(NOMINMAX)
 endif()
 
 if( WIN32 AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )

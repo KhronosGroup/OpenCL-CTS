@@ -14,11 +14,6 @@
 // limitations under the License.
 //
 
-// This is needed for std::numeric_limits<>::min() and max() to work on Windows.
-#if defined(_WIN32)
-#define NOMINMAX
-#endif
-
 #include <algorithm>
 #include <limits>
 #include <numeric>

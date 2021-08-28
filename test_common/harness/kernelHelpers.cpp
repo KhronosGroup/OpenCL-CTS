@@ -1707,7 +1707,7 @@ Version get_max_OpenCL_C_for_context(cl_context context)
                       else
                       {
                           current_version =
-                              (std::min)(device_version, current_version);
+                              std::min(device_version, current_version);
                       }
                   });
     return current_version;
