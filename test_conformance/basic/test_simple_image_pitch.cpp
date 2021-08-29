@@ -83,7 +83,7 @@ int test_simple_read_image_pitch(cl_device_id device, cl_context cl_context_, cl
   free(host_image);
   free(host_buffer);
 
-  return CL_SUCCESS;
+  return errors == 0 ? TEST_PASS : TEST_FAIL;
 }
 
 int test_simple_write_image_pitch(cl_device_id device, cl_context cl_context_, cl_command_queue q, int num_elements)
@@ -149,5 +149,5 @@ int test_simple_write_image_pitch(cl_device_id device, cl_context cl_context_, c
   free(host_image);
   free(host_buffer);
 
-  return CL_SUCCESS;
+  return errors == 0 ? TEST_PASS : TEST_FAIL;
 }
