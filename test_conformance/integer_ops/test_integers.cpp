@@ -1507,19 +1507,20 @@ bool verify_integer_clamp( void *sourceA, void *sourceB, void *sourceC, void *de
         switch( vecAType )
         {
             case kULong:
-                ((cl_ulong*) destination)[0] = std::max(std::min(valueA, valueC), valueB);
+                ((cl_ulong *)destination)[0] =
+                    std::max(std::min(valueA, valueC), valueB);
                 break;
             case kUInt:
-                ((cl_uint*) destination)[0] = (cl_uint)
-                    (std::max(std::min(valueA, valueC), valueB));
+                ((cl_uint *)destination)[0] =
+                    (cl_uint)(std::max(std::min(valueA, valueC), valueB));
                 break;
             case kUShort:
-                ((cl_ushort*) destination)[0] = (cl_ushort)
-                    (std::max(std::min(valueA, valueC), valueB));
+                ((cl_ushort *)destination)[0] =
+                    (cl_ushort)(std::max(std::min(valueA, valueC), valueB));
                 break;
             case kUChar:
-                ((cl_uchar*) destination)[0] = (cl_uchar)
-                    (std::max(std::min(valueA, valueC), valueB));
+                ((cl_uchar *)destination)[0] =
+                    (cl_uchar)(std::max(std::min(valueA, valueC), valueB));
                 break;
             default:
                 //error -- should never get here
@@ -1571,19 +1572,20 @@ bool verify_integer_clamp( void *sourceA, void *sourceB, void *sourceC, void *de
         switch( vecAType )
         {
             case kLong:
-                ((cl_long*) destination)[0] = std::max(std::min(valueA, valueC), valueB);
+                ((cl_long *)destination)[0] =
+                    std::max(std::min(valueA, valueC), valueB);
                 break;
             case kInt:
-                ((cl_int*) destination)[0] = (cl_int)
-                    (std::max(std::min(valueA, valueC), valueB));
+                ((cl_int *)destination)[0] =
+                    (cl_int)(std::max(std::min(valueA, valueC), valueB));
                 break;
             case kShort:
-                ((cl_short*) destination)[0] = (cl_short)
-                    (std::max(std::min(valueA, valueC), valueB));
+                ((cl_short *)destination)[0] =
+                    (cl_short)(std::max(std::min(valueA, valueC), valueB));
                 break;
             case kChar:
-                ((cl_char*) destination)[0] = (cl_char)
-                    (std::max(std::min(valueA, valueC), valueB));
+                ((cl_char *)destination)[0] =
+                    (cl_char)(std::max(std::min(valueA, valueC), valueB));
                 break;
             default:
                 //error -- should never get here
@@ -1649,13 +1651,16 @@ bool verify_integer_mad_sat( void *sourceA, void *sourceB, void *sourceC, void *
                 ((cl_ulong*) destination)[0] = multLo;
                 break;
             case kUInt:
-                ((cl_uint*) destination)[0] = (cl_uint)std::min( multLo, (cl_ulong) CL_UINT_MAX );
+                ((cl_uint *)destination)[0] =
+                    (cl_uint)std::min(multLo, (cl_ulong)CL_UINT_MAX);
                 break;
             case kUShort:
-                ((cl_ushort*) destination)[0] = (cl_ushort)std::min( multLo, (cl_ulong) CL_USHRT_MAX );
+                ((cl_ushort *)destination)[0] =
+                    (cl_ushort)std::min(multLo, (cl_ulong)CL_USHRT_MAX);
                 break;
             case kUChar:
-                ((cl_uchar*) destination)[0] = (cl_uchar)std::min( multLo, (cl_ulong) CL_UCHAR_MAX );
+                ((cl_uchar *)destination)[0] =
+                    (cl_uchar)std::min(multLo, (cl_ulong)CL_UCHAR_MAX);
                 break;
             default:
                 //error -- should never get here
@@ -1739,18 +1744,18 @@ bool verify_integer_mad_sat( void *sourceA, void *sourceB, void *sourceC, void *
                 ((cl_long*) destination)[0] = result;
                 break;
             case kInt:
-                result = std::min( result, (cl_long) CL_INT_MAX );
-                result = std::max( result, (cl_long) CL_INT_MIN );
+                result = std::min(result, (cl_long)CL_INT_MAX);
+                result = std::max(result, (cl_long)CL_INT_MIN);
                 ((cl_int*) destination)[0] = (cl_int) result;
                 break;
             case kShort:
-                result = std::min( result, (cl_long) CL_SHRT_MAX );
-                result = std::max( result, (cl_long) CL_SHRT_MIN );
+                result = std::min(result, (cl_long)CL_SHRT_MAX);
+                result = std::max(result, (cl_long)CL_SHRT_MIN);
                 ((cl_short*) destination)[0] = (cl_short) result;
                 break;
             case kChar:
-                result = std::min( result, (cl_long) CL_CHAR_MAX );
-                result = std::max( result, (cl_long) CL_CHAR_MIN );
+                result = std::min(result, (cl_long)CL_CHAR_MAX);
+                result = std::max(result, (cl_long)CL_CHAR_MIN);
                 ((cl_char*) destination)[0] = (cl_char) result;
                 break;
             default:

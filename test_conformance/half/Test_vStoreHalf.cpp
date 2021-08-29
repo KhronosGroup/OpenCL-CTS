@@ -677,7 +677,7 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
     } // end for vector size
 
     // Figure out how many elements are in a work block
-    size_t elementSize = std::max( sizeof(cl_ushort), sizeof(float));
+    size_t elementSize = std::max(sizeof(cl_ushort), sizeof(float));
     size_t blockCount = BUFFER_SIZE / elementSize; // elementSize is power of 2
     uint64_t lastCase = 1ULL << (8*sizeof(float)); // number of floats.
     size_t stride = blockCount;
@@ -729,7 +729,7 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
 
     for( i = 0; i < lastCase; i += stride )
     {
-        count = (cl_uint)std::min( blockCount, lastCase - i );
+        count = (cl_uint)std::min(blockCount, lastCase - i);
         fref.i = i;
         dref.i = i;
 
@@ -1275,7 +1275,7 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
     }
 
     // Figure out how many elements are in a work block
-    size_t elementSize = std::max( sizeof(cl_ushort), sizeof(float));
+    size_t elementSize = std::max(sizeof(cl_ushort), sizeof(float));
     size_t blockCount = BUFFER_SIZE / elementSize;
     uint64_t lastCase = 1ULL << (8*sizeof(float));
     size_t stride = blockCount;
@@ -1326,7 +1326,7 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
 
     for( i = 0; i < (uint64_t)lastCase; i += stride )
     {
-        count = (cl_uint)std::min( blockCount, lastCase - i );
+        count = (cl_uint)std::min(blockCount, lastCase - i);
         fref.i = i;
         dref.i = i;
 

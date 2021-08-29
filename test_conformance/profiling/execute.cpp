@@ -69,8 +69,8 @@ static const char *image_filter_src =
 static void read_imagef( int x, int y, int w, int h, int nChannels, uchar *src, float *srcRgb )
 {
     // clamp the coords
-    int    x0 = std::min( std::max( x, 0 ), w - 1 );
-    int    y0 = std::min( std::max( y, 0 ), h - 1 );
+    int x0 = std::min(std::max(x, 0), w - 1);
+    int y0 = std::min(std::max(y, 0), h - 1);
 
     // get tine index
     int    indx = ( y0 * w + x0 ) * nChannels;

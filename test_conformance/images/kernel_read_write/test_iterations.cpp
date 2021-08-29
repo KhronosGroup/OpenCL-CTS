@@ -436,7 +436,8 @@ int validate_image_2D_depth_results(void *imageValues, void *resultValues, doubl
                         float err1 = ABS_ERROR(resultPtr[0], expected[0]);
                         // Clamp to the minimum absolute error for the format
                         if (err1 > 0 && err1 < formatAbsoluteError) { err1 = 0.0f; }
-                        float maxErr1 = std::max( maxErr * maxPixel.p[0], FLT_MIN );
+                        float maxErr1 =
+                            std::max(maxErr * maxPixel.p[0], FLT_MIN);
 
                         // Check if the result matches.
                         if( ! (err1 <= maxErr1) )
@@ -486,7 +487,8 @@ int validate_image_2D_depth_results(void *imageValues, void *resultValues, doubl
                                                                                     imageSampler, expected, 0, &containsDenormals );
 
                             float err1 = ABS_ERROR(resultPtr[0], expected[0]);
-                            float maxErr1 = std::max( maxErr * maxPixel.p[0], FLT_MIN );
+                            float maxErr1 =
+                                std::max(maxErr * maxPixel.p[0], FLT_MIN);
 
 
                             if( ! (err1 <= maxErr1) )
@@ -600,10 +602,14 @@ int validate_image_2D_results(void *imageValues, void *resultValues, double form
                         if (err2 > 0 && err2 < formatAbsoluteError) { err2 = 0.0f; }
                         if (err3 > 0 && err3 < formatAbsoluteError) { err3 = 0.0f; }
                         if (err4 > 0 && err4 < formatAbsoluteError) { err4 = 0.0f; }
-                        float maxErr1 = std::max( maxErr * maxPixel.p[0], FLT_MIN );
-                        float maxErr2 = std::max( maxErr * maxPixel.p[1], FLT_MIN );
-                        float maxErr3 = std::max( maxErr * maxPixel.p[2], FLT_MIN );
-                        float maxErr4 = std::max( maxErr * maxPixel.p[3], FLT_MIN );
+                        float maxErr1 =
+                            std::max(maxErr * maxPixel.p[0], FLT_MIN);
+                        float maxErr2 =
+                            std::max(maxErr * maxPixel.p[1], FLT_MIN);
+                        float maxErr3 =
+                            std::max(maxErr * maxPixel.p[2], FLT_MIN);
+                        float maxErr4 =
+                            std::max(maxErr * maxPixel.p[3], FLT_MIN);
 
                         // Check if the result matches.
                         if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    ||
@@ -673,10 +679,14 @@ int validate_image_2D_results(void *imageValues, void *resultValues, double form
                             float err2 = ABS_ERROR(resultPtr[1], expected[1]);
                             float err3 = ABS_ERROR(resultPtr[2], expected[2]);
                             float err4 = ABS_ERROR(resultPtr[3], expected[3]);
-                            float maxErr1 = std::max( maxErr * maxPixel.p[0], FLT_MIN );
-                            float maxErr2 = std::max( maxErr * maxPixel.p[1], FLT_MIN );
-                            float maxErr3 = std::max( maxErr * maxPixel.p[2], FLT_MIN );
-                            float maxErr4 = std::max( maxErr * maxPixel.p[3], FLT_MIN );
+                            float maxErr1 =
+                                std::max(maxErr * maxPixel.p[0], FLT_MIN);
+                            float maxErr2 =
+                                std::max(maxErr * maxPixel.p[1], FLT_MIN);
+                            float maxErr3 =
+                                std::max(maxErr * maxPixel.p[2], FLT_MIN);
+                            float maxErr4 =
+                                std::max(maxErr * maxPixel.p[3], FLT_MIN);
 
 
                             if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    ||

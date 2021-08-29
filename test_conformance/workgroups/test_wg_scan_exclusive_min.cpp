@@ -81,7 +81,7 @@ verify_wg_scan_exclusive_min_int(int *inptr, int *outptr, size_t n, size_t wg_si
                 log_info("work_group_scan_exclusive_min int: Error at %u: expected = %d, got = %d\n", (unsigned int)(j+i), min_, outptr[j+i]);
                 return -1;
             }
-            min_ = std::min(inptr[j+i], min_);
+            min_ = std::min(inptr[j + i], min_);
         }
     }
 
@@ -105,7 +105,7 @@ verify_wg_scan_exclusive_min_uint(unsigned int *inptr, unsigned int *outptr, siz
                 log_info("work_group_scan_exclusive_min int: Error at %u: expected = %u, got = %u\n", j+i, min_, outptr[j+i]);
                 return -1;
             }
-            min_ = std::min(inptr[j+i], min_);
+            min_ = std::min(inptr[j + i], min_);
         }
     }
 
@@ -129,7 +129,7 @@ verify_wg_scan_exclusive_min_long(cl_long *inptr, cl_long *outptr, size_t n, siz
                 log_info("work_group_scan_exclusive_min long: Error at %u: expected = %lld, got = %lld\n", (unsigned int)(j+i), min_, outptr[j+i]);
                 return -1;
             }
-            min_ = std::min(inptr[j+i], min_);
+            min_ = std::min(inptr[j + i], min_);
         }
     }
 
@@ -153,7 +153,7 @@ verify_wg_scan_exclusive_min_ulong(cl_ulong *inptr, cl_ulong *outptr, size_t n, 
                 log_info("work_group_scan_exclusive_min ulong: Error at %u: expected = %llu, got = %llu\n", (unsigned int)(j+i), min_, outptr[j+i]);
                 return -1;
             }
-            min_ = std::min(inptr[j+i], min_);
+            min_ = std::min(inptr[j + i], min_);
         }
     }
 

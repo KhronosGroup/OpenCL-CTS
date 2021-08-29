@@ -1041,16 +1041,16 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                                    expected[3]);
                                             float maxErr1 =
                                                 std::max(maxErr * maxPixel.p[0],
-                                                    FLT_MIN);
+                                                         FLT_MIN);
                                             float maxErr2 =
                                                 std::max(maxErr * maxPixel.p[1],
-                                                    FLT_MIN);
+                                                         FLT_MIN);
                                             float maxErr3 =
                                                 std::max(maxErr * maxPixel.p[2],
-                                                    FLT_MIN);
+                                                         FLT_MIN);
                                             float maxErr4 =
                                                 std::max(maxErr * maxPixel.p[3],
-                                                    FLT_MIN);
+                                                         FLT_MIN);
 
 
                                             if (!(err1 <= maxErr1)

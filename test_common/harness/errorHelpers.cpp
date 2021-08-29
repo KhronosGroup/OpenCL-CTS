@@ -435,7 +435,8 @@ float Ulp_Error(float test, double reference)
             return 0.0f; // if we are expecting a NaN, any NaN is fine
 
         // The unbiased exponent of the ulp unit place
-        int ulp_exp = FLT_MANT_DIG - 1 - std::max(ilogb(reference), FLT_MIN_EXP - 1);
+        int ulp_exp =
+            FLT_MANT_DIG - 1 - std::max(ilogb(reference), FLT_MIN_EXP - 1);
 
         // Scale the exponent of the error
         return (float)scalbn(testVal - reference, ulp_exp);
@@ -443,7 +444,8 @@ float Ulp_Error(float test, double reference)
 
     // reference is a normal power of two or a zero
     // The unbiased exponent of the ulp unit place
-    int ulp_exp = FLT_MANT_DIG - 1 - std::max(ilogb(reference) - 1, FLT_MIN_EXP - 1);
+    int ulp_exp =
+        FLT_MANT_DIG - 1 - std::max(ilogb(reference) - 1, FLT_MIN_EXP - 1);
 
     // Scale the exponent of the error
     return (float)scalbn(testVal - reference, ulp_exp);

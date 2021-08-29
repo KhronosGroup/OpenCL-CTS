@@ -112,7 +112,8 @@ public:
     virtual cl_int Execute( cl_context context, cl_command_queue queue, cl_char tag, SubBufferWrapper &buffer1, SubBufferWrapper &buffer2, cl_char *parentBufferState )
     {
         // Copy from sub-buffer 1 to sub-buffer 2
-        size_t size = get_random_size_t( 0, std::min( buffer1.mSize, buffer2.mSize ), GetRandSeed() );
+        size_t size = get_random_size_t(
+            0, std::min(buffer1.mSize, buffer2.mSize), GetRandSeed());
 
         size_t startOffset = get_random_size_t( 0, buffer1.mSize - size, GetRandSeed() );
         size_t endOffset = get_random_size_t( 0, buffer2.mSize - size, GetRandSeed() );
@@ -261,7 +262,11 @@ int test_sub_buffers_read_write_core( cl_context context, cl_command_queue queue
             endRange = mainSize;
 
         size_t offset = get_random_size_t( toStartFrom / addressAlign, endRange / addressAlign, Action::GetRandSeed() ) * addressAlign;
-        size_t size = get_random_size_t( 1, ( std::min( mainSize / 8, mainSize - offset ) ) / addressAlign, Action::GetRandSeed() ) * addressAlign;
+        size_t size =
+            get_random_size_t(
+                1, (std::min(mainSize / 8, mainSize - offset)) / addressAlign,
+                Action::GetRandSeed())
+            * addressAlign;
         error = subBuffers[ numSubBuffers ].Allocate( mainBuffer, CL_MEM_READ_WRITE, offset, size );
         test_error( error, "Unable to allocate sub buffer" );
 
@@ -438,7 +443,7 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
 
     error = get_reasonable_buffer_size( otherDevice, maxBuffer2 );
     test_error( error, "Unable to get buffer size for secondary device" );
-    maxBuffer1 = std::min( maxBuffer1, maxBuffer2 );
+    maxBuffer1 = std::min(maxBuffer1, maxBuffer2);
 
     cl_uint addressAlign1Bits, addressAlign2Bits;
     error = clGetDeviceInfo( deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, sizeof( addressAlign1Bits ), &addressAlign1Bits, NULL );
@@ -447,7 +452,7 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
     error = clGetDeviceInfo( otherDevice, CL_DEVICE_MEM_BASE_ADDR_ALIGN, sizeof( addressAlign2Bits ), &addressAlign2Bits, NULL );
     test_error( error, "Unable to get secondary device's address alignment" );
 
-    cl_uint addressAlign1 = std::max( addressAlign1Bits, addressAlign2Bits ) / 8;
+    cl_uint addressAlign1 = std::max(addressAlign1Bits, addressAlign2Bits) / 8;
 
     // Finally time to run!
     return test_sub_buffers_read_write_core( testingContext, queue1, queue2, maxBuffer1, addressAlign1 );
