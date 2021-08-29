@@ -309,7 +309,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             }
 
 
-            for (auto k = MAX(1, gMinVectorSizeIndex); k < gMaxVectorSizeIndex;
+            for (auto k = std::max(1U, gMinVectorSizeIndex); k < gMaxVectorSizeIndex;
                  k++)
             {
                 q = out[k];

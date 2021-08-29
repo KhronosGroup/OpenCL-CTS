@@ -690,9 +690,6 @@ int has_alpha(const cl_image_format *format)
         _b ^= _a;                                                              \
         _a ^= _b;                                                              \
     } while (0)
-#ifndef MAX
-#define MAX(_a, _b) ((_a) > (_b) ? (_a) : (_b))
-#endif
 
 void get_max_sizes(
     size_t *numberOfSizes, const int maxNumberOfSizes, size_t sizes[][3],
