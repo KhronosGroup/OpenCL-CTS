@@ -171,7 +171,7 @@ int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue qu
 
     for( i = 0; i < (uint64_t)lastCase; i += stride )
     {
-        count = (uint32_t)std::min(blockCount, lastCase - i);
+        count = (uint32_t)std::min((uint64_t)blockCount, lastCase - i);
 
         //Init the input stream
         uint16_t *p = (uint16_t *)gIn_half;

@@ -729,7 +729,7 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
 
     for( i = 0; i < lastCase; i += stride )
     {
-        count = (cl_uint)std::min(blockCount, lastCase - i);
+        count = (cl_uint)std::min((uint64_t)blockCount, lastCase - i);
         fref.i = i;
         dref.i = i;
 
@@ -1326,7 +1326,7 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
 
     for( i = 0; i < (uint64_t)lastCase; i += stride )
     {
-        count = (cl_uint)std::min(blockCount, lastCase - i);
+        count = (cl_uint)std::min((uint64_t)blockCount, lastCase - i);
         fref.i = i;
         dref.i = i;
 

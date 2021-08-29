@@ -1081,7 +1081,7 @@ static int DoTest( cl_device_id device, Type outType, Type inType, SaturationMod
             fflush(stdout);
         }
 
-        cl_uint count = (uint32_t)std::min(blockCount, lastCase - i);
+        cl_uint count = (uint32_t)std::min((uint64_t)blockCount, lastCase - i);
         writeInputBufferInfo.count = count;
 
         // Crate a user event to represent the status of the reference value computation completion
