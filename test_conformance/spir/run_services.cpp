@@ -430,46 +430,50 @@ OclExtensions OclExtensions::fromString(const std::string& e)
 
 std::string OclExtensions::toString()
 {
-
-    #define APPEND_STR_IF_SUPPORTS( STR, E)                          \
-        if ( this->supports(E) )                                     \
-        {                                                            \
-            std::string ext_str( #E );                               \
-            std::string prefix = "OclExtensions::has_";              \
-            size_t pos = ext_str.find( prefix );                     \
-            if (  pos != std::string::npos )                         \
-            {                                                        \
-                ext_str.replace( pos, prefix.length(), "");          \
-            }                                                        \
-            STR += ext_str;                                          \
-            STR += " ";                                              \
-        }
+#define APPEND_STR_IF_SUPPORTS(STR, E)                                         \
+    if (this->supports(E))                                                     \
+    {                                                                          \
+        std::string ext_str(#E);                                               \
+        std::string prefix = "OclExtensions::has_";                            \
+        size_t pos = ext_str.find(prefix);                                     \
+        if (pos != std::string::npos)                                          \
+        {                                                                      \
+            ext_str.replace(pos, prefix.length(), "");                         \
+        }                                                                      \
+        STR += ext_str;                                                        \
+        STR += " ";                                                            \
+    }
 
     std::string s = "";
 
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_int64_base_atomics );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_int64_extended_atomics );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_3d_image_writes );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_fp16 );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_gl_sharing );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_gl_event );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_d3d10_sharing );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_dx9_media_sharing );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_d3d11_sharing );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_depth_images );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_gl_depth_images );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_gl_msaa_sharing );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_image2d_from_buffer );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_initialize_memory );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_spir );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_fp64 );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_global_int32_base_atomics );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_global_int32_extended_atomics );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_local_int32_base_atomics );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_local_int32_extended_atomics );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cl_khr_byte_addressable_store );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cles_khr_int64 );
-    APPEND_STR_IF_SUPPORTS( s, OclExtensions::has_cles_khr_2d_image_array_writes );
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_int64_base_atomics);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_int64_extended_atomics);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_3d_image_writes);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_fp16);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_gl_sharing);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_gl_event);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_d3d10_sharing);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_dx9_media_sharing);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_d3d11_sharing);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_depth_images);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_gl_depth_images);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_gl_msaa_sharing);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_image2d_from_buffer);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_initialize_memory);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_spir);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_fp64);
+    APPEND_STR_IF_SUPPORTS(s,
+                           OclExtensions::has_cl_khr_global_int32_base_atomics);
+    APPEND_STR_IF_SUPPORTS(
+        s, OclExtensions::has_cl_khr_global_int32_extended_atomics);
+    APPEND_STR_IF_SUPPORTS(s,
+                           OclExtensions::has_cl_khr_local_int32_base_atomics);
+    APPEND_STR_IF_SUPPORTS(
+        s, OclExtensions::has_cl_khr_local_int32_extended_atomics);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cl_khr_byte_addressable_store);
+    APPEND_STR_IF_SUPPORTS(s, OclExtensions::has_cles_khr_int64);
+    APPEND_STR_IF_SUPPORTS(s,
+                           OclExtensions::has_cles_khr_2d_image_array_writes);
 
     return s;
 }
