@@ -18,6 +18,7 @@
 #define INTEGER_OPS_TEST_INFO_H
 
 #include "conversions.h"
+#include "testHarness.h"
 
 // TODO: expand usage to other tests.
 
