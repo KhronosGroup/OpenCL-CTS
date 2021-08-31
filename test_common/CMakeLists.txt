@@ -21,8 +21,3 @@ set(HARNESS_SOURCES
 )
 
 add_library(harness STATIC ${HARNESS_SOURCES})
-
-if(MSVC)
-    # Don't warn about using the portable "strdup" function.
-    target_compile_definitions(harness PRIVATE _CRT_NONSTDC_NO_DEPRECATE)
-endif()
