@@ -115,6 +115,8 @@ endif()
 if(MSVC)
     # Don't warn when using standard non-secure functions.
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    # Don't warn about using the portable "strdup" function.
+    add_compile_definitions(_CRT_NONSTDC_NO_DEPRECATE)
     # Fix std::min and std::max handling with windows.harness.
     add_compile_definitions(NOMINMAX)
 endif()
