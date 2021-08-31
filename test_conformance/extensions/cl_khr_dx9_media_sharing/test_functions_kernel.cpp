@@ -169,7 +169,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
         std::vector<clMemWrapper> planeDstList(planesNum);
         for (unsigned int planeIdx = 0; planeIdx < planesNum; ++planeIdx)
         {
-            planeSrcList[planeIdx] = clCreateFromDX9MediaSurfaceKHR(
+            planeSrcList[planeIdx] = clCreateFromDX9MediaSurfaceKHR_(
                 ctx, CL_MEM_READ_WRITE, adapterType, &surfaceInfoSrc, planeIdx,
                 &error);
             if (error != CL_SUCCESS)
@@ -182,7 +182,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
             }
             memObjSrcList.push_back(planeSrcList[planeIdx]);
 
-            planeDstList[planeIdx] = clCreateFromDX9MediaSurfaceKHR(
+            planeDstList[planeIdx] = clCreateFromDX9MediaSurfaceKHR_(
                 ctx, CL_MEM_READ_WRITE, adapterType, &surfaceInfoDst, planeIdx,
                 &error);
             if (error != CL_SUCCESS)
@@ -222,7 +222,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
                 return result.Result();
             }
 
-            error = clEnqueueAcquireDX9MediaSurfacesKHR(
+            error = clEnqueueAcquireDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjSrcList.size()),
                 &memObjSrcList[0], 0, 0, 0);
             if (error != CL_SUCCESS)
@@ -233,7 +233,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
                 return result.Result();
             }
 
-            error = clEnqueueAcquireDX9MediaSurfacesKHR(
+            error = clEnqueueAcquireDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjDstList.size()),
                 &memObjDstList[0], 0, 0, 0);
             if (error != CL_SUCCESS)
@@ -375,7 +375,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
                 result.ResultSub(CResult::TEST_FAIL);
             }
 
-            error = clEnqueueReleaseDX9MediaSurfacesKHR(
+            error = clEnqueueReleaseDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjSrcList.size()),
                 &memObjSrcList[0], 0, 0, 0);
             if (error != CL_SUCCESS)
@@ -385,7 +385,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
                 result.ResultSub(CResult::TEST_FAIL);
             }
 
-            error = clEnqueueReleaseDX9MediaSurfacesKHR(
+            error = clEnqueueReleaseDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjDstList.size()),
                 &memObjDstList[0], 0, 0, 0);
             if (error != CL_SUCCESS)

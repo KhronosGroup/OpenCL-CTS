@@ -1639,7 +1639,7 @@ cl_int deviceExistForCLTest(
     std::string adapterStr;
     AdapterToString(media_adapters_type, adapterStr);
 
-    _error = clGetDeviceIDsFromDX9MediaAdapterKHR(
+    _error = clGetDeviceIDsFromDX9MediaAdapterKHR_(
         platform, 1, &media_adapters_type, &media_adapters,
         CL_PREFERRED_DEVICES_FOR_DX9_MEDIA_ADAPTER_KHR, 0, 0, &devicesAllNum);
 

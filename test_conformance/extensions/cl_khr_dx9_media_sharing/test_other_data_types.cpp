@@ -204,7 +204,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
 #endif
 
         // create OCL shared object
-        clMemWrapper objectSrcShared = clCreateFromDX9MediaSurfaceKHR(
+        clMemWrapper objectSrcShared = clCreateFromDX9MediaSurfaceKHR_(
             ctx, CL_MEM_READ_WRITE, adapterType, &surfaceSrcInfo, 0, &error);
         if (error != CL_SUCCESS)
         {
@@ -214,7 +214,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
             return result.Result();
         }
 
-        clMemWrapper objectDstShared = clCreateFromDX9MediaSurfaceKHR(
+        clMemWrapper objectDstShared = clCreateFromDX9MediaSurfaceKHR_(
             ctx, CL_MEM_READ_WRITE, adapterType, &surfaceDstInfo, 0, &error);
         if (error != CL_SUCCESS)
         {
@@ -269,7 +269,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
             return TEST_NOT_IMPLEMENTED;
 #endif
 
-            error = clEnqueueAcquireDX9MediaSurfacesKHR(
+            error = clEnqueueAcquireDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjList.size()),
                 &memObjList[0], 0, 0, 0);
             if (error != CL_SUCCESS)
@@ -464,7 +464,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                 }
             }
 
-            error = clEnqueueReleaseDX9MediaSurfacesKHR(
+            error = clEnqueueReleaseDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjList.size()),
                 &memObjList[0], 0, 0, 0);
             if (error != CL_SUCCESS)

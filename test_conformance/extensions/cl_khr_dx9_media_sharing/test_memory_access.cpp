@@ -137,7 +137,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
             std::vector<clMemWrapper> planesList(planesNum);
             for (unsigned int planeIdx = 0; planeIdx < planesNum; ++planeIdx)
             {
-                planesList[planeIdx] = clCreateFromDX9MediaSurfaceKHR(
+                planesList[planeIdx] = clCreateFromDX9MediaSurfaceKHR_(
                     ctx, CL_MEM_WRITE_ONLY, adapterType, &surfaceInfo, planeIdx,
                     &error);
                 if (error != CL_SUCCESS)
@@ -151,7 +151,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
                 memObjList.push_back(planesList[planeIdx]);
             }
 
-            error = clEnqueueAcquireDX9MediaSurfacesKHR(
+            error = clEnqueueAcquireDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjList.size()),
                 &memObjList[0], 0, 0, 0);
             if (error != CL_SUCCESS)
@@ -183,7 +183,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
                 offset += planeWidth * planeHeight;
             }
 
-            error = clEnqueueReleaseDX9MediaSurfacesKHR(
+            error = clEnqueueReleaseDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjList.size()),
                 &memObjList[0], 0, 0, 0);
             if (error != CL_SUCCESS)
@@ -223,7 +223,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
             std::vector<clMemWrapper> planesList(planesNum);
             for (unsigned int planeIdx = 0; planeIdx < planesNum; ++planeIdx)
             {
-                planesList[planeIdx] = clCreateFromDX9MediaSurfaceKHR(
+                planesList[planeIdx] = clCreateFromDX9MediaSurfaceKHR_(
                     ctx, CL_MEM_READ_ONLY, adapterType, &surfaceInfo, planeIdx,
                     &error);
                 if (error != CL_SUCCESS)
@@ -237,7 +237,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
                 memObjList.push_back(planesList[planeIdx]);
             }
 
-            error = clEnqueueAcquireDX9MediaSurfacesKHR(
+            error = clEnqueueAcquireDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjList.size()),
                 &memObjList[0], 0, 0, 0);
             if (error != CL_SUCCESS)
@@ -277,7 +277,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
                 result.ResultSub(CResult::TEST_FAIL);
             }
 
-            error = clEnqueueReleaseDX9MediaSurfacesKHR(
+            error = clEnqueueReleaseDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjList.size()),
                 &memObjList[0], 0, 0, 0);
             if (error != CL_SUCCESS)
@@ -317,7 +317,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
             std::vector<clMemWrapper> planesList(planesNum);
             for (unsigned int planeIdx = 0; planeIdx < planesNum; ++planeIdx)
             {
-                planesList[planeIdx] = clCreateFromDX9MediaSurfaceKHR(
+                planesList[planeIdx] = clCreateFromDX9MediaSurfaceKHR_(
                     ctx, CL_MEM_READ_WRITE, adapterType, &surfaceInfo, planeIdx,
                     &error);
                 if (error != CL_SUCCESS)
@@ -331,7 +331,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
                 memObjList.push_back(planesList[planeIdx]);
             }
 
-            error = clEnqueueAcquireDX9MediaSurfacesKHR(
+            error = clEnqueueAcquireDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjList.size()),
                 &memObjList[0], 0, 0, 0);
             if (error != CL_SUCCESS)
@@ -397,7 +397,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
                 }
             }
 
-            error = clEnqueueReleaseDX9MediaSurfacesKHR(
+            error = clEnqueueReleaseDX9MediaSurfacesKHR_(
                 cmdQueue, static_cast<cl_uint>(memObjList.size()),
                 &memObjList[0], 0, 0, 0);
             if (error != CL_SUCCESS)

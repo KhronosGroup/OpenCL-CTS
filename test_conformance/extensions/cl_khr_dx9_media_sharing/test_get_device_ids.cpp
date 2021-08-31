@@ -65,7 +65,7 @@ int get_device_ids(cl_device_id deviceID, cl_context context,
         }
 
         cl_uint devicesAllNum = 0;
-        error = clGetDeviceIDsFromDX9MediaAdapterKHR(
+        error = clGetDeviceIDsFromDX9MediaAdapterKHR_(
             gPlatformIDdetected, 1, &mediaAdapterTypes[0], &mediaDevices[0],
             CL_ALL_DEVICES_FOR_DX9_MEDIA_ADAPTER_KHR, 0, 0, &devicesAllNum);
         if (error != CL_SUCCESS && error != CL_DEVICE_NOT_FOUND)
@@ -80,7 +80,7 @@ int get_device_ids(cl_device_id deviceID, cl_context context,
         if (devicesAllNum > 0)
         {
             devicesAll.resize(devicesAllNum);
-            error = clGetDeviceIDsFromDX9MediaAdapterKHR(
+            error = clGetDeviceIDsFromDX9MediaAdapterKHR_(
                 gPlatformIDdetected, 1, &mediaAdapterTypes[0], &mediaDevices[0],
                 CL_ALL_DEVICES_FOR_DX9_MEDIA_ADAPTER_KHR, devicesAllNum,
                 &devicesAll[0], 0);
@@ -94,7 +94,7 @@ int get_device_ids(cl_device_id deviceID, cl_context context,
         }
 
         cl_uint devicesPreferredNum = 0;
-        error = clGetDeviceIDsFromDX9MediaAdapterKHR(
+        error = clGetDeviceIDsFromDX9MediaAdapterKHR_(
             gPlatformIDdetected, 1, &mediaAdapterTypes[0], &mediaDevices[0],
             CL_PREFERRED_DEVICES_FOR_DX9_MEDIA_ADAPTER_KHR, 0, 0,
             &devicesPreferredNum);
@@ -110,7 +110,7 @@ int get_device_ids(cl_device_id deviceID, cl_context context,
         if (devicesPreferredNum > 0)
         {
             devicesPreferred.resize(devicesPreferredNum);
-            error = clGetDeviceIDsFromDX9MediaAdapterKHR(
+            error = clGetDeviceIDsFromDX9MediaAdapterKHR_(
                 gPlatformIDdetected, 1, &mediaAdapterTypes[0], &mediaDevices[0],
                 CL_PREFERRED_DEVICES_FOR_DX9_MEDIA_ADAPTER_KHR,
                 devicesPreferredNum, &devicesPreferred[0], 0);
