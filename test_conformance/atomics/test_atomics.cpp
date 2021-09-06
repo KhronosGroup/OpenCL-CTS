@@ -202,7 +202,7 @@ int test_atomic_function(cl_device_id deviceID, cl_context context, cl_command_q
 
         // Limit workSize to avoid extremely large local buffer size and slow
         // run.
-        if (testFns.NumResultsFn && workSize > 65536) workSize = 65536;
+        if (workSize > 65536) workSize = 65536;
 
         // "workSize" is limited to that of the first dimension as only a 1DRange is executed.
         if( maxSizes[0] < workSize )
