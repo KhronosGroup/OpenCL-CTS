@@ -379,38 +379,43 @@ int test_integer_dot_product(cl_device_id deviceID, cl_context context,
     }
 
     // Check that acceleration properties can be queried
-    size_t size_ret;
-    error = clGetDeviceInfo(
-        deviceID,
-        CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_8BIT_KHR, 0,
-        nullptr, &size_ret);
-    test_error(
-        error,
-        "Unable to query size of data returned by "
-        "CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_8BIT_KHR");
+    if (extensionVersion >= CL_MAKE_VERSION(2, 0, 0))
+    {
+        size_t size_ret;
+        error = clGetDeviceInfo(
+            deviceID,
+            CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_8BIT_KHR, 0,
+            nullptr, &size_ret);
+        test_error(
+            error,
+            "Unable to query size of data returned by "
+            "CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_8BIT_KHR");
 
-    cl_device_integer_dot_product_acceleration_properties_khr
-        accelerationProperties;
-    error = clGetDeviceInfo(
-        deviceID,
-        CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_8BIT_KHR,
-        sizeof(accelerationProperties), &accelerationProperties, nullptr);
-    test_error(error, "Unable to query 8-bit acceleration properties");
+        cl_device_integer_dot_product_acceleration_properties_khr
+            accelerationProperties;
+        error = clGetDeviceInfo(
+            deviceID,
+            CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_8BIT_KHR,
+            sizeof(accelerationProperties), &accelerationProperties, nullptr);
+        test_error(error, "Unable to query 8-bit acceleration properties");
 
-    error = clGetDeviceInfo(
-        deviceID,
-        CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR,
-        0, nullptr, &size_ret);
-    test_error(error,
-               "Unable to query size of data returned by "
-               "CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_"
-               "PACKED_KHR");
+        error = clGetDeviceInfo(
+            deviceID,
+            CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR,
+            0, nullptr, &size_ret);
+        test_error(
+            error,
+            "Unable to query size of data returned by "
+            "CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_"
+            "PACKED_KHR");
 
-    error = clGetDeviceInfo(
-        deviceID,
-        CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR,
-        sizeof(accelerationProperties), &accelerationProperties, nullptr);
-    test_error(error, "Unable to query 4x8-bit packed acceleration properties");
+        error = clGetDeviceInfo(
+            deviceID,
+            CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR,
+            sizeof(accelerationProperties), &accelerationProperties, nullptr);
+        test_error(error,
+                   "Unable to query 4x8-bit packed acceleration properties");
+    }
 
     // Report when unknown capabilities are found
     if (dotCaps
