@@ -345,16 +345,16 @@ int command_queue_param_test(cl_command_queue queue,
     return 0;
 }
 
-static cl_command_queue_properties host_required_options[] = {
+static cl_command_queue_properties host_required[] = {
     0, CL_QUEUE_PROFILING_ENABLE
 };
 
-static cl_command_queue_properties host_out_of_order_options[] = {
+static cl_command_queue_properties host_optional[] = {
     CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
     CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
 };
 
-static cl_command_queue_properties device_options[] = {
+static cl_command_queue_properties device_required[] = {
     CL_QUEUE_ON_DEVICE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
     CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_ON_DEVICE
         | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
@@ -395,30 +395,27 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
     // test device queues if the device and the API under test support it
     bool test_on_device = on_device_supported && !is_compatibility;
 
-    int num_required_options = ARRAY_SIZE(host_required_options);
-    int num_out_of_order_options = ARRAY_SIZE(host_out_of_order_options);
-    int num_device_options = ARRAY_SIZE(device_options);
+    int num_host_required = ARRAY_SIZE(host_required);
+    int num_host_optional = ARRAY_SIZE(host_optional);
+    int num_device_required = ARRAY_SIZE(device_required);
 
-    for (int i = 0; i
-         < num_required_options + num_out_of_order_options + num_device_options;
-         i++)
+    for (int i = 0;
+         i < num_host_required + num_host_optional + num_device_required; i++)
     {
-        if (i < num_required_options)
+        if (i < num_host_required)
         {
-            queue_props[1] = host_required_options[i];
+            queue_props[1] = host_required[i];
         }
-        else if (i < num_required_options + num_out_of_order_options)
+        else if (i < num_host_required + num_host_optional)
         {
             if (!out_of_order_supported) continue;
-            queue_props[1] =
-                host_out_of_order_options[i - num_required_options];
+            queue_props[1] = host_optional[i - num_host_required];
         }
         else
         {
             if (!test_on_device) continue;
-            queue_props[1] = device_options[i
-                                            - (num_required_options
-                                               + num_out_of_order_options)];
+            queue_props[1] =
+                device_required[i - (num_host_required + num_host_optional)];
         }
 
         clCommandQueueWrapper queue;
