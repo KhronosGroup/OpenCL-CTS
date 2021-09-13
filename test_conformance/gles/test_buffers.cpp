@@ -205,12 +205,6 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue, ExplicitType 
   if (validate_only) {
     int result = (CheckGLObjectInfo(streams[0], CL_GL_OBJECT_BUFFER, (GLuint)inGLBuffer, (GLenum)0, 0) |
                   CheckGLObjectInfo(streams[2], CL_GL_OBJECT_BUFFER, (GLuint)outGLBuffer, (GLenum)0, 0) );
-    for(i=0;i<3;i++)
-    {
-        clReleaseMemObject(streams[i]);
-        streams[i] = NULL;
-    }
-
     glDeleteBuffers(1, &inGLBuffer);    inGLBuffer = 0;
     glDeleteBuffers(1, &outGLBuffer);    outGLBuffer = 0;
 
@@ -283,12 +277,6 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue, ExplicitType 
         inP += get_explicit_type_size( vecType );
         glP += get_explicit_type_size( vecType );
         clP += get_explicit_type_size( vecType );
-    }
-
-    for(i=0;i<3;i++)
-    {
-        clReleaseMemObject(streams[i]);
-        streams[i] = NULL;
     }
 
     glDeleteBuffers(1, &inGLBuffer);    inGLBuffer = 0;
