@@ -20,6 +20,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+
 #include "procs.h"
 
 
@@ -75,7 +77,7 @@ verify_wg_scan_inclusive_min_int(int *inptr, int *outptr, size_t n, size_t wg_si
             m = wg_size;
 
         for (i = 0; i < m; ++i) {
-            min_ = MIN(inptr[j+i], min_);
+            min_ = std::min(inptr[j + i], min_);
             if (outptr[j+i] != min_) {
                 log_info("work_group_scan_inclusive_min int: Error at %u: expected = %d, got = %d\n", (unsigned int)(j+i), min_, outptr[j+i]);
                 return -1;
@@ -99,7 +101,7 @@ verify_wg_scan_inclusive_min_uint(unsigned int *inptr, unsigned int *outptr, siz
             m = wg_size;
 
         for (i = 0; i < m; ++i) {
-            min_ = MIN(inptr[j+i], min_);
+            min_ = std::min(inptr[j + i], min_);
             if (outptr[j+i] != min_) {
                 log_info("work_group_scan_inclusive_min int: Error at %u: expected = %u, got = %u\n", (unsigned int)(j+i), min_, outptr[j+i]);
                 return -1;
@@ -123,7 +125,7 @@ verify_wg_scan_inclusive_min_long(cl_long *inptr, cl_long *outptr, size_t n, siz
             m = wg_size;
 
         for (i = 0; i < m; ++i) {
-            min_ = MIN(inptr[j+i], min_);
+            min_ = std::min(inptr[j + i], min_);
             if (outptr[j+i] != min_) {
                 log_info("work_group_scan_inclusive_min long: Error at %u: expected = %lld, got = %lld\n", (unsigned int)(j+i), min_, outptr[j+i]);
                 return -1;
@@ -147,7 +149,7 @@ verify_wg_scan_inclusive_min_ulong(cl_ulong *inptr, cl_ulong *outptr, size_t n, 
             m = wg_size;
 
         for (i = 0; i < m; ++i) {
-            min_ = MIN(inptr[j+i], min_);
+            min_ = std::min(inptr[j + i], min_);
             if (outptr[j+i] != min_) {
                 log_info("work_group_scan_inclusive_min ulong: Error at %u: expected = %llu, got = %llu\n", (unsigned int)(j+i), min_, outptr[j+i]);
                 return -1;

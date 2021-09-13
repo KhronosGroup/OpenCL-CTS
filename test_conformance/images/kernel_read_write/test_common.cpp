@@ -16,6 +16,7 @@
 
 #include "test_common.h"
 
+#include <algorithm>
 
 cl_sampler create_sampler(cl_context context, image_sampler_data *sdata, bool test_mipmaps, cl_int *error) {
     cl_sampler sampler = nullptr;
@@ -934,13 +935,13 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                         {
                                             err4 = 0.0f;
                                         }
-                                        float maxErr1 = MAX(
+                                        float maxErr1 = std::max(
                                             maxErr * maxPixel.p[0], FLT_MIN);
-                                        float maxErr2 = MAX(
+                                        float maxErr2 = std::max(
                                             maxErr * maxPixel.p[1], FLT_MIN);
-                                        float maxErr3 = MAX(
+                                        float maxErr3 = std::max(
                                             maxErr * maxPixel.p[2], FLT_MIN);
-                                        float maxErr4 = MAX(
+                                        float maxErr4 = std::max(
                                             maxErr * maxPixel.p[3], FLT_MIN);
 
                                         if (!(err1 <= maxErr1)
@@ -1039,17 +1040,17 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                             float err4 = ABS_ERROR(resultPtr[3],
                                                                    expected[3]);
                                             float maxErr1 =
-                                                MAX(maxErr * maxPixel.p[0],
-                                                    FLT_MIN);
+                                                std::max(maxErr * maxPixel.p[0],
+                                                         FLT_MIN);
                                             float maxErr2 =
-                                                MAX(maxErr * maxPixel.p[1],
-                                                    FLT_MIN);
+                                                std::max(maxErr * maxPixel.p[1],
+                                                         FLT_MIN);
                                             float maxErr3 =
-                                                MAX(maxErr * maxPixel.p[2],
-                                                    FLT_MIN);
+                                                std::max(maxErr * maxPixel.p[2],
+                                                         FLT_MIN);
                                             float maxErr4 =
-                                                MAX(maxErr * maxPixel.p[3],
-                                                    FLT_MIN);
+                                                std::max(maxErr * maxPixel.p[3],
+                                                         FLT_MIN);
 
 
                                             if (!(err1 <= maxErr1)

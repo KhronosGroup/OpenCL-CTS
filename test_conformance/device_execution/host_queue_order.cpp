@@ -18,6 +18,7 @@
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "procs.h"
@@ -124,7 +125,7 @@ int test_host_queue_order(cl_device_id device, cl_context context, cl_command_qu
     cl_uint num = arr_size(result);
     if( gWimpyMode )
     {
-        num = MAX(num / 16, 4);
+        num = std::max(num / 16, 4U);
     }
 
     clMemWrapper res_mem;

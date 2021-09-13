@@ -21,6 +21,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+
 #include "procs.h"
 #include "harness/testHarness.h"
 #include "harness/errorHelpers.h"
@@ -28,12 +30,6 @@
 #ifndef uchar
 typedef unsigned char uchar;
 #endif
-
-#undef MIN
-#define MIN(x,y)    ( (x) < (y) ? (x) : (y) )
-
-#undef MAX
-#define MAX(x,y)    ( (x) > (y) ? (x) : (y) )
 
 //#define CREATE_OUTPUT    1
 
@@ -73,8 +69,8 @@ static const char *image_filter_src =
 static void read_imagef( int x, int y, int w, int h, int nChannels, uchar *src, float *srcRgb )
 {
     // clamp the coords
-    int    x0 = MIN( MAX( x, 0 ), w - 1 );
-    int    y0 = MIN( MAX( y, 0 ), h - 1 );
+    int x0 = std::min(std::max(x, 0), w - 1);
+    int y0 = std::min(std::max(y, 0), h - 1);
 
     // get tine index
     int    indx = ( y0 * w + x0 ) * nChannels;

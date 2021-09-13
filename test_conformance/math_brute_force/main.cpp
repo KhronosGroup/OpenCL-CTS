@@ -18,6 +18,7 @@
 #include "sleep.h"
 #include "utility.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -1239,7 +1240,7 @@ float Bruteforce_Ulp_Error_Double(double test, long double reference)
 
         // The unbiased exponent of the ulp unit place
         int ulp_exp =
-            DBL_MANT_DIG - 1 - MAX(ilogbl(reference), DBL_MIN_EXP - 1);
+            DBL_MANT_DIG - 1 - std::max(ilogbl(reference), DBL_MIN_EXP - 1);
 
         // Scale the exponent of the error
         float result = (float)scalbnl(testVal - reference, ulp_exp);
@@ -1255,7 +1256,7 @@ float Bruteforce_Ulp_Error_Double(double test, long double reference)
     // reference is a normal power of two or a zero
     // The unbiased exponent of the ulp unit place
     int ulp_exp =
-        DBL_MANT_DIG - 1 - MAX(ilogbl(reference) - 1, DBL_MIN_EXP - 1);
+        DBL_MANT_DIG - 1 - std::max(ilogbl(reference) - 1, DBL_MIN_EXP - 1);
 
     // allow correctly rounded results to pass through unmolested. (We might add
     // error to it below.) There is something of a performance optimization here

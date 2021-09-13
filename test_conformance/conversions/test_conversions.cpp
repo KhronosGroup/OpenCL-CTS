@@ -47,6 +47,8 @@
 #endif
 #include <time.h>
 
+#include <algorithm>
+
 #include "Sleep.h"
 #include "basic_test_conversions.h"
 
@@ -1003,7 +1005,8 @@ static int DoTest( cl_device_id device, Type outType, Type inType, SaturationMod
     uint64_t i;
 
     gTestCount++;
-    size_t blockCount = BUFFER_SIZE / MAX( gTypeSizes[ inType ], gTypeSizes[ outType ] );
+    size_t blockCount =
+        BUFFER_SIZE / std::max(gTypeSizes[inType], gTypeSizes[outType]);
     size_t step = blockCount;
     uint64_t lastCase = 1ULL << (8*gTypeSizes[ inType ]);
     cl_event writeInputBuffer = NULL;
@@ -1078,7 +1081,7 @@ static int DoTest( cl_device_id device, Type outType, Type inType, SaturationMod
             fflush(stdout);
         }
 
-        cl_uint count = (uint32_t) MIN( blockCount, lastCase - i );
+        cl_uint count = (uint32_t)std::min((uint64_t)blockCount, lastCase - i);
         writeInputBufferInfo.count = count;
 
         // Crate a user event to represent the status of the reference value computation completion

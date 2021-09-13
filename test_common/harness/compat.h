@@ -309,13 +309,6 @@ EXTERN_C int __builtin_clz(unsigned int pattern);
 
 #endif
 
-#ifndef MIN
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-#endif
-#ifndef MAX
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#endif
-
 
 /*-----------------------------------------------------------------------------
    WARNING: DO NOT USE THESE MACROS:

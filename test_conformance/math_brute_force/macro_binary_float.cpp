@@ -485,7 +485,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             goto exit;
         }
 
-        for (auto k = MAX(1, gMinVectorSizeIndex); k < gMaxVectorSizeIndex; k++)
+        for (auto k = std::max(1U, gMinVectorSizeIndex);
+             k < gMaxVectorSizeIndex; k++)
         {
             q = out[k];
             // If we aren't getting the correctly rounded result

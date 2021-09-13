@@ -17,6 +17,9 @@
 #include "harness/testHarness.h"
 
 #include <string.h>
+
+#include <algorithm>
+
 #include "cl_utils.h"
 #include "tests.h"
 
@@ -429,7 +432,7 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
     }
 
     // Figure out how many elements are in a work block
-    size_t elementSize = MAX( sizeof(cl_half), sizeof(cl_float));
+    size_t elementSize = std::max(sizeof(cl_half), sizeof(cl_float));
     size_t blockCount = getBufferSize(device) / elementSize; // elementSize is power of 2
     uint64_t lastCase = 1ULL << (8*sizeof(cl_half)); // number of things of size cl_half
 
@@ -447,7 +450,7 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
 
     for( i = 0; i < (uint64_t)lastCase; i += blockCount )
     {
-        count = (uint32_t) MIN( blockCount, lastCase - i );
+        count = (uint32_t)std::min((uint64_t)blockCount, lastCase - i);
 
         //Init the input stream
         uint16_t *p = (uint16_t *)gIn_half;

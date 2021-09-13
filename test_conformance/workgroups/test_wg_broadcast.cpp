@@ -20,6 +20,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+
 #include "procs.h"
 
 
@@ -310,7 +312,7 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
         localsize[0] = localsize[1] = 1;
     }
 
-    num_workgroups = MAX(n_elems/wg_size[0], 16);
+    num_workgroups = std::max(n_elems / wg_size[0], (size_t)16);
     globalsize[0] = num_workgroups * localsize[0];
     globalsize[1] = num_workgroups * localsize[1];
     num_elements = globalsize[0] * globalsize[1];
@@ -437,7 +439,7 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
         localsize[0] = localsize[1] = localsize[2] = 1;
     }
 
-    num_workgroups = MAX(n_elems/wg_size[0], 8);
+    num_workgroups = std::max(n_elems / wg_size[0], (size_t)8);
     globalsize[0] = num_workgroups * localsize[0];
     globalsize[1] = num_workgroups * localsize[1];
     globalsize[2] = num_workgroups * localsize[2];
