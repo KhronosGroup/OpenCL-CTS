@@ -280,7 +280,9 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                                       "group %d in group %d - got %lu "
                                       "expected %lu\n",
                                       operation_names(operation),
-                                      TypeManager<Ty>::name(), i, j, k, *((cl_ulong*)(&rr)), *((cl_ulong*)(&tr)));
+                                      TypeManager<Ty>::name(), i, j, k,
+                                      *((cl_ulong *)(&rr)),
+                                      *((cl_ulong *)(&tr)));
                             return TEST_FAIL;
                         }
                     }
