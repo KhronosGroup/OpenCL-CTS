@@ -336,6 +336,21 @@ int test_integer_dot_product(cl_device_id deviceID, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
+    Version deviceVersion = get_device_cl_version(deviceID);
+    cl_version extensionVersion;
+
+    if ((deviceVersion >= Version(3, 0))
+        || is_extension_available(deviceID, "cl_khr_extended_versioning"))
+    {
+        extensionVersion =
+            get_extension_version(deviceID, "cl_khr_integer_dot_product");
+    }
+    else
+    {
+        // Assume 1.0.0 is supported if the version can't be queried
+        extensionVersion = CL_MAKE_VERSION(1, 0, 0);
+    }
+
     cl_int error = CL_SUCCESS;
     int result = TEST_PASS;
 
@@ -346,12 +361,63 @@ int test_integer_dot_product(cl_device_id deviceID, cl_context context,
     test_error(
         error,
         "Unable to query CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR");
+
+    // Check that the required capabilities are reported
     test_assert_error(
         dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR,
         "When cl_khr_integer_dot_product is supported "
         "CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR must be "
         "supported");
 
+    if (extensionVersion >= CL_MAKE_VERSION(2, 0, 0))
+    {
+        test_assert_error(
+            dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR,
+            "When cl_khr_integer_dot_product is supported with version >= 2.0.0"
+            "CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR must be "
+            "supported");
+    }
+
+    // Check that acceleration properties can be queried
+    if (extensionVersion >= CL_MAKE_VERSION(2, 0, 0))
+    {
+        size_t size_ret;
+        error = clGetDeviceInfo(
+            deviceID,
+            CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_8BIT_KHR, 0,
+            nullptr, &size_ret);
+        test_error(
+            error,
+            "Unable to query size of data returned by "
+            "CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_8BIT_KHR");
+
+        cl_device_integer_dot_product_acceleration_properties_khr
+            accelerationProperties;
+        error = clGetDeviceInfo(
+            deviceID,
+            CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_8BIT_KHR,
+            sizeof(accelerationProperties), &accelerationProperties, nullptr);
+        test_error(error, "Unable to query 8-bit acceleration properties");
+
+        error = clGetDeviceInfo(
+            deviceID,
+            CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR,
+            0, nullptr, &size_ret);
+        test_error(
+            error,
+            "Unable to query size of data returned by "
+            "CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_"
+            "PACKED_KHR");
+
+        error = clGetDeviceInfo(
+            deviceID,
+            CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR,
+            sizeof(accelerationProperties), &accelerationProperties, nullptr);
+        test_error(error,
+                   "Unable to query 4x8-bit packed acceleration properties");
+    }
+
+    // Report when unknown capabilities are found
     if (dotCaps
         & ~(CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR
             | CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR))
@@ -359,6 +425,7 @@ int test_integer_dot_product(cl_device_id deviceID, cl_context context,
         log_info("NOTE: found an unknown / untested capability!\n");
     }
 
+    // Test built-in functions
     if (dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR)
     {
         result |= test_vectype<cl_uchar, cl_uint, 4>(deviceID, context, queue,
