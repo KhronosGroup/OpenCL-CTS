@@ -305,13 +305,15 @@ int test_subgroup_functions_clustered_reduce(cl_device_id device,
                                              cl_command_queue queue,
                                              int num_elements)
 {
-    std::vector<std::string> required_extensions = {
-        "cl_khr_subgroup_clustered_reduce"
-    };
+    if (!is_extension_available(device, "cl_khr_subgroup_clustered_reduce"))
+    {
+        log_info("cl_khr_subgroup_clustered_reduce is not supported on this "
+                 "device, skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
     constexpr size_t global_work_size = 2000;
     constexpr size_t local_work_size = 200;
-    WorkGroupParams test_params(global_work_size, local_work_size,
-                                required_extensions);
+    WorkGroupParams test_params(global_work_size, local_work_size);
     RunTestForType rft(device, context, queue, num_elements, test_params);
 
     int error = run_cluster_red_add_max_min_mul_for_type<cl_int>(rft);

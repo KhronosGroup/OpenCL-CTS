@@ -33,10 +33,9 @@ extern cl_half_rounding_mode g_rounding_mode;
 struct WorkGroupParams
 {
     WorkGroupParams(size_t gws, size_t lws,
-                    const std::vector<std::string> &req_ext = {},
                     const std::vector<uint32_t> &all_wim = {})
         : global_workgroup_size(gws), local_workgroup_size(lws),
-          required_extensions(req_ext), all_work_item_masks(all_wim)
+          all_work_item_masks(all_wim)
     {
         subgroup_size = 0;
         work_items_mask = 0;
@@ -49,7 +48,6 @@ struct WorkGroupParams
     uint32_t work_items_mask;
     int dynsc;
     bool use_core_subgroups;
-    std::vector<std::string> required_extensions;
     std::vector<uint32_t> all_work_item_masks;
 };
 
@@ -1295,19 +1293,6 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
             {
                 kernel_sstr << "#pragma OPENCL EXTENSION cl_khr_fp16: enable\n";
             }
-        }
-
-        for (std::string extension : test_params.required_extensions)
-        {
-            if (!is_extension_available(device, extension.c_str()))
-            {
-                log_info("The extension %s not supported on this device. SKIP "
-                         "testing - kernel %s data type %s\n",
-                         extension.c_str(), kname, TypeManager<Ty>::name());
-                return TEST_PASS;
-            }
-            kernel_sstr << "#pragma OPENCL EXTENSION " + extension
-                    + ": enable\n";
         }
 
         error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
