@@ -25,6 +25,8 @@ jobs:
             name: AArch64
             arch: aarch64
     steps:
+      - name: Install packages
+        run: if [[ "${{matrix.os}}" == "ubuntu-20.04" ]]; then sudo apt install -y spirv-tools; fi
       - uses: actions/checkout@v2
       - name: Build
         run: ./presubmit.sh
