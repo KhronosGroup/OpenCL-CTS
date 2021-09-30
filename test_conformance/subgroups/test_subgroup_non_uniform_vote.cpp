@@ -272,15 +272,16 @@ int test_subgroup_functions_non_uniform_vote(cl_device_id device,
                                              cl_command_queue queue,
                                              int num_elements)
 {
-    std::vector<std::string> required_extensions = {
-        "cl_khr_subgroup_non_uniform_vote"
-    };
-
+    if (!is_extension_available(device, "cl_khr_subgroup_non_uniform_vote"))
+    {
+        log_info("cl_khr_subgroup_non_uniform_vote is not supported on this "
+                 "device, skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
 
     constexpr size_t global_work_size = 170;
     constexpr size_t local_work_size = 64;
-    WorkGroupParams test_params(global_work_size, local_work_size,
-                                required_extensions, true);
+    WorkGroupParams test_params(global_work_size, local_work_size, true);
     test_params.save_kernel_source(
         sub_group_non_uniform_any_all_all_equal_source);
     test_params.save_kernel_source(sub_group_elect_source, "sub_group_elect");

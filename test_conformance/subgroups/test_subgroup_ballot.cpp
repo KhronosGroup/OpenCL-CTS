@@ -814,11 +814,16 @@ template <typename T> int run_non_uniform_broadcast_for_type(RunTestForType rft)
 int test_subgroup_functions_ballot(cl_device_id device, cl_context context,
                                    cl_command_queue queue, int num_elements)
 {
-    std::vector<std::string> required_extensions = { "cl_khr_subgroup_ballot" };
+    if (!is_extension_available(device, "cl_khr_subgroup_ballot"))
+    {
+        log_info("cl_khr_subgroup_ballot is not supported on this device, "
+                 "skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     constexpr size_t global_work_size = 170;
     constexpr size_t local_work_size = 64;
-    WorkGroupParams test_params(global_work_size, local_work_size,
-                                required_extensions);
+    WorkGroupParams test_params(global_work_size, local_work_size);
     test_params.save_kernel_source(sub_group_ballot_mask_source);
     test_params.save_kernel_source(sub_group_non_uniform_broadcast_source,
                                    "sub_group_non_uniform_broadcast");
@@ -953,8 +958,7 @@ int test_subgroup_functions_ballot(cl_device_id device, cl_context context,
         "get_sub_group_lt_mask");
 
     // ballot functions
-    WorkGroupParams test_params_ballot(global_work_size, local_work_size,
-                                       required_extensions);
+    WorkGroupParams test_params_ballot(global_work_size, local_work_size);
     test_params_ballot.save_kernel_source(
         sub_group_ballot_bit_scan_find_source);
     test_params_ballot.save_kernel_source(sub_group_ballot_source,

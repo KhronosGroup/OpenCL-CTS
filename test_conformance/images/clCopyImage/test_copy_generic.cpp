@@ -547,18 +547,19 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
         {
             if( memcmp( sourcePtr, destPtr, scanlineSize ) != 0 )
             {
-                // Find the first missing pixel
+                // Find the first differing pixel
                 size_t pixel_size = get_pixel_size( dstImageInfo->format );
-                size_t where = 0;
-                for( where = 0; where < dstImageInfo->width; where++ )
-                    if( memcmp( sourcePtr + pixel_size * where, destPtr + pixel_size * where, pixel_size) )
-                        break;
+                size_t where =
+                    compare_scanlines(dstImageInfo, sourcePtr, destPtr);
 
-                print_first_pixel_difference_error(
-                    where, sourcePtr + pixel_size * where,
-                    destPtr + pixel_size * where, dstImageInfo, y,
-                    dstImageInfo->depth);
-                return -1;
+                if (where < dstImageInfo->width)
+                {
+                    print_first_pixel_difference_error(
+                        where, sourcePtr + pixel_size * where,
+                        destPtr + pixel_size * where, dstImageInfo, y,
+                        dstImageInfo->depth);
+                    return -1;
+                }
             }
             sourcePtr += rowPitch;
             if((dstImageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY || dstImageInfo->type == CL_MEM_OBJECT_IMAGE1D))

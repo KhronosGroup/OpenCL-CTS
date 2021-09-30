@@ -34,7 +34,6 @@
 
 struct Func;
 
-extern int gWimpyBufferSize;
 extern int gWimpyReductionFactor;
 
 #define VECTOR_SIZE_COUNT 6
@@ -56,24 +55,17 @@ extern cl_mem gInBuffer2;
 extern cl_mem gInBuffer3;
 extern cl_mem gOutBuffer[VECTOR_SIZE_COUNT];
 extern cl_mem gOutBuffer2[VECTOR_SIZE_COUNT];
-extern uint32_t gComputeDevices;
-extern uint32_t gSimdSize;
 extern int gSkipCorrectnessTesting;
-extern int gMeasureTimes;
-extern int gReportAverageTimes;
 extern int gForceFTZ;
 extern int gFastRelaxedDerived;
 extern int gWimpyMode;
-extern int gHasDouble;
 extern int gIsInRTZMode;
 extern int gInfNanSupport;
 extern int gIsEmbedded;
 extern int gVerboseBruteForce;
 extern uint32_t gMaxVectorSizeIndex;
 extern uint32_t gMinVectorSizeIndex;
-extern uint32_t gDeviceFrequency;
 extern cl_device_fp_config gFloatCapabilities;
-extern cl_device_fp_config gDoubleCapabilities;
 
 #define LOWER_IS_BETTER 0
 #define HIGHER_IS_BETTER 1
@@ -91,8 +83,6 @@ float Abs_Error(float test, double reference);
 float Ulp_Error(float test, double reference);
 float Bruteforce_Ulp_Error_Double(double test, long double reference);
 
-uint64_t GetTime(void);
-double SubtractTime(uint64_t endTime, uint64_t startTime);
 int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
                cl_program *p, bool relaxedMode);
 int MakeKernels(const char **c, cl_uint count, const char *name,
@@ -100,8 +90,7 @@ int MakeKernels(const char **c, cl_uint count, const char *name,
                 bool relaxedMode);
 
 // used to convert a bucket of bits into a search pattern through double
-static inline double DoubleFromUInt32(uint32_t bits);
-static inline double DoubleFromUInt32(uint32_t bits)
+inline double DoubleFromUInt32(uint32_t bits)
 {
     union {
         uint64_t u;
@@ -123,31 +112,29 @@ static inline double DoubleFromUInt32(uint32_t bits)
 void _LogBuildError(cl_program p, int line, const char *file);
 #define LogBuildError(program) _LogBuildError(program, __LINE__, __FILE__)
 
-#define PERF_LOOP_COUNT 100
-
 // The spec is fairly clear that we may enforce a hard cutoff to prevent
 // premature flushing to zero.
 // However, to avoid conflict for 1.0, we are letting results at TYPE_MIN +
 // ulp_limit to be flushed to zero.
-static inline int IsFloatResultSubnormal(double x, float ulps)
+inline int IsFloatResultSubnormal(double x, float ulps)
 {
     x = fabs(x) - MAKE_HEX_DOUBLE(0x1.0p-149, 0x1, -149) * (double)ulps;
     return x < MAKE_HEX_DOUBLE(0x1.0p-126, 0x1, -126);
 }
 
-static inline int IsFloatResultSubnormalAbsError(double x, float abs_err)
+inline int IsFloatResultSubnormalAbsError(double x, float abs_err)
 {
     x = x - abs_err;
     return x < MAKE_HEX_DOUBLE(0x1.0p-126, 0x1, -126);
 }
 
-static inline int IsDoubleResultSubnormal(long double x, float ulps)
+inline int IsDoubleResultSubnormal(long double x, float ulps)
 {
     x = fabsl(x) - MAKE_HEX_LONG(0x1.0p-1074, 0x1, -1074) * (long double)ulps;
     return x < MAKE_HEX_LONG(0x1.0p-1022, 0x1, -1022);
 }
 
-static inline int IsFloatInfinity(double x)
+inline int IsFloatInfinity(double x)
 {
     union {
         cl_float d;
@@ -157,7 +144,7 @@ static inline int IsFloatInfinity(double x)
     return ((u.u & 0x7fffffffU) == 0x7F800000U);
 }
 
-static inline int IsFloatMaxFloat(double x)
+inline int IsFloatMaxFloat(double x)
 {
     union {
         cl_float d;
@@ -167,7 +154,7 @@ static inline int IsFloatMaxFloat(double x)
     return ((u.u & 0x7fffffffU) == 0x7F7FFFFFU);
 }
 
-static inline int IsFloatNaN(double x)
+inline int IsFloatNaN(double x)
 {
     union {
         cl_float d;
@@ -177,13 +164,13 @@ static inline int IsFloatNaN(double x)
     return ((u.u & 0x7fffffffU) > 0x7F800000U);
 }
 
-extern cl_uint RoundUpToNextPowerOfTwo(cl_uint x);
+cl_uint RoundUpToNextPowerOfTwo(cl_uint x);
 
 // Windows (since long double got deprecated) sets the x87 to 53-bit precision
 // (that's x87 default state).  This causes problems with the tests that
 // convert long and ulong to float and double or otherwise deal with values
 // that need more precision than 53-bit. So, set the x87 to 64-bit precision.
-static inline void Force64BitFPUPrecision(void)
+inline void Force64BitFPUPrecision(void)
 {
 #if __MINGW32__
     // The usual method is to use _controlfp as follows:
@@ -214,17 +201,17 @@ static inline void Force64BitFPUPrecision(void)
 #endif
 }
 
-extern void memset_pattern4(void *dest, const void *src_pattern, size_t bytes);
+void memset_pattern4(void *dest, const void *src_pattern, size_t bytes);
 
-typedef union {
+union int32f_t {
     int32_t i;
     float f;
-} int32f_t;
+};
 
-typedef union {
+union int64d_t {
     int64_t l;
     double d;
-} int64d_t;
+};
 
 void MulD(double *rhi, double *rlo, double u, double v);
 void AddD(double *rhi, double *rlo, double a, double b);
@@ -241,7 +228,7 @@ void logFunctionInfo(const char *fname, unsigned int float_size,
 
 float getAllowedUlpError(const Func *f, const bool relaxed);
 
-static inline cl_uint getTestScale(size_t typeSize)
+inline cl_uint getTestScale(size_t typeSize)
 {
     if (gWimpyMode)
     {
@@ -257,7 +244,7 @@ static inline cl_uint getTestScale(size_t typeSize)
     }
 }
 
-static inline uint64_t getTestStep(size_t typeSize, size_t bufferSize)
+inline uint64_t getTestStep(size_t typeSize, size_t bufferSize)
 {
     if (gWimpyMode)
     {

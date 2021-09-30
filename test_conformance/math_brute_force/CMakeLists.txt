@@ -9,7 +9,9 @@ set(${MODULE_NAME}_SOURCES
     binary_operator_float.cpp
     binary_two_results_i_double.cpp
     binary_two_results_i_float.cpp
+    common.h
     function_list.cpp
+    function_list.h
     i_unary_double.cpp
     i_unary_float.cpp
     macro_binary_double.cpp
@@ -20,9 +22,12 @@ set(${MODULE_NAME}_SOURCES
     mad_float.cpp
     main.cpp
     reference_math.cpp
+    reference_math.h
     sleep.cpp
+    sleep.h
     ternary_double.cpp
     ternary_float.cpp
+    test_functions.h
     unary_double.cpp
     unary_float.cpp
     unary_two_results_double.cpp
@@ -32,17 +37,7 @@ set(${MODULE_NAME}_SOURCES
     unary_u_double.cpp
     unary_u_float.cpp
     utility.cpp
+    utility.h
 )
-
-if (NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
-set_source_files_properties(
-${MODULE_NAME}_SOURCES
-    COMPILE_FLAGS -march=i686)
-endif (NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
-
-if(CMAKE_COMPILER_IS_GNUCC)
-set_source_files_properties(
-        COMPILE_FLAGS -O0)
-endif(CMAKE_COMPILER_IS_GNUCC)
 
 include(../CMakeCommon.txt)

@@ -21,18 +21,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+
 #include "procs.h"
-
-#define UCHAR_MIN   0
-#define USHRT_MIN   0
-#define UINT_MIN    0
-
-#ifndef MAX
-#define MAX( _a, _b )   ( (_a) > (_b) ? (_a) : (_b) )
-#endif
-#ifndef MIN
-#define MIN( _a, _b )   ( (_a) < (_b) ? (_a) : (_b) )
-#endif
 
 static int verify_addsat_char( const cl_char *inA, const cl_char *inB, const cl_char *outptr, int n, const char *sizeName, int vecSize )
 {
@@ -40,8 +31,8 @@ static int verify_addsat_char( const cl_char *inA, const cl_char *inB, const cl_
     for( i = 0; i < n; i++ )
     {
         cl_int r = (cl_int) inA[i] + (cl_int) inB[i];
-        r = MAX( r, CL_CHAR_MIN );
-        r = MIN( r, CL_CHAR_MAX );
+        r = std::max(r, CL_CHAR_MIN);
+        r = std::min(r, CL_CHAR_MAX);
 
         if( r != outptr[i] )
         { log_info( "\n%d) Failure for add_sat( (char%s) 0x%2.2x, (char%s) 0x%2.2x) = *0x%2.2x vs 0x%2.2x\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
@@ -55,9 +46,9 @@ static int verify_addsat_uchar( const cl_uchar *inA, const cl_uchar *inB, const 
     for( i = 0; i < n; i++ )
     {
         cl_int r = (int) inA[i] + (int) inB[i];
-        r = MAX( r, 0 );
-        r = MIN( r, CL_UCHAR_MAX );
-        if( r != outptr[i] )
+        r = std::max(r, 0);
+        r = std::min(r, CL_UCHAR_MAX);
+        if (r != outptr[i])
         { log_info( "\n%d) Failure for add_sat( (uchar%s) 0x%2.2x, (uchar%s) 0x%2.2x) = *0x%2.2x vs 0x%2.2x\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
     }
     return 0;
@@ -69,8 +60,8 @@ static int verify_addsat_short( const cl_short *inA, const cl_short *inB, const 
     for( i = 0; i < n; i++ )
     {
         cl_int r = (cl_int) inA[i] + (cl_int) inB[i];
-        r = MAX( r, CL_SHRT_MIN );
-        r = MIN( r, CL_SHRT_MAX );
+        r = std::max(r, CL_SHRT_MIN);
+        r = std::min(r, CL_SHRT_MAX);
 
         if( r != outptr[i] )
         { log_info( "\n%d) Failure for add_sat( (short%s) 0x%4.4x, (short%s) 0x%4.4x) = *0x%4.4x vs 0x%4.4x\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
@@ -84,8 +75,8 @@ static int verify_addsat_ushort( const cl_ushort *inA, const cl_ushort *inB, con
     for( i = 0; i < n; i++ )
     {
         cl_int r = (cl_int) inA[i] + (cl_int) inB[i];
-        r = MAX( r, 0 );
-        r = MIN( r, CL_USHRT_MAX );
+        r = std::max(r, 0);
+        r = std::min(r, CL_USHRT_MAX);
 
         if( r != outptr[i] )
         { log_info( "\n%d) Failure for add_sat( (ushort%s) 0x%4.4x, (ushort%s) 0x%4.4x) = *0x%4.4x vs 0x%4.4x\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }

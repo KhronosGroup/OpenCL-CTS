@@ -32,14 +32,14 @@
 
 extern MTdata gMTdata;
 typedef std::bitset<128> bs128;
+extern cl_half_rounding_mode g_rounding_mode;
 
 struct WorkGroupParams
 {
     WorkGroupParams(size_t gws, size_t lws,
-                    const std::vector<std::string> &req_ext = {},
                     bool use_mask = false)
         : global_workgroup_size(gws), local_workgroup_size(lws),
-          required_extensions(req_ext), use_masks(use_mask)
+          use_masks(use_mask)
     {
         subgroup_size = 0;
         work_items_mask = 0;
@@ -53,7 +53,6 @@ struct WorkGroupParams
     bs128 work_items_mask;
     int dynsc;
     bool use_core_subgroups;
-    std::vector<std::string> required_extensions;
     std::vector<bs128> all_work_item_masks;
     bool use_masks;
     void save_kernel_source(const std::string &source, std::string name = "")
@@ -1221,7 +1220,7 @@ template <typename Ty>
 typename std::enable_if<TypeManager<Ty>::is_sb_scalar_type::value>::type
 set_value(Ty &lhs, const cl_ulong &rhs)
 {
-    lhs.data = rhs;
+    lhs.data = cl_half_from_float(static_cast<cl_float>(rhs), g_rounding_mode);
 }
 
 // compare for common vectors
@@ -1447,19 +1446,6 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
             {
                 kernel_sstr << "#pragma OPENCL EXTENSION cl_khr_fp16: enable\n";
             }
-        }
-
-        for (std::string extension : test_params.required_extensions)
-        {
-            if (!is_extension_available(device, extension.c_str()))
-            {
-                log_info("The extension %s not supported on this device. SKIP "
-                         "testing - kernel %s data type %s\n",
-                         extension.c_str(), kname, TypeManager<Ty>::name());
-                return TEST_PASS;
-            }
-            kernel_sstr << "#pragma OPENCL EXTENSION " + extension
-                    + ": enable\n";
         }
 
         error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),

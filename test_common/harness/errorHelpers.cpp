@@ -18,9 +18,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <algorithm>
+
 #include "errorHelpers.h"
 
 #include "parseParameters.h"
+#include "testHarness.h"
 
 #include <CL/cl_half.h>
 
@@ -300,10 +303,6 @@ const char *GetQueuePropertyName(cl_command_queue_properties property)
     }
 }
 
-#ifndef MAX
-#define MAX(_a, _b) ((_a) > (_b) ? (_a) : (_b))
-#endif
-
 #if defined(_MSC_VER)
 #define scalbnf(_a, _i) ldexpf(_a, _i)
 #define scalbn(_a, _i) ldexp(_a, _i)
@@ -356,7 +355,7 @@ static float Ulp_Error_Half_Float(float test, double reference)
 
         // The unbiased exponent of the ulp unit place
         int ulp_exp =
-            HALF_MANT_DIG - 1 - MAX(ilogb(reference), HALF_MIN_EXP - 1);
+            HALF_MANT_DIG - 1 - std::max(ilogb(reference), HALF_MIN_EXP - 1);
 
         // Scale the exponent of the error
         return (float)scalbn(testVal - reference, ulp_exp);
@@ -364,7 +363,7 @@ static float Ulp_Error_Half_Float(float test, double reference)
 
     // reference is a normal power of two or a zero
     int ulp_exp =
-        HALF_MANT_DIG - 1 - MAX(ilogb(reference) - 1, HALF_MIN_EXP - 1);
+        HALF_MANT_DIG - 1 - std::max(ilogb(reference) - 1, HALF_MIN_EXP - 1);
 
     // Scale the exponent of the error
     return (float)scalbn(testVal - reference, ulp_exp);
@@ -436,7 +435,8 @@ float Ulp_Error(float test, double reference)
             return 0.0f; // if we are expecting a NaN, any NaN is fine
 
         // The unbiased exponent of the ulp unit place
-        int ulp_exp = FLT_MANT_DIG - 1 - MAX(ilogb(reference), FLT_MIN_EXP - 1);
+        int ulp_exp =
+            FLT_MANT_DIG - 1 - std::max(ilogb(reference), FLT_MIN_EXP - 1);
 
         // Scale the exponent of the error
         return (float)scalbn(testVal - reference, ulp_exp);
@@ -444,7 +444,8 @@ float Ulp_Error(float test, double reference)
 
     // reference is a normal power of two or a zero
     // The unbiased exponent of the ulp unit place
-    int ulp_exp = FLT_MANT_DIG - 1 - MAX(ilogb(reference) - 1, FLT_MIN_EXP - 1);
+    int ulp_exp =
+        FLT_MANT_DIG - 1 - std::max(ilogb(reference) - 1, FLT_MIN_EXP - 1);
 
     // Scale the exponent of the error
     return (float)scalbn(testVal - reference, ulp_exp);
@@ -512,7 +513,7 @@ float Ulp_Error_Double(double test, long double reference)
 
         // The unbiased exponent of the ulp unit place
         int ulp_exp =
-            DBL_MANT_DIG - 1 - MAX(ilogbl(reference), DBL_MIN_EXP - 1);
+            DBL_MANT_DIG - 1 - std::max(ilogbl(reference), DBL_MIN_EXP - 1);
 
         // Scale the exponent of the error
         float result = (float)scalbnl(testVal - reference, ulp_exp);
@@ -528,7 +529,7 @@ float Ulp_Error_Double(double test, long double reference)
     // reference is a normal power of two or a zero
     // The unbiased exponent of the ulp unit place
     int ulp_exp =
-        DBL_MANT_DIG - 1 - MAX(ilogbl(reference) - 1, DBL_MIN_EXP - 1);
+        DBL_MANT_DIG - 1 - std::max(ilogbl(reference) - 1, DBL_MIN_EXP - 1);
 
     // Scale the exponent of the error
     float result = (float)scalbnl(testVal - reference, ulp_exp);
@@ -564,7 +565,7 @@ cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
             error = clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL,
                                      &size_ret);
             test_error(error, "Unable to query context's device size");
-            num_devices = size_ret / sizeof(cl_device_id);
+            num_devices = static_cast<cl_uint>(size_ret / sizeof(cl_device_id));
             device_list = (cl_device_id *)malloc(size_ret);
             if (device_list == NULL)
             {
@@ -623,7 +624,6 @@ cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
 
 const char *subtests_to_skip_with_offline_compiler[] = {
     "get_kernel_arg_info",
-    "get_kernel_arg_info_compatibility",
     "binary_create",
     "load_program_source",
     "load_multistring_source",
@@ -691,21 +691,19 @@ const char *subtests_to_skip_with_offline_compiler[] = {
     "library_function"
 };
 
-int check_functions_for_offline_compiler(const char *subtestname,
-                                         cl_device_id device)
+bool check_functions_for_offline_compiler(const char *subtestname)
 {
     if (gCompilationMode != kOnline)
     {
-        int nNotRequiredWithOfflineCompiler =
-            sizeof(subtests_to_skip_with_offline_compiler) / sizeof(char *);
-        size_t i;
-        for (i = 0; i < nNotRequiredWithOfflineCompiler; ++i)
+        size_t nNotRequiredWithOfflineCompiler =
+            ARRAY_SIZE(subtests_to_skip_with_offline_compiler);
+        for (size_t i = 0; i < nNotRequiredWithOfflineCompiler; ++i)
         {
             if (!strcmp(subtestname, subtests_to_skip_with_offline_compiler[i]))
             {
-                return 1;
+                return false;
             }
         }
     }
-    return 0;
+    return true;
 }

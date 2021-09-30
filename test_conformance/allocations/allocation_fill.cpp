@@ -200,8 +200,10 @@ int fill_image_with_data(cl_context context, cl_device_id device_id, cl_command_
       result = clFinish(*queue);
       if (result != SUCCEEDED)
       {
-        print_error(error, "clFinish failed after successful enquing filling buffer with data.");
-        return result;
+          print_error(error,
+                      "clFinish failed after successful enqueuing filling "
+                      "buffer with data.");
+          return result;
       }
     } else {
       error = clEnqueueWriteImage(*queue, mem, CL_FALSE, origin, region, 0, 0, data, 0, NULL, &event);

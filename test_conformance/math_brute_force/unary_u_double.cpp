@@ -20,8 +20,10 @@
 
 #include <cstring>
 
-static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
-                       cl_program *p, bool relaxedMode)
+namespace {
+
+int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
+                bool relaxedMode)
 {
     const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
                         "__kernel void math_kernel",
@@ -102,16 +104,16 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
     return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
 }
 
-typedef struct BuildKernelInfo
+struct BuildKernelInfo
 {
     cl_uint offset; // the first vector size to build
     cl_kernel *kernels;
     cl_program *programs;
     const char *nameInCode;
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
-} BuildKernelInfo;
+};
 
-static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
+cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
@@ -119,23 +121,22 @@ static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
                        info->programs + i, info->relaxedMode);
 }
 
-static cl_ulong random64(MTdata d)
+cl_ulong random64(MTdata d)
 {
     return (cl_ulong)genrand_int32(d) | ((cl_ulong)genrand_int32(d) << 32);
 }
 
+} // anonymous namespace
+
 int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
 {
-    uint64_t i;
-    uint32_t j, k;
     int error;
     cl_program programs[VECTOR_SIZE_COUNT];
     cl_kernel kernels[VECTOR_SIZE_COUNT];
     float maxError = 0.0f;
     int ftz = f->ftz || gForceFTZ;
     double maxErrorVal = 0.0f;
-    size_t bufferSize = (gWimpyMode) ? gWimpyBufferSize : BUFFER_SIZE;
-    uint64_t step = getTestStep(sizeof(cl_double), bufferSize);
+    uint64_t step = getTestStep(sizeof(cl_double), BUFFER_SIZE);
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
@@ -151,27 +152,28 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
             return error;
     }
 
-    for (i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
         // Init input array
         cl_ulong *p = (cl_ulong *)gIn;
-        for (j = 0; j < bufferSize / sizeof(cl_ulong); j++) p[j] = random64(d);
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(cl_ulong); j++)
+            p[j] = random64(d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
-                                          bufferSize, gIn, 0, NULL, NULL)))
+                                          BUFFER_SIZE, gIn, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
         }
 
         // write garbage into output arrays
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
-            memset_pattern4(gOut[j], &pattern, bufferSize);
+            memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
             if ((error =
                      clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
-                                          bufferSize, gOut[j], 0, NULL, NULL)))
+                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
                            error, j);
@@ -180,10 +182,10 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_double);
-            size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;
+            size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
             if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
                                         &gOutBuffer[j])))
             {
@@ -212,15 +214,15 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
         // Calculate the correctly rounded reference result
         double *r = (double *)gOut_Ref;
         cl_ulong *s = (cl_ulong *)gIn;
-        for (j = 0; j < bufferSize / sizeof(cl_double); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(cl_double); j++)
             r[j] = (double)f->dfunc.f_u(s[j]);
 
         // Read the data back
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
-                                         bufferSize, gOut[j], 0, NULL, NULL)))
+                                         BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
                 goto exit;
@@ -231,9 +233,9 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
 
         // Verify data
         uint64_t *t = (uint64_t *)gOut_Ref;
-        for (j = 0; j < bufferSize / sizeof(cl_double); j++)
+        for (size_t j = 0; j < BUFFER_SIZE / sizeof(cl_double); j++)
         {
-            for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+            for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
                 uint64_t *q = (uint64_t *)(gOut[k]);
 
@@ -245,7 +247,6 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
                     float err = Bruteforce_Ulp_Error_Double(test, correct);
                     int fail = !(fabsf(err) <= f->double_ulps);
 
-                    // half_sin/cos/tan are only valid between +-2**16, Inf, NaN
                     if (fail)
                     {
                         if (ftz)
@@ -283,7 +284,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
             if (gVerboseBruteForce)
             {
                 vlog("base:%14u step:%10zu  bufferSize:%10zd \n", i, step,
-                     bufferSize);
+                     BUFFER_SIZE);
             }
             else
             {
@@ -299,81 +300,15 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
             vlog("Wimp pass");
         else
             vlog("passed");
+
+        vlog("\t%8.2f @ %a", maxError, maxErrorVal);
     }
 
-    if (gMeasureTimes)
-    {
-        // Init input array
-        double *p = (double *)gIn;
-
-        for (j = 0; j < bufferSize / sizeof(double); j++) p[j] = random64(d);
-        if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
-                                          bufferSize, gIn, 0, NULL, NULL)))
-        {
-            vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
-            return error;
-        }
-
-
-        // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-        {
-            size_t vectorSize = sizeValues[j] * sizeof(cl_double);
-            size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;
-            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
-                                        &gOutBuffer[j])))
-            {
-                LogBuildError(programs[j]);
-                goto exit;
-            }
-            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gInBuffer),
-                                        &gInBuffer)))
-            {
-                LogBuildError(programs[j]);
-                goto exit;
-            }
-
-            double sum = 0.0;
-            double bestTime = INFINITY;
-            for (k = 0; k < PERF_LOOP_COUNT; k++)
-            {
-                uint64_t startTime = GetTime();
-                if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
-                                                    &localCount, NULL, 0, NULL,
-                                                    NULL)))
-                {
-                    vlog_error("FAILED -- could not execute kernel\n");
-                    goto exit;
-                }
-
-                // Make sure OpenCL is done
-                if ((error = clFinish(gQueue)))
-                {
-                    vlog_error("Error %d at clFinish\n", error);
-                    goto exit;
-                }
-
-                uint64_t endTime = GetTime();
-                double time = SubtractTime(endTime, startTime);
-                sum += time;
-                if (time < bestTime) bestTime = time;
-            }
-
-            if (gReportAverageTimes) bestTime = sum / PERF_LOOP_COUNT;
-            double clocksPerOp = bestTime * (double)gDeviceFrequency
-                * gComputeDevices * gSimdSize * 1e6
-                / (bufferSize / sizeof(double));
-            vlog_perf(clocksPerOp, LOWER_IS_BETTER, "clocks / element", "%sD%s",
-                      f->name, sizeNames[j]);
-        }
-    }
-
-    if (!gSkipCorrectnessTesting) vlog("\t%8.2f @ %a", maxError, maxErrorVal);
     vlog("\n");
 
 exit:
     // Release
-    for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
     {
         clReleaseKernel(kernels[k]);
         clReleaseProgram(programs[k]);
