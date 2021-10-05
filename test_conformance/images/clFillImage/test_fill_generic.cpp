@@ -468,27 +468,19 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     {
         for ( size_t y = 0; y < secondDim; y++ )
         {
-            // If the data type is 101010 ignore bits 31 and 32 when comparing the row
-            if (imageInfo->format->image_channel_data_type == CL_UNORM_INT_101010) {
-              for (size_t w=0;w!=scanlineSize/4;++w) {
-                ((cl_uint*)sourcePtr)[w] &= 0x3FFFFFFF;
-                ((cl_uint*)destPtr)[w] &= 0x3FFFFFFF;
-              }
-            }
-
             if (memcmp( sourcePtr, destPtr, scanlineSize ) != 0)
             {
-                // Find the first missing pixel
+                // Find the first differing pixel
                 size_t pixel_size = get_pixel_size( imageInfo->format );
-                size_t where = 0;
-                for ( where = 0; where < imageInfo->width; where++ )
-                    if ( memcmp( sourcePtr + pixel_size * where, destPtr + pixel_size * where, pixel_size) )
-                        break;
+                size_t where = compare_scanlines(imageInfo, sourcePtr, destPtr);
 
-                print_first_pixel_difference_error(
-                    where, sourcePtr + pixel_size * where,
-                    destPtr + pixel_size * where, imageInfo, y, thirdDim);
-                return -1;
+                if (where < imageInfo->width)
+                {
+                    print_first_pixel_difference_error(
+                        where, sourcePtr + pixel_size * where,
+                        destPtr + pixel_size * where, imageInfo, y, thirdDim);
+                    return -1;
+                }
             }
 
             total_matched += scanlineSize;

@@ -105,7 +105,7 @@ int test_device_uuid(cl_device_id deviceID, cl_context context,
     if (!is_extension_available(deviceID, "cl_khr_device_uuid"))
     {
         log_info("cl_khr_device_uuid not supported. Skipping test...\n");
-        return 0;
+        return TEST_SKIPPED_ITSELF;
     }
 
     int total_errors = 0;

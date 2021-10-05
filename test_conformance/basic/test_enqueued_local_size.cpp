@@ -14,13 +14,15 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/rounding_mode.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "harness/rounding_mode.h"
+
+#include <algorithm>
 
 #include "procs.h"
 
@@ -124,8 +126,8 @@ test_enqueued_local_size(cl_device_id device, cl_context context, cl_command_que
     err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_wgs), &max_wgs, NULL);
     test_error( err, "clGetDeviceInfo failed.");
 
-    localsize[0] = MIN(16, max_wgs);
-    localsize[1] = MIN(11, max_wgs / localsize[0]);
+    localsize[0] = std::min<size_t>(16, max_wgs);
+    localsize[1] = std::min<size_t>(11, max_wgs / localsize[0]);
     // If we need to use uniform workgroups because non-uniform workgroups are
     // not supported, round up to the next global size that is divisible by the
     // local size.

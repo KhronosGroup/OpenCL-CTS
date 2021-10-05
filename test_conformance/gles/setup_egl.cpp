@@ -117,7 +117,8 @@ public:
                 _platform, "clGetGLContextInfoKHR");
         if (GetGLContextInfo == NULL)
         {
-            print_error(status, "clGetGLContextInfoKHR failed");
+            log_error("ERROR: clGetGLContextInfoKHR failed! (%s:%d)\n",
+                      __FILE__, __LINE__);
             return NULL;
         }
 
@@ -128,7 +129,7 @@ public:
             return NULL;
         }
         dev_size /= sizeof(cl_device_id);
-        log_info("GL _context supports %d compute devices\n", dev_size);
+        log_info("GL _context supports %zu compute devices\n", dev_size);
 
         status =
             GetGLContextInfo(properties, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR,

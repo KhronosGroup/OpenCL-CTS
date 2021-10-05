@@ -15,38 +15,19 @@
 //
 #include "procs.h"
 #include "subhelpers.h"
+#include "subgroup_common_kernels.h"
 #include "subgroup_common_templates.h"
 #include "harness/typeWrappers.h"
 #include <bitset>
 
 namespace {
 
-static const char* shuffle_xor_source =
-    "__kernel void test_sub_group_shuffle_xor(const __global Type *in, "
-    "__global int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    Type x = in[gid];\n"
-    "    out[gid] = sub_group_shuffle_xor(x, xy[gid].z);"
-    "}\n";
-
-static const char* shuffle_source =
-    "__kernel void test_sub_group_shuffle(const __global Type *in, __global "
-    "int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    Type x = in[gid];\n"
-    "    out[gid] = sub_group_shuffle(x, xy[gid].z);"
-    "}\n";
-
 template <typename T> int run_shuffle_for_type(RunTestForType rft)
 {
-    int error = rft.run_impl<T, SHF<T, ShuffleOp::shuffle>>(
-        "test_sub_group_shuffle", shuffle_source);
+    int error =
+        rft.run_impl<T, SHF<T, ShuffleOp::shuffle>>("sub_group_shuffle");
     error |= rft.run_impl<T, SHF<T, ShuffleOp::shuffle_xor>>(
-        "test_sub_group_shuffle_xor", shuffle_xor_source);
+        "sub_group_shuffle_xor");
     return error;
 }
 
@@ -55,11 +36,17 @@ template <typename T> int run_shuffle_for_type(RunTestForType rft)
 int test_subgroup_functions_shuffle(cl_device_id device, cl_context context,
                                     cl_command_queue queue, int num_elements)
 {
-    std::vector<std::string> required_extensions{ "cl_khr_subgroup_shuffle" };
+    if (!is_extension_available(device, "cl_khr_subgroup_shuffle"))
+    {
+        log_info("cl_khr_subgroup_shuffle is not supported on this device, "
+                 "skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     constexpr size_t global_work_size = 2000;
     constexpr size_t local_work_size = 200;
-    WorkGroupParams test_params(global_work_size, local_work_size,
-                                required_extensions);
+    WorkGroupParams test_params(global_work_size, local_work_size);
+    test_params.save_kernel_source(sub_group_generic_source);
     RunTestForType rft(device, context, queue, num_elements, test_params);
 
     int error = run_shuffle_for_type<cl_int>(rft);

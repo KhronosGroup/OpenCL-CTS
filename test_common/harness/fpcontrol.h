@@ -16,6 +16,8 @@
 #ifndef _fpcontrol_h
 #define _fpcontrol_h
 
+#include <cstdint>
+
 // In order to get tests for correctly rounded operations (e.g. multiply) to
 // work properly we need to be able to set the reference hardware to FTZ mode if
 // the device hardware is running in that mode.  We have explored all other
@@ -30,7 +32,11 @@
 // that rounding mode.
 #if defined(__APPLE__) || defined(_MSC_VER) || defined(__linux__)              \
     || defined(__MINGW32__)
+#ifdef _MSC_VER
 typedef int FPU_mode_type;
+#else
+typedef int64_t FPU_mode_type;
+#endif
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
     || defined(__MINGW32__)
 #include <xmmintrin.h>
@@ -39,7 +45,7 @@ typedef int FPU_mode_type;
 extern __thread fpu_control_t fpu_control;
 #endif
 // Set the reference hardware floating point unit to FTZ mode
-static inline void ForceFTZ(FPU_mode_type *mode)
+inline void ForceFTZ(FPU_mode_type *mode)
 {
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
     || defined(__MINGW32__)
@@ -55,7 +61,7 @@ static inline void ForceFTZ(FPU_mode_type *mode)
     __asm__ volatile("fmxr fpscr, %0" ::"r"(fpscr | (1U << 24)));
     // Add 64 bit support
 #elif defined(__aarch64__)
-    unsigned fpscr;
+    uint64_t fpscr;
     __asm__ volatile("mrs %0, fpcr" : "=r"(fpscr));
     *mode = fpscr;
     __asm__ volatile("msr fpcr, %0" ::"r"(fpscr | (1U << 24)));
@@ -65,7 +71,7 @@ static inline void ForceFTZ(FPU_mode_type *mode)
 }
 
 // Disable the denorm flush to zero
-static inline void DisableFTZ(FPU_mode_type *mode)
+inline void DisableFTZ(FPU_mode_type *mode)
 {
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
     || defined(__MINGW32__)
@@ -81,7 +87,7 @@ static inline void DisableFTZ(FPU_mode_type *mode)
     __asm__ volatile("fmxr fpscr, %0" ::"r"(fpscr & ~(1U << 24)));
     // Add 64 bit support
 #elif defined(__aarch64__)
-    unsigned fpscr;
+    uint64_t fpscr;
     __asm__ volatile("mrs %0, fpcr" : "=r"(fpscr));
     *mode = fpscr;
     __asm__ volatile("msr fpcr, %0" ::"r"(fpscr & ~(1U << 24)));
@@ -91,7 +97,7 @@ static inline void DisableFTZ(FPU_mode_type *mode)
 }
 
 // Restore the reference hardware to floating point state indicated by *mode
-static inline void RestoreFPState(FPU_mode_type *mode)
+inline void RestoreFPState(FPU_mode_type *mode)
 {
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
     || defined(__MINGW32__)

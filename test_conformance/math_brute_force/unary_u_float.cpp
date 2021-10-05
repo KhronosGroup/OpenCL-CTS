@@ -20,8 +20,10 @@
 
 #include <cstring>
 
-static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
-                       cl_program *p, bool relaxedMode)
+namespace {
+
+int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
+                bool relaxedMode)
 {
     const char *c[] = { "__kernel void math_kernel",
                         sizeNames[vectorSize],
@@ -99,22 +101,24 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
     return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
 }
 
-typedef struct BuildKernelInfo
+struct BuildKernelInfo
 {
     cl_uint offset; // the first vector size to build
     cl_kernel *kernels;
     cl_program *programs;
     const char *nameInCode;
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
-} BuildKernelInfo;
+};
 
-static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
+cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
     return BuildKernel(info->nameInCode, i, info->kernels + i,
                        info->programs + i, info->relaxedMode);
 }
+
+} // anonymous namespace
 
 int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
 {
@@ -126,8 +130,6 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal = 0.0f;
     uint64_t step = getTestStep(sizeof(float), BUFFER_SIZE);
     int scale = (int)((1ULL << 32) / (16 * BUFFER_SIZE / sizeof(double)) + 1);
-    int isRangeLimited = 0;
-    float half_sin_cos_tan_limit = 0;
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
@@ -146,22 +148,6 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
                                    &build_info)))
             return error;
     }
-
-    if (0 == strcmp(f->name, "half_sin") || 0 == strcmp(f->name, "half_cos"))
-    {
-        isRangeLimited = 1;
-        half_sin_cos_tan_limit = 1.0f
-            + float_ulps
-                * (FLT_EPSILON / 2.0f); // out of range results from finite
-                                        // inputs must be in [-1,1]
-    }
-    else if (0 == strcmp(f->name, "half_tan"))
-    {
-        isRangeLimited = 1;
-        half_sin_cos_tan_limit =
-            INFINITY; // out of range resut from finite inputs must be numeric
-    }
-
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
@@ -249,7 +235,6 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
 
         if (gSkipCorrectnessTesting) break;
 
-
         // Verify data
         uint32_t *t = (uint32_t *)gOut_Ref;
         for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
@@ -265,18 +250,6 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
                     double correct = f->func.f_u(s[j]);
                     float err = Ulp_Error(test, correct);
                     int fail = !(fabsf(err) <= float_ulps);
-
-                    // half_sin/cos/tan are only valid between +-2**16, Inf, NaN
-                    if (isRangeLimited
-                        && fabsf(s[j]) > MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16)
-                        && fabsf(s[j]) < INFINITY)
-                    {
-                        if (fabsf(test) <= half_sin_cos_tan_limit)
-                        {
-                            err = 0;
-                            fail = 0;
-                        }
-                    }
 
                     if (fail)
                     {

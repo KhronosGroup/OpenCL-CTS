@@ -23,8 +23,10 @@
 #define CORRECTLY_ROUNDED 0
 #define FLUSHED 1
 
-static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
-                       cl_program *p, bool relaxedMode)
+namespace {
+
+int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
+                bool relaxedMode)
 {
     const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
                         "__kernel void math_kernel",
@@ -116,16 +118,16 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
     return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
 }
 
-typedef struct BuildKernelInfo
+struct BuildKernelInfo
 {
     cl_uint offset; // the first vector size to build
     cl_kernel *kernels;
     cl_program *programs;
     const char *nameInCode;
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
-} BuildKernelInfo;
+};
 
-static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
+cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
@@ -134,7 +136,7 @@ static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 }
 
 // A table of more difficult cases to get right
-static const double specialValues[] = {
+const double specialValues[] = {
     -NAN,
     -INFINITY,
     -DBL_MAX,
@@ -202,8 +204,10 @@ static const double specialValues[] = {
     +0.0,
 };
 
-static const size_t specialValuesCount =
+constexpr size_t specialValuesCount =
     sizeof(specialValues) / sizeof(specialValues[0]);
+
+} // anonymous namespace
 
 int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                                          bool relaxedMode)

@@ -21,8 +21,10 @@
 #include <climits>
 #include <cstring>
 
-static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
-                       cl_program *p, bool relaxedMode)
+namespace {
+
+int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
+                bool relaxedMode)
 {
     const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
                         "__kernel void math_kernel",
@@ -115,16 +117,16 @@ static int BuildKernel(const char *name, int vectorSize, cl_kernel *k,
     return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
 }
 
-typedef struct BuildKernelInfo
+struct BuildKernelInfo
 {
     cl_uint offset; // the first vector size to build
     cl_kernel *kernels;
     cl_program *programs;
     const char *nameInCode;
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
-} BuildKernelInfo;
+};
 
-static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
+cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
@@ -132,7 +134,7 @@ static cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
                        info->programs + i, info->relaxedMode);
 }
 
-typedef struct ComputeReferenceInfoD_
+struct ComputeReferenceInfoD
 {
     const double *x;
     const double *y;
@@ -141,9 +143,9 @@ typedef struct ComputeReferenceInfoD_
     long double (*f_ffpI)(long double, long double, int *);
     cl_uint lim;
     cl_uint count;
-} ComputeReferenceInfoD;
+};
 
-static cl_int ReferenceD(cl_uint jid, cl_uint tid, void *userInfo)
+cl_int ReferenceD(cl_uint jid, cl_uint tid, void *userInfo)
 {
     ComputeReferenceInfoD *cri = (ComputeReferenceInfoD *)userInfo;
     cl_uint lim = cri->lim;
@@ -164,6 +166,8 @@ static cl_int ReferenceD(cl_uint jid, cl_uint tid, void *userInfo)
 
     return CL_SUCCESS;
 }
+
+} // anonymous namespace
 
 int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 {
@@ -562,7 +566,8 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         else
             vlog("passed");
 
-        vlog("\t{%8.2f, %lld} @ %a", maxError, maxError2, maxErrorVal);
+        vlog("\t{%8.2f, %lld} @ {%a, %a}", maxError, maxError2, maxErrorVal,
+             maxErrorVal2);
     }
 
     vlog("\n");

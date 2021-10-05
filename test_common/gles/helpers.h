@@ -30,11 +30,10 @@
 
 #if !defined (__APPLE__)
 #include <CL/cl.h>
-#include "gl_headers.h"
 #include <CL/cl_gl.h>
-#else
-#include "gl_headers.h"
+#include <CL/cl_half.h>
 #endif
+#include "gl_headers.h"
 
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"

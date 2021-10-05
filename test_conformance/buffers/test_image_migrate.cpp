@@ -345,9 +345,9 @@ int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_que
             }
 
             if ((err = clEnqueueNDRangeKernel(queues[i], kernel, 2, NULL, wgs, wls, 0, NULL, NULL)) != CL_SUCCESS) {
-              print_error(err, "Failed enqueueing the NDRange kernel.");
-              failed = 1;
-              goto cleanup;
+                print_error(err, "Failed enqueuing the NDRange kernel.");
+                failed = 1;
+                goto cleanup;
             }
           }
           // Verify the results as long as neither input is an undefined migration

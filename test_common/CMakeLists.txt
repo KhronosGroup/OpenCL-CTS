@@ -1,6 +1,5 @@
 
 set(HARNESS_SOURCES
-    harness/threadTesting.cpp
     harness/typeWrappers.cpp
     harness/mt19937.cpp
     harness/conversions.cpp
@@ -22,4 +21,3 @@ set(HARNESS_SOURCES
 )
 
 add_library(harness STATIC ${HARNESS_SOURCES})
-

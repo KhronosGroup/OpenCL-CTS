@@ -20,8 +20,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include <algorithm>
 
+#include "procs.h"
 
 const char *wg_scan_exclusive_max_kernel_code_int =
 "__kernel void test_wg_scan_exclusive_max_int(global int *input, global int *output)\n"
@@ -79,7 +80,7 @@ verify_wg_scan_exclusive_max_int(int *inptr, int *outptr, size_t n, size_t wg_si
                 log_info("work_group_scan_exclusive_max int: Error at %u: expected = %d, got = %d\n", (unsigned int)(j+i), max_, outptr[j+i]);
                 return -1;
             }
-            max_ = MAX(inptr[j+i], max_);
+            max_ = std::max(inptr[j + i], max_);
         }
     }
 
@@ -103,7 +104,7 @@ verify_wg_scan_exclusive_max_uint(unsigned int *inptr, unsigned int *outptr, siz
                 log_info("work_group_scan_exclusive_max int: Error at %u: expected = %u, got = %u\n", (unsigned int)(j+i), max_, outptr[j+i]);
                 return -1;
             }
-            max_ = MAX(inptr[j+i], max_);
+            max_ = std::max(inptr[j + i], max_);
         }
     }
 
@@ -127,7 +128,7 @@ verify_wg_scan_exclusive_max_long(cl_long *inptr, cl_long *outptr, size_t n, siz
                 log_info("work_group_scan_exclusive_max long: Error at %u: expected = %lld, got = %lld\n", (unsigned int)(j+i), max_, outptr[j+i]);
                 return -1;
             }
-            max_ = MAX(inptr[j+i], max_);
+            max_ = std::max(inptr[j + i], max_);
         }
     }
 
@@ -151,7 +152,7 @@ verify_wg_scan_exclusive_max_ulong(cl_ulong *inptr, cl_ulong *outptr, size_t n, 
                 log_info("work_group_scan_exclusive_max ulong: Error at %u: expected = %llu, got = %llu\n", (unsigned int)(j+i), max_, outptr[j+i]);
                 return -1;
             }
-            max_ = MAX(inptr[j+i], max_);
+            max_ = std::max(inptr[j + i], max_);
         }
     }
 

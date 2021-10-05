@@ -22,149 +22,17 @@
 #define CLUSTER_SIZE_STR "4"
 
 namespace {
-static const char *redadd_clustered_source =
-    "__kernel void test_redadd_clustered(const __global Type *in, __global "
-    "int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    xy[gid].w = 0;\n"
-    "    if (sizeof(in[gid]) == "
-    "sizeof(sub_group_clustered_reduce_add(in[gid], " CLUSTER_SIZE_STR ")))\n"
-    "    {xy[gid].w = sizeof(in[gid]);}\n"
-    "    out[gid] = sub_group_clustered_reduce_add(in[gid], " CLUSTER_SIZE_STR
-    ");\n"
-    "}\n";
-
-static const char *redmax_clustered_source =
-    "__kernel void test_redmax_clustered(const __global Type *in, __global "
-    "int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    xy[gid].w = 0;\n"
-    "    if (sizeof(in[gid]) == "
-    "sizeof(sub_group_clustered_reduce_max(in[gid], " CLUSTER_SIZE_STR ")))\n"
-    "    {xy[gid].w = sizeof(in[gid]);}\n"
-    "    out[gid] = sub_group_clustered_reduce_max(in[gid], " CLUSTER_SIZE_STR
-    ");\n"
-    "}\n";
-
-static const char *redmin_clustered_source =
-    "__kernel void test_redmin_clustered(const __global Type *in, __global "
-    "int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    xy[gid].w = 0;\n"
-    "    if (sizeof(in[gid]) == "
-    "sizeof(sub_group_clustered_reduce_min(in[gid], " CLUSTER_SIZE_STR ")))\n"
-    "    {xy[gid].w = sizeof(in[gid]);}\n"
-    "    out[gid] = sub_group_clustered_reduce_min(in[gid], " CLUSTER_SIZE_STR
-    ");\n"
-    "}\n";
-
-static const char *redmul_clustered_source =
-    "__kernel void test_redmul_clustered(const __global Type *in, __global "
-    "int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    xy[gid].w = 0;\n"
-    "    if (sizeof(in[gid]) == "
-    "sizeof(sub_group_clustered_reduce_mul(in[gid], " CLUSTER_SIZE_STR ")))\n"
-    "    {xy[gid].w = sizeof(in[gid]);}\n"
-    "    out[gid] = sub_group_clustered_reduce_mul(in[gid], " CLUSTER_SIZE_STR
-    ");\n"
-    "}\n";
-
-static const char *redand_clustered_source =
-    "__kernel void test_redand_clustered(const __global Type *in, __global "
-    "int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    xy[gid].w = 0;\n"
-    "    if (sizeof(in[gid]) == "
-    "sizeof(sub_group_clustered_reduce_and(in[gid], " CLUSTER_SIZE_STR ")))\n"
-    "    {xy[gid].w = sizeof(in[gid]);}\n"
-    "    out[gid] = sub_group_clustered_reduce_and(in[gid], " CLUSTER_SIZE_STR
-    ");\n"
-    "}\n";
-
-static const char *redor_clustered_source =
-    "__kernel void test_redor_clustered(const __global Type *in, __global int4 "
-    "*xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    xy[gid].w = 0;\n"
-    "    if (sizeof(in[gid]) == "
-    "sizeof(sub_group_clustered_reduce_or(in[gid], " CLUSTER_SIZE_STR ")))\n"
-    "    {xy[gid].w = sizeof(in[gid]);}\n"
-    "    out[gid] = sub_group_clustered_reduce_or(in[gid], " CLUSTER_SIZE_STR
-    ");\n"
-    "}\n";
-
-static const char *redxor_clustered_source =
-    "__kernel void test_redxor_clustered(const __global Type *in, __global "
-    "int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    xy[gid].w = 0;\n"
-    "    if (sizeof(in[gid]) == "
-    "sizeof(sub_group_clustered_reduce_xor(in[gid], " CLUSTER_SIZE_STR ")))\n"
-    "    {xy[gid].w = sizeof(in[gid]);}\n"
-    "    out[gid] = sub_group_clustered_reduce_xor(in[gid], " CLUSTER_SIZE_STR
-    ");\n"
-    "}\n";
-
-static const char *redand_clustered_logical_source =
-    "__kernel void test_redand_clustered_logical(const __global Type *in, "
-    "__global int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    xy[gid].w = 0;\n"
-    "    if (sizeof(in[gid]) == "
-    "sizeof(sub_group_clustered_reduce_logical_and(in[gid], " CLUSTER_SIZE_STR
-    ")))\n"
-    "    {xy[gid].w = sizeof(in[gid]);}\n"
-    "    out[gid] = "
-    "sub_group_clustered_reduce_logical_and(in[gid], " CLUSTER_SIZE_STR ");\n"
-    "}\n";
-
-static const char *redor_clustered_logical_source =
-    "__kernel void test_redor_clustered_logical(const __global Type *in, "
-    "__global int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    xy[gid].w = 0;\n"
-    "    if (sizeof(in[gid]) == "
-    "sizeof(sub_group_clustered_reduce_logical_or(in[gid], " CLUSTER_SIZE_STR
-    ")))\n"
-    "    {xy[gid].w = sizeof(in[gid]);}\n"
-    "    out[gid] = "
-    "sub_group_clustered_reduce_logical_or(in[gid], " CLUSTER_SIZE_STR ");\n"
-    "}\n";
-
-static const char *redxor_clustered_logical_source =
-    "__kernel void test_redxor_clustered_logical(const __global Type *in, "
-    "__global int4 *xy, __global Type *out)\n"
-    "{\n"
-    "    int gid = get_global_id(0);\n"
-    "    XY(xy,gid);\n"
-    "    xy[gid].w = 0;\n"
-    "    if ( sizeof(in[gid]) == "
-    "sizeof(sub_group_clustered_reduce_logical_xor(in[gid], " CLUSTER_SIZE_STR
-    ")))\n"
-    "    {xy[gid].w = sizeof(in[gid]);}\n"
-    "    out[gid] = "
-    "sub_group_clustered_reduce_logical_xor(in[gid], " CLUSTER_SIZE_STR ");\n"
-    "}\n";
-
+std::string sub_group_clustered_reduce_source = R"(
+__kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type *out) {
+        int gid = get_global_id(0);
+        XY(xy,gid);
+        xy[gid].w = 0;
+        if (sizeof(in[gid]) == sizeof(%s(in[gid], )" CLUSTER_SIZE_STR R"())) {
+            xy[gid].w = sizeof(in[gid]);
+        }
+        out[gid] = %s(in[gid], )" CLUSTER_SIZE_STR R"();
+}       
+)";
 
 // DESCRIPTION:
 // Test for reduce cluster functions
@@ -267,34 +135,34 @@ template <typename T>
 int run_cluster_red_add_max_min_mul_for_type(RunTestForType rft)
 {
     int error = rft.run_impl<T, RED_CLU<T, ArithmeticOp::add_>>(
-        "test_redadd_clustered", redadd_clustered_source);
+        "sub_group_clustered_reduce_add");
     error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::max_>>(
-        "test_redmax_clustered", redmax_clustered_source);
+        "sub_group_clustered_reduce_max");
     error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::min_>>(
-        "test_redmin_clustered", redmin_clustered_source);
+        "sub_group_clustered_reduce_min");
     error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::mul_>>(
-        "test_redmul_clustered", redmul_clustered_source);
+        "sub_group_clustered_reduce_mul");
     return error;
 }
 template <typename T> int run_cluster_and_or_xor_for_type(RunTestForType rft)
 {
     int error = rft.run_impl<T, RED_CLU<T, ArithmeticOp::and_>>(
-        "test_redand_clustered", redand_clustered_source);
+        "sub_group_clustered_reduce_and");
     error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::or_>>(
-        "test_redor_clustered", redor_clustered_source);
+        "sub_group_clustered_reduce_or");
     error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::xor_>>(
-        "test_redxor_clustered", redxor_clustered_source);
+        "sub_group_clustered_reduce_xor");
     return error;
 }
 template <typename T>
 int run_cluster_logical_and_or_xor_for_type(RunTestForType rft)
 {
     int error = rft.run_impl<T, RED_CLU<T, ArithmeticOp::logical_and>>(
-        "test_redand_clustered_logical", redand_clustered_logical_source);
+        "sub_group_clustered_reduce_logical_and");
     error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::logical_or>>(
-        "test_redor_clustered_logical", redor_clustered_logical_source);
+        "sub_group_clustered_reduce_logical_or");
     error |= rft.run_impl<T, RED_CLU<T, ArithmeticOp::logical_xor>>(
-        "test_redxor_clustered_logical", redxor_clustered_logical_source);
+        "sub_group_clustered_reduce_logical_xor");
 
     return error;
 }
@@ -305,13 +173,17 @@ int test_subgroup_functions_clustered_reduce(cl_device_id device,
                                              cl_command_queue queue,
                                              int num_elements)
 {
-    std::vector<std::string> required_extensions = {
-        "cl_khr_subgroup_clustered_reduce"
-    };
+    if (!is_extension_available(device, "cl_khr_subgroup_clustered_reduce"))
+    {
+        log_info("cl_khr_subgroup_clustered_reduce is not supported on this "
+                 "device, skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     constexpr size_t global_work_size = 2000;
     constexpr size_t local_work_size = 200;
-    WorkGroupParams test_params(global_work_size, local_work_size,
-                                required_extensions);
+    WorkGroupParams test_params(global_work_size, local_work_size);
+    test_params.save_kernel_source(sub_group_clustered_reduce_source);
     RunTestForType rft(device, context, queue, num_elements, test_params);
 
     int error = run_cluster_red_add_max_min_mul_for_type<cl_int>(rft);

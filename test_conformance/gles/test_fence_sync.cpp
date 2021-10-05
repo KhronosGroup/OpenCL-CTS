@@ -570,10 +570,12 @@ int test_fence_sync_single( cl_device_id device, cl_context context, cl_command_
                         {
                             if( p[ t ] == 0 )
                             {
-                                log_error( "RUN: %ld to %ld (%d,%d to %d,%d) 0x%08x\n", a, t - 1,
-                                          (int)( a % framebufferSize ), (int)( a / framebufferSize ),
-                                          (int)( ( t - 1 ) % framebufferSize ), (int)( ( t - 1 ) / framebufferSize ),
-                                          p[ a ] );
+                                log_error(
+                                    "RUN: %zu to %zu (%d,%d to %d,%d) 0x%08x\n",
+                                    a, t - 1, (int)(a % framebufferSize),
+                                    (int)(a / framebufferSize),
+                                    (int)((t - 1) % framebufferSize),
+                                    (int)((t - 1) / framebufferSize), p[a]);
                                 a = t;
                             }
                         }

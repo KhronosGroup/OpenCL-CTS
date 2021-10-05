@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2021 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,13 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../common.hpp"
+#ifndef COMMON_H
+#define COMMON_H
 
-#include "test_enqueue.hpp"
+#include "utility.h"
 
+#include <array>
+#include <vector>
 
-int main(int argc, const char *argv[])
-{
-    auto& tests = autotest::test_suite::global_test_suite().test_defs;
-    return runTestHarness(argc, argv, tests.size(), tests.data(), false, 0);
-}
+// Array of thread-specific kernels for each vector size.
+using KernelMatrix = std::array<std::vector<cl_kernel>, VECTOR_SIZE_COUNT>;
+
+#endif /* COMMON_H */

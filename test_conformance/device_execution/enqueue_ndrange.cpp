@@ -18,6 +18,7 @@
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "procs.h"
@@ -645,7 +646,7 @@ int test_enqueue_ndrange(cl_device_id device, cl_context context, cl_command_que
     max_local_size = (max_local_size > MAX_GWS)? MAX_GWS: max_local_size;
     if(gWimpyMode)
     {
-        max_local_size = MIN(8, max_local_size);
+        max_local_size = std::min((size_t)8, max_local_size);
     }
 
     cl_uint num = 10;

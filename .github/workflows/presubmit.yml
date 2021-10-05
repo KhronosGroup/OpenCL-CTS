@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         mainmatrix: [true]
-        os: [ubuntu-20.04, macos-11.0]
+        os: [ubuntu-20.04, macos-latest]
         include:
           - os: ubuntu-20.04
             mainmatrix: true
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Install packages
-        run: sudo apt install -y clang-format
+        run: sudo apt install -y clang-format clang-format-9
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0

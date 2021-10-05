@@ -18,15 +18,7 @@
 #include "subhelpers.h"
 
 
-extern const char* bcast_source;
-extern const char* redadd_source;
-extern const char* redmax_source;
-extern const char* redmin_source;
-extern const char* scinadd_source;
-extern const char* scinmax_source;
-extern const char* scinmin_source;
-extern const char* scexadd_source;
-extern const char* scexmax_source;
-extern const char* scexmin_source;
+extern std::string sub_group_reduction_scan_source;
+extern std::string sub_group_generic_source;
 
 #endif

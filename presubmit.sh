@@ -55,17 +55,13 @@ cd build
 cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ ..
 make
 
-# Get libclcxx
-cd ${TOP}
-git clone https://github.com/KhronosGroup/libclcxx.git
-
 # Build CTS
+cd ${TOP}
 ls -l
 mkdir build
 cd build
 cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
       -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build \
-      -DCL_LIBCLCXX_DIR=${TOP}/libclcxx \
       -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
       -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin \
       -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \
