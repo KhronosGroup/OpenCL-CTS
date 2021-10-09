@@ -991,7 +991,7 @@ float get_max_relative_error(const cl_image_format *format,
     {
 #if !defined(_WIN32)
 //#warning Implementations will likely wish to pick a max allowable sampling
-//error policy here that is better than the spec
+// error policy here that is better than the spec
 #endif
         // The spec allows linear filters to return any result most of the time.
         // That's fine for implementations but a problem for testing. After all
