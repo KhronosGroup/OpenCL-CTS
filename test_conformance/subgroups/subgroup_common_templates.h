@@ -278,8 +278,8 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                                       "expected 0x%x\n",
                                       operation_names(operation),
                                       TypeManager<Ty>::name(), i, j, k,
-                                      *reinterpret_cast<cl_uint*>(&rr),
-                                      *reinterpret_cast<cl_uint*>(&tr));
+                                      *reinterpret_cast<cl_uint *>(&rr),
+                                      *reinterpret_cast<cl_uint *>(&tr));
                             return TEST_FAIL;
                         }
                     }
@@ -550,10 +550,11 @@ template <typename Ty, ShuffleOp operation> struct SHF
 
                     if (!compare(rr, tr))
                     {
-                        log_error("ERROR: sub_group_%s(%s) mismatch for "
-                                  "local id %zu in sub group %zu in group %zu\n",
-                                  operation_names(operation),
-                                  TypeManager<Ty>::name(), i, j, k);
+                        log_error(
+                            "ERROR: sub_group_%s(%s) mismatch for "
+                            "local id %zu in sub group %zu in group %zu\n",
+                            operation_names(operation), TypeManager<Ty>::name(),
+                            i, j, k);
                         return TEST_FAIL;
                     }
                 }
@@ -667,8 +668,8 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                                 "group %zu Expected: 0x%x Obtained: 0x%x\n",
                                 func_name.c_str(), operation_names(operation),
                                 TypeManager<Ty>::name(), i, j, k,
-                                *reinterpret_cast<cl_uint*>(&tr),
-                                *reinterpret_cast<cl_uint*>(&rr));
+                                *reinterpret_cast<cl_uint *>(&tr),
+                                *reinterpret_cast<cl_uint *>(&rr));
                             return TEST_FAIL;
                         }
                         tr = calculate<Ty>(tr, mx[ii + active_work_item],
@@ -797,8 +798,8 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
                                 "group %zu Expected: 0x%x Obtained: 0x%x\n",
                                 func_name.c_str(), operation_names(operation),
                                 TypeManager<Ty>::name(), active_work_item, j, k,
-                                *reinterpret_cast<cl_uint*>(&tr),
-                                *reinterpret_cast<cl_uint*>(&rr));
+                                *reinterpret_cast<cl_uint *>(&tr),
+                                *reinterpret_cast<cl_uint *>(&rr));
                             return TEST_FAIL;
                         }
                     }
@@ -909,14 +910,14 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
                     rr = my[ii + active_work_item];
                     if (!compare_ordered<Ty>(rr, tr))
                     {
-                        log_error("ERROR: %s_%s(%s) "
-                                  "mismatch for local id %zu in sub group %zu in "
-                                  "group %zu Expected: 0x%x Obtained: 0x%x\n",
-                                  func_name.c_str(), operation_names(operation),
-                                  TypeManager<Ty>::name(), active_work_item, j,
-                                  k,
-                                  *reinterpret_cast<cl_uint*>(&tr),
-                                  *reinterpret_cast<cl_uint*>(&rr));
+                        log_error(
+                            "ERROR: %s_%s(%s) "
+                            "mismatch for local id %zu in sub group %zu in "
+                            "group %zu Expected: 0x%x Obtained: 0x%x\n",
+                            func_name.c_str(), operation_names(operation),
+                            TypeManager<Ty>::name(), active_work_item, j, k,
+                            *reinterpret_cast<cl_uint *>(&tr),
+                            *reinterpret_cast<cl_uint *>(&rr));
                         return TEST_FAIL;
                     }
                 }

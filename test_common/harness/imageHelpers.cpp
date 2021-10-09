@@ -798,10 +798,10 @@ void get_max_sizes(
     if (image_type == CL_MEM_OBJECT_IMAGE1D)
     {
 
-        double M = static_cast<double> (maximum_sizes[0]);
+        double M = static_cast<double>(maximum_sizes[0]);
 
         // Store the size
-        sizes[(*numberOfSizes)][0] = static_cast<size_t> (M);
+        sizes[(*numberOfSizes)][0] = static_cast<size_t>(M);
         sizes[(*numberOfSizes)][1] = 1;
         sizes[(*numberOfSizes)][2] = 1;
         ++(*numberOfSizes);
@@ -815,8 +815,8 @@ void get_max_sizes(
         {
 
             // Determine the size of the fixed dimension
-            double M =  static_cast<double> (maximum_sizes[fixed_dim]);
-            double A =  static_cast<double> (max_pixels);
+            double M = static_cast<double>(maximum_sizes[fixed_dim]);
+            double A = static_cast<double>(max_pixels);
 
             int x0_dim = !fixed_dim;
             size_t x0 = static_cast<size_t>(
@@ -824,8 +824,8 @@ void get_max_sizes(
                      maximum_sizes[x0_dim]));
 
             // Store the size
-            sizes[(*numberOfSizes)][fixed_dim] = static_cast<size_t> (M);
-            sizes[(*numberOfSizes)][x0_dim] = static_cast<size_t> (x0);
+            sizes[(*numberOfSizes)][fixed_dim] = static_cast<size_t>(M);
+            sizes[(*numberOfSizes)][x0_dim] = static_cast<size_t>(x0);
             sizes[(*numberOfSizes)][2] = 1;
             ++(*numberOfSizes);
         }
@@ -840,8 +840,8 @@ void get_max_sizes(
         {
 
             // Determine the size of the fixed dimension
-            double M =  static_cast<double> (maximum_sizes[fixed_dim]);
-            double A =  static_cast<double> (max_pixels);
+            double M = static_cast<double>(maximum_sizes[fixed_dim]);
+            double A = static_cast<double>(max_pixels);
 
             // Find two other dimensions, x0 and x1
             int x0_dim = (fixed_dim == 0) ? 1 : 0;
@@ -874,9 +874,9 @@ void get_max_sizes(
             assert(x0 > 0 && M > 0);
 
             // Store the size
-            sizes[(*numberOfSizes)][fixed_dim] = static_cast<size_t> (M);
-            sizes[(*numberOfSizes)][x0_dim] = static_cast<size_t> (x0);
-            sizes[(*numberOfSizes)][x1_dim] = static_cast<size_t> (x1);
+            sizes[(*numberOfSizes)][fixed_dim] = static_cast<size_t>(M);
+            sizes[(*numberOfSizes)][x0_dim] = static_cast<size_t>(x0);
+            sizes[(*numberOfSizes)][x1_dim] = static_cast<size_t>(x1);
             ++(*numberOfSizes);
         }
     }
@@ -990,7 +990,8 @@ float get_max_relative_error(const cl_image_format *format,
 #else
     {
 #if !defined(_WIN32)
-//#warning Implementations will likely wish to pick a max allowable sampling error policy here that is better than the spec
+//#warning Implementations will likely wish to pick a max allowable sampling
+//error policy here that is better than the spec
 #endif
         // The spec allows linear filters to return any result most of the time.
         // That's fine for implementations but a problem for testing. After all
@@ -1164,12 +1165,13 @@ void escape_inf_nan_values(char *data, size_t allocSize)
 char *generate_random_image_data(image_descriptor *imageInfo,
                                  BufferOwningPtr<char> &P, MTdata d)
 {
-    size_t allocSize = static_cast<size_t>( get_image_size(imageInfo) );
+    size_t allocSize = static_cast<size_t>(get_image_size(imageInfo));
     size_t pixelRowBytes = imageInfo->width * get_pixel_size(imageInfo->format);
     size_t i;
 
     if (imageInfo->num_mip_levels > 1)
-        allocSize = static_cast<size_t>( compute_mipmapped_image_size(*imageInfo) );
+        allocSize =
+            static_cast<size_t>(compute_mipmapped_image_size(*imageInfo));
 
 #if defined(__APPLE__)
     char *data = NULL;
@@ -1725,12 +1727,14 @@ bool get_integer_coords_offset(float x, float y, float z, float xAddressOffset,
     switch (imageInfo->type)
     {
         case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-            outY = static_cast<int>(calculate_array_index(y, (float)imageInfo->arraySize - 1.0f));
+            outY = static_cast<int>(
+                calculate_array_index(y, (float)imageInfo->arraySize - 1.0f));
             outZ = 0; /* don't care! */
             break;
         case CL_MEM_OBJECT_IMAGE2D_ARRAY:
             outY = adFn(static_cast<int>(floorf(y)), height);
-            outZ = static_cast<int>(calculate_array_index(z, (float)imageInfo->arraySize - 1.0f));
+            outZ = static_cast<int>(
+                calculate_array_index(z, (float)imageInfo->arraySize - 1.0f));
             break;
         default:
             // legacy path:
@@ -1806,7 +1810,7 @@ static float unnormalize_coordinate(const char *name, float coord, float offset,
     switch (addressing_mode)
     {
         case CL_ADDRESS_REPEAT:
-            ret = RepeatNormalizedAddressFn(coord, static_cast<size_t>( extent) );
+            ret = RepeatNormalizedAddressFn(coord, static_cast<size_t>(extent));
 
             if (verbose)
             {
@@ -1830,7 +1834,8 @@ static float unnormalize_coordinate(const char *name, float coord, float offset,
             break;
 
         case CL_ADDRESS_MIRRORED_REPEAT:
-            ret = MirroredRepeatNormalizedAddressFn(coord, static_cast<size_t>( extent) );
+            ret = MirroredRepeatNormalizedAddressFn(
+                coord, static_cast<size_t>(extent));
 
             if (verbose)
             {
@@ -2013,8 +2018,8 @@ FloatPixel sample_image_pixel_float_offset(
         switch (imageInfo->type)
         {
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                iy =
-                   static_cast<int>( calculate_array_index(y, (float)(imageInfo->arraySize - 1)));
+                iy = static_cast<int>(calculate_array_index(
+                    y, (float)(imageInfo->arraySize - 1)));
                 iz = 0;
                 if (verbose)
                 {
@@ -2023,8 +2028,8 @@ FloatPixel sample_image_pixel_float_offset(
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
                 iy = adFn(static_cast<int>(floorf(y)), height_lod);
-                iz =
-                   static_cast<int>( calculate_array_index(z, (float)(imageInfo->arraySize - 1)));
+                iz = static_cast<int>(calculate_array_index(
+                    z, (float)(imageInfo->arraySize - 1)));
                 if (verbose)
                 {
                     log_info("\tArray index %f evaluates to %d\n", z, iz);
@@ -2939,15 +2944,18 @@ void pack_image_pixel_error(const float *srcVector,
         case CL_UNSIGNED_INT8: {
             const cl_uchar *ptr = (const cl_uchar *)results;
             for (unsigned int i = 0; i < channelCount; i++)
-                errors[i] = static_cast<float>( (cl_int)ptr[i]
-                    - (cl_int)CONVERT_UINT(srcVector[i], 255.f, CL_UCHAR_MAX) );
+                errors[i] = static_cast<float>(
+                    (cl_int)ptr[i]
+                    - (cl_int)CONVERT_UINT(srcVector[i], 255.f, CL_UCHAR_MAX));
             break;
         }
         case CL_UNSIGNED_INT16: {
             const cl_ushort *ptr = (const cl_ushort *)results;
             for (unsigned int i = 0; i < channelCount; i++)
-                errors[i] = static_cast<float>( (cl_int)ptr[i]
-                    - (cl_int)CONVERT_UINT(srcVector[i], 32767.f, CL_USHRT_MAX) );
+                errors[i] = static_cast<float>(
+                    (cl_int)ptr[i]
+                    - (cl_int)CONVERT_UINT(srcVector[i], 32767.f,
+                                           CL_USHRT_MAX));
             break;
         }
         case CL_UNSIGNED_INT32: {

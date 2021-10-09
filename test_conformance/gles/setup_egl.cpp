@@ -117,7 +117,8 @@ public:
                 _platform, "clGetGLContextInfoKHR");
         if (GetGLContextInfo == NULL)
         {
-            log_error("ERROR: clGetGLContextInfoKHR failed! (%s:%d)\n", __FILE__, __LINE__);
+            log_error("ERROR: clGetGLContextInfoKHR failed! (%s:%d)\n",
+                      __FILE__, __LINE__);
             return NULL;
         }
 

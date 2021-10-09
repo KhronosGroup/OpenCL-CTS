@@ -156,8 +156,10 @@ void gen_insts(cl_int *x, cl_int *p, size_t n)
 
         // Randomly choose a wait value and assign "instructions"
         val = random_in_range(100, 200 + 10 * NUM_LOC, gMTdata);
-        x[j0 * (NUM_LOC + 1) + p[j0]] = inst(INST_COUNT, static_cast<int>(ii[i]), val);
-        x[j1 * (NUM_LOC + 1) + p[j1]] = inst(INST_WAIT, static_cast<int>(ii[i]), val);
+        x[j0 * (NUM_LOC + 1) + p[j0]] =
+            inst(INST_COUNT, static_cast<int>(ii[i]), val);
+        x[j1 * (NUM_LOC + 1) + p[j1]] =
+            inst(INST_WAIT, static_cast<int>(ii[i]), val);
         ++p[j0];
         ++p[j1];
     }

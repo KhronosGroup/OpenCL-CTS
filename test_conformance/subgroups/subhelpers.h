@@ -1564,7 +1564,8 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
 
 static void set_last_workgroup_params(size_t non_uniform_size,
                                       size_t &number_of_subgroups,
-                                      size_t subgroup_size, size_t &workgroup_size,
+                                      size_t subgroup_size,
+                                      size_t &workgroup_size,
                                       size_t &last_subgroup_size)
 {
     number_of_subgroups = 1 + non_uniform_size / subgroup_size;

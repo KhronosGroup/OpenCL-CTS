@@ -128,10 +128,11 @@ template <int Which> struct BAR
 
                     if (tr != rr)
                     {
-                        log_error("ERROR: sub_group_barrier mismatch for local "
-                                  "id %zu in sub group %zu in group %zu expected "
-                                  "%d got %d\n",
-                                  i, j, k, tr, rr);
+                        log_error(
+                            "ERROR: sub_group_barrier mismatch for local "
+                            "id %zu in sub group %zu in group %zu expected "
+                            "%d got %d\n",
+                            i, j, k, tr, rr);
                         return -1;
                     }
                 }

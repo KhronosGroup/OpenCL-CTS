@@ -171,9 +171,10 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
                 }
                 if (active_work_items.empty())
                 {
-                    log_info("  no one workitem acitve... in workgroup id = %zu "
-                             "subgroup id = %zu\n",
-                             k, j);
+                    log_info(
+                        "  no one workitem acitve... in workgroup id = %zu "
+                        "subgroup id = %zu\n",
+                        k, j);
                 }
                 else
                 {
@@ -195,10 +196,10 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
                                       operation_names(operation));
                             log_error(
                                 "mismatch for work item %zu sub group %zu in "
-                                "work group %zu. Expected: 0x%x Obtained: 0x%x\n",
-                                i, j, k,
-                                *reinterpret_cast<cl_uint*>(&tr),
-                                *reinterpret_cast<cl_uint*>(&rr));
+                                "work group %zu. Expected: 0x%x Obtained: "
+                                "0x%x\n",
+                                i, j, k, *reinterpret_cast<cl_uint *>(&tr),
+                                *reinterpret_cast<cl_uint *>(&rr));
                             return TEST_FAIL;
                         }
                     }
