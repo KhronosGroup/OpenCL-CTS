@@ -421,7 +421,7 @@ void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
               (int)thirdDim, (int)imageInfo->rowPitch,
               (int)imageInfo->rowPitch
                   - (int)imageInfo->width * (int)pixel_size);
-    log_error("Failed at column: %ld   ", where);
+    log_error("Failed at column: %zu   ", where);
 
     switch (pixel_size)
     {
@@ -473,7 +473,7 @@ void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
                       ((cl_uint *)destPixel)[2], ((cl_uint *)destPixel)[3]);
             break;
         default:
-            log_error("Don't know how to print pixel size of %ld\n",
+            log_error("Don't know how to print pixel size of %zu\n",
                       pixel_size);
             break;
     }
@@ -798,10 +798,10 @@ void get_max_sizes(
     if (image_type == CL_MEM_OBJECT_IMAGE1D)
     {
 
-        size_t M = maximum_sizes[0];
+        double M = static_cast<double>(maximum_sizes[0]);
 
         // Store the size
-        sizes[(*numberOfSizes)][0] = M;
+        sizes[(*numberOfSizes)][0] = static_cast<size_t>(M);
         sizes[(*numberOfSizes)][1] = 1;
         sizes[(*numberOfSizes)][2] = 1;
         ++(*numberOfSizes);
@@ -815,8 +815,8 @@ void get_max_sizes(
         {
 
             // Determine the size of the fixed dimension
-            size_t M = maximum_sizes[fixed_dim];
-            size_t A = max_pixels;
+            double M = static_cast<double>(maximum_sizes[fixed_dim]);
+            double A = static_cast<double>(max_pixels);
 
             int x0_dim = !fixed_dim;
             size_t x0 = static_cast<size_t>(
@@ -824,8 +824,8 @@ void get_max_sizes(
                      maximum_sizes[x0_dim]));
 
             // Store the size
-            sizes[(*numberOfSizes)][fixed_dim] = M;
-            sizes[(*numberOfSizes)][x0_dim] = x0;
+            sizes[(*numberOfSizes)][fixed_dim] = static_cast<size_t>(M);
+            sizes[(*numberOfSizes)][x0_dim] = static_cast<size_t>(x0);
             sizes[(*numberOfSizes)][2] = 1;
             ++(*numberOfSizes);
         }
@@ -840,8 +840,8 @@ void get_max_sizes(
         {
 
             // Determine the size of the fixed dimension
-            size_t M = maximum_sizes[fixed_dim];
-            size_t A = max_pixels;
+            double M = static_cast<double>(maximum_sizes[fixed_dim]);
+            double A = static_cast<double>(max_pixels);
 
             // Find two other dimensions, x0 and x1
             int x0_dim = (fixed_dim == 0) ? 1 : 0;
@@ -874,9 +874,9 @@ void get_max_sizes(
             assert(x0 > 0 && M > 0);
 
             // Store the size
-            sizes[(*numberOfSizes)][fixed_dim] = M;
-            sizes[(*numberOfSizes)][x0_dim] = x0;
-            sizes[(*numberOfSizes)][x1_dim] = x1;
+            sizes[(*numberOfSizes)][fixed_dim] = static_cast<size_t>(M);
+            sizes[(*numberOfSizes)][x0_dim] = static_cast<size_t>(x0);
+            sizes[(*numberOfSizes)][x1_dim] = static_cast<size_t>(x1);
             ++(*numberOfSizes);
         }
     }
@@ -990,7 +990,8 @@ float get_max_relative_error(const cl_image_format *format,
 #else
     {
 #if !defined(_WIN32)
-#warning Implementations will likely wish to pick a max allowable sampling error policy here that is better than the spec
+//#warning Implementations will likely wish to pick a max allowable sampling
+// error policy here that is better than the spec
 #endif
         // The spec allows linear filters to return any result most of the time.
         // That's fine for implementations but a problem for testing. After all

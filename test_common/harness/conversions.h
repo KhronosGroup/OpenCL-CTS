@@ -86,8 +86,10 @@ extern double get_random_double(double low, double high, MTdata d);
 extern float any_float(MTdata d);
 extern double any_double(MTdata d);
 
+// Return a random number from minV up to and including maxV.
 extern int random_in_range(int minV, int maxV, MTdata d);
 
+// Return a random number from low up to but excluding high.
 size_t get_random_size_t(size_t low, size_t high, MTdata d);
 
 // Note: though this takes a double, this is for use with single precision tests

@@ -27,11 +27,11 @@ template <NonUniformVoteOp operation> struct AA
     static void gen(cl_int *x, cl_int *t, cl_int *m,
                     const WorkGroupParams &test_params)
     {
-        int i, ii, j, k, n;
-        int ng = test_params.global_workgroup_size;
-        int nw = test_params.local_workgroup_size;
-        int ns = test_params.subgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        size_t i, ii, j, k, n;
+        size_t ng = test_params.global_workgroup_size;
+        size_t nw = test_params.local_workgroup_size;
+        size_t ns = test_params.subgroup_size;
+        size_t nj = (nw + ns - 1) / ns;
         int e;
         ng = ng / nw;
         ii = 0;
@@ -71,11 +71,11 @@ template <NonUniformVoteOp operation> struct AA
     static int chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my, cl_int *m,
                    const WorkGroupParams &test_params)
     {
-        int ii, i, j, k, n;
-        int ng = test_params.global_workgroup_size;
-        int nw = test_params.local_workgroup_size;
-        int ns = test_params.subgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        size_t ii, i, j, k, n;
+        size_t ng = test_params.global_workgroup_size;
+        size_t nw = test_params.local_workgroup_size;
+        size_t ns = test_params.subgroup_size;
+        size_t nj = (nw + ns - 1) / ns;
         cl_int taa, raa;
         ng = ng / nw;
 
@@ -113,7 +113,7 @@ template <NonUniformVoteOp operation> struct AA
                     if (raa != taa)
                     {
                         log_error("ERROR: sub_group_%s mismatch for local id "
-                                  "%d in sub group %d in group %d\n",
+                                  "%zu in sub group %zu in group %zu\n",
                                   operation_names(operation), i, j, k);
                         return TEST_FAIL;
                     }

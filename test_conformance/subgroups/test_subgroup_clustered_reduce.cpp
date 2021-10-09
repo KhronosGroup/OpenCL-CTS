@@ -40,11 +40,11 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
 {
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int nw = test_params.local_workgroup_size;
-        int ns = test_params.subgroup_size;
-        int ng = test_params.global_workgroup_size;
+        size_t nw = test_params.local_workgroup_size;
+        size_t ns = test_params.subgroup_size;
+        size_t ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        log_info("  sub_group_clustered_reduce_%s(%s, %d bytes) ...\n",
+        log_info("  sub_group_clustered_reduce_%s(%s, %zu bytes) ...\n",
                  operation_names(operation), TypeManager<Ty>::name(),
                  sizeof(Ty));
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
@@ -53,17 +53,17 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
     static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
                    const WorkGroupParams &test_params)
     {
-        int nw = test_params.local_workgroup_size;
-        int ns = test_params.subgroup_size;
-        int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        size_t nw = test_params.local_workgroup_size;
+        size_t ns = test_params.subgroup_size;
+        size_t ng = test_params.global_workgroup_size;
+        size_t nj = (nw + ns - 1) / ns;
         ng = ng / nw;
 
-        for (int k = 0; k < ng; ++k)
+        for (size_t k = 0; k < ng; ++k)
         {
             std::vector<cl_int> data_type_sizes;
             // Map to array indexed to array indexed by local ID and sub group
-            for (int j = 0; j < nw; ++j)
+            for (size_t j = 0; j < nw; ++j)
             {
                 mx[j] = x[j];
                 my[j] = y[j];
@@ -75,26 +75,26 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
                 if (dts != sizeof(Ty))
                 {
                     log_error("ERROR: sub_group_clustered_reduce_%s(%s) "
-                              "wrong data type size detected, expected: %d, "
-                              "used by device %d, in group %d\n",
+                              "wrong data type size detected, expected: %zu, "
+                              "used by device %d, in group %zu\n",
                               operation_names(operation),
                               TypeManager<Ty>::name(), sizeof(Ty), dts, k);
                     return TEST_FAIL;
                 }
             }
 
-            for (int j = 0; j < nj; ++j)
+            for (size_t j = 0; j < nj; ++j)
             {
-                int ii = j * ns;
-                int n = ii + ns > nw ? nw - ii : ns;
-                int midx = 4 * ii + 2;
+                size_t ii = j * ns;
+                size_t n = ii + ns > nw ? nw - ii : ns;
+                size_t midx = 4 * ii + 2;
                 std::vector<Ty> clusters_results;
-                int clusters_counter = ns / CLUSTER_SIZE;
+                size_t clusters_counter = ns / CLUSTER_SIZE;
                 clusters_results.resize(clusters_counter);
 
                 // Compute target
                 Ty tr = mx[ii];
-                for (int i = 0; i < n; ++i)
+                for (size_t i = 0; i < n; ++i)
                 {
                     if (i % CLUSTER_SIZE == 0)
                         tr = mx[ii + i];
@@ -104,7 +104,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
                 }
 
                 // Check result
-                for (int i = 0; i < n; ++i)
+                for (size_t i = 0; i < n; ++i)
                 {
                     Ty rr = my[ii + i];
                     tr = clusters_results[i / CLUSTER_SIZE];
@@ -112,7 +112,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
                     {
                         log_error(
                             "ERROR: sub_group_clustered_reduce_%s(%s) mismatch "
-                            "for local id %d in sub group %d in group %d\n",
+                            "for local id %zu in sub group %zu in group %zu\n",
                             operation_names(operation), TypeManager<Ty>::name(),
                             i, j, k);
                         return TEST_FAIL;
@@ -124,7 +124,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
             y += nw;
             m += 4 * nw;
         }
-        log_info("  sub_group_clustered_reduce_%s(%s, %d bytes) ... passed\n",
+        log_info("  sub_group_clustered_reduce_%s(%s, %zu bytes) ... passed\n",
                  operation_names(operation), TypeManager<Ty>::name(),
                  sizeof(Ty));
         return TEST_PASS;

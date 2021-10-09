@@ -686,6 +686,10 @@ static BOOL CALLBACK _ThreadPool_Init(_PINIT_ONCE InitOnce, PVOID Parameter,
 
 void ThreadPool_Exit(void)
 {
+#ifndef _WIN32
+    int err;
+#endif
+    int count;
     gRunCount = CL_INT_MAX;
 
 #if defined(__GNUC__)
