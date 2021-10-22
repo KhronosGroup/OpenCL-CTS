@@ -20,6 +20,8 @@
 #include "CL/cl_half.h"
 #include "subhelpers.h"
 #include <set>
+#include <algorithm>
+#include <random>
 
 static cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
                                   const std::string &mask_type,
@@ -396,6 +398,22 @@ void genrand(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
 {
     int nj = (nw + ns - 1) / ns;
 
+    // limit possible input values to avoid arithmetic rouding/overflow issues.
+    // for each subgroup for 4 workitems set 4 values different than 1
+    // for rest of workitems set 1
+    // shuffle values
+    // below values are 0.5f, 0.25f, 2.0f, 4.0f
+    std::vector<cl_ulong> safe_half_values{ 0x3800, 0x3400, 0x4000, 0x4400 };
+    if (std::is_same<Ty, subgroups::cl_half>::value)
+    {
+        std::random_device random_device;
+        std::mt19937 mersenne_twister_engine(random_device());
+        safe_half_values.insert(safe_half_values.end(),
+                                ns - safe_half_values.size(), 0x3c00);
+
+        std::shuffle(safe_half_values.begin(), safe_half_values.end(),
+                     mersenne_twister_engine);
+    }
     for (int k = 0; k < ng; ++k)
     {
         for (int j = 0; j < nj; ++j)
@@ -410,9 +428,16 @@ void genrand(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
                 if (operation == ArithmeticOp::mul_
                     || operation == ArithmeticOp::add_)
                 {
-                    // work around to avoid overflow, do not use 0 for
-                    // multiplication
-                    out_value = (genrand_int32(gMTdata) % 4) + 1;
+                    if (std::is_same<Ty, subgroups::cl_half>::value)
+                    {
+                        out_value = safe_half_values[i];
+                    }
+                    else
+                    {
+                        // work around to avoid overflow, do not use 0 for
+                        // multiplication
+                        out_value = (genrand_int32(gMTdata) % 4) + 1;
+                    }
                 }
                 else
                 {
