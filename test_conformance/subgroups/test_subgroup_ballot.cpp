@@ -81,8 +81,8 @@ template <typename Ty> struct BALLOT
                     {
                         log_error(
                             "ERROR: sub_group_ballot mismatch for local id "
-                            "%d in sub group %d in group %d obtained {%d}, "
-                            "expected {%d} \n",
+                            "%d in sub group %d in group %d obtained %d, "
+                            "expected %d\n",
                             wi_id, sb_id, wg_id, device_result,
                             expected_result);
                         return TEST_FAIL;
@@ -455,7 +455,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
         int non_uniform_size = gws % lws;
         int wg_number = gws / lws;
         wg_number = non_uniform_size ? wg_number + 1 : wg_number;
-        cl_uint4 expected_result, device_result;
+        cl_uint expected_result, device_result;
         int last_subgroup_size = 0;
         int current_sbs = 0;
 
@@ -487,7 +487,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                     current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
                 }
                 // Check result
-                expected_result = { 0, 0, 0, 0 };
+                expected_result = 0;
                 for (wi_id = 0; wi_id < current_sbs; ++wi_id)
                 { // for subgroup element
                     bs128 bs;
@@ -497,23 +497,20 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                         | (bs128(mx[wg_offset + wi_id].s2) << 64)
                         | (bs128(mx[wg_offset + wi_id].s3) << 96);
                     bs &= getImportantBits(wi_id, current_sbs);
-                    device_result = my[wg_offset + wi_id];
+                    device_result = my[wg_offset + wi_id].s0;
                     if (operation == BallotOp::ballot_inclusive_scan
                         || operation == BallotOp::ballot_exclusive_scan
                         || operation == BallotOp::ballot_bit_count)
                     {
-                        expected_result.s0 = bs.count();
+                        expected_result = bs.count();
                         if (!compare(device_result, expected_result))
                         {
                             log_error("ERROR: sub_group_%s "
                                       "mismatch for local id %d in sub group "
-                                      "%d in group %d obtained {%d, %d, %d, "
-                                      "%d}, expected {%d, %d, %d, %d}\n",
+                                      "%d in group %d obtained %d, "
+                                      "expected %d\n",
                                       operation_names(operation), wi_id, sb_id,
-                                      wg_id, device_result.s0, device_result.s1,
-                                      device_result.s2, device_result.s3,
-                                      expected_result.s0, expected_result.s1,
-                                      expected_result.s2, expected_result.s3);
+                                      wg_id, device_result, expected_result);
                             return TEST_FAIL;
                         }
                     }
@@ -523,7 +520,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                         {
                             if (bs.test(id))
                             {
-                                expected_result.s0 = id;
+                                expected_result = id;
                                 break;
                             }
                         }
@@ -531,13 +528,10 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                         {
                             log_error("ERROR: sub_group_ballot_find_lsb "
                                       "mismatch for local id %d in sub group "
-                                      "%d in group %d obtained {%d, %d, %d, "
-                                      "%d}, expected {%d, %d, %d, %d}\n",
-                                      wi_id, sb_id, wg_id, device_result.s0,
-                                      device_result.s1, device_result.s2,
-                                      device_result.s3, expected_result.s0,
-                                      expected_result.s1, expected_result.s2,
-                                      expected_result.s3);
+                                      "%d in group %d obtained %d, "
+                                      "expected %d\n",
+                                      wi_id, sb_id, wg_id, device_result,
+                                      expected_result);
                             return TEST_FAIL;
                         }
                     }
@@ -547,7 +541,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                         {
                             if (bs.test(id))
                             {
-                                expected_result.s0 = id;
+                                expected_result = id;
                                 break;
                             }
                         }
@@ -555,13 +549,10 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                         {
                             log_error("ERROR: sub_group_ballot_find_msb "
                                       "mismatch for local id %d in sub group "
-                                      "%d in group %d obtained {%d, %d, %d, "
-                                      "%d}, expected {%d, %d, %d, %d}\n",
-                                      wi_id, sb_id, wg_id, device_result.s0,
-                                      device_result.s1, device_result.s2,
-                                      device_result.s3, expected_result.s0,
-                                      expected_result.s1, expected_result.s2,
-                                      expected_result.s3);
+                                      "%d in group %d obtained %d, "
+                                      "expected %d\n",
+                                      wi_id, sb_id, wg_id, device_result,
+                                      expected_result);
                             return TEST_FAIL;
                         }
                     }
