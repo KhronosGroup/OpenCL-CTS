@@ -49,6 +49,7 @@ static size_t reduceImageDepth(size_t maxDepth) {
 }
 
 const char *write2DArrayKernelSourcePattern =
+"%s\n"
 "__kernel void sample_kernel( __global %s%s *input, write_only %s output %s)\n"
 "{\n"
 "   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = get_global_id(2);\n"
@@ -57,6 +58,7 @@ const char *write2DArrayKernelSourcePattern =
 "}";
 
 const char *readwrite2DArrayKernelSourcePattern =
+"%s\n"
 "__kernel void sample_kernel( __global %s%s *input, read_write %s output %s)\n"
 "{\n"
 "   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = get_global_id(2);\n"
@@ -673,6 +675,7 @@ int test_write_image_2D_array_set(cl_device_id device, cl_context context,
     // Construct the source
     sprintf( programSrc,
              KernelSourcePattern,
+             gTestMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable\n#pragma OPENCL EXTENSION cl_khr_mipmap_image_writes: enable" : "",
              get_explicit_type_name( inputType ),
              (format->image_channel_order == CL_DEPTH) ? "" : "4",
              (format->image_channel_order == CL_DEPTH) ? "image2d_array_depth_t" : "image2d_array_t",

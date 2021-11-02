@@ -47,6 +47,7 @@ static size_t reduceImageDepth(size_t maxDimSize, MTdata& seed) {
 
 const char *write3DKernelSourcePattern =
 "%s"
+"%s\n"
 "__kernel void sample_kernel( __global %s4 *input, write_only image3d_t output %s )\n"
 "{\n"
 "   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = get_global_id(2);\n"
@@ -56,6 +57,7 @@ const char *write3DKernelSourcePattern =
 
 const char *readwrite3DKernelSourcePattern =
 "%s"
+"%s\n"
 "__kernel void sample_kernel( __global %s4 *input, read_write image3d_t output %s )\n"
 "{\n"
 "   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = get_global_id(2);\n"
@@ -680,7 +682,8 @@ int test_write_image_3D_set(cl_device_id device, cl_context context,
     // Construct the source
     sprintf( programSrc,
              KernelSourcePattern,
-             gTestMipmaps ? "" : khr3DWritesPragma,
+             khr3DWritesPragma,
+             gTestMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable\n#pragma OPENCL EXTENSION cl_khr_mipmap_image_writes: enable" : "",
              get_explicit_type_name( inputType ),
              gTestMipmaps ? ", int lod" : "",
              gTestMipmaps ? offset3DLodSource : offset3DSource,

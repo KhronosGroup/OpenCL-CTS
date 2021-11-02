@@ -26,6 +26,7 @@
 #endif
 
 const char *read1DKernelSourcePattern =
+"%s\n"
 "__kernel void sample_kernel( read_only image1d_t input,%s __global float *xOffsets, __global %s4 *results %s)\n"
 "{\n"
 "%s"
@@ -36,6 +37,7 @@ const char *read1DKernelSourcePattern =
 "}";
 
 const char *read_write1DKernelSourcePattern =
+"%s\n"
 "__kernel void sample_kernel( read_write image1d_t input,%s __global float *xOffsets, __global %s4 *results %s)\n"
 "{\n"
 "%s"
@@ -1053,6 +1055,7 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
     }
     sprintf( programSrc,
             KernelSourcePattern,
+            gTestMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable" : "",
             samplerArg, get_explicit_type_name( outputType ),
             gTestMipmaps ? ", float lod" : "",
             samplerVar,

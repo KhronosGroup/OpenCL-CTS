@@ -47,6 +47,7 @@ extern bool validate_float_write_results( float *expected, float *actual, image_
 extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo );
 
 const char *writeKernelSourcePattern =
+"%s\n"
 "__kernel void sample_kernel( __global %s%s *input, write_only %s output %s)\n"
 "{\n"
 "   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
@@ -55,6 +56,7 @@ const char *writeKernelSourcePattern =
 "}";
 
 const char *read_writeKernelSourcePattern =
+"%s\n"
 "__kernel void sample_kernel( __global %s%s *input, read_write %s output %s)\n"
 "{\n"
 "   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
@@ -730,6 +732,7 @@ int test_write_image_set(cl_device_id device, cl_context context,
     // Construct the source
     sprintf( programSrc,
              KernelSourcePattern,
+             gTestMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable\n#pragma OPENCL EXTENSION cl_khr_mipmap_image_writes: enable" : "",
              get_explicit_type_name( inputType ),
              (format->image_channel_order == CL_DEPTH) ? "" : "4",
              (format->image_channel_order == CL_DEPTH) ? "image2d_depth_t" : "image2d_t",

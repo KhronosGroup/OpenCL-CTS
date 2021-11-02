@@ -27,6 +27,7 @@ extern bool validate_float_write_results( float *expected, float *actual, image_
 extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor* imageInfo );
 
 const char *readwrite1DKernelSourcePattern =
+"%s\n"
 "__kernel void sample_kernel( __global %s4 *input, read_write image1d_t output %s)\n"
 "{\n"
 "   int tidX = get_global_id(0);\n"
@@ -35,6 +36,7 @@ const char *readwrite1DKernelSourcePattern =
 "}";
 
 const char *write1DKernelSourcePattern =
+"%s\n"
 "__kernel void sample_kernel( __global %s4 *input, write_only image1d_t output %s)\n"
 "{\n"
 "   int tidX = get_global_id(0);\n"
@@ -616,6 +618,7 @@ int test_write_image_1D_set(cl_device_id device, cl_context context,
 
     sprintf( programSrc,
              KernelSourcePattern,
+             gTestMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable\n#pragma OPENCL EXTENSION cl_khr_mipmap_image_writes: enable" : "",
              get_explicit_type_name( inputType ),
              gTestMipmaps ? ", int lod" : "",
              readFormat,

@@ -39,6 +39,7 @@ static size_t reduceImageSizeRange(size_t maxDimSize) {
 }
 
 const char *read2DKernelSourcePattern =
+"%s\n"
 "__kernel void sample_kernel( read_only %s input,%s __global float *xOffsets, __global float *yOffsets, __global %s%s *results %s)\n"
 "{\n"
 "%s"
@@ -49,6 +50,7 @@ const char *read2DKernelSourcePattern =
 "}";
 
 const char *read_write2DKernelSourcePattern =
+"%s\n"
 "__kernel void sample_kernel( read_write %s input,%s __global float *xOffsets, __global float *yOffsets, __global %s%s *results %s)\n"
 "{\n"
 "%s"
@@ -1662,6 +1664,7 @@ int test_read_image_set_2D(cl_device_id device, cl_context context,
 
 
     sprintf( programSrc, KernelSourcePattern,
+            gTestMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable" : "",
             (format->image_channel_order == CL_DEPTH) ? "image2d_depth_t" : "image2d_t",
             samplerArg, get_explicit_type_name( outputType ),
             (format->image_channel_order == CL_DEPTH) ? "" : "4",
