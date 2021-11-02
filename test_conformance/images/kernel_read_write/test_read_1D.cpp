@@ -26,26 +26,28 @@
 #endif
 
 const char *read1DKernelSourcePattern =
-"%s\n"
-"__kernel void sample_kernel( read_only image1d_t input,%s __global float *xOffsets, __global %s4 *results %s)\n"
-"{\n"
-"%s"
-"   int tidX = get_global_id(0);\n"
-"   int offset = tidX;\n"
-"%s"
-"   results[offset] = read_image%s( input, imageSampler, coord %s);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( read_only image1d_t input,%s __global float "
+    "*xOffsets, __global %s4 *results %s)\n"
+    "{\n"
+    "%s"
+    "   int tidX = get_global_id(0);\n"
+    "   int offset = tidX;\n"
+    "%s"
+    "   results[offset] = read_image%s( input, imageSampler, coord %s);\n"
+    "}";
 
 const char *read_write1DKernelSourcePattern =
-"%s\n"
-"__kernel void sample_kernel( read_write image1d_t input,%s __global float *xOffsets, __global %s4 *results %s)\n"
-"{\n"
-"%s"
-"   int tidX = get_global_id(0);\n"
-"   int offset = tidX;\n"
-"%s"
-"   results[offset] = read_image%s( input, coord %s);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( read_write image1d_t input,%s __global float "
+    "*xOffsets, __global %s4 *results %s)\n"
+    "{\n"
+    "%s"
+    "   int tidX = get_global_id(0);\n"
+    "   int offset = tidX;\n"
+    "%s"
+    "   results[offset] = read_image%s( input, coord %s);\n"
+    "}";
 
 const char *int1DCoordKernelSource =
 "   int coord = xOffsets[offset];\n";
@@ -1053,15 +1055,14 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
     {
         KernelSourcePattern = read1DKernelSourcePattern;
     }
-    sprintf( programSrc,
-            KernelSourcePattern,
-            gTestMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable" : "",
-            samplerArg, get_explicit_type_name( outputType ),
-            gTestMipmaps ? ", float lod" : "",
-            samplerVar,
+    sprintf(programSrc, KernelSourcePattern,
+            gTestMipmaps
+                ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable"
+                : "",
+            samplerArg, get_explicit_type_name(outputType),
+            gTestMipmaps ? ", float lod" : "", samplerVar,
             floatCoords ? float1DKernelSource : int1DCoordKernelSource,
-            readFormat,
-            gTestMipmaps ? ", lod" : "" );
+            readFormat, gTestMipmaps ? ", lod" : "");
 
     ptr = programSrc;
 

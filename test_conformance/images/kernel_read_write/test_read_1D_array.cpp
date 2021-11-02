@@ -25,26 +25,28 @@
 #endif
 
 const char *read1DArrayKernelSourcePattern =
-"%s\n"
-"__kernel void sample_kernel( read_only image1d_array_t input,%s __global float *xOffsets, __global float *yOffsets, __global %s4 *results %s)\n"
-"{\n"
-"%s"
-"   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
-"%s"
-"%s"
-"   results[offset] = read_image%s( input, imageSampler, coords %s);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( read_only image1d_array_t input,%s __global "
+    "float *xOffsets, __global float *yOffsets, __global %s4 *results %s)\n"
+    "{\n"
+    "%s"
+    "   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
+    "%s"
+    "%s"
+    "   results[offset] = read_image%s( input, imageSampler, coords %s);\n"
+    "}";
 
 const char *read_write1DArrayKernelSourcePattern =
-"%s\n"
-"__kernel void sample_kernel( read_write image1d_array_t input,%s __global float *xOffsets, __global float *yOffsets, __global %s4 *results %s )\n"
-"{\n"
-"%s"
-"   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
-"%s"
-"%s"
-"   results[offset] = read_image%s( input, coords %s);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( read_write image1d_array_t input,%s __global "
+    "float *xOffsets, __global float *yOffsets, __global %s4 *results %s )\n"
+    "{\n"
+    "%s"
+    "   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
+    "%s"
+    "%s"
+    "   results[offset] = read_image%s( input, coords %s);\n"
+    "}";
 
 const char *offset1DArrayKernelSource =
 "   int offset = tidY*get_image_width(input) + tidX;\n";
@@ -1158,16 +1160,15 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
         KernelSourcePattern = read_write1DArrayKernelSourcePattern;
     }
 
-    sprintf( programSrc,
-            KernelSourcePattern,
-            gTestMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable" : "",
-            samplerArg, get_explicit_type_name( outputType ),
-            gTestMipmaps ? ", float lod" : "",
-            samplerVar,
-            gTestMipmaps ? offset1DArrayLodKernelSource : offset1DArrayKernelSource,
-            floatCoords ? floatKernelSource1DArray : intCoordKernelSource1DArray,
-            readFormat,
-            gTestMipmaps ? ", lod" : "" );
+    sprintf(
+        programSrc, KernelSourcePattern,
+        gTestMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable"
+                     : "",
+        samplerArg, get_explicit_type_name(outputType),
+        gTestMipmaps ? ", float lod" : "", samplerVar,
+        gTestMipmaps ? offset1DArrayLodKernelSource : offset1DArrayKernelSource,
+        floatCoords ? floatKernelSource1DArray : intCoordKernelSource1DArray,
+        readFormat, gTestMipmaps ? ", lod" : "");
 
     ptr = programSrc;
     error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
