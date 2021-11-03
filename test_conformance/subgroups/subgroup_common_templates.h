@@ -168,8 +168,8 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
         }
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int ii, i, j, k, l, n;
         int ng = test_params.global_workgroup_size;
@@ -499,8 +499,8 @@ template <typename Ty, ShuffleOp operation> struct SHF
         }
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int ii, i, j, k, l, n;
         int nw = test_params.local_workgroup_size;
@@ -583,8 +583,8 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int ii, i, j, k, n;
         int nw = test_params.local_workgroup_size;
@@ -689,8 +689,8 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
                  operation_names(operation), TypeManager<Ty>::name());
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int ii, i, j, k, n;
         int nw = test_params.local_workgroup_size;
@@ -805,8 +805,8 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int ii, i, j, k, n;
         int nw = test_params.local_workgroup_size;

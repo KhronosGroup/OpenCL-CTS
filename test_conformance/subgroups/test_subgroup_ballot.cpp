@@ -33,8 +33,8 @@ template <typename Ty> struct BALLOT
         log_info("  sub_group_ballot...\n");
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, sb_id;
         int gws = test_params.global_workgroup_size;
@@ -146,8 +146,8 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
         }
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, l, sb_id;
         int gws = test_params.global_workgroup_size;
@@ -269,8 +269,8 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
         // no work here
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, sb_id;
         int gws = test_params.global_workgroup_size;
@@ -444,8 +444,8 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
         return mask;
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, sb_id;
         int gws = test_params.global_workgroup_size;
@@ -617,8 +617,8 @@ template <typename Ty, BallotOp operation> struct SMASK
         }
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, sb_id;
         int gws = test_params.global_workgroup_size;

@@ -245,8 +245,8 @@ struct IFP
         }
     }
 
-    static int chk(cl_int *x, cl_int *y, cl_int *t, cl_int *, cl_int *,
-                   const WorkGroupParams &test_params)
+    static test_status chk(cl_int *x, cl_int *y, cl_int *t, cl_int *, cl_int *,
+                           const WorkGroupParams &test_params)
     {
         int i, k;
         int nw = test_params.local_workgroup_size;
@@ -255,8 +255,8 @@ struct IFP
         int nj = (nw + ns - 1) / ns;
         ng = ng / nw;
 
-        // We need at least 2 sub groups per group for this tes
-        if (nj == 1) return 0;
+        // We need at least 2 sub groups per group for this test
+        if (nj == 1) return TEST_SKIPPED_ITSELF;
 
         log_info("  independent forward progress...\n");
 
@@ -270,14 +270,14 @@ struct IFP
                     log_error(
                         "ERROR: mismatch at element %d in work group %d\n", i,
                         k);
-                    return -1;
+                    return TEST_FAIL;
                 }
             }
             x += nj * (NUM_LOC + 1);
             y += NUM_LOC;
         }
 
-        return 0;
+        return TEST_PASS;
     }
 };
 
