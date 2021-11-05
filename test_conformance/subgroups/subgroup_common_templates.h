@@ -637,12 +637,9 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                 else
                 {
                     tr = TypeManager<Ty>::identify_limits(operation);
-                    int idx = 0;
                     for (const int &active_work_item : active_work_items)
                     {
                         rr = my[ii + active_work_item];
-                        if (idx == 0) continue;
-
                         if (!compare_ordered(rr, tr))
                         {
                             log_error(
@@ -655,7 +652,6 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                         }
                         tr = calculate<Ty>(tr, mx[ii + active_work_item],
                                            operation);
-                        idx++;
                     }
                 }
             }
