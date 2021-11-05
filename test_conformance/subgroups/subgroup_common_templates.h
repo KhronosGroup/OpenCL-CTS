@@ -630,10 +630,6 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                 {
                     continue;
                 }
-                else if (active_work_items.size() == 1)
-                {
-                    continue;
-                }
                 else
                 {
                     tr = TypeManager<Ty>::identify_limits(operation);
