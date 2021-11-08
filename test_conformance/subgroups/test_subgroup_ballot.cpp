@@ -31,10 +31,6 @@ template <typename Ty> struct BALLOT
         int sbs = test_params.subgroup_size;
         int non_uniform_size = gws % lws;
         log_info("  sub_group_ballot...\n");
-        if (non_uniform_size)
-        {
-            log_info("  non uniform work group size mode ON\n");
-        }
     }
 
     static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
@@ -116,11 +112,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
         int non_uniform_size = gws % lws;
         log_info("  sub_group_%s(%s)...\n", operation_names(operation),
                  TypeManager<Ty>::name());
-
-        if (non_uniform_size)
-        {
-            log_info("  non uniform work group size mode ON\n");
-        }
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
@@ -275,10 +266,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
         int sbs = test_params.subgroup_size;
         int non_uniform_size = gws % lws;
         log_info("  sub_group_inverse_ballot...\n");
-        if (non_uniform_size)
-        {
-            log_info("  non uniform work group size mode ON\n");
-        }
         // no work here
     }
 
@@ -379,7 +366,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                  TypeManager<Ty>::name());
         if (non_uniform_size)
         {
-            log_info("  non uniform work group size mode ON\n");
             wg_number++;
         }
         int e;

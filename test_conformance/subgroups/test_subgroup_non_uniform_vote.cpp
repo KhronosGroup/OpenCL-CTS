@@ -34,20 +34,10 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
         int last_subgroup_size = 0;
         ii = 0;
 
-        log_info("  sub_group_%s%s... \n",
+        log_info("  sub_group_%s%s(%s)... \n",
                  (operation == NonUniformVoteOp::elect) ? "" : "non_uniform_",
-                 operation_names(operation));
+                 operation_names(operation), TypeManager<T>::name());
 
-        log_info("  test params: global size = %d local size = %d subgroups "
-                 "size = %d data type (%s)\n",
-                 test_params.global_workgroup_size, nw, ns,
-                 TypeManager<T>::name());
-        log_info("               work items mask: %s\n",
-                 test_params.work_items_mask.to_string().c_str());
-        if (non_uniform_size)
-        {
-            log_info("  non uniform work group size mode ON\n");
-        }
         if (operation == NonUniformVoteOp::elect) return;
 
         for (k = 0; k < ng; ++k)
@@ -171,34 +161,28 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
                 }
                 if (active_work_items.empty())
                 {
-                    log_info("  no one workitem acitve... in workgroup id = %d "
-                             "subgroup id = %d\n",
-                             k, j);
+                    continue;
                 }
-                else
+                auto lowest_active = active_work_items.begin();
+                for (const int &active_work_item : active_work_items)
                 {
-                    auto lowest_active = active_work_items.begin();
-                    for (const int &active_work_item : active_work_items)
+                    i = active_work_item;
+                    if (operation == NonUniformVoteOp::elect)
                     {
-                        i = active_work_item;
-                        if (operation == NonUniformVoteOp::elect)
-                        {
-                            i == *lowest_active ? tr = 1 : tr = 0;
-                        }
+                        i == *lowest_active ? tr = 1 : tr = 0;
+                    }
 
-                        // normalize device values on host, non zero set 1.
-                        rr = compare_ordered<T>(my[ii + i], 0) ? 0 : 1;
+                    // normalize device values on host, non zero set 1.
+                    rr = compare_ordered<T>(my[ii + i], 0) ? 0 : 1;
 
-                        if (rr != tr)
-                        {
-                            log_error("ERROR: sub_group_%s() \n",
-                                      operation_names(operation));
-                            log_error(
-                                "mismatch for work item %d sub group %d in "
-                                "work group %d. Expected: %d Obtained: %d\n",
-                                i, j, k, tr, rr);
-                            return TEST_FAIL;
-                        }
+                    if (rr != tr)
+                    {
+                        log_error("ERROR: sub_group_%s() \n",
+                                  operation_names(operation));
+                        log_error("mismatch for work item %d sub group %d in "
+                                  "work group %d. Expected: %d Obtained: %d\n",
+                                  i, j, k, tr, rr);
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -208,9 +192,9 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
             m += 4 * nw;
         }
 
-        log_info("  sub_group_%s%s... passed\n",
+        log_info("  sub_group_%s%s(%s)... passed\n",
                  (operation == NonUniformVoteOp::elect) ? "" : "non_uniform_",
-                 operation_names(operation));
+                 operation_names(operation), TypeManager<T>::name());
         return TEST_PASS;
     }
 };

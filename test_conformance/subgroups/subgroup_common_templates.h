@@ -80,7 +80,6 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                  TypeManager<Ty>::name());
         if (non_uniform_size)
         {
-            log_info("  non uniform work group size mode ON\n");
             ng++;
         }
         for (k = 0; k < ng; ++k)
@@ -581,14 +580,6 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
             : func_name = "sub_group_scan_exclusive";
         log_info("  %s_%s(%s)...\n", func_name.c_str(),
                  operation_names(operation), TypeManager<Ty>::name());
-        log_info("  test params: global size = %d local size = %d subgroups "
-                 "size = %d \n",
-                 test_params.global_workgroup_size, nw, ns);
-        if (test_params.work_items_mask.any())
-        {
-            log_info("               work items mask: %s\n",
-                     test_params.work_items_mask.to_string().c_str());
-        }
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
@@ -637,16 +628,10 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                 }
                 if (active_work_items.empty())
                 {
-                    log_info("  No acitve workitems in workgroup id = %d "
-                             "subgroup id = %d - no calculation\n",
-                             k, j);
                     continue;
                 }
                 else if (active_work_items.size() == 1)
                 {
-                    log_info("  One active workitem in workgroup id = %d "
-                             "subgroup id = %d - no calculation\n",
-                             k, j);
                     continue;
                 }
                 else
@@ -702,14 +687,6 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
         log_info("  %s_%s(%s)...\n", func_name.c_str(),
                  operation_names(operation), TypeManager<Ty>::name());
-        log_info("  test params: global size = %d local size = %d subgroups "
-                 "size = %d \n",
-                 test_params.global_workgroup_size, nw, ns);
-        if (test_params.work_items_mask.any())
-        {
-            log_info("               work items mask: %s\n",
-                     test_params.work_items_mask.to_string().c_str());
-        }
     }
 
     static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
@@ -765,9 +742,6 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
                 }
                 if (active_work_items.empty())
                 {
-                    log_info("  No acitve workitems in workgroup id = %d "
-                             "subgroup id = %d - no calculation\n",
-                             k, j);
                     continue;
                 }
                 else
@@ -828,14 +802,6 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
             : func_name = "sub_group_reduce";
         log_info("  %s_%s(%s)...\n", func_name.c_str(),
                  operation_names(operation), TypeManager<Ty>::name());
-        log_info("  test params: global size = %d local size = %d subgroups "
-                 "size = %d \n",
-                 test_params.global_workgroup_size, nw, ns);
-        if (test_params.work_items_mask.any())
-        {
-            log_info("               work items mask: %s\n",
-                     test_params.work_items_mask.to_string().c_str());
-        }
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
@@ -894,9 +860,6 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
 
                 if (active_work_items.empty())
                 {
-                    log_info("  No acitve workitems in workgroup id = %d "
-                             "subgroup id = %d - no calculation\n",
-                             k, j);
                     continue;
                 }
 
