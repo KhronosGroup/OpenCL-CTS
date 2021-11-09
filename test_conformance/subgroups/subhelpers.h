@@ -27,6 +27,9 @@
 #include <bitset>
 #include <regex>
 #include <map>
+#include <numeric>
+#include <algorithm>
+#include <random>
 
 #define NR_OF_ACTIVE_WORK_ITEMS 4
 
@@ -57,7 +60,7 @@ struct WorkGroupParams
         work_items_mask = 0;
         use_core_subgroups = true;
         dynsc = 0;
-        load_masks();
+        compute_masks();
     }
     size_t global_workgroup_size;
     size_t local_workgroup_size;
@@ -94,112 +97,27 @@ struct WorkGroupParams
 
 private:
     std::map<std::string, std::string> kernel_function_name;
-    void load_masks()
+    void compute_masks()
     {
-        if (divergence_mask_arg != -1)
+        std::vector<int> items_id(128);
+        std::iota(std::begin(items_id), std::end(items_id), 0);
+        std::random_device random_device;
+        std::mt19937 mersenne_twister_engine(random_device());
+        std::vector<int> number_of_active_work_items = { 1,   2,   4,  8,  16,
+                                                         32,  37,  68, 80, 90,
+                                                         100, 121, 128 };
+        for (auto nr : number_of_active_work_items)
         {
-            // 1 in string will be set 1, 0 will be set 0
-            bs128 mask_0xf0f0f0f0("11110000111100001111000011110000"
-                                  "11110000111100001111000011110000"
-                                  "11110000111100001111000011110000"
-                                  "11110000111100001111000011110000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0xf0f0f0f0);
-            // 1 in string will be set 0, 0 will be set 1
-            bs128 mask_0x0f0f0f0f("11110000111100001111000011110000"
-                                  "11110000111100001111000011110000"
-                                  "11110000111100001111000011110000"
-                                  "11110000111100001111000011110000",
-                                  128, '1', '0');
-            all_work_item_masks.push_back(mask_0x0f0f0f0f);
-            bs128 mask_0x5555aaaa("10101010101010101010101010101010"
-                                  "10101010101010101010101010101010"
-                                  "10101010101010101010101010101010"
-                                  "10101010101010101010101010101010",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0x5555aaaa);
-            bs128 mask_0xaaaa5555("10101010101010101010101010101010"
-                                  "10101010101010101010101010101010"
-                                  "10101010101010101010101010101010"
-                                  "10101010101010101010101010101010",
-                                  128, '1', '0');
-            all_work_item_masks.push_back(mask_0xaaaa5555);
-            // 0x0f0ff0f0
-            bs128 mask_0x0f0ff0f0("00001111000011111111000011110000"
-                                  "00001111000011111111000011110000"
-                                  "00001111000011111111000011110000"
-                                  "00001111000011111111000011110000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0x0f0ff0f0);
-            // 0xff0000ff
-            bs128 mask_0xff0000ff("11111111000000000000000011111111"
-                                  "11111111000000000000000011111111"
-                                  "11111111000000000000000011111111"
-                                  "11111111000000000000000011111111",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0xff0000ff);
-            // 0xff00ff00
-            bs128 mask_0xff00ff00("11111111000000001111111100000000"
-                                  "11111111000000001111111100000000"
-                                  "11111111000000001111111100000000"
-                                  "11111111000000001111111100000000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0xff00ff00);
-            // 0x00ffff00
-            bs128 mask_0x00ffff00("00000000111111111111111100000000"
-                                  "00000000111111111111111100000000"
-                                  "00000000111111111111111100000000"
-                                  "00000000111111111111111100000000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0x00ffff00);
-            // 0x80 1 workitem highest id for 8 subgroup size
-            bs128 mask_0x80808080("10000000100000001000000010000000"
-                                  "10000000100000001000000010000000"
-                                  "10000000100000001000000010000000"
-                                  "10000000100000001000000010000000",
-                                  128, '0', '1');
-
-            all_work_item_masks.push_back(mask_0x80808080);
-            // 0x8000 1 workitem highest id for 16 subgroup size
-            bs128 mask_0x80008000("10000000000000001000000000000000"
-                                  "10000000000000001000000000000000"
-                                  "10000000000000001000000000000000"
-                                  "10000000000000001000000000000000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0x80008000);
-            // 0x80000000 1 workitem highest id for 32 subgroup size
-            bs128 mask_0x80000000("10000000000000000000000000000000"
-                                  "10000000000000000000000000000000"
-                                  "10000000000000000000000000000000"
-                                  "10000000000000000000000000000000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0x80000000);
-            // 0x80000000 00000000 1 workitem highest id for 64 subgroup size
-            // 0x80000000 1 workitem highest id for 32 subgroup size
-            bs128 mask_0x8000000000000000("10000000000000000000000000000000"
-                                          "00000000000000000000000000000000"
-                                          "10000000000000000000000000000000"
-                                          "00000000000000000000000000000000",
-                                          128, '0', '1');
-
-            all_work_item_masks.push_back(mask_0x8000000000000000);
-            // 0x80000000 00000000 00000000 00000000 1 workitem highest id for
-            // 128 subgroup size
-            bs128 mask_0x80000000000000000000000000000000(
-                "10000000000000000000000000000000"
-                "00000000000000000000000000000000"
-                "00000000000000000000000000000000"
-                "00000000000000000000000000000000",
-                128, '0', '1');
-            all_work_item_masks.push_back(
-                mask_0x80000000000000000000000000000000);
-
-            bs128 mask_0xffffffff("11111111111111111111111111111111"
-                                  "11111111111111111111111111111111"
-                                  "11111111111111111111111111111111"
-                                  "11111111111111111111111111111111",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0xffffffff);
+            std::shuffle(items_id.begin(), items_id.end(),
+                         mersenne_twister_engine);
+            std::vector<int> extract_items_id(items_id.begin(),
+                                              items_id.begin() + nr);
+            bs128 bit_mask;
+            for (auto id : extract_items_id)
+            {
+                bit_mask.set(id);
+            }
+            all_work_item_masks.push_back(bit_mask);
         }
     }
 };
@@ -373,8 +291,8 @@ private:
 
 // Need to defined custom type for vector size = 3 and half type. This is
 // because of 3-component types are otherwise indistinguishable from the
-// 4-component types, and because the half type is indistinguishable from some
-// other 16-bit type (ushort)
+// 4-component types, and because the half type is indistinguishable from
+// some other 16-bit type (ushort)
 namespace subgroups {
 struct cl_char3
 {
