@@ -1489,7 +1489,7 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context, cl_com
 
     error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof( maxSize ), &maxSize, 0 );
     test_error( error, "Unable to get max constant buffer size" );
-    individualBufferSize = ((int)maxSize/2)/maxArgs;
+    individualBufferSize = (maxSize / 2) / maxArgs;
 
     log_info("Reported max constant arg count of %d and max constant buffer size of %d. Test will attempt to allocate half of that, or %d buffers of size %d.\n",
              (int)maxArgs, (int)maxSize, (int)maxArgs, (int)individualBufferSize);
