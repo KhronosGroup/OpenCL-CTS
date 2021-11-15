@@ -1568,7 +1568,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         // and Fns::chk.
         if (status == TEST_FAIL)
         {
-            test_fail("Data verification failed");
+            test_fail("Data verification failed\n");
         }
         return status;
     }
