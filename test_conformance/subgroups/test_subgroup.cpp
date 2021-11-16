@@ -68,8 +68,8 @@ template <NonUniformVoteOp operation> struct AA
         }
     }
 
-    static int chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my,
+                           cl_int *m, const WorkGroupParams &test_params)
     {
         int ii, i, j, k, n;
         int ng = test_params.global_workgroup_size;

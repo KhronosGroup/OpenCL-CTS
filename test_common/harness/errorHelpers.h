@@ -62,6 +62,7 @@ static int vlog_win32(const char *format, ...);
         return TEST_FAIL;                                                      \
     }
 #define test_error(errCode, msg) test_error_ret(errCode, msg, errCode)
+#define test_error_fail(errCode, msg) test_error_ret(errCode, msg, TEST_FAIL)
 #define test_error_ret(errCode, msg, retValue)                                 \
     {                                                                          \
         auto errCodeResult = errCode;                                          \

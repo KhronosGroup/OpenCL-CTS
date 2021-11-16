@@ -50,8 +50,8 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
-    static int chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;

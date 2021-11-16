@@ -92,8 +92,8 @@ template <int Which> struct BAR
         }
     }
 
-    static int chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my,
+                           cl_int *m, const WorkGroupParams &test_params)
     {
         int ii, i, j, k, n;
         int nw = test_params.local_workgroup_size;
@@ -133,7 +133,7 @@ template <int Which> struct BAR
                                   "id %d in sub group %d in group %d expected "
                                   "%d got %d\n",
                                   i, j, k, tr, rr);
-                        return -1;
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -143,7 +143,7 @@ template <int Which> struct BAR
             m += 2 * nw;
         }
 
-        return 0;
+        return TEST_PASS;
     }
 };
 

@@ -1375,25 +1375,31 @@ static int run_kernel(cl_context context, cl_command_queue queue,
 // Driver for testing a single built in function
 template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
 {
-    static int mrun(cl_device_id device, cl_context context,
-                    cl_command_queue queue, int num_elements, const char *kname,
-                    const char *src, WorkGroupParams test_params)
+    static test_status mrun(cl_device_id device, cl_context context,
+                            cl_command_queue queue, int num_elements,
+                            const char *kname, const char *src,
+                            WorkGroupParams test_params)
     {
-        int error = TEST_PASS;
+        test_status combined_error = TEST_SKIPPED_ITSELF;
         for (auto &mask : test_params.all_work_item_masks)
         {
             test_params.work_items_mask = mask;
-            error |= run(device, context, queue, num_elements, kname, src,
-                         test_params);
+            test_status error = run(device, context, queue, num_elements, kname,
+                                    src, test_params);
+
+            if (error == TEST_FAIL
+                || (error == TEST_PASS && combined_error != TEST_FAIL))
+                combined_error = error;
         }
-        return error;
+        return combined_error;
     };
-    static int run(cl_device_id device, cl_context context,
-                   cl_command_queue queue, int num_elements, const char *kname,
-                   const char *src, WorkGroupParams test_params)
+    static test_status run(cl_device_id device, cl_context context,
+                           cl_command_queue queue, int num_elements,
+                           const char *kname, const char *src,
+                           WorkGroupParams test_params)
     {
         size_t tmp;
-        int error;
+        cl_int error;
         int subgroup_size, num_subgroups;
         size_t realSize;
         size_t global = test_params.global_workgroup_size;
@@ -1434,7 +1440,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         if (!TypeManager<Ty>::type_supported(device))
         {
             log_info("Data type not supported : %s\n", TypeManager<Ty>::name());
-            return 0;
+            return TEST_SKIPPED_ITSELF;
         }
         else
         {
@@ -1450,7 +1456,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
 
         error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
                                 (void *)&platform, NULL);
-        test_error(error, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
+        test_error_fail(error, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
         if (test_params.use_core_subgroups)
         {
             kernel_sstr
@@ -1465,12 +1471,12 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
 
         error = create_single_kernel_helper(context, &program, &kernel, 1,
                                             &kernel_src, kname);
-        if (error != 0) return error;
+        if (error != CL_SUCCESS) return TEST_FAIL;
 
         // Determine some local dimensions to use for the test.
         error = get_max_common_work_group_size(
             context, kernel, test_params.global_workgroup_size, &local);
-        test_error(error, "get_max_common_work_group_size failed");
+        test_error_fail(error, "get_max_common_work_group_size failed");
 
         // Limit it a bit so we have muliple work groups
         // Ideally this will still be large enough to give us multiple
@@ -1543,7 +1549,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
                            input_array_size * sizeof(Ty), sgmap.data(),
                            global * sizeof(cl_int4), odata.data(),
                            output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
-        test_error(error, "Running kernel first time failed");
+        test_error_fail(error, "Running kernel first time failed");
 
         // Generate the desired input for the kernel
 
@@ -1553,13 +1559,18 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
                            input_array_size * sizeof(Ty), sgmap.data(),
                            global * sizeof(cl_int4), odata.data(),
                            output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
-        test_error(error, "Running kernel second time failed");
+        test_error_fail(error, "Running kernel second time failed");
 
         // Check the result
-        error = Fns::chk(idata.data(), odata.data(), mapin.data(),
-                         mapout.data(), sgmap.data(), test_params);
-        test_error(error, "Data verification failed");
-        return TEST_PASS;
+        test_status status = Fns::chk(idata.data(), odata.data(), mapin.data(),
+                                      mapout.data(), sgmap.data(), test_params);
+        // Detailed failure and skip messages should be logged by Fns::gen
+        // and Fns::chk.
+        if (status == TEST_FAIL)
+        {
+            test_fail("Data verification failed\n");
+        }
+        return status;
     }
 };
 
@@ -1625,7 +1636,10 @@ struct RunTestForType
                                     test_params_);
         }
 
-        return error;
+        // If we return TEST_SKIPPED_ITSELF here, then an entire suite may be
+        // reported as having been skipped even if some tests within it
+        // passed, as the status codes are erroneously ORed together:
+        return error == TEST_FAIL ? TEST_FAIL : TEST_PASS;
     }
 
 private:

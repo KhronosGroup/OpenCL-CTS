@@ -83,8 +83,8 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
         }
     }
 
-    static int chk(T *x, T *y, T *mx, T *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(T *x, T *y, T *mx, T *my, cl_int *m,
+                           const WorkGroupParams &test_params)
     {
         int ii, i, j, k, n;
         int nw = test_params.local_workgroup_size;
