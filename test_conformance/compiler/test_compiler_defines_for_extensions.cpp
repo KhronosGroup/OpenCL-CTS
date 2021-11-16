@@ -75,6 +75,9 @@ const char *known_extensions[] = {
     "cl_khr_pci_bus_info",
     "cl_khr_suggested_local_work_size",
     "cl_khr_spirv_linkonce_odr",
+    "cl_khr_semaphore",
+    "cl_khr_external_semaphore",
+    "cl_khr_external_semaphore_sync_fd",
 };
 
 size_t num_known_extensions = sizeof(known_extensions) / sizeof(char *);
