@@ -496,7 +496,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                         | (bs128(mx[wg_offset + wi_id].s1) << 32)
                         | (bs128(mx[wg_offset + wi_id].s2) << 64)
                         | (bs128(mx[wg_offset + wi_id].s3) << 96);
-                    bs &= getImportantBits(wi_id, current_sbs);
+                    bs &= getImportantBits(wi_id, sbs);
                     device_result = my[wg_offset + wi_id].s0;
                     if (operation == BallotOp::ballot_inclusive_scan
                         || operation == BallotOp::ballot_exclusive_scan
@@ -516,7 +516,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                     }
                     else if (operation == BallotOp::ballot_find_lsb)
                     {
-                        for (int id = 0; id < current_sbs; ++id)
+                        for (int id = 0; id < sbs; ++id)
                         {
                             if (bs.test(id))
                             {
@@ -537,7 +537,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                     }
                     else if (operation == BallotOp::ballot_find_msb)
                     {
-                        for (int id = current_sbs - 1; id >= 0; --id)
+                        for (int id = sbs - 1; id >= 0; --id)
                         {
                             if (bs.test(id))
                             {
