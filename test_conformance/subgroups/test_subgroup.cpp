@@ -24,6 +24,13 @@ namespace {
 // Any/All test functions
 template <NonUniformVoteOp operation> struct AA
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  sub_group_%s...%s\n", operation_names(operation),
+                 extra_text);
+    }
+
     static void gen(cl_int *x, cl_int *t, cl_int *m,
                     const WorkGroupParams &test_params)
     {
@@ -35,7 +42,6 @@ template <NonUniformVoteOp operation> struct AA
         int e;
         ng = ng / nw;
         ii = 0;
-        log_info("  sub_group_%s...\n", operation_names(operation));
         for (k = 0; k < ng; ++k)
         {
             for (j = 0; j < nj; ++j)
@@ -124,7 +130,6 @@ template <NonUniformVoteOp operation> struct AA
             y += nw;
             m += 4 * nw;
         }
-        log_info("  sub_group_%s... passed\n", operation_names(operation));
         return TEST_PASS;
     }
 };

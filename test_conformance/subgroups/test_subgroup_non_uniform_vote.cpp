@@ -22,6 +22,15 @@ namespace {
 
 template <typename T, NonUniformVoteOp operation> struct VOTE
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  sub_group_%s%s(%s)...%s\n",
+                 (operation == NonUniformVoteOp::elect) ? "" : "non_uniform_",
+                 operation_names(operation), TypeManager<T>::name(),
+                 extra_text);
+    }
+
     static void gen(T *x, T *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int i, ii, j, k, n;
@@ -33,10 +42,6 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
         ng = ng / nw;
         int last_subgroup_size = 0;
         ii = 0;
-
-        log_info("  sub_group_%s%s(%s)... \n",
-                 (operation == NonUniformVoteOp::elect) ? "" : "non_uniform_",
-                 operation_names(operation), TypeManager<T>::name());
 
         if (operation == NonUniformVoteOp::elect) return;
 
@@ -192,9 +197,6 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
             m += 4 * nw;
         }
 
-        log_info("  sub_group_%s%s(%s)... passed\n",
-                 (operation == NonUniformVoteOp::elect) ? "" : "non_uniform_",
-                 operation_names(operation), TypeManager<T>::name());
         return TEST_PASS;
     }
 };

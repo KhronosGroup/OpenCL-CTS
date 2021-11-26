@@ -23,6 +23,12 @@ namespace {
 // Test for ballot functions
 template <typename Ty> struct BALLOT
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  sub_group_ballot...%s\n", extra_text);
+    }
+
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         // no work here
@@ -30,7 +36,6 @@ template <typename Ty> struct BALLOT
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
         int non_uniform_size = gws % lws;
-        log_info("  sub_group_ballot...\n");
     }
 
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
@@ -92,7 +97,6 @@ template <typename Ty> struct BALLOT
             y += lws;
             m += 4 * lws;
         }
-        log_info("  sub_group_ballot... passed\n");
         return TEST_PASS;
     }
 };
@@ -100,6 +104,13 @@ template <typename Ty> struct BALLOT
 // Test for bit extract ballot functions
 template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  sub_group_ballot_%s(%s)...%s\n", operation_names(operation),
+                 TypeManager<Ty>::name(), extra_text);
+    }
+
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int wi_id, sb_id, wg_id, l;
@@ -110,8 +121,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
         int wg_number = gws / lws;
         int limit_sbs = sbs > 100 ? 100 : sbs;
         int non_uniform_size = gws % lws;
-        log_info("  sub_group_%s(%s)...\n", operation_names(operation),
-                 TypeManager<Ty>::name());
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
@@ -251,21 +260,24 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
             y += lws;
             m += 4 * lws;
         }
-        log_info("  sub_group_%s(%s)... passed\n", operation_names(operation),
-                 TypeManager<Ty>::name());
         return TEST_PASS;
     }
 };
 
 template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  sub_group_inverse_ballot...%s\n", extra_text);
+    }
+
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
         int non_uniform_size = gws % lws;
-        log_info("  sub_group_inverse_ballot...\n");
         // no work here
     }
 
@@ -341,7 +353,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
             m += 4 * lws;
         }
 
-        log_info("  sub_group_inverse_ballot... passed\n");
         return TEST_PASS;
     }
 };
@@ -350,6 +361,13 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
 // Test for bit count/inclusive and exclusive scan/ find lsb msb ballot function
 template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  sub_group_%s(%s)...%s\n", operation_names(operation),
+                 TypeManager<Ty>::name(), extra_text);
+    }
+
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, sb_id;
@@ -362,8 +380,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
         int last_subgroup_size = 0;
         int current_sbs = 0;
 
-        log_info("  sub_group_%s(%s)...\n", operation_names(operation),
-                 TypeManager<Ty>::name());
         if (non_uniform_size)
         {
             wg_number++;
@@ -562,8 +578,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
             y += lws;
             m += 4 * lws;
         }
-        log_info("  sub_group_ballot_%s(%s)... passed\n",
-                 operation_names(operation), TypeManager<Ty>::name());
         return TEST_PASS;
     }
 };
@@ -571,6 +585,13 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
 // test mask functions
 template <typename Ty, BallotOp operation> struct SMASK
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  get_sub_group_%s_mask...%s\n", operation_names(operation),
+                 extra_text);
+    }
+
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int wi_id, wg_id, l, sb_id;
@@ -579,7 +600,6 @@ template <typename Ty, BallotOp operation> struct SMASK
         int sbs = test_params.subgroup_size;
         int sb_number = (lws + sbs - 1) / sbs;
         int wg_number = gws / lws;
-        log_info("  get_sub_group_%s_mask...\n", operation_names(operation));
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
             for (sb_id = 0; sb_id < sb_number; ++sb_id)
@@ -655,8 +675,6 @@ template <typename Ty, BallotOp operation> struct SMASK
             y += lws;
             m += 4 * lws;
         }
-        log_info("  get_sub_group_%s_mask... passed\n",
-                 operation_names(operation));
         return TEST_PASS;
     }
 };

@@ -63,6 +63,13 @@ static cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
 // only 4 work_items from subgroup enter the code (are active)
 template <typename Ty, SubgroupsBroadcastOp operation> struct BC
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  sub_group_%s(%s)...%s\n", operation_names(operation),
+                 TypeManager<Ty>::name(), extra_text);
+    }
+
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int i, ii, j, k, n;
@@ -76,8 +83,6 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
         int last_subgroup_size = 0;
         ii = 0;
 
-        log_info("  sub_group_%s(%s)...\n", operation_names(operation),
-                 TypeManager<Ty>::name());
         if (non_uniform_size)
         {
             ng++;
@@ -286,8 +291,6 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
             y += nw;
             m += 4 * nw;
         }
-        log_info("  sub_group_%s(%s)... passed\n", operation_names(operation),
-                 TypeManager<Ty>::name());
         return TEST_PASS;
     }
 };
@@ -437,6 +440,13 @@ void genrand(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
 
 template <typename Ty, ShuffleOp operation> struct SHF
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  sub_group_%s(%s)...%s\n", operation_names(operation),
+                 TypeManager<Ty>::name(), extra_text);
+    }
+
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int i, ii, j, k, l, n, delta;
@@ -447,8 +457,6 @@ template <typename Ty, ShuffleOp operation> struct SHF
         int d = ns > 100 ? 100 : ns;
         ii = 0;
         ng = ng / nw;
-        log_info("  sub_group_%s(%s)...\n", operation_names(operation),
-                 TypeManager<Ty>::name());
         for (k = 0; k < ng; ++k)
         { // for each work_group
             for (j = 0; j < nj; ++j)
@@ -560,26 +568,29 @@ template <typename Ty, ShuffleOp operation> struct SHF
             y += nw;
             m += 4 * nw;
         }
-        log_info("  sub_group_%s(%s)... passed\n", operation_names(operation),
-                 TypeManager<Ty>::name());
         return TEST_PASS;
     }
 };
 
 template <typename Ty, ArithmeticOp operation> struct SCEX_NU
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        std::string func_name = (test_params.all_work_item_masks.size() > 0
+                                     ? "sub_group_non_uniform_scan_exclusive"
+                                     : "sub_group_scan_exclusive");
+        log_info("  %s_%s(%s)...%s\n", func_name.c_str(),
+                 operation_names(operation), TypeManager<Ty>::name(),
+                 extra_text);
+    }
+
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        std::string func_name;
-        test_params.work_items_mask.any()
-            ? func_name = "sub_group_non_uniform_scan_exclusive"
-            : func_name = "sub_group_scan_exclusive";
-        log_info("  %s_%s(%s)...\n", func_name.c_str(),
-                 operation_names(operation), TypeManager<Ty>::name());
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
@@ -595,11 +606,9 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
         Ty tr, rr;
         ng = ng / nw;
 
-        std::string func_name;
-        test_params.work_items_mask.any()
-            ? func_name = "sub_group_non_uniform_scan_exclusive"
-            : func_name = "sub_group_scan_exclusive";
-
+        std::string func_name = (test_params.all_work_item_masks.size() > 0
+                                     ? "sub_group_non_uniform_scan_exclusive"
+                                     : "sub_group_scan_exclusive");
 
         // for uniform case take into consideration all workitems
         if (!work_items_mask.any())
@@ -656,8 +665,6 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
             m += 4 * nw;
         }
 
-        log_info("  %s_%s(%s)... passed\n", func_name.c_str(),
-                 operation_names(operation), TypeManager<Ty>::name());
         return TEST_PASS;
     }
 };
@@ -665,20 +672,24 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
 // Test for scan inclusive non uniform functions
 template <typename Ty, ArithmeticOp operation> struct SCIN_NU
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        std::string func_name = (test_params.all_work_item_masks.size() > 0
+                                     ? "sub_group_non_uniform_scan_inclusive"
+                                     : "sub_group_scan_inclusive");
+        log_info("  %s_%s(%s)...%s\n", func_name.c_str(),
+                 operation_names(operation), TypeManager<Ty>::name(),
+                 extra_text);
+    }
+
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        std::string func_name;
-        test_params.work_items_mask.any()
-            ? func_name = "sub_group_non_uniform_scan_inclusive"
-            : func_name = "sub_group_scan_inclusive";
-
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
-        log_info("  %s_%s(%s)...\n", func_name.c_str(),
-                 operation_names(operation), TypeManager<Ty>::name());
     }
 
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
@@ -694,10 +705,9 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
         Ty tr, rr;
         ng = ng / nw;
 
-        std::string func_name;
-        work_items_mask.any()
-            ? func_name = "sub_group_non_uniform_scan_inclusive"
-            : func_name = "sub_group_scan_inclusive";
+        std::string func_name = (test_params.all_work_item_masks.size() > 0
+                                     ? "sub_group_non_uniform_scan_inclusive"
+                                     : "sub_group_scan_inclusive");
 
         // for uniform case take into consideration all workitems
         if (!work_items_mask.any())
@@ -771,8 +781,6 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
             m += 4 * nw;
         }
 
-        log_info("  %s_%s(%s)... passed\n", func_name.c_str(),
-                 operation_names(operation), TypeManager<Ty>::name());
         return TEST_PASS;
     }
 };
@@ -780,6 +788,16 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
 // Test for reduce non uniform functions
 template <typename Ty, ArithmeticOp operation> struct RED_NU
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        std::string func_name = (test_params.all_work_item_masks.size() > 0
+                                     ? "sub_group_non_uniform_reduce"
+                                     : "sub_group_reduce");
+        log_info("  %s_%s(%s)...%s\n", func_name.c_str(),
+                 operation_names(operation), TypeManager<Ty>::name(),
+                 extra_text);
+    }
 
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
@@ -787,13 +805,6 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        std::string func_name;
-
-        test_params.work_items_mask.any()
-            ? func_name = "sub_group_non_uniform_reduce"
-            : func_name = "sub_group_reduce";
-        log_info("  %s_%s(%s)...\n", func_name.c_str(),
-                 operation_names(operation), TypeManager<Ty>::name());
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
@@ -809,9 +820,9 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
         ng = ng / nw;
         Ty tr, rr;
 
-        std::string func_name;
-        work_items_mask.any() ? func_name = "sub_group_non_uniform_reduce"
-                              : func_name = "sub_group_reduce";
+        std::string func_name = (test_params.all_work_item_masks.size() > 0
+                                     ? "sub_group_non_uniform_reduce"
+                                     : "sub_group_reduce");
 
         for (k = 0; k < ng; ++k)
         {
@@ -875,8 +886,6 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
             m += 4 * nw;
         }
 
-        log_info("  %s_%s(%s)... passed\n", func_name.c_str(),
-                 operation_names(operation), TypeManager<Ty>::name());
         return TEST_PASS;
     }
 };

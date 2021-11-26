@@ -225,6 +225,12 @@ void run_insts(cl_int *x, cl_int *p, int n)
 
 struct IFP
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  independent forward progress...%s\n", extra_text);
+    }
+
     static void gen(cl_int *x, cl_int *t, cl_int *,
                     const WorkGroupParams &test_params)
     {
@@ -257,8 +263,6 @@ struct IFP
 
         // We need at least 2 sub groups per group for this test
         if (nj == 1) return TEST_SKIPPED_ITSELF;
-
-        log_info("  independent forward progress...\n");
 
         for (k = 0; k < ng; ++k)
         {
