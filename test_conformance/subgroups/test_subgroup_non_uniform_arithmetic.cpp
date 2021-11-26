@@ -17,7 +17,6 @@
 #include "subhelpers.h"
 #include "harness/typeWrappers.h"
 #include "subgroup_common_templates.h"
-#include <cstdio>
 
 namespace {
 
