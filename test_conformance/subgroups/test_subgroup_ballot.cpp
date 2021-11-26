@@ -437,9 +437,9 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
         else if (operation == BallotOp::ballot_inclusive_scan
                  || operation == BallotOp::ballot_exclusive_scan)
         {
-            for (cl_uint i = 0; i <= sub_group_local_id; ++i) mask.set(i);
-            if (operation == BallotOp::ballot_exclusive_scan)
-                mask.reset(sub_group_local_id);
+            for (cl_uint i = 0; i < sub_group_local_id; ++i) mask.set(i);
+            if (operation == BallotOp::ballot_inclusive_scan)
+                mask.set(sub_group_local_id);
         }
         return mask;
     }
