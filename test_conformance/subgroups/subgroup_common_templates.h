@@ -393,27 +393,52 @@ template <typename Ty> bool is_floating_point()
         || std::is_same<Ty, subgroups::cl_half>::value;
 }
 
+// limit possible input values to avoid arithmetic rouding/overflow issues.
+// for each subgroup values defined different values
+// for rest of workitems set 1
+// shuffle values
+template <typename Ty>
+void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
+                                  const int &sb_size)
+{
+    // below values are 0.5f, 0.25f, 2.0f, 4.0f
+    std::vector<cl_ulong> safe_half_values{ 0x3800, 0x3400, 0x4000, 0x4400 };
+    // max possible value is == 5040
+    std::vector<cl_ulong> safe_other_types_values{ 2, 3, 4, 5, 6, 7 };
+
+    cl_ulong set_one = 0x3c00;
+
+    if (std::is_same<Ty, subgroups::cl_half>::value)
+    {
+        safe_values = safe_half_values;
+    }
+    else
+    {
+        safe_values = safe_other_types_values;
+        set_one = 1;
+    }
+
+    std::random_device random_device;
+    std::mt19937 mersenne_twister_engine(random_device());
+    int offset_size = sb_size - safe_values.size();
+    if (offset_size > 0)
+    {
+        safe_values.insert(safe_values.end(), offset_size, set_one);
+    }
+    else
+    {
+        safe_values.resize(sb_size);
+    }
+
+    std::shuffle(safe_values.begin(), safe_values.end(),
+                 mersenne_twister_engine);
+};
+
 template <typename Ty, ArithmeticOp operation>
 void genrand(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
 {
     int nj = (nw + ns - 1) / ns;
 
-    // limit possible input values to avoid arithmetic rouding/overflow issues.
-    // for each subgroup for 4 workitems set 4 values different than 1
-    // for rest of workitems set 1
-    // shuffle values
-    // below values are 0.5f, 0.25f, 2.0f, 4.0f
-    std::vector<cl_ulong> safe_half_values{ 0x3800, 0x3400, 0x4000, 0x4400 };
-    if (std::is_same<Ty, subgroups::cl_half>::value)
-    {
-        std::random_device random_device;
-        std::mt19937 mersenne_twister_engine(random_device());
-        safe_half_values.insert(safe_half_values.end(),
-                                ns - safe_half_values.size(), 0x3c00);
-
-        std::shuffle(safe_half_values.begin(), safe_half_values.end(),
-                     mersenne_twister_engine);
-    }
     for (int k = 0; k < ng; ++k)
     {
         for (int j = 0; j < nj; ++j)
@@ -421,23 +446,20 @@ void genrand(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
             int ii = j * ns;
             int n = ii + ns > nw ? nw - ii : ns;
 
+            std::vector<cl_ulong> safe_values;
+            if (operation == ArithmeticOp::mul_
+                || operation == ArithmeticOp::add_)
+            {
+                fill_and_shuffle_safe_values<Ty>(safe_values, ns);
+            }
+
             for (int i = 0; i < n; ++i)
             {
                 cl_ulong out_value;
-                double y;
                 if (operation == ArithmeticOp::mul_
                     || operation == ArithmeticOp::add_)
                 {
-                    if (std::is_same<Ty, subgroups::cl_half>::value)
-                    {
-                        out_value = safe_half_values[i];
-                    }
-                    else
-                    {
-                        // work around to avoid overflow, do not use 0 for
-                        // multiplication
-                        out_value = (genrand_int32(gMTdata) % 4) + 1;
-                    }
+                    out_value = safe_values[i];
                 }
                 else
                 {
