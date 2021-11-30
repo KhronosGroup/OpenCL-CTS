@@ -434,7 +434,7 @@ void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
 };
 
 template <typename Ty, ArithmeticOp operation>
-void genrand(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
+void generate_inputs(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
 {
     int nj = (nw + ns - 1) / ns;
 
@@ -636,7 +636,7 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        genrand<Ty, operation>(x, t, m, ns, nw, ng);
+        generate_inputs<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
@@ -734,7 +734,7 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        genrand<Ty, operation>(x, t, m, ns, nw, ng);
+        generate_inputs<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
@@ -850,7 +850,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        genrand<Ty, operation>(x, t, m, ns, nw, ng);
+        generate_inputs<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,

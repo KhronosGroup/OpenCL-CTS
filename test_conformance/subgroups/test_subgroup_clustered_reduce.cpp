@@ -52,7 +52,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        genrand<Ty, operation>(x, t, m, ns, nw, ng);
+        generate_inputs<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
