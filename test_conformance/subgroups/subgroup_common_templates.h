@@ -393,7 +393,7 @@ template <typename Ty> bool is_floating_point()
         || std::is_same<Ty, subgroups::cl_half>::value;
 }
 
-// limit possible input values to avoid arithmetic rouding/overflow issues.
+// limit possible input values to avoid arithmetic rounding/overflow issues.
 // for each subgroup values defined different values
 // for rest of workitems set 1
 // shuffle values
