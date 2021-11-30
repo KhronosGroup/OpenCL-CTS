@@ -418,8 +418,6 @@ void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
         set_one = 1;
     }
 
-    std::random_device random_device;
-    std::mt19937 mersenne_twister_engine(random_device());
     int offset_size = sb_size - safe_values.size();
     if (offset_size > 0)
     {
@@ -430,6 +428,7 @@ void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
         safe_values.resize(sb_size);
     }
 
+    std::mt19937 mersenne_twister_engine(10000);
     std::shuffle(safe_values.begin(), safe_values.end(),
                  mersenne_twister_engine);
 };
@@ -439,19 +438,18 @@ void genrand(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
 {
     int nj = (nw + ns - 1) / ns;
 
+    std::vector<cl_ulong> safe_values;
+    if (operation == ArithmeticOp::mul_ || operation == ArithmeticOp::add_)
+    {
+        fill_and_shuffle_safe_values<Ty>(safe_values, ns);
+    }
+
     for (int k = 0; k < ng; ++k)
     {
         for (int j = 0; j < nj; ++j)
         {
             int ii = j * ns;
             int n = ii + ns > nw ? nw - ii : ns;
-
-            std::vector<cl_ulong> safe_values;
-            if (operation == ArithmeticOp::mul_
-                || operation == ArithmeticOp::add_)
-            {
-                fill_and_shuffle_safe_values<Ty>(safe_values, ns);
-            }
 
             for (int i = 0; i < n; ++i)
             {
