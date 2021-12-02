@@ -397,35 +397,22 @@ template <typename Ty> bool is_floating_point()
 // for each subgroup values defined different values
 // for rest of workitems set 1
 // shuffle values
-template <typename Ty>
-void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
-                                  const int &sb_size)
+static void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
+                                         int sb_size)
 {
-    // below values are 0.5f, 0.25f, 2.0f, 4.0f
-    std::vector<cl_ulong> safe_half_values{ 0x3800, 0x3400, 0x4000, 0x4400 };
-    // max possible value is == 5040
-    std::vector<cl_ulong> safe_other_types_values{ 2, 3, 4, 5, 6, 7 };
+    // max product is 720, cl_half has enough precision for it
+    const std::vector<cl_ulong> non_one_values{ 2, 3, 4, 5, 6 };
 
-    cl_ulong set_one = 0x3c00;
-
-    if (std::is_same<Ty, subgroups::cl_half>::value)
+    if (sb_size <= non_one_values.size())
     {
-        safe_values = safe_half_values;
+        safe_values.assign(non_one_values.begin(),
+                           non_one_values.begin() + sb_size);
     }
     else
     {
-        safe_values = safe_other_types_values;
-        set_one = 1;
-    }
-
-    int offset_size = sb_size - safe_values.size();
-    if (offset_size > 0)
-    {
-        safe_values.insert(safe_values.end(), offset_size, set_one);
-    }
-    else
-    {
-        safe_values.resize(sb_size);
+        safe_values.assign(sb_size, 1);
+        std::copy(non_one_values.begin(), non_one_values.end(),
+                  safe_values.begin());
     }
 
     std::mt19937 mersenne_twister_engine(10000);
@@ -441,7 +428,7 @@ void generate_inputs(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
     std::vector<cl_ulong> safe_values;
     if (operation == ArithmeticOp::mul_ || operation == ArithmeticOp::add_)
     {
-        fill_and_shuffle_safe_values<Ty>(safe_values, ns);
+        fill_and_shuffle_safe_values(safe_values, ns);
     }
 
     for (int k = 0; k < ng; ++k)
