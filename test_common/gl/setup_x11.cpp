@@ -18,9 +18,6 @@
 #include "testBase.h"
 #include "harness/errorHelpers.h"
 
-#include <GL/gl.h>
-#include <GL/glut.h>
-#include <GL/freeglut.h>
 #include <GL/glx.h>
 #include <CL/cl_ext.h>
 

@@ -18,8 +18,6 @@
 #include "testBase.h"
 #include "harness/errorHelpers.h"
 
-#include <GL/gl.h>
-#include <GL/glut.h>
 #include <CL/cl_ext.h>
 
 typedef CL_API_ENTRY cl_int (CL_API_CALL *clGetGLContextInfoKHR_fn)(
