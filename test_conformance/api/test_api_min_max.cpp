@@ -1827,7 +1827,7 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context,
     individualBufferSize = (maxSize / 2) / maxArgs;
 
     log_info(
-        "Reported max constant arg count of %llu and max constant buffer "
+        "Reported max constant arg count of %u and max constant buffer "
         "size of %llu. Test will attempt to allocate half of that, or %llu "
         "buffers of size %zu.\n",
         maxArgs, maxSize, maxArgs, individualBufferSize);
@@ -2138,8 +2138,8 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context,
     /* Test running the kernel and verifying it */
     threads[0] = numberOfInts;
     localThreads[0] = 1;
-    log_info("Creating local buffer with %d cl_ints (%zu bytes).\n",
-             (int)numberOfInts, sizeToAllocate);
+    log_info("Creating local buffer with %zu cl_ints (%zu bytes).\n",
+             numberOfInts, sizeToAllocate);
 
     cl_event evt;
     cl_int evt_err;
