@@ -172,6 +172,8 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
                 destroyClState(pClState);
                 return -1;
             }
+
+            clStateDestroyProgramAndKernel(pClState);
         }
     }
 
