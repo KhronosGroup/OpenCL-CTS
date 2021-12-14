@@ -38,15 +38,20 @@ __kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type 
 // Test for reduce cluster functions
 template <typename Ty, ArithmeticOp operation> struct RED_CLU
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  sub_group_clustered_reduce_%s(%s, %d bytes) ...%s\n",
+                 operation_names(operation), TypeManager<Ty>::name(),
+                 sizeof(Ty), extra_text);
+    }
+
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        log_info("  sub_group_clustered_reduce_%s(%s, %d bytes) ...\n",
-                 operation_names(operation), TypeManager<Ty>::name(),
-                 sizeof(Ty));
         genrand<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
@@ -124,9 +129,6 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
             y += nw;
             m += 4 * nw;
         }
-        log_info("  sub_group_clustered_reduce_%s(%s, %d bytes) ... passed\n",
-                 operation_names(operation), TypeManager<Ty>::name(),
-                 sizeof(Ty));
         return TEST_PASS;
     }
 };

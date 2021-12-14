@@ -59,6 +59,17 @@ static const char *gbar_source =
 // barrier test functions
 template <int Which> struct BAR
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        if (Which == 0)
+            log_info("  sub_group_barrier(CLK_LOCAL_MEM_FENCE)...%s\n",
+                     extra_text);
+        else
+            log_info("  sub_group_barrier(CLK_GLOBAL_MEM_FENCE)...%s\n",
+                     extra_text);
+    }
+
     static void gen(cl_int *x, cl_int *t, cl_int *m,
                     const WorkGroupParams &test_params)
     {
@@ -102,11 +113,6 @@ template <int Which> struct BAR
         int nj = (nw + ns - 1) / ns;
         ng = ng / nw;
         cl_int tr, rr;
-
-        if (Which == 0)
-            log_info("  sub_group_barrier(CLK_LOCAL_MEM_FENCE)...\n");
-        else
-            log_info("  sub_group_barrier(CLK_GLOBAL_MEM_FENCE)...\n");
 
         for (k = 0; k < ng; ++k)
         {
