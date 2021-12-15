@@ -33,12 +33,12 @@
 #include "harness/clImageHelper.h"
 #include "harness/os_helpers.h"
 
+#include "../math_brute_force/function_list.h"
+#include "datagen.h"
 #include "exceptions.h"
 #include "kernelargs.h"
-#include "datagen.h"
-#include "run_services.h"
 #include "run_build_test.h"
-#include "../math_brute_force/FunctionList.h"
+#include "run_services.h"
 #include <CL/cl.h>
 //
 // Task

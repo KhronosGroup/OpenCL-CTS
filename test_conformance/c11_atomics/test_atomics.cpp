@@ -1657,12 +1657,18 @@ public:
       "  for(cnt = 0; !stop && cnt < threadCount; cnt++) // each thread must find critical section where it is the first visitor\n"
       "  {\n"
       "    bool set = atomic_flag_test_and_set" + postfix + "(&destMemory[cnt]" + memoryOrderScope + ");\n";
-    if (MemoryOrder() == MEMORY_ORDER_RELAXED || MemoryOrder() == MEMORY_ORDER_RELEASE)
-      program += "    atomic_work_item_fence(" +
-                 std::string(LocalMemory() ? "CLK_LOCAL_MEM_FENCE, " : "CLK_GLOBAL_MEM_FENCE, ") +
-                 "memory_order_acquire," +
-                 std::string(LocalMemory() ? "memory_scope_work_group" : (UseSVM() ? "memory_scope_all_svm_devices" : "memory_scope_device") ) +
-                 ");\n";
+    if (MemoryOrder() == MEMORY_ORDER_RELAXED
+        || MemoryOrder() == MEMORY_ORDER_RELEASE || LocalMemory())
+        program += "    atomic_work_item_fence("
+            + std::string(LocalMemory()
+                              ? "CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE, "
+                              : "CLK_GLOBAL_MEM_FENCE, ")
+            + "memory_order_acquire,"
+            + std::string(LocalMemory()
+                              ? "memory_scope_work_group"
+                              : (UseSVM() ? "memory_scope_all_svm_devices"
+                                          : "memory_scope_device"))
+            + ");\n";
 
     program +=
       "    if (!set)\n"
@@ -1683,12 +1689,18 @@ public:
       "        stop = 1;\n"
       "      }\n";
 
-    if (MemoryOrder() == MEMORY_ORDER_ACQUIRE || MemoryOrder() == MEMORY_ORDER_RELAXED)
-      program += "      atomic_work_item_fence(" +
-                 std::string(LocalMemory() ? "CLK_LOCAL_MEM_FENCE, " : "CLK_GLOBAL_MEM_FENCE, ") +
-                 "memory_order_release," +
-                 std::string(LocalMemory() ? "memory_scope_work_group" : (UseSVM() ? "memory_scope_all_svm_devices" : "memory_scope_device") ) +
-                 ");\n";
+    if (MemoryOrder() == MEMORY_ORDER_ACQUIRE
+        || MemoryOrder() == MEMORY_ORDER_RELAXED || LocalMemory())
+        program += "      atomic_work_item_fence("
+            + std::string(LocalMemory()
+                              ? "CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE, "
+                              : "CLK_GLOBAL_MEM_FENCE, ")
+            + "memory_order_release,"
+            + std::string(LocalMemory()
+                              ? "memory_scope_work_group"
+                              : (UseSVM() ? "memory_scope_all_svm_devices"
+                                          : "memory_scope_device"))
+            + ");\n";
 
     program +=
       "      atomic_flag_clear" + postfix + "(&destMemory[cnt]" + MemoryOrderScopeStrForClear() + ");\n"

@@ -49,7 +49,8 @@ const char *known_extensions[] = {
     "cl_khr_subgroup_shuffle",
     "cl_khr_subgroup_shuffle_relative",
     "cl_khr_subgroup_clustered_reduce",
-
+    "cl_khr_extended_bit_ops",
+    "cl_khr_integer_dot_product",
     // API-only extensions after this point.  If you add above here, modify
     // first_API_extension below.
     "cl_khr_icd",
@@ -71,10 +72,17 @@ const char *known_extensions[] = {
     "cl_khr_spirv_no_integer_wrap_decoration",
     "cl_khr_extended_versioning",
     "cl_khr_device_uuid",
+    "cl_khr_pci_bus_info",
+    "cl_khr_suggested_local_work_size",
+    "cl_khr_spirv_linkonce_odr",
+    "cl_khr_semaphore",
+    "cl_khr_external_semaphore",
+    "cl_khr_external_semaphore_sync_fd",
+    "cl_khr_command_buffer",
 };
 
-size_t num_known_extensions = sizeof(known_extensions)/sizeof(char*);
-size_t first_API_extension = 27;
+size_t num_known_extensions = sizeof(known_extensions) / sizeof(char *);
+size_t first_API_extension = 29;
 
 const char *known_embedded_extensions[] = {
     "cles_khr_int64",
@@ -335,10 +343,10 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
     strcat(kernel_code, kernel_strings[4]);
 
     // Now we need to execute the kernel
-    cl_mem defines;
+    clMemWrapper defines;
     cl_int *data;
-    cl_program program;
-    cl_kernel kernel;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
 
     Version version = get_device_cl_version(device);
 
@@ -432,10 +440,6 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
       free(extensions_supported[i]);
     }
     free(extensions);
-    if( defines ) {
-        error = clReleaseMemObject( defines );
-        test_error( error, "Unable to release memory object" );
-    }
 
     if (total_errors)
         return -1;

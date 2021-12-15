@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017,2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -408,6 +408,118 @@ int get_32_bit_image_format(cl_context context, cl_mem_object_type objType,
     return -1;
 }
 
+void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
+                                        const char *destPixel,
+                                        image_descriptor *imageInfo, size_t y,
+                                        size_t thirdDim)
+{
+    size_t pixel_size = get_pixel_size(imageInfo->format);
+
+    log_error("ERROR: Scanline %d did not verify for image size %d,%d,%d "
+              "pitch %d (extra %d bytes)\n",
+              (int)y, (int)imageInfo->width, (int)imageInfo->height,
+              (int)thirdDim, (int)imageInfo->rowPitch,
+              (int)imageInfo->rowPitch
+                  - (int)imageInfo->width * (int)pixel_size);
+    log_error("Failed at column: %ld   ", where);
+
+    switch (pixel_size)
+    {
+        case 1:
+            log_error("*0x%2.2x vs. 0x%2.2x\n", ((cl_uchar *)sourcePixel)[0],
+                      ((cl_uchar *)destPixel)[0]);
+            break;
+        case 2:
+            log_error("*0x%4.4x vs. 0x%4.4x\n", ((cl_ushort *)sourcePixel)[0],
+                      ((cl_ushort *)destPixel)[0]);
+            break;
+        case 3:
+            log_error("*{0x%2.2x, 0x%2.2x, 0x%2.2x} vs. "
+                      "{0x%2.2x, 0x%2.2x, 0x%2.2x}\n",
+                      ((cl_uchar *)sourcePixel)[0],
+                      ((cl_uchar *)sourcePixel)[1],
+                      ((cl_uchar *)sourcePixel)[2], ((cl_uchar *)destPixel)[0],
+                      ((cl_uchar *)destPixel)[1], ((cl_uchar *)destPixel)[2]);
+            break;
+        case 4:
+            log_error("*0x%8.8x vs. 0x%8.8x\n", ((cl_uint *)sourcePixel)[0],
+                      ((cl_uint *)destPixel)[0]);
+            break;
+        case 6:
+            log_error(
+                "*{0x%4.4x, 0x%4.4x, 0x%4.4x} vs. "
+                "{0x%4.4x, 0x%4.4x, 0x%4.4x}\n",
+                ((cl_ushort *)sourcePixel)[0], ((cl_ushort *)sourcePixel)[1],
+                ((cl_ushort *)sourcePixel)[2], ((cl_ushort *)destPixel)[0],
+                ((cl_ushort *)destPixel)[1], ((cl_ushort *)destPixel)[2]);
+            break;
+        case 8:
+            log_error("*0x%16.16llx vs. 0x%16.16llx\n",
+                      ((cl_ulong *)sourcePixel)[0], ((cl_ulong *)destPixel)[0]);
+            break;
+        case 12:
+            log_error("*{0x%8.8x, 0x%8.8x, 0x%8.8x} vs. "
+                      "{0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
+                      ((cl_uint *)sourcePixel)[0], ((cl_uint *)sourcePixel)[1],
+                      ((cl_uint *)sourcePixel)[2], ((cl_uint *)destPixel)[0],
+                      ((cl_uint *)destPixel)[1], ((cl_uint *)destPixel)[2]);
+            break;
+        case 16:
+            log_error("*{0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x} vs. "
+                      "{0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
+                      ((cl_uint *)sourcePixel)[0], ((cl_uint *)sourcePixel)[1],
+                      ((cl_uint *)sourcePixel)[2], ((cl_uint *)sourcePixel)[3],
+                      ((cl_uint *)destPixel)[0], ((cl_uint *)destPixel)[1],
+                      ((cl_uint *)destPixel)[2], ((cl_uint *)destPixel)[3]);
+            break;
+        default:
+            log_error("Don't know how to print pixel size of %ld\n",
+                      pixel_size);
+            break;
+    }
+}
+
+size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
+                         const char *bPtr)
+{
+    size_t pixel_size = get_pixel_size(imageInfo->format);
+    size_t column;
+
+    for (column = 0; column < imageInfo->width; column++)
+    {
+        switch (imageInfo->format->image_channel_data_type)
+        {
+            // If the data type is 101010, then ignore bits 31 and 32 when
+            // comparing the row
+            case CL_UNORM_INT_101010: {
+                cl_uint aPixel = *(cl_uint *)aPtr;
+                cl_uint bPixel = *(cl_uint *)bPtr;
+                if ((aPixel & 0x3fffffff) != (bPixel & 0x3fffffff))
+                    return column;
+            }
+            break;
+
+            // If the data type is 555, ignore bit 15 when comparing the row
+            case CL_UNORM_SHORT_555: {
+                cl_ushort aPixel = *(cl_ushort *)aPtr;
+                cl_ushort bPixel = *(cl_ushort *)bPtr;
+                if ((aPixel & 0x7fff) != (bPixel & 0x7fff)) return column;
+            }
+            break;
+
+            default:
+                if (memcmp(aPtr, bPtr, pixel_size) != 0) return column;
+                break;
+        }
+
+        aPtr += pixel_size;
+        bPtr += pixel_size;
+    }
+
+    // If we didn't find a difference, return the width of the image
+    return column;
+}
+
 int random_log_in_range(int minV, int maxV, MTdata d)
 {
     double v = log2(((double)genrand_int32(d) / (double)0xffffffff) + 1);
@@ -483,8 +595,8 @@ struct AddressingTable
 {
     AddressingTable()
     {
-        ct_assert((CL_ADDRESS_MIRRORED_REPEAT - CL_ADDRESS_NONE < 6));
-        ct_assert(CL_FILTER_NEAREST - CL_FILTER_LINEAR < 2);
+        static_assert(CL_ADDRESS_MIRRORED_REPEAT - CL_ADDRESS_NONE < 6, "");
+        static_assert(CL_FILTER_NEAREST - CL_FILTER_LINEAR < 2, "");
 
         mTable[CL_ADDRESS_NONE - CL_ADDRESS_NONE]
               [CL_FILTER_NEAREST - CL_FILTER_NEAREST] = NoAddressFn;
@@ -550,6 +662,7 @@ int has_alpha(const cl_image_format *format)
         case CL_RGBA: return 1;
         case CL_BGRA: return 1;
         case CL_ARGB: return 1;
+        case CL_ABGR: return 1;
         case CL_INTENSITY: return 1;
         case CL_LUMINANCE: return 0;
 #ifdef CL_BGR1_APPLE
@@ -577,9 +690,6 @@ int has_alpha(const cl_image_format *format)
         _b ^= _a;                                                              \
         _a ^= _b;                                                              \
     } while (0)
-#ifndef MAX
-#define MAX(_a, _b) ((_a) > (_b) ? (_a) : (_b))
-#endif
 
 void get_max_sizes(
     size_t *numberOfSizes, const int maxNumberOfSizes, size_t sizes[][3],
@@ -647,7 +757,7 @@ void get_max_sizes(
     if (usingMaxPixelSizeBuffer || raw_pixel_size == 12) raw_pixel_size = 16;
     size_t max_pixels = (size_t)maxAllocSize / raw_pixel_size;
 
-    log_info("Maximums: [%ld x %ld x %ld], raw pixel size %lu bytes, "
+    log_info("Maximums: [%zu x %zu x %zu], raw pixel size %zu bytes, "
              "per-allocation limit %gMB.\n",
              maxWidth, maxHeight, isArray ? maxArraySize : maxDepth,
              raw_pixel_size, (maxAllocSize / (1024.0 * 1024.0)));
@@ -688,10 +798,10 @@ void get_max_sizes(
     if (image_type == CL_MEM_OBJECT_IMAGE1D)
     {
 
-        double M = maximum_sizes[0];
+        size_t M = maximum_sizes[0];
 
         // Store the size
-        sizes[(*numberOfSizes)][0] = (size_t)M;
+        sizes[(*numberOfSizes)][0] = M;
         sizes[(*numberOfSizes)][1] = 1;
         sizes[(*numberOfSizes)][2] = 1;
         ++(*numberOfSizes);
@@ -705,17 +815,17 @@ void get_max_sizes(
         {
 
             // Determine the size of the fixed dimension
-            double M = maximum_sizes[fixed_dim];
-            double A = max_pixels;
+            size_t M = maximum_sizes[fixed_dim];
+            size_t A = max_pixels;
 
             int x0_dim = !fixed_dim;
-            double x0 =
+            size_t x0 = static_cast<size_t>(
                 fmin(fmin(other_sizes[(other_size++) % num_other_sizes], A / M),
-                     maximum_sizes[x0_dim]);
+                     maximum_sizes[x0_dim]));
 
             // Store the size
-            sizes[(*numberOfSizes)][fixed_dim] = (size_t)M;
-            sizes[(*numberOfSizes)][x0_dim] = (size_t)x0;
+            sizes[(*numberOfSizes)][fixed_dim] = M;
+            sizes[(*numberOfSizes)][x0_dim] = x0;
             sizes[(*numberOfSizes)][2] = 1;
             ++(*numberOfSizes);
         }
@@ -730,16 +840,17 @@ void get_max_sizes(
         {
 
             // Determine the size of the fixed dimension
-            double M = maximum_sizes[fixed_dim];
-            double A = max_pixels;
+            size_t M = maximum_sizes[fixed_dim];
+            size_t A = max_pixels;
 
             // Find two other dimensions, x0 and x1
             int x0_dim = (fixed_dim == 0) ? 1 : 0;
             int x1_dim = (fixed_dim == 2) ? 1 : 2;
 
             // Choose two other sizes for these dimensions
-            double x0 = fmin(fmin(A / M, maximum_sizes[x0_dim]),
-                             other_sizes[(other_size++) % num_other_sizes]);
+            size_t x0 = static_cast<size_t>(
+                fmin(fmin(A / M, maximum_sizes[x0_dim]),
+                     other_sizes[(other_size++) % num_other_sizes]));
             // GPUs have certain restrictions on minimum width (row alignment)
             // of images which has given us issues testing small widths in this
             // test (say we set width to 3 for testing, and compute size based
@@ -748,8 +859,9 @@ void get_max_sizes(
             // width of 16 which doesnt fit in vram). For this purpose we are
             // not testing width < 16 for this test.
             if (x0_dim == 0 && x0 < 16) x0 = 16;
-            double x1 = fmin(fmin(A / M / x0, maximum_sizes[x1_dim]),
-                             other_sizes[(other_size++) % num_other_sizes]);
+            size_t x1 = static_cast<size_t>(
+                fmin(fmin(A / M / x0, maximum_sizes[x1_dim]),
+                     other_sizes[(other_size++) % num_other_sizes]));
 
             // Valid image sizes cannot be below 1. Due to the workaround for
             // the xo_dim where x0 is overidden to 16 there might not be enough
@@ -762,9 +874,9 @@ void get_max_sizes(
             assert(x0 > 0 && M > 0);
 
             // Store the size
-            sizes[(*numberOfSizes)][fixed_dim] = (size_t)M;
-            sizes[(*numberOfSizes)][x0_dim] = (size_t)x0;
-            sizes[(*numberOfSizes)][x1_dim] = (size_t)x1;
+            sizes[(*numberOfSizes)][fixed_dim] = M;
+            sizes[(*numberOfSizes)][x0_dim] = x0;
+            sizes[(*numberOfSizes)][x1_dim] = x1;
             ++(*numberOfSizes);
         }
     }
@@ -775,20 +887,20 @@ void get_max_sizes(
         switch (image_type)
         {
             case CL_MEM_OBJECT_IMAGE1D:
-                log_info(" size[%d] = [%ld] (%g MB image)\n", j, sizes[j][0],
+                log_info(" size[%d] = [%zu] (%g MB image)\n", j, sizes[j][0],
                          raw_pixel_size * sizes[j][0] * sizes[j][1]
                              * sizes[j][2] / (1024.0 * 1024.0));
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             case CL_MEM_OBJECT_IMAGE2D:
-                log_info(" size[%d] = [%ld %ld] (%g MB image)\n", j,
+                log_info(" size[%d] = [%zu %zu] (%g MB image)\n", j,
                          sizes[j][0], sizes[j][1],
                          raw_pixel_size * sizes[j][0] * sizes[j][1]
                              * sizes[j][2] / (1024.0 * 1024.0));
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
             case CL_MEM_OBJECT_IMAGE3D:
-                log_info(" size[%d] = [%ld %ld %ld] (%g MB image)\n", j,
+                log_info(" size[%d] = [%zu %zu %zu] (%g MB image)\n", j,
                          sizes[j][0], sizes[j][1], sizes[j][2],
                          raw_pixel_size * sizes[j][0] * sizes[j][1]
                              * sizes[j][2] / (1024.0 * 1024.0));
@@ -1052,12 +1164,13 @@ void escape_inf_nan_values(char *data, size_t allocSize)
 char *generate_random_image_data(image_descriptor *imageInfo,
                                  BufferOwningPtr<char> &P, MTdata d)
 {
-    size_t allocSize = get_image_size(imageInfo);
+    size_t allocSize = static_cast<size_t>(get_image_size(imageInfo));
     size_t pixelRowBytes = imageInfo->width * get_pixel_size(imageInfo->format);
     size_t i;
 
     if (imageInfo->num_mip_levels > 1)
-        allocSize = compute_mipmapped_image_size(*imageInfo);
+        allocSize =
+            static_cast<size_t>(compute_mipmapped_image_size(*imageInfo));
 
 #if defined(__APPLE__)
     char *data = NULL;
@@ -1089,7 +1202,7 @@ char *generate_random_image_data(image_descriptor *imageInfo,
 
     if (data == NULL)
     {
-        log_error("ERROR: Unable to malloc %lu bytes for "
+        log_error("ERROR: Unable to malloc %zu bytes for "
                   "generate_random_image_data\n",
                   allocSize);
         return 0;
@@ -1416,6 +1529,12 @@ void read_image_pixel_float(void *imageData, image_descriptor *imageInfo, int x,
             outData[2] = tempData[3];
             outData[3] = tempData[0];
             break;
+        case CL_ABGR:
+            outData[0] = tempData[3];
+            outData[1] = tempData[2];
+            outData[2] = tempData[1];
+            outData[3] = tempData[0];
+            break;
         case CL_BGRA:
         case CL_sBGRA:
             outData[0] = tempData[2];
@@ -1600,24 +1719,26 @@ bool get_integer_coords_offset(float x, float y, float z, float xAddressOffset,
 
     // At this point, we're dealing with non-normalized coordinates.
 
-    outX = adFn(floorf(x), width);
+    outX = adFn(static_cast<int>(floorf(x)), width);
 
     // 1D and 2D arrays require special care for the index coordinate:
 
     switch (imageInfo->type)
     {
         case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-            outY = calculate_array_index(y, (float)imageInfo->arraySize - 1.0f);
-            outZ = 0.0f; /* don't care! */
+            outY = static_cast<int>(
+                calculate_array_index(y, (float)imageInfo->arraySize - 1.0f));
+            outZ = 0; /* don't care! */
             break;
         case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-            outY = adFn(floorf(y), height);
-            outZ = calculate_array_index(z, (float)imageInfo->arraySize - 1.0f);
+            outY = adFn(static_cast<int>(floorf(y)), height);
+            outZ = static_cast<int>(
+                calculate_array_index(z, (float)imageInfo->arraySize - 1.0f));
             break;
         default:
             // legacy path:
-            if (height != 0) outY = adFn(floorf(y), height);
-            if (depth != 0) outZ = adFn(floorf(z), depth);
+            if (height != 0) outY = adFn(static_cast<int>(floorf(y)), height);
+            if (depth != 0) outZ = adFn(static_cast<int>(floorf(z)), depth);
     }
 
     return !((int)refX == outX && (int)refY == outY && (int)refZ == outZ);
@@ -1688,7 +1809,7 @@ static float unnormalize_coordinate(const char *name, float coord, float offset,
     switch (addressing_mode)
     {
         case CL_ADDRESS_REPEAT:
-            ret = RepeatNormalizedAddressFn(coord, extent);
+            ret = RepeatNormalizedAddressFn(coord, static_cast<size_t>(extent));
 
             if (verbose)
             {
@@ -1712,7 +1833,8 @@ static float unnormalize_coordinate(const char *name, float coord, float offset,
             break;
 
         case CL_ADDRESS_MIRRORED_REPEAT:
-            ret = MirroredRepeatNormalizedAddressFn(coord, extent);
+            ret = MirroredRepeatNormalizedAddressFn(
+                coord, static_cast<size_t>(extent));
 
             if (verbose)
             {
@@ -1890,13 +2012,13 @@ FloatPixel sample_image_pixel_float_offset(
         // coordinates.  Note that the array cases again require special
         // care, per section 8.4 in the OpenCL 1.2 Specification.
 
-        ix = adFn(floorf(x), width_lod);
+        ix = adFn(static_cast<int>(floorf(x)), width_lod);
 
         switch (imageInfo->type)
         {
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                iy =
-                    calculate_array_index(y, (float)(imageInfo->arraySize - 1));
+                iy = static_cast<int>(calculate_array_index(
+                    y, (float)(imageInfo->arraySize - 1)));
                 iz = 0;
                 if (verbose)
                 {
@@ -1904,18 +2026,18 @@ FloatPixel sample_image_pixel_float_offset(
                 }
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                iy = adFn(floorf(y), height_lod);
-                iz =
-                    calculate_array_index(z, (float)(imageInfo->arraySize - 1));
+                iy = adFn(static_cast<int>(floorf(y)), height_lod);
+                iz = static_cast<int>(calculate_array_index(
+                    z, (float)(imageInfo->arraySize - 1)));
                 if (verbose)
                 {
                     log_info("\tArray index %f evaluates to %d\n", z, iz);
                 }
                 break;
             default:
-                iy = adFn(floorf(y), height_lod);
+                iy = adFn(static_cast<int>(floorf(y)), height_lod);
                 if (depth_lod != 0)
-                    iz = adFn(floorf(z), depth_lod);
+                    iz = adFn(static_cast<int>(floorf(z)), depth_lod);
                 else
                     iz = 0;
         }
@@ -1969,16 +2091,16 @@ FloatPixel sample_image_pixel_float_offset(
                 height = 1;
             }
 
-            int x1 = adFn(floorf(x - 0.5f), width);
+            int x1 = adFn(static_cast<int>(floorf(x - 0.5f)), width);
             int y1 = 0;
-            int x2 = adFn(floorf(x - 0.5f) + 1, width);
+            int x2 = adFn(static_cast<int>(floorf(x - 0.5f) + 1), width);
             int y2 = 0;
             if ((imageInfo->type != CL_MEM_OBJECT_IMAGE1D)
                 && (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
                 && (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER))
             {
-                y1 = adFn(floorf(y - 0.5f), height);
-                y2 = adFn(floorf(y - 0.5f) + 1, height);
+                y1 = adFn(static_cast<int>(floorf(y - 0.5f)), height);
+                y2 = adFn(static_cast<int>(floorf(y - 0.5f) + 1), height);
             }
             else
             {
@@ -2069,12 +2191,12 @@ FloatPixel sample_image_pixel_float_offset(
         else
         {
             // 3D linear filtering
-            int x1 = adFn(floorf(x - 0.5f), width_lod);
-            int y1 = adFn(floorf(y - 0.5f), height_lod);
-            int z1 = adFn(floorf(z - 0.5f), depth_lod);
-            int x2 = adFn(floorf(x - 0.5f) + 1, width_lod);
-            int y2 = adFn(floorf(y - 0.5f) + 1, height_lod);
-            int z2 = adFn(floorf(z - 0.5f) + 1, depth_lod);
+            int x1 = adFn(static_cast<int>(floorf(x - 0.5f)), width_lod);
+            int y1 = adFn(static_cast<int>(floorf(y - 0.5f)), height_lod);
+            int z1 = adFn(static_cast<int>(floorf(z - 0.5f)), depth_lod);
+            int x2 = adFn(static_cast<int>(floorf(x - 0.5f) + 1), width_lod);
+            int y2 = adFn(static_cast<int>(floorf(y - 0.5f) + 1), height_lod);
+            int z2 = adFn(static_cast<int>(floorf(z - 0.5f) + 1), depth_lod);
 
             if (verbose)
                 log_info("\tActual integer coords used (i = floor(x-.5)): "
@@ -2397,6 +2519,14 @@ void swizzle_vector_for_image(T *srcVector, const cl_image_format *imageFormat)
             srcVector[2] = srcVector[1];
             srcVector[1] = srcVector[0];
             srcVector[0] = temp;
+            break;
+        case CL_ABGR:
+            temp = srcVector[3];
+            srcVector[3] = srcVector[0];
+            srcVector[0] = temp;
+            temp = srcVector[2];
+            srcVector[2] = srcVector[1];
+            srcVector[1] = temp;
             break;
         case CL_BGRA:
         case CL_sBGRA:
@@ -2813,15 +2943,18 @@ void pack_image_pixel_error(const float *srcVector,
         case CL_UNSIGNED_INT8: {
             const cl_uchar *ptr = (const cl_uchar *)results;
             for (unsigned int i = 0; i < channelCount; i++)
-                errors[i] = (cl_int)ptr[i]
-                    - (cl_int)CONVERT_UINT(srcVector[i], 255.f, CL_UCHAR_MAX);
+                errors[i] = static_cast<float>(
+                    (cl_int)ptr[i]
+                    - (cl_int)CONVERT_UINT(srcVector[i], 255.f, CL_UCHAR_MAX));
             break;
         }
         case CL_UNSIGNED_INT16: {
             const cl_ushort *ptr = (const cl_ushort *)results;
             for (unsigned int i = 0; i < channelCount; i++)
-                errors[i] = (cl_int)ptr[i]
-                    - (cl_int)CONVERT_UINT(srcVector[i], 32767.f, CL_USHRT_MAX);
+                errors[i] = static_cast<float>(
+                    (cl_int)ptr[i]
+                    - (cl_int)CONVERT_UINT(srcVector[i], 32767.f,
+                                           CL_USHRT_MAX));
             break;
         }
         case CL_UNSIGNED_INT32: {
@@ -3142,7 +3275,7 @@ char *create_random_image_data(ExplicitType dataType,
     if (data == NULL)
     {
         log_error(
-            "ERROR: Unable to malloc %lu bytes for create_random_image_data\n",
+            "ERROR: Unable to malloc %zu bytes for create_random_image_data\n",
             allocSize);
         return NULL;
     }
@@ -3902,7 +4035,8 @@ bool is_image_format_required(cl_image_format format, cl_mem_flags flags,
 
 cl_uint compute_max_mip_levels(size_t width, size_t height, size_t depth)
 {
-    cl_uint retMaxMipLevels = 0, max_dim = 0;
+    cl_uint retMaxMipLevels = 0;
+    size_t max_dim = 0;
 
     max_dim = width;
     max_dim = height > max_dim ? height : max_dim;

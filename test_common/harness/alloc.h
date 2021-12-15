@@ -29,7 +29,7 @@
 #include "mingw_compat.h"
 #endif
 
-static void* align_malloc(size_t size, size_t alignment)
+inline void* align_malloc(size_t size, size_t alignment)
 {
 #if defined(_WIN32) && defined(_MSC_VER)
     return _aligned_malloc(size, alignment);
@@ -53,7 +53,7 @@ static void* align_malloc(size_t size, size_t alignment)
 #endif
 }
 
-static void align_free(void* ptr)
+inline void align_free(void* ptr)
 {
 #if defined(_WIN32) && defined(_MSC_VER)
     _aligned_free(ptr);

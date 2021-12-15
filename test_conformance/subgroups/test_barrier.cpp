@@ -59,10 +59,26 @@ static const char *gbar_source =
 // barrier test functions
 template <int Which> struct BAR
 {
-    static void gen(cl_int *x, cl_int *t, cl_int *m, int ns, int nw, int ng)
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        if (Which == 0)
+            log_info("  sub_group_barrier(CLK_LOCAL_MEM_FENCE)...%s\n",
+                     extra_text);
+        else
+            log_info("  sub_group_barrier(CLK_GLOBAL_MEM_FENCE)...%s\n",
+                     extra_text);
+    }
+
+    static void gen(cl_int *x, cl_int *t, cl_int *m,
+                    const WorkGroupParams &test_params)
     {
         int i, ii, j, k, n;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
         int e;
 
         ii = 0;
@@ -79,8 +95,7 @@ template <int Which> struct BAR
             // Now map into work group using map from device
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
-                x[j] = t[i];
+                x[j] = t[j];
             }
 
             x += nw;
@@ -88,26 +103,24 @@ template <int Which> struct BAR
         }
     }
 
-    static int chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my, cl_int *m,
-                   int ns, int nw, int ng)
+    static test_status chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my,
+                           cl_int *m, const WorkGroupParams &test_params)
     {
         int ii, i, j, k, n;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
         cl_int tr, rr;
-
-        if (Which == 0)
-            log_info("  sub_group_barrier(CLK_LOCAL_MEM_FENCE)...\n");
-        else
-            log_info("  sub_group_barrier(CLK_GLOBAL_MEM_FENCE)...\n");
 
         for (k = 0; k < ng; ++k)
         {
             // Map to array indexed to array indexed by local ID and sub group
             for (j = 0; j < nw; ++j)
             {
-                i = m[2 * j + 1] * ns + m[2 * j];
-                mx[i] = x[j];
-                my[i] = y[j];
+                mx[j] = x[j];
+                my[j] = y[j];
             }
 
             for (j = 0; j < nj; ++j)
@@ -123,9 +136,10 @@ template <int Which> struct BAR
                     if (tr != rr)
                     {
                         log_error("ERROR: sub_group_barrier mismatch for local "
-                                  "id %d in sub group %d in group %d\n",
-                                  i, j, k);
-                        return -1;
+                                  "id %d in sub group %d in group %d expected "
+                                  "%d got %d\n",
+                                  i, j, k, tr, rr);
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -135,7 +149,7 @@ template <int Which> struct BAR
             m += 2 * nw;
         }
 
-        return 0;
+        return TEST_PASS;
     }
 };
 
@@ -144,18 +158,18 @@ int test_barrier_functions(cl_device_id device, cl_context context,
                            cl_command_queue queue, int num_elements,
                            bool useCoreSubgroups)
 {
-    int error;
+    int error = TEST_PASS;
 
     // Adjust these individually below if desired/needed
-#define G 2000
-#define L 200
-
-    error = test<cl_int, BAR<0>, G, L>::run(device, context, queue,
-                                            num_elements, "test_lbar",
-                                            lbar_source, 0, useCoreSubgroups);
-    error = test<cl_int, BAR<1>, G, L, G>::run(
-        device, context, queue, num_elements, "test_gbar", gbar_source, 0,
-        useCoreSubgroups);
+    constexpr size_t global_work_size = 2000;
+    constexpr size_t local_work_size = 200;
+    WorkGroupParams test_params(global_work_size, local_work_size);
+    test_params.use_core_subgroups = useCoreSubgroups;
+    error = test<cl_int, BAR<0>>::run(device, context, queue, num_elements,
+                                      "test_lbar", lbar_source, test_params);
+    error |= test<cl_int, BAR<1>, global_work_size>::run(
+        device, context, queue, num_elements, "test_gbar", gbar_source,
+        test_params);
 
     return error;
 }

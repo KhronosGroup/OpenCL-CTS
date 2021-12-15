@@ -22,6 +22,8 @@
 #if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
 // or any other POSIX system
 
+#include <atomic>
+
 #if defined(_WIN32)
 #include <windows.h>
 #if defined(_MSC_VER)
@@ -241,7 +243,7 @@ pthread_cond_t cond_var;
 // Condition variable state. How many iterations on the function left to run,
 // set to CL_INT_MAX to cause worker threads to exit. Note: this value might
 // go negative.
-volatile cl_int gRunCount = 0;
+std::atomic<cl_int> gRunCount{ 0 };
 
 // State that only changes when the threadpool is not working.
 volatile TPFuncPtr gFunc_ptr = NULL;
@@ -261,19 +263,20 @@ pthread_cond_t caller_cond_var;
 
 // # of threads intended to be running. Running threads will decrement this
 // as they discover they've run out of work to do.
-volatile cl_int gRunning = 0;
+std::atomic<cl_int> gRunning{ 0 };
 
 // The total number of threads launched.
-volatile cl_int gThreadCount = 0;
+std::atomic<cl_int> gThreadCount{ 0 };
+
 #ifdef _WIN32
 void ThreadPool_WorkerFunc(void *p)
 #else
 void *ThreadPool_WorkerFunc(void *p)
 #endif
 {
-    cl_uint threadID = ThreadPool_AtomicAdd((volatile cl_int *)p, 1);
-    cl_int item = ThreadPool_AtomicAdd(&gRunCount, -1);
-    // log_info( "ThreadPool_WorkerFunc start: gRunning = %d\n", gRunning );
+    auto &tid = *static_cast<std::atomic<cl_uint> *>(p);
+    cl_uint threadID = tid++;
+    cl_int item = gRunCount--;
 
     while (MAX_COUNT > item)
     {
@@ -282,8 +285,6 @@ void *ThreadPool_WorkerFunc(void *p)
         // check for more work to do
         if (0 >= item)
         {
-            // log_info("Thread %d has run out of work.\n", threadID);
-
             // No work to do. Attempt to block waiting for work
 #if defined(_WIN32)
             EnterCriticalSection(cond_lock);
@@ -298,9 +299,7 @@ void *ThreadPool_WorkerFunc(void *p)
             }
 #endif // !_WIN32
 
-            cl_int remaining = ThreadPool_AtomicAdd(&gRunning, -1);
-            // log_info("ThreadPool_WorkerFunc: gRunning = %d\n",
-            //          remaining - 1);
+            cl_int remaining = gRunning--;
             if (1 == remaining)
             { // last thread out signal the main thread to wake up
 #if defined(_WIN32)
@@ -350,7 +349,7 @@ void *ThreadPool_WorkerFunc(void *p)
 #endif // !_WIN32
 
                 // try again to get a valid item id
-                item = ThreadPool_AtomicAdd(&gRunCount, -1);
+                item = gRunCount--;
                 if (MAX_COUNT <= item) // exit if we are done
                 {
 #if defined(_WIN32)
@@ -362,8 +361,7 @@ void *ThreadPool_WorkerFunc(void *p)
                 }
             }
 
-            ThreadPool_AtomicAdd(&gRunning, 1);
-            // log_info("Thread %d has found work.\n", threadID);
+            gRunning++;
 
 #if defined(_WIN32)
             LeaveCriticalSection(cond_lock);
@@ -447,12 +445,12 @@ void *ThreadPool_WorkerFunc(void *p)
         }
 
         // get the next item
-        item = ThreadPool_AtomicAdd(&gRunCount, -1);
+        item = gRunCount--;
     }
 
 exit:
     log_info("ThreadPool: thread %d exiting.\n", threadID);
-    ThreadPool_AtomicAdd(&gThreadCount, -1);
+    gThreadCount--;
 #if !defined(_WIN32)
     return NULL;
 #endif
@@ -487,7 +485,7 @@ void ThreadPool_Init(void)
 {
     cl_int i;
     int err;
-    volatile cl_uint threadID = 0;
+    std::atomic<cl_uint> threadID{ 0 };
 
     // Check for manual override of multithreading code. We add this for better
     // debuggability.
@@ -523,7 +521,7 @@ void ThreadPool_Init(void)
                     {
                         // Count the number of bits in ProcessorMask (number of
                         // logical cores)
-                        ULONG mask = ptr->ProcessorMask;
+                        ULONG_PTR mask = ptr->ProcessorMask;
                         while (mask)
                         {
                             ++gThreadCount;
@@ -624,7 +622,7 @@ void ThreadPool_Init(void)
     }
 #endif // !_WIN32
 
-    gRunning = gThreadCount;
+    gRunning = gThreadCount.load();
     // init threads
     for (i = 0; i < gThreadCount; i++)
     {
@@ -688,7 +686,6 @@ static BOOL CALLBACK _ThreadPool_Init(_PINIT_ONCE InitOnce, PVOID Parameter,
 
 void ThreadPool_Exit(void)
 {
-    int err, count;
     gRunCount = CL_INT_MAX;
 
 #if defined(__GNUC__)
@@ -702,13 +699,13 @@ void ThreadPool_Exit(void)
 #endif
 
     // spin waiting for threads to die
-    for (count = 0; 0 != gThreadCount && count < 1000; count++)
+    for (int count = 0; 0 != gThreadCount && count < 1000; count++)
     {
 #if defined(_WIN32)
         _WakeAllConditionVariable(cond_var);
         Sleep(1);
 #else // !_WIN32
-        if ((err = pthread_cond_broadcast(&cond_var)))
+        if (int err = pthread_cond_broadcast(&cond_var))
         {
             log_error("Error %d from pthread_cond_broadcast. Unable to wake up "
                       "work threads. ThreadPool_Exit failed.\n",
@@ -722,7 +719,7 @@ void ThreadPool_Exit(void)
     if (gThreadCount)
         log_error("Error: Thread pool timed out after 1 second with %d threads "
                   "still active.\n",
-                  gThreadCount);
+                  gThreadCount.load());
     else
         log_info("Thread pool exited in a orderly fashion.\n");
 }
@@ -738,7 +735,9 @@ void ThreadPool_Exit(void)
 // all available then it would make more sense to use those features.
 cl_int ThreadPool_Do(TPFuncPtr func_ptr, cl_uint count, void *userInfo)
 {
+#ifndef _WIN32
     cl_int newErr;
+#endif
     cl_int err = 0;
     // Lazily set up our threads
 #if defined(_MSC_VER) && (_WIN32_WINNT >= 0x600)
@@ -913,7 +912,9 @@ cl_int ThreadPool_Do(TPFuncPtr func_ptr, cl_uint count, void *userInfo)
 
     err = jobError;
 
+#ifndef _WIN32
 exit:
+#endif
     // exit critical region
 #if defined(_WIN32)
     LeaveCriticalSection(gThreadPoolLock);

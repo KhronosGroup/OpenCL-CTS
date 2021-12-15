@@ -18,12 +18,12 @@
 
 #if defined(_WIN32) && defined(_MSC_VER)
 #include <Windows.h>
-#endif
-
+#else
 #ifdef __cplusplus
 #define EXTERN_C extern "C"
 #else
 #define EXTERN_C
+#endif
 #endif
 
 
@@ -307,13 +307,6 @@ EXTERN_C double SubtractTime(uint64_t endTime, uint64_t startTime);
 */
 EXTERN_C int __builtin_clz(unsigned int pattern);
 
-#endif
-
-#ifndef MIN
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-#endif
-#ifndef MAX
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #endif
 
 

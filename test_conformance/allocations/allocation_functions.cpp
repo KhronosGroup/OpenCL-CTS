@@ -37,8 +37,8 @@ int find_good_image_size(cl_device_id device_id, size_t size_to_allocate, size_t
   }
 
   if (size_to_allocate == 0) {
-    log_error("Trying to allcoate a zero sized image.\n");
-    return FAILED_ABORT;
+      log_error("Trying to allocate a zero sized image.\n");
+      return FAILED_ABORT;
   }
 
   error = clGetDeviceInfo( device_id, CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof( max_width ), &max_width, NULL );

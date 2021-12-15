@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017, 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 #include "test_common.h"
 #include <float.h>
 
+#include <algorithm>
+
 #if defined( __APPLE__ )
     #include <signal.h>
     #include <sys/signal.h>
@@ -23,9 +25,6 @@
 #endif
 
 extern bool gTestImage2DFromBuffer;
-extern uint64_t gRoundingStartValue;
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.
@@ -75,8 +74,6 @@ static const char *lodOffsetSource =
 static const char *offsetSource =
 "   int offset = tidY*get_image_width(input) + tidX;\n";
 
-extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
-                            int x, int y, int z, float *outData );
 template <class T> int determine_validation_error( void *imagePtr, image_descriptor *imageInfo, image_sampler_data *imageSampler,
                                                 T *resultPtr, T * expected, float error,
                                 float x, float y, float xAddressOffset, float yAddressOffset, size_t j, int &numTries, int &numClamped, bool printAsFloat, int lod = 0 )
@@ -439,7 +436,8 @@ int validate_image_2D_depth_results(void *imageValues, void *resultValues, doubl
                         float err1 = ABS_ERROR(resultPtr[0], expected[0]);
                         // Clamp to the minimum absolute error for the format
                         if (err1 > 0 && err1 < formatAbsoluteError) { err1 = 0.0f; }
-                        float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
+                        float maxErr1 =
+                            std::max(maxErr * maxPixel.p[0], FLT_MIN);
 
                         // Check if the result matches.
                         if( ! (err1 <= maxErr1) )
@@ -489,7 +487,8 @@ int validate_image_2D_depth_results(void *imageValues, void *resultValues, doubl
                                                                                     imageSampler, expected, 0, &containsDenormals );
 
                             float err1 = ABS_ERROR(resultPtr[0], expected[0]);
-                            float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
+                            float maxErr1 =
+                                std::max(maxErr * maxPixel.p[0], FLT_MIN);
 
 
                             if( ! (err1 <= maxErr1) )
@@ -603,10 +602,14 @@ int validate_image_2D_results(void *imageValues, void *resultValues, double form
                         if (err2 > 0 && err2 < formatAbsoluteError) { err2 = 0.0f; }
                         if (err3 > 0 && err3 < formatAbsoluteError) { err3 = 0.0f; }
                         if (err4 > 0 && err4 < formatAbsoluteError) { err4 = 0.0f; }
-                        float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
-                        float maxErr2 = MAX( maxErr * maxPixel.p[1], FLT_MIN );
-                        float maxErr3 = MAX( maxErr * maxPixel.p[2], FLT_MIN );
-                        float maxErr4 = MAX( maxErr * maxPixel.p[3], FLT_MIN );
+                        float maxErr1 =
+                            std::max(maxErr * maxPixel.p[0], FLT_MIN);
+                        float maxErr2 =
+                            std::max(maxErr * maxPixel.p[1], FLT_MIN);
+                        float maxErr3 =
+                            std::max(maxErr * maxPixel.p[2], FLT_MIN);
+                        float maxErr4 =
+                            std::max(maxErr * maxPixel.p[3], FLT_MIN);
 
                         // Check if the result matches.
                         if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    ||
@@ -676,10 +679,14 @@ int validate_image_2D_results(void *imageValues, void *resultValues, double form
                             float err2 = ABS_ERROR(resultPtr[1], expected[1]);
                             float err3 = ABS_ERROR(resultPtr[2], expected[2]);
                             float err4 = ABS_ERROR(resultPtr[3], expected[3]);
-                            float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
-                            float maxErr2 = MAX( maxErr * maxPixel.p[1], FLT_MIN );
-                            float maxErr3 = MAX( maxErr * maxPixel.p[2], FLT_MIN );
-                            float maxErr4 = MAX( maxErr * maxPixel.p[3], FLT_MIN );
+                            float maxErr1 =
+                                std::max(maxErr * maxPixel.p[0], FLT_MIN);
+                            float maxErr2 =
+                                std::max(maxErr * maxPixel.p[1], FLT_MIN);
+                            float maxErr3 =
+                                std::max(maxErr * maxPixel.p[2], FLT_MIN);
+                            float maxErr4 =
+                                std::max(maxErr * maxPixel.p[3], FLT_MIN);
 
 
                             if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    ||

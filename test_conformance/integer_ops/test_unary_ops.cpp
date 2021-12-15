@@ -107,7 +107,7 @@ int test_unary_op( cl_command_queue queue, cl_context context, OpKonstants which
             // For sub ops, the min control value is 2. Otherwise, it's 0
             controlData[ i ] |= 0x02;
         else if( whichOp == kIncrement )
-            // For addition ops, the MAX control value is 1. Otherwise, it's 3
+            // For addition ops, the max control value is 1. Otherwise, it's 3
             controlData[ i ] &= ~0x02;
     }
     streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,

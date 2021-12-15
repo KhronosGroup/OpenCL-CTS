@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017, 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 #include "test_common.h"
 #include <float.h>
 
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
+#include <algorithm>
 
 // Utility function to clamp down image sizes for certain tests to avoid
 // using too much memory.
@@ -78,7 +77,6 @@ const char *float2DArrayUnnormalizedCoordKernelSource =
 
 static const char *samplerKernelArg = " sampler_t imageSampler,";
 
-extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo, int x, int y, int z, float *outData );
 template <class T> int determine_validation_error_offset_2D_array( void *imagePtr, image_descriptor *imageInfo, image_sampler_data *imageSampler,
                                                          T *resultPtr, T * expected, float error,
                                                          float x, float y, float z, float xAddressOffset, float yAddressOffset, float zAddressOffset, size_t j, int &numTries, int &numClamped, bool printAsFloat, int lod )
@@ -621,7 +619,8 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
                                         ABS_ERROR(resultPtr[0], expected[0]);
                                     // Clamp to the minimum absolute error for the format
                                     if (err1 > 0 && err1 < formatAbsoluteError) { err1 = 0.0f; }
-                                    float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
+                                    float maxErr1 = std::max(
+                                        maxErr * maxPixel.p[0], FLT_MIN);
 
                                     if( ! (err1 <= maxErr1) )
                                     {
@@ -665,7 +664,8 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                         float err1 = ABS_ERROR(resultPtr[0],
                                                                expected[0]);
-                                        float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
+                                        float maxErr1 = std::max(
+                                            maxErr * maxPixel.p[0], FLT_MIN);
 
 
                                         if( ! (err1 <= maxErr1) )
@@ -946,10 +946,14 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
                                     if (err2 > 0 && err2 < formatAbsoluteError) { err2 = 0.0f; }
                                     if (err3 > 0 && err3 < formatAbsoluteError) { err3 = 0.0f; }
                                     if (err4 > 0 && err4 < formatAbsoluteError) { err4 = 0.0f; }
-                                    float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
-                                    float maxErr2 = MAX( maxErr * maxPixel.p[1], FLT_MIN );
-                                    float maxErr3 = MAX( maxErr * maxPixel.p[2], FLT_MIN );
-                                    float maxErr4 = MAX( maxErr * maxPixel.p[3], FLT_MIN );
+                                    float maxErr1 = std::max(
+                                        maxErr * maxPixel.p[0], FLT_MIN);
+                                    float maxErr2 = std::max(
+                                        maxErr * maxPixel.p[1], FLT_MIN);
+                                    float maxErr3 = std::max(
+                                        maxErr * maxPixel.p[2], FLT_MIN);
+                                    float maxErr4 = std::max(
+                                        maxErr * maxPixel.p[3], FLT_MIN);
 
                                     if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    || ! (err3 <= maxErr3) || ! (err4 <= maxErr4) )
                                     {
@@ -1008,10 +1012,14 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
                                                                expected[2]);
                                         float err4 = ABS_ERROR(resultPtr[3],
                                                                expected[3]);
-                                        float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
-                                        float maxErr2 = MAX( maxErr * maxPixel.p[1], FLT_MIN );
-                                        float maxErr3 = MAX( maxErr * maxPixel.p[2], FLT_MIN );
-                                        float maxErr4 = MAX( maxErr * maxPixel.p[3], FLT_MIN );
+                                        float maxErr1 = std::max(
+                                            maxErr * maxPixel.p[0], FLT_MIN);
+                                        float maxErr2 = std::max(
+                                            maxErr * maxPixel.p[1], FLT_MIN);
+                                        float maxErr3 = std::max(
+                                            maxErr * maxPixel.p[2], FLT_MIN);
+                                        float maxErr4 = std::max(
+                                            maxErr * maxPixel.p[3], FLT_MIN);
 
 
                                         if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    || ! (err3 <= maxErr3) || ! (err4 <= maxErr4) )

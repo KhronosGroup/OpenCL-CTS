@@ -713,20 +713,20 @@ int parseAndCallCommandLineTests(int argc, const char *argv[],
             ret = saveResultsToJson(filename, argv[0], testList,
                                     selectedTestList, resultTestList, testNum);
         }
-    }
 
-    if (std::any_of(resultTestList, resultTestList + testNum,
-                    [](test_status result) {
-                        switch (result)
-                        {
-                            case TEST_PASS:
-                            case TEST_SKIP: return false;
-                            case TEST_FAIL:
-                            default: return true;
-                        };
-                    }))
-    {
-        ret = EXIT_FAILURE;
+        if (std::any_of(resultTestList, resultTestList + testNum,
+                        [](test_status result) {
+                            switch (result)
+                            {
+                                case TEST_PASS:
+                                case TEST_SKIP: return false;
+                                case TEST_FAIL:
+                                default: return true;
+                            };
+                        }))
+        {
+            ret = EXIT_FAILURE;
+        }
     }
 
     free(selectedTestList);
@@ -783,6 +783,14 @@ test_status callSingleTestFunction(test_definition test,
         return TEST_SKIP;
     }
 
+    if (!check_functions_for_offline_compiler(test.name))
+    {
+        log_info("Subtest %s tests is not supported in offline compiler "
+                 "execution path!\n",
+                 test.name);
+        return TEST_SKIP;
+    }
+
     /* Create a context to work with, unless we're told not to */
     if (!forceNoContextCreation)
     {
@@ -812,14 +820,12 @@ test_status callSingleTestFunction(test_definition test,
         if (queue == NULL)
         {
             print_error(error, "Unable to create testing command queue");
+            clReleaseContext(context);
             return TEST_FAIL;
         }
     }
 
     /* Run the test and print the result */
-    error = check_functions_for_offline_compiler(test.name, deviceToUse);
-    test_missing_support_offline_cmpiler(error, test.name);
-
     if (test.func == NULL)
     {
         // Skip unimplemented test, can happen when all of the tests are
@@ -861,7 +867,7 @@ test_status callSingleTestFunction(test_definition test,
         int error = clFinish(queue);
         if (error)
         {
-            log_error("clFinish failed: %d", error);
+            log_error("clFinish failed: %s\n", IGetErrorString(error));
             status = TEST_FAIL;
         }
         clReleaseCommandQueue(queue);
@@ -1159,6 +1165,15 @@ test_status check_spirv_compilation_readiness(cl_device_id device)
         }
     }
     return TEST_PASS;
+}
+
+cl_platform_id getPlatformFromDevice(cl_device_id deviceID)
+{
+    cl_platform_id platform = nullptr;
+    cl_int err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform),
+                                 &platform, nullptr);
+    ASSERT_SUCCESS(err, "clGetDeviceInfo");
+    return platform;
 }
 
 void PrintArch(void)

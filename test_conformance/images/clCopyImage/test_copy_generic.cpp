@@ -105,23 +105,41 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
 
     if ( *error != CL_SUCCESS )
     {
+        long long unsigned imageSize = get_image_size_mb(imageInfo);
         switch (imageInfo->type)
         {
             case CL_MEM_OBJECT_IMAGE1D:
-                log_error( "ERROR: Unable to create 1D image of size %d (%s)", (int)imageInfo->width, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 1D image of size %d (%llu "
+                          "MB):(%s)",
+                          (int)imageInfo->width, imageSize,
+                          IGetErrorString(*error));
                 break;
             case CL_MEM_OBJECT_IMAGE2D:
-                log_error( "ERROR: Unable to create 2D image of size %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->height, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 2D image of size %d x %d "
+                          "(%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->height,
+                          imageSize, IGetErrorString(*error));
                 break;
             case CL_MEM_OBJECT_IMAGE3D:
-                log_error( "ERROR: Unable to create 3D image of size %d x %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->depth, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 3D image of size %d x %d x "
+                          "%d (%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->height,
+                          (int)imageInfo->depth, imageSize,
+                          IGetErrorString(*error));
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                log_error( "ERROR: Unable to create 1D image array of size %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->arraySize, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 1D image array of size %d x "
+                          "%d (%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->arraySize,
+                          imageSize, IGetErrorString(*error));
                 break;
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                log_error( "ERROR: Unable to create 2D image array of size %d x %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->arraySize, IGetErrorString( *error ) );
+                log_error("ERROR: Unable to create 2D image array of size %d x "
+                          "%d x %d (%llu MB):(%s)",
+                          (int)imageInfo->width, (int)imageInfo->height,
+                          (int)imageInfo->arraySize, imageSize,
+                          IGetErrorString(*error));
                 break;
         }
         log_error("ERROR: and %llu mip levels\n", (unsigned long long) imageInfo->num_mip_levels);
@@ -266,7 +284,6 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
     return img;
 }
 
-
 // WARNING -- not thread safe
 BufferOwningPtr<char> srcData;
 BufferOwningPtr<char> dstData;
@@ -291,24 +308,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     }
     else
     {
-        switch (srcImageInfo->type)
-        {
-            case CL_MEM_OBJECT_IMAGE1D:
-                srcBytes = srcImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D:
-                srcBytes = srcImageInfo->height * srcImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE3D:
-                srcBytes = srcImageInfo->depth * srcImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                srcBytes = srcImageInfo->arraySize * srcImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                srcBytes = srcImageInfo->arraySize * srcImageInfo->slicePitch;
-                break;
-        }
+        srcBytes = get_image_size(srcImageInfo);
     }
 
     if (srcBytes > srcData.getSize())
@@ -344,24 +344,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     }
     else
     {
-        switch (dstImageInfo->type)
-        {
-            case CL_MEM_OBJECT_IMAGE1D:
-                destImageSize = dstImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D:
-                destImageSize = dstImageInfo->height * dstImageInfo->rowPitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE3D:
-                destImageSize = dstImageInfo->depth * dstImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                destImageSize = dstImageInfo->arraySize * dstImageInfo->slicePitch;
-                break;
-            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                destImageSize = dstImageInfo->arraySize * dstImageInfo->slicePitch;
-                break;
-        }
+        destImageSize = get_image_size(dstImageInfo);
     }
 
     if (destImageSize > dstData.getSize())
@@ -373,7 +356,11 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
             log_error( "ERROR: Unable to malloc %lu bytes for dstData\n", destImageSize );
             return -1;
         }
+    }
 
+    if (destImageSize > dstHost.getSize())
+    {
+        dstHost.reset(NULL);
         dstHost.reset(malloc(destImageSize),NULL,0,destImageSize);
         if (dstHost == NULL) {
             dstData.reset(NULL);
@@ -560,59 +547,19 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
         {
             if( memcmp( sourcePtr, destPtr, scanlineSize ) != 0 )
             {
-                log_error( "ERROR: Scanline %d did not verify for image size %d,%d,%d pitch %d (extra %d bytes)\n", (int)y, (int)dstImageInfo->width, (int)dstImageInfo->height, (int)dstImageInfo->depth, (int)dstImageInfo->rowPitch, (int)dstImageInfo->rowPitch - (int)dstImageInfo->width * (int)get_pixel_size( dstImageInfo->format ) );
-
-                // Find the first missing pixel
+                // Find the first differing pixel
                 size_t pixel_size = get_pixel_size( dstImageInfo->format );
-                size_t where = 0;
-                for( where = 0; where < dstImageInfo->width; where++ )
-                    if( memcmp( sourcePtr + pixel_size * where, destPtr + pixel_size * where, pixel_size) )
-                        break;
-                log_error( "Failed at column: %ld   ", where );
-                switch( pixel_size )
-                {
-                    case 1:
-                        log_error( "*0x%2.2x vs. 0x%2.2x\n", ((cl_uchar*)(sourcePtr + pixel_size * where))[0], ((cl_uchar*)(destPtr + pixel_size * where))[0] );
-                        break;
-                    case 2:
-                        log_error( "*0x%4.4x vs. 0x%4.4x\n", ((cl_ushort*)(sourcePtr + pixel_size * where))[0], ((cl_ushort*)(destPtr + pixel_size * where))[0] );
-                        break;
-                    case 3:
-                        log_error( "*{0x%2.2x, 0x%2.2x, 0x%2.2x} vs. {0x%2.2x, 0x%2.2x, 0x%2.2x}\n",
-                                  ((cl_uchar*)(sourcePtr + pixel_size * where))[0], ((cl_uchar*)(sourcePtr + pixel_size * where))[1], ((cl_uchar*)(sourcePtr + pixel_size * where))[2],
-                                  ((cl_uchar*)(destPtr + pixel_size * where))[0], ((cl_uchar*)(destPtr + pixel_size * where))[1], ((cl_uchar*)(destPtr + pixel_size * where))[2]
-                                  );
-                        break;
-                    case 4:
-                        log_error( "*0x%8.8x vs. 0x%8.8x\n", ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[0] );
-                        break;
-                    case 6:
-                        log_error( "*{0x%4.4x, 0x%4.4x, 0x%4.4x} vs. {0x%4.4x, 0x%4.4x, 0x%4.4x}\n",
-                                  ((cl_ushort*)(sourcePtr + pixel_size * where))[0], ((cl_ushort*)(sourcePtr + pixel_size * where))[1], ((cl_ushort*)(sourcePtr + pixel_size * where))[2],
-                                  ((cl_ushort*)(destPtr + pixel_size * where))[0], ((cl_ushort*)(destPtr + pixel_size * where))[1], ((cl_ushort*)(destPtr + pixel_size * where))[2]
-                                  );
-                        break;
-                    case 8:
-                        log_error( "*0x%16.16llx vs. 0x%16.16llx\n", ((cl_ulong*)(sourcePtr + pixel_size * where))[0], ((cl_ulong*)(destPtr + pixel_size * where))[0] );
-                        break;
-                    case 12:
-                        log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
-                                  ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(sourcePtr + pixel_size * where))[1], ((cl_uint*)(sourcePtr + pixel_size * where))[2],
-                                  ((cl_uint*)(destPtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[1], ((cl_uint*)(destPtr + pixel_size * where))[2]
-                                  );
-                        break;
-                    case 16:
-                        log_error( "*{0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x} vs. {0x%8.8x, 0x%8.8x, 0x%8.8x, 0x%8.8x}\n",
-                                  ((cl_uint*)(sourcePtr + pixel_size * where))[0], ((cl_uint*)(sourcePtr + pixel_size * where))[1], ((cl_uint*)(sourcePtr + pixel_size * where))[2], ((cl_uint*)(sourcePtr + pixel_size * where))[3],
-                                  ((cl_uint*)(destPtr + pixel_size * where))[0], ((cl_uint*)(destPtr + pixel_size * where))[1], ((cl_uint*)(destPtr + pixel_size * where))[2], ((cl_uint*)(destPtr + pixel_size * where))[3]
-                                  );
-                        break;
-                    default:
-                        log_error( "Don't know how to print pixel size of %ld\n", pixel_size );
-                        break;
-                }
+                size_t where =
+                    compare_scanlines(dstImageInfo, sourcePtr, destPtr);
 
-                return -1;
+                if (where < dstImageInfo->width)
+                {
+                    print_first_pixel_difference_error(
+                        where, sourcePtr + pixel_size * where,
+                        destPtr + pixel_size * where, dstImageInfo, y,
+                        dstImageInfo->depth);
+                    return -1;
+                }
             }
             sourcePtr += rowPitch;
             if((dstImageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY || dstImageInfo->type == CL_MEM_OBJECT_IMAGE1D))
@@ -629,6 +576,15 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     if (error != CL_SUCCESS)
     {
         log_error( "ERROR: Unable to unmap image after verify: %s\n", IGetErrorString( error ) );
+        return error;
+    }
+
+    // Ensure the unmap call completes.
+    error = clFinish(queue);
+    if (error != CL_SUCCESS)
+    {
+        log_error("ERROR: clFinish() failed to return CL_SUCCESS: %s\n",
+                  IGetErrorString(error));
         return error;
     }
 

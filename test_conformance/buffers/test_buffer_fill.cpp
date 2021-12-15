@@ -562,14 +562,13 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
                      int loops, void *inptr[5], void *hostptr[5], void *pattern[5], size_t offset_elements, size_t fill_elements,
                      const char *kernelCode[], const char *kernelName[], int (*fn)(void *,void *,int) )
 {
-    clMemWrapper buffers[10];
     void        *outptr[5];
     clProgramWrapper program[5];
     clKernelWrapper kernel[5];
     size_t      ptrSizes[5];
     size_t      global_work_size[3];
     int         err;
-    int         i, ii;
+    int i;
     int         src_flag_id;
     int         total_errors = 0;
 
@@ -586,8 +585,6 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
     loops = (loops < 5 ? loops : 5);
     for (i = 0; i < loops; i++)
     {
-        ii = i << 1;
-
         err = create_single_kernel_helper(context, &program[i], &kernel[i], 1,
                                           &kernelCode[i], kernelName[i]);
         if (err)
@@ -599,18 +596,25 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
             clEventWrapper event[2];
-
+            clMemWrapper buffers[2];
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
-                buffers[ii] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, hostptr[i], &err);
+                buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],
+                                            ptrSizes[i] * num_elements,
+                                            hostptr[i], &err);
             else
-                buffers[ii] = clCreateBuffer(context, flag_set[src_flag_id],  ptrSizes[i] * num_elements, NULL, &err);
-            if ( !buffers[ii] || err){
+                buffers[0] =
+                    clCreateBuffer(context, flag_set[src_flag_id],
+                                   ptrSizes[i] * num_elements, NULL, &err);
+            if (!buffers[0] || err)
+            {
                 print_error(err, "clCreateBuffer failed\n" );
                 return -1;
             }
             // Initialize source buffer with 0, since the validation code expects 0(s) outside of the fill region.
             if (!((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))) {
-                err = clEnqueueWriteBuffer(queue, buffers[ii], CL_FALSE, 0, ptrSizes[i]*num_elements, hostptr[i], 0, NULL, NULL);
+                err = clEnqueueWriteBuffer(queue, buffers[0], CL_FALSE, 0,
+                                           ptrSizes[i] * num_elements,
+                                           hostptr[i], 0, NULL, NULL);
                 if ( err != CL_SUCCESS ){
                     print_error(err, "clEnqueueWriteBuffer failed\n" );
                     return -1;
@@ -619,27 +623,31 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
 
             outptr[i] = align_malloc( ptrSizes[i] * num_elements, min_alignment);
             memset(outptr[i], 0, ptrSizes[i] * num_elements);
-            buffers[ii+1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,  ptrSizes[i] * num_elements, outptr[i], &err);
-            if ( !buffers[ii+1] || err){
+            buffers[1] =
+                clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                               ptrSizes[i] * num_elements, outptr[i], &err);
+            if (!buffers[1] || err)
+            {
                 print_error(err, "clCreateBuffer failed\n" );
                 align_free( outptr[i] );
                 return -1;
             }
 
-            err = clEnqueueFillBuffer(queue, buffers[ii], pattern[i], ptrSizes[i],
-                                      ptrSizes[i] * offset_elements, ptrSizes[i] * fill_elements,
-                                      0, NULL, &(event[0]));
-            /* uncomment for test debugging
-             err = clEnqueueWriteBuffer(queue, buffers[ii], CL_FALSE, 0, ptrSizes[i]*num_elements, inptr[i], 0, NULL, &(event[0]));
-             */
+            err = clEnqueueFillBuffer(
+                queue, buffers[0], pattern[i], ptrSizes[i],
+                ptrSizes[i] * offset_elements, ptrSizes[i] * fill_elements, 0,
+                NULL, &(event[0]));
+
             if ( err != CL_SUCCESS ){
                 print_error( err, " clEnqueueFillBuffer failed" );
                 align_free( outptr[i] );
                 return -1;
             }
 
-            err = clSetKernelArg( kernel[i], 0, sizeof( cl_mem ), (void *)&buffers[ii] );
-            err |= clSetKernelArg( kernel[i], 1, sizeof( cl_mem ), (void *)&buffers[ii+1] );
+            err = clSetKernelArg(kernel[i], 0, sizeof(cl_mem),
+                                 (void *)&buffers[0]);
+            err |= clSetKernelArg(kernel[i], 1, sizeof(cl_mem),
+                                  (void *)&buffers[1]);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArg failed" );
                 align_free( outptr[i] );
@@ -659,7 +667,9 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
                 return -1;
             }
 
-            err = clEnqueueReadBuffer( queue, buffers[ii+1], false, 0, ptrSizes[i]*num_elements, outptr[i], 0, NULL, &(event[1]) );
+            err = clEnqueueReadBuffer(queue, buffers[1], false, 0,
+                                      ptrSizes[i] * num_elements, outptr[i], 0,
+                                      NULL, &(event[1]));
             if (err != CL_SUCCESS){
                 print_error( err, "clEnqueueReadBuffer failed" );
                 return -1;
@@ -692,10 +702,6 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
 
 int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
-    clMemWrapper buffers[2];
-    void        *outptr;
-    TestStruct  *inptr;
-    TestStruct  *hostptr;
     TestStruct pattern;
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -731,6 +737,10 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
         for (n = 0; n < 8; n++)
         {
             clEventWrapper event[2];
+            clMemWrapper buffers[2];
+            void *outptr;
+            TestStruct *inptr;
+            TestStruct *hostptr;
 
             offset_elements =
                 (size_t)get_random_float(0.f, (float)(num_elements - 8), d);

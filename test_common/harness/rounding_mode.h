@@ -16,8 +16,6 @@
 #ifndef __ROUNDING_MODE_H__
 #define __ROUNDING_MODE_H__
 
-#pragma STDC FENV_ACCESS ON
-
 #include "compat.h"
 
 #if (defined(_WIN32) && defined(_MSC_VER))

@@ -141,3 +141,5 @@ extern int test_unary_ops_decrement(cl_device_id deviceID, cl_context context, c
 
 extern int test_vector_scalar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
+extern int test_integer_dot_product(cl_device_id deviceID, cl_context context,
+                                    cl_command_queue queue, int num_elements);

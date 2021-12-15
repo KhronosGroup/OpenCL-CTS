@@ -13,15 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
+
 #include "reference_math.h"
-#include <limits.h>
+#include "harness/compat.h"
+
+#include <climits>
 
 #if !defined(_WIN32)
-#include <string.h>
+#include <cstring>
 #endif
 
-#include "Utility.h"
+#include "utility.h"
 
 #if defined(__SSE__)                                                           \
     || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
@@ -39,10 +41,10 @@
 #pragma STDC FP_CONTRACT OFF
 static void __log2_ep(double *hi, double *lo, double x);
 
-typedef union {
+union uint64d_t {
     uint64_t i;
     double d;
-} uint64d_t;
+};
 
 static const uint64d_t _CL_NAN = { 0x7ff8000000000000ULL };
 
@@ -380,8 +382,6 @@ static float round_toward_zero_float(cl_ulong p, int exponent)
 
 static float round_toward_zero_float_ftz(cl_ulong p, int exponent)
 {
-    extern int gCheckTininessBeforeRounding;
-
     union {
         cl_uint u;
         cl_float d;
@@ -2259,10 +2259,10 @@ long double reference_dividel(long double x, long double y)
     return dx / dy;
 }
 
-typedef struct
+struct double_double
 {
     double hi, lo;
-} double_double;
+};
 
 // Split doubles_double into a series of consecutive 26-bit precise doubles and
 // a remainder. Note for later -- for multiplication, it might be better to
@@ -2680,20 +2680,6 @@ static inline void mul128(cl_ulong a, cl_ulong b, cl_ulong *hi, cl_ulong *lo)
     *lo = (aloblo & 0xffffffffULL) | (alobhi << 32);
 }
 
-// Move the most significant non-zero bit to the MSB
-// Note: not general. Only works if the most significant non-zero bit is at
-// MSB-1
-static inline void renormalize(cl_ulong *hi, cl_ulong *lo, int *exponent)
-{
-    if (0 == (0x8000000000000000ULL & *hi))
-    {
-        *hi <<= 1;
-        *hi |= *lo >> 63;
-        *lo <<= 1;
-        *exponent -= 1;
-    }
-}
-
 static double round_to_nearest_even_double(cl_ulong hi, cl_ulong lo,
                                            int exponent)
 {
@@ -2988,8 +2974,6 @@ long double reference_recipl(long double x) { return 1.0L / x; }
 
 long double reference_rootnl(long double x, int i)
 {
-    double hi, lo;
-    long double l;
     // rootn ( x, 0 )  returns a NaN.
     if (0 == i) return cl_make_nan();
 
@@ -3288,7 +3272,6 @@ long double reference_cbrtl(long double x)
 
     if (isnan(x) || fabsx == 1.0 || fabsx == 0.0 || isinf(x)) return x;
 
-    double iy = 0.0;
     double log2x_hi, log2x_lo;
 
     // extended precision log .... accurate to at least 64-bits + couple of
@@ -3602,12 +3585,6 @@ long double reference_expm1l(long double x)
     // unimplemented
     return x;
 #else
-    union {
-        double f;
-        cl_ulong u;
-    } u;
-    u.f = (double)x;
-
     if (reference_isnanl(x)) return x;
 
     if (x > 710) return INFINITY;
@@ -3790,10 +3767,10 @@ static uint32_t two_over_pi[] = {
 static uint32_t pi_over_two[] = { 0x1,        0x2487ed51, 0x42d1846,
                                   0x26263314, 0x1701b839, 0x28948127 };
 
-typedef union {
+union d_ui64_t {
     uint64_t u;
     double d;
-} d_ui64_t;
+};
 
 // radix or base of representation
 #define RADIX (30)
@@ -3809,13 +3786,13 @@ d_ui64_t two_pow_two_mradix = { (uint64_t)(1023 - 2 * RADIX) << 52 };
 // extended fixed point representation of double precision
 // floating point number.
 // x = sign * [ sum_{i = 0 to 2} ( X[i] * 2^(index - i)*RADIX ) ]
-typedef struct
+struct eprep_t
 {
     uint32_t X[3]; // three 32 bit integers are sufficient to represnt double in
                    // base_30
     int index; // exponent bias
     int sign; // sign of double
-} eprep_t;
+};
 
 static eprep_t double_to_eprep(double x)
 {

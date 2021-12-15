@@ -4,11 +4,6 @@ set -e
 
 export TOP=$(pwd)
 
-if [[ "${JOB_CHECK_FORMAT}" == "1" ]]; then
-    ./check-format.sh
-    exit $?
-fi
-
 TOOLCHAIN_URL_arm="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz"
 TOOLCHAIN_URL_aarch64="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz"
 
@@ -60,17 +55,13 @@ cd build
 cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ ..
 make
 
-# Get libclcxx
-cd ${TOP}
-git clone https://github.com/KhronosGroup/libclcxx.git
-
 # Build CTS
+cd ${TOP}
 ls -l
 mkdir build
 cd build
 cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
       -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build \
-      -DCL_LIBCLCXX_DIR=${TOP}/libclcxx \
       -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
       -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin \
       -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \

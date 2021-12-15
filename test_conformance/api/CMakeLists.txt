@@ -2,6 +2,7 @@ set(MODULE_NAME API)
 
 set(${MODULE_NAME}_SOURCES
          main.cpp
+         negative_platform.cpp
          test_api_consistency.cpp
          test_bool.cpp
          test_retain.cpp
@@ -13,6 +14,7 @@ set(${MODULE_NAME}_SOURCES
          test_api_min_max.cpp
          test_kernel_arg_changes.cpp
          test_kernel_arg_multi_setup.cpp
+         test_kernel_attributes.cpp
          test_binary.cpp
          test_native_kernel.cpp
          test_mem_objects.cpp
@@ -20,7 +22,6 @@ set(${MODULE_NAME}_SOURCES
          test_device_min_data_type_align_size_alignment.cpp
          test_platform.cpp
          test_kernel_arg_info.cpp
-         test_kernel_arg_info_compatibility.cpp
          test_null_buffer_arg.cpp
          test_mem_object_info.cpp
          test_min_image_formats.cpp

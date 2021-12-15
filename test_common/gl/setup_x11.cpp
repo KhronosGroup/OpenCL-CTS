@@ -13,16 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#define GL_GLEXT_PROTOTYPES
 
 #include "setup.h"
 #include "testBase.h"
 #include "harness/errorHelpers.h"
 
-#include <GL/gl.h>
-#include <GL/glut.h>
-#include <GL/glext.h>
-#include <GL/freeglut.h>
 #include <GL/glx.h>
 #include <CL/cl_ext.h>
 
@@ -90,10 +85,17 @@ public:
         }
 
         for (int i=0; i<(int)num_of_devices; i++) {
-            if (!is_extension_available(devices[i], "cl_khr_gl_sharing ")) {
-                log_info("Device %d of %d does not support required extension cl_khr_gl_sharing.\n", i+1, num_of_devices);
-            } else {
-                log_info("Device %d of %d supports required extension cl_khr_gl_sharing.\n", i+1, num_of_devices);
+            if (!is_extension_available(devices[i], "cl_khr_gl_sharing"))
+            {
+                log_info("Device %d of %d does not support required extension "
+                         "cl_khr_gl_sharing.\n",
+                         i + 1, num_of_devices);
+            }
+            else
+            {
+                log_info("Device %d of %d supports required extension "
+                         "cl_khr_gl_sharing.\n",
+                         i + 1, num_of_devices);
                 found_valid_device = 1;
                 m_devices[m_device_count++] = devices[i];
             }

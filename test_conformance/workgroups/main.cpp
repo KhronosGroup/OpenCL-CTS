@@ -24,27 +24,30 @@
 #endif
 
 test_definition test_list[] = {
-    ADD_TEST(work_group_all),
-    ADD_TEST(work_group_any),
-    ADD_TEST(work_group_reduce_add),
-    ADD_TEST(work_group_reduce_min),
-    ADD_TEST(work_group_reduce_max),
-    ADD_TEST(work_group_scan_inclusive_add),
-    ADD_TEST(work_group_scan_inclusive_min),
-    ADD_TEST(work_group_scan_inclusive_max),
-    ADD_TEST(work_group_scan_exclusive_add),
-    ADD_TEST(work_group_scan_exclusive_min),
-    ADD_TEST(work_group_scan_exclusive_max),
-    ADD_TEST(work_group_broadcast_1D),
-    ADD_TEST(work_group_broadcast_2D),
-    ADD_TEST(work_group_broadcast_3D),
+    ADD_TEST_VERSION(work_group_all, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_any, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_reduce_add, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_reduce_min, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_reduce_max, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_scan_inclusive_add, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_scan_inclusive_min, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_scan_inclusive_max, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_scan_exclusive_add, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_scan_exclusive_min, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_scan_exclusive_max, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_broadcast_1D, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_broadcast_2D, Version(2, 0)),
+    ADD_TEST_VERSION(work_group_broadcast_3D, Version(2, 0)),
+    ADD_TEST(work_group_suggested_local_size_1D),
+    ADD_TEST(work_group_suggested_local_size_2D),
+    ADD_TEST(work_group_suggested_local_size_3D)
 };
 
 const int test_num = ARRAY_SIZE(test_list);
 
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);
-    auto expected_min_version = Version(2, 0);
+    auto expected_min_version = Version(1, 2);
     if (version < expected_min_version)
     {
         version_expected_info("Test", "OpenCL",

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017, 2021 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,15 +17,13 @@
 #include "test_common.h"
 #include <float.h>
 
+#include <algorithm>
+
 #if defined( __APPLE__ )
     #include <signal.h>
     #include <sys/signal.h>
     #include <setjmp.h>
 #endif
-
-extern uint64_t gRoundingStartValue;
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
 
 const char *read1DKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_t input,%s __global float *xOffsets, __global %s4 *results %s)\n"
@@ -55,8 +53,6 @@ const char *float1DKernelSource =
 
 static const char *samplerKernelArg = " sampler_t imageSampler,";
 
-extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo,
-                            int x, int y, int z, float *outData );
 template <class T> int determine_validation_error_1D( void *imagePtr, image_descriptor *imageInfo, image_sampler_data *imageSampler,
                                                 T *resultPtr, T * expected, float error,
                                 float x, float xAddressOffset, size_t j, int &numTries, int &numClamped, bool printAsFloat, int lod )
@@ -675,10 +671,14 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                             if (err2 > 0 && err2 < formatAbsoluteError) { err2 = 0.0f; }
                             if (err3 > 0 && err3 < formatAbsoluteError) { err3 = 0.0f; }
                             if (err4 > 0 && err4 < formatAbsoluteError) { err4 = 0.0f; }
-                            float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
-                            float maxErr2 = MAX( maxErr * maxPixel.p[1], FLT_MIN );
-                            float maxErr3 = MAX( maxErr * maxPixel.p[2], FLT_MIN );
-                            float maxErr4 = MAX( maxErr * maxPixel.p[3], FLT_MIN );
+                            float maxErr1 =
+                                std::max(maxErr * maxPixel.p[0], FLT_MIN);
+                            float maxErr2 =
+                                std::max(maxErr * maxPixel.p[1], FLT_MIN);
+                            float maxErr3 =
+                                std::max(maxErr * maxPixel.p[2], FLT_MIN);
+                            float maxErr4 =
+                                std::max(maxErr * maxPixel.p[3], FLT_MIN);
 
                             // Check if the result matches.
                             if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    ||
@@ -738,10 +738,14 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                                     ABS_ERROR(resultPtr[2], expected[2]);
                                 float err4 =
                                     ABS_ERROR(resultPtr[3], expected[3]);
-                                float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
-                                float maxErr2 = MAX( maxErr * maxPixel.p[1], FLT_MIN );
-                                float maxErr3 = MAX( maxErr * maxPixel.p[2], FLT_MIN );
-                                float maxErr4 = MAX( maxErr * maxPixel.p[3], FLT_MIN );
+                                float maxErr1 =
+                                    std::max(maxErr * maxPixel.p[0], FLT_MIN);
+                                float maxErr2 =
+                                    std::max(maxErr * maxPixel.p[1], FLT_MIN);
+                                float maxErr3 =
+                                    std::max(maxErr * maxPixel.p[2], FLT_MIN);
+                                float maxErr4 =
+                                    std::max(maxErr * maxPixel.p[3], FLT_MIN);
 
 
                                 if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    ||

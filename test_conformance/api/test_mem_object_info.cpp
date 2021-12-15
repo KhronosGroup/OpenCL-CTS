@@ -348,14 +348,7 @@ int test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_
             TEST_MEM_OBJECT_PARAM( subBufferObject, CL_MEM_ASSOCIATED_MEMOBJECT, origObj, (cl_mem)bufferObject, "associated mem object", "%p", void * )
 
             TEST_MEM_OBJECT_PARAM( subBufferObject, CL_MEM_OFFSET, offset, (size_t)( addressAlign ), "offset", "%ld", size_t )
-
-            clReleaseMemObject( subBufferObject );
-            subBufferObject = NULL;
-
         }
-
-        clReleaseMemObject( bufferObject );
-        bufferObject = NULL;
     }
 
     return CL_SUCCESS;
