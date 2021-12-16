@@ -172,6 +172,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     dptr func = job->f->dfunc;
     cl_int error;
     int ftz = job->ftz;
+    bool relaxedMode = job->relaxedMode;
 
     Force64BitFPUPrecision();
 
@@ -305,7 +306,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
                 if (fail)
                 {
-                    if (ftz)
+                    if (ftz || relaxedMode)
                     {
                         // retry per section 6.5.3.2
                         if (IsDoubleResultSubnormal(correct, ulps))
