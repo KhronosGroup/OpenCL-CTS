@@ -435,7 +435,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
                 if (fail)
                 {
-                    if (ftz)
+                    if (ftz || relaxedMode)
                     {
                         typedef int (*CheckForSubnormal)(
                             double, float); // If we are in fast relaxed math,
