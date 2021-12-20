@@ -84,6 +84,84 @@ struct CommandBufferTestBase
     cl_device_id device = nullptr;
 };
 
+// Wrapper class based off generic typeWrappers.h wrappers. However, because
+// the release/retain functions are queried at runtime from the platform,
+// rather than known at compile time we cannot link the instantiated template.
+// Instead, pass an instance of `CommandBufferTestBase` on wrapper construction
+// to access the release/retain functions.
+class clCommandBufferWrapper {
+    cl_command_buffer_khr object = nullptr;
+
+    void retain()
+    {
+        if (!object) return;
+
+        auto err = base->clRetainCommandBufferKHR(object);
+        if (err != CL_SUCCESS)
+        {
+            print_error(err, "clRetainCommandBufferKHR() failed");
+            std::abort();
+        }
+    }
+
+    void release()
+    {
+        if (!object) return;
+
+        auto err = base->clReleaseCommandBufferKHR(object);
+        if (err != CL_SUCCESS)
+        {
+            print_error(err, "clReleaseCommandBufferKHR() failed");
+            std::abort();
+        }
+    }
+
+    // Used to access release/retain functions
+    CommandBufferTestBase *base;
+
+public:
+    // We always want to have base available to dereference
+    clCommandBufferWrapper() = delete;
+
+    clCommandBufferWrapper(CommandBufferTestBase *base): base(base) {}
+
+    // On assignment, assume the object has a refcount of one.
+    clCommandBufferWrapper &operator=(cl_command_buffer_khr rhs)
+    {
+        reset(rhs);
+        return *this;
+    }
+
+    // Copy semantics, increase retain count.
+    clCommandBufferWrapper(clCommandBufferWrapper const &w) { *this = w; }
+    clCommandBufferWrapper &operator=(clCommandBufferWrapper const &w)
+    {
+        reset(w.object);
+        retain();
+        return *this;
+    }
+
+    // Move semantics, directly take ownership.
+    clCommandBufferWrapper(clCommandBufferWrapper &&w) { *this = std::move(w); }
+    clCommandBufferWrapper &operator=(clCommandBufferWrapper &&w)
+    {
+        reset(w.object);
+        w.object = nullptr;
+        return *this;
+    }
+
+    ~clCommandBufferWrapper() { reset(); }
+
+    // Release the existing object, if any, and own the new one, if any.
+    void reset(cl_command_buffer_khr new_object = nullptr)
+    {
+        release();
+        object = new_object;
+    }
+
+    operator cl_command_buffer_khr() const { return object; }
+};
+
 #define CHECK_COMMAND_BUFFER_EXTENSION_AVAILABLE(device)                       \
     {                                                                          \
         if (!is_extension_available(device, "cl_khr_command_buffer"))          \

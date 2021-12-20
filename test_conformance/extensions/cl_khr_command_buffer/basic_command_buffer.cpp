@@ -41,23 +41,8 @@ struct BasicCommandBufferTest : CommandBufferTestBase
     BasicCommandBufferTest(cl_device_id device, cl_context context,
                            cl_command_queue queue)
         : CommandBufferTestBase(device), context(context), queue(queue),
-          command_buffer(nullptr), simultaneous_use(false), num_elements(0)
+          command_buffer(this), simultaneous_use(false), num_elements(0)
     {}
-
-    virtual ~BasicCommandBufferTest()
-    {
-        if (nullptr != command_buffer)
-        {
-            cl_int error = clReleaseCommandBufferKHR(command_buffer);
-            if (error != CL_SUCCESS)
-            {
-                print_error(error, "clReleaseCommandBufferKHR() failed");
-                // Behaviour taken from common type wrapper code which aborts on
-                // release failure
-                std::abort();
-            }
-        }
-    }
 
     virtual bool Skip()
     {
@@ -160,7 +145,7 @@ protected:
 
     cl_context context;
     cl_command_queue queue;
-    cl_command_buffer_khr command_buffer;
+    clCommandBufferWrapper command_buffer;
     clProgramWrapper program;
     clKernelWrapper kernel;
     clMemWrapper in_mem, out_mem;
