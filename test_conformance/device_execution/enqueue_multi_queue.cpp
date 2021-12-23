@@ -25,7 +25,7 @@
 #include <time.h>
 
 
-
+#define SPIRVMinLimitForFuncArgSize 255
 
 #ifdef CL_VERSION_2_0
 extern int gWimpyMode;
@@ -128,6 +128,8 @@ int test_enqueue_multi_queue(cl_device_id device, cl_context context, cl_command
     if(max_queues > 1)
     {
         n = (max_queues > MAX_QUEUES) ? MAX_QUEUES : max_queues-1;
+        n = (n < SPIRVMinLimitForFuncArgSize) ? n - 2
+                                              : SPIRVMinLimitForFuncArgSize - 2;
         clMemWrapper mem, buff, evt;
         std::vector<clCommandQueueWrapper> queues(n);
         std::vector<cl_command_queue> q(n);
