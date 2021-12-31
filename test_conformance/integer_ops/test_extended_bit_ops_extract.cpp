@@ -26,32 +26,58 @@
 
 template <typename T>
 static typename std::make_signed<T>::type
+static_cast_to_signed(T x)
+{
+    // From code review comment: conversion from unsigned types to signed types
+    // using static_cast is implementation-defined if the most significant bit
+    // is set until C++20. The conventional idiom for conversion is:
+    typedef typename std::make_unsigned<T>::type unsigned_t;
+    typedef typename std::make_signed<T>::type signed_t;
+    return x & (static_cast<unsigned_t>(1) << (sizeof(x) * 8 - 1))
+                ? -(static_cast<signed_t>(~x)) - 1
+                : static_cast<signed_t>(x);
+}
+
+template <typename T>
+static typename std::make_unsigned<T>::type
+arithmetic_shift_right(T tx, cl_uint count)
+{
+    typedef typename std::make_unsigned<T>::type unsigned_t;
+    unsigned_t x = static_cast<unsigned_t>(tx);
+
+    // To implement an arithmetic shift right:
+    // - If the sign bit is not set, shift as usual.
+    // - Otherwise, flip all of the bits, shift, then flip back.
+    unsigned_t s = -(x >> (sizeof(x) * 8 - 1));
+    unsigned_t result = (s ^ x) >> count ^ s;
+
+    return result;
+}
+
+template <typename T>
+static typename std::make_signed<T>::type
 cpu_bit_extract_signed(T tbase, cl_uint offset, cl_uint count)
 {
-    typedef typename std::make_signed<T>::type signed_t;
+    typedef typename std::make_signed<T>::type unsigned_t;
 
     assert(offset <= sizeof(T) * 8);
     assert(count <= sizeof(T) * 8);
     assert(offset + count <= sizeof(T) * 8);
 
-    signed_t base = static_cast<signed_t>(tbase);
-    signed_t result;
+    unsigned_t base = static_cast<unsigned_t>(tbase);
+    unsigned_t result;
 
     if (count == 0)
     {
         result = 0;
     }
-    else if (offset + count < sizeof(T) * 8)
-    {
-        result = base << (sizeof(T) * 8 - offset - count);
-        result = result >> (sizeof(T) * 8 - count);
-    }
     else
     {
-        result = base >> offset;
+        result = base << (sizeof(T) * 8 - offset - count);
+        result = arithmetic_shift_right(result, sizeof(T) * 8 - count);
     }
 
-    return result;
+    return static_cast_to_signed(result);
 }
 
 template <typename T>
@@ -71,14 +97,10 @@ cpu_bit_extract_unsigned(T tbase, cl_uint offset, cl_uint count)
     {
         result = 0;
     }
-    else if (offset + count < sizeof(T) * 8)
+    else
     {
         result = base << (sizeof(T) * 8 - offset - count);
         result = result >> (sizeof(T) * 8 - count);
-    }
-    else
-    {
-        result = base >> offset;
     }
 
     return result;

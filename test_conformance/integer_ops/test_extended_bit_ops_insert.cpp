@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <numeric>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "procs.h"
@@ -24,8 +25,10 @@
 #include "harness/testHarness.h"
 
 template <typename T>
-static T cpu_bit_insert(T tbase, T tinsert, cl_uint offset, cl_uint count)
+static typename std::make_unsigned<T>::type
+cpu_bit_insert(T tbase, T tinsert, cl_uint offset, cl_uint count)
 {
+    typedef typename std::make_unsigned<T>::type UT;
     assert(offset <= sizeof(T) * 8);
     assert(count <= sizeof(T) * 8);
     assert(offset + count <= sizeof(T) * 8);
@@ -36,13 +39,15 @@ static T cpu_bit_insert(T tbase, T tinsert, cl_uint offset, cl_uint count)
     cl_ulong mask = (count < 64) ? ((1ULL << count) - 1) << offset : ~0ULL;
     cl_ulong result = ((insert << offset) & mask) | (base & ~mask);
 
-    return static_cast<T>(result);
+    return static_cast<UT>(result);
 }
 
-template <typename T, size_t N>
-static void calculate_reference(std::vector<T>& ref, const std::vector<T>& base,
+template <typename UT, typename T, size_t N>
+static void calculate_reference(std::vector<UT>& ref,
+                                const std::vector<T>& base,
                                 const std::vector<T>& insert)
 {
+    static_assert(std::is_unsigned<UT>::value);
     ref.resize(base.size());
     for (size_t i = 0; i < base.size(); i++)
     {
@@ -89,6 +94,11 @@ template <typename T, size_t N>
 static int test_vectype(cl_device_id device, cl_context context,
                         cl_command_queue queue)
 {
+    // Because converting from an unsigned type to a signed type is
+    // implementation-defined if the most significant bit is set until C++ 20,
+    // compute all reference results using unsigned types.
+    typedef typename std::make_unsigned<T>::type UT;
+
     cl_int error = CL_SUCCESS;
     int result = TEST_PASS;
 
@@ -112,8 +122,8 @@ static int test_vectype(cl_device_id device, cl_context context,
     std::vector<T> insert(ELEMENTS_TO_TEST * N);
     generate_input(insert);
 
-    std::vector<T> reference;
-    calculate_reference<T, N>(reference, base, insert);
+    std::vector<UT> reference;
+    calculate_reference<UT, T, N>(reference, base, insert);
 
     const char* source = (N == 3) ? kernel_source_vec3 : kernel_source;
     error = create_single_kernel_helper(context, &program, &kernel, 1, &source,
@@ -152,7 +162,7 @@ static int test_vectype(cl_device_id device, cl_context context,
     error = clFinish(queue);
     test_error(error, "clFinish failed after test kernel");
 
-    std::vector<T> results(reference.size(), 99);
+    std::vector<UT> results(reference.size(), 99);
     error =
         clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, results.size() * sizeof(T),
                             results.data(), 0, NULL, NULL);
