@@ -43,7 +43,8 @@ int test_negative_get_platform_info(cl_device_id deviceID, cl_context context,
     cl_platform_id platform = getPlatformFromDevice(deviceID);
 
     constexpr cl_platform_info INVALID_PARAM_VALUE = 0;
-    cl_int err = clGetPlatformInfo(platform, INVALID_PARAM_VALUE, 0, nullptr, nullptr);
+    cl_int err =
+        clGetPlatformInfo(platform, INVALID_PARAM_VALUE, 0, nullptr, nullptr);
     test_failure_error_ret(
         err, CL_INVALID_VALUE,
         "clGetPlatformInfo should return CL_INVALID_VALUE when: \"param_name "
