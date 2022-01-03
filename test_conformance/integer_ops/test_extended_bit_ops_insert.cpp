@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "procs.h"
-#include "integer_ops_test_info.h"
+#include "harness/integer_ops_test_info.h"
 #include "harness/testHarness.h"
 
 template <typename T>
@@ -120,7 +120,7 @@ static int test_vectype(cl_device_id device, cl_context context,
     std::fill(base.begin(), base.end(), static_cast<T>(0xA5A5A5A5A5A5A5A5ULL));
 
     std::vector<T> insert(ELEMENTS_TO_TEST * N);
-    generate_input(insert);
+    fill_vector_with_random_data(insert);
 
     std::vector<UT> reference;
     calculate_reference<UT, T, N>(reference, base, insert);

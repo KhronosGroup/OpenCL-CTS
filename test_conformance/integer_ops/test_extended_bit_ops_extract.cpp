@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "procs.h"
-#include "integer_ops_test_info.h"
+#include "harness/integer_ops_test_info.h"
 #include "harness/testHarness.h"
 
 template <typename T>
@@ -191,7 +191,7 @@ static int test_vectype(cl_device_id device, cl_context context,
     const size_t ELEMENTS_TO_TEST = (sizeof(T) * 8 + 1) * (sizeof(T) * 8 + 1);
 
     std::vector<T> base(ELEMENTS_TO_TEST * N);
-    generate_input(base);
+    fill_vector_with_random_data(base);
 
     std::vector<signed_t> sreference;
     std::vector<unsigned_t> ureference;
