@@ -25,20 +25,6 @@
 #include "harness/testHarness.h"
 
 template <typename T>
-static typename std::make_signed<T>::type
-static_cast_to_signed(T x)
-{
-    // From code review comment: conversion from unsigned types to signed types
-    // using static_cast is implementation-defined if the most significant bit
-    // is set until C++20. The conventional idiom for conversion is:
-    typedef typename std::make_unsigned<T>::type unsigned_t;
-    typedef typename std::make_signed<T>::type signed_t;
-    return x & (static_cast<unsigned_t>(1) << (sizeof(x) * 8 - 1))
-                ? -(static_cast<signed_t>(~x)) - 1
-                : static_cast<signed_t>(x);
-}
-
-template <typename T>
 static typename std::make_unsigned<T>::type
 arithmetic_shift_right(T tx, cl_uint count)
 {
@@ -55,7 +41,7 @@ arithmetic_shift_right(T tx, cl_uint count)
 }
 
 template <typename T>
-static typename std::make_signed<T>::type
+static typename std::make_unsigned<T>::type
 cpu_bit_extract_signed(T tbase, cl_uint offset, cl_uint count)
 {
     typedef typename std::make_signed<T>::type unsigned_t;
@@ -77,7 +63,7 @@ cpu_bit_extract_signed(T tbase, cl_uint offset, cl_uint count)
         result = arithmetic_shift_right(result, sizeof(T) * 8 - count);
     }
 
-    return static_cast_to_signed(result);
+    return result;
 }
 
 template <typename T>
@@ -108,7 +94,7 @@ cpu_bit_extract_unsigned(T tbase, cl_uint offset, cl_uint count)
 
 template <typename T, size_t N>
 static void
-calculate_reference(std::vector<typename std::make_signed<T>::type>& sref,
+calculate_reference(std::vector<typename std::make_unsigned<T>::type>& sref,
                     std::vector<typename std::make_unsigned<T>::type>& uref,
                     const std::vector<T>& base)
 {
@@ -162,7 +148,9 @@ template <typename T, size_t N>
 static int test_vectype(cl_device_id device, cl_context context,
                         cl_command_queue queue)
 {
-    typedef typename std::make_signed<T>::type signed_t;
+    // Because converting from an unsigned type to a signed type is
+    // implementation-defined if the most significant bit is set until C++ 20,
+    // compute all reference results using unsigned types.
     typedef typename std::make_unsigned<T>::type unsigned_t;
 
     cl_int error = CL_SUCCESS;
@@ -193,7 +181,7 @@ static int test_vectype(cl_device_id device, cl_context context,
     std::vector<T> base(ELEMENTS_TO_TEST * N);
     fill_vector_with_random_data(base);
 
-    std::vector<signed_t> sreference;
+    std::vector<unsigned_t> sreference;
     std::vector<unsigned_t> ureference;
     calculate_reference<T, N>(sreference, ureference, base);
 
@@ -233,7 +221,7 @@ static int test_vectype(cl_device_id device, cl_context context,
     error = clFinish(queue);
     test_error(error, "clFinish failed after test kernel");
 
-    std::vector<signed_t> sresults(sreference.size(), 99);
+    std::vector<unsigned_t> sresults(sreference.size(), 99);
     error = clEnqueueReadBuffer(queue, sdst, CL_TRUE, 0,
                                 sresults.size() * sizeof(T), sresults.data(), 0,
                                 NULL, NULL);
