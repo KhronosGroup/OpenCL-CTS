@@ -1582,7 +1582,7 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
     size_t threads[1], localThreads[1];
     cl_int *constantData, *resultData;
     cl_ulong maxSize, stepSize, currentSize, maxGlobalSize, maxAllocSize;
-    cl_ulong i;
+    size_t i;
     cl_event event;
     cl_int event_status;
     MTdata d;
@@ -1736,8 +1736,8 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
 
         for (i = 0; i < numberOfInts; i++)
             if (constantData[i] != resultData[i]) {
-                log_error("Data failed to verify: constantData[%lld]=%d != "
-                          "resultData[%lld]=%d\n",
+                log_error("Data failed to verify: constantData[%zu]=%d != "
+                          "resultData[%zu]=%d\n",
                           "resultData[%d]=%d\n",
                           i, constantData[i], i, resultData[i]);
                 free(constantData);
