@@ -1041,8 +1041,8 @@ CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumDestItems)
             // global atomics declared in program scope
             code += R"(
                 if(atomic_fetch_add_explicit(&finishedThreads, 1u,
-                                           memory_order_relaxed,
-                                           memory_scope_work_group)
+                                           memory_order_acq_rel,
+                                           memory_scope_device)
                    == get_global_size(0)-1) // last finished thread
                    )";
         code += "    for(uint dstItemIdx = 0; dstItemIdx < numDestItems; "
