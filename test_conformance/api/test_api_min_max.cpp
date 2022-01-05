@@ -1556,7 +1556,8 @@ REGISTER_TEST(min_max_constant_buffer_size)
 
     maxAllocSize = get_device_info_max_mem_alloc_size(
         device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
-    log_info("Reported max alloc size of %lld bytes.\n", maxAllocSize);
+    log_info("Reported max alloc size of %" PRIu64 " bytes.\n",
+             (uint64_t)maxAllocSize);
 
     if (maxSize > maxAllocSize) maxSize = maxAllocSize;
 
@@ -1680,10 +1681,10 @@ REGISTER_TEST(min_max_constant_buffer_size)
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (i = 0; i < numberOfInts; i++)
-            if (constantData[i] != resultData[i]) {
+            if (constantData[i] != resultData[i])
+            {
                 log_error("Data failed to verify: constantData[%zu]=%d != "
                           "resultData[%zu]=%d\n",
-                          "resultData[%d]=%d\n",
                           i, constantData[i], i, resultData[i]);
                 free(constantData);
                 free(resultData);
