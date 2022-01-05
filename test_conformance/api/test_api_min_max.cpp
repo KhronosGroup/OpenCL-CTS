@@ -1735,11 +1735,12 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (i = 0; i < numberOfInts; i++)
-            if (constantData[i] != resultData[i]) {
+            if (constantData[i] != resultData[i])
+            {
                 log_error("Data failed to verify: constantData[%zu]=%d != "
                           "resultData[%zu]=%d\n",
-                          "resultData[%d]=%d\n",
-                          i, constantData[i], i, resultData[i]);
+                          "resultData[%d]=%d\n", i, constantData[i], i,
+                          resultData[i]);
                 free(constantData);
                 free(resultData);
                 free_mtdata(d);
