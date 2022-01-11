@@ -763,7 +763,6 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
 {
     clProgramWrapper program[5];
     clKernelWrapper kernel[5];
-    clEventWrapper event;
     void        *outptr[5];
     void        *inptr[5];
     size_t      global_work_size[3];
@@ -805,6 +804,7 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
             clMemWrapper buffer;
+            clEventWrapper event;
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
                 log_error( " unable to allocate %d bytes for outptr\n", (int)(ptrSizes[i] * num_elements) );
@@ -900,7 +900,6 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
 {
     clProgramWrapper program[5];
     clKernelWrapper kernel[5];
-    clEventWrapper event;
     void        *outptr[5], *inptr[5];
     size_t      global_work_size[3];
     cl_int      err;
@@ -941,6 +940,7 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
             clMemWrapper buffer;
+            clEventWrapper event;
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
                 log_error( " unable to allocate %d bytes for outptr\n", (int)(ptrSizes[i] * num_elements) );
