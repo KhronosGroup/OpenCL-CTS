@@ -34,12 +34,24 @@ extern MTdata gMTdata;
 typedef std::bitset<128> bs128;
 extern cl_half_rounding_mode g_rounding_mode;
 
+static cl_uint4 bs128_to_cl_uint4(bs128 v)
+{
+    bs128 bs128_ffffffff = 0xffffffffU;
+
+    cl_uint4 r;
+    r.s0 = ((v >> 0) & bs128_ffffffff).to_ulong();
+    r.s1 = ((v >> 32) & bs128_ffffffff).to_ulong();
+    r.s2 = ((v >> 64) & bs128_ffffffff).to_ulong();
+    r.s3 = ((v >> 96) & bs128_ffffffff).to_ulong();
+
+    return r;
+}
+
 struct WorkGroupParams
 {
-    WorkGroupParams(size_t gws, size_t lws,
-                    bool use_mask = false)
+    WorkGroupParams(size_t gws, size_t lws, int dm_arg = -1)
         : global_workgroup_size(gws), local_workgroup_size(lws),
-          use_masks(use_mask)
+          divergence_mask_arg(dm_arg)
     {
         subgroup_size = 0;
         work_items_mask = 0;
@@ -54,7 +66,7 @@ struct WorkGroupParams
     int dynsc;
     bool use_core_subgroups;
     std::vector<bs128> all_work_item_masks;
-    bool use_masks;
+    int divergence_mask_arg;
     void save_kernel_source(const std::string &source, std::string name = "")
     {
         if (name == "")
@@ -84,7 +96,7 @@ private:
     std::map<std::string, std::string> kernel_function_name;
     void load_masks()
     {
-        if (use_masks)
+        if (divergence_mask_arg != -1)
         {
             // 1 in string will be set 1, 0 will be set 0
             bs128 mask_0xf0f0f0f0("11110000111100001111000011110000"
@@ -1375,50 +1387,10 @@ static int run_kernel(cl_context context, cl_command_queue queue,
 // Driver for testing a single built in function
 template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
 {
-    static test_status mrun(cl_device_id device, cl_context context,
-                            cl_command_queue queue, int num_elements,
-                            const char *kname, const char *src,
-                            WorkGroupParams test_params)
-    {
-        Fns::log_test(test_params, "");
-
-        test_status combined_error = TEST_SKIPPED_ITSELF;
-        for (auto &mask : test_params.all_work_item_masks)
-        {
-            test_params.work_items_mask = mask;
-            test_status error = do_run(device, context, queue, num_elements,
-                                       kname, src, test_params);
-
-            if (error == TEST_FAIL
-                || (error == TEST_PASS && combined_error != TEST_FAIL))
-                combined_error = error;
-        }
-
-        if (combined_error == TEST_PASS)
-        {
-            Fns::log_test(test_params, " passed");
-        }
-        return combined_error;
-    };
-    static int run(cl_device_id device, cl_context context,
-                   cl_command_queue queue, int num_elements, const char *kname,
-                   const char *src, WorkGroupParams test_params)
-    {
-        Fns::log_test(test_params, "");
-
-        int error = do_run(device, context, queue, num_elements, kname, src,
-                           test_params);
-
-        if (error == TEST_PASS)
-        {
-            Fns::log_test(test_params, " passed");
-        }
-        return error;
-    };
-    static test_status do_run(cl_device_id device, cl_context context,
-                              cl_command_queue queue, int num_elements,
-                              const char *kname, const char *src,
-                              WorkGroupParams test_params)
+    static test_status run(cl_device_id device, cl_context context,
+                           cl_command_queue queue, int num_elements,
+                           const char *kname, const char *src,
+                           WorkGroupParams test_params)
     {
         size_t tmp;
         cl_int error;
@@ -1436,25 +1408,8 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         std::vector<Ty> mapout;
         mapout.resize(local);
         std::stringstream kernel_sstr;
-        if (test_params.use_masks)
-        {
-            // Prapare uint4 type to store bitmask on kernel OpenCL C side
-            // To keep order the first characet in string is the lowest bit
-            // there was a need to give such offset to bitset constructor
-            // (first highest offset = 96)
-            std::bitset<32> bits_1_32(test_params.work_items_mask.to_string(),
-                                      96, 32);
-            std::bitset<32> bits_33_64(test_params.work_items_mask.to_string(),
-                                       64, 32);
-            std::bitset<32> bits_65_96(test_params.work_items_mask.to_string(),
-                                       32, 32);
-            std::bitset<32> bits_97_128(test_params.work_items_mask.to_string(),
-                                        0, 32);
-            kernel_sstr << "global uint4 work_item_mask_vector = (uint4)(0b"
-                        << bits_1_32 << ",0b" << bits_33_64 << ",0b"
-                        << bits_65_96 << ",0b" << bits_97_128 << ");\n";
-        }
 
+        Fns::log_test(test_params, "");
 
         kernel_sstr << "#define NR_OF_ACTIVE_WORK_ITEMS ";
         kernel_sstr << NR_OF_ACTIVE_WORK_ITEMS << "\n";
@@ -1563,6 +1518,18 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         idata.resize(input_array_size);
         odata.resize(output_array_size);
 
+        if (test_params.divergence_mask_arg != -1)
+        {
+            cl_uint4 mask_vector;
+            mask_vector.x = 0xffffffffU;
+            mask_vector.y = 0xffffffffU;
+            mask_vector.z = 0xffffffffU;
+            mask_vector.w = 0xffffffffU;
+            error = clSetKernelArg(kernel, test_params.divergence_mask_arg,
+                                   sizeof(cl_uint4), &mask_vector);
+            test_error_fail(error, "Unable to set divergence mask argument");
+        }
+
         // Run the kernel once on zeroes to get the map
         memset(idata.data(), 0, input_array_size * sizeof(Ty));
         error = run_kernel(context, queue, kernel, global, local, idata.data(),
@@ -1572,25 +1539,65 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         test_error_fail(error, "Running kernel first time failed");
 
         // Generate the desired input for the kernel
-
         test_params.subgroup_size = subgroup_size;
         Fns::gen(idata.data(), mapin.data(), sgmap.data(), test_params);
-        error = run_kernel(context, queue, kernel, global, local, idata.data(),
+
+        test_status combined_status;
+
+        if (test_params.divergence_mask_arg != -1)
+        {
+            combined_status = TEST_SKIPPED_ITSELF;
+
+            for (auto &mask : test_params.all_work_item_masks)
+            {
+                test_params.work_items_mask = mask;
+                cl_uint4 mask_vector = bs128_to_cl_uint4(mask);
+                clSetKernelArg(kernel, test_params.divergence_mask_arg,
+                               sizeof(cl_uint4), &mask_vector);
+                error = run_kernel(context, queue, kernel, global, local,
+                                   idata.data(), input_array_size * sizeof(Ty),
+                                   sgmap.data(), global * sizeof(cl_int4),
+                                   odata.data(), output_array_size * sizeof(Ty),
+                                   TSIZE * sizeof(Ty));
+                test_error_fail(error, "Running kernel second time failed");
+
+                // Check the result
+                test_status status =
+                    Fns::chk(idata.data(), odata.data(), mapin.data(),
+                             mapout.data(), sgmap.data(), test_params);
+
+                if (status == TEST_FAIL
+                    || (status == TEST_PASS && combined_status != TEST_FAIL))
+                    combined_status = status;
+
+                if (status == TEST_FAIL) break;
+            }
+        }
+        else
+        {
+            error =
+                run_kernel(context, queue, kernel, global, local, idata.data(),
                            input_array_size * sizeof(Ty), sgmap.data(),
                            global * sizeof(cl_int4), odata.data(),
                            output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
-        test_error_fail(error, "Running kernel second time failed");
+            test_error_fail(error, "Running kernel second time failed");
 
-        // Check the result
-        test_status status = Fns::chk(idata.data(), odata.data(), mapin.data(),
-                                      mapout.data(), sgmap.data(), test_params);
+            // Check the result
+            combined_status =
+                Fns::chk(idata.data(), odata.data(), mapin.data(),
+                         mapout.data(), sgmap.data(), test_params);
+        }
         // Detailed failure and skip messages should be logged by Fns::gen
         // and Fns::chk.
-        if (status == TEST_FAIL)
+        if (combined_status == TEST_PASS)
+        {
+            Fns::log_test(test_params, " passed");
+        }
+        else if (combined_status == TEST_FAIL)
         {
             test_fail("Data verification failed\n");
         }
-        return status;
+        return combined_status;
     }
 };
 
@@ -1643,18 +1650,9 @@ struct RunTestForType
             std::regex_replace(test_params_.get_kernel_source(function_name),
                                std::regex("\\%s"), function_name);
         std::string kernel_name = "test_" + function_name;
-        if (test_params_.all_work_item_masks.size() > 0)
-        {
-            error = test<T, U>::mrun(device_, context_, queue_, num_elements_,
-                                     kernel_name.c_str(), source.c_str(),
-                                     test_params_);
-        }
-        else
-        {
-            error = test<T, U>::run(device_, context_, queue_, num_elements_,
-                                    kernel_name.c_str(), source.c_str(),
-                                    test_params_);
-        }
+        error =
+            test<T, U>::run(device_, context_, queue_, num_elements_,
+                            kernel_name.c_str(), source.c_str(), test_params_);
 
         // If we return TEST_SKIPPED_ITSELF here, then an entire suite may be
         // reported as having been skipped even if some tests within it
