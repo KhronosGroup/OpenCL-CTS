@@ -34,6 +34,12 @@ extern MTdata gMTdata;
 typedef std::bitset<128> bs128;
 extern cl_half_rounding_mode g_rounding_mode;
 
+static bs128 cl_uint4_to_bs128(cl_uint4 v)
+{
+    return bs128(v.s0) | (bs128(v.s1) << 32) | (bs128(v.s2) << 64)
+        | (bs128(v.s3) << 96);
+}
+
 static cl_uint4 bs128_to_cl_uint4(bs128 v)
 {
     bs128 bs128_ffffffff = 0xffffffffU;
