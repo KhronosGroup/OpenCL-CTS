@@ -27,9 +27,6 @@
 #include <bitset>
 #include <regex>
 #include <map>
-#include <numeric>
-#include <algorithm>
-#include <random>
 
 #define NR_OF_ACTIVE_WORK_ITEMS 4
 
@@ -60,7 +57,6 @@ struct WorkGroupParams
         work_items_mask = 0;
         use_core_subgroups = true;
         dynsc = 0;
-        compute_masks();
     }
     size_t global_workgroup_size;
     size_t local_workgroup_size;
@@ -94,32 +90,40 @@ struct WorkGroupParams
         return kernel_function_name[name];
     }
 
+    void compute_masks()
+    {
+        // crate mask of bits to indicate which work item in the subgroup is
+        // active
+        // first work item
+        create_single_mask_case(0, 1, 1);
+        // last work item
+        create_single_mask_case(subgroup_size - 1, subgroup_size, 1);
+        // even numbers: 2, 4, 6 ... work items
+        create_single_mask_case(1, subgroup_size, 2);
+        // odd numbers: 1, 3, 5 ... work items
+        create_single_mask_case(0, subgroup_size, 2);
+        // first half of the subgroup with lower ids
+        create_single_mask_case(0, subgroup_size / 2, 1);
+        // second half of the subgroup with higher ids
+        create_single_mask_case(subgroup_size / 2, subgroup_size, 1);
+        // full subgroup
+        create_single_mask_case(0, subgroup_size, 1);
+    }
 
 private:
     std::map<std::string, std::string> kernel_function_name;
-    void compute_masks()
+    void create_single_mask_case(uint32_t start_offset, uint32_t stop_offset,
+                                 uint32_t step)
     {
-        std::vector<int> items_id(128);
-        std::iota(std::begin(items_id), std::end(items_id), 0);
-        std::random_device random_device;
-        std::mt19937 mersenne_twister_engine(random_device());
-        std::vector<int> number_of_active_work_items = { 1,   2,   4,  8,  16,
-                                                         32,  37,  68, 80, 90,
-                                                         100, 121, 128 };
-        for (auto nr : number_of_active_work_items)
+        bs128 bit_mask;
+        bit_mask.reset();
+        for (uint32_t set_bit = start_offset; set_bit < stop_offset;
+             set_bit = set_bit + step)
         {
-            std::shuffle(items_id.begin(), items_id.end(),
-                         mersenne_twister_engine);
-            std::vector<int> extract_items_id(items_id.begin(),
-                                              items_id.begin() + nr);
-            bs128 bit_mask;
-            for (auto id : extract_items_id)
-            {
-                bit_mask.set(id);
-            }
-            all_work_item_masks.push_back(bit_mask);
+            bit_mask.set(set_bit);
         }
-    }
+        all_work_item_masks.push_back(bit_mask);
+    };
 };
 
 enum class SubgroupsBroadcastOp
@@ -1465,6 +1469,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         if (test_params.divergence_mask_arg != -1)
         {
             combined_status = TEST_SKIPPED_ITSELF;
+            test_params.compute_masks();
 
             for (auto &mask : test_params.all_work_item_masks)
             {
