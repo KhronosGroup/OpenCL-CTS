@@ -1108,6 +1108,15 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
         log_info("\t\tTest disabled\n");
         return 0;
     }
+    if (!LocalMemory() && DeclaredInProgram())
+    {
+        if (((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_DEVICE) == 0)
+            || ((gAtomicMemCap & CL_DEVICE_ATOMIC_ORDER_ACQ_REL == 0)))
+        {
+            log_info("\t\tTest disabled\n");
+            return 0;
+        }
+    }
 
     // set up work sizes based on device capabilities and test configuration
     error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_WORK_GROUP_SIZE,
