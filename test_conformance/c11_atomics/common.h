@@ -1111,7 +1111,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     if (!LocalMemory() && DeclaredInProgram())
     {
         if (((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_DEVICE) == 0)
-            || ((gAtomicMemCap & CL_DEVICE_ATOMIC_ORDER_ACQ_REL == 0)))
+            || ((gAtomicMemCap & CL_DEVICE_ATOMIC_ORDER_ACQ_REL) == 0))
         {
             log_info("\t\tTest disabled\n");
             return 0;
