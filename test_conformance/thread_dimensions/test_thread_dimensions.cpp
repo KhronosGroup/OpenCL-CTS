@@ -30,6 +30,10 @@
 #define MAX_TOTAL_GLOBAL_THREADS_FOR_TEST (1 << 24)
 int limit_size = 0;
 
+extern cl_uint maxThreadDimension;
+extern cl_uint bufferSize;
+extern cl_uint bufferStep;
+
 static int get_maximums(cl_kernel kernel, cl_context context,
                         size_t *max_workgroup_size_result,
                         cl_ulong *max_allcoation_result,
@@ -466,8 +470,9 @@ int run_test(cl_context context, cl_command_queue queue, cl_kernel kernel,
 
         // Increment the addresses
         if (end_valid_memory_address == last_memory_address) break;
-        start_valid_memory_address += memory_size;
-        end_valid_memory_address += memory_size;
+        start_valid_memory_address +=
+            memory_size * (bufferStep ? bufferStep : 1);
+        end_valid_memory_address += memory_size * (bufferStep ? bufferStep : 1);
         if (end_valid_memory_address > last_memory_address)
             end_valid_memory_address = last_memory_address;
     }
@@ -617,7 +622,7 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
         max_allocation = 1024 * 1024 * 512;
     }
 
-    max_memory_size = (cl_uint)(max_allocation);
+    max_memory_size = bufferSize ? bufferSize : (cl_uint)(max_allocation);
     if (max_memory_size > 512 * 1024 * 1024)
         max_memory_size = 512 * 1024 * 1024;
     memory_size = max_memory_size;
@@ -696,6 +701,8 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
 
     log_info("Testing with dimensions up to %s.\n",
              print_dimensions(max_x_size, max_y_size, max_z_size, dimensions));
+    log_info("Testing with buffer size %d.\n", bufferSize);
+    log_info("Testing with buffer step %d.\n", bufferStep);
     cl_uint x_size, y_size, z_size;
 
     d = init_genrand(gRandomSeed);
@@ -1093,86 +1100,98 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
 int test_quick_1d_explicit_local(cl_device_id deviceID, cl_context context,
                                  cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 1, 1, 65536 * 512,
-                                  QUICK, 4, 1);
+    return test_thread_dimensions(
+        deviceID, context, queue, 1, 1,
+        maxThreadDimension ? maxThreadDimension : 65536 * 512, QUICK, 4, 1);
 }
 
 int test_quick_2d_explicit_local(cl_device_id deviceID, cl_context context,
                                  cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 2, 1, 65536 / 4,
-                                  QUICK, 16, 1);
+    return test_thread_dimensions(
+        deviceID, context, queue, 2, 1,
+        maxThreadDimension ? maxThreadDimension : 65536 / 4, QUICK, 16, 1);
 }
 
 int test_quick_3d_explicit_local(cl_device_id deviceID, cl_context context,
                                  cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 3, 1, 1024, QUICK,
-                                  32, 1);
+    return test_thread_dimensions(
+        deviceID, context, queue, 3, 1,
+        maxThreadDimension ? maxThreadDimension : 1024, QUICK, 32, 1);
 }
 
 
 int test_quick_1d_implicit_local(cl_device_id deviceID, cl_context context,
                                  cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 1, 1, 65536 * 256,
-                                  QUICK, 4, 0);
+    return test_thread_dimensions(
+        deviceID, context, queue, 1, 1,
+        maxThreadDimension ? maxThreadDimension : 65536 * 256, QUICK, 4, 0);
 }
 
 int test_quick_2d_implicit_local(cl_device_id deviceID, cl_context context,
                                  cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 2, 1, 65536 / 4,
-                                  QUICK, 16, 0);
+    return test_thread_dimensions(
+        deviceID, context, queue, 2, 1,
+        maxThreadDimension ? maxThreadDimension : 65536 / 4, QUICK, 16, 0);
 }
 
 int test_quick_3d_implicit_local(cl_device_id deviceID, cl_context context,
                                  cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 3, 1, 1024, QUICK,
-                                  32, 0);
+    return test_thread_dimensions(
+        deviceID, context, queue, 3, 1,
+        maxThreadDimension ? maxThreadDimension : 1024, QUICK, 32, 0);
 }
 
 
 int test_full_1d_explicit_local(cl_device_id deviceID, cl_context context,
                                 cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 1, 1, 65536 * 512,
-                                  FULL, 4, 1);
+    return test_thread_dimensions(
+        deviceID, context, queue, 1, 1,
+        maxThreadDimension ? maxThreadDimension : 65536 * 512, FULL, 4, 1);
 }
 
 int test_full_2d_explicit_local(cl_device_id deviceID, cl_context context,
                                 cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 2, 1, 65536 / 4,
-                                  FULL, 16, 1);
+    return test_thread_dimensions(
+        deviceID, context, queue, 2, 1,
+        maxThreadDimension ? maxThreadDimension : 65536 / 4, FULL, 16, 1);
 }
 
 int test_full_3d_explicit_local(cl_device_id deviceID, cl_context context,
                                 cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 3, 1, 1024, FULL,
-                                  32, 1);
+    return test_thread_dimensions(
+        deviceID, context, queue, 3, 1,
+        maxThreadDimension ? maxThreadDimension : 1024, FULL, 32, 1);
 }
 
 
 int test_full_1d_implicit_local(cl_device_id deviceID, cl_context context,
                                 cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 1, 1, 65536 * 256,
-                                  FULL, 4, 0);
+    return test_thread_dimensions(
+        deviceID, context, queue, 1, 1,
+        maxThreadDimension ? maxThreadDimension : 65536 * 256, FULL, 4, 0);
 }
 
 int test_full_2d_implicit_local(cl_device_id deviceID, cl_context context,
                                 cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 2, 1, 65536 / 4,
-                                  FULL, 16, 0);
+    return test_thread_dimensions(
+        deviceID, context, queue, 2, 1,
+        maxThreadDimension ? maxThreadDimension : 65536 / 4, FULL, 16, 0);
 }
 
 int test_full_3d_implicit_local(cl_device_id deviceID, cl_context context,
                                 cl_command_queue queue, int num_elements)
 {
-    return test_thread_dimensions(deviceID, context, queue, 3, 1, 1024, FULL,
-                                  32, 0);
+    return test_thread_dimensions(
+        deviceID, context, queue, 3, 1,
+        maxThreadDimension ? maxThreadDimension : 65536 * 1024, FULL, 32, 0);
 }
