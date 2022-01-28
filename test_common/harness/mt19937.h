@@ -90,6 +90,9 @@ double genrand_res53(MTdata /*data*/);
 
 #ifdef __cplusplus
 
+/* generates a random boolean */
+bool genrand_bool(MTdata /*data*/);
+
 #include <cassert>
 
 struct MTdataHolder
