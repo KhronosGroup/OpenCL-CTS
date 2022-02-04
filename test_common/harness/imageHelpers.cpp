@@ -2929,9 +2929,8 @@ void pack_image_pixel_error(const float *srcVector,
         case CL_SIGNED_INT32: {
             const cl_int *ptr = (const cl_int *)results;
             for (unsigned int i = 0; i < channelCount; i++)
-                errors[i] = (cl_float)(
-                    (cl_long)ptr[i]
-                    - (cl_long)round_to_even(srcVector[i]));
+                errors[i] = (cl_float)((cl_long)ptr[i]
+                                       - (cl_long)round_to_even(srcVector[i]));
             break;
         }
         case CL_UNSIGNED_INT8: {
