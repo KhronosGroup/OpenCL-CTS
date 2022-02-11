@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "procs.h"
+#include <algorithm>
 
 #include <algorithm>
 
@@ -521,7 +522,13 @@ int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_
     for ( size_t i = 0; i < 16; i++ )
     {
         size_t offset = get_random_size_t( 0, mainSize / addressAlign, Action::GetRandSeed() ) * addressAlign;
-        size_t size = get_random_size_t( 1, ( mainSize - offset ) / addressAlign, Action::GetRandSeed() ) * addressAlign;
+
+        // subBuffers size is used to define the number of workitem to use when
+        // reading from kernel. In order to allow small GPU to have a small
+        // enough number of workitem, we limit the subBuffer size with the
+        // 'num_elements' value.
+        size_t max_size = std::max((size_t)num_elements, ( mainSize - offset ) / addressAlign);
+        size_t size = get_random_size_t( 1, max_size, Action::GetRandSeed() ) * addressAlign;
 
         error = subBuffers[ i ].Allocate( mainBuffer, CL_MEM_READ_ONLY, offset, size );
         test_error( error, "Unable to allocate sub buffer" );

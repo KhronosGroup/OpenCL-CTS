@@ -56,22 +56,29 @@ private:
 
 Version get_device_cl_version(cl_device_id device);
 
+#define ADD_TEST_ELEMENTS(fn, num_elements)                                    \
+    {                                                                          \
+        test_##fn, #fn, Version(1, 0), (num_elements)                          \
+    }
+
 #define ADD_TEST(fn)                                                           \
     {                                                                          \
-        test_##fn, #fn, Version(1, 0)                                          \
+        test_##fn, #fn, Version(1, 0), UNDEFINED_DEFAULT_NUM_ELEMENTS          \
     }
 #define ADD_TEST_VERSION(fn, ver)                                              \
     {                                                                          \
-        test_##fn, #fn, ver                                                    \
+        test_##fn, #fn, ver, UNDEFINED_DEFAULT_NUM_ELEMENTS                    \
     }
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+#define UNDEFINED_DEFAULT_NUM_ELEMENTS (-1)
 typedef struct test_definition
 {
     basefn func;
     const char *name;
     Version min_version;
+    int default_num_elements;
 } test_definition;
 
 

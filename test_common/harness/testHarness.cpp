@@ -101,7 +101,7 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     cl_uint num_platforms = 0;
     cl_platform_id *platforms;
     cl_device_id device;
-    int num_elements = DEFAULT_NUM_ELEMENTS;
+    int num_elements = UNDEFINED_DEFAULT_NUM_ELEMENTS;
     cl_uint num_devices = 0;
     cl_device_id *devices = NULL;
     cl_uint choosen_device_index = 0;
@@ -498,8 +498,6 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         }
     }
 
-    if (num_elements <= 0) num_elements = DEFAULT_NUM_ELEMENTS;
-
         // On most platforms which support denorm, default is FTZ off. However,
         // on some hardware where the reference is computed, default might be
         // flush denorms to zero e.g. arm. This creates issues in result
@@ -835,7 +833,17 @@ test_status callSingleTestFunction(test_definition test,
     }
     else
     {
-        int ret = test.func(deviceToUse, context, queue, numElementsToUse);
+        int num_elements = DEFAULT_NUM_ELEMENTS;
+        // Prioritize the what has been given in the command line
+        // Then what the test specified
+        // If nothing has been specified either in the command line or for the
+        // test, use the DEFAULT_NUM_ELEMTS value.
+        if (numElementsToUse != UNDEFINED_DEFAULT_NUM_ELEMENTS && numElementsToUse > 0) {
+            num_elements = numElementsToUse;
+        } else if (test.default_num_elements != UNDEFINED_DEFAULT_NUM_ELEMENTS) {
+            num_elements = test.default_num_elements;
+        }
+        int ret = test.func(deviceToUse, context, queue, num_elements);
         if (ret == TEST_SKIPPED_ITSELF)
         {
             /* Tests can also let us know they're not supported by the
