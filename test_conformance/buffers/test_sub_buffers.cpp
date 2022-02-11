@@ -527,8 +527,10 @@ int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_
         // reading from kernel. In order to allow small GPU to have a small
         // enough number of workitem, we limit the subBuffer size with the
         // 'num_elements' value.
-        size_t max_size = std::max((size_t)num_elements, ( mainSize - offset ) / addressAlign);
-        size_t size = get_random_size_t( 1, max_size, Action::GetRandSeed() ) * addressAlign;
+        size_t max_size =
+            std::max((size_t)num_elements, (mainSize - offset) / addressAlign);
+        size_t size = get_random_size_t(1, max_size, Action::GetRandSeed())
+            * addressAlign;
 
         error = subBuffers[ i ].Allocate( mainBuffer, CL_MEM_READ_ONLY, offset, size );
         test_error( error, "Unable to allocate sub buffer" );

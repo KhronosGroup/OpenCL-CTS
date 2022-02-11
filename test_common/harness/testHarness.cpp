@@ -838,9 +838,13 @@ test_status callSingleTestFunction(test_definition test,
         // Then what the test specified
         // If nothing has been specified either in the command line or for the
         // test, use the DEFAULT_NUM_ELEMTS value.
-        if (numElementsToUse != UNDEFINED_DEFAULT_NUM_ELEMENTS && numElementsToUse > 0) {
+        if (numElementsToUse != UNDEFINED_DEFAULT_NUM_ELEMENTS
+            && numElementsToUse > 0)
+        {
             num_elements = numElementsToUse;
-        } else if (test.default_num_elements != UNDEFINED_DEFAULT_NUM_ELEMENTS) {
+        }
+        else if (test.default_num_elements != UNDEFINED_DEFAULT_NUM_ELEMENTS)
+        {
             num_elements = test.default_num_elements;
         }
         int ret = test.func(deviceToUse, context, queue, num_elements);

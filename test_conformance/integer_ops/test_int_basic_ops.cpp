@@ -811,12 +811,24 @@ test_integer_ops(cl_device_id deviceID, cl_context context,
 // Run all the vector sizes for a given test
 int run_specific_test(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num, int testID) {
     int errors = 0;
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements/1, 1, kBothVectors, num, type, testID);
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements/2, 2, kBothVectors, num, type, testID);
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements/3, 3, kBothVectors, num, type, testID);
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements/4, 4, kBothVectors, num, type, testID);
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements/8, 8, kBothVectors, num, type, testID);
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements/16, 16, kBothVectors, num, type, testID);
+    errors +=
+        test_integer_ops_threaded(deviceID, context, queue, num_elements / 1, 1,
+                                  kBothVectors, num, type, testID);
+    errors +=
+        test_integer_ops_threaded(deviceID, context, queue, num_elements / 2, 2,
+                                  kBothVectors, num, type, testID);
+    errors +=
+        test_integer_ops_threaded(deviceID, context, queue, num_elements / 3, 3,
+                                  kBothVectors, num, type, testID);
+    errors +=
+        test_integer_ops_threaded(deviceID, context, queue, num_elements / 4, 4,
+                                  kBothVectors, num, type, testID);
+    errors +=
+        test_integer_ops_threaded(deviceID, context, queue, num_elements / 8, 8,
+                                  kBothVectors, num, type, testID);
+    errors +=
+        test_integer_ops_threaded(deviceID, context, queue, num_elements / 16,
+                                  16, kBothVectors, num, type, testID);
     return errors;
 }
 
@@ -874,12 +886,18 @@ int run_test_compare(cl_device_id deviceID, cl_context context, cl_command_queue
 // Run all tests for a given type
 int run_test(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num) {
     int errors = 0;
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements, 1, kBothVectors, num, type, -1);
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements, 2, kBothVectors, num, type, -1);
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements, 3, kBothVectors, num, type, -1);
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements, 4, kBothVectors, num, type, -1);
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements, 8, kBothVectors, num, type, -1);
-    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements, 16, kBothVectors, num, type, -1);
+    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements,
+                                        1, kBothVectors, num, type, -1);
+    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements,
+                                        2, kBothVectors, num, type, -1);
+    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements,
+                                        3, kBothVectors, num, type, -1);
+    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements,
+                                        4, kBothVectors, num, type, -1);
+    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements,
+                                        8, kBothVectors, num, type, -1);
+    errors += test_integer_ops_threaded(deviceID, context, queue, num_elements,
+                                        16, kBothVectors, num, type, -1);
     return errors;
 }
 
@@ -1329,7 +1347,8 @@ int run_vector_scalar_tests( cl_device_id deviceID, cl_context context, cl_comma
         13, 14, 15, 16, 17, 18, 19, 20, 21 };
     for (i=0; i< sizeof(testsToRun)/sizeof(testsToRun[0]); i++)
     {
-        errors += run_test_sizes(deviceID, context, queue, num_elements, type, num, testsToRun[i]);
+        errors += run_test_sizes(deviceID, context, queue, num_elements, type,
+                                 num, testsToRun[i]);
     }
     return errors;
 }

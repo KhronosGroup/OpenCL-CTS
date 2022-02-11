@@ -38,7 +38,7 @@
 //-----------------------------------------
 
 // initialize src1 and src2 buffer with values based on stype
-static void initSrcBuffer(void* src1, Type stype, MTdata, int num_elements);
+static void initSrcBuffer(void *src1, Type stype, MTdata, int num_elements);
 
 // initialize the valued used to compare with in the select with
 // vlaues [start, count)
@@ -102,7 +102,7 @@ int int_log2(size_t value) {
 }
 
 
-static void initSrcBuffer(void* src1, Type stype, MTdata d, int num_elements)
+static void initSrcBuffer(void *src1, Type stype, MTdata d, int num_elements)
 {
     unsigned int* s1 = (unsigned int *)src1;
     size_t i;
@@ -347,17 +347,17 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype,
         }
     }
 
-    ref = malloc( num_elements );
+    ref = malloc(num_elements);
     if( NULL == ref ){ log_error("Error: could not allocate ref buffer\n" ); goto exit; }
-    sref = malloc( num_elements );
+    sref = malloc(num_elements);
     if( NULL == sref ){ log_error("Error: could not allocate ref buffer\n" ); goto exit; }
-    src1 = clCreateBuffer( context, CL_MEM_READ_ONLY, num_elements, NULL, &err );
+    src1 = clCreateBuffer(context, CL_MEM_READ_ONLY, num_elements, NULL, &err);
     if( err ) { log_error( "Error: could not allocate src1 buffer\n" );  ++s_test_fail; goto exit; }
-    src2 = clCreateBuffer( context, CL_MEM_READ_ONLY, num_elements, NULL, &err );
+    src2 = clCreateBuffer(context, CL_MEM_READ_ONLY, num_elements, NULL, &err);
     if( err ) { log_error( "Error: could not allocate src2 buffer\n" );  ++s_test_fail; goto exit; }
-    cmp = clCreateBuffer( context, CL_MEM_READ_ONLY, num_elements, NULL, &err );
+    cmp = clCreateBuffer(context, CL_MEM_READ_ONLY, num_elements, NULL, &err);
     if( err ) { log_error( "Error: could not allocate cmp buffer\n" );  ++s_test_fail; goto exit; }
-    dest = clCreateBuffer( context, CL_MEM_WRITE_ONLY, num_elements, NULL, &err );
+    dest = clCreateBuffer(context, CL_MEM_WRITE_ONLY, num_elements, NULL, &err);
     if( err ) { log_error( "Error: could not allocate dest buffer\n" );  ++s_test_fail; goto exit; }
 
 
@@ -373,17 +373,20 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype,
     uint64_t i;
     for (i=0; i < blocks; i+=step)
     {
-        void *s1 = clEnqueueMapBuffer( queue, src1, CL_TRUE, CL_MAP_WRITE, 0, num_elements, 0, NULL, NULL, &err );
+        void *s1 = clEnqueueMapBuffer(queue, src1, CL_TRUE, CL_MAP_WRITE, 0,
+                                      num_elements, 0, NULL, NULL, &err);
         if( err ){ log_error( "Error: Could not map src1" ); goto exit; }
         // Setup the input data to change for each block
-        initSrcBuffer( s1, stype, d, num_elements);
+        initSrcBuffer(s1, stype, d, num_elements);
 
-        void *s2 = clEnqueueMapBuffer( queue, src2, CL_TRUE, CL_MAP_WRITE, 0, num_elements, 0, NULL, NULL, &err );
+        void *s2 = clEnqueueMapBuffer(queue, src2, CL_TRUE, CL_MAP_WRITE, 0,
+                                      num_elements, 0, NULL, NULL, &err);
         if( err ){ log_error( "Error: Could not map src2" ); goto exit; }
         // Setup the input data to change for each block
-        initSrcBuffer( s2, stype, d, num_elements);
+        initSrcBuffer(s2, stype, d, num_elements);
 
-        void *s3 = clEnqueueMapBuffer( queue, cmp, CL_TRUE, CL_MAP_WRITE, 0, num_elements, 0, NULL, NULL, &err );
+        void *s3 = clEnqueueMapBuffer(queue, cmp, CL_TRUE, CL_MAP_WRITE, 0,
+                                      num_elements, 0, NULL, NULL, &err);
         if( err ){ log_error( "Error: Could not map cmp" ); goto exit; }
         // Setup the input data to change for each block
         initCmpBuffer(s3, cmptype, i * cmp_stride, block_elements);
@@ -405,7 +408,8 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype,
         for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
         {
             size_t vector_size = element_count[vecsize] * type_size[stype];
-            size_t vector_count =  (num_elements + vector_size - 1) / vector_size;
+            size_t vector_count =
+                (num_elements + vector_size - 1) / vector_size;
 
             if((err = clSetKernelArg(kernels[vecsize], 0,  sizeof dest, &dest) ))
             { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
@@ -418,9 +422,10 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype,
 
 
             // Wipe destination
-            void *d = clEnqueueMapBuffer( queue, dest, CL_TRUE, CL_MAP_WRITE, 0, num_elements, 0, NULL, NULL, &err );
+            void *d = clEnqueueMapBuffer(queue, dest, CL_TRUE, CL_MAP_WRITE, 0,
+                                         num_elements, 0, NULL, NULL, &err);
             if( err ){ log_error( "Error: Could not map dest" );  ++s_test_fail; goto exit; }
-            memset( d, -1, num_elements );
+            memset(d, -1, num_elements);
             if( (err = clEnqueueUnmapMemObject( queue, dest, d, 0, NULL, NULL ) ) ){ log_error( "Error: Could not unmap dest" ); ++s_test_fail; goto exit; }
 
             err = clEnqueueNDRangeKernel(queue, kernels[vecsize], 1, NULL, &vector_count, NULL, 0, NULL, NULL);
@@ -430,7 +435,8 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype,
                 goto exit;
             }
 
-            d = clEnqueueMapBuffer( queue, dest, CL_TRUE, CL_MAP_READ, 0, num_elements, 0, NULL, NULL, &err );
+            d = clEnqueueMapBuffer(queue, dest, CL_TRUE, CL_MAP_READ, 0,
+                                   num_elements, 0, NULL, NULL, &err);
             if( err ){ log_error( "Error: Could not map dest # 2" );  ++s_test_fail; goto exit; }
 
             if ((*checkResults[stype])(d, vecsize == 0 ? sref : ref, block_elements, element_count[vecsize])!=0){
@@ -552,26 +558,26 @@ int test_select_double_long(cl_device_id deviceID, cl_context context, cl_comman
 }
 
 test_definition test_list[] = {
-    ADD_TEST_ELEMENTS( select_uchar_uchar, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_uchar_char, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_char_uchar, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_char_char, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_ushort_ushort, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_ushort_short, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_short_ushort, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_short_short, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_uint_uint, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_uint_int, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_int_uint, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_int_int, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_float_uint, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_float_int, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_ulong_ulong, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_ulong_long, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_long_ulong, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_long_long, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_double_ulong, BUFFER_SIZE ),
-    ADD_TEST_ELEMENTS( select_double_long, BUFFER_SIZE ),
+    ADD_TEST_ELEMENTS(select_uchar_uchar, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_uchar_char, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_char_uchar, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_char_char, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_ushort_ushort, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_ushort_short, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_short_ushort, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_short_short, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_uint_uint, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_uint_int, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_int_uint, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_int_int, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_float_uint, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_float_int, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_ulong_ulong, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_ulong_long, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_long_ulong, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_long_long, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_double_ulong, BUFFER_SIZE),
+    ADD_TEST_ELEMENTS(select_double_long, BUFFER_SIZE),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

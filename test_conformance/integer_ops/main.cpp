@@ -24,7 +24,7 @@
 #include <unistd.h>
 #endif
 
-#define INT_BASIC_OPS_DEFAULT_NUM_ELEMENTS (1024*1024*2)
+#define INT_BASIC_OPS_DEFAULT_NUM_ELEMENTS (1024 * 1024 * 2)
 
 test_definition test_list[] = {
     ADD_TEST(integer_clz),
