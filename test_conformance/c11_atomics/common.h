@@ -1042,7 +1042,7 @@ CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumDestItems)
             code += R"(
                 if(atomic_fetch_add_explicit(&finishedThreads, 1u,
                                            memory_order_relaxed,
-                                           memory_scope_work_group)
+                                           memory_scope_device)
                    == get_global_size(0)-1) // last finished thread
                    )";
         code += "    for(uint dstItemIdx = 0; dstItemIdx < numDestItems; "
@@ -1053,7 +1053,7 @@ CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumDestItems)
                 finalDest[dstItemIdx] =
                     atomic_flag_test_and_set_explicit(destMemory+dstItemIdx,
                                                       memory_order_relaxed,
-                                                      memory_scope_work_group);)";
+                                                      memory_scope_device);)";
         }
         else
         {
@@ -1061,7 +1061,7 @@ CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumDestItems)
                 finalDest[dstItemIdx] =
                     atomic_load_explicit(destMemory+dstItemIdx,
                                          memory_order_relaxed,
-                                         memory_scope_work_group);)";
+                                         memory_scope_device);)";
         }
     }
     code += "}\n"
