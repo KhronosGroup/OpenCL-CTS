@@ -55,11 +55,12 @@ static cl_uint4 bs128_to_cl_uint4(bs128 v)
 
 struct WorkGroupParams
 {
-    WorkGroupParams(size_t gws, size_t lws, int dm_arg = -1)
+    WorkGroupParams(size_t gws, size_t lws, int dm_arg = -1, int cs_arg = -1)
         : global_workgroup_size(gws), local_workgroup_size(lws),
-          divergence_mask_arg(dm_arg)
+          divergence_mask_arg(dm_arg), cluster_size_arg(cs_arg)
     {
         subgroup_size = 0;
+        cluster_size = 0;
         work_items_mask = 0;
         use_core_subgroups = true;
         dynsc = 0;
@@ -68,11 +69,13 @@ struct WorkGroupParams
     size_t global_workgroup_size;
     size_t local_workgroup_size;
     size_t subgroup_size;
+    cl_uint cluster_size;
     bs128 work_items_mask;
     int dynsc;
     bool use_core_subgroups;
     std::vector<bs128> all_work_item_masks;
     int divergence_mask_arg;
+    int cluster_size_arg;
     void save_kernel_source(const std::string &source, std::string name = "")
     {
         if (name == "")
@@ -1421,7 +1424,9 @@ public:
         return error;
     }
 
-    test_status run_and_check(const WorkGroupParams &test_params)
+private:
+    test_status
+    run_and_check_with_cluster_size(const WorkGroupParams &test_params)
     {
         cl_int error = run();
         if (error != CL_SUCCESS)
@@ -1443,6 +1448,35 @@ public:
         }
 
         return status;
+    }
+
+public:
+    test_status run_and_check(WorkGroupParams &test_params)
+    {
+        test_status tmp_status = TEST_SKIPPED_ITSELF;
+
+        if (test_params.cluster_size_arg != -1)
+        {
+            for (cl_uint cluster_size = 1;
+                 cluster_size <= test_params.subgroup_size; cluster_size *= 2)
+            {
+                test_params.cluster_size = cluster_size;
+                cl_int error =
+                    clSetKernelArg(kernel, test_params.cluster_size_arg,
+                                   sizeof(cl_uint), &cluster_size);
+                test_error_fail(error, "Unable to set cluster size");
+
+                tmp_status = run_and_check_with_cluster_size(test_params);
+
+                if (tmp_status == TEST_FAIL) break;
+            }
+        }
+        else
+        {
+            tmp_status = run_and_check_with_cluster_size(test_params);
+        }
+
+        return tmp_status;
     }
 };
 
@@ -1590,6 +1624,14 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
             error = clSetKernelArg(kernel, test_params.divergence_mask_arg,
                                    sizeof(cl_uint4), &mask_vector);
             test_error_fail(error, "Unable to set divergence mask argument");
+        }
+
+        if (test_params.cluster_size_arg != -1)
+        {
+            cl_uint dummy_cluster_size = 1;
+            error = clSetKernelArg(kernel, test_params.cluster_size_arg,
+                                   sizeof(cl_uint), &dummy_cluster_size);
+            test_error_fail(error, "Unable to set dummy cluster size");
         }
 
         KernelExecutor<Ty, Fns> executor(
