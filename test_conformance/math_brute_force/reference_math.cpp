@@ -4549,8 +4549,8 @@ long double reference_powl(long double x, long double y)
     if (x != x || y != y) return x + y;
 
     // do the work required to sort out edge cases
-    double fabsy = reference_fabs(y);
-    double fabsx = reference_fabs(x);
+    double fabsy = (double)reference_fabsl(y);
+    double fabsx = (double)reference_fabsl(x);
     double iy = reference_rint(
         fabsy); // we do round to nearest here so that |fy| <= 0.5
     if (iy > fabsy) // convert nearbyint to floor
@@ -4637,13 +4637,13 @@ long double reference_powl(long double x, long double y)
 
     // compute product of y*log2(x)
     // scale to avoid overflow in double-double multiplication
-    if (reference_fabs(y) > HEX_DBL(+, 1, 0, +, 970))
+    if (fabsy > HEX_DBL(+, 1, 0, +, 970))
     {
         y_hi = reference_ldexp(y_hi, -53);
         y_lo = reference_ldexp(y_lo, -53);
     }
     MulDD(&ylog2x_hi, &ylog2x_lo, log2x_hi, log2x_lo, y_hi, y_lo);
-    if (fabs(y) > HEX_DBL(+, 1, 0, +, 970))
+    if (fabsy > HEX_DBL(+, 1, 0, +, 970))
     {
         ylog2x_hi = reference_ldexp(ylog2x_hi, 53);
         ylog2x_lo = reference_ldexp(ylog2x_lo, 53);
