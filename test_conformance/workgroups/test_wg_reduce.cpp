@@ -15,69 +15,64 @@
 //
 #include "harness/compat.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+//#include <stdio.h>
+//#include <string.h>
+//#include <sys/types.h>
+//#include <sys/stat.h>
+
+#include <vector>
 
 #include "procs.h"
 
-
-const char *wg_reduce_add_kernel_code_int =
-"__kernel void test_wg_reduce_add_int(global int *input, global int *output)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    int result = work_group_reduce_add(input[tid]);\n"
-"    output[tid] = result;\n"
-"}\n";
-
-
-const char *wg_reduce_add_kernel_code_uint =
-"__kernel void test_wg_reduce_add_uint(global uint *input, global uint *output)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    uint result = work_group_reduce_add(input[tid]);\n"
-"    output[tid] = result;\n"
-"}\n";
-
-const char *wg_reduce_add_kernel_code_long =
-"__kernel void test_wg_reduce_add_long(global long *input, global long *output)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    long result = work_group_reduce_add(input[tid]);\n"
-"    output[tid] = result;\n"
-"}\n";
-
-
-const char *wg_reduce_add_kernel_code_ulong =
-"__kernel void test_wg_reduce_add_ulong(global ulong *input, global ulong *output)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    ulong result = work_group_reduce_add(input[tid]);\n"
-"    output[tid] = result;\n"
-"}\n";
-
-
-static int
-verify_wg_reduce_add_int(int *inptr, int *outptr, size_t n, size_t wg_size)
+static constexpr const char *kernel_source_reduce = R"CLC(
+__kernel void test_wg_reduce_add(global TYPE *input, global TYPE *output)
 {
-    size_t     i, j;
+    int  tid = get_global_id(0);
 
-    for (i=0; i<n; i+=wg_size)
+    output[tid] = work_group_reduce_add(input[tid]);
+}
+)CLC";
+
+template <typename T> struct ReduceTestInfo
+{
+};
+
+template <> struct ReduceTestInfo<cl_int>
+{
+    static constexpr const char *deviceTypeName = "int";
+};
+
+template <> struct ReduceTestInfo<cl_uint>
+{
+    static constexpr const char *deviceTypeName = "uint";
+};
+
+template <> struct ReduceTestInfo<cl_long>
+{
+    static constexpr const char *deviceTypeName = "long";
+};
+
+template <> struct ReduceTestInfo<cl_ulong>
+{
+    static constexpr const char *deviceTypeName = "ulong";
+};
+
+template <typename T>
+static int verify_wg_reduce_add(T *inptr, T *outptr, size_t n, size_t wg_size)
+{
+    size_t i, j;
+
+    for (i = 0; i < n; i += wg_size)
     {
-        int sum = 0;
-        for (j=0; j<((n-i) > wg_size ? wg_size : (n-i)); j++)
-            sum += inptr[i+j];
+        T sum = 0;
+        for (j = 0; j < ((n - i) > wg_size ? wg_size : (n - i)); j++)
+            sum += inptr[i + j];
 
-        for (j=0; j<((n-i) > wg_size ? wg_size : (n-i)); j++)
+        for (j = 0; j < ((n - i) > wg_size ? wg_size : (n - i)); j++)
         {
-            if ( sum != outptr[i+j] )
+            if (sum != outptr[i + j])
             {
-                log_info("work_group_reduce_add int: Error at %u: expected = %d, got = %d\n", i+j, sum, outptr[i+j]);
+                log_info("work_group_reduce_add: Error at %u\n", i + j);
                 return -1;
             }
         }
@@ -86,511 +81,97 @@ verify_wg_reduce_add_int(int *inptr, int *outptr, size_t n, size_t wg_size)
     return 0;
 }
 
-static int
-verify_wg_reduce_add_uint(unsigned int *inptr, unsigned int *outptr, size_t n, size_t wg_size)
+template <typename T>
+static int test_reduce_add_type(cl_device_id device, cl_context context,
+                                cl_command_queue queue, int n_elems)
 {
-    size_t     i, j;
+    cl_int err = CL_SUCCESS;
 
-    for (i=0; i<n; i+=wg_size)
-    {
-        unsigned int sum = 0;
-        for (j=0; j<((n-i) > wg_size ? wg_size : (n-i)); j++)
-            sum += inptr[i+j];
+    clProgramWrapper program;
+    clKernelWrapper kernel;
 
-        for (j=0; j<((n-i) > wg_size ? wg_size : (n-i)); j++)
-        {
-            if ( sum != outptr[i+j] )
-            {
-                log_info("work_group_reduce_add uint: Error at %u: expected = %d, got = %d\n", i+j, sum, outptr[i+j]);
-                return -1;
-            }
-        }
-    }
+    size_t wg_size[1];
+    int i;
 
-    return 0;
-}
+    std::string buildOptions;
+    buildOptions += " -DTYPE=";
+    buildOptions += ReduceTestInfo<T>::deviceTypeName;
 
-static int
-verify_wg_reduce_add_long(cl_long *inptr, cl_long *outptr, size_t n, size_t wg_size)
-{
-    size_t     i, j;
-
-    for (i=0; i<n; i+=wg_size)
-    {
-        cl_long sum = 0;
-        for (j=0; j<((n-i) > wg_size ? wg_size : (n-i)); j++)
-            sum += inptr[i+j];
-
-        for (j=0; j<((n-i) > wg_size ? wg_size : (n-i)); j++)
-        {
-            if ( sum != outptr[i+j] )
-            {
-                log_info("work_group_reduce_add long: Error at %u: expected = %lld, got = %lld\n", i+j, sum, outptr[i+j]);
-                return -1;
-            }
-        }
-    }
-
-    return 0;
-}
-
-static int
-verify_wg_reduce_add_ulong(cl_ulong *inptr, cl_ulong *outptr, size_t n, size_t wg_size)
-{
-    size_t     i, j;
-
-    for (i=0; i<n; i+=wg_size)
-    {
-        cl_ulong sum = 0;
-        for (j=0; j<((n-i) > wg_size ? wg_size : (n-i)); j++)
-            sum += inptr[i+j];
-
-        for (j=0; j<((n-i) > wg_size ? wg_size : (n-i)); j++)
-        {
-            if ( sum != outptr[i+j] )
-            {
-                log_info("work_group_reduce_add ulong: Error at %u: expected = %llu, got = %llu\n", i+j, sum, outptr[i+j]);
-                return -1;
-            }
-        }
-    }
-
-    return 0;
-}
-
-
-
-int
-test_work_group_reduce_add_int(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
-{
-    cl_mem       streams[2];
-    cl_int       *input_ptr[1], *p;
-    cl_int       *output_ptr;
-    cl_program   program;
-    cl_kernel    kernel;
-    void         *values[2];
-    size_t       threads[1];
-    size_t       wg_size[1];
-    size_t       num_elements;
-    int          err;
-    int          i;
-    MTdata       d;
-
+    const char *kernel_source = kernel_source_reduce;
     err = create_single_kernel_helper(context, &program, &kernel, 1,
-                                      &wg_reduce_add_kernel_code_int,
-                                      "test_wg_reduce_add_int");
-    if (err)
-        return -1;
+                                      &kernel_source, "test_wg_reduce_add",
+                                      buildOptions.c_str());
+    test_error(err, "Unable to create test kernel");
 
-    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
     err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
     test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
 
-    num_elements = n_elems;
+    clMemWrapper src = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                      sizeof(T) * n_elems, NULL, &err);
+    test_error(err, "Unable to create source buffer");
 
-    input_ptr[0] = (cl_int*)malloc(sizeof(cl_int) * num_elements);
-    output_ptr = (cl_int*)malloc(sizeof(cl_int) * num_elements);
-    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_int) * num_elements, NULL, NULL);
-    if (!streams[0])
+    clMemWrapper dst = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                      sizeof(T) * n_elems, NULL, &err);
+    test_error(err, "Unable to create destination buffer");
+
+    std::vector<T> input_ptr(n_elems);
+
+    MTdataHolder d(gRandomSeed);
+    for (int i = 0; i < n_elems; i++)
     {
-        log_error("clCreateBuffer failed\n");
-        return -1;
+        input_ptr[i] = genrand_int64(d);
     }
 
-    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_int) * num_elements, NULL, NULL);
-    if (!streams[1])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
+    err = clEnqueueWriteBuffer(queue, src, true, 0, sizeof(T) * n_elems,
+                               input_ptr.data(), 0, NULL, NULL);
+    test_error(err, "clWriteBuffer to initialize src buffer failed");
 
-    p = input_ptr[0];
-    d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
-        p[i] = genrand_int32(d);
-    free_mtdata(d); d = NULL;
+    err = clSetKernelArg(kernel, 0, sizeof(src), &src);
+    test_error(err, "Unable to set src buffer kernel arg");
+    err |= clSetKernelArg(kernel, 1, sizeof(dst), &dst);
+    test_error(err, "Unable to set dst buffer kernel arg");
 
-    err = clEnqueueWriteBuffer( queue, streams[0], true, 0, sizeof(cl_int) * num_elements, (void *)input_ptr[0], 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clWriteArray failed\n");
-        return -1;
-    }
+    size_t global_work_size[] = { n_elems };
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size,
+                                 wg_size, 0, NULL, NULL);
+    test_error(err, "Unable to enqueue test kernel");
 
-    values[0] = streams[0];
-    values[1] = streams[1];
-    err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
-    err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clSetKernelArgs failed\n");
-        return -1;
-    }
-
-    // Line below is troublesome...
-    threads[0] = (size_t)num_elements;
-    err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, wg_size, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clEnqueueNDRangeKernel failed\n");
-        return -1;
-    }
+    std::vector<T> output_ptr(n_elems);
 
     cl_uint dead = 0xdeaddead;
-    memset_pattern4(output_ptr, &dead, sizeof(cl_int)*num_elements);
-    err = clEnqueueReadBuffer( queue, streams[1], true, 0, sizeof(cl_int)*num_elements, (void *)output_ptr, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
+    memset_pattern4(output_ptr.data(), &dead, sizeof(T) * n_elems);
+    err = clEnqueueReadBuffer(queue, dst, true, 0, sizeof(T) * n_elems,
+                              output_ptr.data(), 0, NULL, NULL);
+    test_error(err, "clEnqueueReadBuffer to read read dst buffer failed");
+
+    if (verify_wg_reduce_add(input_ptr.data(), output_ptr.data(), n_elems,
+                             wg_size[0]))
     {
-        log_error("clEnqueueReadBuffer failed\n");
-        return -1;
+        log_error("work_group_reduce_add %s failed\n",
+                  ReduceTestInfo<T>::deviceTypeName);
+        return TEST_FAIL;
     }
 
-    if (verify_wg_reduce_add_int(input_ptr[0], output_ptr, num_elements, wg_size[0]))
-    {
-        log_error("work_group_reduce_add int failed\n");
-        return -1;
-    }
-    log_info("work_group_reduce_add int passed\n");
-
-    clReleaseMemObject(streams[0]);
-    clReleaseMemObject(streams[1]);
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    free(input_ptr[0]);
-    free(output_ptr);
-
-    return err;
+    log_info("work_group_reduce_add %s passed\n",
+             ReduceTestInfo<T>::deviceTypeName);
+    return TEST_PASS;
 }
 
-
-int
-test_work_group_reduce_add_uint(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+int test_work_group_reduce_add(cl_device_id device, cl_context context,
+                               cl_command_queue queue, int n_elems)
 {
-    cl_mem       streams[2];
-    cl_uint      *input_ptr[1], *p;
-    cl_uint      *output_ptr;
-    cl_program   program;
-    cl_kernel    kernel;
-    void         *values[2];
-    size_t       threads[1];
-    size_t       wg_size[1];
-    size_t       num_elements;
-    int          err;
-    int          i;
-    MTdata       d;
+    int result = TEST_PASS;
 
-    err = create_single_kernel_helper(context, &program, &kernel, 1,
-                                      &wg_reduce_add_kernel_code_uint,
-                                      "test_wg_reduce_add_uint");
-    if (err)
-        return -1;
+    result |= test_reduce_add_type<cl_int>(device, context, queue, n_elems);
+    result |= test_reduce_add_type<cl_uint>(device, context, queue, n_elems);
 
-    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
-    err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
-    test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
-
-    num_elements = n_elems;
-
-    input_ptr[0] = (cl_uint*)malloc(sizeof(cl_uint) * num_elements);
-    output_ptr = (cl_uint*)malloc(sizeof(cl_uint) * num_elements);
-    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_uint) * num_elements, NULL, NULL);
-    if (!streams[0])
+    if (gHasLong)
     {
-        log_error("clCreateBuffer failed\n");
-        return -1;
+        result |=
+            test_reduce_add_type<cl_long>(device, context, queue, n_elems);
+        result |=
+            test_reduce_add_type<cl_ulong>(device, context, queue, n_elems);
     }
 
-    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_uint) * num_elements, NULL, NULL);
-    if (!streams[1])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-
-    p = input_ptr[0];
-    d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
-        p[i] = genrand_int32(d);
-    free_mtdata(d); d = NULL;
-
-    err = clEnqueueWriteBuffer( queue, streams[0], true, 0, sizeof(cl_uint)*num_elements, (void *)input_ptr[0], 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clWriteArray failed\n");
-        return -1;
-    }
-
-    values[0] = streams[0];
-    values[1] = streams[1];
-    err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
-    err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clSetKernelArgs failed\n");
-        return -1;
-    }
-
-    // Line below is troublesome...
-    threads[0] = (size_t)n_elems;
-    err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, wg_size, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clEnqueueNDRangeKernel failed\n");
-        return -1;
-    }
-
-    cl_uint dead = 0xdeaddead;
-    memset_pattern4(output_ptr, &dead, sizeof(cl_uint)*num_elements);
-    err = clEnqueueReadBuffer( queue, streams[1], true, 0, sizeof(cl_uint)*num_elements, (void *)output_ptr, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clEnqueueReadBuffer failed\n");
-        return -1;
-    }
-
-    if (verify_wg_reduce_add_uint(input_ptr[0], output_ptr, num_elements, wg_size[0]))
-    {
-        log_error("work_group_reduce_add uint failed\n");
-        return -1;
-    }
-    log_info("work_group_reduce_add uint passed\n");
-
-    clReleaseMemObject(streams[0]);
-    clReleaseMemObject(streams[1]);
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    free(input_ptr[0]);
-    free(output_ptr);
-
-    return err;
+    return result;
 }
-
-int
-test_work_group_reduce_add_long(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
-{
-    cl_mem       streams[2];
-    cl_long      *input_ptr[1], *p;
-    cl_long      *output_ptr;
-    cl_program   program;
-    cl_kernel    kernel;
-    void         *values[2];
-    size_t       threads[1];
-    size_t       wg_size[1];
-    size_t       num_elements;
-    int          err;
-    int          i;
-    MTdata       d;
-
-    err = create_single_kernel_helper(context, &program, &kernel, 1,
-                                      &wg_reduce_add_kernel_code_long,
-                                      "test_wg_reduce_add_long");
-    if (err)
-        return -1;
-
-    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
-    err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
-    test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
-
-    num_elements = n_elems;
-
-    input_ptr[0] = (cl_long*)malloc(sizeof(cl_long) * num_elements);
-    output_ptr = (cl_long*)malloc(sizeof(cl_long) * num_elements);
-    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_long) * num_elements, NULL, NULL);
-    if (!streams[0])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-
-    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_long) * num_elements, NULL, NULL);
-    if (!streams[1])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-
-    p = input_ptr[0];
-    d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
-        p[i] = genrand_int64(d);
-    free_mtdata(d); d = NULL;
-
-    err = clEnqueueWriteBuffer( queue, streams[0], true, 0, sizeof(cl_long)*num_elements, (void *)input_ptr[0], 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clWriteArray failed\n");
-        return -1;
-    }
-
-    values[0] = streams[0];
-    values[1] = streams[1];
-    err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
-    err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clSetKernelArgs failed\n");
-        return -1;
-    }
-
-    // Line below is troublesome...
-    threads[0] = (size_t)n_elems;
-    err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, wg_size, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clEnqueueNDRangeKernel failed\n");
-        return -1;
-    }
-
-    cl_uint dead = 0xdeaddead;
-    memset_pattern4(output_ptr, &dead, sizeof(cl_long)*num_elements);
-    err = clEnqueueReadBuffer( queue, streams[1], true, 0, sizeof(cl_long)*num_elements, (void *)output_ptr, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clEnqueueReadBuffer failed\n");
-        return -1;
-    }
-
-    if (verify_wg_reduce_add_long(input_ptr[0], output_ptr, num_elements, wg_size[0]))
-    {
-        log_error("work_group_reduce_add long failed\n");
-        return -1;
-    }
-    log_info("work_group_reduce_add long passed\n");
-
-    clReleaseMemObject(streams[0]);
-    clReleaseMemObject(streams[1]);
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    free(input_ptr[0]);
-    free(output_ptr);
-
-    return err;
-}
-
-
-int
-test_work_group_reduce_add_ulong(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
-{
-    cl_mem       streams[2];
-    cl_ulong     *input_ptr[1], *p;
-    cl_ulong     *output_ptr;
-    cl_program   program;
-    cl_kernel    kernel;
-    void         *values[2];
-    size_t       threads[1];
-    size_t       wg_size[1];
-    size_t       num_elements;
-    int          err;
-    int          i;
-    MTdata       d;
-
-    err = create_single_kernel_helper(context, &program, &kernel, 1,
-                                      &wg_reduce_add_kernel_code_ulong,
-                                      "test_wg_reduce_add_ulong");
-    if (err)
-        return -1;
-
-    // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
-    err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
-    test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
-
-    num_elements = n_elems;
-
-    input_ptr[0] = (cl_ulong*)malloc(sizeof(cl_ulong) * num_elements);
-    output_ptr = (cl_ulong*)malloc(sizeof(cl_ulong) * num_elements);
-    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_ulong) * num_elements, NULL, NULL);
-    if (!streams[0])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-
-    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_ulong) * num_elements, NULL, NULL);
-    if (!streams[1])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-
-    p = input_ptr[0];
-    d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
-        p[i] = genrand_int64(d);
-    free_mtdata(d); d = NULL;
-
-    err = clEnqueueWriteBuffer( queue, streams[0], true, 0, sizeof(cl_ulong)*num_elements, (void *)input_ptr[0], 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clWriteArray failed\n");
-        return -1;
-    }
-
-    values[0] = streams[0];
-    values[1] = streams[1];
-    err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
-    err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clSetKernelArgs failed\n");
-        return -1;
-    }
-
-    // Line below is troublesome...
-    threads[0] = (size_t)n_elems;
-    err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, wg_size, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clEnqueueNDRangeKernel failed\n");
-        return -1;
-    }
-
-    cl_uint dead = 0xdeaddead;
-    memset_pattern4(output_ptr, &dead, sizeof(cl_ulong)*num_elements);
-    err = clEnqueueReadBuffer( queue, streams[1], true, 0, sizeof(cl_ulong)*num_elements, (void *)output_ptr, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clEnqueueReadBuffer failed\n");
-        return -1;
-    }
-
-    if (verify_wg_reduce_add_ulong(input_ptr[0], output_ptr, num_elements, wg_size[0]))
-    {
-        log_error("work_group_reduce_add ulong failed\n");
-        return -1;
-    }
-    log_info("work_group_reduce_add ulong passed\n");
-
-    clReleaseMemObject(streams[0]);
-    clReleaseMemObject(streams[1]);
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    free(input_ptr[0]);
-    free(output_ptr);
-
-    return err;
-}
-
-
-int
-test_work_group_reduce_add(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
-{
-    int err;
-
-    err = test_work_group_reduce_add_int(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_reduce_add_uint(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_reduce_add_long(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_reduce_add_ulong(device, context, queue, n_elems);
-    return err;
-}
-
