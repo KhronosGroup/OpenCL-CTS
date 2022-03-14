@@ -239,7 +239,7 @@ static int run_test(cl_device_id device, cl_context context,
         input_ptr[i] = genrand_int64(d);
     }
 
-    err = clEnqueueWriteBuffer(queue, src, true, 0, sizeof(T) * n_elems,
+    err = clEnqueueWriteBuffer(queue, src, CL_TRUE, 0, sizeof(T) * n_elems,
                                input_ptr.data(), 0, NULL, NULL);
     test_error(err, "clWriteBuffer to initialize src buffer failed");
 
@@ -257,7 +257,7 @@ static int run_test(cl_device_id device, cl_context context,
 
     cl_uint dead = 0xdeaddead;
     memset_pattern4(output_ptr.data(), &dead, sizeof(T) * n_elems);
-    err = clEnqueueReadBuffer(queue, dst, true, 0, sizeof(T) * n_elems,
+    err = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, sizeof(T) * n_elems,
                               output_ptr.data(), 0, NULL, NULL);
     test_error(err, "clEnqueueReadBuffer to read read dst buffer failed");
 
