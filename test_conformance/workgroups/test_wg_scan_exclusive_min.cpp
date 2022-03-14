@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#if 0
+
 #include "harness/compat.h"
 
 #include <stdio.h>
@@ -631,3 +634,4 @@ test_work_group_scan_exclusive_min(cl_device_id device, cl_context context, cl_c
     return err;
 }
 
+#endif

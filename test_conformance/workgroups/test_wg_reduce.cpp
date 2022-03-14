@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2022 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -100,23 +100,92 @@ template <typename C> struct Reduce
     {
         for (size_t i = 0; i < n; i += wg_size)
         {
+            size_t m = n - i;
+            if (m > wg_size) m = wg_size;
+
             Type result = C::identityValue;
-            for (size_t j = 0; j < ((n - i) > wg_size ? wg_size : (n - i)); j++)
+            for (size_t j = 0; j < m; j++)
             {
                 result = C::combine(result, inptr[i + j]);
             }
 
-            for (size_t j = 0; j < ((n - i) > wg_size ? wg_size : (n - i)); j++)
+            for (size_t j = 0; j < m; j++)
             {
                 if (result != outptr[i + j])
                 {
-                    log_info("%s_%s: Error at %u: expected %u, got %u\n", testName, testOpName,
-                             i + j, result, outptr[i + j]);
+                    log_info("%s_%s: Error at %zu: expected %u, got %u\n",
+                             testName, testOpName, i + j, result,
+                             outptr[i + j]);
                     return -1;
                 }
             }
         }
+        return 0;
+    }
+};
 
+template <typename C> struct ScanInclusive
+{
+    using Type = typename C::Type;
+
+    static constexpr const char *testName = "work_group_scan_inclusive";
+    static constexpr const char *testOpName = C::opName;
+    static constexpr const char *deviceTypeName =
+        TestTypeInfo<Type>::deviceName;
+    static constexpr const char *kernelName = "test_wg_scan_inclusive";
+    static int verify(Type *inptr, Type *outptr, size_t n, size_t wg_size)
+    {
+        for (size_t i = 0; i < n; i += wg_size)
+        {
+            size_t m = n - i;
+            if (m > wg_size) m = wg_size;
+
+            Type result = C::identityValue;
+            for (size_t j = 0; j < m; ++j)
+            {
+                result = C::combine(result, inptr[i + j]);
+                if (result != outptr[i + j])
+                {
+                    log_info("%s_%s: Error at %zu: expected = %u, got = %u\n",
+                             testName, testOpName, i + j, result,
+                             outptr[i + j]);
+                    return -1;
+                }
+            }
+        }
+        return 0;
+    }
+};
+
+template <typename C> struct ScanExclusive
+{
+    using Type = typename C::Type;
+
+    static constexpr const char *testName = "work_group_scan_exclusive";
+    static constexpr const char *testOpName = C::opName;
+    static constexpr const char *deviceTypeName =
+        TestTypeInfo<Type>::deviceName;
+    static constexpr const char *kernelName = "test_wg_scan_exclusive";
+    static int verify(Type *inptr, Type *outptr, size_t n, size_t wg_size)
+    {
+        for (size_t i = 0; i < n; i += wg_size)
+        {
+            size_t m = n - i;
+            if (m > wg_size) m = wg_size;
+
+            Type result = C::identityValue;
+            for (size_t j = 0; j < m; ++j)
+            {
+                if (result != outptr[i + j])
+                {
+                    log_info("%s_%s: Error at %zu: expected = %u, got = %u\n",
+                             testName, testOpName, i + j, result,
+                             outptr[i + j]);
+                    return -1;
+                }
+                result = C::combine(result, inptr[i + j]);
+            }
+        }
         return 0;
     }
 };
@@ -256,6 +325,132 @@ int test_work_group_reduce_min(cl_device_id device, cl_context context,
             run_test<Reduce<Min<cl_long>>>(device, context, queue, n_elems);
         result |=
             run_test<Reduce<Min<cl_ulong>>>(device, context, queue, n_elems);
+    }
+
+    return result;
+}
+
+int test_work_group_scan_inclusive_add(cl_device_id device, cl_context context,
+                                       cl_command_queue queue, int n_elems)
+{
+    int result = TEST_PASS;
+
+    result |=
+        run_test<ScanInclusive<Add<cl_int>>>(device, context, queue, n_elems);
+    result |=
+        run_test<ScanInclusive<Add<cl_uint>>>(device, context, queue, n_elems);
+
+    if (gHasLong)
+    {
+        result |= run_test<ScanInclusive<Add<cl_long>>>(device, context, queue,
+                                                        n_elems);
+        result |= run_test<ScanInclusive<Add<cl_ulong>>>(device, context, queue,
+                                                         n_elems);
+    }
+
+    return result;
+}
+
+int test_work_group_scan_inclusive_max(cl_device_id device, cl_context context,
+                                       cl_command_queue queue, int n_elems)
+{
+    int result = TEST_PASS;
+
+    result |=
+        run_test<ScanInclusive<Max<cl_int>>>(device, context, queue, n_elems);
+    result |=
+        run_test<ScanInclusive<Max<cl_uint>>>(device, context, queue, n_elems);
+
+    if (gHasLong)
+    {
+        result |= run_test<ScanInclusive<Max<cl_long>>>(device, context, queue,
+                                                        n_elems);
+        result |= run_test<ScanInclusive<Max<cl_ulong>>>(device, context, queue,
+                                                         n_elems);
+    }
+
+    return result;
+}
+
+int test_work_group_scan_inclusive_min(cl_device_id device, cl_context context,
+                                       cl_command_queue queue, int n_elems)
+{
+    int result = TEST_PASS;
+
+    result |=
+        run_test<ScanInclusive<Min<cl_int>>>(device, context, queue, n_elems);
+    result |=
+        run_test<ScanInclusive<Min<cl_uint>>>(device, context, queue, n_elems);
+
+    if (gHasLong)
+    {
+        result |= run_test<ScanInclusive<Min<cl_long>>>(device, context, queue,
+                                                        n_elems);
+        result |= run_test<ScanInclusive<Min<cl_ulong>>>(device, context, queue,
+                                                         n_elems);
+    }
+
+    return result;
+}
+
+int test_work_group_scan_exclusive_add(cl_device_id device, cl_context context,
+                                       cl_command_queue queue, int n_elems)
+{
+    int result = TEST_PASS;
+
+    result |=
+        run_test<ScanExclusive<Add<cl_int>>>(device, context, queue, n_elems);
+    result |=
+        run_test<ScanExclusive<Add<cl_uint>>>(device, context, queue, n_elems);
+
+    if (gHasLong)
+    {
+        result |= run_test<ScanExclusive<Add<cl_long>>>(device, context, queue,
+                                                        n_elems);
+        result |= run_test<ScanExclusive<Add<cl_ulong>>>(device, context, queue,
+                                                         n_elems);
+    }
+
+    return result;
+}
+
+int test_work_group_scan_exclusive_max(cl_device_id device, cl_context context,
+                                       cl_command_queue queue, int n_elems)
+{
+    int result = TEST_PASS;
+
+    result |=
+        run_test<ScanExclusive<Max<cl_int>>>(device, context, queue, n_elems);
+    result |=
+        run_test<ScanExclusive<Max<cl_uint>>>(device, context, queue, n_elems);
+
+    if (gHasLong)
+    {
+        result |= run_test<ScanExclusive<Max<cl_long>>>(device, context, queue,
+                                                        n_elems);
+        result |= run_test<ScanExclusive<Max<cl_ulong>>>(device, context, queue,
+                                                         n_elems);
+    }
+
+    return result;
+}
+
+int test_work_group_scan_exclusive_min(cl_device_id device, cl_context context,
+                                       cl_command_queue queue, int n_elems)
+{
+    int result = TEST_PASS;
+
+    result |=
+        run_test<ScanExclusive<Min<cl_int>>>(device, context, queue, n_elems);
+    result |=
+        run_test<ScanExclusive<Min<cl_uint>>>(device, context, queue, n_elems);
+
+    if (gHasLong)
+    {
+        result |= run_test<ScanExclusive<Min<cl_long>>>(device, context, queue,
+                                                        n_elems);
+        result |= run_test<ScanExclusive<Min<cl_ulong>>>(device, context, queue,
+                                                         n_elems);
     }
 
     return result;
