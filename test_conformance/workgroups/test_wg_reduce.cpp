@@ -15,76 +15,118 @@
 //
 #include "harness/compat.h"
 
-//#include <stdio.h>
-//#include <string.h>
-//#include <sys/types.h>
-//#include <sys/stat.h>
-
+#include <limits>
 #include <vector>
 
 #include "procs.h"
 
-static constexpr const char *kernel_source_reduce = R"CLC(
-__kernel void test_wg_reduce_add(global TYPE *input, global TYPE *output)
+static std::string make_kernel_string(const std::string &type,
+                                      const std::string &kernelName,
+                                      const std::string &func)
 {
-    int  tid = get_global_id(0);
+    // Build a kernel string of the form:
+    // __kernel void KERNEL_NAME(global TYPE *input, global TYPE *output) {
+    //     int  tid = get_global_id(0);
+    //     output[tid] = FUNC(input[tid]);
+    // }
 
-    output[tid] = work_group_reduce_add(input[tid]);
+    std::ostringstream os;
+    os << "__kernel void " << kernelName << "(global " << type
+       << " *input, global " << type << " *output) {\n";
+    os << "    int tid = get_global_id(0);\n";
+    os << "    output[tid] = " << func << "(input[tid]);\n";
+    os << "}\n";
+    return os.str();
 }
-)CLC";
 
-template <typename T> struct ReduceTestInfo
+template <typename T> struct TestTypeInfo
 {
 };
 
-template <> struct ReduceTestInfo<cl_int>
+template <> struct TestTypeInfo<cl_int>
 {
-    static constexpr const char *deviceTypeName = "int";
+    static constexpr const char *deviceName = "int";
 };
 
-template <> struct ReduceTestInfo<cl_uint>
+template <> struct TestTypeInfo<cl_uint>
 {
-    static constexpr const char *deviceTypeName = "uint";
+    static constexpr const char *deviceName = "uint";
 };
 
-template <> struct ReduceTestInfo<cl_long>
+template <> struct TestTypeInfo<cl_long>
 {
-    static constexpr const char *deviceTypeName = "long";
+    static constexpr const char *deviceName = "long";
 };
 
-template <> struct ReduceTestInfo<cl_ulong>
+template <> struct TestTypeInfo<cl_ulong>
 {
-    static constexpr const char *deviceTypeName = "ulong";
+    static constexpr const char *deviceName = "ulong";
 };
 
-template <typename T>
-static int verify_wg_reduce_add(T *inptr, T *outptr, size_t n, size_t wg_size)
+template <typename T> struct Add
 {
-    size_t i, j;
+    using Type = T;
+    static constexpr const char *opName = "add";
+    static constexpr T identityValue = 0;
+    static T combine(T a, T b) { return a + b; }
+};
 
-    for (i = 0; i < n; i += wg_size)
+template <typename T> struct Max
+{
+    using Type = T;
+    static constexpr const char *opName = "max";
+    static constexpr T identityValue = std::numeric_limits<T>::min();
+    static T combine(T a, T b) { return std::max(a, b); }
+};
+
+template <typename T> struct Min
+{
+    using Type = T;
+    static constexpr const char *opName = "min";
+    static constexpr T identityValue = std::numeric_limits<T>::max();
+    static T combine(T a, T b) { return std::min(a, b); }
+};
+
+template <typename C> struct Reduce
+{
+    using Type = typename C::Type;
+
+    static constexpr const char *testName = "work_group_reduce";
+    static constexpr const char *testOpName = C::opName;
+    static constexpr const char *deviceTypeName =
+        TestTypeInfo<Type>::deviceName;
+    static constexpr const char *kernelName = "test_wg_reduce";
+    static int verify(Type *inptr, Type *outptr, size_t n, size_t wg_size)
     {
-        T sum = 0;
-        for (j = 0; j < ((n - i) > wg_size ? wg_size : (n - i)); j++)
-            sum += inptr[i + j];
-
-        for (j = 0; j < ((n - i) > wg_size ? wg_size : (n - i)); j++)
+        for (size_t i = 0; i < n; i += wg_size)
         {
-            if (sum != outptr[i + j])
+            Type result = C::identityValue;
+            for (size_t j = 0; j < ((n - i) > wg_size ? wg_size : (n - i)); j++)
             {
-                log_info("work_group_reduce_add: Error at %u\n", i + j);
-                return -1;
+                result = C::combine(result, inptr[i + j]);
+            }
+
+            for (size_t j = 0; j < ((n - i) > wg_size ? wg_size : (n - i)); j++)
+            {
+                if (result != outptr[i + j])
+                {
+                    log_info("%s_%s: Error at %u: expected %u, got %u\n", testName, testOpName,
+                             i + j, result, outptr[i + j]);
+                    return -1;
+                }
             }
         }
+
+        return 0;
     }
+};
 
-    return 0;
-}
-
-template <typename T>
-static int test_reduce_add_type(cl_device_id device, cl_context context,
-                                cl_command_queue queue, int n_elems)
+template <typename TestInfo>
+static int run_test(cl_device_id device, cl_context context,
+                    cl_command_queue queue, int n_elems)
 {
+    using T = typename TestInfo::Type;
+
     cl_int err = CL_SUCCESS;
 
     clProgramWrapper program;
@@ -93,14 +135,20 @@ static int test_reduce_add_type(cl_device_id device, cl_context context,
     size_t wg_size[1];
     int i;
 
-    std::string buildOptions;
-    buildOptions += " -DTYPE=";
-    buildOptions += ReduceTestInfo<T>::deviceTypeName;
+    std::string funcName = TestInfo::testName;
+    funcName += "_";
+    funcName += TestInfo::testOpName;
 
-    const char *kernel_source = kernel_source_reduce;
+    std::string kernelName = TestInfo::kernelName;
+    kernelName += "_";
+    kernelName += TestInfo::testOpName;
+
+    std::string kernelString =
+        make_kernel_string(TestInfo::deviceTypeName, kernelName, funcName);
+
+    const char *kernel_source = kernelString.c_str();
     err = create_single_kernel_helper(context, &program, &kernel, 1,
-                                      &kernel_source, "test_wg_reduce_add",
-                                      buildOptions.c_str());
+                                      &kernel_source, kernelName.c_str());
     test_error(err, "Unable to create test kernel");
 
     err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
@@ -144,16 +192,15 @@ static int test_reduce_add_type(cl_device_id device, cl_context context,
                               output_ptr.data(), 0, NULL, NULL);
     test_error(err, "clEnqueueReadBuffer to read read dst buffer failed");
 
-    if (verify_wg_reduce_add(input_ptr.data(), output_ptr.data(), n_elems,
-                             wg_size[0]))
+    if (TestInfo::verify(input_ptr.data(), output_ptr.data(), n_elems,
+                         wg_size[0]))
     {
-        log_error("work_group_reduce_add %s failed\n",
-                  ReduceTestInfo<T>::deviceTypeName);
+        log_error("%s %s failed\n", TestInfo::testName,
+                  TestInfo::deviceTypeName);
         return TEST_FAIL;
     }
 
-    log_info("work_group_reduce_add %s passed\n",
-             ReduceTestInfo<T>::deviceTypeName);
+    log_info("%s %s passed\n", TestInfo::testName, TestInfo::deviceTypeName);
     return TEST_PASS;
 }
 
@@ -162,15 +209,53 @@ int test_work_group_reduce_add(cl_device_id device, cl_context context,
 {
     int result = TEST_PASS;
 
-    result |= test_reduce_add_type<cl_int>(device, context, queue, n_elems);
-    result |= test_reduce_add_type<cl_uint>(device, context, queue, n_elems);
+    result |= run_test<Reduce<Add<cl_int>>>(device, context, queue, n_elems);
+    result |= run_test<Reduce<Add<cl_uint>>>(device, context, queue, n_elems);
 
     if (gHasLong)
     {
         result |=
-            test_reduce_add_type<cl_long>(device, context, queue, n_elems);
+            run_test<Reduce<Add<cl_long>>>(device, context, queue, n_elems);
         result |=
-            test_reduce_add_type<cl_ulong>(device, context, queue, n_elems);
+            run_test<Reduce<Add<cl_ulong>>>(device, context, queue, n_elems);
+    }
+
+    return result;
+}
+
+int test_work_group_reduce_max(cl_device_id device, cl_context context,
+                               cl_command_queue queue, int n_elems)
+{
+    int result = TEST_PASS;
+
+    result |= run_test<Reduce<Max<cl_int>>>(device, context, queue, n_elems);
+    result |= run_test<Reduce<Max<cl_uint>>>(device, context, queue, n_elems);
+
+    if (gHasLong)
+    {
+        result |=
+            run_test<Reduce<Max<cl_long>>>(device, context, queue, n_elems);
+        result |=
+            run_test<Reduce<Max<cl_ulong>>>(device, context, queue, n_elems);
+    }
+
+    return result;
+}
+
+int test_work_group_reduce_min(cl_device_id device, cl_context context,
+                               cl_command_queue queue, int n_elems)
+{
+    int result = TEST_PASS;
+
+    result |= run_test<Reduce<Min<cl_int>>>(device, context, queue, n_elems);
+    result |= run_test<Reduce<Min<cl_uint>>>(device, context, queue, n_elems);
+
+    if (gHasLong)
+    {
+        result |=
+            run_test<Reduce<Min<cl_long>>>(device, context, queue, n_elems);
+        result |=
+            run_test<Reduce<Min<cl_ulong>>>(device, context, queue, n_elems);
     }
 
     return result;
