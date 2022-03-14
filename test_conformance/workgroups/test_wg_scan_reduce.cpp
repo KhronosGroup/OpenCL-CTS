@@ -15,6 +15,7 @@
 //
 #include "harness/compat.h"
 
+#include <algorithm>
 #include <limits>
 #include <vector>
 
@@ -113,9 +114,8 @@ template <typename C> struct Reduce
             {
                 if (result != outptr[i + j])
                 {
-                    log_info("%s_%s: Error at %zu: expected %u, got %u\n",
-                             testName, testOpName, i + j, result,
-                             outptr[i + j]);
+                    log_info("%s_%s: Error at %zu\n", testName, testOpName,
+                             i + j);
                     return -1;
                 }
             }
@@ -146,9 +146,8 @@ template <typename C> struct ScanInclusive
                 result = C::combine(result, inptr[i + j]);
                 if (result != outptr[i + j])
                 {
-                    log_info("%s_%s: Error at %zu: expected = %u, got = %u\n",
-                             testName, testOpName, i + j, result,
-                             outptr[i + j]);
+                    log_info("%s_%s: Error at %zu\n", testName, testOpName,
+                             i + j);
                     return -1;
                 }
             }
@@ -178,9 +177,8 @@ template <typename C> struct ScanExclusive
             {
                 if (result != outptr[i + j])
                 {
-                    log_info("%s_%s: Error at %zu: expected = %u, got = %u\n",
-                             testName, testOpName, i + j, result,
-                             outptr[i + j]);
+                    log_info("%s_%s: Error at %zu\n", testName, testOpName,
+                             i + j);
                     return -1;
                 }
                 result = C::combine(result, inptr[i + j]);
@@ -201,9 +199,6 @@ static int run_test(cl_device_id device, cl_context context,
     clProgramWrapper program;
     clKernelWrapper kernel;
 
-    size_t wg_size[1];
-    int i;
-
     std::string funcName = TestInfo::testName;
     funcName += "_";
     funcName += TestInfo::testOpName;
@@ -222,6 +217,7 @@ static int run_test(cl_device_id device, cl_context context,
                                       &kernel_source, kernelName.c_str());
     test_error(err, "Unable to create test kernel");
 
+    size_t wg_size[1];
     err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
     test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
 
@@ -238,7 +234,7 @@ static int run_test(cl_device_id device, cl_context context,
     MTdataHolder d(gRandomSeed);
     for (int i = 0; i < n_elems; i++)
     {
-        input_ptr[i] = genrand_int64(d);
+        input_ptr[i] = (T)genrand_int64(d);
     }
 
     err = clEnqueueWriteBuffer(queue, src, CL_TRUE, 0, sizeof(T) * n_elems,
@@ -250,7 +246,7 @@ static int run_test(cl_device_id device, cl_context context,
     err |= clSetKernelArg(kernel, 1, sizeof(dst), &dst);
     test_error(err, "Unable to set dst buffer kernel arg");
 
-    size_t global_work_size[] = { n_elems };
+    size_t global_work_size[] = { (size_t)n_elems };
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size,
                                  wg_size, 0, NULL, NULL);
     test_error(err, "Unable to enqueue test kernel");
