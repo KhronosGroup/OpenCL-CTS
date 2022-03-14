@@ -211,6 +211,8 @@ static int run_test(cl_device_id device, cl_context context,
     std::string kernelName = TestInfo::kernelName;
     kernelName += "_";
     kernelName += TestInfo::testOpName;
+    kernelName += "_";
+    kernelName += TestInfo::deviceTypeName;
 
     std::string kernelString =
         make_kernel_string(TestInfo::deviceTypeName, kernelName, funcName);
