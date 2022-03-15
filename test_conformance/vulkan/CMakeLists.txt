@@ -30,6 +30,7 @@ set (${MODULE_NAME}_SOURCES
         test_vulkan_interop_buffer.cpp
         test_vulkan_interop_image.cpp
         test_vulkan_api_consistency.cpp
+        test_vulkan_platform_device_info.cpp
         vulkan_interop_common/vulkan_wrapper.cpp
         vulkan_interop_common/vulkan_interop_common.cpp
         vulkan_interop_common/opencl_vulkan_wrapper.cpp
@@ -37,7 +38,6 @@ set (${MODULE_NAME}_SOURCES
         vulkan_interop_common/vulkan_list_map.cpp
         ../../test_common/harness/genericThread.cpp
         ../../test_common/harness/errorHelpers.cpp
-        ../../test_common/harness/threadTesting.cpp
         ../../test_common/harness/testHarness.cpp
         ../../test_common/harness/kernelHelpers.cpp
         ../../test_common/harness/mt19937.cpp

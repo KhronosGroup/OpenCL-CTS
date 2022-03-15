@@ -94,7 +94,9 @@ test_definition test_list[] = {
     ADD_TEST(image_multiple_queue),
     ADD_TEST(consistency_external_buffer),
     ADD_TEST(consistency_external_image),
-    ADD_TEST(consistency_external_semaphore)
+    ADD_TEST(consistency_external_semaphore),
+    ADD_TEST(platform_info),
+    ADD_TEST(device_info)
     };
 
 const int test_num = ARRAY_SIZE( test_list );
@@ -122,6 +124,7 @@ bool useSingleImageKernel = false;
 bool useDeviceLocal = false;
 bool disableNTHandleType = false;
 bool enableOffset = false;
+bool non_dedicated = false;
 
 static void printUsage( const char *execName )
 {
@@ -138,6 +141,7 @@ static void printUsage( const char *execName )
     log_info( "\n" );
     log_info( "Options:\n" );
     log_info( "\t--debug_trace - Enables additional debug info logging\n" );
+    log_info( "\t--non_dedicated - Choose dedicated Vs. non_dedicated \n" );
 }
 
 size_t parseParams( int argc, const char *argv[], const char** argList)
@@ -163,6 +167,9 @@ size_t parseParams( int argc, const char *argv[], const char** argList)
             if (!strcmp(argv[i], "--enableOffset")) {
                 enableOffset = true;
             }
+            if( !strcmp(argv[i], "--non_dedicated")) {
+                non_dedicated = true;
+            }
             if (strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 ) {
                 printUsage( argv[ 0 ] );
                 argCount = 0; // Returning argCount = 0 to assert error in main()
@@ -183,6 +190,11 @@ int main(int argc, const char *argv[])
 
     test_start();
     params_reset();
+
+    if(!checkVkSupport()) {
+        log_info("Vulkan supported GPU not found \n");
+        return 0;
+    }
 
     cl_device_type requestedDeviceType = CL_DEVICE_TYPE_GPU;    
     char *force_cpu = getenv( "CL_DEVICE_TYPE" );

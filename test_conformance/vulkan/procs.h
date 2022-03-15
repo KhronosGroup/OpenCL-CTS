@@ -21,3 +21,7 @@ extern int test_consistency_external_image( cl_device_id device, cl_context cont
   cl_command_queue queue, int num_elements );
 extern int test_consistency_external_semaphore( cl_device_id device, cl_context context, 
   cl_command_queue queue, int num_elements );
+extern int test_platform_info( cl_device_id device, cl_context context, 
+  cl_command_queue queue, int num_elements );
+extern int test_device_info( cl_device_id device, cl_context context, 
+  cl_command_queue queue, int num_elements );

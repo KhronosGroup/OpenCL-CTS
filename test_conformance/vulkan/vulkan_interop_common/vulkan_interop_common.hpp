@@ -29,5 +29,6 @@ extern bool useDeviceLocal;
 extern bool disableNTHandleType;
 // Enable offset for multiImport of vulkan device memory
 extern bool enableOffset;
+extern bool non_dedicated;
 
 #endif // _vulkan_interop_common_hpp_
