@@ -1031,20 +1031,40 @@ CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumDestItems)
         }
         code += "\n";
     }
-    if (LocalMemory() || DeclaredInProgram())
+    if (LocalMemory())
     {
         code += "  // Copy final values to host reachable buffer\n";
-        if (LocalMemory())
-            code += "  barrier(CLK_LOCAL_MEM_FENCE);\n"
-                    "  if(get_local_id(0) == 0) // first thread in workgroup\n";
-        else
-            // global atomics declared in program scope
+        code += "  barrier(CLK_LOCAL_MEM_FENCE);\n"
+                "  if(get_local_id(0) == 0) // first thread in workgroup\n";
+        code += "    for(uint dstItemIdx = 0; dstItemIdx < numDestItems; "
+                "dstItemIdx++)\n";
+        if (aTypeName == "atomic_flag")
+        {
             code += R"(
-                if(atomic_fetch_add_explicit(&finishedThreads, 1u,
-                                           memory_order_relaxed,
-                                           memory_scope_device)
+                finalDest[dstItemIdx] =
+                    atomic_flag_test_and_set_explicit(destMemory+dstItemIdx,
+                                                      memory_order_relaxed,
+                                                      memory_scope_work_group);)";
+        }
+        else
+        {
+            code += R"(
+                finalDest[dstItemIdx] =
+                    atomic_load_explicit(destMemory+dstItemIdx,
+                                         memory_order_relaxed,
+                                         memory_scope_work_group);)";
+        }
+    }
+    else if (DeclaredInProgram())
+    {
+        // global atomics declared in program scope
+        code += "  // Copy final values to host reachable buffer\n";
+        code += R"(
+            if(atomic_fetch_add_explicit(&finishedThreads, 1u,
+                                         memory_order_relaxed,
+                                         memory_scope_device)
                    == get_global_size(0)-1) // last finished thread
-                   )";
+                )";
         code += "    for(uint dstItemIdx = 0; dstItemIdx < numDestItems; "
                 "dstItemIdx++)\n";
         if (aTypeName == "atomic_flag")
