@@ -1193,5 +1193,5 @@ int test_full_3d_implicit_local(cl_device_id deviceID, cl_context context,
 {
     return test_thread_dimensions(
         deviceID, context, queue, 3, 1,
-        maxThreadDimension ? maxThreadDimension : 65536 * 1024, FULL, 32, 0);
+        maxThreadDimension ? maxThreadDimension : 1024, FULL, 32, 0);
 }
