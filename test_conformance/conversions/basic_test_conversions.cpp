@@ -696,7 +696,8 @@ static void int2short( void *out, void *in){ ((cl_short*) out)[0] = ((cl_int*) i
 static void int2uint( void *out, void *in){ ((cl_uint*) out)[0] = ((cl_int*) in)[0]; }
 static void int2float( void *out, void *in)
 {
-    cl_int l = ((cl_int*) in)[0];
+    // Use volatile to prevent optimization by Clang compiler
+    volatile cl_int l = ((cl_int *)in)[0];
     ((float*) out)[0] = (l == 0 ? 0.0f : (float) l);        // Per IEEE-754-2008 5.4.1, 0's always convert to +0.0
 }
 static void int2double( void *out, void *in)
