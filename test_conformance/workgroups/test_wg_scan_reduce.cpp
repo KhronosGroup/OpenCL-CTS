@@ -97,20 +97,20 @@ template <typename C> struct Reduce
     static constexpr const char *deviceTypeName =
         TestTypeInfo<Type>::deviceName;
     static constexpr const char *kernelName = "test_wg_reduce";
-    static int verify(Type *inptr, Type *outptr, size_t n, size_t wg_size)
+    static int verify(Type *inptr, Type *outptr, size_t n_elems,
+                      size_t max_wg_size)
     {
-        for (size_t i = 0; i < n; i += wg_size)
+        for (size_t i = 0; i < n_elems; i += max_wg_size)
         {
-            size_t m = n - i;
-            if (m > wg_size) m = wg_size;
+            size_t wg_size = std::min(max_wg_size, n_elems - i);
 
             Type result = C::identityValue;
-            for (size_t j = 0; j < m; j++)
+            for (size_t j = 0; j < wg_size; j++)
             {
                 result = C::combine(result, inptr[i + j]);
             }
 
-            for (size_t j = 0; j < m; j++)
+            for (size_t j = 0; j < wg_size; j++)
             {
                 if (result != outptr[i + j])
                 {
@@ -133,15 +133,15 @@ template <typename C> struct ScanInclusive
     static constexpr const char *deviceTypeName =
         TestTypeInfo<Type>::deviceName;
     static constexpr const char *kernelName = "test_wg_scan_inclusive";
-    static int verify(Type *inptr, Type *outptr, size_t n, size_t wg_size)
+    static int verify(Type *inptr, Type *outptr, size_t n_elems,
+                      size_t max_wg_size)
     {
-        for (size_t i = 0; i < n; i += wg_size)
+        for (size_t i = 0; i < n_elems; i += max_wg_size)
         {
-            size_t m = n - i;
-            if (m > wg_size) m = wg_size;
+            size_t wg_size = std::min(max_wg_size, n_elems - i);
 
             Type result = C::identityValue;
-            for (size_t j = 0; j < m; ++j)
+            for (size_t j = 0; j < wg_size; ++j)
             {
                 result = C::combine(result, inptr[i + j]);
                 if (result != outptr[i + j])
@@ -165,15 +165,15 @@ template <typename C> struct ScanExclusive
     static constexpr const char *deviceTypeName =
         TestTypeInfo<Type>::deviceName;
     static constexpr const char *kernelName = "test_wg_scan_exclusive";
-    static int verify(Type *inptr, Type *outptr, size_t n, size_t wg_size)
+    static int verify(Type *inptr, Type *outptr, size_t n_elems,
+                      size_t max_wg_size)
     {
-        for (size_t i = 0; i < n; i += wg_size)
+        for (size_t i = 0; i < n_elems; i += max_wg_size)
         {
-            size_t m = n - i;
-            if (m > wg_size) m = wg_size;
+            size_t wg_size = std::min(max_wg_size, n_elems - i);
 
             Type result = C::identityValue;
-            for (size_t j = 0; j < m; ++j)
+            for (size_t j = 0; j < wg_size; ++j)
             {
                 if (result != outptr[i + j])
                 {
@@ -262,12 +262,13 @@ static int run_test(cl_device_id device, cl_context context,
     if (TestInfo::verify(input_ptr.data(), output_ptr.data(), n_elems,
                          wg_size[0]))
     {
-        log_error("%s %s failed\n", TestInfo::testName,
+        log_error("%s_%s %s failed\n", TestInfo::testName, TestInfo::testOpName,
                   TestInfo::deviceTypeName);
         return TEST_FAIL;
     }
 
-    log_info("%s %s passed\n", TestInfo::testName, TestInfo::deviceTypeName);
+    log_info("%s_%s %s passed\n", TestInfo::testName, TestInfo::testOpName,
+             TestInfo::deviceTypeName);
     return TEST_PASS;
 }
 
