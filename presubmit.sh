@@ -47,6 +47,9 @@ cd OpenCL-Headers
 ln -s CL OpenCL # For OSX builds
 cd ..
 
+#Vulkan Headers
+git clone https://github.com/KhronosGroup/Vulkan-Headers.git
+
 # Get and build loader
 git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
 cd ${TOP}/OpenCL-ICD-Loader
@@ -67,6 +70,7 @@ cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
       -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \
       -DUSE_CL_EXPERIMENTAL=ON \
       -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
+      -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/vulkan \
       ..
 make -j2
 
