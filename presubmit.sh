@@ -70,7 +70,7 @@ cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
       -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \
       -DUSE_CL_EXPERIMENTAL=ON \
       -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
-      -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/vulkan \
+      -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
       ..
 make -j2
 
