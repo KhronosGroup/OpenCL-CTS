@@ -912,8 +912,6 @@ void get_max_sizes(
 float get_max_absolute_error(const cl_image_format *format,
                              image_sampler_data *sampler)
 {
-    if (sampler->filter_mode == CL_FILTER_NEAREST) return 0.0f;
-
     switch (format->image_channel_data_type)
     {
         case CL_SNORM_INT8: return 1.0f / 127.0f;
@@ -924,6 +922,8 @@ float get_max_absolute_error(const cl_image_format *format,
 #ifdef CL_SFIXED14_APPLE
         case CL_SFIXED14_APPLE: return 0x1.0p-14f;
 #endif
+        case CL_UNORM_SHORT_555:
+        case CL_UNORM_SHORT_565: return 1.0f / 31.0f;
         default: return 0.0f;
     }
 }
