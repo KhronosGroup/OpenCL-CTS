@@ -18,19 +18,29 @@
 #include "subgroup_common_templates.h"
 #include "harness/typeWrappers.h"
 
-#define CLUSTER_SIZE 4
-#define CLUSTER_SIZE_STR "4"
-
 namespace {
 std::string sub_group_clustered_reduce_source = R"(
-__kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type *out) {
+__kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type *out,
+                      uint cluster_size) {
+        Type r;
         int gid = get_global_id(0);
         XY(xy,gid);
         xy[gid].w = 0;
-        if (sizeof(in[gid]) == sizeof(%s(in[gid], )" CLUSTER_SIZE_STR R"())) {
+        Type v = in[gid];
+        if (sizeof(in[gid]) == sizeof(%s(v, 1))) {
             xy[gid].w = sizeof(in[gid]);
         }
-        out[gid] = %s(in[gid], )" CLUSTER_SIZE_STR R"();
+        switch (cluster_size) {
+            case 1: r = %s(v, 1); break;
+            case 2: r = %s(v, 2); break;
+            case 4: r = %s(v, 4); break;
+            case 8: r = %s(v, 8); break;
+            case 16: r = %s(v, 16); break;
+            case 32: r = %s(v, 32); break;
+            case 64: r = %s(v, 64); break;
+            case 128: r = %s(v, 128); break;
+        }
+        out[gid] = r;
 }       
 )";
 
@@ -94,32 +104,33 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
                 int n = ii + ns > nw ? nw - ii : ns;
                 int midx = 4 * ii + 2;
                 std::vector<Ty> clusters_results;
-                int clusters_counter = ns / CLUSTER_SIZE;
+                int clusters_counter = ns / test_params.cluster_size;
                 clusters_results.resize(clusters_counter);
 
                 // Compute target
                 Ty tr = mx[ii];
                 for (int i = 0; i < n; ++i)
                 {
-                    if (i % CLUSTER_SIZE == 0)
+                    if (i % test_params.cluster_size == 0)
                         tr = mx[ii + i];
                     else
                         tr = calculate<Ty>(tr, mx[ii + i], operation);
-                    clusters_results[i / CLUSTER_SIZE] = tr;
+                    clusters_results[i / test_params.cluster_size] = tr;
                 }
 
                 // Check result
                 for (int i = 0; i < n; ++i)
                 {
                     Ty rr = my[ii + i];
-                    tr = clusters_results[i / CLUSTER_SIZE];
+                    tr = clusters_results[i / test_params.cluster_size];
                     if (!compare(rr, tr))
                     {
                         log_error(
-                            "ERROR: sub_group_clustered_reduce_%s(%s) mismatch "
-                            "for local id %d in sub group %d in group %d\n",
+                            "ERROR: sub_group_clustered_reduce_%s(%s, %u) "
+                            "mismatch for local id %d in sub group %d in group "
+                            "%d\n",
                             operation_names(operation), TypeManager<Ty>::name(),
-                            i, j, k);
+                            test_params.cluster_size, i, j, k);
                         return TEST_FAIL;
                     }
                 }
@@ -184,7 +195,7 @@ int test_subgroup_functions_clustered_reduce(cl_device_id device,
 
     constexpr size_t global_work_size = 2000;
     constexpr size_t local_work_size = 200;
-    WorkGroupParams test_params(global_work_size, local_work_size);
+    WorkGroupParams test_params(global_work_size, local_work_size, -1, 3);
     test_params.save_kernel_source(sub_group_clustered_reduce_source);
     RunTestForType rft(device, context, queue, num_elements, test_params);
 
