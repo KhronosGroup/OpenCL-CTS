@@ -22,19 +22,11 @@
 const char *sample_single_param_kernel[] = {
     "__kernel void sample_test(__global int *src)\n"
     "{\n"
-    "    int  tid = get_global_id(0);\n"
+    "    size_t  tid = get_global_id(0);\n"
     "\n"
     "}\n"
 };
 
-const char *sample_single_param_write_kernel[] = {
-    "__kernel void sample_test(__global int *src)\n"
-    "{\n"
-    "    int  tid = get_global_id(0);\n"
-    "     src[tid] = tid;\n"
-    "\n"
-    "}\n"
-};
 
 const char *sample_read_image_kernel_pattern[] = {
     "__kernel void sample_test( __global float *result, ",
@@ -42,7 +34,7 @@ const char *sample_read_image_kernel_pattern[] = {
     "{\n"
     "  sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | "
     "CLK_FILTER_NEAREST;\n"
-    "    int  tid = get_global_id(0);\n"
+    "    size_t  tid = get_global_id(0);\n"
     "    result[0] = 0.0f;\n",
     "\n"
     "}\n"
@@ -52,7 +44,7 @@ const char *sample_write_image_kernel_pattern[] = {
     "__kernel void sample_test( ",
     " )\n"
     "{\n"
-    "    int  tid = get_global_id(0);\n",
+    "    size_t  tid = get_global_id(0);\n",
     "\n"
     "}\n"
 };
@@ -81,8 +73,8 @@ const char *sample_sampler_kernel_pattern[] = {
     ", sampler_t sampler%d",
     ")\n"
     "{\n"
-    "    int  tid = get_global_id(0);\n",
-    "     dst[ 0 ] = read_imagei( src, sampler%d, (int2)( 0, 0 ) );\n",
+    "    size_t  tid = get_global_id(0);\n",
+    "    dst[ 0 ] = read_imagei( src, sampler%d, (int2)( 0, 0 ) );\n",
     "\n"
     "}\n"
 };
@@ -90,7 +82,7 @@ const char *sample_sampler_kernel_pattern[] = {
 const char *sample_const_arg_kernel[] = {
     "__kernel void sample_test(__constant int *src1, __global int *dst)\n"
     "{\n"
-    "    int  tid = get_global_id(0);\n"
+    "    size_t  tid = get_global_id(0);\n"
     "\n"
     "    dst[tid] = src1[tid];\n"
     "\n"
@@ -101,7 +93,7 @@ const char *sample_local_arg_kernel[] = {
     "__kernel void sample_test(__local int *src1, __global int *global_src, "
     "__global int *dst)\n"
     "{\n"
-    "    int  tid = get_global_id(0);\n"
+    "    size_t  tid = get_global_id(0);\n"
     "\n"
     "    src1[tid] = global_src[tid];\n"
     "    barrier(CLK_GLOBAL_MEM_FENCE);\n"
