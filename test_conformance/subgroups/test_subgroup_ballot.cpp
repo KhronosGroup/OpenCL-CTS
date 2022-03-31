@@ -609,6 +609,12 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                     }
                     else if (operation == BallotOp::ballot_find_lsb)
                     {
+                        if (bs.none())
+                        {
+                            // Return value is undefined when no bits are set,
+                            // so skip validation:
+                            continue;
+                        }
                         for (int id = 0; id < sbs; ++id)
                         {
                             if (bs.test(id))
@@ -630,6 +636,12 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                     }
                     else if (operation == BallotOp::ballot_find_msb)
                     {
+                        if (bs.none())
+                        {
+                            // Return value is undefined when no bits are set,
+                            // so skip validation:
+                            continue;
+                        }
                         for (int id = sbs - 1; id >= 0; --id)
                         {
                             if (bs.test(id))
