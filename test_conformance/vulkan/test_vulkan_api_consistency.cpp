@@ -74,13 +74,7 @@ int test_consistency_external_buffer(cl_device_id deviceID,
     };
     cl_external_memory_handle_type_khr type;
     switch (vkExternalMemoryHandleType) {
-    case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
-        fd = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
-        type = CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR;
-        errNum = check_external_memory_handle_type(devList[0], type);
-        extMemProperties.push_back((cl_mem_properties)type);
-        extMemProperties.push_back((cl_mem_properties)fd);
-        break;
+#ifdef _WIN32
     case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
         handle = vkDeviceMem->getHandle(vkExternalMemoryHandleType);
         type = CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR;
@@ -95,6 +89,15 @@ int test_consistency_external_buffer(cl_device_id deviceID,
         extMemProperties.push_back((cl_mem_properties)type);
         extMemProperties.push_back((cl_mem_properties)handle);
         break;
+#else
+    case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
+        fd = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
+        type = CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR;
+        errNum = check_external_memory_handle_type(devList[0], type);
+        extMemProperties.push_back((cl_mem_properties)type);
+        extMemProperties.push_back((cl_mem_properties)fd);
+        break;
+#endif
     default:
         errNum = TEST_FAIL;
         log_error("Unsupported external memory handle type \n");
@@ -221,12 +224,7 @@ int test_consistency_external_image(cl_device_id deviceID,
         (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR,
     };
     switch (vkExternalMemoryHandleType) {
-    case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
-        fd = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
-        errNum = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
-        extMemProperties.push_back((cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
-        extMemProperties.push_back((cl_mem_properties)fd);
-        break;
+#ifdef _WIN32
     case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
         handle = vkDeviceMem->getHandle(vkExternalMemoryHandleType);
         errNum = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
@@ -239,6 +237,14 @@ int test_consistency_external_image(cl_device_id deviceID,
         extMemProperties.push_back((cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
         extMemProperties.push_back((cl_mem_properties)handle);
         break;
+#else
+    case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
+        fd = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
+        errNum = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
+        extMemProperties.push_back((cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
+        extMemProperties.push_back((cl_mem_properties)fd);
+        break;
+#endif
     default:
         errNum = TEST_FAIL;
         log_error("Unsupported external memory handle type \n");
@@ -388,16 +394,7 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
         (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
     };
     switch (vkExternalSemaphoreHandleType) {
-        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
-            log_info(" Opaque file descriptors are not supported on Windows\n");
-            fd1 = (int)vkVk2Clsemaphore.getHandle(vkExternalSemaphoreHandleType);
-            fd2 = (int)vkCl2Vksemaphore.getHandle(vkExternalSemaphoreHandleType);
-            errNum = check_external_semaphore_handle_type(devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
-            sema_props1.push_back((cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
-            sema_props1.push_back((cl_semaphore_properties_khr)fd1);
-            sema_props2.push_back((cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
-            sema_props2.push_back((cl_semaphore_properties_khr)fd2);
-            break;
+#ifdef _WIN32
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
             log_info(" Opaque NT handles are only supported on Windows\n");
             handle1 = vkVk2Clsemaphore.getHandle(vkExternalSemaphoreHandleType);
@@ -418,6 +415,18 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
             sema_props2.push_back((cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
             sema_props2.push_back((cl_semaphore_properties_khr)handle2);
             break;
+#else
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
+            log_info(" Opaque file descriptors are not supported on Windows\n");
+            fd1 = (int)vkVk2Clsemaphore.getHandle(vkExternalSemaphoreHandleType);
+            fd2 = (int)vkCl2Vksemaphore.getHandle(vkExternalSemaphoreHandleType);
+            errNum = check_external_semaphore_handle_type(devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
+            sema_props1.push_back((cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
+            sema_props1.push_back((cl_semaphore_properties_khr)fd1);
+            sema_props2.push_back((cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
+            sema_props2.push_back((cl_semaphore_properties_khr)fd2);
+            break;
+#endif
         default:
             log_error("Unsupported external memory handle type\n");
             break;

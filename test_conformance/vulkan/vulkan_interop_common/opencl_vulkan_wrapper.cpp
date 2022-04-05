@@ -538,20 +538,8 @@ clExternalMemoryImage::clExternalMemoryImage(
     #endif
 
     switch (externalMemoryHandleType) {
-        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
-            #ifdef _WIN32
-               ASSERT(0);
-            #endif
-            log_info(" Opaque file descriptors are not supported on Windows\n");
-            fd = (int)deviceMemory.getHandle(externalMemoryHandleType);
-            errcode_ret = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
-            extMemProperties1.push_back((cl_mem_properties_khr)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
-            extMemProperties1.push_back((cl_mem_properties_khr)fd);
-            break;
+#ifdef _WIN32
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
-            #ifndef _WIN32
-               ASSERT(0);
-            #endif
             log_info(" Opaque NT handles are only supported on Windows\n");
             handle = deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
@@ -559,15 +547,21 @@ clExternalMemoryImage::clExternalMemoryImage(
             extMemProperties1.push_back((cl_mem_properties_khr)handle);
             break;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
-            #ifndef _WIN32
-                ASSERT(0);
-            #endif
             log_info(" Opaque D3DKMT handles are only supported on Windows\n");
             handle = deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
             extMemProperties1.push_back((cl_mem_properties_khr)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
             extMemProperties1.push_back((cl_mem_properties_khr)handle);
             break;
+#else
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
+            log_info(" Opaque file descriptors are not supported on Windows\n");
+            fd = (int)deviceMemory.getHandle(externalMemoryHandleType);
+            errcode_ret = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
+            extMemProperties1.push_back((cl_mem_properties_khr)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
+            extMemProperties1.push_back((cl_mem_properties_khr)fd);
+            break;
+#endif
         default:
             ASSERT(0);
             log_error("Unsupported external memory handle type\n");
