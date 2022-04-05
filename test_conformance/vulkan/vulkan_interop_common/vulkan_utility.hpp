@@ -6,8 +6,7 @@
 #include <ostream>
 #include <string.h>
 #include <map>
-
-#define ARRAY_SIZE(a)  (sizeof(a) / sizeof(a[0]))
+#include "../../../test_common/harness/testHarness.h"
 
 #define STRING_(str)  #str
 #define STRING(str)   STRING_(str)
