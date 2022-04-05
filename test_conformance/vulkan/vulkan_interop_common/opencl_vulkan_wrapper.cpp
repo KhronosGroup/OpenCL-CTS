@@ -379,16 +379,16 @@ cl_int getCLImageInfoFromVkImageInfo(const VkImageCreateInfo *VulkanImageCreateI
     return result;
 }
 
-cl_int check_external_memory_handle_type(cl_device_id deviceID, cl_external_memory_handle_type_khr requiredHandleType)
+cl_int check_external_memory_handle_type(cl_device_id deviceID, cl_external_mem_handle_type_khr requiredHandleType)
 {
     unsigned int i;
-    cl_external_memory_handle_type_khr* handle_type;
+    cl_external_mem_handle_type_khr* handle_type;
     size_t handle_type_size = 0;
 
     cl_int errNum = CL_SUCCESS;
 
     errNum = clGetDeviceInfo(deviceID, CL_DEVICE_EXTERNAL_MEMORY_IMPORT_HANDLE_TYPES_KHR, 0, NULL, &handle_type_size);
-    handle_type = (cl_external_memory_handle_type_khr*)malloc(handle_type_size);
+    handle_type = (cl_external_mem_handle_type_khr*)malloc(handle_type_size);
 
     errNum = clGetDeviceInfo(deviceID, CL_DEVICE_EXTERNAL_MEMORY_IMPORT_HANDLE_TYPES_KHR, handle_type_size, handle_type, NULL);
 
@@ -469,8 +469,8 @@ clExternalMemory::clExternalMemory(
                 log_info(" Opaque file descriptors are not supported on Windows\n");
                 fd = (int)deviceMemory->getHandle(externalMemoryHandleType);
                 err = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
-                extMemProperties.push_back((cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
-                extMemProperties.push_back((cl_mem_properties)fd);
+                extMemProperties.push_back((cl_mem_properties_khr)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
+                extMemProperties.push_back((cl_mem_properties_khr)fd);
                 break;
             case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
                 #ifndef _WIN32
@@ -479,8 +479,8 @@ clExternalMemory::clExternalMemory(
                 log_info(" Opaque NT handles are only supported on Windows\n");
                 handle = deviceMemory->getHandle(externalMemoryHandleType);
                 err = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
-                extMemProperties.push_back((cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
-                extMemProperties.push_back((cl_mem_properties)handle);
+                extMemProperties.push_back((cl_mem_properties_khr)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
+                extMemProperties.push_back((cl_mem_properties_khr)handle);
                 break;
             case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
                 #ifndef _WIN32
@@ -489,8 +489,8 @@ clExternalMemory::clExternalMemory(
                 log_info(" Opaque D3DKMT handles are only supported on Windows\n");
                 handle = deviceMemory->getHandle(externalMemoryHandleType);
                 err = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
-                extMemProperties.push_back((cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
-                extMemProperties.push_back((cl_mem_properties)handle);
+                extMemProperties.push_back((cl_mem_properties_khr)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
+                extMemProperties.push_back((cl_mem_properties_khr)handle);
                 break;
             default:
                  ASSERT(0);
@@ -501,9 +501,9 @@ clExternalMemory::clExternalMemory(
         throw std::runtime_error("Unsupported external memory type\n ");
     }
 
-    extMemProperties.push_back((cl_mem_properties)CL_DEVICE_HANDLE_LIST_KHR);
-    extMemProperties.push_back((cl_mem_properties)devList[0]);
-    extMemProperties.push_back((cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR);
+    extMemProperties.push_back((cl_mem_properties_khr)CL_DEVICE_HANDLE_LIST_KHR);
+    extMemProperties.push_back((cl_mem_properties_khr)devList[0]);
+    extMemProperties.push_back((cl_mem_properties_khr)CL_DEVICE_HANDLE_LIST_END_KHR);
     extMemProperties.push_back(0);
     
     m_externalMemory = clCreateBufferWithProperties(context, extMemProperties.data(), 1, size, NULL, &err);
@@ -524,7 +524,7 @@ clExternalMemoryImage::clExternalMemoryImage(
     cl_device_id deviceId)
 {
     cl_int errcode_ret = 0;    
-    std::vector<cl_mem_properties> extMemProperties1;
+    std::vector<cl_mem_properties_khr> extMemProperties1;
     cl_device_id devList[] = { deviceId, NULL };
 
     #ifdef _WIN32
@@ -545,8 +545,8 @@ clExternalMemoryImage::clExternalMemoryImage(
             log_info(" Opaque file descriptors are not supported on Windows\n");
             fd = (int)deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
-            extMemProperties1.push_back((cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
-            extMemProperties1.push_back((cl_mem_properties)fd);
+            extMemProperties1.push_back((cl_mem_properties_khr)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
+            extMemProperties1.push_back((cl_mem_properties_khr)fd);
             break;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
             #ifndef _WIN32
@@ -555,8 +555,8 @@ clExternalMemoryImage::clExternalMemoryImage(
             log_info(" Opaque NT handles are only supported on Windows\n");
             handle = deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
-            extMemProperties1.push_back((cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
-            extMemProperties1.push_back((cl_mem_properties)handle);
+            extMemProperties1.push_back((cl_mem_properties_khr)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
+            extMemProperties1.push_back((cl_mem_properties_khr)handle);
             break;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
             #ifndef _WIN32
@@ -565,8 +565,8 @@ clExternalMemoryImage::clExternalMemoryImage(
             log_info(" Opaque D3DKMT handles are only supported on Windows\n");
             handle = deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
-            extMemProperties1.push_back((cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
-            extMemProperties1.push_back((cl_mem_properties)handle);
+            extMemProperties1.push_back((cl_mem_properties_khr)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
+            extMemProperties1.push_back((cl_mem_properties_khr)handle);
             break;
         default:
             ASSERT(0);
@@ -588,9 +588,9 @@ clExternalMemoryImage::clExternalMemoryImage(
         throw std::runtime_error("getCLImageInfoFromVkImageInfo failed!!!");
     }
 
-    extMemProperties1.push_back((cl_mem_properties)CL_DEVICE_HANDLE_LIST_KHR);
-    extMemProperties1.push_back((cl_mem_properties)devList[0]);
-    extMemProperties1.push_back((cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR);
+    extMemProperties1.push_back((cl_mem_properties_khr)CL_DEVICE_HANDLE_LIST_KHR);
+    extMemProperties1.push_back((cl_mem_properties_khr)devList[0]);
+    extMemProperties1.push_back((cl_mem_properties_khr)CL_DEVICE_HANDLE_LIST_END_KHR);
     extMemProperties1.push_back(0);
     m_externalMemory = clCreateImageWithProperties(context,
                                                  extMemProperties1.data(),

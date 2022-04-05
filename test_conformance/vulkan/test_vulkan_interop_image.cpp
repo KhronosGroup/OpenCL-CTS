@@ -349,17 +349,27 @@ int run_test_with_two_queue(cl_context& context, cl_command_queue& cmd_queue1,cl
                                 ASSERT_LEQ(vkImage2D.getSize(), maxImage2DSize);
                                 totalImageMemSize = ROUND_UP(vkImage2D.getSize(), vkImage2D.getAlignment());
                             }
+                            VulkanImage2DList vkNonDedicatedImage2DList(num2DImages, vkDevice, vkFormat, width, height, numMipLevels, vkExternalMemoryHandleType);
                             for (size_t bIdx = 0; bIdx < num2DImages; bIdx++) {
-                                vkNonDedicatedImage2DListDeviceMemory1.push_back(new VulkanDeviceMemory(vkDevice, totalImageMemSize, memoryType, vkExternalMemoryHandleType));
-                                vkNonDedicatedImage2DListDeviceMemory2.push_back(new VulkanDeviceMemory(vkDevice, totalImageMemSize, memoryType, vkExternalMemoryHandleType));
-                            }
-                            VulkanImage2DList vkNonDedicatedImage2DList(num2DImages, vkNonDedicatedImage2DListDeviceMemory1, 0, 0/*interImageOffset*/, vkDevice, vkFormat, width, height, numMipLevels, vkExternalMemoryHandleType);
-                            for (size_t bIdx = 0; bIdx < num2DImages; bIdx++) {
+                                if (non_dedicated) {
+                                    vkNonDedicatedImage2DListDeviceMemory1.push_back(new VulkanDeviceMemory(vkDevice, totalImageMemSize, memoryType, vkExternalMemoryHandleType));
+                                }
+                                else {
+                                    vkNonDedicatedImage2DListDeviceMemory1.push_back(new VulkanDeviceMemory(vkDevice, vkNonDedicatedImage2DList[bIdx], memoryType, vkExternalMemoryHandleType));
+                                }
+                                vkNonDedicatedImage2DListDeviceMemory1[bIdx]->bindImage(vkNonDedicatedImage2DList[bIdx], 0);
                                 nonDedicatedExternalMemory1.push_back(new clExternalMemoryImage(*vkNonDedicatedImage2DListDeviceMemory1[bIdx], vkExternalMemoryHandleType, context, totalImageMemSize, width, height, 0, vkNonDedicatedImage2DList[bIdx], deviceId));
                             }
                             VulkanImageViewList vkNonDedicatedImage2DViewList(vkDevice, vkNonDedicatedImage2DList);
-                            VulkanImage2DList vkNonDedicatedImage2DList2(num2DImages, vkNonDedicatedImage2DListDeviceMemory2, 0, 0/*interImageOffset*/, vkDevice, vkFormat, width, height, numMipLevels, vkExternalMemoryHandleType);
+                            VulkanImage2DList vkNonDedicatedImage2DList2(num2DImages, vkDevice, vkFormat, width, height, numMipLevels, vkExternalMemoryHandleType);
                             for (size_t bIdx = 0; bIdx < num2DImages; bIdx++) {
+                                if (non_dedicated) {
+                                    vkNonDedicatedImage2DListDeviceMemory2.push_back(new VulkanDeviceMemory(vkDevice, totalImageMemSize, memoryType, vkExternalMemoryHandleType));
+                                }
+                                else {
+                                    vkNonDedicatedImage2DListDeviceMemory2.push_back(new VulkanDeviceMemory(vkDevice, vkNonDedicatedImage2DList2[bIdx], memoryType, vkExternalMemoryHandleType));
+                                }
+                                vkNonDedicatedImage2DListDeviceMemory2[bIdx]->bindImage(vkNonDedicatedImage2DList2[bIdx], 0);
                                 nonDedicatedExternalMemory2.push_back(new clExternalMemoryImage(*vkNonDedicatedImage2DListDeviceMemory2[bIdx], vkExternalMemoryHandleType, context, totalImageMemSize, width, height, 0, vkNonDedicatedImage2DList2[bIdx], deviceId));
                             }
                             VulkanImageViewList vkDedicatedImage2DViewList(vkDevice, vkNonDedicatedImage2DList2);

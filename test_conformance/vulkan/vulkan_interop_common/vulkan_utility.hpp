@@ -21,6 +21,7 @@ const VulkanQueueFamily & getVulkanQueueFamily(
 const VulkanMemoryType & getVulkanMemoryType(
     const VulkanDevice & device,
     VulkanMemoryTypeProperty memoryTypeProperty);
+bool checkVkSupport();
 const VulkanQueueFamilyList & getEmptyVulkanQueueFamilyList();
 const VulkanDescriptorSetLayoutList & getEmptyVulkanDescriptorSetLayoutList();
 const VulkanQueueFamilyToQueueCountMap & getDefaultVulkanQueueFamilyToQueueCountMap();
