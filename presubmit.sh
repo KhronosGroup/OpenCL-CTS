@@ -58,6 +58,17 @@ cd build
 cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ ..
 make
 
+#Vulkan Loader
+cd ${TOP}
+git clone https://github.com/KhronosGroup/Vulkan-Loader.git
+cd Vulkan-Loader
+mkdir build
+cd build
+python3 ../scripts/update_deps.py
+cmake -DBUILD_WSI_XLIB_SUPPORT=OFF -DBUILD_WSI_XCB_SUPPORT=OFF -DBUILD_WSI_WAYLAND_SUPPORT=OFF -C helper.cmake ..
+cmake --build .
+make
+
 # Build CTS
 cd ${TOP}
 ls -l
@@ -71,6 +82,7 @@ cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
       -DUSE_CL_EXPERIMENTAL=ON \
       -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
       -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
+      -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/ \
       ..
 make -j2
 
