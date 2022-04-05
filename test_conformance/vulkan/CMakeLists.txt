@@ -9,13 +9,8 @@ set(CMAKE_CXX_FLAGS "-fpermissive")
 if(WIN32) 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
 endif(WIN32)
-if(MSVC)
-    set (CLConform_VULKAN_LIBRARIES_DIR "${VULKAN_LIB_DIR}/${ARCH}_win32")
-elseif(MINGW)
-    set (CLConform_VULKAN_LIBRARIES_DIR "${VULKAN_LIB_DIR}/${ARCH}_mingw")
-else(MSVC)
-    set (CLConform_VULKAN_LIBRARIES_DIR "${VULKAN_LIB_DIR}/${ARCH}_Linux")
-endif(MSVC)
+
+set (CLConform_VULKAN_LIBRARIES_DIR "${VULKAN_LIB_DIR}")
 
 link_directories(${CLConform_VULKAN_LIBRARIES_DIR})
 
