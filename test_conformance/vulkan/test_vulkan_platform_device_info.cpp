@@ -42,7 +42,7 @@ int test_platform_info(cl_device_id deviceID,
     errNum = clGetPlatformIDs(0, NULL, &num_platforms);
     test_error(errNum, "clGetPlatformIDs (getting count) failed");
 
-    platforms = malloc(num_platforms * sizeof(cl_platform_id));
+    platforms = (cl_platform_id *)malloc(num_platforms * sizeof(cl_platform_id));
     if (!platforms) {
         printf("error allocating memory\n");
         exit(1);
