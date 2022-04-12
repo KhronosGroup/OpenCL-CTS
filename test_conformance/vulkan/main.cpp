@@ -1,7 +1,7 @@
 /******************************************************************
 //
 //  OpenCL Conformance Tests
-// 
+//
 //  Copyright:	(c) 2008-2011 by Apple Inc. All Rights Reserved.
 //
 ******************************************************************/
@@ -16,7 +16,7 @@
 #include <math.h>
 #include <string.h>
 
-#if !defined (__APPLE__)
+#if !defined(__APPLE__)
 #include <CL/cl.h>
 #endif
 
@@ -41,7 +41,7 @@ static void params_reset()
 }
 
 extern int test_buffer_common(cl_device_id device_, cl_context context_,
-		              cl_command_queue queue_, int numElements_);
+                              cl_command_queue queue_, int numElements_);
 extern int test_image_common(cl_device_id device_, cl_context context_,
 		             cl_command_queue queue_, int numElements_);
 
