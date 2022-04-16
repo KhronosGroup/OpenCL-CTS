@@ -11,10 +11,8 @@
 #include "harness/typeWrappers.h"
 #include "harness/deviceInfo.h"
               
-int test_consistency_external_buffer(cl_device_id deviceID,
-                               cl_context _context,
-                               cl_command_queue _queue,
-                               int num_elements)
+int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
+                                     cl_command_queue _queue, int num_elements)
 {
     cl_int errNum;
     VulkanDevice vkDevice;
@@ -23,18 +21,14 @@ int test_consistency_external_buffer(cl_device_id deviceID,
     cl_context context = NULL;
     cl_command_queue cmd_queue = NULL;
 
-    cl_context_properties contextProperties[] =
-    {
-       CL_CONTEXT_PLATFORM,
-       0,
-       0
-    };
+    cl_context_properties contextProperties[] = {CL_CONTEXT_PLATFORM, 0, 0};
     errNum = clGetPlatformIDs(1, &platform, NULL);
     test_error(errNum, "Failed to get platform Id");
 
     contextProperties[1] = (cl_context_properties)platform;
 
-    context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU, NULL, NULL, &errNum);
+    context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU,
+                                      NULL, NULL, &errNum);
     test_error(errNum, "Unable to create context with properties");
 
     cmd_queue = clCreateCommandQueue(context, deviceID, 0, &errNum);
@@ -44,12 +38,16 @@ int test_consistency_external_buffer(cl_device_id deviceID,
     cl_device_id devList[] = {deviceID, NULL};
 
     #ifdef _WIN32
-        if (!is_extension_available(devList[0], "cl_khr_external_memory_win32")) {
-            throw std::runtime_error(" Device does not support cl_khr_external_memory_win32 extension \n");
+        if (!is_extension_available(devList[0], "cl_khr_external_memory_win32"))
+	{
+            throw std::runtime_error("Device does not support "
+			             "cl_khr_external_memory_win32 extension \n");
         }
     #else
-        if (!is_extension_available(devList[0], "cl_khr_external_memory_opaque_fd")) {
-            throw std::runtime_error(" Device does not support cl_khr_external_memory_opaque_fd extension \n");
+        if (!is_extension_available(devList[0], "cl_khr_external_memory_opaque_fd"))
+	{
+            throw std::runtime_error("Device does not support "
+			             "cl_khr_external_memory_opaque_fd extension \n");
         }
     #endif
     
@@ -73,35 +71,36 @@ int test_consistency_external_buffer(cl_device_id deviceID,
         (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR,
     };
     cl_external_memory_handle_type_khr type;
-    switch (vkExternalMemoryHandleType) {
+    switch (vkExternalMemoryHandleType)
+    {
 #ifdef _WIN32
-    case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
-        handle = vkDeviceMem->getHandle(vkExternalMemoryHandleType);
-        type = CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR;
-        errNum = check_external_memory_handle_type(devList[0], type);
-        extMemProperties.push_back((cl_mem_properties)type);
-        extMemProperties.push_back((cl_mem_properties)handle);
-        break;
-    case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
-        handle = vkDeviceMem->getHandle(vkExternalMemoryHandleType);
-        type = CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR;
-        errNum = check_external_memory_handle_type(devList[0], type);
-        extMemProperties.push_back((cl_mem_properties)type);
-        extMemProperties.push_back((cl_mem_properties)handle);
-        break;
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
+            handle = vkDeviceMem->getHandle(vkExternalMemoryHandleType);
+            type = CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR;
+            errNum = check_external_memory_handle_type(devList[0], type);
+            extMemProperties.push_back((cl_mem_properties)type);
+            extMemProperties.push_back((cl_mem_properties)handle);
+            break;
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
+            handle = vkDeviceMem->getHandle(vkExternalMemoryHandleType);
+            type = CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR;
+            errNum = check_external_memory_handle_type(devList[0], type);
+            extMemProperties.push_back((cl_mem_properties)type);
+            extMemProperties.push_back((cl_mem_properties)handle);
+            break;
 #else
-    case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
-        fd = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
-        type = CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR;
-        errNum = check_external_memory_handle_type(devList[0], type);
-        extMemProperties.push_back((cl_mem_properties)type);
-        extMemProperties.push_back((cl_mem_properties)fd);
-        break;
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
+            fd = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
+            type = CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR;
+            errNum = check_external_memory_handle_type(devList[0], type);
+            extMemProperties.push_back((cl_mem_properties)type);
+            extMemProperties.push_back((cl_mem_properties)fd);
+            break;
 #endif
-    default:
-        errNum = TEST_FAIL;
-        log_error("Unsupported external memory handle type \n");
-        break;
+        default:
+            errNum = TEST_FAIL;
+            log_error("Unsupported external memory handle type \n");
+            break;
     }
     if (errNum != CL_SUCCESS)
     {
@@ -113,13 +112,15 @@ int test_consistency_external_buffer(cl_device_id deviceID,
     clMemWrapper buffer;
     
     // Passing NULL properties and a valid extMem_desc size
-    buffer = clCreateBufferWithProperties(context, NULL , 1, bufferSize, NULL, &errNum);
+    buffer = clCreateBufferWithProperties(context, NULL , 1, bufferSize,
+		                          NULL, &errNum);
     test_error(errNum, "Unable to create buffer with NULL properties");
     
     buffer.reset();
    
     // Passing valid extMemProperties and buffersize 
-    buffer = clCreateBufferWithProperties(context, extMemProperties.data(), 1, bufferSize, NULL, &errNum);
+    buffer = clCreateBufferWithProperties(context, extMemProperties.data(), 1,
+		                          bufferSize, NULL, &errNum);
     test_error(errNum, "Unable to create buffer with Properties");
 
     buffer.reset();
@@ -139,18 +140,17 @@ int test_consistency_external_buffer(cl_device_id deviceID,
         (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR,
         0
     };
-    buffer = clCreateBufferWithProperties(context, extMemProperties2.data() , 1, bufferSize, NULL, &errNum);
-    test_failure_error(
-        errNum, CL_INVALID_VALUE ,
-        "Should return CL_INVALID_VALUE ");
+    buffer = clCreateBufferWithProperties(context, extMemProperties2.data(),
+		                          1, bufferSize, NULL, &errNum);
+    test_failure_error(errNum, CL_INVALID_VALUE, "Should return CL_INVALID_VALUE ");
    
     buffer.reset();
 
     // Passing extMem_desc size = 0 but valid memProperties, CL_INVALID_SIZE should be returned. 
-    buffer = clCreateBufferWithProperties(context, extMemProperties.data(), 1, 0, NULL, &errNum);
-    test_failure_error(
-        errNum, CL_INVALID_BUFFER_SIZE,
-        "Should return CL_INVALID_BUFFER_SIZE ");
+    buffer = clCreateBufferWithProperties(context, extMemProperties.data(),
+		                          1, 0, NULL, &errNum);
+    test_failure_error(errNum, CL_INVALID_BUFFER_SIZE,
+                       "Should return CL_INVALID_BUFFER_SIZE");
 
     return TEST_PASS;
 }
@@ -179,7 +179,8 @@ int test_consistency_external_image(cl_device_id deviceID,
 
     contextProperties[1] = (cl_context_properties)platform;
 
-    context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU, NULL, NULL, &errNum);
+    context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU,
+		                      NULL, NULL, &errNum);
     test_error(errNum, "Unable to create context with properties");
 
     cmd_queue = clCreateCommandQueue(context, deviceID, 0, &errNum);
@@ -270,12 +271,12 @@ int test_consistency_external_image(cl_device_id deviceID,
 
     // Pass valid properties, image_desc and image_format 
     image = clCreateImageWithProperties(context,
-        extMemProperties.data(),
-        CL_MEM_READ_WRITE,
-        &img_format,
-        &image_desc,
-        NULL, // host_ptr NULL
-        &errNum);
+                                        extMemProperties.data(),
+                                        CL_MEM_READ_WRITE,
+                                        &img_format,
+                                        &image_desc,
+                                        NULL, // host_ptr NULL
+                                        &errNum);
     test_error(errNum, "Unable to create Image with Properties");
     image.reset();
    
@@ -287,8 +288,7 @@ int test_consistency_external_image(cl_device_id deviceID,
                                         NULL, //image desc passed as NULL
                                         NULL, // host_ptr NULL
                                         &errNum);
-    test_failure_error(
-        errNum, CL_INVALID_IMAGE_DESCRIPTOR,
+    test_failure_error(errNum, CL_INVALID_IMAGE_DESCRIPTOR,
         "Image creation must fail with CL_INVALID_IMAGE_DESCRIPTOR when all are passed as NULL");
         
     image.reset();
@@ -357,7 +357,8 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
    
     contextProperties[1] = (cl_context_properties)platform;
 
-    context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU, NULL, NULL, &errNum);
+    context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU,
+		                      NULL, NULL, &errNum);
     test_error(errNum, "Unable to create context with properties");
 
     cmd_queue = clCreateCommandQueue(context, deviceID, 0, &errNum);
@@ -367,11 +368,13 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
 
 #ifdef _WIN32
     if (!is_extension_available(devList[0], "cl_khr_external_semaphore_win32")) {
-        throw std::runtime_error(" Device does not support cl_khr_external_semaphore_win32 extension \n");
+        throw std::runtime_error("Device does not support "
+		         	 "cl_khr_external_semaphore_win32 extension \n");
     }
 #else
     if (!is_extension_available(devList[0], "cl_khr_external_semaphore_opaque_fd")) {
-        throw std::runtime_error(" Device does not support cl_khr_external_semaphore_opaque_fd extension \n");
+        throw std::runtime_error("Device does not support "
+			         "cl_khr_external_semaphore_opaque_fd extension \n");
     }
 #endif
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType = getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
@@ -393,7 +396,8 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
         (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
         (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
     };
-    switch (vkExternalSemaphoreHandleType) {
+    switch (vkExternalSemaphoreHandleType)
+    {
 #ifdef _WIN32
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
             log_info(" Opaque NT handles are only supported on Windows\n");
