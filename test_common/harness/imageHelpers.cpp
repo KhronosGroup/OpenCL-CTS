@@ -2624,11 +2624,11 @@ void pack_image_pixel(int *srcVector, const cl_image_format *imageFormat,
     }
 }
 
-int round_to_even(float v)
+cl_int round_to_even(float v)
 {
     // clamp overflow
-    if (v >= -(float)INT_MIN) return INT_MAX;
-    if (v <= (float)INT_MIN) return INT_MIN;
+    if (v >= -(float)CL_INT_MIN) return CL_INT_MAX;
+    if (v <= (float)CL_INT_MIN) return CL_INT_MIN;
 
     // round fractional values to integer value
     if (fabsf(v) < MAKE_HEX_FLOAT(0x1.0p23f, 0x1L, 23))
@@ -2640,7 +2640,7 @@ int round_to_even(float v)
         v -= magicVal;
     }
 
-    return (int)v;
+    return (cl_int)v;
 }
 
 void pack_image_pixel(float *srcVector, const cl_image_format *imageFormat,
@@ -2765,10 +2765,7 @@ void pack_image_pixel(float *srcVector, const cl_image_format *imageFormat,
         case CL_SIGNED_INT32: {
             cl_int *ptr = (cl_int *)outData;
             for (unsigned int i = 0; i < channelCount; i++)
-                ptr[i] = (int)CONVERT_INT(
-                    srcVector[i], MAKE_HEX_FLOAT(-0x1.0p31f, -1, 31),
-                    MAKE_HEX_FLOAT(0x1.fffffep30f, 0x1fffffe, 30 - 23),
-                    CL_INT_MAX);
+                ptr[i] = round_to_even(srcVector[i]);
             break;
         }
         case CL_UNSIGNED_INT8: {
@@ -2932,12 +2929,8 @@ void pack_image_pixel_error(const float *srcVector,
         case CL_SIGNED_INT32: {
             const cl_int *ptr = (const cl_int *)results;
             for (unsigned int i = 0; i < channelCount; i++)
-                errors[i] = (cl_float)(
-                    (cl_long)ptr[i]
-                    - (cl_long)CONVERT_INT(
-                        srcVector[i], MAKE_HEX_FLOAT(-0x1.0p31f, -1, 31),
-                        MAKE_HEX_FLOAT(0x1.fffffep30f, 0x1fffffe, 30 - 23),
-                        CL_INT_MAX));
+                errors[i] = (cl_float)((cl_long)ptr[i]
+                                       - (cl_long)round_to_even(srcVector[i]));
             break;
         }
         case CL_UNSIGNED_INT8: {
