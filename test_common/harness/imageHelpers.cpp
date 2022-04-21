@@ -912,6 +912,8 @@ void get_max_sizes(
 float get_max_absolute_error(const cl_image_format *format,
                              image_sampler_data *sampler)
 {
+    if (sampler->filter_mode == CL_FILTER_NEAREST) return 0.0f;
+
     switch (format->image_channel_data_type)
     {
         case CL_SNORM_INT8: return 1.0f / 127.0f;
