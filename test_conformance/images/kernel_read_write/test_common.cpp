@@ -1214,7 +1214,8 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                         // offsets (0.0, 0.0) E.g., test one
                                         // pixel.
                                         if (!imageSampler->normalized_coords
-                                            || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                            || !(gDeviceType
+                                                 & CL_DEVICE_TYPE_GPU)
                                             || NORM_OFFSET == 0)
                                         {
                                             norm_offset_x = 0.0f;
@@ -1396,7 +1397,8 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                         // offsets (0.0, 0.0) E.g., test one
                                         // pixel.
                                         if (!imageSampler->normalized_coords
-                                            || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                            || !(gDeviceType
+                                                 & CL_DEVICE_TYPE_GPU)
                                             || NORM_OFFSET == 0)
                                         {
                                             norm_offset_x = 0.0f;
