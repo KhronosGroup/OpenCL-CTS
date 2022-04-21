@@ -581,7 +581,7 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                     if (!imageSampler->normalized_coords ||  imageSampler->filter_mode != CL_FILTER_NEAREST || NORM_OFFSET == 0
 #if defined( __APPLE__ )
                         // Apple requires its CPU implementation to do correctly rounded address arithmetic in all modes
-                        || gDeviceType != CL_DEVICE_TYPE_GPU
+                        || !(gDeviceType & CL_DEVICE_TYPE_GPU)
 #endif
                         )
                         offset = 0.0f;          // Loop only once
@@ -647,7 +647,7 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords || !(gDeviceType & CL_DEVICE_TYPE_GPU) || NORM_OFFSET == 0) {
                                     norm_offset_x = 0.0f;
                                     norm_offset_y = 0.0f;
                                     checkOnlyOnePixel = 1;
@@ -749,7 +749,7 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                     if (!imageSampler->normalized_coords ||  imageSampler->filter_mode != CL_FILTER_NEAREST || NORM_OFFSET == 0
 #if defined( __APPLE__ )
                         // Apple requires its CPU implementation to do correctly rounded address arithmetic in all modes
-                        || gDeviceType != CL_DEVICE_TYPE_GPU
+                        || !(gDeviceType & CL_DEVICE_TYPE_GPU)
 #endif
                         )
                         offset = 0.0f;          // Loop only once
@@ -824,7 +824,7 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords || !(gDeviceType & CL_DEVICE_TYPE_GPU) || NORM_OFFSET == 0) {
                                     norm_offset_x = 0.0f;
                                     norm_offset_y = 0.0f;
                                     checkOnlyOnePixel = 1;
@@ -935,7 +935,7 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                             // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                             // E.g., test one pixel.
-                            if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                            if (!imageSampler->normalized_coords || !(gDeviceType & CL_DEVICE_TYPE_GPU) || NORM_OFFSET == 0) {
                                 norm_offset_x = 0.0f;
                                 norm_offset_y = 0.0f;
                                 checkOnlyOnePixel = 1;
@@ -965,7 +965,7 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords || !(gDeviceType & CL_DEVICE_TYPE_GPU) || NORM_OFFSET == 0) {
                                     norm_offset_x = 0.0f;
                                     norm_offset_y = 0.0f;
                                     checkOnlyOnePixel = 1;
@@ -1021,7 +1021,7 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                             // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                             // E.g., test one pixel.
-                            if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                            if (!imageSampler->normalized_coords || !(gDeviceType & CL_DEVICE_TYPE_GPU) || NORM_OFFSET == 0) {
                                 norm_offset_x = 0.0f;
                                 norm_offset_y = 0.0f;
                                 checkOnlyOnePixel = 1;
@@ -1051,7 +1051,7 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords || !(gDeviceType & CL_DEVICE_TYPE_GPU) || NORM_OFFSET == 0) {
                                     norm_offset_x = 0.0f;
                                     norm_offset_y = 0.0f;
                                     checkOnlyOnePixel = 1;
