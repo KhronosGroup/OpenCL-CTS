@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/deviceInfo.h"
 #include "harness/kernelHelpers.h"
 #include "harness/testHarness.h"
 
@@ -323,6 +324,8 @@ int test_vstorea_half_rtn( cl_device_id deviceID, cl_context context, cl_command
 
 int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleReferenceFunc, const char *roundName )
 {
+    if (!is_extension_available(device, "cl_khr_fp16")) return 0;
+
     int vectorSize, error;
     cl_program  programs[kVectorSizeCount+kStrangeVectorSizeCount][3];
     cl_kernel   kernels[kVectorSizeCount+kStrangeVectorSizeCount][3];
@@ -973,6 +976,8 @@ exit:
 
 int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleReferenceFunc, const char *roundName )
 {
+    if (!is_extension_available(device, "cl_khr_fp16")) return 0;
+
     int vectorSize, error;
     cl_program  programs[kVectorSizeCount+kStrangeVectorSizeCount][3];
     cl_kernel   kernels[kVectorSizeCount+kStrangeVectorSizeCount][3];

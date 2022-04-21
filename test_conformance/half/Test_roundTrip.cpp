@@ -19,10 +19,13 @@
 
 #include "cl_utils.h"
 #include "tests.h"
+#include "harness/deviceInfo.h"
 #include "harness/testHarness.h"
 
 int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
 {
+    if (!is_extension_available(device, "cl_khr_fp16")) return 0;
+
     int vectorSize, error;
     uint64_t i, j;
     cl_program  programs[kVectorSizeCount+kStrangeVectorSizeCount] = {0};

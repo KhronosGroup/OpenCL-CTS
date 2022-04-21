@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/deviceInfo.h"
 #include "harness/testHarness.h"
 
 #include <string.h>
@@ -34,6 +35,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
     uint64_t time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
     uint64_t min_time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
     size_t q;
+
+    if (!is_extension_available(device, "cl_khr_fp16")) return 0;
 
     memset( min_time, -1, sizeof( min_time ) );
 
