@@ -544,4 +544,3 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
 
     return TEST_PASS;
 }
-
