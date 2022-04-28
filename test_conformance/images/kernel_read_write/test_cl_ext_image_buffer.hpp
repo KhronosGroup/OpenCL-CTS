@@ -42,7 +42,8 @@ static inline void* aligned_ptr(void* ptr, size_t alignment)
 
 static inline size_t get_format_size(cl_context context,
                                      cl_image_format* format,
-                                     cl_mem_object_type imageType)
+                                     cl_mem_object_type imageType,
+                                     cl_mem_flags flags)
 {
     cl_image_desc image_desc = { 0 };
     image_desc.image_type = imageType;
@@ -65,8 +66,17 @@ static inline size_t get_format_size(cl_context context,
         image_desc.image_array_size = 1;
     }
 
-    cl_int error;
-    cl_mem image = clCreateImage(context, CL_MEM_READ_WRITE, format,
+    cl_int error = 0;
+    cl_mem buffer;
+    if (imageType == CL_MEM_OBJECT_IMAGE1D_BUFFER)
+    {
+        buffer = clCreateBuffer(context, flags, get_pixel_size(format) * image_desc.image_width, NULL, &error);
+        test_error(error, "Unable to create buffer");
+
+        image_desc.buffer = buffer;
+    }
+
+    cl_mem image = clCreateImage(context, flags, format,
                                  &image_desc, nullptr, &error);
     test_error(error, "Unable to create image");
 
@@ -77,6 +87,12 @@ static inline size_t get_format_size(cl_context context,
 
     error = clReleaseMemObject(image);
     test_error(error, "Unable to release image");
+
+    if (imageType == CL_MEM_OBJECT_IMAGE1D_BUFFER)
+    {
+        error = clReleaseMemObject(buffer);
+        test_error(error, "Unable to release buffer");
+    }
 
     return element_size;
 }

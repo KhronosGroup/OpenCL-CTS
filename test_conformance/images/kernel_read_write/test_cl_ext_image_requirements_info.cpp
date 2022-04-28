@@ -102,51 +102,65 @@ int cl_image_requirements_size_ext_consistency(cl_device_id device,
         CL_MEM_OBJECT_IMAGE1D_ARRAY, CL_MEM_OBJECT_IMAGE2D_ARRAY
     };
 
-    for (auto imageType : imageTypes)
+    std::vector<cl_mem_flags> flagTypes{
+        CL_MEM_READ_ONLY,
+        CL_MEM_WRITE_ONLY,
+        CL_MEM_READ_WRITE,
+        CL_MEM_KERNEL_READ_AND_WRITE
+    };
+
+    for(auto flag: flagTypes)
     {
-        /* Get the list of supported image formats */
-        std::vector<cl_image_format> formatList;
-        if (TEST_PASS
-                != get_format_list(context, imageType, formatList,
-                                   CL_MEM_READ_WRITE)
-            || formatList.size() == 0)
+        for (auto imageType: imageTypes)
         {
-            test_fail("Failure to get supported formats list");
-        }
-
-        for (auto format : formatList)
-        {
-            cl_image_desc image_desc = { 0 };
-            image_desc_init(&image_desc, imageType);
-
-            cl_int err = clGetImageRequirementsInfoEXT(
-                context, nullptr, CL_MEM_READ_WRITE, &format, &image_desc,
-                CL_IMAGE_REQUIREMENTS_SIZE_EXT, sizeof(max_size), &max_size,
-                &param_val_size);
-            test_error(err, "Error clGetImageRequirementsInfoEXT");
-
-            /* Create buffer */
-            cl_mem buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, max_size,
-                                           nullptr, &err);
-            test_error(err, "Unable to create buffer");
-
-            image_desc.buffer = buffer;
-
-            /* 2D Image from buffer */
-            cl_mem image_buffer =
-                clCreateImage(context, CL_MEM_READ_WRITE, &format, &image_desc,
-                              nullptr, &err);
-            test_error(err, "Unable to create image");
-
-            size_t size = 0;
-            err = clGetMemObjectInfo(image_buffer, CL_MEM_SIZE, sizeof(size_t),
-                                     &size, NULL);
-            test_error(err, "Error clGetMemObjectInfo");
-
-            if (max_size != size)
+            /* Get the list of supported image formats */
+            std::vector<cl_image_format> formatList;
+            if (TEST_PASS != get_format_list(context, imageType, formatList, flag)
+                || formatList.size() == 0)
             {
-                test_fail("CL_IMAGE_REQUIREMENTS_SIZE_EXT different from "
-                          "CL_MEM_SIZE");
+                test_fail("Failure to get supported formats list");
+            }
+
+            for (auto format: formatList)
+            {
+                cl_image_desc image_desc = {0};
+                image_desc_init(&image_desc, imageType);
+
+                cl_int err = clGetImageRequirementsInfoEXT(
+                    context, nullptr, flag, &format, &image_desc,
+                    CL_IMAGE_REQUIREMENTS_SIZE_EXT, sizeof(max_size), &max_size,
+                    &param_val_size);
+                test_error(err, "Error clGetImageRequirementsInfoEXT");
+
+                /* Create buffer */
+                cl_mem buffer = clCreateBuffer(context, flag, max_size,
+                                               nullptr, &err);
+                test_error(err, "Unable to create buffer");
+
+                image_desc.buffer = buffer;
+
+                /* 2D Image from buffer */
+                cl_mem image_buffer =
+                    clCreateImage(context, flag, &format, &image_desc,
+                                  nullptr, &err);
+                test_error(err, "Unable to create image");
+
+                size_t size = 0;
+                err = clGetMemObjectInfo(image_buffer, CL_MEM_SIZE, sizeof(size_t),
+                                         &size, NULL);
+                test_error(err, "Error clGetMemObjectInfo");
+
+                if (max_size != size)
+                {
+                    test_fail("CL_IMAGE_REQUIREMENTS_SIZE_EXT different from "
+                              "CL_MEM_SIZE");
+                }
+
+                err = clReleaseMemObject(image_buffer);
+                test_error(err, "Error clReleaseMemObject");
+
+                err = clReleaseMemObject(buffer);
+                test_error(err, "Error clReleaseMemObject");
             }
         }
     }
