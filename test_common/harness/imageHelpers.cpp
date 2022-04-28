@@ -924,6 +924,8 @@ float get_max_absolute_error(const cl_image_format *format,
 #ifdef CL_SFIXED14_APPLE
         case CL_SFIXED14_APPLE: return 0x1.0p-14f;
 #endif
+        case CL_UNORM_SHORT_555:
+        case CL_UNORM_SHORT_565: return 1.0f / 31.0f;
         default: return 0.0f;
     }
 }
