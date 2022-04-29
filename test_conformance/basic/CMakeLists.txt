@@ -6,8 +6,7 @@ set(${MODULE_NAME}_SOURCES
     test_intmath.cpp
     test_hiloeo.cpp test_local.cpp test_pointercast.cpp
     test_if.cpp test_loop.cpp
-    test_readimage.cpp test_readimage_int16.cpp test_readimage_fp32.cpp
-    test_readimage3d.cpp test_readimage3d_int16.cpp test_readimage3d_fp32.cpp
+    test_readimage.cpp
     test_writeimage.cpp test_writeimage_int16.cpp test_writeimage_fp32.cpp
     test_multireadimageonefmt.cpp test_multireadimagemultifmt.cpp
     test_imagedim.cpp
