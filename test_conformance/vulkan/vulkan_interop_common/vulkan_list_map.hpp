@@ -165,7 +165,7 @@ public:
     virtual ~VulkanCommandBufferList();
 };
 
-class VulkanBufferList: public VulkanList<VulkanBuffer, VkBuffer> {
+class VulkanBufferList : public VulkanList<VulkanBuffer, VkBuffer> {
 protected:
     VulkanBufferList(const VulkanBufferList &bufferList);
 
@@ -234,7 +234,7 @@ VulkanDeviceMemoryList(size_t numImages, const VulkanImage2DList &image2DList,
 virtual ~VulkanDeviceMemoryList();
 };
 
-class VulkanSemaphoreList: public VulkanList<VulkanSemaphore, VkSemaphore> {
+class VulkanSemaphoreList : public VulkanList<VulkanSemaphore, VkSemaphore> {
 protected:
     VulkanSemaphoreList(const VulkanSemaphoreList &semaphoreList);
 
@@ -349,9 +349,8 @@ VulkanMap<VulkanKey, VulkanValue>::~VulkanMap()
 {}
 
 template <class VulkanKey, class VulkanValue>
-void
-VulkanMap<VulkanKey, VulkanValue>::insert(const VulkanKey &key,
-                                          VulkanValue &value)
+void VulkanMap<VulkanKey, VulkanValue>::insert(const VulkanKey &key,
+                                               VulkanValue &value)
 {
     m_map.insert(std::pair<VulkanKey, std::reference_wrapper<VulkanValue>>(
         key, std::reference_wrapper<VulkanValue>(value)));
@@ -365,8 +364,7 @@ const VulkanValue &
 }
 
 template <class VulkanKey, class VulkanValue>
-VulkanValue &
-    VulkanMap<VulkanKey, VulkanValue>::operator[](const VulkanKey &key)
+VulkanValue &VulkanMap<VulkanKey, VulkanValue>::operator[](const VulkanKey &key)
 {
     return m_map.at(key);
 }
