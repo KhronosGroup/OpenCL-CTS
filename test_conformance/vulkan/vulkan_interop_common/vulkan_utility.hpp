@@ -12,7 +12,7 @@
 #define STRING(str) STRING_(str)
 
 #define ROUND_UP(n, multiple)                                                  \
-    (((n) + (multiple) - 1) - ((((n) + (multiple) - 1)) % (multiple)))
+    (((n) + (multiple)-1) - ((((n) + (multiple)-1)) % (multiple)))
 
 const VulkanInstance& getVulkanInstance();
 const VulkanPhysicalDevice& getVulkanPhysicalDevice();
@@ -40,13 +40,13 @@ std::string prepareVulkanShader(
     std::string shaderCode,
     const std::map<std::string, std::string>& patternToSubstituteMap);
 
-std::ostream& operator<<(std::ostream &os,
+std::ostream& operator<<(std::ostream& os,
                          VulkanMemoryTypeProperty memoryTypeProperty);
 std::ostream&
-operator<<(std::ostream &os,
+operator<<(std::ostream& os,
            VulkanExternalMemoryHandleType externalMemoryHandleType);
 std::ostream&
-operator<<(std::ostream &os,
+operator<<(std::ostream& os,
            VulkanExternalSemaphoreHandleType externalSemaphoreHandleType);
 std::ostream& operator<<(std::ostream& os, VulkanFormat format);
 
