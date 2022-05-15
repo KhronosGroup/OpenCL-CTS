@@ -77,11 +77,14 @@ const char *known_extensions[] = {
     "cl_khr_spirv_linkonce_odr",
     "cl_khr_semaphore",
     "cl_khr_external_semaphore",
+    "cl_khr_external_semaphore_opaque_fd",
     "cl_khr_external_semaphore_sync_fd",
     "cl_khr_command_buffer",
+    "cl_khr_external_memory",
+    "cl_khr_external_memory_opaque_fd",
 };
 
-size_t num_known_extensions = sizeof(known_extensions) / sizeof(char *);
+size_t num_known_extensions = ARRAY_SIZE(known_extensions);
 size_t first_API_extension = 29;
 
 const char *known_embedded_extensions[] = {
