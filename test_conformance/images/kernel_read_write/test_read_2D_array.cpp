@@ -1277,8 +1277,6 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
                                         if (!imageSampler->normalized_coords
                                             || !(gDeviceType
                                                  & CL_DEVICE_TYPE_GPU)
-                                            || NORM_OFFSET == 0
-                                            || NORM_OFFSET == 0
                                             || NORM_OFFSET == 0)
                                         {
                                             norm_offset_x = 0.0f;
