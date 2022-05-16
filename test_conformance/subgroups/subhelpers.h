@@ -36,8 +36,7 @@ extern cl_half_rounding_mode g_rounding_mode;
 
 struct WorkGroupParams
 {
-    WorkGroupParams(size_t gws, size_t lws,
-                    bool use_mask = false)
+    WorkGroupParams(size_t gws, size_t lws, bool use_mask = false)
         : global_workgroup_size(gws), local_workgroup_size(lws),
           use_masks(use_mask)
     {

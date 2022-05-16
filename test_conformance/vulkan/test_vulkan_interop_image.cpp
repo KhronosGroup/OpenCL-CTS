@@ -13,26 +13,27 @@
 #define GLSL_TYPE_PREFIX_STRING "<GLSL_TYPE_PREFIX>"
 #define NUM_THREADS_PER_GROUP_X 32
 #define NUM_THREADS_PER_GROUP_Y 32
-#define NUM_BLOCKS(size, blockSize)                                           \
+#define NUM_BLOCKS(size, blockSize)                                            \
     (ROUND_UP((size), (blockSize)) / (blockSize))
 
-#define ASSERT(x)                                                             \
-    if (!(x))                                                                 \
-    {                                                                         \
-        fprintf(stderr, "Assertion \"%s\" failed at %s:%d\n", #x, __FILE__,   \
-                __LINE__);                                                    \
-        exit(1);                                                              \
-    }                                                                         \
+#define ASSERT(x)                                                              \
+    if (!(x))                                                                  \
+    {                                                                          \
+        fprintf(stderr, "Assertion \"%s\" failed at %s:%d\n", #x, __FILE__,    \
+                __LINE__);                                                     \
+        exit(1);                                                               \
+    }
 
-#define ASSERT_LEQ(x,y)                                                       \
-    if(x>y)                                                                   \
-    {                                                                         \
-       ASSERT(0);                                                             \ 
-    }                                                                         \
+#define ASSERT_LEQ(x, y)                                                       \
+    if (x > y)                                                                 \
+    {                                                                          \
+        ASSERT(0);                                                             \
+    }
 
 namespace {
-struct Params {
-uint32_t numImage2DDescriptors;
+struct Params
+{
+    uint32_t numImage2DDescriptors;
 };
 }
 static cl_uchar uuid[CL_UUID_SIZE_KHR];

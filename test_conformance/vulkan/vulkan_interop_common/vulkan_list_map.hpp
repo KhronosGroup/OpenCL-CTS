@@ -232,7 +232,8 @@ VulkanDeviceMemoryList(size_t numImages, const VulkanImage2DList &image2DList,
                        VulkanExternalMemoryHandleType externalMemoryHandleType =
                            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE);
 virtual ~VulkanDeviceMemoryList();
-};
+}
+;
 
 class VulkanSemaphoreList : public VulkanList<VulkanSemaphore, VkSemaphore> {
 protected:

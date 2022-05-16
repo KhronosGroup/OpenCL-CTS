@@ -37,8 +37,8 @@ void init_cl_vk_ext(cl_platform_id opencl_platform)
                                  "clEnqueueSignalSemaphoresKHRptr!");
     }
     clReleaseSemaphoreObjectKHRptr = (pfnclReleaseSemaphoreObjectKHR)
-        clGetExtensionFunctionAddressForPlatform(
-            opencl_platform, "clReleaseSemaphoreObjectKHR");
+        clGetExtensionFunctionAddressForPlatform(opencl_platform,
+                                                 "clReleaseSemaphoreObjectKHR");
     if (NULL == clReleaseSemaphoreObjectKHRptr)
     {
         throw std::runtime_error("Failed to get the function pointer of "
