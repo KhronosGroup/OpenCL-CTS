@@ -291,8 +291,8 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 if (err != CL_SUCCESS)
                 {
                     print_error(err,
-                                "Error: Failed to launch update_buffer_kernel,
-                                error\n ");
+                                "Error: Failed to launch update_buffer_kernel,"
+                                "error\n");
                     goto CLEANUP;
                 }
 

@@ -222,18 +222,18 @@ public:
 };
 
 class VulkanDeviceMemoryList
-    : public VulkanList<VulkanDeviceMemory, VkDeviceMemory> protected
-    : VulkanDeviceMemoryList(const VulkanDeviceMemoryList &deviceMemoryList);
+    : public VulkanList<VulkanDeviceMemory, VkDeviceMemory> {
+protected:
+    VulkanDeviceMemoryList(const VulkanDeviceMemoryList &deviceMemoryList);
 
 public:
-VulkanDeviceMemoryList(size_t numImages, const VulkanImage2DList &image2DList,
-                       const VulkanDevice &device,
-                       const VulkanMemoryType &memoryType,
-                       VulkanExternalMemoryHandleType externalMemoryHandleType =
-                           VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE);
-virtual ~VulkanDeviceMemoryList();
-}
-;
+    VulkanDeviceMemoryList(
+        size_t numImages, const VulkanImage2DList &image2DList,
+        const VulkanDevice &device, const VulkanMemoryType &memoryType,
+        VulkanExternalMemoryHandleType externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE);
+    virtual ~VulkanDeviceMemoryList();
+};
 
 class VulkanSemaphoreList : public VulkanList<VulkanSemaphore, VkSemaphore> {
 protected:

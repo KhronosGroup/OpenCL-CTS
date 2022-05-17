@@ -143,7 +143,7 @@ public:
     const VulkanQueueFamily &getQueueFamily();
     void submit(const VulkanSemaphoreList &waitSemaphoreList,
                 const VulkanCommandBufferList &commandBufferList,
-                const VulkanSemaphoreLis &signalSemaphoreList);
+                const VulkanSemaphoreList &signalSemaphoreList);
     void submit(const VulkanSemaphore &waitSemaphore,
                 const VulkanCommandBuffer &commandBuffer,
                 const VulkanSemaphore &signalSemaphore);
@@ -553,7 +553,7 @@ public:
 };
 
 
-#define VK_FUNC_DECL(name) extern "C" PFN_##name_##name;
+#define VK_FUNC_DECL(name)   extern "C" PFN_ ## name _ ## name;
 VK_FUNC_LIST
 #if defined(_WIN32) || defined(_WIN64)
 VK_WINDOWS_FUNC_LIST

@@ -39,6 +39,37 @@ struct Params
 static cl_uchar uuid[CL_UUID_SIZE_KHR];
 static cl_device_id deviceId = NULL;
 
+static const char *vkImage2DShader =
+    "#version 450\n"
+    "#extension GL_ARB_separate_shader_objects : enable\n"
+    "#extension GL_NV_gpu_shader5 : enable\n"
+    "layout(binding = 0) buffer Params\n"
+    "{\n"
+    "    uint32_t numImage2DDescriptors;\n"
+    "};\n"
+    "layout(binding = 1, " GLSL_FORMAT_STRING ") uniform " GLSL_TYPE_PREFIX_STRING "image2D image2DList[" STRING(MAX_2D_IMAGE_DESCRIPTORS) "];\n"
+    "layout(local_size_x = 32, local_size_y = 32) in;\n"
+    "void main() {\n"
+    "    uvec3 numThreads = gl_NumWorkGroups * gl_WorkGroupSize;\n"
+    "    for (uint32_t image2DIdx = 0; image2DIdx < numImage2DDescriptors; image2DIdx++)"
+    "    {\n"
+    "        ivec2 imageDim = imageSize(image2DList[image2DIdx]);\n"
+    "        uint32_t heightBy2 = imageDim.y / 2;\n"
+    "        for (uint32_t row = gl_GlobalInvocationID.y; row < heightBy2; row += numThreads.y)"
+    "        {\n"
+    "            for (uint32_t col = gl_GlobalInvocationID.x; col < imageDim.x; col += numThreads.x)"
+    "            {\n"
+    "                ivec2 coordsA = ivec2(col, row);\n"
+    "                ivec2 coordsB = ivec2(col, imageDim.y - row - 1);\n"
+    "                " GLSL_TYPE_PREFIX_STRING "vec4 dataA = imageLoad(image2DList[image2DIdx], coordsA);\n"
+    "                " GLSL_TYPE_PREFIX_STRING "vec4 dataB = imageLoad(image2DList[image2DIdx], coordsB);\n"
+    "                imageStore(image2DList[image2DIdx], coordsA, dataB);\n"
+    "                imageStore(image2DList[image2DIdx], coordsB, dataA);\n"
+    "            }\n"
+    "        }\n"
+    "    }\n"
+    "}\n";
+
 const char* kernel_text_numImage_1 = " \
 __constant sampler_t smpImg = CLK_NORMALIZED_COORDS_FALSE|CLK_ADDRESS_NONE|CLK_FILTER_NEAREST;\n\
 __kernel void image2DKernel(read_only image2d_t InputImage, write_only image2d_t OutImage, int num2DImages, int baseWidth, int baseHeight, int numMipLevels)\n\
@@ -47,7 +78,7 @@ __kernel void image2DKernel(read_only image2d_t InputImage, write_only image2d_t
     int threadIdxY = get_global_id(1);\n\
     int numThreadsX = get_global_size(0);                                                                                                  \n\
     int numThreadsY = get_global_size(1);\n\
-    if (threadIdxX >= baseWidth || threadIdxY >= baseHeight)
+    if (threadIdxX >= baseWidth || threadIdxY >= baseHeight)\n\
     {\n\
         return;\n\
     }\n\
@@ -58,123 +89,58 @@ __kernel void image2DKernel(read_only image2d_t InputImage, write_only image2d_t
 \n\
 }";
 
-const char* kernel_text_numImage_1 = " \
-    "layout(binding = 1, " GLSL_FORMAT_STRING
-    ") uniform " GLSL_TYPE_PREFIX_STRING "image2D image2DList[" STRING(
-        MAX_2D_IMAGE_DESCRIPTORS) "];\n"
-                                  "layout(local_size_x = 32, local_size_y = "
-                                  "32) in;\n"
-                                  "void main() {\n"
-                                  "    uvec3 numThreads = gl_NumWorkGroups * "
-                                  "gl_WorkGroupSize;\n"
-                                  "    for (uint32_t image2DIdx = 0; image2DIdx < numImage2DDescriptors; image2DIdx++)
-                                  "    {\n"
-                                  "        ivec2 imageDim = "
-                                  "imageSize(image2DList[image2DIdx]);\n"
-                                  "        uint32_t heightBy2 = imageDim.y / "
-                                  "2;\n"
-                                  "        for (uint32_t row = gl_GlobalInvocationID.y; row < heightBy2; row += numThreads.y)
-                                  "        {\n"
-                                  "            for (uint32_t col = gl_GlobalInvocationID.x; col < imageDim.x; col += numThreads.x)
-                                  "            {\n"
-                                  "                ivec2 coordsA = ivec2(col, "
-                                  "row);\n"
-                                  "                ivec2 coordsB = ivec2(col, "
-                                  "imageDim.y - row - 1);\n"
-                                  "                " GLSL_TYPE_PREFIX_STRING
-                                  "vec4 dataA = "
-                                  "imageLoad(image2DList[image2DIdx], "
-                                  "coordsA);\n"
-                                  "                " GLSL_TYPE_PREFIX_STRING
-                                  "vec4 dataB = "
-                                  "imageLoad(image2DList[image2DIdx], "
-                                  "coordsB);\n"
-                                  "                "
-                                  "imageStore(image2DList[image2DIdx], "
-                                  "coordsA, dataB);\n"
-                                  "                "
-                                  "imageStore(image2DList[image2DIdx], "
-                                  "coordsB, dataA);\n"
-                                  "            }\n"
-                                  "        }\n"
-                                  "    }\n"
-                                  "}\n";
-
-const char* kernel_text_numImage_1 = " \
-__constant sampler_t smpImg = CLK_NORMALIZED_COORDS_FALSE|CLK_ADDRESS_NONE|CLK_FILTER_NEAREST;\n\
-__kernel void image2DKernel(read_only image2d_t InputImage, write_only image2d_t OutImage, int num2DImages, int baseWidth, int baseHeight, int numMipLevels)\n\
-{\n\
-    int threadIdxX = get_global_id(0);\n\
-    int threadIdxY = get_global_id(1);\n\
-    int numThreadsX = get_global_size(0);                                                                                                  \n\
-    int numThreadsY = get_global_size(1);\n\
-    if (threadIdxX >= baseWidth || threadIdxY >= baseHeight)
-    {\n\
-        return;\n\
-    }\n\
 const char* kernel_text_numImage_2 = " \
 __constant sampler_t smpImg = CLK_NORMALIZED_COORDS_FALSE|CLK_ADDRESS_NONE|CLK_FILTER_NEAREST;\n\
 __kernel void image2DKernel(read_only image2d_t InputImage_1, write_only image2d_t OutImage_1, read_only image2d_t InputImage_2,write_only image2d_t OutImage_2,int num2DImages, int baseWidth, int baseHeight, int numMipLevels)    \n\
-{\n                                                                           \
- \n int threadIdxX = get_global_id(0);					      \
- \n int threadIdxY = get_global_id(1);					      \
- \n int numThreadsX = get_global_size(0);			      	      \
- \n int numThreadsY = get_global_size(1);				      \
- \n if (threadIdxX >= baseWidth || threadIdxY >= baseHeight)                  \
- \n {									      \ 
- \n     return;                                                               \
- \n                                                                           \ 
- \n }                                                                         \  \n % s dataA =                                                               \
- \n   read_image % s(InputImage, smpImg, (int2)(threadIdxX, threadIdxY));     \
- \n % s dataB = read_image                                                    \
- \n % s(InputImage, smpImg, (int2)(threadIdxX, baseHeight - threadIdxY - 1)); \
- \n write_image                                                               \
- \n % s(OutImage, (int2)(threadIdxX, baseHeight - threadIdxY - 1), dataA);    \
- \n write_image % s(OutImage, (int2)(threadIdxX, threadIdxY), dataB);         \
- \n                                                                           \
- \n
-}
-";
+{\n\
+    int threadIdxX = get_global_id(0);\n\
+    int threadIdxY = get_global_id(1);\n\
+    int numThreadsX = get_global_size(0);\n\
+    int numThreadsY = get_global_size(1);\n\
+    if (threadIdxX >= baseWidth || threadIdxY >= baseHeight) \n\
+    {\n\
+        return;\n\
+    }\n\
+    %s dataA =  read_image%s(InputImage_1, smpImg, (int2)(threadIdxX, threadIdxY)); \n\
+    %s dataB =  read_image%s(InputImage_1, smpImg, (int2)(threadIdxX, baseHeight-threadIdxY-1)); \n\
+    %s dataC =  read_image%s(InputImage_2, smpImg, (int2)(threadIdxX, threadIdxY)); \n\
+    %s dataD =  read_image%s(InputImage_2, smpImg, (int2)(threadIdxX, baseHeight-threadIdxY-1)); \n\
+    write_image%s(OutImage_1, (int2)(threadIdxX, baseHeight-threadIdxY-1), dataA);\n\
+    write_image%s(OutImage_1, (int2)(threadIdxX, threadIdxY), dataB);\n\
+    write_image%s(OutImage_2, (int2)(threadIdxX, baseHeight-threadIdxY-1), dataC);\n\
+    write_image%s(OutImage_2, (int2)(threadIdxX, threadIdxY), dataD);\n\
+\n\
+}";
 
 const char* kernel_text_numImage_4 = " \
 __constant sampler_t smpImg = CLK_NORMALIZED_COORDS_FALSE|CLK_ADDRESS_NONE|CLK_FILTER_NEAREST;\n\
 __kernel void image2DKernel(read_only image2d_t InputImage_1, write_only image2d_t OutImage_1, read_only image2d_t InputImage_2, write_only image2d_t OutImage_2, read_only image2d_t InputImage_3, write_only image2d_t OutImage_3, read_only image2d_t InputImage_4, write_only image2d_t OutImage_4, int num2DImages, int baseWidth, int baseHeight, int numMipLevels)    \n\
-{\n
- \n int threadIdxX = get_global_id(0);                                        \
- \n int threadIdxY = get_global_id(1);                                        \
- \n int numThreadsX = get_global_size(0);                                     \
- \n int numThreadsY = get_global_size(1);                                     \
- \n if (threadIdxX >= baseWidth || threadIdxY >= baseHeight)                  \
-    {\n                                                                       \
-     \n   return;                                                             \
-    }\n                                                                       \
-    \n %s dataA =                                                             \
-    \n read_image%s(InputImage_1, smpImg, (int2)(threadIdxX, threadIdxY));    \
-    \n %s dataB =                                                             \
-    \n read_image%s(InputImage_1, smpImg,                                     \
-    \n              (int2)(threadIdxX, baseHeight-threadIdxY-1));             \
-    \n %s dataC =                                                             \
-    \n read_image%s(InputImage_2, smpImg, (int2)(threadIdxX, threadIdxY));    \
-    \n %s dataD =                                                             \
-    \n read_image%s(InputImage_2, smpImg,                                     \
-    \n		    (int2)(threadIdxX,baseHeight-threadIdxY-1));              \
-    \n %s dataE =                                                             \
-    \n read_image%s(InputImage_3, smpImg, (int2)(threadIdxX, threadIdxY));    \
-    \n %s dataF =                                                             \
-    \n read_image%s(InputImage_3, smpImg, (int2)(threadIdxX, baseHeight-threadIdxY-1)); \
-    \n %s dataG =                                                             \
-    \n read_image%s(InputImage_4, smpImg, (int2)(threadIdxX, threadIdxY));    \
-    \n %s dataH =                                                             \
-    \n read_image%s(InputImage_4, smpImg, (int2)(threadIdxX, baseHeight-threadIdxY-1)); \
-    \n write_image%s(OutImage_1, (int2)(threadIdxX, baseHeight-threadIdxY-1), dataA);\
-    \n write_image%s(OutImage_1, (int2)(threadIdxX, threadIdxY), dataB);\
-    \n write_image%s(OutImage_2, (int2)(threadIdxX, baseHeight-threadIdxY-1), dataC);\
-    \n write_image%s(OutImage_2, (int2)(threadIdxX, threadIdxY), dataD);\
-    \n write_image%s(OutImage_3, (int2)(threadIdxX, baseHeight-threadIdxY-1), dataE);\
-    \n write_image%s(OutImage_3, (int2)(threadIdxX, threadIdxY), dataF);\
-    \n write_image%s(OutImage_4, (int2)(threadIdxX, baseHeight-threadIdxY-1), dataG);\
-    \n write_image%s(OutImage_4, (int2)(threadIdxX, threadIdxY), dataH);\
-\n
+{\n\
+    int threadIdxX = get_global_id(0);\n\
+    int threadIdxY = get_global_id(1);\n\
+    int numThreadsX = get_global_size(0);\n\
+    int numThreadsY = get_global_size(1);\n\
+    if (threadIdxX >= baseWidth || threadIdxY >= baseHeight) \n\
+    {\n\
+        return;\n\
+    }\n\
+    %s dataA =  read_image%s(InputImage_1, smpImg, (int2)(threadIdxX, threadIdxY)); \n\
+    %s dataB =  read_image%s(InputImage_1, smpImg, (int2)(threadIdxX, baseHeight-threadIdxY-1)); \n\
+    %s dataC =  read_image%s(InputImage_2, smpImg, (int2)(threadIdxX, threadIdxY)); \n\
+    %s dataD =  read_image%s(InputImage_2, smpImg, (int2)(threadIdxX, baseHeight-threadIdxY-1)); \n\
+    %s dataE =  read_image%s(InputImage_3, smpImg, (int2)(threadIdxX, threadIdxY)); \n\
+    %s dataF =  read_image%s(InputImage_3, smpImg, (int2)(threadIdxX, baseHeight-threadIdxY-1)); \n\
+    %s dataG =  read_image%s(InputImage_4, smpImg, (int2)(threadIdxX, threadIdxY)); \n\
+    %s dataH =  read_image%s(InputImage_4, smpImg, (int2)(threadIdxX, baseHeight-threadIdxY-1)); \n\
+    write_image%s(OutImage_1, (int2)(threadIdxX, baseHeight-threadIdxY-1), dataA);\n\
+    write_image%s(OutImage_1, (int2)(threadIdxX, threadIdxY), dataB);\n\
+    write_image%s(OutImage_2, (int2)(threadIdxX, baseHeight-threadIdxY-1), dataC);\n\
+    write_image%s(OutImage_2, (int2)(threadIdxX, threadIdxY), dataD);\n\
+    write_image%s(OutImage_3, (int2)(threadIdxX, baseHeight-threadIdxY-1), dataE);\n\
+    write_image%s(OutImage_3, (int2)(threadIdxX, threadIdxY), dataF);\n\
+    write_image%s(OutImage_4, (int2)(threadIdxX, baseHeight-threadIdxY-1), dataG);\n\
+    write_image%s(OutImage_4, (int2)(threadIdxX, threadIdxY), dataH);\n\
+\n\
 }";
 
 const uint32_t num2DImagesList[] = { 1, 2, 4 };
@@ -502,7 +468,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                                 {
                                     vkNonDedicatedImage2DListDeviceMemory2
                                         .push_back(new VulkanDeviceMemory(
-                                            ivkDevice,
+                                            vkDevice,
                                             vkNonDedicatedImage2DList2[bIdx],
                                             memoryType,
                                             vkExternalMemoryHandleType));

@@ -52,7 +52,7 @@ int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
     }
 #endif
 
-    VulkanExiternalMemoryHandleType vkExternalMemoryHandleType =
+    VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
         getSupportedVulkanExternalMemoryHandleTypeList()[0];
 
     VulkanBuffer vkDummyBuffer(vkDevice, 4 * 1024, vkExternalMemoryHandleType);
@@ -69,7 +69,7 @@ int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
     void* handle = NULL;
     int fd;
 
-    std::vector<cl_mem_propertiesi> extMemProperties{
+    std::vector<cl_mem_properties> extMemProperties{
         (cl_mem_properties)CL_DEVICE_HANDLE_LIST_KHR,
         (cl_mem_properties)devList[0],
         (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR,

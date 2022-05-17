@@ -448,7 +448,7 @@ VulkanQueueFamily::~VulkanQueueFamily() {}
 
 uint32_t VulkanQueueFamily::getQueueFlags() const
 {
-    return m_vkQuieueFamilyProperties.queueFlags
+    return m_vkQueueFamilyProperties.queueFlags
         & (uint32_t)VULKAN_QUEUE_FLAG_MASK_ALL;
 }
 
