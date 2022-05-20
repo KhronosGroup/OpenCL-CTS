@@ -13,15 +13,13 @@
 #define BUFFERSIZE 3000
 
 
-const VulkanInstance &
-getVulkanInstance()
+const VulkanInstance &getVulkanInstance()
 {
     static VulkanInstance instance;
     return instance;
 }
 
-const VulkanPhysicalDevice &
-getVulkanPhysicalDevice()
+const VulkanPhysicalDevice &getVulkanPhysicalDevice()
 {
     size_t pdIdx;
     cl_int errNum = 0;
@@ -31,79 +29,109 @@ getVulkanPhysicalDevice()
     char *extensions = NULL;
     size_t extensionSize = 0;
     cl_uint num_devices = 0;
-    cl_uint device_no = 0;    
+    cl_uint device_no = 0;
     const size_t bufsize = BUFFERSIZE;
     char buf[BUFFERSIZE];
-    const VulkanInstance & instance = getVulkanInstance();
-    const VulkanPhysicalDeviceList & physicalDeviceList = instance.getPhysicalDeviceList();
+    const VulkanInstance &instance = getVulkanInstance();
+    const VulkanPhysicalDeviceList &physicalDeviceList =
+        instance.getPhysicalDeviceList();
 
     // get the platform ID
     errNum = clGetPlatformIDs(1, &platform, NULL);
-    if (errNum != CL_SUCCESS) {
+    if (errNum != CL_SUCCESS)
+    {
         printf("Error: Failed to get platform\n");
-        throw std::runtime_error("Error: Failed to get number of platform\n"); ;
+        throw std::runtime_error("Error: Failed to get number of platform\n");
     }
-    
-    errNum = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, NULL, &num_devices);
-    if (CL_SUCCESS != errNum) {
-       throw std::runtime_error("Error: clGetDeviceIDs failed in returning of devices\n"); ;
+
+    errNum =
+        clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, NULL, &num_devices);
+    if (CL_SUCCESS != errNum)
+    {
+        throw std::runtime_error(
+            "Error: clGetDeviceIDs failed in returning of devices\n");
     }
     devices = (cl_device_id *)malloc(num_devices * sizeof(cl_device_id));
-    if (NULL == devices) {
-        throw std::runtime_error("Error: Unable to allocate memory for devices\n"); ;
+    if (NULL == devices)
+    {
+        throw std::runtime_error(
+            "Error: Unable to allocate memory for devices\n");
     }
-    errNum = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, num_devices, devices, NULL);
-    if (CL_SUCCESS != errNum) {
-       throw std::runtime_error("Error: Failed to get deviceID.\n"); ;
+    errNum = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, num_devices, devices,
+                            NULL);
+    if (CL_SUCCESS != errNum)
+    {
+        throw std::runtime_error("Error: Failed to get deviceID.\n");
     }
     bool is_selected = false;
-    for (device_no = 0; device_no < num_devices; device_no++) {
-        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS, 0, NULL, &extensionSize);
-        if (CL_SUCCESS != errNum) {
-            throw std::runtime_error("Error in clGetDeviceInfo for getting device_extension size....\n");;
+    for (device_no = 0; device_no < num_devices; device_no++)
+    {
+        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS, 0,
+                                 NULL, &extensionSize);
+        if (CL_SUCCESS != errNum)
+        {
+            throw std::runtime_error("Error in clGetDeviceInfo for getting "
+                                     "device_extension size....\n");
         }
-        extensions = (char*)malloc(extensionSize);
-        if (NULL == extensions) {
-            throw std::runtime_error("Unable to allocate memory for extensions\n");;
+        extensions = (char *)malloc(extensionSize);
+        if (NULL == extensions)
+        {
+            throw std::runtime_error(
+                "Unable to allocate memory for extensions\n");
         }
-        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS, extensionSize, extensions, NULL/*&extensionSize*/);
-        if (CL_SUCCESS != errNum) {
-            throw std::runtime_error("Error: Error in clGetDeviceInfo for getting device_extension \n"); ;
+        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS,
+                                 extensionSize, extensions, NULL);
+        if (CL_SUCCESS != errNum)
+        {
+            throw std::runtime_error("Error: Error in clGetDeviceInfo for "
+                                     "getting device_extension\n");
         }
-        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_UUID_KHR, CL_UUID_SIZE_KHR, uuid, &extensionSize);
-        if (CL_SUCCESS != errNum) {
-             throw std::runtime_error("Error: clGetDeviceInfo failed with error\n"); ;
+        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_UUID_KHR,
+                                 CL_UUID_SIZE_KHR, uuid, &extensionSize);
+        if (CL_SUCCESS != errNum)
+        {
+            throw std::runtime_error(
+                "Error: clGetDeviceInfo failed with error\n");
         }
         free(extensions);
-        for (pdIdx = 0; pdIdx < physicalDeviceList.size(); pdIdx++) {
-            if (!memcmp(&uuid, physicalDeviceList[pdIdx].getUUID(), VK_UUID_SIZE)) {
-                std::cout << "Selected physical device = " << physicalDeviceList[pdIdx] << std::endl;
+        for (pdIdx = 0; pdIdx < physicalDeviceList.size(); pdIdx++)
+        {
+            if (!memcmp(&uuid, physicalDeviceList[pdIdx].getUUID(),
+                        VK_UUID_SIZE))
+            {
+                std::cout << "Selected physical device = "
+                          << physicalDeviceList[pdIdx] << std::endl;
                 is_selected = true;
                 break;
             }
         }
-        if (is_selected) {
+        if (is_selected)
+        {
             break;
         }
     }
 
-    if ((pdIdx >= physicalDeviceList.size()) || (physicalDeviceList[pdIdx] == (VkPhysicalDevice)VK_NULL_HANDLE)) {
-         throw std::runtime_error("failed to find a suitable GPU!");
+    if ((pdIdx >= physicalDeviceList.size())
+        || (physicalDeviceList[pdIdx] == (VkPhysicalDevice)VK_NULL_HANDLE))
+    {
+        throw std::runtime_error("failed to find a suitable GPU!");
     }
-    std::cout << "Selected physical device is: " << physicalDeviceList[pdIdx] << std::endl;
+    std::cout << "Selected physical device is: " << physicalDeviceList[pdIdx]
+              << std::endl;
     return physicalDeviceList[pdIdx];
 }
 
-const VulkanQueueFamily &
-getVulkanQueueFamily(
-    uint32_t queueFlags)
+const VulkanQueueFamily &getVulkanQueueFamily(uint32_t queueFlags)
 {
     size_t qfIdx;
-    const VulkanPhysicalDevice & physicalDevice = getVulkanPhysicalDevice();
-    const VulkanQueueFamilyList & queueFamilyList = physicalDevice.getQueueFamilyList();
+    const VulkanPhysicalDevice &physicalDevice = getVulkanPhysicalDevice();
+    const VulkanQueueFamilyList &queueFamilyList =
+        physicalDevice.getQueueFamilyList();
 
-    for (qfIdx = 0; qfIdx < queueFamilyList.size(); qfIdx++) {
-        if ((queueFamilyList[qfIdx].getQueueFlags() & queueFlags) == queueFlags) {
+    for (qfIdx = 0; qfIdx < queueFamilyList.size(); qfIdx++)
+    {
+        if ((queueFamilyList[qfIdx].getQueueFlags() & queueFlags) == queueFlags)
+        {
             break;
         }
     }
@@ -112,45 +140,48 @@ getVulkanQueueFamily(
 }
 
 const VulkanMemoryType &
-getVulkanMemoryType(
-    const VulkanDevice & device,
-    VulkanMemoryTypeProperty memoryTypeProperty)
+getVulkanMemoryType(const VulkanDevice &device,
+                    VulkanMemoryTypeProperty memoryTypeProperty)
 {
     size_t mtIdx;
-    const VulkanMemoryTypeList & memoryTypeList = device.getPhysicalDevice().getMemoryTypeList();
+    const VulkanMemoryTypeList &memoryTypeList =
+        device.getPhysicalDevice().getMemoryTypeList();
 
-    for (mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++) {
-        if ((memoryTypeList[mtIdx].getMemoryTypeProperty() & memoryTypeProperty) == memoryTypeProperty) {
+    for (mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
+    {
+        if ((memoryTypeList[mtIdx].getMemoryTypeProperty() & memoryTypeProperty)
+            == memoryTypeProperty)
+        {
             break;
         }
     }
 
-   // CHECK_LT(mtIdx, memoryTypeList.size());
+    // CHECK_LT(mtIdx, memoryTypeList.size());
     return memoryTypeList[mtIdx];
 }
 
 bool checkVkSupport()
 {
     bool result = true;
-    const VulkanInstance & instance = getVulkanInstance();
-    const VulkanPhysicalDeviceList & physicalDeviceList = instance.getPhysicalDeviceList();
-    if (physicalDeviceList == NULL) {
-        std::cout<<"physicalDeviceList is null, No GPUs found with Vulkan support !!!\n";
+    const VulkanInstance &instance = getVulkanInstance();
+    const VulkanPhysicalDeviceList &physicalDeviceList =
+        instance.getPhysicalDeviceList();
+    if (physicalDeviceList == NULL)
+    {
+        std::cout << "physicalDeviceList is null, No GPUs found with "
+                     "Vulkan support !!!\n";
         result = false;
     }
     return result;
 }
 
-const VulkanQueueFamilyList &
-getEmptyVulkanQueueFamilyList()
+const VulkanQueueFamilyList &getEmptyVulkanQueueFamilyList()
 {
     static VulkanQueueFamilyList queueFamilyList;
-
     return queueFamilyList;
 }
 
-const VulkanDescriptorSetLayoutList &
-getEmptyVulkanDescriptorSetLayoutList()
+const VulkanDescriptorSetLayoutList &getEmptyVulkanDescriptorSetLayoutList()
 {
     static VulkanDescriptorSetLayoutList descriptorSetLayoutList;
 
@@ -170,13 +201,17 @@ getSupportedVulkanExternalMemoryHandleTypeList()
 {
     std::vector<VulkanExternalMemoryHandleType> externalMemoryHandleTypeList;
 
-#if _WIN32 
-    if (IsWindows8OrGreater()) {
-        externalMemoryHandleTypeList.push_back(VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT);
+#if _WIN32
+    if (IsWindows8OrGreater())
+    {
+        externalMemoryHandleTypeList.push_back(
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT);
     }
-    externalMemoryHandleTypeList.push_back(VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT);
+    externalMemoryHandleTypeList.push_back(
+        VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT);
 #else
-    externalMemoryHandleTypeList.push_back(VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD);
+    externalMemoryHandleTypeList.push_back(
+        VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD);
 #endif
 
     return externalMemoryHandleTypeList;
@@ -185,22 +220,26 @@ getSupportedVulkanExternalMemoryHandleTypeList()
 const std::vector<VulkanExternalSemaphoreHandleType>
 getSupportedVulkanExternalSemaphoreHandleTypeList()
 {
-    std::vector<VulkanExternalSemaphoreHandleType> externalSemaphoreHandleTypeList;
+    std::vector<VulkanExternalSemaphoreHandleType>
+        externalSemaphoreHandleTypeList;
 
-#if _WIN32 
-    if (IsWindows8OrGreater()) {
-        externalSemaphoreHandleTypeList.push_back(VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT);
+#if _WIN32
+    if (IsWindows8OrGreater())
+    {
+        externalSemaphoreHandleTypeList.push_back(
+            VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT);
     }
-    externalSemaphoreHandleTypeList.push_back(VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT);
+    externalSemaphoreHandleTypeList.push_back(
+        VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT);
 #else
-    externalSemaphoreHandleTypeList.push_back(VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD);
+    externalSemaphoreHandleTypeList.push_back(
+        VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD);
 #endif
 
     return externalSemaphoreHandleTypeList;
 }
 
-const std::vector<VulkanFormat>
-getSupportedVulkanFormatList()
+const std::vector<VulkanFormat> getSupportedVulkanFormatList()
 {
     std::vector<VulkanFormat> formatList;
 
@@ -226,8 +265,10 @@ getSupportedVulkanFormatList()
     formatList.push_back(VULKAN_FORMAT_R32G32B32A32_SINT);
     formatList.push_back(VULKAN_FORMAT_R32G32B32A32_SFLOAT);
 
-    for (size_t fIdx = 0; fIdx < formatList.size(); fIdx++) {
-        switch (formatList[fIdx]) {
+    for (size_t fIdx = 0; fIdx < formatList.size(); fIdx++)
+    {
+        switch (formatList[fIdx])
+        {
             case VULKAN_FORMAT_R8_UINT:
             case VULKAN_FORMAT_R8_SINT:
             case VULKAN_FORMAT_R8G8_UINT:
@@ -248,8 +289,8 @@ getSupportedVulkanFormatList()
             case VULKAN_FORMAT_R32G32_SFLOAT:
             case VULKAN_FORMAT_R32G32B32A32_UINT:
             case VULKAN_FORMAT_R32G32B32A32_SINT:
-            case VULKAN_FORMAT_R32G32B32A32_SFLOAT:
-                break;
+            case VULKAN_FORMAT_R32G32B32A32_SFLOAT: break;
+
             case VULKAN_FORMAT_UNDEFINED:
             case VULKAN_FORMAT_R4G4_UNORM_PACK8:
             case VULKAN_FORMAT_R4G4B4A4_UNORM_PACK16:
@@ -415,128 +456,79 @@ getSupportedVulkanFormatList()
             case VULKAN_FORMAT_ASTC_12x12_UNORM_BLOCK:
             case VULKAN_FORMAT_ASTC_12x12_SRGB_BLOCK:
                 ASSERT(0);
-                std::cout<< "Unsupport texture format";
+                std::cout << "Unsupport texture format";
         }
     }
 
     return formatList;
 }
 
-uint32_t
-getVulkanFormatElementSize(
-    VulkanFormat format)
+uint32_t getVulkanFormatElementSize(VulkanFormat format)
 {
-    switch (format) {
-        case VULKAN_FORMAT_R8_UINT:
-            return uint32_t(1);
-        case VULKAN_FORMAT_R8_SINT:
-            return uint32_t(1);
-        case VULKAN_FORMAT_R8G8_UINT:
-            return uint32_t(2);
-        case VULKAN_FORMAT_R8G8_SINT:
-            return uint32_t(2);
-        case VULKAN_FORMAT_R8G8B8A8_UINT:
-            return uint32_t(4);
-        case VULKAN_FORMAT_R8G8B8A8_SINT:
-            return uint32_t(4);
-        case VULKAN_FORMAT_R16_UINT:
-            return uint32_t(2);
-        case VULKAN_FORMAT_R16_SINT:
-            return uint32_t(2);
-        case VULKAN_FORMAT_R16G16_UINT:
-            return uint32_t(4);
-        case VULKAN_FORMAT_R16G16_SINT:
-            return uint32_t(4);
-        case VULKAN_FORMAT_R16G16B16A16_UINT:
-            return uint32_t(8);
-        case VULKAN_FORMAT_R16G16B16A16_SINT:
-            return uint32_t(8);
-        case VULKAN_FORMAT_R32_UINT:
-            return uint32_t(4);
-        case VULKAN_FORMAT_R32_SINT:
-            return uint32_t(4);
-        case VULKAN_FORMAT_R32_SFLOAT:
-            return uint32_t(4);
-        case VULKAN_FORMAT_R32G32_UINT:
-            return uint32_t(8);
-        case VULKAN_FORMAT_R32G32_SINT:
-            return uint32_t(8);
-        case VULKAN_FORMAT_R32G32_SFLOAT:
-            return uint32_t(8);
-        case VULKAN_FORMAT_R32G32B32A32_UINT:
-            return uint32_t(16);
-        case VULKAN_FORMAT_R32G32B32A32_SINT:
-            return uint32_t(16);
-        case VULKAN_FORMAT_R32G32B32A32_SFLOAT:
-            return uint32_t(16);
-        default:
-            ASSERT(0);
-            std::cout<< "Unknown format";
+    switch (format)
+    {
+        case VULKAN_FORMAT_R8_UINT: return uint32_t(1);
+        case VULKAN_FORMAT_R8_SINT: return uint32_t(1);
+        case VULKAN_FORMAT_R8G8_UINT: return uint32_t(2);
+        case VULKAN_FORMAT_R8G8_SINT: return uint32_t(2);
+        case VULKAN_FORMAT_R8G8B8A8_UINT: return uint32_t(4);
+        case VULKAN_FORMAT_R8G8B8A8_SINT: return uint32_t(4);
+        case VULKAN_FORMAT_R16_UINT: return uint32_t(2);
+        case VULKAN_FORMAT_R16_SINT: return uint32_t(2);
+        case VULKAN_FORMAT_R16G16_UINT: return uint32_t(4);
+        case VULKAN_FORMAT_R16G16_SINT: return uint32_t(4);
+        case VULKAN_FORMAT_R16G16B16A16_UINT: return uint32_t(8);
+        case VULKAN_FORMAT_R16G16B16A16_SINT: return uint32_t(8);
+        case VULKAN_FORMAT_R32_UINT: return uint32_t(4);
+        case VULKAN_FORMAT_R32_SINT: return uint32_t(4);
+        case VULKAN_FORMAT_R32_SFLOAT: return uint32_t(4);
+        case VULKAN_FORMAT_R32G32_UINT: return uint32_t(8);
+        case VULKAN_FORMAT_R32G32_SINT: return uint32_t(8);
+        case VULKAN_FORMAT_R32G32_SFLOAT: return uint32_t(8);
+        case VULKAN_FORMAT_R32G32B32A32_UINT: return uint32_t(16);
+        case VULKAN_FORMAT_R32G32B32A32_SINT: return uint32_t(16);
+        case VULKAN_FORMAT_R32G32B32A32_SFLOAT: return uint32_t(16);
+        default: ASSERT(0); std::cout << "Unknown format";
     }
 
     return uint32_t(0);
 }
 
-const char *
-getVulkanFormatGLSLFormat(
-    VulkanFormat format)
+const char *getVulkanFormatGLSLFormat(VulkanFormat format)
 {
-    switch (format) {
-        case VULKAN_FORMAT_R8_UINT:
-            return "r8ui";
-        case VULKAN_FORMAT_R8_SINT:
-            return "r8i";
-        case VULKAN_FORMAT_R8G8_UINT:
-            return "rg8ui";
-        case VULKAN_FORMAT_R8G8_SINT:
-            return "rg8i";
-        case VULKAN_FORMAT_R8G8B8A8_UINT:
-            return "rgba8ui";
-        case VULKAN_FORMAT_R8G8B8A8_SINT:
-            return "rgba8i";
-        case VULKAN_FORMAT_R16_UINT:
-            return "r16ui";
-        case VULKAN_FORMAT_R16_SINT:
-            return "r16i";
-        case VULKAN_FORMAT_R16G16_UINT:
-            return "rg16ui";
-        case VULKAN_FORMAT_R16G16_SINT:
-            return "rg16i";
-        case VULKAN_FORMAT_R16G16B16A16_UINT:
-            return "rgba16ui";
-        case VULKAN_FORMAT_R16G16B16A16_SINT:
-            return "rgba16i";
-        case VULKAN_FORMAT_R32_UINT:
-            return "r32ui";
-        case VULKAN_FORMAT_R32_SINT:
-            return "r32i";
-        case VULKAN_FORMAT_R32_SFLOAT:
-            return "r32f";
-        case VULKAN_FORMAT_R32G32_UINT:
-            return "rg32ui";
-        case VULKAN_FORMAT_R32G32_SINT:
-            return "rg32i";
-        case VULKAN_FORMAT_R32G32_SFLOAT:
-            return "rg32f";
-        case VULKAN_FORMAT_R32G32B32A32_UINT:
-            return "rgba32ui";
-        case VULKAN_FORMAT_R32G32B32A32_SINT:
-            return "rgba32i";
-        case VULKAN_FORMAT_R32G32B32A32_SFLOAT:
-            return "rgba32f";
-        default:
-            ASSERT(0);
-            std::cout<< "Unknown format";
+    switch (format)
+    {
+        case VULKAN_FORMAT_R8_UINT: return "r8ui";
+        case VULKAN_FORMAT_R8_SINT: return "r8i";
+        case VULKAN_FORMAT_R8G8_UINT: return "rg8ui";
+        case VULKAN_FORMAT_R8G8_SINT: return "rg8i";
+        case VULKAN_FORMAT_R8G8B8A8_UINT: return "rgba8ui";
+        case VULKAN_FORMAT_R8G8B8A8_SINT: return "rgba8i";
+        case VULKAN_FORMAT_R16_UINT: return "r16ui";
+        case VULKAN_FORMAT_R16_SINT: return "r16i";
+        case VULKAN_FORMAT_R16G16_UINT: return "rg16ui";
+        case VULKAN_FORMAT_R16G16_SINT: return "rg16i";
+        case VULKAN_FORMAT_R16G16B16A16_UINT: return "rgba16ui";
+        case VULKAN_FORMAT_R16G16B16A16_SINT: return "rgba16i";
+        case VULKAN_FORMAT_R32_UINT: return "r32ui";
+        case VULKAN_FORMAT_R32_SINT: return "r32i";
+        case VULKAN_FORMAT_R32_SFLOAT: return "r32f";
+        case VULKAN_FORMAT_R32G32_UINT: return "rg32ui";
+        case VULKAN_FORMAT_R32G32_SINT: return "rg32i";
+        case VULKAN_FORMAT_R32G32_SFLOAT: return "rg32f";
+        case VULKAN_FORMAT_R32G32B32A32_UINT: return "rgba32ui";
+        case VULKAN_FORMAT_R32G32B32A32_SINT: return "rgba32i";
+        case VULKAN_FORMAT_R32G32B32A32_SFLOAT: return "rgba32f";
+        default: ASSERT(0); std::cout << "Unknown format";
     }
 
     return (const char *)size_t(0);
 }
 
-const char *
-getVulkanFormatGLSLTypePrefix(
-    VulkanFormat format)
+const char *getVulkanFormatGLSLTypePrefix(VulkanFormat format)
 {
-    switch (format) {
+    switch (format)
+    {
         case VULKAN_FORMAT_R8_UINT:
         case VULKAN_FORMAT_R8G8_UINT:
         case VULKAN_FORMAT_R8G8B8A8_UINT:
@@ -545,8 +537,8 @@ getVulkanFormatGLSLTypePrefix(
         case VULKAN_FORMAT_R16G16B16A16_UINT:
         case VULKAN_FORMAT_R32_UINT:
         case VULKAN_FORMAT_R32G32_UINT:
-        case VULKAN_FORMAT_R32G32B32A32_UINT:
-            return "u";
+        case VULKAN_FORMAT_R32G32B32A32_UINT: return "u";
+
         case VULKAN_FORMAT_R8_SINT:
         case VULKAN_FORMAT_R8G8_SINT:
         case VULKAN_FORMAT_R8G8B8A8_SINT:
@@ -555,28 +547,29 @@ getVulkanFormatGLSLTypePrefix(
         case VULKAN_FORMAT_R16G16B16A16_SINT:
         case VULKAN_FORMAT_R32_SINT:
         case VULKAN_FORMAT_R32G32_SINT:
-        case VULKAN_FORMAT_R32G32B32A32_SINT:
-            return "i";
+        case VULKAN_FORMAT_R32G32B32A32_SINT: return "i";
+
         case VULKAN_FORMAT_R32_SFLOAT:
         case VULKAN_FORMAT_R32G32_SFLOAT:
-        case VULKAN_FORMAT_R32G32B32A32_SFLOAT:
-            return "";
-        default:
-            ASSERT(0);
-            std::cout<< "Unknown format";
+        case VULKAN_FORMAT_R32G32B32A32_SFLOAT: return "";
+
+        default: ASSERT(0); std::cout << "Unknown format";
     }
 
     return "";
 }
 
-std::string
-prepareVulkanShader(
+std::string prepareVulkanShader(
     std::string shaderCode,
-    const std::map<std::string, std::string> & patternToSubstituteMap)
+    const std::map<std::string, std::string> &patternToSubstituteMap)
 {
-    for (std::map<std::string, std::string>::const_iterator psIt = patternToSubstituteMap.begin(); psIt != patternToSubstituteMap.end(); ++psIt) {
+    for (std::map<std::string, std::string>::const_iterator psIt =
+             patternToSubstituteMap.begin();
+         psIt != patternToSubstituteMap.end(); ++psIt)
+    {
         std::string::size_type pos = 0u;
-        while ((pos = shaderCode.find(psIt->first, pos)) != std::string::npos) {
+        while ((pos = shaderCode.find(psIt->first, pos)) != std::string::npos)
+        {
             shaderCode.replace(pos, psIt->first.length(), psIt->second);
             pos += psIt->second.length();
         }
@@ -585,14 +578,12 @@ prepareVulkanShader(
     return shaderCode;
 }
 
-std::ostream &
-operator<<(
-    std::ostream & os,
-    VulkanMemoryTypeProperty memoryTypeProperty)
+std::ostream &operator<<(std::ostream &os,
+                         VulkanMemoryTypeProperty memoryTypeProperty)
 {
-    switch (memoryTypeProperty) {
-        case VULKAN_MEMORY_TYPE_PROPERTY_NONE:
-            return os << "None";
+    switch (memoryTypeProperty)
+    {
+        case VULKAN_MEMORY_TYPE_PROPERTY_NONE: return os << "None";
         case VULKAN_MEMORY_TYPE_PROPERTY_DEVICE_LOCAL:
             return os << "Device local";
         case VULKAN_MEMORY_TYPE_PROPERTY_HOST_VISIBLE_COHERENT:
@@ -613,13 +604,12 @@ operator<<(
 }
 
 std::ostream &
-operator<<(
-    std::ostream & os,
-    VulkanExternalMemoryHandleType externalMemoryHandleType)
+operator<<(std::ostream &os,
+           VulkanExternalMemoryHandleType externalMemoryHandleType)
 {
-    switch (externalMemoryHandleType) {
-        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE:
-            return os << "None";
+    switch (externalMemoryHandleType)
+    {
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE: return os << "None";
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
             return os << "Opaque file descriptor";
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
@@ -634,13 +624,12 @@ operator<<(
 }
 
 std::ostream &
-operator<<(
-    std::ostream & os,
-    VulkanExternalSemaphoreHandleType externalSemaphoreHandleType)
+operator<<(std::ostream &os,
+           VulkanExternalSemaphoreHandleType externalSemaphoreHandleType)
 {
-    switch (externalSemaphoreHandleType) {
-        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NONE:
-            return os << "None";
+    switch (externalSemaphoreHandleType)
+    {
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NONE: return os << "None";
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
             return os << "Opaque file descriptor";
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
@@ -654,58 +643,34 @@ operator<<(
     return os;
 }
 
-std::ostream &
-operator<<(
-    std::ostream & os,
-    VulkanFormat format)
+std::ostream &operator<<(std::ostream &os, VulkanFormat format)
 {
-    switch (format) {
-        case VULKAN_FORMAT_R8_UINT:
-            return os << "R8_UINT";
-        case VULKAN_FORMAT_R8_SINT:
-            return os << "R8_SINT";
-        case VULKAN_FORMAT_R8G8_UINT:
-            return os << "R8G8_UINT";
-        case VULKAN_FORMAT_R8G8_SINT:
-            return os << "R8G8_SINT";
-        case VULKAN_FORMAT_R8G8B8A8_UINT:
-            return os << "R8G8B8A8_UINT";
-        case VULKAN_FORMAT_R8G8B8A8_SINT:
-            return os << "R8G8B8A8_SINT";
-        case VULKAN_FORMAT_R16_UINT:
-            return os << "R16_UINT";
-        case VULKAN_FORMAT_R16_SINT:
-            return os << "R16_SINT";
-        case VULKAN_FORMAT_R16G16_UINT:
-            return os << "R16G16_UINT";
-        case VULKAN_FORMAT_R16G16_SINT:
-            return os << "R16G16_SINT";
-        case VULKAN_FORMAT_R16G16B16A16_UINT:
-            return os << "R16G16B16A16_UINT";
-        case VULKAN_FORMAT_R16G16B16A16_SINT:
-            return os << "R16G16B16A16_SINT";
-        case VULKAN_FORMAT_R32_UINT:
-            return os << "R32_UINT";
-        case VULKAN_FORMAT_R32_SINT:
-            return os << "R32_SINT";
-        case VULKAN_FORMAT_R32_SFLOAT:
-            return os << "R32_SFLOAT";
-        case VULKAN_FORMAT_R32G32_UINT:
-            return os << "R32G32_UINT";
-        case VULKAN_FORMAT_R32G32_SINT:
-            return os << "R32G32_SINT";
-        case VULKAN_FORMAT_R32G32_SFLOAT:
-            return os << "R32G32_SFLOAT";
-        case VULKAN_FORMAT_R32G32B32A32_UINT:
-            return os << "R32G32B32A32_UINT";
-        case VULKAN_FORMAT_R32G32B32A32_SINT:
-            return os << "R32G32B32A32_SINT";
+    switch (format)
+    {
+        case VULKAN_FORMAT_R8_UINT: return os << "R8_UINT";
+        case VULKAN_FORMAT_R8_SINT: return os << "R8_SINT";
+        case VULKAN_FORMAT_R8G8_UINT: return os << "R8G8_UINT";
+        case VULKAN_FORMAT_R8G8_SINT: return os << "R8G8_SINT";
+        case VULKAN_FORMAT_R8G8B8A8_UINT: return os << "R8G8B8A8_UINT";
+        case VULKAN_FORMAT_R8G8B8A8_SINT: return os << "R8G8B8A8_SINT";
+        case VULKAN_FORMAT_R16_UINT: return os << "R16_UINT";
+        case VULKAN_FORMAT_R16_SINT: return os << "R16_SINT";
+        case VULKAN_FORMAT_R16G16_UINT: return os << "R16G16_UINT";
+        case VULKAN_FORMAT_R16G16_SINT: return os << "R16G16_SINT";
+        case VULKAN_FORMAT_R16G16B16A16_UINT: return os << "R16G16B16A16_UINT";
+        case VULKAN_FORMAT_R16G16B16A16_SINT: return os << "R16G16B16A16_SINT";
+        case VULKAN_FORMAT_R32_UINT: return os << "R32_UINT";
+        case VULKAN_FORMAT_R32_SINT: return os << "R32_SINT";
+        case VULKAN_FORMAT_R32_SFLOAT: return os << "R32_SFLOAT";
+        case VULKAN_FORMAT_R32G32_UINT: return os << "R32G32_UINT";
+        case VULKAN_FORMAT_R32G32_SINT: return os << "R32G32_SINT";
+        case VULKAN_FORMAT_R32G32_SFLOAT: return os << "R32G32_SFLOAT";
+        case VULKAN_FORMAT_R32G32B32A32_UINT: return os << "R32G32B32A32_UINT";
+        case VULKAN_FORMAT_R32G32B32A32_SINT: return os << "R32G32B32A32_SINT";
         case VULKAN_FORMAT_R32G32B32A32_SFLOAT:
             return os << "R32G32B32A32_SFLOAT";
             break;
-        default:
-            ASSERT(0);
-            std::cout<< "Unknown format";
+        default: ASSERT(0); std::cout << "Unknown format";
     }
 
     return os;
