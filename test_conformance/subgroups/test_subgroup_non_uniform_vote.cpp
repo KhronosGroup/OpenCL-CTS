@@ -202,7 +202,7 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
 };
 
 std::string sub_group_elect_source = R"(
-    __kernel void test_sub_group_elect(const __global Type *in, __global int4 *xy, __global Type *out) {
+    __kernel void test_sub_group_elect(const __global Type *in, __global int4 *xy, __global Type *out, uint4 work_item_mask_vector) {
         int gid = get_global_id(0);
         XY(xy,gid);
         uint subgroup_local_id = get_sub_group_local_id();
@@ -213,9 +213,9 @@ std::string sub_group_elect_source = R"(
         } else if(subgroup_local_id < 64) {
             work_item_mask = work_item_mask_vector.y;
         } else if(subgroup_local_id < 96) {
-            work_item_mask = work_item_mask_vector.w;
-        } else if(subgroup_local_id < 128) {
             work_item_mask = work_item_mask_vector.z;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.w;
         }
         if (elect_work_item & work_item_mask){
             out[gid] = sub_group_elect();
@@ -224,7 +224,7 @@ std::string sub_group_elect_source = R"(
 )";
 
 std::string sub_group_non_uniform_any_all_all_equal_source = R"(
-    __kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type *out) {
+    __kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type *out, uint4 work_item_mask_vector) {
         int gid = get_global_id(0);
         XY(xy,gid);
         uint subgroup_local_id = get_sub_group_local_id();
@@ -235,9 +235,9 @@ std::string sub_group_non_uniform_any_all_all_equal_source = R"(
         } else if(subgroup_local_id < 64) {
             work_item_mask = work_item_mask_vector.y;
         } else if(subgroup_local_id < 96) {
-            work_item_mask = work_item_mask_vector.w;
-        } else if(subgroup_local_id < 128) {
             work_item_mask = work_item_mask_vector.z;
+        } else if(subgroup_local_id < 128) {
+            work_item_mask = work_item_mask_vector.w;
         }
         if (elect_work_item & work_item_mask){
                 out[gid] = %s(in[gid]);
@@ -267,7 +267,7 @@ int test_subgroup_functions_non_uniform_vote(cl_device_id device,
 
     constexpr size_t global_work_size = 170;
     constexpr size_t local_work_size = 64;
-    WorkGroupParams test_params(global_work_size, local_work_size, true);
+    WorkGroupParams test_params(global_work_size, local_work_size, 3);
     test_params.save_kernel_source(
         sub_group_non_uniform_any_all_all_equal_source);
     test_params.save_kernel_source(sub_group_elect_source, "sub_group_elect");

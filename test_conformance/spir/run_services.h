@@ -113,42 +113,33 @@ private:
 
     OclExtensions(size_t ext) : m_extVector(ext) {}
 
-// Fix a compilation error, since cl_khr_gl_sharing is defined as a macro.
-#ifdef cl_khr_gl_sharing
-#undef cl_khr_gl_sharing
-#endif//cl_khr_gl_sharing
-
-#ifdef cl_khr_icd
-#undef cl_khr_icd
-#endif//cl_khr_icd
-
     enum ClKhrs
     {
-        no_extensions                 = KhrValue<0>::Mask,
-        cl_khr_int64_base_atomics     = KhrValue<1>::Mask,
-        cl_khr_int64_extended_atomics = KhrValue<2>::Mask,
-        cl_khr_3d_image_writes        = KhrValue<3>::Mask,
-        cl_khr_fp16                   = KhrValue<4>::Mask,
-        cl_khr_gl_sharing             = KhrValue<5>::Mask,
-        cl_khr_gl_event               = KhrValue<6>::Mask,
-        cl_khr_d3d10_sharing          = KhrValue<7>::Mask,
-        cl_khr_dx9_media_sharing      = KhrValue<8>::Mask,
-        cl_khr_d3d11_sharing          = KhrValue<9>::Mask,
-        cl_khr_depth_images           = KhrValue<10>::Mask,
-        cl_khr_gl_depth_images        = KhrValue<11>::Mask,
-        cl_khr_gl_msaa_sharing        = KhrValue<12>::Mask,
-        cl_khr_image2d_from_buffer    = KhrValue<13>::Mask,
-        cl_khr_initialize_memory      = KhrValue<14>::Mask,
-        cl_khr_context_abort          = KhrValue<15>::Mask,
-        cl_khr_spir                   = KhrValue<16>::Mask,
-        cl_khr_fp64                   = KhrValue<17>::Mask,
-        cl_khr_global_int32_base_atomics     = KhrValue<18>::Mask,
-        cl_khr_global_int32_extended_atomics = KhrValue<19>::Mask,
-        cl_khr_local_int32_base_atomics      = KhrValue<20>::Mask,
-        cl_khr_local_int32_extended_atomics  = KhrValue<21>::Mask,
-        cl_khr_byte_addressable_store        = KhrValue<22>::Mask,
-        cles_khr_int64                         = KhrValue<23>::Mask,
-        cles_khr_2d_image_array_writes         = KhrValue<24>::Mask,
+        no_extensions = KhrValue<0>::Mask,
+        has_cl_khr_int64_base_atomics = KhrValue<1>::Mask,
+        has_cl_khr_int64_extended_atomics = KhrValue<2>::Mask,
+        has_cl_khr_3d_image_writes = KhrValue<3>::Mask,
+        has_cl_khr_fp16 = KhrValue<4>::Mask,
+        has_cl_khr_gl_sharing = KhrValue<5>::Mask,
+        has_cl_khr_gl_event = KhrValue<6>::Mask,
+        has_cl_khr_d3d10_sharing = KhrValue<7>::Mask,
+        has_cl_khr_dx9_media_sharing = KhrValue<8>::Mask,
+        has_cl_khr_d3d11_sharing = KhrValue<9>::Mask,
+        has_cl_khr_depth_images = KhrValue<10>::Mask,
+        has_cl_khr_gl_depth_images = KhrValue<11>::Mask,
+        has_cl_khr_gl_msaa_sharing = KhrValue<12>::Mask,
+        has_cl_khr_image2d_from_buffer = KhrValue<13>::Mask,
+        has_cl_khr_initialize_memory = KhrValue<14>::Mask,
+        has_cl_khr_context_abort = KhrValue<15>::Mask,
+        has_cl_khr_spir = KhrValue<16>::Mask,
+        has_cl_khr_fp64 = KhrValue<17>::Mask,
+        has_cl_khr_global_int32_base_atomics = KhrValue<18>::Mask,
+        has_cl_khr_global_int32_extended_atomics = KhrValue<19>::Mask,
+        has_cl_khr_local_int32_base_atomics = KhrValue<20>::Mask,
+        has_cl_khr_local_int32_extended_atomics = KhrValue<21>::Mask,
+        has_cl_khr_byte_addressable_store = KhrValue<22>::Mask,
+        has_cles_khr_int64 = KhrValue<23>::Mask,
+        has_cles_khr_2d_image_array_writes = KhrValue<24>::Mask,
     };
 
     size_t m_extVector;

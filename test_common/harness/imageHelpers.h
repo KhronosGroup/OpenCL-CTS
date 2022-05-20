@@ -63,7 +63,7 @@ typedef struct
     bool normalized_coords;
 } image_sampler_data;
 
-int round_to_even(float v);
+cl_int round_to_even(float v);
 
 #define NORMALIZE(v, max) (v < 0 ? 0 : (v > 1.f ? max : round_to_even(v * max)))
 #define NORMALIZE_UNROUNDED(v, max) (v < 0 ? 0 : (v > 1.f ? max : v * max))

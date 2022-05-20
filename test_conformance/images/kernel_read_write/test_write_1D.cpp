@@ -27,20 +27,24 @@ extern bool validate_float_write_results( float *expected, float *actual, image_
 extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor* imageInfo );
 
 const char *readwrite1DKernelSourcePattern =
-"__kernel void sample_kernel( __global %s4 *input, read_write image1d_t output %s)\n"
-"{\n"
-"   int tidX = get_global_id(0);\n"
-"   int offset = tidX;\n"
-"   write_image%s( output, tidX %s, input[ offset ]);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( __global %s4 *input, read_write image1d_t "
+    "output %s)\n"
+    "{\n"
+    "   int tidX = get_global_id(0);\n"
+    "   int offset = tidX;\n"
+    "   write_image%s( output, tidX %s, input[ offset ]);\n"
+    "}";
 
 const char *write1DKernelSourcePattern =
-"__kernel void sample_kernel( __global %s4 *input, write_only image1d_t output %s)\n"
-"{\n"
-"   int tidX = get_global_id(0);\n"
-"   int offset = tidX;\n"
-"   write_image%s( output, tidX %s, input[ offset ]);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( __global %s4 *input, write_only image1d_t "
+    "output %s)\n"
+    "{\n"
+    "   int tidX = get_global_id(0);\n"
+    "   int offset = tidX;\n"
+    "   write_image%s( output, tidX %s, input[ offset ]);\n"
+    "}";
 
 int test_write_image_1D( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel,
                      image_descriptor *imageInfo, ExplicitType inputType, MTdata d )
@@ -614,12 +618,14 @@ int test_write_image_1D_set(cl_device_id device, cl_context context,
         KernelSourcePattern = readwrite1DKernelSourcePattern;
     }
 
-    sprintf( programSrc,
-             KernelSourcePattern,
-             get_explicit_type_name( inputType ),
-             gTestMipmaps ? ", int lod" : "",
-             readFormat,
-             gTestMipmaps ? ", lod" :"" );
+    sprintf(
+        programSrc, KernelSourcePattern,
+        gTestMipmaps
+            ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable\n#pragma "
+              "OPENCL EXTENSION cl_khr_mipmap_image_writes: enable"
+            : "",
+        get_explicit_type_name(inputType), gTestMipmaps ? ", int lod" : "",
+        readFormat, gTestMipmaps ? ", lod" : "");
 
     ptr = programSrc;
     error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,

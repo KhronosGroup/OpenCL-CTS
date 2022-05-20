@@ -95,8 +95,8 @@ typedef struct _version version_t;
 
 struct _extensions
 {
-    int cl_khr_fp64;
-    int cl_khr_fp16;
+    int has_cl_khr_fp64;
+    int has_cl_khr_fp16;
 };
 typedef struct _extensions extensions_t;
 
@@ -1069,11 +1069,11 @@ int parseExtensions(char const* str, extensions_t* extensions)
         }
         if (strncmp(begin, "cl_khr_fp64", length) == 0)
         {
-            extensions->cl_khr_fp64 = 1;
+            extensions->has_cl_khr_fp64 = 1;
         }
         if (strncmp(begin, "cl_khr_fp16", length) == 0)
         {
-            extensions->cl_khr_fp16 = 1;
+            extensions->has_cl_khr_fp16 = 1;
         }
         begin += length; // Skip word.
         if (begin[0] == ' ')
@@ -1112,13 +1112,13 @@ int getConfigInfos(cl_device_id device)
             // version 1.1, we have to check doubles are sopported. In
             // OpenCL 1.2 CL_DEVICE_DOUBLE_FP_CONFIG should be reported
             // unconditionally.
-            get = extensions.cl_khr_fp64;
+            get = extensions.has_cl_khr_fp64;
         };
         if (info.opcode == CL_DEVICE_HALF_FP_CONFIG)
         {
             // CL_DEVICE_HALF_FP_CONFIG should be reported only when cl_khr_fp16
             // extension is available
-            get = extensions.cl_khr_fp16;
+            get = extensions.has_cl_khr_fp16;
         };
         if (get)
         {

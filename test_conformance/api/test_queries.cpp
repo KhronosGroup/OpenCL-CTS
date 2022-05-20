@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <algorithm>
+#include <vector>
 
 int test_get_platform_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -345,87 +346,100 @@ int command_queue_param_test(cl_command_queue queue,
     return 0;
 }
 
-#define MIN_NUM_COMMAND_QUEUE_PROPERTIES 2
-#define OOO_NUM_COMMAND_QUEUE_PROPERTIES 4
-static cl_command_queue_properties property_options[] = {
-    0,
-
-    CL_QUEUE_PROFILING_ENABLE,
-
-    CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-
-    CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-
-    CL_QUEUE_ON_DEVICE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-
-    CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_ON_DEVICE
-        | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-
-    CL_QUEUE_ON_DEVICE | CL_QUEUE_ON_DEVICE_DEFAULT
-        | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-
-    CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_ON_DEVICE | CL_QUEUE_ON_DEVICE_DEFAULT
-        | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
-};
-
 int check_get_command_queue_info_params(cl_device_id deviceID,
                                         cl_context context,
                                         bool is_compatibility)
 {
-    int error;
-    size_t size;
+    const cl_command_queue_properties host_optional[] = {
+        CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+        CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+    };
 
-    cl_queue_properties host_queue_props, device_queue_props;
-    cl_queue_properties queue_props[] = { CL_QUEUE_PROPERTIES, 0, 0 };
+    const cl_command_queue_properties device_required[] = {
+        CL_QUEUE_ON_DEVICE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+        CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_ON_DEVICE
+            | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+        CL_QUEUE_ON_DEVICE | CL_QUEUE_ON_DEVICE_DEFAULT
+            | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+        CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_ON_DEVICE
+            | CL_QUEUE_ON_DEVICE_DEFAULT
+            | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+    };
 
-    clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_HOST_PROPERTIES,
-                    sizeof(host_queue_props), &host_queue_props, NULL);
-    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n",
-             (int)host_queue_props);
-    clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES,
-                    sizeof(device_queue_props), &device_queue_props, NULL);
-    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n",
-             (int)device_queue_props);
+    const size_t host_optional_size = ARRAY_SIZE(host_optional);
+    const size_t device_required_size = ARRAY_SIZE(device_required);
 
-    auto version = get_device_cl_version(deviceID);
+    Version version = get_device_cl_version(deviceID);
 
-    // Are on device queues supported
+    const cl_device_info host_queue_query = version >= Version(2, 0)
+        ? CL_DEVICE_QUEUE_ON_HOST_PROPERTIES
+        : CL_DEVICE_QUEUE_PROPERTIES;
+
+    cl_queue_properties host_queue_props = 0;
+    int error =
+        clGetDeviceInfo(deviceID, host_queue_query, sizeof(host_queue_props),
+                        &host_queue_props, NULL);
+    test_error(error, "clGetDeviceInfo failed");
+    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n", host_queue_props);
+
+    cl_queue_properties device_queue_props = 0;
+    if (version >= Version(2, 0))
+    {
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES,
+                                sizeof(device_queue_props), &device_queue_props,
+                                NULL);
+        test_error(error, "clGetDeviceInfo failed");
+        log_info("CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES is %d\n",
+                 device_queue_props);
+    }
+
+    bool out_of_order_supported =
+        host_queue_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
+
     bool on_device_supported =
         (version >= Version(2, 0) && version < Version(3, 0))
         || (version >= Version(3, 0) && device_queue_props != 0);
 
-    int num_test_options = MIN_NUM_COMMAND_QUEUE_PROPERTIES;
-    if (host_queue_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
-    {
-        // Test out-of-order queues properties if supported
-        num_test_options = OOO_NUM_COMMAND_QUEUE_PROPERTIES;
-    }
-    if (on_device_supported && !is_compatibility)
-    {
-        // Test queue on device if supported (in this case out-of-order must
-        // also be supported)
-        num_test_options = ARRAY_SIZE(property_options);
-    }
+    // test device queues if the device and the API under test support it
+    bool test_on_device = on_device_supported && !is_compatibility;
 
-    for (int i = 0; i < num_test_options; i++)
+    std::vector<cl_queue_properties> queue_props{ 0,
+                                                  CL_QUEUE_PROFILING_ENABLE };
+
+    if (out_of_order_supported)
     {
-        queue_props[1] = property_options[i];
+        queue_props.insert(queue_props.end(), &host_optional[0],
+                           &host_optional[host_optional_size]);
+    };
+
+    cl_queue_properties queue_props_arg[] = { CL_QUEUE_PROPERTIES, 0, 0 };
+
+    if (test_on_device)
+    {
+        queue_props.insert(queue_props.end(), &device_required[0],
+                           &device_required[device_required_size]);
+    };
+
+    for (cl_queue_properties props : queue_props)
+    {
+
+        queue_props_arg[1] = props;
+
         clCommandQueueWrapper queue;
-
         if (is_compatibility)
         {
-            queue =
-                clCreateCommandQueue(context, deviceID, queue_props[1], &error);
+            queue = clCreateCommandQueue(context, deviceID, props, &error);
             test_error(error, "Unable to create command queue to test with");
         }
         else
         {
             queue = clCreateCommandQueueWithProperties(context, deviceID,
-                                                       &queue_props[0], &error);
+                                                       queue_props_arg, &error);
             test_error(error, "Unable to create command queue to test with");
         }
 
         cl_uint refCount;
+        size_t size;
         error = clGetCommandQueueInfo(queue, CL_QUEUE_REFERENCE_COUNT,
                                       sizeof(refCount), &refCount, &size);
         test_error(error, "Unable to get command queue reference count");
@@ -442,11 +456,12 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
         test_error(error, "param checking failed");
 
         error = command_queue_param_test(queue, CL_QUEUE_PROPERTIES,
-                                         queue_props[1], "properties");
+                                         queue_props_arg[1], "properties");
         test_error(error, "param checking failed");
     }
     return 0;
 }
+
 int test_get_command_queue_info(cl_device_id deviceID, cl_context context,
                                 cl_command_queue ignoreQueue, int num_elements)
 {
@@ -824,5 +839,3 @@ int test_kernel_required_group_size(cl_device_id deviceID, cl_context context, c
 
     return 0;
 }
-
-

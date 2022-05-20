@@ -277,3 +277,5 @@ double genrand_res53(MTdata d)
     unsigned long a = genrand_int32(d) >> 5, b = genrand_int32(d) >> 6;
     return (a * 67108864.0 + b) * (1.0 / 9007199254740992.0);
 }
+
+bool genrand_bool(MTdata d) { return ((cl_uint)genrand_int32(d) & 1); }

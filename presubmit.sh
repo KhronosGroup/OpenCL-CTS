@@ -15,7 +15,7 @@ touch ${TOOLCHAIN_FILE}
 BUILD_OPENGL_TEST="OFF"
 
 # Prepare toolchain if needed
-if [[ ${JOB_ARCHITECTURE} != "" ]]; then
+if [[ ${JOB_ARCHITECTURE} != "" && ${RUNNER_OS} != "Windows" ]]; then
     TOOLCHAIN_URL_VAR=TOOLCHAIN_URL_${JOB_ARCHITECTURE}
     TOOLCHAIN_URL=${!TOOLCHAIN_URL_VAR}
     wget ${TOOLCHAIN_URL}
@@ -38,14 +38,7 @@ fi
 
 if [[ ( ${JOB_ARCHITECTURE} == "" && ${JOB_ENABLE_GL} == "1" ) ]]; then
     BUILD_OPENGL_TEST="ON"
-    sudo apt-get update
-    sudo apt-get -y install libglu1-mesa-dev freeglut3-dev mesa-common-dev libglew-dev
 fi
-# Prepare headers
-git clone https://github.com/KhronosGroup/OpenCL-Headers.git
-cd OpenCL-Headers
-ln -s CL OpenCL # For OSX builds
-cd ..
 
 #Vulkan Headers
 git clone https://github.com/KhronosGroup/Vulkan-Headers.git
@@ -55,8 +48,8 @@ git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
 cd ${TOP}/OpenCL-ICD-Loader
 mkdir build
 cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ ..
-make
+cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/
+cmake --build . -j2 --config Release
 
 #Vulkan Loader
 cd ${TOP}
@@ -74,15 +67,24 @@ cd ${TOP}
 ls -l
 mkdir build
 cd build
-cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
+if [[ ${RUNNER_OS} == "Windows" ]]; then
+  CMAKE_OPENCL_LIBRARIES_OPTION="OpenCL"
+  CMAKE_CACHE_OPTIONS=""
+else
+  CMAKE_OPENCL_LIBRARIES_OPTION="-lOpenCL -lpthread"
+  CMAKE_CACHE_OPTIONS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
+fi
+cmake .. -G Ninja \
+      ${CMAKE_CACHE_OPTIONS} \
+      -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
       -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build \
       -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
       -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin \
-      -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \
+      -DOPENCL_LIBRARIES="${CMAKE_OPENCL_LIBRARIES_OPTION}" \
       -DUSE_CL_EXPERIMENTAL=ON \
-      -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
+      -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST}
       -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
       -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/ \
-      ..
-make -j2
+cmake --build . -j3 --config Release
+
 

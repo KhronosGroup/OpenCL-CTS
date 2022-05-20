@@ -41,24 +41,32 @@ static size_t reduceImageDepth(size_t maxDepth) {
 }
 
 const char *read2DArrayKernelSourcePattern =
-"__kernel void sample_kernel( read_only %s input,%s __global float *xOffsets, __global float *yOffsets, __global float *zOffsets,  __global %s%s *results %s )\n"
-"{\n"
-"%s"
-"   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = get_global_id(2);\n"
-"%s"
-"%s"
-"   results[offset] = read_image%s( input, imageSampler, coords %s);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( read_only %s input,%s __global float "
+    "*xOffsets, __global float *yOffsets, __global float *zOffsets,  __global "
+    "%s%s *results %s )\n"
+    "{\n"
+    "%s"
+    "   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = "
+    "get_global_id(2);\n"
+    "%s"
+    "%s"
+    "   results[offset] = read_image%s( input, imageSampler, coords %s);\n"
+    "}";
 
 const char *read_write2DArrayKernelSourcePattern =
-"__kernel void sample_kernel( read_write %s input,%s __global float *xOffsets, __global float *yOffsets, __global float *zOffsets,  __global %s%s *results %s)\n"
-"{\n"
-"%s"
-"   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = get_global_id(2);\n"
-"%s"
-"%s"
-"   results[offset] = read_image%s( input, coords %s);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( read_write %s input,%s __global float "
+    "*xOffsets, __global float *yOffsets, __global float *zOffsets,  __global "
+    "%s%s *results %s)\n"
+    "{\n"
+    "%s"
+    "   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = "
+    "get_global_id(2);\n"
+    "%s"
+    "%s"
+    "   results[offset] = read_image%s( input, coords %s);\n"
+    "}";
 
 const char* offset2DarraySource ="   int offset = tidZ*get_image_width(input)*get_image_height(input) + tidY*get_image_width(input) + tidX;\n";
 const char* offset2DarraySourceLod =
@@ -597,12 +605,15 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
                         int checkOnlyOnePixel = 0;
                         int found_pixel = 0;
                         float offset = NORM_OFFSET;
-                        if (!imageSampler->normalized_coords ||  imageSampler->filter_mode != CL_FILTER_NEAREST || NORM_OFFSET == 0
+                        if (!imageSampler->normalized_coords
+                            || imageSampler->filter_mode != CL_FILTER_NEAREST
+                            || NORM_OFFSET == 0
 #if defined( __APPLE__ )
-                            // Apple requires its CPU implementation to do correctly rounded address arithmetic in all modes
-                            || gDeviceType != CL_DEVICE_TYPE_GPU
+                            // Apple requires its CPU implementation to do
+                            // correctly rounded address arithmetic in all modes
+                            || !(gDeviceType & CL_DEVICE_TYPE_GPU)
 #endif
-                            )
+                        )
                             offset = 0.0f;          // Loop only once
 
                         for (float norm_offset_x = -offset; norm_offset_x <= offset && !found_pixel ; norm_offset_x += NORM_OFFSET) {
@@ -738,12 +749,15 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
                         int checkOnlyOnePixel = 0;
                         int found_pixel = 0;
                         float offset = NORM_OFFSET;
-                        if (!imageSampler->normalized_coords ||  imageSampler->filter_mode != CL_FILTER_NEAREST || NORM_OFFSET == 0
+                        if (!imageSampler->normalized_coords
+                            || imageSampler->filter_mode != CL_FILTER_NEAREST
+                            || NORM_OFFSET == 0
 #if defined( __APPLE__ )
-                            // Apple requires its CPU implementation to do correctly rounded address arithmetic in all modes
-                            || gDeviceType != CL_DEVICE_TYPE_GPU
+                            // Apple requires its CPU implementation to do
+                            // correctly rounded address arithmetic in all modes
+                            || !(gDeviceType & CL_DEVICE_TYPE_GPU)
 #endif
-                            )
+                        )
                             offset = 0.0f;          // Loop only once
 
                         for (float norm_offset_x = -offset; norm_offset_x <= offset && !found_pixel ; norm_offset_x += NORM_OFFSET) {
@@ -915,12 +929,15 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
                         int checkOnlyOnePixel = 0;
                         int found_pixel = 0;
                         float offset = NORM_OFFSET;
-                        if (!imageSampler->normalized_coords ||  imageSampler->filter_mode != CL_FILTER_NEAREST || NORM_OFFSET == 0
+                        if (!imageSampler->normalized_coords
+                            || imageSampler->filter_mode != CL_FILTER_NEAREST
+                            || NORM_OFFSET == 0
 #if defined( __APPLE__ )
-                            // Apple requires its CPU implementation to do correctly rounded address arithmetic in all modes
-                            || gDeviceType != CL_DEVICE_TYPE_GPU
+                            // Apple requires its CPU implementation to do
+                            // correctly rounded address arithmetic in all modes
+                            || !(gDeviceType & CL_DEVICE_TYPE_GPU)
 #endif
-                            )
+                        )
                             offset = 0.0f;          // Loop only once
 
                         for (float norm_offset_x = -offset; norm_offset_x <= offset && !found_pixel ; norm_offset_x += NORM_OFFSET) {
@@ -1108,7 +1125,10 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                     // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                     // E.g., test one pixel.
-                                    if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                    if (!imageSampler->normalized_coords
+                                        || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                        || NORM_OFFSET == 0)
+                                    {
                                         norm_offset_x = 0.0f;
                                         norm_offset_y = 0.0f;
                                         norm_offset_z = 0.0f;
@@ -1147,7 +1167,11 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                         // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                         // E.g., test one pixel.
-                                        if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                        if (!imageSampler->normalized_coords
+                                            || !(gDeviceType
+                                                 & CL_DEVICE_TYPE_GPU)
+                                            || NORM_OFFSET == 0)
+                                        {
                                             norm_offset_x = 0.0f;
                                             norm_offset_y = 0.0f;
                                             norm_offset_z = 0.0f;
@@ -1216,7 +1240,10 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                     // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                     // E.g., test one pixel.
-                                    if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                    if (!imageSampler->normalized_coords
+                                        || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                        || NORM_OFFSET == 0)
+                                    {
                                         norm_offset_x = 0.0f;
                                         norm_offset_y = 0.0f;
                                         norm_offset_z = 0.0f;
@@ -1255,7 +1282,11 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                         // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                         // E.g., test one pixel.
-                                        if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0 || NORM_OFFSET == 0 || NORM_OFFSET == 0) {
+                                        if (!imageSampler->normalized_coords
+                                            || !(gDeviceType
+                                                 & CL_DEVICE_TYPE_GPU)
+                                            || NORM_OFFSET == 0)
+                                        {
                                             norm_offset_x = 0.0f;
                                             norm_offset_y = 0.0f;
                                             norm_offset_z = 0.0f;
@@ -1389,17 +1420,16 @@ int test_read_image_set_2D_array(cl_device_id device, cl_context context,
     }
 
     // Construct the source
-    sprintf( programSrc,
-            KernelSourcePattern,
-            imageType,
-            samplerArg, get_explicit_type_name( outputType ),
-            imageElement,
-            gTestMipmaps ? ", float lod" : " ",
-            samplerVar,
+    sprintf(programSrc, KernelSourcePattern,
+            gTestMipmaps
+                ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable"
+                : "",
+            imageType, samplerArg, get_explicit_type_name(outputType),
+            imageElement, gTestMipmaps ? ", float lod" : " ", samplerVar,
             gTestMipmaps ? offset2DarraySourceLod : offset2DarraySource,
-            floatCoords ? float2DArrayUnnormalizedCoordKernelSource : int2DArrayCoordKernelSource,
-            readFormat,
-            gTestMipmaps ? ", lod" : " " );
+            floatCoords ? float2DArrayUnnormalizedCoordKernelSource
+                        : int2DArrayCoordKernelSource,
+            readFormat, gTestMipmaps ? ", lod" : " ");
 
     ptr = programSrc;
     error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
