@@ -82,9 +82,9 @@ cmake .. -G Ninja \
       -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin \
       -DOPENCL_LIBRARIES="${CMAKE_OPENCL_LIBRARIES_OPTION}" \
       -DUSE_CL_EXPERIMENTAL=ON \
-      -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST}
+      -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
       -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
-      -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/ \
+      -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/
 cmake --build . -j3 --config Release
 
 
