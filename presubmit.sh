@@ -58,9 +58,8 @@ cd Vulkan-Loader
 mkdir build
 cd build
 python3 ../scripts/update_deps.py
-cmake -DBUILD_WSI_XLIB_SUPPORT=OFF -DBUILD_WSI_XCB_SUPPORT=OFF -DBUILD_WSI_WAYLAND_SUPPORT=OFF -C helper.cmake ..
-cmake --build .
-make
+cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DBUILD_WSI_XLIB_SUPPORT=OFF -DBUILD_WSI_XCB_SUPPORT=OFF -DBUILD_WSI_WAYLAND_SUPPORT=OFF -C helper.cmake ..
+cmake --build . -j2 --config Release
 
 # Build CTS
 cd ${TOP}
