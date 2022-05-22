@@ -9,6 +9,7 @@
 #include "harness/errorHelpers.h"
 
 #define MAX_BUFFERS 5
+#define MAX_IMPORTS 5
 #define BUFFERSIZE 3000
 static cl_uchar uuid[CL_UUID_SIZE_KHR];
 static cl_device_id deviceId = NULL;
@@ -196,7 +197,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                     vkBufferListDeviceMemory[bIdx], vkExternalMemoryHandleType,
                     0, bufferSize, context, deviceId));
             }
-            cl_mem buffers[numBuffers];
+            cl_mem buffers[MAX_BUFFERS];
             clFinish(cmd_queue1);
             Params *params = (Params *)vkParamsDeviceMemory.map();
             params->numBuffers = numBuffers;
@@ -681,7 +682,7 @@ int run_test_with_multi_import_same_ctx(
     uint8_t *error_2;
     cl_mem error_1;
     int numImports = numBuffers;
-    cl_kernel update_buffer_kernel[numImports];
+    cl_kernel update_buffer_kernel[MAX_IMPORTS];
     clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
     clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
     int err = CL_SUCCESS;
@@ -763,7 +764,7 @@ int run_test_with_multi_import_same_ctx(
                 {
                     pBufferSize = bufferSize;
                 }
-                cl_mem buffers[numBuffers][numImports];
+                cl_mem buffers[MAX_BUFFERS][MAX_IMPORTS];
                 VulkanBufferList vkBufferList(numBuffers, vkDevice, pBufferSize,
                                               vkExternalMemoryHandleType);
                 uint32_t interBufferOffset =
@@ -1012,8 +1013,8 @@ int run_test_with_multi_import_diff_ctx(
     cl_mem error_1;
     cl_mem error_2;
     int numImports = numBuffers;
-    cl_kernel update_buffer_kernel1[numImports];
-    cl_kernel update_buffer_kernel2[numImports];
+    cl_kernel update_buffer_kernel1[MAX_IMPORTS];
+    cl_kernel update_buffer_kernel2[MAX_IMPORTS];
     clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
     clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
     clExternalSemaphore *clVk2CLExternalSemaphore2 = NULL;
@@ -1096,8 +1097,8 @@ int run_test_with_multi_import_diff_ctx(
                  withOffset <= (unsigned int)enableOffset; withOffset++)
             {
                 log_info("Running withOffset case %d\n", (uint32_t)withOffset);
-                cl_mem buffers1[numBuffers][numImports];
-                cl_mem buffers2[numBuffers][numImports];
+                cl_mem buffers1[MAX_BUFFERS][MAX_IMPORTS];
+                cl_mem buffers2[MAX_BUFFERS][MAX_IMPORTS];
                 if (withOffset)
                 {
                     pBufferSize = bufferSizeForOffset;
