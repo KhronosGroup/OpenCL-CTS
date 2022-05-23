@@ -11,7 +11,10 @@ typedef struct
 } _info;
 
 _info platform_info_table[] = {
-#define STRING(x) { x, #x }
+#define STRING(x)                                                              \
+    {                                                                          \
+        x, #x                                                                  \
+    }
     STRING(CL_PLATFORM_EXTERNAL_MEMORY_IMPORT_HANDLE_TYPES_KHR),
     STRING(CL_PLATFORM_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
     STRING(CL_PLATFORM_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR)
@@ -19,7 +22,10 @@ _info platform_info_table[] = {
 };
 
 _info device_info_table[] = {
-#define STRING(x) { x, #x }
+#define STRING(x)                                                              \
+    {                                                                          \
+        x, #x                                                                  \
+    }
     STRING(CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR),
     STRING(CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
     STRING(CL_DEVICE_EXTERNAL_MEMORY_IMPORT_HANDLE_TYPES_KHR)

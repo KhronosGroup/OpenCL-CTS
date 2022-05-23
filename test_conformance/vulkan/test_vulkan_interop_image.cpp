@@ -47,30 +47,54 @@ static const char *vkImage2DShader =
     "{\n"
     "    uint32_t numImage2DDescriptors;\n"
     "};\n"
-    "layout(binding = 1, " GLSL_FORMAT_STRING ") uniform " GLSL_TYPE_PREFIX_STRING "image2D image2DList[" STRING(MAX_2D_IMAGE_DESCRIPTORS) "];\n"
-    "layout(local_size_x = 32, local_size_y = 32) in;\n"
-    "void main() {\n"
-    "    uvec3 numThreads = gl_NumWorkGroups * gl_WorkGroupSize;\n"
-    "    for (uint32_t image2DIdx = 0; image2DIdx < numImage2DDescriptors; image2DIdx++)"
-    "    {\n"
-    "        ivec2 imageDim = imageSize(image2DList[image2DIdx]);\n"
-    "        uint32_t heightBy2 = imageDim.y / 2;\n"
-    "        for (uint32_t row = gl_GlobalInvocationID.y; row < heightBy2; row += numThreads.y)"
-    "        {\n"
-    "            for (uint32_t col = gl_GlobalInvocationID.x; col < imageDim.x; col += numThreads.x)"
-    "            {\n"
-    "                ivec2 coordsA = ivec2(col, row);\n"
-    "                ivec2 coordsB = ivec2(col, imageDim.y - row - 1);\n"
-    "                " GLSL_TYPE_PREFIX_STRING "vec4 dataA = imageLoad(image2DList[image2DIdx], coordsA);\n"
-    "                " GLSL_TYPE_PREFIX_STRING "vec4 dataB = imageLoad(image2DList[image2DIdx], coordsB);\n"
-    "                imageStore(image2DList[image2DIdx], coordsA, dataB);\n"
-    "                imageStore(image2DList[image2DIdx], coordsB, dataA);\n"
-    "            }\n"
-    "        }\n"
-    "    }\n"
-    "}\n";
+    "layout(binding = 1, " GLSL_FORMAT_STRING
+    ") uniform " GLSL_TYPE_PREFIX_STRING "image2D image2DList[" STRING(
+        MAX_2D_IMAGE_DESCRIPTORS) "];\n"
+                                  "layout(local_size_x = 32, local_size_y = "
+                                  "32) in;\n"
+                                  "void main() {\n"
+                                  "    uvec3 numThreads = gl_NumWorkGroups * "
+                                  "gl_WorkGroupSize;\n"
+                                  "    for (uint32_t image2DIdx = 0; "
+                                  "image2DIdx < numImage2DDescriptors; "
+                                  "image2DIdx++)"
+                                  "    {\n"
+                                  "        ivec2 imageDim = "
+                                  "imageSize(image2DList[image2DIdx]);\n"
+                                  "        uint32_t heightBy2 = imageDim.y / "
+                                  "2;\n"
+                                  "        for (uint32_t row = "
+                                  "gl_GlobalInvocationID.y; row < heightBy2; "
+                                  "row += numThreads.y)"
+                                  "        {\n"
+                                  "            for (uint32_t col = "
+                                  "gl_GlobalInvocationID.x; col < imageDim.x; "
+                                  "col += numThreads.x)"
+                                  "            {\n"
+                                  "                ivec2 coordsA = ivec2(col, "
+                                  "row);\n"
+                                  "                ivec2 coordsB = ivec2(col, "
+                                  "imageDim.y - row - 1);\n"
+                                  "                " GLSL_TYPE_PREFIX_STRING
+                                  "vec4 dataA = "
+                                  "imageLoad(image2DList[image2DIdx], "
+                                  "coordsA);\n"
+                                  "                " GLSL_TYPE_PREFIX_STRING
+                                  "vec4 dataB = "
+                                  "imageLoad(image2DList[image2DIdx], "
+                                  "coordsB);\n"
+                                  "                "
+                                  "imageStore(image2DList[image2DIdx], "
+                                  "coordsA, dataB);\n"
+                                  "                "
+                                  "imageStore(image2DList[image2DIdx], "
+                                  "coordsB, dataA);\n"
+                                  "            }\n"
+                                  "        }\n"
+                                  "    }\n"
+                                  "}\n";
 
-const char* kernel_text_numImage_1 = " \
+const char *kernel_text_numImage_1 = " \
 __constant sampler_t smpImg = CLK_NORMALIZED_COORDS_FALSE|CLK_ADDRESS_NONE|CLK_FILTER_NEAREST;\n\
 __kernel void image2DKernel(read_only image2d_t InputImage, write_only image2d_t OutImage, int num2DImages, int baseWidth, int baseHeight, int numMipLevels)\n\
 {\n\
@@ -89,7 +113,7 @@ __kernel void image2DKernel(read_only image2d_t InputImage, write_only image2d_t
 \n\
 }";
 
-const char* kernel_text_numImage_2 = " \
+const char *kernel_text_numImage_2 = " \
 __constant sampler_t smpImg = CLK_NORMALIZED_COORDS_FALSE|CLK_ADDRESS_NONE|CLK_FILTER_NEAREST;\n\
 __kernel void image2DKernel(read_only image2d_t InputImage_1, write_only image2d_t OutImage_1, read_only image2d_t InputImage_2,write_only image2d_t OutImage_2,int num2DImages, int baseWidth, int baseHeight, int numMipLevels)    \n\
 {\n\
@@ -112,7 +136,7 @@ __kernel void image2DKernel(read_only image2d_t InputImage_1, write_only image2d
 \n\
 }";
 
-const char* kernel_text_numImage_4 = " \
+const char *kernel_text_numImage_4 = " \
 __constant sampler_t smpImg = CLK_NORMALIZED_COORDS_FALSE|CLK_ADDRESS_NONE|CLK_FILTER_NEAREST;\n\
 __kernel void image2DKernel(read_only image2d_t InputImage_1, write_only image2d_t OutImage_1, read_only image2d_t InputImage_2, write_only image2d_t OutImage_2, read_only image2d_t InputImage_3, write_only image2d_t OutImage_3, read_only image2d_t InputImage_4, write_only image2d_t OutImage_4, int num2DImages, int baseWidth, int baseHeight, int numMipLevels)    \n\
 {\n\

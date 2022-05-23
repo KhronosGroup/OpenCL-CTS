@@ -553,7 +553,7 @@ public:
 };
 
 
-#define VK_FUNC_DECL(name)   extern "C" PFN_ ## name _ ## name;
+#define VK_FUNC_DECL(name) extern "C" PFN_##name _##name;
 VK_FUNC_LIST
 #if defined(_WIN32) || defined(_WIN64)
 VK_WINDOWS_FUNC_LIST
