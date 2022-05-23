@@ -6,10 +6,7 @@
 //
 ******************************************************************/
 
-#include "../../test_common/harness/mt19937.h"
-
-#pragma mark -
-#pragma Misc tests
+#include "harness/mt19937.h"
 
 extern int test_vulkan_interop_buffer(cl_device_id device, cl_context context,
                                       cl_command_queue queue, int num_elements);
