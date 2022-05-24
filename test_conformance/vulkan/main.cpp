@@ -26,7 +26,10 @@
 
 #if !defined(__APPLE__)
 #include <CL/cl.h>
+#else
+#include <OpenCL/cl.h>
 #endif
+
 
 #include "procs.h"
 #include "harness/testHarness.h"

@@ -526,7 +526,7 @@ clExternalMemory::clExternalMemory(
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
 #ifndef _WIN32
             ASSERT(0);
-#endif
+#else
             log_info(" Opaque NT handles are only supported on Windows\n");
             handle = deviceMemory->getHandle(externalMemoryHandleType);
             err = check_external_memory_handle_type(
@@ -534,11 +534,12 @@ clExternalMemory::clExternalMemory(
             extMemProperties.push_back(
                 (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
             extMemProperties.push_back((cl_mem_properties)handle);
+#endif
             break;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
 #ifndef _WIN32
             ASSERT(0);
-#endif
+#else
             log_info("Opaque D3DKMT handles are only supported on Windows\n");
             handle = deviceMemory->getHandle(externalMemoryHandleType);
             err = check_external_memory_handle_type(
@@ -547,6 +548,7 @@ clExternalMemory::clExternalMemory(
                 (cl_mem_properties)
                     CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
             extMemProperties.push_back((cl_mem_properties)handle);
+#endif
             break;
         default:
             ASSERT(0);
@@ -589,12 +591,14 @@ clExternalMemoryImage::clExternalMemoryImage(
                                  "cl_khr_external_memory_win32 extension \n");
     }
 #else
+#if !defined(__APPLE__)
     if (!is_extension_available(devList[0], "cl_khr_external_memory_opaque_fd"))
     {
         throw std::runtime_error(
             "Device does not support cl_khr_external_memory_opaque_fd "
             "extension\n");
     }
+#endif
 #endif
 
     switch (externalMemoryHandleType)
@@ -620,8 +624,7 @@ clExternalMemoryImage::clExternalMemoryImage(
             extMemProperties1.push_back((cl_mem_properties)handle);
             break;
 #else
-        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
-            log_info(" Opaque file descriptors are not supported on Windows\n");
+#if !defined(__APPLE__)
             fd = (int)deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(
                 devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
@@ -629,6 +632,7 @@ clExternalMemoryImage::clExternalMemoryImage(
                 (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
             extMemProperties1.push_back((cl_mem_properties)fd);
             break;
+#endif
 #endif
         default:
             ASSERT(0);
@@ -710,6 +714,7 @@ clExternalSemaphore::clExternalSemaphore(
                                  "cl_khr_external_semaphore_win32 extension\n");
     }
 #else
+#if !defined(__APPLE__)
     if (!is_extension_available(devList[0],
                                 "cl_khr_external_semaphore_opaque_fd"))
     {
@@ -717,6 +722,7 @@ clExternalSemaphore::clExternalSemaphore(
             "Device does not support cl_khr_external_semaphore_opaque_fd "
             "extension \n");
     }
+#endif
 #endif
 
     std::vector<cl_semaphore_properties_khr> sema_props{
@@ -728,7 +734,7 @@ clExternalSemaphore::clExternalSemaphore(
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
 #ifdef _WIN32
             ASSERT(0);
-#endif
+#else
             log_info(" Opaque file descriptors are not supported on Windows\n");
             fd = (int)semaphore.getHandle(externalSemaphoreHandleType);
             err = check_external_semaphore_handle_type(
@@ -736,11 +742,12 @@ clExternalSemaphore::clExternalSemaphore(
             sema_props.push_back(
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)fd);
+#endif
             break;
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
 #ifndef _WIN32
             ASSERT(0);
-#endif
+#else
             log_info(" Opaque NT handles are only supported on Windows\n");
             handle = semaphore.getName().size()
                 ? NULL
@@ -750,11 +757,12 @@ clExternalSemaphore::clExternalSemaphore(
             sema_props.push_back((cl_semaphore_properties_khr)
                                      CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)handle);
+#endif
             break;
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT:
 #ifndef _WIN32
             ASSERT(0);
-#endif
+#else
             log_info(" Opaque D3DKMT handles are only supported on Windows\n");
             handle = semaphore.getHandle(externalSemaphoreHandleType);
             err = check_external_semaphore_handle_type(
@@ -762,6 +770,7 @@ clExternalSemaphore::clExternalSemaphore(
             sema_props.push_back((cl_semaphore_properties_khr)
                                      CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)handle);
+#endif
             break;
         default:
             ASSERT(0);
