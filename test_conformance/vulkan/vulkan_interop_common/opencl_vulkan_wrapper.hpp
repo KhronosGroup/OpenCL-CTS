@@ -18,8 +18,15 @@
 
 #include "vulkan_wrapper.hpp"
 
+#if !defined (__APPLE__)
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
+#else
+#include <OpenCL/cl.h>
+#include <OpenCL/cl_ext.h>
+#endif
+
+
 
 typedef cl_semaphore_khr (*pfnclCreateSemaphoreWithPropertiesKHR)(
     cl_context context, cl_semaphore_properties_khr *sema_props,

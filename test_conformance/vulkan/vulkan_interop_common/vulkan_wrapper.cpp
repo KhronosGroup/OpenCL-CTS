@@ -83,6 +83,7 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
     vkGetInstanceProcAddr =
         (PFN_vkGetInstanceProcAddr)LoadFunction(hDLL, "vkGetInstanceProcAddr");
 #else
+#if !defined (__APPLE__)
     void *handle;
     handle = dlopen(vulkanLoaderLibraryName, RTLD_LAZY);
     if (!handle)
@@ -92,6 +93,7 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
     }
     vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)LoadFunction(
         handle, "vkGetInstanceProcAddr");
+#endif
 #endif
     if ((unsigned long long)vkGetInstanceProcAddr == (unsigned long long)NULL)
     {

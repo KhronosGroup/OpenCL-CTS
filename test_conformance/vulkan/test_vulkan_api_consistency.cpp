@@ -17,8 +17,14 @@
 #include <vulkan_interop_common.hpp>
 #include <opencl_vulkan_wrapper.hpp>
 #include <vulkan_wrapper.hpp>
+#if !defined (__APPLE__)
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
+#else
+#include <OpenCL/cl.h>
+#include <OpenCL/cl_ext.h>
+#endif
+
 #include <assert.h>
 #include <vector>
 #include <iostream>
