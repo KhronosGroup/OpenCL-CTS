@@ -591,7 +591,7 @@ clExternalMemoryImage::clExternalMemoryImage(
                                  "cl_khr_external_memory_win32 extension \n");
     }
 #else
-#if !defined (__APPLE__)
+#if !defined(__APPLE__)
     if (!is_extension_available(devList[0], "cl_khr_external_memory_opaque_fd"))
     {
         throw std::runtime_error(
@@ -624,7 +624,7 @@ clExternalMemoryImage::clExternalMemoryImage(
             extMemProperties1.push_back((cl_mem_properties)handle);
             break;
 #else
-#if !defined (__APPLE__)
+#if !defined(__APPLE__)
             fd = (int)deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(
                 devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
@@ -714,7 +714,7 @@ clExternalSemaphore::clExternalSemaphore(
                                  "cl_khr_external_semaphore_win32 extension\n");
     }
 #else
-#if !defined (__APPLE__)
+#if !defined(__APPLE__)
     if (!is_extension_available(devList[0],
                                 "cl_khr_external_semaphore_opaque_fd"))
     {

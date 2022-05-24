@@ -18,7 +18,7 @@
 
 #include "vulkan_wrapper.hpp"
 
-#if !defined (__APPLE__)
+#if !defined(__APPLE__)
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
 #else
