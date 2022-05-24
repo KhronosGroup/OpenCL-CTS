@@ -622,6 +622,8 @@ clExternalMemoryImage::clExternalMemoryImage(
             extMemProperties1.push_back((cl_mem_properties)handle);
             break;
 #elif !defined(__APPLE__)
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
+            log_info(" Opaque file descriptors are not supported on Windows\n");
             fd = (int)deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(
                 devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
