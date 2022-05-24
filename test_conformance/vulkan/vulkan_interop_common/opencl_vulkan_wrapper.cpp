@@ -590,15 +590,13 @@ clExternalMemoryImage::clExternalMemoryImage(
         throw std::runtime_error("Device does not support "
                                  "cl_khr_external_memory_win32 extension \n");
     }
-#else
-#if !defined(__APPLE__)
+#elif !defined(__APPLE__)
     if (!is_extension_available(devList[0], "cl_khr_external_memory_opaque_fd"))
     {
         throw std::runtime_error(
             "Device does not support cl_khr_external_memory_opaque_fd "
             "extension\n");
     }
-#endif
 #endif
 
     switch (externalMemoryHandleType)
@@ -623,8 +621,7 @@ clExternalMemoryImage::clExternalMemoryImage(
                     CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
             extMemProperties1.push_back((cl_mem_properties)handle);
             break;
-#else
-#if !defined(__APPLE__)
+#elif !defined(__APPLE__)
             fd = (int)deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(
                 devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
@@ -632,7 +629,6 @@ clExternalMemoryImage::clExternalMemoryImage(
                 (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
             extMemProperties1.push_back((cl_mem_properties)fd);
             break;
-#endif
 #endif
         default:
             ASSERT(0);
@@ -713,8 +709,7 @@ clExternalSemaphore::clExternalSemaphore(
         throw std::runtime_error("Device does not support "
                                  "cl_khr_external_semaphore_win32 extension\n");
     }
-#else
-#if !defined(__APPLE__)
+#elif !defined(__APPLE__)
     if (!is_extension_available(devList[0],
                                 "cl_khr_external_semaphore_opaque_fd"))
     {
@@ -722,7 +717,6 @@ clExternalSemaphore::clExternalSemaphore(
             "Device does not support cl_khr_external_semaphore_opaque_fd "
             "extension \n");
     }
-#endif
 #endif
 
     std::vector<cl_semaphore_properties_khr> sema_props{
