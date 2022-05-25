@@ -164,7 +164,7 @@ struct TestInfo
     cl_uint scale; // stride between individual test values
     float ulps; // max_allowed ulps
     int ftz; // non-zero if running in flush to zero mode
-
+    bool relaxedMode;
     // no special values
 };
 
@@ -601,6 +601,7 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d, bool relaxedMode)
     test_info.f = f;
     test_info.ulps = f->double_ulps;
     test_info.ftz = f->ftz || gForceFTZ;
+    test_info.relaxedMode = relaxedMode;
 
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread

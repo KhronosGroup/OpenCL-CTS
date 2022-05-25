@@ -291,7 +291,7 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
                     float err2 = Bruteforce_Ulp_Error_Double(test2, correct2);
                     int fail = !(fabsf(err) <= f->double_ulps
                                  && fabsf(err2) <= f->double_ulps);
-                    if (ftz)
+                    if (ftz || relaxedMode)
                     {
                         // retry per section 6.5.3.2
                         if (IsDoubleResultSubnormal(correct, f->double_ulps))

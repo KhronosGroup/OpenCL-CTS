@@ -456,7 +456,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // Calculate the correctly rounded reference result
     FPU_mode_type oldMode;
     memset(&oldMode, 0, sizeof(oldMode));
-    if (ftz) ForceFTZ(&oldMode);
+    if (ftz || relaxedMode) ForceFTZ(&oldMode);
 
     // Set the rounding mode to match the device
     oldRoundMode = kRoundToNearestEven;
@@ -484,7 +484,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     if (gIsInRTZMode) (void)set_round(oldRoundMode, kfloat);
 
-    if (ftz) RestoreFPState(&oldMode);
+    if (ftz || relaxedMode) RestoreFPState(&oldMode);
 
     // Read the data back -- no need to wait for the first N-1 buffers but wait
     // for the last buffer. This is an in order queue.
