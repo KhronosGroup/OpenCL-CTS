@@ -155,7 +155,8 @@ struct TestInfo
     cl_uint step; // step between each chunk and the next.
     cl_uint scale; // stride between individual test values
     int ftz; // non-zero if running in flush to zero mode
-    bool relaxedMode;
+    bool relaxedMode; // True if test is running in relaxed mode, false
+                      // otherwise.
 };
 
 // A table of more difficult cases to get right

@@ -162,7 +162,8 @@ struct TestInfo
     cl_uint scale; // stride between individual test values
     float ulps; // max_allowed ulps
     int ftz; // non-zero if running in flush to zero mode
-    bool relaxedMode;
+    bool relaxedMode; // True if test is running in relaxed mode, false
+                      // otherwise.
     // no special values
 };
 
