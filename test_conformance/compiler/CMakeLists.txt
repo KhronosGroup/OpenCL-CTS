@@ -1,5 +1,6 @@
 set(MODULE_NAME COMPILER)
 
+
 set(${MODULE_NAME}_SOURCES
     main.cpp
     test_build_helpers.cpp
