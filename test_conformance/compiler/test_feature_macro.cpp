@@ -579,22 +579,25 @@ int test_feature_macro_fp64(cl_device_id deviceID, cl_context context,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_integer_dot_product_input_4x8bit_packed(cl_device_id deviceID, cl_context context,
-                             								   std::string test_macro_name, cl_bool& supported)
+int test_feature_macro_integer_dot_product_input_4x8bit_packed(
+    cl_device_id deviceID, cl_context context, std::string test_macro_name,
+    cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
     cl_bool compiler_status;
     log_info("\n%s ...\n", test_macro_name.c_str());
-    
-	if (!is_extension_available(deviceID, "cl_khr_integer_dot_product"))
-	{
-		supported = false;
-		return TEST_PASS;
-	}
-	
-	error = check_api_feature_info_capabilities<cl_device_integer_dot_product_capabilities_khr>(
-        deviceID, context, api_status, CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR,
+
+    if (!is_extension_available(deviceID, "cl_khr_integer_dot_product"))
+    {
+        supported = false;
+        return TEST_PASS;
+    }
+
+    error = check_api_feature_info_capabilities<
+        cl_device_integer_dot_product_capabilities_khr>(
+        deviceID, context, api_status,
+        CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR,
         CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR);
     if (error != CL_SUCCESS)
     {
@@ -612,22 +615,25 @@ int test_feature_macro_integer_dot_product_input_4x8bit_packed(cl_device_id devi
                                         compiler_status, supported);
 }
 
-int test_feature_macro_integer_dot_product_input_4x8bit(cl_device_id deviceID, cl_context context,
-                             							std::string test_macro_name, cl_bool& supported)
+int test_feature_macro_integer_dot_product_input_4x8bit(
+    cl_device_id deviceID, cl_context context, std::string test_macro_name,
+    cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
     cl_bool compiler_status;
     log_info("\n%s ...\n", test_macro_name.c_str());
 
-	if (!is_extension_available(deviceID, "cl_khr_integer_dot_product"))
-	{
-		supported = false;
-		return TEST_PASS;
-	}
+    if (!is_extension_available(deviceID, "cl_khr_integer_dot_product"))
+    {
+        supported = false;
+        return TEST_PASS;
+    }
 
-    error = check_api_feature_info_capabilities<cl_device_integer_dot_product_capabilities_khr>(
-        deviceID, context, api_status, CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR,
+    error = check_api_feature_info_capabilities<
+        cl_device_integer_dot_product_capabilities_khr>(
+        deviceID, context, api_status,
+        CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR,
         CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR);
     if (error != CL_SUCCESS)
     {
@@ -814,8 +820,8 @@ int test_features_macro(cl_device_id deviceID, cl_context context,
     NEW_FEATURE_MACRO_TEST(images);
     NEW_FEATURE_MACRO_TEST(fp64);
     NEW_FEATURE_MACRO_TEST(int64);
-	NEW_FEATURE_MACRO_TEST(integer_dot_product_input_4x8bit);
-	NEW_FEATURE_MACRO_TEST(integer_dot_product_input_4x8bit_packed);
+    NEW_FEATURE_MACRO_TEST(integer_dot_product_input_4x8bit);
+    NEW_FEATURE_MACRO_TEST(integer_dot_product_input_4x8bit_packed);
 
     error |= test_consistency_c_features_list(deviceID, supported_features_vec);
 
