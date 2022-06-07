@@ -322,8 +322,15 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
     }
 
     // Build the kernel
-    char *kernel_code = (char*)malloc(1025*256*(num_not_supported_extensions+num_of_supported_extensions));
-    memset(kernel_code, 0, 1025*256*(num_not_supported_extensions+num_of_supported_extensions));
+    char *kernel_code = (char *)malloc(
+        1
+        + 1025 * 256
+            * (num_not_supported_extensions + num_of_supported_extensions));
+    memset(
+        kernel_code, 0,
+        1
+            + 1025 * 256
+                * (num_not_supported_extensions + num_of_supported_extensions));
 
     int i, index = 0;
     strcat(kernel_code, kernel_strings[0]);
