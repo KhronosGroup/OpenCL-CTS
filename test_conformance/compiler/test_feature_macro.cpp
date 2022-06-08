@@ -758,15 +758,6 @@ int test_consistency_c_features_list(cl_device_id deviceID,
     sort(vec_to_cmp.begin(), vec_to_cmp.end());
     sort(vec_device_feature_names.begin(), vec_device_feature_names.end());
 
-    if (vec_device_feature_names == vec_to_cmp)
-    {
-        log_info("Comparison list of features - passed\n");
-    }
-    else
-    {
-        log_info("Comparison list of features - failed\n");
-        error = TEST_FAIL;
-    }
     log_info(
         "Supported features based on CL_DEVICE_OPENCL_C_FEATURES API query:\n");
     for (auto each_f : vec_device_feature_names)
@@ -775,10 +766,24 @@ int test_consistency_c_features_list(cl_device_id deviceID,
     }
 
     log_info("\nSupported features based on queries to API/compiler :\n");
+
     for (auto each_f : vec_to_cmp)
     {
         log_info("%s\n", each_f.c_str());
     }
+
+    for (auto each_f : vec_to_cmp)
+    {
+        if (find(vec_device_feature_names.begin(),
+                 vec_device_feature_names.end(), each_f)
+            == vec_device_feature_names.end())
+        {
+            log_info("Comparison list of features - failed\n");
+            return TEST_FAIL;
+        }
+    }
+
+    log_info("Comparison list of features - passed\n");
 
     return error;
 }
