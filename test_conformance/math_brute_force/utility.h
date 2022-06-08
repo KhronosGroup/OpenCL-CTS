@@ -22,6 +22,7 @@
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
 #include "harness/conversions.h"
+#include "CL/cl_half.h"
 
 #define BUFFER_SIZE (1024 * 1024 * 2)
 #define EMBEDDED_REDUCTION_FACTOR (64)
@@ -60,12 +61,15 @@ extern int gForceFTZ;
 extern int gFastRelaxedDerived;
 extern int gWimpyMode;
 extern int gIsInRTZMode;
+extern int gHasHalf;
 extern int gInfNanSupport;
 extern int gIsEmbedded;
 extern int gVerboseBruteForce;
 extern uint32_t gMaxVectorSizeIndex;
 extern uint32_t gMinVectorSizeIndex;
 extern cl_device_fp_config gFloatCapabilities;
+extern cl_device_fp_config gHalfCapabilities;
+extern RoundingMode gFloatToHalfRoundingMode;
 
 #define LOWER_IS_BETTER 0
 #define HIGHER_IS_BETTER 1

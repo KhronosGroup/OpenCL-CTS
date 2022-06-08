@@ -4698,6 +4698,40 @@ double reference_nextafter(double xx, double yy)
     return a.f;
 }
 
+cl_half reference_nanh(cl_ushort x)
+{
+    cl_ushort u;
+    cl_half h;
+    u = x | 0x7e00U;
+    memcpy(&h, &u, sizeof(cl_half));
+    return h;
+}
+
+float reference_nextafterh(float xx, float yy)
+{
+    cl_half tmp_a = cl_half_from_float(xx, CL_HALF_RTE);
+    cl_half tmp_b = cl_half_from_float(yy, CL_HALF_RTE);
+    float x = cl_half_to_float(tmp_a);
+    float y = cl_half_to_float(tmp_b);
+
+    // take care of nans
+    if (x != x) return x;
+
+    if (y != y) return y;
+
+    if (x == y) return y;
+
+    short a_h = cl_half_from_float(x, CL_HALF_RTE);
+    short b_h = cl_half_from_float(y, CL_HALF_RTE);
+
+    if (a_h & 0x8000) a_h = 0x8000 - a_h;
+    if (b_h & 0x8000) b_h = 0x8000 - b_h;
+
+    a_h += (a_h < b_h) ? 1 : -1;
+    a_h = (a_h < 0) ? (cl_short)0x8000 - a_h : a_h;
+
+    return cl_half_to_float(a_h);
+}
 
 long double reference_nextafterl(long double xx, long double yy)
 {

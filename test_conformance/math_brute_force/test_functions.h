@@ -24,6 +24,9 @@ int TestFunc_Float_Float(const Func *f, MTdata, bool relaxedMode);
 // double foo(double)
 int TestFunc_Double_Double(const Func *f, MTdata, bool relaxedMode);
 
+// half foo(half)
+int TestFunc_Half_Half(const Func *f, MTdata, bool relaxedMode);
+
 // int foo(float)
 int TestFunc_Int_Float(const Func *f, MTdata, bool relaxedMode);
 
@@ -36,6 +39,9 @@ int TestFunc_Float_UInt(const Func *f, MTdata, bool relaxedMode);
 // double foo(ulong)
 int TestFunc_Double_ULong(const Func *f, MTdata, bool relaxedMode);
 
+// half (Ushort)
+int TestFunc_Half_UShort(const Func *f, MTdata, bool relaxedMode);
+
 // Returns {0, 1} for scalar and {0, -1} for vector.
 // int foo(float)
 int TestMacro_Int_Float(const Func *f, MTdata, bool relaxedMode);
@@ -44,21 +50,34 @@ int TestMacro_Int_Float(const Func *f, MTdata, bool relaxedMode);
 // int foo(double)
 int TestMacro_Int_Double(const Func *f, MTdata, bool relaxedMode);
 
+// int foo(half,half)
+int TestMacro_Int_Half_Half(const Func *f, MTdata, bool relaxedMode);
+
+// int foo(half)
+int TestMacro_Int_Half(const Func *f, MTdata, bool relaxedMode);
+
+// int foo(half)
+int TestFunc_Int_Half(const Func *f, MTdata, bool relaxedMode);
+
 // float foo(float, float)
 int TestFunc_Float_Float_Float(const Func *f, MTdata, bool relaxedMode);
 
 // double foo(double, double)
 int TestFunc_Double_Double_Double(const Func *f, MTdata, bool relaxedMode);
 
+// Half foo(half, half)
+int TestFunc_Half_Half_Half(const Func *f, MTdata, bool relaxedMode);
 // Special handling for nextafter.
-// float foo(float, float)
-int TestFunc_Float_Float_Float_nextafter(const Func *f, MTdata,
-                                         bool relaxedMode);
+// Half foo(Half, Half)
+int TestFunc_Half_Half_Half_nextafter(const Func *f, MTdata, bool relaxedMode);
 
-// Special handling for nextafter.
-// double foo(double, double)
-int TestFunc_Double_Double_Double_nextafter(const Func *f, MTdata,
-                                            bool relaxedMode);
+// Half foo(Half, Half)
+int TestFunc_Half_Half_Half_common(const Func *f, MTdata, int isNextafter,
+                                   bool relaxedMode);
+
+// Half foo(Half, int)
+int TestFunc_Half_Half_Int(const Func *f, MTdata, bool relaxedMode);
+
 
 // float op float
 int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata,
@@ -114,5 +133,8 @@ int TestFunc_mad_Float(const Func *f, MTdata, bool relaxedMode);
 // Special handling for mad.
 // double mad(double, double, double)
 int TestFunc_mad_Double(const Func *f, MTdata, bool relaxedMode);
+
+// half mad(half, half, half)
+int TestFunc_mad_Half(const Func *f, MTdata, bool relaxedMode);
 
 #endif

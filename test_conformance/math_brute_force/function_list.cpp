@@ -32,33 +32,37 @@
 #define ENTRY(_name, _ulp, _embedded_ulp, _rmode, _type)                       \
     {                                                                          \
         STRINGIFY(_name), STRINGIFY(_name), { NULL }, { NULL }, { NULL },      \
-            _ulp, _ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,             \
+            _ulp, _ulp, _ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,       \
             RELAXED_OFF, _type                                                 \
     }
 #define ENTRY_EXT(_name, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, _type,     \
                   _relaxed_embedded_ulp)                                       \
     {                                                                          \
         STRINGIFY(_name), STRINGIFY(_name), { NULL }, { NULL }, { NULL },      \
-            _ulp, _ulp, _embedded_ulp, _relaxed_ulp, _relaxed_embedded_ulp,    \
-            _rmode, RELAXED_ON, _type                                          \
+            _ulp, _ulp, _ulp, _embedded_ulp, _relaxed_ulp,                     \
+            _relaxed_embedded_ulp, _rmode, RELAXED_ON, _type                   \
     }
 #define HALF_ENTRY(_name, _ulp, _embedded_ulp, _rmode, _type)                  \
     {                                                                          \
         "half_" STRINGIFY(_name), "half_" STRINGIFY(_name), { NULL },          \
-            { NULL }, { NULL }, _ulp, _ulp, _embedded_ulp, INFINITY, INFINITY, \
-            _rmode, RELAXED_OFF, _type                                         \
+            { NULL }, { NULL }, _ulp, _ulp, _ulp, _embedded_ulp, INFINITY,     \
+            INFINITY, _rmode, RELAXED_OFF, _type                               \
     }
 #define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _rmode, _type)   \
     {                                                                          \
         STRINGIFY(_name), _operator, { NULL }, { NULL }, { NULL }, _ulp, _ulp, \
-            _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
+            _ulp, _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF,      \
+            _type                                                              \
     }
 
 #define unaryF NULL
+#define unaryOF NULL
 #define i_unaryF NULL
 #define unaryF_u NULL
 #define macro_unaryF NULL
 #define binaryF NULL
+#define binaryOF NULL
+#define binaryF_nextafter NULL
 #define binaryOperatorF NULL
 #define binaryF_i NULL
 #define macro_binaryF NULL
@@ -80,7 +84,7 @@
     {                                                                          \
         STRINGIFY(_name), STRINGIFY(_name), { (void*)reference_##_name },      \
             { (void*)reference_##_name##l }, { (void*)reference_##_name },     \
-            _ulp, _ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,             \
+            _ulp, _ulp, _ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,       \
             RELAXED_OFF, _type                                                 \
     }
 #define ENTRY_EXT(_name, _ulp, _embedded_ulp, _relaxed_ulp, _rmode, _type,     \
@@ -88,19 +92,21 @@
     {                                                                          \
         STRINGIFY(_name), STRINGIFY(_name), { (void*)reference_##_name },      \
             { (void*)reference_##_name##l },                                   \
-            { (void*)reference_##relaxed_##_name }, _ulp, _ulp, _embedded_ulp, \
-            _relaxed_ulp, _relaxed_embedded_ulp, _rmode, RELAXED_ON, _type     \
+            { (void*)reference_##relaxed_##_name }, _ulp, _ulp, _ulp,          \
+            _embedded_ulp, _relaxed_ulp, _relaxed_embedded_ulp, _rmode,        \
+            RELAXED_ON, _type                                                  \
     }
 #define HALF_ENTRY(_name, _ulp, _embedded_ulp, _rmode, _type)                  \
     {                                                                          \
         "half_" STRINGIFY(_name), "half_" STRINGIFY(_name),                    \
             { (void*)reference_##_name }, { NULL }, { NULL }, _ulp, _ulp,      \
-            _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
+            _ulp, _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF,      \
+            _type                                                              \
     }
 #define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _rmode, _type)   \
     {                                                                          \
         STRINGIFY(_name), _operator, { (void*)reference_##_name },             \
-            { (void*)reference_##_name##l }, { NULL }, _ulp, _ulp,             \
+            { (void*)reference_##_name##l }, { NULL }, _ulp, _ulp, _ulp,       \
             _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
     }
 
@@ -108,85 +114,114 @@ static constexpr vtbl _unary = {
     "unary",
     TestFunc_Float_Float,
     TestFunc_Double_Double,
+    TestFunc_Half_Half,
 };
+
+static constexpr vtbl _unaryof = { "unaryof", TestFunc_Float_Float, NULL,
+                                   NULL };
 
 static constexpr vtbl _i_unary = {
     "i_unary",
     TestFunc_Int_Float,
     TestFunc_Int_Double,
+    TestFunc_Int_Half,
 };
 
 static constexpr vtbl _unary_u = {
     "unary_u",
     TestFunc_Float_UInt,
     TestFunc_Double_ULong,
+    TestFunc_Half_UShort,
 };
 
 static constexpr vtbl _macro_unary = {
     "macro_unary",
     TestMacro_Int_Float,
     TestMacro_Int_Double,
+    TestMacro_Int_Half,
 };
 
 static constexpr vtbl _binary = {
     "binary",
     TestFunc_Float_Float_Float,
     TestFunc_Double_Double_Double,
+    TestFunc_Half_Half_Half,
 };
+
+static constexpr vtbl _binary_nextafter = {
+    "binary",
+    TestFunc_Float_Float_Float,
+    TestFunc_Double_Double_Double,
+    TestFunc_Half_Half_Half_nextafter,
+};
+
+static constexpr vtbl _binaryof = { "binaryof", TestFunc_Float_Float_Float,
+                                    NULL, NULL };
 
 static constexpr vtbl _binary_operator = {
     "binaryOperator",
     TestFunc_Float_Float_Float_Operator,
     TestFunc_Double_Double_Double_Operator,
+    NULL,
 };
 
 static constexpr vtbl _binary_i = {
     "binary_i",
     TestFunc_Float_Float_Int,
     TestFunc_Double_Double_Int,
+    TestFunc_Half_Half_Int,
 };
 
 static constexpr vtbl _macro_binary = {
     "macro_binary",
     TestMacro_Int_Float_Float,
     TestMacro_Int_Double_Double,
+    TestMacro_Int_Half_Half,
 };
 
 static constexpr vtbl _ternary = {
     "ternary",
     TestFunc_Float_Float_Float_Float,
     TestFunc_Double_Double_Double_Double,
+    NULL,
 };
 
 static constexpr vtbl _unary_two_results = {
     "unary_two_results",
     TestFunc_Float2_Float,
     TestFunc_Double2_Double,
+    NULL,
 };
 
 static constexpr vtbl _unary_two_results_i = {
     "unary_two_results_i",
     TestFunc_FloatI_Float,
     TestFunc_DoubleI_Double,
+    NULL,
 };
 
 static constexpr vtbl _binary_two_results_i = {
     "binary_two_results_i",
     TestFunc_FloatI_Float_Float,
     TestFunc_DoubleI_Double_Double,
+    NULL,
 };
 
 static constexpr vtbl _mad_tbl = {
     "ternary",
     TestFunc_mad_Float,
     TestFunc_mad_Double,
+    TestFunc_mad_Half,
 };
 
 #define unaryF &_unary
+#define unaryOF &_unaryof
 #define i_unaryF &_i_unary
 #define unaryF_u &_unary_u
 #define macro_unaryF &_macro_unary
 #define binaryF &_binary
+#define binaryF_nextafter &_binary_nextafter
+#define binaryOF &_binaryof
 #define binaryOperatorF &_binary_operator
 #define binaryF_i &_binary_i
 #define macro_binaryF &_macro_binary
@@ -278,7 +313,7 @@ const Func functionList[] = {
     ENTRY(minmag, 0.0f, 0.0f, FTZ_OFF, binaryF),
     ENTRY(modf, 0.0f, 0.0f, FTZ_OFF, unaryF_two_results),
     ENTRY(nan, 0.0f, 0.0f, FTZ_OFF, unaryF_u),
-    ENTRY(nextafter, 0.0f, 0.0f, FTZ_OFF, binaryF),
+    ENTRY(nextafter, 0.0f, 0.0f, FTZ_OFF, binaryF_nextafter),
     ENTRY_EXT(pow, 16.0f, 16.0f, 8192.0f, FTZ_OFF, binaryF,
               8192.0f), // in derived mode the ulp error is calculated as
                         // exp2(y*log2(x)) and in non-derived it is the same as
@@ -308,6 +343,7 @@ const Func functionList[] = {
       { NULL },
       3.0f,
       0.0f,
+      0.0f,
       4.0f,
       INFINITY,
       INFINITY,
@@ -319,6 +355,7 @@ const Func functionList[] = {
       { (void*)reference_sqrt },
       { (void*)reference_sqrtl },
       { NULL },
+      0.0f,
       0.0f,
       0.0f,
       0.0f,
@@ -339,20 +376,20 @@ const Func functionList[] = {
     //                                    sure this requirement is realistic
     ENTRY(trunc, 0.0f, 0.0f, FTZ_OFF, unaryF),
 
-    HALF_ENTRY(cos, 8192.0f, 8192.0f, FTZ_ON, unaryF),
-    HALF_ENTRY(divide, 8192.0f, 8192.0f, FTZ_ON, binaryF),
-    HALF_ENTRY(exp, 8192.0f, 8192.0f, FTZ_ON, unaryF),
-    HALF_ENTRY(exp2, 8192.0f, 8192.0f, FTZ_ON, unaryF),
-    HALF_ENTRY(exp10, 8192.0f, 8192.0f, FTZ_ON, unaryF),
-    HALF_ENTRY(log, 8192.0f, 8192.0f, FTZ_ON, unaryF),
-    HALF_ENTRY(log2, 8192.0f, 8192.0f, FTZ_ON, unaryF),
-    HALF_ENTRY(log10, 8192.0f, 8192.0f, FTZ_ON, unaryF),
-    HALF_ENTRY(powr, 8192.0f, 8192.0f, FTZ_ON, binaryF),
-    HALF_ENTRY(recip, 8192.0f, 8192.0f, FTZ_ON, unaryF),
-    HALF_ENTRY(rsqrt, 8192.0f, 8192.0f, FTZ_ON, unaryF),
-    HALF_ENTRY(sin, 8192.0f, 8192.0f, FTZ_ON, unaryF),
-    HALF_ENTRY(sqrt, 8192.0f, 8192.0f, FTZ_ON, unaryF),
-    HALF_ENTRY(tan, 8192.0f, 8192.0f, FTZ_ON, unaryF),
+    HALF_ENTRY(cos, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
+    HALF_ENTRY(divide, 8192.0f, 8192.0f, FTZ_ON, binaryOF),
+    HALF_ENTRY(exp, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
+    HALF_ENTRY(exp2, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
+    HALF_ENTRY(exp10, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
+    HALF_ENTRY(log, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
+    HALF_ENTRY(log2, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
+    HALF_ENTRY(log10, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
+    HALF_ENTRY(powr, 8192.0f, 8192.0f, FTZ_ON, binaryOF),
+    HALF_ENTRY(recip, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
+    HALF_ENTRY(rsqrt, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
+    HALF_ENTRY(sin, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
+    HALF_ENTRY(sqrt, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
+    HALF_ENTRY(tan, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
 
     // basic operations
     OPERATOR_ENTRY(add, "+", 0.0f, 0.0f, FTZ_OFF, binaryOperatorF),
@@ -363,6 +400,7 @@ const Func functionList[] = {
       { (void*)reference_dividel },
       { (void*)reference_relaxed_divide },
       2.5f,
+      0.0f,
       0.0f,
       3.0f,
       2.5f,
@@ -375,6 +413,7 @@ const Func functionList[] = {
       { (void*)reference_divide },
       { (void*)reference_dividel },
       { (void*)reference_relaxed_divide },
+      0.0f,
       0.0f,
       0.0f,
       0.0f,
