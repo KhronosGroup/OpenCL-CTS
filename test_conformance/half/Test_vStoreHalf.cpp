@@ -83,6 +83,8 @@ ReferenceF(cl_uint jid, cl_uint tid, void *userInfo)
     cl_ulong i = cri->i + off;
     cl_uint j, rr;
 
+    if (off >= lim) return 0;
+
     if (off + count > lim)
         count = lim - off;
 
@@ -109,6 +111,8 @@ CheckF(cl_uint jid, cl_uint tid, void *userInfo)
     cl_ushort correct2 = f( 0.0f);
     cl_ushort correct3 = f(-0.0f);
     cl_int ret = 0;
+
+    if (off >= lim) return 0;
 
     if (off + count > lim)
         count = lim - off;
@@ -155,6 +159,8 @@ ReferenceD(cl_uint jid, cl_uint tid, void *userInfo)
     cl_uint j;
     cl_ulong i = cri->i + off;
 
+    if (off >= lim) return 0;
+
     if (off + count > lim)
         count = lim - off;
 
@@ -181,6 +187,8 @@ CheckD(cl_uint jid, cl_uint tid, void *userInfo)
     cl_ushort correct2 = f( 0.0);
     cl_ushort correct3 = f(-0.0);
     cl_int ret = 0;
+
+    if (off >= lim) return 0;
 
     if (off + count > lim)
         count = lim - off;
