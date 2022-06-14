@@ -22,8 +22,10 @@
 #endif
 #include <vulkan/vulkan.h>
 #include "vulkan_wrapper.hpp"
-#ifdef __linux__ && !__ANDROID__
+#if defined(__linux__) && !defined(__ANDROID__)
 #include <gnu/libc-version.h>
+#include <dlfcn.h>
+#elif defined(__ANDROID__)
 #include <dlfcn.h>
 #endif
 #if defined _WIN32
@@ -57,7 +59,7 @@ VulkanInstance::VulkanInstance(const VulkanInstance &instance)
 
 VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
 {
-#if defined(__linux__)
+#if defined(__linux__) && !defined(__ANDROID__)
     char *glibcVersion = strdup(gnu_get_libc_version());
     int majNum = (int)atoi(strtok(glibcVersion, "."));
     int minNum = (int)atoi(strtok(NULL, "."));
