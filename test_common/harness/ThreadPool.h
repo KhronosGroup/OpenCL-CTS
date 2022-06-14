@@ -16,7 +16,7 @@
 #ifndef THREAD_POOL_H
 #define THREAD_POOL_H
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) && CL_TARGET_OPENCL_VERSION <= 120
 #include <OpenCL/opencl.h>
 #else
 #include <CL/cl.h>

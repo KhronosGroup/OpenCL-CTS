@@ -17,7 +17,7 @@
 #define __KERNELARGS_H
 
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && CL_TARGET_OPENCL_VERSION <= 120
 #include <OpenCL/opencl.h>
 #else
 #include <CL/cl.h>

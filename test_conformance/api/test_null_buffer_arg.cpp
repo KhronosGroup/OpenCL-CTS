@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include <stdio.h>
-#if defined(__APPLE__)
+#if defined(__APPLE__) && CL_TARGET_OPENCL_VERSION <= 120
 #include <OpenCL/opencl.h>
 #include <OpenCL/cl_platform.h>
 #else

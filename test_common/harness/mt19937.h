@@ -49,7 +49,7 @@
 #ifndef MT19937_H
 #define MT19937_H 1
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) && CL_TARGET_OPENCL_VERSION <= 120
 #include <OpenCL/cl_platform.h>
 #else
 #include <CL/cl_platform.h>
