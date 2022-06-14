@@ -778,7 +778,8 @@ int test_consistency_c_features_list(cl_device_id deviceID,
                  vec_device_feature_names.end(), each_f)
             == vec_device_feature_names.end())
         {
-            log_info("Comparison list of features - failed\n");
+            log_info("Comparison list of features - failed - missing %s\n",
+                     each_f.c_str());
             return TEST_FAIL;
         }
     }
