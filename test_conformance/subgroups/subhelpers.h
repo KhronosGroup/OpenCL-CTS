@@ -250,7 +250,9 @@ enum class ShuffleOp
     shuffle,
     shuffle_up,
     shuffle_down,
-    shuffle_xor
+    shuffle_xor,
+    rotate,
+    clustered_rotate,
 };
 
 enum class ArithmeticOp
@@ -316,6 +318,8 @@ static const char *const operation_names(ShuffleOp operation)
         case ShuffleOp::shuffle_up: return "shuffle_up";
         case ShuffleOp::shuffle_down: return "shuffle_down";
         case ShuffleOp::shuffle_xor: return "shuffle_xor";
+        case ShuffleOp::rotate: return "rotate";
+        case ShuffleOp::clustered_rotate: return "clustered_rotate";
         default: log_error("Unknown operation request"); break;
     }
     return "";
