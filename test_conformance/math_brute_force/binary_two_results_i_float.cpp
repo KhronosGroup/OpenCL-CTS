@@ -379,7 +379,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                 if (iptrUndefined) iErr = 0;
 
                 int fail = !(fabsf(err) <= float_ulps && iErr == 0);
-                if (ftz && fail)
+                if ((ftz || relaxedMode) && fail)
                 {
                     // retry per section 6.5.3.2
                     if (IsFloatResultSubnormal(correct, float_ulps))

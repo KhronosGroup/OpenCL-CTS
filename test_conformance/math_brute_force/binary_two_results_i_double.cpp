@@ -379,7 +379,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                 if (iptrUndefined) iErr = 0;
 
                 int fail = !(fabsf(err) <= f->double_ulps && iErr == 0);
-                if (ftz && fail)
+                if ((ftz || relaxedMode) && fail)
                 {
                     // retry per section 6.5.3.2
                     if (IsDoubleResultSubnormal(correct, f->double_ulps))

@@ -245,7 +245,7 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
                 // If we aren't getting the correctly rounded result
                 if (t[j] != q[j])
                 {
-                    if (ftz && IsFloatSubnormal(s[j]))
+                    if ((ftz || relaxedMode) && IsFloatSubnormal(s[j]))
                     {
                         unsigned int correct0 = f->func.i_f(0.0);
                         unsigned int correct1 = f->func.i_f(-0.0);
