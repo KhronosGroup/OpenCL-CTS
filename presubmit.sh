@@ -40,12 +40,25 @@ if [[ ( ${JOB_ARCHITECTURE} == "" && ${JOB_ENABLE_GL} == "1" ) ]]; then
     BUILD_OPENGL_TEST="ON"
 fi
 
+#Vulkan Headers
+git clone https://github.com/KhronosGroup/Vulkan-Headers.git
+
 # Get and build loader
 git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
 cd ${TOP}/OpenCL-ICD-Loader
 mkdir build
 cd build
 cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/
+cmake --build . -j2 --config Release
+
+#Vulkan Loader
+cd ${TOP}
+git clone https://github.com/KhronosGroup/Vulkan-Loader.git
+cd Vulkan-Loader
+mkdir build
+cd build
+python3 ../scripts/update_deps.py
+cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DBUILD_WSI_XLIB_SUPPORT=OFF -DBUILD_WSI_XCB_SUPPORT=OFF -DBUILD_WSI_WAYLAND_SUPPORT=OFF -DUSE_GAS=OFF -C helper.cmake ..
 cmake --build . -j2 --config Release
 
 # Build CTS
@@ -68,6 +81,9 @@ cmake .. -G Ninja \
       -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin \
       -DOPENCL_LIBRARIES="${CMAKE_OPENCL_LIBRARIES_OPTION}" \
       -DUSE_CL_EXPERIMENTAL=ON \
-      -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST}
+      -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
+      -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
+      -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/
 cmake --build . -j3 --config Release
+
 

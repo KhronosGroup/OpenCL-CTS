@@ -55,6 +55,7 @@ static cl_uint4 bs128_to_cl_uint4(bs128 v)
 
 struct WorkGroupParams
 {
+
     WorkGroupParams(size_t gws, size_t lws, int dm_arg = -1, int cs_arg = -1)
         : global_workgroup_size(gws), local_workgroup_size(lws),
           divergence_mask_arg(dm_arg), cluster_size_arg(cs_arg)
