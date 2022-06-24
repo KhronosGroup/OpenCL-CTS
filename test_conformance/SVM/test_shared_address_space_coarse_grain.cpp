@@ -210,6 +210,7 @@ int shared_address_space_coarse_grain(cl_device_id deviceID, cl_context context2
     // this buffer holds an index into the nodes buffer, it is used for node allocation
     clMemWrapper allocator = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                             sizeof(size_t), NULL, &error);
+
     test_error(error, "clCreateBuffer failed.");
 
     error = clGetMemObjectInfo(allocator, CL_MEM_USES_SVM_POINTER, sizeof(cl_bool), &usesSVMpointer, 0);
