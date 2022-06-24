@@ -98,7 +98,7 @@ cl_int create_linked_lists_on_device(int ci, cl_command_queue cmdq, cl_mem alloc
   cl_int error = CL_SUCCESS;
   log_info("SVM: creating linked list on device: %d ", ci);
 
-  size_t *pAllocator = (size_t *) clEnqueueMapBuffer(
+  size_t *pAllocator = (size_t *)clEnqueueMapBuffer(
       cmdq, allocator, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, sizeof(size_t),
       0, NULL, NULL, &error);
   test_error2(error, pAllocator, "clEnqueueMapBuffer failed");
