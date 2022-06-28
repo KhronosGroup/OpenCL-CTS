@@ -501,7 +501,31 @@ template <typename Ty, ShuffleOp operation> struct SHF
                     l = (((cl_uint)(genrand_int32(gMTdata) & 0x7fffffff) + 1)
                          % (ns * 2 + 1))
                         - 1;
-                    m[midx] = l;
+                    switch (operation)
+                    {
+                        case ShuffleOp::shuffle:
+                        case ShuffleOp::shuffle_xor:
+                        case ShuffleOp::shuffle_up:
+                        case ShuffleOp::shuffle_down:
+                            // storing information about shuffle index/delta
+                            m[midx] = (cl_int)l;
+                            break;
+                        case ShuffleOp::rotate:
+                        case ShuffleOp::clustered_rotate:
+                            // Storing information about rotate delta.
+                            // The delta must be the same for each thread in
+                            // the subgroup.
+                            if (i == 0)
+                            {
+                                m[midx] = (cl_int)l;
+                            }
+                            else
+                            {
+                                m[midx] = m[midx - 4];
+                            }
+                            break;
+                        default: break;
+                    }
                     cl_ulong number = genrand_int64(gMTdata);
                     set_value(t[ii + i], number);
                 }
@@ -565,6 +589,15 @@ template <typename Ty, ShuffleOp operation> struct SHF
                             if (l >= ns) skip = true;
                             tr_idx = i + l;
                             break;
+                        // rotate - treat l as delta
+                        case ShuffleOp::rotate:
+                            tr_idx = (i + l) % test_params.subgroup_size;
+                            break;
+                        case ShuffleOp::clustered_rotate: {
+                            tr_idx = ((i & ~(test_params.cluster_size - 1))
+                                      + ((i + l) % test_params.cluster_size));
+                            break;
+                        }
                         default: break;
                     }
 

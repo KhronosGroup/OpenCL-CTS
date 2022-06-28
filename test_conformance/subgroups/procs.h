@@ -81,4 +81,8 @@ extern int test_subgroup_functions_shuffle_relative(cl_device_id device,
                                                     cl_context context,
                                                     cl_command_queue queue,
                                                     int num_elements);
+extern int test_subgroup_functions_rotate(cl_device_id device,
+                                          cl_context context,
+                                          cl_command_queue queue,
+                                          int num_elements);
 #endif /*_procs_h*/
