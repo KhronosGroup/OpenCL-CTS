@@ -258,7 +258,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             // Calculate the correctly rounded reference result
             memset(&oldMode, 0, sizeof(oldMode));
-            if (ftz) ForceFTZ(&oldMode);
+            if (ftz || relaxedMode) ForceFTZ(&oldMode);
 
             // Set the rounding mode to match the device
             if (gIsInRTZMode)

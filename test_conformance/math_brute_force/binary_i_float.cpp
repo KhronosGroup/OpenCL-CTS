@@ -164,7 +164,6 @@ struct TestInfo
     int ftz; // non-zero if running in flush to zero mode
     bool relaxedMode; // True if test is running in relaxed mode, false
                       // otherwise.
-
     // no special values
 };
 
@@ -599,6 +598,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
     test_info.ftz =
         f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
     test_info.relaxedMode = relaxedMode;
+
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
     for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)

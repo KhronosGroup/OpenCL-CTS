@@ -396,6 +396,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
     test_info.f = f;
     test_info.ftz = f->ftz || gForceFTZ;
     test_info.relaxedMode = relaxedMode;
+
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
     for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
