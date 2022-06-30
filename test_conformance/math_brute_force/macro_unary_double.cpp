@@ -149,6 +149,8 @@ struct TestInfo
     cl_uint step; // step between each chunk and the next.
     cl_uint scale; // stride between individual test values
     int ftz; // non-zero if running in flush to zero mode
+    bool relaxedMode; // True if test is running in relaxed mode, false
+                      // otherwise.
 };
 
 cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
@@ -161,6 +163,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     ThreadInfo *tinfo = &(job->tinfo[thread_id]);
     dptr dfunc = job->f->dfunc;
     int ftz = job->ftz;
+    bool relaxedMode = job->relaxedMode;
     cl_int error;
     const char *name = job->f->name;
 
@@ -286,7 +289,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         if (gMinVectorSizeIndex == 0 && t[j] != q[j])
         {
             // If we aren't getting the correctly rounded result
-            if (ftz)
+            if (ftz || relaxedMode)
             {
                 if (IsDoubleSubnormal(s[j]))
                 {
@@ -311,7 +314,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             // If we aren't getting the correctly rounded result
             if (-t[j] != q[j])
             {
-                if (ftz)
+                if (ftz || relaxedMode)
                 {
                     if (IsDoubleSubnormal(s[j]))
                     {
@@ -392,7 +395,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
 
     test_info.f = f;
     test_info.ftz = f->ftz || gForceFTZ;
-
+    test_info.relaxedMode = relaxedMode;
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
     for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)

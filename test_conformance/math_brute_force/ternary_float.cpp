@@ -443,7 +443,7 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                     err = Ulp_Error(test, correct);
                     fail = !(fabsf(err) <= float_ulps);
 
-                    if (fail && ftz)
+                    if (fail && (ftz || relaxedMode))
                     {
                         float correct2, err2;
 

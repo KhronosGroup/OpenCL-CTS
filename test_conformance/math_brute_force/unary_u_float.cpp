@@ -253,7 +253,7 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
 
                     if (fail)
                     {
-                        if (ftz)
+                        if (ftz || relaxedMode)
                         {
                             // retry per section 6.5.3.2
                             if (IsFloatResultSubnormal(correct, float_ulps))

@@ -297,7 +297,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
                     cl_long iErr = (int64_t)q2[j] - (int64_t)correct2;
                     int fail = !(fabsf(err) <= float_ulps
                                  && abs_cl_long(iErr) <= maxiError);
-                    if (ftz)
+                    if (ftz || relaxedMode)
                     {
                         // retry per section 6.5.3.2
                         if (IsFloatResultSubnormal(correct, float_ulps))

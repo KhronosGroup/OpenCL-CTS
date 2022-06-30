@@ -385,7 +385,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
                     int fail = !(fabsf(err) <= float_ulps
                                  && fabsf(err2) <= float_ulps);
 
-                    if (ftz)
+                    if (ftz || relaxedMode)
                     {
                         // retry per section 6.5.3.2
                         if ((*isFloatResultSubnormalPtr)(correct, float_ulps))
