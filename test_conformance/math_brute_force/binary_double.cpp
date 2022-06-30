@@ -297,6 +297,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     float ulps = job->ulps;
     dptr func = job->f->dfunc;
     int ftz = job->ftz;
+    bool relaxedMode = job->relaxedMode;
     MTdata d = tinfo->d;
     cl_int error;
     const char *name = job->f->name;
@@ -481,7 +482,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 float err = Bruteforce_Ulp_Error_Double(test, correct);
                 int fail = !(fabsf(err) <= ulps);
 
-                if (fail && ftz)
+                if (fail && (ftz || relaxedMode))
                 {
                     // retry per section 6.5.3.2
                     if (IsDoubleResultSubnormal(correct, ulps))
@@ -680,6 +681,7 @@ int TestFunc_Double_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     test_info.f = f;
     test_info.ulps = f->double_ulps;
     test_info.ftz = f->ftz || gForceFTZ;
+    test_info.relaxedMode = relaxedMode;
 
     test_info.isFDim = 0 == strcmp("fdim", f->nameInCode);
     test_info.skipNanInf = 0;

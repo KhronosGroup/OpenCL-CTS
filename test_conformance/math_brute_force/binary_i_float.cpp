@@ -292,6 +292,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     ThreadInfo *tinfo = &(job->tinfo[thread_id]);
     fptr func = job->f->func;
     int ftz = job->ftz;
+    bool relaxedMode = job->relaxedMode;
     float ulps = job->ulps;
     MTdata d = tinfo->d;
     cl_int error;
@@ -474,7 +475,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 float err = Ulp_Error(test, correct);
                 int fail = !(fabsf(err) <= ulps);
 
-                if (fail && ftz)
+                if (fail && (ftz || relaxedMode))
                 {
                     // retry per section 6.5.3.2
                     if (IsFloatResultSubnormal(correct, ulps))

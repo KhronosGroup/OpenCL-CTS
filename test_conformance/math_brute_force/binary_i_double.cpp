@@ -166,6 +166,7 @@ struct TestInfo
     int ftz; // non-zero if running in flush to zero mode
     bool relaxedMode; // True if test is running in relaxed mode, false
                       // otherwise.
+
     // no special values
 };
 
@@ -301,6 +302,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     float ulps = job->ulps;
     dptr func = job->f->dfunc;
     int ftz = job->ftz;
+    bool relaxedMode = job->relaxedMode;
     MTdata d = tinfo->d;
     cl_int error;
     const char *name = job->f->name;
@@ -483,7 +485,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 float err = Bruteforce_Ulp_Error_Double(test, correct);
                 int fail = !(fabsf(err) <= ulps);
 
-                if (fail && ftz)
+                if (fail && (ftz || relaxedMode))
                 {
                     // retry per section 6.5.3.2
                     if (IsDoubleResultSubnormal(correct, ulps))
