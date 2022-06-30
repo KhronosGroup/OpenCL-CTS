@@ -541,7 +541,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                     ((!(fabsf(err) <= ulps)) && (!(fabsf(errB) <= ulps)));
                 if (fabsf(errB) < fabsf(err)) err = errB;
 
-                if (fail && ftz)
+                if (fail && (ftz || relaxedMode))
                 {
                     // retry per section 6.5.3.2
                     if (IsFloatResultSubnormal(correct, ulps))

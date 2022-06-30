@@ -294,7 +294,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
                     cl_long iErr = (long long)q2[j] - (long long)correct2;
                     int fail = !(fabsf(err) <= f->double_ulps
                                  && abs_cl_long(iErr) <= maxiError);
-                    if (ftz)
+                    if (ftz || relaxedMode)
                     {
                         // retry per section 6.5.3.2
                         if (IsDoubleResultSubnormal(correct, f->double_ulps))
