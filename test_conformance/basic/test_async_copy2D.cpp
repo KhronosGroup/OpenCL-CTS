@@ -37,7 +37,7 @@ static const char *async_global_to_local_kernel2D =
     " for(i=0; i<lineCopiesPerWorkItem; i++)\n"
     "   for(j=0; j<numElementsPerLine; j++)\n"
     "     localBuffer[ (get_local_id( 0 "
-    ")*lineCopiesPerWorkItem+i)*(dstStride)+j ] = "
+    ")*lineCopiesPerWorkItem+i)*dstStride+j ] = "
     "(%s)(%s)0;\n"
     // Do this to verify all kernels are done zeroing the local buffer before we
     // try the copy
@@ -53,9 +53,9 @@ static const char *async_global_to_local_kernel2D =
     " for(i=0; i<lineCopiesPerWorkItem; i++)\n"
     "   for(j=0; j<numElementsPerLine; j++)\n"
     "     dst[ (get_global_id( 0 "
-    ")*lineCopiesPerWorkItem+i)*(dstStride)+j ] = "
+    ")*lineCopiesPerWorkItem+i)*dstStride+j ] = "
     "localBuffer[ (get_local_id( 0 "
-    ")*lineCopiesPerWorkItem+i)*(dstStride)+j ];\n"
+    ")*lineCopiesPerWorkItem+i)*dstStride+j ];\n"
     "}\n";
 
 static const char *async_local_to_global_kernel2D =
@@ -70,7 +70,7 @@ static const char *async_local_to_global_kernel2D =
     " for(i=0; i<lineCopiesPerWorkItem; i++)\n"
     "   for(j=0; j<numElementsPerLine; j++)\n"
     "     localBuffer[ (get_local_id( 0 "
-    ")*lineCopiesPerWorkItem+i)*(srcStride)+j ] = "
+    ")*lineCopiesPerWorkItem+i)*srcStride+j ] = "
     "(%s)(%s)0;\n"
     // Do this to verify all kernels are done zeroing the local buffer before we
     // try the copy
@@ -78,7 +78,7 @@ static const char *async_local_to_global_kernel2D =
     " for(i=0; i<lineCopiesPerWorkItem; i++)\n"
     "   for(j=0; j<numElementsPerLine; j++)\n"
     "     localBuffer[ (get_local_id( 0 "
-    ")*lineCopiesPerWorkItem+i)*(srcStride)+j ] = src[ "
+    ")*lineCopiesPerWorkItem+i)*srcStride+j ] = src[ "
     "(get_global_id( 0 )*lineCopiesPerWorkItem+i)*( "
     "srcStride)+j ];\n"
     // Do this to verify all kernels are done copying to the local buffer before
@@ -86,7 +86,7 @@ static const char *async_local_to_global_kernel2D =
     "    barrier( CLK_LOCAL_MEM_FENCE );\n"
     "    event_t event;\n"
     "    event = async_work_group_copy_2D2D(dst, "
-    " lineCopiesPerWorkgroup*get_group_id(0)*(dstStride), "
+    " lineCopiesPerWorkgroup*get_group_id(0)*dstStride, "
     " localBuffer, 0, sizeof(%s), (size_t)numElementsPerLine, "
     " (size_t)lineCopiesPerWorkgroup, srcStride, dstStride, 0 );\n"
     "    wait_group_events( 1, &event );\n"
@@ -179,12 +179,17 @@ int test_copy2D(cl_device_id deviceID, cl_context context,
     if (max_workgroup_size > max_local_workgroup_size[0])
         max_workgroup_size = max_local_workgroup_size[0];
 
-    size_t numElementsPerLine = 10;
-    size_t lineCopiesPerWorkItem = 13;
+    const size_t numElementsPerLine = 10;
+    const cl_int dstStride = numElementsPerLine + dstMargin;
+    const cl_int srcStride = numElementsPerLine + srcMargin;
+
     elementSize =
         get_explicit_type_size(vecType) * ((vecSize == 3) ? 4 : vecSize);
-    size_t localStorageSpacePerWorkitem = lineCopiesPerWorkItem * elementSize
-        * (numElementsPerLine + (localIsDst ? dstMargin : srcMargin));
+
+    const size_t lineCopiesPerWorkItem = 13;
+    const size_t localStorageSpacePerWorkitem = lineCopiesPerWorkItem
+        * elementSize * (localIsDst ? dstStride : srcStride);
+
     size_t maxLocalWorkgroupSize =
         (((int)max_local_mem_size / 2) / localStorageSpacePerWorkitem);
 
@@ -198,37 +203,39 @@ int test_copy2D(cl_device_id deviceID, cl_context context,
     if (maxLocalWorkgroupSize > max_workgroup_size)
         localWorkgroupSize = max_workgroup_size;
 
-    size_t maxTotalLinesIn = (max_alloc_size / elementSize + srcMargin)
-        / (numElementsPerLine + srcMargin);
-    size_t maxTotalLinesOut = (max_alloc_size / elementSize + dstMargin)
-        / (numElementsPerLine + dstMargin);
-    size_t maxTotalLines = std::min(maxTotalLinesIn, maxTotalLinesOut);
-    size_t maxLocalWorkgroups =
+
+    const size_t maxTotalLinesIn =
+        (max_alloc_size / elementSize + srcMargin) / srcStride;
+    const size_t maxTotalLinesOut =
+        (max_alloc_size / elementSize + dstMargin) / dstStride;
+    const size_t maxTotalLines = std::min(maxTotalLinesIn, maxTotalLinesOut);
+    const size_t maxLocalWorkgroups =
         maxTotalLines / (localWorkgroupSize * lineCopiesPerWorkItem);
 
-    size_t localBufferSize = localWorkgroupSize * localStorageSpacePerWorkitem
+    const size_t localBufferSize =
+        localWorkgroupSize * localStorageSpacePerWorkitem
         - (localIsDst ? dstMargin : srcMargin);
-    size_t numberOfLocalWorkgroups = std::min(1111, (int)maxLocalWorkgroups);
-    size_t totalLines =
+    const size_t numberOfLocalWorkgroups =
+        std::min(1111, (int)maxLocalWorkgroups);
+    const size_t totalLines =
         numberOfLocalWorkgroups * localWorkgroupSize * lineCopiesPerWorkItem;
-    size_t inBufferSize = elementSize
+    const size_t inBufferSize = elementSize
         * (totalLines * numElementsPerLine + (totalLines - 1) * srcMargin);
-    size_t outBufferSize = elementSize
+    const size_t outBufferSize = elementSize
         * (totalLines * numElementsPerLine + (totalLines - 1) * dstMargin);
-    size_t globalWorkgroupSize = numberOfLocalWorkgroups * localWorkgroupSize;
+    const size_t globalWorkgroupSize =
+        numberOfLocalWorkgroups * localWorkgroupSize;
 
     inBuffer = (void *)malloc(inBufferSize);
     outBuffer = (void *)malloc(outBufferSize);
     outBufferCopy = (void *)malloc(outBufferSize);
 
-    cl_int lineCopiesPerWorkItemInt, numElementsPerLineInt,
-        lineCopiesPerWorkgroup;
-    lineCopiesPerWorkItemInt = (int)lineCopiesPerWorkItem;
-    numElementsPerLineInt = (int)numElementsPerLine;
-    lineCopiesPerWorkgroup = (int)(lineCopiesPerWorkItem * localWorkgroupSize);
-
-    cl_int dstStride = numElementsPerLine + dstMargin;
-    cl_int srcStride = numElementsPerLine + srcMargin;
+    const cl_int lineCopiesPerWorkItemInt =
+        static_cast<cl_int>(lineCopiesPerWorkItem);
+    const cl_int numElementsPerLineInt =
+        static_cast<cl_int>(numElementsPerLine);
+    const cl_int lineCopiesPerWorkgroup =
+        static_cast<cl_int>(lineCopiesPerWorkItem * localWorkgroupSize);
 
     log_info(
         "Global: %d, local %d, local buffer %db, global in buffer %db, "
@@ -298,8 +305,8 @@ int test_copy2D(cl_device_id deviceID, cl_context context,
         for (int j = 0; j < (int)numElementsPerLine * elementSize;
              j += elementSize)
         {
-            int inIdx = i * (numElementsPerLine + srcMargin) + j;
-            int outIdx = i * (numElementsPerLine + dstMargin) + j;
+            int inIdx = i * srcStride + j;
+            int outIdx = i * dstStride + j;
             if (memcmp(((char *)inBuffer) + inIdx, ((char *)outBuffer) + outIdx,
                        typeSize)
                 != 0)
@@ -334,8 +341,7 @@ int test_copy2D(cl_device_id deviceID, cl_context context,
         if (i < (int)(globalWorkgroupSize * lineCopiesPerWorkItem - 1)
                 * elementSize)
         {
-            int outIdx = i * (numElementsPerLine + dstMargin)
-                + numElementsPerLine * elementSize;
+            int outIdx = i * dstStride + numElementsPerLine * elementSize;
             if (memcmp(((char *)outBuffer) + outIdx,
                        ((char *)outBufferCopy) + outIdx,
                        dstMargin * elementSize)
@@ -378,7 +384,7 @@ int test_copy2D_all_types(cl_device_id deviceID, cl_context context,
     // The margins below represent the number of elements between the end of
     // one line and the start of the next. The strides are equivalent to the
     // length of the line plus the chosen margin.
-    unsigned int vecSizes[] = { 1, 2, 4, 8, 16, 0 };
+    unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
     unsigned int smallTypesMarginSizes[] = { 0, 10, 100 };
     unsigned int size, typeIndex, srcMargin, dstMargin;
 

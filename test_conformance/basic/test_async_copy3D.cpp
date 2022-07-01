@@ -39,14 +39,14 @@ static const char *async_global_to_local_kernel3D =
     "   for(j=0; j<numLines; j++)\n"
     "     for(k=0; k<numElementsPerLine; k++)\n"
     "       localBuffer[ (get_local_id( 0 "
-    ")*planesCopiesPerWorkItem+i)*(dstPlaneStride) + j*("
+    ")*planesCopiesPerWorkItem+i) * dstPlaneStride + j*("
     "dstLineStride) + k ] = (%s)(%s)0;\n"
     // Do this to verify all kernels are done zeroing the local buffer before we
     // try the copy
     "    barrier( CLK_LOCAL_MEM_FENCE );\n"
     "    event_t event;\n"
     "    event = async_work_group_copy_3D3D(localBuffer, 0, "
-    "src, planesCopiesPerWorkgroup*get_group_id(0)*(srcPlaneStride),"
+    "src, planesCopiesPerWorkgroup*get_group_id(0) * srcPlaneStride,"
     "sizeof(%s), (size_t)numElementsPerLine, (size_t)numLines,"
     "planesCopiesPerWorkgroup, srcLineStride, srcPlaneStride, dstLineStride,"
     "dstPlaneStride, 0 );\n"
@@ -57,8 +57,8 @@ static const char *async_global_to_local_kernel3D =
     "   for(j=0; j<numLines; j++)\n"
     "     for(k=0; k<numElementsPerLine; k++)\n"
     "       dst[ (get_global_id(0)*planesCopiesPerWorkItem+i) * "
-    "(dstPlaneStride) + j*(dstLineStride) + k ] =  localBuffer[ "
-    "(get_local_id(0 )*planesCopiesPerWorkItem+i)*(dstPlaneStride) + j * "
+    "dstPlaneStride + j*(dstLineStride) + k ] =  localBuffer[ "
+    "(get_local_id(0 )*planesCopiesPerWorkItem+i) * dstPlaneStride + j * "
     "(dstLineStride) + k ];"
     "}\n";
 
@@ -76,7 +76,7 @@ static const char *async_local_to_global_kernel3D =
     "   for(j=0; j<numLines; j++)\n"
     "     for(k=0; k<numElementsPerLine; k++)\n"
     "       localBuffer[ (get_local_id( 0 "
-    ")*planesCopiesPerWorkItem+i)*(srcPlaneStride) + j*("
+    ")*planesCopiesPerWorkItem+i) * srcPlaneStride + j*("
     "srcLineStride) + k ] = (%s)(%s)0;\n"
     // Do this to verify all kernels are done zeroing the local buffer before we
     // try the copy
@@ -87,7 +87,7 @@ static const char *async_local_to_global_kernel3D =
     "       localBuffer[ (get_local_id( 0 "
     ")*planesCopiesPerWorkItem+i)*("
     "srcPlaneStride) + j*(srcLineStride) + k ] = src[ (get_global_id( 0 )"
-    "*planesCopiesPerWorkItem+i)*(srcPlaneStride) + j*(srcLineStride) + k ];\n"
+    "*planesCopiesPerWorkItem+i) * srcPlaneStride + j*(srcLineStride) + k ];\n"
     // Do this to verify all kernels are done copying to the local buffer before
     // we try the copy
     "    barrier( CLK_LOCAL_MEM_FENCE );\n"
@@ -189,16 +189,20 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
     if (max_workgroup_size > max_local_workgroup_size[0])
         max_workgroup_size = max_local_workgroup_size[0];
 
-    size_t numElementsPerLine = 10;
-    size_t numLines = 13;
-    size_t planesCopiesPerWorkItem = 2;
+    const size_t numElementsPerLine = 10;
+    const cl_int dstLineStride = numElementsPerLine + dstLineMargin;
+    const cl_int srcLineStride = numElementsPerLine + srcLineMargin;
+
+    const size_t numLines = 13;
+    const cl_int dstPlaneStride = (numLines * dstLineStride) + dstPlaneMargin;
+    const cl_int srcPlaneStride = (numLines * srcLineStride) + srcPlaneMargin;
+
     elementSize =
         get_explicit_type_size(vecType) * ((vecSize == 3) ? 4 : vecSize);
-    size_t localStorageSpacePerWorkitem = elementSize
+    const size_t planesCopiesPerWorkItem = 2;
+    const size_t localStorageSpacePerWorkitem = elementSize
         * (planesCopiesPerWorkItem
-           * (numLines * numElementsPerLine
-              + numLines * (localIsDst ? dstLineMargin : srcLineMargin)
-              + (localIsDst ? dstPlaneMargin : srcPlaneMargin)));
+           * (localIsDst ? dstPlaneStride : srcPlaneStride));
     size_t maxLocalWorkgroupSize =
         (((int)max_local_mem_size / 2) / localStorageSpacePerWorkitem);
 
@@ -212,47 +216,41 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
     if (maxLocalWorkgroupSize > max_workgroup_size)
         localWorkgroupSize = max_workgroup_size;
 
-    size_t maxTotalPlanesIn = ((max_alloc_size / elementSize) + srcPlaneMargin)
-        / ((numLines * numElementsPerLine + numLines * srcLineMargin)
-           + srcPlaneMargin);
-    size_t maxTotalPlanesOut = ((max_alloc_size / elementSize) + dstPlaneMargin)
-        / ((numLines * numElementsPerLine + numLines * dstLineMargin)
-           + dstPlaneMargin);
-    size_t maxTotalPlanes = std::min(maxTotalPlanesIn, maxTotalPlanesOut);
-    size_t maxLocalWorkgroups =
+    const size_t maxTotalPlanesIn =
+        ((max_alloc_size / elementSize) + srcPlaneMargin) / srcPlaneStride;
+    const size_t maxTotalPlanesOut =
+        ((max_alloc_size / elementSize) + dstPlaneMargin) / dstPlaneStride;
+    const size_t maxTotalPlanes = std::min(maxTotalPlanesIn, maxTotalPlanesOut);
+    const size_t maxLocalWorkgroups =
         maxTotalPlanes / (localWorkgroupSize * planesCopiesPerWorkItem);
 
-    size_t localBufferSize = localWorkgroupSize * localStorageSpacePerWorkitem
+    const size_t localBufferSize =
+        localWorkgroupSize * localStorageSpacePerWorkitem
         - (localIsDst ? dstPlaneMargin : srcPlaneMargin);
-    size_t numberOfLocalWorkgroups = std::min(1111, (int)maxLocalWorkgroups);
-    size_t totalPlanes =
+    const size_t numberOfLocalWorkgroups =
+        std::min(1111, (int)maxLocalWorkgroups);
+    const size_t totalPlanes =
         numberOfLocalWorkgroups * localWorkgroupSize * planesCopiesPerWorkItem;
-    size_t inBufferSize = elementSize
-        * (totalPlanes
-               * (numLines * numElementsPerLine + numLines * srcLineMargin)
+    const size_t inBufferSize = elementSize
+        * (totalPlanes * (numLines * srcLineStride)
            + (totalPlanes - 1) * srcPlaneMargin);
-    size_t outBufferSize = elementSize
-        * (totalPlanes
-               * (numLines * numElementsPerLine + numLines * dstLineMargin)
+    const size_t outBufferSize = elementSize
+        * (totalPlanes * (numLines * dstLineStride)
            + (totalPlanes - 1) * dstPlaneMargin);
-    size_t globalWorkgroupSize = numberOfLocalWorkgroups * localWorkgroupSize;
+    const size_t globalWorkgroupSize =
+        numberOfLocalWorkgroups * localWorkgroupSize;
 
     inBuffer = (void *)malloc(inBufferSize);
     outBuffer = (void *)malloc(outBufferSize);
     outBufferCopy = (void *)malloc(outBufferSize);
 
-    cl_int planesCopiesPerWorkItemInt, numElementsPerLineInt, numLinesInt,
-        planesCopiesPerWorkgroup;
-    planesCopiesPerWorkItemInt = (int)planesCopiesPerWorkItem;
-    numElementsPerLineInt = (int)numElementsPerLine;
-    numLinesInt = (int)numLines;
-    planesCopiesPerWorkgroup =
-        (int)(planesCopiesPerWorkItem * localWorkgroupSize);
-
-    cl_int dstLineStride = numElementsPerLine + dstLineMargin;
-    cl_int srcLineStride = numElementsPerLine + srcLineMargin;
-    cl_int dstPlaneStride = (numLines * dstLineStride) + dstPlaneMargin;
-    cl_int srcPlaneStride = (numLines * srcLineStride) + srcPlaneMargin;
+    const cl_int planesCopiesPerWorkItemInt =
+        static_cast<cl_int>(planesCopiesPerWorkItem);
+    const cl_int numElementsPerLineInt =
+        static_cast<cl_int>(numElementsPerLine);
+    const cl_int numLinesInt = static_cast<cl_int>(numLines);
+    const cl_int planesCopiesPerWorkgroup =
+        static_cast<cl_int>(planesCopiesPerWorkItem * localWorkgroupSize);
 
     log_info("Global: %d, local %d, local buffer %db, global in buffer %db, "
              "global out buffer %db, each work group will copy %d planes and "
@@ -329,14 +327,8 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
             for (int k = 0; k < (int)numElementsPerLine * elementSize;
                  k += elementSize)
             {
-                int inIdx = i
-                        * (numLines * numElementsPerLine
-                           + numLines * srcLineMargin + srcPlaneMargin)
-                    + j * (numElementsPerLine + srcLineMargin) + k;
-                int outIdx = i
-                        * (numLines * numElementsPerLine
-                           + numLines * dstLineMargin + dstPlaneMargin)
-                    + j * (numElementsPerLine + dstLineMargin) + k;
+                int inIdx = i * srcPlaneStride + j * srcLineStride + k;
+                int outIdx = i * dstPlaneStride + j * dstLineStride + k;
                 if (memcmp(((char *)inBuffer) + inIdx,
                            ((char *)outBuffer) + outIdx, typeSize)
                     != 0)
@@ -371,10 +363,7 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
             }
             if (j < (int)numLines * elementSize)
             {
-                int outIdx = i
-                        * (numLines * numElementsPerLine
-                           + numLines * dstLineMargin + dstPlaneMargin)
-                    + j * (numElementsPerLine + dstLineMargin)
+                int outIdx = i * dstPlaneStride + j * dstLineStride
                     + numElementsPerLine * elementSize;
                 if (memcmp(((char *)outBuffer) + outIdx,
                            ((char *)outBufferCopy) + outIdx,
@@ -402,9 +391,7 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
         if (i < (int)(globalWorkgroupSize * planesCopiesPerWorkItem - 1)
                 * elementSize)
         {
-            int outIdx = i
-                    * (numLines * numElementsPerLine + numLines * dstLineMargin
-                       + dstPlaneMargin)
+            int outIdx = i * dstPlaneStride
                 + (numLines * elementSize) * (numElementsPerLine)
                 + (numLines * elementSize) * (dstLineMargin);
             if (memcmp(((char *)outBuffer) + outIdx,
