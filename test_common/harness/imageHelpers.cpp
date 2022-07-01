@@ -1994,7 +1994,7 @@ FloatPixel sample_image_pixel_float_offset(
                 break;
             case CL_MEM_OBJECT_IMAGE1D:
             case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-                log_info("Starting coordinate: %f\b", x);
+                log_info("Starting coordinate: %f\n", x);
                 break;
             case CL_MEM_OBJECT_IMAGE2D:
                 log_info("Starting coordinate: %f, %f\n", x, y);
