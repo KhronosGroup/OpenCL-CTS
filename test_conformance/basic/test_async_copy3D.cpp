@@ -25,79 +25,90 @@
 #include "../../test_common/harness/conversions.h"
 #include "procs.h"
 
-static const char *async_global_to_local_kernel3D =
-    "#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable\n"
-    "%s\n" // optional pragma string
-    "__kernel void test_fn( const __global %s *src, __global %s *dst, __local "
-    "%s *localBuffer, int numElementsPerLine, int numLines, int "
-    "planesCopiesPerWorkgroup, int planesCopiesPerWorkItem, int srcLineStride, "
-    "int dstLineStride, int srcPlaneStride, int dstPlaneStride )\n"
-    "{\n"
-    " int i, j, k;\n"
-    // Zero the local storage first
-    " for(i=0; i<planesCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numLines; j++)\n"
-    "     for(k=0; k<numElementsPerLine; k++)\n"
-    "       localBuffer[ (get_local_id( 0 "
-    ")*planesCopiesPerWorkItem+i) * dstPlaneStride + j*("
-    "dstLineStride) + k ] = (%s)(%s)0;\n"
-    // Do this to verify all kernels are done zeroing the local buffer before we
-    // try the copy
-    "    barrier( CLK_LOCAL_MEM_FENCE );\n"
-    "    event_t event;\n"
-    "    event = async_work_group_copy_3D3D(localBuffer, 0, "
-    "src, planesCopiesPerWorkgroup*get_group_id(0) * srcPlaneStride,"
-    "sizeof(%s), (size_t)numElementsPerLine, (size_t)numLines,"
-    "planesCopiesPerWorkgroup, srcLineStride, srcPlaneStride, dstLineStride,"
-    "dstPlaneStride, 0 );\n"
-    // Wait for the copy to complete, then verify by manually copying to the
-    // dest
-    " wait_group_events( 1, &event );\n"
-    " for(i=0; i<planesCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numLines; j++)\n"
-    "     for(k=0; k<numElementsPerLine; k++)\n"
-    "       dst[ (get_global_id(0)*planesCopiesPerWorkItem+i) * "
-    "dstPlaneStride + j*(dstLineStride) + k ] =  localBuffer[ "
-    "(get_local_id(0 )*planesCopiesPerWorkItem+i) * dstPlaneStride + j * "
-    "(dstLineStride) + k ];"
-    "}\n";
+static const char *async_global_to_local_kernel3D = R"OpenCLC(
+#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable
+%s // optional pragma string
 
-static const char *async_local_to_global_kernel3D =
-    "#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable\n"
-    "%s\n" // optional pragma string
-    "__kernel void test_fn( const __global %s *src, __global %s *dst, __local "
-    "%s *localBuffer, int numElementsPerLine, int numLines, int "
-    "planesCopiesPerWorkgroup, int planesCopiesPerWorkItem, int srcLineStride, "
-    "int dstLineStride, int srcPlaneStride, int dstPlaneStride )\n"
-    "{\n"
-    " int i, j, k;\n"
-    // Zero the local storage first
-    " for(i=0; i<planesCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numLines; j++)\n"
-    "     for(k=0; k<numElementsPerLine; k++)\n"
-    "       localBuffer[ (get_local_id( 0 "
-    ")*planesCopiesPerWorkItem+i) * srcPlaneStride + j*("
-    "srcLineStride) + k ] = (%s)(%s)0;\n"
-    // Do this to verify all kernels are done zeroing the local buffer before we
-    // try the copy
-    "    barrier( CLK_LOCAL_MEM_FENCE );\n"
-    " for(i=0; i<planesCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numLines; j++)\n"
-    "     for(k=0; k<numElementsPerLine; k++)\n"
-    "       localBuffer[ (get_local_id( 0 "
-    ")*planesCopiesPerWorkItem+i)*("
-    "srcPlaneStride) + j*(srcLineStride) + k ] = src[ (get_global_id( 0 )"
-    "*planesCopiesPerWorkItem+i) * srcPlaneStride + j*(srcLineStride) + k ];\n"
-    // Do this to verify all kernels are done copying to the local buffer before
-    // we try the copy
-    "    barrier( CLK_LOCAL_MEM_FENCE );\n"
-    "    event_t event;\n"
-    "    event = async_work_group_copy_3D3D(dst, planesCopiesPerWorkgroup * "
-    "get_group_id(0) * dstPlaneStride, localBuffer, 0, sizeof(%s), "
-    "(size_t)numElementsPerLine, (size_t)numLines, planesCopiesPerWorkgroup,"
-    "srcLineStride, srcPlaneStride, dstLineStride, dstPlaneStride, 0 );\n"
-    "    wait_group_events( 1, &event );\n"
-    "}\n";
+__kernel void test_fn(const __global %s *src, __global %s *dst, __local %s *localBuffer,
+                      int numElementsPerLine, int numLines, int planesCopiesPerWorkgroup,
+                      int planesCopiesPerWorkItem, int srcLineStride,
+                      int dstLineStride, int srcPlaneStride, int dstPlaneStride ) {
+  // Zero the local storage first
+  for (int i = 0; i < planesCopiesPerWorkItem; i++) {
+    for (int j = 0; j < numLines; j++) {
+      for (int k = 0; k < numElementsPerLine; k++) {
+        const int index = (get_local_id(0) * planesCopiesPerWorkItem + i) * dstPlaneStride + j * dstLineStride + k;
+        localBuffer[index] = (%s)(%s)0;
+      }
+    }
+  }
+
+  // Do this to verify all kernels are done zeroing the local buffer before we try the copy
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  event_t event = async_work_group_copy_3D3D(localBuffer, 0, src,
+    planesCopiesPerWorkgroup * get_group_id(0) * srcPlaneStride,
+    sizeof(%s), (size_t)numElementsPerLine, (size_t)numLines,
+    planesCopiesPerWorkgroup, srcLineStride, srcPlaneStride, dstLineStride,
+    dstPlaneStride, 0);
+
+  // Wait for the copy to complete, then verify by manually copying to the dest
+  wait_group_events(1, &event);
+
+  for (int i = 0; i < planesCopiesPerWorkItem; i++) {
+    for (int j = 0; j < numLines; j++) {
+      for(int k = 0; k < numElementsPerLine; k++) {
+        const int local_index = (get_local_id(0) * planesCopiesPerWorkItem + i) * dstPlaneStride + j * dstLineStride + k;
+        const int global_index = (get_global_id(0) * planesCopiesPerWorkItem + i) * dstPlaneStride + j * dstLineStride + k;
+        dst[global_index] = localBuffer[local_index];
+      }
+    }
+  }
+}
+)OpenCLC";
+
+static const char *async_local_to_global_kernel3D = R"OpenCLC(
+#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable
+%s // optional pragma string
+
+__kernel void test_fn(const __global %s *src, __global %s *dst, __local %s *localBuffer,
+                      int numElementsPerLine, int numLines, int planesCopiesPerWorkgroup,
+                      int planesCopiesPerWorkItem, int srcLineStride,
+                      int dstLineStride, int srcPlaneStride, int dstPlaneStride) {
+  // Zero the local storage first
+  for (int i = 0; i < planesCopiesPerWorkItem; i++) {
+    for (int j = 0; j < numLines; j++) {
+      for (int k = 0; k < numElementsPerLine; k++) {
+        const int index = (get_local_id(0) * planesCopiesPerWorkItem + i) * srcPlaneStride + j * srcLineStride + k;
+        localBuffer[index] = (%s)(%s)0;
+      }
+    }
+  }
+
+  // Do this to verify all kernels are done zeroing the local buffer before we try the copy
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  for (int i=0; i < planesCopiesPerWorkItem; i++) {
+    for (int j=0; j < numLines; j++) {
+      for (int k=0; k < numElementsPerLine; k++) {
+        const int local_index = (get_local_id(0) * planesCopiesPerWorkItem + i) * srcPlaneStride + j * srcLineStride + k;
+        const int global_index = (get_global_id(0) * planesCopiesPerWorkItem + i) * srcPlaneStride + j*srcLineStride + k;
+        localBuffer[local_index] = src[global_index];
+      }
+    }
+  }
+
+  // Do this to verify all kernels are done copying to the local buffer before we try the copy
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  event_t event = async_work_group_copy_3D3D(dst,
+    planesCopiesPerWorkgroup * get_group_id(0) * dstPlaneStride, localBuffer, 0,
+    sizeof(%s), (size_t)numElementsPerLine, (size_t)numLines, planesCopiesPerWorkgroup,
+    srcLineStride, srcPlaneStride, dstLineStride, dstPlaneStride, 0);
+
+  wait_group_events(1, &event);
+}
+)OpenCLC";
 
 int test_copy3D(cl_device_id deviceID, cl_context context,
                 cl_command_queue queue, const char *kernelCode,
@@ -201,8 +212,8 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
         get_explicit_type_size(vecType) * ((vecSize == 3) ? 4 : vecSize);
     const size_t planesCopiesPerWorkItem = 2;
     const size_t localStorageSpacePerWorkitem = elementSize
-        * (planesCopiesPerWorkItem
-           * (localIsDst ? dstPlaneStride : srcPlaneStride));
+        * planesCopiesPerWorkItem
+        * (localIsDst ? dstPlaneStride : srcPlaneStride);
     size_t maxLocalWorkgroupSize =
         (((int)max_local_mem_size / 2) / localStorageSpacePerWorkitem);
 
@@ -232,10 +243,10 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
     const size_t totalPlanes =
         numberOfLocalWorkgroups * localWorkgroupSize * planesCopiesPerWorkItem;
     const size_t inBufferSize = elementSize
-        * (totalPlanes * (numLines * srcLineStride)
+        * (totalPlanes * numLines * srcLineStride
            + (totalPlanes - 1) * srcPlaneMargin);
     const size_t outBufferSize = elementSize
-        * (totalPlanes * (numLines * dstLineStride)
+        * (totalPlanes * numLines * dstLineStride
            + (totalPlanes - 1) * dstPlaneMargin);
     const size_t globalWorkgroupSize =
         numberOfLocalWorkgroups * localWorkgroupSize;
@@ -391,9 +402,8 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
         if (i < (int)(globalWorkgroupSize * planesCopiesPerWorkItem - 1)
                 * elementSize)
         {
-            int outIdx = i * dstPlaneStride
-                + (numLines * elementSize) * (numElementsPerLine)
-                + (numLines * elementSize) * (dstLineMargin);
+            int outIdx =
+                i * dstPlaneStride + numLines * dstLineStride * elementSize;
             if (memcmp(((char *)outBuffer) + outIdx,
                        ((char *)outBufferCopy) + outIdx,
                        dstPlaneMargin * elementSize)
