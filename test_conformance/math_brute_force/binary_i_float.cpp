@@ -162,7 +162,8 @@ struct TestInfo
     cl_uint scale; // stride between individual test values
     float ulps; // max_allowed ulps
     int ftz; // non-zero if running in flush to zero mode
-
+    bool relaxedMode; // True if test is running in relaxed mode, false
+                      // otherwise.
     // no special values
 };
 
@@ -291,6 +292,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     ThreadInfo *tinfo = &(job->tinfo[thread_id]);
     fptr func = job->f->func;
     int ftz = job->ftz;
+    bool relaxedMode = job->relaxedMode;
     float ulps = job->ulps;
     MTdata d = tinfo->d;
     cl_int error;
@@ -473,7 +475,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 float err = Ulp_Error(test, correct);
                 int fail = !(fabsf(err) <= ulps);
 
-                if (fail && ftz)
+                if (fail && (ftz || relaxedMode))
                 {
                     // retry per section 6.5.3.2
                     if (IsFloatResultSubnormal(correct, ulps))
@@ -595,6 +597,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
     test_info.ulps = gIsEmbedded ? f->float_embedded_ulps : f->float_ulps;
     test_info.ftz =
         f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
+    test_info.relaxedMode = relaxedMode;
 
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread

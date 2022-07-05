@@ -461,7 +461,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     {
         // Calculate the correctly rounded reference result
         memset(&oldMode, 0, sizeof(oldMode));
-        if (ftz) ForceFTZ(&oldMode);
+        if (ftz || relaxedMode) ForceFTZ(&oldMode);
 
         // Set the rounding mode to match the device
         if (gIsInRTZMode) oldRoundMode = set_round(kRoundTowardZero, kfloat);
@@ -546,7 +546,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                     float err = Ulp_Error(test, correct);
                     int fail = !(fabsf(err) <= ulps);
 
-                    if (fail && ftz)
+                    if (fail && (ftz || relaxedMode))
                     {
                         // retry per section 6.5.3.2
                         if (IsFloatResultSubnormal(correct, ulps))

@@ -248,7 +248,7 @@ int TestFunc_Int_Double(const Func *f, MTdata d, bool relaxedMode)
                 // If we aren't getting the correctly rounded result
                 if (t[j] != q[j])
                 {
-                    if (ftz && IsDoubleSubnormal(s[j]))
+                    if ((ftz || relaxedMode) && IsDoubleSubnormal(s[j]))
                     {
                         unsigned int correct0 = f->dfunc.i_f(0.0);
                         unsigned int correct1 = f->dfunc.i_f(-0.0);
