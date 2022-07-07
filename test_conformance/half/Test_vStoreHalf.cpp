@@ -422,7 +422,9 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
             "__kernel void test( __global float *p, __global half *f,\n"
             "                   uint extra_last_thread )\n"
             "{\n"
-            "   __local ushort data[3*(", local_buf_size, "+1)];\n"
+            "   __local ushort data[3*(",
+            local_buf_size,
+            "+1)];\n"
             "   size_t i = get_global_id(0);\n"
             "   size_t lid = get_local_id(0);\n"
             "   size_t last_i = get_global_size(0)-1;\n"
@@ -432,9 +434,13 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
             "   if(last_i == i && extra_last_thread != 0) {\n"
             "     adjust = 3-extra_last_thread;\n"
             "   } "
-            "   vstore_half3",roundName,"( vload3(i,p-adjust), lid, (__local half *)(&data[0]) );\n"
+            "   vstore_half3",
+            roundName,
+            "( vload3(i,p-adjust), lid, (__local half *)(&data[0]) );\n"
             "   barrier( CLK_LOCAL_MEM_FENCE ); \n"
-            "   async_event = async_work_group_copy((__global ushort *)(f+3*(i-lid)), (__local ushort *)(&data[adjust]), lsize*3-adjust, 0);\n" // investigate later
+            "   async_event = async_work_group_copy((__global ushort "
+            "*)(f+3*(i-lid)), (__local ushort *)(&data[adjust]), "
+            "lsize*3-adjust, 0);\n" // investigate later
             "   wait_group_events(1, &async_event);\n"
             "}\n"
         };
@@ -524,7 +530,9 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
             "__kernel void test( __global double *p, __global half *f,\n"
             "                   uint extra_last_thread )\n"
             "{\n"
-            "   __local ushort data[3*(", local_buf_size, "+1)];\n"
+            "   __local ushort data[3*(",
+            local_buf_size,
+            "+1)];\n"
             "   size_t i = get_global_id(0);\n"
             "   size_t lid = get_local_id(0);\n"
             "   size_t last_i = get_global_size(0)-1;\n"
@@ -534,13 +542,16 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
             "   if(last_i == i && extra_last_thread != 0) {\n"
             "     adjust = 3-extra_last_thread;\n"
             "   }\n "
-            "   vstore_half3",roundName,"( vload3(i,p-adjust), lid, (__local half *)(&data[0]) );\n"
+            "   vstore_half3",
+            roundName,
+            "( vload3(i,p-adjust), lid, (__local half *)(&data[0]) );\n"
             "   barrier( CLK_LOCAL_MEM_FENCE ); \n"
-            "   async_event = async_work_group_copy((__global ushort *)(f+3*(i-lid)), (__local ushort *)(&data[adjust]), lsize*3-adjust, 0);\n" // investigate later
+            "   async_event = async_work_group_copy((__global ushort "
+            "*)(f+3*(i-lid)), (__local ushort *)(&data[adjust]), "
+            "lsize*3-adjust, 0);\n" // investigate later
             "   wait_group_events(1, &async_event);\n"
             "}\n"
         };
-
 
 
         if(g_arrVecSizes[vectorSize] == 3) {

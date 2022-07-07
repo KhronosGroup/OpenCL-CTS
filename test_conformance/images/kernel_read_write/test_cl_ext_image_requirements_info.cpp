@@ -102,28 +102,26 @@ int cl_image_requirements_size_ext_consistency(cl_device_id device,
         CL_MEM_OBJECT_IMAGE1D_ARRAY, CL_MEM_OBJECT_IMAGE2D_ARRAY
     };
 
-    std::vector<cl_mem_flags> flagTypes{
-        CL_MEM_READ_ONLY,
-        CL_MEM_WRITE_ONLY,
-        CL_MEM_READ_WRITE,
-        CL_MEM_KERNEL_READ_AND_WRITE
-    };
+    std::vector<cl_mem_flags> flagTypes{ CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY,
+                                         CL_MEM_READ_WRITE,
+                                         CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for(auto flag: flagTypes)
+    for (auto flag : flagTypes)
     {
-        for (auto imageType: imageTypes)
+        for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
-            if (TEST_PASS != get_format_list(context, imageType, formatList, flag)
+            if (TEST_PASS
+                    != get_format_list(context, imageType, formatList, flag)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list");
             }
 
-            for (auto format: formatList)
+            for (auto format : formatList)
             {
-                cl_image_desc image_desc = {0};
+                cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
                 cl_int err = clGetImageRequirementsInfoEXT(
@@ -133,21 +131,20 @@ int cl_image_requirements_size_ext_consistency(cl_device_id device,
                 test_error(err, "Error clGetImageRequirementsInfoEXT");
 
                 /* Create buffer */
-                cl_mem buffer = clCreateBuffer(context, flag, max_size,
-                                               nullptr, &err);
+                cl_mem buffer =
+                    clCreateBuffer(context, flag, max_size, nullptr, &err);
                 test_error(err, "Unable to create buffer");
 
                 image_desc.buffer = buffer;
 
                 /* 2D Image from buffer */
-                cl_mem image_buffer =
-                    clCreateImage(context, flag, &format, &image_desc,
-                                  nullptr, &err);
+                cl_mem image_buffer = clCreateImage(context, flag, &format,
+                                                    &image_desc, nullptr, &err);
                 test_error(err, "Unable to create image");
 
                 size_t size = 0;
-                err = clGetMemObjectInfo(image_buffer, CL_MEM_SIZE, sizeof(size_t),
-                                         &size, NULL);
+                err = clGetMemObjectInfo(image_buffer, CL_MEM_SIZE,
+                                         sizeof(size_t), &size, NULL);
                 test_error(err, "Error clGetMemObjectInfo");
 
                 if (max_size != size)
