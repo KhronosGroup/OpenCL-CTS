@@ -90,10 +90,9 @@ struct BasicCommandBufferTest : CommandBufferTestBase
             size_t id = get_global_id(0);
             out[id] = in[id];
         })";
-        const size_t lengths[1] = { std::strlen(kernel_str) };
 
-        program =
-            clCreateProgramWithSource(context, 1, &kernel_str, lengths, &error);
+        error = create_single_kernel_helper_create_program(context, &program, 1,
+                                                           &kernel_str);
         test_error(error, "Failed to create program with source");
 
         error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
@@ -120,7 +119,7 @@ struct BasicCommandBufferTest : CommandBufferTestBase
         if (simultaneous_use)
         {
             cl_command_buffer_properties_khr properties[3] = {
-                CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR,
+                CL_COMMAND_BUFFER_FLAGS_KHR,
                 CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR, 0
             };
             command_buffer =
