@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 The Khronos Group Inc.
+// Copyright (c) 2022 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,5 +29,7 @@ extern int test_explicit_flush(cl_device_id device, cl_context context,
                                cl_command_queue queue, int num_elements);
 extern int test_user_events(cl_device_id device, cl_context context,
                             cl_command_queue queue, int num_elements);
+extern int test_out_of_order(cl_device_id device, cl_context context,
+                             cl_command_queue queue, int num_elements);
 
 #endif /*_CL_KHR_COMMAND_BUFFER_PROCS_H*/

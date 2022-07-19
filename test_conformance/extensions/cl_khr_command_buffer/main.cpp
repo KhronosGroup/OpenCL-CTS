@@ -1,4 +1,4 @@
-// Copyright (c) 2021 The Khronos Group Inc.
+// Copyright (c) 2022 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@
 
 test_definition test_list[] = {
     ADD_TEST(single_ndrange), ADD_TEST(interleaved_enqueue),
-    ADD_TEST(mixed_commands), ADD_TEST(explicit_flush), ADD_TEST(user_events)
+    ADD_TEST(mixed_commands), ADD_TEST(explicit_flush),
+    ADD_TEST(user_events),    ADD_TEST(out_of_order)
 };
 
 
