@@ -400,7 +400,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
                                              out[j], 0, NULL, NULL)))
         {
-            vlog_error("Error: clEnqueueMapBuffer failed! err: %d\n", error);
+            vlog_error("Error: clEnqueueUnmapMemObject failed! err: %d\n",
+                       error);
             goto exit;
         }
 
