@@ -1092,7 +1092,6 @@ int MakeKernels(const char **c, cl_uint count, const char *name,
             clGetProgramBuildInfo(*p, gDevice, CL_PROGRAM_BUILD_LOG,
                                   sizeof(buffer), buffer, NULL);
             vlog_error("Log: %s\n", buffer);
-            clReleaseProgram(*p);
             return error;
         }
     }

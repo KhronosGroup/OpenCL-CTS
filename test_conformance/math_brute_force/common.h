@@ -16,6 +16,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include "harness/typeWrappers.h"
 #include "utility.h"
 
 #include <array>
@@ -23,5 +24,8 @@
 
 // Array of thread-specific kernels for each vector size.
 using KernelMatrix = std::array<std::vector<cl_kernel>, VECTOR_SIZE_COUNT>;
+
+// Array of programs for each vector size.
+using Programs = std::array<clProgramWrapper, VECTOR_SIZE_COUNT>;
 
 #endif /* COMMON_H */
