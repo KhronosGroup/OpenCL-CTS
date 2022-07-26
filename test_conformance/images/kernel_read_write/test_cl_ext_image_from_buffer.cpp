@@ -115,6 +115,8 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
                 cl_image_desc image_desc = {0};
                 image_desc_init(&image_desc, imageType);
 
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
+
                 size_t row_pitch_alignment = 0;
                 size_t base_address_alignment = 0;
 
@@ -195,6 +197,8 @@ int memInfo_image_from_buffer_positive(cl_device_id device, cl_context context,
             {
                 cl_image_desc image_desc = {0};
                 image_desc_init(&image_desc, imageType);
+
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
@@ -301,6 +305,8 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
             {
                 cl_image_desc image_desc = {0};
                 image_desc_init(&image_desc, imageType);
+
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
@@ -448,6 +454,8 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                 cl_image_desc image_desc = {0};
                 image_desc_init(&image_desc, imageType);
 
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
+
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
                 size_t base_address_alignment = 0;
@@ -594,6 +602,8 @@ int image_from_small_buffer_negative(cl_device_id device, cl_context context,
                 cl_image_desc image_desc = {0};
                 image_desc_init(&image_desc, imageType);
 
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
+
                 /* Invalid buffer size */
                 cl_int err;
                 cl_mem buffer = clCreateBuffer(context, flag,
@@ -699,6 +709,8 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
             {
                 cl_image_desc image_desc = {0};
                 image_desc_init(&image_desc, imageType);
+
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;

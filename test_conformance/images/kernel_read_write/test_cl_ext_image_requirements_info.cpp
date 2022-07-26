@@ -126,6 +126,8 @@ int cl_image_requirements_size_ext_consistency(cl_device_id device,
                 cl_image_desc image_desc = {0};
                 image_desc_init(&image_desc, imageType);
 
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
+
                 cl_int err = clGetImageRequirementsInfoEXT(
                     context, nullptr, flag, &format, &image_desc,
                     CL_IMAGE_REQUIREMENTS_SIZE_EXT, sizeof(max_size), &max_size,
