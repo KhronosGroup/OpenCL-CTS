@@ -1830,9 +1830,9 @@ public:
     {
       if (gIsEmbedded)
       {
-        if (CurrentGroupSize() > 1024)
-          CurrentGroupSize(1024);
-        return 1; //1KB of local memory required by spec. Clamp group size to 1k and allow 1 variable per thread
+        if (CurrentGroupSize() > 512)
+          CurrentGroupSize(512);
+        return 2; //1KB of local memory required by spec. Clamp group size to 512 and allow 2 variables per thread
       }
       else
         return 32 * 1024 / 8 / CurrentGroupSize() - 1; //32KB of local memory required by spec

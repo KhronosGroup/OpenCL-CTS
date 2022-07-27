@@ -1361,9 +1361,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
             error =
                 clSetKernelArg(kernel, argInd++,
                                LocalRefValues() ? typeSize
-                                       * ((CurrentGroupSize()
+                                       * (CurrentGroupSize()
                                            * NumNonAtomicVariablesPerThread())
-                                          + 4)
                                                 : 1,
                                NULL);
             test_error(error, "Unable to set indexed kernel argument");
