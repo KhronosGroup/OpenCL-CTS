@@ -321,7 +321,7 @@ template <typename Ty> inline Ty calculate(Ty a, Ty b, ArithmeticOp operation)
         case ArithmeticOp::logical_and: return a && b;
         case ArithmeticOp::logical_or: return a || b;
         case ArithmeticOp::logical_xor: return !a ^ !b;
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return 0;
 }
@@ -343,7 +343,7 @@ inline cl_double calculate(cl_double a, cl_double b, ArithmeticOp operation)
         case ArithmeticOp::mul_: {
             return a * b;
         }
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return 0;
 }
@@ -365,7 +365,7 @@ inline cl_float calculate(cl_float a, cl_float b, ArithmeticOp operation)
         case ArithmeticOp::mul_: {
             return a * b;
         }
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return 0;
 }
@@ -382,7 +382,7 @@ inline subgroups::cl_half calculate(subgroups::cl_half a, subgroups::cl_half b,
         case ArithmeticOp::min_:
             return to_float(a) < to_float(b) || is_half_nan(b.data) ? a : b;
         case ArithmeticOp::mul_: return to_half(to_float(a) * to_float(b));
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return to_half(0);
 }
