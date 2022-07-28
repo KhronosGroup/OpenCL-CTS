@@ -113,7 +113,7 @@ struct BuildKernelInfo
     cl_uint offset; // the first vector size to build
     cl_uint kernel_count;
     KernelMatrix &kernels;
-    cl_program *programs;
+    Programs &programs;
     const char *nameInCode;
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 };
@@ -123,7 +123,7 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
     return BuildKernel(info->nameInCode, i, info->kernel_count,
-                       info->kernels[i].data(), info->programs + i,
+                       info->kernels[i].data(), &(info->programs[i]),
                        info->relaxedMode);
 }
 
@@ -141,7 +141,9 @@ struct TestInfo
 {
     size_t subBufferSize; // Size of the sub-buffer in elements
     const Func *f; // A pointer to the function info
-    cl_program programs[VECTOR_SIZE_COUNT]; // programs for various vector sizes
+
+    // Programs for various vector sizes.
+    Programs programs;
 
     // Thread-specific kernels for each vector size:
     // k[vector_size][thread_id]
@@ -692,7 +694,6 @@ exit:
     // Release
     for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
-        clReleaseProgram(test_info.programs[i]);
         for (auto &kernel : test_info.k[i])
         {
             clReleaseKernel(kernel);
