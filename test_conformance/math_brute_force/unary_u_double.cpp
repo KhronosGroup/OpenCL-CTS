@@ -105,7 +105,7 @@ int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
     return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
 }
 
-struct BuildKernelInfo
+struct BuildKernelInfo2
 {
     cl_uint offset; // the first vector size to build
     cl_kernel *kernels;
@@ -116,7 +116,7 @@ struct BuildKernelInfo
 
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
-    BuildKernelInfo *info = (BuildKernelInfo *)p;
+    BuildKernelInfo2 *info = (BuildKernelInfo2 *)p;
     cl_uint i = info->offset + job_id;
     return BuildKernel(info->nameInCode, i, info->kernels + i,
                        &(info->programs[i]), info->relaxedMode);
@@ -145,8 +145,8 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                       f->nameInCode, relaxedMode };
+        BuildKernelInfo2 build_info = { gMinVectorSizeIndex, kernels, programs,
+                                        f->nameInCode, relaxedMode };
         if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))

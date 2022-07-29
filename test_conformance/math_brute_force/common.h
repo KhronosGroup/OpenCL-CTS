@@ -28,4 +28,14 @@ using KernelMatrix = std::array<std::vector<cl_kernel>, VECTOR_SIZE_COUNT>;
 // Array of programs for each vector size.
 using Programs = std::array<clProgramWrapper, VECTOR_SIZE_COUNT>;
 
+struct BuildKernelInfo
+{
+    cl_uint offset; // the first vector size to build
+    cl_uint kernel_count;
+    KernelMatrix &kernels;
+    Programs &programs;
+    const char *nameInCode;
+    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
+};
+
 #endif /* COMMON_H */
