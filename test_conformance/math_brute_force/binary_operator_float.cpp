@@ -109,21 +109,11 @@ int BuildKernel(const char *operator_symbol, int vectorSize,
                        relaxedMode);
 }
 
-struct BuildKernelInfo
-{
-    cl_uint offset; // the first vector size to build
-    cl_uint kernel_count;
-    KernelMatrix &kernels;
-    Programs &programs;
-    const char *operator_symbol;
-    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
-};
-
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
     cl_uint i = info->offset + job_id;
-    return BuildKernel(info->operator_symbol, i, info->kernel_count,
+    return BuildKernel(info->nameInCode, i, info->kernel_count,
                        info->kernels[i].data(), &(info->programs[i]),
                        info->relaxedMode);
 }
