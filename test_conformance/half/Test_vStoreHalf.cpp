@@ -117,8 +117,7 @@ CheckF(cl_uint jid, cl_uint tid, void *userInfo)
         return 0;
 
     for (j = 0; j < count; j++) {
-    if (s[j] == r[j])
-        continue;
+        if (s[j] == r[j]) continue;
 
         // Pass any NaNs
         if ((s[j] & 0x7fff) > 0x7c00 && (r[j] & 0x7fff) > 0x7c00 )
@@ -189,8 +188,7 @@ CheckD(cl_uint jid, cl_uint tid, void *userInfo)
         return 0;
 
     for (j = 0; j < count; j++) {
-    if (s[j] == r[j])
-        continue;
+        if (s[j] == r[j]) continue;
 
         // Pass any NaNs
         if ((s[j] & 0x7fff) > 0x7c00 && (r[j] & 0x7fff) > 0x7c00)
