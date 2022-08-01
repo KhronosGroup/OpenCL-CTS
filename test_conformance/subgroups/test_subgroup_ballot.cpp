@@ -502,7 +502,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                 }
                 else
                 {
-                    log_error("Unknown operation...");
+                    log_error("Unknown operation...\n");
                 }
             }
 

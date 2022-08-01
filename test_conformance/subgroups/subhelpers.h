@@ -86,7 +86,7 @@ struct WorkGroupParams
         if (kernel_function_name.find(name) != kernel_function_name.end())
         {
             log_info("Kernel definition duplication. Source will be "
-                     "overwritten for function name %s",
+                     "overwritten for function name %s\n",
                      name.c_str());
         }
         kernel_function_name[name] = source;
@@ -284,7 +284,7 @@ static const char *const operation_names(ArithmeticOp operation)
         case ArithmeticOp::logical_and: return "logical_and";
         case ArithmeticOp::logical_or: return "logical_or";
         case ArithmeticOp::logical_xor: return "logical_xor";
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return "";
 }
@@ -306,7 +306,7 @@ static const char *const operation_names(BallotOp operation)
         case BallotOp::gt_mask: return "gt";
         case BallotOp::le_mask: return "le";
         case BallotOp::lt_mask: return "lt";
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return "";
 }
@@ -321,7 +321,7 @@ static const char *const operation_names(ShuffleOp operation)
         case ShuffleOp::shuffle_xor: return "shuffle_xor";
         case ShuffleOp::rotate: return "rotate";
         case ShuffleOp::clustered_rotate: return "clustered_rotate";
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return "";
 }
@@ -334,7 +334,7 @@ static const char *const operation_names(NonUniformVoteOp operation)
         case NonUniformVoteOp::all_equal: return "all_equal";
         case NonUniformVoteOp::any: return "any";
         case NonUniformVoteOp::elect: return "elect";
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return "";
 }
@@ -347,7 +347,7 @@ static const char *const operation_names(SubgroupsBroadcastOp operation)
         case SubgroupsBroadcastOp::broadcast_first: return "broadcast_first";
         case SubgroupsBroadcastOp::non_uniform_broadcast:
             return "non_uniform_broadcast";
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return "";
 }
@@ -524,7 +524,7 @@ template <typename Ty> struct CommonTypeManager
             case ArithmeticOp::and_: return (Ty)~0;
             case ArithmeticOp::or_: return (Ty)0;
             case ArithmeticOp::xor_: return (Ty)0;
-            default: log_error("Unknown operation request"); break;
+            default: log_error("Unknown operation request\n"); break;
         }
         return 0;
     }
@@ -552,7 +552,7 @@ template <> struct TypeManager<cl_int> : public CommonTypeManager<cl_int>
             case ArithmeticOp::logical_and: return (cl_int)1;
             case ArithmeticOp::logical_or: return (cl_int)0;
             case ArithmeticOp::logical_xor: return (cl_int)0;
-            default: log_error("Unknown operation request"); break;
+            default: log_error("Unknown operation request\n"); break;
         }
         return 0;
     }
@@ -966,7 +966,7 @@ template <> struct TypeManager<cl_float> : public CommonTypeManager<cl_float>
             case ArithmeticOp::min_:
                 return std::numeric_limits<float>::infinity();
             case ArithmeticOp::mul_: return (cl_float)1;
-            default: log_error("Unknown operation request"); break;
+            default: log_error("Unknown operation request\n"); break;
         }
         return 0;
     }
@@ -1025,7 +1025,7 @@ template <> struct TypeManager<cl_double> : public CommonTypeManager<cl_double>
             case ArithmeticOp::min_:
                 return std::numeric_limits<double>::infinity();
             case ArithmeticOp::mul_: return (cl_double)1;
-            default: log_error("Unknown operation request"); break;
+            default: log_error("Unknown operation request\n"); break;
         }
         return 0;
     }
@@ -1112,7 +1112,7 @@ struct TypeManager<subgroups::cl_half>
             case ArithmeticOp::max_: return { 0xfc00 };
             case ArithmeticOp::min_: return { 0x7c00 };
             case ArithmeticOp::mul_: return { 0x3c00 };
-            default: log_error("Unknown operation request"); break;
+            default: log_error("Unknown operation request\n"); break;
         }
         return { 0 };
     }
@@ -1566,7 +1566,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
             subgroupsApiSet.clGetKernelSubGroupInfo_ptr();
         if (clGetKernelSubGroupInfo_ptr == NULL)
         {
-            log_error("ERROR: %s function not available",
+            log_error("ERROR: %s function not available\n",
                       subgroupsApiSet.clGetKernelSubGroupInfo_name);
             return TEST_FAIL;
         }
@@ -1576,7 +1576,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         if (error != CL_SUCCESS)
         {
             log_error("ERROR: %s function error for "
-                      "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE",
+                      "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE\n",
                       subgroupsApiSet.clGetKernelSubGroupInfo_name);
             return TEST_FAIL;
         }
@@ -1589,7 +1589,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         if (error != CL_SUCCESS)
         {
             log_error("ERROR: %s function error for "
-                      "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE",
+                      "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE\n",
                       subgroupsApiSet.clGetKernelSubGroupInfo_name);
             return TEST_FAIL;
         }
