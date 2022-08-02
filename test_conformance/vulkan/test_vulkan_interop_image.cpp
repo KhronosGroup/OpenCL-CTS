@@ -14,10 +14,10 @@
 // limitations under the License.
 //
 
-#define NOMINMAX
 #include <vulkan_interop_common.hpp>
 #include <string>
 #include "harness/errorHelpers.h"
+#include <algorithm>
 
 #define MAX_2D_IMAGES 5
 #define MAX_2D_IMAGE_WIDTH 1024
