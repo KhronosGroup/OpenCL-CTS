@@ -29,9 +29,12 @@ int test_waitlist( cl_device_id device, cl_context context, cl_command_queue que
     cl_int error;
 
     if (multiple)
-        log_info("\tExecuting reference event 0, then reference event 1 with reference event 0 in its waitlist, then test event 2 with reference events 0 and 1 in its waitlist.\n");
+        log_info("\tExecuting reference event 0, then reference event 1 with "
+                 "reference event 0 in its waitlist, then test event 2 with "
+                 "reference events 0 and 1 in its waitlist.\n");
     else
-        log_info("\tExecuting reference event 0, then test event 2 with reference event 0 in its waitlist.\n");
+        log_info("\tExecuting reference event 0, then test event 2 with "
+                 "reference event 0 in its waitlist.\n");
 
     // Set up the first base action to wait against
     error = actions[ 0 ].Setup( device, context, queue );
@@ -61,18 +64,20 @@ int test_waitlist( cl_device_id device, cl_context context, cl_command_queue que
     }
 
     // Sanity check
-    if( multiple )
+    if (multiple)
     {
         if (PRINT_OPS) log_info("\tChecking status of action 1...\n");
         error = clGetEventInfo( events[ 1 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 1 ] ), &status[ 1 ], NULL );
-        test_error( error, "Unable to get event status" );
+        test_error(error, "Unable to get event status");
     }
     if (PRINT_OPS) log_info("\tChecking status of action 0...\n");
     error = clGetEventInfo( events[ 0 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 0 ] ), &status[ 0 ], NULL );
-    test_error( error, "Unable to get event status" );
+    test_error(error, "Unable to get event status");
 
-    log_info("\t\tEvent status after starting reference events: reference event 0: %s, reference event 1: %s, test event 2: %s.\n",
-            IGetStatusString( status[ 0 ] ), (multiple ? IGetStatusString( status[ 1 ] ) : "N/A"), "N/A");
+    log_info("\t\tEvent status after starting reference events: reference "
+             "event 0: %s, reference event 1: %s, test event 2: %s.\n",
+             IGetStatusString(status[0]),
+             (multiple ? IGetStatusString(status[1]) : "N/A"), "N/A");
 
     if( ( status[ 0 ] == CL_COMPLETE ) || ( multiple && status[ 1 ] == CL_COMPLETE ) )
     {
@@ -88,18 +93,21 @@ int test_waitlist( cl_device_id device, cl_context context, cl_command_queue que
     if (PRINT_OPS) log_info("\tChecking status of action to test 2...\n");
     error = clGetEventInfo( events[ 2 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 2 ] ), &status[ 2 ], NULL );
     test_error( error, "Unable to get event status" );
-    if( multiple )
+    if (multiple)
     {
         if (PRINT_OPS) log_info("\tChecking status of action 1...\n");
         error = clGetEventInfo( events[ 1 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 1 ] ), &status[ 1 ], NULL );
-        test_error( error, "Unable to get event status" );
+        test_error(error, "Unable to get event status");
     }
     if (PRINT_OPS) log_info("\tChecking status of action 0...\n");
     error = clGetEventInfo( events[ 0 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 0 ] ), &status[ 0 ], NULL );
-    test_error( error, "Unable to get event status" );
+    test_error(error, "Unable to get event status");
 
-    log_info("\t\tEvent status after starting test event: reference event 0: %s, reference event 1: %s, test event 2: %s.\n",
-            IGetStatusString( status[ 0 ] ), (multiple ? IGetStatusString( status[ 1 ] ) : "N/A"), IGetStatusString( status[ 2 ] ));
+    log_info("\t\tEvent status after starting test event: reference event 0: "
+             "%s, reference event 1: %s, test event 2: %s.\n",
+             IGetStatusString(status[0]),
+             (multiple ? IGetStatusString(status[1]) : "N/A"),
+             IGetStatusString(status[2]));
 
     if( multiple )
     {
@@ -110,9 +118,12 @@ int test_waitlist( cl_device_id device, cl_context context, cl_command_queue que
             return 0;
         }
 
-        if(status[1] == CL_COMPLETE && status[0] != CL_COMPLETE)
+        if (status[1] == CL_COMPLETE && status[0] != CL_COMPLETE)
         {
-            log_error("ERROR: Test failed because the second wait event is complete and the first is not.(status: 0: %s and 1: %s)\n", IGetStatusString( status[ 0 ] ), IGetStatusString( status[ 1 ] ) );
+            log_error(
+                "ERROR: Test failed because the second wait event is complete "
+                "and the first is not.(status: 0: %s and 1: %s)\n",
+                IGetStatusString(status[0]), IGetStatusString(status[1]));
             clFinish( queue );
             return -1;
         }
@@ -149,18 +160,21 @@ int test_waitlist( cl_device_id device, cl_context context, cl_command_queue que
     if (PRINT_OPS) log_info("\tChecking status of action to test 2...\n");
     error = clGetEventInfo( events[ 2 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 2 ] ), &status[ 2 ], NULL );
     test_error( error, "Unable to get event status" );
-    if( multiple )
+    if (multiple)
     {
         if (PRINT_OPS) log_info("\tChecking status of action 1...\n");
         error = clGetEventInfo( events[ 1 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 1 ] ), &status[ 1 ], NULL );
-        test_error( error, "Unable to get event status" );
+        test_error(error, "Unable to get event status");
     }
     if (PRINT_OPS) log_info("\tChecking status of action 0...\n");
     error = clGetEventInfo( events[ 0 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 0 ] ), &status[ 0 ], NULL );
-    test_error( error, "Unable to get event status" );
+    test_error(error, "Unable to get event status");
 
-    log_info("\t\tEvent status after waiting for reference event 0: reference event 0: %s, reference event 1: %s, test event 2: %s.\n",
-           IGetStatusString( status[ 0 ] ), (multiple ? IGetStatusString( status[ 1 ] ) : "N/A"), IGetStatusString( status[ 2 ] ));
+    log_info("\t\tEvent status after waiting for reference event 0: reference "
+             "event 0: %s, reference event 1: %s, test event 2: %s.\n",
+             IGetStatusString(status[0]),
+             (multiple ? IGetStatusString(status[1]) : "N/A"),
+             IGetStatusString(status[2]));
 
     // Sanity
     if( status[ 0 ] != CL_COMPLETE )
@@ -173,10 +187,10 @@ int test_waitlist( cl_device_id device, cl_context context, cl_command_queue que
     // If we're multiple, and the second event isn't complete, then our test event should still be queued
     if( multiple && status[ 1 ] != CL_COMPLETE )
     {
-        if( status[ 1 ] == CL_RUNNING && status[ 2 ] == CL_RUNNING )
+        if (status[1] == CL_RUNNING && status[2] == CL_RUNNING)
         {
             log_error("ERROR: Test event and second event are both running.\n");
-            clFinish( queue );
+            clFinish(queue);
             return -1;
         }
         if( status[ 2 ] != CL_QUEUED && status[ 2 ] != CL_SUBMITTED )
@@ -193,20 +207,27 @@ int test_waitlist( cl_device_id device, cl_context context, cl_command_queue que
 
         // Grab statuses again
         if (PRINT_OPS) log_info("\tChecking status of action to test 2...\n");
-        error = clGetEventInfo( events[ 2 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 2 ] ), &status[ 2 ], NULL );
-        test_error( error, "Unable to get event status" );
-        if( multiple )
+        error = clGetEventInfo(events[2], CL_EVENT_COMMAND_EXECUTION_STATUS,
+                               sizeof(status[2]), &status[2], NULL);
+        test_error(error, "Unable to get event status");
+        if (multiple)
         {
             if (PRINT_OPS) log_info("\tChecking status of action 1...\n");
-            error = clGetEventInfo( events[ 1 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 1 ] ), &status[ 1 ], NULL );
-            test_error( error, "Unable to get event status" );
+            error = clGetEventInfo(events[1], CL_EVENT_COMMAND_EXECUTION_STATUS,
+                                   sizeof(status[1]), &status[1], NULL);
+            test_error(error, "Unable to get event status");
         }
         if (PRINT_OPS) log_info("\tChecking status of action 0...\n");
-        error = clGetEventInfo( events[ 0 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 0 ] ), &status[ 0 ], NULL );
-        test_error( error, "Unable to get event status" );
+        error = clGetEventInfo(events[0], CL_EVENT_COMMAND_EXECUTION_STATUS,
+                               sizeof(status[0]), &status[0], NULL);
+        test_error(error, "Unable to get event status");
 
-        log_info("\t\tEvent status after waiting for reference event 1: reference event 0: %s, reference event 1: %s, test event 2: %s.\n",
-             IGetStatusString( status[ 0 ] ), (multiple ? IGetStatusString( status[ 1 ] ) : "N/A"), IGetStatusString( status[ 2 ] ));
+        log_info(
+            "\t\tEvent status after waiting for reference event 1: reference "
+            "event 0: %s, reference event 1: %s, test event 2: %s.\n",
+            IGetStatusString(status[0]),
+            (multiple ? IGetStatusString(status[1]) : "N/A"),
+            IGetStatusString(status[2]));
 
         // Sanity
         if( status[ 1 ] != CL_COMPLETE )
@@ -236,17 +257,22 @@ int test_waitlist( cl_device_id device, cl_context context, cl_command_queue que
     error = clWaitForEvents( 1, &events[ 2 ] );
     test_error( error, "Unable to wait for test event" );
 
-    error |= clGetEventInfo( events[ 2 ], CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof( status[ 2 ] ), &status[ 2 ], NULL );
-    test_error( error, "Unable to get event status" );
+    error |= clGetEventInfo(events[2], CL_EVENT_COMMAND_EXECUTION_STATUS,
+                            sizeof(status[2]), &status[2], NULL);
+    test_error(error, "Unable to get event status");
 
-    log_info("\t\tEvent status after waiting for test event: reference event 0: %s, reference event 1: %s, test event 2: %s.\n",
-           IGetStatusString( status[ 0 ] ), (multiple ? IGetStatusString( status[ 1 ] ) : "N/A"), IGetStatusString( status[ 2 ] ));
+    log_info("\t\tEvent status after waiting for test event: reference event "
+             "0: %s, reference event 1: %s, test event 2: %s.\n",
+             IGetStatusString(status[0]),
+             (multiple ? IGetStatusString(status[1]) : "N/A"),
+             IGetStatusString(status[2]));
 
     // Sanity
-    if( status[ 2 ] != CL_COMPLETE )
+    if (status[2] != CL_COMPLETE)
     {
-        log_error( "ERROR: Test event didn't complete (status: 2: %s)\n", IGetStatusString( status[ 2 ] ) );
-        clFinish( queue );
+        log_error("ERROR: Test event didn't complete (status: 2: %s)\n",
+                  IGetStatusString(status[2]));
+        clFinish(queue);
         return -1;
     }
 
