@@ -122,9 +122,10 @@ int test_writeimage_fp32(cl_device_id device, cl_context context, cl_command_que
         return -1;
     }
 
-  err = create_single_kernel_helper(context, &program, &kernel[0], 1, &rgbaFFFF_write_kernel_code, "test_rgbaFFFF_write" );
-  if (err)
-    return -1;
+    err = create_single_kernel_helper(context, &program, &kernel[0], 1,
+                                      &rgbaFFFF_write_kernel_code,
+                                      "test_rgbaFFFF_write");
+    if (err) return -1;
     kernel[1] = clCreateKernel(program, "test_rgbaFFFF_write", NULL);
     if (!kernel[1])
     {

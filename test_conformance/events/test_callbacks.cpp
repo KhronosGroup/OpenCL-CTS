@@ -110,11 +110,12 @@ int test_callback_event_single( cl_device_id device, cl_context context, cl_comm
     {
         usleep( 100000 );    // 1/10th second
 
-    int cc=0;
-    for( int k=0;k< EVENT_CALLBACK_TYPE_TOTAL;k++)
-        if (sCallbackTriggered_flag[k]) {
-            cc++;
-        }
+        int cc = 0;
+        for (int k = 0; k < EVENT_CALLBACK_TYPE_TOTAL; k++)
+            if (sCallbackTriggered_flag[k])
+            {
+                cc++;
+            }
 
         if  (cc== EVENT_CALLBACK_TYPE_TOTAL  )
         {
@@ -260,8 +261,8 @@ int test_callbacks_simultaneous( cl_device_id deviceID, cl_context context, cl_c
     if (actionEvents == NULL)
     {
         log_error(" memory error in test_callbacks_simultaneous  \n");
-      for (size_t i=0;i<(sizeof(actions)/sizeof(actions[0]));++i)
-        if (actions[i]) delete actions[i];
+        for (size_t i = 0; i < (sizeof(actions) / sizeof(actions[0])); ++i)
+            if (actions[i]) delete actions[i];
         return  -1;
     }
 
@@ -317,11 +318,11 @@ int test_callbacks_simultaneous( cl_device_id deviceID, cl_context context, cl_c
         usleep( 100000 );    // 1/10th second
         if( ((last_count = sSimultaneousCount)) == total_callbacks )
         {
-      // All of the callbacks were executed
-      if (actionEvents) delete [] actionEvents;
-      for (size_t i=0;i<(sizeof(actions)/sizeof(actions[0]));++i)
-        if (actions[i]) delete actions[i];
-        return 0;
+            // All of the callbacks were executed
+            if (actionEvents) delete[] actionEvents;
+            for (size_t i = 0; i < (sizeof(actions) / sizeof(actions[0])); ++i)
+                if (actions[i]) delete actions[i];
+            return 0;
         }
     }
 
