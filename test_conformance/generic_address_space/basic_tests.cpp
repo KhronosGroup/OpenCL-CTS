@@ -819,7 +819,7 @@ int test_compare_pointers(cl_device_id deviceID, cl_context context, cl_command_
         NL
         NL "    ptr = lptr;"
         NL
-        NL "    results[tid] = (gptr == ptr) && (lptr == ptr);"
+        NL "    results[tid] = ((int*)gptr == ptr) && ((int*)lptr == ptr);"
         NL "}"
         NL
     );
