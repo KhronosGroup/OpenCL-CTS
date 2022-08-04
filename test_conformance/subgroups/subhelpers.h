@@ -1496,7 +1496,6 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         size_t tmp;
         cl_int error;
         int subgroup_size, num_subgroups;
-        size_t realSize;
         size_t global = test_params.global_workgroup_size;
         size_t local = test_params.local_workgroup_size;
         clProgramWrapper program;
