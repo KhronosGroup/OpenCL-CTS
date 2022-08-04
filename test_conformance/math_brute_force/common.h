@@ -28,14 +28,21 @@ using KernelMatrix = std::array<std::vector<cl_kernel>, VECTOR_SIZE_COUNT>;
 // Array of programs for each vector size.
 using Programs = std::array<clProgramWrapper, VECTOR_SIZE_COUNT>;
 
+// Information to generate OpenCL kernels.
 struct BuildKernelInfo
 {
-    cl_uint offset; // the first vector size to build
-    cl_uint kernel_count;
+    // Number of kernels to build, one for each thread to avoid data races.
+    cl_uint threadCount;
+
     KernelMatrix &kernels;
+
     Programs &programs;
+
+    // Function, macro or symbol tested by the kernel.
     const char *nameInCode;
-    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
+
+    // Whether to build with -cl-fast-relaxed-math.
+    bool relaxedMode;
 };
 
 #endif /* COMMON_H */

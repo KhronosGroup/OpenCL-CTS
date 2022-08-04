@@ -114,10 +114,10 @@ int BuildKernel(const char *operator_symbol, int vectorSize,
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
-    cl_uint i = info->offset + job_id;
-    return BuildKernel(info->nameInCode, i, info->kernel_count,
-                       info->kernels[i].data(), &(info->programs[i]),
-                       info->relaxedMode);
+    cl_uint vectorSize = gMinVectorSizeIndex + job_id;
+    return BuildKernel(info->nameInCode, vectorSize, info->threadCount,
+                       info->kernels[vectorSize].data(),
+                       &(info->programs[vectorSize]), info->relaxedMode);
 }
 
 // Thread specific data for a worker thread
@@ -708,10 +708,9 @@ int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata d,
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = {
-            gMinVectorSizeIndex, test_info.threadCount, test_info.k,
-            test_info.programs,  f->nameInCode,         relaxedMode
-        };
+        BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
+                                    test_info.programs, f->nameInCode,
+                                    relaxedMode };
         if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
