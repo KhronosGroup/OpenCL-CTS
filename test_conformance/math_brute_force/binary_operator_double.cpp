@@ -132,7 +132,9 @@ struct ThreadInfo
     double maxErrorValue2; // position of the max error value (param 2).  Init
                            // to 0.
     MTdata d;
-    cl_command_queue tQueue; // per thread command queue to improve performance
+
+    // Per thread command queue to improve performance
+    clCommandQueueWrapper tQueue;
 };
 
 struct TestInfo
@@ -762,7 +764,6 @@ exit:
         clReleaseMemObject(threadInfo.inBuf2);
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
             clReleaseMemObject(threadInfo.outBuf[j]);
-        clReleaseCommandQueue(threadInfo.tQueue);
     }
 
     return error;
