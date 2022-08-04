@@ -481,7 +481,7 @@ template <typename Ty, ShuffleOp operation> struct SHF
 
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int i, ii, j, k, n, delta;
+        int i, ii, j, k, n;
         cl_uint l;
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
