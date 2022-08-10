@@ -784,7 +784,7 @@ int run_test_with_multi_import_same_ctx(
                 VulkanBufferList vkBufferList(numBuffers, vkDevice, pBufferSize,
                                               vkExternalMemoryHandleType);
                 uint32_t interBufferOffset =
-                    (uint32_t)(vkBufferList[0].getSize());
+                    (uint32_t)(vkBufferList[(size_t)0].getSize());
 
                 for (size_t bIdx = 0; bIdx < numBuffers; bIdx++)
                 {
@@ -1126,7 +1126,7 @@ int run_test_with_multi_import_diff_ctx(
                 VulkanBufferList vkBufferList(numBuffers, vkDevice, pBufferSize,
                                               vkExternalMemoryHandleType);
                 uint32_t interBufferOffset =
-                    (uint32_t)(vkBufferList[0].getSize());
+                    (uint32_t)(vkBufferList[(size_t)0].getSize());
 
                 for (size_t bIdx = 0; bIdx < numBuffers; bIdx++)
                 {
