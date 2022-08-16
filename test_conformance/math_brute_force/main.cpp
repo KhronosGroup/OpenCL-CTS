@@ -129,8 +129,9 @@ static int doTest(const char *name)
         const Func *const temp_func = functionList + i;
         if (strcmp(temp_func->name, name) == 0)
         {
-            if ((gStartTestNumber != -1 && i < gStartTestNumber)
-                || i > gEndTestNumber)
+            if ((gStartTestNumber != -1
+                 && static_cast<int32_t>(i) < gStartTestNumber)
+                || static_cast<int32_t>(i) > gEndTestNumber)
             {
                 vlog("Skipping function #%d\n", i);
                 return 0;
@@ -524,7 +525,7 @@ static int ParseArgs(int argc, const char **argv)
 static void PrintFunctions(void)
 {
     vlog("\nMath function names:\n");
-    for (int i = 0; i < functionListCount; i++)
+    for (size_t i = 0; i < functionListCount; i++)
     {
         vlog("\t%s\n", functionList[i].name);
     }
