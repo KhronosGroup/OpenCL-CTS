@@ -2321,7 +2321,7 @@ static inline double_double accum_d(double_double a, double b)
 
 static inline double_double add_dd(double_double a, double_double b)
 {
-    double_double r = { -0.0 - 0.0 };
+    double_double r = { -0.0, -0.0 };
 
     if (isinf(a.hi) || isinf(b.hi) || isnan(a.hi) || isnan(b.hi) || 0.0 == a.hi
         || 0.0 == b.hi)
