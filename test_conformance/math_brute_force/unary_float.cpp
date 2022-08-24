@@ -118,7 +118,9 @@ struct ThreadInfo
     cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
     float maxError; // max error value. Init to 0.
     double maxErrorValue; // position of the max error value.  Init to 0.
-    cl_command_queue tQueue; // per thread command queue to improve performance
+
+    // Per thread command queue to improve performance
+    clCommandQueueWrapper tQueue;
 };
 
 struct TestInfo
@@ -693,7 +695,6 @@ exit:
         clReleaseMemObject(threadInfo.inBuf);
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
             clReleaseMemObject(threadInfo.outBuf[j]);
-        clReleaseCommandQueue(threadInfo.tQueue);
     }
 
     return error;
