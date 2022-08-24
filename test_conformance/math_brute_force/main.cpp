@@ -58,8 +58,8 @@ static char appName[MAXPATHLEN] = "";
 cl_device_id gDevice = NULL;
 cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
-static int32_t gStartTestNumber = -1;
-static int32_t gEndTestNumber = -1;
+static size_t gStartTestNumber = ~0u;
+static size_t gEndTestNumber = ~0u;
 int gSkipCorrectnessTesting = 0;
 static int gStopOnError = 0;
 static bool gSkipRestOfTests;
@@ -129,9 +129,8 @@ static int doTest(const char *name)
         const Func *const temp_func = functionList + i;
         if (strcmp(temp_func->name, name) == 0)
         {
-            if ((gStartTestNumber != -1
-                 && static_cast<int32_t>(i) < gStartTestNumber)
-                || static_cast<int32_t>(i) > gEndTestNumber)
+            if ((gStartTestNumber != ~0u && i < gStartTestNumber)
+                || i > gEndTestNumber)
             {
                 vlog("Skipping function #%d\n", i);
                 return 0;
@@ -468,7 +467,7 @@ static int ParseArgs(int argc, const char **argv)
             long number = strtol(arg, &t, 0);
             if (t != arg)
             {
-                if (-1 == gStartTestNumber)
+                if (~0u == gStartTestNumber)
                     gStartTestNumber = (int32_t)number;
                 else
                     gEndTestNumber = gStartTestNumber + (int32_t)number;
