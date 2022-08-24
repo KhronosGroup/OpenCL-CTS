@@ -124,7 +124,9 @@ struct ThreadInfo
     cl_mem inBuf2; // input buffer for the thread
     cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
     MTdata d;
-    cl_command_queue tQueue; // per thread command queue to improve performance
+
+    // Per thread command queue to improve performance
+    clCommandQueueWrapper tQueue;
 };
 
 struct TestInfo
@@ -696,7 +698,6 @@ exit:
         clReleaseMemObject(threadInfo.inBuf2);
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
             clReleaseMemObject(threadInfo.outBuf[j]);
-        clReleaseCommandQueue(threadInfo.tQueue);
     }
 
     return error;
