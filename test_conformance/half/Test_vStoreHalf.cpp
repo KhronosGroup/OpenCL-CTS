@@ -324,6 +324,8 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
     int vectorSize, error;
     cl_program  programs[kVectorSizeCount+kStrangeVectorSizeCount][3];
     cl_kernel   kernels[kVectorSizeCount+kStrangeVectorSizeCount][3];
+    cl_program  resetProgram;
+    cl_kernel   resetKernel;
 
     uint64_t time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
     uint64_t min_time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
@@ -695,6 +697,25 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
         }
     } // end for vector size
 
+    const char *reset[] = {
+            "__kernel void reset( __global float *p, __global half *f,\n"
+            "                   uint extra_last_thread)\n"
+            "{\n"
+            "   size_t i = get_global_id(0);\n"
+            "   *(f + i) = 0xdeaddead;"
+            "}\n"
+    };
+
+    resetProgram = MakeProgram(device, reset, sizeof(reset) / sizeof( reset[0]));
+    resetKernel = clCreateKernel(resetProgram, "reset", &error);
+    if( NULL == resetProgram || NULL == resetKernel )
+    {
+        gFailCount++;
+        return -1;
+    }
+
+
+
     // Figure out how many elements are in a work block
     size_t elementSize = std::max(sizeof(cl_ushort), sizeof(float));
     size_t blockCount = BUFFER_SIZE / elementSize; // elementSize is power of 2
@@ -746,6 +767,19 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
     dchk.lim = blockCount;
     dchk.count = (blockCount + threadCount - 1) / threadCount;
 
+    cl_uint pattern = 0xdeaddead;
+    memset_pattern4( gOut_half, &pattern, BUFFER_SIZE/2);
+
+    error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE,
+                                 0, count * sizeof(cl_half),
+                                 gOut_half, 0, NULL, NULL);
+
+    if (error) {
+        vlog_error( "Failure in clWriteArray\n" );
+        gFailCount++;
+        goto exit;
+    }
+
     for( i = 0; i < lastCase; i += stride )
     {
         count = (cl_uint)std::min((uint64_t)blockCount, lastCase - i);
@@ -783,17 +817,14 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
                 fchk.aspace = addressSpaceNames[addressSpace];
                 dchk.aspace = addressSpaceNames[addressSpace];
 
-                cl_uint pattern = 0xdeaddead;
-                memset_pattern4( gOut_half, &pattern, BUFFER_SIZE/2);
-
-                error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE,
-                                             0, count * sizeof(cl_half),
-                                             gOut_half, 0, NULL, NULL);
+                error = RunKernel(device, resetKernel, gInBuffer_single, gOutBuffer_half,
+                                  count, 0);
                 if (error) {
-                    vlog_error( "Failure in clWriteArray\n" );
                     gFailCount++;
                     goto exit;
                 }
+
+                memset_pattern4(gOut_half, &pattern, BUFFER_SIZE/2);
 
                 error = RunKernel(device, kernels[vectorSize][addressSpace], gInBuffer_single, gOutBuffer_half,
                                        numVecs(count, vectorSize, aligned) ,
@@ -814,18 +845,17 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
 
                 error = ThreadPool_Do(CheckF, threadCount, &fchk);
                 if (error) {
-                            gFailCount++;
-                            goto exit;
-                        }
+                    gFailCount++;
+                    goto exit;
+                }
 
                 if (gTestDouble) {
+
                     memset_pattern4( gOut_half, &pattern, BUFFER_SIZE/2);
 
-                    error = clEnqueueWriteBuffer(
-                        gQueue, gOutBuffer_half, CL_FALSE, 0,
-                        count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
+                    error = RunKernel(device, resetKernel, gInBuffer_double, gOutBuffer_half,
+                                      count, 0);
                     if (error) {
-                        vlog_error( "Failure in clWriteArray\n" );
                         gFailCount++;
                         goto exit;
                     }
@@ -846,6 +876,7 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
                         gFailCount++;
                         goto exit;
                     }
+
 
                     error = ThreadPool_Do(CheckD, threadCount, &dchk);
                     if (error) {
@@ -974,6 +1005,9 @@ int Test_vStoreHalf_private( cl_device_id device, f2h referenceFunc, d2h doubleR
 
 exit:
     //clean up
+    clReleaseKernel(resetKernel);
+    clReleaseProgram(resetProgram);
+
     for( vectorSize = kMinVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
     {
         for ( addressSpace = 0; addressSpace < 3; addressSpace++) {
@@ -995,6 +1029,8 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
     int vectorSize, error;
     cl_program  programs[kVectorSizeCount+kStrangeVectorSizeCount][3];
     cl_kernel   kernels[kVectorSizeCount+kStrangeVectorSizeCount][3];
+    cl_program  resetProgram;
+    cl_kernel   resetKernel;
 
     uint64_t time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
     uint64_t min_time[kVectorSizeCount+kStrangeVectorSizeCount] = {0};
@@ -1293,6 +1329,23 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
         }
     }
 
+    const char *reset[] = {
+            "__kernel void reset( __global float *p, __global half *f,\n"
+            "                   uint extra_last_thread)\n"
+            "{\n"
+            "   size_t i = get_global_id(0);\n"
+            "   *(f + i) = 0xdeaddead;"
+            "}\n"
+    };
+
+    resetProgram = MakeProgram(device, reset, sizeof(reset) / sizeof( reset[0]));
+    resetKernel = clCreateKernel(resetProgram, "reset", &error);
+    if( NULL == resetProgram || NULL == resetKernel )
+    {
+        gFailCount++;
+        return -1;
+    }
+
     // Figure out how many elements are in a work block
     size_t elementSize = std::max(sizeof(cl_ushort), sizeof(float));
     size_t blockCount = BUFFER_SIZE / elementSize;
@@ -1343,6 +1396,19 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
     dchk.lim = blockCount;
     dchk.count = (blockCount + threadCount - 1) / threadCount;
 
+    cl_uint pattern = 0xdeaddead;
+    memset_pattern4(gOut_half, &pattern, BUFFER_SIZE/2);
+
+    error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE,
+                                 0, count * sizeof(cl_half),
+                                 gOut_half, 0, NULL, NULL);
+
+    if (error) {
+        vlog_error( "Failure in clWriteArray\n" );
+        gFailCount++;
+        goto exit;
+    }
+
     for( i = 0; i < (uint64_t)lastCase; i += stride )
     {
         count = (cl_uint)std::min((uint64_t)blockCount, lastCase - i);
@@ -1380,17 +1446,14 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
                 fchk.aspace = addressSpaceNames[addressSpace];
                 dchk.aspace = addressSpaceNames[addressSpace];
 
-                cl_uint pattern = 0xdeaddead;
-                memset_pattern4(gOut_half, &pattern, BUFFER_SIZE/2);
-
-                error = clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE,
-                                             0, count * sizeof(cl_half),
-                                             gOut_half, 0, NULL, NULL);
+                error = RunKernel(device, resetKernel, gInBuffer_single, gOutBuffer_half,
+                                  count, 0);
                 if (error) {
-                    vlog_error( "Failure in clWriteArray\n" );
                     gFailCount++;
                     goto exit;
                 }
+
+                memset_pattern4(gOut_half, &pattern, BUFFER_SIZE/2);
 
                 error = RunKernel(device, kernels[vectorSize][addressSpace], gInBuffer_single, gOutBuffer_half,
                                   numVecs(count, vectorSize, aligned),
@@ -1416,13 +1479,12 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
                         }
 
                 if (gTestDouble) {
+
                     memset_pattern4(gOut_half, &pattern, BUFFER_SIZE/2);
 
-                    error = clEnqueueWriteBuffer(
-                        gQueue, gOutBuffer_half, CL_FALSE, 0,
-                        count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
+                    error = RunKernel(device, resetKernel, gInBuffer_single, gOutBuffer_half,
+                                      count, 0);
                     if (error) {
-                        vlog_error( "Failure in clWriteArray\n" );
                         gFailCount++;
                         goto exit;
                     }
@@ -1568,6 +1630,9 @@ int Test_vStoreaHalf_private( cl_device_id device, f2h referenceFunc, d2h double
 
 exit:
     //clean up
+    clReleaseKernel(resetKernel);
+    clReleaseProgram(resetProgram);
+
     for( vectorSize = minVectorSize; vectorSize < kLastVectorSizeToTest; vectorSize++)
     {
         for ( addressSpace = 0; addressSpace < 3; addressSpace++) {
