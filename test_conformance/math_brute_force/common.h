@@ -28,6 +28,9 @@ using KernelMatrix = std::array<std::vector<cl_kernel>, VECTOR_SIZE_COUNT>;
 // Array of programs for each vector size.
 using Programs = std::array<clProgramWrapper, VECTOR_SIZE_COUNT>;
 
+// Array of buffers for each vector size.
+using Buffers = std::array<clMemWrapper, VECTOR_SIZE_COUNT>;
+
 // Information to generate OpenCL kernels.
 struct BuildKernelInfo
 {

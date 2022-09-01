@@ -116,8 +116,10 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 // Thread specific data for a worker thread
 struct ThreadInfo
 {
-    cl_mem inBuf; // input buffer for the thread
-    cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
+    // Input and output buffers for the thread
+    clMemWrapper inBuf;
+    Buffers outBuf;
+
     float maxError; // max error value. Init to 0.
     double maxErrorValue; // position of the max error value.  Init to 0.
 
@@ -511,13 +513,6 @@ exit:
         {
             clReleaseKernel(kernel);
         }
-    }
-
-    for (auto &threadInfo : test_info.tinfo)
-    {
-        clReleaseMemObject(threadInfo.inBuf);
-        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-            clReleaseMemObject(threadInfo.outBuf[j]);
     }
 
     return error;
