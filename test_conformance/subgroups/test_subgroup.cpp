@@ -24,6 +24,13 @@ namespace {
 // Any/All test functions
 template <NonUniformVoteOp operation> struct AA
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  sub_group_%s...%s\n", operation_names(operation),
+                 extra_text);
+    }
+
     static void gen(cl_int *x, cl_int *t, cl_int *m,
                     const WorkGroupParams &test_params)
     {
@@ -35,7 +42,6 @@ template <NonUniformVoteOp operation> struct AA
         int e;
         ng = ng / nw;
         ii = 0;
-        log_info("  sub_group_%s...\n", operation_names(operation));
         for (k = 0; k < ng; ++k)
         {
             for (j = 0; j < nj; ++j)
@@ -68,8 +74,8 @@ template <NonUniformVoteOp operation> struct AA
         }
     }
 
-    static int chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my,
+                           cl_int *m, const WorkGroupParams &test_params)
     {
         int ii, i, j, k, n;
         int ng = test_params.global_workgroup_size;
@@ -124,27 +130,9 @@ template <NonUniformVoteOp operation> struct AA
             y += nw;
             m += 4 * nw;
         }
-        log_info("  sub_group_%s... passed\n", operation_names(operation));
         return TEST_PASS;
     }
 };
-
-static const char *any_source = "__kernel void test_any(const __global Type "
-                                "*in, __global int4 *xy, __global Type *out)\n"
-                                "{\n"
-                                "    int gid = get_global_id(0);\n"
-                                "    XY(xy,gid);\n"
-                                "    out[gid] = sub_group_any(in[gid]);\n"
-                                "}\n";
-
-static const char *all_source = "__kernel void test_all(const __global Type "
-                                "*in, __global int4 *xy, __global Type *out)\n"
-                                "{\n"
-                                "    int gid = get_global_id(0);\n"
-                                "    XY(xy,gid);\n"
-                                "    out[gid] = sub_group_all(in[gid]);\n"
-                                "}\n";
-
 
 template <typename T>
 int run_broadcast_scan_reduction_for_type(RunTestForType rft)

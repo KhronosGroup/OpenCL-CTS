@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+#include "common.h"
 #include "function_list.h"
 #include "test_functions.h"
 #include "utility.h"
@@ -116,21 +117,20 @@ int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
     return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
 }
 
-struct BuildKernelInfo
+struct BuildKernelInfo2
 {
-    cl_uint offset; // the first vector size to build
     cl_kernel *kernels;
-    cl_program *programs;
+    Programs &programs;
     const char *nameInCode;
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
 };
 
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
-    BuildKernelInfo *info = (BuildKernelInfo *)p;
-    cl_uint i = info->offset + job_id;
-    return BuildKernel(info->nameInCode, i, info->kernels + i,
-                       info->programs + i, info->relaxedMode);
+    BuildKernelInfo2 *info = (BuildKernelInfo2 *)p;
+    cl_uint vectorSize = gMinVectorSizeIndex + job_id;
+    return BuildKernel(info->nameInCode, vectorSize, info->kernels + vectorSize,
+                       &(info->programs[vectorSize]), info->relaxedMode);
 }
 
 // A table of more difficult cases to get right
@@ -223,7 +223,7 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
-    cl_program programs[VECTOR_SIZE_COUNT];
+    Programs programs;
     cl_kernel kernels[VECTOR_SIZE_COUNT];
     float maxError = 0.0f;
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
@@ -244,8 +244,8 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                       f->nameInCode, relaxedMode };
+        BuildKernelInfo2 build_info{ kernels, programs, f->nameInCode,
+                                     relaxedMode };
         if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
@@ -443,7 +443,7 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                     err = Ulp_Error(test, correct);
                     fail = !(fabsf(err) <= float_ulps);
 
-                    if (fail && ftz)
+                    if (fail && (ftz || relaxedMode))
                     {
                         float correct2, err2;
 
@@ -872,7 +872,6 @@ exit:
     for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
     {
         clReleaseKernel(kernels[k]);
-        clReleaseProgram(programs[k]);
     }
 
     return error;

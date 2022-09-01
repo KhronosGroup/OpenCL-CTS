@@ -610,9 +610,6 @@ static int test_vectype(const char* type_name, cl_device_id device,
     cl_int error = CL_SUCCESS;
     int result = TEST_PASS;
 
-    clProgramWrapper program;
-    clKernelWrapper kernel;
-
     std::string buildOptions{ "-DTYPE=" };
     buildOptions += type_name;
     buildOptions += std::to_string(N);
@@ -628,35 +625,50 @@ static int test_vectype(const char* type_name, cl_device_id device,
     makeReference<T, N, S>(reference);
 
     // XYZW swizzles:
-
-    const char* xyzw_source = TestInfo<N>::kernel_source_xyzw;
-    error = create_single_kernel_helper(
-        context, &program, &kernel, 1, &xyzw_source, "test_vector_swizzle_xyzw",
-        buildOptions.c_str());
-    test_error(error, "Unable to create xyzw test kernel");
-
-    result |= test_vectype_case(value, reference, context, kernel, queue);
-
-    // sN swizzles:
-    const char* sN_source = TestInfo<N>::kernel_source_sN;
-    error = create_single_kernel_helper(context, &program, &kernel, 1,
-                                        &sN_source, "test_vector_swizzle_sN",
-                                        buildOptions.c_str());
-    test_error(error, "Unable to create sN test kernel");
-
-    result |= test_vectype_case(value, reference, context, kernel, queue);
-
-    // RGBA swizzles for OpenCL 3.0 and newer:
-    const Version device_version = get_device_cl_version(device);
-    if (device_version >= Version(3, 0))
     {
-        const char* rgba_source = TestInfo<N>::kernel_source_rgba;
+        clProgramWrapper program;
+        clKernelWrapper kernel;
+
+        const char* xyzw_source = TestInfo<N>::kernel_source_xyzw;
         error = create_single_kernel_helper(
-            context, &program, &kernel, 1, &rgba_source,
-            "test_vector_swizzle_rgba", buildOptions.c_str());
-        test_error(error, "Unable to create rgba test kernel");
+            context, &program, &kernel, 1, &xyzw_source,
+            "test_vector_swizzle_xyzw", buildOptions.c_str());
+        test_error(error, "Unable to create xyzw test kernel");
 
         result |= test_vectype_case(value, reference, context, kernel, queue);
+    }
+
+    // sN swizzles:
+    {
+        clProgramWrapper program;
+        clKernelWrapper kernel;
+
+        const char* sN_source = TestInfo<N>::kernel_source_sN;
+        error = create_single_kernel_helper(
+            context, &program, &kernel, 1, &sN_source, "test_vector_swizzle_sN",
+            buildOptions.c_str());
+        test_error(error, "Unable to create sN test kernel");
+
+        result |= test_vectype_case(value, reference, context, kernel, queue);
+    }
+
+    // RGBA swizzles for OpenCL 3.0 and newer:
+    {
+        clProgramWrapper program;
+        clKernelWrapper kernel;
+
+        const Version device_version = get_device_cl_version(device);
+        if (device_version >= Version(3, 0))
+        {
+            const char* rgba_source = TestInfo<N>::kernel_source_rgba;
+            error = create_single_kernel_helper(
+                context, &program, &kernel, 1, &rgba_source,
+                "test_vector_swizzle_rgba", buildOptions.c_str());
+            test_error(error, "Unable to create rgba test kernel");
+
+            result |=
+                test_vectype_case(value, reference, context, kernel, queue);
+        }
     }
 
     return result;

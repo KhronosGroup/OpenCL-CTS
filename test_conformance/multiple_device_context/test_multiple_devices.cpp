@@ -175,9 +175,8 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
   }
 
     /* All done now! */
-  if (errors)
-    return -1;
-    return 0;
+  if (errors) return -1;
+  return 0;
 }
 
 int test_two_devices(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)

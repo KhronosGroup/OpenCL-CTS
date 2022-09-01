@@ -16,6 +16,7 @@
 #include "procs.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
+#include <CL/cl.h>
 
 struct get_test_data
 {
@@ -251,8 +252,21 @@ int test_work_item_functions(cl_device_id device, cl_context context,
 
     global = local * 5;
 
-    // Make sure we have a flexible range
-    global += 3 * local / 4;
+    // Non-uniform work-groups are an optional feature from 3.0 onward.
+    cl_bool device_supports_non_uniform_wg = CL_TRUE;
+    if (get_device_cl_version(device) >= Version(3, 0))
+    {
+        error = clGetDeviceInfo(
+            device, CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT, sizeof(cl_bool),
+            &device_supports_non_uniform_wg, nullptr);
+        test_error(error, "clGetDeviceInfo failed");
+    }
+
+    if (device_supports_non_uniform_wg)
+    {
+        // Make sure we have a flexible range
+        global += 3 * local / 4;
+    }
 
     // Collect the data
     memset((void *)&result, 0xf0, sizeof(result));

@@ -75,9 +75,16 @@ const char *known_extensions[] = {
     "cl_khr_pci_bus_info",
     "cl_khr_suggested_local_work_size",
     "cl_khr_spirv_linkonce_odr",
+    "cl_khr_semaphore",
+    "cl_khr_external_semaphore",
+    "cl_khr_external_semaphore_opaque_fd",
+    "cl_khr_external_semaphore_sync_fd",
+    "cl_khr_command_buffer",
+    "cl_khr_external_memory",
+    "cl_khr_external_memory_opaque_fd",
 };
 
-size_t num_known_extensions = sizeof(known_extensions) / sizeof(char *);
+size_t num_known_extensions = ARRAY_SIZE(known_extensions);
 size_t first_API_extension = 29;
 
 const char *known_embedded_extensions[] = {
@@ -318,8 +325,15 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
     }
 
     // Build the kernel
-    char *kernel_code = (char*)malloc(1025*256*(num_not_supported_extensions+num_of_supported_extensions));
-    memset(kernel_code, 0, 1025*256*(num_not_supported_extensions+num_of_supported_extensions));
+    char *kernel_code = (char *)malloc(
+        1
+        + 1025 * 256
+            * (num_not_supported_extensions + num_of_supported_extensions));
+    memset(
+        kernel_code, 0,
+        1
+            + 1025 * 256
+                * (num_not_supported_extensions + num_of_supported_extensions));
 
     int i, index = 0;
     strcat(kernel_code, kernel_strings[0]);

@@ -108,22 +108,26 @@ int test_subgroup_functions_extended_types(cl_device_id device,
     error |= run_broadcast_for_extended_type<cl_double8>(rft);
     error |= run_broadcast_for_extended_type<cl_double16>(rft);
 
+    error |= run_broadcast_for_extended_type<cl_ushort>(rft);
     error |= run_broadcast_for_extended_type<cl_ushort2>(rft);
     error |= run_broadcast_for_extended_type<subgroups::cl_ushort3>(rft);
     error |= run_broadcast_for_extended_type<cl_ushort4>(rft);
     error |= run_broadcast_for_extended_type<cl_ushort8>(rft);
     error |= run_broadcast_for_extended_type<cl_ushort16>(rft);
+    error |= run_broadcast_for_extended_type<cl_short>(rft);
     error |= run_broadcast_for_extended_type<cl_short2>(rft);
     error |= run_broadcast_for_extended_type<subgroups::cl_short3>(rft);
     error |= run_broadcast_for_extended_type<cl_short4>(rft);
     error |= run_broadcast_for_extended_type<cl_short8>(rft);
     error |= run_broadcast_for_extended_type<cl_short16>(rft);
 
+    error |= run_broadcast_for_extended_type<cl_uchar>(rft);
     error |= run_broadcast_for_extended_type<cl_uchar2>(rft);
     error |= run_broadcast_for_extended_type<subgroups::cl_uchar3>(rft);
     error |= run_broadcast_for_extended_type<cl_uchar4>(rft);
     error |= run_broadcast_for_extended_type<cl_uchar8>(rft);
     error |= run_broadcast_for_extended_type<cl_uchar16>(rft);
+    error |= run_broadcast_for_extended_type<cl_char>(rft);
     error |= run_broadcast_for_extended_type<cl_char2>(rft);
     error |= run_broadcast_for_extended_type<subgroups::cl_char3>(rft);
     error |= run_broadcast_for_extended_type<cl_char4>(rft);

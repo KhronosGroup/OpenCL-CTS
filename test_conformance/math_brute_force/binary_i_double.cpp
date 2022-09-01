@@ -111,45 +111,41 @@ int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
                        relaxedMode);
 }
 
-struct BuildKernelInfo
-{
-    cl_uint offset; // the first vector size to build
-    cl_uint kernel_count;
-    KernelMatrix &kernels;
-    cl_program *programs;
-    const char *nameInCode;
-    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
-};
-
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo *info = (BuildKernelInfo *)p;
-    cl_uint i = info->offset + job_id;
-    return BuildKernel(info->nameInCode, i, info->kernel_count,
-                       info->kernels[i].data(), info->programs + i,
-                       info->relaxedMode);
+    cl_uint vectorSize = gMinVectorSizeIndex + job_id;
+    return BuildKernel(info->nameInCode, vectorSize, info->threadCount,
+                       info->kernels[vectorSize].data(),
+                       &(info->programs[vectorSize]), info->relaxedMode);
 }
 
 // Thread specific data for a worker thread
 struct ThreadInfo
 {
-    cl_mem inBuf; // input buffer for the thread
-    cl_mem inBuf2; // input buffer for the thread
-    cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
+    // Input and output buffers for the thread
+    clMemWrapper inBuf;
+    clMemWrapper inBuf2;
+    Buffers outBuf;
+
     float maxError; // max error value. Init to 0.
     double
         maxErrorValue; // position of the max error value (param 1).  Init to 0.
     cl_int maxErrorValue2; // position of the max error value (param 2).  Init
                            // to 0.
     MTdata d;
-    cl_command_queue tQueue; // per thread command queue to improve performance
+
+    // Per thread command queue to improve performance
+    clCommandQueueWrapper tQueue;
 };
 
 struct TestInfo
 {
     size_t subBufferSize; // Size of the sub-buffer in elements
     const Func *f; // A pointer to the function info
-    cl_program programs[VECTOR_SIZE_COUNT]; // programs for various vector sizes
+
+    // Programs for various vector sizes.
+    Programs programs;
 
     // Thread-specific kernels for each vector size:
     // k[vector_size][thread_id]
@@ -164,6 +160,8 @@ struct TestInfo
     cl_uint scale; // stride between individual test values
     float ulps; // max_allowed ulps
     int ftz; // non-zero if running in flush to zero mode
+    bool relaxedMode; // True if test is running in relaxed mode, false
+                      // otherwise.
 
     // no special values
 };
@@ -300,6 +298,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     float ulps = job->ulps;
     dptr func = job->f->dfunc;
     int ftz = job->ftz;
+    bool relaxedMode = job->relaxedMode;
     MTdata d = tinfo->d;
     cl_int error;
     const char *name = job->f->name;
@@ -400,7 +399,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
                                              out[j], 0, NULL, NULL)))
         {
-            vlog_error("Error: clEnqueueMapBuffer failed! err: %d\n", error);
+            vlog_error("Error: clEnqueueUnmapMemObject failed! err: %d\n",
+                       error);
             goto exit;
         }
 
@@ -482,7 +482,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 float err = Bruteforce_Ulp_Error_Double(test, correct);
                 int fail = !(fabsf(err) <= ulps);
 
-                if (fail && ftz)
+                if (fail && (ftz || relaxedMode))
                 {
                     // retry per section 6.5.3.2
                     if (IsDoubleResultSubnormal(correct, ulps))
@@ -601,6 +601,7 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d, bool relaxedMode)
     test_info.f = f;
     test_info.ulps = f->double_ulps;
     test_info.ftz = f->ftz || gForceFTZ;
+    test_info.relaxedMode = relaxedMode;
 
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
@@ -666,10 +667,9 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d, bool relaxedMode)
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = {
-            gMinVectorSizeIndex, test_info.threadCount, test_info.k,
-            test_info.programs,  f->nameInCode,         relaxedMode
-        };
+        BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
+                                    test_info.programs, f->nameInCode,
+                                    relaxedMode };
         if ((error = ThreadPool_Do(BuildKernelFn,
                                    gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                    &build_info)))
@@ -708,7 +708,6 @@ exit:
     // Release
     for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
     {
-        clReleaseProgram(test_info.programs[i]);
         for (auto &kernel : test_info.k[i])
         {
             clReleaseKernel(kernel);
@@ -718,11 +717,6 @@ exit:
     for (auto &threadInfo : test_info.tinfo)
     {
         free_mtdata(threadInfo.d);
-        clReleaseMemObject(threadInfo.inBuf);
-        clReleaseMemObject(threadInfo.inBuf2);
-        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-            clReleaseMemObject(threadInfo.outBuf[j]);
-        clReleaseCommandQueue(threadInfo.tQueue);
     }
 
     return error;

@@ -628,8 +628,8 @@ int write_image( cl_device_id device, cl_context context, cl_command_queue queue
     free( dst );
     free( inptr );
 
-  if (check_times(queueStart, submitStart, writeStart, writeEnd, device))
-    err = -1;
+    if (check_times(queueStart, submitStart, writeStart, writeEnd, device))
+        err = -1;
 
     return err;
 

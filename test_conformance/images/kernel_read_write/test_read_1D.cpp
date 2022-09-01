@@ -26,24 +26,28 @@
 #endif
 
 const char *read1DKernelSourcePattern =
-"__kernel void sample_kernel( read_only image1d_t input,%s __global float *xOffsets, __global %s4 *results %s)\n"
-"{\n"
-"%s"
-"   int tidX = get_global_id(0);\n"
-"   int offset = tidX;\n"
-"%s"
-"   results[offset] = read_image%s( input, imageSampler, coord %s);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( read_only image1d_t input,%s __global float "
+    "*xOffsets, __global %s4 *results %s)\n"
+    "{\n"
+    "%s"
+    "   int tidX = get_global_id(0);\n"
+    "   int offset = tidX;\n"
+    "%s"
+    "   results[offset] = read_image%s( input, imageSampler, coord %s);\n"
+    "}";
 
 const char *read_write1DKernelSourcePattern =
-"__kernel void sample_kernel( read_write image1d_t input,%s __global float *xOffsets, __global %s4 *results %s)\n"
-"{\n"
-"%s"
-"   int tidX = get_global_id(0);\n"
-"   int offset = tidX;\n"
-"%s"
-"   results[offset] = read_image%s( input, coord %s);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( read_write image1d_t input,%s __global float "
+    "*xOffsets, __global %s4 *results %s)\n"
+    "{\n"
+    "%s"
+    "   int tidX = get_global_id(0);\n"
+    "   int offset = tidX;\n"
+    "%s"
+    "   results[offset] = read_image%s( input, coord %s);\n"
+    "}";
 
 const char *int1DCoordKernelSource =
 "   int coord = xOffsets[offset];\n";
@@ -487,10 +491,13 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                     int checkOnlyOnePixel = 0;
                     int found_pixel = 0;
                     float offset = NORM_OFFSET;
-                    if (!imageSampler->normalized_coords || imageSampler->filter_mode != CL_FILTER_NEAREST || NORM_OFFSET == 0
+                    if (!imageSampler->normalized_coords
+                        || imageSampler->filter_mode != CL_FILTER_NEAREST
+                        || NORM_OFFSET == 0
 #if defined( __APPLE__ )
-                        // Apple requires its CPU implementation to do correctly rounded address arithmetic in all modes
-                        || gDeviceType != CL_DEVICE_TYPE_GPU
+                        // Apple requires its CPU implementation to do correctly
+                        // rounded address arithmetic in all modes
+                        || !(gDeviceType & CL_DEVICE_TYPE_GPU)
 #endif
                     )
                         offset = 0.0f;          // Loop only once
@@ -553,7 +560,10 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords
+                                    || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                    || NORM_OFFSET == 0)
+                                {
                                     norm_offset_x = 0.0f;
                                     checkOnlyOnePixel = 1;
                                 }
@@ -646,10 +656,13 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
                     int checkOnlyOnePixel = 0;
                     int found_pixel = 0;
                     float offset = NORM_OFFSET;
-                    if (!imageSampler->normalized_coords || imageSampler->filter_mode != CL_FILTER_NEAREST || NORM_OFFSET == 0
+                    if (!imageSampler->normalized_coords
+                        || imageSampler->filter_mode != CL_FILTER_NEAREST
+                        || NORM_OFFSET == 0
 #if defined( __APPLE__ )
-                        // Apple requires its CPU implementation to do correctly rounded address arithmetic in all modes
-                        || gDeviceType != CL_DEVICE_TYPE_GPU
+                        // Apple requires its CPU implementation to do correctly
+                        // rounded address arithmetic in all modes
+                        || !(gDeviceType & CL_DEVICE_TYPE_GPU)
 #endif
                     )
                         offset = 0.0f;          // Loop only once
@@ -720,7 +733,10 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords
+                                    || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                    || NORM_OFFSET == 0)
+                                {
                                     norm_offset_x = 0.0f;
                                     checkOnlyOnePixel = 1;
                                 }
@@ -826,7 +842,10 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
 
                             // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                             // E.g., test one pixel.
-                            if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                            if (!imageSampler->normalized_coords
+                                || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                || NORM_OFFSET == 0)
+                            {
                                 norm_offset_x = 0.0f;
                                 checkOnlyOnePixel = 1;
                             }
@@ -857,7 +876,10 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords
+                                    || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                    || NORM_OFFSET == 0)
+                                {
                                     norm_offset_x = 0.0f;
                                     checkOnlyOnePixel = 1;
                                 }
@@ -913,7 +935,10 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
 
                             // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                             // E.g., test one pixel.
-                            if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                            if (!imageSampler->normalized_coords
+                                || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                || NORM_OFFSET == 0)
+                            {
                                 norm_offset_x = 0.0f;
                                 checkOnlyOnePixel = 1;
                             }
@@ -944,7 +969,10 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords
+                                    || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                    || NORM_OFFSET == 0)
+                                {
                                     norm_offset_x = 0.0f;
                                     checkOnlyOnePixel = 1;
                                 }
@@ -1051,14 +1079,14 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
     {
         KernelSourcePattern = read1DKernelSourcePattern;
     }
-    sprintf( programSrc,
-            KernelSourcePattern,
-            samplerArg, get_explicit_type_name( outputType ),
-            gTestMipmaps ? ", float lod" : "",
-            samplerVar,
+    sprintf(programSrc, KernelSourcePattern,
+            gTestMipmaps
+                ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable"
+                : "",
+            samplerArg, get_explicit_type_name(outputType),
+            gTestMipmaps ? ", float lod" : "", samplerVar,
             floatCoords ? float1DKernelSource : int1DCoordKernelSource,
-            readFormat,
-            gTestMipmaps ? ", lod" : "" );
+            readFormat, gTestMipmaps ? ", lod" : "");
 
     ptr = programSrc;
 

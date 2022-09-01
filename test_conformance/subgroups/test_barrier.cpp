@@ -59,6 +59,17 @@ static const char *gbar_source =
 // barrier test functions
 template <int Which> struct BAR
 {
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        if (Which == 0)
+            log_info("  sub_group_barrier(CLK_LOCAL_MEM_FENCE)...%s\n",
+                     extra_text);
+        else
+            log_info("  sub_group_barrier(CLK_GLOBAL_MEM_FENCE)...%s\n",
+                     extra_text);
+    }
+
     static void gen(cl_int *x, cl_int *t, cl_int *m,
                     const WorkGroupParams &test_params)
     {
@@ -68,7 +79,6 @@ template <int Which> struct BAR
         int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
         ng = ng / nw;
-        int e;
 
         ii = 0;
         for (k = 0; k < ng; ++k)
@@ -92,8 +102,8 @@ template <int Which> struct BAR
         }
     }
 
-    static int chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my, cl_int *m,
-                   const WorkGroupParams &test_params)
+    static test_status chk(cl_int *x, cl_int *y, cl_int *mx, cl_int *my,
+                           cl_int *m, const WorkGroupParams &test_params)
     {
         int ii, i, j, k, n;
         int nw = test_params.local_workgroup_size;
@@ -102,11 +112,6 @@ template <int Which> struct BAR
         int nj = (nw + ns - 1) / ns;
         ng = ng / nw;
         cl_int tr, rr;
-
-        if (Which == 0)
-            log_info("  sub_group_barrier(CLK_LOCAL_MEM_FENCE)...\n");
-        else
-            log_info("  sub_group_barrier(CLK_GLOBAL_MEM_FENCE)...\n");
 
         for (k = 0; k < ng; ++k)
         {
@@ -133,7 +138,7 @@ template <int Which> struct BAR
                                   "id %d in sub group %d in group %d expected "
                                   "%d got %d\n",
                                   i, j, k, tr, rr);
-                        return -1;
+                        return TEST_FAIL;
                     }
                 }
             }
@@ -143,7 +148,7 @@ template <int Which> struct BAR
             m += 2 * nw;
         }
 
-        return 0;
+        return TEST_PASS;
     }
 };
 
