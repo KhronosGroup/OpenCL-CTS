@@ -155,33 +155,35 @@ void InitFloatCoordsCommon(image_descriptor *imageInfo,
         }
         else if (gTestMipmaps)
         {
-            width_loop = (width_loop >> lod) ? (width_loop >> lod) : 1;
+            size_t width_lod = (width_loop >> lod) ? (width_loop >> lod) : 1;
+            size_t height_lod = height_loop;
+            size_t depth_lod = depth_loop;
             if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
             {
-                height_loop = (height_loop >> lod) ? (height_loop >> lod) : 1;
+                height_lod = (height_loop >> lod) ? (height_loop >> lod) : 1;
             }
             if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
             {
-                depth_loop = (depth_loop >> lod) ? (depth_loop >> lod) : 1;
+                depth_lod = (depth_loop >> lod) ? (depth_loop >> lod) : 1;
             }
 
-            for (size_t z = 0; z < depth_loop; z++)
+            for (size_t z = 0; z < depth_lod; z++)
             {
-                for (size_t y = 0; y < height_loop; y++)
+                for (size_t y = 0; y < height_lod; y++)
                 {
-                    for (size_t x = 0; x < width_loop; x++, i++)
+                    for (size_t x = 0; x < width_lod; x++, i++)
                     {
                         xOffsets[i] =
-                            (float)((double)xOffsets[i] / (double)width_loop);
+                            (float)((double)xOffsets[i] / (double)width_lod);
                         if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
                         {
                             yOffsets[i] = (float)((double)yOffsets[i]
-                                                  / (double)height_loop);
+                                                  / (double)height_lod);
                         }
                         if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
                         {
                             zOffsets[i] = (float)((double)zOffsets[i]
-                                                  / (double)depth_loop);
+                                                  / (double)depth_lod);
                         }
                     }
                 }
