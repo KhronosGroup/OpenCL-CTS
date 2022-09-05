@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2022 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <stdexcept>
 
 #define ASSERT(x) assert((x))
+#define GB(x) ((unsigned long long) (x) << 30)
 
 pfnclCreateSemaphoreWithPropertiesKHR clCreateSemaphoreWithPropertiesKHRptr;
 pfnclEnqueueWaitSemaphoresKHR clEnqueueWaitSemaphoresKHRptr;
@@ -31,7 +32,7 @@ pfnclEnqueueAcquireExternalMemObjectsKHR
     clEnqueueAcquireExternalMemObjectsKHRptr;
 pfnclEnqueueReleaseExternalMemObjectsKHR
     clEnqueueReleaseExternalMemObjectsKHRptr;
-pfnclReleaseSemaphoreObjectKHR clReleaseSemaphoreObjectKHRptr;
+pfnclReleaseSemaphoreKHR clReleaseSemaphoreKHRptr;
 
 void init_cl_vk_ext(cl_platform_id opencl_platform)
 {
@@ -51,13 +52,13 @@ void init_cl_vk_ext(cl_platform_id opencl_platform)
         throw std::runtime_error("Failed to get the function pointer of "
                                  "clEnqueueSignalSemaphoresKHRptr!");
     }
-    clReleaseSemaphoreObjectKHRptr = (pfnclReleaseSemaphoreObjectKHR)
+    clReleaseSemaphoreKHRptr = (pfnclReleaseSemaphoreKHR)
         clGetExtensionFunctionAddressForPlatform(opencl_platform,
-                                                 "clReleaseSemaphoreObjectKHR");
-    if (NULL == clReleaseSemaphoreObjectKHRptr)
+                                                 "clReleaseSemaphoreKHR");
+    if (NULL == clReleaseSemaphoreKHRptr)
     {
         throw std::runtime_error("Failed to get the function pointer of "
-                                 "clReleaseSemaphoreObjectKHRptr!");
+                                 "clReleaseSemaphoreKHRptr!");
     }
     clCreateSemaphoreWithPropertiesKHRptr =
         (pfnclCreateSemaphoreWithPropertiesKHR)
@@ -68,6 +69,39 @@ void init_cl_vk_ext(cl_platform_id opencl_platform)
         throw std::runtime_error("Failed to get the function pointer of "
                                  "clCreateSemaphoreWithPropertiesKHRptr!");
     }
+}
+
+cl_int setMaxImageDimensions(cl_device_id deviceID,
+                             size_t &max_width, size_t &max_height){
+    cl_int result = CL_SUCCESS;
+    cl_ulong val;
+    size_t paramSize;
+
+    result = clGetDeviceInfo(deviceID, CL_DEVICE_GLOBAL_MEM_SIZE,
+                             sizeof(cl_ulong), &val, &paramSize);
+
+    if (result != CL_SUCCESS)
+    {
+        return result;
+    }
+    
+    if (val < GB(4))
+    {
+        max_width = 256;
+        max_height = 256;
+    }
+    else if (val < GB(8))
+    {
+        max_width = 512;
+        max_height = 256;
+    }
+    else
+    {
+        max_width = 1024;
+        max_height = 512;
+    }
+
+    return result;
 }
 
 cl_int getCLFormatFromVkFormat(VkFormat vkFormat,
@@ -798,10 +832,10 @@ clExternalSemaphore::clExternalSemaphore(
 
 clExternalSemaphore::~clExternalSemaphore()
 {
-    cl_int err = clReleaseSemaphoreObjectKHRptr(m_externalSemaphore);
+    cl_int err = clReleaseSemaphoreKHRptr(m_externalSemaphore);
     if (err != CL_SUCCESS)
     {
-        throw std::runtime_error("clReleaseSemaphoreObjectKHR failed!");
+        throw std::runtime_error("clReleaseSemaphoreKHR failed!");
     }
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2022 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -552,17 +552,17 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
 
 
     // Pass invalid object to release call
-    errNum = clReleaseSemaphoreObjectKHRptr(NULL);
+    errNum = clReleaseSemaphoreKHRptr(NULL);
     test_failure_error(errNum, CL_INVALID_VALUE,
-                       "clReleaseSemaphoreObjectKHRptr fails with "
+                       "clReleaseSemaphoreKHRptr fails with "
                        "CL_INVALID_VALUE when NULL semaphore object is passed");
 
     // Release both semaphore objects
-    errNum = clReleaseSemaphoreObjectKHRptr(clVk2Clsemaphore);
-    test_error(errNum, "clReleaseSemaphoreObjectKHRptr failed");
+    errNum = clReleaseSemaphoreKHRptr(clVk2Clsemaphore);
+    test_error(errNum, "clReleaseSemaphoreKHRptr failed");
 
-    errNum = clReleaseSemaphoreObjectKHRptr(clCl2Vksemaphore);
-    test_error(errNum, "clReleaseSemaphoreObjectKHRptr failed");
+    errNum = clReleaseSemaphoreKHRptr(clCl2Vksemaphore);
+    test_error(errNum, "clReleaseSemaphoreKHRptr failed");
 
     return TEST_PASS;
 }

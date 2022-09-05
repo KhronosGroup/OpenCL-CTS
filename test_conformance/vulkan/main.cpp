@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2022 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -134,7 +134,6 @@ cl_device_id *devices;
 const size_t bufsize = BUFFERSIZE;
 char buf[BUFFERSIZE];
 cl_uchar uuid[CL_UUID_SIZE_KHR];
-VulkanDevice vkDevice;
 unsigned int numCQ;
 bool multiImport;
 bool multiCtx;
@@ -220,8 +219,11 @@ int main(int argc, const char *argv[])
     if (!checkVkSupport())
     {
         log_info("Vulkan supported GPU not found \n");
+        log_info("TEST SKIPPED \n");
         return 0;
     }
+
+    VulkanDevice vkDevice;
 
     cl_device_type requestedDeviceType = CL_DEVICE_TYPE_GPU;
     char *force_cpu = getenv("CL_DEVICE_TYPE");
