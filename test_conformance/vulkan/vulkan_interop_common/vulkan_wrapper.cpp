@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2022 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@
 #endif
 #include <vulkan/vulkan.h>
 #include "vulkan_wrapper.hpp"
-#ifdef __linux__ && !__ANDROID__
+#if defined(__linux__) && !defined(__ANDROID__)
 #include <gnu/libc-version.h>
+#include <dlfcn.h>
+#elif defined(__ANDROID__)
 #include <dlfcn.h>
 #endif
 #if defined _WIN32
@@ -57,7 +59,7 @@ VulkanInstance::VulkanInstance(const VulkanInstance &instance)
 
 VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
 {
-#if defined(__linux__)
+#if defined(__linux__) && !defined(__ANDROID__)
     char *glibcVersion = strdup(gnu_get_libc_version());
     int majNum = (int)atoi(strtok(glibcVersion, "."));
     int minNum = (int)atoi(strtok(NULL, "."));
@@ -199,7 +201,8 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
 
     if (physicalDeviceCount == uint32_t(0))
     {
-        throw std::runtime_error("failed to find GPUs with Vulkan support!");
+        std::cout<<"failed to find GPUs with Vulkan support!\n";
+        return;
     }
 
     std::vector<VkPhysicalDevice> vkPhysicalDeviceList(physicalDeviceCount,
@@ -844,23 +847,17 @@ VulkanShaderModule::VulkanShaderModule(const VulkanShaderModule &shaderModule)
 {}
 
 VulkanShaderModule::VulkanShaderModule(const VulkanDevice &device,
-                                       const std::string &code)
+                                       const std::vector<char> &code)
     : m_device(device)
 {
-    std::string paddedCode = code;
-    while (paddedCode.size() % 4)
-    {
-        paddedCode += " ";
-    }
-
     VkShaderModuleCreateInfo vkShaderModuleCreateInfo = {};
     vkShaderModuleCreateInfo.sType =
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     vkShaderModuleCreateInfo.pNext = NULL;
     vkShaderModuleCreateInfo.flags = 0;
-    vkShaderModuleCreateInfo.codeSize = paddedCode.size();
+    vkShaderModuleCreateInfo.codeSize = code.size();
     vkShaderModuleCreateInfo.pCode =
-        (const uint32_t *)(void *)paddedCode.c_str();
+        reinterpret_cast<const uint32_t*>(code.data());
 
     vkCreateShaderModule(m_device, &vkShaderModuleCreateInfo, NULL,
                          &m_vkShaderModule);

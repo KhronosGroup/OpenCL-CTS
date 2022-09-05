@@ -39,35 +39,6 @@ struct Params
 };
 }
 
-static const char *vkBufferShader =
-    "#version 450\n"
-    "#extension GL_ARB_separate_shader_objects : enable\n"
-    "#extension GL_NV_gpu_shader5 : enable\n"
-    "layout(binding = 0) buffer Params\n"
-    "{\n"
-    "    uint32_t numBuffers;\n"
-    "    uint32_t bufferSize;\n"
-    "    uint32_t interBufferOffset;\n"
-    "};\n"
-    "layout(binding = 1) buffer Buffer\n"
-    "{\n"
-    "    uint8_t ptr[];\n"
-    "} bufferPtrList[" STRING(
-        MAX_BUFFERS) "];\n"
-                     "layout(local_size_x = 512) in;\n"
-                     "void main() {\n"
-                     "    for (uint32_t bufIdx = 0; bufIdx < numBuffers;"
-                     " bufIdx++) {\n"
-                     "        uint32_t ptrIdx = gl_GlobalInvocationID.x;\n"
-                     "        uint32_t limit = bufferSize;\n"
-                     "        while (ptrIdx < limit) {\n"
-                     "            bufferPtrList[bufIdx].ptr[ptrIdx]++;\n"
-                     "            ptrIdx += (gl_NumWorkGroups.x * "
-                     "gl_WorkGroupSize.x);\n"
-                     "        }\n"
-                     "    }\n"
-                     "}\n";
-
 const char *kernel_text_numbuffer_1 = " \
 __kernel void clUpdateBuffer(int bufferSize, __global unsigned char *a) {  \n\
     int gid = get_global_id(0); \n\
@@ -149,6 +120,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
+    std::vector<char> vkBufferShader = readFile("buffer.spv");
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
         MAX_BUFFERS + 1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -446,6 +418,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
+    std::vector<char> vkBufferShader = readFile("buffer.spv");
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
         MAX_BUFFERS + 1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -716,6 +689,7 @@ int run_test_with_multi_import_same_ctx(
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
+    std::vector<char> vkBufferShader = readFile("buffer.spv");
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
         MAX_BUFFERS + 1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -1050,6 +1024,7 @@ int run_test_with_multi_import_diff_ctx(
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
+    std::vector<char> vkBufferShader = readFile("buffer.spv");
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
         MAX_BUFFERS + 1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER);

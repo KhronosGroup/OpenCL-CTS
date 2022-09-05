@@ -18,6 +18,7 @@
 #include "vulkan_wrapper.hpp"
 #include <assert.h>
 #include <iostream>
+#include <fstream>
 #include <set>
 #include <string>
 #include <CL/cl.h>
@@ -541,59 +542,6 @@ const char *getVulkanFormatGLSLFormat(VulkanFormat format)
     return (const char *)size_t(0);
 }
 
-const char *getVulkanFormatGLSLTypePrefix(VulkanFormat format)
-{
-    switch (format)
-    {
-        case VULKAN_FORMAT_R8_UINT:
-        case VULKAN_FORMAT_R8G8_UINT:
-        case VULKAN_FORMAT_R8G8B8A8_UINT:
-        case VULKAN_FORMAT_R16_UINT:
-        case VULKAN_FORMAT_R16G16_UINT:
-        case VULKAN_FORMAT_R16G16B16A16_UINT:
-        case VULKAN_FORMAT_R32_UINT:
-        case VULKAN_FORMAT_R32G32_UINT:
-        case VULKAN_FORMAT_R32G32B32A32_UINT: return "u";
-
-        case VULKAN_FORMAT_R8_SINT:
-        case VULKAN_FORMAT_R8G8_SINT:
-        case VULKAN_FORMAT_R8G8B8A8_SINT:
-        case VULKAN_FORMAT_R16_SINT:
-        case VULKAN_FORMAT_R16G16_SINT:
-        case VULKAN_FORMAT_R16G16B16A16_SINT:
-        case VULKAN_FORMAT_R32_SINT:
-        case VULKAN_FORMAT_R32G32_SINT:
-        case VULKAN_FORMAT_R32G32B32A32_SINT: return "i";
-
-        case VULKAN_FORMAT_R32_SFLOAT:
-        case VULKAN_FORMAT_R32G32_SFLOAT:
-        case VULKAN_FORMAT_R32G32B32A32_SFLOAT: return "";
-
-        default: ASSERT(0); std::cout << "Unknown format";
-    }
-
-    return "";
-}
-
-std::string prepareVulkanShader(
-    std::string shaderCode,
-    const std::map<std::string, std::string> &patternToSubstituteMap)
-{
-    for (std::map<std::string, std::string>::const_iterator psIt =
-             patternToSubstituteMap.begin();
-         psIt != patternToSubstituteMap.end(); ++psIt)
-    {
-        std::string::size_type pos = 0u;
-        while ((pos = shaderCode.find(psIt->first, pos)) != std::string::npos)
-        {
-            shaderCode.replace(pos, psIt->first.length(), psIt->second);
-            pos += psIt->second.length();
-        }
-    }
-
-    return shaderCode;
-}
-
 std::ostream &operator<<(std::ostream &os,
                          VulkanMemoryTypeProperty memoryTypeProperty)
 {
@@ -690,4 +638,49 @@ std::ostream &operator<<(std::ostream &os, VulkanFormat format)
     }
 
     return os;
+}
+
+static char *findFilePath(const std::string filename) {
+    const char *searchPath[] = {
+      "./",                // Same dir
+      "./shaders/",        // In shaders folder in same dir
+      "../test_conformance/vulkan/shaders/"  // In src folder
+    };
+    for (unsigned int i = 0; i < sizeof(searchPath) / sizeof(char *); ++i) {
+        std::string path(searchPath[i]);
+        
+        path.append(filename);
+        FILE *fp;
+        fp = fopen(path.c_str(), "rb");
+
+        if (fp != NULL) {
+          fclose(fp);
+          // File found
+          char *file_path = (char *)(malloc(path.length() + 1));
+          strncpy(file_path, path.c_str(), path.length() + 1);
+          return file_path;
+        }
+        if (fp) {
+          fclose(fp);
+        }
+    }
+    // File not found
+    return 0;    
+}
+
+std::vector<char> readFile(const std::string& filename) {
+    char* file_path = findFilePath(filename);
+
+    std::ifstream file(file_path, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("failed to open shader spv file!\n");
+    }
+    size_t fileSize = (size_t)file.tellg();
+    std::vector<char> buffer(fileSize);
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+    file.close();
+    printf("filesize is %d",fileSize);
+    return buffer;
 }

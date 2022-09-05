@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2022 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -240,7 +240,7 @@ protected:
     VulkanShaderModule(const VulkanShaderModule &shaderModule);
 
 public:
-    VulkanShaderModule(const VulkanDevice &device, const std::string &code);
+    VulkanShaderModule(const VulkanDevice &device, const std::vector<char> &code);
     virtual ~VulkanShaderModule();
     operator VkShaderModule() const;
 };
