@@ -640,27 +640,31 @@ std::ostream &operator<<(std::ostream &os, VulkanFormat format)
     return os;
 }
 
-static char *findFilePath(const std::string filename) {
+static char *findFilePath(const std::string filename)
+{
     const char *searchPath[] = {
-      "./",                // Same dir
-      "./shaders/",        // In shaders folder in same dir
-      "../test_conformance/vulkan/shaders/"  // In src folder
+        "./", // Same dir
+        "./shaders/", // In shaders folder in same dir
+        "../test_conformance/vulkan/shaders/" // In src folder
     };
-    for (unsigned int i = 0; i < sizeof(searchPath) / sizeof(char *); ++i) {
+    for (unsigned int i = 0; i < sizeof(searchPath) / sizeof(char *); ++i)
+    {
         std::string path(searchPath[i]);
-        
+
         path.append(filename);
         FILE *fp;
         fp = fopen(path.c_str(), "rb");
 
-        if (fp != NULL) {
-          fclose(fp);
-          // File found
-          char *file_path = (char *)(malloc(path.length() + 1));
-          strncpy(file_path, path.c_str(), path.length() + 1);
-          return file_path;
+        if (fp != NULL)
+	{
+            fclose(fp);
+            // File found
+            char *file_path = (char *)(malloc(path.length() + 1));
+            strncpy(file_path, path.c_str(), path.length() + 1);
+            return file_path;
         }
-        if (fp) {
+        if (fp)
+	{
           fclose(fp);
         }
     }
@@ -668,12 +672,14 @@ static char *findFilePath(const std::string filename) {
     return 0;    
 }
 
-std::vector<char> readFile(const std::string& filename) {
+std::vector<char> readFile(const std::string& filename)
+{
     char* file_path = findFilePath(filename);
 
     std::ifstream file(file_path, std::ios::ate | std::ios::binary);
 
-    if (!file.is_open()) {
+    if (!file.is_open())
+    {
         throw std::runtime_error("failed to open shader spv file!\n");
     }
     size_t fileSize = (size_t)file.tellg();
@@ -681,6 +687,6 @@ std::vector<char> readFile(const std::string& filename) {
     file.seekg(0);
     file.read(buffer.data(), fileSize);
     file.close();
-    printf("filesize is %d",fileSize);
+    printf("filesize is %d", fileSize);
     return buffer;
 }

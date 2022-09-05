@@ -23,7 +23,7 @@
 #include <stdexcept>
 
 #define ASSERT(x) assert((x))
-#define GB(x) ((unsigned long long) (x) << 30)
+#define GB(x) ((unsigned long long)(x) << 30)
 
 pfnclCreateSemaphoreWithPropertiesKHR clCreateSemaphoreWithPropertiesKHRptr;
 pfnclEnqueueWaitSemaphoresKHR clEnqueueWaitSemaphoresKHRptr;
@@ -52,9 +52,9 @@ void init_cl_vk_ext(cl_platform_id opencl_platform)
         throw std::runtime_error("Failed to get the function pointer of "
                                  "clEnqueueSignalSemaphoresKHRptr!");
     }
-    clReleaseSemaphoreKHRptr = (pfnclReleaseSemaphoreKHR)
-        clGetExtensionFunctionAddressForPlatform(opencl_platform,
-                                                 "clReleaseSemaphoreKHR");
+    clReleaseSemaphoreKHRptr =
+        (pfnclReleaseSemaphoreKHR)clGetExtensionFunctionAddressForPlatform(
+             opencl_platform, "clReleaseSemaphoreKHR");
     if (NULL == clReleaseSemaphoreKHRptr)
     {
         throw std::runtime_error("Failed to get the function pointer of "
@@ -71,8 +71,9 @@ void init_cl_vk_ext(cl_platform_id opencl_platform)
     }
 }
 
-cl_int setMaxImageDimensions(cl_device_id deviceID,
-                             size_t &max_width, size_t &max_height){
+cl_int setMaxImageDimensions(cl_device_id deviceID, size_t &max_width,
+                             size_t &max_height)
+{
     cl_int result = CL_SUCCESS;
     cl_ulong val;
     size_t paramSize;
@@ -84,7 +85,7 @@ cl_int setMaxImageDimensions(cl_device_id deviceID,
     {
         return result;
     }
-    
+
     if (val < GB(4))
     {
         max_width = 256;
