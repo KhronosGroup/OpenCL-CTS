@@ -321,7 +321,7 @@ template <typename Ty> inline Ty calculate(Ty a, Ty b, ArithmeticOp operation)
         case ArithmeticOp::logical_and: return a && b;
         case ArithmeticOp::logical_or: return a || b;
         case ArithmeticOp::logical_xor: return !a ^ !b;
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return 0;
 }
@@ -343,7 +343,7 @@ inline cl_double calculate(cl_double a, cl_double b, ArithmeticOp operation)
         case ArithmeticOp::mul_: {
             return a * b;
         }
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return 0;
 }
@@ -365,7 +365,7 @@ inline cl_float calculate(cl_float a, cl_float b, ArithmeticOp operation)
         case ArithmeticOp::mul_: {
             return a * b;
         }
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return 0;
 }
@@ -382,7 +382,7 @@ inline subgroups::cl_half calculate(subgroups::cl_half a, subgroups::cl_half b,
         case ArithmeticOp::min_:
             return to_float(a) < to_float(b) || is_half_nan(b.data) ? a : b;
         case ArithmeticOp::mul_: return to_half(to_float(a) * to_float(b));
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return to_half(0);
 }
@@ -481,7 +481,7 @@ template <typename Ty, ShuffleOp operation> struct SHF
 
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int i, ii, j, k, n, delta;
+        int i, ii, j, k, n;
         cl_uint l;
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
@@ -501,7 +501,31 @@ template <typename Ty, ShuffleOp operation> struct SHF
                     l = (((cl_uint)(genrand_int32(gMTdata) & 0x7fffffff) + 1)
                          % (ns * 2 + 1))
                         - 1;
-                    m[midx] = l;
+                    switch (operation)
+                    {
+                        case ShuffleOp::shuffle:
+                        case ShuffleOp::shuffle_xor:
+                        case ShuffleOp::shuffle_up:
+                        case ShuffleOp::shuffle_down:
+                            // storing information about shuffle index/delta
+                            m[midx] = (cl_int)l;
+                            break;
+                        case ShuffleOp::rotate:
+                        case ShuffleOp::clustered_rotate:
+                            // Storing information about rotate delta.
+                            // The delta must be the same for each thread in
+                            // the subgroup.
+                            if (i == 0)
+                            {
+                                m[midx] = (cl_int)l;
+                            }
+                            else
+                            {
+                                m[midx] = m[midx - 4];
+                            }
+                            break;
+                        default: break;
+                    }
                     cl_ulong number = genrand_int64(gMTdata);
                     set_value(t[ii + i], number);
                 }
@@ -565,6 +589,15 @@ template <typename Ty, ShuffleOp operation> struct SHF
                             if (l >= ns) skip = true;
                             tr_idx = i + l;
                             break;
+                        // rotate - treat l as delta
+                        case ShuffleOp::rotate:
+                            tr_idx = (i + l) % test_params.subgroup_size;
+                            break;
+                        case ShuffleOp::clustered_rotate: {
+                            tr_idx = ((i & ~(test_params.cluster_size - 1))
+                                      + ((i + l) % test_params.cluster_size));
+                            break;
+                        }
                         default: break;
                     }
 

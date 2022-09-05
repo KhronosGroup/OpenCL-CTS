@@ -50,6 +50,11 @@ const std::vector<VulkanFormat> getSupportedVulkanFormatList();
 
 uint32_t getVulkanFormatElementSize(VulkanFormat format);
 const char* getVulkanFormatGLSLFormat(VulkanFormat format);
+const char* getVulkanFormatGLSLTypePrefix(VulkanFormat format);
+
+std::string prepareVulkanShader(
+    std::string shaderCode,
+    const std::map<std::string, std::string>& patternToSubstituteMap);
 
 std::ostream& operator<<(std::ostream& os,
                          VulkanMemoryTypeProperty memoryTypeProperty);

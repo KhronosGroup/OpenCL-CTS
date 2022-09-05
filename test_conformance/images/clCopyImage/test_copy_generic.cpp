@@ -228,6 +228,11 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
         }
         size_t mappedSlicePad = mappedSlice - (mappedRow * height);
 
+        // For 1Darray, the height variable actually contains the arraysize,
+        // so it can't be used for calculating the slice padding.
+        if (imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY)
+            mappedSlicePad = mappedSlice - (mappedRow * 1);
+
         // Copy the image.
         size_t scanlineSize = row_pitch_lod;
         size_t sliceSize = slice_pitch_lod - scanlineSize * height;

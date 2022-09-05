@@ -850,6 +850,7 @@ VulkanShaderModule::VulkanShaderModule(const VulkanDevice &device,
                                        const std::vector<char> &code)
     : m_device(device)
 {
+
     VkShaderModuleCreateInfo vkShaderModuleCreateInfo = {};
     vkShaderModuleCreateInfo.sType =
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

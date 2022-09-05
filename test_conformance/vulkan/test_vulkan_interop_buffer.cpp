@@ -121,6 +121,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
     std::vector<char> vkBufferShader = readFile("buffer.spv");
+
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
         MAX_BUFFERS + 1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -690,6 +691,7 @@ int run_test_with_multi_import_same_ctx(
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
     std::vector<char> vkBufferShader = readFile("buffer.spv");
+
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
         MAX_BUFFERS + 1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -1025,6 +1027,7 @@ int run_test_with_multi_import_diff_ctx(
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
     std::vector<char> vkBufferShader = readFile("buffer.spv");
+
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
         MAX_BUFFERS + 1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER);

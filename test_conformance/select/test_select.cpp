@@ -79,7 +79,6 @@ static int s_wimpy_reduction_factor = 256;
 // sub tests which is for each individual test.  The following
 // tracks the subtests
 int s_test_cnt = 0;
-int s_test_fail = 0;
 
 //-----------------------------------------
 // Static helper functions
@@ -297,6 +296,7 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
 static int doTest(cl_command_queue queue, cl_context context, Type stype, Type cmptype, cl_device_id device)
 {
     int err = CL_SUCCESS;
+    int s_test_fail = 0;
     MTdata    d;
     const size_t element_count[VECTOR_SIZE_COUNT] = { 1, 2, 3, 4, 8, 16 };
     cl_mem src1 = NULL;
@@ -468,6 +468,11 @@ exit:
         clReleaseProgram(programs[vecsize]);
     }
     ++s_test_cnt;
+    if (s_test_fail)
+    {
+        err = TEST_FAIL;
+        gFailCount++;
+    }
     return err;
 }
 

@@ -181,9 +181,8 @@ test_arraycopy(cl_device_id device, cl_context context, cl_command_queue queue, 
         }
     }
 
-  // Keep track of multiple errors.
-  if (error_count != 0)
-    err = error_count;
+    // Keep track of multiple errors.
+    if (error_count != 0) err = error_count;
 
     if (err)
         log_error("\tCL_MEM_USE_HOST_PTR buffer with kernel copy FAILED\n");

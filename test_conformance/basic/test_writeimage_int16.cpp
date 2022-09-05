@@ -128,9 +128,10 @@ int test_writeimage_int16(cl_device_id device, cl_context context, cl_command_qu
         return -1;
     }
 
-  err = create_single_kernel_helper(context, &program, &kernel[0], 1, &rgba16_write_kernel_code, "test_rgba16_write" );
-  if (err)
-    return -1;
+    err = create_single_kernel_helper(context, &program, &kernel[0], 1,
+                                      &rgba16_write_kernel_code,
+                                      "test_rgba16_write");
+    if (err) return -1;
     kernel[1] = clCreateKernel(program, "test_rgba16_write", NULL);
     if (!kernel[1])
     {

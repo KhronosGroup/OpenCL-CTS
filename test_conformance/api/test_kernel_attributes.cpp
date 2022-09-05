@@ -275,16 +275,16 @@ static bool run_test(cl_context context, cl_device_id deviceID,
         clKernelWrapper kernel;
         cl_int err = create_single_kernel_helper(context, &program, &kernel, 1,
                                                  &kernel_src, "test_kernel");
-        test_error(err, "create_single_kernel_helper");
+        test_error_ret(err, "create_single_kernel_helper", false);
 
         // Get the size of the kernel attribute string returned
         size_t size = 0;
         err = clGetKernelInfo(kernel, CL_KERNEL_ATTRIBUTES, 0, nullptr, &size);
-        test_error(err, "clGetKernelInfo");
+        test_error_ret(err, "clGetKernelInfo", false);
         std::vector<char> attributes(size);
         err = clGetKernelInfo(kernel, CL_KERNEL_ATTRIBUTES, attributes.size(),
                               attributes.data(), nullptr);
-        test_error(err, "clGetKernelInfo");
+        test_error_ret(err, "clGetKernelInfo", false);
         std::string attribute_string(attributes.data());
         attribute_string.erase(
             std::remove(attribute_string.begin(), attribute_string.end(), ' '),

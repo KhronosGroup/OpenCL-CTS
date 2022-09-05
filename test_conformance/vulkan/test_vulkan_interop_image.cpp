@@ -274,6 +274,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
         log_info("Load %s file", fileName.c_str());
         vkImage2DShader = readFile(fileName);
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
+
         VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
                                                 vkImage2DShaderModule);
 
@@ -776,6 +777,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 }
             }
         }
+
         vkImage2DShader.clear();
     }
 CLEANUP:
@@ -870,6 +872,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
         log_info("Load %s file", fileName.c_str());
         vkImage2DShader = readFile(fileName);
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
+
         VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
                                                 vkImage2DShaderModule);
 
@@ -879,6 +882,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
             log_info("Width: %d\n", width);
             if (width > max_width) 
                 continue;
+
             region[0] = width;
             for (size_t hIdx = 0; hIdx < ARRAY_SIZE(heightList); hIdx++)
             {
@@ -1442,6 +1446,7 @@ int test_image_common(cl_device_id device_, cl_context context_,
     }
     log_info(" Set max_width to %d and max_height to %d\n",
         max_width, max_height);
+
     context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU,
                                       NULL, NULL, &err);
     if (CL_SUCCESS != err)
