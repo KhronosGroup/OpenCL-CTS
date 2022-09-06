@@ -79,43 +79,45 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
         CL_MEM_OBJECT_IMAGE1D_ARRAY, CL_MEM_OBJECT_IMAGE2D_ARRAY
     };
 
-    std::vector<cl_mem_flags> flagTypes{
-        CL_MEM_READ_ONLY,
-        CL_MEM_WRITE_ONLY,
-        CL_MEM_READ_WRITE,
-        CL_MEM_KERNEL_READ_AND_WRITE
-    };
+    std::vector<cl_mem_flags> flagTypes{ CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY,
+                                         CL_MEM_READ_WRITE,
+                                         CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for(auto flag: flagTypes)
+    for (auto flag : flagTypes)
     {
-        for (auto imageType: imageTypes)
+        for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
-            if (TEST_PASS != get_format_list(context, imageType, formatList, flag)
+            if (TEST_PASS
+                    != get_format_list(context, imageType, formatList, flag)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list");
             }
 
             cl_uint row_pitch_alignment_2d = 0;
-            cl_int err = clGetDeviceInfo(device, CL_DEVICE_IMAGE_PITCH_ALIGNMENT,
-                                         sizeof(row_pitch_alignment_2d),
-                                         &row_pitch_alignment_2d, nullptr);
+            cl_int err =
+                clGetDeviceInfo(device, CL_DEVICE_IMAGE_PITCH_ALIGNMENT,
+                                sizeof(row_pitch_alignment_2d),
+                                &row_pitch_alignment_2d, nullptr);
             test_error(err, "Error clGetDeviceInfo");
 
             cl_uint base_address_alignment_2d = 0;
-            err = clGetDeviceInfo(device, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT,
-                                  sizeof(base_address_alignment_2d),
-                                  &base_address_alignment_2d, nullptr);
+            err =
+                clGetDeviceInfo(device, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT,
+                                sizeof(base_address_alignment_2d),
+                                &base_address_alignment_2d, nullptr);
             test_error(err, "Error clGetDeviceInfo");
 
-            for (auto format: formatList)
+            for (auto format : formatList)
             {
-                cl_image_desc image_desc = {0};
+                cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                    ? CL_MEM_READ_WRITE
+                    : flag;
 
                 size_t row_pitch_alignment = 0;
                 size_t base_address_alignment = 0;
@@ -128,7 +130,8 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
                     return get_error;
                 }
 
-                const size_t element_size = get_format_size(context, &format, imageType, flag);
+                const size_t element_size =
+                    get_format_size(context, &format, imageType, flag);
 
                 /*  Alignements in pixels vs bytes */
                 if (base_address_alignment
@@ -174,31 +177,31 @@ int memInfo_image_from_buffer_positive(cl_device_id device, cl_context context,
         CL_MEM_OBJECT_IMAGE1D_ARRAY, CL_MEM_OBJECT_IMAGE2D_ARRAY
     };
 
-    std::vector<cl_mem_flags> flagTypes{
-        CL_MEM_READ_ONLY,
-        CL_MEM_WRITE_ONLY,
-        CL_MEM_READ_WRITE,
-        CL_MEM_KERNEL_READ_AND_WRITE
-    };
+    std::vector<cl_mem_flags> flagTypes{ CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY,
+                                         CL_MEM_READ_WRITE,
+                                         CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for(auto flag: flagTypes)
+    for (auto flag : flagTypes)
     {
-        for (auto imageType: imageTypes)
+        for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
-            if (TEST_PASS != get_format_list(context, imageType, formatList, flag)
+            if (TEST_PASS
+                    != get_format_list(context, imageType, formatList, flag)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list");
             }
 
-            for (auto format: formatList)
+            for (auto format : formatList)
             {
-                cl_image_desc image_desc = {0};
+                cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                    ? CL_MEM_READ_WRITE
+                    : flag;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
@@ -211,31 +214,31 @@ int memInfo_image_from_buffer_positive(cl_device_id device, cl_context context,
                     return get_error;
                 }
 
-                const size_t element_size = get_format_size(context, &format, imageType, flag);
+                const size_t element_size =
+                    get_format_size(context, &format, imageType, flag);
 
                 const size_t row_pitch = aligned_size(
                     TEST_IMAGE_SIZE * element_size, row_pitch_alignment);
-                const size_t slice_pitch = aligned_size(row_pitch * TEST_IMAGE_SIZE,
-                                                        slice_pitch_alignment);
+                const size_t slice_pitch = aligned_size(
+                    row_pitch * TEST_IMAGE_SIZE, slice_pitch_alignment);
 
                 const size_t buffer_size = slice_pitch * TEST_IMAGE_SIZE;
 
                 cl_int err = CL_SUCCESS;
-                cl_mem buffer = clCreateBuffer(context, flag,
-                                               buffer_size, nullptr, &err);
+                cl_mem buffer =
+                    clCreateBuffer(context, flag, buffer_size, nullptr, &err);
                 test_error(err, "Unable to create buffer");
 
                 image_desc.buffer = buffer;
 
-                cl_mem image_buffer =
-                    clCreateImage(context, flag, &format, &image_desc,
-                                  nullptr, &err);
+                cl_mem image_buffer = clCreateImage(context, flag, &format,
+                                                    &image_desc, nullptr, &err);
                 test_error(err, "Unable to create image");
 
                 cl_mem returned_buffer;
-                err = clGetMemObjectInfo(image_buffer, CL_MEM_ASSOCIATED_MEMOBJECT,
-                                         sizeof(returned_buffer), &returned_buffer,
-                                         nullptr);
+                err = clGetMemObjectInfo(
+                    image_buffer, CL_MEM_ASSOCIATED_MEMOBJECT,
+                    sizeof(returned_buffer), &returned_buffer, nullptr);
                 test_error(err, "Error clGetMemObjectInfo");
 
                 if (returned_buffer != buffer)
@@ -282,31 +285,31 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
         CL_MEM_OBJECT_IMAGE1D_ARRAY, CL_MEM_OBJECT_IMAGE2D_ARRAY
     };
 
-    std::vector<cl_mem_flags> flagTypes{
-        CL_MEM_READ_ONLY,
-        CL_MEM_WRITE_ONLY,
-        CL_MEM_READ_WRITE,
-        CL_MEM_KERNEL_READ_AND_WRITE
-    };
+    std::vector<cl_mem_flags> flagTypes{ CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY,
+                                         CL_MEM_READ_WRITE,
+                                         CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for(auto flag: flagTypes)
+    for (auto flag : flagTypes)
     {
-        for (auto imageType: imageTypes)
+        for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
-            if (TEST_PASS != get_format_list(context, imageType, formatList, flag)
+            if (TEST_PASS
+                    != get_format_list(context, imageType, formatList, flag)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list");
             }
 
-            for (auto format: formatList)
+            for (auto format : formatList)
             {
-                cl_image_desc image_desc = {0};
+                cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                    ? CL_MEM_READ_WRITE
+                    : flag;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
@@ -319,18 +322,19 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
                     return get_error;
                 }
 
-                const size_t element_size = get_format_size(context, &format, imageType, flag);
+                const size_t element_size =
+                    get_format_size(context, &format, imageType, flag);
 
                 const size_t row_pitch = aligned_size(
                     TEST_IMAGE_SIZE * element_size, row_pitch_alignment);
-                const size_t slice_pitch = aligned_size(row_pitch * TEST_IMAGE_SIZE,
-                                                        slice_pitch_alignment);
+                const size_t slice_pitch = aligned_size(
+                    row_pitch * TEST_IMAGE_SIZE, slice_pitch_alignment);
 
                 const size_t buffer_size = slice_pitch * TEST_IMAGE_SIZE;
 
                 cl_int err = CL_SUCCESS;
-                cl_mem buffer = clCreateBuffer(context, flag,
-                                               buffer_size, nullptr, &err);
+                cl_mem buffer =
+                    clCreateBuffer(context, flag, buffer_size, nullptr, &err);
                 test_error(err, "Unable to create buffer");
 
                 image_desc.buffer = buffer;
@@ -339,16 +343,16 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
                     || imageType == CL_MEM_OBJECT_IMAGE1D_ARRAY)
                 {
                     image_desc.image_row_pitch = row_pitch;
-                } else if (imageType == CL_MEM_OBJECT_IMAGE3D
-                           || imageType == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                }
+                else if (imageType == CL_MEM_OBJECT_IMAGE3D
+                         || imageType == CL_MEM_OBJECT_IMAGE2D_ARRAY)
                 {
                     image_desc.image_row_pitch = row_pitch;
                     image_desc.image_slice_pitch = slice_pitch;
                 }
 
-                cl_mem image_buffer =
-                    clCreateImage(context, flag, &format, &image_desc,
-                                  nullptr, &err);
+                cl_mem image_buffer = clCreateImage(context, flag, &format,
+                                                    &image_desc, nullptr, &err);
                 test_error(err, "Unable to create image");
 
                 if (imageType == CL_MEM_OBJECT_IMAGE3D
@@ -364,8 +368,9 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
 
                     if (returned_row_pitch != row_pitch)
                     {
-                        test_fail("Unexpected row pitch "
-                                  "CL_IMAGE_REQUIREMENTS_ROW_PITCH_ALIGNMENT_EXT");
+                        test_fail(
+                            "Unexpected row pitch "
+                            "CL_IMAGE_REQUIREMENTS_ROW_PITCH_ALIGNMENT_EXT");
                     }
                 }
 
@@ -430,31 +435,31 @@ int image_from_buffer_alignment_negative(cl_device_id device,
         CL_MEM_OBJECT_IMAGE1D_ARRAY, CL_MEM_OBJECT_IMAGE2D_ARRAY
     };
 
-    std::vector<cl_mem_flags> flagTypes{
-        CL_MEM_READ_ONLY,
-        CL_MEM_WRITE_ONLY,
-        CL_MEM_READ_WRITE,
-        CL_MEM_KERNEL_READ_AND_WRITE
-    };
+    std::vector<cl_mem_flags> flagTypes{ CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY,
+                                         CL_MEM_READ_WRITE,
+                                         CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for(auto flag: flagTypes)
+    for (auto flag : flagTypes)
     {
-        for (auto imageType: imageTypes)
+        for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
-            if (TEST_PASS != get_format_list(context, imageType, formatList, flag)
+            if (TEST_PASS
+                    != get_format_list(context, imageType, formatList, flag)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list");
             }
 
-            for (auto format: formatList)
+            for (auto format : formatList)
             {
-                cl_image_desc image_desc = {0};
+                cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                    ? CL_MEM_READ_WRITE
+                    : flag;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
@@ -462,26 +467,27 @@ int image_from_buffer_alignment_negative(cl_device_id device,
 
                 int get_error = get_image_requirement_alignment(
                     device, context, 0, &format, &image_desc,
-                &row_pitch_alignment, &slice_pitch_alignment,
+                    &row_pitch_alignment, &slice_pitch_alignment,
                     &base_address_alignment);
                 if (TEST_PASS != get_error)
                 {
                     return get_error;
                 }
 
-                const size_t element_size = get_format_size(context, &format, imageType, flag);
+                const size_t element_size =
+                    get_format_size(context, &format, imageType, flag);
 
                 const size_t row_pitch = aligned_size(
                     TEST_IMAGE_SIZE * element_size, row_pitch_alignment);
-                const size_t slice_pitch = aligned_size(row_pitch * TEST_IMAGE_SIZE,
-                                                        slice_pitch_alignment);
+                const size_t slice_pitch = aligned_size(
+                    row_pitch * TEST_IMAGE_SIZE, slice_pitch_alignment);
 
                 const size_t buffer_size = (slice_pitch + 1)
-                                           * TEST_IMAGE_SIZE; /* For bigger row/slice pitch */
+                    * TEST_IMAGE_SIZE; /* For bigger row/slice pitch */
 
                 cl_int err = CL_SUCCESS;
-                cl_mem buffer = clCreateBuffer(context, flag,
-                                               buffer_size, nullptr, &err);
+                cl_mem buffer =
+                    clCreateBuffer(context, flag, buffer_size, nullptr, &err);
                 test_error(err, "Unable to create buffer");
 
                 /* Test Row pitch images */
@@ -494,8 +500,8 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                     image_desc.image_row_pitch =
                         row_pitch + 1; /* wrong row pitch */
 
-                    clCreateImage(context, flag, &format, &image_desc,
-                                  nullptr, &err);
+                    clCreateImage(context, flag, &format, &image_desc, nullptr,
+                                  &err);
                     test_failure_error(err, CL_INVALID_IMAGE_FORMAT_DESCRIPTOR,
                                        "Unexpected clCreateImage return");
                 }
@@ -509,8 +515,8 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                     image_desc.image_slice_pitch =
                         slice_pitch + 1; /* wrong slice pitch */
 
-                    clCreateImage(context, flag, &format, &image_desc,
-                                  nullptr, &err);
+                    clCreateImage(context, flag, &format, &image_desc, nullptr,
+                                  &err);
                     test_failure_error(err, CL_INVALID_IMAGE_FORMAT_DESCRIPTOR,
                                        "Unexpected clCreateImage return");
                 }
@@ -520,21 +526,22 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                     aligned_size(buffer_size, base_address_alignment);
                 /* Create buffer with host ptr and additional size for the wrong
                  * alignment */
-                void *const host_ptr =
+                void* const host_ptr =
                     malloc(aligned_buffer_size + base_address_alignment);
-                void *non_aligned_host_ptr =
-                    (void *) ((char *) (aligned_ptr(host_ptr, base_address_alignment))
-                              + 1); /* wrong alignment */
+                void* non_aligned_host_ptr =
+                    (void*)((char*)(aligned_ptr(host_ptr,
+                                                base_address_alignment))
+                            + 1); /* wrong alignment */
 
-                cl_mem buffer_host =
-                    clCreateBuffer(context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE,
-                                   buffer_size, non_aligned_host_ptr, &err);
+                cl_mem buffer_host = clCreateBuffer(
+                    context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE,
+                    buffer_size, non_aligned_host_ptr, &err);
                 test_error(err, "Unable to create buffer");
 
                 image_desc.buffer = buffer_host;
 
-                clCreateImage(context, flag, &format, &image_desc,
-                              nullptr, &err);
+                clCreateImage(context, flag, &format, &image_desc, nullptr,
+                              &err);
                 test_failure_error(err, CL_INVALID_IMAGE_FORMAT_DESCRIPTOR,
                                    "Unexpected clCreateImage return");
 
@@ -578,42 +585,42 @@ int image_from_small_buffer_negative(cl_device_id device, cl_context context,
         CL_MEM_OBJECT_IMAGE1D_ARRAY,  CL_MEM_OBJECT_IMAGE2D_ARRAY
     };
 
-    std::vector<cl_mem_flags> flagTypes{
-        CL_MEM_READ_ONLY,
-        CL_MEM_WRITE_ONLY,
-        CL_MEM_READ_WRITE,
-        CL_MEM_KERNEL_READ_AND_WRITE
-    };
+    std::vector<cl_mem_flags> flagTypes{ CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY,
+                                         CL_MEM_READ_WRITE,
+                                         CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for(auto flag: flagTypes)
+    for (auto flag : flagTypes)
     {
-        for (auto imageType: imageTypes)
+        for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
-            if (TEST_PASS != get_format_list(context, imageType, formatList, flag)
+            if (TEST_PASS
+                    != get_format_list(context, imageType, formatList, flag)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list");
             }
 
-            for (auto format: formatList)
+            for (auto format : formatList)
             {
-                cl_image_desc image_desc = {0};
+                cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                    ? CL_MEM_READ_WRITE
+                    : flag;
 
                 /* Invalid buffer size */
                 cl_int err;
-                cl_mem buffer = clCreateBuffer(context, flag,
-                                               TEST_IMAGE_SIZE / 2, nullptr, &err);
+                cl_mem buffer = clCreateBuffer(
+                    context, flag, TEST_IMAGE_SIZE / 2, nullptr, &err);
                 test_error(err, "Unable to create buffer");
 
                 image_desc.buffer = buffer;
 
-                clCreateImage(context, flag, &format, &image_desc,
-                              nullptr, &err);
+                clCreateImage(context, flag, &format, &image_desc, nullptr,
+                              &err);
                 test_failure_error(err, CL_INVALID_MEM_OBJECT,
                                    "Unexpected clCreateImage return");
 
@@ -686,31 +693,31 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
         CL_MEM_OBJECT_IMAGE1D_ARRAY, CL_MEM_OBJECT_IMAGE2D_ARRAY
     };
 
-    std::vector<cl_mem_flags> flagTypes{
-        CL_MEM_READ_ONLY,
-        CL_MEM_WRITE_ONLY,
-        CL_MEM_READ_WRITE,
-        CL_MEM_KERNEL_READ_AND_WRITE
-    };
+    std::vector<cl_mem_flags> flagTypes{ CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY,
+                                         CL_MEM_READ_WRITE,
+                                         CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for(auto flag: flagTypes)
+    for (auto flag : flagTypes)
     {
-        for (auto imageType: imageTypes)
+        for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
-            if (TEST_PASS != get_format_list(context, imageType, formatList, flag)
+            if (TEST_PASS
+                    != get_format_list(context, imageType, formatList, flag)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list");
             }
 
-            for (auto format: formatList)
+            for (auto format : formatList)
             {
-                cl_image_desc image_desc = {0};
+                cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE) ? CL_MEM_READ_WRITE : flag;
+                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                    ? CL_MEM_READ_WRITE
+                    : flag;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
@@ -723,24 +730,26 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
                     return get_error;
                 }
 
-                const size_t element_size = get_format_size(context, &format, imageType, flag);
+                const size_t element_size =
+                    get_format_size(context, &format, imageType, flag);
 
                 const size_t row_pitch = aligned_size(
                     TEST_IMAGE_SIZE * element_size, row_pitch_alignment);
-                const size_t slice_pitch = aligned_size(row_pitch * TEST_IMAGE_SIZE,
-                                                        slice_pitch_alignment);
+                const size_t slice_pitch = aligned_size(
+                    row_pitch * TEST_IMAGE_SIZE, slice_pitch_alignment);
 
                 const size_t buffer_size = slice_pitch * TEST_IMAGE_SIZE;
 
                 cl_int err = CL_SUCCESS;
-                cl_mem buffer = clCreateBuffer(context, flag,
-                                               buffer_size, nullptr, &err);
+                cl_mem buffer =
+                    clCreateBuffer(context, flag, buffer_size, nullptr, &err);
                 test_error(err, "Unable to create buffer");
 
                 /* fill the buffer with a pattern */
                 const char pattern = 0x55;
-                err = clEnqueueFillBuffer(queue, buffer, &pattern, sizeof(pattern),
-                                          0, buffer_size, 0, nullptr, nullptr);
+                err = clEnqueueFillBuffer(queue, buffer, &pattern,
+                                          sizeof(pattern), 0, buffer_size, 0,
+                                          nullptr, nullptr);
                 test_error(err, "Error clEnqueueFillBuffer");
 
                 err = clFinish(queue);
@@ -749,8 +758,8 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
                 cl_mem image1d_buffer;
                 if (imageType == CL_MEM_OBJECT_IMAGE1D_BUFFER)
                 {
-                    image1d_buffer = clCreateBuffer(context, flag,
-                                                    buffer_size, nullptr, &err);
+                    image1d_buffer = clCreateBuffer(context, flag, buffer_size,
+                                                    nullptr, &err);
                     test_error(err, "Unable to create buffer");
 
                     image_desc.buffer = image1d_buffer;
@@ -767,20 +776,20 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
                     || imageType == CL_MEM_OBJECT_IMAGE1D_ARRAY)
                 {
                     image_desc.image_row_pitch = row_pitch;
-                } else if (imageType == CL_MEM_OBJECT_IMAGE3D
-                           || imageType == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                }
+                else if (imageType == CL_MEM_OBJECT_IMAGE3D
+                         || imageType == CL_MEM_OBJECT_IMAGE2D_ARRAY)
                 {
                     image_desc.image_row_pitch = row_pitch;
                     image_desc.image_slice_pitch = slice_pitch;
                 }
 
-                cl_mem image_from_buffer =
-                    clCreateImage(context, flag, &format, &image_desc,
-                                  nullptr, &err);
+                cl_mem image_from_buffer = clCreateImage(
+                    context, flag, &format, &image_desc, nullptr, &err);
                 test_error(err, "Unable to create image");
 
-                size_t origin[3] = {0, 0, 0};
-                size_t region[3] = {1, 1, 1};
+                size_t origin[3] = { 0, 0, 0 };
+                size_t region[3] = { 1, 1, 1 };
 
                 region[0] = TEST_IMAGE_SIZE;
                 if (CL_MEM_OBJECT_IMAGE1D_BUFFER != imageType
@@ -795,8 +804,9 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
                 }
 
                 /* Check the copy of the image from buffer */
-                err = clEnqueueCopyImage(queue, image_from_buffer, image, origin,
-                                         origin, region, 0, nullptr, nullptr);
+                err =
+                    clEnqueueCopyImage(queue, image_from_buffer, image, origin,
+                                       origin, region, 0, nullptr, nullptr);
                 test_error(err, "Error clEnqueueCopyImage");
 
                 err = clFinish(queue);
@@ -809,8 +819,8 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
                     return fill_error;
                 }
 
-                fill_error = image_from_buffer_fill_check(queue, image, region,
-                                                          element_size, pattern);
+                fill_error = image_from_buffer_fill_check(
+                    queue, image, region, element_size, pattern);
                 if (TEST_PASS != fill_error)
                 {
                     return fill_error;
@@ -907,7 +917,8 @@ int image_from_buffer_read_positive(cl_device_id device, cl_context context,
         cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT8 };
         const char pattern = 0x55;
 
-        const size_t element_size = get_format_size(context, &format, imageType, CL_MEM_READ_WRITE);
+        const size_t element_size =
+            get_format_size(context, &format, imageType, CL_MEM_READ_WRITE);
 
         size_t row_pitch_alignment = 0;
         size_t slice_pitch_alignment = 0;
@@ -977,7 +988,9 @@ int image_from_buffer_read_positive(cl_device_id device, cl_context context,
 
         int read_error = image_from_buffer_read_check(
             queue, buffer, buffer_size, region, element_size, pattern,
-            (imageType == CL_MEM_OBJECT_IMAGE1D_ARRAY) ? slice_pitch : row_pitch, slice_pitch);
+            (imageType == CL_MEM_OBJECT_IMAGE1D_ARRAY) ? slice_pitch
+                                                       : row_pitch,
+            slice_pitch);
         if (TEST_PASS != read_error)
         {
             return read_error;

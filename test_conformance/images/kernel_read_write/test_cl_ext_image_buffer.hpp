@@ -70,14 +70,16 @@ static inline size_t get_format_size(cl_context context,
     cl_mem buffer;
     if (imageType == CL_MEM_OBJECT_IMAGE1D_BUFFER)
     {
-        buffer = clCreateBuffer(context, flags, get_pixel_size(format) * image_desc.image_width, NULL, &error);
+        buffer = clCreateBuffer(context, flags,
+                                get_pixel_size(format) * image_desc.image_width,
+                                NULL, &error);
         test_error(error, "Unable to create buffer");
 
         image_desc.buffer = buffer;
     }
 
-    cl_mem image = clCreateImage(context, flags, format,
-                                 &image_desc, nullptr, &error);
+    cl_mem image =
+        clCreateImage(context, flags, format, &image_desc, nullptr, &error);
     test_error(error, "Unable to create image");
 
     size_t element_size = 0;
