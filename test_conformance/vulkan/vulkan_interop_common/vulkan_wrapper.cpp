@@ -625,12 +625,12 @@ void VulkanQueue::submit(const VulkanSemaphoreList &waitSemaphoreList,
     vkSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     vkSubmitInfo.pNext = NULL;
     vkSubmitInfo.waitSemaphoreCount = (uint32_t)waitSemaphoreList.size();
-    vkSubmitInfo.pWaitSemaphores = waitSemaphoreList;
+    vkSubmitInfo.pWaitSemaphores = waitSemaphoreList();
     vkSubmitInfo.pWaitDstStageMask = vkPipelineStageFlagsList.data();
     vkSubmitInfo.commandBufferCount = (uint32_t)commandBufferList.size();
-    vkSubmitInfo.pCommandBuffers = commandBufferList;
+    vkSubmitInfo.pCommandBuffers = commandBufferList();
     vkSubmitInfo.signalSemaphoreCount = (uint32_t)signalSemaphoreList.size();
-    vkSubmitInfo.pSignalSemaphores = signalSemaphoreList;
+    vkSubmitInfo.pSignalSemaphores = signalSemaphoreList();
 
     vkQueueSubmit(m_vkQueue, 1, &vkSubmitInfo, NULL);
 }
@@ -728,7 +728,7 @@ void VulkanDescriptorSetLayout::VulkanDescriptorSetLayoutCommon(
     vkDescriptorSetLayoutCreateInfo.flags = 0;
     vkDescriptorSetLayoutCreateInfo.bindingCount =
         (uint32_t)descriptorSetLayoutBindingList.size();
-    vkDescriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindingList;
+    vkDescriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindingList();
 
     vkCreateDescriptorSetLayout(m_device, &vkDescriptorSetLayoutCreateInfo,
                                 NULL, &m_vkDescriptorSetLayout);
@@ -799,7 +799,7 @@ void VulkanPipelineLayout::VulkanPipelineLayoutCommon(
     vkPipelineLayoutCreateInfo.flags = 0;
     vkPipelineLayoutCreateInfo.setLayoutCount =
         (uint32_t)descriptorSetLayoutList.size();
-    vkPipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayoutList;
+    vkPipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayoutList();
     vkPipelineLayoutCreateInfo.pushConstantRangeCount = 0;
     vkPipelineLayoutCreateInfo.pPushConstantRanges = NULL;
 
@@ -1577,7 +1577,7 @@ VulkanImage::VulkanImage(
     vkImageCreateInfo.queueFamilyIndexCount =
         (uint32_t)m_device.getPhysicalDevice().getQueueFamilyList().size();
     vkImageCreateInfo.pQueueFamilyIndices =
-        m_device.getPhysicalDevice().getQueueFamilyList();
+        m_device.getPhysicalDevice().getQueueFamilyList()();
     vkImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     VkExternalMemoryImageCreateInfo vkExternalMemoryImageCreateInfo = {};

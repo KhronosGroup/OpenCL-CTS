@@ -182,7 +182,7 @@ bool checkVkSupport()
     const VulkanInstance &instance = getVulkanInstance();
     const VulkanPhysicalDeviceList &physicalDeviceList =
         instance.getPhysicalDeviceList();
-    if (physicalDeviceList == NULL)
+    if (physicalDeviceList() == NULL)
     {
         std::cout << "physicalDeviceList is null, No GPUs found with "
                      "Vulkan support !!!\n";
