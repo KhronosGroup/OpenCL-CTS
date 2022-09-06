@@ -728,7 +728,8 @@ void VulkanDescriptorSetLayout::VulkanDescriptorSetLayoutCommon(
     vkDescriptorSetLayoutCreateInfo.flags = 0;
     vkDescriptorSetLayoutCreateInfo.bindingCount =
         (uint32_t)descriptorSetLayoutBindingList.size();
-    vkDescriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindingList();
+    vkDescriptorSetLayoutCreateInfo.pBindings =
+        descriptorSetLayoutBindingList();
 
     vkCreateDescriptorSetLayout(m_device, &vkDescriptorSetLayoutCreateInfo,
                                 NULL, &m_vkDescriptorSetLayout);
