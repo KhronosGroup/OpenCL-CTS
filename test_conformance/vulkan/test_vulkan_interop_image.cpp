@@ -884,8 +884,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
             {
                 uint32_t height = heightList[hIdx];
                 log_info("Height: %d\n", height);
-                if (height > max_height)   
-                   continue;
+                if (height > max_height) continue;
                 region[1] = height;
 
                 uint32_t numMipLevels = 1;
