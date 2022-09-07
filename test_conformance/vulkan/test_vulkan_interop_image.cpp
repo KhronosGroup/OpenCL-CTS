@@ -213,8 +213,8 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             VULKAN_MEMORY_TYPE_PROPERTY_HOST_VISIBLE_COHERENT));
     vkParamsDeviceMemory.bindBuffer(vkParamsBuffer);
 
-    uint64_t maxImage2DSize = max_width * max_height
-        * MAX_2D_IMAGE_ELEMENT_SIZE * 2;
+    uint64_t maxImage2DSize =
+        max_width * max_height * MAX_2D_IMAGE_ELEMENT_SIZE * 2;
     VulkanBuffer vkSrcBuffer(vkDevice, maxImage2DSize);
     VulkanDeviceMemory vkSrcBufferDeviceMemory(
         vkDevice, vkSrcBuffer.getSize(),
@@ -282,8 +282,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
         {
             uint32_t width = widthList[wIdx];
             log_info("Width: %d\n", width);
-            if (width > max_width ) 
-                continue;
+            if (width > max_width) continue;
             region[0] = width;
             for (size_t hIdx = 0; hIdx < ARRAY_SIZE(heightList); hIdx++)
             {
@@ -811,8 +810,8 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             VULKAN_MEMORY_TYPE_PROPERTY_HOST_VISIBLE_COHERENT));
     vkParamsDeviceMemory.bindBuffer(vkParamsBuffer);
 
-    uint64_t maxImage2DSize = max_width * max_height
-        * MAX_2D_IMAGE_ELEMENT_SIZE * 2;
+    uint64_t maxImage2DSize =
+        max_width * max_height * MAX_2D_IMAGE_ELEMENT_SIZE * 2;
     VulkanBuffer vkSrcBuffer(vkDevice, maxImage2DSize);
     VulkanDeviceMemory vkSrcBufferDeviceMemory(
         vkDevice, vkSrcBuffer.getSize(),
@@ -867,8 +866,8 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
         ASSERT_LEQ(elementSize, (uint32_t)MAX_2D_IMAGE_ELEMENT_SIZE);
         log_info("elementSize= %d\n", elementSize);
 
-        std::string fileName = "image2D_" + std::string(
-            getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
+        std::string fileName = "image2D_"
+            + std::string(getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
         log_info("Load %s file", fileName.c_str());
         vkImage2DShader = readFile(fileName);
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
@@ -880,9 +879,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
         {
             uint32_t width = widthList[wIdx];
             log_info("Width: %d\n", width);
-            if (width > max_width) 
-                continue;
-
+            if (width > max_width) continue;
             region[0] = width;
             for (size_t hIdx = 0; hIdx < ARRAY_SIZE(heightList); hIdx++)
             {
@@ -1440,13 +1437,13 @@ int test_image_common(cl_device_id device_, cl_context context_,
     }
     deviceId = devices[device_no];
     err = setMaxImageDimensions(deviceId, max_width, max_height);
-    if (CL_SUCCESS != err){
+    if (CL_SUCCESS != err)
+    {
         print_error(err,"error setting max image dimensions");
         goto CLEANUP;
     }
-    log_info(" Set max_width to %d and max_height to %d\n",
-        max_width, max_height);
-
+    log_info("Set max_width to %lu and max_height to %lu\n", max_width,
+             max_height);
     context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU,
                                       NULL, NULL, &err);
     if (CL_SUCCESS != err)

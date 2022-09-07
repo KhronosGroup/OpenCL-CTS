@@ -335,11 +335,8 @@ const VulkanWrapper &
 template <class VulkanWrapper, class VulkanNative>
 VulkanWrapper &VulkanList<VulkanWrapper, VulkanNative>::operator[](size_t idx)
 {
-    if (idx < m_wrapperList.size())
-    {
-        // CHECK_LT(idx, m_wrapperList.size());
-        return m_wrapperList[idx].get();
-    }
+    // CHECK_LT(idx, m_wrapperList.size());
+    return m_wrapperList[idx].get();
 }
 
 template <class VulkanWrapper, class VulkanNative>

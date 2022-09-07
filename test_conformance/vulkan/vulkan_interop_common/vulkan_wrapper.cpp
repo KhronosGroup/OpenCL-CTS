@@ -201,7 +201,7 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
 
     if (physicalDeviceCount == uint32_t(0))
     {
-        std::cout<<"failed to find GPUs with Vulkan support!\n";
+        std::cout <<"failed to find GPUs with Vulkan support!\n";
         return;
     }
 
@@ -858,7 +858,7 @@ VulkanShaderModule::VulkanShaderModule(const VulkanDevice &device,
     vkShaderModuleCreateInfo.flags = 0;
     vkShaderModuleCreateInfo.codeSize = code.size();
     vkShaderModuleCreateInfo.pCode =
-        reinterpret_cast<const uint32_t*>(code.data());
+        reinterpret_cast<const uint32_t *>(code.data());
 
     vkCreateShaderModule(m_device, &vkShaderModuleCreateInfo, NULL,
                          &m_vkShaderModule);

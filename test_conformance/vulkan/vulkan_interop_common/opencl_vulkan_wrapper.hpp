@@ -69,8 +69,8 @@ cl_int check_external_memory_handle_type(
 cl_int check_external_semaphore_handle_type(
     cl_device_id deviceID,
     cl_external_semaphore_handle_type_khr requiredHandleType);
-cl_int setMaxImageDimensions(cl_device_id deviceID,
-    size_t &width, size_t &height);
+cl_int setMaxImageDimensions(cl_device_id deviceID, size_t &width,
+                             size_t &height);
 
 class clExternalMemory {
 protected:

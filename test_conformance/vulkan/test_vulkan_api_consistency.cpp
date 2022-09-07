@@ -238,7 +238,7 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
     const VulkanMemoryTypeList& memoryTypeList = vkImage2D->getMemoryTypeList();
     uint64_t totalImageMemSize = vkImage2D->getSize();
 
-    log_info("Memory type index: %d\n", (uint32_t)memoryTypeList[0]);
+    log_info("Memory type index: %lu\n", (uint32_t)memoryTypeList[0]);
     log_info("Memory type property: %d\n",
              memoryTypeList[0].getMemoryTypeProperty());
     log_info("Image size : %d\n", totalImageMemSize);
