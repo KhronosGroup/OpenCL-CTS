@@ -58,7 +58,6 @@ int test_svm_byte_granularity(cl_device_id deviceID, cl_context c, cl_command_qu
 
   cl_uint     num_devices = 0;
   cl_int      err = CL_SUCCESS;
-  cl_int        rval = CL_SUCCESS;
 
   err = create_cl_objects(deviceID, &byte_manipulation_kernels[0], &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER);
   if(err == 1) return 0; // no devices capable of requested SVM level, so don't execute but count test as passing.

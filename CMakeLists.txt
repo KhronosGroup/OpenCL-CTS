@@ -89,6 +89,7 @@ endmacro(add_cxx_flag_if_supported)
 
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
     add_cxx_flag_if_supported(-Wmisleading-indentation)
+    add_cxx_flag_if_supported(-Wunused-variable)
     add_cxx_flag_if_supported(-Wno-narrowing)
     add_cxx_flag_if_supported(-Wno-format)
     add_cxx_flag_if_supported(-Werror)

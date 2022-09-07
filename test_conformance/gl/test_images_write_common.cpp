@@ -427,7 +427,6 @@ static int test_image_write( cl_context context, cl_command_queue queue,
 int supportsHalf(cl_context context, bool* supports_half)
 {
   int error;
-  size_t  size;
   cl_uint numDev;
 
   error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDev, NULL);
@@ -446,7 +445,6 @@ int supportsHalf(cl_context context, bool* supports_half)
 int supportsMsaa(cl_context context, bool* supports_msaa)
 {
   int error;
-  size_t  size;
   cl_uint numDev;
 
   error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDev, NULL);
@@ -465,7 +463,6 @@ int supportsMsaa(cl_context context, bool* supports_msaa)
 int supportsDepth(cl_context context, bool* supports_depth)
 {
   int error;
-  size_t  size;
   cl_uint numDev;
 
   error = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDev, NULL);
@@ -486,7 +483,6 @@ static int test_image_format_write( cl_context context, cl_command_queue queue,
   GLenum internalFormat,  GLenum glType, ExplicitType type, MTdata d )
 {
   int error;
-  int samples = 8;
   // If we're testing a half float format, then we need to determine the
   // rounding mode of this machine.  Punt if we fail to do so.
 

@@ -604,8 +604,6 @@ int test_event_enqueue_marker( cl_device_id deviceID, cl_context context, cl_com
 #ifdef CL_VERSION_1_2
 int test_event_enqueue_marker_with_event_list( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-
-    cl_int status;
     SETUP_EVENT( context, queue );
     cl_event event_list[3]={ NULL, NULL, NULL};
 
@@ -649,8 +647,6 @@ int test_event_enqueue_marker_with_event_list( cl_device_id deviceID, cl_context
 
 int test_event_enqueue_barrier_with_event_list( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-
-    cl_int status;
     SETUP_EVENT( context, queue );
     cl_event event_list[3]={ NULL, NULL, NULL};
 
