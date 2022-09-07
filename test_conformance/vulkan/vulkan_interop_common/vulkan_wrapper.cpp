@@ -201,7 +201,7 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
 
     if (physicalDeviceCount == uint32_t(0))
     {
-        std::cout <<"failed to find GPUs with Vulkan support!\n";
+        std::cout << "failed to find GPUs with Vulkan support!\n";
         return;
     }
 

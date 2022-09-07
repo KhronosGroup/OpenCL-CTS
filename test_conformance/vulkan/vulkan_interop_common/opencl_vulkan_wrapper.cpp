@@ -54,7 +54,7 @@ void init_cl_vk_ext(cl_platform_id opencl_platform)
     }
     clReleaseSemaphoreKHRptr =
         (pfnclReleaseSemaphoreKHR)clGetExtensionFunctionAddressForPlatform(
-             opencl_platform, "clReleaseSemaphoreKHR");
+            opencl_platform, "clReleaseSemaphoreKHR");
     if (NULL == clReleaseSemaphoreKHRptr)
     {
         throw std::runtime_error("Failed to get the function pointer of "

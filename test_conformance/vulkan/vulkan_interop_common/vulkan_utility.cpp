@@ -656,7 +656,7 @@ static char *findFilePath(const std::string filename)
         fp = fopen(path.c_str(), "rb");
 
         if (fp != NULL)
-	{
+        {
             fclose(fp);
             // File found
             char *file_path = (char *)(malloc(path.length() + 1));
@@ -664,17 +664,17 @@ static char *findFilePath(const std::string filename)
             return file_path;
         }
         if (fp)
-	{
+        {
           fclose(fp);
         }
     }
     // File not found
-    return 0;    
+    return 0;
 }
 
-std::vector<char> readFile(const std::string& filename)
+std::vector<char> readFile(const std::string &filename)
 {
-    char* file_path = findFilePath(filename);
+    char *file_path = findFilePath(filename);
 
     std::ifstream file(file_path, std::ios::ate | std::ios::binary);
 
