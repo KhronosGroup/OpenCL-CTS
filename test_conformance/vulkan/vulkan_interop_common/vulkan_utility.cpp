@@ -665,7 +665,7 @@ static char *findFilePath(const std::string filename)
         }
         if (fp)
         {
-          fclose(fp);
+            fclose(fp);
         }
     }
     // File not found
