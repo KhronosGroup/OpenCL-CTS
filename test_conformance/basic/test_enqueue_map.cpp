@@ -146,7 +146,7 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command
     clMemWrapper memObject;
     log_info("Testing with cl_mem_flags src: %s\n", flag_set_names[src_flag_id]);
 
-    generate_random_data(kUInt, (unsigned int)(imageSize * imageSize), d,
+    generate_random_data(kUInt, (unsigned int)(imageSize * imageSize * 4), d,
                          hostPtrData);
     memcpy(referenceData, hostPtrData, imageDataSize);
 

@@ -88,13 +88,13 @@ macro(add_cxx_flag_if_supported flag)
 endmacro(add_cxx_flag_if_supported)
 
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    add_cxx_flag_if_supported(-Wmisleading-indentation)
     add_cxx_flag_if_supported(-Wno-narrowing)
     add_cxx_flag_if_supported(-Wno-format)
     add_cxx_flag_if_supported(-Werror)
     add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive
     add_cxx_flag_if_supported(-Wno-error=unknown-pragmas) # Issue #785
     add_cxx_flag_if_supported(-Wno-error=asm-operand-widths) # Issue #784
-    add_cxx_flag_if_supported(-Wno-error=implicit-const-int-float-conversion) # Issue #1250
 
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float

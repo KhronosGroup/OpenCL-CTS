@@ -703,8 +703,6 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
 int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
     TestStruct pattern;
-    clProgramWrapper program;
-    clKernelWrapper kernel;
     size_t      ptrSize = sizeof( TestStruct );
     size_t      global_work_size[3];
     int         n, err;
@@ -720,6 +718,8 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
 
     for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
     {
+        clProgramWrapper program;
+        clKernelWrapper kernel;
         log_info("Testing with cl_mem_flags: %s\n",
                  flag_set_names[src_flag_id]);
 

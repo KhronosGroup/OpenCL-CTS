@@ -90,14 +90,17 @@ int test_read_image_1D(cl_context context, cl_command_queue queue,
 
     region[0] = width_lod;
 
-    if ( gDebugTrace )
-      if ( gTestMipmaps) {
-        log_info(" - Working at mipLevel :%llu\n", (unsigned long long)lod);
-      }
-      error = clEnqueueWriteImage(queue, image, CL_FALSE,
-        origin, region, ( gEnablePitch ? row_pitch_lod : 0 ), 0,
-        (char*)imageValues + imgValMipLevelOffset, 0, NULL, NULL);
-      if (error != CL_SUCCESS) {
+    if (gDebugTrace)
+        if (gTestMipmaps)
+        {
+            log_info(" - Working at mipLevel :%llu\n", (unsigned long long)lod);
+        }
+    error = clEnqueueWriteImage(queue, image, CL_FALSE, origin, region,
+                                (gEnablePitch ? row_pitch_lod : 0), 0,
+                                (char *)imageValues + imgValMipLevelOffset, 0,
+                                NULL, NULL);
+    if (error != CL_SUCCESS)
+    {
         log_error( "ERROR: Unable to write to 1D image of size %d \n", (int)width_lod );
         return -1;
     }

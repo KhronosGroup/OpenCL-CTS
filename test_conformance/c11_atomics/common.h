@@ -1031,20 +1031,11 @@ CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumDestItems)
         }
         code += "\n";
     }
-    if (LocalMemory() || DeclaredInProgram())
+    if (LocalMemory())
     {
         code += "  // Copy final values to host reachable buffer\n";
-        if (LocalMemory())
-            code += "  barrier(CLK_LOCAL_MEM_FENCE);\n"
-                    "  if(get_local_id(0) == 0) // first thread in workgroup\n";
-        else
-            // global atomics declared in program scope
-            code += R"(
-                if(atomic_fetch_add_explicit(&finishedThreads, 1u,
-                                           memory_order_relaxed,
-                                           memory_scope_work_group)
-                   == get_global_size(0)-1) // last finished thread
-                   )";
+        code += "  barrier(CLK_LOCAL_MEM_FENCE);\n"
+                "  if(get_local_id(0) == 0) // first thread in workgroup\n";
         code += "    for(uint dstItemIdx = 0; dstItemIdx < numDestItems; "
                 "dstItemIdx++)\n";
         if (aTypeName == "atomic_flag")
@@ -1062,6 +1053,35 @@ CBasicTest<HostAtomicType, HostDataType>::KernelCode(cl_uint maxNumDestItems)
                     atomic_load_explicit(destMemory+dstItemIdx,
                                          memory_order_relaxed,
                                          memory_scope_work_group);)";
+        }
+    }
+    else if (DeclaredInProgram())
+    {
+        // global atomics declared in program scope
+        code += "  // Copy final values to host reachable buffer\n";
+        code += R"(
+            if(atomic_fetch_add_explicit(&finishedThreads, 1u,
+                                         memory_order_acq_rel,
+                                         memory_scope_device)
+                   == get_global_size(0)-1) // last finished thread
+                )";
+        code += "    for(uint dstItemIdx = 0; dstItemIdx < numDestItems; "
+                "dstItemIdx++)\n";
+        if (aTypeName == "atomic_flag")
+        {
+            code += R"(
+                finalDest[dstItemIdx] =
+                    atomic_flag_test_and_set_explicit(destMemory+dstItemIdx,
+                                                      memory_order_relaxed,
+                                                      memory_scope_device);)";
+        }
+        else
+        {
+            code += R"(
+                finalDest[dstItemIdx] =
+                    atomic_load_explicit(destMemory+dstItemIdx,
+                                         memory_order_relaxed,
+                                         memory_scope_device);)";
         }
     }
     code += "}\n"
@@ -1107,6 +1127,15 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     {
         log_info("\t\tTest disabled\n");
         return 0;
+    }
+    if (!LocalMemory() && DeclaredInProgram())
+    {
+        if (((gAtomicMemCap & CL_DEVICE_ATOMIC_SCOPE_DEVICE) == 0)
+            || ((gAtomicMemCap & CL_DEVICE_ATOMIC_ORDER_ACQ_REL) == 0))
+        {
+            log_info("\t\tTest disabled\n");
+            return 0;
+        }
     }
 
     // set up work sizes based on device capabilities and test configuration
@@ -1331,8 +1360,9 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
         {
             error =
                 clSetKernelArg(kernel, argInd++,
-                               LocalRefValues() ? typeSize * CurrentGroupSize()
-                                       * NumNonAtomicVariablesPerThread()
+                               LocalRefValues() ? typeSize
+                                       * (CurrentGroupSize()
+                                          * NumNonAtomicVariablesPerThread())
                                                 : 1,
                                NULL);
             test_error(error, "Unable to set indexed kernel argument");

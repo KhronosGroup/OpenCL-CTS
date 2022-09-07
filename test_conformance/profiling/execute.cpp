@@ -335,8 +335,8 @@ static int kernelFilter( cl_device_id device, cl_context context, cl_command_que
     clReleaseMemObject( memobjs[1] );
     clReleaseMemObject( memobjs[0] );
 
-  if (check_times(queueStart, submitStart, writeStart, writeEnd, device))
-    err = -1;
+    if (check_times(queueStart, submitStart, writeStart, writeEnd, device))
+        err = -1;
 
     return err;
 

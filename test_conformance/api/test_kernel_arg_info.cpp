@@ -814,8 +814,34 @@ static int run_image_tests(cl_context context, cl_device_id deviceID)
     cl_kernel_arg_address_qualifier address_qualifier =
         CL_KERNEL_ARG_ADDRESS_GLOBAL;
 
+    Version version = get_device_cl_version(deviceID);
+    bool supports_read_write_images = false;
+    if (version >= Version(3, 0))
+    {
+        cl_uint maxReadWriteImageArgs = 0;
+        cl_int error = clGetDeviceInfo(
+            deviceID, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
+            sizeof(maxReadWriteImageArgs), &maxReadWriteImageArgs, NULL);
+        test_error(error,
+                   "Unable to query "
+                   "CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS");
+
+        // read-write images are supported if MAX_READ_WRITE_IMAGE_ARGS is
+        // nonzero
+        supports_read_write_images = maxReadWriteImageArgs != 0;
+    }
+    else if (version >= Version(2, 0))
+    {
+        // read-write images are required for OpenCL 2.x
+        supports_read_write_images = true;
+    }
+
     for (auto access_qualifier : access_qualifiers)
     {
+        if (access_qualifier == CL_KERNEL_ARG_ACCESS_READ_WRITE
+            && !supports_read_write_images)
+            continue;
+
         bool is_write =
             (access_qualifier == CL_KERNEL_ARG_ACCESS_WRITE_ONLY
              || access_qualifier == CL_KERNEL_ARG_ACCESS_READ_WRITE);

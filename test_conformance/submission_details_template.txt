@@ -81,6 +81,12 @@ Platform Version:
 # 
 Tests version:
 
+# Commit SHAs (7-digit) of any cherry-picked patches subsequent to tagged
+# version. Any patches included must apply without conflicts to the tagged
+# version in the order listed.
+#
+Patches:
+
 # Implementations that support cl_khr_icd are required to use a loader to run
 # the tests and document the loader that was used.
 #

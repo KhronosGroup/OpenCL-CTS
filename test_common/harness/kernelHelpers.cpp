@@ -1661,8 +1661,10 @@ Version get_device_latest_cl_c_version(cl_device_id device)
         Version max_supported_cl_c_version{};
         for (const auto &name_version : name_versions)
         {
-            Version current_version{ CL_VERSION_MAJOR(name_version.version),
-                                     CL_VERSION_MINOR(name_version.version) };
+            Version current_version{
+                static_cast<int>(CL_VERSION_MAJOR(name_version.version)),
+                static_cast<int>(CL_VERSION_MINOR(name_version.version))
+            };
             max_supported_cl_c_version =
                 (current_version > max_supported_cl_c_version)
                 ? current_version
@@ -1745,8 +1747,10 @@ bool device_supports_cl_c_version(cl_device_id device, Version version)
 
         for (const auto &name_version : name_versions)
         {
-            Version current_version{ CL_VERSION_MAJOR(name_version.version),
-                                     CL_VERSION_MINOR(name_version.version) };
+            Version current_version{
+                static_cast<int>(CL_VERSION_MAJOR(name_version.version)),
+                static_cast<int>(CL_VERSION_MINOR(name_version.version))
+            };
             if (current_version == version)
             {
                 return true;

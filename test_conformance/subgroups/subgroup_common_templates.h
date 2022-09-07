@@ -20,6 +20,8 @@
 #include "CL/cl_half.h"
 #include "subhelpers.h"
 #include <set>
+#include <algorithm>
+#include <random>
 
 static cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
                                   const std::string &mask_type,
@@ -319,7 +321,7 @@ template <typename Ty> inline Ty calculate(Ty a, Ty b, ArithmeticOp operation)
         case ArithmeticOp::logical_and: return a && b;
         case ArithmeticOp::logical_or: return a || b;
         case ArithmeticOp::logical_xor: return !a ^ !b;
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return 0;
 }
@@ -341,7 +343,7 @@ inline cl_double calculate(cl_double a, cl_double b, ArithmeticOp operation)
         case ArithmeticOp::mul_: {
             return a * b;
         }
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return 0;
 }
@@ -363,7 +365,7 @@ inline cl_float calculate(cl_float a, cl_float b, ArithmeticOp operation)
         case ArithmeticOp::mul_: {
             return a * b;
         }
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return 0;
 }
@@ -380,7 +382,7 @@ inline subgroups::cl_half calculate(subgroups::cl_half a, subgroups::cl_half b,
         case ArithmeticOp::min_:
             return to_float(a) < to_float(b) || is_half_nan(b.data) ? a : b;
         case ArithmeticOp::mul_: return to_half(to_float(a) * to_float(b));
-        default: log_error("Unknown operation request"); break;
+        default: log_error("Unknown operation request\n"); break;
     }
     return to_half(0);
 }
@@ -391,10 +393,43 @@ template <typename Ty> bool is_floating_point()
         || std::is_same<Ty, subgroups::cl_half>::value;
 }
 
+// limit possible input values to avoid arithmetic rounding/overflow issues.
+// for each subgroup values defined different values
+// for rest of workitems set 1
+// shuffle values
+static void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
+                                         int sb_size)
+{
+    // max product is 720, cl_half has enough precision for it
+    const std::vector<cl_ulong> non_one_values{ 2, 3, 4, 5, 6 };
+
+    if (sb_size <= non_one_values.size())
+    {
+        safe_values.assign(non_one_values.begin(),
+                           non_one_values.begin() + sb_size);
+    }
+    else
+    {
+        safe_values.assign(sb_size, 1);
+        std::copy(non_one_values.begin(), non_one_values.end(),
+                  safe_values.begin());
+    }
+
+    std::mt19937 mersenne_twister_engine(10000);
+    std::shuffle(safe_values.begin(), safe_values.end(),
+                 mersenne_twister_engine);
+};
+
 template <typename Ty, ArithmeticOp operation>
-void genrand(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
+void generate_inputs(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
 {
     int nj = (nw + ns - 1) / ns;
+
+    std::vector<cl_ulong> safe_values;
+    if (operation == ArithmeticOp::mul_ || operation == ArithmeticOp::add_)
+    {
+        fill_and_shuffle_safe_values(safe_values, ns);
+    }
 
     for (int k = 0; k < ng; ++k)
     {
@@ -406,13 +441,10 @@ void genrand(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
             for (int i = 0; i < n; ++i)
             {
                 cl_ulong out_value;
-                double y;
                 if (operation == ArithmeticOp::mul_
                     || operation == ArithmeticOp::add_)
                 {
-                    // work around to avoid overflow, do not use 0 for
-                    // multiplication
-                    out_value = (genrand_int32(gMTdata) % 4) + 1;
+                    out_value = safe_values[i];
                 }
                 else
                 {
@@ -449,12 +481,12 @@ template <typename Ty, ShuffleOp operation> struct SHF
 
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int i, ii, j, k, l, n, delta;
+        int i, ii, j, k, n;
+        cl_uint l;
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
-        int d = ns > 100 ? 100 : ns;
         ii = 0;
         ng = ng / nw;
         for (k = 0; k < ng; ++k)
@@ -466,30 +498,31 @@ template <typename Ty, ShuffleOp operation> struct SHF
                 for (i = 0; i < n; ++i)
                 {
                     int midx = 4 * ii + 4 * i + 2;
-                    l = (int)(genrand_int32(gMTdata) & 0x7fffffff)
-                        % (d > n ? n : d);
+                    l = (((cl_uint)(genrand_int32(gMTdata) & 0x7fffffff) + 1)
+                         % (ns * 2 + 1))
+                        - 1;
                     switch (operation)
                     {
                         case ShuffleOp::shuffle:
                         case ShuffleOp::shuffle_xor:
-                            // storing information about shuffle index
+                        case ShuffleOp::shuffle_up:
+                        case ShuffleOp::shuffle_down:
+                            // storing information about shuffle index/delta
                             m[midx] = (cl_int)l;
                             break;
-                        case ShuffleOp::shuffle_up:
-                            delta = l; // calculate delta for shuffle up
-                            if (i - delta < 0)
+                        case ShuffleOp::rotate:
+                        case ShuffleOp::clustered_rotate:
+                            // Storing information about rotate delta.
+                            // The delta must be the same for each thread in
+                            // the subgroup.
+                            if (i == 0)
                             {
-                                delta = i;
+                                m[midx] = (cl_int)l;
                             }
-                            m[midx] = (cl_int)delta;
-                            break;
-                        case ShuffleOp::shuffle_down:
-                            delta = l; // calculate delta for shuffle down
-                            if (i + delta >= n)
+                            else
                             {
-                                delta = n - 1 - i;
+                                m[midx] = m[midx - 4];
                             }
-                            m[midx] = (cl_int)delta;
                             break;
                         default: break;
                     }
@@ -510,7 +543,8 @@ template <typename Ty, ShuffleOp operation> struct SHF
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
                            const WorkGroupParams &test_params)
     {
-        int ii, i, j, k, l, n;
+        int ii, i, j, k, n;
+        cl_uint l;
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
@@ -535,32 +569,51 @@ template <typename Ty, ShuffleOp operation> struct SHF
                 { // inside the subgroup
                   // shuffle index storage
                     int midx = 4 * ii + 4 * i + 2;
-                    l = (int)m[midx];
+                    l = m[midx];
                     rr = my[ii + i];
+                    cl_uint tr_idx;
+                    bool skip = false;
                     switch (operation)
                     {
                         // shuffle basic - treat l as index
-                        case ShuffleOp::shuffle: tr = mx[ii + l]; break;
-                        // shuffle up - treat l as delta
-                        case ShuffleOp::shuffle_up: tr = mx[ii + i - l]; break;
-                        // shuffle up - treat l as delta
-                        case ShuffleOp::shuffle_down:
-                            tr = mx[ii + i + l];
-                            break;
+                        case ShuffleOp::shuffle: tr_idx = l; break;
                         // shuffle xor - treat l as mask
-                        case ShuffleOp::shuffle_xor:
-                            tr = mx[ii + (i ^ l)];
+                        case ShuffleOp::shuffle_xor: tr_idx = i ^ l; break;
+                        // shuffle up - treat l as delta
+                        case ShuffleOp::shuffle_up:
+                            if (l >= ns) skip = true;
+                            tr_idx = i - l;
                             break;
+                        // shuffle down - treat l as delta
+                        case ShuffleOp::shuffle_down:
+                            if (l >= ns) skip = true;
+                            tr_idx = i + l;
+                            break;
+                        // rotate - treat l as delta
+                        case ShuffleOp::rotate:
+                            tr_idx = (i + l) % test_params.subgroup_size;
+                            break;
+                        case ShuffleOp::clustered_rotate: {
+                            tr_idx = ((i & ~(test_params.cluster_size - 1))
+                                      + ((i + l) % test_params.cluster_size));
+                            break;
+                        }
                         default: break;
                     }
 
-                    if (!compare(rr, tr))
+                    if (!skip && tr_idx < n)
                     {
-                        log_error("ERROR: sub_group_%s(%s) mismatch for "
-                                  "local id %d in sub group %d in group %d\n",
-                                  operation_names(operation),
-                                  TypeManager<Ty>::name(), i, j, k);
-                        return TEST_FAIL;
+                        tr = mx[ii + tr_idx];
+
+                        if (!compare(rr, tr))
+                        {
+                            log_error("ERROR: sub_group_%s(%s) mismatch for "
+                                      "local id %d in sub group %d in group "
+                                      "%d\n",
+                                      operation_names(operation),
+                                      TypeManager<Ty>::name(), i, j, k);
+                            return TEST_FAIL;
+                        }
                     }
                 }
             }
@@ -591,7 +644,7 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        genrand<Ty, operation>(x, t, m, ns, nw, ng);
+        generate_inputs<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
@@ -689,7 +742,7 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        genrand<Ty, operation>(x, t, m, ns, nw, ng);
+        generate_inputs<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
@@ -805,7 +858,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         ng = ng / nw;
-        genrand<Ty, operation>(x, t, m, ns, nw, ng);
+        generate_inputs<Ty, operation>(x, t, m, ns, nw, ng);
     }
 
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
