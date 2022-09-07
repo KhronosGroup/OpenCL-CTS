@@ -269,8 +269,8 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
         ASSERT_LEQ(elementSize, (uint32_t)MAX_2D_IMAGE_ELEMENT_SIZE);
         log_info("elementSize= %d\n", elementSize);
 
-        std::string fileName = "image2D_" + std::string(
-            getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
+        std::string fileName = "image2D_"
+            + std::string(getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
         log_info("Load %s file", fileName.c_str());
         vkImage2DShader = readFile(fileName);
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
@@ -288,8 +288,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
             {
                 uint32_t height = heightList[hIdx];
                 log_info("Height: %d", height);
-                if (height > max_height ) 
-                    continue;
+                if (height > max_height) continue;
                 region[1] = height;
 
                 uint32_t numMipLevels = 1;
@@ -1439,7 +1438,7 @@ int test_image_common(cl_device_id device_, cl_context context_,
     err = setMaxImageDimensions(deviceId, max_width, max_height);
     if (CL_SUCCESS != err)
     {
-        print_error(err,"error setting max image dimensions");
+        print_error(err, "error setting max image dimensions");
         goto CLEANUP;
     }
     log_info("Set max_width to %lu and max_height to %lu\n", max_width,
