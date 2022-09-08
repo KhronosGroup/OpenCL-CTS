@@ -25,8 +25,6 @@
 #define MAX_2D_IMAGE_ELEMENT_SIZE 16
 #define MAX_2D_IMAGE_MIP_LEVELS 11
 #define MAX_2D_IMAGE_DESCRIPTORS MAX_2D_IMAGES *MAX_2D_IMAGE_MIP_LEVELS
-#define GLSL_FORMAT_STRING "<GLSL_FORMAT>"
-#define GLSL_TYPE_PREFIX_STRING "<GLSL_TYPE_PREFIX>"
 #define NUM_THREADS_PER_GROUP_X 32
 #define NUM_THREADS_PER_GROUP_Y 32
 #define NUM_BLOCKS(size, blockSize)                                            \
@@ -54,61 +52,8 @@ struct Params
 }
 static cl_uchar uuid[CL_UUID_SIZE_KHR];
 static cl_device_id deviceId = NULL;
-
-static const char *vkImage2DShader =
-    "#version 450\n"
-    "#extension GL_ARB_separate_shader_objects : enable\n"
-    "#extension GL_NV_gpu_shader5 : enable\n"
-    "layout(binding = 0) buffer Params\n"
-    "{\n"
-    "    uint32_t numImage2DDescriptors;\n"
-    "};\n"
-    "layout(binding = 1, " GLSL_FORMAT_STRING
-    ") uniform " GLSL_TYPE_PREFIX_STRING "image2D image2DList[" STRING(
-        MAX_2D_IMAGE_DESCRIPTORS) "];\n"
-                                  "layout(local_size_x = 32, local_size_y = "
-                                  "32) in;\n"
-                                  "void main() {\n"
-                                  "    uvec3 numThreads = gl_NumWorkGroups * "
-                                  "gl_WorkGroupSize;\n"
-                                  "    for (uint32_t image2DIdx = 0; "
-                                  "image2DIdx < numImage2DDescriptors; "
-                                  "image2DIdx++)"
-                                  "    {\n"
-                                  "        ivec2 imageDim = "
-                                  "imageSize(image2DList[image2DIdx]);\n"
-                                  "        uint32_t heightBy2 = imageDim.y / "
-                                  "2;\n"
-                                  "        for (uint32_t row = "
-                                  "gl_GlobalInvocationID.y; row < heightBy2; "
-                                  "row += numThreads.y)"
-                                  "        {\n"
-                                  "            for (uint32_t col = "
-                                  "gl_GlobalInvocationID.x; col < imageDim.x; "
-                                  "col += numThreads.x)"
-                                  "            {\n"
-                                  "                ivec2 coordsA = ivec2(col, "
-                                  "row);\n"
-                                  "                ivec2 coordsB = ivec2(col, "
-                                  "imageDim.y - row - 1);\n"
-                                  "                " GLSL_TYPE_PREFIX_STRING
-                                  "vec4 dataA = "
-                                  "imageLoad(image2DList[image2DIdx], "
-                                  "coordsA);\n"
-                                  "                " GLSL_TYPE_PREFIX_STRING
-                                  "vec4 dataB = "
-                                  "imageLoad(image2DList[image2DIdx], "
-                                  "coordsB);\n"
-                                  "                "
-                                  "imageStore(image2DList[image2DIdx], "
-                                  "coordsA, dataB);\n"
-                                  "                "
-                                  "imageStore(image2DList[image2DIdx], "
-                                  "coordsB, dataA);\n"
-                                  "            }\n"
-                                  "        }\n"
-                                  "    }\n"
-                                  "}\n";
+size_t max_width = MAX_2D_IMAGE_WIDTH;
+size_t max_height = MAX_2D_IMAGE_HEIGHT;
 
 const char *kernel_text_numImage_1 = " \
 __constant sampler_t smpImg = CLK_NORMALIZED_COORDS_FALSE|CLK_ADDRESS_NONE|CLK_FILTER_NEAREST;\n\
@@ -268,8 +213,8 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             VULKAN_MEMORY_TYPE_PROPERTY_HOST_VISIBLE_COHERENT));
     vkParamsDeviceMemory.bindBuffer(vkParamsBuffer);
 
-    uint64_t maxImage2DSize = MAX_2D_IMAGE_WIDTH * MAX_2D_IMAGE_HEIGHT
-        * MAX_2D_IMAGE_ELEMENT_SIZE * 2;
+    uint64_t maxImage2DSize =
+        max_width * max_height * MAX_2D_IMAGE_ELEMENT_SIZE * 2;
     VulkanBuffer vkSrcBuffer(vkDevice, maxImage2DSize);
     VulkanDeviceMemory vkSrcBufferDeviceMemory(
         vkDevice, vkSrcBuffer.getSize(),
@@ -310,6 +255,12 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
     clCl2VkExternalSemaphore = new clExternalSemaphore(
         vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
 
+    std::vector<VulkanDeviceMemory *> vkNonDedicatedImage2DListDeviceMemory1;
+    std::vector<VulkanDeviceMemory *> vkNonDedicatedImage2DListDeviceMemory2;
+    std::vector<clExternalMemoryImage *> nonDedicatedExternalMemory1;
+    std::vector<clExternalMemoryImage *> nonDedicatedExternalMemory2;
+    std::vector<char> vkImage2DShader;
+
     for (size_t fIdx = 0; fIdx < vkFormatList.size(); fIdx++)
     {
         VulkanFormat vkFormat = vkFormatList[fIdx];
@@ -317,15 +268,13 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
         uint32_t elementSize = getVulkanFormatElementSize(vkFormat);
         ASSERT_LEQ(elementSize, (uint32_t)MAX_2D_IMAGE_ELEMENT_SIZE);
         log_info("elementSize= %d\n", elementSize);
-        std::map<std::string, std::string> patternToSubstituteMap;
-        patternToSubstituteMap[GLSL_FORMAT_STRING] =
-            getVulkanFormatGLSLFormat(vkFormat);
-        patternToSubstituteMap[GLSL_TYPE_PREFIX_STRING] =
-            getVulkanFormatGLSLTypePrefix(vkFormat);
 
-        VulkanShaderModule vkImage2DShaderModule(
-            vkDevice,
-            prepareVulkanShader(vkImage2DShader, patternToSubstituteMap));
+        std::string fileName = "image2D_"
+            + std::string(getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
+        log_info("Load %s file", fileName.c_str());
+        vkImage2DShader = readFile(fileName);
+        VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
+
         VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
                                                 vkImage2DShaderModule);
 
@@ -333,13 +282,13 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
         {
             uint32_t width = widthList[wIdx];
             log_info("Width: %d\n", width);
-            ASSERT_LEQ(width, (uint32_t)MAX_2D_IMAGE_WIDTH);
+            if (width > max_width) continue;
             region[0] = width;
             for (size_t hIdx = 0; hIdx < ARRAY_SIZE(heightList); hIdx++)
             {
                 uint32_t height = heightList[hIdx];
                 log_info("Height: %d", height);
-                ASSERT_LEQ(height, (uint32_t)MAX_2D_IMAGE_HEIGHT);
+                if (height > max_height) continue;
                 region[1] = height;
 
                 uint32_t numMipLevels = 1;
@@ -418,14 +367,6 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                         const VulkanMemoryTypeList &memoryTypeList =
                             vkDummyImage2D.getMemoryTypeList();
 
-                        std::vector<VulkanDeviceMemory *>
-                            vkNonDedicatedImage2DListDeviceMemory1;
-                        std::vector<VulkanDeviceMemory *>
-                            vkNonDedicatedImage2DListDeviceMemory2;
-                        std::vector<clExternalMemoryImage *>
-                            nonDedicatedExternalMemory1;
-                        std::vector<clExternalMemoryImage *>
-                            nonDedicatedExternalMemory2;
                         for (size_t mtIdx = 0; mtIdx < memoryTypeList.size();
                              mtIdx++)
                         {
@@ -834,6 +775,8 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 }
             }
         }
+
+        vkImage2DShader.clear();
     }
 CLEANUP:
     if (clVk2CLExternalSemaphore) delete clVk2CLExternalSemaphore;
@@ -866,8 +809,8 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             VULKAN_MEMORY_TYPE_PROPERTY_HOST_VISIBLE_COHERENT));
     vkParamsDeviceMemory.bindBuffer(vkParamsBuffer);
 
-    uint64_t maxImage2DSize = MAX_2D_IMAGE_WIDTH * MAX_2D_IMAGE_HEIGHT
-        * MAX_2D_IMAGE_ELEMENT_SIZE * 2;
+    uint64_t maxImage2DSize =
+        max_width * max_height * MAX_2D_IMAGE_ELEMENT_SIZE * 2;
     VulkanBuffer vkSrcBuffer(vkDevice, maxImage2DSize);
     VulkanDeviceMemory vkSrcBufferDeviceMemory(
         vkDevice, vkSrcBuffer.getSize(),
@@ -908,6 +851,12 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
     clCl2VkExternalSemaphore = new clExternalSemaphore(
         vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
 
+    std::vector<VulkanDeviceMemory *> vkNonDedicatedImage2DListDeviceMemory1;
+    std::vector<VulkanDeviceMemory *> vkNonDedicatedImage2DListDeviceMemory2;
+    std::vector<clExternalMemoryImage *> nonDedicatedExternalMemory1;
+    std::vector<clExternalMemoryImage *> nonDedicatedExternalMemory2;
+    std::vector<char> vkImage2DShader;
+
     for (size_t fIdx = 0; fIdx < vkFormatList.size(); fIdx++)
     {
         VulkanFormat vkFormat = vkFormatList[fIdx];
@@ -915,15 +864,13 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
         uint32_t elementSize = getVulkanFormatElementSize(vkFormat);
         ASSERT_LEQ(elementSize, (uint32_t)MAX_2D_IMAGE_ELEMENT_SIZE);
         log_info("elementSize= %d\n", elementSize);
-        std::map<std::string, std::string> patternToSubstituteMap;
-        patternToSubstituteMap[GLSL_FORMAT_STRING] =
-            getVulkanFormatGLSLFormat(vkFormat);
-        patternToSubstituteMap[GLSL_TYPE_PREFIX_STRING] =
-            getVulkanFormatGLSLTypePrefix(vkFormat);
 
-        VulkanShaderModule vkImage2DShaderModule(
-            vkDevice,
-            prepareVulkanShader(vkImage2DShader, patternToSubstituteMap));
+        std::string fileName = "image2D_"
+            + std::string(getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
+        log_info("Load %s file", fileName.c_str());
+        vkImage2DShader = readFile(fileName);
+        VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
+
         VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
                                                 vkImage2DShaderModule);
 
@@ -931,13 +878,13 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
         {
             uint32_t width = widthList[wIdx];
             log_info("Width: %d\n", width);
-            ASSERT_LEQ(width, (uint32_t)MAX_2D_IMAGE_WIDTH);
+            if (width > max_width) continue;
             region[0] = width;
             for (size_t hIdx = 0; hIdx < ARRAY_SIZE(heightList); hIdx++)
             {
                 uint32_t height = heightList[hIdx];
                 log_info("Height: %d\n", height);
-                ASSERT_LEQ(height, (uint32_t)MAX_2D_IMAGE_HEIGHT);
+                if (height > max_height) continue;
                 region[1] = height;
 
                 uint32_t numMipLevels = 1;
@@ -1016,14 +963,6 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                         const VulkanMemoryTypeList &memoryTypeList =
                             vkDummyImage2D.getMemoryTypeList();
 
-                        std::vector<VulkanDeviceMemory *>
-                            vkNonDedicatedImage2DListDeviceMemory1;
-                        std::vector<VulkanDeviceMemory *>
-                            vkNonDedicatedImage2DListDeviceMemory2;
-                        std::vector<clExternalMemoryImage *>
-                            nonDedicatedExternalMemory1;
-                        std::vector<clExternalMemoryImage *>
-                            nonDedicatedExternalMemory2;
                         for (size_t mtIdx = 0; mtIdx < memoryTypeList.size();
                              mtIdx++)
                         {
@@ -1368,6 +1307,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 }
             }
         }
+        vkImage2DShader.clear();
     }
 CLEANUP:
     if (clVk2CLExternalSemaphore) delete clVk2CLExternalSemaphore;
@@ -1494,6 +1434,14 @@ int test_image_common(cl_device_id device_, cl_context context_,
         goto CLEANUP;
     }
     deviceId = devices[device_no];
+    err = setMaxImageDimensions(deviceId, max_width, max_height);
+    if (CL_SUCCESS != err)
+    {
+        print_error(err, "error setting max image dimensions");
+        goto CLEANUP;
+    }
+    log_info("Set max_width to %lu and max_height to %lu\n", max_width,
+             max_height);
     context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU,
                                       NULL, NULL, &err);
     if (CL_SUCCESS != err)
