@@ -79,7 +79,6 @@ int test_callback_event_single( cl_device_id device, cl_context context, cl_comm
 
   /*  use struct as call back para */
   CALL_BACK_USER_DATA user_data[EVENT_CALLBACK_TYPE_TOTAL];
-  int index [EVENT_CALLBACK_TYPE_TOTAL]={ 0,1,2};
   for( int i=0;i< EVENT_CALLBACK_TYPE_TOTAL; i++)
   {
        user_data[i].enevt_type=event_callback_types[i];

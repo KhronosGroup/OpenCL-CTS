@@ -361,8 +361,6 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
     clProgramWrapper program;
     clKernelWrapper kernel;
 
-    Version version = get_device_cl_version(device);
-
     error = create_single_kernel_helper(context, &program, &kernel, 1,
                                         (const char **)&kernel_code, "test");
     test_error(error, "create_single_kernel_helper failed");

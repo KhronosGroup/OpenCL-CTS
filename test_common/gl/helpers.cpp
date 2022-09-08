@@ -1381,7 +1381,6 @@ void * CreateGLTexture2DArrayMultisample(size_t width, size_t height,
 
   //calculating colors
   double color_delta = 1.0 / (total_layers * samples);
-  double color = color_delta;
 
   if (attachment != GL_DEPTH_ATTACHMENT && attachment != GL_DEPTH_STENCIL_ATTACHMENT) {
     glDisable(GL_DEPTH_TEST);

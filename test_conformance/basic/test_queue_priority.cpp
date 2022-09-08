@@ -48,13 +48,9 @@ static const char *fpmul_kernel_code =
 "    dst[tid] = srcA[tid] * srcB[tid];\n"
 "}\n";
 
-
-static const float    MAX_ERR = 1e-5f;
-
 static int
 verify_fpadd(float *inptrA, float *inptrB, float *outptr, int n, int fileNum)
 {
-    float       r;
     int         i;
 
     float * reference_ptr = (float *)malloc(n * sizeof(float));
@@ -82,7 +78,6 @@ verify_fpadd(float *inptrA, float *inptrB, float *outptr, int n, int fileNum)
 static int
 verify_fpsub(float *inptrA, float *inptrB, float *outptr, int n, int fileNum)
 {
-    float       r;
     int         i;
 
     float * reference_ptr = (float *)malloc(n * sizeof(float));
@@ -110,7 +105,6 @@ verify_fpsub(float *inptrA, float *inptrB, float *outptr, int n, int fileNum)
 static int
 verify_fpmul(float *inptrA, float *inptrB, float *outptr, int n, int fileNum)
 {
-    float       r;
     int         i;
 
     float * reference_ptr = (float *)malloc(n * sizeof(float));

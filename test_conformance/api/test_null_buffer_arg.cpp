@@ -149,7 +149,6 @@ int test_null_buffer_arg(cl_device_id device, cl_context context,
     cl_command_queue queue, int num_elements)
 {
     unsigned int test_success = 0;
-    unsigned int i;
     unsigned int buffer_size;
     cl_int status;
     cl_program program;

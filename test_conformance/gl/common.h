@@ -32,7 +32,11 @@ struct format {
 };
 
 // These are the typically tested formats.
-
+// TODO: These variables should be made const; until then, suppress unused
+// variable warnings as not every translation unit including this header uses
+// all variables.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 static struct format common_formats[] = {
 #ifdef __APPLE__
   { GL_RGBA8,        GL_BGRA,             GL_UNSIGNED_INT_8_8_8_8,         kUChar },
@@ -60,6 +64,7 @@ static struct format depth_formats[] = {
   { GL_DEPTH32F_STENCIL8,  GL_DEPTH_STENCIL,   GL_FLOAT_32_UNSIGNED_INT_24_8_REV, kFloat },
 };
 #endif
+#pragma GCC diagnostic pop
 
 int test_images_write_common(cl_device_id device, cl_context context,
   cl_command_queue queue, struct format* formats, size_t nformats,

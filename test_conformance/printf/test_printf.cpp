@@ -232,10 +232,8 @@ int waitForEvent(cl_event* event)
 //-----------------------------------------
 static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context context,const unsigned int testId,const unsigned int testNum,bool isLongSupport,bool is64bAddrSpace)
 {
-    int err,i;
+    int err;
     cl_program program;
-    cl_device_id devID;
-    char buildLog[ 1024 * 128 ];
     char testname[256] = {0};
     char addrSpaceArgument[256] = {0};
     char addrSpacePAddArgument[256] = {0};
