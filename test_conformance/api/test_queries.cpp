@@ -526,26 +526,6 @@ void CL_CALLBACK mem_obj_destructor_callback( cl_mem, void *data )
     free( data );
 }
 
-// All possible combinations of valid cl_mem_flags.
-static cl_mem_flags all_flags[16] = {
-  0,
-  CL_MEM_READ_WRITE,
-  CL_MEM_READ_ONLY,
-  CL_MEM_WRITE_ONLY,
-  CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
-  CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-  CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
-  CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
-  CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,
-};
-
 #define TEST_DEVICE_PARAM( device, paramName, val, name, type, cast )    \
 error = clGetDeviceInfo( device, paramName, sizeof( val ), &val, &size );        \
 test_error( error, "Unable to get device " name );                            \

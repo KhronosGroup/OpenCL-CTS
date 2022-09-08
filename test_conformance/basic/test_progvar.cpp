@@ -1642,8 +1642,6 @@ int test_progvar_func_scope(cl_device_id device, cl_context context, cl_command_
                  "supported on this device\n");
         return TEST_SKIPPED_ITSELF;
     }
-    size_t max_size = 0;
-    size_t pref_size = 0;
 
     cl_int err = CL_SUCCESS;
 

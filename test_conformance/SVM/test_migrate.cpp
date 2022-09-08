@@ -78,9 +78,6 @@ int test_svm_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue
     cl_uint amem[GLOBAL_SIZE];
     cl_uint bmem[GLOBAL_SIZE];
     cl_uint cmem[GLOBAL_SIZE];
-    cl_uint ramem[GLOBAL_SIZE];
-    cl_uint rbmem[GLOBAL_SIZE];
-    cl_uint rcmem[GLOBAL_SIZE];
     cl_event evs[20];
 
     const size_t global_size = GLOBAL_SIZE;

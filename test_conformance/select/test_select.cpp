@@ -173,8 +173,6 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
     char extension[128] = "";
     int  err = 0;
 
-    int i; // generic, re-usable loop variable
-
     const char *source[] = {
         extension,
         "__kernel void ", testname,

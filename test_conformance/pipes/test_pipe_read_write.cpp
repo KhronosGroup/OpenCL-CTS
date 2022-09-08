@@ -626,7 +626,6 @@ int test_pipe_readwrite_struct_generic( cl_device_id deviceID, cl_context contex
     size_t size = sizeof(TestStruct);
     size_t global_work_size[3];
     cl_int err;
-    int total_errors = 0;
     int i;
     MTdataHolder d(gRandomSeed);
     clEventWrapper producer_sync_event = NULL;
