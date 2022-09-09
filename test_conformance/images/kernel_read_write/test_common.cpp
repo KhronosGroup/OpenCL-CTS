@@ -34,9 +34,10 @@ cl_sampler create_sampler(cl_context context, image_sampler_data *sdata, bool te
     return sampler;
 }
 
-void get_image_dimensions(image_descriptor *imageInfo, size_t &width,
+cl_int get_image_dimensions(image_descriptor *imageInfo, size_t &width,
                           size_t &height, size_t &depth)
 {
+    cl_int error = CL_SUCCESS;
     width = imageInfo->width;
     height = 1;
     depth = 1;
@@ -53,10 +54,13 @@ void get_image_dimensions(image_descriptor *imageInfo, size_t &width,
             height = imageInfo->height;
             depth = imageInfo->depth;
             break;
+        default:
+            test_error(-1, "ERROR: Test does not support image type");
     }
+    return error;
 }
 
-void InitFloatCoordsCommon(image_descriptor *imageInfo,
+cl_int InitFloatCoordsCommon(image_descriptor *imageInfo,
                            image_sampler_data *imageSampler, float *xOffsets,
                            float *yOffsets, float *zOffsets, float xfract,
                            float yfract, float zfract, int normalized_coords,
@@ -64,72 +68,25 @@ void InitFloatCoordsCommon(image_descriptor *imageInfo,
 {
     size_t i = 0;
     size_t width_loop, height_loop, depth_loop;
-    get_image_dimensions(imageInfo, width_loop, height_loop, depth_loop);
-
-    if (gDisableOffsets)
+    cl_int error = get_image_dimensions(imageInfo, width_loop, height_loop, depth_loop);
+    if (!error)
     {
-        for (size_t z = 0; z < depth_loop; z++)
+        if (gDisableOffsets)
         {
-            for (size_t y = 0; y < height_loop; y++)
+            for (size_t z = 0; z < depth_loop; z++)
             {
-                for (size_t x = 0; x < width_loop; x++, i++)
+                for (size_t y = 0; y < height_loop; y++)
                 {
-                    xOffsets[i] = (float)(xfract + (double)x);
-                    yOffsets[i] = (float)(yfract + (double)y);
-                    zOffsets[i] = (float)(zfract + (double)z);
+                    for (size_t x = 0; x < width_loop; x++, i++)
+                    {
+                        xOffsets[i] = (float)(xfract + (double)x);
+                        yOffsets[i] = (float)(yfract + (double)y);
+                        zOffsets[i] = (float)(zfract + (double)z);
+                    }
                 }
             }
         }
-    }
-    else
-    {
-        for (size_t z = 0; z < depth_loop; z++)
-        {
-            for (size_t y = 0; y < height_loop; y++)
-            {
-                for (size_t x = 0; x < width_loop; x++, i++)
-                {
-                    xOffsets[i] =
-                        (float)(xfract
-                                + (double)((int)x
-                                           + random_in_range(-10, 10, d)));
-                    yOffsets[i] =
-                        (float)(yfract
-                                + (double)((int)y
-                                           + random_in_range(-10, 10, d)));
-                    zOffsets[i] =
-                        (float)(zfract
-                                + (double)((int)z
-                                           + random_in_range(-10, 10, d)));
-                }
-            }
-        }
-    }
-
-    if (imageSampler->addressing_mode == CL_ADDRESS_NONE)
-    {
-        i = 0;
-        for (size_t z = 0; z < depth_loop; z++)
-        {
-            for (size_t y = 0; y < height_loop; y++)
-            {
-                for (size_t x = 0; x < width_loop; x++, i++)
-                {
-                    xOffsets[i] = (float)CLAMP((double)xOffsets[i], 0.0,
-                                               (double)width_loop - 1.0);
-                    yOffsets[i] = (float)CLAMP((double)yOffsets[i], 0.0,
-                                               (double)height_loop - 1.0);
-                    zOffsets[i] = (float)CLAMP((double)zOffsets[i], 0.0,
-                                               (double)depth_loop - 1.0);
-                }
-            }
-        }
-    }
-
-    if (normalized_coords || gTestMipmaps)
-    {
-        i = 0;
-        if (lod == 0)
+        else
         {
             for (size_t z = 0; z < depth_loop; z++)
             {
@@ -138,58 +95,108 @@ void InitFloatCoordsCommon(image_descriptor *imageInfo,
                     for (size_t x = 0; x < width_loop; x++, i++)
                     {
                         xOffsets[i] =
-                            (float)((double)xOffsets[i] / (double)width_loop);
-                        if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
-                        {
-                            yOffsets[i] = (float)((double)yOffsets[i]
-                                                  / (double)height_loop);
-                        }
-                        if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
-                        {
-                            zOffsets[i] = (float)((double)zOffsets[i]
-                                                  / (double)depth_loop);
-                        }
+                            (float)(xfract
+                                    + (double)((int)x
+                                            + random_in_range(-10, 10, d)));
+                        yOffsets[i] =
+                            (float)(yfract
+                                    + (double)((int)y
+                                            + random_in_range(-10, 10, d)));
+                        zOffsets[i] =
+                            (float)(zfract
+                                    + (double)((int)z
+                                            + random_in_range(-10, 10, d)));
                     }
                 }
             }
         }
-        else if (gTestMipmaps)
-        {
-            size_t width_lod = (width_loop >> lod) ? (width_loop >> lod) : 1;
-            size_t height_lod = height_loop;
-            size_t depth_lod = depth_loop;
-            if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
-            {
-                height_lod = (height_loop >> lod) ? (height_loop >> lod) : 1;
-            }
-            if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
-            {
-                depth_lod = (depth_loop >> lod) ? (depth_loop >> lod) : 1;
-            }
 
-            for (size_t z = 0; z < depth_lod; z++)
+        if (imageSampler->addressing_mode == CL_ADDRESS_NONE)
+        {
+            i = 0;
+            for (size_t z = 0; z < depth_loop; z++)
             {
-                for (size_t y = 0; y < height_lod; y++)
+                for (size_t y = 0; y < height_loop; y++)
                 {
-                    for (size_t x = 0; x < width_lod; x++, i++)
+                    for (size_t x = 0; x < width_loop; x++, i++)
                     {
-                        xOffsets[i] =
-                            (float)((double)xOffsets[i] / (double)width_lod);
-                        if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
+                        xOffsets[i] = (float)CLAMP((double)xOffsets[i], 0.0,
+                                                (double)width_loop - 1.0);
+                        yOffsets[i] = (float)CLAMP((double)yOffsets[i], 0.0,
+                                                (double)height_loop - 1.0);
+                        zOffsets[i] = (float)CLAMP((double)zOffsets[i], 0.0,
+                                                (double)depth_loop - 1.0);
+                    }
+                }
+            }
+        }
+
+        if (normalized_coords || gTestMipmaps)
+        {
+            i = 0;
+            if (lod == 0)
+            {
+                for (size_t z = 0; z < depth_loop; z++)
+                {
+                    for (size_t y = 0; y < height_loop; y++)
+                    {
+                        for (size_t x = 0; x < width_loop; x++, i++)
                         {
-                            yOffsets[i] = (float)((double)yOffsets[i]
-                                                  / (double)height_lod);
+                            xOffsets[i] =
+                                (float)((double)xOffsets[i] / (double)width_loop);
+                            if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
+                            {
+                                yOffsets[i] = (float)((double)yOffsets[i]
+                                                    / (double)height_loop);
+                            }
+                            if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                            {
+                                zOffsets[i] = (float)((double)zOffsets[i]
+                                                    / (double)depth_loop);
+                            }
                         }
-                        if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                    }
+                }
+            }
+            else if (gTestMipmaps)
+            {
+                size_t width_lod = (width_loop >> lod) ? (width_loop >> lod) : 1;
+                size_t height_lod = height_loop;
+                size_t depth_lod = depth_loop;
+                if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
+                {
+                    height_lod = (height_loop >> lod) ? (height_loop >> lod) : 1;
+                }
+                if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                {
+                    depth_lod = (depth_loop >> lod) ? (depth_loop >> lod) : 1;
+                }
+
+                for (size_t z = 0; z < depth_lod; z++)
+                {
+                    for (size_t y = 0; y < height_lod; y++)
+                    {
+                        for (size_t x = 0; x < width_lod; x++, i++)
                         {
-                            zOffsets[i] = (float)((double)zOffsets[i]
-                                                  / (double)depth_lod);
+                            xOffsets[i] =
+                                (float)((double)xOffsets[i] / (double)width_lod);
+                            if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
+                            {
+                                yOffsets[i] = (float)((double)yOffsets[i]
+                                                    / (double)height_lod);
+                            }
+                            if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                            {
+                                zOffsets[i] = (float)((double)zOffsets[i]
+                                                    / (double)depth_lod);
+                            }
                         }
                     }
                 }
             }
         }
     }
+    return error;
 }
 
 cl_mem create_image_of_type(cl_context context, cl_mem_flags mem_flags,
@@ -205,6 +212,9 @@ cl_mem create_image_of_type(cl_context context, cl_mem_flags mem_flags,
                                     imageInfo->depth, row_pitch, slice_pitch,
                                     host_ptr, error);
             break;
+        default:
+            log_error("Implementation is incomplete, only 3D images are supported so far");
+            return nullptr;
     }
     return image;
 }
@@ -217,6 +227,7 @@ static size_t get_image_num_pixels(image_descriptor *imageInfo, size_t width,
     switch (imageInfo->type)
     {
         case CL_MEM_OBJECT_IMAGE3D: image_size = width * height * depth; break;
+        default: log_error("Implementation is incomplete, only 3D images are supported so far"); return 0;
     }
     return image_size;
 }
@@ -233,8 +244,9 @@ int test_read_image(cl_context context, cl_command_queue queue,
     size_t image_size =
         get_image_num_pixels(imageInfo, imageInfo->width, imageInfo->height,
                              imageInfo->depth, imageInfo->arraySize);
+    test_assert_error(0 != image_size, "Invalid image size");
     size_t width_size, height_size, depth_size;
-    get_image_dimensions(imageInfo, width_size, height_size, depth_size);
+    test_assert_error(get_image_dimensions(imageInfo, width_size, height_size, depth_size), "invalid image dimensions");
 
     cl_mem_flags image_read_write_flags = CL_MEM_READ_ONLY;
 
@@ -379,6 +391,8 @@ int test_read_image(cl_context context, cl_command_queue queue,
         }
     }
 
+    test_assert_error(nullptr != image, "Image creation failed");
+
     if (gMemFlagsToUse != CL_MEM_COPY_HOST_PTR)
     {
         size_t origin[4] = { 0, 0, 0, 0 };
@@ -520,6 +534,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
     {
         size_t image_lod_size = get_image_num_pixels(
             imageInfo, width_lod, height_lod, depth_lod, imageInfo->arraySize);
+        test_assert_error(0 != image_lod_size, "Invalid image size");
         size_t resultValuesSize =
             image_lod_size * get_explicit_type_size(outputType) * 4;
         BufferOwningPtr<char> resultValues(malloc(resultValuesSize));
@@ -537,12 +552,13 @@ int test_read_image(cl_context context, cl_command_queue queue,
             float offset = float_offsets[q % float_offset_count];
 
             // Init the coordinates
-            InitFloatCoordsCommon(imageInfo, imageSampler, xOffsetValues,
+            error = InitFloatCoordsCommon(imageInfo, imageSampler, xOffsetValues,
                                   yOffsetValues, zOffsetValues,
                                   q >= float_offset_count ? -offset : offset,
                                   q >= float_offset_count ? offset : -offset,
                                   q >= float_offset_count ? -offset : offset,
                                   imageSampler->normalized_coords, d, lod);
+            test_error(error, "Unable to initialise coordinates");
 
             error = clEnqueueWriteBuffer(queue, xOffsets, CL_TRUE, 0,
                                          sizeof(cl_float) * image_size,
