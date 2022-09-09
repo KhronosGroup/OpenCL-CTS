@@ -1256,6 +1256,7 @@ static int l_capacity( cl_device_id device, cl_context context, cl_command_queue
     char prog_src[MAX_STR];
     int num_printed = snprintf(prog_src,sizeof(prog_src),prog_src_template,max_size, max_size);
     assert( num_printed < MAX_STR ); // or increase MAX_STR
+    (void)num_printed;
 
     StringTable ksrc;
     ksrc.add( prog_src );
