@@ -42,8 +42,8 @@ extern int test_read_image(cl_context context, cl_command_queue queue,
                            bool useFloatCoords, ExplicitType outputType,
                            MTdata d);
 
-extern void get_image_dimensions(image_descriptor *imageInfo, size_t &width,
-                                 size_t &height, size_t &depth);
+extern cl_int get_image_dimensions(image_descriptor *imageInfo, size_t &width,
+                                   size_t &height, size_t &depth);
 
 template <class T>
 int determine_validation_error_offset(
