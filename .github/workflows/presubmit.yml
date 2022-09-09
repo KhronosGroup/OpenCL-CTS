@@ -24,6 +24,8 @@ jobs:
             mainmatrix: false
             arch: aarch64
     steps:
+      - name: Install packages
+        run: if [[ "${{matrix.os}}" == "ubuntu-20.04" ]]; then sudo apt install -y spirv-tools; fi
       - uses: actions/checkout@v2
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
