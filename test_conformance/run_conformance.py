@@ -8,14 +8,14 @@
 #//
 #******************************************************************/
 
+from __future__ import print_function
+
 import os
 import re
 import sys
 import subprocess
 import time
-import commands
 import tempfile
-import math
 import string
 
 DEBUG = 0
@@ -144,7 +144,7 @@ def run_test_checking_output(current_directory, test_dir, log_file):
         if not done and p.returncode != None:
             if p.returncode < 0:
                 if not output_this_run:
-                    print ""
+                    print("")
                     output_this_run = True
                 write_screen_log("           ==> ERROR: test killed/crashed: " + str(p.returncode) + ".")
             done = True
@@ -161,7 +161,7 @@ def run_test_checking_output(current_directory, test_dir, log_file):
             match = re.search(".*(FAILED|ERROR).*", line)
             if match:
                 if not output_this_run:
-                    print ""
+                    print("")
                     output_this_run = True
                 print("           ==> " + line.replace('\n', ''))
             match = re.search(".*FAILED.*", line)
@@ -170,7 +170,7 @@ def run_test_checking_output(current_directory, test_dir, log_file):
             match = re.search(".*(PASSED).*", line)
             if match:
                 if not output_this_run:
-                    print ""
+                    print("")
                     output_this_run = True
                 print("               " + line.replace('\n', ''))
             # Write it to the log
@@ -193,7 +193,6 @@ def run_test_checking_output(current_directory, test_dir, log_file):
             except IOError:
                 write_screen_log("\n           ==> ERROR: could not reopen output file from test.")
                 return -1
-                done = True
         else:
             line = line + char_read
             pointer = pointer + 1
@@ -227,7 +226,7 @@ def run_tests(tests):
             log_file.write("========================================================================================\n")
             log_file.write("========================================================================================\n")
             previous_test = test_dir
-        print("(" + get_time() + ")     BEGIN  " + test_name.ljust(40) + ": "),
+        print("(" + get_time() + ")     BEGIN  " + test_name.ljust(40) + ": ", end='')
         log_file.write("     ----------------------------------------------------------------------------------------\n")
         log_file.write("     (" + get_time() + ")     Running Sub Test: " + test_name + "\n")
         log_file.write("     ----------------------------------------------------------------------------------------\n")
@@ -256,9 +255,9 @@ def run_tests(tests):
 
         # Move print the finish status
         if result == 0:
-            print("(" + get_time() + ")     PASSED " + test_name.ljust(40) + ": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) + ")"),
+            print("(" + get_time() + ")     PASSED " + test_name.ljust(40) + ": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) + ")", end='')
         else:
-            print("(" + get_time() + ")     FAILED " + test_name.ljust(40) + ": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) + ")"),
+            print("(" + get_time() + ")     FAILED " + test_name.ljust(40) + ": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) + ")", end='')
 
         test_number = test_number + 1
         log_file.write("     ----------------------------------------------------------------------------------------\n")
@@ -295,7 +294,8 @@ for arg in sys.argv:
 try:
     log_file = open(log_file_name, "w")
 except IOError:
-    print "Could not open log file " + log_file_name
+    print("Could not open log file " + log_file_name)
+    sys.exit(-1)
 
 # Determine which devices to test
 device_types = ["CL_DEVICE_TYPE_DEFAULT", "CL_DEVICE_TYPE_CPU", "CL_DEVICE_TYPE_GPU", "CL_DEVICE_TYPE_ACCELERATOR", "CL_DEVICE_TYPE_ALL"]
