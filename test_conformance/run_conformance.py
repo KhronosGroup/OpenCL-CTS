@@ -18,6 +18,9 @@ import time
 import tempfile
 import string
 
+if sys.version_info[0] < 3:
+    import commands
+
 DEBUG = 0
 
 log_file_name = "opencl_conformance_results_" + time.strftime("%Y-%m-%d_%H-%M", time.localtime()) + ".log"
@@ -63,19 +66,33 @@ def get_tests(filename, devices_to_test):
         comment = re.search("^#.*", line)
         if comment:
             continue
-        device_specific_match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*,\s*(.+?)\s*$", line)
+        if sys.version_info[0] < 3:
+            device_specific_match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*,\s*(.+?)\s*$", line)
+        else:
+            device_specific_match = re.search("^\s*(.+)\s*,\s*(.+)\s*,\s*(.+)\s*", line)
         if device_specific_match:
             if device_specific_match.group(1) in devices_to_test:
-                test_path = string.replace(device_specific_match.group(3), '/', os.sep)
-                test_name = string.replace(device_specific_match.group(2), '/', os.sep)
+                if sys.version_info[0] < 3:
+                    test_path = string.replace(device_specific_match.group(3), '/', os.sep)
+                    test_name = string.replace(device_specific_match.group(2), '/', os.sep)
+                else:
+                    test_path = str.replace(device_specific_match.group(3), '/', os.sep)
+                    test_name = str.replace(device_specific_match.group(2), '/', os.sep)
                 tests.append((test_name, test_path))
             else:
                 print("Skipping " + device_specific_match.group(2) + " because " + device_specific_match.group(1) + " is not in the list of devices to test.")
             continue
-        match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*$", line)
+        if sys.version_info[0] < 3:
+            match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*$", line)
+        else:
+            match = re.search("^\s*(.+)\s*,\s*(.+)\s*", line)
         if match:
-            test_path = string.replace(match.group(2), '/', os.sep)
-            test_name = string.replace(match.group(1), '/', os.sep)
+            if sys.version_info[0] < 3:
+                test_path = string.replace(match.group(2), '/', os.sep)
+                test_name = string.replace(match.group(1), '/', os.sep)
+            else:
+                test_path = str.replace(match.group(2), '/', os.sep)
+                test_name = str.replace(match.group(1), '/', os.sep)
             tests.append((test_name, test_path))
     return tests
 
@@ -243,7 +260,10 @@ def run_tests(tests):
             # Catch an interrupt from the user
             write_screen_log("\nFAILED: Execution interrupted.  Killing test process, but not aborting full test run.")
             os.kill(process_pid, 9)
-            answer = raw_input("Abort all tests? (y/n)")
+            if sys.version_info[0] < 3:
+                answer = raw_input("Abort all tests? (y/n)")
+            else:
+                answer = input("Abort all tests? (y/n)")
             if answer.find("y") != -1:
                 write_screen_log("\nUser chose to abort all tests.")
                 log_file.close()
