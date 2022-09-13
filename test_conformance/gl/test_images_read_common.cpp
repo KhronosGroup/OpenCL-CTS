@@ -386,10 +386,9 @@ static int test_image_read( cl_context context, cl_command_queue queue,
     width, height, depth, sampleNum, outFormat, outType, outResultBuffer );
 }
 
-static int test_image_format_read(
-    cl_context context, cl_command_queue queue,
-    size_t width, size_t height, size_t depth,
-    GLenum target, struct format* fmt, MTdata data)
+static int test_image_format_read(cl_context context, cl_command_queue queue,
+                                  size_t width, size_t height, size_t depth,
+                                  GLenum target, const format *fmt, MTdata data)
 {
   int error = 0;
 
@@ -645,9 +644,10 @@ static int test_image_format_read(
   }
 }
 
-int test_images_read_common( cl_device_id device, cl_context context,
-  cl_command_queue queue, struct format* formats, size_t nformats,
-  GLenum *targets, size_t ntargets, sizevec_t *sizes, size_t nsizes )
+int test_images_read_common(cl_device_id device, cl_context context,
+                            cl_command_queue queue, const format *formats,
+                            size_t nformats, GLenum *targets, size_t ntargets,
+                            sizevec_t *sizes, size_t nsizes)
 {
   int error = 0;
   RandomSeed seed(gRandomSeed);
