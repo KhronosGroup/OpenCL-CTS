@@ -660,8 +660,9 @@ static int test_image_format_write( cl_context context, cl_command_queue queue,
 // combination.
 
 int test_images_write_common(cl_device_id device, cl_context context,
-  cl_command_queue queue, struct format* formats, size_t nformats,
-  GLenum *targets, size_t ntargets, sizevec_t* sizes, size_t nsizes )
+                             cl_command_queue queue, const format *formats,
+                             size_t nformats, GLenum *targets, size_t ntargets,
+                             sizevec_t *sizes, size_t nsizes)
 {
   int err = 0;
   int error = 0;
