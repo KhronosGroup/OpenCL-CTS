@@ -55,7 +55,7 @@ commandStatus, void * userData )
 /*   use struct as call back para */
 typedef struct
 {
-    cl_int enevt_type;
+    cl_int event_type;
     int index;
 } CALL_BACK_USER_DATA;
 
@@ -67,7 +67,7 @@ void CL_CALLBACK single_event_callback_function_flags(cl_event event,
     CALL_BACK_USER_DATA *pdata = static_cast<CALL_BACK_USER_DATA *>(userData);
 
     log_info("\tEvent callback  %d  of type %d triggered\n", pdata->index,
-             pdata->enevt_type);
+             pdata->event_type);
     sCallbackTriggered_flag[pdata->index] = true;
 }
 
@@ -95,7 +95,7 @@ int test_callback_event_single(cl_device_id device, cl_context context,
     CALL_BACK_USER_DATA user_data[EVENT_CALLBACK_TYPE_TOTAL];
     for (int i = 0; i < EVENT_CALLBACK_TYPE_TOTAL; i++)
     {
-        user_data[i].enevt_type = event_callback_types[i];
+        user_data[i].event_type = event_callback_types[i];
         user_data[i].index = i;
         error = clSetEventCallback(actualEvent, event_callback_types[i],
                                    single_event_callback_function_flags,
