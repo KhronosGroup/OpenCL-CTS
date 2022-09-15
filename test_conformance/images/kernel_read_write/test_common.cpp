@@ -54,7 +54,9 @@ cl_int get_image_dimensions(image_descriptor *imageInfo, size_t &width,
             height = imageInfo->height;
             depth = imageInfo->depth;
             break;
-        default: test_error(-1, "ERROR: Test does not support image type");
+        default:
+            log_error("ERROR: Test does not support image type");
+            return TEST_FAIL;
     }
     return error;
 }

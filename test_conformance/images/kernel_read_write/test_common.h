@@ -60,7 +60,9 @@ int determine_validation_error_offset(
     int clampedX, clampedY, clampedZ;
 
     size_t imageWidth, imageHeight, imageDepth;
-    get_image_dimensions(imageInfo, imageWidth, imageHeight, imageDepth);
+    cl_int error =
+        get_image_dimensions(imageInfo, imageWidth, imageHeight, imageDepth);
+    test_error(error, "invalid image dimensions");
 
     clamped = get_integer_coords_offset(x, y, z, xAddressOffset, yAddressOffset,
                                         zAddressOffset, imageWidth, imageHeight,
