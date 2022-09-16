@@ -1949,7 +1949,8 @@ double reference_lgamma(double x)
         w6 = -1.63092934096575273989e-03; /* 0xBF5AB89D, 0x0B9E43E4 */
 
     static const double zero = 0.00000000000000000000e+00;
-    double t, y, z, nadj, p, p1, p2, p3, q, r, w;
+    double nadj = zero;
+    double t, y, z, p, p1, p2, p3, q, r, w;
     cl_int i, hx, lx, ix;
 
     union {
