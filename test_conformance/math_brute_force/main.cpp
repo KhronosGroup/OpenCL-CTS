@@ -360,16 +360,18 @@ static int ParseArgs(int argc, const char **argv)
     int singleThreaded = 0;
 
     { // Extract the app name
-        strncpy(appName, argv[0], MAXPATHLEN);
+        strncpy(appName, argv[0], MAXPATHLEN - 1);
+        appName[MAXPATHLEN - 1] = '\0';
 
 #if defined(__APPLE__)
         char baseName[MAXPATHLEN];
         char *base = NULL;
-        strncpy(baseName, argv[0], MAXPATHLEN);
+        strncpy(baseName, argv[0], MAXPATHLEN - 1);
+        baseName[MAXPATHLEN - 1] = '\0';
         base = basename(baseName);
         if (NULL != base)
         {
-            strncpy(appName, base, sizeof(appName));
+            strncpy(appName, base, sizeof(appName) - 1);
             appName[sizeof(appName) - 1] = '\0';
         }
 #endif
