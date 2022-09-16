@@ -34,10 +34,9 @@ cl_sampler create_sampler(cl_context context, image_sampler_data *sdata, bool te
     return sampler;
 }
 
-cl_int get_image_dimensions(image_descriptor *imageInfo, size_t &width,
-                            size_t &height, size_t &depth)
+bool get_image_dimensions(image_descriptor *imageInfo, size_t &width,
+                          size_t &height, size_t &depth)
 {
-    cl_int error = CL_SUCCESS;
     width = imageInfo->width;
     height = 1;
     depth = 1;
@@ -58,18 +57,17 @@ cl_int get_image_dimensions(image_descriptor *imageInfo, size_t &width,
             log_error("ERROR: Test does not support image type");
             return TEST_FAIL;
     }
-    return error;
+    return 0;
 }
 
-cl_int InitFloatCoordsCommon(image_descriptor *imageInfo,
-                             image_sampler_data *imageSampler, float *xOffsets,
-                             float *yOffsets, float *zOffsets, float xfract,
-                             float yfract, float zfract, int normalized_coords,
-                             MTdata d, int lod)
+static test_status InitFloatCoordsCommon(
+    image_descriptor *imageInfo, image_sampler_data *imageSampler,
+    float *xOffsets, float *yOffsets, float *zOffsets, float xfract,
+    float yfract, float zfract, int normalized_coords, MTdata d, int lod)
 {
     size_t i = 0;
     size_t width_loop, height_loop, depth_loop;
-    cl_int error =
+    bool error =
         get_image_dimensions(imageInfo, width_loop, height_loop, depth_loop);
     if (!error)
     {
@@ -254,9 +252,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
                              imageInfo->depth, imageInfo->arraySize);
     test_assert_error(0 != image_size, "Invalid image size");
     size_t width_size, height_size, depth_size;
-    test_error(
-        get_image_dimensions(imageInfo, width_size, height_size, depth_size),
-        "invalid image dimensions");
+    if (get_image_dimensions(imageInfo, width_size, height_size, depth_size))
+    {
+        log_error("ERROR: invalid image dimensions");
+        return CL_INVALID_VALUE;
+    }
 
     cl_mem_flags image_read_write_flags = CL_MEM_READ_ONLY;
 

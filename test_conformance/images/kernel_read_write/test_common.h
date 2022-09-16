@@ -46,7 +46,7 @@ extern cl_int get_image_dimensions(image_descriptor *imageInfo, size_t &width,
                                    size_t &height, size_t &depth);
 
 template <class T>
-int determine_validation_error_offset(
+test_status determine_validation_error_offset(
     void *imagePtr, image_descriptor *imageInfo,
     image_sampler_data *imageSampler, T *resultPtr, T *expected, float error,
     float x, float y, float z, float xAddressOffset, float yAddressOffset,
@@ -60,9 +60,11 @@ int determine_validation_error_offset(
     int clampedX, clampedY, clampedZ;
 
     size_t imageWidth, imageHeight, imageDepth;
-    cl_int error =
-        get_image_dimensions(imageInfo, imageWidth, imageHeight, imageDepth);
-    test_error(error, "invalid image dimensions");
+    if (get_image_dimensions(imageInfo, width_size, height_size, depth_size))
+    {
+        log_error("ERROR: invalid image dimensions");
+        return TEST_FAIL;
+    }
 
     clamped = get_integer_coords_offset(x, y, z, xAddressOffset, yAddressOffset,
                                         zAddressOffset, imageWidth, imageHeight,
