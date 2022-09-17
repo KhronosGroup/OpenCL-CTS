@@ -42,11 +42,11 @@ extern int test_read_image(cl_context context, cl_command_queue queue,
                            bool useFloatCoords, ExplicitType outputType,
                            MTdata d);
 
-extern cl_int get_image_dimensions(image_descriptor *imageInfo, size_t &width,
-                                   size_t &height, size_t &depth);
+extern bool get_image_dimensions(image_descriptor *imageInfo, size_t &width,
+                                 size_t &height, size_t &depth);
 
 template <class T>
-test_status determine_validation_error_offset(
+int determine_validation_error_offset(
     void *imagePtr, image_descriptor *imageInfo,
     image_sampler_data *imageSampler, T *resultPtr, T *expected, float error,
     float x, float y, float z, float xAddressOffset, float yAddressOffset,
@@ -60,7 +60,7 @@ test_status determine_validation_error_offset(
     int clampedX, clampedY, clampedZ;
 
     size_t imageWidth, imageHeight, imageDepth;
-    if (get_image_dimensions(imageInfo, width_size, height_size, depth_size))
+    if (get_image_dimensions(imageInfo, imageWidth, imageHeight, imageDepth))
     {
         log_error("ERROR: invalid image dimensions");
         return TEST_FAIL;

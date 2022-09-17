@@ -60,10 +60,12 @@ bool get_image_dimensions(image_descriptor *imageInfo, size_t &width,
     return 0;
 }
 
-static test_status InitFloatCoordsCommon(
-    image_descriptor *imageInfo, image_sampler_data *imageSampler,
-    float *xOffsets, float *yOffsets, float *zOffsets, float xfract,
-    float yfract, float zfract, int normalized_coords, MTdata d, int lod)
+static bool InitFloatCoordsCommon(image_descriptor *imageInfo,
+                                  image_sampler_data *imageSampler,
+                                  float *xOffsets, float *yOffsets,
+                                  float *zOffsets, float xfract, float yfract,
+                                  float zfract, int normalized_coords, MTdata d,
+                                  int lod)
 {
     size_t i = 0;
     size_t width_loop, height_loop, depth_loop;
