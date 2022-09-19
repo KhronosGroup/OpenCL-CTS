@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -639,7 +639,6 @@ int main(int argc, const char* argv[])
         s_wimpy_mode = true;
     }
 
-    log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
     if (s_wimpy_mode) {
         log_info("\n");
         log_info("*** WARNING: Testing in Wimpy mode!                     ***\n");
@@ -668,4 +667,3 @@ static void printUsage( void )
         log_info( "\t%s\n", test_list[i].name );
     }
 }
-
