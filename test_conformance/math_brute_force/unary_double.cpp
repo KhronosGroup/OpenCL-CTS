@@ -427,7 +427,7 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         test_info.k[i].resize(test_info.threadCount, nullptr);
     }
 
-    test_info.tinfo.resize(test_info.threadCount, ThreadInfo{});
+    test_info.tinfo.resize(test_info.threadCount);
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {
