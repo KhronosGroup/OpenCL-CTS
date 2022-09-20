@@ -131,8 +131,7 @@ exit:
 static int ParseArgs( int argc, const char **argv )
 {
     int i;
-    argList = (const char **)calloc( argc - 1, sizeof( char*) );
-
+    argList = (const char **)calloc(argc, sizeof(char *));
     if( NULL == argList )
     {
         vlog_error( "Failed to allocate memory for argList.\n" );
