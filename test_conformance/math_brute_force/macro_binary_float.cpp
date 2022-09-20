@@ -125,7 +125,7 @@ struct ThreadInfo
     clMemWrapper inBuf2;
     Buffers outBuf;
 
-    MTdata d;
+    MTdataHolder d;
 
     // Per thread command queue to improve performance
     clCommandQueueWrapper tQueue;
@@ -605,7 +605,7 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         test_info.k[i].resize(test_info.threadCount, nullptr);
     }
 
-    test_info.tinfo.resize(test_info.threadCount, ThreadInfo{});
+    test_info.tinfo.resize(test_info.threadCount);
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {
@@ -654,7 +654,7 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
         }
 
-        test_info.tinfo[i].d = init_genrand(genrand_int32(d));
+        test_info.tinfo[i].d = MTdataHolder(genrand_int32(d));
     }
 
     // Init the kernels
@@ -691,11 +691,6 @@ exit:
         {
             clReleaseKernel(kernel);
         }
-    }
-
-    for (auto &threadInfo : test_info.tinfo)
-    {
-        free_mtdata(threadInfo.d);
     }
 
     return error;
