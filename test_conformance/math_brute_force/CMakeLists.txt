@@ -40,4 +40,14 @@ set(${MODULE_NAME}_SOURCES
     utility.h
 )
 
+# math_brute_force compiles cleanly with -Wall but other tests not (yet), so
+# enable -Wall locally.
+if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    SET_SOURCE_FILES_PROPERTIES(
+        ${${MODULE_NAME}_SOURCES}
+        PROPERTIES
+        COMPILE_FLAGS "-Wall -Wno-format -Wno-strict-aliasing -Wno-unknown-pragmas"
+    )
+endif()
+
 include(../CMakeCommon.txt)
