@@ -18,9 +18,6 @@ import time
 import tempfile
 import string
 
-if sys.version_info[0] < 3:
-    import commands
-
 DEBUG = 0
 
 log_file_name = "opencl_conformance_results_" + time.strftime("%Y-%m-%d_%H-%M", time.localtime()) + ".log"
@@ -72,12 +69,8 @@ def get_tests(filename, devices_to_test):
             device_specific_match = re.search("^\s*(.+)\s*,\s*(.+)\s*,\s*(.+)\s*", line)
         if device_specific_match:
             if device_specific_match.group(1) in devices_to_test:
-                if sys.version_info[0] < 3:
-                    test_path = string.replace(device_specific_match.group(3), '/', os.sep)
-                    test_name = string.replace(device_specific_match.group(2), '/', os.sep)
-                else:
-                    test_path = str.replace(device_specific_match.group(3), '/', os.sep)
-                    test_name = str.replace(device_specific_match.group(2), '/', os.sep)
+                test_path = str.replace(device_specific_match.group(3), '/', os.sep)
+                test_name = str.replace(device_specific_match.group(2), '/', os.sep)
                 tests.append((test_name, test_path))
             else:
                 print("Skipping " + device_specific_match.group(2) + " because " + device_specific_match.group(1) + " is not in the list of devices to test.")
@@ -87,12 +80,8 @@ def get_tests(filename, devices_to_test):
         else:
             match = re.search("^\s*(.+)\s*,\s*(.+)\s*", line)
         if match:
-            if sys.version_info[0] < 3:
-                test_path = string.replace(match.group(2), '/', os.sep)
-                test_name = string.replace(match.group(1), '/', os.sep)
-            else:
-                test_path = str.replace(match.group(2), '/', os.sep)
-                test_name = str.replace(match.group(1), '/', os.sep)
+            test_path = str.replace(match.group(2), '/', os.sep)
+            test_name = str.replace(match.group(1), '/', os.sep)
             tests.append((test_name, test_path))
     return tests
 
