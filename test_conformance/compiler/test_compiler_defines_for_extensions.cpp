@@ -79,11 +79,13 @@ const char *known_extensions[] = {
     "cl_khr_spirv_linkonce_odr",
     "cl_khr_semaphore",
     "cl_khr_external_semaphore",
-    "cl_khr_external_semaphore_opaque_fd",
+    "cl_khr_external_semaphore_win32",
     "cl_khr_external_semaphore_sync_fd",
-    "cl_khr_command_buffer",
+    "cl_khr_external_semaphore_opaque_fd",
     "cl_khr_external_memory",
+    "cl_khr_external_memory_win32",
     "cl_khr_external_memory_opaque_fd",
+    "cl_khr_command_buffer",
     "cl_khr_command_buffer_mutable_dispatch",
 };
 
