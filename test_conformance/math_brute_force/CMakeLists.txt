@@ -40,14 +40,8 @@ set(${MODULE_NAME}_SOURCES
     utility.h
 )
 
-# math_brute_force compiles cleanly with -Wall but other tests not (yet), so
-# enable -Wall locally.
-if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
-    SET_SOURCE_FILES_PROPERTIES(
-        ${${MODULE_NAME}_SOURCES}
-        PROPERTIES
-        COMPILE_FLAGS "-Wall -Wno-format -Wno-strict-aliasing -Wno-unknown-pragmas"
-    )
-endif()
+# math_brute_force compiles cleanly with -Wall (except for a few remaining
+# warnings), but other tests not (yet); so enable -Wall locally.
+set_gnulike_module_compile_flags("-Wall -Wno-format -Wno-strict-aliasing -Wno-unknown-pragmas")
 
 include(../CMakeCommon.txt)
