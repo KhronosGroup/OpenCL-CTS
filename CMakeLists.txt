@@ -113,6 +113,17 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
 endif()
 
+# Set a module's COMPILE_FLAGS if using gcc or clang.
+macro(set_gnulike_module_compile_flags flags)
+    if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+        SET_SOURCE_FILES_PROPERTIES(
+            ${${MODULE_NAME}_SOURCES}
+            PROPERTIES
+            COMPILE_FLAGS ${flags}
+        )
+    endif()
+endmacro(set_gnulike_module_compile_flags)
+
 if(MSVC)
     # Don't warn when using standard non-secure functions.
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)

@@ -21,13 +21,7 @@ set(${MODULE_NAME}_SOURCES
 
 # Make unused variables not fatal in this module; see
 # https://github.com/KhronosGroup/OpenCL-CTS/issues/1484
-if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
-  SET_SOURCE_FILES_PROPERTIES(
-    ${${MODULE_NAME}_SOURCES}
-    PROPERTIES
-    COMPILE_FLAGS "-Wno-error=unused-variable"
-  )
-endif()
+set_gnulike_module_compile_flags("-Wno-error=unused-variable")
 
 include(../../CMakeCommon.txt)
 
