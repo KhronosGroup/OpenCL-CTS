@@ -502,8 +502,6 @@ static int ParseArgs(int argc, const char **argv)
         gWimpyMode = 1;
     }
 
-    vlog("\nTest binary built %s %s\n", __DATE__, __TIME__);
-
     PrintArch();
 
     if (gWimpyMode)
