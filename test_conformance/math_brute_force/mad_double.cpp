@@ -26,94 +26,13 @@ namespace {
 int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
                 bool relaxedMode)
 {
-    const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-                        "__kernel void math_kernel",
-                        sizeNames[vectorSize],
-                        "( __global double",
-                        sizeNames[vectorSize],
-                        "* out, __global double",
-                        sizeNames[vectorSize],
-                        "* in1, __global double",
-                        sizeNames[vectorSize],
-                        "* in2,  __global double",
-                        sizeNames[vectorSize],
-                        "* in3 )\n"
-                        "{\n"
-                        "   size_t i = get_global_id(0);\n"
-                        "   out[i] = ",
-                        name,
-                        "( in1[i], in2[i], in3[i] );\n"
-                        "}\n" };
-
-    const char *c3[] = {
-        "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-        "__kernel void math_kernel",
-        sizeNames[vectorSize],
-        "( __global double* out, __global double* in, __global double* in2, "
-        "__global double* in3)\n"
-        "{\n"
-        "   size_t i = get_global_id(0);\n"
-        "   if( i + 1 < get_global_size(0) )\n"
-        "   {\n"
-        "       double3 d0 = vload3( 0, in + 3 * i );\n"
-        "       double3 d1 = vload3( 0, in2 + 3 * i );\n"
-        "       double3 d2 = vload3( 0, in3 + 3 * i );\n"
-        "       d0 = ",
-        name,
-        "( d0, d1, d2 );\n"
-        "       vstore3( d0, 0, out + 3*i );\n"
-        "   }\n"
-        "   else\n"
-        "   {\n"
-        "       size_t parity = i & 1;   // Figure out how many elements are "
-        "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
-        "buffer size \n"
-        "       double3 d0;\n"
-        "       double3 d1;\n"
-        "       double3 d2;\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 1:\n"
-        "               d0 = (double3)( in[3*i], NAN, NAN ); \n"
-        "               d1 = (double3)( in2[3*i], NAN, NAN ); \n"
-        "               d2 = (double3)( in3[3*i], NAN, NAN ); \n"
-        "               break;\n"
-        "           case 0:\n"
-        "               d0 = (double3)( in[3*i], in[3*i+1], NAN ); \n"
-        "               d1 = (double3)( in2[3*i], in2[3*i+1], NAN ); \n"
-        "               d2 = (double3)( in3[3*i], in3[3*i+1], NAN ); \n"
-        "               break;\n"
-        "       }\n"
-        "       d0 = ",
-        name,
-        "( d0, d1, d2 );\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 0:\n"
-        "               out[3*i+1] = d0.y; \n"
-        "               // fall through\n"
-        "           case 1:\n"
-        "               out[3*i] = d0.x; \n"
-        "               break;\n"
-        "       }\n"
-        "   }\n"
-        "}\n"
-    };
-
-    const char **kern = c;
-    size_t kernSize = sizeof(c) / sizeof(c[0]);
-
-    if (sizeValues[vectorSize] == 3)
-    {
-        kern = c3;
-        kernSize = sizeof(c3) / sizeof(c3[0]);
-    }
-
-    char testName[32];
-    snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
-             sizeNames[vectorSize]);
-
-    return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
+    auto kernel_name = GetKernelName(vectorSize);
+    auto source = GetTernaryKernel(kernel_name, name, ParameterType::Double,
+                                   ParameterType::Double, ParameterType::Double,
+                                   ParameterType::Double, vectorSize);
+    std::array<const char *, 1> sources{ source.c_str() };
+    return MakeKernel(sources.data(), sources.size(), kernel_name.c_str(), k, p,
+                      relaxedMode);
 }
 
 struct BuildKernelInfo2
