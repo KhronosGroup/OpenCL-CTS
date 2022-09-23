@@ -69,7 +69,7 @@ void createKernelSourceCode(std::stringstream &stream, int num_pipes)
                   }
           }
           )";
-          // clang-format om
+        // clang-format on
     }
     stream << R"(
     }
