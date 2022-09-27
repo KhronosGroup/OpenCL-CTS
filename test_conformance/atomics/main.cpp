@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,6 +24,7 @@
 #include <unistd.h>
 #endif
 
+// clang-format off
 test_definition test_list[] = {
     ADD_TEST( atomic_add ),
     ADD_TEST( atomic_sub ),
@@ -40,11 +41,11 @@ test_definition test_list[] = {
     ADD_TEST( atomic_add_index ),
     ADD_TEST( atomic_add_index_bin ),
 };
+// clang-format on
 
-const int test_num = ARRAY_SIZE( test_list );
+const int test_num = ARRAY_SIZE(test_list);
 
 int main(int argc, const char *argv[])
 {
     return runTestHarness(argc, argv, test_num, test_list, false, 0);
 }
-
