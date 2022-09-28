@@ -40,7 +40,7 @@ int test_atomic_add_index(cl_device_id deviceID, cl_context context,
     clKernelWrapper kernel;
     clMemWrapper counter, counters;
     size_t numGlobalThreads, numLocalThreads;
-    int fail = 0, succeed = 0, err;
+    int fail = 0, err;
 
     /* Check if atomics are supported. */
     if (!is_extension_available(deviceID, "cl_khr_global_int32_base_atomics"))
@@ -85,7 +85,6 @@ int test_atomic_add_index(cl_device_id deviceID, cl_context context,
         log_error(
             "add_index_test FAILED to allocate memory for initial values.\n");
         fail = 1;
-        succeed = -1;
     }
     else
     {
@@ -104,7 +103,6 @@ int test_atomic_add_index(cl_device_id deviceID, cl_context context,
                 "add_index_test FAILED to write initial values to arrays: %d\n",
                 err);
             fail = 1;
-            succeed = -1;
         }
         else
         {
@@ -115,7 +113,6 @@ int test_atomic_add_index(cl_device_id deviceID, cl_context context,
                 log_error("add_index_test FAILED to set kernel arguments: %d\n",
                           err);
                 fail = 1;
-                succeed = -1;
             }
             else
             {
@@ -127,7 +124,6 @@ int test_atomic_add_index(cl_device_id deviceID, cl_context context,
                     log_error("add_index_test FAILED to execute kernel: %d\n",
                               err);
                     fail = 1;
-                    succeed = -1;
                 }
                 else
                 {
@@ -140,7 +136,6 @@ int test_atomic_add_index(cl_device_id deviceID, cl_context context,
                             "add_index_test FAILED to read back results: %d\n",
                             err);
                         fail = 1;
-                        succeed = -1;
                     }
                     else
                     {
@@ -161,7 +156,6 @@ int test_atomic_add_index(cl_device_id deviceID, cl_context context,
                                     "instances (%d!=1) for counter %d.\n",
                                     instances_found, looking_for);
                                 fail = 1;
-                                succeed = -1;
                             }
                         }
                     }
@@ -208,7 +202,6 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     int max_counts_per_bin = divisor * 2;
 
     int fail = 0;
-    int succeed = 0;
     int err;
 
     clProgramWrapper program;
@@ -353,7 +346,6 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
         log_error("add_index_bin_test FAILED to set kernel arguments: %d\n",
                   err);
         fail = 1;
-        succeed = -1;
         return -1;
     }
 
@@ -363,7 +355,6 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     {
         log_error("add_index_bin_test FAILED to execute kernel: %d\n", err);
         fail = 1;
-        succeed = -1;
     }
 
     cl_int *final_bin_assignments =
@@ -382,7 +373,6 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     {
         log_error("add_index_bin_test FAILED to read back bins: %d\n", err);
         fail = 1;
-        succeed = -1;
     }
 
     cl_int *final_bin_counts =
@@ -401,7 +391,6 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
         log_error("add_index_bin_test FAILED to read back bin_counters: %d\n",
                   err);
         fail = 1;
-        succeed = -1;
     }
 
     // Verification.
