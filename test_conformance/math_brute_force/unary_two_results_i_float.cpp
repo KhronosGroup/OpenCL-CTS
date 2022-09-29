@@ -385,8 +385,9 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             if (gVerboseBruteForce)
             {
-                vlog("base:%14" PRIu64 " step:%10" PRIu64 "  bufferSize:%10d \n", i, step,
-                     BUFFER_SIZE);
+                vlog("base:%14" PRIu64 " step:%10" PRIu64
+                     "  bufferSize:%10d \n",
+                     i, step, BUFFER_SIZE);
             }
             else
             {
@@ -403,8 +404,8 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
         else
             vlog("passed");
 
-        vlog("\t{%8.2f, %" PRId64 "} @ {%a, %a}", maxError, maxError2, maxErrorVal,
-             maxErrorVal2);
+        vlog("\t{%8.2f, %" PRId64 "} @ {%a, %a}", maxError, maxError2,
+             maxErrorVal, maxErrorVal2);
     }
 
     vlog("\n");
