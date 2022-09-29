@@ -19,6 +19,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
+#include <cinttypes>
 #include <climits>
 #include <cstring>
 
@@ -514,7 +515,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                 if (fail)
                 {
                     vlog_error(
-                        "\nERROR: %s%s: {%f, %lld} ulp error at {%a, %a} "
+                        "\nERROR: %s%s: {%f, %" PRId64 "} ulp error at {%a, %a} "
                         "({0x%8.8x, 0x%8.8x}): *{%a, %d} ({0x%8.8x, "
                         "0x%8.8x}) vs. {%a, %d} ({0x%8.8x, 0x%8.8x})\n",
                         f->name, sizeNames[k], err, iErr, ((float *)gIn)[j],
@@ -533,7 +534,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             if (gVerboseBruteForce)
             {
-                vlog("base:%14u step:%10zu  bufferSize:%10zd \n", i, step,
+                vlog("base:%14" PRIu64 " step:%10" PRIu64 "  bufferSize:%10d \n", i, step,
                      BUFFER_SIZE);
             }
             else
@@ -551,7 +552,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         else
             vlog("passed");
 
-        vlog("\t{%8.2f, %lld} @ {%a, %a}", maxError, maxError2, maxErrorVal,
+        vlog("\t{%8.2f, %" PRId64 "} @ {%a, %a}", maxError, maxError2, maxErrorVal,
              maxErrorVal2);
     }
 

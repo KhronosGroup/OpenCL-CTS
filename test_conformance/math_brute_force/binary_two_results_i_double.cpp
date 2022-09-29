@@ -19,6 +19,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
+#include <cinttypes>
 #include <climits>
 #include <cstring>
 
@@ -528,10 +529,10 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                 if (fail)
                 {
                     vlog_error(
-                        "\nERROR: %sD%s: {%f, %lld} ulp error at {%.13la, "
-                        "%.13la} ({ 0x%16.16llx, 0x%16.16llx}): *{%.13la, "
-                        "%d} ({ 0x%16.16llx, 0x%8.8x}) vs. {%.13la, %d} ({ "
-                        "0x%16.16llx, 0x%8.8x})\n",
+                        "\nERROR: %sD%s: {%f, %" PRId64 "} ulp error at {%.13la, "
+                        "%.13la} ({ 0x%16.16" PRIx64 ", 0x%16.16" PRIx64 "}): *{%.13la, "
+                        "%d} ({ 0x%16.16" PRIx64 ", 0x%8.8x}) vs. {%.13la, %d} ({ "
+                        "0x%16.16" PRIx64 ", 0x%8.8x})\n",
                         f->name, sizeNames[k], err, iErr, ((double *)gIn)[j],
                         ((double *)gIn2)[j], ((cl_ulong *)gIn)[j],
                         ((cl_ulong *)gIn2)[j], ((double *)gOut_Ref)[j],
@@ -548,7 +549,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         {
             if (gVerboseBruteForce)
             {
-                vlog("base:%14u step:%10zu  bufferSize:%10zd \n", i, step,
+                vlog("base:%14" PRIu64 " step:%10" PRIu64 "  bufferSize:%10d \n", i, step,
                      BUFFER_SIZE);
             }
             else
@@ -566,7 +567,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         else
             vlog("passed");
 
-        vlog("\t{%8.2f, %lld} @ {%a, %a}", maxError, maxError2, maxErrorVal,
+        vlog("\t{%8.2f, %" PRId64 "} @ {%a, %a}", maxError, maxError2, maxErrorVal,
              maxErrorVal2);
     }
 

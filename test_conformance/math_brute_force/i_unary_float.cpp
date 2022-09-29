@@ -19,6 +19,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
+#include <cinttypes>
 #include <cstring>
 
 namespace {
@@ -268,7 +269,7 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             if (gVerboseBruteForce)
             {
-                vlog("base:%14u step:%10zu  bufferSize:%10zd \n", i, step,
+                vlog("base:%14" PRIu64 " step:%10" PRIu64 "  bufferSize:%10d \n", i, step,
                      BUFFER_SIZE);
             }
             else

@@ -478,7 +478,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             uint32_t err = t[j] - q[j];
             if (q[j] > t[j]) err = q[j] - t[j];
             vlog_error("\nERROR: %s: %d ulp error at {%a, %a}: *0x%8.8x vs. "
-                       "0x%8.8x (index: %d)\n",
+                       "0x%8.8x (index: %zu)\n",
                        name, err, ((float *)s)[j], ((float *)s2)[j], t[j], q[j],
                        j);
             error = -1;
@@ -524,7 +524,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 cl_uint err = -t[j] - q[j];
                 if (q[j] > -t[j]) err = q[j] + t[j];
                 vlog_error("\nERROR: %s%s: %d ulp error at {%a, %a}: *0x%8.8x "
-                           "vs. 0x%8.8x (index: %d)\n",
+                           "vs. 0x%8.8x (index: %zu)\n",
                            name, sizeNames[k], err, ((float *)s)[j],
                            ((float *)s2)[j], -t[j], q[j], j);
                 error = -1;
