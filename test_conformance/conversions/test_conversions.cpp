@@ -834,7 +834,7 @@ cl_uint RoundUpToNextPowerOfTwo( cl_uint x )
     return x + x;
 }
 
-void CL_CALLBACK WriteInputBufferComplete( cl_event, cl_int, void * );
+void WriteInputBufferComplete( void * );
 
 typedef struct DataInitInfo
 {
@@ -1141,7 +1141,7 @@ static int DoTest( cl_device_id device, Type outType, Type inType, SaturationMod
 
         // Copy the results to the device
         writeInputBuffer = NULL;
-        if( (error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0, count * gTypeSizes[inType], gIn, 0, NULL, &writeInputBuffer )))
+        if( (error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_TRUE, 0, count * gTypeSizes[inType], gIn, 0, NULL, &writeInputBuffer )))
         {
             vlog_error( "ERROR: clEnqueueWriteBuffer failed. (%d)\n", error );
             gFailCount++;
@@ -1158,20 +1158,7 @@ static int DoTest( cl_device_id device, Type outType, Type inType, SaturationMod
         // achieve a test performance improvement because they can verify the results in parallel.  If the
         // implementation serializes callbacks however, that won't happen.   Consider it some motivation
         // to do the right thing! :-)
-        if( (error = clSetEventCallback( writeInputBuffer, CL_COMPLETE, WriteInputBufferComplete, &writeInputBufferInfo)) )
-        {
-            vlog_error( "ERROR: clSetEventCallback failed. (%d)\n", error );
-            gFailCount++;
-            goto exit;
-        }
-
-        // The event can't be destroyed until the callback is called, so we can release it now.
-        if( (error = clReleaseEvent(writeInputBuffer) ))
-        {
-            vlog_error( "ERROR: clReleaseEvent failed. (%d)\n", error );
-            gFailCount++;
-            goto exit;
-        }
+        WriteInputBufferComplete((void *)&writeInputBufferInfo);
 
         // Make sure the work is actually running, so we don't deadlock
         if( (error = clFlush( gQueue ) ) )
@@ -1341,21 +1328,15 @@ exit:
     return error;
 }
 
-void CL_CALLBACK MapResultValuesComplete( cl_event e, cl_int status, void *data );
+void MapResultValuesComplete( void *data );
 
 // Note: not called reentrantly
-void CL_CALLBACK WriteInputBufferComplete( cl_event e, cl_int status, void *data )
+void WriteInputBufferComplete(void *data)
 {
+    cl_int status;
     WriteInputBufferInfo *info = (WriteInputBufferInfo*) data;
     cl_uint count = info->count;
     int vectorSize;
-
-    if( CL_SUCCESS != status )
-    {
-        vlog_error( "ERROR: WriteInputBufferComplete calback failed with status: %d\n", status );
-        gFailCount++;
-        return;
-    }
 
     info->barrierCount = gMaxVectorSize - gMinVectorSize;
 
@@ -1372,8 +1353,8 @@ void CL_CALLBACK WriteInputBufferComplete( cl_event e, cl_int status, void *data
             return;
         }
 
-        info->calcInfo[vectorSize].p = clEnqueueMapBuffer( gQueue, gOutBuffers[ vectorSize ], CL_FALSE, CL_MAP_READ | CL_MAP_WRITE,
-                                                          0, count * gTypeSizes[ info->outType ], 0, NULL, &mapComplete, &status);
+        info->calcInfo[vectorSize].p = clEnqueueMapBuffer( gQueue, gOutBuffers[ vectorSize ], CL_TRUE, CL_MAP_READ | CL_MAP_WRITE,
+                                                          0, count * gTypeSizes[ info->outType ], 0, NULL, NULL, &status);
         {
             if( status )
             {
@@ -1382,20 +1363,11 @@ void CL_CALLBACK WriteInputBufferComplete( cl_event e, cl_int status, void *data
                 return;
             }
         }
+    }
 
-        if( (status = clSetEventCallback( mapComplete, CL_COMPLETE, MapResultValuesComplete, info->calcInfo + vectorSize)))
-        {
-            vlog_error( "ERROR: WriteInputBufferComplete calback failed with status: %d\n", status );
-            gFailCount++;
-            return;
-        }
-
-        if( (status = clReleaseEvent(mapComplete)))
-        {
-            vlog_error( "ERROR: clReleaseEvent calback failed in WriteInputBufferComplete for vector size %d with status: %d\n", vectorSize, status );
-            gFailCount++;
-            return;
-        }
+    for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
+    {
+        MapResultValuesComplete(info->calcInfo + vectorSize);
     }
 
     // Make sure the work starts moving -- otherwise we may deadlock
@@ -1412,18 +1384,11 @@ void CL_CALLBACK WriteInputBufferComplete( cl_event e, cl_int status, void *data
 void CL_CALLBACK CalcReferenceValuesComplete( cl_event e, cl_int status, void *data );
 
 // Note: May be called reentrantly
-void CL_CALLBACK MapResultValuesComplete( cl_event e, cl_int status, void *data )
+void MapResultValuesComplete( void *data )
 {
+    cl_int status;
     CalcReferenceValuesInfo *info = (CalcReferenceValuesInfo*) data;
     cl_event calcReferenceValues = info->parent->calcReferenceValues;
-
-    if( CL_SUCCESS != status )
-    {
-        vlog_error( "ERROR: MapResultValuesComplete calback failed with status: %d\n", status );
-        gFailCount++;       // not thread safe -- being lazy here
-        clReleaseEvent(calcReferenceValues);
-        return;
-    }
 
     // we know that the map is done, wait for the main thread to finish calculating the reference values
     if( (status = clSetEventCallback( calcReferenceValues, CL_COMPLETE, CalcReferenceValuesComplete, data )))
@@ -1549,8 +1514,6 @@ void CL_CALLBACK CalcReferenceValuesComplete( cl_event e, cl_int status, void *d
             return;
         }
     }
-
-
     // e was already released by WriteInputBufferComplete. It should be destroyed automatically soon after
     // all the calls to CalcReferenceValuesComplete exit.
 }
