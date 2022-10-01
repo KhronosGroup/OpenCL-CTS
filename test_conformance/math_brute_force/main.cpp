@@ -132,7 +132,7 @@ static int doTest(const char *name)
             if ((gStartTestNumber != ~0u && i < gStartTestNumber)
                 || i > gEndTestNumber)
             {
-                vlog("Skipping function #%d\n", i);
+                vlog("Skipping function #%zu\n", i);
                 return 0;
             }
 
