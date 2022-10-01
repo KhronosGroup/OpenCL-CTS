@@ -19,6 +19,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
+#include <cinttypes>
 #include <climits>
 #include <cstring>
 
@@ -513,16 +514,17 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 
                 if (fail)
                 {
-                    vlog_error(
-                        "\nERROR: %s%s: {%f, %lld} ulp error at {%a, %a} "
-                        "({0x%8.8x, 0x%8.8x}): *{%a, %d} ({0x%8.8x, "
-                        "0x%8.8x}) vs. {%a, %d} ({0x%8.8x, 0x%8.8x})\n",
-                        f->name, sizeNames[k], err, iErr, ((float *)gIn)[j],
-                        ((float *)gIn2)[j], ((cl_uint *)gIn)[j],
-                        ((cl_uint *)gIn2)[j], ((float *)gOut_Ref)[j],
-                        ((int *)gOut_Ref2)[j], ((cl_uint *)gOut_Ref)[j],
-                        ((cl_uint *)gOut_Ref2)[j], test, q2[j],
-                        ((cl_uint *)&test)[0], ((cl_uint *)q2)[j]);
+                    vlog_error("\nERROR: %s%s: {%f, %" PRId64
+                               "} ulp error at {%a, %a} "
+                               "({0x%8.8x, 0x%8.8x}): *{%a, %d} ({0x%8.8x, "
+                               "0x%8.8x}) vs. {%a, %d} ({0x%8.8x, 0x%8.8x})\n",
+                               f->name, sizeNames[k], err, iErr,
+                               ((float *)gIn)[j], ((float *)gIn2)[j],
+                               ((cl_uint *)gIn)[j], ((cl_uint *)gIn2)[j],
+                               ((float *)gOut_Ref)[j], ((int *)gOut_Ref2)[j],
+                               ((cl_uint *)gOut_Ref)[j],
+                               ((cl_uint *)gOut_Ref2)[j], test, q2[j],
+                               ((cl_uint *)&test)[0], ((cl_uint *)q2)[j]);
                     error = -1;
                     goto exit;
                 }
@@ -533,8 +535,9 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             if (gVerboseBruteForce)
             {
-                vlog("base:%14u step:%10zu  bufferSize:%10zd \n", i, step,
-                     BUFFER_SIZE);
+                vlog("base:%14" PRIu64 " step:%10" PRIu64
+                     "  bufferSize:%10d \n",
+                     i, step, BUFFER_SIZE);
             }
             else
             {
@@ -551,8 +554,8 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         else
             vlog("passed");
 
-        vlog("\t{%8.2f, %lld} @ {%a, %a}", maxError, maxError2, maxErrorVal,
-             maxErrorVal2);
+        vlog("\t{%8.2f, %" PRId64 "} @ {%a, %a}", maxError, maxError2,
+             maxErrorVal, maxErrorVal2);
     }
 
     vlog("\n");

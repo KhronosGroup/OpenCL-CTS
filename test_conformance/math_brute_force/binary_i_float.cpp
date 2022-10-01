@@ -516,7 +516,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 {
                     vlog_error(
                         "\nERROR: %s%s: %f ulp error at {%a (0x%8.8x), %d}: "
-                        "*%a (0x%8.8x) vs. %a (0x%8.8x) at index: %d\n",
+                        "*%a (0x%8.8x) vs. %a (0x%8.8x) at index: %zu\n",
                         name, sizeNames[k], err, s[j], ((uint32_t *)s)[j],
                         s2[j], r[j], ((uint32_t *)r)[j], test,
                         ((cl_uint *)&test)[0], j);
@@ -545,7 +545,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     {
         if (gVerboseBruteForce)
         {
-            vlog("base:%14u step:%10u scale:%10zu buf_elements:%10u ulps:%5.3f "
+            vlog("base:%14u step:%10u scale:%10u buf_elements:%10zu ulps:%5.3f "
                  "ThreadCount:%2u\n",
                  base, job->step, job->scale, buffer_elements, job->ulps,
                  job->threadCount);
