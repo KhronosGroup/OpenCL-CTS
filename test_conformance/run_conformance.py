@@ -16,7 +16,6 @@ import sys
 import subprocess
 import time
 import tempfile
-import string
 
 DEBUG = 0
 
@@ -26,7 +25,6 @@ process_pid = 0
 # The amount of time between printing a "." (if no output from test) or ":" (if output)
 #  to the screen while the tests are running.
 seconds_between_status_updates = 60 * 60 * 24 * 7  # effectively never
-
 
 # Help info
 def write_help_info():
@@ -66,16 +64,16 @@ def get_tests(filename, devices_to_test):
         device_specific_match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*,\s*(.+?)\s*$", line)
         if device_specific_match:
             if device_specific_match.group(1) in devices_to_test:
-                test_path = string.replace(device_specific_match.group(3), '/', os.sep)
-                test_name = string.replace(device_specific_match.group(2), '/', os.sep)
+                test_path = str.replace(device_specific_match.group(3), '/', os.sep)
+                test_name = str.replace(device_specific_match.group(2), '/', os.sep)
                 tests.append((test_name, test_path))
             else:
                 print("Skipping " + device_specific_match.group(2) + " because " + device_specific_match.group(1) + " is not in the list of devices to test.")
             continue
         match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*$", line)
         if match:
-            test_path = string.replace(match.group(2), '/', os.sep)
-            test_name = string.replace(match.group(1), '/', os.sep)
+            test_path = str.replace(match.group(2), '/', os.sep)
+            test_name = str.replace(match.group(1), '/', os.sep)
             tests.append((test_name, test_path))
     return tests
 
@@ -243,7 +241,10 @@ def run_tests(tests):
             # Catch an interrupt from the user
             write_screen_log("\nFAILED: Execution interrupted.  Killing test process, but not aborting full test run.")
             os.kill(process_pid, 9)
-            answer = raw_input("Abort all tests? (y/n)")
+            if sys.version_info[0] < 3:
+                answer = raw_input("Abort all tests? (y/n)")
+            else:
+                answer = input("Abort all tests? (y/n)")
             if answer.find("y") != -1:
                 write_screen_log("\nUser chose to abort all tests.")
                 log_file.close()
