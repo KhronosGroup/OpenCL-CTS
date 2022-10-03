@@ -16,7 +16,6 @@ import sys
 import subprocess
 import time
 import tempfile
-import string
 
 DEBUG = 0
 
@@ -26,7 +25,6 @@ process_pid = 0
 # The amount of time between printing a "." (if no output from test) or ":" (if output)
 #  to the screen while the tests are running.
 seconds_between_status_updates = 60 * 60 * 24 * 7  # effectively never
-
 
 # Help info
 def write_help_info():
@@ -63,10 +61,7 @@ def get_tests(filename, devices_to_test):
         comment = re.search("^#.*", line)
         if comment:
             continue
-        if sys.version_info[0] < 3:
-            device_specific_match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*,\s*(.+?)\s*$", line)
-        else:
-            device_specific_match = re.search("^\s*(.+)\s*,\s*(.+)\s*,\s*(.+)\s*", line)
+        device_specific_match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*,\s*(.+?)\s*$", line)
         if device_specific_match:
             if device_specific_match.group(1) in devices_to_test:
                 test_path = str.replace(device_specific_match.group(3), '/', os.sep)
@@ -75,10 +70,7 @@ def get_tests(filename, devices_to_test):
             else:
                 print("Skipping " + device_specific_match.group(2) + " because " + device_specific_match.group(1) + " is not in the list of devices to test.")
             continue
-        if sys.version_info[0] < 3:
-            match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*$", line)
-        else:
-            match = re.search("^\s*(.+)\s*,\s*(.+)\s*", line)
+        match = re.search("^\s*(.+?)\s*,\s*(.+?)\s*$", line)
         if match:
             test_path = str.replace(match.group(2), '/', os.sep)
             test_name = str.replace(match.group(1), '/', os.sep)
