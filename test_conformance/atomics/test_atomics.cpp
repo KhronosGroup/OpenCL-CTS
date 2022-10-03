@@ -19,6 +19,8 @@
 #include <unistd.h>
 #endif
 
+#include <cinttypes>
+
 #define INT_TEST_VALUE 402258822
 #define LONG_TEST_VALUE 515154531254381446LL
 
@@ -359,7 +361,7 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
                 if (typeSize == 4)
                 {
                     cl_int *outValue = (cl_int *)(destItems + i * typeSize);
-                    log_error("ERROR: Result %ld from kernel does not "
+                    log_error("ERROR: Result %zu from kernel does not "
                               "validate! (should be %d, was %d)\n",
                               i, intVal, *outValue);
                     cl_int *startRefs = (cl_int *)startRefValues;
@@ -367,27 +369,28 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
                     for (i = 0; i < threadSize; i++)
                     {
                         if (startRefs != NULL)
-                            log_info(" --- %ld - %d --- %d\n", i, startRefs[i],
+                            log_info(" --- %zu - %d --- %d\n", i, startRefs[i],
                                      refs[i]);
                         else
-                            log_info(" --- %ld --- %d\n", i, refs[i]);
+                            log_info(" --- %zu --- %d\n", i, refs[i]);
                     }
                 }
                 else
                 {
                     cl_long *outValue = (cl_long *)(destItems + i * typeSize);
-                    log_error("ERROR: Result %ld from kernel does not "
-                              "validate! (should be %lld, was %lld)\n",
+                    log_error("ERROR: Result %zu from kernel does not "
+                              "validate! (should be %" PRId64 ", was %" PRId64
+                              ")\n",
                               i, longVal, *outValue);
                     cl_long *startRefs = (cl_long *)startRefValues;
                     cl_long *refs = (cl_long *)refValues;
                     for (i = 0; i < threadSize; i++)
                     {
                         if (startRefs != NULL)
-                            log_info(" --- %ld - %lld --- %lld\n", i,
-                                     startRefs[i], refs[i]);
+                            log_info(" --- %zu - %" PRId64 " --- %" PRId64 "\n",
+                                     i, startRefs[i], refs[i]);
                         else
-                            log_info(" --- %ld --- %lld\n", i, refs[i]);
+                            log_info(" --- %zu --- %" PRId64 "\n", i, refs[i]);
                     }
                 }
                 return -1;
@@ -476,7 +479,8 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
             cl_long *r = (cl_long *)refValues;
             log_error("ERROR: atomic function operated correctly but did NOT "
                       "return correct 'old' value "
-                      " (should have been %lld, returned %lld)!\n",
+                      " (should have been %" PRId64 ", returned %" PRId64
+                      ")!\n",
                       *s, *r);
         }
         return -1;
@@ -673,7 +677,7 @@ bool test_atomic_xchg_verify_int(size_t size, cl_int *refValues,
         if (refValues[i] < 0 || (size_t)refValues[i] >= size)
         {
             log_error(
-                "ERROR: Reference value %ld outside of valid range! (%d)\n", i,
+                "ERROR: Reference value %zu outside of valid range! (%d)\n", i,
                 refValues[i]);
             return false;
         }
@@ -702,7 +706,7 @@ bool test_atomic_xchg_verify_int(size_t size, cl_int *refValues,
     {
         if (valids[i] != 1)
         {
-            log_error("ERROR: Reference value %ld did not occur "
+            log_error("ERROR: Reference value %zu did not occur "
                       "once-and-only-once (occurred %d)\n",
                       i, valids[i]);
             for (size_t j = 0; j < size; j++)
@@ -738,7 +742,8 @@ bool test_atomic_xchg_verify_long(size_t size, cl_long *refValues,
         if (refValues[i] < 0 || (size_t)refValues[i] >= size)
         {
             log_error(
-                "ERROR: Reference value %ld outside of valid range! (%lld)\n",
+                "ERROR: Reference value %zu outside of valid range! (%" PRId64
+                ")\n",
                 i, refValues[i]);
             return false;
         }
@@ -749,7 +754,7 @@ bool test_atomic_xchg_verify_long(size_t size, cl_long *refValues,
      executed, because that value should be the final value outputted */
     if (valids[finalValue] > 0)
     {
-        log_error("ERROR: Final value %lld was also in ref list!\n",
+        log_error("ERROR: Final value %" PRId64 " was also in ref list!\n",
                   finalValue);
         return false;
     }
@@ -768,7 +773,7 @@ bool test_atomic_xchg_verify_long(size_t size, cl_long *refValues,
     {
         if (valids[i] != 1)
         {
-            log_error("ERROR: Reference value %ld did not occur "
+            log_error("ERROR: Reference value %zu did not occur "
                       "once-and-only-once (occurred %d)\n",
                       i, valids[i]);
             for (size_t j = 0; j < size; j++)
@@ -805,7 +810,7 @@ bool test_atomic_xchg_verify_float(size_t size, cl_float *refValues,
         if (refValues[i] < 0 || (size_t)refValues[i] >= size)
         {
             log_error(
-                "ERROR: Reference value %ld outside of valid range! (%a)\n", i,
+                "ERROR: Reference value %zu outside of valid range! (%a)\n", i,
                 refValues[i]);
             return false;
         }
@@ -834,7 +839,7 @@ bool test_atomic_xchg_verify_float(size_t size, cl_float *refValues,
     {
         if (valids[i] != 1)
         {
-            log_error("ERROR: Reference value %ld did not occur "
+            log_error("ERROR: Reference value %zu did not occur "
                       "once-and-only-once (occurred %d)\n",
                       i, valids[i]);
             for (size_t j = 0; j < size; j++)
