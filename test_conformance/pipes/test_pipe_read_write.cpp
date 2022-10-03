@@ -1075,7 +1075,8 @@ int test_pipe_readwrite_half( cl_device_id deviceID, cl_context context, cl_comm
 
     if(!is_extension_available(deviceID, "cl_khr_fp16"))
     {
-        log_info("cl_khr_fp16 is not supported on this platoform. Skipping test.\n");
+        log_info(
+            "cl_khr_fp16 is not supported on this platform. Skipping test.\n");
         return CL_SUCCESS;
     }
     ptrSizes[0] = sizeof(cl_float) / 2;
@@ -1256,7 +1257,8 @@ int test_pipe_readwrite_double( cl_device_id deviceID, cl_context context, cl_co
     //skip devices that don't support double
     if(!is_extension_available(deviceID, "cl_khr_fp64"))
     {
-        log_info("cl_khr_fp64 is not supported on this platoform. Skipping test.\n");
+        log_info(
+            "cl_khr_fp64 is not supported on this platform. Skipping test.\n");
         return CL_SUCCESS;
     }
 
@@ -1403,7 +1405,8 @@ int test_pipe_subgroup_readwrite_int( cl_device_id deviceID, cl_context context,
 
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     return test_pipe_readwrite_int(deviceID, context, queue, num_elements);
@@ -1417,7 +1420,8 @@ int test_pipe_subgroup_readwrite_uint( cl_device_id deviceID, cl_context context
 
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     return test_pipe_readwrite_uint(deviceID, context, queue, num_elements);
@@ -1431,7 +1435,8 @@ int test_pipe_subgroup_readwrite_short( cl_device_id deviceID, cl_context contex
 
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     return test_pipe_readwrite_short(deviceID, context, queue, num_elements);
@@ -1445,7 +1450,8 @@ int test_pipe_subgroup_readwrite_ushort( cl_device_id deviceID, cl_context conte
 
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     return test_pipe_readwrite_ushort(deviceID, context, queue, num_elements);
@@ -1459,7 +1465,8 @@ int test_pipe_subgroup_readwrite_char( cl_device_id deviceID, cl_context context
 
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     return test_pipe_readwrite_char(deviceID, context, queue, num_elements);
@@ -1473,7 +1480,8 @@ int test_pipe_subgroup_readwrite_uchar( cl_device_id deviceID, cl_context contex
 
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     return test_pipe_readwrite_uchar(deviceID, context, queue, num_elements);
@@ -1488,7 +1496,8 @@ int test_pipe_subgroup_readwrite_float( cl_device_id deviceID, cl_context contex
 
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     return test_pipe_readwrite_float(deviceID, context, queue, num_elements);
@@ -1502,7 +1511,8 @@ int test_pipe_subgroup_readwrite_half( cl_device_id deviceID, cl_context context
 
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     return test_pipe_readwrite_half(deviceID, context, queue, num_elements);
@@ -1516,7 +1526,8 @@ int test_pipe_subgroup_readwrite_long( cl_device_id deviceID, cl_context context
 
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     return test_pipe_readwrite_long(deviceID, context, queue, num_elements);
@@ -1530,7 +1541,8 @@ int test_pipe_subgroup_readwrite_ulong( cl_device_id deviceID, cl_context contex
 
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     return test_pipe_readwrite_ulong(deviceID, context, queue, num_elements);
@@ -1544,7 +1556,8 @@ int test_pipe_subgroup_readwrite_double( cl_device_id deviceID, cl_context conte
 
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     return test_pipe_readwrite_double(deviceID, context, queue, num_elements);
@@ -1554,7 +1567,8 @@ int test_pipe_subgroup_readwrite_struct( cl_device_id deviceID, cl_context conte
 {
     if(!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info("cl_khr_subgroups is not supported on this platoform. Skipping test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
     const char *kernelNames[] = {"test_pipe_subgroup_write_struct","test_pipe_subgroup_read_struct"};
