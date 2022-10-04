@@ -201,7 +201,8 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
 
     if (physicalDeviceCount == uint32_t(0))
     {
-        throw std::runtime_error("failed to find GPUs with Vulkan support!");
+        std::cout << "failed to find GPUs with Vulkan support!\n";
+        return;
     }
 
     std::vector<VkPhysicalDevice> vkPhysicalDeviceList(physicalDeviceCount,
@@ -846,23 +847,18 @@ VulkanShaderModule::VulkanShaderModule(const VulkanShaderModule &shaderModule)
 {}
 
 VulkanShaderModule::VulkanShaderModule(const VulkanDevice &device,
-                                       const std::string &code)
+                                       const std::vector<char> &code)
     : m_device(device)
 {
-    std::string paddedCode = code;
-    while (paddedCode.size() % 4)
-    {
-        paddedCode += " ";
-    }
 
     VkShaderModuleCreateInfo vkShaderModuleCreateInfo = {};
     vkShaderModuleCreateInfo.sType =
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     vkShaderModuleCreateInfo.pNext = NULL;
     vkShaderModuleCreateInfo.flags = 0;
-    vkShaderModuleCreateInfo.codeSize = paddedCode.size();
+    vkShaderModuleCreateInfo.codeSize = code.size();
     vkShaderModuleCreateInfo.pCode =
-        (const uint32_t *)(void *)paddedCode.c_str();
+        reinterpret_cast<const uint32_t *>(code.data());
 
     vkCreateShaderModule(m_device, &vkShaderModuleCreateInfo, NULL,
                          &m_vkShaderModule);
