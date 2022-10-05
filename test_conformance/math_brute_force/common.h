@@ -37,12 +37,29 @@ enum class ParameterType
 {
     Float,
     Double,
+    Int,
+    UInt,
+    Long,
+    ULong,
 };
 
 // Return kernel name suffixed with vector size.
 std::string GetKernelName(int vector_size_index);
 
 // Generate kernel code for the given builtin function/operator.
+std::string GetUnaryKernel(const std::string &kernel_name, const char *builtin,
+                           ParameterType retType, ParameterType type1,
+                           int vector_size_index);
+std::string GetUnaryKernel(const std::string &kernel_name, const char *builtin,
+                           ParameterType retType1, ParameterType retType2,
+                           ParameterType type1, int vector_size_index);
+std::string GetBinaryKernel(const std::string &kernel_name, const char *builtin,
+                            ParameterType retType, ParameterType type1,
+                            ParameterType type2, int vector_size_index);
+std::string GetBinaryKernel(const std::string &kernel_name, const char *builtin,
+                            ParameterType retType1, ParameterType retType2,
+                            ParameterType type1, ParameterType type2,
+                            int vector_size_index);
 std::string GetTernaryKernel(const std::string &kernel_name,
                              const char *builtin, ParameterType retType,
                              ParameterType type1, ParameterType type2,
