@@ -414,9 +414,9 @@ static int verify_readwrite_ulong(void *ptr1, void *ptr2, int n)
 static int verify_readwrite_double(void *ptr1, void *ptr2, int n)
 {
     int                i;
-    long long int    sum_input = 0, sum_output = 0;
-    long long int    *inptr = (long long int *)ptr1;
-    long long int    *outptr = (long long int *)ptr2;
+    cl_long sum_input = 0, sum_output = 0;
+    cl_long *inptr = (cl_long *)ptr1;
+    cl_long *outptr = (cl_long *)ptr2;
 
     for(i = 0; i < n; i++)
     {
@@ -1246,7 +1246,7 @@ int test_pipe_readwrite_double( cl_device_id deviceID, cl_context context, cl_co
 
     size_t  min_alignment = get_min_alignment(context);
 
-    foo = verify_readwrite_long;
+    foo = verify_readwrite_double;
 
     ptrSizes[0] = sizeof(cl_double);
     ptrSizes[1] = ptrSizes[0] << 1;
