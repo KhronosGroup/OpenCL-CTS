@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -232,10 +232,8 @@ int waitForEvent(cl_event* event)
 //-----------------------------------------
 static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context context,const unsigned int testId,const unsigned int testNum,bool isLongSupport,bool is64bAddrSpace)
 {
-    int err,i;
+    int err;
     cl_program program;
-    cl_device_id devID;
-    char buildLog[ 1024 * 128 ];
     char testname[256] = {0};
     char addrSpaceArgument[256] = {0};
     char addrSpacePAddArgument[256] = {0};
@@ -1031,8 +1029,6 @@ test_status InitCL( cl_device_id device )
                               version.to_string().c_str());
         return TEST_SKIP;
     }
-
-    log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
 
     gFd = acquireOutputStream(&err);
     if (err != 0)

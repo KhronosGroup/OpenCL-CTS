@@ -26,92 +26,13 @@ namespace {
 int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
                 bool relaxedMode)
 {
-    const char *c[] = { "__kernel void math_kernel",
-                        sizeNames[vectorSize],
-                        "( __global float",
-                        sizeNames[vectorSize],
-                        "* out, __global float",
-                        sizeNames[vectorSize],
-                        "* in1, __global float",
-                        sizeNames[vectorSize],
-                        "* in2,  __global float",
-                        sizeNames[vectorSize],
-                        "* in3 )\n"
-                        "{\n"
-                        "   size_t i = get_global_id(0);\n"
-                        "   out[i] = ",
-                        name,
-                        "( in1[i], in2[i], in3[i] );\n"
-                        "}\n" };
-
-    const char *c3[] = {
-        "__kernel void math_kernel",
-        sizeNames[vectorSize],
-        "( __global float* out, __global float* in, __global float* in2, "
-        "__global float* in3)\n"
-        "{\n"
-        "   size_t i = get_global_id(0);\n"
-        "   if( i + 1 < get_global_size(0) )\n"
-        "   {\n"
-        "       float3 f0 = vload3( 0, in + 3 * i );\n"
-        "       float3 f1 = vload3( 0, in2 + 3 * i );\n"
-        "       float3 f2 = vload3( 0, in3 + 3 * i );\n"
-        "       f0 = ",
-        name,
-        "( f0, f1, f2 );\n"
-        "       vstore3( f0, 0, out + 3*i );\n"
-        "   }\n"
-        "   else\n"
-        "   {\n"
-        "       size_t parity = i & 1;   // Figure out how many elements are "
-        "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
-        "buffer size \n"
-        "       float3 f0;\n"
-        "       float3 f1;\n"
-        "       float3 f2;\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 1:\n"
-        "               f0 = (float3)( in[3*i], NAN, NAN ); \n"
-        "               f1 = (float3)( in2[3*i], NAN, NAN ); \n"
-        "               f2 = (float3)( in3[3*i], NAN, NAN ); \n"
-        "               break;\n"
-        "           case 0:\n"
-        "               f0 = (float3)( in[3*i], in[3*i+1], NAN ); \n"
-        "               f1 = (float3)( in2[3*i], in2[3*i+1], NAN ); \n"
-        "               f2 = (float3)( in3[3*i], in3[3*i+1], NAN ); \n"
-        "               break;\n"
-        "       }\n"
-        "       f0 = ",
-        name,
-        "( f0, f1, f2 );\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 0:\n"
-        "               out[3*i+1] = f0.y; \n"
-        "               // fall through\n"
-        "           case 1:\n"
-        "               out[3*i] = f0.x; \n"
-        "               break;\n"
-        "       }\n"
-        "   }\n"
-        "}\n"
-    };
-
-    const char **kern = c;
-    size_t kernSize = sizeof(c) / sizeof(c[0]);
-
-    if (sizeValues[vectorSize] == 3)
-    {
-        kern = c3;
-        kernSize = sizeof(c3) / sizeof(c3[0]);
-    }
-
-    char testName[32];
-    snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
-             sizeNames[vectorSize]);
-
-    return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
+    auto kernel_name = GetKernelName(vectorSize);
+    auto source = GetTernaryKernel(kernel_name, name, ParameterType::Float,
+                                   ParameterType::Float, ParameterType::Float,
+                                   ParameterType::Float, vectorSize);
+    std::array<const char *, 1> sources{ source.c_str() };
+    return MakeKernel(sources.data(), sources.size(), kernel_name.c_str(), k, p,
+                      relaxedMode);
 }
 
 struct BuildKernelInfo2

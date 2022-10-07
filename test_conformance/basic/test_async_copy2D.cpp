@@ -53,7 +53,7 @@ __kernel void test_fn(const __global %s *src, __global %s *dst,
 
   for (int i = 0; i < lineCopiesPerWorkItem; i++) {
     for (int j = 0; j < numElementsPerLine; j++) {
-      const local_index = (get_local_id(0) * lineCopiesPerWorkItem + i) * dstStride + j;
+      const int local_index = (get_local_id(0) * lineCopiesPerWorkItem + i) * dstStride + j;
       const int global_index = (get_global_id(0) * lineCopiesPerWorkItem + i) * dstStride + j;
       dst[global_index] = localBuffer[local_index];
     }

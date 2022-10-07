@@ -79,11 +79,13 @@ const char *known_extensions[] = {
     "cl_khr_spirv_linkonce_odr",
     "cl_khr_semaphore",
     "cl_khr_external_semaphore",
-    "cl_khr_external_semaphore_opaque_fd",
+    "cl_khr_external_semaphore_win32",
     "cl_khr_external_semaphore_sync_fd",
-    "cl_khr_command_buffer",
+    "cl_khr_external_semaphore_opaque_fd",
     "cl_khr_external_memory",
+    "cl_khr_external_memory_win32",
     "cl_khr_external_memory_opaque_fd",
+    "cl_khr_command_buffer",
     "cl_khr_command_buffer_mutable_dispatch",
 };
 
@@ -360,8 +362,6 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
     cl_int *data;
     clProgramWrapper program;
     clKernelWrapper kernel;
-
-    Version version = get_device_cl_version(device);
 
     error = create_single_kernel_helper(context, &program, &kernel, 1,
                                         (const char **)&kernel_code, "test");

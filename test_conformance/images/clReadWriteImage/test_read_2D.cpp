@@ -81,7 +81,6 @@ int test_read_image_2D(cl_context context, cl_command_queue queue,
 
     for( size_t lod = 0; (gTestMipmaps && lod < imageInfo->num_mip_levels) || (!gTestMipmaps && lod < 1); lod++)
     {
-        float lod_float = (float) lod;
         origin[2] = lod;
         size_t width_lod, height_lod, row_pitch_lod;
 
@@ -195,6 +194,7 @@ int test_read_image_set_2D(cl_device_id device, cl_context context,
 
     if (memSize > (cl_ulong)SIZE_MAX) {
         memSize = (cl_ulong)SIZE_MAX;
+        maxAllocSize = (cl_ulong)SIZE_MAX;
     }
 
     if( gTestSmallImages )

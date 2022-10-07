@@ -19,6 +19,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
+#include <cinttypes>
 #include <cstring>
 
 namespace {
@@ -345,7 +346,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 if (fail)
                 {
                     vlog_error("\nERROR: %s%s: %f ulp error at %.13la "
-                               "(0x%16.16llx): *%.13la vs. %.13la\n",
+                               "(0x%16.16" PRIx64 "): *%.13la vs. %.13la\n",
                                job->f->name, sizeNames[k], err,
                                ((cl_double *)gIn)[j], ((cl_ulong *)gIn)[j],
                                ((cl_double *)gOut_Ref)[j], test);
@@ -427,7 +428,7 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         test_info.k[i].resize(test_info.threadCount, nullptr);
     }
 
-    test_info.tinfo.resize(test_info.threadCount, ThreadInfo{});
+    test_info.tinfo.resize(test_info.threadCount);
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {

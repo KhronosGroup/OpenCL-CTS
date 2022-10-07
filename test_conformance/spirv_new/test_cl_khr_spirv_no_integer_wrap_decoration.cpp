@@ -109,7 +109,6 @@ int test_ext_cl_khr_spirv_no_integer_wrap_decoration(cl_device_id deviceID,
         kernelStr = kernelStream.str();
     }
 
-    size_t kernelLen = kernelStr.size();
     const char *kernelBuf = kernelStr.c_str();
 
     for (int i = 0; i < num; i++) {

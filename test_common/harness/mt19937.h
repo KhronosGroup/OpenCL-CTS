@@ -94,23 +94,42 @@ double genrand_res53(MTdata /*data*/);
 bool genrand_bool(MTdata /*data*/);
 
 #include <cassert>
+#include <utility>
 
-struct MTdataHolder
-{
-    MTdataHolder(cl_uint seed)
+class MTdataHolder {
+public:
+    MTdataHolder() = default;
+    explicit MTdataHolder(cl_uint seed)
     {
         m_mtdata = init_genrand(seed);
         assert(m_mtdata != nullptr);
     }
 
-    MTdataHolder(MTdata mtdata): m_mtdata(mtdata) {}
+    // Forbid copy.
+    MTdataHolder(const MTdataHolder&) = delete;
+    MTdataHolder& operator=(const MTdataHolder&) = delete;
 
-    ~MTdataHolder() { free_mtdata(m_mtdata); }
+    // Support move semantics.
+    MTdataHolder(MTdataHolder&& h) { std::swap(m_mtdata, h.m_mtdata); }
+    MTdataHolder& operator=(MTdataHolder&& h)
+    {
+        std::swap(m_mtdata, h.m_mtdata);
+        return *this;
+    }
 
-    operator MTdata() const { return m_mtdata; }
+    ~MTdataHolder()
+    {
+        if (m_mtdata) free_mtdata(m_mtdata);
+    }
+
+    operator MTdata() const
+    {
+        assert(m_mtdata && "Object wasn't initialised");
+        return m_mtdata;
+    }
 
 private:
-    MTdata m_mtdata;
+    MTdata m_mtdata = nullptr;
 };
 
 #endif // #ifdef __cplusplus
