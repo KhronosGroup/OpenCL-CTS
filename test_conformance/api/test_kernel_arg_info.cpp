@@ -22,11 +22,8 @@
 
 #define MINIMUM_OPENCL_PIPE_VERSION Version(2, 0)
 
-static constexpr size_t CL_VERSION_LENGTH = 128;
 static constexpr size_t KERNEL_ARGUMENT_LENGTH = 128;
 static constexpr char KERNEL_ARGUMENT_NAME[] = "argument";
-static constexpr size_t KERNEL_ARGUMENT_NAME_LENGTH =
-    sizeof(KERNEL_ARGUMENT_NAME) + 1;
 static constexpr int SINGLE_KERNEL_ARG_NUMBER = 0;
 static constexpr int MAX_NUMBER_OF_KERNEL_ARGS = 128;
 
@@ -183,7 +180,6 @@ static std::string generate_kernel(const std::vector<KernelArgInfo>& all_args,
     ret += "kernel void get_kernel_arg_info(\n";
     for (int i = 0; i < all_args.size(); ++i)
     {
-        const KernelArgInfo& arg = all_args[i];
         ret += generate_argument(all_args[i]);
         if (i == all_args.size() - 1)
         {
@@ -542,6 +538,7 @@ size_t get_param_size(const std::string& arg_type, cl_device_id deviceID,
         cl_int err = clGetDeviceInfo(deviceID, CL_DEVICE_ADDRESS_BITS,
                                      sizeof(device_address_bits),
                                      &device_address_bits, NULL);
+        test_error_ret(err, "clGetDeviceInfo", 0);
         return (device_address_bits / 8);
     }
 

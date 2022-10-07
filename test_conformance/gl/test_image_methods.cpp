@@ -337,7 +337,6 @@ int test_image_methods_depth( cl_device_id device, cl_context context, cl_comman
     return 0;
   }
 
-    size_t pixelSize;
     int result = 0;
   GLenum depth_targets[] = {GL_TEXTURE_2D, GL_TEXTURE_2D_ARRAY};
   size_t ntargets = sizeof(depth_targets) / sizeof(depth_targets[0]);
@@ -378,7 +377,6 @@ int test_image_methods_multisample( cl_device_id device, cl_context context, cl_
     return 0;
   }
 
-    size_t pixelSize;
   int result = 0;
   GLenum targets[] = {GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D_MULTISAMPLE_ARRAY};
   size_t ntargets = sizeof(targets) / sizeof(targets[0]);

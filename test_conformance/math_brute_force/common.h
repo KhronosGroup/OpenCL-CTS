@@ -20,6 +20,7 @@
 #include "utility.h"
 
 #include <array>
+#include <string>
 #include <vector>
 
 // Array of thread-specific kernels for each vector size.
@@ -30,6 +31,22 @@ using Programs = std::array<clProgramWrapper, VECTOR_SIZE_COUNT>;
 
 // Array of buffers for each vector size.
 using Buffers = std::array<clMemWrapper, VECTOR_SIZE_COUNT>;
+
+// Types supported for kernel code generation.
+enum class ParameterType
+{
+    Float,
+    Double,
+};
+
+// Return kernel name suffixed with vector size.
+std::string GetKernelName(int vector_size_index);
+
+// Generate kernel code for the given builtin function/operator.
+std::string GetTernaryKernel(const std::string &kernel_name,
+                             const char *builtin, ParameterType retType,
+                             ParameterType type1, ParameterType type2,
+                             ParameterType type3, int vector_size_index);
 
 // Information to generate OpenCL kernels.
 struct BuildKernelInfo

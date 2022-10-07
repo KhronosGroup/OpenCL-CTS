@@ -37,7 +37,7 @@ public:
     virtual size_t size() const;
     virtual const VulkanWrapper &operator[](size_t idx) const;
     virtual VulkanWrapper &operator[](size_t idx);
-    virtual operator const VulkanNative *() const;
+    virtual const VulkanNative *operator()() const;
 };
 
 template <class VulkanKey, class VulkanValue> class VulkanMap {
@@ -335,15 +335,12 @@ const VulkanWrapper &
 template <class VulkanWrapper, class VulkanNative>
 VulkanWrapper &VulkanList<VulkanWrapper, VulkanNative>::operator[](size_t idx)
 {
-    if (idx < m_wrapperList.size())
-    {
-        // CHECK_LT(idx, m_wrapperList.size());
-        return m_wrapperList[idx].get();
-    }
+    // CHECK_LT(idx, m_wrapperList.size());
+    return m_wrapperList[idx].get();
 }
 
 template <class VulkanWrapper, class VulkanNative>
-VulkanList<VulkanWrapper, VulkanNative>::operator const VulkanNative *() const
+const VulkanNative *VulkanList<VulkanWrapper, VulkanNative>::operator()() const
 {
     return m_nativeList.data();
 }

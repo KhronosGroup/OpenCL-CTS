@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,8 +19,8 @@
 
 #include <thread>
 
-#if !defined (_MSC_VER)
-    #include <unistd.h>
+#if !defined(_MSC_VER)
+#include <unistd.h>
 #endif // !_MSC_VER
 
 void trigger_user_event(cl_event *event)
@@ -30,44 +30,44 @@ void trigger_user_event(cl_event *event)
     clSetUserEventStatus(*event, CL_COMPLETE);
 }
 
-int test_userevents_multithreaded( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+int test_userevents_multithreaded(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements)
 {
     cl_int error;
 
 
     // Set up a user event to act as a gate
-    clEventWrapper gateEvent = clCreateUserEvent( context, &error );
-    test_error( error, "Unable to create user gate event" );
+    clEventWrapper gateEvent = clCreateUserEvent(context, &error);
+    test_error(error, "Unable to create user gate event");
 
     // Set up a few actions gated on the user event
     NDRangeKernelAction action1;
     ReadBufferAction action2;
     WriteBufferAction action3;
 
-    clEventWrapper actionEvents[ 3 ];
-    Action * actions[] = { &action1, &action2, &action3, NULL };
+    clEventWrapper actionEvents[3];
+    Action *actions[] = { &action1, &action2, &action3, NULL };
 
-    for( int i = 0; actions[ i ] != NULL; i++ )
+    for (int i = 0; actions[i] != NULL; i++)
     {
-        error = actions[ i ]->Setup( deviceID, context, queue );
-        test_error( error, "Unable to set up test action" );
+        error = actions[i]->Setup(deviceID, context, queue);
+        test_error(error, "Unable to set up test action");
 
-        error = actions[ i ]->Execute( queue, 1, &gateEvent, &actionEvents[ i ] );
-        test_error( error, "Unable to execute test action" );
+        error = actions[i]->Execute(queue, 1, &gateEvent, &actionEvents[i]);
+        test_error(error, "Unable to execute test action");
     }
 
     // Now, instead of releasing the gate, we spawn a separate thread to do so
-    log_info( "\tStarting trigger thread...\n" );
+    log_info("\tStarting trigger thread...\n");
     std::thread thread(trigger_user_event, &gateEvent);
 
-    log_info( "\tWaiting for actions...\n" );
-    error = clWaitForEvents( 3, &actionEvents[ 0 ] );
-    test_error( error, "Unable to wait for action events" );
+    log_info("\tWaiting for actions...\n");
+    error = clWaitForEvents(3, &actionEvents[0]);
+    test_error(error, "Unable to wait for action events");
 
     thread.join();
-    log_info( "\tActions completed.\n" );
+    log_info("\tActions completed.\n");
 
     // If we got here without error, we're good
     return 0;
 }
-

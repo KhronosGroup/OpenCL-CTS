@@ -19,6 +19,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
+#include <cinttypes>
 #include <cstring>
 
 namespace {
@@ -297,7 +298,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
             cl_ulong err = t[j] - q[j];
             if (q[j] > t[j]) err = q[j] - t[j];
-            vlog_error("\nERROR: %sD: %zd ulp error at %.13la: *%zd vs. %zd\n",
+            vlog_error("\nERROR: %sD: %" PRId64
+                       " ulp error at %.13la: *%" PRId64 " vs. %" PRId64 "\n",
                        name, err, ((double *)gIn)[j], t[j], q[j]);
             return -1;
         }
@@ -323,7 +325,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 cl_ulong err = -t[j] - q[j];
                 if (q[j] > -t[j]) err = q[j] + t[j];
                 vlog_error(
-                    "\nERROR: %sD%s: %zd ulp error at %.13la: *%zd vs. %zd\n",
+                    "\nERROR: %sD%s: %" PRId64 " ulp error at %.13la: *%" PRId64
+                    " vs. %" PRId64 "\n",
                     name, sizeNames[k], err, ((double *)gIn)[j], -t[j], q[j]);
                 return -1;
             }
@@ -400,7 +403,7 @@ int TestMacro_Int_Double(const Func *f, MTdata d, bool relaxedMode)
         test_info.k[i].resize(test_info.threadCount, nullptr);
     }
 
-    test_info.tinfo.resize(test_info.threadCount, ThreadInfo{});
+    test_info.tinfo.resize(test_info.threadCount);
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {

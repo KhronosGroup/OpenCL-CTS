@@ -665,8 +665,6 @@ int test_min_max_image_2d_width(cl_device_id deviceID, cl_context context,
     cl_image_format image_format_desc;
     cl_ulong maxAllocSize;
     cl_uint minRequiredDimension;
-    size_t length;
-
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID)
 
@@ -746,7 +744,6 @@ int test_min_max_image_2d_height(cl_device_id deviceID, cl_context context,
     cl_image_format image_format_desc;
     cl_ulong maxAllocSize;
     cl_uint minRequiredDimension;
-    size_t length;
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID)
 
