@@ -73,6 +73,12 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
+    if (!is_extension_available(device, "cl_ext_image_requirements_info"))
+    {
+        printf("Extension cl_ext_image_requirements_info not available");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     std::vector<cl_mem_object_type> imageTypes{
         CL_MEM_OBJECT_IMAGE1D,       CL_MEM_OBJECT_IMAGE2D,
         CL_MEM_OBJECT_IMAGE3D,       CL_MEM_OBJECT_IMAGE1D_BUFFER,
