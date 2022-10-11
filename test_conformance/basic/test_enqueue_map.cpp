@@ -107,6 +107,16 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context, cl_comman
           // Unmap
           error = clEnqueueUnmapMemObject( queue, memObject, mappedRegion, 0, NULL, NULL );
           test_error( error, "Unable to unmap buffer" );
+
+          // Explicitly finish the queue. This is required because it is
+          // possible that subsequent mappings will result in overlapping write
+          // regions which is disallowed. This happens in the case that a
+          // clEnqueueUnmapMemObject implementation is non-blocking, meaning
+          // that the call to clEnqueueMapBuffer on the next iteration of this
+          // loop could result in an overlapping write map with the previous
+          // call which has yet to be unmapped.
+          error = clFinish(queue);
+          test_error(error, "Unable to finish queue");
         }
 
         // Final validation: read actual values of buffer and compare against our reference
