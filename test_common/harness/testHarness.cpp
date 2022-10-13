@@ -1198,7 +1198,7 @@ cl_platform_id getPlatformFromDevice(cl_device_id deviceID)
 
 void PrintArch(void)
 {
-    vlog("sizeof( void*) = %ld\n", sizeof(void *));
+    vlog("sizeof( void*) = %zu\n", sizeof(void *));
 #if defined(__ppc__)
     vlog("ARCH:\tppc\n");
 #elif defined(__ppc64__)
