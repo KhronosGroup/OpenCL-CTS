@@ -53,22 +53,20 @@ __kernel void test_global_linear_id_1d(global int *dst)
 
 int verify_global_linear_id(std::vector<cl_int> &result, int n)
 {
-
     if (std::any_of(result.begin(), result.begin() + n,
                     [](cl_int value) { return 0 == value; }))
     {
         log_error("get_global_linear_id failed\n");
-        return -1;
+        return TEST_FAIL;
     }
     log_info("get_global_linear_id passed\n");
-    return 0;
+    return TEST_PASS;
 }
 }
 
 int test_global_linear_id(cl_device_id device, cl_context context,
                           cl_command_queue queue, int num_elements)
 {
-    clMemWrapper streams;
     clProgramWrapper program[2];
     clKernelWrapper kernel[2];
 
@@ -79,18 +77,20 @@ int test_global_linear_id(cl_device_id device, cl_context context,
     int err;
 
     num_elements = static_cast<int>(sqrt(static_cast<float>(num_elements)));
-    int length = num_elements * num_elements;
+    int length = 1;
     size_t threads[] = { static_cast<size_t>(num_elements),
                          static_cast<size_t>(num_elements) };
 
-    std::vector<cl_int> output(length);
-
-    streams = clCreateBuffer(context, CL_MEM_READ_WRITE, length * sizeof(int),
-                             nullptr, &err);
-    test_error(err, "clCreateBuffer failed.");
-
-    for (int i = 0; i < ARRAY_SIZE(program); i++)
+    for (int i = 0; i < ARRAY_SIZE(program) && !err; i++)
     {
+        length *= num_elements;
+
+        std::vector<cl_int> output(length);
+
+        clMemWrapper streams = clCreateBuffer(
+            context, CL_MEM_READ_WRITE, length * sizeof(cl_int), nullptr, &err);
+        test_error(err, "clCreateBuffer failed.");
+
         err = create_single_kernel_helper(context, &program[i], &kernel[i], 1,
                                           &kernel_code[i], kernel_names[i]);
         test_error(err, "create_single_kernel_helper failed");
@@ -103,7 +103,7 @@ int test_global_linear_id(cl_device_id device, cl_context context,
         test_error(err, "clEnqueueNDRangeKernel failed.");
 
         err = clEnqueueReadBuffer(queue, streams, CL_TRUE, 0,
-                                  length * sizeof(int), output.data(), 0,
+                                  length * sizeof(cl_int), output.data(), 0,
                                   nullptr, nullptr);
         test_error(err, "clEnqueueReadBuffer failed.");
 
