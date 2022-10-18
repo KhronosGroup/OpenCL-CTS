@@ -228,7 +228,17 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
-            memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
+
+            if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
+                                             &pattern, sizeof(pattern), 0,
+                                             BUFFER_SIZE, 0, NULL, NULL)))
+            {
+                vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
+                           error);
+                return error;
+            }
+            //memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
+
             if ((error =
                      clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
                                           BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
@@ -238,7 +248,16 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                 goto exit;
             }
 
-            memset_pattern4(gOut2[j], &pattern, BUFFER_SIZE);
+            if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer2[j],
+                                             &pattern, sizeof(pattern), 0,
+                                             BUFFER_SIZE, 0, NULL, NULL)))
+            {
+                vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
+                           error);
+                return error;
+            }
+            //memset_pattern4(gOut2[j], &pattern, BUFFER_SIZE);
+
             if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer2[j], CL_FALSE,
                                               0, BUFFER_SIZE, gOut2[j], 0, NULL,
                                               NULL)))

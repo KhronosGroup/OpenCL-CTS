@@ -388,7 +388,17 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         // Fill the result buffer with garbage, so that old results don't carry
         // over
         uint32_t pattern = 0xffffdead;
-        memset_pattern4(out[j], &pattern, buffer_size);
+
+        if ((error = clEnqueueFillBuffer(tinfo->tQueue, tinfo->outBuf[j],
+                                         &pattern, sizeof(pattern), 0,
+                                         buffer_size, 0, NULL, NULL)))
+        {
+            vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
+                       error);
+            return error;
+        }
+        //memset_pattern4(out[j], &pattern, buffer_size);
+
         if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
                                              out[j], 0, NULL, NULL)))
         {
