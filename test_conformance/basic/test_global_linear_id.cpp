@@ -74,7 +74,7 @@ int test_global_linear_id(cl_device_id device, cl_context context,
                                    "test_global_linear_id_2d" };
     const char *kernel_code[] = { global_linear_id_1d_code,
                                   global_linear_id_2d_code };
-    int err;
+    int err = CL_SUCCESS;
 
     num_elements = static_cast<int>(sqrt(static_cast<float>(num_elements)));
     int length = 1;
