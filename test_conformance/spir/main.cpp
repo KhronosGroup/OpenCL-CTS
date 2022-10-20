@@ -6253,7 +6253,7 @@ static bool test_image_enumeration(cl_context context, cl_command_queue queue,
                 (FailE)(it.toString(), kernelName);
                 std::cout << "enum_" << it.toString() << " FAILED" << std::endl;
             }
-        } catch(std::exception e)
+        } catch (const std::exception &e)
         {
             (FailE)(it.toString(), kernelName);
             print_error(1, e.what());
@@ -6356,7 +6356,7 @@ static bool test_image_enumeration_3d(cl_context context, cl_command_queue queue
                 (FailE)(it.toString(), kernelName);
                 std::cout << "enum_" << it.toString() << " FAILED" << std::endl;
             }
-        } catch(std::exception e)
+        } catch (const std::exception &e)
         {
             (FailE)(it.toString(), kernelName);
             print_error(1, e.what());
@@ -6521,7 +6521,7 @@ test_kernel_attributes(cl_device_id device, cl_uint width, const char *folder)
         }
         (SuccE)(test_name, "");
         log_info("kernel_attributes passed.\n");
-    } catch(std::exception e)
+    } catch (const std::exception &e)
     {
         (FailE)(test_name, "");
         log_info("kernel_attributes FAILED\n");
@@ -6587,7 +6587,7 @@ static bool test_binary_type(cl_device_id device, cl_uint width, const char *fol
         }
         (SuccE)(test_name, "");
         log_info("binary_type passed.\n");
-    } catch(std::exception e)
+    } catch (const std::exception &e)
     {
         (FailE)(test_name, "");
         log_info("binary_type FAILED\n");
