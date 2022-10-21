@@ -53,15 +53,14 @@ __kernel void test_if(__global int *src, __global int *dst)
 }
 )";
 
-const int results[] = {
-    0x12345678, 0x23456781, 0x34567812, 0x45678123,
-    0x56781234, 0x67812345, 0x78123456, 0x81234567,
-};
-
-
 int verify_if(std::vector<cl_int> input, std::vector<cl_int> output)
 {
-    auto predicate = [](cl_int a, cl_int b) {
+    const cl_int results[] = {
+        0x12345678, 0x23456781, 0x34567812, 0x45678123,
+        0x56781234, 0x67812345, 0x78123456, 0x81234567,
+    };
+
+    auto predicate = [&results](cl_int a, cl_int b) {
         if (a <= 7)
             return b == results[a];
         else
