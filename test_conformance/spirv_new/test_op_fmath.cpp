@@ -79,10 +79,7 @@ int test_fmath(cl_device_id deviceID,
         kernelStr = kernelStream.str();
     }
 
-    size_t kernelLen = kernelStr.size();
     const char *kernelBuf = kernelStr.c_str();
-
-    const char *options = fast_math ? "-cl-fast-relaxed-math" : NULL;
 
     std::vector<T> h_ref(num);
 

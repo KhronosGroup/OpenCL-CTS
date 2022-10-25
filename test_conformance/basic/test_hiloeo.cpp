@@ -43,8 +43,6 @@ static const unsigned int out_vector_idx[] =   { 0, 0, 1, 1, 3, 4};
 // input type name is strcat(gentype, vector_size_names[i]);
 // and output type name is
 // strcat(gentype, vector_size_names[out_vector_idx[i]]);
-static const int size_to_idx[] = {-1,0,1,2,3,-1,-1,-1,4,
-    -1,-1,-1,-1,-1,-1,-1,5};
 static const char *vector_size_names[] = { "", "2", "3", "4", "8", "16"};
 
 static const size_t  kSizes[] = { 1, 1, 2, 2, 4, 4, 8, 8, 4, 8 };

@@ -75,7 +75,6 @@ int test_vector_times_scalar(cl_device_id deviceID,
         kernelStr = kernelStream.str();
     }
 
-    size_t kernelLen = kernelStr.size();
     const char *kernelBuf = kernelStr.c_str();
 
     std::vector<Tv> h_ref(num);
@@ -107,7 +106,6 @@ int test_vector_times_scalar(cl_device_id deviceID,
         SPIRV_CHECK_ERROR(err, "Failed to read from ref");
     }
 
-    cl_uint bits = sizeof(void *) * 8;
     std::string ref = "vector_times_scalar_";
     ref += Tname;
     const char *spvName = ref.c_str();

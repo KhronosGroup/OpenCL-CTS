@@ -49,7 +49,7 @@ typedef cl_int (*pfnclEnqueueReleaseExternalMemObjectsKHR)(
     cl_command_queue command_queue, cl_uint num_mem_objects,
     const cl_mem *mem_objects, cl_uint num_events_in_wait_list,
     const cl_event *event_wait_list, cl_event *event);
-typedef cl_int (*pfnclReleaseSemaphoreObjectKHR)(cl_semaphore_khr sema_object);
+typedef cl_int (*pfnclReleaseSemaphoreKHR)(cl_semaphore_khr sema_object);
 
 extern pfnclCreateSemaphoreWithPropertiesKHR
     clCreateSemaphoreWithPropertiesKHRptr;
@@ -59,7 +59,7 @@ extern pfnclEnqueueAcquireExternalMemObjectsKHR
     clEnqueueAcquireExternalMemObjectsKHRptr;
 extern pfnclEnqueueReleaseExternalMemObjectsKHR
     clEnqueueReleaseExternalMemObjectsKHRptr;
-extern pfnclReleaseSemaphoreObjectKHR clReleaseSemaphoreObjectKHRptr;
+extern pfnclReleaseSemaphoreKHR clReleaseSemaphoreKHRptr;
 
 cl_int getCLImageInfoFromVkImageInfo(const VkImageCreateInfo *, size_t,
                                      cl_image_format *, cl_image_desc *);
@@ -69,6 +69,8 @@ cl_int check_external_memory_handle_type(
 cl_int check_external_semaphore_handle_type(
     cl_device_id deviceID,
     cl_external_semaphore_handle_type_khr requiredHandleType);
+cl_int setMaxImageDimensions(cl_device_id deviceID, size_t &width,
+                             size_t &height);
 
 class clExternalMemory {
 protected:

@@ -89,6 +89,7 @@ endmacro(add_cxx_flag_if_supported)
 
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
     add_cxx_flag_if_supported(-Wmisleading-indentation)
+    add_cxx_flag_if_supported(-Wunused-variable)
     add_cxx_flag_if_supported(-Wno-narrowing)
     add_cxx_flag_if_supported(-Wno-format)
     add_cxx_flag_if_supported(-Werror)
@@ -111,6 +112,17 @@ else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D__SSE__")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
 endif()
+
+# Set a module's COMPILE_FLAGS if using gcc or clang.
+macro(set_gnulike_module_compile_flags flags)
+    if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+        SET_SOURCE_FILES_PROPERTIES(
+            ${${MODULE_NAME}_SOURCES}
+            PROPERTIES
+            COMPILE_FLAGS ${flags}
+        )
+    endif()
+endmacro(set_gnulike_module_compile_flags)
 
 if(MSVC)
     # Don't warn when using standard non-secure functions.

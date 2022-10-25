@@ -98,7 +98,7 @@ cl_mem gInBuffer2 = NULL;
 cl_mem gInBuffer3 = NULL;
 cl_mem gOutBuffer[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
 cl_mem gOutBuffer2[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
-static MTdata gMTdata;
+static MTdataHolder gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
 int gWimpyReductionFactor = 32;
 int gVerboseBruteForce = 0;
@@ -132,7 +132,7 @@ static int doTest(const char *name)
             if ((gStartTestNumber != ~0u && i < gStartTestNumber)
                 || i > gEndTestNumber)
             {
-                vlog("Skipping function #%d\n", i);
+                vlog("Skipping function #%zu\n", i);
                 return 0;
             }
 
@@ -326,7 +326,7 @@ int main(int argc, const char *argv[])
     vlog("\n-------------------------------------------------------------------"
          "----------------------------------------\n");
 
-    gMTdata = init_genrand(gRandomSeed);
+    gMTdata = MTdataHolder(gRandomSeed);
 
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
@@ -335,8 +335,6 @@ int main(int argc, const char *argv[])
                                       test_num, test_list, true, 0, InitCL);
 
     RestoreFPState(&oldMode);
-
-    free_mtdata(gMTdata);
 
     if (gQueue)
     {
@@ -360,16 +358,18 @@ static int ParseArgs(int argc, const char **argv)
     int singleThreaded = 0;
 
     { // Extract the app name
-        strncpy(appName, argv[0], MAXPATHLEN);
+        strncpy(appName, argv[0], MAXPATHLEN - 1);
+        appName[MAXPATHLEN - 1] = '\0';
 
 #if defined(__APPLE__)
         char baseName[MAXPATHLEN];
         char *base = NULL;
-        strncpy(baseName, argv[0], MAXPATHLEN);
+        strncpy(baseName, argv[0], MAXPATHLEN - 1);
+        baseName[MAXPATHLEN - 1] = '\0';
         base = basename(baseName);
         if (NULL != base)
         {
-            strncpy(appName, base, sizeof(appName));
+            strncpy(appName, base, sizeof(appName) - 1);
             appName[sizeof(appName) - 1] = '\0';
         }
 #endif
@@ -501,8 +501,6 @@ static int ParseArgs(int argc, const char **argv)
         vlog("*** Detected CL_WIMPY_MODE env                          ***\n");
         gWimpyMode = 1;
     }
-
-    vlog("\nTest binary built %s %s\n", __DATE__, __TIME__);
 
     PrintArch();
 

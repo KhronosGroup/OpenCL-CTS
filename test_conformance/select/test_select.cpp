@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -172,8 +172,6 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
     char ctypename[32];
     char extension[128] = "";
     int  err = 0;
-
-    int i; // generic, re-usable loop variable
 
     const char *source[] = {
         extension,
@@ -641,7 +639,6 @@ int main(int argc, const char* argv[])
         s_wimpy_mode = true;
     }
 
-    log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
     if (s_wimpy_mode) {
         log_info("\n");
         log_info("*** WARNING: Testing in Wimpy mode!                     ***\n");
@@ -670,4 +667,3 @@ static void printUsage( void )
         log_info( "\t%s\n", test_list[i].name );
     }
 }
-

@@ -69,7 +69,7 @@ void createKernelSourceCode(std::stringstream &stream, int num_pipes)
                   }
           }
           )";
-          // clang-format om
+        // clang-format on
     }
     stream << R"(
     }
@@ -163,7 +163,7 @@ int test_pipe_max_args(cl_device_id deviceID, cl_context context, cl_command_que
     cl_int err;
     cl_int size;
     int num_pipe_elements = 1024;
-    int i, j;
+    int i;
     int max_pipe_args;
     std::stringstream source;
     clEventWrapper producer_sync_event = NULL;

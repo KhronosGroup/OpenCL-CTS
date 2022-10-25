@@ -114,9 +114,8 @@ int test_pipe_subgroups_divergence(cl_device_id deviceID, cl_context context, cl
 
     if (!is_extension_available(deviceID, "cl_khr_subgroups"))
     {
-        log_info(
-            "cl_khr_subgroups is not supported on this platoform. Skipping "
-            "test.\n");
+        log_info("cl_khr_subgroups is not supported on this platform. Skipping "
+                 "test.\n");
         return CL_SUCCESS;
     }
 

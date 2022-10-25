@@ -14,6 +14,9 @@ TOOLCHAIN_FILE=${TOP}/toolchain.cmake
 touch ${TOOLCHAIN_FILE}
 BUILD_OPENGL_TEST="OFF"
 
+cmake --version
+echo
+
 # Prepare toolchain if needed
 if [[ ${JOB_ARCHITECTURE} != "" && ${RUNNER_OS} != "Windows" ]]; then
     TOOLCHAIN_URL_VAR=TOOLCHAIN_URL_${JOB_ARCHITECTURE}
@@ -40,6 +43,12 @@ if [[ ( ${JOB_ARCHITECTURE} == "" && ${JOB_ENABLE_GL} == "1" ) ]]; then
     BUILD_OPENGL_TEST="ON"
 fi
 
+if [[ ${JOB_ENABLE_DEBUG} == 1 ]]; then
+    BUILD_CONFIG="Debug"
+else
+    BUILD_CONFIG="Release"
+fi
+
 #Vulkan Headers
 git clone https://github.com/KhronosGroup/Vulkan-Headers.git
 
@@ -48,8 +57,11 @@ git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
 cd ${TOP}/OpenCL-ICD-Loader
 mkdir build
 cd build
-cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/
-cmake --build . -j2 --config Release
+cmake .. -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
+      -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/
+cmake --build . -j2
 
 #Vulkan Loader
 cd ${TOP}
@@ -58,8 +70,15 @@ cd Vulkan-Loader
 mkdir build
 cd build
 python3 ../scripts/update_deps.py
-cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DBUILD_WSI_XLIB_SUPPORT=OFF -DBUILD_WSI_XCB_SUPPORT=OFF -DBUILD_WSI_WAYLAND_SUPPORT=OFF -DUSE_GAS=OFF -C helper.cmake ..
-cmake --build . -j2 --config Release
+cmake .. -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
+      -DBUILD_WSI_XLIB_SUPPORT=OFF \
+      -DBUILD_WSI_XCB_SUPPORT=OFF \
+      -DBUILD_WSI_WAYLAND_SUPPORT=OFF \
+      -DUSE_GAS=OFF \
+      -C helper.cmake ..
+cmake --build . -j2
 
 # Build CTS
 cd ${TOP}
@@ -74,6 +93,7 @@ else
   CMAKE_CACHE_OPTIONS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
 fi
 cmake .. -G Ninja \
+      -DCMAKE_BUILD_TYPE="${BUILD_CONFIG}" \
       ${CMAKE_CACHE_OPTIONS} \
       -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
       -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build \
@@ -84,6 +104,4 @@ cmake .. -G Ninja \
       -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
       -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
       -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/
-cmake --build . -j3 --config Release
-
-
+cmake --build . -j3
