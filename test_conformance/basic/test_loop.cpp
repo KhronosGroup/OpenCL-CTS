@@ -47,12 +47,10 @@ __kernel void test_loop(__global int *src, __global int *loopindx, __global int 
 int verify_loop(std::vector<cl_int> inptr, std::vector<cl_int> loopindx,
                 std::vector<cl_int> loopcnt, std::vector<cl_int> outptr, int n)
 {
-    int r, i, j, k;
-
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
-        r = 0;
-        for (j = 0, k = loopindx[i]; j < loopcnt[i]; j++, k++)
+        int r = 0;
+        for (int j = 0, k = loopindx[i]; j < loopcnt[i]; j++, k++)
         {
             if (k >= n) k = 0;
             r += inptr[k];
