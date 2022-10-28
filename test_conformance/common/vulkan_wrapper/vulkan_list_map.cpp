@@ -141,6 +141,17 @@ VulkanDescriptorSetLayoutBindingList::VulkanDescriptorSetLayoutBindingList(
 
 VulkanDescriptorSetLayoutBindingList::VulkanDescriptorSetLayoutBindingList() {}
 
+void VulkanDescriptorSetLayoutBindingList::addBinding(size_t binding,
+                VulkanDescriptorType descriptorType,
+                uint32_t descriptorCount,
+                VulkanShaderStage shaderStage)
+{
+    VulkanDescriptorSetLayoutBinding *descriptorSetLayoutBinding =
+            new VulkanDescriptorSetLayoutBinding(binding, descriptorType,
+                                                 descriptorCount, shaderStage);
+    add(*descriptorSetLayoutBinding);
+}
+
 VulkanDescriptorSetLayoutBindingList::VulkanDescriptorSetLayoutBindingList(
     size_t numDescriptorSetLayoutBindings, VulkanDescriptorType descriptorType,
     uint32_t descriptorCount, VulkanShaderStage shaderStage)

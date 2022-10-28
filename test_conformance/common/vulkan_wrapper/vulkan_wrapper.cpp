@@ -74,7 +74,7 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
     const char *vulkanLoaderLibraryName = "vulkan-1.dll";
 #elif defined(__ANDROID__)
     const char *vulkanLoaderLibraryName = "libvulkan.so";
-#elif defined(__linux__)
+#else
     const char *vulkanLoaderLibraryName = "libvulkan.so.1";
 #endif
 #ifdef _WIN32
@@ -1013,12 +1013,12 @@ void VulkanDescriptorPool::VulkanDescriptorPoolCommon(
                 == vkDescriptorTypeToDescriptorCountMap.end())
             {
                 vkDescriptorTypeToDescriptorCountMap
-                    [vkDescriptorSetLayoutBinding.descriptorType] = 1;
+                    [vkDescriptorSetLayoutBinding.descriptorType] = vkDescriptorSetLayoutBinding.descriptorCount;
             }
             else
             {
                 vkDescriptorTypeToDescriptorCountMap
-                    [vkDescriptorSetLayoutBinding.descriptorType]++;
+                    [vkDescriptorSetLayoutBinding.descriptorType] += vkDescriptorSetLayoutBinding.descriptorCount;
             }
         }
 
@@ -1159,6 +1159,33 @@ void VulkanDescriptorSet::update(uint32_t binding, const VulkanBuffer &buffer)
     vkUpdateDescriptorSets(m_device, 1, &vkWriteDescriptorSet, 0, NULL);
 }
 
+void VulkanDescriptorSet::updateArray(uint32_t binding, unsigned numBuffers, const VulkanBufferList &buffers)
+{
+    VkDescriptorBufferInfo *vkDescriptorBufferInfo =
+            (VkDescriptorBufferInfo *)calloc(numBuffers, sizeof(VkDescriptorBufferInfo));
+    for(unsigned  i = 0; i < numBuffers; i++)
+    {
+        vkDescriptorBufferInfo[i].buffer = buffers[i];
+        vkDescriptorBufferInfo[i].offset = 0;
+        vkDescriptorBufferInfo[i].range = VK_WHOLE_SIZE;
+    }
+
+    VkWriteDescriptorSet vkWriteDescriptorSet = {};
+    vkWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    vkWriteDescriptorSet.pNext = NULL;
+    vkWriteDescriptorSet.dstSet = m_vkDescriptorSet;
+    vkWriteDescriptorSet.dstBinding = binding;
+    vkWriteDescriptorSet.dstArrayElement = 0;
+    vkWriteDescriptorSet.descriptorCount = numBuffers;
+    vkWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    vkWriteDescriptorSet.pImageInfo = NULL;
+    vkWriteDescriptorSet.pBufferInfo = vkDescriptorBufferInfo;
+    vkWriteDescriptorSet.pTexelBufferView = NULL;
+
+    vkUpdateDescriptorSets(m_device, 1, &vkWriteDescriptorSet, 0, NULL);
+    free(vkDescriptorBufferInfo);
+}
+
 void VulkanDescriptorSet::update(uint32_t binding,
                                  const VulkanImageView &imageView)
 {
@@ -1180,6 +1207,33 @@ void VulkanDescriptorSet::update(uint32_t binding,
     vkWriteDescriptorSet.pTexelBufferView = NULL;
 
     vkUpdateDescriptorSets(m_device, 1, &vkWriteDescriptorSet, 0, NULL);
+}
+
+void VulkanDescriptorSet::updateArray(uint32_t binding,
+                                 const VulkanImageViewList &imageViewList)
+{
+    VkDescriptorImageInfo *vkDescriptorImageInfo = new VkDescriptorImageInfo[imageViewList.size()];
+    for(size_t i = 0; i < imageViewList.size(); i++)
+    {
+        vkDescriptorImageInfo[i].sampler = VK_NULL_HANDLE;
+        vkDescriptorImageInfo[i].imageView = imageViewList[i];
+        vkDescriptorImageInfo[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+    }
+
+    VkWriteDescriptorSet vkWriteDescriptorSet = {};
+    vkWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    vkWriteDescriptorSet.pNext = NULL;
+    vkWriteDescriptorSet.dstSet = m_vkDescriptorSet;
+    vkWriteDescriptorSet.dstBinding = binding;
+    vkWriteDescriptorSet.dstArrayElement = 0;
+    vkWriteDescriptorSet.descriptorCount = imageViewList.size();
+    vkWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    vkWriteDescriptorSet.pImageInfo = vkDescriptorImageInfo;
+    vkWriteDescriptorSet.pBufferInfo = NULL;
+    vkWriteDescriptorSet.pTexelBufferView = NULL;
+
+    vkUpdateDescriptorSets(m_device, 1, &vkWriteDescriptorSet, 0, NULL);
+    delete [] vkDescriptorImageInfo;
 }
 
 VulkanDescriptorSet::operator VkDescriptorSet() const

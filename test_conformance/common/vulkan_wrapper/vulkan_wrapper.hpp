@@ -328,7 +328,9 @@ public:
                         const VulkanDescriptorSetLayout &descriptorSetLayout);
     virtual ~VulkanDescriptorSet();
     void update(uint32_t binding, const VulkanBuffer &buffer);
+    void updateArray(uint32_t binding, unsigned numBuffers, const VulkanBufferList &buffers);
     void update(uint32_t binding, const VulkanImageView &imageView);
+    void updateArray(uint32_t binding, const VulkanImageViewList &imageViewList);
     operator VkDescriptorSet() const;
 };
 

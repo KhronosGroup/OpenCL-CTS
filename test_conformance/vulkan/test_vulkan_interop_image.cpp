@@ -226,9 +226,9 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
     srcBufferPtr = (char *)malloc(maxImage2DSize);
     dstBufferPtr = (char *)malloc(maxImage2DSize);
 
-    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
-        VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-        VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_2D_IMAGE_DESCRIPTORS);
+    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
+    vkDescriptorSetLayoutBindingList.addBinding(0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
+    vkDescriptorSetLayoutBindingList.addBinding(1, VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_2D_IMAGE_DESCRIPTORS);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -488,20 +488,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             clCl2VkExternalSemaphore->signal(cmd_queue1);
                             if (!useSingleImageKernel)
                             {
-                                for (size_t i2DIdx = 0;
-                                     i2DIdx < vkImage2DList.size(); i2DIdx++)
-                                {
-                                    for (uint32_t mipLevel = 0;
-                                         mipLevel < numMipLevels; mipLevel++)
-                                    {
-                                        uint32_t i2DvIdx =
-                                            (uint32_t)(i2DIdx * numMipLevels)
-                                            + mipLevel;
-                                        vkDescriptorSet.update(
-                                            1 + i2DvIdx,
-                                            vkImage2DViewList[i2DvIdx]);
-                                    }
-                                }
+                                vkDescriptorSet.updateArray(1, vkImage2DViewList);
                                 vkCopyCommandBuffer.begin();
                                 vkCopyCommandBuffer.pipelineBarrier(
                                     vkImage2DList,
@@ -822,9 +809,9 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
     srcBufferPtr = (char *)malloc(maxImage2DSize);
     dstBufferPtr = (char *)malloc(maxImage2DSize);
 
-    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
-        VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-        VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_2D_IMAGE_DESCRIPTORS);
+    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
+    vkDescriptorSetLayoutBindingList.addBinding(0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
+    vkDescriptorSetLayoutBindingList.addBinding(1, VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_2D_IMAGE_DESCRIPTORS);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -1063,20 +1050,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             clCl2VkExternalSemaphore->signal(cmd_queue1);
                             if (!useSingleImageKernel)
                             {
-                                for (size_t i2DIdx = 0;
-                                     i2DIdx < vkImage2DList.size(); i2DIdx++)
-                                {
-                                    for (uint32_t mipLevel = 0;
-                                         mipLevel < numMipLevels; mipLevel++)
-                                    {
-                                        uint32_t i2DvIdx =
-                                            (uint32_t)(i2DIdx * numMipLevels)
-                                            + mipLevel;
-                                        vkDescriptorSet.update(
-                                            1 + i2DvIdx,
-                                            vkImage2DViewList[i2DvIdx]);
-                                    }
-                                }
+                                vkDescriptorSet.updateArray(1, vkImage2DViewList);
                                 vkCopyCommandBuffer.begin();
                                 vkCopyCommandBuffer.pipelineBarrier(
                                     vkImage2DList,
@@ -1118,8 +1092,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                                          i2DIdx < vkImage2DList.size();
                                          i2DIdx++)
                                     {
-                                        vkDescriptorSet.update(
-                                            1, vkImage2DViewList[i2DIdx]);
+                                        vkDescriptorSet.update(1, vkImage2DViewList[i2DIdx]);
                                         vkCopyCommandBuffer.begin();
                                         vkCopyCommandBuffer.pipelineBarrier(
                                             vkImage2DList,
