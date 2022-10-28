@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+extern bool useOptimalTiling;
+
 #ifdef _WIN32
 #include <Windows.h>
 #include <dxgi1_2.h>
@@ -1558,6 +1560,11 @@ VulkanImage::VulkanImage(
       m_format(format), m_numMipLevels(numMipLevels), m_numLayers(arrayLayers),
       m_vkImage(VK_NULL_HANDLE)
 {
+    if (useOptimalTiling)
+    {
+        imageTiling = VULKAN_IMAGE_TILING_OPTIMAL;
+    }
+
     VkImageCreateInfo vkImageCreateInfo = {};
     vkImageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     vkImageCreateInfo.pNext = NULL;

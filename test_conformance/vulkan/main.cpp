@@ -143,6 +143,7 @@ bool useDeviceLocal = false;
 bool disableNTHandleType = false;
 bool enableOffset = false;
 bool non_dedicated = false;
+bool useOptimalTiling = false;
 
 static void printUsage(const char *execName)
 {
@@ -192,6 +193,10 @@ size_t parseParams(int argc, const char *argv[], const char **argList)
             if (!strcmp(argv[i], "--non_dedicated"))
             {
                 non_dedicated = true;
+            }
+            if (!strcmp(argv[i], "--useOptimalTiling"))
+            {
+                useOptimalTiling = true;
             }
             if (strcmp(argv[i], "-h") == 0)
             {
