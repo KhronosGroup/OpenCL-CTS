@@ -426,6 +426,7 @@ protected:
     VkBuffer m_vkBuffer;
     uint64_t m_size;
     uint64_t m_alignment;
+    bool     m_dedicated;
     VulkanMemoryTypeList m_memoryTypeList;
 
     VulkanBuffer(const VulkanBuffer &buffer);
@@ -443,6 +444,7 @@ public:
     uint64_t getSize() const;
     uint64_t getAlignment() const;
     const VulkanMemoryTypeList &getMemoryTypeList() const;
+    bool isDedicated() const;
     operator VkBuffer() const;
 };
 
@@ -454,6 +456,7 @@ protected:
     const VulkanFormat m_format;
     const uint32_t m_numMipLevels;
     const uint32_t m_numLayers;
+    bool m_dedicated;
     VkImage m_vkImage;
     uint64_t m_size;
     uint64_t m_alignment;
@@ -480,6 +483,7 @@ public:
     uint32_t getNumLayers() const;
     uint64_t getSize() const;
     uint64_t getAlignment() const;
+    bool isDedicated() const;
     const VulkanMemoryTypeList &getMemoryTypeList() const;
     VkImageCreateInfo getVkImageCreateInfo() const;
     operator VkImage() const;
@@ -488,8 +492,6 @@ public:
 class VulkanImage2D : public VulkanImage {
 protected:
     VkImageView m_vkImageView;
-
-    VulkanImage2D(const VulkanImage2D &image2D);
 
 public:
     VulkanImage2D(
@@ -503,6 +505,8 @@ public:
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
     virtual ~VulkanImage2D();
     virtual VulkanExtent3D getExtent3D(uint32_t mipLevel = 0) const;
+
+    VulkanImage2D(const VulkanImage2D &image2D);
 };
 
 class VulkanImageView {
@@ -542,6 +546,11 @@ public:
                        const VulkanMemoryType &memoryType,
                        VulkanExternalMemoryHandleType externalMemoryHandleType =
                            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
+                       const void *name = NULL);
+    VulkanDeviceMemory(const VulkanDevice &device, const VulkanBuffer &buffer,
+                       const VulkanMemoryType &memoryType,
+                       VulkanExternalMemoryHandleType externalMemoryHandleType =
+                       VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
                        const void *name = NULL);
     virtual ~VulkanDeviceMemory();
     uint64_t getSize() const;

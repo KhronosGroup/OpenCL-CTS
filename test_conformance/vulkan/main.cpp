@@ -185,7 +185,6 @@ bool useSingleImageKernel = false;
 bool useDeviceLocal = false;
 bool disableNTHandleType = false;
 bool enableOffset = false;
-bool non_dedicated = false;
 
 static void printUsage(const char *execName)
 {
@@ -231,10 +230,6 @@ size_t parseParams(int argc, const char *argv[], const char **argList)
             if (!strcmp(argv[i], "--enableOffset"))
             {
                 enableOffset = true;
-            }
-            if (!strcmp(argv[i], "--non_dedicated"))
-            {
-                non_dedicated = true;
             }
             if (strcmp(argv[i], "-h") == 0)
             {

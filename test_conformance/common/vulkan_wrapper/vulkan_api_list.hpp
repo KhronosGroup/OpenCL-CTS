@@ -75,6 +75,7 @@
     VK_FUNC_DECL(vkDestroyImageView)                                           \
     VK_FUNC_DECL(vkCreateImage)                                                \
     VK_FUNC_DECL(vkGetImageMemoryRequirements)                                 \
+    VK_FUNC_DECL(vkGetImageMemoryRequirements2KHR)                                \
     VK_FUNC_DECL(vkDestroyImage)                                               \
     VK_FUNC_DECL(vkDestroyBuffer)                                              \
     VK_FUNC_DECL(vkDestroyPipeline)                                            \
@@ -89,6 +90,7 @@
     VK_FUNC_DECL(vkGetPhysicalDeviceFeatures)                                  \
     VK_FUNC_DECL(vkGetPhysicalDeviceProperties2KHR)                            \
     VK_FUNC_DECL(vkGetBufferMemoryRequirements)                                \
+    VK_FUNC_DECL(vkGetBufferMemoryRequirements2KHR)                            \
     VK_FUNC_DECL(vkGetMemoryFdKHR)                                             \
     VK_FUNC_DECL(vkGetSemaphoreFdKHR)                                          \
     VK_FUNC_DECL(vkEnumeratePhysicalDeviceGroups)                              \
@@ -160,6 +162,7 @@
 #define vkDestroyImageView _vkDestroyImageView
 #define vkCreateImage _vkCreateImage
 #define vkGetImageMemoryRequirements _vkGetImageMemoryRequirements
+#define vkGetImageMemoryRequirements2KHR _vkGetImageMemoryRequirements2KHR
 #define vkDestroyImage _vkDestroyImage
 #define vkDestroyBuffer _vkDestroyBuffer
 #define vkDestroyPipeline _vkDestroyPipeline
@@ -175,6 +178,7 @@
 #define vkGetPhysicalDeviceFeatures _vkGetPhysicalDeviceFeatures
 #define vkGetPhysicalDeviceProperties2KHR _vkGetPhysicalDeviceProperties2KHR
 #define vkGetBufferMemoryRequirements _vkGetBufferMemoryRequirements
+#define vkGetBufferMemoryRequirements2KHR _vkGetBufferMemoryRequirements2KHR
 #define vkGetMemoryFdKHR _vkGetMemoryFdKHR
 #define vkGetSemaphoreFdKHR _vkGetSemaphoreFdKHR
 #define vkEnumeratePhysicalDeviceGroups _vkEnumeratePhysicalDeviceGroups

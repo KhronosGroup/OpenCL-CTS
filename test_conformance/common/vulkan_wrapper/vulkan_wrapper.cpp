@@ -1559,12 +1559,17 @@ VulkanBuffer::VulkanBuffer(const VulkanBuffer &buffer)
       m_memoryTypeList(buffer.m_memoryTypeList)
 {}
 
+bool VulkanBuffer::isDedicated() const
+{
+    return m_dedicated;
+}
+
 VulkanBuffer::VulkanBuffer(
     const VulkanDevice &device, uint64_t size,
     VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanBufferUsage bufferUsage, VulkanSharingMode sharingMode,
     const VulkanQueueFamilyList &queueFamilyList)
-    : m_device(device), m_vkBuffer(VK_NULL_HANDLE)
+    : m_device(device), m_vkBuffer(VK_NULL_HANDLE), m_dedicated(false)
 {
     std::vector<uint32_t> queueFamilyIndexList;
     if (queueFamilyList.size() == 0)
@@ -1610,16 +1615,32 @@ VulkanBuffer::VulkanBuffer(
 
     vkCreateBuffer(m_device, &vkBufferCreateInfo, NULL, &m_vkBuffer);
 
-    VkMemoryRequirements vkMemoryRequirements = {};
-    vkGetBufferMemoryRequirements(m_device, m_vkBuffer, &vkMemoryRequirements);
-    m_size = vkMemoryRequirements.size;
-    m_alignment = vkMemoryRequirements.alignment;
+    VkMemoryDedicatedRequirements vkMemoryDedicatedRequirements = {};
+    vkMemoryDedicatedRequirements.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS;
+    vkMemoryDedicatedRequirements.pNext = NULL;
+
+    VkMemoryRequirements2 vkMemoryRequirements = {};
+    vkMemoryRequirements.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+    vkMemoryRequirements.pNext = &vkMemoryDedicatedRequirements;
+
+    VkBufferMemoryRequirementsInfo2 vkMemoryRequirementsInfo ={};
+
+    vkMemoryRequirementsInfo.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2;
+    vkMemoryRequirementsInfo.buffer = m_vkBuffer;
+    vkMemoryRequirementsInfo.pNext = NULL;
+
+    vkGetBufferMemoryRequirements2KHR(m_device, &vkMemoryRequirementsInfo, &vkMemoryRequirements);
+
+    m_dedicated = vkMemoryDedicatedRequirements.requiresDedicatedAllocation;
+
+    m_size = vkMemoryRequirements.memoryRequirements.size;
+    m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
     const VulkanMemoryTypeList &memoryTypeList =
         m_device.getPhysicalDevice().getMemoryTypeList();
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];
-        if ((1 << memoryTypeIndex) & vkMemoryRequirements.memoryTypeBits)
+        if ((1 << memoryTypeIndex) & vkMemoryRequirements.memoryRequirements.memoryTypeBits)
         {
             m_memoryTypeList.add(memoryTypeList[mtIdx]);
         }
@@ -1694,16 +1715,32 @@ VulkanImage::VulkanImage(
 
     vkCreateImage(m_device, &vkImageCreateInfo, NULL, &m_vkImage);
     VulkanImageCreateInfo = vkImageCreateInfo;
-    VkMemoryRequirements vkMemoryRequirements = {};
-    vkGetImageMemoryRequirements(m_device, m_vkImage, &vkMemoryRequirements);
-    m_size = vkMemoryRequirements.size;
-    m_alignment = vkMemoryRequirements.alignment;
+
+    VkMemoryDedicatedRequirements vkMemoryDedicatedRequirements = {};
+    vkMemoryDedicatedRequirements.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS;
+    vkMemoryDedicatedRequirements.pNext = NULL;
+
+    VkMemoryRequirements2 vkMemoryRequirements = {};
+    vkMemoryRequirements.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+    vkMemoryRequirements.pNext = &vkMemoryDedicatedRequirements;
+
+    VkImageMemoryRequirementsInfo2 vkMemoryRequirementsInfo ={};
+
+    vkMemoryRequirementsInfo.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2;
+    vkMemoryRequirementsInfo.image = m_vkImage;
+    vkMemoryRequirementsInfo.pNext = NULL;
+
+    vkGetImageMemoryRequirements2KHR(m_device, &vkMemoryRequirementsInfo, &vkMemoryRequirements);
+    m_size = vkMemoryRequirements.memoryRequirements.size;
+    m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
+    m_dedicated = vkMemoryDedicatedRequirements.requiresDedicatedAllocation;
+
     const VulkanMemoryTypeList &memoryTypeList =
         m_device.getPhysicalDevice().getMemoryTypeList();
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];
-        if ((1 << memoryTypeIndex) & vkMemoryRequirements.memoryTypeBits)
+        if ((1 << memoryTypeIndex) & vkMemoryRequirements.memoryRequirements.memoryTypeBits)
         {
             m_memoryTypeList.add(memoryTypeList[mtIdx]);
         }
@@ -1731,6 +1768,8 @@ uint32_t VulkanImage::getNumLayers() const { return m_numLayers; }
 uint64_t VulkanImage::getSize() const { return m_size; }
 
 uint64_t VulkanImage::getAlignment() const { return m_alignment; }
+
+bool VulkanImage::isDedicated() const { return m_dedicated; }
 
 const VulkanMemoryTypeList &VulkanImage::getMemoryTypeList() const
 {
@@ -1942,7 +1981,7 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     const VulkanDevice &device, const VulkanImage &image,
     const VulkanMemoryType &memoryType,
     VulkanExternalMemoryHandleType externalMemoryHandleType, const void *name)
-    : m_device(device), m_size(image.getSize()), m_isDedicated(true)
+    : m_device(device), m_size(image.getSize()), m_isDedicated(image.isDedicated())
 {
 #if defined(_WIN32) || defined(_WIN64)
     WindowsSecurityAttributes winSecurityAttributes;
@@ -1987,6 +2026,59 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     vkMemoryAllocateInfo.memoryTypeIndex = (uint32_t)memoryType;
 
     vkAllocateMemory(m_device, &vkMemoryAllocateInfo, NULL, &m_vkDeviceMemory);
+}
+
+VulkanDeviceMemory::VulkanDeviceMemory(
+        const VulkanDevice &device, const VulkanBuffer &buffer,
+        const VulkanMemoryType &memoryType,
+        VulkanExternalMemoryHandleType externalMemoryHandleType, const void *name)
+        : m_device(device), m_size(buffer.getSize()), m_isDedicated(buffer.isDedicated())
+{
+#if defined(_WIN32) || defined(_WIN64)
+    WindowsSecurityAttributes winSecurityAttributes;
+
+    VkExportMemoryWin32HandleInfoKHR vkExportMemoryWin32HandleInfoKHR = {};
+    vkExportMemoryWin32HandleInfoKHR.sType =
+        VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
+    vkExportMemoryWin32HandleInfoKHR.pNext = NULL;
+    vkExportMemoryWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
+    vkExportMemoryWin32HandleInfoKHR.dwAccess =
+        DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
+    vkExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)name;
+
+#endif
+
+    VkExportMemoryAllocateInfoKHR vkExportMemoryAllocateInfoKHR = {};
+    vkExportMemoryAllocateInfoKHR.sType =
+            VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
+#if defined(_WIN32) || defined(_WIN64)
+    vkExportMemoryAllocateInfoKHR.pNext = externalMemoryHandleType
+            & VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT
+        ? &vkExportMemoryWin32HandleInfoKHR
+        : NULL;
+#else
+    vkExportMemoryAllocateInfoKHR.pNext = NULL;
+#endif
+    vkExportMemoryAllocateInfoKHR.handleTypes =
+            (VkExternalMemoryHandleTypeFlagsKHR)externalMemoryHandleType;
+
+    VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = {};
+    vkMemoryDedicatedAllocateInfo.sType =
+            VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
+    vkMemoryDedicatedAllocateInfo.pNext =
+            externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    vkMemoryDedicatedAllocateInfo.image = VK_NULL_HANDLE;
+    vkMemoryDedicatedAllocateInfo.buffer = buffer;
+
+    VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
+    vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    vkMemoryAllocateInfo.pNext = m_isDedicated ? &vkMemoryDedicatedAllocateInfo : nullptr;
+    vkMemoryAllocateInfo.allocationSize = m_size;
+    vkMemoryAllocateInfo.memoryTypeIndex = (uint32_t)memoryType;
+
+    VkResult res = vkAllocateMemory(m_device, &vkMemoryAllocateInfo, NULL, &m_vkDeviceMemory);
+    ASSERT_SUCCESS(res, "Failed to allocate device memory");
+
 }
 
 VulkanDeviceMemory::~VulkanDeviceMemory()
@@ -2055,11 +2147,19 @@ void VulkanDeviceMemory::unmap() { vkUnmapMemory(m_device, m_vkDeviceMemory); }
 
 void VulkanDeviceMemory::bindBuffer(const VulkanBuffer &buffer, uint64_t offset)
 {
+    if(buffer.isDedicated() && !m_isDedicated)
+    {
+        throw std::runtime_error("Buffer requires dedicated memory.  Failed to bind");
+    }
     vkBindBufferMemory(m_device, buffer, m_vkDeviceMemory, offset);
 }
 
 void VulkanDeviceMemory::bindImage(const VulkanImage &image, uint64_t offset)
 {
+    if(image.isDedicated() && !m_isDedicated)
+    {
+        throw std::runtime_error("Image requires dedicated memory.  Failed to bind");
+    }
     vkBindImageMemory(m_device, image, m_vkDeviceMemory, offset);
 }
 
