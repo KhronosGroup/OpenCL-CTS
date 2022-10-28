@@ -1652,7 +1652,7 @@ VulkanImage2D::VulkanImage2D(
     : VulkanImage(device, VULKAN_IMAGE_TYPE_2D, format,
                   VulkanExtent3D(width, height, 1), numMipLevels, 1,
                   externalMemoryHandleType, imageCreateFlag,
-                  VULKAN_IMAGE_TILING_OPTIMAL, imageUsage, sharingMode)
+                  VULKAN_IMAGE_TILING_LINEAR, imageUsage, sharingMode)
 {}
 
 VulkanImage2D::~VulkanImage2D() {}
