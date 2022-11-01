@@ -1441,7 +1441,6 @@ void WriteInputBufferComplete(void *data)
     {
         size_t workItemCount =
             (count + vectorSizes[vectorSize] - 1) / (vectorSizes[vectorSize]);
-        cl_event mapComplete = NULL;
 
         if ((status = RunKernel(info->calcInfo[vectorSize].kernel, gInBuffer,
                                 gOutBuffers[vectorSize], workItemCount)))
