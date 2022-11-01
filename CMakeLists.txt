@@ -49,16 +49,6 @@ set(CONFORMANCE_SUFFIX "" )
 include(CMakeVendor.txt OPTIONAL)
 
 # CL_INCLUDE_DIR - path to dir with OpenCL headers
-find_package(OpenCL REQUIRED)
-if(NOT (CL_INCLUDE_DIR AND CL_LIB_DIR) AND OpenCL_FOUND)
-    set(CL_INCLUDE_DIR OpenCL_INCLUDE_DIRS)
-    set(CL_LIB_DIR OpenCL_LIBRARY)
-    message(STATUS "Using system OpenCL: Include DIRS = ${CL_INCLUDE_DIR}")
-else()
-    message(STATUS "Using user defined OpenCL: Include Dirs = ${CL_INCLUDE_DIR}")
-    message(STATUS "Using user defined OpenCL: lib Dir = ${CL_LIB_DIR}")
-endif()
-
 if(CL_INCLUDE_DIR AND CL_LIB_DIR)
     link_directories(${CL_LIB_DIR})
 else(CL_INCLUDE_DIR AND CL_LIB_DIR)

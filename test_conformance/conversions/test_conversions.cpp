@@ -394,7 +394,7 @@ int main(int argc, const char **argv)
 static int ParseArgs(int argc, const char **argv)
 {
     int i;
-    argList = (const char **)calloc(argc - 1, sizeof(char *));
+    argList = (const char **)calloc(argc, sizeof(char *));
     argCount = 0;
 
     if (NULL == argList && argc > 1) return -1;
