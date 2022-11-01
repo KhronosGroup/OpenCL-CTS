@@ -521,8 +521,6 @@ static int ParseArgs(int argc, const char **argv)
 
     vlog("\n");
 
-    vlog("Test binary built %s %s\n", __DATE__, __TIME__);
-
     PrintArch();
 
     if (gWimpyMode)
@@ -1768,8 +1766,6 @@ static cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
                                         &programSource, testName, flags);
     if (error)
     {
-        char buffer[2048] = "";
-
         vlog_error("Failed to build kernel/program.\n", error);
         clReleaseProgram(program);
         return NULL;
