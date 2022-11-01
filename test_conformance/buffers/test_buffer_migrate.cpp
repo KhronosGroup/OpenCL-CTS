@@ -80,7 +80,7 @@ static cl_int migrateMemObject(enum migrations migrate, cl_command_queue *queues
 
 static cl_int restoreBuffer(cl_command_queue *queues, cl_mem *buffers, cl_uint num_devices, cl_mem_migration_flags *flags, cl_uint *buffer)
 {
-  cl_uint i, j;
+  cl_uint i;
   cl_int  err;
 
   // If the buffer was previously migrated with undefined content, reload the content.

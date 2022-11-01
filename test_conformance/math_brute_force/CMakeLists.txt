@@ -9,6 +9,7 @@ set(${MODULE_NAME}_SOURCES
     binary_operator_float.cpp
     binary_two_results_i_double.cpp
     binary_two_results_i_float.cpp
+    common.cpp
     common.h
     function_list.cpp
     function_list.h
@@ -39,5 +40,9 @@ set(${MODULE_NAME}_SOURCES
     utility.cpp
     utility.h
 )
+
+# math_brute_force compiles cleanly with -Wall (except for a few remaining
+# warnings), but other tests not (yet); so enable -Wall locally.
+set_gnulike_module_compile_flags("-Wall -Wno-strict-aliasing -Wno-unknown-pragmas")
 
 include(../CMakeCommon.txt)

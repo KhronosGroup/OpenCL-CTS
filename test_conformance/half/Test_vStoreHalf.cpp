@@ -81,7 +81,7 @@ ReferenceF(cl_uint jid, cl_uint tid, void *userInfo)
     cl_ushort *r = cri->r + off;
     f2h f = cri->f;
     cl_ulong i = cri->i + off;
-    cl_uint j, rr;
+    cl_uint j;
 
     if (off + count > lim)
         count = lim - off;
