@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "conversions.h"
+#include <cinttypes>
 #include <limits.h>
 #include <time.h>
 #include <assert.h>
@@ -50,10 +51,10 @@ void print_type_to_string(ExplicitType type, void *data, char *string)
         case kInt: sprintf(string, "%d", *((cl_int *)data)); return;
         case kUInt:
         case kUnsignedInt: sprintf(string, "%u", *((cl_uint *)data)); return;
-        case kLong: sprintf(string, "%lld", *((cl_long *)data)); return;
+        case kLong: sprintf(string, "%" PRId64 "", *((cl_long *)data)); return;
         case kULong:
         case kUnsignedLong:
-            sprintf(string, "%llu", *((cl_ulong *)data));
+            sprintf(string, "%" PRIu64 "", *((cl_ulong *)data));
             return;
         case kFloat: sprintf(string, "%f", *((cl_float *)data)); return;
         case kHalf: sprintf(string, "half"); return;

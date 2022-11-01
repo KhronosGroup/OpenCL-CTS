@@ -908,12 +908,6 @@ void dumpConfigInfo(config_info* info)
                 {
                     cl_name_version new_version_item =
                         info->config.cl_name_version_array[f];
-                    cl_version new_version_major =
-                        CL_VERSION_MAJOR_KHR(new_version_item.version);
-                    cl_version new_version_minor =
-                        CL_VERSION_MINOR_KHR(new_version_item.version);
-                    cl_version new_version_patch =
-                        CL_VERSION_PATCH_KHR(new_version_item.version);
                     log_info("\t\t\"%s\" %d.%d.%d\n", new_version_item.name,
                              CL_VERSION_MAJOR_KHR(new_version_item.version),
                              CL_VERSION_MINOR_KHR(new_version_item.version),

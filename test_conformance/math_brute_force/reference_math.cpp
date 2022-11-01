@@ -1949,7 +1949,8 @@ double reference_lgamma(double x)
         w6 = -1.63092934096575273989e-03; /* 0xBF5AB89D, 0x0B9E43E4 */
 
     static const double zero = 0.00000000000000000000e+00;
-    double t, y, z, nadj, p, p1, p2, p3, q, r, w;
+    double nadj = zero;
+    double t, y, z, p, p1, p2, p3, q, r, w;
     cl_int i, hx, lx, ix;
 
     union {
@@ -5357,10 +5358,10 @@ long double reference_acosl(long double x)
         0x3243F6A8885A308DULL, 0x313198A2E0370734ULL
     }; // first 126 bits of pi
        // http://www.super-computing.org/pi-hexa_current.html
-    long double head, tail, temp;
+    long double head, tail;
 #if __LDBL_MANT_DIG__ >= 64
     // long double has 64-bits of precision or greater
-    temp = (long double)pi_bits[0] * 0x1.0p64L;
+    long double temp = (long double)pi_bits[0] * 0x1.0p64L;
     head = temp + (long double)pi_bits[1];
     temp -= head; // rounding err rounding pi_bits[1] into head
     tail = (long double)pi_bits[1] + temp;

@@ -19,6 +19,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
+#include <cinttypes>
 #include <cstring>
 
 namespace {
@@ -116,11 +117,15 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 // Thread specific data for a worker thread
 struct ThreadInfo
 {
-    cl_mem inBuf; // input buffer for the thread
-    cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
+    // Input and output buffers for the thread
+    clMemWrapper inBuf;
+    Buffers outBuf;
+
     float maxError; // max error value. Init to 0.
     double maxErrorValue; // position of the max error value.  Init to 0.
-    cl_command_queue tQueue; // per thread command queue to improve performance
+
+    // Per thread command queue to improve performance
+    clCommandQueueWrapper tQueue;
 };
 
 struct TestInfo
@@ -341,7 +346,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 if (fail)
                 {
                     vlog_error("\nERROR: %s%s: %f ulp error at %.13la "
-                               "(0x%16.16llx): *%.13la vs. %.13la\n",
+                               "(0x%16.16" PRIx64 "): *%.13la vs. %.13la\n",
                                job->f->name, sizeNames[k], err,
                                ((cl_double *)gIn)[j], ((cl_ulong *)gIn)[j],
                                ((cl_double *)gOut_Ref)[j], test);
@@ -423,7 +428,7 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         test_info.k[i].resize(test_info.threadCount, nullptr);
     }
 
-    test_info.tinfo.resize(test_info.threadCount, ThreadInfo{});
+    test_info.tinfo.resize(test_info.threadCount);
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {
@@ -509,14 +514,6 @@ exit:
         {
             clReleaseKernel(kernel);
         }
-    }
-
-    for (auto &threadInfo : test_info.tinfo)
-    {
-        clReleaseMemObject(threadInfo.inBuf);
-        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-            clReleaseMemObject(threadInfo.outBuf[j]);
-        clReleaseCommandQueue(threadInfo.tQueue);
     }
 
     return error;

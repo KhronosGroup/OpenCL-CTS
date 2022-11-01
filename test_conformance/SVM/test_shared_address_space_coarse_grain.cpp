@@ -98,7 +98,9 @@ cl_int create_linked_lists_on_device(int ci, cl_command_queue cmdq, cl_mem alloc
   cl_int error = CL_SUCCESS;
   log_info("SVM: creating linked list on device: %d ", ci);
 
-  size_t *pAllocator = (size_t*) clEnqueueMapBuffer(cmdq, allocator, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, sizeof(cl_int), 0, NULL,NULL, &error);
+  size_t *pAllocator = (size_t *)clEnqueueMapBuffer(
+      cmdq, allocator, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, sizeof(size_t),
+      0, NULL, NULL, &error);
   test_error2(error, pAllocator, "clEnqueueMapBuffer failed");
   // reset allocator index
   *pAllocator = numLists;   // the first numLists elements of the nodes array are already allocated (they hold the head of each list).
@@ -206,7 +208,9 @@ int shared_address_space_coarse_grain(cl_device_id deviceID, cl_context context2
     }
 
     // this buffer holds an index into the nodes buffer, it is used for node allocation
-    clMemWrapper allocator = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int), NULL, &error);
+    clMemWrapper allocator = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                            sizeof(size_t), NULL, &error);
+
     test_error(error, "clCreateBuffer failed.");
 
     error = clGetMemObjectInfo(allocator, CL_MEM_USES_SVM_POINTER, sizeof(cl_bool), &usesSVMpointer, 0);

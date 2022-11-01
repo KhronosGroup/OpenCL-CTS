@@ -49,8 +49,6 @@ static const char *fpmul_kernel_code =
 "}\n";
 
 
-static const float    MAX_ERR = 1e-5f;
-
 static int
 verify_fpadd(float *inptrA, float *inptrB, float *outptr, int n)
 {

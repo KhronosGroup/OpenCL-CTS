@@ -320,8 +320,10 @@ int main(int argc, const char *argv[])
       goto cleanup;
     }
 
+#ifdef GLES3
     int argc_ = (first_32_testname) ? 1 + (argc - first_32_testname) : argc;
     const char** argv_ = (first_32_testname) ? &argv[first_32_testname-1] : argv;
+#endif
 
     // Execute the tests.
       for( size_t i = 0; i < numDevices; i++ ) {

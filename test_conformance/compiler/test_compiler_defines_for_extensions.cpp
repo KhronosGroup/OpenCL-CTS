@@ -20,7 +20,7 @@
 #include <unistd.h>
 #endif
 
-
+// List should follow order in the extension spec
 const char *known_extensions[] = {
     "cl_khr_byte_addressable_store",
     "cl_khr_3d_image_writes",
@@ -42,6 +42,7 @@ const char *known_extensions[] = {
     "cl_khr_mipmap_image_writes",
     "cl_khr_srgb_image_writes",
     "cl_khr_subgroup_named_barrier",
+    "cl_khr_extended_async_copies",
     "cl_khr_subgroup_extended_types",
     "cl_khr_subgroup_non_uniform_vote",
     "cl_khr_subgroup_ballot",
@@ -51,6 +52,7 @@ const char *known_extensions[] = {
     "cl_khr_subgroup_clustered_reduce",
     "cl_khr_extended_bit_ops",
     "cl_khr_integer_dot_product",
+    "cl_khr_subgroup_rotate",
     // API-only extensions after this point.  If you add above here, modify
     // first_API_extension below.
     "cl_khr_icd",
@@ -77,15 +79,18 @@ const char *known_extensions[] = {
     "cl_khr_spirv_linkonce_odr",
     "cl_khr_semaphore",
     "cl_khr_external_semaphore",
-    "cl_khr_external_semaphore_opaque_fd",
+    "cl_khr_external_semaphore_win32",
     "cl_khr_external_semaphore_sync_fd",
-    "cl_khr_command_buffer",
+    "cl_khr_external_semaphore_opaque_fd",
     "cl_khr_external_memory",
+    "cl_khr_external_memory_win32",
     "cl_khr_external_memory_opaque_fd",
+    "cl_khr_command_buffer",
+    "cl_khr_command_buffer_mutable_dispatch",
 };
 
 size_t num_known_extensions = ARRAY_SIZE(known_extensions);
-size_t first_API_extension = 29;
+size_t first_API_extension = 31;
 
 const char *known_embedded_extensions[] = {
     "cles_khr_int64",
@@ -357,8 +362,6 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
     cl_int *data;
     clProgramWrapper program;
     clKernelWrapper kernel;
-
-    Version version = get_device_cl_version(device);
 
     error = create_single_kernel_helper(context, &program, &kernel, 1,
                                         (const char **)&kernel_code, "test");
