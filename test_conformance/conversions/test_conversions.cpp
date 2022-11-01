@@ -519,7 +519,7 @@ static int ParseArgs(int argc, const char **argv)
         gWimpyMode = 1;
     }
 
-    vlog("\n");
+    vlog( "\n" );
 
     PrintArch();
 
