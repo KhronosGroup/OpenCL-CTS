@@ -692,7 +692,8 @@ test_status InitCL(cl_device_id device)
     char profile[1024] = "";
     if ((error = clGetDeviceInfo(device, CL_DEVICE_PROFILE, sizeof(profile),
                                  profile, NULL)))
-    {}
+    {
+    }
     else if (strstr(profile, "EMBEDDED_PROFILE"))
     {
         gIsEmbedded = 1;
