@@ -539,7 +539,7 @@ static cl_int print_build_log(cl_program program, cl_uint num_devices,
                 log_error("clGetProgramBuildInfo returned an empty log.\n");
             else
             {
-                log_error("Build log:\n", deviceName);
+                log_error("Build log for device \"%s\":\n", deviceName);
                 log_error("%s\n", log.c_str());
             }
         }

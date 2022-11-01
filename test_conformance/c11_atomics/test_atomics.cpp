@@ -3133,7 +3133,7 @@ public:
                                   NumNonAtomicVariablesPerThread() - 1);
                         log_error("ERROR: Thread #%u observed invalid values "
                                   "in other thread's variables\n",
-                                  workOffset + i, myValue);
+                                  workOffset + i);
                         correct = false;
                         return true;
                     }
