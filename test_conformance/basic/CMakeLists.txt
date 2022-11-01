@@ -31,7 +31,6 @@ set(${MODULE_NAME}_SOURCES
     test_imagecopy.cpp
     test_imagerandomcopy.cpp
     test_arrayimagecopy.cpp
-    test_arrayimagecopy3d.cpp
     test_imagecopy3d.cpp
     test_enqueue_map.cpp
     test_work_item_functions.cpp
