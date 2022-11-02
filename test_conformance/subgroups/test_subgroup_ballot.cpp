@@ -744,9 +744,12 @@ template <typename Ty, BallotOp operation> struct SMASK
                     {
                         log_error("ERROR:  get_sub_group_%s_mask... mismatch "
                                   "for local id %d in sub group %d in group "
-                                  "%d, obtained %d, expected %d\n",
+                                  "%d, %s\n",
                                   operation_names(operation), wi_id, sb_id,
-                                  wg_id, device_result, expected_result);
+                                  wg_id,
+                                  print_expected_obtained(expected_result,
+                                                          device_result)
+                                      .c_str());
                         return TEST_FAIL;
                     }
                 }
