@@ -183,7 +183,6 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
                            error);
                 return error;
             }
-            //memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
 
             if ((error =
                      clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,

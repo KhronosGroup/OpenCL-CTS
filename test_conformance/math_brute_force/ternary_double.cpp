@@ -227,7 +227,6 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                            error);
                 return error;
             }
-            //memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
 
             if ((error =
                      clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,

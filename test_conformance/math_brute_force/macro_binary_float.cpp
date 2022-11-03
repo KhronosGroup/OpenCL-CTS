@@ -375,7 +375,6 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                        error);
             return error;
         }
-        //memset_pattern4(out[j], &pattern, buffer_size);
 
         if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
                                              out[j], 0, NULL, NULL)))
