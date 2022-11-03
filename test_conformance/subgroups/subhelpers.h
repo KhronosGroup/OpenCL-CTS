@@ -72,7 +72,7 @@ struct WorkGroupParams
     size_t subgroup_size;
     cl_uint cluster_size;
     bs128 work_items_mask;
-    int dynsc;
+    size_t dynsc;
     bool use_core_subgroups;
     std::vector<bs128> all_work_item_masks;
     int divergence_mask_arg;
@@ -1495,7 +1495,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
     {
         size_t tmp;
         cl_int error;
-        int subgroup_size, num_subgroups;
+        size_t subgroup_size, num_subgroups;
         size_t global = test_params.global_workgroup_size;
         size_t local = test_params.local_workgroup_size;
         clProgramWrapper program;
@@ -1580,7 +1580,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
             return TEST_FAIL;
         }
 
-        subgroup_size = (int)tmp;
+        subgroup_size = tmp;
 
         error = clGetKernelSubGroupInfo_ptr(
             kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE,
@@ -1593,11 +1593,11 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
             return TEST_FAIL;
         }
 
-        num_subgroups = (int)tmp;
+        num_subgroups = tmp;
         // Make sure the number of sub groups is what we expect
         if (num_subgroups != (local + subgroup_size - 1) / subgroup_size)
         {
-            log_error("ERROR: unexpected number of subgroups (%d) returned\n",
+            log_error("ERROR: unexpected number of subgroups (%zu) returned\n",
                       num_subgroups);
             return TEST_FAIL;
         }
@@ -1606,13 +1606,12 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         std::vector<Ty> odata;
         size_t input_array_size = global;
         size_t output_array_size = global;
-        int dynscl = test_params.dynsc;
+        size_t dynscl = test_params.dynsc;
 
         if (dynscl != 0)
         {
-            input_array_size =
-                (int)global / (int)local * num_subgroups * dynscl;
-            output_array_size = (int)global / (int)local * dynscl;
+            input_array_size = global / local * num_subgroups * dynscl;
+            output_array_size = global / local * dynscl;
         }
 
         idata.resize(input_array_size);

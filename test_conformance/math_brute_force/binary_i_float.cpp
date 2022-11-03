@@ -121,16 +121,20 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 // Thread specific data for a worker thread
 struct ThreadInfo
 {
-    cl_mem inBuf; // input buffer for the thread
-    cl_mem inBuf2; // input buffer for the thread
-    cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
+    // Input and output buffers for the thread
+    clMemWrapper inBuf;
+    clMemWrapper inBuf2;
+    Buffers outBuf;
+
     float maxError; // max error value. Init to 0.
     double
         maxErrorValue; // position of the max error value (param 1).  Init to 0.
     cl_int maxErrorValue2; // position of the max error value (param 2).  Init
                            // to 0.
-    MTdata d;
-    cl_command_queue tQueue; // per thread command queue to improve performance
+    MTdataHolder d;
+
+    // Per thread command queue to improve performance
+    clCommandQueueWrapper tQueue;
 };
 
 struct TestInfo
@@ -521,7 +525,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 {
                     vlog_error(
                         "\nERROR: %s%s: %f ulp error at {%a (0x%8.8x), %d}: "
-                        "*%a (0x%8.8x) vs. %a (0x%8.8x) at index: %d\n",
+                        "*%a (0x%8.8x) vs. %a (0x%8.8x) at index: %zu\n",
                         name, sizeNames[k], err, s[j], ((uint32_t *)s)[j],
                         s2[j], r[j], ((uint32_t *)r)[j], test,
                         ((cl_uint *)&test)[0], j);
@@ -550,7 +554,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     {
         if (gVerboseBruteForce)
         {
-            vlog("base:%14u step:%10u scale:%10zu buf_elements:%10u ulps:%5.3f "
+            vlog("base:%14u step:%10u scale:%10u buf_elements:%10zu ulps:%5.3f "
                  "ThreadCount:%2u\n",
                  base, job->step, job->scale, buffer_elements, job->ulps,
                  job->threadCount);
@@ -608,7 +612,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
         test_info.k[i].resize(test_info.threadCount, nullptr);
     }
 
-    test_info.tinfo.resize(test_info.threadCount, ThreadInfo{});
+    test_info.tinfo.resize(test_info.threadCount);
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {
@@ -660,7 +664,7 @@ int TestFunc_Float_Float_Int(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
         }
 
-        test_info.tinfo[i].d = init_genrand(genrand_int32(d));
+        test_info.tinfo[i].d = MTdataHolder(genrand_int32(d));
     }
 
     // Init the kernels
@@ -710,16 +714,6 @@ exit:
         {
             clReleaseKernel(kernel);
         }
-    }
-
-    for (auto &threadInfo : test_info.tinfo)
-    {
-        free_mtdata(threadInfo.d);
-        clReleaseMemObject(threadInfo.inBuf);
-        clReleaseMemObject(threadInfo.inBuf2);
-        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-            clReleaseMemObject(threadInfo.outBuf[j]);
-        clReleaseCommandQueue(threadInfo.tQueue);
     }
 
     return error;

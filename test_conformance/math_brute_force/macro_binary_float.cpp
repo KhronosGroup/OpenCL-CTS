@@ -120,11 +120,15 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 // Thread specific data for a worker thread
 struct ThreadInfo
 {
-    cl_mem inBuf; // input buffer for the thread
-    cl_mem inBuf2; // input buffer for the thread
-    cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
-    MTdata d;
-    cl_command_queue tQueue; // per thread command queue to improve performance
+    // Input and output buffers for the thread
+    clMemWrapper inBuf;
+    clMemWrapper inBuf2;
+    Buffers outBuf;
+
+    MTdataHolder d;
+
+    // Per thread command queue to improve performance
+    clCommandQueueWrapper tQueue;
 };
 
 struct TestInfo
@@ -483,7 +487,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             uint32_t err = t[j] - q[j];
             if (q[j] > t[j]) err = q[j] - t[j];
             vlog_error("\nERROR: %s: %d ulp error at {%a, %a}: *0x%8.8x vs. "
-                       "0x%8.8x (index: %d)\n",
+                       "0x%8.8x (index: %zu)\n",
                        name, err, ((float *)s)[j], ((float *)s2)[j], t[j], q[j],
                        j);
             error = -1;
@@ -529,7 +533,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 cl_uint err = -t[j] - q[j];
                 if (q[j] > -t[j]) err = q[j] + t[j];
                 vlog_error("\nERROR: %s%s: %d ulp error at {%a, %a}: *0x%8.8x "
-                           "vs. 0x%8.8x (index: %d)\n",
+                           "vs. 0x%8.8x (index: %zu)\n",
                            name, sizeNames[k], err, ((float *)s)[j],
                            ((float *)s2)[j], -t[j], q[j], j);
                 error = -1;
@@ -610,7 +614,7 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         test_info.k[i].resize(test_info.threadCount, nullptr);
     }
 
-    test_info.tinfo.resize(test_info.threadCount, ThreadInfo{});
+    test_info.tinfo.resize(test_info.threadCount);
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {
@@ -659,7 +663,7 @@ int TestMacro_Int_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
         }
 
-        test_info.tinfo[i].d = init_genrand(genrand_int32(d));
+        test_info.tinfo[i].d = MTdataHolder(genrand_int32(d));
     }
 
     // Init the kernels
@@ -696,16 +700,6 @@ exit:
         {
             clReleaseKernel(kernel);
         }
-    }
-
-    for (auto &threadInfo : test_info.tinfo)
-    {
-        free_mtdata(threadInfo.d);
-        clReleaseMemObject(threadInfo.inBuf);
-        clReleaseMemObject(threadInfo.inBuf2);
-        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-            clReleaseMemObject(threadInfo.outBuf[j]);
-        clReleaseCommandQueue(threadInfo.tQueue);
     }
 
     return error;

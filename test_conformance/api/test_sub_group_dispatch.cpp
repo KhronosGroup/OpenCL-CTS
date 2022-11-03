@@ -56,11 +56,9 @@ cl_int get_sub_group_num(cl_command_queue queue, cl_kernel kernel, clMemWrapper&
 
 int test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
-    static const size_t gsize0 = 80;
-    int i, error;
+    int error;
     size_t realSize;
     size_t kernel_max_subgroup_size, kernel_subgroup_count;
-    size_t global[] = {1,1,1};
     size_t max_local;
 
     cl_platform_id platform;
