@@ -60,7 +60,7 @@ int test_set_default_device_command_queue(cl_device_id deviceID,
                    "Unable to query CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES");
 
         if (0 == (dseCaps & CL_DEVICE_QUEUE_REPLACEABLE_DEFAULT))
-            return TEST_SKIP;
+            return TEST_SKIPPED_ITSELF;
     }
 
     clCommandQueueWrapper cmd_queue_1 = clCreateCommandQueueWithProperties(
