@@ -1589,7 +1589,6 @@ int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel ke
             if (retCode)
                 return retCode;
         }
-        end:
         if ( gTestMipmaps )
         {
             nextLevelOffset += width_lod * height_lod * get_pixel_size( imageInfo->format );
