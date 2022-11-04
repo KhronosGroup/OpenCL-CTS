@@ -164,6 +164,7 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
 
     memset( extension_type, 0, sizeof( extension_type) );
 
+    bool failed = false;
     // loop over extension string
     while (currentP != extensions + stringSize)
     {
@@ -225,8 +226,10 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
             }
             if( ii == num_known_extensions )
             {
-                log_error( "FAIL: Extension %s is not in the list of approved Khronos extensions!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                log_error("FAIL: Extension %s is not in the list of approved "
+                          "Khronos extensions!\n",
+                          extensions_supported[num_of_supported_extensions]);
+                failed = true;
             }
         }
         // Is it an embedded extension?
@@ -241,19 +244,29 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
             }
             if( known_embedded_extensions[ ii ] == NULL )
             {
-                log_error( "FAIL: Extension %s is not in the list of approved Khronos embedded extensions!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                log_error("FAIL: Extension %s is not in the list of approved "
+                          "Khronos embedded extensions!\n",
+                          extensions_supported[num_of_supported_extensions]);
+                failed = true;
             }
-
-            // It's approved, but are we even an embedded system?
-            char profileStr[128] = "";
-            error = clGetDeviceInfo( device, CL_DEVICE_PROFILE, sizeof( profileStr ), &profileStr, NULL );
-            test_error( error, "Unable to get CL_DEVICE_PROFILE to validate embedded extension name" );
-
-            if( strcmp( profileStr, "EMBEDDED_PROFILE" ) != 0 )
+            else
             {
-                log_error( "FAIL: Extension %s is an approved embedded extension, but on a non-embedded profile!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                // It's approved, but are we even an embedded system?
+                char profileStr[128] = "";
+                error = clGetDeviceInfo(device, CL_DEVICE_PROFILE,
+                                        sizeof(profileStr), &profileStr, NULL);
+                test_error(error,
+                           "Unable to get CL_DEVICE_PROFILE to validate "
+                           "embedded extension name");
+
+                if (strcmp(profileStr, "EMBEDDED_PROFILE") != 0)
+                {
+                    log_error(
+                        "FAIL: Extension %s is an approved embedded extension, "
+                        "but on a non-embedded profile!\n",
+                        extensions_supported[num_of_supported_extensions]);
+                    failed = true;
+                }
             }
         }
         else
@@ -262,30 +275,41 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
                 extensions_supported[ num_of_supported_extensions ][1] != 'l'  ||
                 extensions_supported[ num_of_supported_extensions ][2] != '_' )
             {
-                log_error( "FAIL:  Extension %s doesn't start with \"cl_\"!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                log_error("FAIL:  Extension %s doesn't start with \"cl_\"!\n",
+                          extensions_supported[num_of_supported_extensions]);
+                failed = true;
             }
-
-            if( extensions_supported[ num_of_supported_extensions ][3] == '_' || extensions_supported[ num_of_supported_extensions ][3] == '\0' )
+            else if (extensions_supported[num_of_supported_extensions][3] == '_'
+                     || extensions_supported[num_of_supported_extensions][3]
+                         == '\0')
             {
-                log_error( "FAIL:  Vendor name is missing in extension %s!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                log_error("FAIL:  Vendor name is missing in extension %s!\n",
+                          extensions_supported[num_of_supported_extensions]);
+                failed = true;
             }
-
-            // look for the second underscore for name
-            char *p = extensions_supported[ num_of_supported_extensions ] + 4;
-            while( *p != '\0' && *p != '_' )
-                p++;
-
-            if( *p != '_' || p[1] == '\0')
+            else
             {
-                log_error( "FAIL:  extension name is missing in extension %s!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                // look for the second underscore for name
+                char *p = extensions_supported[num_of_supported_extensions] + 4;
+                while (*p != '\0' && *p != '_') p++;
+
+                if (*p != '_' || p[1] == '\0')
+                {
+                    log_error(
+                        "FAIL:  extension name is missing in extension %s!\n",
+                        extensions_supported[num_of_supported_extensions]);
+                    failed = true;
+                }
             }
         }
 
 
         num_of_supported_extensions++;
+    }
+
+    if (failed)
+    {
+        return -1;
     }
 
     // Build a list of the known extensions that are not supported by the device
