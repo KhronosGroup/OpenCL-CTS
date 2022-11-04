@@ -184,7 +184,7 @@ int test_writeimage(cl_device_id device, cl_context context,
         log_error("WRITE_IMAGE_%s_%s with %s test failed\n",
                   GetChannelOrderName(img_format->image_channel_order),
                   GetChannelTypeName(img_format->image_channel_data_type),
-                  get_mem_flag_name(test_flags));
+                  get_mem_flag_name(img_flags));
         err = -1;
     }
     else
@@ -192,7 +192,7 @@ int test_writeimage(cl_device_id device, cl_context context,
         log_info("WRITE_IMAGE_%s_%s with %s test passed\n",
                  GetChannelOrderName(img_format->image_channel_order),
                  GetChannelTypeName(img_format->image_channel_data_type),
-                 get_mem_flag_name(test_flags));
+                 get_mem_flag_name(img_flags));
     }
 
     return err;
