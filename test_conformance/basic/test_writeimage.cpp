@@ -109,9 +109,20 @@ template <> void generate_random_inputs<float>(std::vector<float> &v)
 }
 
 
+const char *get_mem_flag_name(cl_mem_flags flags)
+{
+    switch (flags)
+    {
+        case CL_MEM_READ_WRITE: return "CL_MEM_READ_WRITE";
+        case CL_MEM_WRITE_ONLY: return "CL_MEM_WRITE_ONLY";
+        default: return "Unsupported cl_mem_flags value";
+    }
+}
+
 template <typename T>
 int test_writeimage(cl_device_id device, cl_context context,
-                    cl_command_queue queue, const cl_image_format *img_format)
+                    cl_command_queue queue, const cl_image_format *img_format,
+                    cl_mem_flags img_flags)
 {
     clMemWrapper streams[2];
     clProgramWrapper program;
@@ -137,8 +148,8 @@ int test_writeimage(cl_device_id device, cl_context context,
 
     generate_random_inputs(input);
 
-    streams[0] = create_image_2d(context, CL_MEM_WRITE_ONLY, img_format,
-                                 img_width, img_height, 0, nullptr, &err);
+    streams[0] = create_image_2d(context, img_flags, img_format, img_width,
+                                 img_height, 0, nullptr, &err);
     test_error(err, "create_image failed.");
 
     streams[1] =
@@ -170,16 +181,18 @@ int test_writeimage(cl_device_id device, cl_context context,
 
     if (0 != memcmp(input.data(), output.data(), length))
     {
-        log_error("WRITE_IMAGE_%s_%s test failed\n",
+        log_error("WRITE_IMAGE_%s_%s with %s test failed\n",
                   GetChannelOrderName(img_format->image_channel_order),
-                  GetChannelTypeName(img_format->image_channel_data_type));
+                  GetChannelTypeName(img_format->image_channel_data_type),
+                  get_mem_flag_name(test_flags));
         err = -1;
     }
     else
     {
-        log_info("WRITE_IMAGE_%s_%s test passed\n",
+        log_info("WRITE_IMAGE_%s_%s with %s test passed\n",
                  GetChannelOrderName(img_format->image_channel_order),
-                 GetChannelTypeName(img_format->image_channel_data_type));
+                 GetChannelTypeName(img_format->image_channel_data_type),
+                 get_mem_flag_name(test_flags));
     }
 
     return err;
@@ -187,40 +200,62 @@ int test_writeimage(cl_device_id device, cl_context context,
 
 bool check_format(cl_device_id device, cl_context context,
                   cl_mem_object_type image_type,
-                  const cl_image_format img_format)
+                  const cl_image_format img_format, cl_mem_flags test_flags)
 {
-    return is_image_format_required(img_format, CL_MEM_WRITE_ONLY, image_type,
-                                    device)
-        || is_image_format_supported(context, CL_MEM_WRITE_ONLY, image_type,
+    return is_image_format_required(img_format, test_flags, image_type, device)
+        || is_image_format_supported(context, test_flags, image_type,
                                      &img_format);
 }
 }
 int test_writeimage(cl_device_id device, cl_context context,
                     cl_command_queue queue, int num_elements)
 {
+    int err = 0;
     const cl_image_format format[] = { { CL_RGBA, CL_UNORM_INT8 },
                                        { CL_BGRA, CL_UNORM_INT8 } };
+    const cl_mem_flags test_flags[] = { CL_MEM_WRITE_ONLY, CL_MEM_READ_WRITE };
 
-    int err = test_writeimage<cl_uchar>(device, context, queue, &format[0]);
-
-    if (check_format(device, context, CL_MEM_OBJECT_IMAGE2D, format[1]))
+    for (size_t i = 0; i < ARRAY_SIZE(test_flags) && !err; i++)
     {
-        err |= test_writeimage<cl_uchar>(device, context, queue, &format[1]);
-    }
+        err = test_writeimage<cl_uchar>(device, context, queue, &format[0],
+                                        test_flags[i]);
 
+        if (check_format(device, context, CL_MEM_OBJECT_IMAGE2D, format[1],
+                         test_flags[i]))
+        {
+            err |= test_writeimage<cl_uchar>(device, context, queue, &format[1],
+                                             test_flags[i]);
+        }
+    }
     return err;
 }
 
 int test_writeimage_int16(cl_device_id device, cl_context context,
                           cl_command_queue queue, int num_elements)
 {
+    int err = 0;
     const cl_image_format format = { CL_RGBA, CL_UNORM_INT16 };
-    return test_writeimage<cl_ushort>(device, context, queue, &format);
+    const cl_mem_flags test_flags[] = { CL_MEM_WRITE_ONLY, CL_MEM_READ_WRITE };
+
+    for (size_t i = 0; i < ARRAY_SIZE(test_flags) && !err; i++)
+    {
+        err = test_writeimage<cl_ushort>(device, context, queue, &format,
+                                         test_flags[i]);
+    }
+    return err;
 }
 
 int test_writeimage_fp32(cl_device_id device, cl_context context,
                          cl_command_queue queue, int num_elements)
 {
+    int err = 0;
     const cl_image_format format = { CL_RGBA, CL_FLOAT };
-    return test_writeimage<cl_float>(device, context, queue, &format);
+    const cl_mem_flags test_flags[] = { CL_MEM_WRITE_ONLY, CL_MEM_READ_WRITE };
+
+    for (size_t i = 0; i < ARRAY_SIZE(test_flags) && !err; i++)
+    {
+        err = test_writeimage<cl_float>(device, context, queue, &format,
+                                        test_flags[i]);
+    }
+    return err;
 }
