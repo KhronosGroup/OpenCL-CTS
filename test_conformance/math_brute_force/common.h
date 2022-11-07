@@ -24,7 +24,8 @@
 #include <vector>
 
 // Array of thread-specific kernels for each vector size.
-using KernelMatrix = std::array<std::vector<cl_kernel>, VECTOR_SIZE_COUNT>;
+using KernelMatrix =
+    std::array<std::vector<clKernelWrapper>, VECTOR_SIZE_COUNT>;
 
 // Array of programs for each vector size.
 using Programs = std::array<clProgramWrapper, VECTOR_SIZE_COUNT>;
@@ -81,5 +82,13 @@ struct BuildKernelInfo
     // Whether to build with -cl-fast-relaxed-math.
     bool relaxedMode;
 };
+
+using SourceGenerator = std::string (*)(const std::string &kernel_name,
+                                        const char *builtin,
+                                        cl_uint vector_size_index);
+
+/// Build kernels for all threads in "info" for the given job_id.
+cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
+                    SourceGenerator generator);
 
 #endif /* COMMON_H */

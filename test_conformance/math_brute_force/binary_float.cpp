@@ -25,25 +25,16 @@ namespace {
 
 const float twoToMinus126 = MAKE_HEX_FLOAT(0x1p-126f, 1, -126);
 
-int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
-                cl_kernel *k, cl_program *p, bool relaxedMode)
-{
-    auto kernel_name = GetKernelName(vectorSize);
-    auto source =
-        GetBinaryKernel(kernel_name, name, ParameterType::Float,
-                        ParameterType::Float, ParameterType::Float, vectorSize);
-    std::array<const char *, 1> sources{ source.c_str() };
-    return MakeKernels(sources.data(), sources.size(), kernel_name.c_str(),
-                       kernel_count, k, p, relaxedMode);
-}
-
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
-    BuildKernelInfo *info = (BuildKernelInfo *)p;
-    cl_uint vectorSize = gMinVectorSizeIndex + job_id;
-    return BuildKernel(info->nameInCode, vectorSize, info->threadCount,
-                       info->kernels[vectorSize].data(),
-                       &(info->programs[vectorSize]), info->relaxedMode);
+    BuildKernelInfo &info = *(BuildKernelInfo *)p;
+    auto generator = [](const std::string &kernel_name, const char *builtin,
+                        cl_uint vector_size_index) {
+        return GetBinaryKernel(kernel_name, builtin, ParameterType::Float,
+                               ParameterType::Float, ParameterType::Float,
+                               vector_size_index);
+    };
+    return BuildKernels(info, job_id, generator);
 }
 
 // Thread specific data for a worker thread
@@ -768,13 +759,6 @@ int TestFunc_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     test_info.skipNanInf = test_info.isFDim && !gInfNanSupport;
     test_info.isNextafter = 0 == strcmp("nextafter", f->nameInCode);
 
-    // cl_kernels aren't thread safe, so we make one for each vector size for
-    // every thread
-    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
-    {
-        test_info.k[i].resize(test_info.threadCount, nullptr);
-    }
-
     test_info.tinfo.resize(test_info.threadCount);
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
@@ -867,14 +851,5 @@ int TestFunc_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
-    // Release
-    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
-    {
-        for (auto &kernel : test_info.k[i])
-        {
-            clReleaseKernel(kernel);
-        }
-    }
-
     return error;
 }
