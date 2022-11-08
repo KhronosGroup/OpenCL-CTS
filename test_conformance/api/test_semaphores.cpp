@@ -85,7 +85,7 @@ static int semaphore_cross_queue_helper(cl_device_id deviceID,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
@@ -144,7 +144,7 @@ int test_semaphores_simple_1(cl_device_id deviceID, cl_context context,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
@@ -206,7 +206,7 @@ int test_semaphores_simple_2(cl_device_id deviceID, cl_context context,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
@@ -298,7 +298,7 @@ int test_semaphores_reuse(cl_device_id deviceID, cl_context context,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
@@ -441,7 +441,7 @@ int test_semaphores_multi_signal(cl_device_id deviceID, cl_context context,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
@@ -517,7 +517,7 @@ int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
@@ -593,7 +593,7 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
@@ -659,7 +659,7 @@ int test_semaphores_order_1(cl_device_id deviceID, cl_context context,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
@@ -740,7 +740,7 @@ int test_semaphores_order_2(cl_device_id deviceID, cl_context context,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
@@ -844,7 +844,7 @@ int test_semaphores_order_3(cl_device_id deviceID, cl_context context,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
@@ -912,10 +912,12 @@ int test_semaphores_order_3(cl_device_id deviceID, cl_context context,
     std::this_thread::sleep_for(std::chrono::seconds(FLUSH_DELAY_S));
 
     // Ensure only second signal and second wait completed
+    cl_event event_list[] = { signal_2_event, wait_2_event };
+    err = clWaitForEvents(2, event_list);
+    test_error(err, "Could not wait for events");
+
     test_assert_event_inprogress(signal_1_event);
-    test_assert_event_complete(signal_2_event);
     test_assert_event_inprogress(wait_1_event);
-    test_assert_event_complete(wait_2_event);
 
     // Complete user_event_1
     err = clSetUserEventStatus(user_event_1, CL_COMPLETE);
@@ -954,7 +956,14 @@ int test_semaphores_import_export_fd(cl_device_id deviceID, cl_context context,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    if (!is_extension_available(deviceID, "cl_khr_external_semaphore_sync_fd"))
+    {
+        log_info("cl_khr_external_semaphore_sync_fd is not supported on this "
+                 "platoform. Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
@@ -1046,7 +1055,7 @@ int test_semaphores_invalid_command(cl_device_id deviceID, cl_context context,
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
-        return TEST_SKIP;
+        return TEST_SKIPPED_ITSELF;
     }
 
     // Obtain pointers to semaphore's API
