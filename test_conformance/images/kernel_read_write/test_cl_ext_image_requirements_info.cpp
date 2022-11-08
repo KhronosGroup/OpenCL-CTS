@@ -31,7 +31,7 @@ int cl_image_requirements_size_ext_negative(cl_device_id device,
 {
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -80,13 +80,13 @@ int cl_image_requirements_size_ext_consistency(cl_device_id device,
 {
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
     if (!is_extension_available(device, "cl_ext_image_from_buffer"))
     {
-        printf("Extension cl_ext_image_from_buffer not available");
+        log_info("Extension cl_ext_image_from_buffer not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -116,7 +116,7 @@ int cl_image_requirements_size_ext_consistency(cl_device_id device,
                     != get_format_list(context, imageType, formatList, flag)
                 || formatList.size() == 0)
             {
-                test_fail("Failure to get supported formats list");
+                test_fail("Failure to get supported formats list\n");
             }
 
             for (auto format : formatList)
@@ -154,7 +154,7 @@ int cl_image_requirements_size_ext_consistency(cl_device_id device,
                 if (max_size != size)
                 {
                     test_fail("CL_IMAGE_REQUIREMENTS_SIZE_EXT different from "
-                              "CL_MEM_SIZE");
+                              "CL_MEM_SIZE\n");
                 }
 
                 err = clReleaseMemObject(image_buffer);
@@ -179,7 +179,7 @@ int clGetImageRequirementsInfoEXT_negative(cl_device_id device,
 {
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -292,7 +292,7 @@ int cl_image_requirements_max_val_ext_negative(cl_device_id device,
 {
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -387,7 +387,7 @@ int cl_image_requirements_max_val_ext_positive(cl_device_id device,
 {
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -412,7 +412,7 @@ int cl_image_requirements_max_val_ext_positive(cl_device_id device,
 
     if (!(max_width <= width_1d && max_width > 0))
     {
-        test_fail("Unexpected CL_IMAGE_REQUIREMENTS_MAX_WIDTH_EXT value");
+        test_fail("Unexpected CL_IMAGE_REQUIREMENTS_MAX_WIDTH_EXT value\n");
     }
 
     /* CL_IMAGE_REQUIREMENTS_MAX_HEIGHT_EXT */
@@ -433,7 +433,7 @@ int cl_image_requirements_max_val_ext_positive(cl_device_id device,
 
     if (!(max_height <= height_2d && max_height > 0))
     {
-        test_fail("Unexpected CL_IMAGE_REQUIREMENTS_MAX_HEIGHT_EXT value");
+        test_fail("Unexpected CL_IMAGE_REQUIREMENTS_MAX_HEIGHT_EXT value\n");
     }
 
     /* CL_IMAGE_REQUIREMENTS_MAX_DEPTH_EXT */
@@ -454,7 +454,7 @@ int cl_image_requirements_max_val_ext_positive(cl_device_id device,
 
     if (!(max_depth <= depth_3d && max_depth > 0))
     {
-        test_fail("Unexpected CL_IMAGE_REQUIREMENTS_MAX_DEPTH_EXT value");
+        test_fail("Unexpected CL_IMAGE_REQUIREMENTS_MAX_DEPTH_EXT value\n");
     }
 
     /* CL_IMAGE_REQUIREMENTS_MAX_ARRAY_SIZE_EXT */
@@ -475,7 +475,8 @@ int cl_image_requirements_max_val_ext_positive(cl_device_id device,
 
     if (!(max_array_size <= array_size && max_array_size > 0))
     {
-        test_fail("Unexpected CL_IMAGE_REQUIREMENTS_MAX_ARRAY_SIZE_EXT value");
+        test_fail(
+            "Unexpected CL_IMAGE_REQUIREMENTS_MAX_ARRAY_SIZE_EXT value\n");
     }
 
     return TEST_PASS;
