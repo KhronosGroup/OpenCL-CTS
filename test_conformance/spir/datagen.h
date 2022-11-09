@@ -1055,8 +1055,6 @@ public:
 
     static cl_channel_order channelOrders[];
     static const char* imageTypes[];
-private:
-    WorkSizeInfo  m_wsInfo;
 };
 
 #endif
