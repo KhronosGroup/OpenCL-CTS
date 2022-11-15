@@ -148,6 +148,20 @@ test_definition test_list[] = {
     ADD_TEST(min_image_formats),
     ADD_TEST(negative_get_platform_info),
     ADD_TEST(negative_get_platform_ids),
+
+    ADD_TEST_VERSION(semaphores_simple_1, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_simple_2, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_reuse, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_cross_queues_ooo, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_cross_queues_io, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_multi_signal, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_multi_wait, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_queries, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_order_1, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_order_2, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_order_3, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_import_export_fd, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_invalid_command, Version(1, 2)),
 };
 
 const int test_num = ARRAY_SIZE(test_list);
