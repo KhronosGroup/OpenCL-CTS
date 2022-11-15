@@ -280,10 +280,10 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                         {
                             log_error("ERROR: sub_group_%s(%s) "
                                       "mismatch for local id %d in sub "
-                                      "group %d in group %d - got %lu "
-                                      "expected %lu\n",
+                                      "group %d in group %d - %s\n",
                                       operation_names(operation),
-                                      TypeManager<Ty>::name(), i, j, k, rr, tr);
+                                      TypeManager<Ty>::name(), i, j, k,
+                                      print_expected_obtained(tr, rr).c_str());
                             return TEST_FAIL;
                         }
                     }
@@ -703,9 +703,10 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                             log_error(
                                 "ERROR: %s_%s(%s) "
                                 "mismatch for local id %d in sub group %d in "
-                                "group %d Expected: %d Obtained: %d\n",
+                                "group %d %s\n",
                                 func_name.c_str(), operation_names(operation),
-                                TypeManager<Ty>::name(), i, j, k, tr, rr);
+                                TypeManager<Ty>::name(), i, j, k,
+                                print_expected_obtained(tr, rr).c_str());
                             return TEST_FAIL;
                         }
                         tr = calculate<Ty>(tr, mx[ii + active_work_item],
@@ -820,10 +821,10 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
                                 "ERROR: %s_%s(%s) "
                                 "mismatch for local id %d in sub group %d "
                                 "in "
-                                "group %d Expected: %d Obtained: %d\n",
+                                "group %d %s\n",
                                 func_name.c_str(), operation_names(operation),
                                 TypeManager<Ty>::name(), active_work_item, j, k,
-                                tr, rr);
+                                print_expected_obtained(tr, rr).c_str());
                             return TEST_FAIL;
                         }
                     }
@@ -926,10 +927,10 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
                     {
                         log_error("ERROR: %s_%s(%s) "
                                   "mismatch for local id %d in sub group %d in "
-                                  "group %d Expected: %d Obtained: %d\n",
+                                  "group %d %s\n",
                                   func_name.c_str(), operation_names(operation),
                                   TypeManager<Ty>::name(), active_work_item, j,
-                                  k, tr, rr);
+                                  k, print_expected_obtained(tr, rr).c_str());
                         return TEST_FAIL;
                     }
                 }
