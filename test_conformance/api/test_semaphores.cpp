@@ -72,6 +72,75 @@
 
 static const char* source = "__kernel void empty() {}";
 
+/* Infer that signal_event generates a pending signal.
+ * A command that is submitted and not held back by dependencies
+ * moves to READY. If signal_event has no dependencies, polling for submitted
+ * or higher is sufficient.
+ *
+ * If signal event is submitted and has dependencies, poll for the RUNNING
+ * state.
+ * */
+static int poll_for_pending_signal(cl_command_queue queue,
+                                   cl_event signal_event,
+                                   cl_uint num_dependencies,
+                                   cl_event* dependencies)
+{
+    int err = CL_SUCCESS;
+    bool has_dependencies = false;
+
+    for (cl_uint i = 0; i < num_dependencies; i++)
+    {
+        cl_int event_status = -1;
+        err = clGetEventInfo(dependencies[i], CL_EVENT_COMMAND_EXECUTION_STATUS,
+                             sizeof(cl_int), &event_status, nullptr);
+        if (err != CL_SUCCESS)
+        {
+            return err;
+        }
+
+        if (event_status != CL_COMPLETE)
+        {
+            has_dependencies = true;
+            break;
+        }
+    }
+
+    while (true)
+    {
+        cl_int event_status = -1;
+        err = clGetEventInfo(signal_event, CL_EVENT_COMMAND_EXECUTION_STATUS,
+                             sizeof(cl_int), &event_status, nullptr);
+        if (err != CL_SUCCESS)
+        {
+            break;
+        }
+
+        // Event was terminated
+        if (event_status < CL_COMPLETE)
+        {
+            err = CL_INVALID_EVENT;
+            break;
+        }
+
+        if (has_dependencies)
+        {
+            if (event_status <= CL_RUNNING)
+            {
+                break;
+            }
+        }
+        else
+        {
+            if (event_status <= CL_SUBMITTED)
+            {
+                break;
+            }
+        }
+    }
+
+    return err;
+}
+
 // Helper function that signals and waits on semaphore across two different
 // queues.
 static int semaphore_cross_queue_helper(cl_device_id deviceID,
@@ -110,6 +179,12 @@ static int semaphore_cross_queue_helper(cl_device_id deviceID,
                                        &signal_event);
     test_error(err, "Could not signal semaphore");
 
+    err = clFlush(queue_1);
+    test_error(err, "Could not flush queue");
+
+    err = poll_for_pending_signal(queue_1, signal_event, 0, nullptr);
+    test_error(err, "Could not wait for pending signal");
+
     // Wait semaphore on queue_2
     clEventWrapper wait_event;
     err = clEnqueueWaitSemaphoresKHR(queue_2, 1, &sema, nullptr, 0, nullptr,
@@ -134,7 +209,7 @@ static int semaphore_cross_queue_helper(cl_device_id deviceID,
     return TEST_PASS;
 }
 
-// Confirm that a signal followed by a wait will complete successfully
+// Confirm that a signal followed by a wait will complete successfully
 int test_semaphores_simple_1(cl_device_id deviceID, cl_context context,
                              cl_command_queue defaultQueue, int num_elements)
 {
@@ -153,9 +228,8 @@ int test_semaphores_simple_1(cl_device_id deviceID, cl_context context,
     GET_PFN(deviceID, clEnqueueWaitSemaphoresKHR);
     GET_PFN(deviceID, clReleaseSemaphoreKHR);
 
-    // Create ooo queue
-    clCommandQueueWrapper queue = clCreateCommandQueue(
-        context, deviceID, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
+    clCommandQueueWrapper queue =
+        clCreateCommandQueue(context, deviceID, 0, &err);
     test_error(err, "Could not create command queue");
 
     // Create semaphore
@@ -252,16 +326,23 @@ int test_semaphores_simple_2(cl_device_id deviceID, cl_context context,
                                        &signal_event);
     test_error(err, "Could not signal semaphore");
 
+    err = clFlush(queue);
+    test_error(err, "Could not flush queue");
+
+    err = poll_for_pending_signal(queue, signal_event, 0, nullptr);
+    ASSERT_SUCCESS(err, "Failed to wait for pending signal");
+
     // Wait semaphore
     clEventWrapper wait_event;
     err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema, nullptr, 0, nullptr,
                                      &wait_event);
     test_error(err, "Could not wait semaphore");
 
-    // Flush and delay
     err = clFlush(queue);
     test_error(err, "Could not flush queue");
-    std::this_thread::sleep_for(std::chrono::seconds(FLUSH_DELAY_S));
+
+    err = clWaitForEvents(1, &wait_event);
+    ASSERT_SUCCESS(err, "Failed to wait for wait_event");
 
     // Ensure all events are completed except for task_1
     test_assert_event_inprogress(task_1_event);
@@ -344,11 +425,11 @@ int test_semaphores_reuse(cl_device_id deviceID, cl_context context,
     test_error(err, "Could not signal semaphore");
 
     // In a loop
-    size_t loop;
-    for (loop = 1; loop < loop_count; ++loop)
+    for (size_t loop = 1; loop < loop_count; ++loop)
     {
         // Wait semaphore
-        err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema, nullptr, 0, nullptr,
+        err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema, nullptr, 1,
+                                         &signal_events[loop - 1],
                                          &wait_events[loop - 1]);
         test_error(err, "Could not wait semaphore");
 
@@ -369,8 +450,9 @@ int test_semaphores_reuse(cl_device_id deviceID, cl_context context,
     }
 
     // Wait semaphore
-    err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema, nullptr, 0, nullptr,
-                                     &wait_events[loop - 1]);
+    err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema, nullptr, 1,
+                                     &signal_events[loop_count - 1],
+                                     &wait_events[loop_count - 1]);
     test_error(err, "Could not wait semaphore");
 
     // Finish
@@ -378,7 +460,7 @@ int test_semaphores_reuse(cl_device_id deviceID, cl_context context,
     test_error(err, "Could not finish queue");
 
     // Ensure all events are completed
-    for (loop = 0; loop < loop_count; ++loop)
+    for (size_t loop = 0; loop < loop_count; ++loop)
     {
         test_assert_event_complete(wait_events[loop]);
         test_assert_event_complete(signal_events[loop]);
@@ -476,6 +558,12 @@ int test_semaphores_multi_signal(cl_device_id deviceID, cl_context context,
                                        &signal_event);
     test_error(err, "Could not signal semaphore");
 
+    err = clFlush(queue);
+    test_error(err, "Could not flush queue");
+
+    err = poll_for_pending_signal(queue, signal_event, 0, nullptr);
+    test_error(err, "Failed to wait for pending signal");
+
     // Wait semaphore 1
     clEventWrapper wait_1_event;
     err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema_1, nullptr, 0, nullptr,
@@ -556,6 +644,14 @@ int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
     err = clEnqueueSignalSemaphoresKHR(queue, 1, &sema_2, nullptr, 0, nullptr,
                                        &signal_2_event);
     test_error(err, "Could not signal semaphore");
+
+    err = clFlush(queue);
+    test_error(err, "Could not flush queue");
+
+    err = poll_for_pending_signal(queue, signal_1_event, 0, nullptr);
+    test_error(err, "Failed to wait for pending signal");
+    err = poll_for_pending_signal(queue, signal_2_event, 0, nullptr);
+    test_error(err, "Failed to wait for pending signal");
 
     // Wait semaphore 1 and 2
     clEventWrapper wait_event;
@@ -702,7 +798,9 @@ int test_semaphores_order_1(cl_device_id deviceID, cl_context context,
     // Flush and delay
     err = clFlush(queue);
     test_error(err, "Could not flush queue");
-    std::this_thread::sleep_for(std::chrono::seconds(FLUSH_DELAY_S));
+
+    err = clWaitForEvents(1, &signal_event);
+    test_error(err, "Failed to wait for signal_event");
 
     // Ensure signal event is completed while wait event is not
     test_assert_event_complete(signal_event);
@@ -796,6 +894,12 @@ int test_semaphores_order_2(cl_device_id deviceID, cl_context context,
     err = clSetUserEventStatus(user_event_1, CL_COMPLETE);
     test_error(err, "Could not set user event to CL_COMPLETE");
 
+    err = clFlush(queue);
+    test_error(err, "Could not flush queue");
+
+    err = poll_for_pending_signal(queue, signal_1_event, 1, &user_event_1);
+    test_error(err, "Failed to wait for pending signal");
+
     // Complete user_event_3
     err = clSetUserEventStatus(user_event_3, CL_COMPLETE);
     test_error(err, "Could not set user event to CL_COMPLETE");
@@ -803,7 +907,9 @@ int test_semaphores_order_2(cl_device_id deviceID, cl_context context,
     // Flush and delay
     err = clFlush(queue);
     test_error(err, "Could not flush queue");
-    std::this_thread::sleep_for(std::chrono::seconds(FLUSH_DELAY_S));
+
+    err = clWaitForEvents(1, &wait_event);
+    test_error(err, "Failed to wait on wait_event");
 
     // Ensure all events are completed except for second signal
     test_assert_event_complete(signal_1_event);
@@ -833,7 +939,7 @@ int test_semaphores_order_2(cl_device_id deviceID, cl_context context,
 // Confirm that it is possible to enqueue a signal of wait and signal in any
 // order as soon as the submission order (after deferred dependencies) is
 // correct. Case: first two deferred signals, then two deferred waits. Unblock
-// one signal and one wait (both blocked by the same user event). When wait
+// one signal and one wait. When wait
 // completes, unblock the other signal. Then unblock the other wait.
 int test_semaphores_order_3(cl_device_id deviceID, cl_context context,
                             cl_command_queue defaultQueue, int num_elements)
@@ -896,10 +1002,10 @@ int test_semaphores_order_3(cl_device_id deviceID, cl_context context,
                                      &wait_1_event);
     test_error(err, "Could not wait semaphore");
 
-    // Wait semaphore (dependency on user_event_2)
+    // Wait semaphore (dependency on signal_2_event)
     clEventWrapper wait_2_event;
-    err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema, nullptr, 1, &user_event_2,
-                                     &wait_2_event);
+    err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema, nullptr, 1,
+                                     &signal_2_event, &wait_2_event);
     test_error(err, "Could not wait semaphore");
 
     // Complete user_event_2
@@ -909,7 +1015,6 @@ int test_semaphores_order_3(cl_device_id deviceID, cl_context context,
     // Flush and delay
     err = clFlush(queue);
     test_error(err, "Could not flush queue");
-    std::this_thread::sleep_for(std::chrono::seconds(FLUSH_DELAY_S));
 
     // Ensure only second signal and second wait completed
     cl_event event_list[] = { signal_2_event, wait_2_event };
@@ -922,6 +1027,12 @@ int test_semaphores_order_3(cl_device_id deviceID, cl_context context,
     // Complete user_event_1
     err = clSetUserEventStatus(user_event_1, CL_COMPLETE);
     test_error(err, "Could not set user event to CL_COMPLETE");
+
+    err = clFlush(queue);
+    test_error(err, "Could not flush queue");
+
+    err = poll_for_pending_signal(queue, signal_1_event, 1, &user_event_1);
+    test_error(err, "Failed to wait on pending signal");
 
     // Complete user_event_3
     err = clSetUserEventStatus(user_event_3, CL_COMPLETE);
@@ -986,6 +1097,8 @@ int test_semaphores_import_export_fd(cl_device_id deviceID, cl_context context,
             CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
         static_cast<cl_semaphore_properties_khr>(
             CL_SEMAPHORE_HANDLE_SYNC_FD_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
         0
     };
     cl_semaphore_khr sema_1 =
@@ -1040,107 +1153,5 @@ int test_semaphores_import_export_fd(cl_device_id deviceID, cl_context context,
 
     err = clReleaseSemaphoreKHR(sema_2);
     test_error(err, "Could not release semaphore");
-    return TEST_PASS;
-}
-
-// Test that an invalid semaphore command results in the invalidation of the
-// command's event and the dependencies' events
-int test_semaphores_invalid_command(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue defaultQueue,
-                                    int num_elements)
-{
-    cl_int err;
-
-    if (!is_extension_available(deviceID, "cl_khr_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
-    // Obtain pointers to semaphore's API
-    GET_PFN(deviceID, clCreateSemaphoreWithPropertiesKHR);
-    GET_PFN(deviceID, clEnqueueSignalSemaphoresKHR);
-    GET_PFN(deviceID, clEnqueueWaitSemaphoresKHR);
-    GET_PFN(deviceID, clReleaseSemaphoreKHR);
-
-    // Create ooo queue
-    clCommandQueueWrapper queue = clCreateCommandQueue(
-        context, deviceID, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
-    test_error(err, "Could not create command queue");
-
-    // Create semaphores
-    cl_semaphore_properties_khr sema_props[] = {
-        static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-        static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_BINARY_KHR),
-        0
-    };
-    cl_semaphore_khr sema_1 =
-        clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
-    test_error(err, "Could not create semaphore");
-
-    cl_semaphore_khr sema_2 =
-        clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
-    test_error(err, "Could not create semaphore");
-
-    // Create user events
-    clEventWrapper user_event_1 = clCreateUserEvent(context, &err);
-    test_error(err, "Could not create user event");
-
-    clEventWrapper user_event_2 = clCreateUserEvent(context, &err);
-    test_error(err, "Could not create user event");
-
-    // Signal semaphore_1 (dependency on user_event_1)
-    clEventWrapper signal_1_event;
-    err = clEnqueueSignalSemaphoresKHR(queue, 1, &sema_1, nullptr, 1,
-                                       &user_event_1, &signal_1_event);
-    test_error(err, "Could not signal semaphore");
-
-    // Wait semaphore_1 and semaphore_2 (dependency on user_event_1)
-    clEventWrapper wait_event;
-    cl_semaphore_khr sema_list[] = { sema_1, sema_2 };
-    err = clEnqueueWaitSemaphoresKHR(queue, 2, sema_list, nullptr, 1,
-                                     &user_event_1, &wait_event);
-    test_error(err, "Could not wait semaphore");
-
-    // Signal semaphore_1 (dependency on wait_event and user_event_2)
-    clEventWrapper signal_2_event;
-    cl_event wait_list[] = { user_event_2, wait_event };
-    err = clEnqueueSignalSemaphoresKHR(queue, 1, &sema_1, nullptr, 2, wait_list,
-                                       &signal_2_event);
-    test_error(err, "Could not signal semaphore");
-
-    // Flush and delay
-    err = clFlush(queue);
-    test_error(err, "Could not flush queue");
-    std::this_thread::sleep_for(std::chrono::seconds(FLUSH_DELAY_S));
-
-    // Ensure all events are not completed
-    test_assert_event_inprogress(signal_1_event);
-    test_assert_event_inprogress(signal_2_event);
-    test_assert_event_inprogress(wait_event);
-
-    // Complete user_event_1 (expect failure as waiting on semaphore_2 is not
-    // allowed (unsignaled)
-    err = clSetUserEventStatus(user_event_1, CL_COMPLETE);
-    test_assert_error(err != CL_SUCCESS,
-                      "signal_2_event completed unexpectedly");
-
-    // Ensure signal_1 is completed while others failed (the second signal
-    // should fail as it depends on wait)
-    err = clFinish(queue);
-    test_error(err, "Could not finish queue");
-
-    test_assert_event_complete(signal_1_event);
-    test_assert_event_terminated(wait_event);
-    test_assert_event_terminated(signal_2_event);
-
-    // Release semaphore
-    err = clReleaseSemaphoreKHR(sema_1);
-    test_error(err, "Could not release semaphore");
-
-    err = clReleaseSemaphoreKHR(sema_2);
-    test_error(err, "Could not release semaphore");
-
     return TEST_PASS;
 }
