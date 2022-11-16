@@ -409,8 +409,9 @@ static int l_get_device_info(cl_device_id device, size_t* max_size_ret,
 
 static void l_set_randomly(cl_uchar* buf, size_t buf_size,
                            RandomSeed& rand_state);
-static int l_compare(const cl_uchar* expected, const cl_uchar* received,
-                     unsigned num_values, const TypeInfo& ti);
+static int l_compare(const char* test_name, const cl_uchar* expected,
+                     const cl_uchar* received, size_t num_values,
+                     const TypeInfo& ti);
 static int l_copy(cl_uchar* dest, unsigned dest_idx, const cl_uchar* src,
                   unsigned src_idx, const TypeInfo& ti);
 
@@ -436,8 +437,7 @@ static int l_init_write_read_for_type(cl_device_id device, cl_context context,
 static int l_capacity(cl_device_id device, cl_context context,
                       cl_command_queue queue, size_t max_size);
 static int l_user_type(cl_device_id device, cl_context context,
-                       cl_command_queue queue, size_t max_size,
-                       bool separate_compilation);
+                       cl_command_queue queue, bool separate_compile);
 
 
 ////////////////////
