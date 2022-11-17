@@ -127,7 +127,9 @@ int test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_comman
     log_info("The CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE for the kernel is %d.\n", (int)kernel_subgroup_count);
 
     if (realSize != sizeof(kernel_subgroup_count)) {
-        log_error( "ERROR: Returned size of sub group count not valid! (Expected %d, got %d)\n", (int)sizeof(kernel_subgroup_count), (int)realSize );
+        log_error("ERROR: Returned size of sub group count not valid! "
+                  "(Expected %d, got %d)\n",
+                  (int)sizeof(kernel_subgroup_count), (int)realSize);
         return -1;
     }
 
