@@ -217,13 +217,9 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                 // Check result
                 if (operation == SubgroupsBroadcastOp::broadcast_first)
                 {
-                    int lowest_active_id = -1;
+                    int lowest_active_id = 0;
                     for (i = 0; i < n; ++i)
                     {
-
-                        lowest_active_id = i < NR_OF_ACTIVE_WORK_ITEMS
-                            ? 0
-                            : NR_OF_ACTIVE_WORK_ITEMS;
                         //  findout if broadcasted
                         //  value is the same
                         tr = mx[ii + lowest_active_id];
