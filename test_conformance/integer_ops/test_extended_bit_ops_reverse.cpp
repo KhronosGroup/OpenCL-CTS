@@ -71,7 +71,6 @@ static int test_vectype(cl_device_id device, cl_context context,
                         cl_command_queue queue)
 {
     cl_int error = CL_SUCCESS;
-    int result = TEST_PASS;
 
     clProgramWrapper program;
     clKernelWrapper kernel;

@@ -98,7 +98,6 @@ static int test_vectype(cl_device_id device, cl_context context,
     typedef typename std::make_unsigned<T>::type unsigned_t;
 
     cl_int error = CL_SUCCESS;
-    int result = TEST_PASS;
 
     clProgramWrapper program;
     clKernelWrapper kernel;
