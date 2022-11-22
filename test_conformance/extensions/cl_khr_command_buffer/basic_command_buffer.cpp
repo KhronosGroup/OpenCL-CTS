@@ -41,8 +41,11 @@ struct BasicCommandBufferTest : CommandBufferTestBase
     BasicCommandBufferTest(cl_device_id device, cl_context context,
                            cl_command_queue queue)
         : CommandBufferTestBase(device), context(context), queue(queue),
-          command_buffer(this), simultaneous_use(false),
-          out_of_order_support(false), num_elements(0)
+          command_buffer(this),
+          simultaneous_use(false),
+          simultaneous_use_requested(true), // try to use simultaneous path by default
+          out_of_order_support(false),
+          num_elements(0)
     {}
 
     virtual bool Skip()
@@ -81,8 +84,8 @@ struct BasicCommandBufferTest : CommandBufferTestBase
                             sizeof(capabilities), &capabilities, NULL);
         test_error(error,
                    "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
-        simultaneous_use =
-            capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR;
+        simultaneous_use = simultaneous_use_requested &&
+            (capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR) != 0;
         out_of_order_support =
             capabilities & CL_COMMAND_BUFFER_CAPABILITY_OUT_OF_ORDER_KHR;
 
@@ -148,7 +151,6 @@ struct BasicCommandBufferTest : CommandBufferTestBase
     // Test body returning an OpenCL error code
     virtual cl_int Run() = 0;
 
-
 protected:
     size_t data_size() const { return num_elements * sizeof(cl_int); }
 
@@ -163,6 +165,9 @@ protected:
     // Device support query results
     bool simultaneous_use;
     bool out_of_order_support;
+
+    // user request for simultaneous use
+    bool simultaneous_use_requested;
 };
 
 // Test enqueuing a command-buffer containing a single NDRange command once
@@ -523,6 +528,144 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     clEventWrapper event;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// Command-queue substitution tests which handles below cases:
+// -substitution on queue without properties
+// -substitution on queue with properties
+// -simultaneous use queue substitution
+
+template <bool prop_use, bool simul_use>
+struct SubstituteQueueTest : public BasicCommandBufferTest
+{
+    bool properties_use_requested = false;
+
+    SubstituteQueueTest(cl_device_id device, cl_context context,
+                        cl_command_queue queue)
+        : BasicCommandBufferTest(device, context, queue),
+          properties_use_requested(prop_use)
+    {
+        simultaneous_use_requested = simul_use;
+    }
+
+    bool Skip() override
+    {
+      if (properties_use_requested && queue == nullptr)
+        return true;
+
+      return (simultaneous_use_requested && !simultaneous_use)
+          || BasicCommandBufferTest::Skip();
+    }
+
+    cl_int CreateCommandQueueWithProperties(cl_command_queue &queue_with_prop)
+    {
+        cl_int error = 0;
+        cl_queue_properties_khr device_props = 0;
+
+        error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
+                                sizeof(device_props), &device_props, nullptr);
+        test_error(error,
+                   "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
+
+        auto check_property = [&](const cl_bitfield& prop, const char* name)
+        {
+          if (device_props & prop)
+          {
+            log_info("Queue property %s supported. Testing ... \n", name);
+            queue_with_prop = clCreateCommandQueue(
+                context, device, prop, &error);
+          }
+          else
+              log_info("Queue property %s not supported \n", name);
+        };
+
+        std::vector<std::pair<cl_queue_properties_khr, const char*> > props = {
+          {CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+           "CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE"},
+          {CL_QUEUE_PROFILING_ENABLE, "CL_QUEUE_PROFILING_ENABLE"}
+        };
+
+        for ( auto && prop : props )
+        {
+          check_property(prop.first, prop.second);
+          test_error(error, "clCreateCommandQueueWithPropertiesKHR failed");
+          if (queue_with_prop!=nullptr)
+              return CL_SUCCESS;
+        }
+
+        return CL_INVALID_QUEUE_PROPERTIES;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        // By default command queue is created without properties,
+        // if test requires queue with properties we must replace default queue first.
+        if (properties_use_requested)
+        {
+            queue = nullptr;
+            if ( CreateCommandQueueWithProperties(queue) != CL_SUCCESS )
+              return 0;
+        }
+
+        return BasicCommandBufferTest::SetUp(elements);
+    }
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandNDRangeKernelKHR(
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+            nullptr, 0, nullptr, nullptr, nullptr);
+        test_error(error, "clCommandNDRangeKernelKHR failed");
+
+        error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        cl_command_queue new_queue = nullptr;
+        // create substitute queue
+        if (properties_use_requested)
+        {
+            error = CreateCommandQueueWithProperties(new_queue);
+            test_error(error, "CreateCommandQueueWithProperties failed");
+        }
+        else
+        {
+            const cl_command_queue_properties queue_properties = 0;
+            new_queue =
+                clCreateCommandQueue(context, device, queue_properties, &error);
+            test_error(error, "clCreateCommandQueue failed");
+        }
+
+        const cl_int pattern = 42;
+        error = clEnqueueFillBuffer(new_queue, in_mem, &pattern, sizeof(cl_int),
+                                    0, data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        cl_command_queue queues[] = { new_queue };
+        error = clEnqueueCommandBufferKHR(1, queues, command_buffer, 0, nullptr,
+                                          nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_int> output_data(num_elements);
+        error = clEnqueueReadBuffer(new_queue, out_mem, CL_TRUE, 0, data_size(),
+                                    output_data.data(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        error = clFinish(new_queue);
+        test_error(error, "clFinish failed");
+
+        for (size_t i = 0; i < num_elements; i++)
+        {
+            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+        }
+
+        clReleaseCommandQueue(new_queue);
+        if (properties_use_requested)
+        {
+            clReleaseCommandQueue(queue);
+        }
+        return CL_SUCCESS;
+    }
+};
+
 #undef CHECK_VERIFICATION_ERROR
 
 template <class T>
@@ -586,3 +729,23 @@ int test_out_of_order(cl_device_id device, cl_context context,
 {
     return MakeAndRunTest<OutOfOrderTest>(device, context, queue, num_elements);
 }
+
+int test_queue_substitution(cl_device_id device, cl_context context,
+                      cl_command_queue queue, int num_elements)
+{
+    return MakeAndRunTest<SubstituteQueueTest<false, false> >(device, context, queue, num_elements);
+}
+
+int test_properties_queue_substitution(cl_device_id device, cl_context context,
+                      cl_command_queue queue, int num_elements)
+{
+    return MakeAndRunTest<SubstituteQueueTest<true, false> >(device, context, queue, num_elements);
+}
+
+int test_simultaneous_queue_substitution(cl_device_id device, cl_context context,
+                      cl_command_queue queue, int num_elements)
+{
+    return MakeAndRunTest<SubstituteQueueTest<false, true> >(device, context, queue, num_elements);
+}
+
+
