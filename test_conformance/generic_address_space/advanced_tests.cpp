@@ -107,7 +107,32 @@ public:
             program = clCreateProgramWithSource(context, 1, &srcPtr, NULL, &error);
             test_error(error, "clCreateProgramWithSource failed");
 
-            error = clCompileProgram(program, 1, &deviceID, "-cl-std=CL2.0", 0, NULL, NULL, NULL, NULL);
+            // Use the latest OpenCL-C version supported by the device. This
+            // allows calling code to force a particular CL C version if it is
+            // required, but also means that callers need not specify a version
+            // if they want to assume the most recent CL C.
+
+            auto version = get_max_OpenCL_C_for_context(context);
+
+            const char* cl_std = nullptr;
+            if (version >= Version(3, 0))
+            {
+                cl_std = "-cl-std=CL3.0";
+            }
+            else if (version >= Version(2, 0) && version < Version(3, 0))
+            {
+                cl_std = "-cl-std=CL2.0";
+            }
+            else
+            {
+                // If the -cl-std build option is not specified, the highest
+                // OpenCL C 1.x language version supported by each device is
+                // used when compiling the program for each device.
+                cl_std = "";
+            }
+
+            error = clCompileProgram(program, 1, &deviceID, cl_std, 0, NULL,
+                                     NULL, NULL, NULL);
 
             if (error != CL_SUCCESS)
                 PrintCompilationLog(program, deviceID);
@@ -118,7 +143,8 @@ public:
             preCompiledLibrary = clCreateProgramWithSource(context, 1, &srcPtrLibrary, NULL, &error);
             test_error(error, "clCreateProgramWithSource failed");
 
-            error = clCompileProgram(preCompiledLibrary, 1, &deviceID, "-cl-std=CL2.0", 0, NULL, NULL, NULL, NULL);
+            error = clCompileProgram(preCompiledLibrary, 1, &deviceID, cl_std,
+                                     0, NULL, NULL, NULL, NULL);
 
             if (error != CL_SUCCESS)
                 PrintCompilationLog(preCompiledLibrary, deviceID);
@@ -136,7 +162,9 @@ public:
         }
 
         else {
-            if (create_single_kernel_helper_with_build_options(context, &program, &kernel, 1, &srcPtr, "testKernel", "-cl-std=CL2.0")) {
+            if (create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &srcPtr, "testKernel"))
+            {
                 log_error("create_single_kernel_helper failed\n");
                 return -1;
             }
@@ -276,31 +304,36 @@ int test_library_function(cl_device_id deviceID, cl_context context, cl_command_
         NL "}"
         NL;
 
-    const std::string KERNEL_FUNCTION =
-        NL
-        NL "extern bool helperFunction(float *floatp, float val);"
-        NL
-        NL "__global float gfloat = 1.0f;"
-        NL
-        NL "__kernel void testKernel(__global uint *results) {"
-        NL "    uint tid = get_global_id(0);"
-        NL
-        NL "    __global float *gfloatp = &gfloat;"
-        NL "    __local float lfloat;"
-        NL "    lfloat = 2.0f;"
-        NL "    __local float *lfloatp = &lfloat;"
-        NL "    float pfloat = 3.0f;"
-        NL "    __private float *pfloatp = &pfloat;"
-        NL
-        NL "    uint failures = 0;"
-        NL
-        NL "    failures += helperFunction(gfloatp, gfloat) ? 0 : 1;"
-        NL "    failures += helperFunction(lfloatp, lfloat) ? 0 : 1;"
-        NL "    failures += helperFunction(pfloatp, pfloat) ? 0 : 1;"
-        NL
-        NL "    results[tid] = failures == 0;"
-        NL "}"
-        NL;
+    const std::string KERNEL_FUNCTION = R"OpenCLC(
+extern bool helperFunction(float *floatp, float val);
+
+#ifdef __opencl_c_program_scope_global_variables
+__global float gfloat = 1.0f;
+#endif
+
+__kernel void testKernel(__global uint *results) {
+    uint tid = get_global_id(0);
+
+#ifdef __opencl_c_program_scope_global_variables
+    __global float *gfloatp = &gfloat;
+#endif
+    __local float lfloat;
+    lfloat = 2.0f;
+    __local float *lfloatp = &lfloat;
+    float pfloat = 3.0f;
+    __private float *pfloatp = &pfloat;
+
+    uint failures = 0;
+
+#ifdef __opencl_c_program_scope_global_variables
+    failures += helperFunction(gfloatp, gfloat) ? 0 : 1;
+#endif
+    failures += helperFunction(lfloatp, lfloat) ? 0 : 1;
+    failures += helperFunction(pfloatp, pfloat) ? 0 : 1;
+
+    results[tid] = failures == 0;
+};
+)OpenCLC";
 
     CAdvancedTest test(LIBRARY_FUNCTION, KERNEL_FUNCTION);
 
