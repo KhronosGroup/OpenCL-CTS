@@ -21,6 +21,11 @@
 #include <cstring>
 #include <vector>
 
+#define ADD_PROP(prop)                                                         \
+    {                                                                          \
+        prop, #prop                                                            \
+    }
+
 #define CHECK_VERIFICATION_ERROR(reference, result, index)                     \
     {                                                                          \
         if (reference != result)                                               \
@@ -566,27 +571,30 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         test_error(error,
                    "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
 
-        auto check_property = [&](const cl_bitfield& prop, const char* name)
+        using UPropPair = std::pair<cl_queue_properties_khr, std::string>;
+
+        auto check_property = [&](const UPropPair & prop)
         {
-          if (device_props & prop)
+          if (device_props & prop.first)
           {
-            log_info("Queue property %s supported. Testing ... \n", name);
+            log_info("Queue property %s supported. Testing ... \n",
+                     prop.second.c_str());
             queue_with_prop = clCreateCommandQueue(
-                context, device, prop, &error);
+                context, device, prop.first, &error);
           }
           else
-              log_info("Queue property %s not supported \n", name);
+              log_info("Queue property %s not supported \n", prop.second.c_str());
         };
 
-        std::vector<std::pair<cl_queue_properties_khr, const char*> > props = {
-          {CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-           "CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE"},
-          {CL_QUEUE_PROFILING_ENABLE, "CL_QUEUE_PROFILING_ENABLE"}
+        // in case of extending property list in future
+        std::vector< UPropPair > props = {
+          ADD_PROP(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE),
+          ADD_PROP(CL_QUEUE_PROFILING_ENABLE)
         };
 
         for ( auto && prop : props )
         {
-          check_property(prop.first, prop.second);
+          check_property(prop);
           test_error(error, "clCreateCommandQueueWithPropertiesKHR failed");
           if (queue_with_prop!=nullptr)
               return CL_SUCCESS;
@@ -601,6 +609,7 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         // if test requires queue with properties we must replace default queue first.
         if (properties_use_requested)
         {
+            // due to the skip condition
             queue = nullptr;
             if ( CreateCommandQueueWithProperties(queue) != CL_SUCCESS )
               return 0;
@@ -619,8 +628,8 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        cl_command_queue new_queue = nullptr;
         // create substitute queue
+        cl_command_queue new_queue = nullptr;
         if (properties_use_requested)
         {
             error = CreateCommandQueueWithProperties(new_queue);
