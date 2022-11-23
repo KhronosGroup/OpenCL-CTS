@@ -323,6 +323,14 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     clKernelWrapper clonek = clCloneKernel(kernel, &error);
     test_error( error, "clCloneKernel failed." );
 
+    // enqueue the kernel before the last arg is set
+    error = clEnqueueNDRangeKernel(queue, clonek, 1, NULL, &ndrange1, NULL, 0,
+                                   NULL, NULL);
+    test_failure_error(error, CL_INVALID_KERNEL_ARGS,
+                       "A kernel cloned before all args are set should return "
+                       "CL_INVALID_KERNEL_ARGS if enqueued before the "
+                       "remaining args are set");
+
     // set the last arg and enqueue
     error = clSetKernelArg(clonek, 4, sizeof(cl_mem), &bufOut);
     test_error( error, "clSetKernelArg failed." );
