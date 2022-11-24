@@ -46,11 +46,13 @@ struct BasicCommandBufferTest : CommandBufferTestBase
     BasicCommandBufferTest(cl_device_id device, cl_context context,
                            cl_command_queue queue)
         : CommandBufferTestBase(device), context(context), queue(queue),
+          num_elements(0),
           command_buffer(this),
           simultaneous_use(false),
-          simultaneous_use_requested(true), // try to use simultaneous path by default
           out_of_order_support(false),
-          num_elements(0)
+          simultaneous_use_requested(true), // try to use simultaneous path by default
+          double_buffers_size(false) // due to simultaneous case extend buffer size
+
     {}
 
     virtual bool Skip()
@@ -104,9 +106,10 @@ struct BasicCommandBufferTest : CommandBufferTestBase
         // is created.
         const char *kernel_str =
             R"(
-        __kernel void copy(__global int* in, __global int* out) {
+        __kernel void copy(__global int* in, __global int* out, int offset) {
             size_t id = get_global_id(0);
-            out[id] = in[id];
+            int ind = offset + id;
+            out[ind] = in[ind];
         })";
 
         error = create_single_kernel_helper_create_program(context, &program, 1,
@@ -117,12 +120,11 @@ struct BasicCommandBufferTest : CommandBufferTestBase
         test_error(error, "Failed to build program");
 
         in_mem = clCreateBuffer(context, CL_MEM_READ_ONLY,
-                                sizeof(cl_int) * num_elements, nullptr, &error);
+            sizeof(cl_int) * num_elements * (double_buffers_size?2:1), nullptr, &error);
         test_error(error, "clCreateBuffer failed");
 
-        out_mem =
-            clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-                           sizeof(cl_int) * num_elements, nullptr, &error);
+        out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+            sizeof(cl_int) * num_elements * (double_buffers_size?2:1), nullptr, &error);
         test_error(error, "clCreateBuffer failed");
 
         kernel = clCreateKernel(program, "copy", &error);
@@ -132,6 +134,10 @@ struct BasicCommandBufferTest : CommandBufferTestBase
         test_error(error, "clSetKernelArg failed");
 
         error = clSetKernelArg(kernel, 1, sizeof(out_mem), &out_mem);
+        test_error(error, "clSetKernelArg failed");
+
+        const cl_int offset=0;
+        error = clSetKernelArg(kernel, 2, sizeof(cl_int), &offset);
         test_error(error, "clSetKernelArg failed");
 
         if (simultaneous_use)
@@ -173,6 +179,7 @@ protected:
 
     // user request for simultaneous use
     bool simultaneous_use_requested;
+    bool double_buffers_size;
 };
 
 // Test enqueuing a command-buffer containing a single NDRange command once
@@ -542,16 +549,16 @@ struct OutOfOrderTest : public BasicCommandBufferTest
 template <bool prop_use, bool simul_use>
 struct SubstituteQueueTest : public BasicCommandBufferTest
 {
-    bool properties_use_requested = false;
-
     SubstituteQueueTest(cl_device_id device, cl_context context,
                         cl_command_queue queue)
         : BasicCommandBufferTest(device, context, queue),
-          properties_use_requested(prop_use)
+          properties_use_requested(prop_use),
+          user_event(nullptr)
     {
-        simultaneous_use_requested = simul_use;
+        double_buffers_size = simultaneous_use_requested = simul_use;
     }
 
+    //--------------------------------------------------------------------------
     bool Skip() override
     {
       if (properties_use_requested && queue == nullptr)
@@ -561,6 +568,7 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
           || BasicCommandBufferTest::Skip();
     }
 
+    //--------------------------------------------------------------------------
     cl_int CreateCommandQueueWithProperties(cl_command_queue &queue_with_prop)
     {
         cl_int error = 0;
@@ -571,23 +579,23 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         test_error(error,
                    "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
 
-        using UPropPair = std::pair<cl_queue_properties_khr, std::string>;
+        using PropPair = std::pair<cl_queue_properties_khr, std::string>;
 
-        auto check_property = [&](const UPropPair & prop)
+        auto check_property = [&](const PropPair & prop)
         {
           if (device_props & prop.first)
           {
             log_info("Queue property %s supported. Testing ... \n",
                      prop.second.c_str());
-            queue_with_prop = clCreateCommandQueue(
-                context, device, prop.first, &error);
+            queue_with_prop = clCreateCommandQueue
+                (context, device, prop.first, &error);
           }
           else
               log_info("Queue property %s not supported \n", prop.second.c_str());
         };
 
         // in case of extending property list in future
-        std::vector< UPropPair > props = {
+        std::vector< PropPair > props = {
           ADD_PROP(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE),
           ADD_PROP(CL_QUEUE_PROFILING_ENABLE)
         };
@@ -595,7 +603,7 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         for ( auto && prop : props )
         {
           check_property(prop);
-          test_error(error, "clCreateCommandQueueWithPropertiesKHR failed");
+          test_error(error, "clCreateCommandQueue failed");
           if (queue_with_prop!=nullptr)
               return CL_SUCCESS;
         }
@@ -603,21 +611,23 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         return CL_INVALID_QUEUE_PROPERTIES;
     }
 
+    //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
         // By default command queue is created without properties,
-        // if test requires queue with properties we must replace default queue first.
+        // if test requires queue with properties default queue must be replaced.
         if (properties_use_requested)
         {
             // due to the skip condition
             queue = nullptr;
             if ( CreateCommandQueueWithProperties(queue) != CL_SUCCESS )
-              return 0;
+              return CL_SUCCESS;
         }
 
         return BasicCommandBufferTest::SetUp(elements);
     }
 
+    //--------------------------------------------------------------------------
     cl_int Run() override
     {
         cl_int error = clCommandNDRangeKernelKHR(
@@ -638,32 +648,20 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         else
         {
             const cl_command_queue_properties queue_properties = 0;
-            new_queue =
-                clCreateCommandQueue(context, device, queue_properties, &error);
+            new_queue = clCreateCommandQueue
+                (context, device, queue_properties, &error);
             test_error(error, "clCreateCommandQueue failed");
         }
 
-        const cl_int pattern = 42;
-        error = clEnqueueFillBuffer(new_queue, in_mem, &pattern, sizeof(cl_int),
-                                    0, data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        cl_command_queue queues[] = { new_queue };
-        error = clEnqueueCommandBufferKHR(1, queues, command_buffer, 0, nullptr,
-                                          nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        std::vector<cl_int> output_data(num_elements);
-        error = clEnqueueReadBuffer(new_queue, out_mem, CL_TRUE, 0, data_size(),
-                                    output_data.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        error = clFinish(new_queue);
-        test_error(error, "clFinish failed");
-
-        for (size_t i = 0; i < num_elements; i++)
+        if (simultaneous_use)
         {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+          error = RunSimultaneous(new_queue);
+          test_error(error, "RunSimultaneous failed");
+        }
+        else
+        {
+          error = RunSingle(new_queue);
+          test_error(error, "RunSingle failed");
         }
 
         clReleaseCommandQueue(new_queue);
@@ -673,6 +671,115 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         }
         return CL_SUCCESS;
     }
+
+    //--------------------------------------------------------------------------
+    cl_int RunSingle(const cl_command_queue& q)
+    {
+      cl_int error = CL_SUCCESS;
+      std::vector<cl_int> output_data(num_elements);
+      const cl_int pattern = 42;
+      error = clEnqueueFillBuffer(q, in_mem, &pattern, sizeof(cl_int),
+                                  0, data_size(), 0, nullptr, nullptr);
+      test_error(error, "clEnqueueFillBuffer failed");
+
+      cl_command_queue queues[] = { q };
+      error = clEnqueueCommandBufferKHR(1, queues, command_buffer, 0,
+                                        nullptr, nullptr);
+      test_error(error, "clEnqueueCommandBufferKHR failed");
+
+      error = clEnqueueReadBuffer(q, out_mem, CL_TRUE, 0, data_size(),
+                                  output_data.data(), 0, nullptr, nullptr);
+      test_error(error, "clEnqueueReadBuffer failed");
+
+      error = clFinish(q);
+      test_error(error, "clFinish failed");
+
+      for (size_t i = 0; i < num_elements; i++)
+      {
+          CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+      }
+
+      return CL_SUCCESS;
+    }
+
+    //--------------------------------------------------------------------------
+    // tuple order: pattern, offset, queue, output-buffer
+    using SimulPassData =
+      std::tuple<cl_int, cl_int, cl_command_queue, std::vector<cl_int>>;
+
+    //--------------------------------------------------------------------------
+    cl_int EnqueueSimultaneousPass (SimulPassData & pd)
+    {
+      const cl_int offset = std::get<1>(pd);
+      auto & q = std::get<2>(pd);
+      cl_int error = clEnqueueFillBuffer
+          (q, in_mem, &std::get<0>(pd), sizeof(cl_int),
+           offset * sizeof(cl_int), data_size(), 0, nullptr, nullptr);
+      test_error(error, "clEnqueueFillBuffer failed");
+
+      error = clSetKernelArg(kernel, 2, sizeof(cl_int), &offset);
+      test_error(error, "clSetKernelArg failed");
+
+      if (!user_event)
+      {
+        user_event = clCreateUserEvent(context, &error);
+        test_error(error, "clCreateUserEvent failed");
+      }
+
+      cl_command_queue queues[] = { q };
+      error = clEnqueueCommandBufferKHR
+          (1, queues, command_buffer, 1, &user_event, nullptr);
+      test_error(error, "clEnqueueCommandBufferKHR failed");
+
+      error = clEnqueueReadBuffer
+          (q, out_mem, CL_FALSE, offset * sizeof(cl_int),
+           data_size(), std::get<3>(pd).data(), 0, nullptr, nullptr);
+
+      test_error(error, "clEnqueueReadBuffer failed");
+
+      return CL_SUCCESS;
+    }
+
+    //--------------------------------------------------------------------------
+    cl_int RunSimultaneous(const cl_command_queue& q)
+    {
+        cl_int error = CL_SUCCESS;
+
+        // tuple order: pattern, offset, queue, output-buffer
+        std::vector<SimulPassData> simul_passes = {
+          { 0xA, 0, queue, std::vector<cl_int>(num_elements) },
+          { 0xB, num_elements, q, std::vector<cl_int>(num_elements) }
+        };
+
+        for ( auto && pass : simul_passes )
+        {
+          error = EnqueueSimultaneousPass(pass);
+          test_error(error, "EnqueuePass failed");
+        }
+
+        error = clSetUserEventStatus(user_event, CL_COMPLETE);
+        test_error(error, "clSetUserEventStatus failed");
+
+        for ( auto && pass : simul_passes )
+        {
+          error = clFinish(std::get<2>(pass));
+          test_error(error, "clFinish failed");
+
+          auto & pattern = std::get<0>(pass);
+          auto & res_data = std::get<3>(pass);
+
+          for (size_t i = 0; i < num_elements; i++)
+          {
+              CHECK_VERIFICATION_ERROR(pattern, res_data[i], i);
+          }
+        }
+
+        return CL_SUCCESS;
+    }
+
+    //--------------------------------------------------------------------------
+    bool properties_use_requested = false;
+    clEventWrapper user_event = nullptr;
 };
 
 #undef CHECK_VERIFICATION_ERROR
