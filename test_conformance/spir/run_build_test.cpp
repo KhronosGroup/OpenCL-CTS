@@ -462,8 +462,7 @@ bool TestRunner::runBuildTest(cl_device_id device, const char *folder,
                 log_info("kernel '%s' failed.\n", kernel_name.c_str());
                 (*m_failureHandler)(test_name, kernel_name);
             }
-        }
-        catch (std::runtime_error err)
+        } catch (const std::runtime_error& err)
         {
             ++failures;
             log_info("kernel '%s' failed: %s\n", kernel_name.c_str(), err.what());
