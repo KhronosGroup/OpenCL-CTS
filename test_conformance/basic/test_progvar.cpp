@@ -81,20 +81,20 @@ class TypeInfo {
 
 public:
     TypeInfo()
-        : name(""), m_buf_elem_type(""), m_is_vecbase(false),
+        : name(""), m_elem_type(0), m_num_elem(0), m_is_vecbase(false),
           m_is_atomic(false), m_is_like_size_t(false), m_is_bool(false),
-          m_elem_type(0), m_num_elem(0), m_size(0), m_value_size(0)
+          m_size(0), m_value_size(0), m_buf_elem_type("")
     {}
     TypeInfo(const char* name_arg)
-        : name(name_arg), m_buf_elem_type(name_arg), m_is_vecbase(false),
+        : name(name_arg), m_elem_type(0), m_num_elem(0), m_is_vecbase(false),
           m_is_atomic(false), m_is_like_size_t(false), m_is_bool(false),
-          m_elem_type(0), m_num_elem(0), m_size(0), m_value_size(0)
+          m_size(0), m_value_size(0), m_buf_elem_type(name_arg)
     {}
 
     // Vectors
     TypeInfo(TypeInfo* elem_type, int num_elem)
-        : m_is_vecbase(false), m_is_atomic(false), m_is_like_size_t(false),
-          m_is_bool(false), m_elem_type(elem_type), m_num_elem(num_elem)
+        : m_elem_type(elem_type), m_num_elem(num_elem), m_is_vecbase(false),
+          m_is_atomic(false), m_is_like_size_t(false), m_is_bool(false)
     {
         char
             the_name[10]; // long enough for longest vector type name "double16"
@@ -325,7 +325,7 @@ static int num_type_info = 0; // Number of valid entries in type_info[]
 // A helper class to form kernel source arguments for clCreateProgramWithSource.
 class StringTable {
 public:
-    StringTable(): m_c_strs(NULL), m_lengths(NULL), m_frozen(false), m_strings()
+    StringTable(): m_strings(), m_c_strs(NULL), m_lengths(NULL), m_frozen(false)
     {}
     ~StringTable() { release_frozen(); }
 
