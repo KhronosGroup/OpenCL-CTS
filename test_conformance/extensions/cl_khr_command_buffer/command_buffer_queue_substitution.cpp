@@ -247,8 +247,16 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
            offset * sizeof(cl_int), data_size(), 0, nullptr, nullptr);
       test_error(error, "clEnqueueFillBuffer failed");
 
+#if USE_COMMAND_BUF_KENEL_ARG
       error = clSetKernelArg(kernel, 2, sizeof(cl_int), &offset);
       test_error(error, "clSetKernelArg failed");
+#else
+         error = clEnqueueFillBuffer
+             (q, off_mem, &offset, sizeof(cl_int), 0, sizeof(cl_int),
+              0, nullptr, nullptr);
+         test_error(error, "clEnqueueFillBuffer failed");
+
+#endif
 
       if (!user_event)
       {
