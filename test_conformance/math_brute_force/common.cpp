@@ -85,6 +85,28 @@ void EmitEnableExtension(std::ostringstream &kernel, ParameterType type)
     }
 }
 
+std::string GetBuildOptions(bool relaxed_mode)
+{
+    std::ostringstream options;
+
+    if (gForceFTZ)
+    {
+        options << " -cl-denorms-are-zero";
+    }
+
+    if (gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT)
+    {
+        options << " -cl-fp32-correctly-rounded-divide-sqrt";
+    }
+
+    if (relaxed_mode)
+    {
+        options << " -cl-fast-relaxed-math";
+    }
+
+    return options.str();
+}
+
 } // anonymous namespace
 
 std::string GetKernelName(int vector_size_index)
@@ -529,4 +551,51 @@ __kernel void )", kernel_name.c_str(), R"((__global RETTYPE_SCALAR* out,
         for (const auto &chunk : kernel_vec3) kernel << chunk;
 
     return kernel.str();
+}
+
+cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
+                    SourceGenerator generator)
+{
+    // Generate the kernel code.
+    cl_uint vector_size_index = gMinVectorSizeIndex + job_id;
+    auto kernel_name = GetKernelName(vector_size_index);
+    auto source = generator(kernel_name, info.nameInCode, vector_size_index);
+    std::array<const char *, 1> sources{ source.c_str() };
+
+    // Create the program.
+    clProgramWrapper &program = info.programs[vector_size_index];
+    auto options = GetBuildOptions(info.relaxedMode);
+    int error =
+        create_single_kernel_helper(gContext, &program, nullptr, sources.size(),
+                                    sources.data(), nullptr, options.c_str());
+    if (error != CL_SUCCESS)
+    {
+        vlog_error("\t\tFAILED -- Failed to create program. (%d)\n", error);
+        return error;
+    }
+
+    // Create a kernel for each thread. cl_kernels aren't thread safe, so make
+    // one for every thread
+    auto &kernels = info.kernels[vector_size_index];
+    assert(kernels.empty() && "Dirty BuildKernelInfo");
+    kernels.resize(info.threadCount);
+    for (auto &kernel : kernels)
+    {
+        kernel = clCreateKernel(program, kernel_name.c_str(), &error);
+        if (!kernel || error != CL_SUCCESS)
+        {
+            vlog_error("\t\tFAILED -- clCreateKernel() failed: (%d)\n", error);
+            size_t log_size;
+            clGetProgramBuildInfo(program, gDevice, CL_PROGRAM_BUILD_LOG, 0,
+                                  nullptr, &log_size);
+            std::string buffer;
+            buffer.resize(log_size + 1);
+            clGetProgramBuildInfo(program, gDevice, CL_PROGRAM_BUILD_LOG,
+                                  log_size, &buffer[0], NULL);
+            vlog_error("Log: %s\n", buffer.c_str());
+            return error;
+        }
+    }
+
+    return CL_SUCCESS;
 }

@@ -1050,54 +1050,6 @@ int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
     return error;
 }
 
-int MakeKernels(const char **c, cl_uint count, const char *name,
-                cl_uint kernel_count, cl_kernel *k, cl_program *p,
-                bool relaxedMode)
-{
-    char options[200] = "";
-
-    if (gForceFTZ)
-    {
-        strcat(options, " -cl-denorms-are-zero ");
-    }
-
-    if (gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT)
-    {
-        strcat(options, " -cl-fp32-correctly-rounded-divide-sqrt ");
-    }
-
-    if (relaxedMode)
-    {
-        strcat(options, " -cl-fast-relaxed-math");
-    }
-
-    int error =
-        create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
-    if (error != CL_SUCCESS)
-    {
-        vlog_error("\t\tFAILED -- Failed to create program. (%d)\n", error);
-        return error;
-    }
-
-    for (cl_uint i = 0; i < kernel_count; i++)
-    {
-        k[i] = clCreateKernel(*p, name, &error);
-        if (NULL == k[i] || error)
-        {
-            char buffer[2048] = "";
-
-            vlog_error("\t\tFAILED -- clCreateKernel() failed: (%d)\n", error);
-            clGetProgramBuildInfo(*p, gDevice, CL_PROGRAM_BUILD_LOG,
-                                  sizeof(buffer), buffer, NULL);
-            vlog_error("Log: %s\n", buffer);
-            return error;
-        }
-    }
-
-    return error;
-}
-
-
 static int IsInRTZMode(void)
 {
     int error;
