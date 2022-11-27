@@ -216,11 +216,8 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
     if (!byNumber) {
         byNumber = (useNumbersFlip++)%2;
     }
-    // Do not use xyzw for vectors whose length is not 2 or 4 per the spec.
-    if (vecSize != 2 || vecSize != 4 || vecSize != 3)
-        byNumber = 1;
 
-    if( byNumber || vecSize > 4 )
+    if (byNumber)
     {
         idx = 0;
         // Randomly chose upper and lower case S
@@ -251,7 +248,9 @@ char * get_order_name( ExplicitType vecType, size_t inVecSize, size_t outVecSize
     if( inVecSize == 1 )
         inOrderStr[ 0 ] = 0;
     else
-        sprintf( inOrderStr, "%d.%s", (int)inVecSize, get_order_string( inOrder, outVecSize, lengthToUse, inUseNumerics, d ) );
+        sprintf(inOrderStr, "%d.%s", (int)inVecSize,
+                get_order_string(inOrder, inVecSize, lengthToUse, inUseNumerics,
+                                 d));
     if( outVecSize == 1 )
         outOrderStr[ 0 ] = 0;
     else
@@ -398,7 +397,9 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
     for( unsigned int i = 0; i < numOrders; i++ )
     {
         if( inOrders != NULL )
-            strcpy( inOrder, get_order_string( inOrders[ i ], outVecSize, lengthToUse[i], inUseNumerics, d ) );
+            strcpy(inOrder,
+                   get_order_string(inOrders[i], inVecSize, lengthToUse[i],
+                                    inUseNumerics, d));
         strcpy( shuffledOrder, get_order_string( outOrders[ i ], outVecSize, lengthToUse[i], outUseNumerics, d ) );
 
 
