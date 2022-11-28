@@ -15,10 +15,10 @@
 //
 
 #ifdef _WIN32
-#define NOMINMAX
 #include <Windows.h>
 #include <dxgi1_2.h>
 #include <aclapi.h>
+#include <algorithm>
 #endif
 #include <vulkan/vulkan.h>
 #include "vulkan_wrapper.hpp"

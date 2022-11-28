@@ -14,9 +14,8 @@
 // limitations under the License.
 //
 
-#ifdef _WIN32
-#define NOMINMAX
-#endif
+
+#include <algorithm>
 #include "vulkan_list_map.hpp"
 #include "vulkan_utility.hpp"
 #include "vulkan_wrapper.hpp"

@@ -1664,7 +1664,7 @@ static cl_program   MakeProgram( Type outType, Type inType, SaturationMode sat, 
                                         &programSource, testName, flags);
     if (error)
     {
-        vlog_error("Failed to build kernel/program.\n", error);
+        vlog_error("Failed to build kernel/program (err = %d).\n", error);
         clReleaseProgram(program);
         return NULL;
     }
