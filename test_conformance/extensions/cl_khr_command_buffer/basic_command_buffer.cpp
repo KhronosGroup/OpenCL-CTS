@@ -21,14 +21,14 @@
 #include <vector>
 
 
-BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device, cl_context context,
-                       cl_command_queue queue)
+BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
+                                               cl_context context,
+                                               cl_command_queue queue)
     : CommandBufferTestBase(device), context(context), queue(queue),
-      num_elements(0),
-      command_buffer(this),
-      simultaneous_use(false),
+      num_elements(0), command_buffer(this), simultaneous_use(false),
       out_of_order_support(false),
-      simultaneous_use_requested(true), // try to use simultaneous path by default
+      simultaneous_use_requested(
+          true), // try to use simultaneous path by default
       double_buffers_size(false) // due to simultaneous case extend buffer size
 
 {}
@@ -46,8 +46,8 @@ bool BasicCommandBufferTest::Skip()
     cl_command_queue_properties queue_properties;
 
     error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
-                                  sizeof(queue_properties),
-                                  &queue_properties, NULL);
+                                  sizeof(queue_properties), &queue_properties,
+                                  NULL);
     test_error(error, "Unable to query CL_QUEUE_PROPERTIES");
 
     // Skip if queue properties don't contain those required
@@ -64,13 +64,13 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
 
     // Query if device supports simultaneous use
     cl_device_command_buffer_capabilities_khr capabilities;
-    error =
-        clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
-                        sizeof(capabilities), &capabilities, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
+                            sizeof(capabilities), &capabilities, NULL);
     test_error(error,
                "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
-    simultaneous_use = simultaneous_use_requested &&
-        (capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR) != 0;
+    simultaneous_use = simultaneous_use_requested
+        && (capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR)
+            != 0;
     out_of_order_support =
         capabilities & CL_COMMAND_BUFFER_CAPABILITY_OUT_OF_ORDER_KHR;
 
@@ -107,17 +107,21 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     test_error(error, "Failed to build program");
 
     in_mem = clCreateBuffer(context, CL_MEM_READ_ONLY,
-        sizeof(cl_int) * num_elements * (double_buffers_size?2:1), nullptr, &error);
+                            sizeof(cl_int) * num_elements
+                                * (double_buffers_size ? 2 : 1),
+                            nullptr, &error);
     test_error(error, "clCreateBuffer failed");
 
     out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-        sizeof(cl_int) * num_elements * (double_buffers_size?2:1), nullptr, &error);
+                             sizeof(cl_int) * num_elements
+                                 * (double_buffers_size ? 2 : 1),
+                             nullptr, &error);
     test_error(error, "clCreateBuffer failed");
 
-    cl_int offset=0;
+    cl_int offset = 0;
 #if !USE_COMMAND_BUF_KENEL_ARG
     off_mem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        sizeof(cl_int), &offset, &error);
+                             sizeof(cl_int), &offset, &error);
     test_error(error, "clCreateBuffer failed");
 #endif
 
@@ -141,16 +145,15 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     if (simultaneous_use)
     {
         cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR,
-            CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR, 0
+            CL_COMMAND_BUFFER_FLAGS_KHR, CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR,
+            0
         };
         command_buffer =
             clCreateCommandBufferKHR(1, &queue, properties, &error);
     }
     else
     {
-        command_buffer =
-            clCreateCommandBufferKHR(1, &queue, nullptr, &error);
+        command_buffer = clCreateCommandBufferKHR(1, &queue, nullptr, &error);
     }
     test_error(error, "clCreateCommandBufferKHR failed");
 
@@ -560,4 +563,3 @@ int test_out_of_order(cl_device_id device, cl_context context,
 {
     return MakeAndRunTest<OutOfOrderTest>(device, context, queue, num_elements);
 }
-
