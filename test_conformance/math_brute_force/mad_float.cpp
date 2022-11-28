@@ -111,7 +111,7 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
             return error;
         }
 
-        // write garbage into output arrays
+        // Write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
@@ -122,15 +122,6 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
                 vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
                            error);
                 return error;
-            }
-
-            if ((error =
-                     clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
-                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
-            {
-                vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
-                           error, j);
-                goto exit;
             }
         }
 

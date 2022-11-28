@@ -298,25 +298,6 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     cl_float *s = 0;
     cl_int *s2 = 0;
 
-    // start the map of the output arrays
-    cl_event e[VECTOR_SIZE_COUNT];
-    cl_uint *out[VECTOR_SIZE_COUNT];
-    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-    {
-        out[j] = (cl_uint *)clEnqueueMapBuffer(
-            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
-            buffer_size, 0, NULL, e + j, &error);
-        if (error || NULL == out[j])
-        {
-            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
-                       error);
-            return error;
-        }
-    }
-
-    // Get that moving
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
-
     // Init input array
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
     cl_uint *p2 = (cl_uint *)gIn2 + thread_id * buffer_elements;
@@ -370,18 +351,6 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
-        // Wait for the map to finish
-        if ((error = clWaitForEvents(1, e + j)))
-        {
-            vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
-            goto exit;
-        }
-        if ((error = clReleaseEvent(e[j])))
-        {
-            vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
-            goto exit;
-        }
-
         // Fill the result buffer with garbage, so that old results don't carry
         // over
         uint32_t pattern = 0xffffdead;
@@ -394,15 +363,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             return error;
         }
 
-        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
-                                             out[j], 0, NULL, NULL)))
-        {
-            vlog_error("Error: clEnqueueUnmapMemObject failed! err: %d\n",
-                       error);
-            goto exit;
-        }
-
-        // run the kernel
+        // Run the kernel
         size_t vectorCount =
             (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
@@ -437,11 +398,12 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     }
 
     // Get that moving
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
+    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
 
     if (gSkipCorrectnessTesting) return CL_SUCCESS;
 
     // Calculate the correctly rounded reference result
+    cl_uint *out[VECTOR_SIZE_COUNT];
     r = (float *)gOut_Ref + thread_id * buffer_elements;
     s = (float *)gIn + thread_id * buffer_elements;
     s2 = (cl_int *)gIn2 + thread_id * buffer_elements;
@@ -546,7 +508,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 3 failed\n");
+    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
 
 
     if (0 == (base & 0x0fffffff))
