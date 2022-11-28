@@ -49,15 +49,16 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
     }
 
     //--------------------------------------------------------------------------
-    cl_int CreateCommandQueueWithProperties(cl_command_queue& queue_with_prop)
+    cl_command_queue CreateCommandQueueWithProperties(cl_int& error)
     {
-        cl_int error = 0;
+        cl_command_queue ret_queue = nullptr;
         cl_queue_properties_khr device_props = 0;
 
         error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
                                 sizeof(device_props), &device_props, nullptr);
-        test_error(error,
-                   "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
+        test_error_ret(error,
+                       "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed",
+                       nullptr);
 
         using PropPair = std::pair<cl_queue_properties_khr, std::string>;
 
@@ -66,7 +67,7 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
             {
                 log_info("Queue property %s supported. Testing ... \n",
                          prop.second.c_str());
-                queue_with_prop =
+                ret_queue =
                     clCreateCommandQueue(context, device, prop.first, &error);
             }
             else
@@ -83,11 +84,11 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         for (auto&& prop : props)
         {
             check_property(prop);
-            test_error(error, "clCreateCommandQueue failed");
-            if (queue_with_prop != nullptr) return CL_SUCCESS;
+            test_error_ret(error, "clCreateCommandQueue failed", ret_queue);
+            if (ret_queue != nullptr) return ret_queue;
         }
 
-        return CL_INVALID_QUEUE_PROPERTIES;
+        return ret_queue;
     }
 
     //--------------------------------------------------------------------------
@@ -99,8 +100,8 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         if (properties_use_requested)
         {
             // due to the skip condition
-            queue = nullptr;
-            cl_int error = CreateCommandQueueWithProperties(queue);
+            cl_int error = CL_SUCCESS;
+            queue = CreateCommandQueueWithProperties(error);
             test_error(error, "CreateCommandQueueWithProperties failed");
         }
 
@@ -127,10 +128,10 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         test_error(error, "RecordCommandBuffer failed");
 
         // create substitute queue
-        cl_command_queue new_queue = nullptr;
+        clCommandQueueWrapper new_queue;
         if (properties_use_requested)
         {
-            error = CreateCommandQueueWithProperties(new_queue);
+            new_queue = CreateCommandQueueWithProperties(error);
             test_error(error, "CreateCommandQueueWithProperties failed");
         }
         else
@@ -154,7 +155,6 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
             test_error(error, "RunSingle failed");
         }
 
-        clReleaseCommandQueue(new_queue);
         if (properties_use_requested)
         {
             clReleaseCommandQueue(queue);
