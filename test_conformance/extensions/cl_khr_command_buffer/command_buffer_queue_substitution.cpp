@@ -35,7 +35,8 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
           properties_use_requested(prop_use), out_of_order_queue(false),
           user_event(nullptr)
     {
-        double_buffers_size = simultaneous_use_requested = simul_use;
+        simultaneous_use_requested = simul_use;
+        if (simul_use) buffer_size_multiplier = 2;
     }
 
     //--------------------------------------------------------------------------
@@ -43,7 +44,7 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
     {
         if (properties_use_requested && queue == nullptr) return true;
 
-        return (simultaneous_use_requested && !simultaneous_use)
+        return (simultaneous_use_requested && !simultaneous_use_support)
             || BasicCommandBufferTest::Skip();
     }
 
@@ -99,8 +100,8 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         {
             // due to the skip condition
             queue = nullptr;
-            if (CreateCommandQueueWithProperties(queue) != CL_SUCCESS)
-                return CL_SUCCESS;
+            cl_int error = CreateCommandQueueWithProperties(queue);
+            test_error(error, "CreateCommandQueueWithProperties failed");
         }
 
         return BasicCommandBufferTest::SetUp(elements);
@@ -140,7 +141,7 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
             test_error(error, "clCreateCommandQueue failed");
         }
 
-        if (simultaneous_use)
+        if (simultaneous_use_support)
         {
             // enque simultaneous command-buffers with substitute queue
             error = RunSimultaneous(new_queue);
@@ -166,34 +167,17 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
     {
         cl_int error = CL_SUCCESS;
 
-        if (out_of_order_queue)
+        if (out_of_order_queue && simultaneous_use_support)
         {
-            if (simultaneous_use)
-            {
-                log_info(
-                    "Queue property CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE "
-                    "not supported with simultaneous use\n");
-                return CL_INVALID_QUEUE_PROPERTIES;
-            }
-
-            cl_sync_point_khr sync_point;
-            error = clCommandFillBufferKHR(
-                command_buffer, nullptr, in_mem, &pattern_pri, sizeof(cl_int),
-                0, data_size(), 0, nullptr, &sync_point, nullptr);
-            test_error(error, "clCommandFillBufferKHR failed");
-
-            error = clCommandNDRangeKernelKHR(
-                command_buffer, nullptr, nullptr, kernel, 1, nullptr,
-                &num_elements, nullptr, 1, &sync_point, nullptr, nullptr);
-            test_error(error, "clCommandNDRangeKernelKHR failed");
+            log_info("Queue property CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE "
+                     "not supported with simultaneous use in this test\n");
+            return CL_INVALID_QUEUE_PROPERTIES;
         }
-        else
-        {
-            error = clCommandNDRangeKernelKHR(
-                command_buffer, nullptr, nullptr, kernel, 1, nullptr,
-                &num_elements, nullptr, 0, nullptr, nullptr, nullptr);
-            test_error(error, "clCommandNDRangeKernelKHR failed");
-        }
+
+        error = clCommandNDRangeKernelKHR(
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+            nullptr, 0, nullptr, nullptr, nullptr);
+        test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
@@ -206,20 +190,20 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         cl_int error = CL_SUCCESS;
         std::vector<cl_int> output_data(num_elements);
 
-        if (!out_of_order_queue)
-        {
-            error = clEnqueueFillBuffer(q, in_mem, &pattern_pri, sizeof(cl_int),
-                                        0, data_size(), 0, nullptr, nullptr);
-            test_error(error, "clEnqueueFillBuffer failed");
-        }
+        // this could be out-of-order queue, cover such possibility with events
+        clEventWrapper events[2] = { nullptr, nullptr };
+
+        error = clEnqueueFillBuffer(q, in_mem, &pattern_pri, sizeof(cl_int), 0,
+                                    data_size(), 0, nullptr, &events[0]);
+        test_error(error, "clEnqueueFillBuffer failed");
 
         cl_command_queue queues[] = { q };
-        error = clEnqueueCommandBufferKHR(1, queues, command_buffer, 0, nullptr,
-                                          nullptr);
+        error = clEnqueueCommandBufferKHR(1, queues, command_buffer, 1,
+                                          &events[0], &events[1]);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         error = clEnqueueReadBuffer(q, out_mem, CL_TRUE, 0, data_size(),
-                                    output_data.data(), 0, nullptr, nullptr);
+                                    output_data.data(), 1, &events[1], nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         error = clFinish(q);
@@ -235,27 +219,30 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
 
     //--------------------------------------------------------------------------
     // tuple order: pattern, offset, queue, output-buffer
-    using SimulPassData =
-        std::tuple<cl_int, cl_int, cl_command_queue, std::vector<cl_int>>;
+    struct SimulPassData
+    {
+        cl_int pattern;
+        cl_int offset;
+        cl_command_queue queue;
+        std::vector<cl_int> output_buffer;
+    };
 
     //--------------------------------------------------------------------------
     cl_int EnqueueSimultaneousPass(SimulPassData& pd)
     {
-        const cl_int offset = std::get<1>(pd);
-        auto& q = std::get<2>(pd);
         cl_int error = clEnqueueFillBuffer(
-            q, in_mem, &std::get<0>(pd), sizeof(cl_int),
-            offset * sizeof(cl_int), data_size(), 0, nullptr, nullptr);
+            pd.queue, in_mem, &pd.pattern, sizeof(cl_int),
+            pd.offset * sizeof(cl_int), data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
 #if USE_COMMAND_BUF_KENEL_ARG
         error = clSetKernelArg(kernel, 2, sizeof(cl_int), &offset);
         test_error(error, "clSetKernelArg failed");
 #else
-        error = clEnqueueFillBuffer(q, off_mem, &offset, sizeof(cl_int), 0,
-                                    sizeof(cl_int), 0, nullptr, nullptr);
+        error =
+            clEnqueueFillBuffer(pd.queue, off_mem, &pd.offset, sizeof(cl_int),
+                                0, sizeof(cl_int), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
-
 #endif
 
         if (!user_event)
@@ -264,14 +251,14 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
             test_error(error, "clCreateUserEvent failed");
         }
 
-        cl_command_queue queues[] = { q };
+        cl_command_queue queues[] = { pd.queue };
         error = clEnqueueCommandBufferKHR(1, queues, command_buffer, 1,
                                           &user_event, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         error = clEnqueueReadBuffer(
-            q, out_mem, CL_FALSE, offset * sizeof(cl_int), data_size(),
-            std::get<3>(pd).data(), 0, nullptr, nullptr);
+            pd.queue, out_mem, CL_FALSE, pd.offset * sizeof(cl_int),
+            data_size(), pd.output_buffer.data(), 0, nullptr, nullptr);
 
         test_error(error, "clEnqueueReadBuffer failed");
 
@@ -300,15 +287,14 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
 
         for (auto&& pass : simul_passes)
         {
-            error = clFinish(std::get<2>(pass));
+            error = clFinish(pass.queue);
             test_error(error, "clFinish failed");
 
-            auto& pattern = std::get<0>(pass);
-            auto& res_data = std::get<3>(pass);
+            auto& res_data = pass.output_buffer;
 
             for (size_t i = 0; i < num_elements; i++)
             {
-                CHECK_VERIFICATION_ERROR(pattern, res_data[i], i);
+                CHECK_VERIFICATION_ERROR(pass.pattern, res_data[i], i);
             }
         }
 
@@ -319,12 +305,12 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
     const cl_int pattern_pri = 0xB;
     const cl_int pattern_sec = 0xC;
 
+    //    cl_sync_point_khr sync_point;
+
     bool properties_use_requested = false;
     bool out_of_order_queue = false;
     clEventWrapper user_event = nullptr;
 };
-
-//#undef CHECK_VERIFICATION_ERROR
 
 } // anonymous namespace
 

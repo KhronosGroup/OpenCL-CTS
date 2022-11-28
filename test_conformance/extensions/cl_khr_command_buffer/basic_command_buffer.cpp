@@ -25,11 +25,12 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
                                                cl_context context,
                                                cl_command_queue queue)
     : CommandBufferTestBase(device), context(context), queue(queue),
-      num_elements(0), command_buffer(this), simultaneous_use(false),
+      num_elements(0), command_buffer(this), simultaneous_use_support(false),
       out_of_order_support(false),
-      simultaneous_use_requested(
-          true), // try to use simultaneous path by default
-      double_buffers_size(false) // due to simultaneous case extend buffer size
+      // try to use simultaneous path by default
+      simultaneous_use_requested(true),
+      // due to simultaneous cases extend buffer size
+      buffer_size_multiplier(1)
 
 {}
 
@@ -68,7 +69,7 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
                             sizeof(capabilities), &capabilities, NULL);
     test_error(error,
                "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
-    simultaneous_use = simultaneous_use_requested
+    simultaneous_use_support = simultaneous_use_requested
         && (capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR)
             != 0;
     out_of_order_support =
@@ -106,16 +107,16 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
     test_error(error, "Failed to build program");
 
-    in_mem = clCreateBuffer(context, CL_MEM_READ_ONLY,
-                            sizeof(cl_int) * num_elements
-                                * (double_buffers_size ? 2 : 1),
-                            nullptr, &error);
+    in_mem =
+        clCreateBuffer(context, CL_MEM_READ_ONLY,
+                       sizeof(cl_int) * num_elements * buffer_size_multiplier,
+                       nullptr, &error);
     test_error(error, "clCreateBuffer failed");
 
-    out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-                             sizeof(cl_int) * num_elements
-                                 * (double_buffers_size ? 2 : 1),
-                             nullptr, &error);
+    out_mem =
+        clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+                       sizeof(cl_int) * num_elements * buffer_size_multiplier,
+                       nullptr, &error);
     test_error(error, "clCreateBuffer failed");
 
     cl_int offset = 0;
@@ -142,7 +143,7 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     test_error(error, "clSetKernelArg failed");
 #endif
 
-    if (simultaneous_use)
+    if (simultaneous_use_support)
     {
         cl_command_buffer_properties_khr properties[3] = {
             CL_COMMAND_BUFFER_FLAGS_KHR, CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR,
@@ -372,7 +373,7 @@ struct ExplicitFlushTest : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        return !simultaneous_use || BasicCommandBufferTest::Skip();
+        return !simultaneous_use_support || BasicCommandBufferTest::Skip();
     }
 };
 
@@ -428,7 +429,7 @@ struct InterleavedEnqueueTest : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        return !simultaneous_use || BasicCommandBufferTest::Skip();
+        return !simultaneous_use_support || BasicCommandBufferTest::Skip();
     }
 };
 
@@ -519,8 +520,6 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     clCommandBufferWrapper out_of_order_command_buffer;
     clEventWrapper event;
 };
-
-#undef CHECK_VERIFICATION_ERROR
 
 } // anonymous namespace
 

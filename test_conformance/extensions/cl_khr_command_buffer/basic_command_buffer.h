@@ -63,12 +63,12 @@ protected:
     size_t num_elements;
 
     // Device support query results
-    bool simultaneous_use;
+    bool simultaneous_use_support;
     bool out_of_order_support;
 
     // user request for simultaneous use
     bool simultaneous_use_requested;
-    bool double_buffers_size;
+    unsigned buffer_size_multiplier;
 };
 
 template <class T>
