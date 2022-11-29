@@ -226,15 +226,10 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
             pd.offset * sizeof(cl_int), data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
-#if USE_COMMAND_BUF_KENEL_ARG
-        error = clSetKernelArg(kernel, 2, sizeof(cl_int), &pd.offset);
-        test_error(error, "clSetKernelArg failed");
-#else
         error =
             clEnqueueFillBuffer(pd.queue, off_mem, &pd.offset, sizeof(cl_int),
                                 0, sizeof(cl_int), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
-#endif
 
         if (!user_event)
         {
@@ -263,7 +258,7 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         cl_int offset = static_cast<cl_int>(num_elements);
 
         std::vector<SimulPassData> simul_passes = {
-            { pattern_pri, 0, queue, std::vector<cl_int>(num_elements) },
+            { pattern_pri, 0, q, std::vector<cl_int>(num_elements) },
             { pattern_sec, offset, q, std::vector<cl_int>(num_elements) }
         };
 

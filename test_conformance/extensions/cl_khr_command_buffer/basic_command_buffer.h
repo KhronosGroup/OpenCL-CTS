@@ -19,9 +19,6 @@
 #include "command_buffer_test_base.h"
 #include "harness/typeWrappers.h"
 
-// temporary flag to be removed once simultaneous test will be sorted out
-#define USE_COMMAND_BUF_KENEL_ARG 0
-
 #define ADD_PROP(prop)                                                         \
     {                                                                          \
         prop, #prop                                                            \

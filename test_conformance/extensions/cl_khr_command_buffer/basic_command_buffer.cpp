@@ -84,21 +84,12 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     // Kernel performs a parallel copy from an input buffer to output buffer
     // is created.
     const char *kernel_str =
-#if USE_COMMAND_BUF_KENEL_ARG
-        R"(
-    __kernel void copy(__global int* in, __global int* out, int offset) {
-        size_t id = get_global_id(0);
-        int ind = offset + id;
-        out[ind] = in[ind];
-    })";
-#else
         R"(
     __kernel void copy(__global int* in, __global int* out, __global int* offset) {
         size_t id = get_global_id(0);
         int ind = offset[0] + id;
         out[ind] = in[ind];
     })";
-#endif
 
     error = create_single_kernel_helper_create_program(context, &program, 1,
                                                        &kernel_str);
@@ -120,11 +111,9 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     test_error(error, "clCreateBuffer failed");
 
     cl_int offset = 0;
-#if !USE_COMMAND_BUF_KENEL_ARG
     off_mem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                              sizeof(cl_int), &offset, &error);
     test_error(error, "clCreateBuffer failed");
-#endif
 
     kernel = clCreateKernel(program, "copy", &error);
     test_error(error, "Failed to create copy kernel");
@@ -135,13 +124,8 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     error = clSetKernelArg(kernel, 1, sizeof(out_mem), &out_mem);
     test_error(error, "clSetKernelArg failed");
 
-#if USE_COMMAND_BUF_KENEL_ARG
-    error = clSetKernelArg(kernel, 2, sizeof(cl_int), &offset);
-    test_error(error, "clSetKernelArg failed");
-#else
     error = clSetKernelArg(kernel, 2, sizeof(off_mem), &off_mem);
     test_error(error, "clSetKernelArg failed");
-#endif
 
     if (simultaneous_use_support)
     {
