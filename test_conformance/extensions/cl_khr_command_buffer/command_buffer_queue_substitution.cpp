@@ -260,10 +260,11 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
     cl_int RunSimultaneous(const cl_command_queue& q)
     {
         cl_int error = CL_SUCCESS;
+        cl_int offset = static_cast<cl_int>(num_elements);
 
         std::vector<SimulPassData> simul_passes = {
             { pattern_pri, 0, queue, std::vector<cl_int>(num_elements) },
-            { pattern_sec, num_elements, q, std::vector<cl_int>(num_elements) }
+            { pattern_sec, offset, q, std::vector<cl_int>(num_elements) }
         };
 
         for (auto&& pass : simul_passes)
