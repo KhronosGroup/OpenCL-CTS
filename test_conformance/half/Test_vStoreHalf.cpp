@@ -1653,7 +1653,7 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
     }
 
     const char *reset[] = {
-        "__kernel void reset( __global float *p, __global half *f,\n"
+        "__kernel void reset( __global float *p, __global ushort *f,\n"
         "                   uint extra_last_thread)\n"
         "{\n"
         "   size_t i = get_global_id(0);\n"
