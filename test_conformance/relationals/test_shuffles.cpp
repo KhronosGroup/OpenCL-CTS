@@ -201,14 +201,13 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
 
     size_t j, idx;
 
-    // Assume we don't have to use numbers
-    byNumber = 0;
-    // Check to see
+    // Assume we don't have to use numbered indices (.s0123...).
+    byNumber = false;
+    // Check if any index is beyond xyzw, which requires to use numbers.
     for( j = 0; j < lengthToUse; j++ )
     {
         if (order[j] > 3) {
-            // An index is > xyzw so we need to use numbers
-            byNumber = 1;
+            byNumber = true;
             break;
         }
     }
@@ -220,7 +219,7 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
     if (byNumber)
     {
         idx = 0;
-        // Randomly chose upper and lower case S
+        // Randomly chose upper and lower case S.
         orderString[ idx++ ] = random_in_range(0, 1, d) ? 's' : 'S';
         for( j = 0; j < vecSize && j < lengthToUse; j++ ) {
             // Randomly choose upper and lower case.
@@ -230,8 +229,8 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
     }
     else
     {
+        // Use xyzw.
         for( j = 0; j < vecSize && j < lengthToUse; j++ ) {
-            // Randomly choose upper and lower case.
             orderString[ j ] = names2[ (int)order[ j ] ];
         }
         orderString[ j ] = 0;
