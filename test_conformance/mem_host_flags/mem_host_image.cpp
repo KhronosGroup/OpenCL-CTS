@@ -151,7 +151,7 @@ int test_mem_host_read_only_image(cl_device_id deviceID, cl_context context,
 }
 
 //----------------------------
-static cl_int test_MEM_HOST_WRIE_ONLY_Image_RW(
+static cl_int test_MEM_HOST_WRITE_ONLY_Image_RW(
     cl_device_id deviceID, cl_context context, cl_command_queue queue,
     cl_bool blocking, cl_mem_flags buffer_mem_flag,
     cl_mem_object_type image_type_in, size_t array_size, size_t *img_dim)
@@ -260,7 +260,7 @@ int test_mem_host_write_only_image(cl_device_id deviceID, cl_context context,
         {
             for (int p = 0; p < 3; p++)
             {
-                err = test_MEM_HOST_WRIE_ONLY_Image_RW(
+                err = test_MEM_HOST_WRITE_ONLY_Image_RW(
                     deviceID, context, queue, blocking[i], buffer_mem_flags[k],
                     img_type[p], array_size[p], img_dims[p]);
                 test_error(err, __FUNCTION__);
