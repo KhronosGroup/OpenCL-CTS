@@ -32,6 +32,13 @@
 #include <android/api-level.h>
 #endif
 
+#if !defined(_WIN32)
+#if defined(__APPLE__)
+#include <sys/sysctl.h>
+#endif
+#endif
+
+
 #define CHECK_PTR(ptr)                                                         \
     if ((ptr) == NULL)                                                         \
     {                                                                          \

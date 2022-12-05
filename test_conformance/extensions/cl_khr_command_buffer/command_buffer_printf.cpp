@@ -448,7 +448,7 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
             std::vector<cl_char> pattern(pattern_length + 1, pattern_character);
             pattern[pattern_length] = '\0';
             simul_passes[i] = { pattern,
-                                { i * offset, pattern_length },
+                                { cl_int(i * offset), cl_int(pattern_length) },
                                 std::vector<cl_char>(num_elements
                                                      * pattern_length) };
             total_pattern_coverage += simul_passes[i].output_buffer.size();
