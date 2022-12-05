@@ -55,7 +55,7 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
     CommandBufferPrintfTest(cl_device_id device, cl_context context,
                             cl_command_queue queue)
         : BasicCommandBufferTest(device, context, queue),
-          trigger_event(nullptr), file_descriptor(0)
+          trigger_event(nullptr), wait_event(nullptr), file_descriptor(0)
     {
         simultaneous_use_requested = simul_use;
         if (simul_use)
@@ -181,16 +181,14 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
     cl_int SetUp(int elements) override
     {
         // Query if device supports simultaneous use
-        cl_device_command_buffer_capabilities_khr capabilities;
+        cl_device_command_buffer_capabilities_khr caps;
         cl_int error =
             clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
-                            sizeof(capabilities), &capabilities, NULL);
-        test_error(
-            error,
-            "Unable to query CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR");
+                            sizeof(caps), &caps, NULL);
+        test_error(error,
+                   "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
 
-        if ((capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR)
-            == 0)
+        if ((caps & CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR) == 0)
         {
             log_error(
                 "Device capability "
@@ -219,13 +217,13 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
 
         if (simultaneous_use_support)
         {
-            // enque simultaneous command-buffers with printf calls
+            // enqueue simultaneous command-buffers with printf calls
             error = RunSimultaneous();
             test_error(error, "RunSimultaneous failed");
         }
         else
         {
-            // enque single command-buffer with printf calls
+            // enqueue single command-buffer with printf calls
             error = RunSingle();
             test_error(error, "RunSingle failed");
         }
@@ -247,25 +245,6 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
 
         error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
-        return CL_SUCCESS;
-    }
-
-    //--------------------------------------------------------------------------
-    int WaitForEvent(cl_event* event)
-    {
-        cl_int status = clWaitForEvents(1, event);
-        if (status != CL_SUCCESS)
-        {
-            log_error("clWaitForEvents failed");
-            return status;
-        }
-
-        status = clReleaseEvent(*event);
-        if (status != CL_SUCCESS)
-        {
-            log_error("clReleaseEvent failed. (*event)");
-            return status;
-        }
         return CL_SUCCESS;
     }
 
@@ -305,7 +284,6 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         }
 
         // enqueue command buffer with kernel containing printf command
-        cl_event wait_event;
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, &wait_event);
         test_error_release_stdout(error, "clEnqueueCommandBufferKHR failed");
@@ -316,8 +294,8 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
 
         // Wait until kernel finishes its execution and (thus) the output
         // printed from the kernel is immediately printed
-        error = WaitForEvent(&wait_event);
-        test_error_release_stdout(error, "WaitForEvent failed");
+        error = clWaitForEvents(1, &wait_event);
+        test_error(error, "clWaitForEvents failed");
 
         // output buffer contains pattern to be compared with printout
         error = clEnqueueReadBuffer(queue, out_mem, CL_FALSE, 0, data_size(),
@@ -527,6 +505,8 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
 
     //--------------------------------------------------------------------------
     clEventWrapper trigger_event = nullptr;
+    clEventWrapper wait_event = nullptr;
+
 
     std::string temp_filename;
     int file_descriptor;
