@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/os_helpers.h"
 
 #include <string.h>
 #include <errno.h>
@@ -946,9 +947,10 @@ int main(int argc, const char* argv[])
         }
     }
 
-    if (getTempFileName() == -1)
+    strcpy(gFileName, get_temp_filename());
+    if (strlen(gFileName) == 0)
     {
-        log_error("getTempFileName failed\n");
+        log_error("get_temp_filename failed\n");
         return -1;
     }
 

@@ -556,4 +556,27 @@ char* get_exe_dir()
 } // get_exe_dir
 
 
+char* get_temp_filename()
+{
+    char gFileName[256] = "";
+    // Create a unique temporary file to allow parallel executed tests.
+#if (defined(__linux__) || defined(__APPLE__)) && (!defined(__ANDROID__))
+    sprintf(gFileName, "/tmp/tmpfile.XXXXXX");
+    int fd = mkstemp(gFileName);
+    if (fd == -1) return strdup(gFileName);
+    close(fd);
+#elif defined(_WIN32)
+    UINT ret = GetTempFileName(".", "tmp", 0, gFileName);
+    if (ret == 0) return gFileName;
+#else
+    MTdata d = init_genrand((cl_uint)time(NULL));
+    sprintf(gFileName, "tmpfile.%u", genrand_int32(d));
+#endif
+
+    char* fn = strdup(gFileName);
+    CHECK_PTR(fn);
+    return fn;
+}
+
+
 // end of file //
