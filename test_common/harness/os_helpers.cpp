@@ -36,6 +36,7 @@
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
 #endif
+#include <unistd.h>
 #endif
 
 
