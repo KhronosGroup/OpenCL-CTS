@@ -106,8 +106,10 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     bool Skip() override
     {
-        return (simultaneous_use_requested && !simultaneous_use_support)
-            || BasicCommandBufferTest::Skip();
+        if (!printf_use_support
+            || (simultaneous_use_requested && !simultaneous_use_support))
+            return true;
+        return BasicCommandBufferTest::Skip();
     }
 
     //--------------------------------------------------------------------------
@@ -180,22 +182,6 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
-        // Query if device supports simultaneous use
-        cl_device_command_buffer_capabilities_khr caps;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
-                            sizeof(caps), &caps, NULL);
-        test_error(error,
-                   "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
-
-        if ((caps & CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR) == 0)
-        {
-            log_error(
-                "Device capability "
-                "CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR not supported");
-            return CL_INVALID_DEVICE_TYPE;
-        }
-
         temp_filename = get_temp_filename();
         if (temp_filename.empty())
         {
