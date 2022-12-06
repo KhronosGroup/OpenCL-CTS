@@ -16,9 +16,10 @@
 #include "harness/testHarness.h"
 
 test_definition test_list[] = {
-    ADD_TEST(single_ndrange), ADD_TEST(interleaved_enqueue),
-    ADD_TEST(mixed_commands), ADD_TEST(explicit_flush),
-    ADD_TEST(user_events),    ADD_TEST(out_of_order)
+    ADD_TEST(single_ndrange),       ADD_TEST(interleaved_enqueue),
+    ADD_TEST(mixed_commands),       ADD_TEST(explicit_flush),
+    ADD_TEST(user_events),          ADD_TEST(out_of_order),
+    ADD_TEST(basic_set_kernel_arg), ADD_TEST(pending_set_kernel_arg)
 };
 
 
