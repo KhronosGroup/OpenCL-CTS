@@ -515,7 +515,7 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
     const unsigned max_pattern_length = 6;
     // specifies min test length for printf pattern
     const unsigned min_pattern_length = 1;
-    // specifies number of command-buffer equeue iterations
+    // specifies number of command-buffer enqueue iterations
     const unsigned num_test_iters = 3;
 };
 
