@@ -58,7 +58,7 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         test_error(error, "Failed to build program");
 
         kernel = clCreateKernel(program, "copy", &error);
-        test_error(error, "Failed to create print kernel");
+        test_error(error, "Failed to create copy kernel");
 
         return CL_SUCCESS;
     }
@@ -76,6 +76,7 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
                                  nullptr, &error);
         test_error(error, "clCreateBuffer failed");
 
+        // create secondary output buffer to test kernel args substitution
         out_mem_k2 = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
                                     num_elements * buffer_size_multiplier
                                         * sizeof(cl_int),
@@ -107,13 +108,13 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         cl_int error = CL_SUCCESS;
         if (simultaneous_use_support)
         {
-            // enqueue simultaneous command-buffers with printf calls
+            // enqueue simultaneous command-buffers with clSetKernelArg calls
             error = RunSimultaneous();
             test_error(error, "RunSimultaneous failed");
         }
         else
         {
-            // enqueue single command-buffer with printf calls
+            // enqueue single command-buffer with  clSetKernelArg calls
             error = RunSingle();
             test_error(error, "RunSingle failed");
         }
@@ -131,6 +132,8 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
             nullptr, 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
+        // changing kernel args at this point should have no effect,
+        // test will verify if clSetKernelArg didn't affect the first command
         cl_int in_arg = pattern_sec;
         error = clSetKernelArg(kernel, 0, sizeof(cl_int), &in_arg);
         test_error(error, "clSetKernelArg failed");
@@ -154,7 +157,7 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         cl_int error = CL_SUCCESS;
         std::vector<cl_int> output_data(num_elements);
 
-        // record command buffer with primary queue
+        // record command buffer
         error = RecordCommandBuffer();
         test_error(error, "RecordCommandBuffer failed");
 
@@ -181,7 +184,7 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         error = clFinish(queue);
         test_error(error, "clFinish failed");
 
-        // verify the result - we are interested in first kernel launch
+        // verify the result - result buffer must contain initial pattern
         for (size_t i = 0; i < num_elements; i++)
         {
             CHECK_VERIFICATION_ERROR(pattern_pri, output_data[i], i);
@@ -259,6 +262,8 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         error = EnqueueSimultaneousPass(simul_passes.front());
         test_error(error, "EnqueueSimultaneousPass 1 failed");
 
+        // changing kernel args at this point should have no effect,
+        // test will verify if clSetKernelArg didn't affect command-buffer
         cl_int in_arg = pattern_sec;
         error = clSetKernelArg(kernel, 0, sizeof(cl_int), &in_arg);
         test_error(error, "clSetKernelArg failed");
@@ -282,6 +287,7 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         error = clFinish(queue);
         test_error(error, "clFinish failed");
 
+        // verify the result buffer
         for (auto&& pass : simul_passes)
         {
             auto& res_data = pass.output_buffer;
