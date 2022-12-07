@@ -27,7 +27,7 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
                                                cl_command_queue queue)
     : CommandBufferTestBase(device), context(context), queue(queue),
       num_elements(0), command_buffer(this), simultaneous_use_support(false),
-      out_of_order_support(false), printf_use_support(false),
+      out_of_order_support(false),
       // try to use simultaneous path by default
       simultaneous_use_requested(true),
       // due to simultaneous cases extend buffer size
@@ -138,9 +138,6 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
             != 0;
     out_of_order_support =
         (capabilities & CL_COMMAND_BUFFER_CAPABILITY_OUT_OF_ORDER_KHR) != 0;
-
-    printf_use_support =
-        (capabilities & CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR) != 0;
 
     if (elements <= 0)
     {

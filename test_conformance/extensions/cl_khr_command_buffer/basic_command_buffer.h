@@ -65,7 +65,6 @@ protected:
     // Device support query results
     bool simultaneous_use_support;
     bool out_of_order_support;
-    bool printf_use_support;
 
     // user request for simultaneous use
     bool simultaneous_use_requested;

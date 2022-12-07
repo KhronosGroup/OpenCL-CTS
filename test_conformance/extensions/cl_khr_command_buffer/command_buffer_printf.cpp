@@ -55,7 +55,8 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
     CommandBufferPrintfTest(cl_device_id device, cl_context context,
                             cl_command_queue queue)
         : BasicCommandBufferTest(device, context, queue),
-          trigger_event(nullptr), wait_event(nullptr), file_descriptor(0)
+          trigger_event(nullptr), wait_event(nullptr), file_descriptor(0),
+          printf_use_support(false)
     {
         simultaneous_use_requested = simul_use;
         if (simul_use)
@@ -182,6 +183,18 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
+        // Query if device supports kernel printf use
+        cl_device_command_buffer_capabilities_khr capabilities;
+        cl_int error =
+            clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
+                            sizeof(capabilities), &capabilities, NULL);
+        test_error(error,
+                   "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
+
+        printf_use_support =
+            (capabilities & CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR)
+            != 0;
+
         temp_filename = get_temp_filename();
         if (temp_filename.empty())
         {
@@ -254,12 +267,12 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         auto in_mem_size = sizeof(cl_char) * pattern.size();
         error = clEnqueueWriteBuffer(queue, in_mem, CL_TRUE, 0, in_mem_size,
                                      &pattern[0], 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
+        test_error(error, "clEnqueueWriteBuffer failed");
 
         cl_int offset[] = { 0, pattern.size() - 1 };
         error = clEnqueueWriteBuffer(queue, off_mem, CL_TRUE, 0, sizeof(offset),
                                      offset, 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
+        test_error(error, "clEnqueueWriteBuffer failed");
 
         // redirect output stream to temporary file
         file_descriptor = AcquireOutputStream(&error);
@@ -275,8 +288,6 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         test_error_release_stdout(error, "clEnqueueCommandBufferKHR failed");
 
         fflush(stdout);
-        error = clFlush(queue);
-        test_error_release_stdout(error, "clFlush failed");
 
         // Wait until kernel finishes its execution and (thus) the output
         // printed from the kernel is immediately printed
@@ -352,13 +363,13 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         cl_int error =
             clEnqueueWriteBuffer(queue, in_mem, CL_FALSE, 0, in_mem_size,
                                  &pd.pattern[0], 0, nullptr, nullptr);
-        test_error_release_stdout(error, "clEnqueueFillBuffer failed");
+        test_error_release_stdout(error, "clEnqueueWriteBuffer failed");
 
         // refresh offsets for current enqueuing
         error =
             clEnqueueWriteBuffer(queue, off_mem, CL_FALSE, 0, sizeof(pd.offset),
                                  pd.offset, 0, nullptr, nullptr);
-        test_error_release_stdout(error, "clEnqueueFillBuffer failed");
+        test_error_release_stdout(error, "clEnqueueWriteBuffer failed");
 
         // create user event to block simultaneous command buffers
         if (!trigger_event)
@@ -431,7 +442,7 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         for (auto&& pass : simul_passes)
         {
             error = EnqueueSimultaneousPass(pass);
-            test_error_release_stdout(error, "EnqueuePass failed");
+            test_error_release_stdout(error, "EnqueueSimultaneousPass failed");
         }
 
         // execute command buffers
@@ -440,8 +451,6 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
 
         // flush streams
         fflush(stdout);
-        error = clFlush(queue);
-        test_error_release_stdout(error, "clFlush failed");
 
         // finish command queue
         error = clFinish(queue);
@@ -493,9 +502,10 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
     clEventWrapper trigger_event = nullptr;
     clEventWrapper wait_event = nullptr;
 
-
     std::string temp_filename;
     int file_descriptor;
+
+    bool printf_use_support;
 
     // specifies max test length for printf pattern
     const unsigned max_pattern_length = 6;
