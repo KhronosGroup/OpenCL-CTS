@@ -106,7 +106,7 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error = CL_SUCCESS;
-        if (simultaneous_use_support)
+        if (simultaneous_use_requested)
         {
             // enqueue simultaneous command-buffers with clSetKernelArg calls
             error = RunSimultaneous();
@@ -253,7 +253,7 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
 
         // record command buffer with primary queue
         error = RecordSimultaneousCommandBuffer();
-        test_error(error, "RecordCommandBuffer failed");
+        test_error(error, "RecordSimultaneousCommandBuffer failed");
 
         std::vector<SimulPassData> simul_passes = {
             { 0, 0, std::vector<cl_int>(num_elements) }
