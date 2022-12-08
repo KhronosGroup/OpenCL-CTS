@@ -18,8 +18,6 @@
 #include "procs.h"
 
 #include <vector>
-#include <fstream>
-#include <stdio.h>
 
 namespace {
 
@@ -183,9 +181,6 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
                                     output_data.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
 
         // verify the result - result buffer must contain initial pattern
         for (size_t i = 0; i < num_elements; i++)
