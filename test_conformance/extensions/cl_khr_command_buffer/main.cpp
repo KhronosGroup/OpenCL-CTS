@@ -18,7 +18,11 @@
 test_definition test_list[] = {
     ADD_TEST(single_ndrange), ADD_TEST(interleaved_enqueue),
     ADD_TEST(mixed_commands), ADD_TEST(explicit_flush),
-    ADD_TEST(user_events),    ADD_TEST(out_of_order)
+    ADD_TEST(user_events),    ADD_TEST(out_of_order),
+    ADD_TEST(fill_image_khr), ADD_TEST(fill_buffer_khr),
+    ADD_TEST(copy_image_khr), ADD_TEST(copy_buffer_khr),
+    ADD_TEST(copy_buffer_to_image_khr), ADD_TEST(copy_image_to_buffer_khr),
+    ADD_TEST(copy_buffer_rect_khr), ADD_TEST(barrier_wait_list_khr),
 };
 
 
