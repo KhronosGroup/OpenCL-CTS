@@ -24,6 +24,9 @@
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
+// clSetKernelArg tests for cl_khr_command_buffer which handles below cases:
+// -test interactions of clSetKernelArg with command-buffers
+// -test interactions of clSetKernelArg on a command-buffer pending execution
 
 template <bool simul_use>
 struct CommandBufferSetKernelArg : public BasicCommandBufferTest
