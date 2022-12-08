@@ -1043,9 +1043,165 @@ int test_semaphores_import_export_fd(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-// Test that an invalid semaphore command results in the invalidation of the
-// command's event and the dependencies' events
-int test_semaphores_invalid_command(cl_device_id deviceID, cl_context context,
+static int cross_context_sync_fd_helper(cl_device_id deviceID,
+                                        cl_context context,
+                                        const unsigned int num_signals,
+                                        bool signaled)
+{
+    cl_int err;
+
+    if (!is_extension_available(deviceID, "cl_khr_semaphore"))
+    {
+        log_info("cl_khr_semaphore is not supported on this platoform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    if (!is_extension_available(deviceID, "cl_khr_external_semaphore_sync_fd"))
+    {
+        log_info("cl_khr_external_semaphore_sync_fd is not supported on this "
+                 "platoform. Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    // Obtain pointers to semaphore's API
+    GET_PFN(deviceID, clCreateSemaphoreWithPropertiesKHR);
+    GET_PFN(deviceID, clEnqueueSignalSemaphoresKHR);
+    GET_PFN(deviceID, clEnqueueWaitSemaphoresKHR);
+    GET_PFN(deviceID, clGetSemaphoreHandleForTypeKHR);
+    GET_PFN(deviceID, clReleaseSemaphoreKHR);
+
+    clContextWrapper context2 =
+        clCreateContext(0, 1, &deviceID, nullptr, nullptr, &err);
+    test_error(err, "Failed to create context2");
+
+    // Create ooo queue_context1
+    clCommandQueueWrapper queue_context1 =
+        clCreateCommandQueue(context, deviceID, 0, &err);
+    test_error(err, "Could not create command queue_context1");
+
+    clCommandQueueWrapper queue_context2 =
+        clCreateCommandQueue(context2, deviceID, 0, &err);
+    test_error(err, "Could not create command queue_context2");
+
+    // Create semaphore
+    cl_semaphore_properties_khr sema_1_props[] = {
+        static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
+        static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_BINARY_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_HANDLE_SYNC_FD_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
+        0
+    };
+
+    std::vector<cl_semaphore_khr> semas_context1(num_signals);
+    for (unsigned i = 0; i < num_signals; i++)
+    {
+        semas_context1[i] =
+            clCreateSemaphoreWithPropertiesKHR(context, sema_1_props, &err);
+        test_error(err, "Could not create semaphore");
+    }
+
+    // Signal semaphore
+    clEventWrapper signal_event;
+    err = clEnqueueSignalSemaphoresKHR(queue_context1, num_signals,
+                                       semas_context1.data(), nullptr, 0,
+                                       nullptr, &signal_event);
+    test_error(err, "Could not signal semaphore");
+
+    if (signaled)
+    {
+        // Wait on signaled semaphore
+        err = clFinish(queue_context1);
+        test_error(err, "Failed to finish queue on context 1");
+    }
+    else
+    {
+        // Wait on pending signal
+        err = clFlush(queue_context1);
+        test_error(err, "Failed to flush queue on context 1");
+    }
+
+    // Extract sync fd
+    std::vector<cl_semaphore_khr> semas_context2(num_signals);
+    int handle;
+    size_t handle_size;
+    for (unsigned i = 0; i < num_signals; i++)
+    {
+        handle = -1;
+        err = clGetSemaphoreHandleForTypeKHR(
+            semas_context1[i], deviceID, CL_SEMAPHORE_HANDLE_SYNC_FD_KHR,
+            sizeof(handle), &handle, &handle_size);
+        test_error(err, "Could not extract semaphore handle");
+        test_assert_error(sizeof(handle) == handle_size, "Invalid handle size");
+        test_assert_error(handle >= 0, "Invalid handle");
+
+        // Create semaphore from sync fd
+        cl_semaphore_properties_khr sema_2_props[] = {
+            static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
+            static_cast<cl_semaphore_properties_khr>(
+                CL_SEMAPHORE_TYPE_BINARY_KHR),
+            CL_SEMAPHORE_HANDLE_SYNC_FD_KHR,
+            static_cast<cl_semaphore_properties_khr>(handle), 0
+        };
+
+        semas_context2[i] =
+            clCreateSemaphoreWithPropertiesKHR(context2, sema_2_props, &err);
+        test_error(err, "Could not create semaphore for context2");
+    }
+
+    // Wait semaphore on context 2
+    clEventWrapper wait_event;
+    err = clEnqueueWaitSemaphoresKHR(queue_context2, num_signals,
+                                     semas_context2.data(), nullptr, 0, nullptr,
+                                     &wait_event);
+    test_error(err, "Could not wait semaphores");
+
+    // Finish
+    err = clFinish(queue_context1);
+    err = clFinish(queue_context2);
+    test_error(err, "Could not finish queue_context1");
+
+    // Check all events are completed
+    test_assert_event_complete(signal_event);
+    test_assert_event_complete(wait_event);
+
+    // Release semaphore
+    for (unsigned i = 0; i < num_signals; i++)
+    {
+        err = clReleaseSemaphoreKHR(semas_context1[i]);
+        test_error(err, "Could not release semaphore");
+
+        err = clReleaseSemaphoreKHR(semas_context2[i]);
+        test_error(err, "Could not release semaphore");
+    }
+    return TEST_PASS;
+}
+
+// Test sync_fd can signal multiple signals across contexts, wait on pending
+// signal
+int test_semaphores_cross_context_sync_fd_pending(cl_device_id deviceID,
+                                                  cl_context context,
+                                                  cl_command_queue defaultQueue,
+                                                  int num_elements)
+{
+    return cross_context_sync_fd_helper(deviceID, context, 5, false);
+}
+
+// Test sync_fd can signal multiple signals across contexts, semaphore already
+// signaled
+int test_semaphores_cross_context_sync_fd_signaled(
+    cl_device_id deviceID, cl_context context, cl_command_queue defaultQueue,
+    int num_elements)
+{
+    return cross_context_sync_fd_helper(deviceID, context, 5, true);
+}
+
+// Test that handles with value -1 import as signaled
+int test_semaphores_import_signaled(cl_device_id deviceID, cl_context context,
                                     cl_command_queue defaultQueue,
                                     int num_elements)
 {
@@ -1058,89 +1214,52 @@ int test_semaphores_invalid_command(cl_device_id deviceID, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
+    if (!is_extension_available(deviceID, "cl_khr_external_semaphore_sync_fd"))
+    {
+        log_info("cl_khr_external_semaphore_sync_fd is not supported on this "
+                 "platoform. Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     // Obtain pointers to semaphore's API
     GET_PFN(deviceID, clCreateSemaphoreWithPropertiesKHR);
     GET_PFN(deviceID, clEnqueueSignalSemaphoresKHR);
     GET_PFN(deviceID, clEnqueueWaitSemaphoresKHR);
+    GET_PFN(deviceID, clGetSemaphoreHandleForTypeKHR);
     GET_PFN(deviceID, clReleaseSemaphoreKHR);
 
-    // Create ooo queue
-    clCommandQueueWrapper queue = clCreateCommandQueue(
-        context, deviceID, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
+    clCommandQueueWrapper queue =
+        clCreateCommandQueue(context, deviceID, 0, &err);
     test_error(err, "Could not create command queue");
 
-    // Create semaphores
+    // Import signaled sync_fd handle
+    int handle = -1;
+
     cl_semaphore_properties_khr sema_props[] = {
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_BINARY_KHR),
-        0
+        CL_SEMAPHORE_HANDLE_SYNC_FD_KHR,
+        static_cast<cl_semaphore_properties_khr>(handle), 0
     };
-    cl_semaphore_khr sema_1 =
+
+    cl_semaphore_khr sema =
         clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
     test_error(err, "Could not create semaphore");
 
-    cl_semaphore_khr sema_2 =
-        clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
-    test_error(err, "Could not create semaphore");
-
-    // Create user events
-    clEventWrapper user_event_1 = clCreateUserEvent(context, &err);
-    test_error(err, "Could not create user event");
-
-    clEventWrapper user_event_2 = clCreateUserEvent(context, &err);
-    test_error(err, "Could not create user event");
-
-    // Signal semaphore_1 (dependency on user_event_1)
-    clEventWrapper signal_1_event;
-    err = clEnqueueSignalSemaphoresKHR(queue, 1, &sema_1, nullptr, 1,
-                                       &user_event_1, &signal_1_event);
-    test_error(err, "Could not signal semaphore");
-
-    // Wait semaphore_1 and semaphore_2 (dependency on user_event_1)
+    // Wait semaphore
     clEventWrapper wait_event;
-    cl_semaphore_khr sema_list[] = { sema_1, sema_2 };
-    err = clEnqueueWaitSemaphoresKHR(queue, 2, sema_list, nullptr, 1,
-                                     &user_event_1, &wait_event);
+    err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema, nullptr, 0, nullptr,
+                                     &wait_event);
     test_error(err, "Could not wait semaphore");
 
-    // Signal semaphore_1 (dependency on wait_event and user_event_2)
-    clEventWrapper signal_2_event;
-    cl_event wait_list[] = { user_event_2, wait_event };
-    err = clEnqueueSignalSemaphoresKHR(queue, 1, &sema_1, nullptr, 2, wait_list,
-                                       &signal_2_event);
-    test_error(err, "Could not signal semaphore");
-
-    // Flush and delay
-    err = clFlush(queue);
-    test_error(err, "Could not flush queue");
-    std::this_thread::sleep_for(std::chrono::seconds(FLUSH_DELAY_S));
-
-    // Ensure all events are not completed
-    test_assert_event_inprogress(signal_1_event);
-    test_assert_event_inprogress(signal_2_event);
-    test_assert_event_inprogress(wait_event);
-
-    // Complete user_event_1 (expect failure as waiting on semaphore_2 is not
-    // allowed (unsignaled)
-    err = clSetUserEventStatus(user_event_1, CL_COMPLETE);
-    test_assert_error(err != CL_SUCCESS,
-                      "signal_2_event completed unexpectedly");
-
-    // Ensure signal_1 is completed while others failed (the second signal
-    // should fail as it depends on wait)
+    // Finish
     err = clFinish(queue);
     test_error(err, "Could not finish queue");
 
-    test_assert_event_complete(signal_1_event);
-    test_assert_event_terminated(wait_event);
-    test_assert_event_terminated(signal_2_event);
+    // Check all events are completed
+    test_assert_event_complete(wait_event);
 
-    // Release semaphore
-    err = clReleaseSemaphoreKHR(sema_1);
+    err = clReleaseSemaphoreKHR(sema);
     test_error(err, "Could not release semaphore");
-
-    err = clReleaseSemaphoreKHR(sema_2);
-    test_error(err, "Could not release semaphore");
-
     return TEST_PASS;
 }

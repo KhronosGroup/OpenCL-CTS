@@ -161,7 +161,9 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(semaphores_order_2, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_order_3, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_import_export_fd, Version(1, 2)),
-    ADD_TEST_VERSION(semaphores_invalid_command, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_cross_context_sync_fd_pending, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_cross_context_sync_fd_signaled, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_import_signaled, Version(1, 2)),
 };
 
 const int test_num = ARRAY_SIZE(test_list);
