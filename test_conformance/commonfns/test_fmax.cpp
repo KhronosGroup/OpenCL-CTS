@@ -88,7 +88,6 @@ test_fmax(cl_device_id device, cl_context context, cl_command_queue queue, int n
     cl_float     *input_ptr[2], *output_ptr, *p;
     cl_program   *program;
     cl_kernel    *kernel;
-    void        *values[3];
     size_t  threads[1];
     int num_elements;
     int err;
@@ -170,10 +169,6 @@ test_fmax(cl_device_id device, cl_context context, cl_command_queue queue, int n
     if (err)
     return -1;
 
-
-    values[0] = streams[0];
-    values[1] = streams[1];
-    values[2] = streams[2];
     for (i=0; i < kTotalVecCount; i++)
     {
         err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );
