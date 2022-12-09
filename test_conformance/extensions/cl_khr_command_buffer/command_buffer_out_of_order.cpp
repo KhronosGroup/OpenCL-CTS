@@ -153,7 +153,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         }
         else
         {
-            // enqueue single command-buffer with  out-of-order calls
+            // enqueue single command-buffer with out-of-order calls
             error = RunSingle();
             test_error(error, "RunSingle failed");
         }
@@ -217,14 +217,14 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     cl_int RecordSimultaneousCommandBuffer() const
     {
         cl_sync_point_khr sync_points[2];
-        // for both simultaneous passes this call will fill whole buffer
+        // for both simultaneous passes this call will fill entire in_mem buffer
         cl_int error = clCommandFillBufferKHR(
             out_of_order_command_buffer, nullptr, in_mem, &pattern_pri,
             sizeof(cl_int), 0, data_size() * buffer_size_multiplier, 0, nullptr,
             &sync_points[0], nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
-        // to avoid overwriting of entire result buffer instead of filling only
+        // to avoid overwriting the entire result buffer instead of filling only
         // relevant part this additional kernel was introduced
         error = clCommandNDRangeKernelKHR(out_of_order_command_buffer, nullptr,
                                           nullptr, kernel_fill, 1, nullptr,
@@ -247,26 +247,31 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     {
         cl_int offset;
         std::vector<cl_int> output_buffer;
-        // 0-user event, 1-fill offset buffer event, 2-kernel done event
+        // 0:user event, 1:offset-buffer fill event, 2:kernel done event
         clEventWrapper wait_events[3];
     };
 
     //--------------------------------------------------------------------------
     cl_int EnqueueSimultaneousPass(SimulPassData& pd)
     {
-        cl_int error = clEnqueueFillBuffer(
-            out_of_order_queue, off_mem, &pd.offset, sizeof(cl_int), 0,
-            sizeof(cl_int), 0, nullptr, &pd.wait_events[1]);
-        test_error(error, "clEnqueueFillBuffer failed");
-
+        cl_int error = CL_SUCCESS;
         if (!user_event)
         {
             user_event = clCreateUserEvent(context, &error);
             test_error(error, "clCreateUserEvent failed");
         }
 
-        // command buffer execution must wait for two events
         pd.wait_events[0] = user_event;
+
+        // filling offset buffer must wait for previous pass completeness
+        error = clEnqueueFillBuffer(
+            out_of_order_queue, off_mem, &pd.offset, sizeof(cl_int), 0,
+            sizeof(cl_int), (wait_pass_event != nullptr ? 1 : 0),
+            (wait_pass_event != nullptr ? &wait_pass_event : nullptr),
+            &pd.wait_events[1]);
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        // command buffer execution must wait for two wait-events
         error = clEnqueueCommandBufferKHR(
             0, nullptr, out_of_order_command_buffer, 2, &pd.wait_events[0],
             &pd.wait_events[2]);
@@ -290,14 +295,16 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         cl_int offset = static_cast<cl_int>(num_elements);
 
         std::vector<SimulPassData> simul_passes = {
-            { 0, std::vector<cl_int>(num_elements), nullptr },
-            { offset, std::vector<cl_int>(num_elements), nullptr }
+            { 0, std::vector<cl_int>(num_elements) },
+            { offset, std::vector<cl_int>(num_elements) }
         };
 
         for (auto&& pass : simul_passes)
         {
             error = EnqueueSimultaneousPass(pass);
             test_error(error, "EnqueueSimultaneousPass failed");
+
+            wait_pass_event = pass.wait_events[2];
         }
 
         error = clSetUserEventStatus(user_event, CL_COMPLETE);
@@ -306,7 +313,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         error = clFinish(out_of_order_queue);
         test_error(error, "clFinish failed");
 
-        // verify the result buffer
+        // verify the result buffers
         for (auto&& pass : simul_passes)
         {
             auto& res_data = pass.output_buffer;
@@ -322,12 +329,15 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     clCommandQueueWrapper out_of_order_queue;
     clCommandBufferWrapper out_of_order_command_buffer;
+
     clEventWrapper user_event;
+    clEventWrapper wait_pass_event = nullptr;
+
     clKernelWrapper kernel_fill;
     clProgramWrapper program_fill;
 
     const cl_int overwritten_pattern = 0xACDC;
-    const cl_int pattern_pri = 2;
+    const cl_int pattern_pri = 42;
 };
 
 } // anonymous namespace
