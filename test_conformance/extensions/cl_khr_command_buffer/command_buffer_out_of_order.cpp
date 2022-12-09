@@ -43,7 +43,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     cl_int SetUpKernel() override
     {
         // if device doesn't support simultaneous use which was requested
-        // we can skip creation of secondary kernel
+        // we can skip creation of OCL resources
         if (simultaneous_use_requested && !simultaneous_use_support)
             return CL_SUCCESS;
 
@@ -78,7 +78,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     cl_int SetUpKernelArgs() override
     {
         // if device doesn't support simultaneous use which was requested
-        // we can skip creation of secondary kernel
+        // we can skip creation of OCL resources
         if (simultaneous_use_requested && !simultaneous_use_support)
             return CL_SUCCESS;
 
@@ -106,9 +106,10 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
-        if (!out_of_order_support)
+        if (!out_of_order_support
+            || (simultaneous_use_requested && !simultaneous_use_support))
         {
-            // Test will skip as device doesn't support out-of-order
+            // Test will skip as device doesn't support necessary capabilities
             // command-buffers
             return CL_SUCCESS;
         }
@@ -141,13 +142,13 @@ struct OutOfOrderTest : public BasicCommandBufferTest
 
         if (simultaneous_use_support)
         {
-            // enqueue simultaneous command-buffers with clSetKernelArg calls
+            // enqueue simultaneous command-buffers with out-of-order calls
             error = RunSimultaneous();
             test_error(error, "RunSimultaneous failed");
         }
         else
         {
-            // enqueue single command-buffer with  clSetKernelArg calls
+            // enqueue single command-buffer with  out-of-order calls
             error = RunSingle();
             test_error(error, "RunSingle failed");
         }
@@ -212,13 +213,15 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     cl_int RecordSimultaneousCommandBuffer() const
     {
         cl_sync_point_khr sync_points[2];
-        const cl_int pattern = pattern_pri;
+        // for both simultaneous passes this call will fill whole buffer
         cl_int error = clCommandFillBufferKHR(
-            out_of_order_command_buffer, nullptr, in_mem, &pattern,
+            out_of_order_command_buffer, nullptr, in_mem, &pattern_pri,
             sizeof(cl_int), 0, data_size() * buffer_size_multiplier, 0, nullptr,
             &sync_points[0], nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
+        // to avoid overwriting of entire result buffer instead of filling only
+        // relevant part this additional kernel was introduced
         error = clCommandNDRangeKernelKHR(out_of_order_command_buffer, nullptr,
                                           nullptr, kernel_fill, 1, nullptr,
                                           &num_elements, nullptr, 0, nullptr,
