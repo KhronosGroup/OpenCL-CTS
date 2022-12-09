@@ -85,8 +85,6 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUpKernelArgs();
         test_error(error, "BasicCommandBufferTest::SetUpKernelArgs failed");
 
-        // that pattern in output must mean trouble
-        const cl_int overwritten_pattern = 0xACDC;
         error = clSetKernelArg(kernel_fill, 0, sizeof(cl_int),
                                &overwritten_pattern);
         test_error(error, "clSetKernelArg failed");
@@ -118,8 +116,15 @@ struct OutOfOrderTest : public BasicCommandBufferTest
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
         test_error(error, "Unable to create command queue to test with");
 
-        out_of_order_command_buffer =
-            clCreateCommandBufferKHR(1, &out_of_order_queue, nullptr, &error);
+        cl_command_buffer_properties_khr properties[3] = {
+            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
+        };
+
+        if (simultaneous_use_requested && simultaneous_use_support)
+            properties[1] = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+
+        out_of_order_command_buffer = clCreateCommandBufferKHR(
+            1, &out_of_order_queue, properties, &error);
         test_error(error, "clCreateCommandBufferKHR failed");
 
         return CL_SUCCESS;
@@ -167,7 +172,6 @@ struct OutOfOrderTest : public BasicCommandBufferTest
                                    nullptr, &sync_points[0], nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
-        const cl_int overwritten_pattern = 0xACDC;
         error = clCommandFillBufferKHR(out_of_order_command_buffer, nullptr,
                                        out_mem, &overwritten_pattern,
                                        sizeof(cl_int), 0, data_size(), 0,
@@ -243,15 +247,16 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     {
         cl_int offset;
         std::vector<cl_int> output_buffer;
-        clEventWrapper wait_event;
+        // 0-user event, 1-fill offset buffer event, 2-kernel done event
+        clEventWrapper wait_events[3];
     };
 
     //--------------------------------------------------------------------------
     cl_int EnqueueSimultaneousPass(SimulPassData& pd)
     {
-        cl_int error = clEnqueueFillBuffer(out_of_order_queue, off_mem,
-                                           &pd.offset, sizeof(cl_int), 0,
-                                           sizeof(cl_int), 0, nullptr, nullptr);
+        cl_int error = clEnqueueFillBuffer(
+            out_of_order_queue, off_mem, &pd.offset, sizeof(cl_int), 0,
+            sizeof(cl_int), 0, nullptr, &pd.wait_events[1]);
         test_error(error, "clEnqueueFillBuffer failed");
 
         if (!user_event)
@@ -260,14 +265,17 @@ struct OutOfOrderTest : public BasicCommandBufferTest
             test_error(error, "clCreateUserEvent failed");
         }
 
-        error =
-            clEnqueueCommandBufferKHR(0, nullptr, out_of_order_command_buffer,
-                                      1, &user_event, &pd.wait_event);
+        // command buffer execution must wait for two events
+        pd.wait_events[0] = user_event;
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, out_of_order_command_buffer, 2, &pd.wait_events[0],
+            &pd.wait_events[2]);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clEnqueueReadBuffer(
-            out_of_order_queue, out_mem, CL_FALSE, pd.offset * sizeof(cl_int),
-            data_size(), pd.output_buffer.data(), 1, &pd.wait_event, nullptr);
+        error = clEnqueueReadBuffer(out_of_order_queue, out_mem, CL_FALSE,
+                                    pd.offset * sizeof(cl_int), data_size(),
+                                    pd.output_buffer.data(), 1,
+                                    &pd.wait_events[2], nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         return CL_SUCCESS;
@@ -318,6 +326,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     clKernelWrapper kernel_fill;
     clProgramWrapper program_fill;
 
+    const cl_int overwritten_pattern = 0xACDC;
     const cl_int pattern_pri = 2;
 };
 
