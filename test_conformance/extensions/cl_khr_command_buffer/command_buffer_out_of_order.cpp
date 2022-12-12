@@ -33,7 +33,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
                    cl_command_queue queue)
         : BasicCommandBufferTest(device, context, queue),
           out_of_order_command_buffer(this), out_of_order_queue(nullptr),
-          user_event(nullptr), kernel_fill(nullptr), program_fill(nullptr)
+          user_event(nullptr), wait_pass_event(nullptr), kernel_fill(nullptr), program_fill(nullptr)
     {
         simultaneous_use_requested = simultaneous_request;
         if (simultaneous_request) buffer_size_multiplier = 2;
@@ -331,7 +331,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     clCommandBufferWrapper out_of_order_command_buffer;
 
     clEventWrapper user_event;
-    clEventWrapper wait_pass_event = nullptr;
+    clEventWrapper wait_pass_event;
 
     clKernelWrapper kernel_fill;
     clProgramWrapper program_fill;
