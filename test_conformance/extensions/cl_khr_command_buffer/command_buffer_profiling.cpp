@@ -142,7 +142,6 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
             ADD_PROF_PARAM(CL_PROFILING_COMMAND_SUBMIT),
             ADD_PROF_PARAM(CL_PROFILING_COMMAND_START),
             ADD_PROF_PARAM(CL_PROFILING_COMMAND_END),
-            ADD_PROF_PARAM(CL_PROFILING_COMMAND_COMPLETE)
         };
 
         // gather profiling timestamps
@@ -154,18 +153,24 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
         }
 
         // verify the results by comparing timestamps
+        bool all_vals_0 = prof_params.front().value != 0;
         for (int i = 1; i < prof_params.size(); i++)
         {
+            all_vals_0 = (prof_params[i].value != 0) ? false : all_vals_0;
             if (prof_params[i - 1].value > prof_params[i].value)
             {
-                log_error(
-                    "Profiling %s should be smaller than or equal to %s for "
-                    "kernels that use the on-device queue",
-                    prof_params[i - 1].name.c_str(),
-                    prof_params[i].name.c_str());
+                log_error("Profiling %s=0x%x should be smaller than or equal "
+                          "to %s=0x%x for "
+                          "kernels that use the on-device queue",
+                          prof_params[i - 1].name.c_str(),
+                          prof_params[i - 1].param, prof_params[i].name.c_str(),
+                          prof_params[i].param);
                 return TEST_FAIL;
             }
         }
+
+        if (all_vals_0)
+            log_error("All values are 0. This is exceedingly unlikely.\n");
 
         log_info("Profiling info for command-buffer kernel succeeded.\n");
         return TEST_PASS;
