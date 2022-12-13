@@ -24,7 +24,7 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Command-queue fill tests which handles below cases:
-// 
+//
 // -fill image
 // -fill buffer
 
@@ -33,32 +33,26 @@ struct FillImageKHR : public BasicCommandBufferTest
     using BasicCommandBufferTest::BasicCommandBufferTest;
 
     cl_int Run() override
-    {        
-        cl_int error = clCommandFillImageKHR(
-            command_buffer,
-            nullptr,
-            image,
-            fill_color,
-            origin,
-            region,
-            0,
-            nullptr,
-            nullptr,
-            nullptr);
+    {
+        cl_int error =
+            clCommandFillImageKHR(command_buffer, nullptr, image, fill_color,
+                                  origin, region, 0, nullptr, nullptr, nullptr);
 
         test_error(error, "clCommandFillImageKHR failed");
-        
+
         error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0, nullptr, nullptr);
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         error = clFinish(queue);
         test_error(error, "clFinish failed");
 
         std::vector<cl_char> output_data(data_size);
-        error = clEnqueueReadImage(queue, image, CL_TRUE, origin, region, 0, 0, output_data.data(), 0, nullptr, nullptr);
+        error = clEnqueueReadImage(queue, image, CL_TRUE, origin, region, 0, 0,
+                                   output_data.data(), 0, nullptr, nullptr);
 
         for (size_t i = 0; i < data_size; i++)
         {
@@ -73,24 +67,40 @@ struct FillImageKHR : public BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
+        imageSupport =
+            checkForImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED;
+
+        if (imageSupport)
+        {
+            return CL_SUCCESS;
+        }
+
         image = create_image_2d(context, CL_MEM_READ_WRITE, &formats, img_width,
-                          img_height, 0, NULL, &error);
+                                img_height, 0, NULL, &error);
         test_error(error, "create_image_2d failed");
 
         return CL_SUCCESS;
     }
 
-    
-    int        img_width = 512;
-    int        img_height = 512;
-    const size_t data_size = img_width * img_height * 4;
-    const size_t origin[3]={ 0, 0, 0}, region[3]={ img_width, img_height, 1 };
+    bool Skip() override
+    {
+        cl_int error = BasicCommandBufferTest::Skip();
+        test_error(error, "BasicCommandBufferTest::Skip failed");
+
+        return imageSupport;
+    }
+
+    const size_t img_width = 512;
+    const size_t img_height = 512;
+    const size_t data_size = img_width * img_height * 4 * sizeof(cl_char);
+    const size_t origin[3] = { 0, 0, 0 },
+                 region[3] = { img_width, img_height, 1 };
     const char pattern = 0x10;
     const cl_uint fill_color[4] = { pattern, pattern, pattern, pattern };
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
+    bool imageSupport;
 
     clMemWrapper image;
-    
 };
 
 struct FillBufferKHR : public BasicCommandBufferTest
@@ -100,29 +110,24 @@ struct FillBufferKHR : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandFillBufferKHR(
-                command_buffer, nullptr, buffer, &pattern, sizeof(cl_char), 0,
-                data_size, 0, nullptr, nullptr, nullptr);
-        
+            command_buffer, nullptr, in_mem, &pattern, sizeof(cl_char), 0,
+            data_size(), 0, nullptr, nullptr, nullptr);
+
         test_error(error, "clCommandFillBufferKHR failed");
-        
+
         error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
-        
-        error = clFinish(queue);
 
-        test_error(error, "clFinish failed");
-        
-        std::vector<cl_char> output_data(data_size);
-        error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0,
-                                    data_size, output_data.data(), 0, nullptr,
-                                    nullptr);
+        std::vector<cl_char> output_data(data_size());
+        error = clEnqueueReadBuffer(queue, in_mem, CL_TRUE, 0, data_size(),
+                                    output_data.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        for (size_t i = 0; i < data_size; i++)
+        for (size_t i = 0; i < data_size(); i++)
         {
             CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
         }
@@ -130,35 +135,19 @@ struct FillBufferKHR : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, data_size, nullptr, &error);
-        test_error(error, "Unable to create buffer");            
-
-        return CL_SUCCESS;
-    }
-
-    const size_t data_size = 262144;
     const char pattern = 0x15;
-
-    clMemWrapper      buffer;
 };
 
 };
 
 int test_fill_buffer_khr(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+                         cl_command_queue queue, int num_elements)
 {
-    return MakeAndRunTest<FillBufferKHR>(device, context, queue,
-                                                  num_elements);
+    return MakeAndRunTest<FillBufferKHR>(device, context, queue, num_elements);
 }
 
 int test_fill_image_khr(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+                        cl_command_queue queue, int num_elements)
 {
-    return MakeAndRunTest<FillImageKHR>(device, context, queue,
-                                                  num_elements);
+    return MakeAndRunTest<FillImageKHR>(device, context, queue, num_elements);
 }
