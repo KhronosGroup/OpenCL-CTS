@@ -125,7 +125,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
     };
 
     //--------------------------------------------------------------------------
-    cl_int VerifyResult(const clEventWrapper & event)
+    cl_int VerifyResult(const clEventWrapper& event)
     {
         cl_int error = CL_SUCCESS;
         cl_int status;
@@ -148,8 +148,8 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
         // gather profiling timestamps
         for (auto&& p : prof_params)
         {
-            error = clGetEventProfilingInfo(event, p.param,
-                                            sizeof(p.value), &p.value, NULL);
+            error = clGetEventProfilingInfo(event, p.param, sizeof(p.value),
+                                            &p.value, NULL);
             test_error(error, "clGetEventProfilingInfo() failed");
         }
 
@@ -258,8 +258,8 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
 
         for (auto&& pass : simul_passes)
         {
-          error = VerifyResult(pass.query_event);
-          test_error(error, "VerifyResult failed");
+            error = VerifyResult(pass.query_event);
+            test_error(error, "VerifyResult failed");
         }
 
         return CL_SUCCESS;
