@@ -22,6 +22,9 @@
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
+// Command-buffer profiling test cases:
+// -all commands are recorded to a single command-queue
+// -profiling a command-buffer with simultaneous use
 
 template <bool simultaneous_request>
 struct CommandBufferProfiling : public BasicCommandBufferTest
@@ -46,9 +49,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
-        // due to the skip condition
         cl_int error = CL_SUCCESS;
-
         cl_queue_properties_khr device_props = 0;
         error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
                                 sizeof(device_props), &device_props, nullptr);
@@ -144,6 +145,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
             ADD_PROF_PARAM(CL_PROFILING_COMMAND_COMPLETE)
         };
 
+        // gather profiling timestamps
         for (auto&& p : prof_params)
         {
             error = clGetEventProfilingInfo(wait_event, p.param,
@@ -151,6 +153,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
             test_error(error, "clGetEventProfilingInfo() failed");
         }
 
+        // verify the results by comparing timestamps
         for (int i = 1; i < prof_params.size(); i++)
         {
             if (prof_params[i - 1].value > prof_params[i].value)
@@ -242,7 +245,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
         for (auto&& pass : simul_passes)
         {
             error = EnqueueSimultaneousPass(pass);
-            test_error(error, "EnqueuePass failed");
+            test_error(error, "EnqueueSimultaneousPass failed");
         }
 
         error = clSetUserEventStatus(wait_event, CL_COMPLETE);
