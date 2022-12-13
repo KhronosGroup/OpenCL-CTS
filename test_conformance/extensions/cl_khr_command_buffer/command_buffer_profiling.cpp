@@ -125,11 +125,11 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
     };
 
     //--------------------------------------------------------------------------
-    cl_int VerifyResult()
+    cl_int VerifyResult(const clEventWrapper & event)
     {
         cl_int error = CL_SUCCESS;
         cl_int status;
-        error = clGetEventInfo(wait_event, CL_EVENT_COMMAND_EXECUTION_STATUS,
+        error = clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS,
                                sizeof(status), &status, NULL);
         test_error(error, "clGetEventInfo() failed");
 
@@ -148,7 +148,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
         // gather profiling timestamps
         for (auto&& p : prof_params)
         {
-            error = clGetEventProfilingInfo(wait_event, p.param,
+            error = clGetEventProfilingInfo(event, p.param,
                                             sizeof(p.value), &p.value, NULL);
             test_error(error, "clGetEventProfilingInfo() failed");
         }
@@ -180,15 +180,16 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
                                     data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
+        clEventWrapper query_event;
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, &wait_event);
+                                          nullptr, &query_event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
                                     output_data.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        error = VerifyResult();
+        error = VerifyResult(query_event);
         test_error(error, "VerifyResult failed");
 
         return CL_SUCCESS;
@@ -199,6 +200,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
     {
         cl_int offset;
         std::vector<cl_int> output_buffer;
+        clEventWrapper query_event;
     };
 
     //--------------------------------------------------------------------------
@@ -220,7 +222,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
         }
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &wait_event, nullptr);
+                                          &wait_event, &pd.query_event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         error = clEnqueueReadBuffer(
@@ -254,8 +256,11 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
         error = clFinish(queue);
         test_error(error, "clFinish failed");
 
-        error = VerifyResult();
-        test_error(error, "VerifyResult failed");
+        for (auto&& pass : simul_passes)
+        {
+          error = VerifyResult(pass.query_event);
+          test_error(error, "VerifyResult failed");
+        }
 
         return CL_SUCCESS;
     }
