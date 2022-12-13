@@ -56,7 +56,8 @@ struct FillImageKHR : public BasicCommandBufferTest
 
         for (size_t i = 0; i < data_size; i++)
         {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+            CHECK_VERIFICATION_ERROR(static_cast<cl_char>(pattern),
+                                     output_data[i], i);
         }
 
         return CL_SUCCESS;
@@ -95,7 +96,7 @@ struct FillImageKHR : public BasicCommandBufferTest
     const size_t data_size = img_width * img_height * 4 * sizeof(cl_char);
     const size_t origin[3] = { 0, 0, 0 },
                  region[3] = { img_width, img_height, 1 };
-    const char pattern = 0x10;
+    const cl_uint pattern = 0x10;
     const cl_uint fill_color[4] = { pattern, pattern, pattern, pattern };
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
     bool imageSupport;
