@@ -161,7 +161,8 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
                 log_error(
                     "Profiling %s should be smaller than or equal to %s for "
                     "kernels that use the on-device queue",
-                    prof_params[i - 1].name, prof_params[i].name);
+                    prof_params[i - 1].name.c_str(),
+                    prof_params[i].name.c_str());
                 return TEST_FAIL;
             }
         }
