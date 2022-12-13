@@ -32,21 +32,25 @@ extern int test_user_events(cl_device_id device, cl_context context,
 extern int test_out_of_order(cl_device_id device, cl_context context,
                              cl_command_queue queue, int num_elements);
 extern int test_fill_image_khr(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements);
+                               cl_command_queue queue, int num_elements);
 extern int test_fill_buffer_khr(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements);
+                                cl_command_queue queue, int num_elements);
 extern int test_copy_image_khr(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements);
+                               cl_command_queue queue, int num_elements);
 extern int test_copy_buffer_khr(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements);
-extern int test_copy_buffer_to_image_khr(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements);
-extern int test_copy_image_to_buffer_khr(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements);
+                                cl_command_queue queue, int num_elements);
+extern int test_copy_buffer_to_image_khr(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
+extern int test_copy_image_to_buffer_khr(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
 extern int test_copy_buffer_rect_khr(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements);
+                                     cl_command_queue queue, int num_elements);
 extern int test_barrier_wait_list_khr(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements);
+                                      cl_command_queue queue, int num_elements);
 
 
 #endif /*_CL_KHR_COMMAND_BUFFER_PROCS_H*/

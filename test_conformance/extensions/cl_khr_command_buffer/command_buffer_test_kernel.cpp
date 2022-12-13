@@ -34,15 +34,14 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
 
     cl_int Run() override
     {
-        std::array<cl_sync_point_khr, 2> sync_points;
+        cl_sync_point_khr sync_points[2];
         cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
             nullptr, 0, nullptr, &sync_points[0], nullptr);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 1,
-                                                sync_points.data(),
-                                                &sync_points[0], nullptr);
+        error = clCommandBarrierWithWaitListKHR(
+            command_buffer, nullptr, 1, sync_points, &sync_points[0], nullptr);
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);

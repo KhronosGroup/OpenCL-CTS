@@ -156,8 +156,7 @@ struct CopyBufferKHR : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    const size_t pattern = 0x14;
-    const cl_uint fill_color[4] = { pattern, pattern, pattern, pattern };
+    const cl_char pattern = 0x14;
 };
 
 struct CopyBufferToImageKHR : public BasicCommandBufferTest
@@ -282,7 +281,8 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
 
         for (size_t i = 0; i < data_size; i++)
         {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+            CHECK_VERIFICATION_ERROR(static_cast<cl_char>(pattern),
+                                     output_data[i], i);
         }
 
         return CL_SUCCESS;
@@ -325,7 +325,7 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
     const size_t data_size = img_width * img_height * 4 * sizeof(cl_char);
     const size_t origin[3] = { 0, 0, 0 },
                  region[3] = { img_width, img_height, 1 };
-    const cl_int pattern = 0x12;
+    const cl_uint pattern = 0x12;
     const cl_uint fill_color[4] = { pattern, pattern, pattern, pattern };
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
     bool imageSupport;
@@ -395,9 +395,7 @@ struct CopyBufferRectKHR : public BasicCommandBufferTest
     const size_t data_size = img_width * img_height * sizeof(cl_char);
     const size_t origin[3] = { 0, 0, 0 },
                  region[3] = { img_width, img_height, 1 };
-    const cl_int pattern = 0x13;
-    const cl_uint fill_color[4] = { pattern, pattern, pattern, pattern };
-    const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
+    const cl_char pattern = 0x13;
 
     clMemWrapper in_mem;
     clMemWrapper out_mem;
