@@ -41,8 +41,8 @@ struct BasicCommandBufferTest : CommandBufferTestBase
     BasicCommandBufferTest(cl_device_id device, cl_context context,
                            cl_command_queue queue)
         : CommandBufferTestBase(device), context(context), queue(queue),
-          command_buffer(this), simultaneous_use(false),
-          out_of_order_support(false), num_elements(0)
+          command_buffer(this), num_elements(0), simultaneous_use(false),
+          out_of_order_support(false)
     {}
 
     virtual bool Skip()
@@ -442,7 +442,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     OutOfOrderTest(cl_device_id device, cl_context context,
                    cl_command_queue queue)
         : BasicCommandBufferTest(device, context, queue),
-          out_of_order_command_buffer(this), out_of_order_queue(nullptr),
+          out_of_order_queue(nullptr), out_of_order_command_buffer(this),
           event(nullptr)
     {}
 
