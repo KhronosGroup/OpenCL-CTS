@@ -35,9 +35,11 @@ int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
                       relaxedMode);
 }
 
+using Kernels = std::array<clKernelWrapper, VECTOR_SIZE_COUNT>;
+
 struct BuildKernelInfo2
 {
-    cl_kernel *kernels;
+    Kernels &kernels;
     Programs &programs;
     const char *nameInCode;
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
@@ -47,7 +49,8 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo2 *info = (BuildKernelInfo2 *)p;
     cl_uint vectorSize = gMinVectorSizeIndex + job_id;
-    return BuildKernel(info->nameInCode, vectorSize, info->kernels + vectorSize,
+    return BuildKernel(info->nameInCode, vectorSize,
+                       &(info->kernels[vectorSize]),
                        &(info->programs[vectorSize]), info->relaxedMode);
 }
 
@@ -62,7 +65,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
 {
     int error;
     Programs programs;
-    cl_kernel kernels[VECTOR_SIZE_COUNT];
+    Kernels kernels;
     float maxError = 0.0f;
     int ftz = f->ftz || gForceFTZ;
     double maxErrorVal = 0.0f;
@@ -238,11 +241,5 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
-    // Release
-    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
-    {
-        clReleaseKernel(kernels[k]);
-    }
-
     return error;
 }
