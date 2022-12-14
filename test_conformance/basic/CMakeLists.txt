@@ -26,7 +26,6 @@ set(${MODULE_NAME}_SOURCES
     test_arrayreadwrite.cpp
     test_arraycopy.cpp
     test_imagearraycopy.cpp
-    test_imagearraycopy3d.cpp
     test_imagecopy.cpp
     test_imagerandomcopy.cpp
     test_arrayimagecopy.cpp
