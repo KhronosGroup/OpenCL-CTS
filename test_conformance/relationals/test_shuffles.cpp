@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#include <iomanip>
+
 #include "testBase.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
@@ -260,33 +263,48 @@ char * get_order_name( ExplicitType vecType, size_t inVecSize, size_t outVecSize
     return orderName;
 }
 
-void    print_hex_mem_dump( const unsigned char *inDataPtr, const unsigned char * inDataPtr2, const unsigned char *expected, const unsigned char *outDataPtr, size_t inVecSize, size_t outVecSize, size_t typeSize )
+void print_hex_mem_dump(const unsigned char *inDataPtr,
+                        const unsigned char *inDataPtr2,
+                        const unsigned char *expected,
+                        const unsigned char *outDataPtr, size_t inVecSize,
+                        size_t outVecSize, size_t typeSize)
 {
-    char error [4096] = "";
-    strcat(error, "      Source: ");
-    for( unsigned int j = 0; j < inVecSize * typeSize; j++ )
+    auto byte_to_hex_str = [](unsigned char v) {
+        // Use a new stream to avoid manipulating state of outer stream.
+        std::ostringstream ss;
+        ss << std::setfill('0') << std::setw(2) << std::right << std::hex << +v;
+        return ss.str();
+    };
+
+    std::ostringstream error;
+    error << "      Source: ";
+    for (size_t j = 0; j < inVecSize * typeSize; j++)
     {
-        sprintf(error, "%s%s%02x ",error, ( j % typeSize ) ? "" : " ", (cl_uchar)inDataPtr[ j ] );
+        error << (j % typeSize ? "" : " ") << byte_to_hex_str(inDataPtr[j])
+              << " ";
     }
-    if( inDataPtr2 != NULL )
+    if (inDataPtr2 != NULL)
     {
-        strcat(error, "\n    Source 2: ");
-        for( unsigned int j = 0; j < inVecSize * typeSize; j++ )
+        error << "\n    Source 2: ";
+        for (size_t j = 0; j < inVecSize * typeSize; j++)
         {
-            sprintf(error, "%s%s%02x ",error, ( j % typeSize ) ? "" : " ", (cl_uchar)inDataPtr2[ j ] );
+            error << (j % typeSize ? "" : " ") << byte_to_hex_str(inDataPtr2[j])
+                  << " ";
         }
     }
-    strcat(error, "\n    Expected: " );
-    for( unsigned int j = 0; j < outVecSize * typeSize; j++ )
+    error << "\n    Expected: ";
+    for (size_t j = 0; j < outVecSize * typeSize; j++)
     {
-        sprintf(error, "%s%s%02x ",error, ( j % typeSize ) ? "" : " ", (cl_uchar)expected[ j ] );
+        error << (j % typeSize ? "" : " ") << byte_to_hex_str(expected[j])
+              << " ";
     }
-    strcat(error, "\n      Actual: " );
-    for( unsigned int j = 0; j < outVecSize * typeSize; j++ )
+    error << "\n      Actual: ";
+    for (size_t j = 0; j < outVecSize * typeSize; j++)
     {
-        sprintf(error, "%s%s%02x ",error, ( j % typeSize ) ? "" : " ", (cl_uchar)outDataPtr[ j ] );
+        error << (j % typeSize ? "" : " ") << byte_to_hex_str(outDataPtr[j])
+              << " ";
     }
-    log_info("%s\n", error);
+    log_info("%s\n", error.str().c_str());
 }
 
 void generate_shuffle_mask( char *outMaskString, size_t maskSize, const ShuffleOrder *order )
