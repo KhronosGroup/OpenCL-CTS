@@ -201,14 +201,13 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
 
     size_t j, idx;
 
-    // Assume we don't have to use numbers
-    byNumber = 0;
-    // Check to see
+    // Assume we don't have to use numbered indices (.s0123...).
+    byNumber = false;
+    // Check if any index is beyond xyzw, which requires to use numbers.
     for( j = 0; j < lengthToUse; j++ )
     {
         if (order[j] > 3) {
-            // An index is > xyzw so we need to use numbers
-            byNumber = 1;
+            byNumber = true;
             break;
         }
     }
@@ -216,14 +215,11 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
     if (!byNumber) {
         byNumber = (useNumbersFlip++)%2;
     }
-    // Do not use xyzw for vectors whose length is not 2 or 4 per the spec.
-    if (vecSize != 2 || vecSize != 4 || vecSize != 3)
-        byNumber = 1;
 
-    if( byNumber || vecSize > 4 )
+    if (byNumber)
     {
         idx = 0;
-        // Randomly chose upper and lower case S
+        // Randomly chose upper and lower case S.
         orderString[ idx++ ] = random_in_range(0, 1, d) ? 's' : 'S';
         for( j = 0; j < vecSize && j < lengthToUse; j++ ) {
             // Randomly choose upper and lower case.
@@ -233,8 +229,8 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
     }
     else
     {
+        // Use xyzw.
         for( j = 0; j < vecSize && j < lengthToUse; j++ ) {
-            // Randomly choose upper and lower case.
             orderString[ j ] = names2[ (int)order[ j ] ];
         }
         orderString[ j ] = 0;
@@ -251,7 +247,9 @@ char * get_order_name( ExplicitType vecType, size_t inVecSize, size_t outVecSize
     if( inVecSize == 1 )
         inOrderStr[ 0 ] = 0;
     else
-        sprintf( inOrderStr, "%d.%s", (int)inVecSize, get_order_string( inOrder, outVecSize, lengthToUse, inUseNumerics, d ) );
+        sprintf(inOrderStr, "%d.%s", (int)inVecSize,
+                get_order_string(inOrder, inVecSize, lengthToUse, inUseNumerics,
+                                 d));
     if( outVecSize == 1 )
         outOrderStr[ 0 ] = 0;
     else
@@ -398,7 +396,9 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
     for( unsigned int i = 0; i < numOrders; i++ )
     {
         if( inOrders != NULL )
-            strcpy( inOrder, get_order_string( inOrders[ i ], outVecSize, lengthToUse[i], inUseNumerics, d ) );
+            strcpy(inOrder,
+                   get_order_string(inOrders[i], inVecSize, lengthToUse[i],
+                                    inUseNumerics, d));
         strcpy( shuffledOrder, get_order_string( outOrders[ i ], outVecSize, lengthToUse[i], outUseNumerics, d ) );
 
 

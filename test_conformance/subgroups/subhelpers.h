@@ -34,24 +34,17 @@ extern MTdata gMTdata;
 typedef std::bitset<128> bs128;
 extern cl_half_rounding_mode g_rounding_mode;
 
-static bs128 cl_uint4_to_bs128(cl_uint4 v)
-{
-    return bs128(v.s0) | (bs128(v.s1) << 32) | (bs128(v.s2) << 64)
-        | (bs128(v.s3) << 96);
-}
+bs128 cl_uint4_to_bs128(cl_uint4 v);
+cl_uint4 bs128_to_cl_uint4(bs128 v);
+cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
+                           const std::string &mask_type,
+                           cl_uint max_sub_group_size);
 
-static cl_uint4 bs128_to_cl_uint4(bs128 v)
-{
-    bs128 bs128_ffffffff = 0xffffffffU;
-
-    cl_uint4 r;
-    r.s0 = ((v >> 0) & bs128_ffffffff).to_ulong();
-    r.s1 = ((v >> 32) & bs128_ffffffff).to_ulong();
-    r.s2 = ((v >> 64) & bs128_ffffffff).to_ulong();
-    r.s3 = ((v >> 96) & bs128_ffffffff).to_ulong();
-
-    return r;
-}
+// limit possible input values to avoid arithmetic rounding/overflow issues.
+// for each subgroup values defined different values
+// for rest of workitems set 1 shuffle values
+void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
+                                  int sb_size);
 
 struct WorkGroupParams
 {
@@ -270,87 +263,11 @@ enum class ArithmeticOp
     logical_xor
 };
 
-static const char *const operation_names(ArithmeticOp operation)
-{
-    switch (operation)
-    {
-        case ArithmeticOp::add_: return "add";
-        case ArithmeticOp::max_: return "max";
-        case ArithmeticOp::min_: return "min";
-        case ArithmeticOp::mul_: return "mul";
-        case ArithmeticOp::and_: return "and";
-        case ArithmeticOp::or_: return "or";
-        case ArithmeticOp::xor_: return "xor";
-        case ArithmeticOp::logical_and: return "logical_and";
-        case ArithmeticOp::logical_or: return "logical_or";
-        case ArithmeticOp::logical_xor: return "logical_xor";
-        default: log_error("Unknown operation request\n"); break;
-    }
-    return "";
-}
-
-static const char *const operation_names(BallotOp operation)
-{
-    switch (operation)
-    {
-        case BallotOp::ballot: return "ballot";
-        case BallotOp::inverse_ballot: return "inverse_ballot";
-        case BallotOp::ballot_bit_extract: return "bit_extract";
-        case BallotOp::ballot_bit_count: return "bit_count";
-        case BallotOp::ballot_inclusive_scan: return "inclusive_scan";
-        case BallotOp::ballot_exclusive_scan: return "exclusive_scan";
-        case BallotOp::ballot_find_lsb: return "find_lsb";
-        case BallotOp::ballot_find_msb: return "find_msb";
-        case BallotOp::eq_mask: return "eq";
-        case BallotOp::ge_mask: return "ge";
-        case BallotOp::gt_mask: return "gt";
-        case BallotOp::le_mask: return "le";
-        case BallotOp::lt_mask: return "lt";
-        default: log_error("Unknown operation request\n"); break;
-    }
-    return "";
-}
-
-static const char *const operation_names(ShuffleOp operation)
-{
-    switch (operation)
-    {
-        case ShuffleOp::shuffle: return "shuffle";
-        case ShuffleOp::shuffle_up: return "shuffle_up";
-        case ShuffleOp::shuffle_down: return "shuffle_down";
-        case ShuffleOp::shuffle_xor: return "shuffle_xor";
-        case ShuffleOp::rotate: return "rotate";
-        case ShuffleOp::clustered_rotate: return "clustered_rotate";
-        default: log_error("Unknown operation request\n"); break;
-    }
-    return "";
-}
-
-static const char *const operation_names(NonUniformVoteOp operation)
-{
-    switch (operation)
-    {
-        case NonUniformVoteOp::all: return "all";
-        case NonUniformVoteOp::all_equal: return "all_equal";
-        case NonUniformVoteOp::any: return "any";
-        case NonUniformVoteOp::elect: return "elect";
-        default: log_error("Unknown operation request\n"); break;
-    }
-    return "";
-}
-
-static const char *const operation_names(SubgroupsBroadcastOp operation)
-{
-    switch (operation)
-    {
-        case SubgroupsBroadcastOp::broadcast: return "broadcast";
-        case SubgroupsBroadcastOp::broadcast_first: return "broadcast_first";
-        case SubgroupsBroadcastOp::non_uniform_broadcast:
-            return "non_uniform_broadcast";
-        default: log_error("Unknown operation request\n"); break;
-    }
-    return "";
-}
+const char *const operation_names(ArithmeticOp operation);
+const char *const operation_names(BallotOp operation);
+const char *const operation_names(ShuffleOp operation);
+const char *const operation_names(NonUniformVoteOp operation);
+const char *const operation_names(SubgroupsBroadcastOp operation);
 
 class subgroupsAPI {
 public:
@@ -1732,15 +1649,9 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
     }
 };
 
-static void set_last_workgroup_params(int non_uniform_size,
-                                      int &number_of_subgroups,
-                                      int subgroup_size, int &workgroup_size,
-                                      int &last_subgroup_size)
-{
-    number_of_subgroups = 1 + non_uniform_size / subgroup_size;
-    last_subgroup_size = non_uniform_size % subgroup_size;
-    workgroup_size = non_uniform_size;
-}
+void set_last_workgroup_params(int non_uniform_size, int &number_of_subgroups,
+                               int subgroup_size, int &workgroup_size,
+                               int &last_subgroup_size);
 
 template <typename Ty>
 static void set_randomdata_for_subgroup(Ty *workgroup, int wg_offset,
