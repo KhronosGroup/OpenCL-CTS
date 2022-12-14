@@ -94,18 +94,6 @@ struct structArg
     float f;
 };
 
-static unsigned char *
-generate_8888_image(int w, int h, MTdata d)
-{
-    unsigned char   *ptr = (unsigned char*)malloc(w * h * 4);
-    int             i;
-
-    for (i=0; i<w*h*4; i++)
-        ptr[i] = (unsigned char)genrand_int32( d);
-
-    return ptr;
-}
-
 int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, void* pbufRes, clMemWrapper& bufOut)
 {
     int error;
