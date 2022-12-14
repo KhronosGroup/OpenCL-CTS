@@ -189,7 +189,7 @@ cl_int NDRangeKernelAction::Execute(cl_command_queue queue, cl_uint numWaits,
 #pragma mark -------------------- Buffer Sub-Classes -------------------------
 
 cl_int BufferAction::Setup(cl_device_id device, cl_context context,
-                           cl_command_queue queue, bool allocate)
+                           cl_command_queue queue)
 {
     cl_int error;
     cl_ulong maxAllocSize;
@@ -227,7 +227,7 @@ cl_int BufferAction::Setup(cl_device_id device, cl_context context,
 cl_int ReadBufferAction::Setup(cl_device_id device, cl_context context,
                                cl_command_queue queue)
 {
-    return BufferAction::Setup(device, context, queue, true);
+    return BufferAction::Setup(device, context, queue);
 }
 
 cl_int ReadBufferAction::Execute(cl_command_queue queue, cl_uint numWaits,
@@ -243,7 +243,7 @@ cl_int ReadBufferAction::Execute(cl_command_queue queue, cl_uint numWaits,
 cl_int WriteBufferAction::Setup(cl_device_id device, cl_context context,
                                 cl_command_queue queue)
 {
-    return BufferAction::Setup(device, context, queue, true);
+    return BufferAction::Setup(device, context, queue);
 }
 
 cl_int WriteBufferAction::Execute(cl_command_queue queue, cl_uint numWaits,
@@ -265,7 +265,7 @@ MapBufferAction::~MapBufferAction()
 cl_int MapBufferAction::Setup(cl_device_id device, cl_context context,
                               cl_command_queue queue)
 {
-    return BufferAction::Setup(device, context, queue, false);
+    return BufferAction::Setup(device, context, queue);
 }
 
 cl_int MapBufferAction::Execute(cl_command_queue queue, cl_uint numWaits,
@@ -283,7 +283,7 @@ cl_int MapBufferAction::Execute(cl_command_queue queue, cl_uint numWaits,
 cl_int UnmapBufferAction::Setup(cl_device_id device, cl_context context,
                                 cl_command_queue queue)
 {
-    cl_int error = BufferAction::Setup(device, context, queue, false);
+    cl_int error = BufferAction::Setup(device, context, queue);
     if (error != CL_SUCCESS) return error;
 
     mMappedPtr = clEnqueueMapBuffer(queue, mBuffer, CL_TRUE, CL_MAP_READ, 0,
