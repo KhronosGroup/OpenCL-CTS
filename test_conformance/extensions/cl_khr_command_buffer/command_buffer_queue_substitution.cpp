@@ -48,49 +48,6 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
     }
 
     //--------------------------------------------------------------------------
-    cl_command_queue CreateCommandQueueWithProperties(cl_int& error)
-    {
-        cl_command_queue ret_queue = nullptr;
-        cl_queue_properties_khr device_props = 0;
-
-        error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
-                                sizeof(device_props), &device_props, nullptr);
-        test_error_ret(error,
-                       "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed",
-                       nullptr);
-
-        using PropPair = std::pair<cl_queue_properties_khr, std::string>;
-
-        auto check_property = [&](const PropPair& prop) {
-            if (device_props & prop.first)
-            {
-                log_info("Queue property %s supported. Testing ... \n",
-                         prop.second.c_str());
-                ret_queue =
-                    clCreateCommandQueue(context, device, prop.first, &error);
-            }
-            else
-                log_info("Queue property %s not supported \n",
-                         prop.second.c_str());
-        };
-
-        // in case of extending property list in future
-        std::vector<PropPair> props = {
-            ADD_PROP(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE),
-            ADD_PROP(CL_QUEUE_PROFILING_ENABLE)
-        };
-
-        for (auto&& prop : props)
-        {
-            check_property(prop);
-            test_error_ret(error, "clCreateCommandQueue failed", ret_queue);
-            if (ret_queue != nullptr) return ret_queue;
-        }
-
-        return ret_queue;
-    }
-
-    //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
         // By default command queue is created without properties,
@@ -100,22 +57,12 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         {
             // due to the skip condition
             cl_int error = CL_SUCCESS;
-            queue = CreateCommandQueueWithProperties(error);
-            test_error(error, "CreateCommandQueueWithProperties failed");
 
-            cl_command_queue_properties cqp;
-            error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
-                                          sizeof(cqp), &cqp, NULL);
-            test_error(error, "clGetCommandQueueInfo failed");
-
-            if (simultaneous_use_support
-                && (cqp & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE))
-            {
-                log_info(
-                    "Queue property CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE "
-                    "not supported with simultaneous use in this test\n");
-                return CL_INVALID_QUEUE_PROPERTIES;
-            }
+            queue = clCreateCommandQueue(context, device,
+                                         CL_QUEUE_PROFILING_ENABLE, &error);
+            test_error(
+                error,
+                "clCreateCommandQueue with CL_QUEUE_PROFILING_ENABLE failed");
         }
 
         return BasicCommandBufferTest::SetUp(elements);
@@ -132,8 +79,11 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         clCommandQueueWrapper new_queue;
         if (properties_use_requested)
         {
-            new_queue = CreateCommandQueueWithProperties(error);
-            test_error(error, "CreateCommandQueueWithProperties failed");
+            new_queue = clCreateCommandQueue(context, device,
+                                             CL_QUEUE_PROFILING_ENABLE, &error);
+            test_error(
+                error,
+                "clCreateCommandQueue with CL_QUEUE_PROFILING_ENABLE failed");
         }
         else
         {
@@ -156,10 +106,6 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
             test_error(error, "RunSingle failed");
         }
 
-        if (properties_use_requested)
-        {
-            clReleaseCommandQueue(queue);
-        }
         return CL_SUCCESS;
     }
 
@@ -182,20 +128,17 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         cl_int error = CL_SUCCESS;
         std::vector<cl_int> output_data(num_elements);
 
-        // this could be out-of-order queue, cover such possibility with events
-        clEventWrapper events[2] = { nullptr, nullptr };
-
         error = clEnqueueFillBuffer(q, in_mem, &pattern_pri, sizeof(cl_int), 0,
-                                    data_size(), 0, nullptr, &events[0]);
+                                    data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
         cl_command_queue queues[] = { q };
-        error = clEnqueueCommandBufferKHR(1, queues, command_buffer, 1,
-                                          &events[0], &events[1]);
+        error = clEnqueueCommandBufferKHR(1, queues, command_buffer, 0, nullptr,
+                                          nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         error = clEnqueueReadBuffer(q, out_mem, CL_TRUE, 0, data_size(),
-                                    output_data.data(), 1, &events[1], nullptr);
+                                    output_data.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         error = clFinish(q);
@@ -291,8 +234,8 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
     const cl_int pattern_pri = 0xB;
     const cl_int pattern_sec = 0xC;
 
-    bool properties_use_requested = false;
-    clEventWrapper user_event = nullptr;
+    bool properties_use_requested;
+    clEventWrapper user_event;
 };
 
 } // anonymous namespace

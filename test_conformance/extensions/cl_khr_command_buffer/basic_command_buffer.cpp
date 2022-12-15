@@ -24,7 +24,7 @@
 BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
                                                cl_context context,
                                                cl_command_queue queue)
-    : CommandBufferTestBase(device), context(context), queue(queue),
+    : CommandBufferTestBase(device), context(context), queue(nullptr),
       num_elements(0), command_buffer(this), simultaneous_use_support(false),
       out_of_order_support(false),
       // try to use simultaneous path by default
@@ -32,7 +32,14 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
       // due to simultaneous cases extend buffer size
       buffer_size_multiplier(1)
 
-{}
+{
+    cl_int error = clRetainCommandQueue(queue);
+    if (error != CL_SUCCESS)
+    {
+        throw std::runtime_error("clRetainCommandQueue failed\n");
+    }
+    this->queue = queue;
+}
 
 bool BasicCommandBufferTest::Skip()
 {

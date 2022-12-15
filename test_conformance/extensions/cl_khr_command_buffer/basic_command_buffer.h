@@ -52,7 +52,7 @@ protected:
     size_t data_size() const { return num_elements * sizeof(cl_int); }
 
     cl_context context;
-    cl_command_queue queue;
+    clCommandQueueWrapper queue;
     clCommandBufferWrapper command_buffer;
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -74,17 +74,25 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
 {
     CHECK_COMMAND_BUFFER_EXTENSION_AVAILABLE(device);
 
-    auto test_fixture = T(device, context, queue);
-    cl_int error = test_fixture.SetUp(num_elements);
-    test_error_ret(error, "Error in test initialization", TEST_FAIL);
-
-    if (test_fixture.Skip())
+    try
     {
-        return TEST_SKIPPED_ITSELF;
-    }
+        auto test_fixture = T(device, context, queue);
 
-    error = test_fixture.Run();
-    test_error_ret(error, "Test Failed", TEST_FAIL);
+        cl_int error = test_fixture.SetUp(num_elements);
+        test_error_ret(error, "Error in test initialization", TEST_FAIL);
+
+        if (test_fixture.Skip())
+        {
+            return TEST_SKIPPED_ITSELF;
+        }
+
+        error = test_fixture.Run();
+        test_error_ret(error, "Test Failed", TEST_FAIL);
+    } catch (const std::runtime_error &e)
+    {
+        log_error("%s", e.what());
+        return TEST_FAIL;
+    }
 
     return TEST_PASS;
 }
