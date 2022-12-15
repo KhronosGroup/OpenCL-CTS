@@ -31,5 +31,14 @@ extern int test_user_events(cl_device_id device, cl_context context,
                             cl_command_queue queue, int num_elements);
 extern int test_out_of_order(cl_device_id device, cl_context context,
                              cl_command_queue queue, int num_elements);
-
+extern int test_command_type(cl_device_id device, cl_context context,
+                             cl_command_queue queue, int num_elements);
+extern int test_command_queue(cl_device_id device, cl_context context,
+                              cl_command_queue queue, int num_elements);
+extern int test_context(cl_device_id device, cl_context context,
+                        cl_command_queue queue, int num_elements);
+extern int test_execution_status(cl_device_id device, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+extern int test_reference_count(cl_device_id device, cl_context context,
+                                cl_command_queue queue, int num_elements);
 #endif /*_CL_KHR_COMMAND_BUFFER_PROCS_H*/
