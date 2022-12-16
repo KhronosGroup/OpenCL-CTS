@@ -94,10 +94,7 @@ struct CopyImageKHR : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        cl_int error = BasicCommandBufferTest::Skip();
-        test_error(error, "BasicCommandBufferTest::Skip failed");
-
-        return imageSupport;
+        return imageSupport || BasicCommandBufferTest::Skip();
     }
 
     const size_t img_width = 512;
@@ -217,10 +214,7 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        cl_int error = BasicCommandBufferTest::Skip();
-        test_error(error, "BasicCommandBufferTest::Skip failed");
-
-        return imageSupport;
+        return imageSupport || BasicCommandBufferTest::Skip();
     }
 
     const size_t img_width = 512;
@@ -302,10 +296,7 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        cl_int error = BasicCommandBufferTest::Skip();
-        test_error(error, "BasicCommandBufferTest::Skip failed");
-
-        return imageSupport;
+        return imageSupport || BasicCommandBufferTest::Skip();;
     }
 
     const size_t img_width = 512;
