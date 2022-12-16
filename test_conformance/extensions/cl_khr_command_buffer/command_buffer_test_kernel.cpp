@@ -51,20 +51,14 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
                                     data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &user_event, nullptr);
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         std::vector<cl_int> output_data(num_elements);
-        error = clEnqueueReadBuffer(queue, out_mem, CL_FALSE, 0, data_size(),
+        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
                                     output_data.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
-
-        error = clSetUserEventStatus(user_event, CL_COMPLETE);
-        test_error(error, "clSetUserEventStatus failed");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
 
         for (size_t i = 0; i < num_elements; i++)
         {
@@ -78,9 +72,6 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
     {
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        user_event = clCreateUserEvent(context, &error);
-        test_error(error, "clCreateUserEvent failed");
 
         return CL_SUCCESS;
     }

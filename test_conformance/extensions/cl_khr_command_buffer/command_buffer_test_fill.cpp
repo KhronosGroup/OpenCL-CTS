@@ -47,9 +47,6 @@ struct FillImageKHR : public BasicCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
-
         std::vector<cl_char> output_data(data_size);
         error = clEnqueueReadImage(queue, image, CL_TRUE, origin, region, 0, 0,
                                    output_data.data(), 0, nullptr, nullptr);

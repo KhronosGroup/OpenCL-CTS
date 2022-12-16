@@ -56,10 +56,6 @@ struct CopyImageKHR : public BasicCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clFinish(queue);
-
-        test_error(error, "clFinish failed");
-
         std::vector<cl_char> output_data(data_size);
         error = clEnqueueReadImage(queue, dst_image, CL_TRUE, origin, region, 0,
                                    0, output_data.data(), 0, nullptr, nullptr);
@@ -140,9 +136,6 @@ struct CopyBufferKHR : public BasicCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
-
         std::vector<cl_char> output_data(data_size());
         error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
                                     output_data.data(), 0, nullptr, nullptr);
@@ -183,9 +176,6 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
 
         std::vector<cl_char> output_data(data_size);
 
@@ -271,8 +261,6 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        clFinish(queue);
-
         std::vector<cl_char> output_data(data_size);
 
         error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, data_size,
@@ -357,9 +345,6 @@ struct CopyBufferRectKHR : public BasicCommandBufferTest
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
 
         std::vector<cl_char> output_data(data_size);
         error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size,
