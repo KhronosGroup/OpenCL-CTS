@@ -296,7 +296,7 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        return imageSupport || BasicCommandBufferTest::Skip();;
+        return imageSupport || BasicCommandBufferTest::Skip();
     }
 
     const size_t img_width = 512;
