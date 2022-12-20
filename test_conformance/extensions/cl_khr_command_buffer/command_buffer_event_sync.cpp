@@ -24,10 +24,10 @@ enum class ReturnEventMode
 {
     REM_REGULAR_WAIT_FOR_COMBUF = 0,
     REM_COMBUF_WAIT_FOR_COMBUF,
-    REM_COMBUF_WAIT_FOR_OTHER_COMBUF,
+    REM_COMBUF_WAIT_FOR_SEC_COMBUF,
     REM_EVENT_CALLBACK,
-    REM_CLWAITFOREVENTS_WAIT_FOR_EVENT,
-    REM_CLWAITFOREVENTS_WAIT_FOR_EVENTS
+    REM_CLWAITFOREVENTS_SINGLE,
+    REM_CLWAITFOREVENTS
 };
 
 //--------------------------------------------------------------------------
@@ -36,7 +36,7 @@ enum class UserEventMode
     UEM_USER_EVENT_WAIT = 0,
     UEM_USER_EVENTS_WAIT,
     UEM_COMBUF_WAIT_FOR_RETULAR,
-    UEM_WAIT_FOR_OTHER_QUEUE_EVENT
+    UEM_WAIT_FOR_SEC_QUEUE_EVENT
 };
 
 //--------------------------------------------------------------------------
@@ -52,16 +52,27 @@ void CL_CALLBACK combuf_event_callback_function(cl_event event,
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
-//
+// event sync test cases for cl_khr_command_buffer which handles:
+// -test that an event returned by a command-buffer enqueue can be waited on by
+//  regular commands
+// -test that an event returned by a command-buffer enqueue can
+//  be waited on an enqueue of the same command-buffer
+// -tests that a command buffer enqueue can wait on the enqueue of a different
+//  command buffer
+// -test clSetEventCallback works correctly on an event returned by
+//  clEnqueueCommandBufferKHR
+// -test clWaitForEvents on a single event returned from a
+//  clEnqueueCommandBufferKHR
+// -test clWaitForEvents on multiple events returned from different
+//  clEnqueueCommandBufferKHR calls
 template <ReturnEventMode return_event_mode, bool out_of_order_requested>
 struct CommandBufferReturnEvent : public BasicCommandBufferTest
 {
     CommandBufferReturnEvent(cl_device_id device, cl_context context,
                              cl_command_queue queue)
         : BasicCommandBufferTest(device, context, queue),
-          out_of_order_queue(nullptr), command_buffer_sec(nullptr),
-          kernel_sec(nullptr), in_mem_sec(nullptr), out_mem_sec(nullptr),
-          off_mem_sec(nullptr), test_event(nullptr)
+          command_buffer_sec(this), kernel_sec(nullptr), in_mem_sec(nullptr),
+          out_mem_sec(nullptr), off_mem_sec(nullptr), test_event(nullptr)
     {
         simultaneous_use_requested = false;
     }
@@ -72,12 +83,10 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUpKernel();
         test_error(error, "BasicCommandBufferTest::SetUpKernel failed");
 
-        // copy of the copy kernel for out-of-order case scenarios
-        if (out_of_order_requested && out_of_order_support
-            && (return_event_mode
-                    == ReturnEventMode::REM_COMBUF_WAIT_FOR_OTHER_COMBUF
-                || return_event_mode
-                    == ReturnEventMode::REM_CLWAITFOREVENTS_WAIT_FOR_EVENTS))
+        // due to possible out-of-order command queue copy the kernel for below
+        // case scenarios
+        if (return_event_mode == ReturnEventMode::REM_COMBUF_WAIT_FOR_SEC_COMBUF
+            || return_event_mode == ReturnEventMode::REM_CLWAITFOREVENTS)
         {
             kernel_sec = clCreateKernel(program, "copy", &error);
             test_error(error, "Failed to create copy kernel");
@@ -89,11 +98,10 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUpKernelArgs() override
     {
-        if (out_of_order_requested && out_of_order_support
-            && (return_event_mode
-                    == ReturnEventMode::REM_COMBUF_WAIT_FOR_OTHER_COMBUF
-                || return_event_mode
-                    == ReturnEventMode::REM_CLWAITFOREVENTS_WAIT_FOR_EVENTS))
+        // due to possible out-of-order command queue it is necessary to create
+        // separate set of kernel args for below cases
+        if (return_event_mode == ReturnEventMode::REM_COMBUF_WAIT_FOR_SEC_COMBUF
+            || return_event_mode == ReturnEventMode::REM_CLWAITFOREVENTS)
         {
             // setup arguments for secondary kernel
             std::swap(kernel, kernel_sec);
@@ -101,15 +109,23 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
             cl_int error = BasicCommandBufferTest::SetUpKernelArgs();
             test_error(error, "BasicCommandBufferTest::SetUpKernel failed");
 
-            // restore arguments for base class setup
-            std::swap(in_mem_sec, in_mem);
-            std::swap(out_mem_sec, out_mem);
-            std::swap(off_mem_sec, off_mem);
+            // swap arguments for base class setup
+            in_mem_sec = in_mem;
+            out_mem_sec = out_mem;
+            off_mem_sec = off_mem;
             std::swap(kernel, kernel_sec);
         }
 
         cl_int error = BasicCommandBufferTest::SetUpKernelArgs();
         test_error(error, "BasicCommandBufferTest::SetUpKernel failed");
+
+        if (out_of_order_requested && out_of_order_support)
+        {
+            queue = clCreateCommandQueue(context, device,
+                                         CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+                                         &error);
+            test_error(error, "Unable to create command queue to test with");
+        }
 
         return CL_SUCCESS;
     }
@@ -117,31 +133,24 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
-        cl_int error = CL_SUCCESS;
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
 
-        if (out_of_order_requested && out_of_order_support
-            && (return_event_mode
-                    == ReturnEventMode::REM_COMBUF_WAIT_FOR_OTHER_COMBUF
-                || return_event_mode
-                    == ReturnEventMode::REM_CLWAITFOREVENTS_WAIT_FOR_EVENTS))
-        {
-            out_of_order_queue = clCreateCommandQueue(
-                context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-                &error);
-            test_error(error, "Unable to create command queue to test with");
-
-            command_buffer_sec = clCreateCommandBufferKHR(
-                1, &out_of_order_queue, nullptr, &error);
-            test_error(error, "clCreateCommandBufferKHR failed");
-        }
-        else
+        if (return_event_mode == ReturnEventMode::REM_COMBUF_WAIT_FOR_SEC_COMBUF
+            || return_event_mode == ReturnEventMode::REM_CLWAITFOREVENTS)
         {
             command_buffer_sec =
                 clCreateCommandBufferKHR(1, &queue, nullptr, &error);
             test_error(error, "clCreateCommandBufferKHR failed");
         }
+        return CL_SUCCESS;
+    }
 
-        return BasicCommandBufferTest::SetUp(elements);
+    //--------------------------------------------------------------------------
+    bool Skip() override
+    {
+        return (out_of_order_requested && !out_of_order_support)
+            || BasicCommandBufferTest::Skip();
     }
 
     //--------------------------------------------------------------------------
@@ -150,7 +159,7 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
         cl_int error = CL_SUCCESS;
 
         // record command buffer
-        error = RecordCommandBuffer(command_buffer);
+        error = RecordCommandBuffer(command_buffer, kernel);
         test_error(error, "RecordCommandBuffer failed");
 
         switch (return_event_mode)
@@ -163,7 +172,7 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
                 error = RunCombufWaitForCombuf();
                 test_error(error, "RunCombufWaitForCombuf failed");
                 break;
-            case ReturnEventMode::REM_COMBUF_WAIT_FOR_OTHER_COMBUF:
+            case ReturnEventMode::REM_COMBUF_WAIT_FOR_SEC_COMBUF:
                 error = RunCombufWaitForOtherCombuf();
                 test_error(error, "RunCombufWaitForCombuf failed");
                 break;
@@ -171,11 +180,11 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
                 error = RunCombufEventCallback();
                 test_error(error, "RunCombufEventCallback failed");
                 break;
-            case ReturnEventMode::REM_CLWAITFOREVENTS_WAIT_FOR_EVENT:
+            case ReturnEventMode::REM_CLWAITFOREVENTS_SINGLE:
                 error = RunWaitForCombufEvent();
                 test_error(error, "RunWaitForCombufEvent failed");
                 break;
-            case ReturnEventMode::REM_CLWAITFOREVENTS_WAIT_FOR_EVENTS:
+            case ReturnEventMode::REM_CLWAITFOREVENTS:
                 error = RunWaitForCombufEvents();
                 test_error(error, "RunWaitForCombufEvents failed");
                 break;
@@ -185,11 +194,12 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
     }
 
     //--------------------------------------------------------------------------
-    cl_int RecordCommandBuffer(clCommandBufferWrapper &combuf)
+    cl_int RecordCommandBuffer(clCommandBufferWrapper &combuf,
+                               clKernelWrapper &kern)
     {
         cl_int error = clCommandNDRangeKernelKHR(
-            combuf, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
-            nullptr, 0, nullptr, nullptr, nullptr);
+            combuf, nullptr, nullptr, kern, 1, nullptr, &num_elements, nullptr,
+            0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clFinalizeCommandBufferKHR(combuf);
@@ -202,10 +212,10 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
     {
         if (out_of_order_requested)
         {
-            for (auto &&eptr : event_ptrs)
+            in_order_events.resize(event_ptrs.size());
+            for (size_t i = 0; i < in_order_events.size(); i++)
             {
-                in_order_events.emplace_back(clEventWrapper());
-                eptr = &in_order_events.back();
+                event_ptrs[i] = &in_order_events[i];
             }
         }
     }
@@ -280,7 +290,7 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
         // verify the result - result buffer must contain initial pattern
         for (size_t i = 0; i < num_elements; i++)
         {
-            CHECK_VERIFICATION_ERROR(pattern_sec, output_data[i], i);
+            CHECK_VERIFICATION_ERROR(pattern_pri, output_data[i], i);
         }
         return CL_SUCCESS;
     }
@@ -296,7 +306,7 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
         InitInOrderEvents(event_ptrs);
 
         // record other command buffer
-        cl_int error = RecordCommandBuffer(command_buffer_sec);
+        cl_int error = RecordCommandBuffer(command_buffer_sec, kernel_sec);
         test_error(error, "RecordCommandBuffer failed");
 
         error =
@@ -373,7 +383,7 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
         error = clFinish(queue);
         test_error(error, "clFinish failed");
 
-        // verify the result - result buffer must contain initial pattern
+        // verify the result
         if (!confirmation)
         {
             log_error("combuf_event_callback_function invocation failure\n");
@@ -416,7 +426,6 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
         {
             CHECK_VERIFICATION_ERROR(pattern_pri, output_data[i], i);
         }
-
         return CL_SUCCESS;
     }
 
@@ -428,11 +437,11 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
 
         // if out-of-order queue requested it is necessary to secure proper
         // order of all commands
-        std::vector<cl_event *> event_ptrs = { nullptr, nullptr, nullptr };
+        std::vector<cl_event *> event_ptrs = { nullptr, nullptr };
         InitInOrderEvents(event_ptrs);
 
         // record other command buffer
-        cl_int error = RecordCommandBuffer(command_buffer_sec);
+        cl_int error = RecordCommandBuffer(command_buffer_sec, kernel_sec);
         test_error(error, "RecordCommandBuffer failed");
 
         error =
@@ -459,8 +468,7 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
         test_error(error, "clWaitForEvents failed");
 
         error = clEnqueueReadBuffer(queue, out_mem, CL_FALSE, 0, data_size(),
-                                    output_data.data(), wait_count,
-                                    event_ptrs[2], nullptr);
+                                    output_data.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         error = clFinish(queue);
@@ -476,7 +484,6 @@ struct CommandBufferReturnEvent : public BasicCommandBufferTest
 
     //--------------------------------------------------------------------------
 
-    clCommandQueueWrapper out_of_order_queue;
     clCommandBufferWrapper command_buffer_sec;
     clKernelWrapper kernel_sec;
     clMemWrapper in_mem_sec, out_mem_sec, off_mem_sec;
@@ -504,7 +511,6 @@ struct CommandBufferUserEvent : public BasicCommandBufferTest
         simultaneous_use_requested = false;
     }
 
-
     //--------------------------------------------------------------------------
     cl_int Run() override
     {
@@ -513,11 +519,11 @@ struct CommandBufferUserEvent : public BasicCommandBufferTest
         {
             case UserEventMode::UEM_USER_EVENT_WAIT:
                 error = RunUserEventWait();
-                test_error(error, "RunSingle failed");
+                test_error(error, "RunUserEventWait failed");
                 break;
             case UserEventMode::UEM_USER_EVENTS_WAIT: break;
             case UserEventMode::UEM_COMBUF_WAIT_FOR_RETULAR: break;
-            case UserEventMode::UEM_WAIT_FOR_OTHER_QUEUE_EVENT: break;
+            case UserEventMode::UEM_WAIT_FOR_SEC_QUEUE_EVENT: break;
         }
 
         return CL_SUCCESS;
@@ -570,14 +576,25 @@ struct CommandBufferUserEvent : public BasicCommandBufferTest
 
 } // anonymous namespace
 
+//--------------------------------------------------------------------------
+// return-events test cases for regular queue
 int test_regular_wait_for_command_buffer(cl_device_id device,
                                          cl_context context,
                                          cl_command_queue queue,
                                          int num_elements)
 {
-    return MakeAndRunTest<CommandBufferReturnEvent<
-        ReturnEventMode::REM_REGULAR_WAIT_FOR_COMBUF, false>>(
-        device, context, queue, num_elements);
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_REGULAR_WAIT_FOR_COMBUF, false>>(
+            device, context, queue, num_elements))
+        return TEST_FAIL;
+
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_REGULAR_WAIT_FOR_COMBUF, true>>(
+            device, context, queue, num_elements))
+        return TEST_FAIL;
+    return TEST_PASS;
 }
 
 int test_command_buffer_wait_for_command_buffer(cl_device_id device,
@@ -585,47 +602,92 @@ int test_command_buffer_wait_for_command_buffer(cl_device_id device,
                                                 cl_command_queue queue,
                                                 int num_elements)
 {
-    return MakeAndRunTest<CommandBufferReturnEvent<
-        ReturnEventMode::REM_COMBUF_WAIT_FOR_COMBUF, false>>(
-        device, context, queue, num_elements);
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_COMBUF_WAIT_FOR_COMBUF, false>>(
+            device, context, queue, num_elements))
+        return TEST_FAIL;
+
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_COMBUF_WAIT_FOR_COMBUF, true>>(
+            device, context, queue, num_elements))
+        return TEST_FAIL;
+    return TEST_PASS;
 }
 
-int test_command_buffer_wait_for_other_command_buffer(cl_device_id device,
-                                                      cl_context context,
-                                                      cl_command_queue queue,
-                                                      int num_elements)
+int test_command_buffer_wait_for_sec_command_buffer(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements)
 {
-    return MakeAndRunTest<CommandBufferReturnEvent<
-        ReturnEventMode::REM_COMBUF_WAIT_FOR_OTHER_COMBUF, false>>(
-        device, context, queue, num_elements);
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_COMBUF_WAIT_FOR_SEC_COMBUF, false>>(
+            device, context, queue, num_elements))
+        return TEST_FAIL;
+
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_COMBUF_WAIT_FOR_SEC_COMBUF, true>>(
+            device, context, queue, num_elements))
+        return TEST_FAIL;
+    return TEST_PASS;
 }
 
 int test_event_callback(cl_device_id device, cl_context context,
                         cl_command_queue queue, int num_elements)
 {
-    return MakeAndRunTest<
-        CommandBufferReturnEvent<ReturnEventMode::REM_EVENT_CALLBACK, false>>(
-        device, context, queue, num_elements);
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_EVENT_CALLBACK, false>>(device, context, queue,
+                                                         num_elements))
+        return TEST_FAIL;
+
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_EVENT_CALLBACK, true>>(device, context, queue,
+                                                        num_elements))
+        return TEST_FAIL;
+    return TEST_PASS;
 }
 
-int test_clwaitforevents_wait_for_event(cl_device_id device, cl_context context,
-                                        cl_command_queue queue,
-                                        int num_elements)
+int test_clwaitforevents_single(cl_device_id device, cl_context context,
+                                cl_command_queue queue, int num_elements)
 {
-    return MakeAndRunTest<CommandBufferReturnEvent<
-        ReturnEventMode::REM_CLWAITFOREVENTS_WAIT_FOR_EVENT, false>>(
-        device, context, queue, num_elements);
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_CLWAITFOREVENTS_SINGLE, false>>(
+            device, context, queue, num_elements))
+        return TEST_FAIL;
+
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_EVENT_CALLBACK, true>>(device, context, queue,
+                                                        num_elements))
+        return TEST_FAIL;
+    return TEST_PASS;
 }
 
-int test_clwaitforevents_wait_for_events(cl_device_id device,
-                                         cl_context context,
-                                         cl_command_queue queue,
-                                         int num_elements)
+int test_clwaitforevents(cl_device_id device, cl_context context,
+                         cl_command_queue queue, int num_elements)
 {
-    return MakeAndRunTest<CommandBufferReturnEvent<
-        ReturnEventMode::REM_CLWAITFOREVENTS_WAIT_FOR_EVENTS, false>>(
-        device, context, queue, num_elements);
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_CLWAITFOREVENTS, false>>(device, context,
+                                                          queue, num_elements))
+        return TEST_FAIL;
+
+    if (TEST_PASS
+        != MakeAndRunTest<CommandBufferReturnEvent<
+            ReturnEventMode::REM_EVENT_CALLBACK, true>>(device, context, queue,
+                                                        num_elements))
+        return TEST_FAIL;
+    return TEST_PASS;
 }
+
+//--------------------------------------------------------------------------
+// user-events test cases
 
 int test_user_event_wait(cl_device_id device, cl_context context,
                          cl_command_queue queue, int num_elements)
@@ -653,10 +715,10 @@ int test_command_buffer_wait_for_regular(cl_device_id device,
         device, context, queue, num_elements);
 }
 
-int test_wait_for_other_queue_event(cl_device_id device, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+int test_wait_for_sec_queue_event(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<
-        CommandBufferUserEvent<UserEventMode::UEM_WAIT_FOR_OTHER_QUEUE_EVENT>>(
+        CommandBufferUserEvent<UserEventMode::UEM_WAIT_FOR_SEC_QUEUE_EVENT>>(
         device, context, queue, num_elements);
 }

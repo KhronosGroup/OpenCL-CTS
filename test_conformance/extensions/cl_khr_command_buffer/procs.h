@@ -37,19 +37,16 @@ extern int test_command_buffer_wait_for_command_buffer(cl_device_id device,
                                                        cl_context context,
                                                        cl_command_queue queue,
                                                        int num_elements);
-extern int test_command_buffer_wait_for_other_command_buffer(
+extern int test_command_buffer_wait_for_sec_command_buffer(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
 extern int test_event_callback(cl_device_id device, cl_context context,
                                cl_command_queue queue, int num_elements);
-extern int test_clwaitforevents_wait_for_event(cl_device_id device,
-                                               cl_context context,
-                                               cl_command_queue queue,
-                                               int num_elements);
-extern int test_clwaitforevents_wait_for_events(cl_device_id device,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements);
+extern int test_clwaitforevents_single(cl_device_id device, cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+extern int test_clwaitforevents(cl_device_id device, cl_context context,
+                                cl_command_queue queue, int num_elements);
 extern int test_user_event_wait(cl_device_id device, cl_context context,
                                 cl_command_queue queue, int num_elements);
 extern int test_user_events_wait(cl_device_id device, cl_context context,
@@ -58,9 +55,9 @@ extern int test_command_buffer_wait_for_regular(cl_device_id device,
                                                 cl_context context,
                                                 cl_command_queue queue,
                                                 int num_elements);
-extern int test_wait_for_other_queue_event(cl_device_id device,
-                                           cl_context context,
-                                           cl_command_queue queue,
-                                           int num_elements);
+extern int test_wait_for_sec_queue_event(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
 
 #endif /*_CL_KHR_COMMAND_BUFFER_PROCS_H*/
