@@ -24,13 +24,14 @@ test_definition test_list[] = {
     ADD_TEST(regular_wait_for_command_buffer),
     ADD_TEST(command_buffer_wait_for_command_buffer),
     ADD_TEST(command_buffer_wait_for_sec_command_buffer),
-    ADD_TEST(event_callback),
+    ADD_TEST(return_event_callback),
     ADD_TEST(clwaitforevents_single),
     ADD_TEST(clwaitforevents),
+    ADD_TEST(command_buffer_wait_for_regular),
+    ADD_TEST(wait_for_sec_queue_event),
     ADD_TEST(user_event_wait),
     ADD_TEST(user_events_wait),
-    ADD_TEST(command_buffer_wait_for_regular),
-    ADD_TEST(wait_for_sec_queue_event)
+    ADD_TEST(user_event_callback)
 };
 
 
