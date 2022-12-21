@@ -664,7 +664,7 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
         InitInOrderEvents(event_ptrs);
 
         cl_int error = CL_SUCCESS;
-        clEventWrapper user_events[user_event_num];
+        std::vector<clEventWrapper> user_events(user_event_num);
 
         for (size_t i = 0; i < user_event_num; i++)
         {
@@ -676,7 +676,7 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
                                     0, data_size(), 0, nullptr, event_ptrs[0]);
         test_error(error, "clEnqueueFillBuffer failed");
 
-        cl_event wait_list[user_event_num + wait_count];
+        std::vector<cl_event> wait_list(user_event_num + wait_count);
         for (size_t i = 0; i < user_event_num; i++)
         {
             wait_list[i] = user_events[i];
@@ -685,7 +685,7 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer,
                                           user_event_num + wait_count,
-                                          wait_list, event_ptrs[1]);
+                                          &wait_list.front(), event_ptrs[1]);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         std::vector<cl_int> output_data(num_elements);
