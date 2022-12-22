@@ -71,14 +71,12 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
     uint64_t step = getTestStep(sizeof(float), BUFFER_SIZE);
 
     // Init the kernels
-    {
-        BuildKernelInfo2 build_info{ kernels, programs, f->nameInCode,
-                                     relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernelFn,
-                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                                   &build_info)))
-            return error;
-    }
+    BuildKernelInfo2 build_info{ kernels, programs, f->nameInCode,
+                                 relaxedMode };
+    if ((error = ThreadPool_Do(BuildKernelFn,
+                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                               &build_info)))
+        return error;
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
@@ -128,7 +126,7 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
                     vlog_error(
                         "\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
                         error, j);
-                    goto exit;
+                    return error;
                 }
             }
             else
@@ -154,25 +152,25 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
                                         &gOutBuffer[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
             if ((error = clSetKernelArg(kernels[j], 1, sizeof(gInBuffer),
                                         &gInBuffer)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
             if ((error = clSetKernelArg(kernels[j], 2, sizeof(gInBuffer2),
                                         &gInBuffer2)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
             if ((error = clSetKernelArg(kernels[j], 3, sizeof(gInBuffer3),
                                         &gInBuffer3)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
 
             if ((error =
@@ -180,7 +178,7 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
                                             &localCount, NULL, 0, NULL, NULL)))
             {
                 vlog_error("FAILED -- could not execute kernel\n");
-                goto exit;
+                return error;
             }
         }
 
@@ -203,7 +201,7 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
-                goto exit;
+                return error;
             }
         }
 
@@ -231,6 +229,5 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
 
     vlog("\n");
 
-exit:
-    return error;
+    return CL_SUCCESS;
 }
