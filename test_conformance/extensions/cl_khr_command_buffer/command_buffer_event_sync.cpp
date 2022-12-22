@@ -779,6 +779,22 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
 
 } // anonymous namespace
 
+// helper macros
+#define IN_ORDER_MSG(name) #name " test with in-order command queue"
+#define OUT_OF_ORDER_MSG(name) #name " test with out-of-order command queue"
+#define test_ret_val(code, msg)                                                \
+    {                                                                          \
+        if (code == TEST_FAIL)                                                 \
+        {                                                                      \
+            print_failure_error(code, TEST_PASS, msg " failed\n");             \
+            return TEST_FAIL;                                                  \
+        }                                                                      \
+        else if (code == TEST_SKIP)                                            \
+        {                                                                      \
+            log_info(msg " skipped\n");                                        \
+        }                                                                      \
+    }
+
 //--------------------------------------------------------------------------
 // return-events test cases for regular queue
 int test_regular_wait_for_command_buffer(cl_device_id device,
@@ -786,25 +802,16 @@ int test_regular_wait_for_command_buffer(cl_device_id device,
                                          cl_command_queue queue,
                                          int num_elements)
 {
-    if (TEST_PASS
-        != MakeAndRunTest<CommandBufferEventSync<
-            EventMode::RET_REGULAR_WAIT_FOR_COMBUF, false>>(
-            device, context, queue, num_elements))
-    {
-        log_error("EventMode::RET_REGULAR_WAIT_FOR_COMBUF test with in order "
-                  "queue failed\n");
-        return TEST_FAIL;
-    }
+    int ret = TEST_PASS;
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_REGULAR_WAIT_FOR_COMBUF, false>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, IN_ORDER_MSG(EventMode::RET_REGULAR_WAIT_FOR_COMBUF));
 
-    if (TEST_PASS
-        != MakeAndRunTest<CommandBufferEventSync<
-            EventMode::RET_REGULAR_WAIT_FOR_COMBUF, true>>(device, context,
-                                                           queue, num_elements))
-    {
-        log_error("EventMode::RET_REGULAR_WAIT_FOR_COMBUF test with out of "
-                  "order queue failed\n");
-        return TEST_FAIL;
-    }
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_REGULAR_WAIT_FOR_COMBUF, true>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, OUT_OF_ORDER_MSG(EventMode::RET_REGULAR_WAIT_FOR_COMBUF));
     return TEST_PASS;
 }
 
@@ -813,25 +820,16 @@ int test_command_buffer_wait_for_command_buffer(cl_device_id device,
                                                 cl_command_queue queue,
                                                 int num_elements)
 {
-    if (TEST_PASS
-        != MakeAndRunTest<CommandBufferEventSync<
-            EventMode::RET_COMBUF_WAIT_FOR_COMBUF, false>>(device, context,
-                                                           queue, num_elements))
-    {
-        log_error("EventMode::RET_REGULAR_WAIT_FOR_COMBUF test with in order "
-                  "queue failed\n");
-        return TEST_FAIL;
-    }
+    int ret = TEST_PASS;
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_COMBUF_WAIT_FOR_COMBUF, false>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, IN_ORDER_MSG(EventMode::RET_COMBUF_WAIT_FOR_COMBUF));
 
-    if (TEST_PASS
-        != MakeAndRunTest<CommandBufferEventSync<
-            EventMode::RET_COMBUF_WAIT_FOR_COMBUF, true>>(device, context,
-                                                          queue, num_elements))
-    {
-        log_error("EventMode::RET_REGULAR_WAIT_FOR_COMBUF test with out of "
-                  "order queue failed\n");
-        return TEST_FAIL;
-    }
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_COMBUF_WAIT_FOR_COMBUF, true>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, OUT_OF_ORDER_MSG(EventMode::RET_COMBUF_WAIT_FOR_COMBUF));
     return TEST_PASS;
 }
 
@@ -840,100 +838,65 @@ int test_command_buffer_wait_for_sec_command_buffer(cl_device_id device,
                                                     cl_command_queue queue,
                                                     int num_elements)
 {
-    if (TEST_PASS
-        != MakeAndRunTest<CommandBufferEventSync<
-            EventMode::RET_COMBUF_WAIT_FOR_SEC_COMBUF, false>>(
-            device, context, queue, num_elements))
-    {
-        log_error("EventMode::RET_COMBUF_WAIT_FOR_SEC_COMBUF test with in "
-                  "order queue failed\n");
-        return TEST_FAIL;
-    }
+    int ret = TEST_PASS;
+    ret = MakeAndRunTest<CommandBufferEventSync<
+        EventMode::RET_COMBUF_WAIT_FOR_SEC_COMBUF, false>>(device, context,
+                                                           queue, num_elements);
+    test_ret_val(ret, IN_ORDER_MSG(EventMode::RET_COMBUF_WAIT_FOR_SEC_COMBUF));
 
-    if (TEST_PASS
-        != MakeAndRunTest<CommandBufferEventSync<
-            EventMode::RET_COMBUF_WAIT_FOR_SEC_COMBUF, true>>(
-            device, context, queue, num_elements))
-    {
-        log_error("EventMode::RET_COMBUF_WAIT_FOR_SEC_COMBUF test with out of "
-                  "order queue failed\n");
-        return TEST_FAIL;
-    }
+    ret = MakeAndRunTest<CommandBufferEventSync<
+        EventMode::RET_COMBUF_WAIT_FOR_SEC_COMBUF, true>>(device, context,
+                                                          queue, num_elements);
+    test_ret_val(ret,
+                 OUT_OF_ORDER_MSG(EventMode::RET_COMBUF_WAIT_FOR_SEC_COMBUF));
     return TEST_PASS;
 }
 
 int test_return_event_callback(cl_device_id device, cl_context context,
                                cl_command_queue queue, int num_elements)
 {
-    if (TEST_PASS
-        != MakeAndRunTest<
-            CommandBufferEventSync<EventMode::RET_EVENT_CALLBACK, false>>(
-            device, context, queue, num_elements))
-    {
-        log_error(
-            "EventMode::RET_EVENT_CALLBACK test with in order queue failed\n");
-        return TEST_FAIL;
-    }
+    int ret = TEST_PASS;
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_EVENT_CALLBACK, false>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, IN_ORDER_MSG(EventMode::RET_EVENT_CALLBACK));
 
-    if (TEST_PASS
-        != MakeAndRunTest<
-            CommandBufferEventSync<EventMode::RET_EVENT_CALLBACK, true>>(
-            device, context, queue, num_elements))
-    {
-        log_error("EventMode::RET_EVENT_CALLBACK test with out of order queue "
-                  "failed\n");
-        return TEST_FAIL;
-    }
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_EVENT_CALLBACK, true>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, OUT_OF_ORDER_MSG(EventMode::RET_EVENT_CALLBACK));
     return TEST_PASS;
 }
 
 int test_clwaitforevents_single(cl_device_id device, cl_context context,
                                 cl_command_queue queue, int num_elements)
 {
-    if (TEST_PASS
-        != MakeAndRunTest<CommandBufferEventSync<
-            EventMode::RET_CLWAITFOREVENTS_SINGLE, false>>(device, context,
-                                                           queue, num_elements))
-    {
-        log_error("EventMode::RET_CLWAITFOREVENTS_SINGLE test with in order "
-                  "queue failed\n");
-        return TEST_FAIL;
-    }
+    int ret = TEST_PASS;
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_CLWAITFOREVENTS_SINGLE, false>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, IN_ORDER_MSG(EventMode::RET_CLWAITFOREVENTS_SINGLE));
 
-    if (TEST_PASS
-        != MakeAndRunTest<
-            CommandBufferEventSync<EventMode::RET_EVENT_CALLBACK, true>>(
-            device, context, queue, num_elements))
-    {
-        log_error("EventMode::RET_CLWAITFOREVENTS_SINGLE test with out of "
-                  "order queue failed\n");
-        return TEST_FAIL;
-    }
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_CLWAITFOREVENTS_SINGLE, true>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, OUT_OF_ORDER_MSG(EventMode::RET_CLWAITFOREVENTS_SINGLE));
     return TEST_PASS;
 }
 
 int test_clwaitforevents(cl_device_id device, cl_context context,
                          cl_command_queue queue, int num_elements)
 {
-    if (TEST_PASS
-        != MakeAndRunTest<
-            CommandBufferEventSync<EventMode::RET_CLWAITFOREVENTS, false>>(
-            device, context, queue, num_elements))
-    {
-        log_error(
-            "EventMode::RET_CLWAITFOREVENTS test with in order queue failed\n");
-        return TEST_FAIL;
-    }
+    int ret = TEST_PASS;
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_CLWAITFOREVENTS, false>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, IN_ORDER_MSG(EventMode::RET_CLWAITFOREVENTS));
 
-    if (TEST_PASS
-        != MakeAndRunTest<
-            CommandBufferEventSync<EventMode::RET_EVENT_CALLBACK, true>>(
-            device, context, queue, num_elements))
-    {
-        log_error("EventMode::RET_CLWAITFOREVENTS test with out of order queue "
-                  "failed\n");
-        return TEST_FAIL;
-    }
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_CLWAITFOREVENTS, true>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, OUT_OF_ORDER_MSG(EventMode::RET_CLWAITFOREVENTS));
     return TEST_PASS;
 }
 
@@ -942,50 +905,33 @@ int test_command_buffer_wait_for_regular(cl_device_id device,
                                          cl_command_queue queue,
                                          int num_elements)
 {
-    if (TEST_PASS
-        != MakeAndRunTest<CommandBufferEventSync<
-            EventMode::RET_COMBUF_WAIT_FOR_REGULAR, false>>(
-            device, context, queue, num_elements))
-    {
-        log_error("EventMode::RET_COMBUF_WAIT_FOR_REGULAR test with in order "
-                  "queue failed\n");
-        return TEST_FAIL;
-    }
+    int ret = TEST_PASS;
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_COMBUF_WAIT_FOR_REGULAR, false>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, IN_ORDER_MSG(EventMode::RET_COMBUF_WAIT_FOR_REGULAR));
 
-    if (TEST_PASS
-        != MakeAndRunTest<CommandBufferEventSync<
-            EventMode::RET_COMBUF_WAIT_FOR_REGULAR, true>>(device, context,
-                                                           queue, num_elements))
-    {
-        log_error("EventMode::RET_COMBUF_WAIT_FOR_REGULAR test with out of "
-                  "order queue failed\n");
-        return TEST_FAIL;
-    }
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_COMBUF_WAIT_FOR_REGULAR, true>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, OUT_OF_ORDER_MSG(EventMode::RET_COMBUF_WAIT_FOR_REGULAR));
     return TEST_PASS;
 }
 
 int test_wait_for_sec_queue_event(cl_device_id device, cl_context context,
                                   cl_command_queue queue, int num_elements)
 {
-    if (TEST_PASS
-        != MakeAndRunTest<CommandBufferEventSync<
-            EventMode::RET_WAIT_FOR_SEC_QUEUE_EVENT, false>>(
-            device, context, queue, num_elements))
-    {
-        log_error("EventMode::RET_WAIT_FOR_SEC_QUEUE_EVENT test with in order "
-                  "queue failed\n");
-        return TEST_FAIL;
-    }
+    int ret = TEST_PASS;
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_WAIT_FOR_SEC_QUEUE_EVENT, false>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, IN_ORDER_MSG(EventMode::RET_WAIT_FOR_SEC_QUEUE_EVENT));
 
-    if (TEST_PASS
-        != MakeAndRunTest<CommandBufferEventSync<
-            EventMode::RET_WAIT_FOR_SEC_QUEUE_EVENT, true>>(
-            device, context, queue, num_elements))
-    {
-        log_error("EventMode::RET_WAIT_FOR_SEC_QUEUE_EVENT test with out of "
-                  "order queue failed\n");
-        return TEST_FAIL;
-    }
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::RET_WAIT_FOR_SEC_QUEUE_EVENT, true>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret,
+                 OUT_OF_ORDER_MSG(EventMode::RET_WAIT_FOR_SEC_QUEUE_EVENT));
     return TEST_PASS;
 }
 
@@ -995,74 +941,47 @@ int test_wait_for_sec_queue_event(cl_device_id device, cl_context context,
 int test_user_event_wait(cl_device_id device, cl_context context,
                          cl_command_queue queue, int num_elements)
 {
-    if (TEST_PASS
-        != MakeAndRunTest<
-            CommandBufferEventSync<EventMode::USER_EVENT_WAIT, false>>(
-            device, context, queue, num_elements))
-    {
-        log_error(
-            "EventMode::USER_EVENT_WAIT test with in order queue failed\n");
-        return TEST_FAIL;
-    }
+    int ret = TEST_PASS;
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::USER_EVENT_WAIT, false>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, IN_ORDER_MSG(EventMode::USER_EVENT_WAIT));
 
-    if (TEST_PASS
-        != MakeAndRunTest<
-            CommandBufferEventSync<EventMode::USER_EVENT_WAIT, true>>(
-            device, context, queue, num_elements))
-    {
-        log_error(
-            "EventMode::USER_EVENT_WAIT test with out of order queue failed\n");
-        return TEST_FAIL;
-    }
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::USER_EVENT_WAIT, true>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, OUT_OF_ORDER_MSG(EventMode::USER_EVENT_WAIT));
     return TEST_PASS;
 }
 
 int test_user_events_wait(cl_device_id device, cl_context context,
                           cl_command_queue queue, int num_elements)
 {
-    if (TEST_PASS
-        != MakeAndRunTest<
-            CommandBufferEventSync<EventMode::USER_EVENTS_WAIT, false>>(
-            device, context, queue, num_elements))
-    {
-        log_error(
-            "EventMode::USER_EVENTS_WAIT test with in order queue failed\n");
-        return TEST_FAIL;
-    }
+    int ret = TEST_PASS;
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::USER_EVENTS_WAIT, false>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, IN_ORDER_MSG(EventMode::USER_EVENTS_WAIT));
 
-    if (TEST_PASS
-        != MakeAndRunTest<
-            CommandBufferEventSync<EventMode::USER_EVENTS_WAIT, true>>(
-            device, context, queue, num_elements))
-    {
-        log_error("EventMode::USER_EVENTS_WAIT test with out of order queue "
-                  "failed\n");
-        return TEST_FAIL;
-    }
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::USER_EVENTS_WAIT, true>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, OUT_OF_ORDER_MSG(EventMode::USER_EVENTS_WAIT));
     return TEST_PASS;
 }
 
 int test_user_event_callback(cl_device_id device, cl_context context,
                              cl_command_queue queue, int num_elements)
 {
-    if (TEST_PASS
-        != MakeAndRunTest<
-            CommandBufferEventSync<EventMode::USER_EVENT_CALLBACK, false>>(
-            device, context, queue, num_elements))
-    {
-        log_error(
-            "EventMode::USER_EVENT_CALLBACK test with in order queue failed\n");
-        return TEST_FAIL;
-    }
+    int ret = TEST_PASS;
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::USER_EVENT_CALLBACK, false>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, IN_ORDER_MSG(EventMode::USER_EVENT_CALLBACK));
 
-    if (TEST_PASS
-        != MakeAndRunTest<
-            CommandBufferEventSync<EventMode::USER_EVENT_CALLBACK, true>>(
-            device, context, queue, num_elements))
-    {
-        log_error("EventMode::USER_EVENT_CALLBACK test with out of order queue "
-                  "failed\n");
-        return TEST_FAIL;
-    }
+    ret = MakeAndRunTest<
+        CommandBufferEventSync<EventMode::USER_EVENT_CALLBACK, true>>(
+        device, context, queue, num_elements);
+    test_ret_val(ret, OUT_OF_ORDER_MSG(EventMode::USER_EVENT_CALLBACK));
     return TEST_PASS;
 }
