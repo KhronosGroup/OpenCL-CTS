@@ -54,7 +54,6 @@ test_mix(cl_device_id device, cl_context context, cl_command_queue queue, int nu
     cl_float        *input_ptr[3], *output_ptr, *p;
     cl_program        program;
     cl_kernel        kernel;
-    void            *values[4];
     size_t            lengths[1];
     size_t    threads[1];
     float            max_err;
@@ -137,11 +136,6 @@ test_mix(cl_device_id device, cl_context context, cl_command_queue queue, int nu
     err = create_single_kernel_helper( context, &program, &kernel, 1, &mix_kernel_code, "test_mix" );
     test_error( err, "Unable to create test kernel" );
 
-
-    values[0] = streams[0];
-    values[1] = streams[1];
-    values[2] = streams[2];
-    values[3] = streams[3];
   err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
   err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
   err |= clSetKernelArg(kernel, 2, sizeof streams[2], &streams[2] );
