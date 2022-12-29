@@ -113,6 +113,7 @@ typedef cl_event(CL_API_CALL *clCreateEventFromGLsyncKHR_fn)(
 clCreateEventFromGLsyncKHR_fn clCreateEventFromGLsyncKHR_ptr;
 
 
+// clang-format off
 static const char *updateBuffersKernel[] = {
     "__kernel void update( __global float4 * vertices, __global float4 "
     "*colors, int horizWrap, int rowIdx )\n"
@@ -132,6 +133,7 @@ static const char *updateBuffersKernel[] = {
     "    colors[ tid * 2 + 1 ] = colors[ tid * 2 + 0 ];\n"
     "}\n"
 };
+// clang-format on
 
 // Passthrough VertexShader
 static const char *vertexshader = "#version 150\n"
