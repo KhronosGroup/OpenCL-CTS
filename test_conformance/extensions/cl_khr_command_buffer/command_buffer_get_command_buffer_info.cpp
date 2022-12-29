@@ -18,7 +18,6 @@
 #include "procs.h"
 
 #include <vector>
-#include <array>
 
 //--------------------------------------------------------------------------
 enum class CombufInfoTestMode
@@ -32,37 +31,21 @@ enum class CombufInfoTestMode
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
+// clGetCommandBufferInfoKHR tests for cl_khr_command_buffer which handles below
+// cases:
+// -test case for CL_COMMAND_BUFFER_NUM_QUEUES_KHR &
+//  CL_COMMAND_BUFFER_QUEUES_KHR queries
+// -test case for CL_COMMAND_BUFFER_REFERENCE_COUNT_KHR query
+// -test case for CL_COMMAND_BUFFER_STATE_KHR query
+// -test case for CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR query
 
 template <CombufInfoTestMode test_mode>
 struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 {
     CommandBufferGetCommandBufferInfo(cl_device_id device, cl_context context,
                                       cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue), queue_sec(nullptr),
-          command_buffer_sec(nullptr)
+        : BasicCommandBufferTest(device, context, queue)
     {}
-
-    //--------------------------------------------------------------------------
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        if (test_mode == CombufInfoTestMode::CITM_QUEUES)
-        {
-            // create secondary command queue and command buffer
-            queue_sec = clCreateCommandQueue(context, device, 0, &error);
-            test_error(error, "clCreateCommandQueue failed");
-
-            cl_command_queue queue_list[] = { queue, queue_sec };
-            int testv = sizeof(queue_list) / sizeof(cl_command_queue);
-            command_buffer_sec =
-                clCreateCommandBufferKHR(testv, queue_list, nullptr, &error);
-            test_error(error, "clCreateCommandBufferKHR failed");
-        }
-
-        return CL_SUCCESS;
-    }
 
     //--------------------------------------------------------------------------
     bool Skip() override
@@ -99,95 +82,73 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
                 break;
         }
 
-
         return CL_SUCCESS;
     }
 
     //--------------------------------------------------------------------------
-    cl_int RecordCommandBuffer(clCommandBufferWrapper &combuf)
+    cl_int RecordCommandBuffer()
     {
         cl_int error = CL_SUCCESS;
 
-        error = clCommandNDRangeKernelKHR(combuf, nullptr, nullptr, kernel, 1,
-                                          nullptr, &num_elements, nullptr, 0,
-                                          nullptr, nullptr, nullptr);
+        error = clCommandNDRangeKernelKHR(
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+            nullptr, 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(combuf);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
         return CL_SUCCESS;
     }
 
     //--------------------------------------------------------------------------
+#define test_expected_info(cond)                                               \
+    {                                                                          \
+        if (cond)                                                              \
+        {                                                                      \
+            log_error("clGetCommandBufferInfoKHR return values not as "        \
+                      "expected\n");                                           \
+            return TEST_FAIL;                                                  \
+        }                                                                      \
+    }
+
+    //--------------------------------------------------------------------------
     cl_int RunQueuesInfoTest()
     {
-        cl_int error = CL_SUCCESS;
+        cl_int error = TEST_PASS;
 
         // record command buffers
-        error = RecordCommandBuffer(command_buffer);
+        error = RecordCommandBuffer();
         test_error(error, "RecordCommandBuffer failed");
 
-        error = RecordCommandBuffer(command_buffer_sec);
-        test_error(error, "RecordCommandBuffer failed");
+        // vector containter added due to potential future growth, at the moment
+        // spec of cl_khr_command_buffer says command-buffer accepts only 1
+        // queue
+        std::vector<cl_command_queue> expect_queue_list = { queue };
+        cl_uint num_queues = 0;
+        size_t ret_value_size = 0;
+        error = clGetCommandBufferInfoKHR(
+            command_buffer, CL_COMMAND_BUFFER_NUM_QUEUES_KHR, sizeof(cl_uint),
+            &num_queues, &ret_value_size);
+        test_error(error, "clGetCommandBufferInfoKHR failed");
 
-        auto test_combuf_queues = [&](std::vector<cl_command_queue> &queue_list,
-                                      clCommandBufferWrapper &combuf) {
-            cl_uint num_queues = 0;
-            size_t ret_value_size = 0;
-            cl_int error = clGetCommandBufferInfoKHR(
-                combuf, CL_COMMAND_BUFFER_NUM_QUEUES_KHR, sizeof(cl_uint),
-                &num_queues, &ret_value_size);
-            test_error_ret(error, "clGetCommandBufferInfoKHR failed",
-                           TEST_FAIL);
+        test_expected_info(ret_value_size > sizeof(cl_int));
 
-            if (ret_value_size > sizeof(cl_int)
-                || num_queues != queue_list.size())
-            {
-                log_error("clGetCommandBufferInfoKHR return values not as "
-                          "expected\n");
-                return TEST_FAIL;
-            }
+        test_expected_info(num_queues != expect_queue_list.size());
 
-            std::vector<cl_command_queue> ql(num_queues);
-            size_t expect_size = ql.size() * sizeof(cl_command_queue);
-            error = clGetCommandBufferInfoKHR(
-                combuf, CL_COMMAND_BUFFER_QUEUES_KHR, expect_size, &ql.front(),
-                &ret_value_size);
-            test_error_ret(error, "clGetCommandBufferInfoKHR failed",
-                           TEST_FAIL);
+        std::vector<cl_command_queue> ql(num_queues);
+        size_t expect_size = ql.size() * sizeof(cl_command_queue);
+        error = clGetCommandBufferInfoKHR(
+            command_buffer, CL_COMMAND_BUFFER_QUEUES_KHR, expect_size,
+            &ql.front(), &ret_value_size);
+        test_error(error, "clGetCommandBufferInfoKHR failed");
 
-            if (ret_value_size > expect_size)
-            {
-                log_error("clGetCommandBufferInfoKHR return values not as "
-                          "expected\n");
-                return TEST_FAIL;
-            }
+        test_expected_info(ret_value_size > expect_size);
 
-            for (int i = 0; i < ql.size(); i++)
-            {
-                if (ql[i] != queue_list[i])
-                {
-                    log_error("clGetCommandBufferInfoKHR return values not as "
-                              "expected\n");
-                    return TEST_FAIL;
-                }
-            }
-            return TEST_PASS;
-        };
-
+        for (int i = 0; i < ql.size(); i++)
         {
-            std::vector<cl_command_queue> queue_list = { queue };
-            error = test_combuf_queues(queue_list, command_buffer);
-            test_error(error, "test_combuf_queues failed");
+            test_expected_info(ql[i] != expect_queue_list[i]);
         }
-
-        {
-            std::vector<cl_command_queue> queue_list = { queue, queue_sec };
-            error = test_combuf_queues(queue_list, command_buffer_sec);
-            test_error(error, "test_combuf_queues failed");
-        }
-
-        return CL_SUCCESS;
+        return TEST_PASS;
     }
 
     //--------------------------------------------------------------------------
@@ -196,9 +157,10 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         cl_int error = CL_SUCCESS;
 
         // record command buffer
-        error = RecordCommandBuffer(command_buffer);
+        error = RecordCommandBuffer();
         test_error(error, "RecordCommandBuffer failed");
 
+        // collect initial reference count
         cl_uint init_ref_count = 0;
         size_t ret_value_size = 0;
         error = clGetCommandBufferInfoKHR(
@@ -206,6 +168,7 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             sizeof(cl_uint), &init_ref_count, &ret_value_size);
         test_error(error, "clGetCommandBufferInfoKHR failed");
 
+        // increase reference count through clRetainCommandBufferKHR calls
         const cl_int min_retain_count = 2;
         const cl_int max_retain_count = 6;
         cl_int retain_count = std::max(
@@ -217,36 +180,29 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             test_error(error, "clRetainCommandBufferKHR failed");
         }
 
+        // verify new reference count value
         cl_uint new_ref_count = 0;
         error = clGetCommandBufferInfoKHR(
             command_buffer, CL_COMMAND_BUFFER_REFERENCE_COUNT_KHR,
             sizeof(cl_uint), &new_ref_count, &ret_value_size);
         test_error(error, "clGetCommandBufferInfoKHR failed");
 
-        if (new_ref_count != (retain_count + init_ref_count))
-        {
-            log_error("clGetCommandBufferInfoKHR return values not as "
-                      "expected\n");
-            return TEST_FAIL;
-        }
+        test_expected_info(new_ref_count != (retain_count + init_ref_count));
 
+        // decrease reference count through clReleaseCommandBufferKHR calls
         for (int i = 0; i < retain_count; i++)
         {
             error = clReleaseCommandBufferKHR(command_buffer);
             test_error(error, "clReleaseCommandBufferKHR failed");
         }
 
+        // verify new reference count value
         error = clGetCommandBufferInfoKHR(
             command_buffer, CL_COMMAND_BUFFER_REFERENCE_COUNT_KHR,
             sizeof(cl_uint), &new_ref_count, &ret_value_size);
         test_error(error, "clGetCommandBufferInfoKHR failed");
 
-        if (new_ref_count != init_ref_count)
-        {
-            log_error("clGetCommandBufferInfoKHR return values not as "
-                      "expected\n");
-            return TEST_FAIL;
-        }
+        test_expected_info(new_ref_count != init_ref_count);
 
         return TEST_PASS;
     }
@@ -268,12 +224,8 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             test_error_ret(error, "clGetCommandBufferInfoKHR failed",
                            TEST_FAIL);
 
-            if (state != expected)
-            {
-                log_error("clGetCommandBufferInfoKHR return values not as "
-                          "expected\n");
-                return TEST_FAIL;
-            }
+            test_expected_info(state != expected);
+
             return TEST_PASS;
         };
 
@@ -282,7 +234,7 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         test_error(error, "verify_state failed");
 
         // record command buffer
-        error = RecordCommandBuffer(command_buffer);
+        error = RecordCommandBuffer();
         test_error(error, "RecordCommandBuffer failed");
 
         // verify executable state
@@ -318,7 +270,7 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         cl_int error = CL_SUCCESS;
 
         // record command buffer
-        error = RecordCommandBuffer(command_buffer);
+        error = RecordCommandBuffer();
         test_error(error, "RecordCommandBuffer failed");
 
         size_t ret_value_size = 0;
@@ -328,12 +280,9 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             sizeof(combuf_props), combuf_props, &ret_value_size);
         test_error_ret(error, "clGetCommandBufferInfoKHR failed", TEST_FAIL);
 
-        if (ret_value_size > sizeof(combuf_props) || ret_value_size == 0)
-        {
-            log_error("clGetCommandBufferInfoKHR return values not as "
-                      "expected\n");
-            return TEST_FAIL;
-        }
+        test_expected_info(ret_value_size > sizeof(combuf_props));
+
+        test_expected_info(ret_value_size == 0);
 
         int num_ret_props =
             ret_value_size / sizeof(cl_command_buffer_properties_khr);
@@ -343,11 +292,6 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         return TEST_FAIL;
     }
-
-    //--------------------------------------------------------------------------
-
-    clCommandBufferWrapper command_buffer_sec;
-    clCommandQueueWrapper queue_sec;
 
     const cl_int pattern = 0xE;
 };
