@@ -144,9 +144,11 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         test_expected_info(ret_value_size > expect_size);
 
+        // We can not check if this is the right queue because this is an opaque
+        // object, test against NULL.
         for (int i = 0; i < ql.size(); i++)
         {
-            test_expected_info(ql[i] != expect_queue_list[i]);
+            test_expected_info(ql[i] == NULL);
         }
         return TEST_PASS;
     }
