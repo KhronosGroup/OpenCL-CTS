@@ -23,7 +23,7 @@
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
-// Command-queue fill tests which handles below cases:
+// Command-bufer copy tests which handles below cases:
 //
 // -copy image
 // -copy buffer
@@ -378,34 +378,34 @@ struct CopyBufferRectKHR : public BasicCommandBufferTest
 };
 };
 
-int test_copy_image_khr(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+int test_copy_image(cl_device_id device, cl_context context,
+                    cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<CopyImageKHR>(device, context, queue, num_elements);
 }
 
-int test_copy_buffer_khr(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+int test_copy_buffer(cl_device_id device, cl_context context,
+                     cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<CopyBufferKHR>(device, context, queue, num_elements);
 }
 
-int test_copy_buffer_to_image_khr(cl_device_id device, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+int test_copy_buffer_to_image(cl_device_id device, cl_context context,
+                              cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<CopyBufferToImageKHR>(device, context, queue,
                                                 num_elements);
 }
 
-int test_copy_image_to_buffer_khr(cl_device_id device, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+int test_copy_image_to_buffer(cl_device_id device, cl_context context,
+                              cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<CopyImageToBufferKHR>(device, context, queue,
                                                 num_elements);
 }
 
-int test_copy_buffer_rect_khr(cl_device_id device, cl_context context,
-                              cl_command_queue queue, int num_elements)
+int test_copy_buffer_rect(cl_device_id device, cl_context context,
+                          cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<CopyBufferRectKHR>(device, context, queue,
                                              num_elements);

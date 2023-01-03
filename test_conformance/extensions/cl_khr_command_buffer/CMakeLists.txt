@@ -5,7 +5,7 @@ set(${MODULE_NAME}_SOURCES
     basic_command_buffer.cpp
     command_buffer_test_fill.cpp
     command_buffer_test_copy.cpp
-    command_buffer_test_kernel.cpp
+    command_buffer_test_barrier.cpp
 )
 
 include(../../CMakeCommon.txt)

@@ -23,7 +23,7 @@
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
-// Command-queue fill tests which handles below cases:
+// Command-buffer fill tests which handles below cases:
 //
 // -fill image
 // -fill buffer
@@ -135,14 +135,14 @@ struct FillBufferKHR : public BasicCommandBufferTest
 
 };
 
-int test_fill_buffer_khr(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+int test_fill_buffer(cl_device_id device, cl_context context,
+                     cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<FillBufferKHR>(device, context, queue, num_elements);
 }
 
-int test_fill_image_khr(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+int test_fill_image(cl_device_id device, cl_context context,
+                    cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<FillImageKHR>(device, context, queue, num_elements);
 }
