@@ -49,17 +49,17 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
               : CL_DEVICE_QUEUE_PROPERTIES;
 
           cl_queue_properties host_queue_props = 0;
-          int error =
-              clGetDeviceInfo(device, host_queue_query, sizeof(host_queue_props),
-                              &host_queue_props, NULL);
+          int error = clGetDeviceInfo(device, host_queue_query,
+                                      sizeof(host_queue_props),
+                                      &host_queue_props, NULL);
           test_error(error, "clGetDeviceInfo failed");
 
           if ((host_queue_props&CL_QUEUE_PROFILING_ENABLE)==0)
             return true;
         }
 
-        return BasicCommandBufferTest::Skip() ||
-            (simultaneous_use_requested && !simultaneous_use_support);
+        return BasicCommandBufferTest::Skip()
+            || (simultaneous_use_requested && !simultaneous_use_support);
     }
 
     //--------------------------------------------------------------------------
