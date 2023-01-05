@@ -31,7 +31,7 @@
 #define NR_OF_ACTIVE_WORK_ITEMS 4
 
 extern MTdata gMTdata;
-typedef std::bitset<128> bs128;
+typedef std::bitset<1280> bs128;
 extern cl_half_rounding_mode g_rounding_mode;
 
 bs128 cl_uint4_to_bs128(cl_uint4 v);
