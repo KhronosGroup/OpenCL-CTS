@@ -41,21 +41,21 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     bool Skip() override
     {
-        if (properties_use_requested )
+        if (properties_use_requested)
         {
-          Version version = get_device_cl_version(device);
-          const cl_device_info host_queue_query = version >= Version(2, 0)
-              ? CL_DEVICE_QUEUE_ON_HOST_PROPERTIES
-              : CL_DEVICE_QUEUE_PROPERTIES;
+            Version version = get_device_cl_version(device);
+            const cl_device_info host_queue_query = version >= Version(2, 0)
+                ? CL_DEVICE_QUEUE_ON_HOST_PROPERTIES
+                : CL_DEVICE_QUEUE_PROPERTIES;
 
-          cl_queue_properties host_queue_props = 0;
-          int error = clGetDeviceInfo(device, host_queue_query,
-                                      sizeof(host_queue_props),
-                                      &host_queue_props, NULL);
-          test_error(error, "clGetDeviceInfo failed");
+            cl_queue_properties host_queue_props = 0;
+            int error = clGetDeviceInfo(device, host_queue_query,
+                                        sizeof(host_queue_props),
+                                        &host_queue_props, NULL);
+            test_error(error, "clGetDeviceInfo failed");
 
-          if ((host_queue_props&CL_QUEUE_PROFILING_ENABLE)==0)
-            return true;
+            if ((host_queue_props & CL_QUEUE_PROFILING_ENABLE) == 0)
+                return true;
         }
 
         return BasicCommandBufferTest::Skip()
