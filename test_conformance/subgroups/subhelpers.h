@@ -1514,7 +1514,8 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct subgroup_test
 
         // Limit it a bit so we have muliple work groups
         // Ideally this will still be large enough to give us multiple
-        if (local > test_params.local_workgroup_size)
+        if (local > test_params.local_workgroup_size
+            && global % test_params.local_workgroup_size == 0)
             local = test_params.local_workgroup_size;
 
 
