@@ -69,6 +69,7 @@ extern size_t          gMaxThreadGroupSize;
 extern size_t          gWorkGroupSize;
 extern int             gTestDouble;
 extern int             gReportTimes;
+extern bool            gHostReset;
 
 // gWimpyMode indicates if we run the test in wimpy mode where we limit the
 // size of 32 bit ranges to a much smaller set.  This is meant to be used
