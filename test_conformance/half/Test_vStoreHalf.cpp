@@ -892,20 +892,6 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
     dchk.lim = blockCount;
     dchk.count = (blockCount + threadCount - 1) / threadCount;
 
-    cl_uint pattern = 0xdeaddead;
-    memset_pattern4(gOut_half, &pattern, BUFFER_SIZE / 2);
-
-    error =
-        clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE, 0,
-                             count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
-
-    if (error)
-    {
-        vlog_error("Failure in clWriteArray\n");
-        gFailCount++;
-        goto exit;
-    }
-
     for (i = 0; i < lastCase; i += stride)
     {
         count = (cl_uint)std::min((uint64_t)blockCount, lastCase - i);
@@ -961,8 +947,6 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
                     goto exit;
                 }
 
-                memset_pattern4(gOut_half, &pattern, BUFFER_SIZE / 2);
-
                 error = RunKernel(device, kernels[vectorSize][addressSpace],
                                   gInBuffer_single, gOutBuffer_half,
                                   numVecs(count, vectorSize, aligned),
@@ -992,8 +976,6 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
 
                 if (gTestDouble)
                 {
-
-                    memset_pattern4(gOut_half, &pattern, BUFFER_SIZE / 2);
 
                     error = RunKernel(device, resetKernel, gInBuffer_double,
                                       gOutBuffer_half, count, 0);
@@ -1718,20 +1700,6 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
     dchk.lim = blockCount;
     dchk.count = (blockCount + threadCount - 1) / threadCount;
 
-    cl_uint pattern = 0xdeaddead;
-    memset_pattern4(gOut_half, &pattern, BUFFER_SIZE / 2);
-
-    error =
-        clEnqueueWriteBuffer(gQueue, gOutBuffer_half, CL_FALSE, 0,
-                             count * sizeof(cl_half), gOut_half, 0, NULL, NULL);
-
-    if (error)
-    {
-        vlog_error("Failure in clWriteArray\n");
-        gFailCount++;
-        goto exit;
-    }
-
     for (i = 0; i < (uint64_t)lastCase; i += stride)
     {
         count = (cl_uint)std::min((uint64_t)blockCount, lastCase - i);
@@ -1787,8 +1755,6 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
                     goto exit;
                 }
 
-                memset_pattern4(gOut_half, &pattern, BUFFER_SIZE / 2);
-
                 error = RunKernel(device, kernels[vectorSize][addressSpace],
                                   gInBuffer_single, gOutBuffer_half,
                                   numVecs(count, vectorSize, aligned),
@@ -1818,8 +1784,6 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
 
                 if (gTestDouble)
                 {
-
-                    memset_pattern4(gOut_half, &pattern, BUFFER_SIZE / 2);
 
                     error = RunKernel(device, resetKernel, gInBuffer_single,
                                       gOutBuffer_half, count, 0);
