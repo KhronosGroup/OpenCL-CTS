@@ -1068,7 +1068,6 @@ static int DoTest(cl_device_id device, Type outType, Type inType,
         BUFFER_SIZE / std::max(gTypeSizes[inType], gTypeSizes[outType]);
     size_t step = blockCount;
     uint64_t lastCase = 1ULL << (8 * gTypeSizes[inType]);
-    cl_event writeInputBuffer = NULL;
 
     memset(&writeInputBufferInfo, 0, sizeof(writeInputBufferInfo));
     init_info.d = (MTdata *)malloc(threads * sizeof(MTdata));
@@ -1209,28 +1208,17 @@ static int DoTest(cl_device_id device, Type outType, Type inType,
         ThreadPool_Do(InitData, chunks, &init_info);
 
         // Copy the results to the device
-        writeInputBuffer = NULL;
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_TRUE, 0,
                                           count * gTypeSizes[inType], gIn, 0,
-                                          NULL, &writeInputBuffer)))
+                                          NULL, NULL)))
         {
             vlog_error("ERROR: clEnqueueWriteBuffer failed. (%d)\n", error);
             gFailCount++;
             goto exit;
         }
 
-        // Setup completion callback for the write, which will enqueue the rest
-        // of the work This is somewhat gratuitous.  Because this is an in order
-        // queue, we didn't really need to do this work in a callback. We could
-        // have done it from the main thread.  Here we are verifying that the
-        // implementation can enqueue work from a callback, while at the same
-        // time also checking to make sure that the conversions work.
-        //
-        // Because the verification code is also moved to a callback, it is
-        // hoped that implementations will achieve a test performance
-        // improvement because they can verify the results in parallel.  If the
-        // implementation serializes callbacks however, that won't happen.
-        // Consider it some motivation to do the right thing! :-)
+        // Call completion callback for the write, which will enqueue the rest
+        // of the work.
         WriteInputBufferComplete((void *)&writeInputBufferInfo);
 
         // Make sure the work is actually running, so we don't deadlock
