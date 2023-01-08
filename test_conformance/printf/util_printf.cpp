@@ -842,8 +842,6 @@ static void hexRefBuilder(printDataGenParameters& params, char* refResult, const
 */
 void generateRef(const cl_device_id device)
 {
-    int fd = -1;
-    char _refBuffer[ANALYSIS_BUFFER_SIZE];
     const cl_device_fp_config fpConfig = get_default_rounding_mode(device);
     const RoundingMode hostRound = get_round();
     RoundingMode deviceRound;

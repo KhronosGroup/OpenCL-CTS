@@ -240,7 +240,8 @@ protected:
     VulkanShaderModule(const VulkanShaderModule &shaderModule);
 
 public:
-    VulkanShaderModule(const VulkanDevice &device, const std::string &code);
+    VulkanShaderModule(const VulkanDevice &device,
+                       const std::vector<char> &code);
     virtual ~VulkanShaderModule();
     operator VkShaderModule() const;
 };

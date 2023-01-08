@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -131,8 +131,7 @@ exit:
 static int ParseArgs( int argc, const char **argv )
 {
     int i;
-    argList = (const char **)calloc( argc - 1, sizeof( char*) );
-
+    argList = (const char **)calloc(argc, sizeof(char *));
     if( NULL == argList )
     {
         vlog_error( "Failed to allocate memory for argList.\n" );
@@ -222,7 +221,6 @@ static int ParseArgs( int argc, const char **argv )
       gWimpyMode = 1;
     }
 
-    vlog( "Test binary built %s %s\n", __DATE__, __TIME__ );
     PrintArch();
     if( gWimpyMode )
     {
@@ -248,4 +246,3 @@ static void PrintUsage( void )
         vlog("\t\t%s\n", test_list[i].name );
     }
 }
-

@@ -214,6 +214,7 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
 
     if (memSize > (cl_ulong)SIZE_MAX) {
       memSize = (cl_ulong)SIZE_MAX;
+      maxAllocSize = (cl_ulong)SIZE_MAX;
     }
 
     // Determine types

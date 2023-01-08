@@ -213,7 +213,6 @@ cl_kernel create_kernel_helper( cl_program program, const std::string& kernel_na
 {
     int error = CL_SUCCESS;
     cl_kernel kernel = NULL;
-    cl_device_id device = get_program_device(program);
     /* And create a kernel from it */
     kernel = clCreateKernel( program, kernel_name.c_str(), &error );
     if( kernel == NULL || error != CL_SUCCESS)

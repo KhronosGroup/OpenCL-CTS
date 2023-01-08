@@ -124,23 +124,6 @@ void dealloc(T *p)
     if (p) delete p;
 }
 
-static bool is_dir_exits(const char* path)
-{
-    assert(path && "NULL directory");
-#if defined(_WIN32)
-    DWORD ftyp = GetFileAttributesA(path);
-    if (ftyp != INVALID_FILE_ATTRIBUTES && (ftyp & FILE_ATTRIBUTE_DIRECTORY))
-    return true;
-#else // Linux assumed here.
-    if (DIR *pDir = opendir(path))
-    {
-        closedir(pDir);
-        return true;
-    }
-#endif
-    return false;
-}
-
 static void get_spir_version(cl_device_id device,
                              std::vector<Version> &versions)
 {
@@ -203,21 +186,6 @@ public:
 
 static void printError(const std::string& S){
   std::cerr << S << std::endl;
-}
-
-static bool extractKernelAttribute(std::string& kernel_attributes,
-    const std::string& attribute, std::vector<std::string>& attribute_vector) {
-  size_t start = kernel_attributes.find(attribute + "(");
-  if (start == 0) {
-    size_t end = kernel_attributes.find(")", start);
-    if (end != std::string::npos) {
-      size_t length = end-start+1;
-      attribute_vector.push_back(kernel_attributes.substr(start, length));
-      kernel_attributes.erase(start, length);
-      return true;
-    }
-  }
-  return false;
 }
 
 // Extracts suite with the given name, and saves it to disk.
@@ -6253,7 +6221,7 @@ static bool test_image_enumeration(cl_context context, cl_command_queue queue,
                 (FailE)(it.toString(), kernelName);
                 std::cout << "enum_" << it.toString() << " FAILED" << std::endl;
             }
-        } catch(std::exception e)
+        } catch (const std::exception &e)
         {
             (FailE)(it.toString(), kernelName);
             print_error(1, e.what());
@@ -6356,7 +6324,7 @@ static bool test_image_enumeration_3d(cl_context context, cl_command_queue queue
                 (FailE)(it.toString(), kernelName);
                 std::cout << "enum_" << it.toString() << " FAILED" << std::endl;
             }
-        } catch(std::exception e)
+        } catch (const std::exception &e)
         {
             (FailE)(it.toString(), kernelName);
             print_error(1, e.what());
@@ -6454,7 +6422,8 @@ std::vector<std::string> &split(const std::string &s, char delim, std::vector<st
     return elems;
 }
 
-
+// Temporarily disabled, see GitHub #1284
+#if 0
 static bool
 test_kernel_attributes(cl_device_id device, cl_uint width, const char *folder)
 {
@@ -6521,7 +6490,7 @@ test_kernel_attributes(cl_device_id device, cl_uint width, const char *folder)
         }
         (SuccE)(test_name, "");
         log_info("kernel_attributes passed.\n");
-    } catch(std::exception e)
+    } catch (const std::exception &e)
     {
         (FailE)(test_name, "");
         log_info("kernel_attributes FAILED\n");
@@ -6539,6 +6508,7 @@ test_kernel_attributes(cl_device_id device, cl_uint width, const char *folder)
     std::cout << std::endl;
     return success;
 }
+#endif
 
 static bool test_binary_type(cl_device_id device, cl_uint width, const char *folder)
 {
@@ -6587,7 +6557,7 @@ static bool test_binary_type(cl_device_id device, cl_uint width, const char *fol
         }
         (SuccE)(test_name, "");
         log_info("binary_type passed.\n");
-    } catch(std::exception e)
+    } catch (const std::exception &e)
     {
         (FailE)(test_name, "");
         log_info("binary_type FAILED\n");

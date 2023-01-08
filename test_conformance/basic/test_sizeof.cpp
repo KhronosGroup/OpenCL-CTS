@@ -35,9 +35,9 @@ cl_int get_type_size( cl_context context, cl_command_queue queue, const char *ty
         "}\n"
     };
 
-    cl_program  p;
-    cl_kernel   k;
-    cl_mem      m;
+    clProgramWrapper p;
+    clKernelWrapper k;
+    clMemWrapper m;
     cl_uint        temp;
 
 
@@ -51,42 +51,19 @@ cl_int get_type_size( cl_context context, cl_command_queue queue, const char *ty
     }
     cl_int err = create_single_kernel_helper_with_build_options(
         context, &p, &k, 4, sizeof_kernel_code, "test_sizeof", nullptr);
-    if( err )
-        return err;
+    test_error(err, "Failed to build kernel/program.");
 
     m = clCreateBuffer( context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, sizeof( cl_ulong ), size, &err );
-    if( NULL == m )
-    {
-        clReleaseProgram( p );
-        clReleaseKernel( k );
-        log_error("\nclCreateBuffer FAILED\n");
-        return err;
-    }
+    test_error(err, "clCreateBuffer failed.");
 
     err = clSetKernelArg( k, 0, sizeof( cl_mem ), &m );
-    if( err )
-    {
-        clReleaseProgram( p );
-        clReleaseKernel( k );
-        clReleaseMemObject( m );
-        log_error("\nclSetKernelArg FAILED\n");
-        return err;
-    }
+    test_error(err, "clSetKernelArg failed.");
 
     err = clEnqueueTask( queue, k, 0, NULL, NULL );
-    clReleaseProgram( p );
-    clReleaseKernel( k );
-    if( err )
-    {
-        clReleaseMemObject( m );
-        log_error( "\nclEnqueueTask FAILED\n" );
-        return err;
-    }
+    test_error(err, "clEnqueueTask failed.");
 
     err = clEnqueueReadBuffer( queue, m, CL_TRUE, 0, sizeof( cl_uint ), &temp, 0, NULL, NULL );
-    clReleaseMemObject( m );
-    if( err )
-        log_error( "\nclEnqueueReadBuffer FAILED\n" );
+    test_error(err, "clEnqueueReadBuffer failed.");
 
     *size = (cl_ulong) temp;
 

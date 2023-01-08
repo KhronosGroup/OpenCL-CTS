@@ -129,16 +129,6 @@ static int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf,
 void *FlushToZero(void);
 void UnFlushToZero(void *);
 
-static cl_program
-CreateImplicitConvertProgram(Type outType, Type inType, SaturationMode sat,
-                             RoundingMode round, int vectorSize,
-                             char testName[256], cl_int *error);
-static cl_program CreateStandardProgram(Type outType, Type inType,
-                                        SaturationMode sat, RoundingMode round,
-                                        int vectorSize, char testName[256],
-                                        cl_int *error);
-
-
 // Windows (since long double got deprecated) sets the x87 to 53-bit precision
 // (that's x87 default state).  This causes problems with the tests that
 // convert long and ulong to float and double or otherwise deal with values
@@ -1754,7 +1744,7 @@ static cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
                                         &programSource, testName, flags);
     if (error)
     {
-        vlog_error("Failed to build kernel/program.\n", error);
+        vlog_error("Failed to build kernel/program (err = %d).\n", error);
         clReleaseProgram(program);
         return NULL;
     }

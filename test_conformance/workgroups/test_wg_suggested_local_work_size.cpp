@@ -108,12 +108,6 @@ bool is_not_even(size_t a) { return (is_prime(a) || (a % 2 == 1)); }
 bool is_not_odd(size_t a) { return (is_prime(a) || (a % 2 == 0)); }
 
 #define NELEMS(s) (sizeof(s) / sizeof((s)[0]))
-/* The numbers we chose in the value_range are to be used for the second and
-   third dimension of the global work group size. The numbers below cover many
-   different cases: 1024 is a power of 2, 3 is an odd and small prime number, 12
-   is a multiple of 4 but not a power of 2, 1031 is a large odd and prime number
-   and 1 is to test the lack of this dimension if the others are present */
-const size_t value_range[] = { 1024, 3, 12, 1031, 1 };
 /* The value_range_nD contains numbers to be used for the experiments with 2D
    and 3D global work sizes. This is because we need smaller numbers so that the
    resulting number of work items is meaningful and does not become too large.
@@ -271,7 +265,7 @@ int do_test_work_group_suggested_local_size(
         // return error if no number is found due to the skip condition
         err = -1;
         unsigned int j = 0;
-        size_t num_elems = NELEMS(value_range);
+        size_t num_elems = NELEMS(value_range_nD);
         for (size_t i = start; i < end; i += incr)
         {
             if (skip_cond(i)) continue;

@@ -15,10 +15,10 @@
 //
 
 #ifdef _WIN32
-#define NOMINMAX
 #include <Windows.h>
 #include <dxgi1_2.h>
 #include <aclapi.h>
+#include <algorithm>
 #endif
 #include <vulkan/vulkan.h>
 #include "vulkan_wrapper.hpp"
@@ -201,7 +201,8 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
 
     if (physicalDeviceCount == uint32_t(0))
     {
-        throw std::runtime_error("failed to find GPUs with Vulkan support!");
+        std::cout << "failed to find GPUs with Vulkan support!\n";
+        return;
     }
 
     std::vector<VkPhysicalDevice> vkPhysicalDeviceList(physicalDeviceCount,
@@ -625,12 +626,12 @@ void VulkanQueue::submit(const VulkanSemaphoreList &waitSemaphoreList,
     vkSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     vkSubmitInfo.pNext = NULL;
     vkSubmitInfo.waitSemaphoreCount = (uint32_t)waitSemaphoreList.size();
-    vkSubmitInfo.pWaitSemaphores = waitSemaphoreList;
+    vkSubmitInfo.pWaitSemaphores = waitSemaphoreList();
     vkSubmitInfo.pWaitDstStageMask = vkPipelineStageFlagsList.data();
     vkSubmitInfo.commandBufferCount = (uint32_t)commandBufferList.size();
-    vkSubmitInfo.pCommandBuffers = commandBufferList;
+    vkSubmitInfo.pCommandBuffers = commandBufferList();
     vkSubmitInfo.signalSemaphoreCount = (uint32_t)signalSemaphoreList.size();
-    vkSubmitInfo.pSignalSemaphores = signalSemaphoreList;
+    vkSubmitInfo.pSignalSemaphores = signalSemaphoreList();
 
     vkQueueSubmit(m_vkQueue, 1, &vkSubmitInfo, NULL);
 }
@@ -728,7 +729,8 @@ void VulkanDescriptorSetLayout::VulkanDescriptorSetLayoutCommon(
     vkDescriptorSetLayoutCreateInfo.flags = 0;
     vkDescriptorSetLayoutCreateInfo.bindingCount =
         (uint32_t)descriptorSetLayoutBindingList.size();
-    vkDescriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindingList;
+    vkDescriptorSetLayoutCreateInfo.pBindings =
+        descriptorSetLayoutBindingList();
 
     vkCreateDescriptorSetLayout(m_device, &vkDescriptorSetLayoutCreateInfo,
                                 NULL, &m_vkDescriptorSetLayout);
@@ -799,7 +801,7 @@ void VulkanPipelineLayout::VulkanPipelineLayoutCommon(
     vkPipelineLayoutCreateInfo.flags = 0;
     vkPipelineLayoutCreateInfo.setLayoutCount =
         (uint32_t)descriptorSetLayoutList.size();
-    vkPipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayoutList;
+    vkPipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayoutList();
     vkPipelineLayoutCreateInfo.pushConstantRangeCount = 0;
     vkPipelineLayoutCreateInfo.pPushConstantRanges = NULL;
 
@@ -846,23 +848,18 @@ VulkanShaderModule::VulkanShaderModule(const VulkanShaderModule &shaderModule)
 {}
 
 VulkanShaderModule::VulkanShaderModule(const VulkanDevice &device,
-                                       const std::string &code)
+                                       const std::vector<char> &code)
     : m_device(device)
 {
-    std::string paddedCode = code;
-    while (paddedCode.size() % 4)
-    {
-        paddedCode += " ";
-    }
 
     VkShaderModuleCreateInfo vkShaderModuleCreateInfo = {};
     vkShaderModuleCreateInfo.sType =
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     vkShaderModuleCreateInfo.pNext = NULL;
     vkShaderModuleCreateInfo.flags = 0;
-    vkShaderModuleCreateInfo.codeSize = paddedCode.size();
+    vkShaderModuleCreateInfo.codeSize = code.size();
     vkShaderModuleCreateInfo.pCode =
-        (const uint32_t *)(void *)paddedCode.c_str();
+        reinterpret_cast<const uint32_t *>(code.data());
 
     vkCreateShaderModule(m_device, &vkShaderModuleCreateInfo, NULL,
                          &m_vkShaderModule);
@@ -1577,7 +1574,7 @@ VulkanImage::VulkanImage(
     vkImageCreateInfo.queueFamilyIndexCount =
         (uint32_t)m_device.getPhysicalDevice().getQueueFamilyList().size();
     vkImageCreateInfo.pQueueFamilyIndices =
-        m_device.getPhysicalDevice().getQueueFamilyList();
+        m_device.getPhysicalDevice().getQueueFamilyList()();
     vkImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     VkExternalMemoryImageCreateInfo vkExternalMemoryImageCreateInfo = {};

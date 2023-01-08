@@ -97,10 +97,10 @@ int test_kernel_preprocessor_macros(cl_device_id deviceID, cl_context context, c
     char programSource[4096];
     char curFileName[512];
     char *programPtr = programSource;
-    int i = 0;
     snprintf(curFileName, 512, "%s", __FILE__);
 #ifdef _WIN32
     // Replace "\" with "\\"
+    int i = 0;
     while(curFileName[i] != '\0') {
         if (curFileName[i] == '\\') {
             int j = i + 1;

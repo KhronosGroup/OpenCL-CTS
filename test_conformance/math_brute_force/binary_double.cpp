@@ -25,115 +25,35 @@ namespace {
 
 const double twoToMinus1022 = MAKE_HEX_DOUBLE(0x1p-1022, 1, -1022);
 
-int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
-                cl_kernel *k, cl_program *p, bool relaxedMode)
-{
-    const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-                        "__kernel void math_kernel",
-                        sizeNames[vectorSize],
-                        "( __global double",
-                        sizeNames[vectorSize],
-                        "* out, __global double",
-                        sizeNames[vectorSize],
-                        "* in1, __global double",
-                        sizeNames[vectorSize],
-                        "* in2 )\n"
-                        "{\n"
-                        "   size_t i = get_global_id(0);\n"
-                        "   out[i] = ",
-                        name,
-                        "( in1[i], in2[i] );\n"
-                        "}\n" };
-
-    const char *c3[] = {
-        "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-        "__kernel void math_kernel",
-        sizeNames[vectorSize],
-        "( __global double* out, __global double* in, __global double* in2)\n"
-        "{\n"
-        "   size_t i = get_global_id(0);\n"
-        "   if( i + 1 < get_global_size(0) )\n"
-        "   {\n"
-        "       double3 d0 = vload3( 0, in + 3 * i );\n"
-        "       double3 d1 = vload3( 0, in2 + 3 * i );\n"
-        "       d0 = ",
-        name,
-        "( d0, d1 );\n"
-        "       vstore3( d0, 0, out + 3*i );\n"
-        "   }\n"
-        "   else\n"
-        "   {\n"
-        "       size_t parity = i & 1;   // Figure out how many elements are "
-        "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
-        "buffer size \n"
-        "       double3 d0;\n"
-        "       double3 d1;\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 1:\n"
-        "               d0 = (double3)( in[3*i], NAN, NAN ); \n"
-        "               d1 = (double3)( in2[3*i], NAN, NAN ); \n"
-        "               break;\n"
-        "           case 0:\n"
-        "               d0 = (double3)( in[3*i], in[3*i+1], NAN ); \n"
-        "               d1 = (double3)( in2[3*i], in2[3*i+1], NAN ); \n"
-        "               break;\n"
-        "       }\n"
-        "       d0 = ",
-        name,
-        "( d0, d1 );\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 0:\n"
-        "               out[3*i+1] = d0.y; \n"
-        "               // fall through\n"
-        "           case 1:\n"
-        "               out[3*i] = d0.x; \n"
-        "               break;\n"
-        "       }\n"
-        "   }\n"
-        "}\n"
-    };
-
-    const char **kern = c;
-    size_t kernSize = sizeof(c) / sizeof(c[0]);
-
-    if (sizeValues[vectorSize] == 3)
-    {
-        kern = c3;
-        kernSize = sizeof(c3) / sizeof(c3[0]);
-    }
-
-    char testName[32];
-    snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
-             sizeNames[vectorSize]);
-
-    return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p,
-                       relaxedMode);
-}
-
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
-    BuildKernelInfo *info = (BuildKernelInfo *)p;
-    cl_uint vectorSize = gMinVectorSizeIndex + job_id;
-    return BuildKernel(info->nameInCode, vectorSize, info->threadCount,
-                       info->kernels[vectorSize].data(),
-                       &(info->programs[vectorSize]), info->relaxedMode);
+    BuildKernelInfo &info = *(BuildKernelInfo *)p;
+    auto generator = [](const std::string &kernel_name, const char *builtin,
+                        cl_uint vector_size_index) {
+        return GetBinaryKernel(kernel_name, builtin, ParameterType::Double,
+                               ParameterType::Double, ParameterType::Double,
+                               vector_size_index);
+    };
+    return BuildKernels(info, job_id, generator);
 }
 
 // Thread specific data for a worker thread
 struct ThreadInfo
 {
-    cl_mem inBuf; // input buffer for the thread
-    cl_mem inBuf2; // input buffer for the thread
-    cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
+    // Input and output buffers for the thread
+    clMemWrapper inBuf;
+    clMemWrapper inBuf2;
+    Buffers outBuf;
+
     float maxError; // max error value. Init to 0.
     double
         maxErrorValue; // position of the max error value (param 1).  Init to 0.
     double maxErrorValue2; // position of the max error value (param 2).  Init
                            // to 0.
-    MTdata d;
-    cl_command_queue tQueue; // per thread command queue to improve performance
+    MTdataHolder d;
+
+    // Per thread command queue to improve performance
+    clCommandQueueWrapper tQueue;
 };
 
 struct TestInfo
@@ -626,7 +546,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     {
         if (gVerboseBruteForce)
         {
-            vlog("base:%14u step:%10u scale:%10zu buf_elements:%10u ulps:%5.3f "
+            vlog("base:%14u step:%10u scale:%10u buf_elements:%10zu ulps:%5.3f "
                  "ThreadCount:%2u\n",
                  base, job->step, job->scale, buffer_elements, job->ulps,
                  job->threadCount);
@@ -680,14 +600,7 @@ int TestFunc_Double_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     test_info.skipNanInf = 0;
     test_info.isNextafter = 0 == strcmp("nextafter", f->nameInCode);
 
-    // cl_kernels aren't thread safe, so we make one for each vector size for
-    // every thread
-    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
-    {
-        test_info.k[i].resize(test_info.threadCount, nullptr);
-    }
-
-    test_info.tinfo.resize(test_info.threadCount, ThreadInfo{});
+    test_info.tinfo.resize(test_info.threadCount);
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = {
@@ -736,7 +649,7 @@ int TestFunc_Double_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             goto exit;
         }
 
-        test_info.tinfo[i].d = init_genrand(genrand_int32(d));
+        test_info.tinfo[i].d = MTdataHolder(genrand_int32(d));
     }
 
     // Init the kernels
@@ -779,24 +692,5 @@ int TestFunc_Double_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
-    // Release
-    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
-    {
-        for (auto &kernel : test_info.k[i])
-        {
-            clReleaseKernel(kernel);
-        }
-    }
-
-    for (auto &threadInfo : test_info.tinfo)
-    {
-        free_mtdata(threadInfo.d);
-        clReleaseMemObject(threadInfo.inBuf);
-        clReleaseMemObject(threadInfo.inBuf2);
-        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-            clReleaseMemObject(threadInfo.outBuf[j]);
-        clReleaseCommandQueue(threadInfo.tQueue);
-    }
-
     return error;
 }

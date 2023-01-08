@@ -53,6 +53,43 @@ static void printUsage( const char *execName );
 
 extern int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, test_format_set_fn formatTestFn, cl_mem_object_type imageType );
 
+extern int cl_image_requirements_size_ext_negative(cl_device_id device,
+                                                   cl_context context,
+                                                   cl_command_queue queue);
+extern int cl_image_requirements_size_ext_consistency(cl_device_id device,
+                                                      cl_context context,
+                                                      cl_command_queue queue);
+extern int clGetImageRequirementsInfoEXT_negative(cl_device_id device,
+                                                  cl_context context,
+                                                  cl_command_queue queue);
+extern int cl_image_requirements_max_val_ext_negative(cl_device_id device,
+                                                      cl_context context,
+                                                      cl_command_queue queue);
+extern int cl_image_requirements_max_val_ext_positive(cl_device_id device,
+                                                      cl_context context,
+                                                      cl_command_queue queue);
+
+extern int image2d_from_buffer_positive(cl_device_id device, cl_context context,
+                                        cl_command_queue queue);
+extern int memInfo_image_from_buffer_positive(cl_device_id device,
+                                              cl_context context,
+                                              cl_command_queue queue);
+extern int imageInfo_image_from_buffer_positive(cl_device_id device,
+                                                cl_context context,
+                                                cl_command_queue queue);
+extern int image_from_buffer_alignment_negative(cl_device_id device,
+                                                cl_context context,
+                                                cl_command_queue queue);
+extern int image_from_small_buffer_negative(cl_device_id device,
+                                            cl_context context,
+                                            cl_command_queue queue);
+extern int image_from_buffer_fill_positive(cl_device_id device,
+                                           cl_context context,
+                                           cl_command_queue queue);
+extern int image_from_buffer_read_positive(cl_device_id device,
+                                           cl_context context,
+                                           cl_command_queue queue);
+
 /** read_write images only support sampler-less read buildt-ins which require special settings
   * for some global parameters. This pair of functions temporarily overwrite those global parameters
   * and then recover them after completing a read_write test.
@@ -246,12 +283,108 @@ int test_2Darray(cl_device_id device, cl_context context, cl_command_queue queue
     return doTest( device, context, queue, CL_MEM_OBJECT_IMAGE2D_ARRAY );
 }
 
+int test_cl_image_requirements_size_ext_negative(cl_device_id device,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 int num_elements)
+{
+    return cl_image_requirements_size_ext_negative(device, context, queue);
+}
+int test_cl_image_requirements_size_ext_consistency(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements)
+{
+    return cl_image_requirements_size_ext_consistency(device, context, queue);
+}
+int test_clGetImageRequirementsInfoEXT_negative(cl_device_id device,
+                                                cl_context context,
+                                                cl_command_queue queue,
+                                                int num_elements)
+{
+    return clGetImageRequirementsInfoEXT_negative(device, context, queue);
+}
+int test_cl_image_requirements_max_val_ext_negative(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements)
+{
+    return cl_image_requirements_max_val_ext_negative(device, context, queue);
+}
+int test_cl_image_requirements_max_val_ext_positive(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements)
+{
+    return cl_image_requirements_max_val_ext_positive(device, context, queue);
+}
+
+int test_image2d_from_buffer_positive(cl_device_id device, cl_context context,
+                                      cl_command_queue queue, int num_elements)
+{
+    return image2d_from_buffer_positive(device, context, queue);
+}
+int test_memInfo_image_from_buffer_positive(cl_device_id device,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            int num_elements)
+{
+    return memInfo_image_from_buffer_positive(device, context, queue);
+}
+int test_imageInfo_image_from_buffer_positive(cl_device_id device,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements)
+{
+    return imageInfo_image_from_buffer_positive(device, context, queue);
+}
+int test_image_from_buffer_alignment_negative(cl_device_id device,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements)
+{
+    return image_from_buffer_alignment_negative(device, context, queue);
+}
+int test_image_from_small_buffer_negative(cl_device_id device,
+                                          cl_context context,
+                                          cl_command_queue queue,
+                                          int num_elements)
+{
+    return image_from_small_buffer_negative(device, context, queue);
+}
+int test_image_from_buffer_fill_positive(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements)
+{
+    return image_from_buffer_fill_positive(device, context, queue);
+}
+int test_image_from_buffer_read_positive(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements)
+{
+    return image_from_buffer_read_positive(device, context, queue);
+}
+
 test_definition test_list[] = {
-    ADD_TEST( 1D ),
-    ADD_TEST( 2D ),
-    ADD_TEST( 3D ),
-    ADD_TEST( 1Darray ),
-    ADD_TEST( 2Darray ),
+    ADD_TEST(1D),
+    ADD_TEST(2D),
+    ADD_TEST(3D),
+    ADD_TEST(1Darray),
+    ADD_TEST(2Darray),
+    ADD_TEST_VERSION(cl_image_requirements_size_ext_negative, Version(3, 0)),
+    ADD_TEST_VERSION(cl_image_requirements_size_ext_consistency, Version(3, 0)),
+    ADD_TEST_VERSION(clGetImageRequirementsInfoEXT_negative, Version(3, 0)),
+    ADD_TEST_VERSION(cl_image_requirements_max_val_ext_negative, Version(3, 0)),
+    ADD_TEST_VERSION(cl_image_requirements_max_val_ext_positive, Version(3, 0)),
+    ADD_TEST_VERSION(image2d_from_buffer_positive, Version(3, 0)),
+    ADD_TEST_VERSION(memInfo_image_from_buffer_positive, Version(3, 0)),
+    ADD_TEST_VERSION(imageInfo_image_from_buffer_positive, Version(3, 0)),
+    ADD_TEST_VERSION(image_from_buffer_alignment_negative, Version(3, 0)),
+    ADD_TEST_VERSION(image_from_small_buffer_negative, Version(3, 0)),
+    ADD_TEST_VERSION(image_from_buffer_fill_positive, Version(3, 0)),
+    ADD_TEST_VERSION(image_from_buffer_read_positive, Version(3, 0)),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

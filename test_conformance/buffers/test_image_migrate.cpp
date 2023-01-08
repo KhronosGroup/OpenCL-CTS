@@ -128,7 +128,6 @@ int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_que
   cl_mem_migration_flags *flagsA, *flagsB, *flagsC;
   cl_device_partition_property property[] = {CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, 0, 0};
   cl_mem *imageA, *imageB, *imageC;
-  cl_mem_flags flags;
   cl_image_format format;
   cl_sampler sampler = NULL;
   cl_program program = NULL;

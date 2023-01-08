@@ -19,6 +19,7 @@
 #include <assert.h>
 
 #include <algorithm>
+#include <cinttypes>
 #include <vector>
 
 static bool findProperty(const std::vector<cl_properties>& props,
@@ -97,16 +98,16 @@ int compareProperties(const std::vector<cl_properties>& queried,
 
             if (!found)
             {
-                log_error("ERROR: expected property 0x%llx not found!\n",
+                log_error("ERROR: expected property 0x%" PRIx64 " not found!\n",
                           check_prop);
                 return TEST_FAIL;
             }
             else if (check_value != queried_value)
             {
-                log_error(
-                    "ERROR: mis-matched value for property 0x%llx: wanted "
-                    "0x%llx, got 0x%llx\n",
-                    check_prop, check_value, queried_value);
+                log_error("ERROR: mis-matched value for property 0x%" PRIx64
+                          ": wanted "
+                          "0x%" PRIx64 ", got 0x%" PRIx64 "\n",
+                          check_prop, check_value, queried_value);
                 return TEST_FAIL;
             }
         }

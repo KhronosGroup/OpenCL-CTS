@@ -12,7 +12,6 @@
 ######################################################################################################
 
 set(MODULE_NAME SPIRV_NEW)
-set(CMAKE_CXX_STANDARD 11)
 
 file(GLOB SPIRV_NEW_SOURCES "*.cpp")
 

@@ -482,6 +482,13 @@ void read_image_pixel(void *imageData, image_descriptor *imageInfo, int x,
         outData[2] = tempData[3];
         outData[3] = tempData[0];
     }
+    else if (format->image_channel_order == CL_ABGR)
+    {
+        outData[0] = tempData[3];
+        outData[1] = tempData[2];
+        outData[2] = tempData[1];
+        outData[3] = tempData[0];
+    }
     else if ((format->image_channel_order == CL_BGRA)
              || (format->image_channel_order == CL_sBGRA))
     {
