@@ -829,7 +829,7 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
         "                   uint extra_last_thread)\n"
         "{\n"
         "   size_t i = get_global_id(0);\n"
-        "   *(f + i) = 0xdeaddead;"
+        "   *(f + i) = 0xdead;"
         "}\n"
     };
 
@@ -1676,7 +1676,7 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
         "                   uint extra_last_thread)\n"
         "{\n"
         "   size_t i = get_global_id(0);\n"
-        "   *(f + i) = 0xdeaddead;"
+        "   *(f + i) = 0xdead;"
         "}\n"
     };
 
