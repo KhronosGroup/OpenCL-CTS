@@ -837,8 +837,13 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
     {
         resetProgram =
             MakeProgram(device, reset, sizeof(reset) / sizeof(reset[0]));
+        if (NULL == resetProgram)
+        {
+            gFailCount++;
+            return -1;
+        }
         resetKernel = clCreateKernel(resetProgram, "reset", &error);
-        if (NULL == resetProgram || NULL == resetKernel)
+        if (NULL == resetKernel)
         {
             gFailCount++;
             return -1;
@@ -1679,8 +1684,13 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
     {
         resetProgram =
             MakeProgram(device, reset, sizeof(reset) / sizeof(reset[0]));
+        if (NULL == resetProgram)
+        {
+            gFailCount++;
+            return -1;
+        }
         resetKernel = clCreateKernel(resetProgram, "reset", &error);
-        if (NULL == resetProgram || NULL == resetKernel)
+        if (NULL == resetKernel)
         {
             gFailCount++;
             return -1;
