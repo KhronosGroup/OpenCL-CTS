@@ -28,18 +28,20 @@
 #endif
 
 // Defines the set of types we support (no support for double)
-typedef enum {
+typedef enum
+{
     kuchar = 0,
     kchar = 1,
     kushort = 2,
     kshort = 3,
-    kuint = 4,
-    kint = 5,
-    kfloat = 6,
-    kulong = 7,
-    klong = 8,
-    kdouble = 9,
-    kTypeCount  // always goes last
+    khalf = 4,
+    kuint = 5,
+    kint = 6,
+    kfloat = 7,
+    kulong = 8,
+    klong = 9,
+    kdouble = 10,
+    kTypeCount // always goes last
 } Type;
 
 

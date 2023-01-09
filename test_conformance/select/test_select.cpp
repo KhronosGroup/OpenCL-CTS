@@ -237,6 +237,9 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
     if (srctype == kdouble)
         strcpy( extension, "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n" );
 
+    if (srctype == khalf)
+        strcpy(extension, "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n");
+
     // create type name and testname
     switch( vec_len )
     {
@@ -315,9 +318,16 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     cl_program programs[VECTOR_SIZE_COUNT];
     cl_kernel  kernels[VECTOR_SIZE_COUNT];
 
-    if(stype == kdouble && ! is_extension_available( device, "cl_khr_fp64" ))
+    if (stype == kdouble && !is_extension_available(device, "cl_khr_fp64"))
     {
         log_info("Skipping double because cl_khr_fp64 extension is not supported.\n");
+        return 0;
+    }
+
+    if (stype == khalf && !is_extension_available(device, "cl_khr_fp16"))
+    {
+        log_info(
+            "Skipping half because cl_khr_fp16 extension is not supported.\n");
         return 0;
     }
 
@@ -506,6 +516,16 @@ int test_select_short_short(cl_device_id deviceID, cl_context context, cl_comman
 {
     return doTest(queue, context, kshort, kshort, deviceID);
 }
+int test_select_half_ushort(cl_device_id deviceID, cl_context context,
+                            cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, khalf, kushort, deviceID);
+}
+int test_select_half_short(cl_device_id deviceID, cl_context context,
+                           cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, khalf, kshort, deviceID);
+}
 int test_select_uint_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kuint, kuint, deviceID);
@@ -556,26 +576,17 @@ int test_select_double_long(cl_device_id deviceID, cl_context context, cl_comman
 }
 
 test_definition test_list[] = {
-    ADD_TEST( select_uchar_uchar ),
-    ADD_TEST( select_uchar_char ),
-    ADD_TEST( select_char_uchar ),
-    ADD_TEST( select_char_char ),
-    ADD_TEST( select_ushort_ushort ),
-    ADD_TEST( select_ushort_short ),
-    ADD_TEST( select_short_ushort ),
-    ADD_TEST( select_short_short ),
-    ADD_TEST( select_uint_uint ),
-    ADD_TEST( select_uint_int ),
-    ADD_TEST( select_int_uint ),
-    ADD_TEST( select_int_int ),
-    ADD_TEST( select_float_uint ),
-    ADD_TEST( select_float_int ),
-    ADD_TEST( select_ulong_ulong ),
-    ADD_TEST( select_ulong_long ),
-    ADD_TEST( select_long_ulong ),
-    ADD_TEST( select_long_long ),
-    ADD_TEST( select_double_ulong ),
-    ADD_TEST( select_double_long ),
+    ADD_TEST(select_uchar_uchar),   ADD_TEST(select_uchar_char),
+    ADD_TEST(select_char_uchar),    ADD_TEST(select_char_char),
+    ADD_TEST(select_ushort_ushort), ADD_TEST(select_ushort_short),
+    ADD_TEST(select_short_ushort),  ADD_TEST(select_short_short),
+    ADD_TEST(select_half_ushort),   ADD_TEST(select_half_short),
+    ADD_TEST(select_uint_uint),     ADD_TEST(select_uint_int),
+    ADD_TEST(select_int_uint),      ADD_TEST(select_int_int),
+    ADD_TEST(select_float_uint),    ADD_TEST(select_float_int),
+    ADD_TEST(select_ulong_ulong),   ADD_TEST(select_ulong_long),
+    ADD_TEST(select_long_ulong),    ADD_TEST(select_long_long),
+    ADD_TEST(select_double_ulong),  ADD_TEST(select_double_long),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
