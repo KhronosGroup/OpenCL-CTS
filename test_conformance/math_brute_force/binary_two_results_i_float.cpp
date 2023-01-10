@@ -151,18 +151,18 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             uint32_t pattern = 0xffffdead;
 
-            if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
-                                             &pattern, sizeof(pattern), 0,
-                                             BUFFER_SIZE, 0, NULL, NULL)))
+            if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j], &pattern,
+                                             sizeof(pattern), 0, BUFFER_SIZE, 0,
+                                             NULL, NULL)))
             {
                 vlog_error("Error: clEnqueueFillBuffer 1 failed! err: %d\n",
                            error);
                 return error;
             }
 
-            if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer2[j],
-                                             &pattern, sizeof(pattern), 0,
-                                             BUFFER_SIZE, 0, NULL, NULL)))
+            if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer2[j], &pattern,
+                                             sizeof(pattern), 0, BUFFER_SIZE, 0,
+                                             NULL, NULL)))
             {
                 vlog_error("Error: clEnqueueFillBuffer 2 failed! err: %d\n",
                            error);

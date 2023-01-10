@@ -125,8 +125,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                                          &pattern, sizeof(pattern), 0,
                                          buffer_size, 0, NULL, NULL)))
         {
-            vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
-                       error);
+            vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n", error);
             return error;
         }
 

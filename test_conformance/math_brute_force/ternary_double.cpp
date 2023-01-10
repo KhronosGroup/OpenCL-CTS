@@ -220,9 +220,9 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
         {
             uint32_t pattern = 0xffffdead;
 
-            if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
-                                             &pattern, sizeof(pattern), 0,
-                                             BUFFER_SIZE, 0, NULL, NULL)))
+            if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j], &pattern,
+                                             sizeof(pattern), 0, BUFFER_SIZE, 0,
+                                             NULL, NULL)))
             {
                 vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
                            error);

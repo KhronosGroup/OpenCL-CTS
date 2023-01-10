@@ -115,9 +115,9 @@ int TestFunc_mad_Double(const Func *f, MTdata d, bool relaxedMode)
         {
             uint32_t pattern = 0xffffdead;
 
-            if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
-                                             &pattern, sizeof(pattern), 0,
-                                             BUFFER_SIZE, 0, NULL, NULL)))
+            if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j], &pattern,
+                                             sizeof(pattern), 0, BUFFER_SIZE, 0,
+                                             NULL, NULL)))
             {
                 vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
                            error);
