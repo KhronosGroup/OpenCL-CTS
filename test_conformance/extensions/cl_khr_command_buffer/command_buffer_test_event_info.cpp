@@ -15,9 +15,7 @@
 //
 #include "basic_command_buffer.h"
 #include "procs.h"
-
 #include <vector>
-
 
 namespace {
 
@@ -89,8 +87,8 @@ struct CommandQueue : public BasicCommandBufferTest
         if (size != sizeof(queue) || otherQueue == NULL)
         {
             log_error("ERROR: Returned command queue size does not validate "
-                      "(expected %d, got %d)\n",
-                      (int)sizeof(queue), (int)size);
+                      "(expected %zu, got %zu)\n",
+                      sizeof(queue), size);
             return -1;
         }
 
@@ -122,8 +120,8 @@ struct Context : public BasicCommandBufferTest
         {
             log_error(
                 "ERROR: Returned context size does not validate (expected "
-                "%d, got %d)\n",
-                (int)sizeof(context), (int)size);
+                "%zu, got %zu)\n",
+                sizeof(context), size);
             return -1;
         }
         if (testCtx != context)
@@ -210,8 +208,8 @@ struct ReferenceCount : public BasicCommandBufferTest
         {
             log_error(
                 "ERROR: Wrong command reference count (expected return value 1 "
-                "of size %d, returned size %d, returned value %d)\n",
-                (int)sizeof(count), (int)size, (int)count);
+                "of size %zu, returned size %zu, returned value %u)\n",
+                sizeof(count), size, count);
             return TEST_FAIL;
         }
 
