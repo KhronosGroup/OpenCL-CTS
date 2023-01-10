@@ -188,8 +188,9 @@ int test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_comman
         }
     }
 
-    // test when input subgroup count exceeds max wg size
-    size_t large_sg_size = kernel_subgroup_count + 1;
+    // test when input subgroup count exceeds max wg size:
+    // there can be at most the local size of (1 WI) subgroups
+    size_t large_sg_size = max_local + 1;
     error = clGetKernelSubGroupInfo(kernel, deviceID, CL_KERNEL_LOCAL_SIZE_FOR_SUB_GROUP_COUNT, sizeof(size_t), &large_sg_size, sizeof(ret_ndrange1d), &ret_ndrange1d, &realSize);
         test_error(error, "clGetKernelSubGroupInfo failed for CL_KERNEL_LOCAL_SIZE_FOR_SUB_GROUP_COUNT");
     if (ret_ndrange1d != 0)
