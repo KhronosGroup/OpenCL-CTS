@@ -59,6 +59,7 @@ extern int gSkipCorrectnessTesting;
 extern int gForceFTZ;
 extern int gFastRelaxedDerived;
 extern int gWimpyMode;
+extern int gHostFill;
 extern int gIsInRTZMode;
 extern int gInfNanSupport;
 extern int gIsEmbedded;

@@ -95,6 +95,28 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     Force64BitFPUPrecision();
 
+    cl_event e[VECTOR_SIZE_COUNT];
+    cl_long *out[VECTOR_SIZE_COUNT];
+    if (gHostFill)
+    {
+        // start the map of the output arrays
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        {
+            out[j] = (cl_long *)clEnqueueMapBuffer(
+                tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
+                buffer_size, 0, NULL, e + j, &error);
+            if (error || NULL == out[j])
+            {
+                vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
+                           error);
+                return error;
+            }
+        }
+
+        // Get that moving
+        if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+    }
+
     // Write the new values to the input array
     cl_double *p = (cl_double *)gIn + thread_id * buffer_elements;
     for (size_t j = 0; j < buffer_elements; j++)
@@ -109,16 +131,45 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
+        if (gHostFill)
+        {
+            // Wait for the map to finish
+            if ((error = clWaitForEvents(1, e + j)))
+            {
+                vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
+                return error;
+            }
+            if ((error = clReleaseEvent(e[j])))
+            {
+                vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
+                return error;
+            }
+        }
+
         // Fill the result buffer with garbage, so that old results don't carry
         // over
         uint32_t pattern = 0xffffdead;
-
-        if ((error = clEnqueueFillBuffer(tinfo->tQueue, tinfo->outBuf[j],
-                                         &pattern, sizeof(pattern), 0,
-                                         buffer_size, 0, NULL, NULL)))
+        if (gHostFill)
         {
-            vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n", error);
-            return error;
+            memset_pattern4(out[j], &pattern, buffer_size);
+            if ((error = clEnqueueUnmapMemObject(
+                     tinfo->tQueue, tinfo->outBuf[j], out[j], 0, NULL, NULL)))
+            {
+                vlog_error("Error: clEnqueueUnmapMemObject failed! err: %d\n",
+                           error);
+                return error;
+            }
+        }
+        else
+        {
+            if ((error = clEnqueueFillBuffer(tinfo->tQueue, tinfo->outBuf[j],
+                                             &pattern, sizeof(pattern), 0,
+                                             buffer_size, 0, NULL, NULL)))
+            {
+                vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
+                           error);
+                return error;
+            }
         }
 
         // Run the kernel
@@ -150,12 +201,11 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     }
 
     // Get that moving
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
 
     if (gSkipCorrectnessTesting) return CL_SUCCESS;
 
     // Calculate the correctly rounded reference result
-    cl_long *out[VECTOR_SIZE_COUNT];
     cl_long *r = (cl_long *)gOut_Ref + thread_id * buffer_elements;
     cl_double *s = (cl_double *)p;
     for (size_t j = 0; j < buffer_elements; j++) r[j] = dfunc.i_f(s[j]);
@@ -244,7 +294,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
+    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 3 failed\n");
 
 
     if (0 == (base & 0x0fffffff))
