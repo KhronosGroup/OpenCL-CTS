@@ -15,7 +15,6 @@
 //
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"
-#include "harness/threadTesting.h"
 #include "harness/typeWrappers.h"
 
 extern int create_program_and_kernel(const char *source,
