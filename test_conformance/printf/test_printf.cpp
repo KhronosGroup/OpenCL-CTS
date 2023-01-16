@@ -1172,6 +1172,24 @@ test_status InitCL( cl_device_id device )
 
     releaseOutputStream(gFd);
 
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode_half(device);
+        if (fpConfigHalf == CL_FP_ROUND_TO_NEAREST)
+        {
+            half_rounding_mode = CL_HALF_RTE;
+        }
+        else if (fpConfigHalf == CL_FP_ROUND_TO_ZERO)
+        {
+            half_rounding_mode = CL_HALF_RTZ;
+        }
+        else
+        {
+            log_error("Error while acquiring half rounding mode");
+        }
+    }
+
     // Generate reference results
     generateRef(device);
 

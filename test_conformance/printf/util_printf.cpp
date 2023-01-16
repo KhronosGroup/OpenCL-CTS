@@ -18,9 +18,13 @@
 
 #include "test_printf.h"
 #include <assert.h>
+#include <CL/cl_half.h>
+
 
 // Helpers for generating runtime reference results
 static void intRefBuilder(printDataGenParameters&, char*, const size_t);
+static void halfRefBuilder(printDataGenParameters&, char* rResult,
+                           const size_t);
 static void floatRefBuilder(printDataGenParameters&, char* rResult, const size_t);
 static void octalRefBuilder(printDataGenParameters&, char*, const size_t);
 static void unsignedRefBuilder(printDataGenParameters&, char*, const size_t);
@@ -115,7 +119,7 @@ std::vector<printDataGenParameters> printHalfGenParameters = {
 
     // Default(right)-justified
 
-    { "%f", "1.2345h" },
+    { "%f", "1.234h" },
 
     // One position after the decimal,default(right)-justified
 
@@ -138,12 +142,12 @@ std::vector<printDataGenParameters> printHalfGenParameters = {
     // Double argument representing floating-point,used by f
     // style,default(right)-justified
 
-    { "%4g", "5.6789h" },
+    { "%4g", "5.678h" },
 
     // Double argument representing floating-point,used by e
     // style,default(right)-justified
 
-    { "%4.2g", "5.6789h" },
+    { "%4.2g", "5.678h" },
 
     // Double argument representing floating-point,used by e
     // style,default(right)-justified
@@ -175,7 +179,7 @@ testCase testCaseHalf = {
 
     printHalfGenParameters,
 
-    floatRefBuilder,
+    halfRefBuilder,
 
     kfloat
 
@@ -888,6 +892,9 @@ std::vector<testCase*> allTestCase = {
     &testCaseString,   &testCaseVector,      &testCaseAddrSpace
 };
 
+//-----------------------------------------
+
+cl_half_rounding_mode half_rounding_mode = CL_HALF_RTE;
 
 //-----------------------------------------
 
@@ -962,6 +969,14 @@ static void intRefBuilder(printDataGenParameters& params, char* refResult, const
     snprintf(refResult, refSize, params.genericFormat, atoi(params.dataRepresentation));
 }
 
+static void halfRefBuilder(printDataGenParameters& params, char* refResult,
+                           const size_t refSize)
+{
+    cl_half val = cl_half_from_float(strtof(params.dataRepresentation, NULL),
+                                     half_rounding_mode);
+    snprintf(refResult, refSize, params.genericFormat, cl_half_to_float(val));
+}
+
 static void floatRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
 {
     snprintf(refResult, refSize, params.genericFormat, strtof(params.dataRepresentation, NULL));
@@ -997,24 +1012,29 @@ static void hexRefBuilder(printDataGenParameters& params, char* refResult, const
 */
 void generateRef(const cl_device_id device)
 {
-    const cl_device_fp_config fpConfig = get_default_rounding_mode(device);
+    const cl_device_fp_config fpConfigSingle =
+        get_default_rounding_mode(device);
+    const cl_device_fp_config fpConfigHalf =
+        get_default_rounding_mode_half(device);
     const RoundingMode hostRound = get_round();
-    RoundingMode deviceRound;
 
     // Map device rounding to CTS rounding type
     // get_default_rounding_mode supports RNE and RTZ
-    if (fpConfig == CL_FP_ROUND_TO_NEAREST)
-    {
-        deviceRound = kRoundToNearestEven;
-    }
-    else if (fpConfig == CL_FP_ROUND_TO_ZERO)
-    {
-        deviceRound = kRoundTowardZero;
-    }
-    else
-    {
-        assert(false && "Unreachable");
-    }
+    auto get_rounding = [](const cl_device_fp_config& fpConfig) {
+        if (fpConfig == CL_FP_ROUND_TO_NEAREST)
+        {
+            return kRoundToNearestEven;
+        }
+        else if (fpConfig == CL_FP_ROUND_TO_ZERO)
+        {
+            return kRoundTowardZero;
+        }
+        else
+        {
+            assert(false && "Unreachable");
+        }
+        return kDefaultRoundingMode;
+    };
 
     // Loop through all test cases
     for (auto &caseToTest: allTestCase)
@@ -1029,6 +1049,12 @@ void generateRef(const cl_device_id device)
 
         // Make sure the reference result is empty
         assert(caseToTest->_correctBuffer.size() == 0);
+
+        const cl_device_fp_config* fpConfig = &fpConfigSingle;
+        if (caseToTest->_type == TYPE_HALF
+            || caseToTest->_type == TYPE_HALF_LIMITS)
+            fpConfig = &fpConfigHalf;
+        RoundingMode deviceRound = get_rounding(*fpConfig);
 
         // Loop through each input
         for (auto &params: caseToTest->_genParameters)

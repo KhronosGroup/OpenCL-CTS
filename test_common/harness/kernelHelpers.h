@@ -161,6 +161,10 @@ size_t get_min_alignment(cl_context context);
  * (Double is always CL_FP_ROUND_TO_NEAREST.) Returns 0 on error. */
 cl_device_fp_config get_default_rounding_mode(cl_device_id device);
 
+/* Helper to obtain the default rounding mode for half precision computation.
+ * Returns 0 on error. */
+cl_device_fp_config get_default_rounding_mode_half(cl_device_id device);
+
 #define PASSIVE_REQUIRE_IMAGE_SUPPORT(device)                                  \
     if (checkForImageSupport(device))                                          \
     {                                                                          \

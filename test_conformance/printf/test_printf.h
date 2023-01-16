@@ -32,6 +32,8 @@
 #include <CL/cl_platform.h>
 #endif
 
+#include <CL/cl_half.h>
+
 #define ANALYSIS_BUFFER_SIZE 256
 
 //-----------------------------------------
@@ -106,6 +108,9 @@ struct testCase
 
 extern const char* strType[];
 extern std::vector<testCase*> allTestCase;
+extern cl_half_rounding_mode half_rounding_mode;
+
+//-----------------------------------------
 
 size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId,cl_ulong pAddr = 0);
 

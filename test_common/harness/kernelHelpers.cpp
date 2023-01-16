@@ -1526,7 +1526,39 @@ cl_device_fp_config get_default_rounding_mode(cl_device_id device)
     if (0 == (single & CL_FP_ROUND_TO_ZERO))
         test_error_ret(-1,
                        "FAILURE: device must support either "
-                       "CL_DEVICE_SINGLE_FP_CONFIG or CL_FP_ROUND_TO_NEAREST",
+                       "CL_FP_ROUND_TO_ZERO or CL_FP_ROUND_TO_NEAREST",
+                       0);
+
+    // Make sure we are an embedded device before allowing a pass
+    if ((error = clGetDeviceInfo(device, CL_DEVICE_PROFILE, sizeof(profileStr),
+                                 &profileStr, NULL)))
+        test_error_ret(error, "FAILURE: Unable to get CL_DEVICE_PROFILE", 0);
+
+    if (strcmp(profileStr, "EMBEDDED_PROFILE"))
+        test_error_ret(error,
+                       "FAILURE: non-EMBEDDED_PROFILE devices must support "
+                       "CL_FP_ROUND_TO_NEAREST",
+                       0);
+
+    return CL_FP_ROUND_TO_ZERO;
+}
+
+cl_device_fp_config get_default_rounding_mode_half(cl_device_id device)
+{
+    char profileStr[128] = "";
+    cl_device_fp_config config = 0;
+    int error = clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG,
+                                sizeof(config), &config, NULL);
+    if (error)
+        test_error_ret(error, "Unable to get device CL_DEVICE_HALF_FP_CONFIG",
+                       0);
+
+    if (config & CL_FP_ROUND_TO_NEAREST) return CL_FP_ROUND_TO_NEAREST;
+
+    if (0 == (config & CL_FP_ROUND_TO_ZERO))
+        test_error_ret(-1,
+                       "FAILURE: device must support either "
+                       "CL_FP_ROUND_TO_ZERO or CL_FP_ROUND_TO_NEAREST",
                        0);
 
     // Make sure we are an embedded device before allowing a pass
