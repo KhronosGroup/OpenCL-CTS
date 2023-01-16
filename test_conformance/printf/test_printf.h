@@ -42,18 +42,20 @@
 // Types
 //-----------------------------------------
 enum PrintfTestType
- {
-     TYPE_INT,
-     TYPE_FLOAT,
-     TYPE_FLOAT_LIMITS,
-     TYPE_OCTAL,
-     TYPE_UNSIGNED,
-     TYPE_HEXADEC,
-     TYPE_CHAR,
-     TYPE_STRING,
-     TYPE_VECTOR,
-     TYPE_ADDRESS_SPACE,
-     TYPE_COUNT
+{
+    TYPE_INT,
+    TYPE_HALF,
+    TYPE_HALF_LIMITS,
+    TYPE_FLOAT,
+    TYPE_FLOAT_LIMITS,
+    TYPE_OCTAL,
+    TYPE_UNSIGNED,
+    TYPE_HEXADEC,
+    TYPE_CHAR,
+    TYPE_STRING,
+    TYPE_VECTOR,
+    TYPE_ADDRESS_SPACE,
+    TYPE_COUNT
 };
 
 struct printDataGenParameters
@@ -72,6 +74,7 @@ struct printDataGenParameters
 
 // Reference results - filled out at run-time
 static std::vector<std::string> correctBufferInt;
+static std::vector<std::string> correctBufferHalf;
 static std::vector<std::string> correctBufferFloat;
 static std::vector<std::string> correctBufferOctal;
 static std::vector<std::string> correctBufferUnsigned;
