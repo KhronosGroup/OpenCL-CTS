@@ -1014,8 +1014,9 @@ void generateRef(const cl_device_id device)
 {
     const cl_device_fp_config fpConfigSingle =
         get_default_rounding_mode(device);
-    const cl_device_fp_config fpConfigHalf =
-        get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+    const cl_device_fp_config fpConfigHalf = (half_rounding_mode == CL_HALF_RTE)
+        ? CL_FP_ROUND_TO_NEAREST
+        : CL_FP_ROUND_TO_ZERO;
     const RoundingMode hostRound = get_round();
 
     // Map device rounding to CTS rounding type
