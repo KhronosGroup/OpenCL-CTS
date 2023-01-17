@@ -1175,7 +1175,7 @@ test_status InitCL( cl_device_id device )
     if (is_extension_available(device, "cl_khr_fp16"))
     {
         const cl_device_fp_config fpConfigHalf =
-            get_default_rounding_mode_half(device);
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
         if (fpConfigHalf == CL_FP_ROUND_TO_NEAREST)
         {
             half_rounding_mode = CL_HALF_RTE;
