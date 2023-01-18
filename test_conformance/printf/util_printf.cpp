@@ -741,10 +741,6 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     //(Minimum)Two-wide,two positions after decimal
 
-    { NULL, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hlf", "half", "4" },
-
-    //(Minimum)Two-wide,two positions after decimal
-
     { NULL, "(1.0f,2.0f,3.0f,4.0f)", "%2.2", "hlf", "float", "4" },
 
     // Alternative form,uchar argument
@@ -761,8 +757,11 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     // Alternative form,long argument
 
-    { NULL, "(12345678,98765432)", "%", "ld", "long", "2" }
+    { NULL, "(12345678,98765432)", "%", "ld", "long", "2" },
 
+    //(Minimum)Two-wide,two positions after decimal
+
+    { NULL, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hlf", "half", "4" }
 };
 
 //------------------------------------------------------------
@@ -775,15 +774,15 @@ std::vector<std::string> correctBufferVector = {
 
     "1.00,2.00,3.00,4.00",
 
-    "1.00,2.00,3.00,4.00",
-
     "0xfa,0xfb",
 
     "0x1234,0x8765",
 
     "0x12345678,0x87654321",
 
-    "12345678,98765432"
+    "12345678,98765432",
+
+    "1.00,2.00,3.00,4.00"
 
 };
 
