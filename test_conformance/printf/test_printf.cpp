@@ -122,7 +122,7 @@ static int getTempFileName()
 {
     // Create a unique temporary file to allow parallel executed tests.
 #if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
-    std::sprintf(gFileName, "/tmp/tmpfile.XXXXXX");
+    std::snprintf(gFileName, sizeof(gFileName), "/tmp/tmpfile.XXXXXX");
     int fd = mkstemp(gFileName);
     if (fd == -1)
         return -1;
@@ -133,7 +133,7 @@ static int getTempFileName()
         return -1;
 #else
     MTdata d = init_genrand((cl_uint)time(NULL));
-    sprintf(gFileName, "tmpfile.%u", genrand_int32(d));
+    std::snprintf(gFileName, sizeof(gFileName), "tmpfile.%u", genrand_int32(d));
 #endif
     return 0;
 }
@@ -287,22 +287,23 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
     };
 
     //Update testname
-    std::sprintf(testname, "%s%d", "test", testId);
+    std::snprintf(testname, sizeof(testname), "%s%d", "test", testId);
 
     //Update addrSpaceArgument and addrSpacePAddArgument types, based on FULL_PROFILE/EMBEDDED_PROFILE
     if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
     {
-        std::sprintf(addrSpaceArgument, "%s",
-                     allTestCase[testId]
-                         ->_genParameters[testNum]
-                         .addrSpaceArgumentTypeQualifier);
+        std::snprintf(addrSpaceArgument, sizeof(addrSpaceArgument), "%s",
+                      allTestCase[testId]
+                          ->_genParameters[testNum]
+                          .addrSpaceArgumentTypeQualifier);
 
-        std::sprintf(
-            addrSpacePAddArgument, "%s",
+        std::snprintf(
+            addrSpacePAddArgument, sizeof(addrSpacePAddArgument), "%s",
             allTestCase[testId]->_genParameters[testNum].addrSpacePAdd);
     }
 
-    if (strlen(addrSpaceArgument) == 0) std::sprintf(addrSpaceArgument, "void");
+    if (strlen(addrSpaceArgument) == 0)
+        std::snprintf(addrSpaceArgument, sizeof(addrSpaceArgument), "void");
 
     // create program based on its type
 
