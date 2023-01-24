@@ -122,7 +122,7 @@ static int getTempFileName()
 {
     // Create a unique temporary file to allow parallel executed tests.
 #if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
-    sprintf(gFileName, "/tmp/tmpfile.XXXXXX");
+    std::sprintf(gFileName, "/tmp/tmpfile.XXXXXX");
     int fd = mkstemp(gFileName);
     if (fd == -1)
         return -1;
@@ -287,18 +287,22 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
     };
 
     //Update testname
-    sprintf(testname,"%s%d","test",testId);
+    std::sprintf(testname, "%s%d", "test", testId);
 
     //Update addrSpaceArgument and addrSpacePAddArgument types, based on FULL_PROFILE/EMBEDDED_PROFILE
     if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
     {
-        sprintf(addrSpaceArgument, "%s",allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier);
+        std::sprintf(addrSpaceArgument, "%s",
+                     allTestCase[testId]
+                         ->_genParameters[testNum]
+                         .addrSpaceArgumentTypeQualifier);
 
-        sprintf(addrSpacePAddArgument, "%s", allTestCase[testId]->_genParameters[testNum].addrSpacePAdd);
+        std::sprintf(
+            addrSpacePAddArgument, "%s",
+            allTestCase[testId]->_genParameters[testNum].addrSpacePAdd);
     }
 
-    if (strlen(addrSpaceArgument) == 0)
-        sprintf(addrSpaceArgument,"void");
+    if (strlen(addrSpaceArgument) == 0) std::sprintf(addrSpaceArgument, "void");
 
     // create program based on its type
 
