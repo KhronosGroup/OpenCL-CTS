@@ -35,37 +35,38 @@ const char *align_divisors[kVectorSizeCount+kStrangeVectorSizeCount] = { "1", "2
 const char *align_types[kVectorSizeCount+kStrangeVectorSizeCount] = { "half", "int", "int2", "int4", "int8", "int2" };
 
 
-void            *gIn_half = NULL;
-void            *gOut_half = NULL;
-void            *gOut_half_reference = NULL;
-void            *gOut_half_reference_double = NULL;
-void            *gIn_single = NULL;
-void            *gOut_single = NULL;
-void            *gOut_single_reference = NULL;
-void            *gIn_double = NULL;
-// void            *gOut_double = NULL;
-// void            *gOut_double_reference = NULL;
-cl_mem          gInBuffer_half = NULL;
-cl_mem          gOutBuffer_half = NULL;
-cl_mem          gInBuffer_single = NULL;
-cl_mem          gOutBuffer_single = NULL;
-cl_mem          gInBuffer_double = NULL;
-// cl_mem          gOutBuffer_double = NULL;
+void *gIn_half = NULL;
+void *gOut_half = NULL;
+void *gOut_half_reference = NULL;
+void *gOut_half_reference_double = NULL;
+void *gIn_single = NULL;
+void *gOut_single = NULL;
+void *gOut_single_reference = NULL;
+void *gIn_double = NULL;
+// void *gOut_double = NULL;
+// void *gOut_double_reference = NULL;
+cl_mem gInBuffer_half = NULL;
+cl_mem gOutBuffer_half = NULL;
+cl_mem gInBuffer_single = NULL;
+cl_mem gOutBuffer_single = NULL;
+cl_mem gInBuffer_double = NULL;
+// cl_mem gOutBuffer_double = NULL;
 
-cl_context       gContext = NULL;
+cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
-uint32_t        gDeviceFrequency = 0;
-uint32_t        gComputeDevices = 0;
-size_t          gMaxThreadGroupSize = 0;
-size_t          gWorkGroupSize = 0;
-bool            gWimpyMode = false;
-int             gWimpyReductionFactor = 512;
-int             gTestDouble = 0;
+uint32_t gDeviceFrequency = 0;
+uint32_t gComputeDevices = 0;
+size_t gMaxThreadGroupSize = 0;
+size_t gWorkGroupSize = 0;
+bool gWimpyMode = false;
+int gWimpyReductionFactor = 512;
+int gTestDouble = 0;
+bool gHostReset = false;
 
 #if defined( __APPLE__ )
-int             gReportTimes = 1;
+int gReportTimes = 1;
 #else
-int             gReportTimes = 0;
+int gReportTimes = 0;
 #endif
 
 #pragma mark -
