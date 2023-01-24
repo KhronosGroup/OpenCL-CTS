@@ -89,24 +89,27 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
 #define ref_func(s) (signbit_test ? func.i_f_f(s) : func.i_f(s))
 
-    // start the map of the output arrays
     cl_event e[VECTOR_SIZE_COUNT];
     cl_int *out[VECTOR_SIZE_COUNT];
-    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    if (gHostFill)
     {
-        out[j] = (cl_int *)clEnqueueMapBuffer(
-            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
-            buffer_size, 0, NULL, e + j, &error);
-        if (error || NULL == out[j])
+        // start the map of the output arrays
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
-                       error);
-            return error;
+            out[j] = (cl_int *)clEnqueueMapBuffer(
+                tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
+                buffer_size, 0, NULL, e + j, &error);
+            if (error || NULL == out[j])
+            {
+                vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
+                           error);
+                return error;
+            }
         }
-    }
 
-    // Get that moving
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+        // Get that moving
+        if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+    }
 
     // Init input array
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
@@ -121,31 +124,48 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
-        // Wait for the map to finish
-        if ((error = clWaitForEvents(1, e + j)))
+        if (gHostFill)
         {
-            vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
-            return error;
-        }
-        if ((error = clReleaseEvent(e[j])))
-        {
-            vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
-            return error;
+            // Wait for the map to finish
+            if ((error = clWaitForEvents(1, e + j)))
+            {
+                vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
+                return error;
+            }
+            if ((error = clReleaseEvent(e[j])))
+            {
+                vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
+                return error;
+            }
         }
 
         // Fill the result buffer with garbage, so that old results don't carry
         // over
         uint32_t pattern = 0xffffdead;
-        memset_pattern4(out[j], &pattern, buffer_size);
-        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
-                                             out[j], 0, NULL, NULL)))
+        if (gHostFill)
         {
-            vlog_error("Error: clEnqueueUnmapMemObject failed! err: %d\n",
-                       error);
-            return error;
+            memset_pattern4(out[j], &pattern, buffer_size);
+            if ((error = clEnqueueUnmapMemObject(
+                     tinfo->tQueue, tinfo->outBuf[j], out[j], 0, NULL, NULL)))
+            {
+                vlog_error("Error: clEnqueueUnmapMemObject failed! err: %d\n",
+                           error);
+                return error;
+            }
+        }
+        else
+        {
+            if ((error = clEnqueueFillBuffer(tinfo->tQueue, tinfo->outBuf[j],
+                                             &pattern, sizeof(pattern), 0,
+                                             buffer_size, 0, NULL, NULL)))
+            {
+                vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
+                           error);
+                return error;
+            }
         }
 
-        // run the kernel
+        // Run the kernel
         size_t vectorCount =
             (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
