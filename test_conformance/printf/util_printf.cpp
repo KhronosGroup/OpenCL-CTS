@@ -761,7 +761,7 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     //(Minimum)Two-wide,two positions after decimal
 
-    { NULL, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hlf", "half", "4" }
+    { NULL, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hf", "half", "4" }
 };
 
 //------------------------------------------------------------
