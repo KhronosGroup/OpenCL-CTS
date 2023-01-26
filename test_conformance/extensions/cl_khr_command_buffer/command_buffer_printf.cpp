@@ -107,10 +107,21 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     bool Skip() override
     {
-        if (!printf_use_support
-            || (simultaneous_use_requested && !simultaneous_use_support))
-            return true;
-        return BasicCommandBufferTest::Skip();
+        // Query if device supports kernel printf use
+        cl_device_command_buffer_capabilities_khr capabilities;
+        cl_int error =
+            clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
+                            sizeof(capabilities), &capabilities, NULL);
+        test_error(error,
+                   "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
+
+        printf_use_support =
+            (capabilities & CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR)
+            != 0;
+
+        if (!printf_use_support) return true;
+        return BasicCommandBufferTest::Skip()
+            || (simultaneous_use_requested && !simultaneous_use_support);
     }
 
     //--------------------------------------------------------------------------
@@ -183,18 +194,6 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
-        // Query if device supports kernel printf use
-        cl_device_command_buffer_capabilities_khr capabilities;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
-                            sizeof(capabilities), &capabilities, NULL);
-        test_error(error,
-                   "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
-
-        printf_use_support =
-            (capabilities & CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR)
-            != 0;
-
         temp_filename = get_temp_filename();
         if (temp_filename.empty())
         {

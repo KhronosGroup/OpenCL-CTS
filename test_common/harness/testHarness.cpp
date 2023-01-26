@@ -22,7 +22,6 @@
 #include <cassert>
 #include <stdexcept>
 #include <vector>
-#include "threadTesting.h"
 #include "errorHelpers.h"
 #include "kernelHelpers.h"
 #include "fpcontrol.h"

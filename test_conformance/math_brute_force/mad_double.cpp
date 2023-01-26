@@ -35,9 +35,11 @@ int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
                       relaxedMode);
 }
 
+using Kernels = std::array<clKernelWrapper, VECTOR_SIZE_COUNT>;
+
 struct BuildKernelInfo2
 {
-    cl_kernel *kernels;
+    Kernels &kernels;
     Programs &programs;
     const char *nameInCode;
     bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
@@ -47,7 +49,8 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo2 *info = (BuildKernelInfo2 *)p;
     cl_uint vectorSize = gMinVectorSizeIndex + job_id;
-    return BuildKernel(info->nameInCode, vectorSize, info->kernels + vectorSize,
+    return BuildKernel(info->nameInCode, vectorSize,
+                       &(info->kernels[vectorSize]),
                        &(info->programs[vectorSize]), info->relaxedMode);
 }
 
@@ -57,7 +60,7 @@ int TestFunc_mad_Double(const Func *f, MTdata d, bool relaxedMode)
 {
     int error;
     Programs programs;
-    cl_kernel kernels[VECTOR_SIZE_COUNT];
+    Kernels kernels;
     float maxError = 0.0f;
     double maxErrorVal = 0.0f;
     double maxErrorVal2 = 0.0f;
@@ -110,18 +113,33 @@ int TestFunc_mad_Double(const Func *f, MTdata d, bool relaxedMode)
             return error;
         }
 
-        // write garbage into output arrays
+        // Write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
-            memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
-            if ((error =
-                     clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
-                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
+            if (gHostFill)
             {
-                vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
-                           error, j);
-                goto exit;
+                memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
+                if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer[j],
+                                                  CL_FALSE, 0, BUFFER_SIZE,
+                                                  gOut[j], 0, NULL, NULL)))
+                {
+                    vlog_error(
+                        "\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
+                        error, j);
+                    goto exit;
+                }
+            }
+            else
+            {
+                if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
+                                                 &pattern, sizeof(pattern), 0,
+                                                 BUFFER_SIZE, 0, NULL, NULL)))
+                {
+                    vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
+                               error);
+                    return error;
+                }
             }
         }
 
@@ -213,11 +231,5 @@ int TestFunc_mad_Double(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
-    // Release
-    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
-    {
-        clReleaseKernel(kernels[k]);
-    }
-
     return error;
 }
