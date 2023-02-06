@@ -159,7 +159,9 @@ size_t get_min_alignment(cl_context context);
 
 /* Helper to obtain the default rounding mode for single precision computation.
  * (Double is always CL_FP_ROUND_TO_NEAREST.) Returns 0 on error. */
-cl_device_fp_config get_default_rounding_mode(cl_device_id device);
+cl_device_fp_config
+get_default_rounding_mode(cl_device_id device,
+                          const cl_uint &param = CL_DEVICE_SINGLE_FP_CONFIG);
 
 #define PASSIVE_REQUIRE_IMAGE_SUPPORT(device)                                  \
     if (checkForImageSupport(device))                                          \

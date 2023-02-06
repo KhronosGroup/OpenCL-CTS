@@ -17,6 +17,7 @@
 #define _testBase_h
 
 #include "harness/compat.h"
+#include "harness/conversions.h"
 
 #include <stdio.h>
 #include <string.h>

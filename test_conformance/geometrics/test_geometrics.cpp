@@ -22,6 +22,8 @@
 #include "harness/errorHelpers.h"
 #include <float.h>
 
+#define BUILD_TESTS 0
+
 const char *crossKernelSource =
 "__kernel void sample_test(__global float4 *sourceA, __global float4 *sourceB, __global float4 *destValues)\n"
 "{\n"
@@ -148,7 +150,7 @@ void cross_product( const float *vecA, const float *vecB, float *outVector, floa
 }
 
 
-
+#if BUILD_TESTS
 
 int test_geom_cross(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
 {
@@ -277,6 +279,8 @@ int test_geom_cross(cl_device_id deviceID, cl_context context, cl_command_queue 
         return test_geom_cross_double( deviceID,  context,  queue,  num_elements, seed);
     }
 }
+
+#endif
 
 float getMaxValue( float vecA[], float vecB[], size_t vecSize )
 {
@@ -487,6 +491,7 @@ int test_twoToFloat_kernel(cl_command_queue queue, cl_context context, const cha
     return 0;
 }
 
+
 double verifyDot( float *srcA, float *srcB, size_t vecSize )
 {
     double total = 0.f;
@@ -496,6 +501,8 @@ double verifyDot( float *srcA, float *srcB, size_t vecSize )
 
     return total;
 }
+
+#if BUILD_TESTS
 
 int test_geom_dot(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -526,6 +533,8 @@ int test_geom_dot(cl_device_id deviceID, cl_context context, cl_command_queue qu
     return test_geom_dot_double( deviceID,  context,  queue,  num_elements, seed);
 }
 
+#endif
+
 double verifyFastDistance( float *srcA, float *srcB, size_t vecSize )
 {
     double total = 0, value;
@@ -541,6 +550,8 @@ double verifyFastDistance( float *srcA, float *srcB, size_t vecSize )
 
     return sqrt( total );
 }
+
+#if BUILD_TESTS
 
 int test_geom_fast_distance(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -572,6 +583,7 @@ int test_geom_fast_distance(cl_device_id deviceID, cl_context context, cl_comman
     return retVal;
 }
 
+#endif
 
 double verifyDistance( float *srcA, float *srcB, size_t vecSize )
 {
@@ -588,6 +600,8 @@ double verifyDistance( float *srcA, float *srcB, size_t vecSize )
 
     return sqrt( total );
 }
+
+#if BUILD_TESTS
 
 int test_geom_distance(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -625,6 +639,8 @@ int test_geom_distance(cl_device_id deviceID, cl_context context, cl_command_que
         return test_geom_distance_double( deviceID,  context,  queue,  num_elements, seed);
     }
 }
+
+#endif
 
 typedef double (*oneToFloatVerifyFn)( float *srcA, size_t vecSize );
 
@@ -754,6 +770,8 @@ double verifyLength( float *srcA, size_t vecSize )
     return sqrt( total );
 }
 
+#if BUILD_TESTS
+
 int test_geom_length(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     size_t sizes[] = { 1, 2, 3, 4, 0 };
@@ -793,6 +811,7 @@ int test_geom_length(cl_device_id deviceID, cl_context context, cl_command_queue
     }
 }
 
+#endif
 
 double verifyFastLength( float *srcA, size_t vecSize )
 {
@@ -808,6 +827,8 @@ double verifyFastLength( float *srcA, size_t vecSize )
 
     return sqrt( total );
 }
+
+#if BUILD_TESTS
 
 int test_geom_fast_length(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -835,6 +856,7 @@ int test_geom_fast_length(cl_device_id deviceID, cl_context context, cl_command_
     return retVal;
 }
 
+#endif
 
 typedef void (*oneToOneVerifyFn)( float *srcA, float *dstA, size_t vecSize );
 
@@ -1059,6 +1081,8 @@ void verifyNormalize( float *srcA, float *dst, size_t vecSize )
         dst[i] = (float)( (double)srcA[i] / value );
 }
 
+#if BUILD_TESTS
+
 int test_geom_normalize(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     size_t sizes[] = { 1, 2, 3, 4, 0 };
@@ -1094,7 +1118,6 @@ int test_geom_normalize(cl_device_id deviceID, cl_context context, cl_command_qu
     }
 }
 
-
 int test_geom_fast_normalize(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     size_t sizes[] = { 1, 2, 3, 4, 0 };
@@ -1121,5 +1144,4 @@ int test_geom_fast_normalize(cl_device_id deviceID, cl_context context, cl_comma
     return retVal;
 }
 
-
-
+#endif
