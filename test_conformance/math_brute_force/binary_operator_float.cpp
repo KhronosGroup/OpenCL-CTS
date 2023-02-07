@@ -292,14 +292,14 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                                       buffer_size, p, 0, NULL, NULL)))
     {
         vlog_error("Error: clEnqueueWriteBuffer failed! err: %d\n", error);
-        goto exit;
+        return error;
     }
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf2, CL_FALSE, 0,
                                       buffer_size, p2, 0, NULL, NULL)))
     {
         vlog_error("Error: clEnqueueWriteBuffer failed! err: %d\n", error);
-        goto exit;
+        return error;
     }
 
     for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -310,12 +310,12 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             if ((error = clWaitForEvents(1, e + j)))
             {
                 vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
-                goto exit;
+                return error;
             }
             if ((error = clReleaseEvent(e[j])))
             {
                 vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
-                goto exit;
+                return error;
             }
         }
 
@@ -330,7 +330,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             {
                 vlog_error("Error: clEnqueueUnmapMemObject failed! err: %d\n",
                            error);
-                goto exit;
+                return error;
             }
         }
         else
@@ -375,7 +375,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                                             &vectorCount, NULL, 0, NULL, NULL)))
         {
             vlog_error("FAILED -- could not execute kernel\n");
-            goto exit;
+            return error;
         }
     }
 
@@ -432,7 +432,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         {
             vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
                        error);
-            goto exit;
+            return error;
         }
     }
 
@@ -638,8 +638,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                                "vs. %a (0x%8.8x) at index: %zu\n",
                                name, sizeNames[k], err, s[j], s2[j], r[j], test,
                                ((cl_uint *)&test)[0], j);
-                    error = -1;
-                    goto exit;
+                    return -1;
                 }
             }
         }
@@ -675,8 +674,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         fflush(stdout);
     }
 
-exit:
-    return error;
+    return CL_SUCCESS;
 }
 
 } // anonymous namespace
@@ -730,7 +728,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
             vlog_error("Error: Unable to create sub-buffer of gInBuffer for "
                        "region {%zd, %zd}\n",
                        region.origin, region.size);
-            goto exit;
+            return error;
         }
         test_info.tinfo[i].inBuf2 =
             clCreateSubBuffer(gInBuffer2, CL_MEM_READ_ONLY,
@@ -740,7 +738,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
             vlog_error("Error: Unable to create sub-buffer of gInBuffer2 for "
                        "region {%zd, %zd}\n",
                        region.origin, region.size);
-            goto exit;
+            return error;
         }
 
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -753,7 +751,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
                 vlog_error("Error: Unable to create sub-buffer of "
                            "gOutBuffer[%d] for region {%zd, %zd}\n",
                            (int)j, region.origin, region.size);
-                goto exit;
+                return error;
             }
         }
         test_info.tinfo[i].tQueue =
@@ -761,27 +759,26 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
         if (NULL == test_info.tinfo[i].tQueue || error)
         {
             vlog_error("clCreateCommandQueue failed. (%d)\n", error);
-            goto exit;
+            return error;
         }
 
         test_info.tinfo[i].d = MTdataHolder(genrand_int32(d));
     }
 
     // Init the kernels
-    {
-        BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
-                                    test_info.programs, f->nameInCode,
-                                    relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernelFn,
-                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                                   &build_info)))
-            goto exit;
-    }
+    BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
+                                test_info.programs, f->nameInCode,
+                                relaxedMode };
+    if ((error = ThreadPool_Do(BuildKernelFn,
+                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                               &build_info)))
+        return error;
 
     // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
+        if (error) return error;
 
         // Accumulate the arithmetic errors
         for (cl_uint i = 0; i < test_info.threadCount; i++)
@@ -794,8 +791,6 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
             }
         }
 
-        if (error) goto exit;
-
         if (gWimpyMode)
             vlog("Wimp pass");
         else
@@ -806,6 +801,5 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
 
     vlog("\n");
 
-exit:
-    return error;
+    return CL_SUCCESS;
 }
