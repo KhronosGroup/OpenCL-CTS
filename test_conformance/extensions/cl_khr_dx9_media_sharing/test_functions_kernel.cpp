@@ -224,7 +224,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
 
             error = clEnqueueAcquireDX9MediaSurfacesKHR(
                 cmdQueue, static_cast<cl_uint>(memObjSrcList.size()),
-                &memObjSrcList[0], 0, 0, 0);
+                &memObjSrcList[0], 0, NULL, NULL);
             if (error != CL_SUCCESS)
             {
                 log_error("clEnqueueAcquireDX9MediaSurfacesKHR failed: %s\n",
@@ -235,7 +235,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
 
             error = clEnqueueAcquireDX9MediaSurfacesKHR(
                 cmdQueue, static_cast<cl_uint>(memObjDstList.size()),
-                &memObjDstList[0], 0, 0, 0);
+                &memObjDstList[0], 0, NULL, NULL);
             if (error != CL_SUCCESS)
             {
                 log_error("clEnqueueAcquireDX9MediaSurfacesKHR failed: %s\n",
@@ -377,7 +377,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
 
             error = clEnqueueReleaseDX9MediaSurfacesKHR(
                 cmdQueue, static_cast<cl_uint>(memObjSrcList.size()),
-                &memObjSrcList[0], 0, 0, 0);
+                &memObjSrcList[0], 0, NULL, NULL);
             if (error != CL_SUCCESS)
             {
                 log_error("clEnqueueReleaseDX9MediaSurfacesKHR failed: %s\n",
@@ -387,7 +387,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
 
             error = clEnqueueReleaseDX9MediaSurfacesKHR(
                 cmdQueue, static_cast<cl_uint>(memObjDstList.size()),
-                &memObjDstList[0], 0, 0, 0);
+                &memObjDstList[0], 0, NULL, NULL);
             if (error != CL_SUCCESS)
             {
                 log_error("clEnqueueReleaseDX9MediaSurfacesKHR failed: %s\n",
