@@ -364,7 +364,7 @@ int TestMacro_Int_Float(const Func *f, MTdata d, bool relaxedMode)
             vlog_error("Error: Unable to create sub-buffer of gInBuffer for "
                        "region {%zd, %zd}\n",
                        region.origin, region.size);
-            goto exit;
+            return error;
         }
 
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -377,7 +377,7 @@ int TestMacro_Int_Float(const Func *f, MTdata d, bool relaxedMode)
                 vlog_error("Error: Unable to create sub-buffer of "
                            "gOutBuffer[%d] for region {%zd, %zd}\n",
                            (int)j, region.origin, region.size);
-                goto exit;
+                return error;
             }
         }
         test_info.tinfo[i].tQueue =
@@ -385,27 +385,24 @@ int TestMacro_Int_Float(const Func *f, MTdata d, bool relaxedMode)
         if (NULL == test_info.tinfo[i].tQueue || error)
         {
             vlog_error("clCreateCommandQueue failed. (%d)\n", error);
-            goto exit;
+            return error;
         }
     }
 
     // Init the kernels
-    {
-        BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
-                                    test_info.programs, f->nameInCode,
-                                    relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernelFn,
-                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                                   &build_info)))
-            goto exit;
-    }
+    BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
+                                test_info.programs, f->nameInCode,
+                                relaxedMode };
+    if ((error = ThreadPool_Do(BuildKernelFn,
+                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                               &build_info)))
+        return error;
 
     // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
-
-        if (error) goto exit;
+        if (error) return error;
 
         if (gWimpyMode)
             vlog("Wimp pass");
@@ -415,6 +412,5 @@ int TestMacro_Int_Float(const Func *f, MTdata d, bool relaxedMode)
 
     vlog("\n");
 
-exit:
-    return error;
+    return CL_SUCCESS;
 }
