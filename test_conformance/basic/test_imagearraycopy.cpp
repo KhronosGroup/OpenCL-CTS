@@ -29,7 +29,7 @@ int test_imagearraycopy_single_format(cl_device_id device, cl_context context, c
   clMemWrapper      image, buffer;
   int        img_width = 512;
   int        img_height = 512;
-  size_t    elem_size; 
+  size_t    elem_size;
   size_t    buffer_size;
   int        i;
   cl_int          err;
