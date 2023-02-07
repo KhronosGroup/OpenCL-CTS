@@ -129,7 +129,7 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
                 size_t base_address_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, nullptr, &base_address_alignment);
                 if (TEST_PASS != get_error)
                 {
@@ -213,7 +213,7 @@ int memInfo_image_from_buffer_positive(cl_device_id device, cl_context context,
                 size_t slice_pitch_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment, nullptr);
                 if (TEST_PASS != get_error)
                 {
@@ -322,7 +322,7 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
                 size_t slice_pitch_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment, nullptr);
                 if (TEST_PASS != get_error)
                 {
@@ -473,7 +473,7 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                 size_t base_address_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment,
                     &base_address_alignment);
                 if (TEST_PASS != get_error)
@@ -730,7 +730,7 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
                 size_t slice_pitch_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment, nullptr);
                 if (TEST_PASS != get_error)
                 {
