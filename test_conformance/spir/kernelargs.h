@@ -232,7 +232,7 @@ public:
         return &m_samplerObj;
     }
 
-    bool compare( const KernelArg& rhs ) const
+    bool compare(const KernelArg& rhs, float) const
     {
         if (const KernelArgSampler *Rhs = dynamic_cast<const KernelArgSampler*>(&rhs))
         {

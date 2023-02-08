@@ -98,10 +98,13 @@ int test_rw_image_access_qualifier(cl_device_id device_id, cl_context context, c
     return -1;
     }
 
+    MTdata mtData = init_genrand(gRandomSeed);
     /* Fill input array with random values */
     for (i = 0; i < size; i++) {
-        input[i] = (unsigned int)(rand()/((double)RAND_MAX + 1)*255);
+        input[i] = genrand_int32(mtData);
     }
+    free_mtdata(mtData);
+    mtData = NULL;
 
     /* Zero out output array */
     for (i = 0; i < size; i++) {

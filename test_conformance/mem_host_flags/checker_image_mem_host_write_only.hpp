@@ -38,7 +38,7 @@ public:
     cl_int Setup_Test_Environment();
     cl_int update_host_mem_2();
 
-    cl_int verify_data();
+    cl_int verify_data(T *pdtaIn);
 };
 
 template <class T>
@@ -108,12 +108,13 @@ cl_int cImage_check_mem_host_write_only<T>::update_host_mem_2()
     return err;
 }
 
-template <class T> cl_int cImage_check_mem_host_write_only<T>::verify_data()
+template <class T>
+cl_int cImage_check_mem_host_write_only<T>::verify_data(T *pdtaIn)
 {
     cl_int err = CL_SUCCESS;
-    if (!this->host_m_1.Equal_rect_from_orig(
-            this->host_m_2, this->buffer_origin, this->region,
-            this->host_row_pitch, this->host_slice_pitch))
+    if (!this->host_m_1.Equal_rect_from_orig(pdtaIn, this->buffer_origin,
+                                             this->region, this->host_row_pitch,
+                                             this->host_slice_pitch))
     {
         log_error("Image and host data difference found\n");
         return FAILURE;
@@ -178,9 +179,10 @@ template <class T> cl_int cImage_check_mem_host_write_only<T>::verify_RW_Image()
 
     update_host_mem_2(); // Read buffer contents into mem_2
 
-    err =
-        this->verify_data(); // Compare the contents of mem_2 and mem_1,
-                             // mem_1 is same as mem_0 in setup test environment
+    err = this->verify_data(
+        this->host_m_2
+            .pData); // Compare the contents of mem_2 and mem_1,
+                     // mem_1 is same as mem_0 in setup test environment
     test_error(err, "verify_data error");
 
     v = 0;
