@@ -125,9 +125,8 @@ RelationalsFPTest::RelationalsFPTest(cl_device_id device, cl_context context,
 {
     // hardcoded for now, to be changed into typeid().name solution in future
     // for now C++ spec doesn't guarantee human readable type name
-    eqTypeNames[kHalf] = "short";
-    eqTypeNames[kFloat] = "int";
-    eqTypeNames[kDouble] = "long";
+
+    eqTypeNames={{kHalf ,"short"}, {kFloat, "int"}, {kDouble, "long"}};
 }
 
 //--------------------------------------------------------------------------
@@ -223,11 +222,11 @@ int RelationalsFPTest::test_equiv_kernel(const unsigned int& vecSize,
     sprintf(itype, "%s", eqTypeNames[param.dataType].c_str());
     sprintf(itype_vec, "%s%s", eqTypeNames[param.dataType].c_str(), sizeName);
 
-    if (param.dataType == kDouble)
+    if (std::is_same<T, double>::value)
         strcpy(extension, "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n");
-
-    if (param.dataType == kHalf)
+    else if (std::is_same<T, half>::value)
         strcpy(extension, "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n");
+    else extension[0] = '\0';
 
     if (DENSE_PACK_VECS && vecSize == 3)
     {
@@ -379,7 +378,7 @@ int RelationalsFPTest::test_equiv_kernel(const unsigned int& vecSize,
         {
             if (expected[j] != outData[i * vecSize + j])
             {
-                if (param.dataType == kFloat)
+                if (std::is_same<T, float>::value)
                 {
                     if (gInfNanSupport == 0)
                     {
