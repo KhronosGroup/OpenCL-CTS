@@ -76,14 +76,12 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
     Force64BitFPUPrecision();
 
     // Init the kernels
-    {
-        BuildKernelInfo2 build_info{ kernels, programs, f->nameInCode,
-                                     relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernelFn,
-                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                                   &build_info)))
-            return error;
-    }
+    BuildKernelInfo2 build_info{ kernels, programs, f->nameInCode,
+                                 relaxedMode };
+    if ((error = ThreadPool_Do(BuildKernelFn,
+                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                               &build_info)))
+        return error;
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
@@ -120,7 +118,7 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
                     vlog_error(
                         "\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
                         error, j);
-                    goto exit;
+                    return error;
                 }
 
                 memset_pattern4(gOut2[j], &pattern, BUFFER_SIZE);
@@ -131,7 +129,7 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
                     vlog_error(
                         "\n*** Error %d in clEnqueueWriteBuffer2b(%d) ***\n",
                         error, j);
-                    goto exit;
+                    return error;
                 }
             }
             else
@@ -165,19 +163,19 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
                                         &gOutBuffer[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
             if ((error = clSetKernelArg(kernels[j], 1, sizeof(gOutBuffer2[j]),
                                         &gOutBuffer2[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
             if ((error = clSetKernelArg(kernels[j], 2, sizeof(gInBuffer),
                                         &gInBuffer)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
 
             if ((error =
@@ -185,7 +183,7 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
                                             &localCount, NULL, 0, NULL, NULL)))
             {
                 vlog_error("FAILED -- could not execute kernel\n");
-                goto exit;
+                return error;
             }
         }
 
@@ -211,14 +209,14 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
-                goto exit;
+                return error;
             }
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer2[j], CL_TRUE, 0,
                                          BUFFER_SIZE, gOut2[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray2 failed %d\n", error);
-                goto exit;
+                return error;
             }
         }
 
@@ -357,8 +355,7 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
                             f->name, sizeNames[k], err, err2,
                             ((double *)gIn)[j], ((double *)gOut_Ref)[j],
                             ((double *)gOut_Ref2)[j], test, test2);
-                        error = -1;
-                        goto exit;
+                        return -1;
                     }
                 }
             }
@@ -393,6 +390,5 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
 
     vlog("\n");
 
-exit:
-    return error;
+    return CL_SUCCESS;
 }
