@@ -126,7 +126,9 @@ RelationalsFPTest::RelationalsFPTest(cl_device_id device, cl_context context,
     // hardcoded for now, to be changed into typeid().name solution in future
     // for now C++ spec doesn't guarantee human readable type name
 
-    eqTypeNames={{kHalf ,"short"}, {kFloat, "int"}, {kDouble, "long"}};
+    eqTypeNames = { { kHalf, "short" },
+                    { kFloat, "int" },
+                    { kDouble, "long" } };
 }
 
 //--------------------------------------------------------------------------
@@ -226,7 +228,8 @@ int RelationalsFPTest::test_equiv_kernel(const unsigned int& vecSize,
         strcpy(extension, "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n");
     else if (std::is_same<T, half>::value)
         strcpy(extension, "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n");
-    else extension[0] = '\0';
+    else
+        extension[0] = '\0';
 
     if (DENSE_PACK_VECS && vecSize == 3)
     {
