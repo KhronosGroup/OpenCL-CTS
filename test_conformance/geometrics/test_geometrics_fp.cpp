@@ -155,7 +155,11 @@ template <typename T> static bool isnan_fp(const T &v)
     }
     else
     {
+#if !defined(_WIN32)
         return std::isnan(v);
+#else
+        return _isnan(v);
+#endif
     }
 }
 
@@ -174,7 +178,11 @@ template <typename T> static bool isfinite_fp(const T &v)
     }
     else
     {
+#if !defined(_WIN32)
         return std::isfinite(v);
+#else
+        return isfinite(v);
+#endif
     }
 }
 
@@ -373,7 +381,8 @@ template <typename T> bool signbit_fp(const T &a)
     if (std::is_same<T, half>::value)
         return static_cast<half>(a) & 0x8000 ? 1 : 0;
     else
-        return std::signbit(a);
+        return std::signbit(std::is_same<T, float>::value ? (float)a
+                                                          : (double)a);
 }
 
 //--------------------------------------------------------------------------
