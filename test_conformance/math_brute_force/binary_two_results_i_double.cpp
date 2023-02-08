@@ -112,14 +112,12 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     int testingRemquo = !strcmp(f->name, "remquo");
 
     // Init the kernels
-    {
-        BuildKernelInfo2 build_info{ kernels, programs, f->nameInCode,
-                                     relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernelFn,
-                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                                   &build_info)))
-            return error;
-    }
+    BuildKernelInfo2 build_info{ kernels, programs, f->nameInCode,
+                                 relaxedMode };
+    if ((error = ThreadPool_Do(BuildKernelFn,
+                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                               &build_info)))
+        return error;
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
@@ -160,7 +158,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                     vlog_error(
                         "\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
                         error, j);
-                    goto exit;
+                    return error;
                 }
 
                 memset_pattern4(gOut2[j], &pattern, BUFFER_SIZE);
@@ -171,7 +169,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                     vlog_error(
                         "\n*** Error %d in clEnqueueWriteBuffer2b(%d) ***\n",
                         error, j);
-                    goto exit;
+                    return error;
                 }
             }
             else
@@ -206,25 +204,25 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                                         &gOutBuffer[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
             if ((error = clSetKernelArg(kernels[j], 1, sizeof(gOutBuffer2[j]),
                                         &gOutBuffer2[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
             if ((error = clSetKernelArg(kernels[j], 2, sizeof(gInBuffer),
                                         &gInBuffer)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
             if ((error = clSetKernelArg(kernels[j], 3, sizeof(gInBuffer2),
                                         &gInBuffer2)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
 
             if ((error =
@@ -232,7 +230,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                                             &localCount, NULL, 0, NULL, NULL)))
             {
                 vlog_error("FAILED -- could not execute kernel\n");
-                goto exit;
+                return error;
             }
         }
 
@@ -271,14 +269,14 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
-                goto exit;
+                return error;
             }
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer2[j], CL_TRUE, 0,
                                          BUFFER_SIZE, gOut2[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray2 failed %d\n", error);
-                goto exit;
+                return error;
             }
         }
 
@@ -488,8 +486,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                                ((cl_ulong *)gOut_Ref)[j],
                                ((cl_uint *)gOut_Ref2)[j], test, q2[j],
                                ((cl_ulong *)q)[j], ((cl_uint *)q2)[j]);
-                    error = -1;
-                    goto exit;
+                    return -1;
                 }
             }
         }
@@ -523,6 +520,5 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 
     vlog("\n");
 
-exit:
-    return error;
+    return CL_SUCCESS;
 }
