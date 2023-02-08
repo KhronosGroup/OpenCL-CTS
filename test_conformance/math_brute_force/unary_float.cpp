@@ -531,7 +531,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             vlog_error("Error: Unable to create sub-buffer of gInBuffer for "
                        "region {%zd, %zd}\n",
                        region.origin, region.size);
-            goto exit;
+            return error;
         }
 
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -544,7 +544,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                 vlog_error("Error: Unable to create sub-buffer of "
                            "gOutBuffer[%d] for region {%zd, %zd}\n",
                            (int)j, region.origin, region.size);
-                goto exit;
+                return error;
             }
         }
         test_info.tinfo[i].tQueue =
@@ -552,7 +552,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         if (NULL == test_info.tinfo[i].tQueue || error)
         {
             vlog_error("clCreateCommandQueue failed. (%d)\n", error);
-            goto exit;
+            return error;
         }
     }
 
@@ -575,20 +575,19 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     }
 
     // Init the kernels
-    {
-        BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
-                                    test_info.programs, f->nameInCode,
-                                    relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernelFn,
-                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                                   &build_info)))
-            goto exit;
-    }
+    BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
+                                test_info.programs, f->nameInCode,
+                                relaxedMode };
+    if ((error = ThreadPool_Do(BuildKernelFn,
+                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                               &build_info)))
+        return error;
 
     // Run the kernels
     if (!gSkipCorrectnessTesting || skipTestingRelaxed)
     {
         error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
+        if (error) return error;
 
         // Accumulate the arithmetic errors
         for (cl_uint i = 0; i < test_info.threadCount; i++)
@@ -600,8 +599,6 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             }
         }
 
-        if (error) goto exit;
-
         if (gWimpyMode)
             vlog("Wimp pass");
         else
@@ -610,7 +607,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         if (skipTestingRelaxed)
         {
             vlog(" (rlx skip correctness testing)\n");
-            goto exit;
+            return error;
         }
 
         vlog("\t%8.2f @ %a", maxError, maxErrorVal);
@@ -618,6 +615,5 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
 
     vlog("\n");
 
-exit:
-    return error;
+    return CL_SUCCESS;
 }
