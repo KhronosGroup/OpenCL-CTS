@@ -24,8 +24,10 @@
 
 #include "testBase.h"
 
-#define HALF_NAN 0x7e00
-#define HALF_INF 0x7C00
+#define HALF_P_NAN 0x7e00
+#define HALF_N_NAN 0xfe00
+#define HALF_P_INF 0x7c00
+#define HALF_N_INF 0xfc00
 
 struct GeometricsFPTest;
 
@@ -51,21 +53,10 @@ struct GeomTestBase
 
 //--------------------------------------------------------------------------
 
-template <typename T> using CompareFunc = T (*)(const T &, const T &);
-template <typename T> using ConvertFunc = T (*)(const T &);
-template <typename T> using QueryFunc = bool (*)(T &);
-
-//--------------------------------------------------------------------------
-
 template <typename T> struct GeomTestParams : public GeomTestBase
 {
     GeomTestParams(const ExplicitTypes &dt, const std::string &name,
                    const float &ulp);
-
-    CompareFunc<T> maxFn;
-    ConvertFunc<T> absFn;
-    QueryFunc<T> isnanFn;
-    QueryFunc<T> isfinFn;
 
     std::vector<T> trickyValues;
 };
@@ -139,10 +130,10 @@ struct GeometricsFPTest
     virtual cl_int RunSingleTest(const GeomTestBase *p) = 0;
 
     template <typename T>
-    void FillWithTrickyNumbers(T *const, T *const, const size_t, const size_t,
-                               const GeomTestParams<T> &);
+    void FillWithTrickyNums(T *const, T *const, const size_t, const size_t,
+                            const MTdata &, const GeomTestParams<T> &);
 
-    template <typename T> float UlpError(const T &, const T &);
+    template <typename T> float UlpError(const T &, const double &);
 
     template <typename T> double ToDouble(const T &);
 

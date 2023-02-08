@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2022 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@
 #include <limits>
 
 #include <CL/cl_half.h>
+
+//--------------------------------------------------------------------------/
 
 cl_half_rounding_mode GeomTestBase::halfRoundingMode = CL_HALF_RTE;
 cl_ulong GeometricsFPTest::maxAllocSize = 0;
@@ -66,7 +68,6 @@ static const char *twoArgsKernelPattern[] = {
     "{\n"
     "    int  tid = get_global_id(0);\n"
     , load_store,
-    "\n"
     "}\n"
 };
 
@@ -140,7 +141,7 @@ void vector2string(std::stringstream &sstr, T *vector, size_t elements)
 
 //--------------------------------------------------------------------------
 
-template <typename T> static bool isnan_fp(T &v)
+template <typename T> static bool isnan_fp(const T &v)
 {
     if (std::is_same<T, half>::value)
     {
@@ -153,13 +154,13 @@ template <typename T> static bool isnan_fp(T &v)
     }
     else
     {
-        return isnan(v);
+        return std::isnan(v);
     }
 }
 
 //--------------------------------------------------------------------------
 
-template <typename T> static bool isfinite_fp(T &v)
+template <typename T> static bool isfinite_fp(const T &v)
 {
     if (std::is_same<T, half>::value)
     {
@@ -172,7 +173,7 @@ template <typename T> static bool isfinite_fp(T &v)
     }
     else
     {
-        return isfinite(v);
+        return std::isfinite(v);
     }
 }
 
@@ -183,7 +184,7 @@ template <typename T> static T max_fp(const T &lhs, const T &rhs)
     if (std::is_same<T, half>::value)
         return cl_half_to_float(lhs) > cl_half_to_float(rhs) ? lhs : rhs;
     else
-        return fmax(lhs, rhs);
+        return std::fmax(lhs, rhs);
 }
 
 //--------------------------------------------------------------------------
@@ -191,10 +192,9 @@ template <typename T> static T max_fp(const T &lhs, const T &rhs)
 template <typename T> static T abs_fp(const T &val)
 {
     if (std::is_same<T, half>::value)
-        return cl_half_from_float(fabsf(cl_half_to_float(val)),
-                                  GeomTestBase::halfRoundingMode);
+        return static_cast<half>(val) & 0x7FFF;
     else
-        return fabs(val);
+        return std::fabs(val);
 }
 
 //--------------------------------------------------------------------------
@@ -367,23 +367,47 @@ void cross_product(const T *const vecA, const T *const vecB, T *const outVector,
 
 //--------------------------------------------------------------------------
 
+template <typename T> bool signbit_fp(const T &a)
+{
+    if (std::is_same<T, half>::value)
+        return static_cast<half>(a) & 0x8000 ? 1 : 0;
+    else
+        return std::signbit(a);
+}
+
+//--------------------------------------------------------------------------
+
+template <typename T> double mad_fp(const T &a, const T &b, const T &c)
+{
+    if (!isfinite_fp<T>(a)) return signbit_fp<T>(a) ? -INFINITY : INFINITY;
+    if (!isfinite_fp<T>(b)) return signbit_fp<T>(b) ? -INFINITY : INFINITY;
+    if (!isfinite_fp<T>(c)) return signbit_fp<T>(c) ? -INFINITY : INFINITY;
+    if (std::is_same<T, half>::value)
+        return HTF(a) * HTF(b) + HTF(c);
+    else
+        return a * b + c;
+}
+
+//--------------------------------------------------------------------------
+
 template <typename T>
 double verifyDot(const T *srcA, const T *srcB, size_t vecSize)
 {
     double total = 0.f;
-
     if (std::is_same<T, half>::value)
     {
-        for (unsigned int i = 0; i < vecSize; i++)
-            total += (double)HTF(srcA[i]) * (double)HTF(srcB[i]);
+        for (unsigned int i = vecSize; i--;)
+            total = mad_fp<T>(srcA[i], srcB[i], HFF(total));
+        return (!isfinite_fp<T>(HFF(total)))
+            ? (signbit_fp<T>(total) ? -INFINITY : INFINITY)
+            : total;
     }
     else
     {
         for (unsigned int i = 0; i < vecSize; i++)
             total += (double)srcA[i] * (double)srcB[i];
+        return total;
     }
-
-    return total;
 }
 
 //--------------------------------------------------------------------------
@@ -659,8 +683,8 @@ GeomTestParams<T>::GeomTestParams(const ExplicitTypes &dt,
                          HFF(MAKE_HEX_FLOAT(-0x1.0p-8f, -0x1L, -8)),
                          HFF(HTF(CL_HALF_MAX) / 2.f),
                          HFF(-HTF(CL_HALF_MAX) / 2.f),
-                         HALF_INF,
-                         -HALF_INF,
+                         HALF_P_INF,
+                         HALF_N_INF,
                          HFF(0.f),
                          HFF(-0.f) };
     }
@@ -710,11 +734,6 @@ GeomTestParams<T>::GeomTestParams(const ExplicitTypes &dt,
                          0.,
                          -0. };
     }
-
-    maxFn = &max_fp<T>;
-    absFn = &abs_fp<T>;
-    isnanFn = &isnan_fp<T>;
-    isfinFn = &isfinite_fp<T>;
 }
 
 //--------------------------------------------------------------------------
@@ -777,13 +796,12 @@ cl_int GeometricsFPTest::SetUp(int elements)
 //--------------------------------------------------------------------------
 
 template <typename T>
-void GeometricsFPTest::FillWithTrickyNumbers(T *const aVectors,
-                                             T *const bVectors,
-                                             const size_t num_elems,
-                                             const size_t vecSize,
-                                             const GeomTestParams<T> &param)
+void GeometricsFPTest::FillWithTrickyNums(T *const aVectors, T *const bVectors,
+                                          const size_t num_elems,
+                                          const size_t vecSize, const MTdata &d,
+                                          const GeomTestParams<T> &p)
 {
-    const size_t trickyCount = param.trickyValues.size();
+    const size_t trickyCount = p.trickyValues.size();
     size_t copySize = vecSize * vecSize * trickyCount;
 
     if (copySize * 2 > num_elems)
@@ -797,20 +815,51 @@ void GeometricsFPTest::FillWithTrickyNumbers(T *const aVectors,
         for (int k = 0; k < vecSize; k++)
             for (int i = 0; i < trickyCount; i++)
                 aVectors[i + k * trickyCount + j * vecSize * trickyCount] =
-                    param.trickyValues[i];
+                    p.trickyValues[i];
 
     if (bVectors)
     {
         memset(bVectors, 0, sizeof(T) * copySize);
         memset(aVectors + copySize, 0, sizeof(T) * copySize);
         memcpy(bVectors + copySize, aVectors, sizeof(T) * copySize);
+
+        /* Clamp values to be in range for fast_ functions */
+        // fast_* calls available only for single precision fp
+        if (std::is_same<T, float>::value)
+        {
+            if (p.fnName.find("fast_") != std::string::npos)
+            {
+                for (int i = 0; i < num_elems; i++)
+                {
+                    if (abs_fp<T>(bVectors[i])
+                            > MAKE_HEX_FLOAT(0x1.0p62f, 0x1L, 62)
+                        || abs_fp<T>(bVectors[i])
+                            < MAKE_HEX_FLOAT(0x1.0p-62f, 0x1L, -62))
+                        bVectors[i] = get_random_float(-512.f, 512.f, d);
+                }
+            }
+        }
+    }
+
+    if (std::is_same<T, float>::value)
+    {
+        if (p.fnName.find("fast_") != std::string::npos)
+        {
+            for (int i = 0; i < num_elems; i++)
+            {
+                if (abs_fp<T>(aVectors[i]) > MAKE_HEX_FLOAT(0x1.0p62f, 0x1L, 62)
+                    || abs_fp<T>(aVectors[i])
+                        < MAKE_HEX_FLOAT(0x1.0p-62f, 0x1L, -62))
+                    aVectors[i] = get_random_float(-512.f, 512.f, d);
+            }
+        }
     }
 }
 
 //--------------------------------------------------------------------------
 
 template <typename T>
-float GeometricsFPTest::UlpError(const T &val, const T &ref)
+float GeometricsFPTest::UlpError(const T &val, const double &ref)
 {
     if (std::is_same<T, half>::value)
     {
@@ -837,13 +886,9 @@ float GeometricsFPTest::UlpError(const T &val, const T &ref)
 template <typename T> double GeometricsFPTest::ToDouble(const T &val)
 {
     if (std::is_same<T, half>::value)
-    {
         return (double)HTF(val);
-    }
     else
-    {
         return (double)val;
-    }
 }
 
 //--------------------------------------------------------------------------
@@ -941,9 +986,11 @@ cl_int CrossFPTest::RunSingleTest(const GeomTestBase *p)
         case kDouble:
             error = CrossKernel<cl_double>(*((GeomTestParams<double> *)p));
             break;
-        default: test_error(-1, "CrossFPTest::Run: incorrect fp type"); break;
+        default:
+            test_error(-1, "CrossFPTest::RunSingleTest: incorrect fp type");
+            break;
     }
-    test_error(error, "CrossFPTest::Run: test_relational failed");
+    test_error(error, "CrossFPTest::RunSingleTest: test_relational failed");
     return CL_SUCCESS;
 }
 
@@ -1001,28 +1048,28 @@ template <typename T> int CrossFPTest::CrossKernel(const GeomTestParams<T> &p)
             inDataA[i] = get_random<T>(-512, 512, seed);
             inDataB[i] = get_random<T>(-512, 512, seed);
         }
-        FillWithTrickyNumbers(inDataA, inDataB, test_size * vecsize, vecsize,
-                              p);
+        FillWithTrickyNums(inDataA, inDataB, test_size * vecsize, vecsize, seed,
+                           p);
 
         streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, bufSize,
-                                    inDataA, NULL);
+                                    inDataA, &error);
         if (streams[0] == NULL)
         {
-            log_error("ERROR: Creating input array A failed!\n");
+            print_error(error, "ERROR: Creating input array A failed!\n");
             return -1;
         }
         streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, bufSize,
-                                    inDataB, NULL);
+                                    inDataB, &error);
         if (streams[1] == NULL)
         {
-            log_error("ERROR: Creating input array B failed!\n");
+            print_error(error, "ERROR: Creating input array B failed!\n");
             return -1;
         }
         streams[2] =
-            clCreateBuffer(context, CL_MEM_READ_WRITE, bufSize, NULL, NULL);
+            clCreateBuffer(context, CL_MEM_READ_WRITE, bufSize, NULL, &error);
         if (streams[2] == NULL)
         {
-            log_error("ERROR: Creating output array failed!\n");
+            print_error(error, "ERROR: Creating output array failed!\n");
             return -1;
         }
 
@@ -1075,9 +1122,9 @@ template <typename T> int CrossFPTest::CrossKernel(const GeomTestParams<T> &p)
                                 errorTolerances))
             {
                 char printout[64];
-                std::snprintf(
-                    printout, sizeof(printout), "     ulp %f\n",
-                    UlpError<T>(outData[i * vecsize + 1], testVec[1]));
+                std::snprintf(printout, sizeof(printout), "     ulp %f\n",
+                              UlpError<T>(outData[i * vecsize + 1],
+                                          ToDouble<T>(testVec[1])));
                 log_error(printout);
                 return -1;
             }
@@ -1102,9 +1149,11 @@ cl_int TwoArgsFPTest::RunSingleTest(const GeomTestBase *p)
         case kDouble:
             error = TwoArgs<cl_double>(*((TwoArgsTestParams<double> *)p));
             break;
-        default: test_error(-1, "TwoArgsFPTest::Run: incorrect fp type"); break;
+        default:
+            test_error(-1, "TwoArgsFPTest::RunSingleTest: incorrect fp type");
+            break;
     }
-    test_error(error, "TwoArgsFPTest::Run: test_geometrics failed");
+    test_error(error, "TwoArgsFPTest::RunSingleTest: test_geometrics failed");
     return CL_SUCCESS;
 }
 
@@ -1135,9 +1184,9 @@ T TwoArgsFPTest::GetMaxValue(const T *const vecA, const T *const vecB,
                              const size_t &vecSize,
                              const TwoArgsTestParams<T> &p)
 {
-    T a = p.maxFn(p.absFn(vecA[0]), p.absFn(vecB[0]));
+    T a = max_fp<T>(abs_fp<T>(vecA[0]), abs_fp<T>(vecB[0]));
     for (size_t i = 1; i < vecSize; i++)
-        a = p.maxFn(p.absFn(vecA[i]), p.maxFn(p.absFn(vecB[i]), a));
+        a = max_fp<T>(abs_fp<T>(vecA[i]), max_fp<T>(abs_fp<T>(vecB[i]), a));
     return a;
 }
 
@@ -1192,11 +1241,15 @@ int TwoArgsFPTest::TwoArgsKernel(const size_t &vecSize, const MTdata &d,
 
     /* Create the source */
     if (vecSize == 1)
+    {
         std::snprintf(load_store, sizeof(load_store), twoArgsToScalarV1,
                       p.fnName.c_str());
+    }
     else
+    {
         std::snprintf(load_store, sizeof(load_store), twoArgsToScalarVn,
                       p.fnName.c_str(), vecSize, vecSize);
+    }
     std::string str =
         concat_kernel(twoArgsKernelPattern,
                       sizeof(twoArgsKernelPattern) / sizeof(const char *));
@@ -1214,47 +1267,27 @@ int TwoArgsFPTest::TwoArgsKernel(const size_t &vecSize, const MTdata &d,
         inDataA[i] = get_random<T>(-512, 512, d);
         inDataB[i] = get_random<T>(-512, 512, d);
     }
-    FillWithTrickyNumbers(inDataA, inDataB, test_size * vecSize, vecSize, p);
-
-    /* Clamp values to be in range for fast_ functions */
-    // fast_* calls available only for single precision fp
-    if (std::is_same<T, float>::value)
-    {
-        if (p.fnName.find("fast_") != std::string::npos)
-        {
-            for (i = 0; i < test_size * vecSize; i++)
-            {
-                if (p.absFn(inDataA[i]) > MAKE_HEX_FLOAT(0x1.0p62f, 0x1L, 62)
-                    || p.absFn(inDataA[i])
-                        < MAKE_HEX_FLOAT(0x1.0p-62f, 0x1L, -62))
-                    inDataA[i] = get_random_float(-512.f, 512.f, d);
-                if (p.absFn(inDataB[i]) > MAKE_HEX_FLOAT(0x1.0p62f, 0x1L, 62)
-                    || p.absFn(inDataB[i])
-                        < MAKE_HEX_FLOAT(0x1.0p-62f, 0x1L, -62))
-                    inDataB[i] = get_random_float(-512.f, 512.f, d);
-            }
-        }
-    }
+    FillWithTrickyNums(inDataA, inDataB, test_size * vecSize, vecSize, d, p);
 
     streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, srcBufSize,
-                                inDataA, NULL);
+                                inDataA, &error);
     if (streams[0] == NULL)
     {
-        log_error("ERROR: Creating input array A failed!\n");
+        print_error(error, "ERROR: Creating input array A failed!\n");
         return -1;
     }
     streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, srcBufSize,
-                                inDataB, NULL);
+                                inDataB, &error);
     if (streams[1] == NULL)
     {
-        log_error("ERROR: Creating input array B failed!\n");
+        print_error(error, "ERROR: Creating input array B failed!\n");
         return -1;
     }
     streams[2] =
-        clCreateBuffer(context, CL_MEM_READ_WRITE, dstBufSize, NULL, NULL);
+        clCreateBuffer(context, CL_MEM_READ_WRITE, dstBufSize, NULL, &error);
     if (streams[2] == NULL)
     {
-        log_error("ERROR: Creating output array failed!\n");
+        print_error(error, "ERROR: Creating output array failed!\n");
         return -1;
     }
 
@@ -1287,16 +1320,27 @@ int TwoArgsFPTest::TwoArgsKernel(const size_t &vecSize, const MTdata &d,
         T *src1 = inDataA + i * vecSize;
         T *src2 = inDataB + i * vecSize;
         double expected = p.verifyFunc(src1, src2, vecSize);
-        if (expected != ToDouble<T>(outData[i]))
+        bool isDif = (std::is_same<T, half>::value)
+            ? (HFF(expected) != outData[i])
+            : ((T)expected != outData[i]);
+        if (isDif)
         {
-            if (isnan(expected) && p.isnanFn(outData[i])) continue;
+            if (std::is_same<T, half>::value)
+            {
+                T expv = HFF(expected);
+                if (isnan_fp<T>(expv) && isnan_fp<T>(outData[i])
+                    || (!isfinite_fp<T>(expv) && !isfinite_fp<T>(outData[i])))
+                    continue;
+            }
+            else if (isnan(expected) && isnan_fp<T>(outData[i]))
+                continue;
 
             if (std::is_same<T, float>::value && !floatHasInfNan
                 || std::is_same<T, half>::value && !halfHasInfNan)
             {
                 for (size_t ii = 0; ii < vecSize; ii++)
                 {
-                    if (!p.isfinFn(src1[ii]) || !p.isfinFn(src2[ii]))
+                    if (!isfinite_fp<T>(src1[ii]) || !isfinite_fp<T>(src2[ii]))
                     {
                         skipCount++;
                         continue;
@@ -1385,7 +1429,6 @@ int TwoArgsFPTest::TwoArgsKernel(const size_t &vecSize, const MTdata &d,
             "Skipped %d tests out of %d because they contained Infs or "
             "NaNs\n\tEMBEDDED_PROFILE Device does not support CL_FP_INF_NAN\n",
             skipCount, test_size);
-
     return 0;
 }
 
@@ -1416,7 +1459,6 @@ cl_int FastDistanceFPTest::RunSingleTest(const GeomTestBase *param)
     auto p = *((TwoArgsTestParams<float> *)param);
 
     float ulpConst = p.ulpLimit;
-
     for (unsigned size = 0; sizes[size] != 0; size++)
     {
         p.ulpLimit = std::ceil(ulpConst + 2.f * sizes[size]);
@@ -1561,37 +1603,21 @@ int OneArgFPTest::OneArgKernel(const size_t &vecSize, const MTdata &d,
     {
         inDataA[i] = get_random<T>(-512, 512, d);
     }
-    FillWithTrickyNumbers(inDataA, (T *)nullptr, test_size * vecSize, vecSize,
-                          p);
-
-    /* Clamp values to be in range for fast_ functions */
-    // fast_* calls available only for single precision fp
-    if (std::is_same<T, float>::value)
-    {
-        if (p.fnName.find("fast_") != std::string::npos)
-        {
-            for (i = 0; i < test_size * vecSize; i++)
-            {
-                if (p.absFn(inDataA[i]) > MAKE_HEX_FLOAT(0x1.0p62f, 0x1L, 62)
-                    || p.absFn(inDataA[i])
-                        < MAKE_HEX_FLOAT(0x1.0p-62f, 0x1L, -62))
-                    inDataA[i] = get_random_float(-512.f, 512.f, d);
-            }
-        }
-    }
+    FillWithTrickyNums(inDataA, (T *)nullptr, test_size * vecSize, vecSize, d,
+                       p);
 
     streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, srcBufSize,
-                                inDataA, NULL);
+                                inDataA, &error);
     if (streams[0] == NULL)
     {
-        log_error("ERROR: Creating input array A failed!\n");
+        print_error(error, "ERROR: Creating input array A failed!\n");
         return -1;
     }
     streams[1] =
-        clCreateBuffer(context, CL_MEM_READ_WRITE, dstBufSize, NULL, NULL);
+        clCreateBuffer(context, CL_MEM_READ_WRITE, dstBufSize, NULL, &error);
     if (streams[1] == NULL)
     {
-        log_error("ERROR: Creating output array failed!\n");
+        print_error(error, "ERROR: Creating output array failed!\n");
         return -1;
     }
 
@@ -1620,13 +1646,16 @@ int OneArgFPTest::OneArgKernel(const size_t &vecSize, const MTdata &d,
     for (i = 0; i < test_size; i++)
     {
         double expected = p.verifyFunc(inDataA + i * vecSize, vecSize);
-        if ((float)expected != ToDouble<T>(outData[i]))
+        bool isDif = (std::is_same<T, half>::value)
+            ? (HFF(expected) != outData[i])
+            : ((T)expected != outData[i]);
+        if (isDif)
         {
             float ulps = UlpError<T>(outData[i], expected);
             if (fabsf(ulps) <= p.ulpLimit) continue;
 
             // We have to special case NAN
-            if (p.isnanFn(outData[i]) && isnan(expected)) continue;
+            if (isnan_fp<T>(outData[i]) && isnan(expected)) continue;
 
             if (!(fabsf(ulps) < p.ulpLimit))
             {
@@ -1664,9 +1693,9 @@ cl_int LengthFPTest::RunSingleTest(const GeomTestBase *p)
         case kDouble:
             error = LenghtTest<double>(*((OneArgTestParams<double> *)p));
             break;
-        default: test_error(-1, "TwoArgsFPTest::Run: incorrect fp type"); break;
+        default: test_error(-1, "LengthFPTest::Run: incorrect fp type"); break;
     }
-    test_error(error, "TwoArgsFPTest::Run: test_geometrics failed");
+    test_error(error, "LengthFPTest::RunSingleTest: test_geometrics failed");
     return CL_SUCCESS;
 }
 
@@ -1685,7 +1714,7 @@ template <typename T> int LengthFPTest::LenghtTest(OneArgTestParams<T> &p)
         cl_int error = OneArgKernel<T>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
         {
-            log_error("   geom_two_args vector size %d FAILED\n",
+            log_error("   LenghtTest vector size %d FAILED\n",
                       (int)sizes[size]);
             return error;
         }
@@ -1775,18 +1804,20 @@ int OneToOneArgFPTest::VerifySubnormals(int &fail, const size_t &vecSize,
             for (size_t j = 0; j < vecSize; j++)
             {
                 // We have to special case NAN
-                if (p.isnanFn(out[j]) && p.isnanFn(expected[j])) continue;
+                if (isnan_fp<T>(out[j]) && isnan_fp<T>(expected[j])) continue;
 
                 if (expected2[j] != out[j])
                 {
-                    float ulp_error = UlpError<T>(out[j], expected[j]);
+                    float ulp_error =
+                        UlpError<T>(out[j], ToDouble<T>(expected[j]));
                     if (fabsf(ulp_error) > p.ulpLimit
                         && IsHalfSubnormal(expected2[j]))
                     {
                         expected2[j] = 0.0f;
                         if (expected2[j] != out[j])
                         {
-                            ulp_error = UlpError<T>(out[j], expected[j]);
+                            ulp_error =
+                                UlpError<T>(out[j], ToDouble<T>(expected[j]));
                             if (fabsf(ulp_error) > p.ulpLimit)
                             {
                                 fail = 1;
@@ -1817,18 +1848,20 @@ int OneToOneArgFPTest::VerifySubnormals(int &fail, const size_t &vecSize,
             for (size_t j = 0; j < vecSize; j++)
             {
                 // We have to special case NAN
-                if (p.isnanFn(out[j]) && p.isnanFn(expected[j])) continue;
+                if (isnan_fp<T>(out[j]) && isnan_fp<T>(expected[j])) continue;
 
                 if (expected2[j] != out[j])
                 {
-                    float ulp_error = UlpError<T>(out[j], expected[j]);
+                    float ulp_error =
+                        UlpError<T>(out[j], ToDouble<T>(expected[j]));
                     if (fabsf(ulp_error) > p.ulpLimit
                         && IsFloatSubnormal(expected2[j]))
                     {
                         expected2[j] = 0.0f;
                         if (expected2[j] != out[j])
                         {
-                            ulp_error = UlpError<T>(out[j], expected[j]);
+                            ulp_error =
+                                UlpError<T>(out[j], ToDouble<T>(expected[j]));
                             if (fabsf(ulp_error) > p.ulpLimit)
                             {
                                 fail = 1;
@@ -1910,17 +1943,17 @@ int OneToOneArgFPTest::OneToOneArgKernel(const size_t &vecSize, const MTdata &d,
     }
 
     streams[0] =
-        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, bufSize, inDataA, NULL);
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, bufSize, inDataA, &error);
     if (streams[0] == NULL)
     {
-        log_error("ERROR: Creating input array A failed!\n");
+        print_error(error, "ERROR: Creating input array A failed!\n");
         return -1;
     }
     streams[1] =
-        clCreateBuffer(context, CL_MEM_READ_WRITE, bufSize, NULL, NULL);
+        clCreateBuffer(context, CL_MEM_READ_WRITE, bufSize, NULL, &error);
     if (streams[1] == NULL)
     {
-        log_error("ERROR: Creating output array failed!\n");
+        print_error(error, "ERROR: Creating output array failed!\n");
         return -1;
     }
 
@@ -1955,12 +1988,14 @@ int OneToOneArgFPTest::OneToOneArgKernel(const size_t &vecSize, const MTdata &d,
         for (j = 0; j < vecSize; j++)
         {
             // We have to special case NAN
-            if (p.isnanFn(outData[i * vecSize + j]) && p.isnanFn(expected[j]))
+            if (isnan_fp<T>(outData[i * vecSize + j])
+                && isnan_fp<T>(expected[j]))
                 continue;
 
             if (expected[j] != outData[i * vecSize + j])
             {
-                ulp_error = UlpError<T>(outData[i * vecSize + j], expected[j]);
+                ulp_error = UlpError<T>(outData[i * vecSize + j],
+                                        ToDouble<T>(expected[j]));
                 if (fabsf(ulp_error) > p.ulpLimit)
                 {
                     fail = 1;
