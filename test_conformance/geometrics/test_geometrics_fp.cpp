@@ -668,78 +668,81 @@ GeomTestParams<T>::GeomTestParams(const ExplicitTypes &dt,
 
     if (std::is_same<T, half>::value)
     {
-        trickyValues = {
-            static_cast<half>(HFF(-CL_HALF_EPSILON)),
-            static_cast<half>(HFF(CL_HALF_EPSILON)),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(0x1.0p7f, 0x1L, 7))),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(0x1.8p7f, 0x18L, 3))),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(0x1.0p8f, 0x1L, 8))),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(-0x1.0p7f, -0x1L, 7))),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(-0x1.8p-7f, -0x18L, -11))),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(-0x1.0p8f, -0x1L, 8))),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(0x1.0p-7f, 0x1L, -7))),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(0x1.8p-7f, 0x18L, -11))),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(0x1.0p-8f, 0x1L, -8))),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(-0x1.0p-7f, -0x1L, -7))),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(-0x1.8p-7f, -0x18L, -11))),
-            static_cast<half>(HFF(MAKE_HEX_FLOAT(-0x1.0p-8f, -0x1L, -8))),
-            static_cast<half>(HFF(HTF(CL_HALF_MAX) / 2.f)),
-            static_cast<half>(HFF(-HTF(CL_HALF_MAX) / 2.f)),
-            static_cast<half>(HALF_P_INF),
-            static_cast<half>(HALF_N_INF),
-            static_cast<half>(HFF(0.f)),
-            static_cast<half>(HFF(-0.f))
+        std::vector<half> trickyValuesInit = {
+            HFF(-CL_HALF_EPSILON),
+            HFF(CL_HALF_EPSILON),
+            HFF(MAKE_HEX_FLOAT(0x1.0p7f, 0x1L, 7)),
+            HFF(MAKE_HEX_FLOAT(0x1.8p7f, 0x18L, 3)),
+            HFF(MAKE_HEX_FLOAT(0x1.0p8f, 0x1L, 8)),
+            HFF(MAKE_HEX_FLOAT(-0x1.0p7f, -0x1L, 7)),
+            HFF(MAKE_HEX_FLOAT(-0x1.8p-7f, -0x18L, -11)),
+            HFF(MAKE_HEX_FLOAT(-0x1.0p8f, -0x1L, 8)),
+            HFF(MAKE_HEX_FLOAT(0x1.0p-7f, 0x1L, -7)),
+            HFF(MAKE_HEX_FLOAT(0x1.8p-7f, 0x18L, -11)),
+            HFF(MAKE_HEX_FLOAT(0x1.0p-8f, 0x1L, -8)),
+            HFF(MAKE_HEX_FLOAT(-0x1.0p-7f, -0x1L, -7)),
+            HFF(MAKE_HEX_FLOAT(-0x1.8p-7f, -0x18L, -11)),
+            HFF(MAKE_HEX_FLOAT(-0x1.0p-8f, -0x1L, -8)),
+            HFF(HTF(CL_HALF_MAX) / 2.f),
+            HFF(-HTF(CL_HALF_MAX) / 2.f),
+            HALF_P_INF,
+            HALF_N_INF,
+            HFF(0.f),
+            HFF(-0.f)
         };
+        trickyValues.assign(trickyValuesInit.begin(), trickyValuesInit.end());
     }
     else if (std::is_same<T, float>::value)
     {
-        trickyValues = {
-            static_cast<float>(-FLT_EPSILON),
-            static_cast<float>(FLT_EPSILON),
-            static_cast<float>(MAKE_HEX_FLOAT(0x1.0p63f, 0x1L, 63)),
-            static_cast<float>(MAKE_HEX_FLOAT(0x1.8p63f, 0x18L, 59)),
-            static_cast<float>(MAKE_HEX_FLOAT(0x1.0p64f, 0x1L, 64)),
-            static_cast<float>(MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63)),
-            static_cast<float>(MAKE_HEX_FLOAT(-0x1.8p-63f, -0x18L, -67)),
-            static_cast<float>(MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64)),
-            static_cast<float>(MAKE_HEX_FLOAT(0x1.0p-63f, 0x1L, -63)),
-            static_cast<float>(MAKE_HEX_FLOAT(0x1.8p-63f, 0x18L, -67)),
-            static_cast<float>(MAKE_HEX_FLOAT(0x1.0p-64f, 0x1L, -64)),
-            static_cast<float>(MAKE_HEX_FLOAT(-0x1.0p-63f, -0x1L, -63)),
-            static_cast<float>(MAKE_HEX_FLOAT(-0x1.8p-63f, -0x18L, -67)),
-            static_cast<float>(MAKE_HEX_FLOAT(-0x1.0p-64f, -0x1L, -64)),
-            static_cast<float>(FLT_MAX / 2.f),
-            static_cast<float>(-FLT_MAX / 2.f),
-            static_cast<float>(INFINITY),
-            static_cast<float>(-INFINITY),
-            static_cast<float>(0.f),
-            static_cast<float>(-0.f)
+        std::vector<float> trickyValuesInit = {
+            -FLT_EPSILON,
+            FLT_EPSILON,
+            MAKE_HEX_FLOAT(0x1.0p63f, 0x1L, 63),
+            MAKE_HEX_FLOAT(0x1.8p63f, 0x18L, 59),
+            MAKE_HEX_FLOAT(0x1.0p64f, 0x1L, 64),
+            MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63),
+            MAKE_HEX_FLOAT(-0x1.8p-63f, -0x18L, -67),
+            MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64),
+            MAKE_HEX_FLOAT(0x1.0p-63f, 0x1L, -63),
+            MAKE_HEX_FLOAT(0x1.8p-63f, 0x18L, -67),
+            MAKE_HEX_FLOAT(0x1.0p-64f, 0x1L, -64),
+            MAKE_HEX_FLOAT(-0x1.0p-63f, -0x1L, -63),
+            MAKE_HEX_FLOAT(-0x1.8p-63f, -0x18L, -67),
+            MAKE_HEX_FLOAT(-0x1.0p-64f, -0x1L, -64),
+            FLT_MAX / 2.f,
+            -FLT_MAX / 2.f,
+            INFINITY,
+            -INFINITY,
+            0.f,
+            -0.f
         };
+        trickyValues.assign(trickyValuesInit.begin(), trickyValuesInit.end());
     }
     else if (std::is_same<T, double>::value)
     {
-        trickyValues = {
-            static_cast<double>(-FLT_EPSILON),
-            static_cast<double>(FLT_EPSILON),
-            static_cast<double>(MAKE_HEX_DOUBLE(0x1.0p511, 0x1L, 511)),
-            static_cast<double>(MAKE_HEX_DOUBLE(0x1.8p511, 0x18L, 507)),
-            static_cast<double>(MAKE_HEX_DOUBLE(0x1.0p512, 0x1L, 512)),
-            static_cast<double>(MAKE_HEX_DOUBLE(-0x1.0p511, -0x1L, 511)),
-            static_cast<double>(MAKE_HEX_DOUBLE(-0x1.8p-511, -0x18L, -515)),
-            static_cast<double>(MAKE_HEX_DOUBLE(-0x1.0p512, -0x1L, 512)),
-            static_cast<double>(MAKE_HEX_DOUBLE(0x1.0p-511, 0x1L, -511)),
-            static_cast<double>(MAKE_HEX_DOUBLE(0x1.8p-511, 0x18L, -515)),
-            static_cast<double>(MAKE_HEX_DOUBLE(0x1.0p-512, 0x1L, -512)),
-            static_cast<double>(MAKE_HEX_DOUBLE(-0x1.0p-511, -0x1L, -511)),
-            static_cast<double>(MAKE_HEX_DOUBLE(-0x1.8p-511, -0x18L, -515)),
-            static_cast<double>(MAKE_HEX_DOUBLE(-0x1.0p-512, -0x1L, -512)),
-            static_cast<double>(DBL_MAX / 2.),
-            static_cast<double>(-DBL_MAX / 2.),
-            static_cast<double>(INFINITY),
-            static_cast<double>(-INFINITY),
-            static_cast<double>(0.),
-            static_cast<double>(-0.)
+        std::vector<double> trickyValuesInit = {
+            -FLT_EPSILON,
+            FLT_EPSILON,
+            MAKE_HEX_DOUBLE(0x1.0p511, 0x1L, 511),
+            MAKE_HEX_DOUBLE(0x1.8p511, 0x18L, 507),
+            MAKE_HEX_DOUBLE(0x1.0p512, 0x1L, 512),
+            MAKE_HEX_DOUBLE(-0x1.0p511, -0x1L, 511),
+            MAKE_HEX_DOUBLE(-0x1.8p-511, -0x18L, -515),
+            MAKE_HEX_DOUBLE(-0x1.0p512, -0x1L, 512),
+            MAKE_HEX_DOUBLE(0x1.0p-511, 0x1L, -511),
+            MAKE_HEX_DOUBLE(0x1.8p-511, 0x18L, -515),
+            MAKE_HEX_DOUBLE(0x1.0p-512, 0x1L, -512),
+            MAKE_HEX_DOUBLE(-0x1.0p-511, -0x1L, -511),
+            MAKE_HEX_DOUBLE(-0x1.8p-511, -0x18L, -515),
+            MAKE_HEX_DOUBLE(-0x1.0p-512, -0x1L, -512),
+            DBL_MAX / 2.,
+            -DBL_MAX / 2.,
+            INFINITY,
+            -INFINITY,
+            0.,
+            -0.
         };
+        trickyValues.assign(trickyValuesInit.begin(), trickyValuesInit.end());
     }
 }
 
