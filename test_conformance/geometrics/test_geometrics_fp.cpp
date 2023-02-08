@@ -1356,7 +1356,7 @@ int TwoArgsFPTest::TwoArgsKernel(const size_t &vecSize, const MTdata &d,
                         continue;
                     }
                 }
-                if (!std::isfinite(expected))
+                if (!isfinite_fp(expected))
                 {
                     skipCount++;
                     continue;
