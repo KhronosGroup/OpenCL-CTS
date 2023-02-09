@@ -867,7 +867,7 @@ static inline __m128i vifloorf(__m128 f)
 #else
     // No packed rounding until SSE4... do this the old-fashioned way
     unsigned int mxcsr = _mm_getcsr();
-    _mm_setcsr(mxcsr & ~_MM_ROUND_MASK | _MM_ROUND_DOWN);
+    _mm_setcsr((mxcsr & ~_MM_ROUND_MASK) | _MM_ROUND_DOWN);
     __m128i i = _mm_cvtps_epi32(f);
     _mm_setcsr(mxcsr);
     return i;
@@ -881,7 +881,7 @@ static inline __m128 vfloorf(__m128 f)
 #else
     // No packed rounding until SSE4... do this the old-fashioned way
     unsigned int mxcsr = _mm_getcsr();
-    _mm_setcsr(mxcsr & ~_MM_ROUND_MASK | _MM_ROUND_DOWN);
+    _mm_setcsr((mxcsr & ~_MM_ROUND_MASK) | _MM_ROUND_DOWN);
     f = _mm_cvtepi32_ps(_mm_cvtps_epi32(f));
     _mm_setcsr(mxcsr);
     return f;
@@ -3525,7 +3525,7 @@ FloatPixel sample_image_pixel_float_offset(
         if (NULL == containsDenorms)
         {
             mxcsr = _mm_getcsr();
-            _mm_setcsr(mxcsr & ~_MM_FLUSH_ZERO_MASK | _MM_FLUSH_ZERO_ON);
+            _mm_setcsr((mxcsr & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_ZERO_ON);
         }
         __m128 outPixel = check_for_denorms(
             read_image_pixel_float(imageData, imageInfo, icoord, lod),
@@ -3587,7 +3587,7 @@ FloatPixel sample_image_pixel_float_offset(
             if (NULL == containsDenorms)
             {
                 mxcsr = _mm_getcsr();
-                _mm_setcsr(mxcsr & ~_MM_FLUSH_ZERO_MASK | _MM_FLUSH_ZERO_ON);
+                _mm_setcsr((mxcsr & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_ZERO_ON);
             }
 
             // Make coordinate vectors for pixels 01 and 10
@@ -3849,7 +3849,7 @@ FloatPixel sample_image_pixel_float_offset(
             if (NULL == containsDenorms)
             {
                 mxcsr = _mm_getcsr();
-                _mm_setcsr(mxcsr & ~_MM_FLUSH_ZERO_MASK | _MM_FLUSH_ZERO_ON);
+                _mm_setcsr((mxcsr & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_ZERO_ON);
             }
 
 #ifdef __AVX2__
