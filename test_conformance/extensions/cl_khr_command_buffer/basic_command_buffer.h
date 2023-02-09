@@ -52,7 +52,6 @@ struct BasicCommandBufferTest : CommandBufferTestBase
     virtual cl_int Run() = 0;
 
 protected:
-
     virtual size_t data_size() const { return num_elements * sizeof(cl_int); }
 
     cl_context context;
