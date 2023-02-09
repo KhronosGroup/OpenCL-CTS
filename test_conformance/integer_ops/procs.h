@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2017-2022 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,7 +15,6 @@
 //
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"
-#include "harness/threadTesting.h"
 #include "harness/typeWrappers.h"
 #include "harness/testHarness.h"
 #include "harness/mt19937.h"
@@ -61,6 +60,18 @@ extern int test_integer_sub_sat(cl_device_id deviceID, cl_context context, cl_co
 extern int test_integer_mul24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_integer_mad24(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
+extern int test_extended_bit_ops_extract(cl_device_id device_id,
+                                         cl_context context,
+                                         cl_command_queue commands,
+                                         int num_elements);
+extern int test_extended_bit_ops_insert(cl_device_id device_id,
+                                        cl_context context,
+                                        cl_command_queue commands,
+                                        int num_elements);
+extern int test_extended_bit_ops_reverse(cl_device_id device_id,
+                                         cl_context context,
+                                         cl_command_queue commands,
+                                         int num_elements);
 
 extern int test_long_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int test_long_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

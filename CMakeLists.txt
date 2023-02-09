@@ -90,6 +90,7 @@ endmacro(add_cxx_flag_if_supported)
 
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
     add_cxx_flag_if_supported(-Wmisleading-indentation)
+    add_cxx_flag_if_supported(-Wunused-function)
     add_cxx_flag_if_supported(-Wunused-variable)
     add_cxx_flag_if_supported(-Wno-narrowing)
     add_cxx_flag_if_supported(-Wno-format)
@@ -124,6 +125,12 @@ macro(set_gnulike_module_compile_flags flags)
         )
     endif()
 endmacro(set_gnulike_module_compile_flags)
+
+# Xcode 14.1 deprecated functions such as sprintf.
+# Suppress such warnings for now, see Issue #1626
+if(APPLE)
+    add_cxx_flag_if_supported(-Wno-deprecated-declarations)
+endif(APPLE)
 
 if(MSVC)
     # Don't warn when using standard non-secure functions.

@@ -4,6 +4,7 @@ set(${MODULE_NAME}_SOURCES
     main.cpp
     basic_command_buffer.cpp
     command_buffer_set_kernel_arg.cpp
+    command_buffer_queue_substitution.cpp
 )
 
 include(../../CMakeCommon.txt)

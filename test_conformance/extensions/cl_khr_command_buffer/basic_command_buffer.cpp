@@ -25,15 +25,21 @@
 BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
                                                cl_context context,
                                                cl_command_queue queue)
-    : CommandBufferTestBase(device), context(context), queue(queue),
+    : CommandBufferTestBase(device), context(context), queue(nullptr),
       num_elements(0), command_buffer(this), simultaneous_use_support(false),
       out_of_order_support(false),
       // try to use simultaneous path by default
       simultaneous_use_requested(true),
       // due to simultaneous cases extend buffer size
       buffer_size_multiplier(1)
-
-{}
+{
+    cl_int error = clRetainCommandQueue(queue);
+    if (error != CL_SUCCESS)
+    {
+        throw std::runtime_error("clRetainCommandQueue failed\n");
+    }
+    this->queue = queue;
+}
 
 //--------------------------------------------------------------------------
 bool BasicCommandBufferTest::Skip()
@@ -52,6 +58,19 @@ bool BasicCommandBufferTest::Skip()
                                   sizeof(queue_properties), &queue_properties,
                                   NULL);
     test_error(error, "Unable to query CL_QUEUE_PROPERTIES");
+
+
+    // Query if device supports simultaneous use
+    cl_device_command_buffer_capabilities_khr capabilities;
+    error = clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
+                            sizeof(capabilities), &capabilities, NULL);
+    test_error(error,
+               "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
+    simultaneous_use_support = simultaneous_use_requested
+        && (capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR)
+            != 0;
+    out_of_order_support =
+        capabilities & CL_COMMAND_BUFFER_CAPABILITY_OUT_OF_ORDER_KHR;
 
     // Skip if queue properties don't contain those required
     return required_properties != (required_properties & queue_properties);
@@ -125,23 +144,6 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     if (error != CL_SUCCESS)
     {
         return error;
-    }
-
-    // Query if device supports simultaneous use
-    cl_device_command_buffer_capabilities_khr capabilities;
-    error = clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
-                            sizeof(capabilities), &capabilities, NULL);
-    test_error(error,
-               "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
-    simultaneous_use_support = simultaneous_use_requested
-        && (capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR)
-            != 0;
-    out_of_order_support =
-        capabilities & CL_COMMAND_BUFFER_CAPABILITY_OUT_OF_ORDER_KHR;
-
-    if (elements <= 0)
-    {
-        return CL_INVALID_VALUE;
     }
     num_elements = static_cast<size_t>(elements);
 
@@ -381,7 +383,7 @@ struct ExplicitFlushTest : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        return !simultaneous_use_support || BasicCommandBufferTest::Skip();
+        return BasicCommandBufferTest::Skip() || !simultaneous_use_support;
     }
 };
 
@@ -437,7 +439,7 @@ struct InterleavedEnqueueTest : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        return !simultaneous_use_support || BasicCommandBufferTest::Skip();
+        return BasicCommandBufferTest::Skip() || !simultaneous_use_support;
     }
 };
 
@@ -448,7 +450,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     OutOfOrderTest(cl_device_id device, cl_context context,
                    cl_command_queue queue)
         : BasicCommandBufferTest(device, context, queue),
-          out_of_order_command_buffer(this), out_of_order_queue(nullptr),
+          out_of_order_queue(nullptr), out_of_order_command_buffer(this),
           event(nullptr)
     {}
 
@@ -501,13 +503,6 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
-        if (!out_of_order_support)
-        {
-            // Test will skip as device doesn't support out-of-order
-            // command-buffers
-            return CL_SUCCESS;
-        }
-
         out_of_order_queue = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
         test_error(error, "Unable to create command queue to test with");
@@ -521,7 +516,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        return !out_of_order_support || BasicCommandBufferTest::Skip();
+        return BasicCommandBufferTest::Skip() || !out_of_order_support;
     }
 
     clCommandQueueWrapper out_of_order_queue;
