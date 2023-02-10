@@ -117,7 +117,8 @@ int validate_results( size_t width, size_t height, cl_image_format &format, char
             }
             default:
                 // Should never get here
-                break;
+                log_error("Unhandled channel data type\n");
+                return -1;
         }
 
         if( format.image_channel_order == CL_BGRA )

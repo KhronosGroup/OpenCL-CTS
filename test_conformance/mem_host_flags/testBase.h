@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,16 +23,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if !defined (__APPLE__)
+#if !defined(__APPLE__)
 #include <CL/cl.h>
 #else
-//#include <OpenCL/cl.h>
+// #include <OpenCL/cl.h>
 #endif
 
 #include "harness/imageHelpers.h"
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"
-#include "harness/threadTesting.h"
 #include "harness/typeWrappers.h"
 #include "harness/conversions.h"
 #include "harness/mt19937.h"

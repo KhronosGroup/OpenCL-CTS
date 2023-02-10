@@ -28,6 +28,41 @@
 #if !defined(_WIN32)
 #include <cmath>
 #endif
+#ifdef __SSE2__
+#include <x86intrin.h>
+#if (defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 12)                \
+    || (defined(__clang__) && !defined(__apple_build_version__)                \
+        && __clang_major__ < 8)
+// Add missing intrinsics that aren't in ancient compilers, but are used below
+#ifdef __clang__
+#define NODEBUG nodebug
+#else
+#define NODEBUG artificial
+#endif
+static inline __attribute__((always_inline, NODEBUG)) __m128i
+_mm_loadu_si16(const void *p)
+{
+    struct _loadu_si16
+    {
+        short v;
+    } __attribute__((packed, may_alias));
+    short u = ((const struct _loadu_si16 *)p)->v;
+    return _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, u);
+}
+
+static inline __attribute__((always_inline, NODEBUG)) __m128i
+_mm_loadu_si32(const void *p)
+{
+    struct _loadu_si32
+    {
+        int v;
+    } __attribute__((packed, may_alias));
+    int u = ((const struct _loadu_si32 *)p)->v;
+    return _mm_set_epi32(0, 0, 0, u);
+}
+#undef NODEBUG
+#endif
+#endif
 
 RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
 
@@ -67,6 +102,300 @@ double sRGBunmap(float fc)
 
     return result;
 }
+
+// Precalculated table of linear encodings of sRGB values
+float gSRGBTbl[] = {
+    0x0.000000p+00f, 0x1.3e4569p-12f, 0x1.3e4569p-11f, 0x1.dd681cp-11f,
+    0x1.3e4569p-10f, 0x1.8dd6c2p-10f, 0x1.dd681cp-10f, 0x1.167cbbp-09f,
+    0x1.3e4569p-09f, 0x1.660e15p-09f, 0x1.8dd6c2p-09f, 0x1.b6a31cp-09f,
+    0x1.e1e31ep-09f, 0x1.07c38cp-08f, 0x1.1fcc2cp-08f, 0x1.390ffbp-08f,
+    0x1.53936ep-08f, 0x1.6f5adfp-08f, 0x1.8c6a96p-08f, 0x1.aac6c3p-08f,
+    0x1.ca7383p-08f, 0x1.eb74e3p-08f, 0x1.06e76cp-07f, 0x1.18c2a6p-07f,
+    0x1.2b4e0ap-07f, 0x1.3e8b7cp-07f, 0x1.527cd7p-07f, 0x1.6723efp-07f,
+    0x1.7c8293p-07f, 0x1.929a89p-07f, 0x1.a96d92p-07f, 0x1.c0fd67p-07f,
+    0x1.d94bc1p-07f, 0x1.f25a47p-07f, 0x1.061553p-06f, 0x1.135f40p-06f,
+    0x1.210bbap-06f, 0x1.2f1b8ep-06f, 0x1.3d8f85p-06f, 0x1.4c6868p-06f,
+    0x1.5ba6fcp-06f, 0x1.6b4c05p-06f, 0x1.7b5843p-06f, 0x1.8bcc76p-06f,
+    0x1.9ca95ap-06f, 0x1.adefabp-06f, 0x1.bfa021p-06f, 0x1.d1bb75p-06f,
+    0x1.e4425ap-06f, 0x1.f73586p-06f, 0x1.054ad5p-05f, 0x1.0f31bbp-05f,
+    0x1.194fccp-05f, 0x1.23a55fp-05f, 0x1.2e32c9p-05f, 0x1.38f860p-05f,
+    0x1.43f678p-05f, 0x1.4f2d63p-05f, 0x1.5a9d76p-05f, 0x1.664701p-05f,
+    0x1.722a57p-05f, 0x1.7e47c8p-05f, 0x1.8a9fa3p-05f, 0x1.973239p-05f,
+    0x1.a3ffdcp-05f, 0x1.b108d3p-05f, 0x1.be4d6fp-05f, 0x1.cbcdfdp-05f,
+    0x1.d98ac9p-05f, 0x1.e78420p-05f, 0x1.f5ba4cp-05f, 0x1.0216ccp-04f,
+    0x1.096f28p-04f, 0x1.10e65ep-04f, 0x1.187c92p-04f, 0x1.2031eap-04f,
+    0x1.280689p-04f, 0x1.2ffa93p-04f, 0x1.380e2bp-04f, 0x1.404176p-04f,
+    0x1.489496p-04f, 0x1.5107aep-04f, 0x1.599ae0p-04f, 0x1.624e50p-04f,
+    0x1.6b2220p-04f, 0x1.741672p-04f, 0x1.7d2b67p-04f, 0x1.866121p-04f,
+    0x1.8fb7c1p-04f, 0x1.992f6ap-04f, 0x1.a2c83cp-04f, 0x1.ac8257p-04f,
+    0x1.b65dddp-04f, 0x1.c05aeep-04f, 0x1.ca79aap-04f, 0x1.d4ba31p-04f,
+    0x1.df1ca4p-04f, 0x1.e9a122p-04f, 0x1.f447cap-04f, 0x1.ff10bdp-04f,
+    0x1.04fe0dp-03f, 0x1.0a84ffp-03f, 0x1.101d45p-03f, 0x1.15c6eep-03f,
+    0x1.1b8209p-03f, 0x1.214ea6p-03f, 0x1.272cd4p-03f, 0x1.2d1ca2p-03f,
+    0x1.331e1fp-03f, 0x1.393159p-03f, 0x1.3f5660p-03f, 0x1.458d43p-03f,
+    0x1.4bd60fp-03f, 0x1.5230d4p-03f, 0x1.589da1p-03f, 0x1.5f1c83p-03f,
+    0x1.65ad8ap-03f, 0x1.6c50c3p-03f, 0x1.73063ep-03f, 0x1.79ce07p-03f,
+    0x1.80a82ep-03f, 0x1.8794c0p-03f, 0x1.8e93cbp-03f, 0x1.95a55ep-03f,
+    0x1.9cc987p-03f, 0x1.a40052p-03f, 0x1.ab49cfp-03f, 0x1.b2a60ap-03f,
+    0x1.ba1516p-03f, 0x1.c196f7p-03f, 0x1.c92bc1p-03f, 0x1.d0d380p-03f,
+    0x1.d88e41p-03f, 0x1.e05c12p-03f, 0x1.e83d00p-03f, 0x1.f0311ap-03f,
+    0x1.f8386ap-03f, 0x1.002980p-02f, 0x1.044074p-02f, 0x1.086118p-02f,
+    0x1.0c8b72p-02f, 0x1.10bf88p-02f, 0x1.14fd61p-02f, 0x1.194504p-02f,
+    0x1.1d9677p-02f, 0x1.21f1c0p-02f, 0x1.2656e6p-02f, 0x1.2ac5efp-02f,
+    0x1.2f3ee1p-02f, 0x1.33c1c3p-02f, 0x1.384e9ap-02f, 0x1.3ce56ep-02f,
+    0x1.418644p-02f, 0x1.463122p-02f, 0x1.4ae610p-02f, 0x1.4fa512p-02f,
+    0x1.546e2fp-02f, 0x1.59416dp-02f, 0x1.5e1ed2p-02f, 0x1.630665p-02f,
+    0x1.67f82bp-02f, 0x1.6cf42bp-02f, 0x1.71fa69p-02f, 0x1.770aedp-02f,
+    0x1.7c25bdp-02f, 0x1.814addp-02f, 0x1.867a55p-02f, 0x1.8bb42ap-02f,
+    0x1.90f862p-02f, 0x1.964703p-02f, 0x1.9ba012p-02f, 0x1.a10396p-02f,
+    0x1.a67194p-02f, 0x1.abea12p-02f, 0x1.b16d16p-02f, 0x1.b6faa6p-02f,
+    0x1.bc92c7p-02f, 0x1.c2357fp-02f, 0x1.c7e2d4p-02f, 0x1.cd9acbp-02f,
+    0x1.d35d6bp-02f, 0x1.d92ab8p-02f, 0x1.df02b9p-02f, 0x1.e4e572p-02f,
+    0x1.ead2ebp-02f, 0x1.f0cb27p-02f, 0x1.f6ce2dp-02f, 0x1.fcdc02p-02f,
+    0x1.017a56p-01f, 0x1.048c18p-01f, 0x1.07a34bp-01f, 0x1.0abfefp-01f,
+    0x1.0de209p-01f, 0x1.11099cp-01f, 0x1.1436a9p-01f, 0x1.176933p-01f,
+    0x1.1aa13ep-01f, 0x1.1ddecbp-01f, 0x1.2121dfp-01f, 0x1.246a7ap-01f,
+    0x1.27b8a0p-01f, 0x1.2b0c54p-01f, 0x1.2e6598p-01f, 0x1.31c46fp-01f,
+    0x1.3528dcp-01f, 0x1.3892e1p-01f, 0x1.3c0280p-01f, 0x1.3f77bdp-01f,
+    0x1.42f29ap-01f, 0x1.46731ap-01f, 0x1.49f93ep-01f, 0x1.4d850bp-01f,
+    0x1.511682p-01f, 0x1.54ada5p-01f, 0x1.584a79p-01f, 0x1.5becfep-01f,
+    0x1.5f9538p-01f, 0x1.634329p-01f, 0x1.66f6d4p-01f, 0x1.6ab03bp-01f,
+    0x1.6e6f61p-01f, 0x1.723449p-01f, 0x1.75fef4p-01f, 0x1.79cf65p-01f,
+    0x1.7da59fp-01f, 0x1.8181a5p-01f, 0x1.856378p-01f, 0x1.894b1cp-01f,
+    0x1.8d3892p-01f, 0x1.912bdep-01f, 0x1.952501p-01f, 0x1.9923ffp-01f,
+    0x1.9d28d9p-01f, 0x1.a13392p-01f, 0x1.a5442dp-01f, 0x1.a95aacp-01f,
+    0x1.ad7711p-01f, 0x1.b1995fp-01f, 0x1.b5c198p-01f, 0x1.b9efbep-01f,
+    0x1.be23d5p-01f, 0x1.c25ddep-01f, 0x1.c69ddcp-01f, 0x1.cae3d1p-01f,
+    0x1.cf2fc0p-01f, 0x1.d381abp-01f, 0x1.d7d994p-01f, 0x1.dc377ep-01f,
+    0x1.e09b6bp-01f, 0x1.e5055dp-01f, 0x1.e97557p-01f, 0x1.edeb5bp-01f,
+    0x1.f2676cp-01f, 0x1.f6e98bp-01f, 0x1.fb71bcp-01f, 0x1.000000p+00f,
+};
+
+
+float sRGBunmap(cl_uchar ic) { return gSRGBTbl[ic]; }
+
+#ifdef __SSE2__
+__m128 sRGBunmap(const __m128i ic)
+{
+    static const float recip_255 = 1.0f / 255.0f;
+#ifdef __AVX2__
+    __m128 fc = _mm_i32gather_ps(gSRGBTbl, _mm_cvtepu8_epi32(ic), 4);
+    // only RGB need to be converted for sRGBA
+    return _mm_insert_ps(
+        fc,
+        _mm_mul_ss(_mm_cvtsi32_ss(_mm_undefined_ps(), _mm_extract_epi8(ic, 3)),
+                   _mm_set_ss(recip_255)),
+        _MM_MK_INSERTPS_NDX(0, 3, 0));
+#else
+    // With no gather support, we'll need to load the four components
+    // separately...
+    uint32_t pixel = _mm_cvtsi128_si32(ic);
+    return _mm_set_ps((float)(pixel >> 24) * recip_255,
+                      sRGBunmap((cl_uchar)((pixel >> 16) & 0xFF)),
+                      sRGBunmap((cl_uchar)((pixel >> 8) & 0xFF)),
+                      sRGBunmap((cl_uchar)(pixel & 0xFF)));
+#endif
+}
+
+
+#ifdef __SSE4_1__
+#define SELECT_I(cond, a, b) _mm_blendv_epi8(b, a, cond)
+#define TEST_ANY_ZERO(v) !_mm_test_all_ones(v)
+#define TEST_NONZERO(v) !_mm_test_all_zeros(v, v)
+#define TEST_ZERO(v) _mm_test_all_zeros(v, v)
+#elif defined(__SSE2__)
+// n.b. "ANDNOT" is ~A & B, not A & ~B!!
+#define SELECT_I(cond, a, b)                                                   \
+    _mm_or_si128(_mm_and_si128(cond, a), _mm_andnot_si128(cond, b))
+#ifdef __x86_64
+#define TEST_NONZERO(v)                                                        \
+    (_mm_cvtsi128_si64(v)                                                      \
+     || _mm_cvtsi128_si64(_mm_shuffle_epi32(v, _MM_SHUFFLE(0, 1, 2, 3))))
+#else
+#define TEST_NONZERO(v)                                                        \
+    (_mm_cvtsi128_si32(v)                                                      \
+     || _mm_cvtsi128_si32(                                                     \
+         _mm_shuffle_epi32(v, _MM_SHUFFLE(3, 2, 1, 1))                         \
+         || _mm_cvtsi128_si32(_mm_shuffle_epi32(v, _MM_SHUFFLE(3, 2, 1, 2))))  \
+     || _mm_cvtsi128_si32(_mm_shuffle_epi32(v, _MM_SHUFFLE(3, 2, 1, 3))))
+#endif
+#define TEST_ZERO(v) (!TEST_NONZERO(v))
+// The int64 extraction trick won't work here... :/
+#define TEST_ANY_ZERO(v)                                                       \
+    (!_mm_cvtsi128_si32(v)                                                     \
+     || !_mm_cvtsi128_si32(                                                    \
+         _mm_shuffle_epi32(v, _MM_SHUFFLE(3, 2, 1, 1))                         \
+         || !_mm_cvtsi128_si32(_mm_shuffle_epi32(v, _MM_SHUFFLE(3, 2, 1, 2)))) \
+     || !_mm_cvtsi128_si32(_mm_shuffle_epi32(v, _MM_SHUFFLE(3, 2, 1, 3))))
+#endif
+
+#ifdef __GNUC__
+#define __forceinline __attribute__((always_inline))
+#endif
+
+static inline __m128i __forceinline _mm_setmone_si128(void)
+{
+    __m128i junk = _mm_undefined_si128();
+    return _mm_cmpeq_epi32(junk, junk);
+}
+
+static inline __m128 cl_half_to_float(__m128i h)
+{
+#ifdef __F16C__
+    return _mm_cvtph_ps(h);
+#else
+    // Type-punning to get direct access to underlying bits
+    union {
+        __m128 f;
+        __m128i i;
+    } f32;
+
+    __m128i zero = _mm_setzero_si128();
+    __m128i negOne = _mm_setmone_si128();
+    __m128i one = _mm_srli_epi32(negOne, 31);
+    __m128i h_exp_mask = _mm_srli_epi16(negOne, CL_HALF_MANT_DIG); // = 0x1f
+
+    // Extract sign bit
+    __m128i sign =
+        _mm_slli_epi32(_mm_unpacklo_epi16(_mm_srli_epi16(h, 15), zero), 31);
+
+    // Extract FP16 exponent and mantissa
+    __m128i h_exp =
+        _mm_and_si128(_mm_srli_epi16(h, CL_HALF_MANT_DIG - 1), h_exp_mask);
+    __m128i h_mant = _mm_and_si128(h, _mm_srli_epi16(negOne, 6) /* 0x3ff */);
+
+    // Remove FP16 exponent bias and convert to int32
+    __m128i exp = _mm_sub_epi16(
+        h_exp,
+        _mm_srli_epi16(negOne, CL_HALF_MANT_DIG + 1) /* CL_HALF_MAX_EXP - 1 */);
+#ifdef __SSE4_1__
+    exp = _mm_cvtepi16_epi32(exp);
+#else
+    exp = _mm_unpacklo_epi16(exp, _mm_cmpgt_epi16(zero, exp));
+#endif
+
+    // Add FP32 exponent bias
+    __m128i f_exp = _mm_add_epi32(
+        exp,
+        _mm_srli_epi32(negOne, CL_FLT_MANT_DIG + 1) /* CL_FLT_MAX_EXP - 1 */);
+
+    // Convert mantissa to the 32-bit form
+    __m128i f_mant = _mm_slli_epi32(_mm_unpacklo_epi16(h_mant, zero),
+                                    CL_FLT_MANT_DIG - CL_HALF_MANT_DIG);
+
+    // Note that due to the way SIMD works, we can't have branches--we have to
+    // compute all the possible values.
+
+    // Check for NaN / infinity
+    __m128i inf_mask = _mm_cmpeq_epi16(h_exp, h_exp_mask);
+    inf_mask = _mm_unpacklo_epi16(inf_mask, inf_mask);
+    __m128i mant_zero_mask = _mm_cmpeq_epi32(f_mant, zero);
+    // n.b. "ANDNOT" is ~A & B, not A & ~B!!
+    __m128i nan_mask = _mm_andnot_si128(mant_zero_mask, inf_mask);
+
+    // NaN -> propagate mantissa and silence it
+    __m128i f_mant_nan =
+        _mm_or_si128(f_mant, _mm_slli_epi32(one, 22) /* 0x400000 */);
+    // Infinity -> zero mantissa
+    f_mant = SELECT_I(nan_mask, f_mant_nan, f_mant);
+    f_exp = SELECT_I(inf_mask,
+                     _mm_srli_epi32(negOne, CL_FLT_MANT_DIG) /* 0xff */, f_exp);
+
+    // Check for zero / denormal
+    __m128i exp_zero_mask = _mm_cmpeq_epi16(h_exp, zero);
+    exp_zero_mask = _mm_unpacklo_epi16(exp_zero_mask, exp_zero_mask);
+    __m128i zero_mask = _mm_and_si128(mant_zero_mask, exp_zero_mask);
+    // n.b. "ANDNOT" is ~A & B, not A & ~B!!
+    __m128i denorm_mask = _mm_andnot_si128(mant_zero_mask, exp_zero_mask);
+
+    if (TEST_NONZERO(denorm_mask))
+    {
+        // Denormal -> normalize it
+        // - Shift mantissa to make most-significant 1 implicit
+        // - Adjust exponent accordingly
+        __m128i f_mant_mask =
+            _mm_srli_epi32(negOne, 32 - (CL_FLT_MANT_DIG - 1));
+#if defined(__AVX512VL__) && defined(__AVX512DQ__)
+        // We'll probably never get here, since most CPUs that support AVX-512
+        // also support F16C. n.b. No +1 yet for the implicit 1 before the radix
+        // point--we really do want to shift at least one place
+        __m128i shift =
+            _mm_and_si128(_mm_sub_epi32(_mm_lzcnt_epi32(f_mant),
+                                        _mm_set1_epi32(32 - CL_FLT_MANT_DIG)),
+                          denorm_mask);
+        f_mant = _mm_sllv_epi32(f_mant, shift);
+        shift = _mm_sub_epi32(shift, _mm_and_si128(one, denorm_mask));
+#else
+        // No packed leading-zero count until AVX-512... gotta do this the hard
+        // way
+        __m128i shift = zero;
+        __m128i shift_mask = _mm_cmpgt_epi32(
+            f_mant, _mm_srli_epi32(negOne, 16) /* 0x0000FFFF */);
+        __m128i f_mant_shift =
+            SELECT_I(shift_mask, f_mant, _mm_slli_epi32(f_mant, 16));
+        // n.b. "ANDNOT" is ~A & B, not A & ~B!!
+        shift = _mm_add_epi32(
+            shift,
+            _mm_andnot_si128(shift_mask, _mm_slli_epi32(one, 4) /* 16 */));
+        // Starting from here, we also need to check that mant >= 0, because
+        // PCMPGT does a signed comparison; unsigned comparisons weren't added
+        // until AVX-512, which also already has a faster way to count leading
+        // zeroes anyway
+        shift_mask = _mm_or_si128(
+            _mm_cmplt_epi32(f_mant_shift, zero),
+            _mm_cmpgt_epi32(f_mant_shift,
+                            _mm_srli_epi32(negOne, 8) /* 0x00FFFFFF */));
+        f_mant_shift =
+            SELECT_I(shift_mask, f_mant_shift, _mm_slli_epi32(f_mant_shift, 8));
+        shift = _mm_add_epi32(
+            shift,
+            _mm_andnot_si128(shift_mask, _mm_slli_epi32(one, 3) /* 8 */));
+        shift_mask = _mm_or_si128(
+            _mm_cmplt_epi32(f_mant_shift, zero),
+            _mm_cmpgt_epi32(f_mant_shift,
+                            _mm_srli_epi32(negOne, 4) /* 0x0FFFFFFF */));
+        f_mant_shift =
+            SELECT_I(shift_mask, f_mant_shift, _mm_slli_epi32(f_mant_shift, 4));
+        shift = _mm_add_epi32(
+            shift,
+            _mm_andnot_si128(shift_mask, _mm_slli_epi32(one, 2) /* 4 */));
+        shift_mask = _mm_or_si128(
+            _mm_cmplt_epi32(f_mant_shift, zero),
+            _mm_cmpgt_epi32(f_mant_shift,
+                            _mm_srli_epi32(negOne, 2) /* 0x3FFFFFFF */));
+        f_mant_shift =
+            SELECT_I(shift_mask, f_mant_shift, _mm_slli_epi32(f_mant_shift, 2));
+        shift = _mm_add_epi32(
+            shift,
+            _mm_andnot_si128(shift_mask, _mm_slli_epi32(one, 1) /* 2 */));
+        shift_mask = _mm_or_si128(
+            _mm_cmplt_epi32(f_mant_shift, zero),
+            _mm_cmpgt_epi32(f_mant_shift,
+                            _mm_srli_epi32(negOne, 1) /* 0x7FFFFFFF */));
+        f_mant_shift =
+            SELECT_I(shift_mask, f_mant_shift, _mm_slli_epi32(f_mant_shift, 1));
+        shift = _mm_add_epi32(shift, _mm_andnot_si128(shift_mask, one));
+        f_mant = SELECT_I(denorm_mask,
+                          _mm_srli_epi32(f_mant_shift, 32 - CL_FLT_MANT_DIG),
+                          f_mant);
+        shift = _mm_and_si128(
+            _mm_sub_epi32(shift, _mm_set1_epi32(32 - CL_FLT_MANT_DIG + 1)),
+            denorm_mask);
+#endif
+        f_mant = _mm_and_si128(f_mant, f_mant_mask);
+        f_exp = _mm_sub_epi32(f_exp, shift);
+    }
+
+    // Zero -> zero exponent
+    // n.b. "ANDNOT" is ~A & B, not A & ~B!!
+    f_exp = _mm_andnot_si128(zero_mask, f_exp);
+
+    f32.i = _mm_or_si128(
+        sign, _mm_or_si128(_mm_slli_epi32(f_exp, CL_FLT_MANT_DIG - 1), f_mant));
+    return f32.f;
+#endif
+}
+#endif
 
 
 uint32_t get_format_type_size(const cl_image_format *format)
@@ -529,7 +858,134 @@ int random_log_in_range(int minV, int maxV, MTdata d)
 }
 
 
+#ifdef __SSE2__
+static inline __m128i vifloorf(__m128 f)
+{
+#ifdef __SSE4_1__
+    return _mm_cvtps_epi32(
+        _mm_round_ps(f, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC));
+#else
+    // No packed rounding until SSE4... do this the old-fashioned way
+    unsigned int mxcsr = _mm_getcsr();
+    _mm_setcsr(mxcsr & ~_MM_ROUND_MASK | _MM_ROUND_DOWN);
+    __m128i i = _mm_cvtps_epi32(f);
+    _mm_setcsr(mxcsr);
+    return i;
+#endif
+}
+
+static inline __m128 vfloorf(__m128 f)
+{
+#ifdef __SSE4_1__
+    return _mm_round_ps(f, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC);
+#else
+    // No packed rounding until SSE4... do this the old-fashioned way
+    unsigned int mxcsr = _mm_getcsr();
+    _mm_setcsr(mxcsr & ~_MM_ROUND_MASK | _MM_ROUND_DOWN);
+    f = _mm_cvtepi32_ps(_mm_cvtps_epi32(f));
+    _mm_setcsr(mxcsr);
+    return f;
+#endif
+}
+
+static inline __m128 frac(__m128 a) { return _mm_sub_ps(a, vfloorf(a)); }
+#else
+static inline float frac(float a) { return a - floorf(a); }
+#endif
+
 // Define the addressing functions
+#ifdef __SSE2__
+typedef __m128i (*AddressFn)(__m128i value, __m128i maxValue);
+
+__m128i NoAddressFn(__m128i value, __m128i maxValue) { return value; }
+__m128i RepeatAddressFn(__m128i value, __m128i maxValue)
+{
+    __m128i minMask = _mm_cmplt_epi32(value, _mm_setzero_si128());
+    __m128i maxMask =
+        _mm_cmpgt_epi32(value, _mm_add_epi32(maxValue, _mm_setmone_si128()));
+    return SELECT_I(minMask, _mm_add_epi32(value, maxValue),
+                    SELECT_I(maxMask, _mm_sub_epi32(value, maxValue), value));
+}
+__m128i MirroredRepeatAddressFn(__m128i value, __m128i maxValue)
+{
+#ifdef __SSE4_1__
+    return _mm_max_epi32(
+        _mm_min_epi32(value, _mm_add_epi32(maxValue, _mm_setmone_si128())),
+        _mm_setzero_si128());
+#else
+    __m128i zero = _mm_setzero_si128();
+    maxValue = _mm_add_epi32(maxValue, _mm_setmone_si128());
+    __m128i minMask = _mm_cmplt_epi32(value, zero);
+    __m128i maxMask = _mm_cmpgt_epi32(value, maxValue);
+    return SELECT_I(minMask, zero, SELECT_I(maxMask, maxValue, value));
+#endif
+}
+__m128i ClampAddressFn(__m128i value, __m128i maxValue)
+{
+    __m128i negOne = _mm_cmpgt_epi32(maxValue, _mm_setzero_si128());
+#ifdef __SSE4_1__
+    return _mm_max_epi32(_mm_min_epi32(value, maxValue), negOne);
+#else
+    __m128i minMask = _mm_cmplt_epi32(value, negOne);
+    __m128i maxMask = _mm_cmpgt_epi32(value, maxValue);
+    return SELECT_I(minMask, negOne, SELECT_I(maxMask, maxValue, value));
+#endif
+}
+__m128i ClampToEdgeNearestFn(__m128i value, __m128i maxValue)
+{
+#ifdef __SSE4_1__
+    return _mm_max_epi32(
+        _mm_min_epi32(value, _mm_add_epi32(maxValue, _mm_setmone_si128())),
+        _mm_setzero_si128());
+#else
+    __m128i zero = _mm_setzero_si128();
+    maxValue = _mm_add_epi32(maxValue, _mm_setmone_si128());
+    __m128i minMask = _mm_cmplt_epi32(value, zero);
+    __m128i maxMask = _mm_cmpgt_epi32(value, maxValue);
+    return SELECT_I(minMask, zero, SELECT_I(maxMask, maxValue, value));
+#endif
+}
+AddressFn ClampToEdgeLinearFn = ClampToEdgeNearestFn;
+
+// Note: normalized coords get repeated in normalized space, not unnormalized
+// space! hence the special case here
+__m128 RepeatNormalizedAddressFn(__m128 fValue, __m128i maxValue)
+{
+    return _mm_mul_ps(frac(fValue), _mm_cvtepi32_ps(maxValue));
+}
+
+static inline __m128 vrintf(__m128 f)
+{
+#ifdef __SSE4_1__
+    return _mm_round_ps(f, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+#else
+    // No packed rounding until SSE4... do this the old-fashioned way
+    return _mm_cvtepi32_ps(_mm_cvtps_epi32(f));
+#endif
+}
+
+static inline __m128 vfabsf(__m128 f)
+{
+    return _mm_andnot_ps(_mm_castsi128_ps(_mm_slli_epi32(_mm_setmone_si128(),
+                                                         31) /* 0x80000000 */),
+                         f);
+}
+
+__m128 MirroredRepeatNormalizedAddressFn(__m128 fValue, __m128i maxValue)
+{
+    // Round to nearest multiple of two.
+    // Note halfway values flip flop here due to rte, but they both end up
+    // pointing the same place at the end of the day.
+    __m128 s_prime = vrintf(_mm_mul_ps(fValue, _mm_set1_ps(0.5f)));
+    s_prime = _mm_add_ps(s_prime, s_prime);
+
+    // Reduce to [-1, 1], Apply mirroring -> [0, 1]
+    s_prime = vfabsf(_mm_sub_ps(fValue, s_prime));
+
+    // un-normalize
+    return _mm_mul_ps(s_prime, _mm_cvtepi32_ps(maxValue));
+}
+#else
 typedef int (*AddressFn)(int value, size_t maxValue);
 
 int NoAddressFn(int value, size_t maxValue) { return value; }
@@ -569,7 +1025,7 @@ float RepeatNormalizedAddressFn(float fValue, size_t maxValue)
 {
 #ifndef _MSC_VER // Use original if not the VS compiler.
     // General computation for repeat
-    return (fValue - floorf(fValue)) * (float)maxValue; // Reduce to [0, 1.f]
+    return frac(fValue) * (float)maxValue; // Reduce to [0, 1.f]
 #else // Otherwise, use this instead:
     // Home the subtraction to a float to break up the sequence of x87
     // instructions emitted by the VS compiler.
@@ -591,6 +1047,7 @@ float MirroredRepeatNormalizedAddressFn(float fValue, size_t maxValue)
     // un-normalize
     return s_prime * (float)maxValue;
 }
+#endif
 
 struct AddressingTable
 {
@@ -1316,8 +1773,705 @@ char *generate_random_image_data(image_descriptor *imageInfo,
     return data;
 }
 
-#define CLAMP_FLOAT(v) (fmaxf(fminf(v, 1.f), -1.f))
+#ifdef __SSE2__
+#define CLAMP_FLOAT_V(v)                                                       \
+    (_mm_max_ps(_mm_min_ps(v, _mm_set1_ps(1.f)), _mm_set1_ps(-1.f)))
+#define CLAMP_FLOAT(v)                                                         \
+    (_mm_max_ss(_mm_min_ss(v, _mm_set_ss(1.f)), _mm_set_ss(-1.f)))
 
+#ifdef __SSE4_1__
+#define SET_ALPHA_1(v)                                                         \
+    (_mm_insert_ps(v, _mm_set_ss(1.f), _MM_MK_INSERTPS_NDX(0, 3, 0)))
+#define SELECT_F(cond, a, b) _mm_blendv_ps(b, a, cond)
+#define EXTRACT_I(v, i) _mm_extract_epi32(v, i)
+#ifdef __x86_64
+#define EXTRACT_I64(v, i) _mm_extract_epi64(v, i)
+#endif
+#else
+#define SET_ALPHA_1(v) (_mm_movelh_ps(v, _mm_set_ps(0.f, 0.f, 1.f, 0.f)))
+// n.b. "ANDNOT" is ~A & B, not A & ~B!!
+#define SELECT_F(cond, a, b)                                                   \
+    _mm_or_ps(_mm_and_ps(cond, a), _mm_andnot_ps(cond, b))
+#define EXTRACT_I(v, i)                                                        \
+    _mm_cvtsi128_si32(_mm_shuffle_epi32(v, _MM_SHUFFLE(3, 2, 1, i)))
+#ifdef __x86_64
+#define EXTRACT_I64(v, i)                                                      \
+    _mm_cvtsi128_si64(_mm_shuffle_epi32(v, _MM_SHUFFLE(3, 2, 2 * i + 1, 2 * i)))
+#endif
+#endif
+
+static __m128 read_image_pixel_float(void *imageData,
+                                     image_descriptor *imageInfo, __m128i coord,
+                                     int lod)
+{
+    size_t width_lod = imageInfo->width, height_lod = imageInfo->height,
+           depth_lod = imageInfo->depth;
+    size_t slice_pitch_lod = 0, row_pitch_lod = 0;
+
+    if (imageInfo->num_mip_levels > 1)
+    {
+        switch (imageInfo->type)
+        {
+            case CL_MEM_OBJECT_IMAGE3D:
+                depth_lod =
+                    (imageInfo->depth >> lod) ? (imageInfo->depth >> lod) : 1;
+            case CL_MEM_OBJECT_IMAGE2D:
+            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+                height_lod =
+                    (imageInfo->height >> lod) ? (imageInfo->height >> lod) : 1;
+            default:
+                width_lod =
+                    (imageInfo->width >> lod) ? (imageInfo->width >> lod) : 1;
+        }
+        row_pitch_lod = width_lod * get_pixel_size(imageInfo->format);
+        if (imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY)
+            slice_pitch_lod = row_pitch_lod;
+        else if (imageInfo->type == CL_MEM_OBJECT_IMAGE3D
+                 || imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+            slice_pitch_lod = row_pitch_lod * height_lod;
+    }
+    else
+    {
+        row_pitch_lod = imageInfo->rowPitch;
+        slice_pitch_lod = imageInfo->slicePitch;
+    }
+
+    __m128i extent = _mm_set_epi32(
+        0,
+        imageInfo->arraySize != 0 ? (int)imageInfo->arraySize : (int)depth_lod,
+        (int)height_lod, (int)width_lod);
+    __m128i zero = _mm_setzero_si128();
+    __m128i minMask = _mm_cmplt_epi32(coord, zero);
+    __m128i maxMask =
+        _mm_cmpgt_epi32(coord, _mm_add_epi32(extent, _mm_setmone_si128()));
+    __m128i extentMask = _mm_cmpeq_epi32(extent, zero);
+    __m128i boundsMask =
+        _mm_or_si128(_mm_andnot_si128(extentMask, maxMask), minMask);
+    if (TEST_NONZERO(boundsMask))
+        return has_alpha(imageInfo->format) ? _mm_setzero_ps()
+                                            : _mm_set_ps(1.f, 0.f, 0.f, 0.f);
+
+    const cl_image_format *format = imageInfo->format;
+
+    __m128 tempData;
+    // Predeclare a bunch of reciprocal constants so GCC doesn't use expensive
+    // divisions to compute them in our code
+    static const float recip_31 = 1.0f / 31.0f;
+    static const float recip_63 = 1.0f / 63.0f;
+    static const float recip_127 = 1.0f / 127.0f;
+    static const float recip_255 = 1.0f / 255.0f;
+    static const float recip_1023 = 1.0f / 1023.0f;
+    static const float recip_32767 = 1.0f / 32767.0f;
+    static const float recip_65535 = 1.0f / 65535.0f;
+
+    // Advance to the right spot
+    char *ptr = (char *)imageData;
+    size_t pixelSize = get_pixel_size(format);
+    __m128i pitch_lod = _mm_set_epi32(0, (int)slice_pitch_lod,
+                                      (int)row_pitch_lod, (int)pixelSize);
+
+    __m128i offsetA = _mm_mul_epu32(coord, pitch_lod);
+    __m128i offsetB =
+        _mm_mul_epu32(_mm_shuffle_epi32(coord, _MM_SHUFFLE(2, 3, 0, 1)),
+                      _mm_shuffle_epi32(pitch_lod, _MM_SHUFFLE(2, 3, 0, 1)));
+#ifdef __x86_64
+    ptr += EXTRACT_I64(offsetB, 0) + EXTRACT_I64(offsetA, 1)
+        + EXTRACT_I64(offsetA, 0);
+#else
+    // Using PHADDD doesn't gain us much...
+    ptr +=
+        EXTRACT_I(offsetB, 0) + EXTRACT_I(offsetA, 2) + EXTRACT_I(offsetA, 0);
+#endif
+
+    // OpenCL only supports reading floats from certain formats
+    size_t channelCount = get_format_channel_count(format);
+    switch (format->image_channel_data_type)
+    {
+        case CL_SNORM_INT8: {
+            cl_char *dPtr = (cl_char *)ptr;
+            __m128i pixel;
+            switch (channelCount)
+            {
+                case 1:
+                    tempData = SET_ALPHA_1(CLAMP_FLOAT(
+                        _mm_mul_ss(_mm_cvtsi32_ss(_mm_setzero_ps(), dPtr[0]),
+                                   _mm_set_ss(recip_127))));
+                    break;
+                case 2:
+                    pixel = _mm_insert_epi16(_mm_loadu_si16(ptr), 0x7F00, 1);
+                    break;
+                case 3:
+                    pixel = _mm_insert_epi16(_mm_loadu_si16(ptr),
+                                             0x7F00 | dPtr[2], 1);
+                    break;
+                case 4: pixel = _mm_loadu_si32(ptr); break;
+            }
+            if (channelCount != 1)
+            {
+#ifdef __SSE4_1__
+                tempData = _mm_cvtepi32_ps(_mm_cvtepi8_epi32(pixel));
+#else
+                __m128i signMask;
+                signMask = _mm_cmpgt_epi8(_mm_setzero_si128(), pixel);
+                pixel = _mm_unpacklo_epi8(pixel, signMask);
+                signMask = _mm_unpacklo_epi8(signMask, signMask);
+                tempData = _mm_cvtepi32_ps(_mm_unpacklo_epi16(pixel, signMask));
+#endif
+                tempData =
+                    CLAMP_FLOAT_V(_mm_mul_ps(tempData, _mm_set1_ps(recip_127)));
+            }
+            break;
+        }
+
+        case CL_UNORM_INT8: {
+            unsigned char *dPtr = (unsigned char *)ptr;
+            __m128i pixel;
+            switch (channelCount)
+            {
+                case 1:
+                    if ((is_sRGBA_order(
+                            imageInfo->format->image_channel_order)))
+                        tempData = SET_ALPHA_1(_mm_set_ss(sRGBunmap(dPtr[0])));
+                    else
+                        tempData = SET_ALPHA_1(_mm_mul_ss(
+                            _mm_cvtsi32_ss(_mm_setzero_ps(), dPtr[0]),
+                            _mm_set_ss(recip_255)));
+                    break;
+                case 2:
+                    pixel = _mm_insert_epi16(_mm_loadu_si16(ptr), 0xFF00, 1);
+                    break;
+                case 3:
+                    pixel = _mm_insert_epi16(_mm_loadu_si16(ptr),
+                                             0xFF00 | dPtr[2], 1);
+                    break;
+                case 4: pixel = _mm_loadu_si32(ptr);
+#ifdef CL_1RGB_APPLE
+                    if (format->image_channel_order == CL_1RGB_APPLE)
+#ifdef __SSE4_1__
+                        pixel = _mm_insert_epi8(pixel, 0xFF, 0);
+#else
+                        pixel =
+                            _mm_or_si128(pixel,
+                                         _mm_bsrli_si128(_mm_setmone_si128(),
+                                                         15) /* 0x000000FF */);
+#endif
+#endif
+#ifdef CL_BGR1_APPLE
+                    if (format->image_channel_order == CL_BGR1_APPLE)
+#ifdef __SSE4_1__
+                        pixel = _mm_insert_epi8(pixel, 0xFF, 3);
+#else
+                        pixel = _mm_or_si128(
+                            pixel,
+                            _mm_bslli_si128(
+                                _mm_bsrli_si128(_mm_setmone_si128(), 15),
+                                3) /* 0xFF000000 */);
+#endif
+#endif
+                    break;
+            }
+            if (channelCount != 1)
+            {
+                if (is_sRGBA_order(imageInfo->format->image_channel_order))
+                    tempData = sRGBunmap(pixel);
+                else
+                {
+#ifdef __SSE4_1__
+                    tempData = _mm_cvtepi32_ps(_mm_cvtepu8_epi32(pixel));
+#else
+                    __m128i zero = _mm_setzero_si128();
+                    tempData = _mm_cvtepi32_ps(_mm_unpacklo_epi16(
+                        _mm_unpacklo_epi8(pixel, zero), zero));
+#endif
+                    tempData = _mm_mul_ps(tempData, _mm_set1_ps(recip_255));
+                }
+            }
+            break;
+        }
+
+        case CL_SIGNED_INT8: {
+            cl_char *dPtr = (cl_char *)ptr;
+            __m128i pixel;
+            switch (channelCount)
+            {
+                case 1:
+                    tempData =
+                        SET_ALPHA_1(_mm_cvtsi32_ss(_mm_setzero_ps(), dPtr[0]));
+                    break;
+                case 2:
+                    pixel = _mm_insert_epi16(_mm_loadu_si16(ptr), 0x0100, 1);
+                    break;
+                case 3:
+                    pixel = _mm_insert_epi16(_mm_loadu_si16(ptr),
+                                             0x0100 | dPtr[2], 1);
+                    break;
+                case 4: pixel = _mm_loadu_si32(ptr); break;
+            }
+            if (channelCount != 1)
+            {
+#ifdef __SSE4_1__
+                tempData = _mm_cvtepi32_ps(_mm_cvtepi8_epi32(pixel));
+#else
+                __m128i signMask;
+                signMask = _mm_cmpgt_epi8(_mm_setzero_si128(), pixel);
+                pixel = _mm_unpacklo_epi8(pixel, signMask);
+                signMask = _mm_unpacklo_epi8(signMask, signMask);
+                tempData = _mm_cvtepi32_ps(_mm_unpacklo_epi16(pixel, signMask));
+#endif
+            }
+            break;
+        }
+
+        case CL_UNSIGNED_INT8: {
+            cl_uchar *dPtr = (cl_uchar *)ptr;
+            __m128i pixel;
+            switch (channelCount)
+            {
+                case 1:
+                    tempData =
+                        SET_ALPHA_1(_mm_cvtsi32_ss(_mm_setzero_ps(), dPtr[0]));
+                    break;
+                case 2:
+                    pixel = _mm_insert_epi16(_mm_loadu_si16(ptr), 0x0100, 1);
+                    break;
+                case 3:
+                    pixel = _mm_insert_epi16(_mm_loadu_si16(ptr),
+                                             0x0100 | dPtr[2], 1);
+                    break;
+                case 4: pixel = _mm_loadu_si32(ptr); break;
+            }
+            if (channelCount != 1)
+            {
+#ifdef __SSE4_1__
+                tempData = _mm_cvtepi32_ps(_mm_cvtepu8_epi32(pixel));
+#else
+                __m128i zero = _mm_setzero_si128();
+                tempData = _mm_cvtepi32_ps(
+                    _mm_unpacklo_epi16(_mm_unpacklo_epi8(pixel, zero), zero));
+#endif
+            }
+            break;
+        }
+
+        case CL_SNORM_INT16: {
+            cl_short *dPtr = (cl_short *)ptr;
+            __m128i pixel;
+            switch (channelCount)
+            {
+                case 1:
+                    tempData = SET_ALPHA_1(CLAMP_FLOAT(
+                        _mm_mul_ss(_mm_cvtsi32_ss(_mm_setzero_ps(), dPtr[0]),
+                                   _mm_set_ss(recip_32767))));
+                    break;
+                case 2:
+                    pixel = _mm_insert_epi16(_mm_loadu_si32(ptr), 0x7FFF, 3);
+                    break;
+                case 3:
+                    pixel = _mm_insert_epi16(
+                        _mm_insert_epi16(_mm_loadu_si32(ptr), dPtr[2], 2),
+                        0x7FFF, 3);
+                    break;
+                case 4: pixel = _mm_loadu_si64(ptr); break;
+            }
+            if (channelCount != 1)
+            {
+#ifdef __SSE4_1__
+                tempData = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(pixel));
+#else
+                tempData = _mm_cvtepi32_ps(_mm_unpacklo_epi16(
+                    pixel, _mm_cmpgt_epi16(_mm_setzero_si128(), pixel)));
+#endif
+                tempData = CLAMP_FLOAT_V(
+                    _mm_mul_ps(tempData, _mm_set1_ps(recip_32767)));
+            }
+            break;
+        }
+
+        case CL_UNORM_INT16: {
+            cl_ushort *dPtr = (cl_ushort *)ptr;
+            __m128i pixel;
+            switch (channelCount)
+            {
+                case 1:
+                    tempData = SET_ALPHA_1(
+                        _mm_mul_ss(_mm_cvtsi32_ss(_mm_setzero_ps(), dPtr[0]),
+                                   _mm_set_ss(recip_65535)));
+                    break;
+                case 2:
+                    pixel = _mm_insert_epi16(_mm_loadu_si32(ptr), 0xFFFF, 3);
+                    break;
+                case 3:
+                    pixel = _mm_insert_epi16(
+                        _mm_insert_epi16(_mm_loadu_si32(ptr), dPtr[2], 2),
+                        0xFFFF, 3);
+                    break;
+                case 4: pixel = _mm_loadu_si64(ptr); break;
+            }
+            if (channelCount != 1)
+            {
+#ifdef __SSE4_1__
+                tempData = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(pixel));
+#else
+                tempData = _mm_cvtepi32_ps(
+                    _mm_unpacklo_epi16(pixel, _mm_setzero_si128()));
+#endif
+                tempData = _mm_mul_ps(tempData, _mm_set1_ps(recip_65535));
+            }
+            break;
+        }
+
+        case CL_SIGNED_INT16: {
+            cl_short *dPtr = (cl_short *)ptr;
+            __m128i pixel;
+            switch (channelCount)
+            {
+                case 1:
+                    tempData =
+                        SET_ALPHA_1(_mm_cvtsi32_ss(_mm_setzero_ps(), dPtr[0]));
+                    break;
+                case 2:
+                    pixel = _mm_insert_epi16(_mm_loadu_si32(ptr), 1, 3);
+                    break;
+                case 3:
+                    pixel = _mm_insert_epi16(
+                        _mm_insert_epi16(_mm_loadu_si32(ptr), dPtr[2], 2), 1,
+                        3);
+                    break;
+                case 4: pixel = _mm_loadu_si64(ptr); break;
+            }
+            if (channelCount != 1)
+#ifdef __SSE4_1__
+                tempData = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(pixel));
+#else
+                tempData = _mm_cvtepi32_ps(_mm_unpacklo_epi16(
+                    pixel, _mm_cmpgt_epi16(_mm_setzero_si128(), pixel)));
+#endif
+            break;
+        }
+
+        case CL_UNSIGNED_INT16: {
+            cl_ushort *dPtr = (cl_ushort *)ptr;
+            __m128i pixel;
+            switch (channelCount)
+            {
+                case 1:
+                    tempData =
+                        SET_ALPHA_1(_mm_cvtsi32_ss(_mm_setzero_ps(), dPtr[0]));
+                    break;
+                case 2:
+                    pixel = _mm_insert_epi16(_mm_loadu_si32(ptr), 1, 3);
+                    break;
+                case 3:
+                    pixel = _mm_insert_epi16(
+                        _mm_insert_epi16(_mm_loadu_si32(ptr), dPtr[2], 2), 1,
+                        3);
+                    break;
+                case 4: pixel = _mm_loadu_si64(ptr); break;
+            }
+            if (channelCount != 1)
+#ifdef __SSE4_1__
+                tempData = _mm_cvtepi32_ps(_mm_cvtepu16_epi32(pixel));
+#else
+                tempData = _mm_cvtepi32_ps(
+                    _mm_unpacklo_epi16(pixel, _mm_setzero_si128()));
+#endif
+            break;
+        }
+
+        case CL_HALF_FLOAT: {
+            cl_half *dPtr = (cl_half *)ptr;
+            __m128i h;
+            switch (channelCount)
+            {
+                case 1:
+#ifdef __F16C__
+                    tempData = SET_ALPHA_1(_mm_set_ss(_cvtsh_ss(dPtr[0])));
+#else
+                    tempData =
+                        SET_ALPHA_1(_mm_set_ss(cl_half_to_float(dPtr[0])));
+#endif
+                    break;
+                case 2:
+                    h = _mm_insert_epi16(_mm_loadu_si32(ptr), 0x3C00, 3);
+                    break;
+                case 3:
+                    h = _mm_insert_epi16(
+                        _mm_insert_epi16(_mm_loadu_si32(ptr), dPtr[2], 2),
+                        0x3C00, 3);
+                    break;
+                case 4: h = _mm_loadu_si64(ptr); break;
+            }
+
+            if (channelCount == 1) break;
+
+            tempData = cl_half_to_float(h);
+            break;
+        }
+
+        case CL_SIGNED_INT32: {
+            cl_int *dPtr = (cl_int *)ptr;
+            __m128i pixel;
+            switch (channelCount)
+            {
+                case 1:
+                    tempData =
+                        SET_ALPHA_1(_mm_cvtsi32_ss(_mm_setzero_ps(), dPtr[0]));
+                    break;
+                case 2:
+#ifdef __SSE4_1__
+                    pixel = _mm_insert_epi32(_mm_loadu_si64(ptr), 1, 3);
+#else
+                    pixel = _mm_insert_epi16(_mm_loadu_si64(ptr), 1, 6);
+#endif
+                    break;
+                case 3:
+#ifdef __SSE4_1__
+                    pixel = _mm_insert_epi32(
+                        _mm_insert_epi32(_mm_loadu_si64(ptr), dPtr[2], 2), 1,
+                        3);
+#else
+                    pixel = _mm_or_si128(_mm_loadu_si64(ptr),
+                                         _mm_set_epi32(1, dPtr[2], 0, 0));
+#endif
+                    break;
+                case 4: pixel = _mm_loadu_si128((__m128i_u *)ptr); break;
+            }
+            if (channelCount != 1) tempData = _mm_cvtepi32_ps(pixel);
+            break;
+        }
+
+        case CL_UNSIGNED_INT32: {
+            cl_uint *dPtr = (cl_uint *)ptr;
+            __m128i pixel;
+            switch (channelCount)
+            {
+                case 1:
+#ifdef __x86_64
+                    tempData =
+                        SET_ALPHA_1(_mm_cvtsi64_ss(_mm_setzero_ps(), dPtr[0]));
+#else
+                    tempData = SET_ALPHA_1(_mm_set_ss((float)dPtr[0]));
+#endif
+                    break;
+                case 2:
+#ifdef __SSE4_1__
+                    pixel = _mm_insert_epi32(_mm_loadu_si64(ptr), 1, 3);
+#else
+                    pixel = _mm_insert_epi16(_mm_loadu_si64(ptr), 1, 6);
+#endif
+                    break;
+                case 3:
+#ifdef __SSE4_1__
+                    pixel = _mm_insert_epi32(
+                        _mm_insert_epi32(_mm_loadu_si64(ptr), dPtr[2], 2), 1,
+                        3);
+#else
+                    pixel = _mm_or_si128(_mm_loadu_si64(ptr),
+                                         _mm_set_epi32(1, dPtr[2], 0, 0));
+#endif
+                    break;
+                case 4: pixel = _mm_loadu_si128((__m128i_u *)ptr); break;
+            }
+            if (channelCount != 1)
+            {
+                // Unfortunately, no instruction for converting unsigned 32-bit
+                // integers to float exists until AVX-512; nor is there an
+                // instruction for converting packed 64-bit integers to float
+                // until same
+#ifdef __AVX512VL__
+                tempData = _mm_cvtepu32_ps(pixel);
+#elif defined(__SSE4_1__)
+                // The following is based on the unoptimized output of GCC for
+                // scalars
+                __m128i negOne = _mm_setmone_si128();
+                if (!_mm_testz_si128(
+                        pixel, _mm_slli_epi32(negOne, 31) /* 0x80000000 */))
+                {
+                    __m128i one = _mm_srli_epi32(negOne, 31); // = 1;
+                    __m128i reducedPixel = _mm_or_si128(
+                        _mm_srli_epi32(pixel, 1), _mm_and_si128(pixel, one));
+                    tempData = _mm_cvtepi32_ps(reducedPixel);
+                    tempData = _mm_add_ps(tempData, tempData);
+                    tempData = SELECT_F(_mm_castsi128_ps(pixel), tempData,
+                                        _mm_cvtepi32_ps(pixel));
+                }
+                else
+                    tempData = _mm_cvtepi32_ps(pixel);
+#else
+                // Testing contents of vectors is unwieldy without SSE4.1
+                __m128i negOne = _mm_setmone_si128();
+                __m128i one = _mm_srli_epi32(negOne, 31); // = 1;
+                __m128i reducedPixel = _mm_or_si128(_mm_srli_epi32(pixel, 1),
+                                                    _mm_and_si128(pixel, one));
+                tempData = _mm_cvtepi32_ps(reducedPixel);
+                tempData = _mm_add_ps(tempData, tempData);
+                __m128 tempData2 = _mm_cvtepi32_ps(pixel);
+                __m128 mask = _mm_cmpgt_ps(_mm_setzero_ps(), tempData2);
+                tempData = SELECT_F(mask, tempData, tempData2);
+#endif
+            }
+            break;
+        }
+
+        case CL_UNORM_SHORT_565: {
+            cl_ushort *dPtr = (cl_ushort *)ptr;
+#ifdef __AVX2__
+            __m128i pixel = _mm_broadcastd_epi32(_mm_loadu_si16(dPtr));
+            pixel = _mm_insert_epi32(
+                _mm_srlv_epi32(pixel, _mm_set_epi32(0, 0, 5, 11)), 1, 3);
+#else
+            // Shifts may as well be scalar, since before AVX2 there are no
+            // vector shift amounts
+            __m128i pixel =
+                _mm_set_epi32(1, dPtr[0], dPtr[0] >> 5, dPtr[0] >> 11);
+#endif
+            pixel = _mm_and_si128(pixel, _mm_set_epi32(1, 0x1f, 0x3f, 0x1f));
+            tempData =
+                _mm_mul_ps(_mm_cvtepi32_ps(pixel),
+                           _mm_set_ps(1.0f, recip_31, recip_63, recip_31));
+            break;
+        }
+
+        case CL_UNORM_SHORT_555: {
+            cl_ushort *dPtr = (cl_ushort *)ptr;
+#ifdef __AVX2__
+            __m128i pixel = _mm_broadcastd_epi32(_mm_loadu_si16(dPtr));
+            pixel = _mm_insert_epi32(
+                _mm_srlv_epi32(pixel, _mm_set_epi32(0, 0, 5, 10)), 0x1F, 3);
+#else
+            __m128i pixel =
+                _mm_set_epi32(0x1F, dPtr[0], dPtr[0] >> 5, dPtr[0] >> 10);
+#endif
+            pixel = _mm_and_si128(pixel, _mm_set1_epi16(0x1F));
+            tempData =
+                _mm_mul_ps(_mm_cvtepi32_ps(pixel), _mm_set1_ps(recip_31));
+            break;
+        }
+
+        case CL_UNORM_INT_101010: {
+            cl_uint *dPtr = (cl_uint *)ptr;
+#ifdef __AVX2__
+            __m128i pixel = _mm_broadcastd_epi32(_mm_loadu_si32(dPtr));
+            pixel = _mm_insert_epi32(
+                _mm_srlv_epi32(pixel, _mm_set_epi32(0, 0, 10, 20)), 0x3ff, 3);
+#else
+            __m128i pixel =
+                _mm_set_epi32(0x3ff, dPtr[0], dPtr[0] >> 10, dPtr[0] >> 20);
+#endif
+            pixel = _mm_and_si128(pixel, _mm_set1_epi16(0x3ff));
+            tempData =
+                _mm_mul_ps(_mm_cvtepi32_ps(pixel), _mm_set1_ps(recip_1023));
+            break;
+        }
+
+        case CL_FLOAT: {
+            float *dPtr = (float *)ptr;
+            switch (channelCount)
+            {
+                case 1: tempData = SET_ALPHA_1(_mm_load_ss(dPtr)); break;
+                case 2:
+                    tempData = _mm_loadl_pi(_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f),
+                                            (__m64 *)ptr);
+                    break;
+                case 3:
+                    tempData = _mm_loadl_pi(
+                        _mm_set_ps(1.0f, dPtr[2], 0.0f, 0.0f), (__m64 *)ptr);
+                    break;
+                case 4: tempData = _mm_loadu_ps(dPtr); break;
+            }
+            break;
+        }
+#ifdef CL_SFIXED14_APPLE
+        case CL_SFIXED14_APPLE: {
+            cl_ushort *dPtr = (cl_ushort *)ptr;
+            __m128i pixel;
+            switch (channelCount)
+            {
+                case 1:
+                    tempData = SET_ALPHA_1(
+                        _mm_mul_ss(_mm_cvtsi32_ss((int)dPtr[0] - 16384),
+                                   _mm_set_ss(0x1.0p-14f)));
+                    break;
+                case 2:
+                    pixel = _mm_insert_epi16(_mm_loadu_si32(ptr),
+                                             (1 << 14) + 16384, 3);
+                    break;
+                case 3:
+                    pixel = _mm_insert_epi16(
+                        _mm_insert_epi16(_mm_loadu_si32(ptr), dPtr[2], 2),
+                        (1 << 14) + 16384, 3);
+                    break;
+                case 4: pixel = _mm_loadu_si64(ptr); break;
+            }
+            if (channelCount != 1)
+            {
+#ifdef __SSE4_1__
+                pixel = _mm_cvtepu16_epi32(pixel);
+#else
+                pixel = _mm_unpacklo_epi16(pixel, _mm_setzero_si128());
+#endif
+                tempData = _mm_mul_ps(_mm_cvtepi32_ps(_mm_add_epi32(pixel, _mm_slli_epi32(_mm_setmone_si128(), 14) /* -16384 */, _mm_set1_ps(0x1.0p-14f));
+            }
+            break;
+        }
+#endif
+    }
+
+    switch (format->image_channel_order)
+    {
+        case CL_R:
+        case CL_Rx:
+        case CL_RG:
+        case CL_RGx:
+        case CL_RGB:
+        case CL_RGBx:
+        case CL_sRGB:
+        case CL_sRGBx:
+        case CL_RGBA:
+        case CL_sRGBA:
+        case CL_DEPTH:
+            /* Already correct */
+            return tempData;
+        case CL_A:
+            return _mm_shuffle_ps(tempData, tempData, _MM_SHUFFLE(0, 1, 1, 1));
+        case CL_RA:
+            return _mm_shuffle_ps(tempData, tempData, _MM_SHUFFLE(1, 2, 2, 0));
+        case CL_ARGB:
+#ifdef CL_1RGB_APPLE
+        case CL_1RGB_APPLE:
+#endif
+            return _mm_shuffle_ps(tempData, tempData, _MM_SHUFFLE(0, 3, 2, 1));
+        case CL_ABGR:
+            return _mm_shuffle_ps(tempData, tempData, _MM_SHUFFLE(0, 1, 2, 3));
+        case CL_BGRA:
+        case CL_sBGRA:
+#ifdef CL_BGR1_APPLE
+        case CL_BGR1_APPLE:
+#endif
+            return _mm_shuffle_ps(tempData, tempData, _MM_SHUFFLE(3, 0, 1, 2));
+        case CL_INTENSITY:
+            return _mm_shuffle_ps(tempData, tempData, _MM_SHUFFLE(0, 0, 0, 0));
+        case CL_LUMINANCE:
+            return _mm_shuffle_ps(tempData, tempData, _MM_SHUFFLE(3, 0, 0, 0));
+        default:
+            log_error("Invalid format:");
+            print_header(format, true);
+            break;
+    }
+    return tempData;
+}
+
+void read_image_pixel_float(void *imageData, image_descriptor *imageInfo, int x,
+                            int y, int z, float *outData, int lod)
+{
+    _mm_storeu_ps(outData,
+                  read_image_pixel_float(imageData, imageInfo,
+                                         _mm_set_epi32(0, z, y, x), lod));
+}
+
+#else
+
+#define CLAMP_FLOAT(v) (fmaxf(fminf(v, 1.f), -1.f))
 
 void read_image_pixel_float(void *imageData, image_descriptor *imageInfo, int x,
                             int y, int z, float *outData, int lod)
@@ -1391,7 +2545,7 @@ void read_image_pixel_float(void *imageData, image_descriptor *imageInfo, int x,
             {
                 if ((is_sRGBA_order(imageInfo->format->image_channel_order))
                     && i < 3) // only RGB need to be converted for sRGBA
-                    tempData[i] = (float)sRGBunmap((float)dPtr[i] / 255.0f);
+                    tempData[i] = sRGBunmap(dPtr[i]);
                 else
                     tempData[i] = (float)dPtr[i] / 255.0f;
             }
@@ -1585,6 +2739,7 @@ void read_image_pixel_float(void *imageData, image_descriptor *imageInfo, int x,
             break;
     }
 }
+#endif
 
 void read_image_pixel_float(void *imageData, image_descriptor *imageInfo, int x,
                             int y, int z, float *outData)
@@ -1611,6 +2766,127 @@ bool get_integer_coords_offset(float x, float y, float z, float xAddressOffset,
 {
     AddressFn adFn = sAddressingTable[imageSampler];
 
+#ifdef __SSE2__
+    __m128 coord = _mm_set_ps(0.f, z, y, x);
+    __m128 addressOffset =
+        _mm_set_ps(0.f, zAddressOffset, yAddressOffset, xAddressOffset);
+    __m128i extent = _mm_set_epi32(0, depth, height, width);
+    __m128 extentf = _mm_cvtepi32_ps(extent);
+    __m128i ref = vifloorf(coord);
+
+    __m128 arrayMask;
+    switch (imageInfo->type)
+    {
+        case CL_MEM_OBJECT_IMAGE1D:
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            arrayMask = _mm_castsi128_ps(
+                _mm_bsrli_si128(_mm_setmone_si128(), 12)); // = 0, 0, 0, -1
+            break;
+        case CL_MEM_OBJECT_IMAGE2D:
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            arrayMask = _mm_castsi128_ps(
+                _mm_bsrli_si128(_mm_setmone_si128(), 8)); // = 0, 0, -1, -1
+            break;
+        default:
+            arrayMask = _mm_castsi128_ps(
+                _mm_bsrli_si128(_mm_setmone_si128(), 4)); // = 0, -1, -1, -1
+    }
+    __m128 locMask =
+        _mm_andnot_ps(_mm_cmpeq_ps(extentf, _mm_setzero_ps()), arrayMask);
+    __m128 offsetMask =
+        _mm_andnot_ps(_mm_cmpeq_ps(addressOffset, _mm_setzero_ps()), arrayMask);
+
+    // Handle sampler-directed coordinate normalization + clamping.  Note that
+    // the array coordinate for image array types is expected to be
+    // unnormalized, and is clamped to 0..arraySize-1.
+    if (imageSampler->normalized_coords)
+    {
+        __m128 minMask, maxMask, temp;
+        switch (imageSampler->addressing_mode)
+        {
+            case CL_ADDRESS_REPEAT:
+                coord = SELECT_F(
+                    locMask, RepeatNormalizedAddressFn(coord, extent), coord);
+
+                // Add in the offset
+                coord = _mm_add_ps(coord, addressOffset);
+                // Handle wrapping
+                minMask = _mm_andnot_ps(_mm_cmplt_ps(coord, _mm_setzero_ps()),
+                                        offsetMask);
+                maxMask =
+                    _mm_andnot_ps(_mm_cmpgt_ps(coord, extentf), offsetMask);
+                coord = SELECT_F(
+                    minMask, _mm_add_ps(coord, extentf),
+                    SELECT_F(maxMask, _mm_sub_ps(coord, extentf), coord));
+                break;
+
+            case CL_ADDRESS_MIRRORED_REPEAT:
+                coord = SELECT_F(
+                    locMask, MirroredRepeatNormalizedAddressFn(coord, extent),
+                    coord);
+                temp = _mm_add_ps(coord, addressOffset);
+                maxMask = _mm_cmpgt_ps(temp, extentf);
+                coord = SELECT_F(
+                    offsetMask,
+                    vfabsf(SELECT_F(
+                        maxMask, _mm_sub_ps(extentf, _mm_sub_ps(temp, extentf)),
+                        temp)),
+                    coord);
+                break;
+
+            default:
+                // Also, remultiply to the original coords. This simulates any
+                // truncation in the pass to OpenCL
+#ifdef __FMA4__
+                coord =
+                    SELECT_F(arrayMask,
+                             _mm_macc_ps(coord, extentf, addressOffset), coord);
+#elif defined(__FMA__)
+                coord = SELECT_F(arrayMask,
+                                 _mm_fmadd_ps(coord, extentf, addressOffset),
+                                 coord);
+#else
+                coord = SELECT_F(
+                    arrayMask,
+                    _mm_add_ps(_mm_mul_ps(coord, extentf), addressOffset),
+                    coord);
+#endif
+                break;
+        }
+    }
+
+    // At this point, we're dealing with non-normalized coordinates.
+
+    __m128i out =
+        SELECT_I(_mm_castps_si128(locMask), adFn(vifloorf(coord), extent),
+                 _mm_cvtps_epi32(coord));
+    outX = _mm_cvtsi128_si32(out);
+
+    // 1D and 2D arrays require special care for the index coordinate:
+
+    switch (imageInfo->type)
+    {
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            outY = static_cast<int>(
+                calculate_array_index(y, (float)imageInfo->arraySize - 1.0f));
+            outZ = 0; /* don't care! */
+            break;
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            outY = EXTRACT_I(out, 1);
+            outZ = static_cast<int>(
+                calculate_array_index(z, (float)imageInfo->arraySize - 1.0f));
+            break;
+        default:
+            // legacy path:
+            outY = EXTRACT_I(out, 1);
+            outZ = EXTRACT_I(out, 2);
+    }
+
+    out = _mm_set_epi32(0, outZ, outY, outX);
+    __m128i refEqual = _mm_cmpeq_epi32(ref, out);
+    return TEST_ANY_ZERO(refEqual);
+#else
     float refX = floorf(x), refY = floorf(y), refZ = floorf(z);
 
     // Handle sampler-directed coordinate normalization + clamping.  Note that
@@ -1745,10 +3021,39 @@ bool get_integer_coords_offset(float x, float y, float z, float xAddressOffset,
     }
 
     return !((int)refX == outX && (int)refY == outY && (int)refZ == outZ);
+#endif
 }
 
-static float frac(float a) { return a - floorf(a); }
+#ifdef __SSE2__
+static inline __m128 pixelMax(__m128 a, __m128 b)
+{
+    // n.b. Operands must be reversed, because if either one is NaN, the second
+    // operand is returned
+    return _mm_max_ps(vfabsf(b), vfabsf(a));
+}
 
+static inline int IsFloatSubnormal(__m128 x)
+{
+    // No fpclass until AVX-512 (what took them so long?!!)
+    union {
+        __m128 f;
+        __m128i u;
+    } u;
+    u.f = vfabsf(x);
+    __m128i negOne = _mm_setmone_si128();
+    return TEST_NONZERO(
+        _mm_cmplt_epi32(_mm_add_epi32(u.u, negOne),
+                        _mm_srli_epi32(negOne, 9) /* 0x007fffff */));
+}
+
+// If containsDenorms is NULL, flush denorms to zero
+// if containsDenorms is not NULL, record whether there are any denorms
+static inline __m128 check_for_denorms(__m128 a, int *containsDenorms)
+{
+    if (NULL != containsDenorms && IsFloatSubnormal(a)) *containsDenorms = 1;
+    return a;
+}
+#else
 static inline void pixelMax(const float a[4], const float b[4], float *results);
 static inline void pixelMax(const float a[4], const float b[4], float *results)
 {
@@ -1779,6 +3084,7 @@ static inline void check_for_denorms(float a[4], int *containsDenorms)
         }
     }
 }
+#endif
 
 inline float calculate_array_index(float coord, float extent)
 {
@@ -1794,6 +3100,11 @@ inline float calculate_array_index(float coord, float extent)
     return ret;
 }
 
+#ifdef __SSE2__
+#define EXTRACT_F(v, i)                                                        \
+    _mm_cvtss_f32(_mm_shuffle_ps(v, v, _MM_SHUFFLE(3, 2, 1, i)))
+#endif
+
 /*
  * Utility function to unnormalized a coordinate given a particular sampler.
  *
@@ -1802,6 +3113,124 @@ inline float calculate_array_index(float coord, float extent)
  * offset   - an addressing offset to be added to the coordinate
  * extent   - the max value for this coordinate (e.g. width for x)
  */
+#ifdef __SSE2__
+
+#ifdef __AVX__
+#define TEST_NONZERO_F(v) !_mm_testz_ps(v, v)
+#else
+#define TEST_NONZERO_F(v) TEST_NONZERO(_mm_castps_si128(v))
+#endif
+
+static __m128 unnormalize_coordinate(const char *name, __m128 coord,
+                                     __m128 offset, __m128 extent,
+                                     cl_addressing_mode addressing_mode,
+                                     int verbose)
+{
+    __m128 zero = _mm_setzero_ps();
+    __m128 ret = zero;
+    __m128 offsetMask = _mm_cmpneq_ps(offset, zero);
+    __m128 minMask, maxMask, temp;
+
+    switch (addressing_mode)
+    {
+        case CL_ADDRESS_REPEAT:
+            ret = RepeatNormalizedAddressFn(coord, _mm_cvtps_epi32(extent));
+
+            if (verbose)
+            {
+                log_info("\tRepeat filter denormalizes %s (%f, %f, %f) to %f, "
+                         "%f, %f\n",
+                         name, EXTRACT_F(coord, 0), EXTRACT_F(coord, 1),
+                         EXTRACT_F(coord, 2), EXTRACT_F(ret, 0),
+                         EXTRACT_F(ret, 1), EXTRACT_F(ret, 2));
+            }
+
+            // Add in the offset, and handle wrapping.
+            ret = _mm_add_ps(ret, offset);
+            maxMask = _mm_and_ps(offsetMask, _mm_cmpgt_ps(ret, extent));
+            minMask = _mm_and_ps(offsetMask, _mm_cmplt_ps(ret, zero));
+            ret = SELECT_F(minMask, _mm_add_ps(ret, extent),
+                           SELECT_F(maxMask, _mm_sub_ps(ret, extent), ret));
+
+            if (verbose && TEST_NONZERO_F(offsetMask))
+            {
+                log_info(
+                    "\tAddress offset of %f, %f, %f added to get %f, %f, %f\n",
+                    EXTRACT_F(offset, 0), EXTRACT_F(offset, 1),
+                    EXTRACT_F(offset, 2), EXTRACT_F(ret, 0), EXTRACT_F(ret, 1),
+                    EXTRACT_F(ret, 2));
+            }
+            break;
+
+        case CL_ADDRESS_MIRRORED_REPEAT:
+            ret = MirroredRepeatNormalizedAddressFn(coord,
+                                                    _mm_cvtps_epi32(extent));
+
+            if (verbose)
+            {
+                log_info("\tMirrored repeat filter denormalizes %s (%f, %f, "
+                         "%f) to %f, %f, %f\n",
+                         name, EXTRACT_F(coord, 0), EXTRACT_F(coord, 1),
+                         EXTRACT_F(coord, 2), EXTRACT_F(ret, 0),
+                         EXTRACT_F(ret, 1), EXTRACT_F(ret, 2));
+            }
+
+            temp = _mm_add_ps(ret, offset);
+            maxMask = _mm_cmpgt_ps(temp, extent);
+            ret = SELECT_F(
+                offsetMask,
+                vfabsf(SELECT_F(maxMask,
+                                _mm_sub_ps(extent, _mm_sub_ps(temp, extent)),
+                                temp)),
+                ret);
+
+            if (verbose && TEST_NONZERO_F(offsetMask))
+            {
+                log_info(
+                    "\tAddress offset of %f, %f, %f added to get %f, %f, %f\n",
+                    EXTRACT_F(offset, 0), EXTRACT_F(offset, 1),
+                    EXTRACT_F(offset, 2), EXTRACT_F(ret, 0), EXTRACT_F(ret, 1),
+                    EXTRACT_F(ret, 2));
+            }
+            break;
+
+        default:
+
+            if (verbose)
+            {
+                ret = _mm_mul_ps(coord, extent);
+                log_info("\tFilter denormalizes %s to %f, %f, %f (<%f, %f, %f> "
+                         "* <%f, %f, %f>)\n",
+                         name, EXTRACT_F(ret, 0), EXTRACT_F(ret, 1),
+                         EXTRACT_F(ret, 2), EXTRACT_F(coord, 0),
+                         EXTRACT_F(coord, 1), EXTRACT_F(coord, 2),
+                         EXTRACT_F(extent, 0), EXTRACT_F(extent, 1),
+                         EXTRACT_F(extent, 2));
+                if (TEST_NONZERO_F(offsetMask))
+                {
+                    ret = _mm_add_ps(ret, offset);
+                    log_info("\tAddress offset of %f, %f, %f added to get %f, "
+                             "%f, %f\n",
+                             EXTRACT_F(offset, 0), EXTRACT_F(offset, 1),
+                             EXTRACT_F(offset, 2), EXTRACT_F(ret, 0),
+                             EXTRACT_F(ret, 1), EXTRACT_F(ret, 2));
+                }
+            }
+            else
+            {
+#ifdef __FMA4__
+                ret = _mm_macc_ps(coord, extent, offset);
+#elif defined(__FMA__)
+                ret = _mm_fmadd_ps(coord, extent, offset);
+#else
+                ret = _mm_add_ps(_mm_mul_ps(coord, extent), offset);
+#endif
+            }
+    }
+
+    return ret;
+}
+#else
 static float unnormalize_coordinate(const char *name, float coord, float offset,
                                     float extent,
                                     cl_addressing_mode addressing_mode,
@@ -1881,6 +3310,7 @@ static float unnormalize_coordinate(const char *name, float coord, float offset,
 
     return ret;
 }
+#endif
 
 FloatPixel
 sample_image_pixel_float(void *imageData, image_descriptor *imageInfo, float x,
@@ -1904,6 +3334,933 @@ FloatPixel sample_image_pixel_float(void *imageData,
                                            0.0f, 0.0f, imageSampler, outData,
                                            verbose, containsDenorms, lod);
 }
+#ifdef __SSE2__
+FloatPixel sample_image_pixel_float_offset(
+    void *imageData, image_descriptor *imageInfo, float x, float y, float z,
+    float xAddressOffset, float yAddressOffset, float zAddressOffset,
+    image_sampler_data *imageSampler, float *outData, int verbose,
+    int *containsDenorms, int lod)
+{
+    AddressFn adFn = sAddressingTable[imageSampler];
+    FloatPixel returnVal;
+    size_t width_lod = imageInfo->width, height_lod = imageInfo->height,
+           depth_lod = imageInfo->depth;
+    size_t slice_pitch_lod = 0, row_pitch_lod = 0;
+
+    if (imageInfo->num_mip_levels > 1)
+    {
+        switch (imageInfo->type)
+        {
+            case CL_MEM_OBJECT_IMAGE3D:
+                depth_lod =
+                    (imageInfo->depth >> lod) ? (imageInfo->depth >> lod) : 1;
+            case CL_MEM_OBJECT_IMAGE2D:
+            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+                height_lod =
+                    (imageInfo->height >> lod) ? (imageInfo->height >> lod) : 1;
+            default:
+                width_lod =
+                    (imageInfo->width >> lod) ? (imageInfo->width >> lod) : 1;
+        }
+        row_pitch_lod = width_lod * get_pixel_size(imageInfo->format);
+        if (imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY)
+            slice_pitch_lod = row_pitch_lod;
+        else if (imageInfo->type == CL_MEM_OBJECT_IMAGE3D
+                 || imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+            slice_pitch_lod = row_pitch_lod * height_lod;
+    }
+    else
+    {
+        slice_pitch_lod = imageInfo->slicePitch;
+        row_pitch_lod = imageInfo->rowPitch;
+    }
+
+    if (containsDenorms) *containsDenorms = 0;
+
+    __m128 coord, addressOffset, extentf;
+    __m128i extent, addressMask;
+    switch (imageInfo->type)
+    {
+
+            // The image array types require special care:
+
+        case CL_MEM_OBJECT_IMAGE1D:
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            coord = _mm_set_ss(x);
+            addressOffset = _mm_set_ss(xAddressOffset);
+            extent = _mm_set_epi32(0, 1, 1, width_lod);
+            addressMask =
+                _mm_bsrli_si128(_mm_setmone_si128(), 12); // = 0, 0, 0, -1
+            break;
+
+        case CL_MEM_OBJECT_IMAGE2D:
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            coord = _mm_set_ps(0.f, 0.f, y, x);
+            addressOffset =
+                _mm_set_ps(0.f, 0.f, yAddressOffset, xAddressOffset);
+            extent = _mm_set_epi32(0, 1, height_lod, width_lod);
+            addressMask =
+                _mm_bsrli_si128(_mm_setmone_si128(), 8); // = 0, 0, -1, -1
+            break;
+
+            // Everybody else:
+
+        default:
+            coord = _mm_set_ps(0.f, z, y, x);
+            addressOffset =
+                _mm_set_ps(0.f, zAddressOffset, yAddressOffset, xAddressOffset);
+            extent = _mm_set_epi32(0, depth_lod, height_lod, width_lod);
+            addressMask =
+                _mm_bsrli_si128(_mm_setmone_si128(), 4); // = 0, -1, -1, -1
+    }
+    extentf = _mm_cvtepi32_ps(extent);
+
+    if (imageSampler->normalized_coords)
+    {
+        // We need to unnormalize our coordinates differently depending on
+        // the image type, but 'x' is always processed the same way.
+
+        const char *name = NULL;
+        switch (imageInfo->type)
+        {
+
+            case CL_MEM_OBJECT_IMAGE1D:
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+            case CL_MEM_OBJECT_IMAGE1D_ARRAY: name = "x"; break;
+
+            case CL_MEM_OBJECT_IMAGE2D:
+            case CL_MEM_OBJECT_IMAGE2D_ARRAY: name = "x, y"; break;
+
+            default: name = "x, y, z";
+        }
+
+        coord = unnormalize_coordinate(name, coord, addressOffset, extentf,
+                                       imageSampler->addressing_mode, verbose);
+    }
+    else if (verbose)
+    {
+
+        switch (imageInfo->type)
+        {
+            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+                log_info("Starting coordinate: %f, array index %f\n", x, y);
+                break;
+            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+                log_info("Starting coordinate: %f, %f, array index %f\n", x, y,
+                         z);
+                break;
+            case CL_MEM_OBJECT_IMAGE1D:
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+                log_info("Starting coordinate: %f\b", x);
+                break;
+            case CL_MEM_OBJECT_IMAGE2D:
+                log_info("Starting coordinate: %f, %f\n", x, y);
+                break;
+            case CL_MEM_OBJECT_IMAGE3D:
+            default: log_info("Starting coordinate: %f, %f, %f\n", x, y, z);
+        }
+    }
+
+    // At this point, we have unnormalized coordinates.
+
+    if (imageSampler->filter_mode == CL_FILTER_NEAREST)
+    {
+        __m128i icoord;
+        int arrayIndex;
+
+        // We apply the addressing function to the now-unnormalized
+        // coordinates.  Note that the array cases again require special
+        // care, per section 8.4 in the OpenCL 1.2 Specification.
+
+        icoord = _mm_and_si128(addressMask, adFn(vifloorf(coord), extent));
+
+        switch (imageInfo->type)
+        {
+            case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+                arrayIndex = static_cast<int>(calculate_array_index(
+                    y, (float)(imageInfo->arraySize - 1)));
+                if (verbose)
+                    log_info("\tArray index %f evaluates to %d\n", y,
+                             arrayIndex);
+#ifdef __SSE4_1__
+                icoord = _mm_insert_epi32(icoord, arrayIndex, 1);
+#else
+                icoord = _mm_insert_epi16(
+                    _mm_insert_epi16(icoord, (short)arrayIndex, 2),
+                    (short)(arrayIndex >> 16), 3);
+#endif
+                break;
+            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+                arrayIndex = static_cast<int>(calculate_array_index(
+                    z, (float)(imageInfo->arraySize - 1)));
+                if (verbose)
+                    log_info("\tArray index %f evaluates to %d\n", z,
+                             arrayIndex);
+#ifdef __SSE4_1__
+                icoord = _mm_insert_epi32(icoord, arrayIndex, 2);
+#else
+                icoord = _mm_insert_epi16(
+                    _mm_insert_epi16(icoord, (short)arrayIndex, 4),
+                    (short)(arrayIndex >> 16), 5);
+#endif
+                break;
+            default: break;
+        }
+
+        if (verbose)
+        {
+            if (depth_lod)
+                log_info(
+                    "\tReference integer coords calculated: { %d, %d, %d }\n",
+                    EXTRACT_I(icoord, 0), EXTRACT_I(icoord, 1),
+                    EXTRACT_I(icoord, 2));
+            else
+                log_info("\tReference integer coords calculated: { %d, %d }\n",
+                         EXTRACT_I(icoord, 0), EXTRACT_I(icoord, 1));
+        }
+
+        // SSE has an FTZ mode that will be useful here
+        unsigned int mxcsr = 0;
+        if (NULL == containsDenorms)
+        {
+            mxcsr = _mm_getcsr();
+            _mm_setcsr(mxcsr & ~_MM_FLUSH_ZERO_MASK | _MM_FLUSH_ZERO_ON);
+        }
+        __m128 outPixel = check_for_denorms(
+            read_image_pixel_float(imageData, imageInfo, icoord, lod),
+            containsDenorms);
+        if (NULL == containsDenorms) _mm_setcsr(mxcsr);
+        _mm_storeu_ps(outData, outPixel);
+        _mm_storeu_ps(returnVal.p, vfabsf(outPixel));
+        return returnVal;
+    }
+    else
+    {
+        // Linear filtering cases.
+
+        // Image arrays can use 2D filtering, but require us to walk into the
+        // image a certain number of slices before reading.
+
+        if (depth_lod == 0 || imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY
+            || imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY)
+        {
+            float array_index = 0;
+
+            size_t layer_offset = 0;
+
+            if (imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+            {
+                array_index =
+                    calculate_array_index(z, (float)(imageInfo->arraySize - 1));
+                layer_offset = slice_pitch_lod * (size_t)array_index;
+            }
+            else if (imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY)
+            {
+                array_index =
+                    calculate_array_index(y, (float)(imageInfo->arraySize - 1));
+                layer_offset = slice_pitch_lod * (size_t)array_index;
+            }
+
+            __m128i icoord =
+                vifloorf(_mm_sub_ps(coord, _mm_set_ps(0.f, 0.f, 0.5f, 0.5f)));
+            __m128i coord00 = _mm_and_si128(addressMask, adFn(icoord, extent));
+            __m128i coord11 = _mm_and_si128(
+                addressMask,
+                adFn(_mm_sub_epi32(icoord, _mm_setmone_si128()), extent));
+
+            if (verbose)
+            {
+                log_info("\tActual integer coords used (i = floor(x-.5)): i0:{ "
+                         "%d, %d } and i1:{ %d, %d }\n",
+                         EXTRACT_I(coord00, 0), EXTRACT_I(coord00, 1),
+                         EXTRACT_I(coord11, 0), EXTRACT_I(coord11, 1));
+                log_info("\tArray coordinate is %f\n", array_index);
+            }
+
+            // Walk to beginning of the 'correct' slice, if needed.
+            char *imgPtr = ((char *)imageData) + layer_offset;
+
+            // flush subnormal results to zero if necessary
+            // SSE has an FTZ mode that will be useful here
+            unsigned int mxcsr;
+            if (NULL == containsDenorms)
+            {
+                mxcsr = _mm_getcsr();
+                _mm_setcsr(mxcsr & ~_MM_FLUSH_ZERO_MASK | _MM_FLUSH_ZERO_ON);
+            }
+
+            // Make coordinate vectors for pixels 01 and 10
+#ifdef __AVX2__
+            __m128i coord01 = _mm_blend_epi32(coord00, coord11, 0x01);
+            __m128i coord10 = _mm_blend_epi32(coord00, coord11, 0x02);
+#elif defined(__SSE4_1__)
+            __m128i coord01 = _mm_blend_epi16(coord00, coord11, 0x03);
+            __m128i coord10 = _mm_blend_epi16(coord00, coord11, 0x0C);
+#else
+            __m128i coordMask =
+                _mm_bsrli_si128(_mm_setmone_si128(), 8); // = 0, 0, -1, -1
+            __m128i interleavedCoord =
+                _mm_unpacklo_epi32(coord00, coord11); // y2 y1 x2 x1
+            __m128i coord01 = _mm_and_si128(
+                coordMask,
+                _mm_shuffle_epi32(interleavedCoord, _MM_SHUFFLE(3, 0, 2, 1)));
+            __m128i coord10 = _mm_and_si128(
+                coordMask,
+                _mm_shuffle_epi32(interleavedCoord, _MM_SHUFFLE(2, 1, 3, 0)));
+#endif
+
+            __m128 upLeft, upRight, lowLeft, lowRight;
+            __m128 maxUp, maxLow;
+            upLeft = check_for_denorms(
+                read_image_pixel_float(imgPtr, imageInfo, coord00, lod),
+                containsDenorms);
+            upRight = check_for_denorms(
+                read_image_pixel_float(imgPtr, imageInfo, coord01, lod),
+                containsDenorms);
+            maxUp = pixelMax(upLeft, upRight);
+            lowLeft = check_for_denorms(
+                read_image_pixel_float(imgPtr, imageInfo, coord10, lod),
+                containsDenorms);
+            lowRight = check_for_denorms(
+                read_image_pixel_float(imgPtr, imageInfo, coord11, lod),
+                containsDenorms);
+            maxLow = pixelMax(lowLeft, lowRight);
+            _mm_storeu_ps(returnVal.p, pixelMax(maxUp, maxLow));
+
+            if (verbose)
+            {
+                if (NULL == containsDenorms)
+                    log_info("\tSampled pixels (rgba order, denorms flushed to "
+                             "zero):\n");
+                else
+                    log_info("\tSampled pixels (rgba order):\n");
+                log_info("\t\tp00: %f, %f, %f, %f\n", EXTRACT_F(upLeft, 0),
+                         EXTRACT_F(upLeft, 1), EXTRACT_F(upLeft, 2),
+                         EXTRACT_F(upLeft, 3));
+                log_info("\t\tp01: %f, %f, %f, %f\n", EXTRACT_F(upRight, 0),
+                         EXTRACT_F(upRight, 1), EXTRACT_F(upRight, 2),
+                         EXTRACT_F(upRight, 3));
+                log_info("\t\tp10: %f, %f, %f, %f\n", EXTRACT_F(lowLeft, 0),
+                         EXTRACT_F(lowLeft, 1), EXTRACT_F(lowLeft, 2),
+                         EXTRACT_F(lowLeft, 3));
+                log_info("\t\tp11: %f, %f, %f, %f\n", EXTRACT_F(lowRight, 0),
+                         EXTRACT_F(lowRight, 1), EXTRACT_F(lowRight, 2),
+                         EXTRACT_F(lowRight, 3));
+            }
+
+            __m128 fracCoord = frac(_mm_sub_ps(coord, _mm_set1_ps(0.5f)));
+            if (verbose)
+                log_info("\tfrac( x - 0.5f ) = %f,  frac( y - 0.5f ) = %f\n",
+                         EXTRACT_F(fracCoord, 0), EXTRACT_F(fracCoord, 1));
+
+#ifdef __AVX__
+            __m256d alphaBeta = _mm256_cvtps_pd(fracCoord); // x x b a
+            alphaBeta = _mm256_insertf128_pd(
+                alphaBeta,
+                _mm_sub_pd(_mm_set1_pd(1.0), _mm256_castpd256_pd128(alphaBeta)),
+                1); // 1-b 1-a b a
+            //   1-b       1-a       b         a
+            //   1-a        b        a        1-b (2 1 0 3)
+            //(1-a)(1-b) (1-a)b     a*b      a(1-b)
+            //    00        10      11         01
+#ifdef __AVX2__
+            __m256d weights = _mm256_mul_pd(
+                alphaBeta,
+                _mm256_permute4x64_pd(alphaBeta, _MM_SHUFFLE(2, 1, 0, 3)));
+            __m256d weight01 =
+                _mm256_broadcastsd_pd(_mm256_castpd256_pd128(weights));
+            __m256d weight11 =
+                _mm256_permute4x64_pd(weights, _MM_SHUFFLE(1, 1, 1, 1));
+            __m256d weight10 =
+                _mm256_permute4x64_pd(weights, _MM_SHUFFLE(2, 2, 2, 2));
+            __m256d weight00 =
+                _mm256_permute4x64_pd(weights, _MM_SHUFFLE(3, 3, 3, 3));
+#else
+            // This is now more complicated...
+            // Swap the two halves of the vector (1 0 3 2):
+            //  0x01 = 0b00000001
+            //             ~~  ~~
+            //       +-----+    |
+            //   +---*----------+
+            //   |   +
+            //   v   v
+            //  +-+ +-+
+            //  3 2 1 0
+            // ...then shuffle the elements as follows:
+            //  0x05 = 0b00000101
+            //    +----------+|||
+            //    | +---------+||
+            //    | |     +----+|
+            //    | |     | +---+
+            //    v v     v v
+            //  3 2 1 0 1 0 3 2
+            __m256d weights = _mm256_mul_pd(
+                alphaBeta,
+                _mm256_shuffle_pd(
+                    alphaBeta,
+                    _mm256_permute2f128_pd(alphaBeta, alphaBeta, 0x01), 0x05));
+            // Duplicate the even and odd elements...
+            __m256d weight1001 = _mm256_movedup_pd(weights);
+            __m256d weight0011 = _mm256_permute_pd(weights, 0x0F);
+            // ...then duplicate the low and high halves of the results
+            __m256d weight01 =
+                _mm256_permute2f128_pd(_mm256_undefined_pd(), weight1001, 0x22);
+            __m256d weight11 =
+                _mm256_permute2f128_pd(_mm256_undefined_pd(), weight0011, 0x22);
+            __m256d weight10 =
+                _mm256_permute2f128_pd(_mm256_undefined_pd(), weight1001, 0x33);
+            __m256d weight00 =
+                _mm256_permute2f128_pd(_mm256_undefined_pd(), weight0011, 0x33);
+#endif
+#ifdef __FMA4__
+            // Doing it this way instead of using a chain of FMAs avoids stalls
+            _mm_storeu_ps(
+                outData,
+                _mm256_cvtpd_ps(_mm256_add_pd(
+                    _mm256_macc_pd(
+                        _mm256_cvtps_pd(upLeft), weight00,
+                        _mm256_mul_pd(_mm256_cvtps_pd(upRight), weight01)),
+                    _mm256_macc_pd(
+                        _mm256_cvtps_pd(lowLeft), weight10,
+                        _mm256_mul_pd(_mm256_cvtps_pd(lowRight), weight11)))));
+#elif defined(__FMA__)
+            _mm_storeu_ps(
+                outData,
+                _mm256_cvtpd_ps(_mm256_add_pd(
+                    _mm256_fmadd_pd(
+                        _mm256_cvtps_pd(upLeft), weight00,
+                        _mm256_mul_pd(_mm256_cvtps_pd(upRight), weight01)),
+                    _mm256_fmadd_pd(
+                        _mm256_cvtps_pd(lowLeft), weight10,
+                        _mm256_mul_pd(_mm256_cvtps_pd(lowRight), weight11)))));
+#else
+            // No VDPPD for 256-bit vectors... :/
+            _mm_storeu_ps(
+                outData,
+                _mm256_cvtpd_ps(_mm256_add_pd(
+                    _mm256_add_pd(
+                        _mm256_mul_pd(_mm256_cvtps_pd(upLeft), weight00),
+                        _mm256_mul_pd(_mm256_cvtps_pd(upRight), weight01)),
+                    _mm256_add_pd(
+                        _mm256_mul_pd(_mm256_cvtps_pd(lowLeft), weight10),
+                        _mm256_mul_pd(_mm256_cvtps_pd(lowRight), weight11)))));
+#endif
+#else
+            __m128d alphaBeta = _mm_cvtps_pd(fracCoord); // b a
+            __m128d invAlphaBeta =
+                _mm_sub_pd(_mm_set1_pd(1.0), alphaBeta); // 1-b 1-a
+            __m128d weights[2];
+
+            // <1-a b> * <1-b 1-a> = <(1-a)(1-b) (1-a)b> <00 10>
+            weights[0] = _mm_mul_pd(
+                _mm_shuffle_pd(invAlphaBeta, alphaBeta, _MM_SHUFFLE2(1, 0)),
+                invAlphaBeta);
+            // <b a> * <a 1-b> = <a*b a(1-b)> <11 01>
+            weights[1] = _mm_mul_pd(
+                alphaBeta,
+                _mm_shuffle_pd(invAlphaBeta, alphaBeta, _MM_SHUFFLE2(0, 1)));
+
+            __m128d upLeftL = _mm_cvtps_pd(upLeft);
+            __m128d upLeftH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), upLeft));
+            __m128d upRightL = _mm_cvtps_pd(upRight);
+            __m128d upRightH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), upRight));
+            __m128d lowLeftL = _mm_cvtps_pd(lowLeft);
+            __m128d lowLeftH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), lowLeft));
+            __m128d lowRightL = _mm_cvtps_pd(lowRight);
+            __m128d lowRightH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), lowRight));
+#ifdef __SSE4_1__
+            // In the immediate bytes, the high nibble determines which
+            // multiplies take place--in this case, both of them--and the low
+            // nibble determines which lines receive the sum--bit 0 for the low
+            // lane, bit 1 for the high.
+            __m128d rg = _mm_or_pd(
+                _mm_dp_pd(weights[0], _mm_unpacklo_pd(lowLeftL, upLeftL), 0x31),
+                _mm_dp_pd(weights[0], _mm_unpackhi_pd(lowLeftL, upLeftL),
+                          0x32));
+            __m128d ba = _mm_or_pd(
+                _mm_dp_pd(weights[0], _mm_unpacklo_pd(lowLeftH, upLeftH), 0x31),
+                _mm_dp_pd(weights[0], _mm_unpackhi_pd(lowLeftH, upLeftH),
+                          0x32));
+            rg = _mm_add_pd(
+                rg,
+                _mm_or_pd(_mm_dp_pd(weights[1],
+                                    _mm_unpacklo_pd(upRightL, lowRightL), 0x31),
+                          _mm_dp_pd(weights[1],
+                                    _mm_unpackhi_pd(upRightL, lowRightL),
+                                    0x32)));
+            ba = _mm_add_pd(
+                ba,
+                _mm_or_pd(_mm_dp_pd(weights[1],
+                                    _mm_unpacklo_pd(upRightH, lowRightH), 0x31),
+                          _mm_dp_pd(weights[1],
+                                    _mm_unpackhi_pd(upRightH, lowRightH),
+                                    0x32)));
+#else
+#ifdef __SSE3__
+            __m128d weight10 = _mm_movedup_pd(weights[0]);
+            __m128d weight01 = _mm_movedup_pd(weights[1]);
+#else
+            __m128d weight10 = _mm_unpacklo_pd(weights[0], weights[0]);
+            __m128d weight01 = _mm_unpacklo_pd(weights[1], weights[1]);
+#endif
+            __m128d rg = _mm_add_pd(_mm_mul_pd(weight01, upRightL),
+                                    _mm_mul_pd(weight10, lowLeftL));
+            __m128d ba = _mm_add_pd(_mm_mul_pd(weight01, upRightH),
+                                    _mm_mul_pd(weight10, lowLeftH));
+            __m128d weight00 = _mm_unpackhi_pd(weights[0], weights[0]);
+            __m128d weight11 = _mm_unpackhi_pd(weights[1], weights[1]);
+            rg = _mm_add_pd(rg,
+                            _mm_add_pd(_mm_mul_pd(weight00, upLeftL),
+                                       _mm_mul_pd(weight11, lowRightL)));
+            ba = _mm_add_pd(ba,
+                            _mm_add_pd(_mm_mul_pd(weight00, upLeftH),
+                                       _mm_mul_pd(weight11, lowRightH)));
+#endif
+            _mm_storeu_ps(outData,
+                          _mm_movelh_ps(_mm_cvtpd_ps(rg), _mm_cvtpd_ps(ba)));
+#endif
+            if (NULL == containsDenorms) _mm_setcsr(mxcsr);
+        }
+        else
+        {
+            // 3D linear filtering
+            __m128i icoord =
+                vifloorf(_mm_sub_ps(coord, _mm_set_ps(0.f, 0.5f, 0.5f, 0.5f)));
+            __m128i coord000 = _mm_and_si128(addressMask, adFn(icoord, extent));
+            __m128i coord111 = _mm_and_si128(
+                addressMask,
+                adFn(_mm_sub_epi32(icoord, _mm_setmone_si128()), extent));
+
+            if (verbose)
+                log_info("\tActual integer coords used (i = floor(x-.5)): "
+                         "i0:{%d, %d, %d} and i1:{%d, %d, %d}\n",
+                         EXTRACT_I(coord000, 0), EXTRACT_I(coord000, 1),
+                         EXTRACT_I(coord000, 2), EXTRACT_I(coord111, 0),
+                         EXTRACT_I(coord111, 1), EXTRACT_I(coord111, 2));
+
+            // flush subnormal results to zero if necessary
+            // SSE has an FTZ mode that will be useful here
+            unsigned int mxcsr;
+            if (NULL == containsDenorms)
+            {
+                mxcsr = _mm_getcsr();
+                _mm_setcsr(mxcsr & ~_MM_FLUSH_ZERO_MASK | _MM_FLUSH_ZERO_ON);
+            }
+
+#ifdef __AVX2__
+            __m128i coord001 = _mm_blend_epi32(coord000, coord111, 0x01);
+            __m128i coord010 = _mm_blend_epi32(coord000, coord111, 0x02);
+            __m128i coord011 = _mm_blend_epi32(coord000, coord111, 0x03);
+            __m128i coord100 = _mm_blend_epi32(coord000, coord111, 0x04);
+            __m128i coord101 = _mm_blend_epi32(coord000, coord111, 0x05);
+            __m128i coord110 = _mm_blend_epi32(coord000, coord111, 0x06);
+#elif defined(__SSE4_1__)
+            __m128i coord001 = _mm_blend_epi16(coord000, coord111, 0x03);
+            __m128i coord010 = _mm_blend_epi16(coord000, coord111, 0x0C);
+            __m128i coord011 = _mm_blend_epi16(coord000, coord111, 0x0F);
+            __m128i coord100 = _mm_blend_epi16(coord000, coord111, 0x30);
+            __m128i coord101 = _mm_blend_epi16(coord000, coord111, 0x33);
+            __m128i coord110 = _mm_blend_epi16(coord000, coord111, 0x3C);
+#else
+            // XXX This is horrible without PBLEND...
+            __m128i negOne = _mm_setmone_si128();
+            __m128i coordMask = _mm_bsrli_si128(negOne, 8); // = 0, 0, -1, -1
+            __m128i coord011 = SELECT_I(coordMask, coord000, coord111);
+            coordMask = _mm_bsrli_si128(coordMask, 4); // = 0, 0, 0, -1
+            __m128i coord001 = SELECT_I(coordMask, coord000, coord111);
+            coordMask = _mm_slli_epi64(coordMask, 32); // = 0, 0, -1, 0
+            __m128i coord010 = SELECT_I(coordMask, coord000, coord111);
+            coordMask = _mm_srli_epi64(negOne, 32); // = 0, -1, 0, -1
+            __m128i coord101 = SELECT_I(coordMask, coord000, coord111);
+            coordMask = _mm_bslli_si128(coordMask, 8); // = 0, -1, 0, 0
+            __m128i coord100 = SELECT_I(coordMask, coord000, coord111);
+            coordMask = _mm_bslli_si128(_mm_bsrli_si128(negOne, 4),
+                                        4); // = 0, -1, -1, 0
+            __m128i coord110 = SELECT_I(coordMask, coord000, coord111);
+#endif
+
+            __m128 upLeftA, upRightA, lowLeftA, lowRightA;
+            __m128 upLeftB, upRightB, lowLeftB, lowRightB;
+            __m128 pixelMaxA, pixelMaxB, pixelMaxC;
+            upLeftA = check_for_denorms(
+                read_image_pixel_float(imageData, imageInfo, coord000, lod),
+                containsDenorms);
+            upRightA = check_for_denorms(
+                read_image_pixel_float(imageData, imageInfo, coord001, lod),
+                containsDenorms);
+            pixelMaxA = pixelMax(upLeftA, upRightA);
+            lowLeftA = check_for_denorms(
+                read_image_pixel_float(imageData, imageInfo, coord010, lod),
+                containsDenorms);
+            lowRightA = check_for_denorms(
+                read_image_pixel_float(imageData, imageInfo, coord011, lod),
+                containsDenorms);
+            pixelMaxB = pixelMax(lowLeftA, lowRightA);
+            pixelMaxC = pixelMax(pixelMaxA, pixelMaxB);
+            upLeftB = check_for_denorms(
+                read_image_pixel_float(imageData, imageInfo, coord100, lod),
+                containsDenorms);
+            upRightB = check_for_denorms(
+                read_image_pixel_float(imageData, imageInfo, coord101, lod),
+                containsDenorms);
+            pixelMaxA = pixelMax(upLeftB, upRightB);
+            lowLeftB = check_for_denorms(
+                read_image_pixel_float(imageData, imageInfo, coord110, lod),
+                containsDenorms);
+            lowRightB = check_for_denorms(
+                read_image_pixel_float(imageData, imageInfo, coord111, lod),
+                containsDenorms);
+            pixelMaxB = pixelMax(lowLeftB, lowRightB);
+            pixelMaxA = pixelMax(pixelMaxA, pixelMaxB);
+            _mm_storeu_ps(returnVal.p, pixelMax(pixelMaxA, pixelMaxC));
+
+            if (verbose)
+            {
+                if (NULL == containsDenorms)
+                    log_info("\tSampled pixels (rgba order, denorms flushed to "
+                             "zero):\n");
+                else
+                    log_info("\tSampled pixels (rgba order):\n");
+                log_info("\t\tp000: %f, %f, %f, %f\n", EXTRACT_F(upLeftA, 0),
+                         EXTRACT_F(upLeftA, 1), EXTRACT_F(upLeftA, 2),
+                         EXTRACT_F(upLeftA, 3));
+                log_info("\t\tp001: %f, %f, %f, %f\n", EXTRACT_F(upRightA, 0),
+                         EXTRACT_F(upRightA, 1), EXTRACT_F(upRightA, 2),
+                         EXTRACT_F(upRightA, 3));
+                log_info("\t\tp010: %f, %f, %f, %f\n", EXTRACT_F(lowLeftA, 0),
+                         EXTRACT_F(lowLeftA, 1), EXTRACT_F(lowLeftA, 2),
+                         EXTRACT_F(lowLeftA, 3));
+                log_info("\t\tp011: %f, %f, %f, %f\n\n",
+                         EXTRACT_F(lowRightA, 0), EXTRACT_F(lowRightA, 1),
+                         EXTRACT_F(lowRightA, 2), EXTRACT_F(lowRightA, 3));
+                log_info("\t\tp100: %f, %f, %f, %f\n", EXTRACT_F(upLeftB, 0),
+                         EXTRACT_F(upLeftB, 1), EXTRACT_F(upLeftB, 2),
+                         EXTRACT_F(upLeftB, 3));
+                log_info("\t\tp101: %f, %f, %f, %f\n", EXTRACT_F(upRightB, 0),
+                         EXTRACT_F(upRightB, 1), EXTRACT_F(upRightB, 2),
+                         EXTRACT_F(upRightB, 3));
+                log_info("\t\tp110: %f, %f, %f, %f\n", EXTRACT_F(lowLeftB, 0),
+                         EXTRACT_F(lowLeftB, 1), EXTRACT_F(lowLeftB, 2),
+                         EXTRACT_F(lowLeftB, 3));
+                log_info("\t\tp111: %f, %f, %f, %f\n", EXTRACT_F(lowRightB, 0),
+                         EXTRACT_F(lowRightB, 1), EXTRACT_F(lowRightB, 2),
+                         EXTRACT_F(lowRightB, 3));
+            }
+
+            __m128 fracCoord =
+                frac(_mm_sub_ps(coord, _mm_set_ps(0.f, 0.5f, 0.5f, 0.5f)));
+            if (verbose)
+                log_info("\tfrac( x - 0.5f ) = %f,  frac( y - 0.5f ) = %f, "
+                         "frac( z - 0.5f ) = %f\n",
+                         EXTRACT_F(fracCoord, 0), EXTRACT_F(fracCoord, 1),
+                         EXTRACT_F(fracCoord, 2));
+
+#ifdef __AVX__
+            __m256d alphaBetaGamma = _mm256_cvtps_pd(fracCoord); // x g b a
+            __m256d invABG = _mm256_sub_pd(_mm256_set1_pd(1.0),
+                                           alphaBetaGamma); // x 1-g 1-b 1-a
+            __m256d alphaBeta =
+                _mm256_permute2f128_pd(alphaBetaGamma, invABG, 0x20);
+            __m256d weights[2][2][2];
+            //     1-g          1-g        1-g         1-g
+            //     1-b          1-a         b           a
+            //     1-a           b          a          1-b
+            // a(1-b)(1-g)  (1-a)b(1-g)  a*b(1-g)  a(1-b)(1-g)
+            //     000          010        011         001
+            //      g           g       g       g
+            //     1-b         1-a      b       a
+            //     1-a          b       a      1-b
+            // (1-a)(1-b)g  (1-a)b*g  a*b*g  a(1-b)g
+            //     100         110     111     101
+#ifdef __AVX2__
+            __m256d invGamma =
+                _mm256_permute4x64_pd(invABG, _MM_SHUFFLE(2, 2, 2, 2));
+            weights[1][0][0] = _mm256_mul_pd(
+                alphaBeta,
+                _mm256_permute4x64_pd(alphaBeta, _MM_SHUFFLE(2, 1, 0, 3)));
+            weights[0][0][0] = _mm256_mul_pd(weights[1][0][0], invGamma);
+            __m256d gamma =
+                _mm256_permute4x64_pd(alphaBetaGamma, _MM_SHUFFLE(2, 2, 2, 2));
+            weights[1][0][0] = _mm256_mul_pd(weights[1][0][0], gamma);
+            weights[0][0][1] =
+                _mm256_broadcastsd_pd(_mm256_castpd256_pd128(weights[0][0][0]));
+            weights[0][1][1] = _mm256_permute4x64_pd(weights[0][0][0],
+                                                     _MM_SHUFFLE(1, 1, 1, 1));
+            weights[1][0][1] =
+                _mm256_broadcastsd_pd(_mm256_castpd256_pd128(weights[1][0][0]));
+            weights[1][1][1] = _mm256_permute4x64_pd(weights[1][0][0],
+                                                     _MM_SHUFFLE(1, 1, 1, 1));
+            weights[0][1][0] = _mm256_permute4x64_pd(weights[0][0][0],
+                                                     _MM_SHUFFLE(2, 2, 2, 2));
+            weights[0][0][0] = _mm256_permute4x64_pd(weights[0][0][0],
+                                                     _MM_SHUFFLE(3, 3, 3, 3));
+            weights[1][1][0] = _mm256_permute4x64_pd(weights[1][0][0],
+                                                     _MM_SHUFFLE(2, 2, 2, 2));
+            weights[1][0][0] = _mm256_permute4x64_pd(weights[1][0][0],
+                                                     _MM_SHUFFLE(3, 3, 3, 3));
+#else
+            // Much like before, we must permute the elements of alphaBeta to
+            // get them in the form we need
+            __m256d invGamma = _mm256_permute2f128(
+                _mm256_undefined_pd(), _mm256_movedup_pd(invABG), 0x33);
+            weights[1][0][0] = _mm_mul_pd(
+                alphaBeta,
+                _mm256_shuffle_pd(
+                    alphaBeta,
+                    _mm256_permute2f128_pd(alphaBeta, alphaBeta, 0x01), 0x05));
+            weights[0][0][0] = _mm_mul_pd(weights[1], invGamma);
+            __m256d gamma = _mm256_permute2f128(
+                _mm256_undefined_pd(), _mm256_movedup_pd(alphaBetaGamma), 0x33);
+            weights[1][0][0] = _mm_mul_pd(weights[1], gamma);
+            weights[0][1][0] = _mm256_movedup_pd(weights[0][0][0]);
+            weights[0][0][0] = _mm256_permute_pd(weights[0][0][0], 0x0F);
+            weights[1][1][0] = _mm256_movedup_pd(weights[1][0][0]);
+            weights[1][0][0] = _mm256_permute_pd(weights[1][0][0], 0x0F);
+            weights[0][0][1] = _mm256_permute2f128_pd(_mm256_undefined_pd(),
+                                                      weights[0][1][0], 0x22);
+            weights[0][1][1] = _mm256_permute2f128_pd(_mm256_undefined_pd(),
+                                                      weights[0][0][0], 0x22);
+            weights[1][0][1] = _mm256_permute2f128_pd(_mm256_undefined_pd(),
+                                                      weights[1][1][0], 0x22);
+            weights[1][1][1] = _mm256_permute2f128_pd(_mm256_undefined_pd(),
+                                                      weights[1][0][0], 0x22);
+            weights[0][1][0] = _mm256_permute2f128_pd(_mm256_undefined_pd(),
+                                                      weights[0][1][0], 0x33);
+            weights[0][0][0] = _mm256_permute2f128_pd(_mm256_undefined_pd(),
+                                                      weights[0][0][0], 0x33);
+            weights[1][1][0] = _mm256_permute2f128_pd(_mm256_undefined_pd(),
+                                                      weights[1][1][0], 0x33);
+            weights[1][0][0] = _mm256_permute2f128_pd(_mm256_undefined_pd(),
+                                                      weights[1][0][0], 0x33);
+#endif
+#ifdef __FMA4__
+            _mm_storeu_ps(
+                outData,
+                _mm256_cvtpd_ps(_mm256_add_pd(
+                    _mm256_add_pd(
+                        _mm256_macc_pd(_mm256_cvtps_pd(upLeftA),
+                                       weights[0][0][0],
+                                       _mm256_mul_pd(_mm256_cvtps_pd(upRightA),
+                                                     weights[0][0][1])),
+                        _mm256_macc_pd(_mm256_cvtps_pd(lowLeftA),
+                                       weights[0][1][0],
+                                       _mm256_mul_pd(_mm256_cvtps_pd(lowRightA),
+                                                     weights[0][1][1]))),
+                    _mm256_add_pd(
+                        _mm256_macc_pd(_mm256_cvtps_pd(upLeftB),
+                                       weights[1][0][0],
+                                       _mm256_mul_pd(_mm256_cvtps_pd(upRightB),
+                                                     weights[1][0][1])),
+                        _mm256_macc_pd(_mm256_cvtps_pd(lowLeftB),
+                                       weights[1][1][0],
+                                       _mm256_mul_pd(_mm256_cvtps_pd(lowRightB),
+                                                     weights[1][1][1]))))));
+#elif defined(__FMA__)
+            _mm_storeu_ps(
+                outData,
+                _mm256_cvtpd_ps(_mm256_add_pd(
+                    _mm256_add_pd(
+                        _mm256_fmadd_pd(_mm256_cvtps_pd(upLeftA),
+                                        weights[0][0][0],
+                                        _mm256_mul_pd(_mm256_cvtps_pd(upRightA),
+                                                      weights[0][0][1])),
+                        _mm256_fmadd_pd(
+                            _mm256_cvtps_pd(lowLeftA), weights[0][1][0],
+                            _mm256_mul_pd(_mm256_cvtps_pd(lowRightA),
+                                          weights[0][1][1]))),
+                    _mm256_add_pd(
+                        _mm256_fmadd_pd(_mm256_cvtps_pd(upLeftB),
+                                        weights[1][0][0],
+                                        _mm256_mul_pd(_mm256_cvtps_pd(upRightB),
+                                                      weights[1][0][1])),
+                        _mm256_fmadd_pd(
+                            _mm256_cvtps_pd(lowLeftB), weights[1][1][0],
+                            _mm256_mul_pd(_mm256_cvtps_pd(lowRightB),
+                                          weights[1][1][1]))))));
+#else
+            _mm_storeu_ps(
+                outData,
+                _mm256_cvtpd_ps(_mm256_add_pd(
+                    _mm256_add_pd(
+                        _mm256_add_pd(_mm256_mul_pd(_mm256_cvtps_pd(upLeftA),
+                                                    weights[0][0][0]),
+                                      _mm256_mul_pd(_mm256_cvtps_pd(upRightA),
+                                                    weights[0][0][1])),
+                        _mm256_add_pd(_mm256_mul_pd(_mm256_cvtps_pd(lowLeftA),
+                                                    weights[0][1][0]),
+                                      _mm256_mul_pd(_mm256_cvtps_pd(lowRightA),
+                                                    weights[0][1][1]))),
+                    _mm256_add_pd(
+                        _mm256_add_pd(_mm256_mul_pd(_mm256_cvtps_pd(upLeftB),
+                                                    weights[1][0][0]),
+                                      _mm256_mul_pd(_mm256_cvtps_pd(upRightB),
+                                                    weights[1][0][1])),
+                        _mm256_add_pd(_mm256_mul_pd(_mm256_cvtps_pd(lowLeftB),
+                                                    weights[1][1][0]),
+                                      _mm256_mul_pd(_mm256_cvtps_pd(lowRightB),
+                                                    weights[1][1][1]))))));
+#endif
+#else
+            __m128d alphaBeta = _mm_cvtps_pd(fracCoord); // b a
+            __m128d invAlphaBeta =
+                _mm_sub_pd(_mm_set1_pd(1.0), alphaBeta); // 1-b 1-a
+            __m128d gamma =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), fracCoord));
+#ifdef __SSE3__
+            gamma = _mm_movedup_pd(gamma);
+#else
+            gamma = _mm_unpacklo_pd(gamma, gamma);
+#endif
+            __m128d invGamma = _mm_sub_pd(_mm_set1_pd(1.0), gamma);
+            __m128d weights[4];
+
+            // <1-a b> * <1-b 1-a> = <(1-a)(1-b) (1-a)b> <00 10>
+            weights[0] = _mm_mul_pd(
+                _mm_shuffle_pd(invAlphaBeta, alphaBeta, _MM_SHUFFLE2(1, 0)),
+                invAlphaBeta);
+            // <b a> * <a 1-b> = <a*b a(1-b)> <11 01>
+            weights[1] = _mm_mul_pd(
+                alphaBeta,
+                _mm_shuffle_pd(invAlphaBeta, alphaBeta, _MM_SHUFFLE2(0, 1)));
+            weights[2] = _mm_mul_pd(weights[0], gamma);
+            weights[3] = _mm_mul_pd(weights[1], gamma);
+            weights[0] = _mm_mul_pd(weights[0], invGamma);
+            weights[1] = _mm_mul_pd(weights[1], invGamma);
+
+            __m128d upLeftAL = _mm_cvtps_pd(upLeftA);
+            __m128d upLeftAH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), upLeftA));
+            __m128d upLeftBL = _mm_cvtps_pd(upLeftB);
+            __m128d upLeftBH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), upLeftB));
+            __m128d upRightAL = _mm_cvtps_pd(upRightA);
+            __m128d upRightAH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), upRightA));
+            __m128d upRightBL = _mm_cvtps_pd(upRightB);
+            __m128d upRightBH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), upRightB));
+            __m128d lowLeftAL = _mm_cvtps_pd(lowLeftA);
+            __m128d lowLeftAH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), lowLeftA));
+            __m128d lowLeftBL = _mm_cvtps_pd(lowLeftB);
+            __m128d lowLeftBH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), lowLeftB));
+            __m128d lowRightAL = _mm_cvtps_pd(lowRightA);
+            __m128d lowRightAH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), lowRightA));
+            __m128d lowRightBL = _mm_cvtps_pd(lowRightB);
+            __m128d lowRightBH =
+                _mm_cvtps_pd(_mm_movehl_ps(_mm_undefined_ps(), lowRightB));
+#ifdef __SSE4_1__
+            __m128d rg = _mm_or_pd(
+                _mm_dp_pd(weights[0], _mm_unpacklo_pd(lowLeftAL, upLeftAL),
+                          0x31),
+                _mm_dp_pd(weights[0], _mm_unpackhi_pd(lowLeftAL, upLeftAL),
+                          0x32));
+            __m128d ba = _mm_or_pd(
+                _mm_dp_pd(weights[0], _mm_unpacklo_pd(lowLeftAH, upLeftAH),
+                          0x31),
+                _mm_dp_pd(weights[0], _mm_unpackhi_pd(lowLeftAH, upLeftAH),
+                          0x32));
+            rg = _mm_add_pd(
+                rg,
+                _mm_or_pd(
+                    _mm_dp_pd(weights[1],
+                              _mm_unpacklo_pd(upRightAL, lowRightAL), 0x31),
+                    _mm_dp_pd(weights[1],
+                              _mm_unpackhi_pd(upRightAL, lowRightAL), 0x32)));
+            ba = _mm_add_pd(
+                ba,
+                _mm_or_pd(
+                    _mm_dp_pd(weights[1],
+                              _mm_unpacklo_pd(upRightAH, lowRightAH), 0x31),
+                    _mm_dp_pd(weights[1],
+                              _mm_unpackhi_pd(upRightAH, lowRightAH), 0x32)));
+            rg = _mm_add_pd(
+                rg,
+                _mm_or_pd(_mm_dp_pd(weights[2],
+                                    _mm_unpacklo_pd(lowLeftBL, upLeftBL), 0x31),
+                          _mm_dp_pd(weights[2],
+                                    _mm_unpackhi_pd(lowLeftBL, upLeftBL),
+                                    0x32)));
+            ba = _mm_add_pd(
+                ba,
+                _mm_or_pd(_mm_dp_pd(weights[2],
+                                    _mm_unpacklo_pd(lowLeftBH, upLeftBH), 0x31),
+                          _mm_dp_pd(weights[2],
+                                    _mm_unpackhi_pd(lowLeftBH, upLeftBH),
+                                    0x32)));
+            rg = _mm_add_pd(
+                rg,
+                _mm_or_pd(
+                    _mm_dp_pd(weights[3],
+                              _mm_unpacklo_pd(upRightBL, lowRightBL), 0x31),
+                    _mm_dp_pd(weights[3],
+                              _mm_unpackhi_pd(upRightBL, lowRightBL), 0x32)));
+            ba = _mm_add_pd(
+                ba,
+                _mm_or_pd(
+                    _mm_dp_pd(weights[3],
+                              _mm_unpacklo_pd(upRightBH, lowRightBH), 0x31),
+                    _mm_dp_pd(weights[3],
+                              _mm_unpackhi_pd(upRightBH, lowRightBH), 0x32)));
+#else
+#ifdef __SSE3__
+            __m128d weight010 = _mm_movedup_pd(weights[0]);
+            __m128d weight001 = _mm_movedup_pd(weights[1]);
+#else
+            __m128d weight010 = _mm_unpacklo_pd(weights[0], weights[0]);
+            __m128d weight001 = _mm_unpacklo_pd(weights[1], weights[1]);
+#endif
+            __m128d rg = _mm_add_pd(_mm_mul_pd(weight001, upRightAL),
+                                    _mm_mul_pd(weight010, lowLeftAL));
+            __m128d ba = _mm_add_pd(_mm_mul_pd(weight001, upRightAH),
+                                    _mm_mul_pd(weight010, lowLeftAH));
+            __m128d weight000 = _mm_unpackhi_pd(weights[0], weights[0]);
+            __m128d weight011 = _mm_unpackhi_pd(weights[1], weights[1]);
+            rg = _mm_add_pd(rg,
+                            _mm_add_pd(_mm_mul_pd(weight000, upLeftAL),
+                                       _mm_mul_pd(weight011, lowRightAL)));
+            ba = _mm_add_pd(ba,
+                            _mm_add_pd(_mm_mul_pd(weight000, upLeftAH),
+                                       _mm_mul_pd(weight011, lowRightAH)));
+#ifdef __SSE3__
+            __m128d weight110 = _mm_movedup_pd(weights[2]);
+            __m128d weight101 = _mm_movedup_pd(weights[3]);
+#else
+            __m128d weight110 = _mm_unpacklo_pd(weights[2], weights[2]);
+            __m128d weight101 = _mm_unpacklo_pd(weights[3], weights[3]);
+#endif
+            rg = _mm_add_pd(rg,
+                            _mm_add_pd(_mm_mul_pd(weight101, upRightBL),
+                                       _mm_mul_pd(weight110, lowLeftBL)));
+            ba = _mm_add_pd(rg,
+                            _mm_add_pd(_mm_mul_pd(weight101, upRightBH),
+                                       _mm_mul_pd(weight110, lowLeftBH)));
+            __m128d weight100 = _mm_unpackhi_pd(weights[2], weights[2]);
+            __m128d weight111 = _mm_unpackhi_pd(weights[3], weights[3]);
+            rg = _mm_add_pd(rg,
+                            _mm_add_pd(_mm_mul_pd(weight100, upLeftBL),
+                                       _mm_mul_pd(weight111, lowRightBL)));
+            ba = _mm_add_pd(ba,
+                            _mm_add_pd(_mm_mul_pd(weight100, upLeftBH),
+                                       _mm_mul_pd(weight111, lowRightBH)));
+#endif
+            _mm_storeu_ps(outData,
+                          _mm_movelh_ps(_mm_cvtpd_ps(rg), _mm_cvtpd_ps(ba)));
+#endif
+            if (NULL == containsDenorms) _mm_setcsr(mxcsr);
+        }
+
+        return returnVal;
+    }
+}
+#else
 FloatPixel sample_image_pixel_float_offset(
     void *imageData, image_descriptor *imageInfo, float x, float y, float z,
     float xAddressOffset, float yAddressOffset, float zAddressOffset,
@@ -1951,7 +4308,6 @@ FloatPixel sample_image_pixel_float_offset(
 
         // We need to unnormalize our coordinates differently depending on
         // the image type, but 'x' is always processed the same way.
-
         x = unnormalize_coordinate("x", x, xAddressOffset, (float)width_lod,
                                    imageSampler->addressing_mode, verbose);
 
@@ -2325,6 +4681,7 @@ FloatPixel sample_image_pixel_float_offset(
         return returnVal;
     }
 }
+#endif
 
 FloatPixel sample_image_pixel_float_offset(
     void *imageData, image_descriptor *imageInfo, float x, float y, float z,

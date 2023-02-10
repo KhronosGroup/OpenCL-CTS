@@ -40,34 +40,35 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     bool Skip() override
     {
-        if (queue == nullptr) return true;
+        if (BasicCommandBufferTest::Skip()) return true;
 
-        return (simultaneous_use_requested && !simultaneous_use_support)
-            || BasicCommandBufferTest::Skip();
+        cl_int error = CL_SUCCESS;
+        cl_queue_properties_khr device_props = 0;
+        error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
+                                sizeof(device_props), &device_props, nullptr);
+        if (error != CL_SUCCESS)
+        {
+            print_error(
+                error, "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
+            return true;
+        }
+
+        if ((device_props & CL_QUEUE_PROFILING_ENABLE) == 0)
+        {
+            log_info(
+                "Queue property CL_QUEUE_PROFILING_ENABLE not supported \n");
+            return true;
+        }
+
+        return (simultaneous_use_requested && !simultaneous_use_support);
     }
 
     //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
         cl_int error = CL_SUCCESS;
-        cl_queue_properties_khr device_props = 0;
-        error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
-                                sizeof(device_props), &device_props, nullptr);
-        test_error(error,
-                   "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
-
-        queue = nullptr;
-        if (device_props & CL_QUEUE_PROFILING_ENABLE)
-        {
-            queue = clCreateCommandQueue(context, device,
-                                         CL_QUEUE_PROFILING_ENABLE, &error);
-        }
-        else
-        {
-            log_info(
-                "Queue property CL_QUEUE_PROFILING_ENABLE not supported \n");
-            return CL_SUCCESS;
-        }
+        queue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE,
+                                     &error);
 
         return BasicCommandBufferTest::SetUp(elements);
     }
