@@ -67,9 +67,6 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUpKernelArgs() override
     {
-        // do not extend buffers unless device support simultaneous use!
-        if (!simultaneous_use_support) buffer_size_multiplier = 1;
-
         cl_int error = CL_SUCCESS;
         out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
                                  num_elements * buffer_size_multiplier
