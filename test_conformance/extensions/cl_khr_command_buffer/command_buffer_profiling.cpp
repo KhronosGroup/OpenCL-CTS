@@ -42,10 +42,15 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
     {
         if (BasicCommandBufferTest::Skip()) return true;
 
-        cl_int error = CL_SUCCESS;
-        cl_queue_properties_khr device_props = 0;
-        error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
-                                sizeof(device_props), &device_props, nullptr);
+        Version version = get_device_cl_version(device);
+        const cl_device_info host_queue_query = version >= Version(2, 0)
+            ? CL_DEVICE_QUEUE_ON_HOST_PROPERTIES
+            : CL_DEVICE_QUEUE_PROPERTIES;
+
+        cl_queue_properties host_queue_props = 0;
+        int error =
+            clGetDeviceInfo(device, host_queue_query, sizeof(host_queue_props),
+                            &host_queue_props, NULL);
         if (error != CL_SUCCESS)
         {
             print_error(
@@ -53,13 +58,12 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
             return true;
         }
 
-        if ((device_props & CL_QUEUE_PROFILING_ENABLE) == 0)
+        if ((host_queue_props & CL_QUEUE_PROFILING_ENABLE) == 0)
         {
             log_info(
                 "Queue property CL_QUEUE_PROFILING_ENABLE not supported \n");
             return true;
         }
-
         return (simultaneous_use_requested && !simultaneous_use_support);
     }
 
@@ -69,6 +73,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
         cl_int error = CL_SUCCESS;
         queue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE,
                                      &error);
+        test_error(error, "clCreateCommandQueue failed");
 
         return BasicCommandBufferTest::SetUp(elements);
     }
