@@ -105,14 +105,6 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
-        if (!out_of_order_support
-            || (simultaneous_use_requested && !simultaneous_use_support))
-        {
-            // Test will skip as device doesn't support necessary capabilities
-            // command-buffers
-            return CL_SUCCESS;
-        }
-
         out_of_order_queue = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
         test_error(error, "Unable to create command queue to test with");
@@ -134,11 +126,13 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     bool Skip() override
     {
+        if (BasicCommandBufferTest::Skip()) return true;
+
         if (!out_of_order_support
             || (simultaneous_use_requested && !simultaneous_use_support))
             return true;
 
-        return BasicCommandBufferTest::Skip();
+        return false;
     }
 
     //--------------------------------------------------------------------------
