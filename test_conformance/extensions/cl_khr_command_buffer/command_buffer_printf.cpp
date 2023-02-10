@@ -135,8 +135,10 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
       {
           size_t id = get_global_id(0);
           int ind = offset[0] + offset[1] * id;
-          for(int i=0; i<offset[1]; i++) out[ind+i] = in[i];
-          printf("%s", in);
+          for(int i=0; i<offset[1]; i++) {
+              out[ind+i] = in[i];
+              printf("%c", in[i]);
+          }
       })";
 
         error = create_single_kernel_helper_create_program(context, &program, 1,
