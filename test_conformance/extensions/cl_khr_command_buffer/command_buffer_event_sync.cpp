@@ -156,8 +156,7 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     bool Skip() override
     {
-        if (BasicCommandBufferTest::Skip())
-          return true;
+        if (BasicCommandBufferTest::Skip()) return true;
 
         if (simultaneous_use_requested && !simultaneous_use_support)
             return true;
