@@ -295,7 +295,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
 {
     int err = CL_SUCCESS;
     int s_test_fail = 0;
-    MTdata    d;
+    MTdataHolder d;
     const size_t element_count[VECTOR_SIZE_COUNT] = { 1, 2, 3, 4, 8, 16 };
     cl_mem src1 = NULL;
     cl_mem src2 = NULL;
@@ -368,7 +368,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         cmp_stride = block_elements * step * (0xffffffffffffffffULL / 0x100000000ULL + 1);
 
     log_info("Testing...");
-    d = init_genrand( gRandomSeed );
+    d = MTdataHolder(gRandomSeed);
     uint64_t i;
     for (i=0; i < blocks; i+=step)
     {
@@ -460,7 +460,6 @@ exit:
     if( ref )   free(ref );
     if( sref )  free(sref );
 
-    free_mtdata(d);
     for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; vecsize++) {
         clReleaseKernel(kernels[vecsize]);
         clReleaseProgram(programs[vecsize]);

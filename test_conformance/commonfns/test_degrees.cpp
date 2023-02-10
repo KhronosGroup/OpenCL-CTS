@@ -116,7 +116,6 @@ test_degrees(cl_device_id device, cl_context context, cl_command_queue queue, in
     cl_float     *input_ptr[1], *output_ptr, *p;
     cl_program   *program;
     cl_kernel    *kernel;
-    void        *values[2];
     size_t threads[1];
     int          num_elements;
     int          err;
@@ -180,8 +179,6 @@ test_degrees(cl_device_id device, cl_context context, cl_command_queue queue, in
     if (err)
         return -1;
 
-    values[0] = streams[0];
-    values[1] = streams[1];
     for (i=0; i < kTotalVecCount; i++)
     {
         err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );
@@ -346,7 +343,6 @@ test_degrees_double(cl_device_id device, cl_context context, cl_command_queue qu
     cl_double    *input_ptr[1], *output_ptr, *p;
     cl_program   *program;
     cl_kernel    *kernel;
-    void        *values[2];
     size_t threads[1];
     int          num_elements;
     int          err;
@@ -410,8 +406,6 @@ test_degrees_double(cl_device_id device, cl_context context, cl_command_queue qu
     if (err)
         return -1;
 
-    values[0] = streams[0];
-    values[1] = streams[1];
     for (i=0; i < kTotalVecCount; i++)
     {
         err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );
