@@ -68,19 +68,19 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         {
             case CombufInfoTestMode::CITM_QUEUES:
                 error = RunQueuesInfoTest();
-                test_error(error, "RunCombufWaitForCombuf failed");
+                test_error(error, "RunQueuesInfoTest failed");
                 break;
             case CombufInfoTestMode::CITM_REF_COUNT:
                 error = RunRefCountInfoTest();
-                test_error(error, "RunCombufWaitForSecCombuf failed");
+                test_error(error, "RunRefCountInfoTest failed");
                 break;
             case CombufInfoTestMode::CITM_STATE:
                 error = RunStateInfoTest();
-                test_error(error, "RunReturnEventCallback failed");
+                test_error(error, "RunStateInfoTest failed");
                 break;
             case CombufInfoTestMode::CITM_PROP_ARRAY:
                 error = RunPropArrayInfoTest();
-                test_error(error, "RunWaitForEvent failed");
+                test_error(error, "RunPropArrayInfoTest failed");
                 break;
         }
 
