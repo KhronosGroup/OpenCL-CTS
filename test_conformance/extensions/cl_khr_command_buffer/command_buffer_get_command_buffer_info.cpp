@@ -50,11 +50,13 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     bool Skip() override
     {
+        if (BasicCommandBufferTest::Skip()) return true;
+
         if (test_mode == CombufInfoTestMode::CITM_PROP_ARRAY
             && !simultaneous_use_support)
             return true;
 
-        return BasicCommandBufferTest::Skip();
+        return false;
     }
 
     //--------------------------------------------------------------------------
@@ -135,20 +137,20 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         test_expected_info(num_queues != expect_queue_list.size());
 
-        std::vector<cl_command_queue> ql(num_queues);
-        size_t expect_size = ql.size() * sizeof(cl_command_queue);
+        std::vector<cl_command_queue> queue_list(num_queues);
+        size_t expect_size = queue_list.size() * sizeof(cl_command_queue);
         error = clGetCommandBufferInfoKHR(
             command_buffer, CL_COMMAND_BUFFER_QUEUES_KHR, expect_size,
-            &ql.front(), &ret_value_size);
+            &queue_list.front(), &ret_value_size);
         test_error(error, "clGetCommandBufferInfoKHR failed");
 
         test_expected_info(ret_value_size > expect_size);
 
         // We can not check if this is the right queue because this is an opaque
         // object, test against NULL.
-        for (int i = 0; i < ql.size(); i++)
+        for (int i = 0; i < queue_list.size(); i++)
         {
-            test_expected_info(ql[i] == NULL);
+            test_expected_info(queue_list[i] == NULL);
         }
         return TEST_PASS;
     }
@@ -164,10 +166,9 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         // collect initial reference count
         cl_uint init_ref_count = 0;
-        size_t ret_value_size = 0;
         error = clGetCommandBufferInfoKHR(
             command_buffer, CL_COMMAND_BUFFER_REFERENCE_COUNT_KHR,
-            sizeof(cl_uint), &init_ref_count, &ret_value_size);
+            sizeof(cl_uint), &init_ref_count, nullptr);
         test_error(error, "clGetCommandBufferInfoKHR failed");
 
         // increase reference count through clRetainCommandBufferKHR calls
@@ -186,7 +187,7 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         cl_uint new_ref_count = 0;
         error = clGetCommandBufferInfoKHR(
             command_buffer, CL_COMMAND_BUFFER_REFERENCE_COUNT_KHR,
-            sizeof(cl_uint), &new_ref_count, &ret_value_size);
+            sizeof(cl_uint), &new_ref_count, nullptr);
         test_error(error, "clGetCommandBufferInfoKHR failed");
 
         test_expected_info(new_ref_count != (retain_count + init_ref_count));
@@ -201,7 +202,7 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         // verify new reference count value
         error = clGetCommandBufferInfoKHR(
             command_buffer, CL_COMMAND_BUFFER_REFERENCE_COUNT_KHR,
-            sizeof(cl_uint), &new_ref_count, &ret_value_size);
+            sizeof(cl_uint), &new_ref_count, nullptr);
         test_error(error, "clGetCommandBufferInfoKHR failed");
 
         test_expected_info(new_ref_count != init_ref_count);
@@ -218,11 +219,10 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         auto verify_state = [&](const cl_command_buffer_state_khr &expected) {
             cl_command_buffer_state_khr state =
                 CL_COMMAND_BUFFER_STATE_INVALID_KHR;
-            size_t ret_value_size = 0;
 
             cl_int error = clGetCommandBufferInfoKHR(
                 command_buffer, CL_COMMAND_BUFFER_STATE_KHR, sizeof(state),
-                &state, &ret_value_size);
+                &state, nullptr);
             test_error_ret(error, "clGetCommandBufferInfoKHR failed",
                            TEST_FAIL);
 
@@ -276,18 +276,23 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         test_error(error, "RecordCommandBuffer failed");
 
         size_t ret_value_size = 0;
-        cl_command_buffer_properties_khr combuf_props[16];
+        std::vector<cl_command_buffer_properties_khr> combuf_props;
         error = clGetCommandBufferInfoKHR(
-            command_buffer, CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR,
-            sizeof(combuf_props), combuf_props, &ret_value_size);
+            command_buffer, CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR, 0, nullptr,
+            &ret_value_size);
         test_error_ret(error, "clGetCommandBufferInfoKHR failed", TEST_FAIL);
-
-        test_expected_info(ret_value_size > sizeof(combuf_props));
 
         test_expected_info(ret_value_size == 0);
 
-        int num_ret_props =
+        cl_uint num_ret_props =
             ret_value_size / sizeof(cl_command_buffer_properties_khr);
+        combuf_props.resize(num_ret_props);
+        error = clGetCommandBufferInfoKHR(
+            command_buffer, CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR,
+            num_ret_props * sizeof(cl_command_buffer_properties_khr),
+            combuf_props.data(), nullptr);
+        test_error_ret(error, "clGetCommandBufferInfoKHR failed", TEST_FAIL);
+
         for (int i = 0; i < num_ret_props; i++)
             if (combuf_props[i] == CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR)
                 return TEST_PASS;
