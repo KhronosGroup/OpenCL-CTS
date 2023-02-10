@@ -43,7 +43,6 @@ struct BasicCommandBufferTest : CommandBufferTestBase
                            cl_command_queue queue);
 
     virtual bool Skip();
-
     virtual cl_int SetUpKernel(void);
     virtual cl_int SetUpKernelArgs(void);
     virtual cl_int SetUp(int elements);
@@ -81,13 +80,13 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     {
         auto test_fixture = T(device, context, queue);
 
-        cl_int error = test_fixture.SetUp(num_elements);
-        test_error_ret(error, "Error in test initialization", TEST_FAIL);
-
         if (test_fixture.Skip())
         {
             return TEST_SKIPPED_ITSELF;
         }
+
+        cl_int error = test_fixture.SetUp(num_elements);
+        test_error_ret(error, "Error in test initialization", TEST_FAIL);
 
         error = test_fixture.Run();
         test_error_ret(error, "Test Failed", TEST_FAIL);

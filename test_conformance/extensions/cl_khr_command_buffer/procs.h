@@ -61,5 +61,16 @@ extern int test_user_events_wait(cl_device_id device, cl_context context,
                                  cl_command_queue queue, int num_elements);
 extern int test_user_event_callback(cl_device_id device, cl_context context,
                                     cl_command_queue queue, int num_elements);
+extern int test_queue_substitution(cl_device_id device, cl_context context,
+                                   cl_command_queue queue, int num_elements);
+extern int test_properties_queue_substitution(cl_device_id device,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
+extern int test_simultaneous_queue_substitution(cl_device_id device,
+                                                cl_context context,
+                                                cl_command_queue queue,
+                                                int num_elements);
+
 
 #endif /*_CL_KHR_COMMAND_BUFFER_PROCS_H*/

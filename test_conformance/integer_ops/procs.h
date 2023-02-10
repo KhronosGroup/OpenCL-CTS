@@ -15,7 +15,6 @@
 //
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"
-#include "harness/threadTesting.h"
 #include "harness/typeWrappers.h"
 #include "harness/testHarness.h"
 #include "harness/mt19937.h"

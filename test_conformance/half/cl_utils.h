@@ -44,37 +44,38 @@
 #include <CL/opencl.h>
 #endif
 
-extern void            *gIn_half;
-extern void            *gOut_half;
-extern void            *gOut_half_reference;
-extern void            *gOut_half_reference_double;
-extern void            *gIn_single;
-extern void            *gOut_single;
-extern void            *gOut_single_reference;
-extern void            *gIn_double;
-// extern void            *gOut_double;
-// extern void            *gOut_double_reference;
-extern cl_mem          gInBuffer_half;
-extern cl_mem          gOutBuffer_half;
-extern cl_mem          gInBuffer_single;
-extern cl_mem          gOutBuffer_single;
-extern cl_mem          gInBuffer_double;
-// extern cl_mem          gOutBuffer_double;
+extern void *gIn_half;
+extern void *gOut_half;
+extern void *gOut_half_reference;
+extern void *gOut_half_reference_double;
+extern void *gIn_single;
+extern void *gOut_single;
+extern void *gOut_single_reference;
+extern void *gIn_double;
+// extern void *gOut_double;
+// extern void *gOut_double_reference;
+extern cl_mem gInBuffer_half;
+extern cl_mem gOutBuffer_half;
+extern cl_mem gInBuffer_single;
+extern cl_mem gOutBuffer_single;
+extern cl_mem gInBuffer_double;
+// extern cl_mem gOutBuffer_double;
 
-extern cl_context      gContext;
+extern cl_context gContext;
 extern cl_command_queue gQueue;
-extern uint32_t        gDeviceFrequency;
-extern uint32_t        gComputeDevices;
-extern size_t          gMaxThreadGroupSize;
-extern size_t          gWorkGroupSize;
-extern int             gTestDouble;
-extern int             gReportTimes;
+extern uint32_t gDeviceFrequency;
+extern uint32_t gComputeDevices;
+extern size_t gMaxThreadGroupSize;
+extern size_t gWorkGroupSize;
+extern int gTestDouble;
+extern int gReportTimes;
+extern bool gHostReset;
 
 // gWimpyMode indicates if we run the test in wimpy mode where we limit the
 // size of 32 bit ranges to a much smaller set.  This is meant to be used
 // as a smoke test
-extern bool            gWimpyMode;
-extern int             gWimpyReductionFactor;
+extern bool gWimpyMode;
+extern int gWimpyReductionFactor;
 
 uint64_t ReadTime( void );
 double SubtractTime( uint64_t endTime, uint64_t startTime );
