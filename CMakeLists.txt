@@ -126,6 +126,12 @@ macro(set_gnulike_module_compile_flags flags)
     endif()
 endmacro(set_gnulike_module_compile_flags)
 
+# Xcode 14.1 deprecated functions such as sprintf.
+# Suppress such warnings for now, see Issue #1626
+if(APPLE)
+    add_cxx_flag_if_supported(-Wno-deprecated-declarations)
+endif(APPLE)
+
 if(MSVC)
     # Don't warn when using standard non-secure functions.
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)

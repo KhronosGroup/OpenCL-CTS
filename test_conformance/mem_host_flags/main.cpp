@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#if !defined (__APPLE__)
+#if !defined(__APPLE__)
 #include <CL/cl.h>
 #endif
 
@@ -30,18 +30,18 @@
 #endif
 
 test_definition test_list[] = {
-    ADD_TEST( mem_host_read_only_buffer ),
-    ADD_TEST( mem_host_read_only_subbuffer ),
-    ADD_TEST( mem_host_write_only_buffer ),
-    ADD_TEST( mem_host_write_only_subbuffer ),
-    ADD_TEST( mem_host_no_access_buffer ),
-    ADD_TEST( mem_host_no_access_subbuffer ),
-    ADD_TEST( mem_host_read_only_image ),
-    ADD_TEST( mem_host_write_only_image ),
-    ADD_TEST( mem_host_no_access_image ),
+    ADD_TEST(mem_host_read_only_buffer),
+    ADD_TEST(mem_host_read_only_subbuffer),
+    ADD_TEST(mem_host_write_only_buffer),
+    ADD_TEST(mem_host_write_only_subbuffer),
+    ADD_TEST(mem_host_no_access_buffer),
+    ADD_TEST(mem_host_no_access_subbuffer),
+    ADD_TEST(mem_host_read_only_image),
+    ADD_TEST(mem_host_write_only_image),
+    ADD_TEST(mem_host_no_access_image),
 };
 
-const int test_num = ARRAY_SIZE( test_list );
+const int test_num = ARRAY_SIZE(test_list);
 
 int main(int argc, const char *argv[])
 {
