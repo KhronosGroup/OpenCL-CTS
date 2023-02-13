@@ -89,13 +89,6 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
-        if (!out_of_order_support)
-        {
-            // Test will skip as device doesn't support out-of-order
-            // command-buffers
-            return CL_SUCCESS;
-        }
-
         out_of_order_queue = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
         test_error(error, "Unable to create command queue to test with");

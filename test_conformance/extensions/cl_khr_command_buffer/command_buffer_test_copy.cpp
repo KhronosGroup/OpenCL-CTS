@@ -73,14 +73,6 @@ struct CopyImageKHR : public BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
-        imageSupport =
-            checkForImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED;
-
-        if (imageSupport)
-        {
-            return CL_SUCCESS;
-        }
-
         src_image = create_image_2d(context, CL_MEM_READ_ONLY, &formats,
                                     img_width, img_height, 0, NULL, &error);
         test_error(error, "create_image_2d failed");
@@ -94,6 +86,9 @@ struct CopyImageKHR : public BasicCommandBufferTest
 
     bool Skip() override
     {
+        bool imageSupport =
+            checkForImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED;
+
         return imageSupport || BasicCommandBufferTest::Skip();
     }
 
@@ -105,7 +100,6 @@ struct CopyImageKHR : public BasicCommandBufferTest
     const cl_uint pattern = 0x05;
     const cl_uint fill_color[4] = { pattern, pattern, pattern, pattern };
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
-    bool imageSupport;
     clMemWrapper src_image;
     clMemWrapper dst_image;
 };
@@ -193,14 +187,6 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
-        imageSupport =
-            checkForImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED;
-
-        if (imageSupport)
-        {
-            return CL_SUCCESS;
-        }
-
         image = create_image_2d(context, CL_MEM_READ_WRITE, &formats, img_width,
                                 img_height, 0, NULL, &error);
         test_error(error, "create_image_2d failed");
@@ -214,6 +200,9 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
 
     bool Skip() override
     {
+        bool imageSupport =
+            checkForImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED;
+
         return imageSupport || BasicCommandBufferTest::Skip();
     }
 
@@ -224,7 +213,6 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
                  region[3] = { img_width, img_height, 1 };
     const cl_char pattern = 0x11;
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
-    bool imageSupport;
 
     clMemWrapper buffer;
     clMemWrapper image;
@@ -275,14 +263,6 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
-        imageSupport =
-            checkForImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED;
-
-        if (imageSupport)
-        {
-            return CL_SUCCESS;
-        }
-
         image = create_image_2d(context, CL_MEM_READ_WRITE, &formats, img_width,
                                 img_height, 0, NULL, &error);
         test_error(error, "create_image_2d failed");
@@ -296,6 +276,9 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
 
     bool Skip() override
     {
+        bool imageSupport =
+            checkForImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED;
+
         return imageSupport || BasicCommandBufferTest::Skip();
     }
 
@@ -307,7 +290,6 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
     const cl_uint pattern = 0x12;
     const cl_uint fill_color[4] = { pattern, pattern, pattern, pattern };
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
-    bool imageSupport;
 
     clMemWrapper image;
     clMemWrapper buffer;
