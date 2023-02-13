@@ -4,6 +4,7 @@ set(${MODULE_NAME}_SOURCES
     main.cpp
     basic_command_buffer.cpp
     command_buffer_queue_substitution.cpp
+    command_buffer_test_event_info.cpp
 )
 
 include(../../CMakeCommon.txt)

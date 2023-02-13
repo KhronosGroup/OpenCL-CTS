@@ -23,7 +23,12 @@ test_definition test_list[] = { ADD_TEST(single_ndrange),
                                 ADD_TEST(out_of_order),
                                 ADD_TEST(queue_substitution),
                                 ADD_TEST(properties_queue_substitution),
-                                ADD_TEST(simultaneous_queue_substitution) };
+                                ADD_TEST(simultaneous_queue_substitution),
+                                ADD_TEST(command_type),
+                                ADD_TEST(command_queue),
+                                ADD_TEST(execution_status),
+                                ADD_TEST(context),
+                                ADD_TEST(reference_count) };
 
 
 int main(int argc, const char *argv[])
