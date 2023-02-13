@@ -256,7 +256,7 @@ cl_int cImage_check_mem_host_write_only<T>::verify_RW_Image_Mapping()
     test_error(err, "clReleaseEvent error");
 
     // Map image for writing
-    T *dataPtr = (T*)clEnqueueMapImage(
+    T* dataPtr = (T*)clEnqueueMapImage(
         this->m_queue, this->m_Image, this->m_blocking, CL_MAP_WRITE,
         this->buffer_origin, this->region, &(this->buffer_row_pitch_bytes),
         &(this->buffer_slice_pitch_bytes), 0, NULL, &event, &err);
