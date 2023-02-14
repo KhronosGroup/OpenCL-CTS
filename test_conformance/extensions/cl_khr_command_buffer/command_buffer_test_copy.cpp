@@ -23,7 +23,7 @@
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
-// Command-bufer copy tests which handles below cases:
+// Command-buffer copy tests which handles below cases:
 //
 // -copy image
 // -copy buffer

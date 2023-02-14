@@ -22,7 +22,7 @@
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
-// Command-bufer fill tests which handles below cases:
+// Command-bufer barrier tests which handles below cases:
 //
 // - barrier wait list
 
@@ -102,7 +102,7 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        return !out_of_order_support || BasicCommandBufferTest::Skip();
+        return BasicCommandBufferTest::Skip() || !out_of_order_support;
     }
 
     const cl_int pattern = 0x16;
