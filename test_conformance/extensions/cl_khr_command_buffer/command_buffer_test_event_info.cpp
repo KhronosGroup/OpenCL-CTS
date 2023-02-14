@@ -34,6 +34,9 @@ struct CommandType : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+        clEventWrapper event;
+        cl_int status;
+
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
@@ -59,9 +62,6 @@ struct CommandType : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
-
-    clEventWrapper event;
-    cl_int status;
 };
 
 struct CommandQueue : public BasicCommandBufferTest
@@ -70,6 +70,9 @@ struct CommandQueue : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+        clEventWrapper event;
+        size_t size;
+
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
@@ -89,14 +92,11 @@ struct CommandQueue : public BasicCommandBufferTest
             log_error("ERROR: Returned command queue size does not validate "
                       "(expected %zu, got %zu)\n",
                       sizeof(queue), size);
-            return -1;
+            return TEST_FAIL;
         }
 
         return CL_SUCCESS;
     }
-
-    clEventWrapper event;
-    size_t size;
 };
 
 struct Context : public BasicCommandBufferTest
@@ -105,6 +105,9 @@ struct Context : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+        clEventWrapper event;
+        size_t size;
+
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
@@ -134,9 +137,6 @@ struct Context : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
-
-    clEventWrapper event;
-    size_t size;
 };
 
 struct ExecutionStatus : public BasicCommandBufferTest
@@ -145,6 +145,9 @@ struct ExecutionStatus : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+        clEventWrapper event;
+        cl_int status;
+
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
@@ -182,9 +185,6 @@ struct ExecutionStatus : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
-
-    clEventWrapper event;
-    cl_int status;
 };
 
 struct ReferenceCount : public BasicCommandBufferTest
@@ -193,6 +193,10 @@ struct ReferenceCount : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+        clEventWrapper event;
+        size_t size;
+        cl_uint count;
+
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
@@ -215,40 +219,36 @@ struct ReferenceCount : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
-
-    clEventWrapper event;
-    size_t size;
-    cl_uint count;
 };
 };
 
-int test_command_type(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
+int test_event_info_command_type(cl_device_id device, cl_context context,
+                                 cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<CommandType>(device, context, queue, num_elements);
 }
 
-int test_command_queue(cl_device_id device, cl_context context,
-                       cl_command_queue queue, int num_elements)
+int test_event_info_command_queue(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<CommandQueue>(device, context, queue, num_elements);
 }
 
-int test_context(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int num_elements)
+int test_event_info_context(cl_device_id device, cl_context context,
+                            cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<Context>(device, context, queue, num_elements);
 }
 
-int test_execution_status(cl_device_id device, cl_context context,
-                          cl_command_queue queue, int num_elements)
+int test_event_info_execution_status(cl_device_id device, cl_context context,
+                                     cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<ExecutionStatus>(device, context, queue,
                                            num_elements);
 }
 
-int test_reference_count(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+int test_event_info_reference_count(cl_device_id device, cl_context context,
+                                    cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<ReferenceCount>(device, context, queue, num_elements);
 }
