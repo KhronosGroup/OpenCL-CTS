@@ -30,7 +30,8 @@
 #endif
 #ifdef __SSE2__
 #include <x86intrin.h>
-#if (defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 12)                \
+#if (defined(__GNUC__) && !defined(__clang__)                                  \
+     && (__GNUC__ < 11 || (__GNUC__ == 11 && __GNUC_MINOR__ < 1)))             \
     || (defined(__clang__) && !defined(__apple_build_version__)                \
         && __clang_major__ < 8)
 // Add missing intrinsics that aren't in ancient compilers, but are used below
