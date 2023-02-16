@@ -3755,7 +3755,7 @@ FloatPixel sample_image_pixel_float_offset(
 
             // <1-a b> * <1-b 1-a> = <(1-a)(1-b) (1-a)b> <00 10>
             weights[0] = _mm_mul_pd(
-                _mm_shuffle_pd(invAlphaBeta, alphaBeta, _MM_SHUFFLE2(1, 0)),
+                _mm_shuffle_pd(alphaBeta, invAlphaBeta, _MM_SHUFFLE2(0, 1)),
                 invAlphaBeta);
             // <b a> * <a 1-b> = <a*b a(1-b)> <11 01>
             weights[1] = _mm_mul_pd(
@@ -3777,7 +3777,7 @@ FloatPixel sample_image_pixel_float_offset(
 #ifdef __SSE4_1__
             // In the immediate bytes, the high nibble determines which
             // multiplies take place--in this case, both of them--and the low
-            // nibble determines which lines receive the sum--bit 0 for the low
+            // nibble determines which lanes receive the sum--bit 0 for the low
             // lane, bit 1 for the high.
             __m128d rg = _mm_or_pd(
                 _mm_dp_pd(weights[0], _mm_unpacklo_pd(lowLeftL, upLeftL), 0x31),
@@ -4122,7 +4122,7 @@ FloatPixel sample_image_pixel_float_offset(
 
             // <1-a b> * <1-b 1-a> = <(1-a)(1-b) (1-a)b> <00 10>
             weights[0] = _mm_mul_pd(
-                _mm_shuffle_pd(invAlphaBeta, alphaBeta, _MM_SHUFFLE2(1, 0)),
+                _mm_shuffle_pd(alphaBeta, invAlphaBeta, _MM_SHUFFLE2(0, 1)),
                 invAlphaBeta);
             // <b a> * <a 1-b> = <a*b a(1-b)> <11 01>
             weights[1] = _mm_mul_pd(
@@ -4240,7 +4240,7 @@ FloatPixel sample_image_pixel_float_offset(
             rg = _mm_add_pd(rg,
                             _mm_add_pd(_mm_mul_pd(weight101, upRightBL),
                                        _mm_mul_pd(weight110, lowLeftBL)));
-            ba = _mm_add_pd(rg,
+            ba = _mm_add_pd(ba,
                             _mm_add_pd(_mm_mul_pd(weight101, upRightBH),
                                        _mm_mul_pd(weight110, lowLeftBH)));
             __m128d weight100 = _mm_unpackhi_pd(weights[2], weights[2]);
