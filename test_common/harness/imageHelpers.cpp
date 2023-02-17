@@ -868,9 +868,22 @@ static inline __m128i vifloorf(__m128 f)
 #else
     // No packed rounding until SSE4... do this the old-fashioned way
     unsigned int mxcsr = _mm_getcsr();
-    _mm_setcsr(mxcsr & ~_MM_ROUND_MASK | _MM_ROUND_DOWN);
+#ifdef __GNUC__
+    /* n.b. GCC's optimizer doesn't know that it can't move this
+     * setting around, or that the conversions have to be inside!
+     */
+    __m128i i;
+    unsigned int newcsr = (mxcsr & ~_MM_ROUND_MASK) | _MM_ROUND_DOWN;
+    asm("ldmxcsr %2\n\t"
+        "cvtps2dq %1, %0\n\t"
+        "ldmxcsr %3"
+        : "=x"(i)
+        : "x"(f), "m"(newcsr), "m"(mxcsr));
+#else
+    _mm_setcsr((mxcsr & ~_MM_ROUND_MASK) | _MM_ROUND_DOWN);
     __m128i i = _mm_cvtps_epi32(f);
     _mm_setcsr(mxcsr);
+#endif
     return i;
 #endif
 }
@@ -882,9 +895,23 @@ static inline __m128 vfloorf(__m128 f)
 #else
     // No packed rounding until SSE4... do this the old-fashioned way
     unsigned int mxcsr = _mm_getcsr();
-    _mm_setcsr(mxcsr & ~_MM_ROUND_MASK | _MM_ROUND_DOWN);
+#ifdef __GNUC__
+    /* n.b. GCC's optimizer doesn't know that it can't move this
+     * setting around, or that the conversions have to be inside!
+     */
+    __m128i i;
+    unsigned int newcsr = (mxcsr & ~_MM_ROUND_MASK) | _MM_ROUND_DOWN;
+    asm("ldmxcsr %2\n\t"
+        "cvtps2dq %1, %0\n\t"
+        "cvtdq2ps %0, %1\n\t"
+        "ldmxcsr %3"
+        : "+x"(i), "+x"(f)
+        : "m"(newcsr), "m"(mxcsr));
+#else
+    _mm_setcsr((mxcsr & ~_MM_ROUND_MASK) | _MM_ROUND_DOWN);
     f = _mm_cvtepi32_ps(_mm_cvtps_epi32(f));
     _mm_setcsr(mxcsr);
+#endif
     return f;
 #endif
 }
@@ -3523,15 +3550,38 @@ FloatPixel sample_image_pixel_float_offset(
 
         // SSE has an FTZ mode that will be useful here
         unsigned int mxcsr = 0;
+        __m128 outPixel;
         if (NULL == containsDenorms)
         {
             mxcsr = _mm_getcsr();
-            _mm_setcsr(mxcsr & ~_MM_FLUSH_ZERO_MASK | _MM_FLUSH_ZERO_ON);
+#ifdef __GNUC__
+            /* n.b. GCC's optimizer doesn't know that it can't move this
+             * setting around!
+             */
+            unsigned int newcsr =
+                (mxcsr & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_ZERO_ON;
+            asm volatile("ldmxcsr %1"
+                         : "+x"(outPixel)
+                         : "m"(newcsr)
+                         : "memory");
+#else
+            _mm_setcsr((mxcsr & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_ZERO_ON);
+#endif
         }
-        __m128 outPixel = check_for_denorms(
+        outPixel = check_for_denorms(
             read_image_pixel_float(imageData, imageInfo, icoord, lod),
             containsDenorms);
-        if (NULL == containsDenorms) _mm_setcsr(mxcsr);
+        if (NULL == containsDenorms)
+        {
+#ifdef __GNUC__
+            /* n.b. GCC's optimizer doesn't know that it can't move this
+             * setting around!
+             */
+            asm volatile("ldmxcsr %0" : : "m"(mxcsr), "x"(outPixel));
+#else
+            _mm_setcsr(mxcsr);
+#endif
+        }
         _mm_storeu_ps(outData, outPixel);
         _mm_storeu_ps(returnVal.p, vfabsf(outPixel));
         return returnVal;
@@ -3585,28 +3635,41 @@ FloatPixel sample_image_pixel_float_offset(
             // flush subnormal results to zero if necessary
             // SSE has an FTZ mode that will be useful here
             unsigned int mxcsr;
+            __m128i coord01, coord10;
             if (NULL == containsDenorms)
             {
                 mxcsr = _mm_getcsr();
-                _mm_setcsr(mxcsr & ~_MM_FLUSH_ZERO_MASK | _MM_FLUSH_ZERO_ON);
+#ifdef __GNUC__
+                /* n.b. GCC's optimizer doesn't know that it can't move this
+                 * setting around!
+                 */
+                unsigned int newcsr =
+                    (mxcsr & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_ZERO_ON;
+                asm volatile("ldmxcsr %1"
+                             : "+x"(coord01)
+                             : "m"(newcsr)
+                             : "memory");
+#else
+                _mm_setcsr((mxcsr & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_ZERO_ON);
+#endif
             }
 
             // Make coordinate vectors for pixels 01 and 10
 #ifdef __AVX2__
-            __m128i coord01 = _mm_blend_epi32(coord00, coord11, 0x01);
-            __m128i coord10 = _mm_blend_epi32(coord00, coord11, 0x02);
+            coord01 = _mm_blend_epi32(coord00, coord11, 0x01);
+            coord10 = _mm_blend_epi32(coord00, coord11, 0x02);
 #elif defined(__SSE4_1__)
-            __m128i coord01 = _mm_blend_epi16(coord00, coord11, 0x03);
-            __m128i coord10 = _mm_blend_epi16(coord00, coord11, 0x0C);
+            coord01 = _mm_blend_epi16(coord00, coord11, 0x03);
+            coord10 = _mm_blend_epi16(coord00, coord11, 0x0C);
 #else
             __m128i coordMask =
                 _mm_bsrli_si128(_mm_setmone_si128(), 8); // = 0, 0, -1, -1
             __m128i interleavedCoord =
                 _mm_unpacklo_epi32(coord00, coord11); // y2 y1 x2 x1
-            __m128i coord01 = _mm_and_si128(
+            coord01 = _mm_and_si128(
                 coordMask,
                 _mm_shuffle_epi32(interleavedCoord, _MM_SHUFFLE(3, 0, 2, 1)));
-            __m128i coord10 = _mm_and_si128(
+            coord10 = _mm_and_si128(
                 coordMask,
                 _mm_shuffle_epi32(interleavedCoord, _MM_SHUFFLE(2, 1, 3, 0)));
 #endif
@@ -3825,7 +3888,17 @@ FloatPixel sample_image_pixel_float_offset(
             _mm_storeu_ps(outData,
                           _mm_movelh_ps(_mm_cvtpd_ps(rg), _mm_cvtpd_ps(ba)));
 #endif
-            if (NULL == containsDenorms) _mm_setcsr(mxcsr);
+            if (NULL == containsDenorms)
+            {
+#ifdef __GNUC__
+                /* n.b. GCC's optimizer doesn't know that it can't move this
+                 * setting around!
+                 */
+                asm volatile("ldmxcsr %0" : : "m"(mxcsr), "m"(outData));
+#else
+                _mm_setcsr(mxcsr);
+#endif
+            }
         }
         else
         {
@@ -3847,42 +3920,55 @@ FloatPixel sample_image_pixel_float_offset(
             // flush subnormal results to zero if necessary
             // SSE has an FTZ mode that will be useful here
             unsigned int mxcsr;
+            __m128i coord001, coord010, coord011, coord100, coord101, coord110;
             if (NULL == containsDenorms)
             {
                 mxcsr = _mm_getcsr();
-                _mm_setcsr(mxcsr & ~_MM_FLUSH_ZERO_MASK | _MM_FLUSH_ZERO_ON);
+#ifdef __GNUC__
+                /* n.b. GCC's optimizer doesn't know that it can't move this
+                 * setting around!
+                 */
+                unsigned int newcsr =
+                    (mxcsr & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_ZERO_ON;
+                asm volatile("ldmxcsr %1"
+                             : "+x"(coord001)
+                             : "m"(newcsr)
+                             : "memory");
+#else
+                _mm_setcsr((mxcsr & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_ZERO_ON);
+#endif
             }
 
 #ifdef __AVX2__
-            __m128i coord001 = _mm_blend_epi32(coord000, coord111, 0x01);
-            __m128i coord010 = _mm_blend_epi32(coord000, coord111, 0x02);
-            __m128i coord011 = _mm_blend_epi32(coord000, coord111, 0x03);
-            __m128i coord100 = _mm_blend_epi32(coord000, coord111, 0x04);
-            __m128i coord101 = _mm_blend_epi32(coord000, coord111, 0x05);
-            __m128i coord110 = _mm_blend_epi32(coord000, coord111, 0x06);
+            coord001 = _mm_blend_epi32(coord000, coord111, 0x01);
+            coord010 = _mm_blend_epi32(coord000, coord111, 0x02);
+            coord011 = _mm_blend_epi32(coord000, coord111, 0x03);
+            coord100 = _mm_blend_epi32(coord000, coord111, 0x04);
+            coord101 = _mm_blend_epi32(coord000, coord111, 0x05);
+            coord110 = _mm_blend_epi32(coord000, coord111, 0x06);
 #elif defined(__SSE4_1__)
-            __m128i coord001 = _mm_blend_epi16(coord000, coord111, 0x03);
-            __m128i coord010 = _mm_blend_epi16(coord000, coord111, 0x0C);
-            __m128i coord011 = _mm_blend_epi16(coord000, coord111, 0x0F);
-            __m128i coord100 = _mm_blend_epi16(coord000, coord111, 0x30);
-            __m128i coord101 = _mm_blend_epi16(coord000, coord111, 0x33);
-            __m128i coord110 = _mm_blend_epi16(coord000, coord111, 0x3C);
+            coord001 = _mm_blend_epi16(coord000, coord111, 0x03);
+            coord010 = _mm_blend_epi16(coord000, coord111, 0x0C);
+            coord011 = _mm_blend_epi16(coord000, coord111, 0x0F);
+            coord100 = _mm_blend_epi16(coord000, coord111, 0x30);
+            coord101 = _mm_blend_epi16(coord000, coord111, 0x33);
+            coord110 = _mm_blend_epi16(coord000, coord111, 0x3C);
 #else
             // XXX This is horrible without PBLEND...
             __m128i negOne = _mm_setmone_si128();
             __m128i coordMask = _mm_bsrli_si128(negOne, 8); // = 0, 0, -1, -1
-            __m128i coord011 = SELECT_I(coordMask, coord000, coord111);
+            coord011 = SELECT_I(coordMask, coord000, coord111);
             coordMask = _mm_bsrli_si128(coordMask, 4); // = 0, 0, 0, -1
-            __m128i coord001 = SELECT_I(coordMask, coord000, coord111);
+            coord001 = SELECT_I(coordMask, coord000, coord111);
             coordMask = _mm_slli_epi64(coordMask, 32); // = 0, 0, -1, 0
-            __m128i coord010 = SELECT_I(coordMask, coord000, coord111);
+            coord010 = SELECT_I(coordMask, coord000, coord111);
             coordMask = _mm_srli_epi64(negOne, 32); // = 0, -1, 0, -1
-            __m128i coord101 = SELECT_I(coordMask, coord000, coord111);
+            coord101 = SELECT_I(coordMask, coord000, coord111);
             coordMask = _mm_bslli_si128(coordMask, 8); // = 0, -1, 0, 0
-            __m128i coord100 = SELECT_I(coordMask, coord000, coord111);
+            coord100 = SELECT_I(coordMask, coord000, coord111);
             coordMask = _mm_bslli_si128(_mm_bsrli_si128(negOne, 4),
                                         4); // = 0, -1, -1, 0
-            __m128i coord110 = SELECT_I(coordMask, coord000, coord111);
+            coord110 = SELECT_I(coordMask, coord000, coord111);
 #endif
 
             __m128 upLeftA, upRightA, lowLeftA, lowRightA;
@@ -4255,7 +4341,17 @@ FloatPixel sample_image_pixel_float_offset(
             _mm_storeu_ps(outData,
                           _mm_movelh_ps(_mm_cvtpd_ps(rg), _mm_cvtpd_ps(ba)));
 #endif
-            if (NULL == containsDenorms) _mm_setcsr(mxcsr);
+            if (NULL == containsDenorms)
+            {
+#ifdef __GNUC__
+                /* n.b. GCC's optimizer doesn't know that it can't move this
+                 * setting around!
+                 */
+                asm volatile("ldmxcsr %0" : : "m"(mxcsr), "m"(outData));
+#else
+                _mm_setcsr(mxcsr);
+#endif
+            }
         }
 
         return returnVal;
