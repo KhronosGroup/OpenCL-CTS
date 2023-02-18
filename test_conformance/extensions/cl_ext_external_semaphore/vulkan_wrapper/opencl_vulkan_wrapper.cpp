@@ -852,7 +852,7 @@ void clExternalSemaphore::wait(cl_command_queue cmd_queue)
                                   NULL, NULL);
 }
 
-cl_semaphore_khr& clExternalSemaphore::getCLSemaphore()
+cl_semaphore_khr &clExternalSemaphore::getCLSemaphore()
 {
     return m_externalSemaphore;
 }

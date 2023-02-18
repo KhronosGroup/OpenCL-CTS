@@ -20,12 +20,15 @@
 
 // Basic command-buffer tests
 
-extern int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
-                            cl_command_queue defaultQueue, int num_elements);
-extern int test_external_semaphores_multi_context(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue defaultQueue,
-                                    int num_elements);
-extern int test_external_semaphores_in_order_queue(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue defaultQueue,
-                                    int num_elements);
+extern int test_external_semaphores_queries(cl_device_id deviceID,
+                                            cl_context context,
+                                            cl_command_queue defaultQueue,
+                                            int num_elements);
+extern int test_external_semaphores_multi_context(cl_device_id deviceID,
+                                                  cl_context context,
+                                                  cl_command_queue defaultQueue,
+                                                  int num_elements);
+extern int test_external_semaphores_in_order_queue(
+    cl_device_id deviceID, cl_context context, cl_command_queue defaultQueue,
+    int num_elements);
 #endif /* CL_KHR_EXTERNAL_SEMAPHORE */
