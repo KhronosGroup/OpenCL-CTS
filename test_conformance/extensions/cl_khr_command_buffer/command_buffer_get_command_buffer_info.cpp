@@ -278,6 +278,8 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         cl_uint num_ret_props =
             ret_value_size / sizeof(cl_command_buffer_properties_khr);
+        test_expected_info(num_ret_props == 0);
+
         combuf_props.resize(num_ret_props);
         error = clGetCommandBufferInfoKHR(
             command_buffer, CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR,
