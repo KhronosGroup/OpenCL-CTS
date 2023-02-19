@@ -32,7 +32,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     OutOfOrderTest(cl_device_id device, cl_context context,
                    cl_command_queue queue)
         : BasicCommandBufferTest(device, context, queue),
-          out_of_order_command_buffer(this), out_of_order_queue(nullptr),
+          out_of_order_queue(nullptr), out_of_order_command_buffer(this),
           user_event(nullptr), wait_pass_event(nullptr), kernel_fill(nullptr),
           program_fill(nullptr)
     {
