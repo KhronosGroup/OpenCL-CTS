@@ -47,7 +47,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
             ? CL_DEVICE_QUEUE_ON_HOST_PROPERTIES
             : CL_DEVICE_QUEUE_PROPERTIES;
 
-        cl_queue_properties host_queue_props = 0;
+        cl_command_queue_properties host_queue_props = 0;
         int error =
             clGetDeviceInfo(device, host_queue_query, sizeof(host_queue_props),
                             &host_queue_props, NULL);
@@ -176,7 +176,10 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
         }
 
         if (all_vals_0)
+        {
             log_error("All values are 0. This is exceedingly unlikely.\n");
+            return TEST_FAIL;
+        }
 
         log_info("Profiling info for command-buffer kernel succeeded.\n");
         return TEST_PASS;
