@@ -3957,18 +3957,18 @@ FloatPixel sample_image_pixel_float_offset(
             // XXX This is horrible without PBLEND...
             __m128i negOne = _mm_setmone_si128();
             __m128i coordMask = _mm_bsrli_si128(negOne, 8); // = 0, 0, -1, -1
-            coord011 = SELECT_I(coordMask, coord000, coord111);
+            coord011 = SELECT_I(coordMask, coord111, coord000);
             coordMask = _mm_bsrli_si128(coordMask, 4); // = 0, 0, 0, -1
-            coord001 = SELECT_I(coordMask, coord000, coord111);
+            coord001 = SELECT_I(coordMask, coord111, coord000);
             coordMask = _mm_slli_epi64(coordMask, 32); // = 0, 0, -1, 0
-            coord010 = SELECT_I(coordMask, coord000, coord111);
+            coord010 = SELECT_I(coordMask, coord111, coord000);
             coordMask = _mm_srli_epi64(negOne, 32); // = 0, -1, 0, -1
-            coord101 = SELECT_I(coordMask, coord000, coord111);
+            coord101 = SELECT_I(coordMask, coord111, coord000);
             coordMask = _mm_bslli_si128(coordMask, 8); // = 0, -1, 0, 0
-            coord100 = SELECT_I(coordMask, coord000, coord111);
+            coord100 = SELECT_I(coordMask, coord111, coord000);
             coordMask = _mm_bslli_si128(_mm_bsrli_si128(negOne, 4),
                                         4); // = 0, -1, -1, 0
-            coord110 = SELECT_I(coordMask, coord000, coord111);
+            coord110 = SELECT_I(coordMask, coord111, coord000);
 #endif
 
             __m128 upLeftA, upRightA, lowLeftA, lowRightA;
