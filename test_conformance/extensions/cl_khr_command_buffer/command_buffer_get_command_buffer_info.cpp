@@ -48,18 +48,6 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
     {}
 
     //--------------------------------------------------------------------------
-    bool Skip() override
-    {
-        if (BasicCommandBufferTest::Skip()) return true;
-
-        if (test_mode == CombufInfoTestMode::CITM_PROP_ARRAY
-            && !simultaneous_use_support)
-            return true;
-
-        return false;
-    }
-
-    //--------------------------------------------------------------------------
     cl_int Run() override
     {
         cl_int error = CL_SUCCESS;
@@ -282,6 +270,10 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             &ret_value_size);
         test_error_ret(error, "clGetCommandBufferInfoKHR failed", TEST_FAIL);
 
+        // command buffer created without sumultaneous use ? 0 size possible
+        if (!simultaneous_use_support && ret_value_size == 0) return TEST_PASS;
+
+        // ... otherwise 0 size prop array is not an acceptable value
         test_expected_info(ret_value_size == 0);
 
         cl_uint num_ret_props =
@@ -293,9 +285,16 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             combuf_props.data(), nullptr);
         test_error_ret(error, "clGetCommandBufferInfoKHR failed", TEST_FAIL);
 
-        for (int i = 0; i < num_ret_props; i++)
-            if (combuf_props[i] == CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR)
+        if (simultaneous_use_support)
+        {
+            if (combuf_props[0] == CL_COMMAND_BUFFER_FLAGS_KHR
+                && combuf_props[1] == CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR)
                 return TEST_PASS;
+        }
+        else
+        {
+            if (combuf_props.back() == 0) return TEST_PASS;
+        }
 
         return TEST_FAIL;
     }
