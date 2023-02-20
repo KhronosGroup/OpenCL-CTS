@@ -25,10 +25,6 @@
 #include <unistd.h>
 #endif
 
-// FIXME: To use certain functions in harness/imageHelpers.h
-// (for example, generate_random_image_data()), the tests are required to
-// declare the following variables (<rdar://problem/11111245>):
-
 test_definition test_list[] = {
     ADD_TEST_VERSION(semaphores_simple_1, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_simple_2, Version(1, 2)),
