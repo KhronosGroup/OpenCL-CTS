@@ -24,9 +24,16 @@ test_definition test_list[] = { ADD_TEST(single_ndrange),
                                 ADD_TEST(queue_substitution),
                                 ADD_TEST(properties_queue_substitution),
                                 ADD_TEST(simultaneous_queue_substitution),
+                                ADD_TEST(fill_image),
+                                ADD_TEST(fill_buffer),
+                                ADD_TEST(copy_image),
+                                ADD_TEST(copy_buffer),
+                                ADD_TEST(copy_buffer_to_image),
+                                ADD_TEST(copy_image_to_buffer),
+                                ADD_TEST(copy_buffer_rect),
+                                ADD_TEST(barrier_wait_list),
                                 ADD_TEST(basic_set_kernel_arg),
                                 ADD_TEST(pending_set_kernel_arg) };
-
 
 int main(int argc, const char *argv[])
 {
