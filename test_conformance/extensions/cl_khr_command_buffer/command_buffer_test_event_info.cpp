@@ -14,11 +14,8 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "harness/typeWrappers.h"
 #include "procs.h"
-
 #include <vector>
-
 
 namespace {
 
@@ -37,6 +34,9 @@ struct CommandType : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+        clEventWrapper event;
+        cl_int status;
+
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
@@ -62,9 +62,6 @@ struct CommandType : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
-
-    clEventWrapper event;
-    cl_int status;
 };
 
 struct CommandQueue : public BasicCommandBufferTest
@@ -73,6 +70,9 @@ struct CommandQueue : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+        clEventWrapper event;
+        size_t size;
+
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
@@ -80,25 +80,23 @@ struct CommandQueue : public BasicCommandBufferTest
                                           nullptr, &event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clWaitForEvents(1, &event);
-        test_error(error, "Unable to wait for event");
+        cl_command_queue otherQueue;
+        error = clGetEventInfo(event, CL_EVENT_COMMAND_QUEUE,
+                               sizeof(otherQueue), &otherQueue, &size);
+        test_error(error, "Unable to get event info!");
 
-        error = clGetEventInfo(event, CL_EVENT_COMMAND_QUEUE, sizeof(ret_queue),
-                               &ret_queue, &size);
-        test_error(error, "clGetEventInfo failed");
-
-        if (ret_queue != queue)
+        // We can not check if this is the right queue because this is an opaque
+        // object.
+        if (size != sizeof(queue) || otherQueue == NULL)
         {
-            log_error("ERROR: Wrong command queue returned by clGetEventInfo");
+            log_error("ERROR: Returned command queue size does not validate "
+                      "(expected %zu, got %zu)\n",
+                      sizeof(queue), size);
             return TEST_FAIL;
         }
 
         return CL_SUCCESS;
     }
-
-    clEventWrapper event;
-    cl_command_queue ret_queue = nullptr;
-    size_t size;
 };
 
 struct Context : public BasicCommandBufferTest
@@ -107,6 +105,9 @@ struct Context : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+        clEventWrapper event;
+        size_t size;
+
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
@@ -114,25 +115,28 @@ struct Context : public BasicCommandBufferTest
                                           nullptr, &event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clWaitForEvents(1, &event);
-        test_error(error, "clWaitForEvents failed");
-
-        error = clGetEventInfo(event, CL_EVENT_CONTEXT, sizeof(ret_context),
-                               &ret_context, &size);
-        test_error(error, "clGetEventInfo failed");
-
-        if (ret_context != context)
+        cl_context testCtx;
+        error = clGetEventInfo(event, CL_EVENT_CONTEXT, sizeof(testCtx),
+                               &testCtx, &size);
+        test_error(error, "Unable to get event context info!");
+        if (size != sizeof(context))
         {
-            log_error("ERROR: Wrong context returned by clGetEventInfo");
-            return TEST_FAIL;
+            log_error(
+                "ERROR: Returned context size does not validate (expected "
+                "%zu, got %zu)\n",
+                sizeof(context), size);
+            return -1;
+        }
+        if (testCtx != context)
+        {
+            log_error("ERROR: Returned context does not match (expected %p, "
+                      "got %p)\n",
+                      (void *)context, (void *)testCtx);
+            return -1;
         }
 
         return CL_SUCCESS;
     }
-
-    clEventWrapper event;
-    cl_context ret_context = nullptr;
-    size_t size;
 };
 
 struct ExecutionStatus : public BasicCommandBufferTest
@@ -141,12 +145,28 @@ struct ExecutionStatus : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+        clEventWrapper event;
+        cl_int status;
+
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, &event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        error = clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS,
+                               sizeof(status), &status, NULL);
+        test_error(error, "clGetEventInfo failed");
+
+        if (!(status == CL_QUEUED || status == CL_SUBMITTED
+              || status == CL_RUNNING || status == CL_COMPLETE))
+        {
+            log_error(
+                "ERROR: Incorrect status returned from clGetEventInfo (%d)\n",
+                status);
+            return TEST_FAIL;
+        }
 
         error = clWaitForEvents(1, &event);
         test_error(error, "clWaitForEvents failed");
@@ -165,9 +185,6 @@ struct ExecutionStatus : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
-
-    clEventWrapper event;
-    cl_int status;
 };
 
 struct ReferenceCount : public BasicCommandBufferTest
@@ -176,6 +193,10 @@ struct ReferenceCount : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+        clEventWrapper event;
+        size_t size;
+        cl_uint count;
+
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
@@ -183,58 +204,51 @@ struct ReferenceCount : public BasicCommandBufferTest
                                           nullptr, &event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clWaitForEvents(1, &event);
-        test_error(error, "clWaitForEvents failed");
-
         error = clGetEventInfo(event, CL_EVENT_REFERENCE_COUNT, sizeof(count),
                                &count, &size);
         test_error(error, "clGetEventInfo failed");
 
-        if (count != expected_count)
+        if (size != sizeof(count) || count == 0)
         {
             log_error(
-                "ERROR: Wrong command reference count (expected %d, got %d)\n",
-                (int)expected_count, (int)count);
+                "ERROR: Wrong command reference count (expected return value 1 "
+                "of size %zu, returned size %zu, returned value %u)\n",
+                sizeof(count), size, count);
             return TEST_FAIL;
         }
 
         return CL_SUCCESS;
     }
-
-    clEventWrapper event;
-    size_t size;
-    cl_uint count;
-    const cl_uint expected_count = 1;
 };
 };
 
-int test_command_type(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
+int test_event_info_command_type(cl_device_id device, cl_context context,
+                                 cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<CommandType>(device, context, queue, num_elements);
 }
 
-int test_command_queue(cl_device_id device, cl_context context,
-                       cl_command_queue queue, int num_elements)
+int test_event_info_command_queue(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<CommandQueue>(device, context, queue, num_elements);
 }
 
-int test_context(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int num_elements)
+int test_event_info_context(cl_device_id device, cl_context context,
+                            cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<Context>(device, context, queue, num_elements);
 }
 
-int test_execution_status(cl_device_id device, cl_context context,
-                          cl_command_queue queue, int num_elements)
+int test_event_info_execution_status(cl_device_id device, cl_context context,
+                                     cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<ExecutionStatus>(device, context, queue,
                                            num_elements);
 }
 
-int test_reference_count(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+int test_event_info_reference_count(cl_device_id device, cl_context context,
+                                    cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<ReferenceCount>(device, context, queue, num_elements);
 }
