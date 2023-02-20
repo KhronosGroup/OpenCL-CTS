@@ -125,14 +125,14 @@ struct Context : public BasicCommandBufferTest
                 "ERROR: Returned context size does not validate (expected "
                 "%zu, got %zu)\n",
                 sizeof(context), size);
-            return -1;
+            return TEST_FAIL;
         }
         if (testCtx != context)
         {
             log_error("ERROR: Returned context does not match (expected %p, "
                       "got %p)\n",
                       (void *)context, (void *)testCtx);
-            return -1;
+            return TEST_FAIL;
         }
 
         return CL_SUCCESS;
