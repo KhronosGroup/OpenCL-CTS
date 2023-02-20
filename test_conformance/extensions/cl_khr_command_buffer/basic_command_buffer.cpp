@@ -25,12 +25,12 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
                                                cl_context context,
                                                cl_command_queue queue)
     : CommandBufferTestBase(device), context(context), queue(nullptr),
-      num_elements(0), command_buffer(this), simultaneous_use_support(false),
+      num_elements(0), simultaneous_use_support(false),
       out_of_order_support(false),
       // try to use simultaneous path by default
       simultaneous_use_requested(true),
       // due to simultaneous cases extend buffer size
-      buffer_size_multiplier(1)
+      buffer_size_multiplier(1), command_buffer(this)
 
 {
     cl_int error = clRetainCommandQueue(queue);
