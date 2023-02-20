@@ -5,6 +5,7 @@ set(${MODULE_NAME}_SOURCES
          negative_platform.cpp
          test_api_consistency.cpp
          test_bool.cpp
+         test_device_timer.cpp
          test_retain.cpp
          test_retain_program.cpp
          test_queries.cpp
