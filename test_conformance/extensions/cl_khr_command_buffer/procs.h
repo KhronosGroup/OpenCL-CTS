@@ -71,6 +71,22 @@ extern int test_simultaneous_queue_substitution(cl_device_id device,
                                                 cl_context context,
                                                 cl_command_queue queue,
                                                 int num_elements);
+extern int test_fill_image(cl_device_id device, cl_context context,
+                           cl_command_queue queue, int num_elements);
+extern int test_fill_buffer(cl_device_id device, cl_context context,
+                            cl_command_queue queue, int num_elements);
+extern int test_copy_image(cl_device_id device, cl_context context,
+                           cl_command_queue queue, int num_elements);
+extern int test_copy_buffer(cl_device_id device, cl_context context,
+                            cl_command_queue queue, int num_elements);
+extern int test_copy_buffer_to_image(cl_device_id device, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+extern int test_copy_image_to_buffer(cl_device_id device, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+extern int test_copy_buffer_rect(cl_device_id device, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+extern int test_barrier_wait_list(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements);
 
 
 #endif /*_CL_KHR_COMMAND_BUFFER_PROCS_H*/

@@ -5,6 +5,9 @@ set(${MODULE_NAME}_SOURCES
     basic_command_buffer.cpp
     command_buffer_event_sync.cpp
     command_buffer_queue_substitution.cpp
+    command_buffer_test_fill.cpp
+    command_buffer_test_copy.cpp
+    command_buffer_test_barrier.cpp
 )
 
 include(../../CMakeCommon.txt)
