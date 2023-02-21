@@ -615,7 +615,8 @@ VulkanQueue::VulkanQueue(VkQueue vkQueue): m_vkQueue(vkQueue) {}
 
 VulkanQueue::~VulkanQueue() {}
 
-void VulkanQueue::submit(const VulkanCommandBuffer &commandBuffer, const VkFence &fence)
+void VulkanQueue::submit(const VulkanCommandBuffer &commandBuffer,
+                         const VkFence &fence)
 {
     VkSubmitInfo vkSubmitInfo = {};
     vkSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
