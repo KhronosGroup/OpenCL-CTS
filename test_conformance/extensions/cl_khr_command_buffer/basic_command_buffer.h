@@ -55,7 +55,6 @@ protected:
 
     cl_context context;
     clCommandQueueWrapper queue;
-    clCommandBufferWrapper command_buffer;
     clProgramWrapper program;
     clKernelWrapper kernel;
     clMemWrapper in_mem, out_mem, off_mem;
@@ -68,6 +67,7 @@ protected:
     // user request for simultaneous use
     bool simultaneous_use_requested;
     unsigned buffer_size_multiplier;
+    clCommandBufferWrapper command_buffer;
 };
 
 template <class T>
