@@ -23,7 +23,38 @@
 #include <unistd.h>
 #endif
 
+int g_arrVecSizes[kVectorSizeCount + kStrangeVectorSizeCount];
+int g_arrStrangeVectorSizes[kStrangeVectorSizeCount] = {3};
+
+static void initVecSizes() {
+    int i;
+    for(i = 0; i < kVectorSizeCount; ++i) {
+        g_arrVecSizes[i] = (1<<i);
+    }
+    for(; i < kVectorSizeCount + kStrangeVectorSizeCount; ++i) {
+        g_arrVecSizes[i] = g_arrStrangeVectorSizes[i-kVectorSizeCount];
+    }
+}
+
+
 test_definition test_list[] = {
+    ADD_TEST( clamp ),
+    ADD_TEST( degrees ),
+    ADD_TEST( fmax ),
+    ADD_TEST( fmaxf ),
+    ADD_TEST( fmin ),
+    ADD_TEST( fminf ),
+    ADD_TEST( max ),
+    ADD_TEST( maxf ),
+    ADD_TEST( min ),
+    ADD_TEST( minf ),
+    ADD_TEST( mix ),
+    ADD_TEST( radians ),
+    ADD_TEST( step ),
+    ADD_TEST( stepf ),
+    ADD_TEST( smoothstep ),
+    ADD_TEST( smoothstepf ),
+    ADD_TEST( sign ),
     ADD_TEST( geom_cross ),
     ADD_TEST( geom_dot ),
     ADD_TEST( geom_distance ),
@@ -38,6 +69,7 @@ const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
+    initVecSizes();
     return runTestHarness(argc, argv, test_num, test_list, false, 0);
 }
 
