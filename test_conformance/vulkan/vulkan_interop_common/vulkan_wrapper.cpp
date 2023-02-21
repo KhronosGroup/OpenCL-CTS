@@ -615,6 +615,16 @@ VulkanQueue::VulkanQueue(VkQueue vkQueue): m_vkQueue(vkQueue) {}
 
 VulkanQueue::~VulkanQueue() {}
 
+void VulkanQueue::submit(const VulkanCommandBuffer &commandBuffer, const VkFence &fence)
+{
+    VkSubmitInfo vkSubmitInfo = {};
+    vkSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    vkSubmitInfo.pNext = NULL;
+    vkSubmitInfo.waitSemaphoreCount = (uint32_t)0;
+
+    vkQueueSubmit(m_vkQueue, 1, &vkSubmitInfo, fence);
+}
+
 void VulkanQueue::submit(const VulkanSemaphoreList &waitSemaphoreList,
                          const VulkanCommandBufferList &commandBufferList,
                          const VulkanSemaphoreList &signalSemaphoreList)

@@ -157,6 +157,7 @@ protected:
 
 public:
     const VulkanQueueFamily &getQueueFamily();
+    void submit(const VulkanCommandBuffer &commandBuffer, const VkFence &fence);
     void submit(const VulkanSemaphoreList &waitSemaphoreList,
                 const VulkanCommandBufferList &commandBufferList,
                 const VulkanSemaphoreList &signalSemaphoreList);

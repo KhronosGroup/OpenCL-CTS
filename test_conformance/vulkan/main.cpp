@@ -53,6 +53,8 @@ static void params_reset()
 
 extern int test_buffer_common(cl_device_id device_, cl_context context_,
                               cl_command_queue queue_, int numElements_);
+extern int test_buffer_common_fence(cl_device_id device_, cl_context context_,
+                                    cl_command_queue queue_, int numElements_);
 extern int test_image_common(cl_device_id device_, cl_context context_,
                              cl_command_queue queue_, int numElements_);
 
@@ -90,6 +92,44 @@ int test_buffer_multiImport_diffCtx(cl_device_id device_, cl_context context_,
              "IN DIFFERENT CONTEXT...... \n\n");
     return test_buffer_common(device_, context_, queue_, numElements_);
 }
+int test_buffer_single_queue_fence(cl_device_id device_, cl_context context_,
+                                   cl_command_queue queue_, int numElements_)
+{
+    params_reset();
+    log_info("RUNNING TEST WITH ONE QUEUE...... \n\n");
+    return test_buffer_common_fence(device_, context_, queue_, numElements_);
+}
+int test_buffer_multiple_queue_fence(cl_device_id device_, cl_context context_,
+                                     cl_command_queue queue_, int numElements_)
+{
+    params_reset();
+    numCQ = 2;
+    log_info("RUNNING TEST WITH TWO QUEUE...... \n\n");
+    return test_buffer_common_fence(device_, context_, queue_, numElements_);
+}
+int test_buffer_multiImport_sameCtx_fence(cl_device_id device_,
+                                          cl_context context_,
+                                          cl_command_queue queue_,
+                                          int numElements_)
+{
+    params_reset();
+    multiImport = true;
+    log_info("RUNNING TEST WITH MULTIPLE DEVICE MEMORY IMPORT "
+             "IN SAME CONTEXT...... \n\n");
+    return test_buffer_common_fence(device_, context_, queue_, numElements_);
+}
+int test_buffer_multiImport_diffCtx_fence(cl_device_id device_,
+                                          cl_context context_,
+                                          cl_command_queue queue_,
+                                          int numElements_)
+{
+    params_reset();
+    multiImport = true;
+    multiCtx = true;
+    log_info("RUNNING TEST WITH MULTIPLE DEVICE MEMORY IMPORT "
+             "IN DIFFERENT CONTEXT...... \n\n");
+    return test_buffer_common_fence(device_, context_, queue_, numElements_);
+}
 int test_image_single_queue(cl_device_id device_, cl_context context_,
                             cl_command_queue queue_, int numElements_)
 {
@@ -106,17 +146,24 @@ int test_image_multiple_queue(cl_device_id device_, cl_context context_,
     return test_image_common(device_, context_, queue_, numElements_);
 }
 
-test_definition test_list[] = { ADD_TEST(buffer_single_queue),
-                                ADD_TEST(buffer_multiple_queue),
-                                ADD_TEST(buffer_multiImport_sameCtx),
-                                ADD_TEST(buffer_multiImport_diffCtx),
-                                ADD_TEST(image_single_queue),
-                                ADD_TEST(image_multiple_queue),
-                                ADD_TEST(consistency_external_buffer),
-                                ADD_TEST(consistency_external_image),
-                                ADD_TEST(consistency_external_semaphore),
-                                ADD_TEST(platform_info),
-                                ADD_TEST(device_info) };
+test_definition test_list[] = {
+
+    ADD_TEST(buffer_single_queue),
+    ADD_TEST(buffer_multiple_queue),
+    ADD_TEST(buffer_multiImport_sameCtx),
+    ADD_TEST(buffer_multiImport_diffCtx),
+    ADD_TEST(buffer_single_queue_fence),
+    ADD_TEST(buffer_multiple_queue_fence),
+    ADD_TEST(buffer_multiImport_sameCtx_fence),
+    ADD_TEST(buffer_multiImport_diffCtx_fence),
+    ADD_TEST(image_single_queue),
+    ADD_TEST(image_multiple_queue),
+    ADD_TEST(consistency_external_buffer),
+    ADD_TEST(consistency_external_image),
+    ADD_TEST(consistency_external_semaphore),
+    ADD_TEST(platform_info),
+    ADD_TEST(device_info)
+};
 
 const int test_num = ARRAY_SIZE(test_list);
 
