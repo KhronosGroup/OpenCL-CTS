@@ -43,13 +43,15 @@ struct BasicCommandBufferTest : CommandBufferTestBase
                            cl_command_queue queue);
 
     virtual bool Skip();
+    virtual cl_int SetUpKernel(void);
+    virtual cl_int SetUpKernelArgs(void);
     virtual cl_int SetUp(int elements);
 
     // Test body returning an OpenCL error code
     virtual cl_int Run() = 0;
 
 protected:
-    size_t data_size() const { return num_elements * sizeof(cl_int); }
+    virtual size_t data_size() const { return num_elements * sizeof(cl_int); }
 
     cl_context context;
     clCommandQueueWrapper queue;
