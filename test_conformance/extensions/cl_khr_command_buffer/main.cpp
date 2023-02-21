@@ -33,7 +33,12 @@ test_definition test_list[] = { ADD_TEST(single_ndrange),
                                 ADD_TEST(copy_buffer_to_image),
                                 ADD_TEST(copy_image_to_buffer),
                                 ADD_TEST(copy_buffer_rect),
-                                ADD_TEST(barrier_wait_list) };
+                                ADD_TEST(barrier_wait_list),
+                                ADD_TEST(event_info_command_type),
+                                ADD_TEST(event_info_command_queue),
+                                ADD_TEST(event_info_execution_status),
+                                ADD_TEST(event_info_context),
+                                ADD_TEST(event_info_reference_count) };
 
 int main(int argc, const char *argv[])
 {
