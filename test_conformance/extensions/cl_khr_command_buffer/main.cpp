@@ -21,6 +21,8 @@ test_definition test_list[] = { ADD_TEST(single_ndrange),
                                 ADD_TEST(explicit_flush),
                                 ADD_TEST(user_events),
                                 ADD_TEST(out_of_order),
+                                ADD_TEST(basic_profiling),
+                                ADD_TEST(simultaneous_profiling),
                                 ADD_TEST(queue_substitution),
                                 ADD_TEST(properties_queue_substitution),
                                 ADD_TEST(simultaneous_queue_substitution),
@@ -37,7 +39,6 @@ test_definition test_list[] = { ADD_TEST(single_ndrange),
                                 ADD_TEST(event_info_execution_status),
                                 ADD_TEST(event_info_context),
                                 ADD_TEST(event_info_reference_count) };
-
 
 int main(int argc, const char *argv[])
 {
