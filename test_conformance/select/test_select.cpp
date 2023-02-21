@@ -15,16 +15,19 @@
 //
 #include "harness/compat.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <time.h>
-#include <string.h>
+#include <cassert>
+#include <cstdio>
+#include <ctime>
+#include <cstring>
+#include <chrono>
 #if ! defined( _WIN32)
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
 #endif
 #endif
-#include <limits.h>
+#include <climits>
+#include <vector>
+#include <thread>
 #include "test_select.h"
 
 #include "harness/testHarness.h"
@@ -46,7 +49,7 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
 
 // make a program that uses select for the given stype (src/dest type),
 // ctype (comparison type), veclen (vector length)
-static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context context, Type stype, Type ctype, size_t veclen );
+static cl_program makeSelectProgram(cl_kernel *kernel_ptr, cl_context context, Type srctype, Type cmptype, size_t vec_len);
 
 // Creates and execute the select test for the given device, context,
 // stype (source/dest type), cmptype (comparison type), using max_tg_size
@@ -56,7 +59,7 @@ static int doTest(cl_command_queue queue, cl_context context,
                   Type stype, Type cmptype, cl_device_id device);
 
 
-static void printUsage( void );
+static void printUsage( );
 
 //-----------------------------------------
 // Definitions and initializations
@@ -67,7 +70,7 @@ static void printUsage( void );
 #define KPAGESIZE 4096
 
 
-// When we indicate non wimpy mode, the types that are 32 bits value will
+// When we indicate non-wimpy mode, the types that are 32 bits value will
 // test their entire range and 64 bits test will test the 32 bit
 // range.  Otherwise, we test a subset of the range
 // [-min_short, min_short]
@@ -76,7 +79,7 @@ static int s_wimpy_reduction_factor = 256;
 
 // Tests are broken into the major test which is based on the
 // src and cmp type and their corresponding vector types and
-// sub tests which is for each individual test.  The following
+// subtests which is for each individual test.  The following
 // tracks the subtests
 int s_test_cnt = 0;
 
@@ -90,7 +93,7 @@ int int_log2(size_t value) {
         return INT_MIN;
 
 #if defined( __GNUC__ )
-    return (unsigned) (8*sizeof(size_t) - 1UL - __builtin_clzl(value));
+    return static_cast<int> (8*sizeof(size_t) - 1UL - __builtin_clzl(value));
 #else
     int result = -1;
     while(value)
@@ -103,13 +106,25 @@ int int_log2(size_t value) {
 }
 
 
-static void initSrcBuffer(void* src1, Type stype, MTdata d)
+static void initSrcBuffer(void* src1, Type, MTdata d)
 {
-    unsigned int* s1 = (unsigned int *)src1;
-    size_t i;
+    auto* s1 = (unsigned int *)src1;
+    int buf_size = BUFFER_SIZE / sizeof(cl_int);
+    std::vector<std::thread> threads(buf_size / 4);
 
-    for ( i=0 ; i < BUFFER_SIZE/sizeof(cl_int); i++)
-        s1[i]   = genrand_int32(d);
+    for( int i = 0; i < buf_size; i+=buf_size / 4)
+    {
+        for (auto it = std::begin(threads); it != std::begin(threads);
+             ++it)
+        {
+            if(it->joinable()) {
+               it->join();
+            }
+            *it = std::thread([&]() -> void {
+                s1[it - std::begin(threads) + i] = genrand_int32(d);
+            });
+        }
+    }
 }
 
 static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count) {
@@ -117,27 +132,27 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
     assert(cmptype != kfloat);
     switch (type_size[cmptype]) {
         case 1: {
-            uint8_t* ub = (uint8_t *)cmp;
+            auto* ub = (uint8_t *)cmp;
             for (i=0; i < count; ++i)
                 ub[i] = (uint8_t)start++;
             break;
         }
         case 2: {
-            uint16_t* us = (uint16_t *)cmp;
+            auto* us = (uint16_t *)cmp;
             for (i=0; i < count; ++i)
                 us[i] = (uint16_t)start++;
             break;
         }
         case 4: {
             if (!s_wimpy_mode) {
-                uint32_t* ui = (uint32_t *)cmp;
+                auto* ui = (uint32_t *)cmp;
                 for (i=0; i < count; ++i)
                     ui[i] = (uint32_t)start++;
             }
             else {
-                // The short test doesn't iterate over the entire 32 bit space so
-                // we alternate between positive and negative values
-                int32_t* ui = (int32_t *)cmp;
+                // The short test doesn't iterate over the entire 32 bit space, so
+                // we alternate between positive and negative values'
+                auto* ui = (int32_t *)cmp;
                 int32_t sign = 1;
                 for (i=0; i < count; ++i, ++start) {
                     ui[i] = (int32_t)start*sign;
@@ -149,10 +164,10 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
         case 8: {
             // We don't iterate over the entire space of 64 bit so for the
             // selects, we want to test positive and negative values
-            int64_t* ll = (int64_t *)cmp;
+            auto* ll = (int64_t *)cmp;
             int64_t sign = 1;
             for (i=0; i < count; ++i, ++start) {
-                ll[i] = start*sign;
+                ll[i] = static_cast<int64_t>(start)*sign;
                 sign = sign * -1;
             }
             break;
@@ -165,7 +180,7 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
 // Make the various incarnations of the program we want to run
 //  stype: source and destination type for the select
 //  ctype: compare type
-static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context context, Type srctype, Type cmptype, size_t vec_len)
+static cl_program makeSelectProgram(cl_kernel *kernel_ptr, cl_context context, Type srctype, Type cmptype, size_t vec_len)
 {
     char testname[256];
     char stypename[32];
@@ -262,9 +277,8 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
             log_info("Building %s(%s, %s, %s)\n", testname, stypename, stypename, ctypename);
             break;
         default:
-            log_error( "Unkown vector type. Aborting...\n" );
+            log_error( "Unknown vector type. Aborting...\n" );
             exit(-1);
-            break;
     }
 
     /*
@@ -282,7 +296,7 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
                                     psrc, testname))
     {
         log_error("Failed to build program (%d)\n", err);
-        return NULL;
+        return nullptr;
     }
 
     return program;
@@ -295,16 +309,21 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
 {
     int err = CL_SUCCESS;
     int s_test_fail = 0;
-    MTdata    d;
+    MTdata    d0{};
     const size_t element_count[VECTOR_SIZE_COUNT] = { 1, 2, 3, 4, 8, 16 };
-    cl_mem src1 = NULL;
-    cl_mem src2 = NULL;
-    cl_mem cmp = NULL;
-    cl_mem dest = NULL;
-    void *ref = NULL;
-    void *sref = NULL;
+    cl_mem randBuf = nullptr;
+    cl_mem src1 = nullptr;
+    cl_mem src2 = nullptr;
+    cl_mem cmp = nullptr;
+    cl_mem dest = nullptr;
+    void *ref = nullptr;
+    void *sref = nullptr;
+    void *s1 = nullptr;
+    void *s2 = nullptr;
+    void *s3 = nullptr;
+    Select sfunc{};
 
-    cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
+//    cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
     size_t block_elements = BUFFER_SIZE / type_size[stype];
     size_t step = s_wimpy_mode ? s_wimpy_reduction_factor : 1;
     cl_ulong cmp_stride = block_elements * step;
@@ -347,16 +366,16 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     }
 
     ref = malloc( BUFFER_SIZE );
-    if( NULL == ref ){ log_error("Error: could not allocate ref buffer\n" ); goto exit; }
+    if( nullptr == ref ){ log_error("Error: could not allocate ref buffer\n" ); goto exit; }
     sref = malloc( BUFFER_SIZE );
-    if( NULL == sref ){ log_error("Error: could not allocate ref buffer\n" ); goto exit; }
-    src1 = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, NULL, &err );
+    if( nullptr == sref ){ log_error("Error: could not allocate ref buffer\n" ); goto exit; }
+    src1 = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, nullptr, &err );
     if( err ) { log_error( "Error: could not allocate src1 buffer\n" );  ++s_test_fail; goto exit; }
-    src2 = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, NULL, &err );
+    src2 = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, nullptr, &err );
     if( err ) { log_error( "Error: could not allocate src2 buffer\n" );  ++s_test_fail; goto exit; }
-    cmp = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, NULL, &err );
+    cmp = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, nullptr, &err );
     if( err ) { log_error( "Error: could not allocate cmp buffer\n" );  ++s_test_fail; goto exit; }
-    dest = clCreateBuffer( context, CL_MEM_WRITE_ONLY, BUFFER_SIZE, NULL, &err );
+    dest = clCreateBuffer( context, CL_MEM_WRITE_ONLY, BUFFER_SIZE, nullptr, &err );
     if( err ) { log_error( "Error: could not allocate dest buffer\n" );  ++s_test_fail; goto exit; }
 
 
@@ -368,84 +387,79 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         cmp_stride = block_elements * step * (0xffffffffffffffffULL / 0x100000000ULL + 1);
 
     log_info("Testing...");
-    d = init_genrand( gRandomSeed );
-    uint64_t i;
-    for (i=0; i < blocks; i+=step)
+    d0 = init_genrand( gRandomSeed );
+    randBuf = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, nullptr, &err );
+    if( err ) { log_error( "Error: could not allocate src1 buffer\n" );  ++s_test_fail; goto exit; }
+    initSrcBuffer(randBuf, stype, d0);
+    s1 = clEnqueueMapBuffer( queue, src1, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, nullptr, nullptr, &err );
+    if( err ){ log_error( "Error: Could not map src1" ); goto exit; }
+    s2 = clEnqueueMapBuffer( queue, src2, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, nullptr, nullptr, &err );
+    if( err ){ log_error( "Error: Could not map src2" ); goto exit; }
+    s3 = clEnqueueMapBuffer( queue, cmp, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, nullptr, nullptr, &err );
+    if( err ){ log_error( "Error: Could not map cmp" ); goto exit; }
+    // Set up the input data to change for each block
+    clEnqueueCopyBuffer(queue, randBuf, src1, 0, 0, BUFFER_SIZE, 0, nullptr, nullptr);
+    // Set up the input data to change for each block
+    clEnqueueCopyBuffer(queue, randBuf, src2, 0, 0, BUFFER_SIZE, 0, nullptr, nullptr);
+    // Set up the input data to change for each block
+    initCmpBuffer(s3, cmptype, cmp_stride, block_elements);
+    // Create the reference result
+    sfunc = (cmptype == ctype[stype][0]) ? vrefSelects[stype][0] : vrefSelects[stype][1];
+    (*sfunc)(ref, s1, s2, s3, block_elements);
+
+    sfunc = (cmptype == ctype[stype][0]) ? refSelects[stype][0] : refSelects[stype][1];
+    (*sfunc)(sref, s1, s2, s3, block_elements);
+
+    for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
     {
-        void *s1 = clEnqueueMapBuffer( queue, src1, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
-        if( err ){ log_error( "Error: Could not map src1" ); goto exit; }
-        // Setup the input data to change for each block
-        initSrcBuffer( s1, stype, d);
+        size_t vector_size = element_count[vecsize] * type_size[stype];
+        size_t vector_count =  (BUFFER_SIZE + vector_size - 1) / vector_size;
 
-        void *s2 = clEnqueueMapBuffer( queue, src2, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
-        if( err ){ log_error( "Error: Could not map src2" ); goto exit; }
-        // Setup the input data to change for each block
-        initSrcBuffer( s2, stype, d);
+        if((err = clSetKernelArg(kernels[vecsize], 0,  sizeof dest, &dest) ))
+        { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
+        if((err = clSetKernelArg(kernels[vecsize], 1,  sizeof src1, &src1) ))
+        { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
+        if((err = clSetKernelArg(kernels[vecsize], 2,  sizeof src2, &src2) ))
+        { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
+        if((err = clSetKernelArg(kernels[vecsize], 3,  sizeof cmp, &cmp) ))
+        { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
 
-        void *s3 = clEnqueueMapBuffer( queue, cmp, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
-        if( err ){ log_error( "Error: Could not map cmp" ); goto exit; }
-        // Setup the input data to change for each block
-        initCmpBuffer(s3, cmptype, i * cmp_stride, block_elements);
 
-        // Create the reference result
-        Select sfunc = (cmptype == ctype[stype][0]) ? vrefSelects[stype][0] : vrefSelects[stype][1];
-        (*sfunc)(ref, s1, s2, s3, block_elements);
+        // Wipe destination
+        void *d = clEnqueueMapBuffer( queue, dest, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, nullptr, nullptr, &err );
+        if( err ){ log_error( "Error: Could not map dest" );  ++s_test_fail; goto exit; }
+        memset( d, -1, BUFFER_SIZE );
+        if( (err = clEnqueueUnmapMemObject( queue, dest, d, 0, nullptr, nullptr ) ) ){ log_error( "Error: Could not unmap dest" ); ++s_test_fail; goto exit; }
 
-        sfunc = (cmptype == ctype[stype][0]) ? refSelects[stype][0] : refSelects[stype][1];
-        (*sfunc)(sref, s1, s2, s3, block_elements);
+        err = clEnqueueNDRangeKernel(queue, kernels[vecsize], 1, nullptr, &vector_count, nullptr, 0, nullptr, nullptr);
+        if (err != CL_SUCCESS) {
+            log_error("clEnqueueNDRangeKernel failed errcode:%d\n", err);
+            ++s_test_fail;
+            goto exit;
+        }
 
-        if( (err = clEnqueueUnmapMemObject( queue, src1, s1, 0, NULL, NULL )))
-        { log_error( "Error: coult not unmap src1\n" );  ++s_test_fail; goto exit; }
-        if( (err = clEnqueueUnmapMemObject( queue, src2, s2, 0, NULL, NULL )))
-        { log_error( "Error: coult not unmap src2\n" );  ++s_test_fail; goto exit; }
-        if( (err = clEnqueueUnmapMemObject( queue, cmp, s3, 0, NULL, NULL )))
-        { log_error( "Error: coult not unmap cmp\n" );  ++s_test_fail; goto exit; }
+        d = clEnqueueMapBuffer( queue, dest, CL_TRUE, CL_MAP_READ, 0, BUFFER_SIZE, 0, nullptr, nullptr, &err );
+        if( err ){ log_error( "Error: Could not map dest # 2" );  ++s_test_fail; goto exit; }
 
-        for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
+        if ((*checkResults[stype])(d, vecsize == 0 ? sref : ref, block_elements, element_count[vecsize])!=0){
+            log_error("vec_size:%d indx: 0x%16.16llx\n", (int)element_count[vecsize], 0);
+            ++s_test_fail;
+            goto exit;
+        }
+
+        if( (err = clEnqueueUnmapMemObject( queue, dest, d, 0, nullptr, nullptr ) ) )
         {
-            size_t vector_size = element_count[vecsize] * type_size[stype];
-            size_t vector_count =  (BUFFER_SIZE + vector_size - 1) / vector_size;
-
-            if((err = clSetKernelArg(kernels[vecsize], 0,  sizeof dest, &dest) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
-            if((err = clSetKernelArg(kernels[vecsize], 1,  sizeof src1, &src1) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
-            if((err = clSetKernelArg(kernels[vecsize], 2,  sizeof src2, &src2) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
-            if((err = clSetKernelArg(kernels[vecsize], 3,  sizeof cmp, &cmp) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
-
-
-            // Wipe destination
-            void *d = clEnqueueMapBuffer( queue, dest, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
-            if( err ){ log_error( "Error: Could not map dest" );  ++s_test_fail; goto exit; }
-            memset( d, -1, BUFFER_SIZE );
-            if( (err = clEnqueueUnmapMemObject( queue, dest, d, 0, NULL, NULL ) ) ){ log_error( "Error: Could not unmap dest" ); ++s_test_fail; goto exit; }
-
-            err = clEnqueueNDRangeKernel(queue, kernels[vecsize], 1, NULL, &vector_count, NULL, 0, NULL, NULL);
-            if (err != CL_SUCCESS) {
-                log_error("clEnqueueNDRangeKernel failed errcode:%d\n", err);
-                ++s_test_fail;
-                goto exit;
-            }
-
-            d = clEnqueueMapBuffer( queue, dest, CL_TRUE, CL_MAP_READ, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
-            if( err ){ log_error( "Error: Could not map dest # 2" );  ++s_test_fail; goto exit; }
-
-            if ((*checkResults[stype])(d, vecsize == 0 ? sref : ref, block_elements, element_count[vecsize])!=0){
-                log_error("vec_size:%d indx: 0x%16.16llx\n", (int)element_count[vecsize], i);
-                ++s_test_fail;
-                goto exit;
-            }
-
-            if( (err = clEnqueueUnmapMemObject( queue, dest, d, 0, NULL, NULL ) ) )
-            {
-                log_error( "Error: Could not unmap dest" );
-                ++s_test_fail;
-                goto exit;
-            }
-        } // for vecsize
-    } // for i
+            log_error( "Error: Could not unmap dest" );
+            ++s_test_fail;
+            goto exit;
+        }
+    } // for vecsize
+    if( (err = clEnqueueUnmapMemObject( queue, src1, s1, 0, nullptr, nullptr )))
+    { log_error( "Error: coult not unmap src1\n" );  ++s_test_fail; goto exit; }
+    if( (err = clEnqueueUnmapMemObject( queue, src2, s2, 0, nullptr, nullptr )))
+    { log_error( "Error: coult not unmap src2\n" );  ++s_test_fail; goto exit; }
+    if( (err = clEnqueueUnmapMemObject( queue, cmp, s3, 0, nullptr, nullptr )))
+    { log_error( "Error: coult not unmap cmp\n" );  ++s_test_fail; goto exit; }
 
     if (!s_wimpy_mode)
         log_info(" Passed\n\n");
@@ -460,7 +474,7 @@ exit:
     if( ref )   free(ref );
     if( sref )  free(sref );
 
-    free_mtdata(d);
+    free_mtdata(d0);
     for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; vecsize++) {
         clReleaseKernel(kernels[vecsize]);
         clReleaseProgram(programs[vecsize]);
@@ -474,83 +488,83 @@ exit:
     return err;
 }
 
-int test_select_uchar_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_uchar_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kuchar, kuchar, deviceID);
 }
-int test_select_uchar_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_uchar_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kuchar, kchar, deviceID);
 }
-int test_select_char_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_char_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kchar, kuchar, deviceID);
 }
-int test_select_char_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_char_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kchar, kchar, deviceID);
 }
-int test_select_ushort_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_ushort_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kushort, kushort, deviceID);
 }
-int test_select_ushort_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_ushort_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kushort, kshort, deviceID);
 }
-int test_select_short_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_short_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kshort, kushort, deviceID);
 }
-int test_select_short_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_short_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kshort, kshort, deviceID);
 }
-int test_select_uint_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_uint_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kuint, kuint, deviceID);
 }
-int test_select_uint_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_uint_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kuint, kint, deviceID);
 }
-int test_select_int_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_int_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kint, kuint, deviceID);
 }
-int test_select_int_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_int_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kint, kint, deviceID);
 }
-int test_select_float_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_float_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kfloat, kuint, deviceID);
 }
-int test_select_float_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_float_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kfloat, kint, deviceID);
 }
-int test_select_ulong_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_ulong_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kulong, kulong, deviceID);
 }
-int test_select_ulong_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_ulong_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kulong, klong, deviceID);
 }
-int test_select_long_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_long_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, klong, kulong, deviceID);
 }
-int test_select_long_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_long_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, klong, klong, deviceID);
 }
-int test_select_double_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_double_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kdouble, kulong, deviceID);
 }
-int test_select_double_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_select_double_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
 {
     return doTest(queue, context, kdouble, klong, deviceID);
 }
@@ -582,7 +596,7 @@ const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char* argv[])
 {
-    test_start();
+    test_start()
 
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
@@ -592,7 +606,7 @@ int main(int argc, const char* argv[])
 
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 
-    if( NULL == argList )
+    if( nullptr == argList )
     {
         log_error( "Failed to allocate memory for argList array.\n" );
         return 1;
@@ -604,7 +618,7 @@ int main(int argc, const char* argv[])
     for( int i = 1; i < argc; ++i )
     {
         const char *arg = argv[i];
-        if (arg == NULL)
+        if (arg == nullptr)
             break;
 
         if (arg[0] == '-')
@@ -647,14 +661,14 @@ int main(int argc, const char* argv[])
         log_info("*** Wimpy Reduction Factor: %-27u ***\n\n", s_wimpy_reduction_factor);
     }
 
-    int err = runTestHarness(argCount, argList, test_num, test_list, false, 0);
+    int err = runTestHarness(static_cast<int>(argCount), argList, test_num, test_list, false, 0);
 
     free( argList );
 
     return err;
 }
 
-static void printUsage( void )
+static void printUsage( )
 {
     log_info("test_select:  [-w] <optional: test_names> \n");
     log_info("\tdefault is to run the full test on the default device\n");
@@ -662,8 +676,8 @@ static void printUsage( void )
     log_info("\t-[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", s_wimpy_reduction_factor);
     log_info("\n");
     log_info("Test names:\n");
-    for( int i = 0; i < test_num; i++ )
+    for(auto & i : test_list)
     {
-        log_info( "\t%s\n", test_list[i].name );
+        log_info( "\t%s\n", i.name );
     }
 }
