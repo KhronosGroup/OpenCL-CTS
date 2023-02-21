@@ -22,6 +22,8 @@
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
+#include "tools.h"
+#include "../workgroups/TestNonUniformWorkGroup.h"
 
 test_definition test_list[] = {
     ADD_TEST_VERSION(work_group_all, Version(2, 0)),
@@ -40,7 +42,22 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(work_group_broadcast_3D, Version(2, 0)),
     ADD_TEST(work_group_suggested_local_size_1D),
     ADD_TEST(work_group_suggested_local_size_2D),
-    ADD_TEST(work_group_suggested_local_size_3D)
+    ADD_TEST(work_group_suggested_local_size_3D),
+    ADD_TEST( non_uniform_1d_basic ),
+    ADD_TEST( non_uniform_1d_atomics ),
+    ADD_TEST( non_uniform_1d_barriers ),
+
+    ADD_TEST( non_uniform_2d_basic ),
+    ADD_TEST( non_uniform_2d_atomics ),
+    ADD_TEST( non_uniform_2d_barriers ),
+
+    ADD_TEST( non_uniform_3d_basic ),
+    ADD_TEST( non_uniform_3d_atomics ),
+    ADD_TEST( non_uniform_3d_barriers ),
+
+    ADD_TEST( non_uniform_other_basic ),
+    ADD_TEST( non_uniform_other_atomics ),
+    ADD_TEST( non_uniform_other_barriers )
 };
 
 const int test_num = ARRAY_SIZE(test_list);
@@ -80,6 +97,22 @@ test_status InitCL(cl_device_id device) {
 }
 
 int main(int argc, const char *argv[]) {
-  return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0, InitCL);
+  typedef std::vector<const char *> ArgsVector;
+  ArgsVector programArgs;
+  programArgs.assign(argv, argv+argc);
+
+  for (ArgsVector::iterator it = programArgs.begin(); it!=programArgs.end();) {
+
+        if(*it == std::string("-strict")) {
+            TestNonUniformWorkGroup::enableStrictMode(true);
+            it=programArgs.erase(it);
+        } else {
+            ++it;
+        }
+  }
+
+  PrimeNumbers::generatePrimeNumbers(100000);
+
+  return runTestHarnessWithCheck(static_cast<int>(programArgs.size()), &programArgs.front(), test_num, test_list, false, false, InitCL);
 }
 

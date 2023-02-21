@@ -50,3 +50,18 @@ extern int test_work_group_suggested_local_size_3D(cl_device_id device,
                                                    cl_context context,
                                                    cl_command_queue queue,
                                                    int n_elems);
+extern int test_non_uniform_1d_basic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_non_uniform_1d_atomics(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_non_uniform_1d_barriers(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+
+extern int test_non_uniform_2d_basic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_non_uniform_2d_atomics(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_non_uniform_2d_barriers(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+
+extern int test_non_uniform_3d_basic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_non_uniform_3d_atomics(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_non_uniform_3d_barriers(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+
+extern int test_non_uniform_other_basic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_non_uniform_other_atomics(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_non_uniform_other_barriers(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
