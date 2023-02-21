@@ -31,6 +31,11 @@ extern int test_user_events(cl_device_id device, cl_context context,
                             cl_command_queue queue, int num_elements);
 extern int test_out_of_order(cl_device_id device, cl_context context,
                              cl_command_queue queue, int num_elements);
+extern int test_basic_profiling(cl_device_id device, cl_context context,
+                                cl_command_queue queue, int num_elements);
+extern int test_simultaneous_profiling(cl_device_id device, cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
 extern int test_queue_substitution(cl_device_id device, cl_context context,
                                    cl_command_queue queue, int num_elements);
 extern int test_properties_queue_substitution(cl_device_id device,

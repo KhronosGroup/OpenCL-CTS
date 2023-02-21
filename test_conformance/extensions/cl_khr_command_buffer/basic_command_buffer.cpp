@@ -21,6 +21,7 @@
 #include <vector>
 
 
+//--------------------------------------------------------------------------
 BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
                                                cl_context context,
                                                cl_command_queue queue)
@@ -31,7 +32,6 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
       simultaneous_use_requested(true),
       // due to simultaneous cases extend buffer size
       buffer_size_multiplier(1), command_buffer(this)
-
 {
     cl_int error = clRetainCommandQueue(queue);
     if (error != CL_SUCCESS)
@@ -41,6 +41,7 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
     this->queue = queue;
 }
 
+//--------------------------------------------------------------------------
 bool BasicCommandBufferTest::Skip()
 {
     cl_command_queue_properties required_properties;
@@ -75,29 +76,20 @@ bool BasicCommandBufferTest::Skip()
     return required_properties != (required_properties & queue_properties);
 }
 
-cl_int BasicCommandBufferTest::SetUp(int elements)
+//--------------------------------------------------------------------------
+cl_int BasicCommandBufferTest::SetUpKernel()
 {
-    cl_int error = init_extension_functions();
-    if (error != CL_SUCCESS)
-    {
-        return error;
-    }
-
-    if (elements <= 0)
-    {
-        return CL_INVALID_VALUE;
-    }
-    num_elements = static_cast<size_t>(elements);
+    cl_int error = CL_SUCCESS;
 
     // Kernel performs a parallel copy from an input buffer to output buffer
     // is created.
     const char *kernel_str =
         R"(
-    __kernel void copy(__global int* in, __global int* out, __global int* offset) {
-        size_t id = get_global_id(0);
-        int ind = offset[0] + id;
-        out[ind] = in[ind];
-    })";
+  __kernel void copy(__global int* in, __global int* out, __global int* offset) {
+      size_t id = get_global_id(0);
+      int ind = offset[0] + id;
+      out[ind] = in[ind];
+  })";
 
     error = create_single_kernel_helper_create_program(context, &program, 1,
                                                        &kernel_str);
@@ -106,6 +98,16 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
     test_error(error, "Failed to build program");
 
+    kernel = clCreateKernel(program, "copy", &error);
+    test_error(error, "Failed to create copy kernel");
+
+    return CL_SUCCESS;
+}
+
+//--------------------------------------------------------------------------
+cl_int BasicCommandBufferTest::SetUpKernelArgs()
+{
+    cl_int error = CL_SUCCESS;
     in_mem =
         clCreateBuffer(context, CL_MEM_READ_ONLY,
                        sizeof(cl_int) * num_elements * buffer_size_multiplier,
@@ -123,9 +125,6 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
                              sizeof(cl_int), &offset, &error);
     test_error(error, "clCreateBuffer failed");
 
-    kernel = clCreateKernel(program, "copy", &error);
-    test_error(error, "Failed to create copy kernel");
-
     error = clSetKernelArg(kernel, 0, sizeof(in_mem), &in_mem);
     test_error(error, "clSetKernelArg failed");
 
@@ -134,6 +133,25 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
 
     error = clSetKernelArg(kernel, 2, sizeof(off_mem), &off_mem);
     test_error(error, "clSetKernelArg failed");
+
+    return CL_SUCCESS;
+}
+
+//--------------------------------------------------------------------------
+cl_int BasicCommandBufferTest::SetUp(int elements)
+{
+    cl_int error = init_extension_functions();
+    if (error != CL_SUCCESS)
+    {
+        return error;
+    }
+    num_elements = static_cast<size_t>(elements);
+
+    error = SetUpKernel();
+    test_error(error, "SetUpKernel failed");
+
+    error = SetUpKernelArgs();
+    test_error(error, "SetUpKernelArgs failed");
 
     if (simultaneous_use_support)
     {
