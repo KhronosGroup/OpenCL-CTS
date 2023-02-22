@@ -91,17 +91,6 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
     }
 
     //--------------------------------------------------------------------------
-#define test_expected_info(cond)                                               \
-    {                                                                          \
-        if (cond)                                                              \
-        {                                                                      \
-            log_error("clGetCommandBufferInfoKHR return values not as "        \
-                      "expected\n");                                           \
-            return TEST_FAIL;                                                  \
-        }                                                                      \
-    }
-
-    //--------------------------------------------------------------------------
     cl_int RunQueuesInfoTest()
     {
         cl_int error = TEST_PASS;
@@ -121,9 +110,12 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             &num_queues, &ret_value_size);
         test_error(error, "clGetCommandBufferInfoKHR failed");
 
-        test_expected_info(ret_value_size > sizeof(cl_int));
+        test_assert_error(
+            ret_value_size == sizeof(cl_int),
+            "Unexpected result of CL_COMMAND_BUFFER_NUM_QUEUES_KHR query!");
 
-        test_expected_info(num_queues != expect_queue_list.size());
+        test_assert_error(num_queues == expect_queue_list.size(),
+                          "Unexpected queue list size!");
 
         std::vector<cl_command_queue> queue_list(num_queues);
         size_t expect_size = queue_list.size() * sizeof(cl_command_queue);
@@ -132,13 +124,17 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             &queue_list.front(), &ret_value_size);
         test_error(error, "clGetCommandBufferInfoKHR failed");
 
-        test_expected_info(ret_value_size > expect_size);
+        test_assert_error(
+            ret_value_size == expect_size,
+            "Unexpected result of CL_COMMAND_BUFFER_NUM_QUEUES_KHR query!");
 
         // We can not check if this is the right queue because this is an opaque
         // object, test against NULL.
         for (int i = 0; i < queue_list.size(); i++)
         {
-            test_expected_info(queue_list[i] == NULL);
+            test_assert_error(
+                queue_list[i] == queue,
+                "clGetCommandBufferInfoKHR return values not as expected\n");
         }
         return TEST_PASS;
     }
@@ -178,7 +174,9 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             sizeof(cl_uint), &new_ref_count, nullptr);
         test_error(error, "clGetCommandBufferInfoKHR failed");
 
-        test_expected_info(new_ref_count != (retain_count + init_ref_count));
+        test_assert_error(new_ref_count == (retain_count + init_ref_count),
+                          "Unexpected result of "
+                          "CL_COMMAND_BUFFER_REFERENCE_COUNT_KHR query!");
 
         // decrease reference count through clReleaseCommandBufferKHR calls
         for (int i = 0; i < retain_count; i++)
@@ -193,7 +191,9 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             sizeof(cl_uint), &new_ref_count, nullptr);
         test_error(error, "clGetCommandBufferInfoKHR failed");
 
-        test_expected_info(new_ref_count != init_ref_count);
+        test_assert_error(new_ref_count == init_ref_count,
+                          "Unexpected result of "
+                          "CL_COMMAND_BUFFER_REFERENCE_COUNT_KHR query!");
 
         return TEST_PASS;
     }
@@ -214,7 +214,9 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             test_error_ret(error, "clGetCommandBufferInfoKHR failed",
                            TEST_FAIL);
 
-            test_expected_info(state != expected);
+            test_assert_error(
+                state == expected,
+                "Unexpected result of CL_COMMAND_BUFFER_STATE_KHR query!");
 
             return TEST_PASS;
         };
@@ -245,11 +247,13 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         // verify pending state
         error = verify_state(CL_COMMAND_BUFFER_STATE_PENDING_KHR);
-        test_error(error, "verify_state failed");
 
         // execute command buffer
-        error = clSetUserEventStatus(trigger_event, CL_COMPLETE);
-        test_error(error, "clSetUserEventStatus failed");
+        cl_int signal_error = clSetUserEventStatus(trigger_event, CL_COMPLETE);
+
+        test_error(error, "verify_state failed");
+
+        test_error(signal_error, "clSetUserEventStatus failed");
 
         return CL_SUCCESS;
     }
@@ -274,11 +278,15 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         if (!simultaneous_use_support && ret_value_size == 0) return TEST_PASS;
 
         // ... otherwise 0 size prop array is not an acceptable value
-        test_expected_info(ret_value_size == 0);
+        test_assert_error(ret_value_size != 0,
+                          "Unexpected result of "
+                          "CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR query!");
 
         cl_uint num_ret_props =
             ret_value_size / sizeof(cl_command_buffer_properties_khr);
-        test_expected_info(num_ret_props == 0);
+        test_assert_error(num_ret_props != 0,
+                          "Unexpected result of "
+                          "CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR query!");
 
         combuf_props.resize(num_ret_props);
         error = clGetCommandBufferInfoKHR(
@@ -289,8 +297,14 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         if (simultaneous_use_support)
         {
+            // in simultaneous use case at least 3 elements in array expected
+            test_assert_error(num_ret_props >= 3,
+                              "Unexpected result of "
+                              "CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR query!");
+
             if (combuf_props[0] == CL_COMMAND_BUFFER_FLAGS_KHR
-                && combuf_props[1] == CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR)
+                && combuf_props[1] == CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR
+                && combuf_props.back() == 0)
                 return TEST_PASS;
         }
         else
