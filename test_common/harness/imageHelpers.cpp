@@ -29,7 +29,12 @@
 #include <cmath>
 #endif
 #ifdef __SSE2__
+#if defined(__INTEL_COMPILER)
+#include <intrin.h>
+#else
 #include <x86intrin.h>
+#endif
+
 #if (defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 12)                \
     || (defined(__clang__) && !defined(__apple_build_version__)                \
         && __clang_major__ < 8)
@@ -2234,7 +2239,7 @@ static __m128 read_image_pixel_float(void *imageData,
                                          _mm_set_epi32(1, dPtr[2], 0, 0));
 #endif
                     break;
-                case 4: pixel = _mm_loadu_si128((__m128i_u *)ptr); break;
+                case 4: pixel = _mm_loadu_si128((__m128i *)ptr); break;
             }
             if (channelCount != 1) tempData = _mm_cvtepi32_ps(pixel);
             break;
@@ -2270,7 +2275,7 @@ static __m128 read_image_pixel_float(void *imageData,
                                          _mm_set_epi32(1, dPtr[2], 0, 0));
 #endif
                     break;
-                case 4: pixel = _mm_loadu_si128((__m128i_u *)ptr); break;
+                case 4: pixel = _mm_loadu_si128((__m128i *)ptr); break;
             }
             if (channelCount != 1)
             {
