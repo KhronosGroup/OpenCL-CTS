@@ -75,9 +75,35 @@ For spir-v mode only:
         "\n");
 }
 
+CompilationMode string_to_compilation_mode(const std::string& in)
+{
+    if (in == "online")
+        return kOnline;
+    else if (in == "binary")
+        return kBinary;
+    else if (in == "spir-v")
+        return kSpir_v;
+    else
+    {
+        log_error("Compilation mode not recognized: %s\n", in.c_str());
+        abort();
+    }
+}
+
 int parseCustomParam(int argc, const char *argv[], const char *ignore)
 {
     int delArg = 0;
+
+    char *env_mode = getenv("COMPILATION_MODE");
+    if (env_mode != NULL)
+    {
+        gCompilationMode = string_to_compilation_mode(env_mode);
+        log_info("Compilation mode specified by env: %s\n", env_mode);
+    }
+
+    char *env_prog = getenv("COMPILATION_PROGRAM");
+    if (env_prog != NULL)
+        gCompilationProgram = env_prog;
 
     for (int i = 1; i < argc; i++)
     {
@@ -111,24 +137,8 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
                 delArg++;
                 const char *mode = argv[i + 1];
 
-                if (!strcmp(mode, "online"))
-                {
-                    gCompilationMode = kOnline;
-                }
-                else if (!strcmp(mode, "binary"))
-                {
-                    gCompilationMode = kBinary;
-                }
-                else if (!strcmp(mode, "spir-v"))
-                {
-                    gCompilationMode = kSpir_v;
-                }
-                else
-                {
-                    log_error("Compilation mode not recognized: %s\n", mode);
-                    return -1;
-                }
-                log_info("Compilation mode specified: %s\n", mode);
+                gCompilationMode = string_to_compilation_mode(mode);
+                log_info("Compilation mode specified on command line: %s\n", mode);
             }
             else
             {

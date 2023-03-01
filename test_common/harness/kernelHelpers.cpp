@@ -164,7 +164,8 @@ get_offline_compilation_file_type_str(const CompilationMode compilationMode)
 
 static std::string get_unique_filename_prefix(unsigned int numKernelLines,
                                               const char *const *kernelProgram,
-                                              const char *buildOptions)
+                                              const char *buildOptions,
+                                              const char *compilationProgram)
 {
     std::string kernel = get_kernel_content(numKernelLines, kernelProgram);
     std::string kernelName = get_kernel_name(kernel);
@@ -177,6 +178,12 @@ static std::string get_unique_filename_prefix(unsigned int numKernelLines,
         cl_uint bOptionsCrc = crc32(buildOptions, strlen(buildOptions));
         oss << '.' << std::hex << std::setfill('0') << std::setw(8)
             << bOptionsCrc;
+    }
+    if (compilationProgram)
+    {
+        cl_uint cProgramCrc = crc32(compilationProgram, strlen(compilationProgram));
+        oss << '.' << std::hex << std::setfill('0') << std::setw(8)
+            << cProgramCrc;
     }
     return oss.str();
 }
@@ -286,7 +293,7 @@ save_kernel_source_and_options_to_disk(unsigned int numKernelLines,
 
     std::string kernel = get_kernel_content(numKernelLines, kernelProgram);
     std::string kernelNamePrefix =
-        get_unique_filename_prefix(numKernelLines, kernelProgram, buildOptions);
+        get_unique_filename_prefix(numKernelLines, kernelProgram, buildOptions, gCompilationProgram.c_str());
 
     // save kernel source to disk
     error = save_kernel_source_to_disk(gCompilationCachePath, kernelNamePrefix,
@@ -589,7 +596,7 @@ static int create_single_kernel_helper_create_program_offline(
     bOptions += buildOptions ? std::string(buildOptions) : "";
 
     std::string kernelName =
-        get_unique_filename_prefix(numKernelLines, kernelProgram, buildOptions);
+        get_unique_filename_prefix(numKernelLines, kernelProgram, buildOptions, gCompilationProgram.c_str());
 
 
     std::ifstream ifs;
@@ -686,7 +693,7 @@ static int create_single_kernel_helper_create_program(
     std::lock_guard<std::mutex> compiler_lock(gCompilerMutex);
 
     std::string filePrefix =
-        get_unique_filename_prefix(numKernelLines, kernelProgram, buildOptions);
+        get_unique_filename_prefix(numKernelLines, kernelProgram, buildOptions, gCompilationProgram.c_str());
     bool shouldSaveToDisk = should_save_kernel_source_to_disk(
         compilationMode, gCompilationCacheMode, gCompilationCachePath,
         filePrefix);
@@ -819,6 +826,20 @@ int create_single_kernel_helper(cl_context context, cl_program *outProgram,
         {
             std::string::size_type i = newBuildOptions.find(s);
             if (i != std::string::npos) newBuildOptions.erase(i, s.length());
+        }
+
+        // Remove lang standard flags when offline compiling
+        if(gCompilationMode != kOnline)
+        {
+            std::string onlineCompilerOptions[] = {
+                "-cl-std=CL1.0", "-cl-std=CL1.1", "-cl-std=CL1.2",
+                "-cl-std=CL2.0", "-cl-std=CL2.1", "-cl-std=CL2.2"
+            };
+            for (auto &s : onlineCompilerOptions)
+            {
+                std::string::size_type i = newBuildOptions.find(s);
+                if (i != std::string::npos) newBuildOptions.erase(i, s.length());
+            }
         }
     }
     // Build program and create kernel
