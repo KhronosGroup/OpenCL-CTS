@@ -22,4 +22,25 @@ set(${MODULE_NAME}_SOURCES
     test_binary_fn.cpp
 )
 
+set(${MODULE_NAME}_KERNEL_LANG clc)
+set(${MODULE_NAME}_TESTS
+clamp
+degrees
+fmax
+fmaxf
+fmin
+fminf
+max
+maxf
+min
+minf
+mix
+radians
+step
+stepf
+smoothstep
+smoothstepf
+sign
+)
+
 include(../CMakeCommon.cmake)

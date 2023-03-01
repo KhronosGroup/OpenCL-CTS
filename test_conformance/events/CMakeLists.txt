@@ -11,4 +11,36 @@ set(${MODULE_NAME}_SOURCES
     test_callbacks.cpp
 )
 
+set(${MODULE_NAME}_KERNEL_LANG clc)
+set(${MODULE_NAME}_TESTS
+event_get_execute_status
+event_get_write_array_status
+event_get_read_array_status
+event_get_info
+event_wait_for_execute
+event_wait_for_array
+event_flush
+event_finish_execute
+event_finish_array
+event_release_before_done
+event_enqueue_marker
+event_enqueue_marker_with_event_list
+event_enqueue_barrier_with_event_list
+out_of_order_event_waitlist_single_queue
+out_of_order_event_waitlist_multi_queue
+out_of_order_event_waitlist_multi_queue_multi_device
+out_of_order_event_enqueue_wait_for_events_single_queue
+out_of_order_event_enqueue_wait_for_events_multi_queue
+out_of_order_event_enqueue_wait_for_events_multi_queue_multi_device
+out_of_order_event_enqueue_marker_single_queue
+out_of_order_event_enqueue_marker_multi_queue
+out_of_order_event_enqueue_marker_multi_queue_multi_device
+out_of_order_event_enqueue_barrier_single_queue
+waitlists
+userevents
+callbacks
+callbacks_simultaneous
+userevents_multithreaded
+)
+
 include(../CMakeCommon.cmake)

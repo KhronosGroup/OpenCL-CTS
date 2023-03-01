@@ -47,4 +47,8 @@ set_source_files_properties(
     PROPERTIES LANGUAGE CXX)
 include_directories("./vulkan_interop_common/")
 
+set(${MODULE_NAME}_KERNEL_LANG clc)
+set(${MODULE_NAME}_TESTS
+)
+
 include(../CMakeCommon.cmake)

@@ -17,6 +17,22 @@ set(DEVICE_EXECUTION_SOURCES
     utils.cpp
 )
 
+set(${MODULE_NAME}_KERNEL_LANG clc)
+set(${MODULE_NAME}_TESTS
+device_info
+device_queue
+execute_block
+enqueue_block
+enqueue_nested_blocks
+enqueue_wg_size
+enqueue_flags
+enqueue_multi_queue
+host_multi_queue
+enqueue_ndrange
+host_queue_order
+enqueue_profiling
+)
+
 include(../CMakeCommon.cmake)
 
 # end of file #
