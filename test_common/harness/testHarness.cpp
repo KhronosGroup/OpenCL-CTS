@@ -285,8 +285,18 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
 
     /* Special case: just list the tests */
     if ((argc > 1)
-        && (!strcmp(argv[1], "-list") || !strcmp(argv[1], "-h")
-            || !strcmp(argv[1], "--help")))
+        && (!strcmp(argv[1], "-l") || !strcmp(argv[1], "--list")))
+    {
+        for (int i = 0; i < testNum; i++)
+        {
+            log_info("%s\n", testList[i].name);
+        }
+        return EXIT_SUCCESS;
+    }
+
+    /* Print help */
+    if ((argc > 1)
+        && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")))
     {
         char *fileName = getenv("CL_CONFORMANCE_RESULTS_FILENAME");
 

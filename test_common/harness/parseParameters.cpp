@@ -43,6 +43,8 @@ void helpInfo()
         R"(Common options:
     -h, --help
         This help
+    -l, --list-tests
+        Only print the list of tests inside the executable
     --compilation-mode <mode>
         Specify a compilation mode.  Mode can be:
             online     Use online compilation (default)
