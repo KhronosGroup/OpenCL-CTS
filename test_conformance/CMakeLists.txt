@@ -3,10 +3,6 @@ set( CLConf_Install_Base_Dir "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 set(HARNESS_LIB harness)
 
-if(VULKAN_IS_SUPPORTED)
-    add_subdirectory( common/vulkan_wrapper )
-endif()
-
 add_subdirectory( allocations )
 add_subdirectory( api )
 add_subdirectory( atomics )
@@ -57,6 +53,7 @@ add_subdirectory( device_timer )
 add_subdirectory( spirv_new )
 add_subdirectory( spir )
 if(VULKAN_IS_SUPPORTED)
+    add_subdirectory( common/vulkan_wrapper )
     add_subdirectory( vulkan )
 endif()
 

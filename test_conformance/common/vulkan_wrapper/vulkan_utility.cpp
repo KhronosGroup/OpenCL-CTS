@@ -674,12 +674,7 @@ static char *findFilePath(const std::string filename)
 
 std::vector<char> readFile(const std::string &filename)
 {
-    std::string str1 = filename;
-    std::string str2 =
-        "/home/pajs/work/KHR08-35/OpenCL-CTS/test_conformance/vulkan/shaders/";
-
-    std::string str3 = str2 + str1;
-    const char *file_path = str3.c_str();
+    char *file_path = findFilePath(filename);
 
     std::ifstream file(file_path, std::ios::ate | std::ios::binary);
 

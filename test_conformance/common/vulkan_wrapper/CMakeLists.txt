@@ -11,5 +11,8 @@ add_cxx_flag_if_supported(-Wno-error=terminate)
 add_cxx_flag_if_supported(-Wno-error=unused-function)
 add_cxx_flag_if_supported(-Wno-error=return-type)
 
+link_directories(${CLConform_VULKAN_LIBRARIES_DIR})
+
+list(APPEND CLConform_INCLUDE_DIR ${VULKAN_INCLUDE_DIR})
+
 add_library(vulkan_wrapper SHARED ${VULKAN_WRAPPER_SOURCES})
-#add_library(vulkan_wrapper STATIC ${VULKAN_WRAPPER_SOURCES})
