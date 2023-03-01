@@ -70,4 +70,4 @@ if(APPLE)
     list(APPEND ${MODULE_NAME}_SOURCES test_queue_priority.cpp)
 endif(APPLE)
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

@@ -22,4 +22,4 @@ set(TEST_HARNESS_SOURCES
 
 set(${MODULE_NAME}_SOURCES ${SPIRV_NEW_SOURCES} ${TEST_HARNESS_SOURCES})
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

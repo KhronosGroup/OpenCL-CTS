@@ -9,4 +9,4 @@ set(${MODULE_NAME}_SOURCES
         type_replacer.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

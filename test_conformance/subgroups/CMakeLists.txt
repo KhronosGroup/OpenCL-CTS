@@ -19,4 +19,4 @@ set(${MODULE_NAME}_SOURCES
     test_subgroup_rotate.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

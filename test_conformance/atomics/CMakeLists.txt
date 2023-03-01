@@ -6,5 +6,5 @@ set(${MODULE_NAME}_SOURCES
         test_indexed_cases.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)
 

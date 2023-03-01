@@ -7,6 +7,6 @@ set(${MODULE_NAME}_SOURCES
     stress_tests.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)
 
 # end of file #

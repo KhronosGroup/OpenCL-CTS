@@ -6,4 +6,4 @@ set(${MODULE_NAME}_SOURCES
     cxx_for_opencl_ver.cpp
 )
 
-include(../../CMakeCommon.txt)
+include(../../CMakeCommon.cmake)

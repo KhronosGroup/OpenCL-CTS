@@ -9,4 +9,4 @@ set(${MODULE_NAME}_SOURCES
     test_wg_suggested_local_work_size.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

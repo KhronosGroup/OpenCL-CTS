@@ -17,7 +17,7 @@ set (${MODULE_NAME}_SOURCES
 
 list(APPEND CLConform_LIBRARIES EGL GLESv2)
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)
 
 if(DEFINED USE_GLES3)
     target_compile_definitions(${${MODULE_NAME}_OUT} PRIVATE GLES3)

@@ -17,5 +17,5 @@ set(${MODULE_NAME}_SOURCES
     test_extended_bit_ops_reverse.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)
 

@@ -8,4 +8,4 @@ set(${MODULE_NAME}_SOURCES
         allocation_utils.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

@@ -5,4 +5,4 @@ set(${MODULE_NAME}_SOURCES
     test_thread_dimensions.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

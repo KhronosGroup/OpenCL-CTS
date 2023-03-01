@@ -47,4 +47,4 @@ set_source_files_properties(
     PROPERTIES LANGUAGE CXX)
 include_directories("./vulkan_interop_common/")
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

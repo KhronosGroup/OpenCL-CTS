@@ -6,4 +6,4 @@ set(${MODULE_NAME}_SOURCES
     test_multiple_devices.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

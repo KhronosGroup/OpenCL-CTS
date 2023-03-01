@@ -38,4 +38,4 @@ set(${MODULE_NAME}_SOURCES
          test_semaphores.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

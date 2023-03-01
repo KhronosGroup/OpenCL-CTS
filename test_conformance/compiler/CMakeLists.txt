@@ -15,7 +15,7 @@ set(${MODULE_NAME}_SOURCES
     test_feature_macro.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)
 
 # Copy the required test include directories into the build directory.
 if(NOT DEFINED COMPILER_TEST_RESOURCES)

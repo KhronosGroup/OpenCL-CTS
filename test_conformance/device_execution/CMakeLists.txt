@@ -17,6 +17,6 @@ set(DEVICE_EXECUTION_SOURCES
     utils.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)
 
 # end of file #

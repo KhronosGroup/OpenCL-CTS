@@ -8,4 +8,4 @@ set(${MODULE_NAME}_SOURCES
         pci_bus_info.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

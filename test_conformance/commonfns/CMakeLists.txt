@@ -22,4 +22,4 @@ set(${MODULE_NAME}_SOURCES
     test_binary_fn.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

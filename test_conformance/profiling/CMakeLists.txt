@@ -11,4 +11,4 @@ set(${MODULE_NAME}_SOURCES
     execute_multipass.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

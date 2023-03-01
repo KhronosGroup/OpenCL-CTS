@@ -10,6 +10,6 @@ set(${MODULE_NAME}_SOURCES
     tools.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)
 
 # end of file #

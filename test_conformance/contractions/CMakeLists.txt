@@ -4,4 +4,4 @@ set(${MODULE_NAME}_SOURCES
         contractions.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

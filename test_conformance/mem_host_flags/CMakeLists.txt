@@ -6,4 +6,4 @@ set(${MODULE_NAME}_SOURCES
     mem_host_image.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

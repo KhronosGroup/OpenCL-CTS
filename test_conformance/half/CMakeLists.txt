@@ -7,5 +7,5 @@ set(${MODULE_NAME}_SOURCES
         Test_vStoreHalf.cpp main.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)
 

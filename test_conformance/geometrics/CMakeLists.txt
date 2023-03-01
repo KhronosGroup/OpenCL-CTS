@@ -6,5 +6,5 @@ set(${MODULE_NAME}_SOURCES
     test_geometrics.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)
 

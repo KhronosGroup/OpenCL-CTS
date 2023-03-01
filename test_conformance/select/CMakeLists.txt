@@ -5,4 +5,4 @@ set(${MODULE_NAME}_SOURCES
         util_select.cpp
 )
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)
