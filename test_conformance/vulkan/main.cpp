@@ -40,7 +40,7 @@
 #include <unistd.h>
 #endif
 #include <vulkan_interop_common.hpp>
-#include <vulkan_wrapper.hpp>
+#include <../common/vulkan_wrapper/vulkan_wrapper.hpp>
 
 #define BUFFERSIZE 3000
 
