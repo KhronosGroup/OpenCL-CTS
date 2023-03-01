@@ -5,10 +5,6 @@ set(${MODULE_NAME}_SOURCES
     test_external_semaphore.cpp
 )
 
-#TARGET_LINK_LIBRARIES(${${MODULE_NAME}_OUT} vulkan_wrapper ${CLConform_LIBRARIES})
-
-# list(APPEND CLConform_LIBRARIES vulkan vulkan_wrapper)
-
 # needed by Vulkan wrapper to link
 if(WIN32)
     list(APPEND CLConform_LIBRARIES vulkan-1 vulkan_wrapper)
@@ -19,5 +15,7 @@ set(CMAKE_CXX_FLAGS "-fpermissive")
 if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
 endif(WIN32)
+
+include_directories("../../common/vulkan_wrapper")
 
 include(../../CMakeCommon.txt)

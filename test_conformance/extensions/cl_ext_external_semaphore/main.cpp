@@ -15,9 +15,22 @@
 #include "procs.h"
 #include "harness/testHarness.h"
 
-test_definition test_list[] = { ADD_TEST(external_semaphores_queries),
-                                ADD_TEST(external_semaphores_multi_context),
-                                ADD_TEST(external_semaphores_in_order_queue) };
+test_definition test_list[] = {
+    ADD_TEST(external_semaphores_queries),
+    ADD_TEST(external_semaphores_multi_context),
+    ADD_TEST(external_semaphores_simple_1),
+    // ADD_TEST(external_semaphores_simple_2),
+    ADD_TEST(external_semaphores_reuse),
+    ADD_TEST(external_semaphores_cross_queues_ooo),
+    ADD_TEST(external_semaphores_cross_queues_io),
+    ADD_TEST(external_semaphores_cross_queues_io2),
+    ADD_TEST(external_semaphores_multi_signal),
+    ADD_TEST(external_semaphores_multi_wait),
+    // ADD_TEST(external_semaphores_order_1),
+    // ADD_TEST(external_semaphores_order_2),
+    // ADD_TEST(external_semaphores_order_3),
+    // ADD_TEST(external_semaphores_invalid_command)
+};
 
 
 int main(int argc, const char *argv[])
