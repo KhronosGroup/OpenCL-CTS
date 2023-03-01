@@ -18,7 +18,7 @@
 void host_atomic_thread_fence(TExplicitMemoryOrderType order)
 {
   if(order != MEMORY_ORDER_RELAXED) {
-#if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
+#if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(_WIN32))
     MemoryBarrier();
 #elif defined(__GNUC__)
     __sync_synchronize();
