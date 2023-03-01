@@ -19,6 +19,8 @@
 #include "harness/testHarness.h"
 #include "harness/kernelHelpers.h"
 #include "harness/parseParameters.h"
+#include "harness/mt19937.h"
+
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
 #endif
@@ -158,7 +160,6 @@ static inline void Force64BitFPUPrecision(void)
 #endif
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////////////
 
 template <std::size_t I = 0, typename FuncT, typename... Tp>
@@ -176,7 +177,6 @@ template <std::size_t I = 0, typename FuncT, typename... Tp>
     f(std::get<I>(t));
     for_each_elem<I + 1, FuncT, Tp...>(t, f);
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -499,12 +499,6 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
     }
     else
     {
-        // TODO 1: verify if taking into account sign of zero is indeed
-        // necessary
-        // TODO 2: verify if volatile is necessary in case of int and uint
-        //      // Use volatile to prevent optimization by Clang compiler
-        //      volatile cl_uint l = ((cl_uint *)in)[0];
-
         if (std::is_same<cl_float, OutType>::value)
             *out = (*in == 0 ? 0.f : *in); // Per IEEE-754-2008 5.4.1, 0's
                                            // always convert to +0.0
@@ -635,6 +629,316 @@ void DataInfoSpec<InType, OutType>::conv_sat(OutType *out, InType *in)
             *out = (OutType)*in;
         else
             *out = absolute((OutType)*in);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+// for readability sake keep this section unformatted
+static const unsigned int specialValuesUInt[] = {
+    INT_MIN, INT_MIN + 1, INT_MIN + 2,
+    -(1<<30)-3,-(1<<30)-2,-(1<<30)-1, -(1<<30), -(1<<30)+1, -(1<<30)+2, -(1<<30)+3,
+    -(1<<24)-3,-(1<<24)-2,-(1<<24)-1, -(1<<24), -(1<<24)+1, -(1<<24)+2, -(1<<24)+3,
+    -(1<<23)-3,-(1<<23)-2,-(1<<23)-1, -(1<<23), -(1<<23)+1, -(1<<23)+2, -(1<<23)+3,
+    -(1<<22)-3,-(1<<22)-2,-(1<<22)-1, -(1<<22), -(1<<22)+1, -(1<<22)+2, -(1<<22)+3,
+    -(1<<21)-3,-(1<<21)-2,-(1<<21)-1, -(1<<21), -(1<<21)+1, -(1<<21)+2, -(1<<21)+3,
+    -(1<<16)-3,-(1<<16)-2,-(1<<16)-1, -(1<<16), -(1<<16)+1, -(1<<16)+2, -(1<<16)+3,
+    -(1<<15)-3,-(1<<15)-2,-(1<<15)-1, -(1<<15), -(1<<15)+1, -(1<<15)+2, -(1<<15)+3,
+    -(1<<8)-3,-(1<<8)-2,-(1<<8)-1, -(1<<8), -(1<<8)+1, -(1<<8)+2, -(1<<8)+3,
+    -(1<<7)-3,-(1<<7)-2,-(1<<7)-1, -(1<<7), -(1<<7)+1, -(1<<7)+2, -(1<<7)+3,
+    -4, -3, -2, -1, 0, 1, 2, 3, 4,
+    (1<<7)-3,(1<<7)-2,(1<<7)-1, (1<<7), (1<<7)+1, (1<<7)+2, (1<<7)+3,
+    (1<<8)-3,(1<<8)-2,(1<<8)-1, (1<<8), (1<<8)+1, (1<<8)+2, (1<<8)+3,
+    (1<<15)-3,(1<<15)-2,(1<<15)-1, (1<<15), (1<<15)+1, (1<<15)+2, (1<<15)+3,
+    (1<<16)-3,(1<<16)-2,(1<<16)-1, (1<<16), (1<<16)+1, (1<<16)+2, (1<<16)+3,
+    (1<<21)-3,(1<<21)-2,(1<<21)-1, (1<<21), (1<<21)+1, (1<<21)+2, (1<<21)+3,
+    (1<<22)-3,(1<<22)-2,(1<<22)-1, (1<<22), (1<<22)+1, (1<<22)+2, (1<<22)+3,
+    (1<<23)-3,(1<<23)-2,(1<<23)-1, (1<<23), (1<<23)+1, (1<<23)+2, (1<<23)+3,
+    (1<<24)-3,(1<<24)-2,(1<<24)-1, (1<<24), (1<<24)+1, (1<<24)+2, (1<<24)+3,
+    (1<<30)-3,(1<<30)-2,(1<<30)-1, (1<<30), (1<<30)+1, (1<<30)+2, (1<<30)+3,
+    INT_MAX-3, INT_MAX-2, INT_MAX-1, INT_MAX, // 0x80000000, 0x80000001 0x80000002 already covered above
+    UINT_MAX-3, UINT_MAX-2, UINT_MAX-1, UINT_MAX
+};
+
+static const float specialValuesFloat[] = {
+    -NAN, -INFINITY, -FLT_MAX,
+    MAKE_HEX_FLOAT(-0x1.000002p64f, -0x1000002L, 40), MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64), MAKE_HEX_FLOAT(-0x1.fffffep63f, -0x1fffffeL, 39),
+    MAKE_HEX_FLOAT(-0x1.000002p63f, -0x1000002L, 39), MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63), MAKE_HEX_FLOAT(-0x1.fffffep62f, -0x1fffffeL, 38),
+    MAKE_HEX_FLOAT(-0x1.000002p32f, -0x1000002L, 8), MAKE_HEX_FLOAT(-0x1.0p32f, -0x1L, 32), MAKE_HEX_FLOAT(-0x1.fffffep31f, -0x1fffffeL, 7),
+    MAKE_HEX_FLOAT(-0x1.000002p31f, -0x1000002L, 7), MAKE_HEX_FLOAT(-0x1.0p31f, -0x1L, 31), MAKE_HEX_FLOAT(-0x1.fffffep30f, -0x1fffffeL, 6),
+    -1000.f, -100.f, -4.0f, -3.5f, -3.0f,
+    MAKE_HEX_FLOAT(-0x1.800002p1f, -0x1800002L, -23), -2.5f, MAKE_HEX_FLOAT(-0x1.7ffffep1f, -0x17ffffeL, -23), -2.0f, MAKE_HEX_FLOAT(-0x1.800002p0f, -0x1800002L, -24), -1.5f,
+    MAKE_HEX_FLOAT(-0x1.7ffffep0f, -0x17ffffeL, -24),MAKE_HEX_FLOAT(-0x1.000002p0f, -0x1000002L, -24), -1.0f, MAKE_HEX_FLOAT(-0x1.fffffep-1f, -0x1fffffeL, -25),
+    MAKE_HEX_FLOAT(-0x1.000002p-1f, -0x1000002L, -25), -0.5f, MAKE_HEX_FLOAT(-0x1.fffffep-2f, -0x1fffffeL, -26),
+    MAKE_HEX_FLOAT(-0x1.000002p-2f, -0x1000002L, -26), -0.25f, MAKE_HEX_FLOAT(-0x1.fffffep-3f, -0x1fffffeL, -27),
+    MAKE_HEX_FLOAT(-0x1.000002p-126f, -0x1000002L, -150), -FLT_MIN, MAKE_HEX_FLOAT(-0x0.fffffep-126f, -0x0fffffeL, -150),
+    MAKE_HEX_FLOAT(-0x0.000ffep-126f, -0x0000ffeL, -150), MAKE_HEX_FLOAT(-0x0.0000fep-126f, -0x00000feL, -150),
+    MAKE_HEX_FLOAT(-0x0.00000ep-126f, -0x000000eL, -150), MAKE_HEX_FLOAT(-0x0.00000cp-126f, -0x000000cL, -150),
+    MAKE_HEX_FLOAT(-0x0.00000ap-126f, -0x000000aL, -150), MAKE_HEX_FLOAT(-0x0.000008p-126f, -0x0000008L, -150),
+    MAKE_HEX_FLOAT(-0x0.000006p-126f, -0x0000006L, -150), MAKE_HEX_FLOAT(-0x0.000004p-126f, -0x0000004L, -150),
+    MAKE_HEX_FLOAT(-0x0.000002p-126f, -0x0000002L, -150), -0.0f, +NAN, +INFINITY, +FLT_MAX,
+    MAKE_HEX_FLOAT(+0x1.000002p64f, +0x1000002L, 40), MAKE_HEX_FLOAT(+0x1.0p64f, +0x1L, 64), MAKE_HEX_FLOAT(+0x1.fffffep63f, +0x1fffffeL, 39),
+    MAKE_HEX_FLOAT(+0x1.000002p63f, +0x1000002L, 39), MAKE_HEX_FLOAT(+0x1.0p63f, +0x1L, 63), MAKE_HEX_FLOAT(+0x1.fffffep62f, +0x1fffffeL, 38),
+    MAKE_HEX_FLOAT(+0x1.000002p32f, +0x1000002L, 8), MAKE_HEX_FLOAT(+0x1.0p32f, +0x1L, 32), MAKE_HEX_FLOAT(+0x1.fffffep31f, +0x1fffffeL, 7),
+    MAKE_HEX_FLOAT(+0x1.000002p31f, +0x1000002L, 7), MAKE_HEX_FLOAT(+0x1.0p31f, +0x1L, 31), MAKE_HEX_FLOAT(+0x1.fffffep30f, +0x1fffffeL, 6),
+    +1000.f, +100.f, +4.0f, +3.5f, +3.0f,
+    MAKE_HEX_FLOAT(+0x1.800002p1f, +0x1800002L, -23), 2.5f, MAKE_HEX_FLOAT(+0x1.7ffffep1f, +0x17ffffeL, -23), +2.0f,
+    MAKE_HEX_FLOAT(+0x1.800002p0f, +0x1800002L, -24), 1.5f, MAKE_HEX_FLOAT(+0x1.7ffffep0f, +0x17ffffeL, -24),
+    MAKE_HEX_FLOAT(+0x1.000002p0f, +0x1000002L, -24), +1.0f, MAKE_HEX_FLOAT(+0x1.fffffep-1f, +0x1fffffeL, -25),
+    MAKE_HEX_FLOAT(+0x1.000002p-1f, +0x1000002L, -25), +0.5f, MAKE_HEX_FLOAT(+0x1.fffffep-2f, +0x1fffffeL, -26),
+    MAKE_HEX_FLOAT(+0x1.000002p-2f, +0x1000002L, -26), +0.25f, MAKE_HEX_FLOAT(+0x1.fffffep-3f, +0x1fffffeL, -27),
+    MAKE_HEX_FLOAT(0x1.000002p-126f, 0x1000002L, -150), +FLT_MIN, MAKE_HEX_FLOAT(+0x0.fffffep-126f, +0x0fffffeL, -150),
+    MAKE_HEX_FLOAT(+0x0.000ffep-126f, +0x0000ffeL, -150), MAKE_HEX_FLOAT(+0x0.0000fep-126f, +0x00000feL, -150),
+    MAKE_HEX_FLOAT(+0x0.00000ep-126f, +0x000000eL, -150), MAKE_HEX_FLOAT(+0x0.00000cp-126f, +0x000000cL, -150),
+    MAKE_HEX_FLOAT(+0x0.00000ap-126f, +0x000000aL, -150), MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150),
+    MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150), MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150),
+    MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150), +0.0f
+};
+
+// A table of more difficult cases to get right
+static const double specialValuesDouble[] = {
+    -NAN, -INFINITY, -DBL_MAX,
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p64, -0x10000000000001LL, 12), MAKE_HEX_DOUBLE(-0x1.0p64, -0x1LL, 64),
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp63, -0x1fffffffffffffLL, 11), MAKE_HEX_DOUBLE(-0x1.80000000000001p64, -0x180000000000001LL, 8),
+    MAKE_HEX_DOUBLE(-0x1.8p64, -0x18LL, 60), MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp64, -0x17ffffffffffffLL, 12),
+    MAKE_HEX_DOUBLE(-0x1.80000000000001p63, -0x180000000000001LL, 7), MAKE_HEX_DOUBLE(-0x1.8p63, -0x18LL, 59),
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp63, -0x17ffffffffffffLL, 11), MAKE_HEX_DOUBLE(-0x1.0000000000001p63, -0x10000000000001LL, 11),
+    MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp62, -0x1fffffffffffffLL, 10),
+    MAKE_HEX_DOUBLE(-0x1.80000000000001p32, -0x180000000000001LL, -24), MAKE_HEX_DOUBLE(-0x1.8p32, -0x18LL, 28),
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp32, -0x17ffffffffffffLL, -20), MAKE_HEX_DOUBLE(-0x1.000002p32, -0x1000002LL, 8),
+    MAKE_HEX_DOUBLE(-0x1.0p32, -0x1LL, 32), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp31, -0x1fffffffffffffLL, -21),
+    MAKE_HEX_DOUBLE(-0x1.80000000000001p31, -0x180000000000001LL, -25), MAKE_HEX_DOUBLE(-0x1.8p31, -0x18LL, 27),
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp31, -0x17ffffffffffffLL, -21), MAKE_HEX_DOUBLE(-0x1.0000000000001p31, -0x10000000000001LL, -21),
+    MAKE_HEX_DOUBLE(-0x1.0p31, -0x1LL, 31), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp30, -0x1fffffffffffffLL, -22),
+    -1000., -100., -4.0, -3.5, -3.0, MAKE_HEX_DOUBLE(-0x1.8000000000001p1, -0x18000000000001LL, -51),
+    -2.5, MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp1, -0x17ffffffffffffLL, -51),
+    -2.0, MAKE_HEX_DOUBLE(-0x1.8000000000001p0, -0x18000000000001LL, -52),
+    -1.5, MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp0, -0x17ffffffffffffLL, -52), MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52),
+    -1.0, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-1, -0x1fffffffffffffLL, -53), MAKE_HEX_DOUBLE(-0x1.0000000000001p-1, -0x10000000000001LL, -53),
+    -0.5, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-2, -0x1fffffffffffffLL, -54), MAKE_HEX_DOUBLE(-0x1.0000000000001p-2, -0x10000000000001LL, -54),
+    -0.25, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-3, -0x1fffffffffffffLL, -55), MAKE_HEX_DOUBLE(-0x1.0000000000001p-1022, -0x10000000000001LL, -1074), -DBL_MIN,
+    MAKE_HEX_DOUBLE(-0x0.fffffffffffffp-1022, -0x0fffffffffffffLL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000fffp-1022, -0x00000000000fffLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.00000000000fep-1022, -0x000000000000feLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000ep-1022, -0x0000000000000eLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.000000000000cp-1022, -0x0000000000000cLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000ap-1022, -0x0000000000000aLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000008p-1022, -0x00000000000008LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000007p-1022, -0x00000000000007LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000006p-1022, -0x00000000000006LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000005p-1022, -0x00000000000005LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000004p-1022, -0x00000000000004LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000003p-1022, -0x00000000000003LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000002p-1022, -0x00000000000002LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000001p-1022, -0x00000000000001LL, -1074),
+    -0.0, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp63, +0x1fffffffffffffLL, 11),
+    MAKE_HEX_DOUBLE(0x1.80000000000001p63, 0x180000000000001LL, 7), MAKE_HEX_DOUBLE(0x1.8p63, 0x18LL, 59),
+    MAKE_HEX_DOUBLE(0x1.7ffffffffffffp63, 0x17ffffffffffffLL, 11), MAKE_HEX_DOUBLE(+0x1.0000000000001p63, +0x10000000000001LL, 11),
+    MAKE_HEX_DOUBLE(+0x1.0p63, +0x1LL, 63), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp62, +0x1fffffffffffffLL, 10),
+    MAKE_HEX_DOUBLE(+0x1.80000000000001p32, +0x180000000000001LL, -24), MAKE_HEX_DOUBLE(+0x1.8p32, +0x18LL, 28),
+    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp32, +0x17ffffffffffffLL, -20), MAKE_HEX_DOUBLE(+0x1.000002p32, +0x1000002LL, 8),
+    MAKE_HEX_DOUBLE(+0x1.0p32, +0x1LL, 32), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp31, +0x1fffffffffffffLL, -21),
+    MAKE_HEX_DOUBLE(+0x1.80000000000001p31, +0x180000000000001LL, -25), MAKE_HEX_DOUBLE(+0x1.8p31, +0x18LL, 27),
+    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp31, +0x17ffffffffffffLL, -21), MAKE_HEX_DOUBLE(+0x1.0000000000001p31, +0x10000000000001LL, -21),
+    MAKE_HEX_DOUBLE(+0x1.0p31, +0x1LL, 31), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp30, +0x1fffffffffffffLL, -22),
+    +1000., +100., +4.0, +3.5, +3.0, MAKE_HEX_DOUBLE(+0x1.8000000000001p1, +0x18000000000001LL, -51), +2.5,
+    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp1, +0x17ffffffffffffLL, -51), +2.0, MAKE_HEX_DOUBLE(+0x1.8000000000001p0, +0x18000000000001LL, -52),
+    +1.5, MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp0, +0x17ffffffffffffLL, -52), MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52),
+    +1.0, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-1, +0x1fffffffffffffLL, -53), MAKE_HEX_DOUBLE(+0x1.0000000000001p-1, +0x10000000000001LL, -53),
+    +0.5, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-2, +0x1fffffffffffffLL, -54), MAKE_HEX_DOUBLE(+0x1.0000000000001p-2, +0x10000000000001LL, -54),
+    +0.25, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-3, +0x1fffffffffffffLL, -55), MAKE_HEX_DOUBLE(+0x1.0000000000001p-1022, +0x10000000000001LL, -1074),
+    +DBL_MIN, MAKE_HEX_DOUBLE(+0x0.fffffffffffffp-1022, +0x0fffffffffffffLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000fffp-1022, +0x00000000000fffLL, -1074), MAKE_HEX_DOUBLE(+0x0.00000000000fep-1022, +0x000000000000feLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.000000000000ep-1022, +0x0000000000000eLL, -1074), MAKE_HEX_DOUBLE(+0x0.000000000000cp-1022, +0x0000000000000cLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.000000000000ap-1022, +0x0000000000000aLL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000008p-1022, +0x00000000000008LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000007p-1022, +0x00000000000007LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000006p-1022, +0x00000000000006LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000005p-1022, +0x00000000000005LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000004p-1022, +0x00000000000004LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000003p-1022, +0x00000000000003LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000002p-1022, +0x00000000000002LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074), +0.0, MAKE_HEX_DOUBLE(-0x1.ffffffffffffep62, -0x1ffffffffffffeLL, 10),
+    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp62, -0x1ffffffffffffcLL, 10), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp62, -0x1fffffffffffffLL, 10),
+    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep62, +0x1ffffffffffffeLL, 10), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp62, +0x1ffffffffffffcLL, 10),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp62, +0x1fffffffffffffLL, 10), MAKE_HEX_DOUBLE(-0x1.ffffffffffffep51, -0x1ffffffffffffeLL, -1),
+    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp51, -0x1ffffffffffffcLL, -1), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp51, -0x1fffffffffffffLL, -1),
+    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep51, +0x1ffffffffffffeLL, -1), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp51, +0x1ffffffffffffcLL, -1),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp51, +0x1fffffffffffffLL, -1), MAKE_HEX_DOUBLE(-0x1.ffffffffffffep52, -0x1ffffffffffffeLL, 0),
+    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp52, -0x1ffffffffffffcLL, 0), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp52, -0x1fffffffffffffLL, 0),
+    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep52, +0x1ffffffffffffeLL, 0), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp52, +0x1ffffffffffffcLL, 0),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp52, +0x1fffffffffffffLL, 0), MAKE_HEX_DOUBLE(-0x1.ffffffffffffep53, -0x1ffffffffffffeLL, 1),
+    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp53, -0x1ffffffffffffcLL, 1), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp53, -0x1fffffffffffffLL, 1),
+    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep53, +0x1ffffffffffffeLL, 1), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp53, +0x1ffffffffffffcLL, 1),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp53, +0x1fffffffffffffLL, 1), MAKE_HEX_DOUBLE(-0x1.0000000000002p52, -0x10000000000002LL, 0),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p52, -0x10000000000001LL, 0), MAKE_HEX_DOUBLE(-0x1.0p52, -0x1LL, 52),
+    MAKE_HEX_DOUBLE(+0x1.0000000000002p52, +0x10000000000002LL, 0), MAKE_HEX_DOUBLE(+0x1.0000000000001p52, +0x10000000000001LL, 0),
+    MAKE_HEX_DOUBLE(+0x1.0p52, +0x1LL, 52), MAKE_HEX_DOUBLE(-0x1.0000000000002p53, -0x10000000000002LL, 1),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p53, -0x10000000000001LL, 1), MAKE_HEX_DOUBLE(-0x1.0p53, -0x1LL, 53),
+    MAKE_HEX_DOUBLE(+0x1.0000000000002p53, +0x10000000000002LL, 1), MAKE_HEX_DOUBLE(+0x1.0000000000001p53, +0x10000000000001LL, 1),
+    MAKE_HEX_DOUBLE(+0x1.0p53, +0x1LL, 53), MAKE_HEX_DOUBLE(-0x1.0000000000002p54, -0x10000000000002LL, 2),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p54, -0x10000000000001LL, 2), MAKE_HEX_DOUBLE(-0x1.0p54, -0x1LL, 54),
+    MAKE_HEX_DOUBLE(+0x1.0000000000002p54, +0x10000000000002LL, 2), MAKE_HEX_DOUBLE(+0x1.0000000000001p54, +0x10000000000001LL, 2),
+    MAKE_HEX_DOUBLE(+0x1.0p54, +0x1LL, 54), MAKE_HEX_DOUBLE(-0x1.fffffffefffffp62, -0x1fffffffefffffLL, 10),
+    MAKE_HEX_DOUBLE(-0x1.ffffffffp62, -0x1ffffffffLL, 30), MAKE_HEX_DOUBLE(-0x1.ffffffff00001p62, -0x1ffffffff00001LL, 10),
+    MAKE_HEX_DOUBLE(0x1.fffffffefffffp62, 0x1fffffffefffffLL, 10), MAKE_HEX_DOUBLE(0x1.ffffffffp62, 0x1ffffffffLL, 30),
+    MAKE_HEX_DOUBLE(0x1.ffffffff00001p62, 0x1ffffffff00001LL, 10),
+};
+
+// clang-format on
+
+////////////////////////////////////////////////////////////////////////////////////////
+cl_ulong random64(MTdata d)
+{
+    return (cl_ulong)genrand_int32(d) | ((cl_ulong)genrand_int32(d) << 32);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
+template <typename InType, typename OutType>
+void DataInfoSpec<InType, OutType>::init(const cl_uint &job_id,
+                                         const cl_uint &thread_id)
+{
+    uint64_t start = start + job_id * size;
+    void *pIn = (char *)gIn + job_id * size * gTypeSizes[inType];
+
+    if (std::is_integral<InType>::value)
+    {
+        InType *o = (InType *)pIn;
+        if (sizeof(InType) <= sizeof(cl_short))
+        { // char/uchar/ushort/short
+            for (int i = 0; i < size; i++) o[i] = start++;
+        }
+        else if (sizeof(InType) <= sizeof(cl_int))
+        { // int/uint
+            int i = 0;
+            if (gIsEmbedded)
+                for (i = 0; i < size; i++)
+                    o[i] = (InType)genrand_int32(d[thread_id]);
+            else
+                for (i = 0; i < size; i++) o[i] = (InType)i + start;
+
+            if (0 == start)
+            {
+                size_t tableSize = sizeof(specialValuesUInt);
+                if (sizeof(InType) * size < tableSize)
+                    tableSize = sizeof(InType) * size;
+                memcpy((char *)(o + i) - tableSize, specialValuesUInt,
+                       tableSize);
+            }
+        }
+        else
+        { // long/ulong
+            cl_ulong *o = (cl_ulong *)pIn;
+            cl_ulong i, j, k;
+
+            i = 0;
+            if (start == 0)
+            {
+                // Try various powers of two
+                for (j = 0; j < (cl_ulong)size && j < 8 * sizeof(cl_ulong); j++)
+                    o[j] = (cl_ulong)1 << j;
+                i = j;
+
+                // try the complement of those
+                for (j = 0; i < (cl_ulong)size && j < 8 * sizeof(cl_ulong); j++)
+                    o[i++] = ~((cl_ulong)1 << j);
+
+                // Try various negative powers of two
+                for (j = 0; i < (cl_ulong)size && j < 8 * sizeof(cl_ulong); j++)
+                    o[i++] = (cl_ulong)0xFFFFFFFFFFFFFFFEULL << j;
+
+                // try various powers of two plus 1, shifted by various amounts
+                for (j = 0; i < (cl_ulong)size && j < 8 * sizeof(cl_ulong); j++)
+                    for (k = 0;
+                         i < (cl_ulong)size && k < 8 * sizeof(cl_ulong) - j;
+                         k++)
+                        o[i++] = (((cl_ulong)1 << j) + 1) << k;
+
+                // try various powers of two minus 1
+                for (j = 0; i < (cl_ulong)size && j < 8 * sizeof(cl_ulong); j++)
+                    for (k = 0;
+                         i < (cl_ulong)size && k < 8 * sizeof(cl_ulong) - j;
+                         k++)
+                        o[i++] = (((cl_ulong)1 << j) - 1) << k;
+
+                // Other patterns
+                cl_ulong pattern[] = {
+                    0x3333333333333333ULL, 0x5555555555555555ULL,
+                    0x9999999999999999ULL, 0x6666666666666666ULL,
+                    0xccccccccccccccccULL, 0xaaaaaaaaaaaaaaaaULL
+                };
+                cl_ulong mask[] = { 0xffffffffffffffffULL,
+                                    0xff00ff00ff00ff00ULL,
+                                    0xffff0000ffff0000ULL,
+                                    0xffffffff00000000ULL };
+                for (j = 0; i < (cl_ulong)size
+                     && j < sizeof(pattern) / sizeof(pattern[0]);
+                     j++)
+                    for (k = 0; i + 2 <= (cl_ulong)size
+                         && k < sizeof(mask) / sizeof(mask[0]);
+                         k++)
+                    {
+                        o[i++] = pattern[j] & mask[k];
+                        o[i++] = pattern[j] & ~mask[k];
+                    }
+            }
+
+            for (; i < (cl_ulong)size; i++) o[i] = random64(d[thread_id]);
+        }
+    } // integrals
+    else if (std::is_same<InType, cl_float>::value)
+    {
+        cl_uint *o = (cl_uint *)pIn;
+        int i;
+
+        if (gIsEmbedded)
+            for (i = 0; i < size; i++)
+                o[i] = (cl_uint)genrand_int32(d[thread_id]);
+        else
+            for (i = 0; i < size; i++) o[i] = (cl_uint)i + start;
+
+        if (0 == start)
+        {
+            size_t tableSize = sizeof(specialValuesFloat);
+            if (sizeof(InType) * size < tableSize)
+                tableSize = sizeof(InType) * size;
+            memcpy((char *)(o + i) - tableSize, specialValuesFloat, tableSize);
+        }
+
+        if (kUnsaturated == sat)
+        {
+            clampf func = gClampFloat[outType][round];
+            InType *f = (InType *)pIn;
+            for (i = 0; i < size; i++) f[i] = func(f[i]);
+        }
+    }
+    else if (std::is_same<InType, cl_double>::value)
+    {
+        InType *o = (InType *)pIn;
+        int i = 0;
+
+        union {
+            uint64_t u;
+            InType d;
+        } u;
+
+        for (i = 0; i < size; i++)
+        {
+            uint64_t z = i + start;
+
+            uint32_t bits = ((uint32_t)z ^ (uint32_t)(z >> 32));
+            // split 0x89abcdef to 0x89abc00000000def
+            u.u = bits & 0xfffU;
+            u.u |= (uint64_t)(bits & ~0xfffU) << 32;
+            // sign extend the leading bit of def segment as sign bit so that
+            // the middle region consists of either all 1s or 0s
+            u.u -= (bits & 0x800U) << 1;
+            o[i] = u.d;
+        }
+
+        if (0 == start)
+        {
+            size_t tableSize = sizeof(specialValuesDouble);
+            if (sizeof(InType) * size < tableSize)
+                tableSize = sizeof(InType) * size;
+            memcpy((char *)(o + i) - tableSize, specialValuesDouble, tableSize);
+        }
+
+        if (0 == sat)
+        {
+            clampd func = gClampDouble[outType][round];
+            for (i = 0; i < size; i++) o[i] = func(o[i]);
+        }
     }
 }
 
@@ -1700,10 +2004,14 @@ cl_int InitData(cl_uint job_id, cl_uint thread_id, void *p)
 {
     DataInitBase *info = (DataInitBase *)p;
 
+#if 0
     gInitFunctions[info->inType](
         (char *)gIn + job_id * info->size * gTypeSizes[info->inType], info->sat,
         info->round, info->outType, info->start + job_id * info->size,
         info->size, info->d[thread_id]);
+#else
+    info->init(job_id, thread_id);
+#endif
     return CL_SUCCESS;
 }
 

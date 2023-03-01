@@ -123,6 +123,7 @@ struct DataInitBase : public DataInitInfo
     DataInitBase(const DataInitInfo &agg): DataInitInfo(agg) {}
     virtual void conv_array(void *out, void *in, size_t n) {}
     virtual void conv_array_sat(void *out, void *in, size_t n) {}
+    virtual void init(const cl_uint &, const cl_uint &) {}
 };
 
 //--------------------------------------------------------------------------
@@ -158,6 +159,9 @@ struct DataInfoSpec : public DataInitBase
         for (size_t i = 0; i < n; i++)
             conv_sat(&((OutType *)out)[i], &((InType *)in)[i]);
     }
+
+    ////////////////////////////////////////////////////////////////////////////
+    void init(const cl_uint &, const cl_uint &) override;
 };
 #pragma pack(pop)
 
