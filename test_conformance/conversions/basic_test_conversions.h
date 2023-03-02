@@ -36,11 +36,18 @@
 #include "harness/testHarness.h"
 
 #include <tuple>
+#include <vector>
+#include <memory>
 
 typedef void (*Convert)( void *dest, void *src, size_t );
 
-#define kVectorSizeCount    6
-#define kMaxVectorSize      16
+#define kVectorSizeCount 6
+#define kMaxVectorSize 16
+#define kPageSize 4096
+
+#define BUFFER_SIZE (1024 * 1024)
+#define EMBEDDED_REDUCTION_FACTOR 16
+#define PERF_LOOP_COUNT 100
 
 typedef enum
 {
@@ -76,19 +83,36 @@ extern CheckResults gCheckResults[ kTypeCount ];
 
 #define kCallStyleCount (kVectorSizeCount + 1 /* for implicit scalar */)
 
-typedef struct CalcReferenceValuesInfo
+
+struct CalcReferenceValuesInfo
 {
-    struct WriteInputBufferInfo
-        *parent; // pointer back to the parent WriteInputBufferInfo struct
+    // pointer back to the parent WriteInputBufferInfo struct
+    struct WriteInputBufferInfo *parent;
     cl_kernel kernel; // the kernel for this vector size
     cl_program program; // the program for this vector size
     cl_uint vectorSize; // the vector size for this callback chain
     void *p; // the pointer to mapped result data for this vector size
     cl_int result;
-} CalcReferenceValuesInfo;
+};
 
-typedef struct WriteInputBufferInfo
+struct CalcRefValsBase : CalcReferenceValuesInfo
 {
+    virtual int check_result(void *, uint32_t, int) { return 0; }
+};
+
+template <typename InType, typename OutType>
+struct CalcRefValsPat : CalcRefValsBase
+{
+    int check_result(void *, uint32_t, int) override;
+};
+
+struct WriteInputBufferInfo
+{
+    WriteInputBufferInfo()
+        : calcReferenceValues(nullptr), doneBarrier(nullptr), count(0),
+          outType(kuchar), inType(kuchar), barrierCount(0)
+    {}
+
     volatile cl_event
         calcReferenceValues; // user event which signals when main thread is
                              // done calculating reference values
@@ -98,8 +122,9 @@ typedef struct WriteInputBufferInfo
     Type outType; // the data type of the conversion result
     Type inType; // the data type of the conversion input
     volatile int barrierCount;
-    CalcReferenceValuesInfo calcInfo[kCallStyleCount];
-} WriteInputBufferInfo;
+
+    std::vector<std::unique_ptr<CalcRefValsBase>> calcInfo;
+};
 
 //--------------------------------------------------------------------------
 
@@ -144,7 +169,11 @@ struct DataInfoSpec : public DataInitBase
     void conv(OutType *out, InType *in);
     void conv_sat(OutType *out, InType *in);
 
+    // min/max ranges for output type of data
     std::pair<OutType, OutType> ranges;
+
+    // matrix of clamping ranges for each rounding type
+    std::vector<std::pair<InType, InType>> clamp_ranges;
 
     ////////////////////////////////////////////////////////////////////////////
     void conv_array(void *out, void *in, size_t n) override
@@ -162,6 +191,7 @@ struct DataInfoSpec : public DataInitBase
 
     ////////////////////////////////////////////////////////////////////////////
     void init(const cl_uint &, const cl_uint &) override;
+    InType clamp(const InType &);
 };
 #pragma pack(pop)
 
