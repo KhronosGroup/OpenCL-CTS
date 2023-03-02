@@ -851,3 +851,8 @@ void clExternalSemaphore::wait(cl_command_queue cmd_queue)
     clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, &m_externalSemaphore, NULL, 0,
                                   NULL, NULL);
 }
+
+cl_semaphore_khr &clExternalSemaphore::getCLSemaphore()
+{
+    return m_externalSemaphore;
+}

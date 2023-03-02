@@ -123,6 +123,7 @@ public:
     virtual ~clExternalSemaphore();
     void signal(cl_command_queue command_queue);
     void wait(cl_command_queue command_queue);
+    cl_semaphore_khr &getCLSemaphore();
     // operator openclExternalSemaphore_t() const;
 };
 
