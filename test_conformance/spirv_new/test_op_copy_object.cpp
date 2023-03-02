@@ -93,14 +93,14 @@ TEST_COPY(double  , cl_double , 3.141592653589793)
 
 TEST_SPIRV_FUNC(op_copy_int4_simple)
 {
-    cl_int4 value = {123, 122, 121, 119};
+    cl_int4 value = { { 123, 122, 121, 119 } };
     std::vector<cl_int4> results(256, value);
     return test_copy(deviceID, context, queue, "copy_int4_simple", results);
 }
 
 TEST_SPIRV_FUNC(op_copy_int3_simple)
 {
-    cl_int3 value = {123, 122, 121, 0};
+    cl_int3 value = { { 123, 122, 121, 0 } };
     std::vector<cl_int3> results(256, value);
     return test_copy(deviceID, context, queue, "copy_int3_simple",
                      results, isVectorNotEqual<cl_int3, 3>);
@@ -126,7 +126,7 @@ TEST_SPIRV_FUNC(op_copy_struct_struct_simple)
     typedef AbstractStruct2<cl_int2, CustomType1> CustomType2;
 
     CustomType1 value1 = {2100483600, 128};
-    cl_int2 intvals = {2100480000, 2100480000};
+    cl_int2 intvals = { { 2100480000, 2100480000 } };
     CustomType2 value2 = {intvals, value1};
 
     std::vector<CustomType2> results(256, value2);
