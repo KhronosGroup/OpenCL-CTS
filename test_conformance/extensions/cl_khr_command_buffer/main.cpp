@@ -21,6 +21,7 @@ test_definition test_list[] = {
     ADD_TEST(mixed_commands),
     ADD_TEST(explicit_flush),
     ADD_TEST(out_of_order),
+    ADD_TEST(simultaneous_out_of_order),
     ADD_TEST(basic_profiling),
     ADD_TEST(simultaneous_profiling),
     ADD_TEST(regular_wait_for_command_buffer),

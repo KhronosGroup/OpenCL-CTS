@@ -29,7 +29,6 @@ extern int test_explicit_flush(cl_device_id device, cl_context context,
                                cl_command_queue queue, int num_elements);
 extern int test_out_of_order(cl_device_id device, cl_context context,
                              cl_command_queue queue, int num_elements);
-
 extern int test_regular_wait_for_command_buffer(cl_device_id device,
                                                 cl_context context,
                                                 cl_command_queue queue,
@@ -62,6 +61,10 @@ extern int test_user_events_wait(cl_device_id device, cl_context context,
                                  cl_command_queue queue, int num_elements);
 extern int test_user_event_callback(cl_device_id device, cl_context context,
                                     cl_command_queue queue, int num_elements);
+extern int test_simultaneous_out_of_order(cl_device_id device,
+                                          cl_context context,
+                                          cl_command_queue queue,
+                                          int num_elements);
 extern int test_basic_profiling(cl_device_id device, cl_context context,
                                 cl_command_queue queue, int num_elements);
 extern int test_simultaneous_profiling(cl_device_id device, cl_context context,
