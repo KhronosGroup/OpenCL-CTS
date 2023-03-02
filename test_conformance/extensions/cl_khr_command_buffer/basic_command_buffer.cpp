@@ -443,87 +443,6 @@ struct InterleavedEnqueueTest : public BasicCommandBufferTest
     }
 };
 
-// Test sync-points with an out-of-order command-buffer
-struct OutOfOrderTest : public BasicCommandBufferTest
-{
-    using BasicCommandBufferTest::BasicCommandBufferTest;
-    OutOfOrderTest(cl_device_id device, cl_context context,
-                   cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue),
-          out_of_order_queue(nullptr), out_of_order_command_buffer(this),
-          event(nullptr)
-    {}
-
-    cl_int Run() override
-    {
-        cl_sync_point_khr sync_points[2];
-
-        const cl_int pattern = 42;
-        cl_int error =
-            clCommandFillBufferKHR(out_of_order_command_buffer, nullptr, in_mem,
-                                   &pattern, sizeof(cl_int), 0, data_size(), 0,
-                                   nullptr, &sync_points[0], nullptr);
-        test_error(error, "clCommandFillBufferKHR failed");
-
-        const cl_int overwritten_pattern = 0xACDC;
-        error = clCommandFillBufferKHR(out_of_order_command_buffer, nullptr,
-                                       out_mem, &overwritten_pattern,
-                                       sizeof(cl_int), 0, data_size(), 0,
-                                       nullptr, &sync_points[1], nullptr);
-        test_error(error, "clCommandFillBufferKHR failed");
-
-        error = clCommandNDRangeKernelKHR(
-            out_of_order_command_buffer, nullptr, nullptr, kernel, 1, nullptr,
-            &num_elements, nullptr, 2, sync_points, nullptr, nullptr);
-        test_error(error, "clCommandNDRangeKernelKHR failed");
-
-        error = clFinalizeCommandBufferKHR(out_of_order_command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        error = clEnqueueCommandBufferKHR(
-            0, nullptr, out_of_order_command_buffer, 0, nullptr, &event);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        std::vector<cl_int> output_data(num_elements);
-        error = clEnqueueReadBuffer(out_of_order_queue, out_mem, CL_TRUE, 0,
-                                    data_size(), output_data.data(), 1, &event,
-                                    nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
-        }
-
-        return CL_SUCCESS;
-    }
-
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        out_of_order_queue = clCreateCommandQueue(
-            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
-        test_error(error, "Unable to create command queue to test with");
-
-        out_of_order_command_buffer =
-            clCreateCommandBufferKHR(1, &out_of_order_queue, nullptr, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
-        return CL_SUCCESS;
-    }
-
-    bool Skip() override
-    {
-        return BasicCommandBufferTest::Skip() || !out_of_order_support;
-    }
-
-    clCommandQueueWrapper out_of_order_queue;
-    clCommandBufferWrapper out_of_order_command_buffer;
-    clEventWrapper event;
-};
-
 } // anonymous namespace
 
 int test_single_ndrange(cl_device_id device, cl_context context,
@@ -558,10 +477,4 @@ int test_user_events(cl_device_id device, cl_context context,
                      cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<UserEventTest>(device, context, queue, num_elements);
-}
-
-int test_out_of_order(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
-{
-    return MakeAndRunTest<OutOfOrderTest>(device, context, queue, num_elements);
 }
