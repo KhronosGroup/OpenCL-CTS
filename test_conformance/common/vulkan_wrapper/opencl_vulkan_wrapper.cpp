@@ -831,7 +831,7 @@ clExternalSemaphore::clExternalSemaphore(
     }
 }
 
-clExternalSemaphore::~clExternalSemaphore()
+clExternalSemaphore::~clExternalSemaphore() noexcept(false)
 {
     cl_int err = clReleaseSemaphoreKHRptr(m_externalSemaphore);
     if (err != CL_SUCCESS)
