@@ -536,20 +536,16 @@ int test_read_image(cl_context context, cl_command_queue queue,
     }
 
     int nextLevelOffset = 0;
-    // Precalculate LOD dimensions for sample_image_pixel_offset()
     size_t width_lod = width_size, height_lod = height_size,
            depth_lod = depth_size;
-    image_descriptor lodInfo = *imageInfo;
-    lodInfo.num_mip_levels = 1;
 
     // Loop over all mipmap levels, if we are testing mipmapped images.
     for (int lod = 0; (gTestMipmaps && lod < imageInfo->num_mip_levels)
          || (!gTestMipmaps && lod < 1);
          lod++)
     {
-        size_t image_lod_size =
-            get_image_num_pixels(&lodInfo, lodInfo.width, lodInfo.height,
-                                 lodInfo.depth, lodInfo.arraySize);
+        size_t image_lod_size = get_image_num_pixels(
+            imageInfo, width_lod, height_lod, depth_lod, imageInfo->arraySize);
         test_assert_error(0 != image_lod_size, "Invalid image size");
         size_t resultValuesSize =
             image_lod_size * get_explicit_type_size(outputType) * 4;
@@ -569,11 +565,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
 
             // Init the coordinates
             error = InitFloatCoordsCommon(
-                &lodInfo, imageSampler, xOffsetValues, yOffsetValues,
+                imageInfo, imageSampler, xOffsetValues, yOffsetValues,
                 zOffsetValues, q >= float_offset_count ? -offset : offset,
                 q >= float_offset_count ? offset : -offset,
                 q >= float_offset_count ? -offset : offset,
-                imageSampler->normalized_coords, d, 0);
+                imageSampler->normalized_coords, d, lod);
             test_error(error, "Unable to initialise coordinates");
 
             error = clEnqueueWriteBuffer(queue, xOffsets, CL_TRUE, 0,
@@ -605,9 +601,10 @@ int test_read_image(cl_context context, cl_command_queue queue,
             test_error(error, "Unable to run kernel");
 
             // Get results
-            error = clEnqueueReadBuffer(queue, results, CL_TRUE, 0,
-                                        resultValuesSize, resultValues, 0, NULL,
-                                        NULL);
+            error = clEnqueueReadBuffer(
+                queue, results, CL_TRUE, 0,
+                image_lod_size * get_explicit_type_size(outputType) * 4,
+                resultValues, 0, NULL, NULL);
             test_error(error, "Unable to read results from kernel");
             if (gDebugTrace) log_info("    results read\n");
 
@@ -671,13 +668,13 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                         int hasDenormals = 0;
                                         FloatPixel maxPixel =
                                             sample_image_pixel_float_offset(
-                                                imagePtr, &lodInfo,
+                                                imagePtr, imageInfo,
                                                 xOffsetValues[j],
                                                 yOffsetValues[j],
                                                 zOffsetValues[j], norm_offset_x,
                                                 norm_offset_y, norm_offset_z,
                                                 imageSampler, expected, 0,
-                                                &hasDenormals, 0);
+                                                &hasDenormals, lod);
 
                                         float err1 =
                                             ABS_ERROR(sRGBmap(resultPtr[0]),
@@ -729,7 +726,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
 
                                                 maxPixel =
                                                     sample_image_pixel_float_offset(
-                                                        imagePtr, &lodInfo,
+                                                        imagePtr, imageInfo,
                                                         xOffsetValues[j],
                                                         yOffsetValues[j],
                                                         zOffsetValues[j],
@@ -737,7 +734,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         norm_offset_y,
                                                         norm_offset_z,
                                                         imageSampler, expected,
-                                                        0, NULL, 0);
+                                                        0, NULL, lod);
 
                                                 err1 = ABS_ERROR(
                                                     sRGBmap(resultPtr[0]),
@@ -791,7 +788,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                             int hasDenormals = 0;
                                             FloatPixel maxPixel =
                                                 sample_image_pixel_float_offset(
-                                                    imagePtr, &lodInfo,
+                                                    imagePtr, imageInfo,
                                                     xOffsetValues[j],
                                                     yOffsetValues[j],
                                                     zOffsetValues[j],
@@ -799,7 +796,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                     norm_offset_y,
                                                     norm_offset_z, imageSampler,
                                                     expected, 0, &hasDenormals,
-                                                    0);
+                                                    lod);
 
                                             float err1 =
                                                 ABS_ERROR(sRGBmap(resultPtr[0]),
@@ -830,13 +827,13 @@ int test_read_image(cl_context context, cl_command_queue queue,
 
                                                     maxPixel =
                                                         sample_image_pixel_float(
-                                                            imagePtr, &lodInfo,
+                                                            imagePtr, imageInfo,
                                                             xOffsetValues[j],
                                                             yOffsetValues[j],
                                                             zOffsetValues[j],
                                                             imageSampler,
                                                             expected, 0, NULL,
-                                                            0);
+                                                            lod);
 
                                                     err1 = ABS_ERROR(
                                                         sRGBmap(resultPtr[0]),
@@ -869,7 +866,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                 shouldReturn |=
                                                     determine_validation_error_offset<
                                                         float>(
-                                                        imagePtr, &lodInfo,
+                                                        imagePtr, imageInfo,
                                                         imageSampler, resultPtr,
                                                         expected, error,
                                                         xOffsetValues[j],
@@ -879,11 +876,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         norm_offset_y,
                                                         norm_offset_z, j,
                                                         numTries, numClamped,
-                                                        true, 0);
+                                                        true, lod);
                                                 log_error("Step by step:\n");
                                                 FloatPixel temp =
                                                     sample_image_pixel_float_offset(
-                                                        imagePtr, &lodInfo,
+                                                        imagePtr, imageInfo,
                                                         xOffsetValues[j],
                                                         yOffsetValues[j],
                                                         zOffsetValues[j],
@@ -892,7 +889,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         norm_offset_z,
                                                         imageSampler, tempOut,
                                                         1 /*verbose*/,
-                                                        &hasDenormals, 0);
+                                                        &hasDenormals, lod);
                                                 log_error(
                                                     "\tulps: %2.2f, %2.2f, "
                                                     "%2.2f, %2.2f  (max "
@@ -989,13 +986,13 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                         int hasDenormals = 0;
                                         FloatPixel maxPixel =
                                             sample_image_pixel_float_offset(
-                                                imagePtr, &lodInfo,
+                                                imagePtr, imageInfo,
                                                 xOffsetValues[j],
                                                 yOffsetValues[j],
                                                 zOffsetValues[j], norm_offset_x,
                                                 norm_offset_y, norm_offset_z,
                                                 imageSampler, expected, 0,
-                                                &hasDenormals, 0);
+                                                &hasDenormals, lod);
 
                                         float err1 = ABS_ERROR(resultPtr[0],
                                                                expected[0]);
@@ -1054,7 +1051,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
 
                                                 maxPixel =
                                                     sample_image_pixel_float_offset(
-                                                        imagePtr, &lodInfo,
+                                                        imagePtr, imageInfo,
                                                         xOffsetValues[j],
                                                         yOffsetValues[j],
                                                         zOffsetValues[j],
@@ -1062,7 +1059,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         norm_offset_y,
                                                         norm_offset_z,
                                                         imageSampler, expected,
-                                                        0, NULL, 0);
+                                                        0, NULL, lod);
 
                                                 err1 = ABS_ERROR(resultPtr[0],
                                                                  expected[0]);
@@ -1113,7 +1110,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                             int hasDenormals = 0;
                                             FloatPixel maxPixel =
                                                 sample_image_pixel_float_offset(
-                                                    imagePtr, &lodInfo,
+                                                    imagePtr, imageInfo,
                                                     xOffsetValues[j],
                                                     yOffsetValues[j],
                                                     zOffsetValues[j],
@@ -1121,7 +1118,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                     norm_offset_y,
                                                     norm_offset_z, imageSampler,
                                                     expected, 0, &hasDenormals,
-                                                    0);
+                                                    lod);
 
                                             float err1 = ABS_ERROR(resultPtr[0],
                                                                    expected[0]);
@@ -1160,13 +1157,13 @@ int test_read_image(cl_context context, cl_command_queue queue,
 
                                                     maxPixel =
                                                         sample_image_pixel_float(
-                                                            imagePtr, &lodInfo,
+                                                            imagePtr, imageInfo,
                                                             xOffsetValues[j],
                                                             yOffsetValues[j],
                                                             zOffsetValues[j],
                                                             imageSampler,
                                                             expected, 0, NULL,
-                                                            0);
+                                                            lod);
 
                                                     err1 =
                                                         ABS_ERROR(resultPtr[0],
@@ -1199,7 +1196,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                 shouldReturn |=
                                                     determine_validation_error_offset<
                                                         float>(
-                                                        imagePtr, &lodInfo,
+                                                        imagePtr, imageInfo,
                                                         imageSampler, resultPtr,
                                                         expected, error,
                                                         xOffsetValues[j],
@@ -1209,11 +1206,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         norm_offset_y,
                                                         norm_offset_z, j,
                                                         numTries, numClamped,
-                                                        true, 0);
+                                                        true, lod);
                                                 log_error("Step by step:\n");
                                                 FloatPixel temp =
                                                     sample_image_pixel_float_offset(
-                                                        imagePtr, &lodInfo,
+                                                        imagePtr, imageInfo,
                                                         xOffsetValues[j],
                                                         yOffsetValues[j],
                                                         zOffsetValues[j],
@@ -1222,7 +1219,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         norm_offset_z,
                                                         imageSampler, tempOut,
                                                         1 /*verbose*/,
-                                                        &hasDenormals, 0);
+                                                        &hasDenormals, lod);
                                                 log_error(
                                                     "\tulps: %2.2f, %2.2f, "
                                                     "%2.2f, %2.2f  (max "
@@ -1317,11 +1314,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                         }
 
                                         sample_image_pixel_offset<unsigned int>(
-                                            imagePtr, &lodInfo,
+                                            imagePtr, imageInfo,
                                             xOffsetValues[j], yOffsetValues[j],
                                             zOffsetValues[j], norm_offset_x,
                                             norm_offset_y, norm_offset_z,
-                                            imageSampler, expected, 0);
+                                            imageSampler, expected, lod);
 
                                         error = errMax(
                                             errMax(abs_diff_uint(expected[0],
@@ -1383,12 +1380,12 @@ int test_read_image(cl_context context, cl_command_queue queue,
 
                                             sample_image_pixel_offset<
                                                 unsigned int>(
-                                                imagePtr, &lodInfo,
+                                                imagePtr, imageInfo,
                                                 xOffsetValues[j],
                                                 yOffsetValues[j],
                                                 zOffsetValues[j], norm_offset_x,
                                                 norm_offset_y, norm_offset_z,
-                                                imageSampler, expected, 0);
+                                                imageSampler, expected, lod);
 
                                             error = errMax(
                                                 errMax(
@@ -1415,7 +1412,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                 shouldReturn |=
                                                     determine_validation_error_offset<
                                                         unsigned int>(
-                                                        imagePtr, &lodInfo,
+                                                        imagePtr, imageInfo,
                                                         imageSampler, resultPtr,
                                                         expected, error,
                                                         xOffsetValues[j],
@@ -1425,7 +1422,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         norm_offset_y,
                                                         norm_offset_z, j,
                                                         numTries, numClamped,
-                                                        false, 0);
+                                                        false, lod);
                                             }
                                             else
                                             {
@@ -1500,11 +1497,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                         }
 
                                         sample_image_pixel_offset<int>(
-                                            imagePtr, &lodInfo,
+                                            imagePtr, imageInfo,
                                             xOffsetValues[j], yOffsetValues[j],
                                             zOffsetValues[j], norm_offset_x,
                                             norm_offset_y, norm_offset_z,
-                                            imageSampler, expected, 0);
+                                            imageSampler, expected, lod);
 
                                         error = errMax(
                                             errMax(abs_diff_int(expected[0],
@@ -1566,12 +1563,12 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                             }
 
                                             sample_image_pixel_offset<int>(
-                                                imagePtr, &lodInfo,
+                                                imagePtr, imageInfo,
                                                 xOffsetValues[j],
                                                 yOffsetValues[j],
                                                 zOffsetValues[j], norm_offset_x,
                                                 norm_offset_y, norm_offset_z,
-                                                imageSampler, expected, 0);
+                                                imageSampler, expected, lod);
 
                                             error = errMax(
                                                 errMax(
@@ -1597,7 +1594,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                 shouldReturn |=
                                                     determine_validation_error_offset<
                                                         int>(
-                                                        imagePtr, &lodInfo,
+                                                        imagePtr, imageInfo,
                                                         imageSampler, resultPtr,
                                                         expected, error,
                                                         xOffsetValues[j],
@@ -1607,7 +1604,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         norm_offset_y,
                                                         norm_offset_z, j,
                                                         numTries, numClamped,
-                                                        false, 0);
+                                                        false, lod);
                                             }
                                             else
                                             {
@@ -1629,23 +1626,17 @@ int test_read_image(cl_context context, cl_command_queue queue,
             }
         }
         {
-            nextLevelOffset +=
-                image_lod_size * get_pixel_size(imageInfo->format);
-            width_lod = lodInfo.width =
-                (lodInfo.width >> 1) ? (lodInfo.width >> 1) : 1;
+            nextLevelOffset += width_lod * height_lod * depth_lod
+                * get_pixel_size(imageInfo->format);
+            width_lod = (width_lod >> 1) ? (width_lod >> 1) : 1;
             if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
-                height_lod = lodInfo.height =
-                    (lodInfo.height >> 1) ? (lodInfo.height >> 1) : 1;
+            {
+                height_lod = (height_lod >> 1) ? (height_lod >> 1) : 1;
+            }
             if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
-                depth_lod = lodInfo.depth =
-                    (lodInfo.depth >> 1) ? (lodInfo.depth >> 1) : 1;
-            lodInfo.rowPitch =
-                lodInfo.width * get_pixel_size(imageInfo->format);
-            if (imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY)
-                lodInfo.slicePitch = lodInfo.rowPitch;
-            else if (imageInfo->type == CL_MEM_OBJECT_IMAGE3D
-                     || imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
-                lodInfo.slicePitch = lodInfo.rowPitch * lodInfo.height;
+            {
+                depth_lod = (depth_lod >> 1) ? (depth_lod >> 1) : 1;
+            }
         }
     }
 
