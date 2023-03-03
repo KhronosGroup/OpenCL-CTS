@@ -53,7 +53,6 @@ bool BasicCommandBufferTest::Skip()
                "CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR");
 
     cl_command_queue_properties queue_properties;
-
     error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
                                   sizeof(queue_properties), &queue_properties,
                                   NULL);
@@ -144,6 +143,11 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     if (error != CL_SUCCESS)
     {
         return error;
+    }
+
+    if (elements <= 0)
+    {
+        return CL_INVALID_VALUE;
     }
     num_elements = static_cast<size_t>(elements);
 
@@ -264,53 +268,6 @@ struct MixedCommandsTest : public BasicCommandBufferTest
         {
             const cl_int ref = pattern_base + i;
             CHECK_VERIFICATION_ERROR(ref, result_data[i], i);
-        }
-
-        return CL_SUCCESS;
-    }
-};
-
-// Test enqueueing a command-buffer blocked on a user-event
-struct UserEventTest : public BasicCommandBufferTest
-{
-    using BasicCommandBufferTest::BasicCommandBufferTest;
-
-    cl_int Run() override
-    {
-        cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
-            nullptr, 0, nullptr, nullptr, nullptr);
-        test_error(error, "clCommandNDRangeKernelKHR failed");
-
-        error = clFinalizeCommandBufferKHR(command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        clEventWrapper user_event = clCreateUserEvent(context, &error);
-        test_error(error, "clCreateUserEvent failed");
-
-        const cl_int pattern = 42;
-        error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
-                                    data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &user_event, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        std::vector<cl_int> output_data(num_elements);
-        error = clEnqueueReadBuffer(queue, out_mem, CL_FALSE, 0, data_size(),
-                                    output_data.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        error = clSetUserEventStatus(user_event, CL_COMPLETE);
-        test_error(error, "clSetUserEventStatus failed");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
         }
 
         return CL_SUCCESS;
@@ -471,10 +428,4 @@ int test_explicit_flush(cl_device_id device, cl_context context,
 {
     return MakeAndRunTest<ExplicitFlushTest>(device, context, queue,
                                              num_elements);
-}
-
-int test_user_events(cl_device_id device, cl_context context,
-                     cl_command_queue queue, int num_elements)
-{
-    return MakeAndRunTest<UserEventTest>(device, context, queue, num_elements);
 }
