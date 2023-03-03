@@ -83,6 +83,39 @@ extern CheckResults gCheckResults[ kTypeCount ];
 
 #define kCallStyleCount (kVectorSizeCount + 1 /* for implicit scalar */)
 
+extern MTdata gMTdata;
+extern cl_command_queue gQueue;
+extern cl_context gContext;
+extern cl_mem gInBuffer;
+extern cl_mem gOutBuffers[];
+extern int gHasDouble;
+extern int gTestDouble;
+extern int gWimpyMode;
+extern int gWimpyReductionFactor;
+extern int gSkipTesting;
+extern int gMinVectorSize;
+extern int gMaxVectorSize;
+extern int gForceFTZ;
+extern int gTimeResults;
+extern int gReportAverageTimes;
+extern int gStartTestNumber;
+extern int gEndTestNumber;
+extern int gIsRTZ;
+extern void *gIn;
+extern void *gRef;
+extern void *gAllowZ;
+extern void *gOut[];
+
+extern const char **argList;
+extern int argCount;
+
+extern const char *sizeNames[];
+extern int vectorSizes[];
+
+extern size_t gComputeDevices;
+extern uint32_t gDeviceFrequency;
+
+////////////////////////////////////////////////////////////////////////////////
 
 struct CalcReferenceValuesInfo
 {
@@ -240,9 +273,20 @@ protected:
 
     size_t num_elements;
 
-    TypeIter _typeIterator;
+    TypeIter typeIterator;
 };
 
+//--------------------------------------------------------------------------
+
+struct CustomConversionsTest : ConversionsTest
+{
+    CustomConversionsTest(cl_device_id device, cl_context context,
+                          cl_command_queue queue)
+        : ConversionsTest(device, context, queue)
+    {}
+
+    cl_int Run() override;
+};
 
 //--------------------------------------------------------------------------
 

@@ -93,10 +93,6 @@ roundingMode qcom_rm;
 static int ParseArgs(int argc, const char **argv);
 static void PrintUsage(void);
 test_status InitCL(cl_device_id device);
-#if 0
-static int GetTestCase(const char *name, Type *outType, Type *inType,
-                       SaturationMode *sat, RoundingMode *round);
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -116,46 +112,23 @@ size_t gTypeSizes[kTypeCount] = {
 };
 
 char appName[64] = "ctest";
-const char **argList = NULL;
-int argCount = 0;
 int gMultithread = 1;
-
-extern MTdata gMTdata;
-extern cl_command_queue gQueue;
-extern cl_context gContext;
-extern cl_mem gInBuffer;
-extern cl_mem gOutBuffers[];
-extern int gHasDouble;
-extern int gTestDouble;
-extern int gWimpyMode;
-extern int gWimpyReductionFactor;
-extern int gSkipTesting;
-extern int gMinVectorSize;
-extern int gMaxVectorSize;
-extern int gForceFTZ;
-extern int gTimeResults;
-extern int gReportAverageTimes;
-extern int gStartTestNumber;
-extern int gEndTestNumber;
-extern int gIsRTZ;
-extern void *gIn;
-extern void *gRef;
-extern void *gAllowZ;
-extern void *gOut[];
-
-extern const char *sizeNames[];
-extern const int vectorSizes[];
-
-extern size_t gComputeDevices;
-extern uint32_t gDeviceFrequency;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
 int test_conversions(cl_device_id device, cl_context context,
                      cl_command_queue queue, int num_elements)
 {
-    return MakeAndRunTest<ConversionsTest>(device, context, queue,
-                                           num_elements);
+    if (argCount)
+    {
+        return MakeAndRunTest<CustomConversionsTest>(device, context, queue,
+                                                     num_elements);
+    }
+    else
+    {
+        return MakeAndRunTest<ConversionsTest>(device, context, queue,
+                                               num_elements);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -562,60 +535,3 @@ test_status InitCL(cl_device_id device)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
-
-#if 0
-static int GetTestCase(const char *name, Type *outType, Type *inType,
-                       SaturationMode *sat, RoundingMode *round)
-{
-    int i;
-
-    // Find the return type
-    for (i = 0; i < kTypeCount; i++)
-        if (name == strstr(name, gTypeNames[i]))
-        {
-            *outType = (Type)i;
-            name += strlen(gTypeNames[i]);
-
-            break;
-        }
-
-    if (i == kTypeCount) return -1;
-
-    // Check to see if _sat appears next
-    *sat = (SaturationMode)0;
-    for (i = 1; i < kSaturationModeCount; i++)
-        if (name == strstr(name, gSaturationNames[i]))
-        {
-            *sat = (SaturationMode)i;
-            name += strlen(gSaturationNames[i]);
-            break;
-        }
-
-    *round = (RoundingMode)0;
-    for (i = 1; i < kRoundingModeCount; i++)
-        if (name == strstr(name, gRoundingModeNames[i]))
-        {
-            *round = (RoundingMode)i;
-            name += strlen(gRoundingModeNames[i]);
-            break;
-        }
-
-    if (*name != '_') return -2;
-    name++;
-
-    for (i = 0; i < kTypeCount; i++)
-        if (name == strstr(name, gTypeNames[i]))
-        {
-            *inType = (Type)i;
-            name += strlen(gTypeNames[i]);
-
-            break;
-        }
-
-    if (i == kTypeCount) return -3;
-
-    if (*name != '\0') return -4;
-
-    return 0;
-}
-#endif

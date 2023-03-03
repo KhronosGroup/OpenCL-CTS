@@ -60,9 +60,6 @@
 #include "harness/testHarness.h"
 #endif
 
-#pragma mark -
-#pragma mark globals
-
 #if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
 #include "fplib.h"
 extern bool qcom_sat;
@@ -100,15 +97,18 @@ int vectorSizes[] = { 1, 1, 2, 3, 4, 8, 16 };
 int gMinVectorSize = 0;
 int gMaxVectorSize = sizeof(vectorSizes) / sizeof(vectorSizes[0]);
 MTdata gMTdata;
-
-#pragma mark -
-#pragma mark Declarations
+const char **argList = NULL;
+int argCount = 0;
 
 static cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
                               RoundingMode round, int vectorSize,
                               cl_kernel *outKernel);
 static int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf,
                      size_t blockCount);
+
+static int GetTestCase(const char *name, Type *outType, Type *inType,
+                       SaturationMode *sat, RoundingMode *round);
+
 
 cl_int InitData(cl_uint job_id, cl_uint thread_id, void *p);
 cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p);
@@ -161,12 +161,8 @@ template <std::size_t I = 0, typename FuncT, typename... Tp>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename OutType> struct IterInType
+struct TypeTest
 {
-    IterInType(const Type &outType, ConversionsTest &test, int &tn, int &fc)
-        : outType(outType), test(test), testNumber(tn), failCount(fc)
-    {}
-
     template <typename T> bool testType(Type in)
     {
         switch (in)
@@ -184,6 +180,16 @@ template <typename OutType> struct IterInType
             case klong: return std::is_same<cl_long, T>::value;
         }
     }
+};
+
+////////////////////////////////////////////////////////////////////////////////////////
+// Helper structures to iterate over all tuple attributes of different types
+// which generate type 2 type conversion test case.
+template <typename OutType> struct IterInType : public TypeTest
+{
+    IterInType(const Type &outType, ConversionsTest &test, int &tn, int &fc)
+        : outType(outType), test(test), testNumber(tn), failCount(fc)
+    {}
 
     template <typename InType> void operator()(const InType &t)
     {
@@ -220,6 +226,57 @@ struct IterOutType
             IterInType<OutType>(outType, test, testNumber, failCount));
         outType = (Type)(outType + 1);
     }
+    Type outType = (Type)0;
+    const TypeIter &typeIter;
+    ConversionsTest &test;
+    int testNumber = -1;
+    int failCount = 0;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////
+// Helper structures to select type 2 type conversion test case
+template <typename OutType> struct SelectInType : public TypeTest
+{
+    SelectInType(const Type &out, ConversionsTest &test, int &tn, int &fc,
+                 const Type &in)
+        : outType(out), test(test), testNumber(tn), failCount(fc), inType(in)
+    {}
+
+    template <typename InType> void operator()(const InType &t)
+    {
+        if (testType<InType>(inType))
+        {
+            // run the conversions
+            failCount = test.TestTypesConversion<InType, OutType>(
+                inType, outType, testNumber);
+        }
+    }
+    Type inType = (Type)0;
+    Type outType = (Type)0;
+    ConversionsTest &test;
+
+    int &testNumber;
+    int &failCount;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+struct SelectOutType : TypeTest
+{
+    SelectOutType(const TypeIter &typeIter, ConversionsTest &test,
+                  const Type &in, const Type &out)
+        : typeIter(typeIter), test(test), outType(out), inType(in)
+    {}
+    template <typename OutType> void operator()(const OutType &t)
+    {
+        if (testType<OutType>(outType))
+        {
+            for_each_elem(typeIter,
+                          SelectInType<OutType>(outType, test, testNumber,
+                                                failCount, inType));
+        }
+    }
+    Type inType = (Type)0;
     Type outType = (Type)0;
     const TypeIter &typeIter;
     ConversionsTest &test;
@@ -1158,21 +1215,88 @@ cl_uint RoundUpToNextPowerOfTwo(cl_uint x)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
+cl_int CustomConversionsTest::Run()
+{
+    int startMinVectorSize = gMinVectorSize;
+    Type inType, outType;
+    RoundingMode round;
+    SaturationMode sat;
+
+    for (int i = 0; i < argCount; i++)
+    {
+        if (GetTestCase(argList[i], &outType, &inType, &sat, &round))
+        {
+            vlog_error("\n\t\t**** ERROR:  Unable to parse function name "
+                       "%s.  Skipping....  *****\n\n",
+                       argList[i]);
+            continue;
+        }
+
+        // skip double if we don't have it
+        if (!gTestDouble && (inType == kdouble || outType == kdouble))
+        {
+            if (gHasDouble)
+            {
+                vlog_error("\t *** convert_%sn%s%s( %sn ) FAILED ** \n",
+                           gTypeNames[outType], gSaturationNames[sat],
+                           gRoundingModeNames[round], gTypeNames[inType]);
+                vlog("\t\tcl_khr_fp64 enabled, but double testing turned "
+                     "off.\n");
+            }
+            continue;
+        }
+
+        // skip longs on embedded
+        if (!gHasLong
+            && (inType == klong || outType == klong || inType == kulong
+                || outType == kulong))
+        {
+            continue;
+        }
+
+        // Skip the implicit converts if the rounding mode is not default or
+        // test is saturated
+        if (0 == startMinVectorSize)
+        {
+            if (sat || round != kDefaultRoundingMode)
+                gMinVectorSize = 1;
+            else
+                gMinVectorSize = 0;
+        }
+
+        SelectOutType iter(typeIterator, *this, inType, outType);
+
+        for_each_elem(typeIterator, iter);
+
+        if (iter.failCount)
+        {
+            vlog_error("\t *** convert_%sn%s%s( %sn ) FAILED ** \n",
+                       gTypeNames[outType], gSaturationNames[sat],
+                       gRoundingModeNames[round], gTypeNames[inType]);
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
+
 ConversionsTest::ConversionsTest(cl_device_id device, cl_context context,
                                  cl_command_queue queue)
     : device(device), context(context), queue(queue),
-      _typeIterator({ cl_uchar(0), cl_char(0), cl_ushort(0), cl_short(0),
-                      cl_uint(0), cl_int(0), cl_float(0), cl_double(0),
-                      cl_ulong(0), cl_long(0) })
+      typeIterator({ cl_uchar(0), cl_char(0), cl_ushort(0), cl_short(0),
+                     cl_uint(0), cl_int(0), cl_float(0), cl_double(0),
+                     cl_ulong(0), cl_long(0) })
 {}
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
 cl_int ConversionsTest::Run()
 {
-    IterOutType iter(_typeIterator, *this);
+    IterOutType iter(typeIterator, *this);
 
-    for_each_elem(_typeIterator, iter);
+    for_each_elem(typeIterator, iter);
 
     return iter.failCount;
 }
@@ -1651,9 +1775,6 @@ exit:
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
-
-#pragma mark -
-#pragma mark OpenCL
 
 static int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf,
                      size_t blockCount)
@@ -2229,3 +2350,61 @@ static cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
     return program;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////
+
+static int GetTestCase(const char *name, Type *outType, Type *inType,
+                       SaturationMode *sat, RoundingMode *round)
+{
+    int i;
+
+    // Find the return type
+    for (i = 0; i < kTypeCount; i++)
+        if (name == strstr(name, gTypeNames[i]))
+        {
+            *outType = (Type)i;
+            name += strlen(gTypeNames[i]);
+
+            break;
+        }
+
+    if (i == kTypeCount) return -1;
+
+    // Check to see if _sat appears next
+    *sat = (SaturationMode)0;
+    for (i = 1; i < kSaturationModeCount; i++)
+        if (name == strstr(name, gSaturationNames[i]))
+        {
+            *sat = (SaturationMode)i;
+            name += strlen(gSaturationNames[i]);
+            break;
+        }
+
+    *round = (RoundingMode)0;
+    for (i = 1; i < kRoundingModeCount; i++)
+        if (name == strstr(name, gRoundingModeNames[i]))
+        {
+            *round = (RoundingMode)i;
+            name += strlen(gRoundingModeNames[i]);
+            break;
+        }
+
+    if (*name != '_') return -2;
+    name++;
+
+    for (i = 0; i < kTypeCount; i++)
+        if (name == strstr(name, gTypeNames[i]))
+        {
+            *inType = (Type)i;
+            name += strlen(gTypeNames[i]);
+
+            break;
+        }
+
+    if (i == kTypeCount) return -3;
+
+    if (*name != '\0') return -4;
+
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
