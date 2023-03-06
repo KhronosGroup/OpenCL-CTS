@@ -17,6 +17,10 @@
 #ifndef _vulkan_wrapper_hpp_
 #define _vulkan_wrapper_hpp_
 
+#if defined _WIN32
+typedef void *HANDLE;
+#endif
+
 #include <vulkan/vulkan.h>
 #include "vulkan_wrapper_types.hpp"
 #include "vulkan_list_map.hpp"

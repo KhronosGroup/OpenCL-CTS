@@ -19,7 +19,6 @@
 #include <dxgi1_2.h>
 #include <aclapi.h>
 #include <algorithm>
-#include <windows.h>
 #endif
 #include <vulkan/vulkan.h>
 #include "vulkan_wrapper.hpp"
