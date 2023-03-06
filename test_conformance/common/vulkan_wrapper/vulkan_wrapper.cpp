@@ -30,6 +30,7 @@
 #endif
 #if defined _WIN32
 #include <vulkan/vulkan_win32.h>
+#include <windows.h>
 #define LoadFunction GetProcAddress
 #elif defined __linux
 #define LoadFunction dlsym
