@@ -19,6 +19,7 @@
 #include <dxgi1_2.h>
 #include <aclapi.h>
 #include <algorithm>
+#include <windows.h>
 #endif
 #include <vulkan/vulkan.h>
 #include "vulkan_wrapper.hpp"
@@ -30,7 +31,6 @@
 #endif
 #if defined _WIN32
 #include <vulkan/vulkan_win32.h>
-#include <windows.h>
 #define LoadFunction GetProcAddress
 #elif defined __linux
 #define LoadFunction dlsym
