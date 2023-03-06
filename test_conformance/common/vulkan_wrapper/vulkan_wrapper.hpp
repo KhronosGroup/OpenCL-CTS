@@ -19,6 +19,7 @@
 
 #if defined _WIN32
 typedef void *HANDLE;
+#include <windows.h>
 #endif
 
 #include <vulkan/vulkan.h>
