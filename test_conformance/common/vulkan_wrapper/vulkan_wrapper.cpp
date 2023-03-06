@@ -21,6 +21,7 @@
 #include <algorithm>
 #endif
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_win32.h>
 #include "vulkan_wrapper.hpp"
 #if defined(__linux__) && !defined(__ANDROID__)
 #include <gnu/libc-version.h>
