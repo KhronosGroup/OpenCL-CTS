@@ -39,6 +39,11 @@
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <vulkan/vulkan_win32.h>
+#endif
+
 #include <vulkan_interop_common.hpp>
 #include <vulkan_wrapper.hpp>
 
