@@ -29,8 +29,8 @@
 #include <dlfcn.h>
 #endif
 #if defined _WIN32
-#include <vulkan/vulkan_win32.h>
 #define LoadFunction GetProcAddress
+-
 #elif defined __linux
 #define LoadFunction dlsym
 #endif
@@ -39,7 +39,7 @@ extern "C" {
 #define VK_FUNC_DECL(name) PFN_##name _##name = NULL;
 VK_FUNC_LIST
 #if defined(_WIN32) || defined(_WIN64)
-//VK_WINDOWS_FUNC_LIST
+VK_WINDOWS_FUNC_LIST
 #endif
 #undef VK_FUNC_DECL
 }
@@ -192,7 +192,7 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
 
     VK_FUNC_LIST
 #if defined(_WIN32) || defined(_WIN64)
-    //VK_WINDOWS_FUNC_LIST
+    VK_WINDOWS_FUNC_LIST
 #endif
 #undef VK_FUNC_DECL
 

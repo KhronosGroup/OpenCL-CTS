@@ -574,4 +574,11 @@ public:
     operator VkSemaphore() const;
 };
 
+#define VK_FUNC_DECL(name) extern "C" PFN_##name _##name;
+VK_FUNC_LIST
+#if defined(_WIN32) || defined(_WIN64)
+VK_WINDOWS_FUNC_LIST
+#endif
+#undef VK_FUNC_DECL
+
 #endif // _vulkan_wrapper_hpp_
