@@ -69,3 +69,7 @@ endif()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 include_directories (${CLConform_INCLUDE_DIR})
+
+if (NOT WIN32)
+target_link_libraries(vulkan_wrapper dl)
+endif()
