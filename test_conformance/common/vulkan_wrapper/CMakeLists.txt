@@ -24,6 +24,10 @@ add_cxx_flag_if_supported(-Wno-error=terminate)
 add_cxx_flag_if_supported(-Wno-error=unused-function)
 add_cxx_flag_if_supported(-Wno-error=return-type)
 
+IF(WIN32)
+    target_compile_definitions(vulkan_wrapper PRIVATE VK_USE_PLATFORM_WIN32_KHR)
+ENDIF()
+
 link_directories(${CLConform_VULKAN_LIBRARIES_DIR})
 
 list(APPEND CLConform_INCLUDE_DIR ${VULKAN_INCLUDE_DIR})
