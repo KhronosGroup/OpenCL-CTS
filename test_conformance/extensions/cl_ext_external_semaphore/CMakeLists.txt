@@ -5,6 +5,14 @@ set(${MODULE_NAME}_SOURCES
     test_external_semaphore.cpp
 )
 
+link_directories(${CLConform_VULKAN_LIBRARIES_DIR})
+
+list(APPEND CLConform_INCLUDE_DIR ${VULKAN_INCLUDE_DIR})
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+include_directories (${CLConform_INCLUDE_DIR})
+
 # needed by Vulkan wrapper to link
 if(WIN32)
     list(APPEND CLConform_LIBRARIES vulkan-1 vulkan_wrapper)
