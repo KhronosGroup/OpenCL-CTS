@@ -5,6 +5,8 @@ set(${MODULE_NAME}_SOURCES
     test_external_semaphore.cpp
 )
 
+set (CLConform_VULKAN_LIBRARIES_DIR "${VULKAN_LIB_DIR}")
+
 link_directories(${CLConform_VULKAN_LIBRARIES_DIR})
 
 list(APPEND CLConform_INCLUDE_DIR ${VULKAN_INCLUDE_DIR})
