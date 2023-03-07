@@ -31,7 +31,7 @@
 #endif
 #if defined _WIN32
 #define LoadFunction GetProcAddress
--
+
 #elif defined __linux
 #define LoadFunction dlsym
 #endif
