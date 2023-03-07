@@ -38,7 +38,7 @@ elseif(APPLE)
     target_compile_definitions(vulkan_wrapper PUBLIC VK_USE_PLATFORM_METAL_EXT)
 elseif(UNIX)
     # Variable taken from Vulkan samples, using VKB_WSI_SELECTION="XLIB" as default
-    VKB_WSI_SELECTION="XLIB"
+    set(VKB_WSI_SELECTION "XLIB")
     # Choose WSI based on VKB_WSI_SELECTION
     if (VKB_WSI_SELECTION STREQUAL XCB OR VKB_WSI_SELECTION STREQUAL XLIB OR VKB_WSI_SELECTION STREQUAL WAYLAND)
         find_package(PkgConfig REQUIRED)
