@@ -19,6 +19,7 @@
 #include "harness/testHarness.h"
 #include "harness/kernelHelpers.h"
 #include "harness/mt19937.h"
+#include "harness/kernelHelpers.h"
 
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
@@ -92,6 +93,8 @@ int gIsRTZ = 0;
 uint32_t gSimdSize = 1;
 int gHasDouble = 0;
 int gTestDouble = 1;
+int gHasHalfs = 0;
+int gTestHalfs = 1;
 const char *sizeNames[] = { "", "", "2", "3", "4", "8", "16" };
 int vectorSizes[] = { 1, 1, 2, 3, 4, 8, 16 };
 int gMinVectorSize = 0;
@@ -99,6 +102,8 @@ int gMaxVectorSize = sizeof(vectorSizes) / sizeof(vectorSizes[0]);
 MTdata gMTdata;
 const char **argList = NULL;
 int argCount = 0;
+
+////////////////////////////////////////////////////////////////////////////////////////
 
 static cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
                               RoundingMode round, int vectorSize,
@@ -109,6 +114,7 @@ static int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf,
 static int GetTestCase(const char *name, Type *outType, Type *inType,
                        SaturationMode *sat, RoundingMode *round);
 
+////////////////////////////////////////////////////////////////////////////////////////
 
 cl_int InitData(cl_uint job_id, cl_uint thread_id, void *p);
 cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p);
@@ -117,6 +123,15 @@ double SubtractTime(uint64_t endTime, uint64_t startTime);
 void WriteInputBufferComplete(void *);
 void *FlushToZero(void);
 void UnFlushToZero(void *);
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+cl_half_rounding_mode ConversionsTest::halfRoundingMode = CL_HALF_RTE;
+cl_half_rounding_mode ConversionsTest::defaultHalfRoundingMode = CL_HALF_RTE;
+#define HFF(num) cl_half_from_float(num, ConversionsTest::halfRoundingMode)
+#define HTF(num) cl_half_to_float(num)
+
+////////////////////////////////////////////////////////////////////////////////////////
 
 // Windows (since long double got deprecated) sets the x87 to 53-bit precision
 // (that's x87 default state).  This causes problems with the tests that
@@ -142,153 +157,11 @@ static inline void Force64BitFPUPrecision(void)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
-
-template <std::size_t I = 0, typename FuncT, typename... Tp>
-inline typename std::enable_if<I == sizeof...(Tp), void>::type
-for_each_elem(const std::tuple<Tp...> &,
-              FuncT) // Unused arguments are given no names.
-{}
-
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <std::size_t I = 0, typename FuncT, typename... Tp>
-    inline typename std::enable_if < I<sizeof...(Tp), void>::type
-    for_each_elem(const std::tuple<Tp...> &t, FuncT f)
-{
-    f(std::get<I>(t));
-    for_each_elem<I + 1, FuncT, Tp...>(t, f);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////
-
-struct TypeTest
-{
-    template <typename T> bool testType(Type in)
-    {
-        switch (in)
-        {
-            default: return false;
-            case kuchar: return std::is_same<cl_uchar, T>::value;
-            case kchar: return std::is_same<cl_char, T>::value;
-            case kushort: return std::is_same<cl_ushort, T>::value;
-            case kshort: return std::is_same<cl_short, T>::value;
-            case kuint: return std::is_same<cl_uint, T>::value;
-            case kint: return std::is_same<cl_int, T>::value;
-            case kfloat: return std::is_same<cl_float, T>::value;
-            case kdouble: return std::is_same<cl_double, T>::value;
-            case kulong: return std::is_same<cl_ulong, T>::value;
-            case klong: return std::is_same<cl_long, T>::value;
-        }
-    }
-};
-
-////////////////////////////////////////////////////////////////////////////////////////
-// Helper structures to iterate over all tuple attributes of different types
-// which generate type 2 type conversion test case.
-template <typename OutType> struct IterInType : public TypeTest
-{
-    IterInType(const Type &outType, ConversionsTest &test, int &tn, int &fc)
-        : outType(outType), test(test), testNumber(tn), failCount(fc)
-    {}
-
-    template <typename InType> void operator()(const InType &t)
-    {
-        if (failCount != 0) return;
-
-        if (!testType<InType>(inType)) vlog_error("Unexpected data type!");
-
-        if (!testType<OutType>(outType)) vlog_error("Unexpected data type!");
-
-        // run the conversions
-        failCount = test.TestTypesConversion<InType, OutType>(inType, outType,
-                                                              testNumber);
-        inType = (Type)(inType + 1);
-    }
-    Type inType = (Type)0;
-    Type outType = (Type)0;
-    ConversionsTest &test;
-
-    int &testNumber;
-    int &failCount;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////
-
-struct IterOutType
-{
-    IterOutType(const TypeIter &typeIter, ConversionsTest &test)
-        : typeIter(typeIter), test(test)
-    {}
-    template <typename OutType> void operator()(const OutType &t)
-    {
-        for_each_elem(
-            typeIter,
-            IterInType<OutType>(outType, test, testNumber, failCount));
-        outType = (Type)(outType + 1);
-    }
-    Type outType = (Type)0;
-    const TypeIter &typeIter;
-    ConversionsTest &test;
-    int testNumber = -1;
-    int failCount = 0;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////
-// Helper structures to select type 2 type conversion test case
-template <typename OutType> struct SelectInType : public TypeTest
-{
-    SelectInType(const Type &out, ConversionsTest &test, int &tn, int &fc,
-                 const Type &in)
-        : outType(out), test(test), testNumber(tn), failCount(fc), inType(in)
-    {}
-
-    template <typename InType> void operator()(const InType &t)
-    {
-        if (testType<InType>(inType))
-        {
-            // run the conversions
-            failCount = test.TestTypesConversion<InType, OutType>(
-                inType, outType, testNumber);
-        }
-    }
-    Type inType = (Type)0;
-    Type outType = (Type)0;
-    ConversionsTest &test;
-
-    int &testNumber;
-    int &failCount;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////
-
-struct SelectOutType : TypeTest
-{
-    SelectOutType(const TypeIter &typeIter, ConversionsTest &test,
-                  const Type &in, const Type &out)
-        : typeIter(typeIter), test(test), outType(out), inType(in)
-    {}
-    template <typename OutType> void operator()(const OutType &t)
-    {
-        if (testType<OutType>(outType))
-        {
-            for_each_elem(typeIter,
-                          SelectInType<OutType>(outType, test, testNumber,
-                                                failCount, inType));
-        }
-    }
-    Type inType = (Type)0;
-    Type outType = (Type)0;
-    const TypeIter &typeIter;
-    ConversionsTest &test;
-    int testNumber = -1;
-    int failCount = 0;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
-
-template <typename InType, typename OutType>
-DataInfoSpec<InType, OutType>::DataInfoSpec(const DataInitInfo &agg)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+DataInfoSpec<InType, OutType, InFP, OutFP>::DataInfoSpec(
+    const DataInitInfo &agg)
     : DataInitBase(agg)
 {
     if (std::is_same<cl_float, OutType>::value)
@@ -416,8 +289,8 @@ DataInfoSpec<InType, OutType>::DataInfoSpec(const DataInitInfo &agg)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename InType, typename OutType>
-float DataInfoSpec<InType, OutType>::round_to_int(float f)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+float DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int(float f)
 {
     static const float magic[2] = { MAKE_HEX_FLOAT(0x1.0p23f, 0x1, 23),
                                     -MAKE_HEX_FLOAT(0x1.0p23f, 0x1, 23) };
@@ -447,8 +320,9 @@ float DataInfoSpec<InType, OutType>::round_to_int(float f)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename InType, typename OutType>
-long long DataInfoSpec<InType, OutType>::round_to_int_and_clamp(double f)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+long long
+DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int_and_clamp(double f)
 {
     static const double magic[2] = { MAKE_HEX_DOUBLE(0x1.0p52, 0x1LL, 52),
                                      MAKE_HEX_DOUBLE(-0x1.0p52, -0x1LL, 52) };
@@ -481,8 +355,8 @@ long long DataInfoSpec<InType, OutType>::round_to_int_and_clamp(double f)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename InType, typename OutType>
-OutType DataInfoSpec<InType, OutType>::absolute(const OutType &x)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+OutType DataInfoSpec<InType, OutType, InFP, OutFP>::absolute(const OutType &x)
 {
     union {
         cl_uint u;
@@ -499,32 +373,29 @@ OutType DataInfoSpec<InType, OutType>::absolute(const OutType &x)
     return u.f;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-// helpers to distinguish between cl_half/cl_ushort at compile time
+//////////////////////////////////////////////////////////////////////////////////////////
 
-constexpr uint32_t EncodeTypename(const char *name, size_t v,
-                                  uint32_t hash = UINT32_C(2166136261))
+template <typename T, bool fp> constexpr bool is_half()
 {
-    return v == 0 ? hash
-                  : EncodeTypename(name + 1, v - 1,
-                                   (hash ^ name[0]) * UINT32_C(16777619));
+    return (std::is_same<cl_half, T>::value && fp);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <uint32_t val> uint32_t encode_helper() { return val; }
-#define TYPE_ID(T) encode_helper<EncodeTypename(#T, sizeof(#T) - 1)>()
-
-////////////////////////////////////////////////////////////////////////////////////////
-
-template <typename InType, typename OutType>
-void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
 {
-    if (std::is_same<cl_float, InType>::value)
+    if (std::is_same<cl_float, InType>::value || is_in_half())
     {
+        cl_float inVal = *in;
+        if (std::is_same<cl_half, InType>::value)
+        {
+            inVal = HTF(*in);
+        }
+
         if (std::is_same<cl_double, OutType>::value)
         {
-            *out = (OutType)*in;
+            *out = (OutType)inVal;
         }
         else if (std::is_same<cl_ulong, OutType>::value)
         {
@@ -534,7 +405,7 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
             // the test values won't fit into a signed int. (These test values
             // are >= 2^63.) The result on VS2005 is that these end up silently
             // (at least by default settings) clamped to the max lowest ulong.
-            cl_float x = round_to_int(((cl_float *)in)[0]);
+            cl_float x = round_to_int(inVal);
             if (x >= 9223372036854775808.0f)
             {
                 x -= 9223372036854775808.0f;
@@ -546,20 +417,22 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
                 ((cl_ulong *)out)[0] = x;
             }
 #else
-            *out = round_to_int(*in);
+            *out = round_to_int(inVal);
 #endif
         }
         else if (std::is_same<cl_long, OutType>::value)
         {
-            *out = round_to_int_and_clamp(*in);
+            *out = round_to_int_and_clamp(inVal);
         }
         else
-            *out = round_to_int(*in);
+            *out = round_to_int(inVal);
     }
     else if (std::is_same<cl_double, InType>::value)
     {
         if (std::is_same<cl_float, OutType>::value)
             *out = (OutType)*in;
+        else if (is_out_half())
+            *out = HFF(*in);
         else
             *out = rint(*in);
     }
@@ -592,16 +465,13 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
                                              // always convert to +0.0
             }
 #else
-            // TODO : verify if use of volatile below is necessary
-            //            // Use volatile to prevent optimization by Clang
-            //            compiler volatile cl_ulong l = ((cl_ulong *)in)[0];
-            // Per IEEE-754-2008 5.4.1, 0's always convert to +0.0
             *out = (*in == 0 ? 0.0 : (OutType)*in);
 #endif
         }
-        else if (std::is_same<cl_float, OutType>::value)
+        else if (std::is_same<cl_float, OutType>::value || is_out_half())
         {
             InType l = ((InType *)in)[0];
+            cl_float outVal = 0.f;
 
 #if defined(_MSC_VER) && defined(_M_X64)
             float result;
@@ -610,16 +480,14 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
                 cl_long sl = ((cl_long)l < 0) ? (cl_long)((l >> 1) | (l & 1))
                                               : (cl_long)l;
                 _mm_store_ss(&result, _mm_cvtsi64_ss(_mm_setzero_ps(), sl));
-                ((float *)out)[0] =
-                    (l == 0 ? 0.0f
-                            : (((cl_long)l < 0) ? result * 2.0f : result));
+                outVal = (l == 0 ? 0.0f
+                                 : (((cl_long)l < 0) ? result * 2.0f : result));
             }
             else
             {
                 _mm_store_ss(&result, _mm_cvtsi64_ss(_mm_setzero_ps(), l));
-                ((float *)out)[0] =
-                    (l == 0 ? 0.0f : result); // Per IEEE-754-2008 5.4.1, 0's
-                                              // always convert to +0.0
+                outVal = (l == 0 ? 0.0f : result); // Per IEEE-754-2008 5.4.1,
+                                                   // 0's always convert to +0.0
             }
 #else
 #if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
@@ -636,16 +504,16 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
              * cannot guarantee the compiler will use it.  On all ARM
              * architechures use emulation to calculate reference.*/
             if (std::is_same<cl_ulong, InType>::value)
-                ((float *)out)[0] = qcom_u64_2_f32(l, qcom_sat, qcom_rm);
+                outVal = qcom_u64_2_f32(l, qcom_sat, qcom_rm);
             else
-                ((float *)out)[0] =
-                    (l == 0 ? 0.0f : qcom_s64_2_f32(l, qcom_sat, qcom_rm));
+                outVal = (l == 0 ? 0.0f : qcom_s64_2_f32(l, qcom_sat, qcom_rm));
 #else
-            ((float *)out)[0] =
-                (l == 0 ? 0.0f : (float)l); // Per IEEE-754-2008 5.4.1, 0's
-                                            // always convert to +0.0
+            outVal = (l == 0 ? 0.0f : (float)l); // Per IEEE-754-2008 5.4.1, 0's
+                                                 // always convert to +0.0
 #endif
 #endif
+
+            *out = std::is_same<cl_half, OutType>::value ? HFF(outVal) : outVal;
         }
         else
         {
@@ -657,9 +525,10 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
         if (std::is_same<cl_float, OutType>::value)
             *out = (*in == 0 ? 0.f : *in); // Per IEEE-754-2008 5.4.1, 0's
                                            // always convert to +0.0
-        if (std::is_same<cl_double, OutType>::value)
-            *out = (*in == 0 ? 0.0 : *in); // Per IEEE-754-2008 5.4.1, 0's
-                                           // always convert to +0.0
+        else if (std::is_same<cl_double, OutType>::value)
+            *out = (*in == 0 ? 0.0 : *in);
+        else if (is_out_half())
+            *out = HFF(*in == 0 ? 0.f : *in);
         else
             *out = (OutType)*in;
     }
@@ -672,19 +541,27 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename InType, typename OutType>
-void DataInfoSpec<InType, OutType>::conv_sat(OutType *out, InType *in)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
+                                                          InType *in)
 {
-    if (std::is_floating_point<InType>::value)
+    if (std::is_floating_point<InType>::value || is_in_half())
     {
-        if (std::is_floating_point<OutType>::value)
-        {
-            *out = (OutType)*in;
+        cl_float inVal = *in;
+        if (is_in_half()) inVal = HTF(*in);
+
+        if (std::is_floating_point<OutType>::value || is_out_half())
+        { // in half/float/double, out half/float/double
+            if (is_out_half())
+                *out = HFF(inVal);
+            else
+                *out = (OutType)(is_in_half() ? inVal : *in);
         }
-        else if (std::is_same<InType, cl_float>::value
+        else if ((std::is_same<InType, cl_float>::value || is_in_half())
                  && std::is_same<cl_ulong, OutType>::value)
         {
-            InType x = round_to_int(*in);
+            cl_float x = round_to_int(is_in_half() ? HTF(*in) : *in);
+
 #if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
             // VS2005 (at least) on x86 uses fistp to store the float as a
             // 64-bit int. However, fistp stores it as a signed int, and some of
@@ -715,10 +592,10 @@ void DataInfoSpec<InType, OutType>::conv_sat(OutType *out, InType *in)
                 : x < 0 ? 0 : (OutType)x;
 #endif
         }
-        else if (std::is_same<InType, cl_float>::value
+        else if ((std::is_same<InType, cl_float>::value || is_in_half())
                  && std::is_same<cl_long, OutType>::value)
         {
-            InType f = round_to_int(*in);
+            cl_float f = round_to_int(is_in_half() ? HTF(*in) : *in);
             *out = f >= MAKE_HEX_DOUBLE(0x1.0p63, 0x1LL, 63)
                 ? 0x7FFFFFFFFFFFFFFFULL
                 : f < MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63)
@@ -744,46 +621,56 @@ void DataInfoSpec<InType, OutType>::conv_sat(OutType *out, InType *in)
                     : (OutType)f;
         }
         else
-            *out =
-                CLAMP(ranges.first, round_to_int_and_clamp(*in), ranges.second);
+        { // in half/float/double, out char/uchar/short/ushort/int/uint
+            *out = CLAMP(ranges.first,
+                         round_to_int_and_clamp(is_in_half() ? inVal : *in),
+                         ranges.second);
+        }
     }
     else if (std::is_integral<InType>::value
              && std::is_integral<OutType>::value)
     {
-        if ((std::is_signed<InType>::value && std::is_signed<OutType>::value)
-            || (!std::is_signed<InType>::value
-                && !std::is_signed<OutType>::value))
+        if (is_out_half())
         {
-            if (sizeof(InType) <= sizeof(OutType))
-            {
-                *out = (OutType)*in;
-            }
-            else
-            {
-                *out = CLAMP(ranges.first, *in, ranges.second);
-            }
+            *out = std::is_signed<InType>::value
+                ? HFF((cl_float)*in)
+                : absolute((OutType)HFF((cl_float)*in));
         }
         else
-        { // mixed signed/unsigned types
-            if (sizeof(InType) < sizeof(OutType))
+        {
+            if ((std::is_signed<InType>::value
+                 && std::is_signed<OutType>::value)
+                || (!std::is_signed<InType>::value
+                    && !std::is_signed<OutType>::value))
             {
-                if (!std::is_signed<InType>::value)
+                if (sizeof(InType) <= sizeof(OutType))
+                {
                     *out = (OutType)*in;
+                }
                 else
-                    *out = CLAMP(0, *in, ranges.second); // *in < 0 ? 0 : *in
+                {
+                    *out = CLAMP(ranges.first, *in, ranges.second);
+                }
             }
             else
-            { // bigger/equal mixed signed/unsigned types - always clamp
-                *out = CLAMP(0, *in, ranges.second);
+            { // mixed signed/unsigned types
+                if (sizeof(InType) < sizeof(OutType))
+                {
+                    *out = (!std::is_signed<InType>::value)
+                        ? (OutType)*in
+                        : CLAMP(0, *in, ranges.second); // *in < 0 ? 0 : *in
+                }
+                else
+                { // bigger/equal mixed signed/unsigned types - always clamp
+                    *out = CLAMP(0, *in, ranges.second);
+                }
             }
         }
     }
     else
     { // InType integral, OutType floating
-        if (std::is_signed<InType>::value)
-            *out = (OutType)*in;
-        else
-            *out = absolute((OutType)*in);
+        *out = std::is_signed<InType>::value ? (OutType)*in
+                                             : absolute((OutType)*in);
     }
 }
 
@@ -823,11 +710,14 @@ static const float specialValuesFloat[] = {
     MAKE_HEX_FLOAT(-0x1.000002p32f, -0x1000002L, 8), MAKE_HEX_FLOAT(-0x1.0p32f, -0x1L, 32), MAKE_HEX_FLOAT(-0x1.fffffep31f, -0x1fffffeL, 7),
     MAKE_HEX_FLOAT(-0x1.000002p31f, -0x1000002L, 7), MAKE_HEX_FLOAT(-0x1.0p31f, -0x1L, 31), MAKE_HEX_FLOAT(-0x1.fffffep30f, -0x1fffffeL, 6),
     -1000.f, -100.f, -4.0f, -3.5f, -3.0f,
-    MAKE_HEX_FLOAT(-0x1.800002p1f, -0x1800002L, -23), -2.5f, MAKE_HEX_FLOAT(-0x1.7ffffep1f, -0x17ffffeL, -23), -2.0f, MAKE_HEX_FLOAT(-0x1.800002p0f, -0x1800002L, -24), -1.5f,
-    MAKE_HEX_FLOAT(-0x1.7ffffep0f, -0x17ffffeL, -24),MAKE_HEX_FLOAT(-0x1.000002p0f, -0x1000002L, -24), -1.0f, MAKE_HEX_FLOAT(-0x1.fffffep-1f, -0x1fffffeL, -25),
-    MAKE_HEX_FLOAT(-0x1.000002p-1f, -0x1000002L, -25), -0.5f, MAKE_HEX_FLOAT(-0x1.fffffep-2f, -0x1fffffeL, -26),
-    MAKE_HEX_FLOAT(-0x1.000002p-2f, -0x1000002L, -26), -0.25f, MAKE_HEX_FLOAT(-0x1.fffffep-3f, -0x1fffffeL, -27),
-    MAKE_HEX_FLOAT(-0x1.000002p-126f, -0x1000002L, -150), -FLT_MIN, MAKE_HEX_FLOAT(-0x0.fffffep-126f, -0x0fffffeL, -150),
+    MAKE_HEX_FLOAT(-0x1.800002p1f, -0x1800002L, -23), -2.5f,
+    MAKE_HEX_FLOAT(-0x1.7ffffep1f, -0x17ffffeL, -23), -2.0f,
+    MAKE_HEX_FLOAT(-0x1.800002p0f, -0x1800002L, -24), -1.5f,
+    MAKE_HEX_FLOAT(-0x1.7ffffep0f, -0x17ffffeL, -24), MAKE_HEX_FLOAT(-0x1.000002p0f, -0x1000002L, -24), -1.0f,
+    MAKE_HEX_FLOAT(-0x1.fffffep-1f, -0x1fffffeL, -25), MAKE_HEX_FLOAT(-0x1.000002p-1f, -0x1000002L, -25), -0.5f,
+    MAKE_HEX_FLOAT(-0x1.fffffep-2f, -0x1fffffeL, -26), MAKE_HEX_FLOAT(-0x1.000002p-2f, -0x1000002L, -26), -0.25f,
+    MAKE_HEX_FLOAT(-0x1.fffffep-3f, -0x1fffffeL, -27), MAKE_HEX_FLOAT(-0x1.000002p-126f, -0x1000002L, -150), -FLT_MIN,
+    MAKE_HEX_FLOAT(-0x0.fffffep-126f, -0x0fffffeL, -150),
     MAKE_HEX_FLOAT(-0x0.000ffep-126f, -0x0000ffeL, -150), MAKE_HEX_FLOAT(-0x0.0000fep-126f, -0x00000feL, -150),
     MAKE_HEX_FLOAT(-0x0.00000ep-126f, -0x000000eL, -150), MAKE_HEX_FLOAT(-0x0.00000cp-126f, -0x000000cL, -150),
     MAKE_HEX_FLOAT(-0x0.00000ap-126f, -0x000000aL, -150), MAKE_HEX_FLOAT(-0x0.000008p-126f, -0x0000008L, -150),
@@ -866,13 +756,14 @@ static const double specialValuesDouble[] = {
     MAKE_HEX_DOUBLE(-0x1.80000000000001p31, -0x180000000000001LL, -25), MAKE_HEX_DOUBLE(-0x1.8p31, -0x18LL, 27),
     MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp31, -0x17ffffffffffffLL, -21), MAKE_HEX_DOUBLE(-0x1.0000000000001p31, -0x10000000000001LL, -21),
     MAKE_HEX_DOUBLE(-0x1.0p31, -0x1LL, 31), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp30, -0x1fffffffffffffLL, -22),
-    -1000., -100., -4.0, -3.5, -3.0, MAKE_HEX_DOUBLE(-0x1.8000000000001p1, -0x18000000000001LL, -51),
-    -2.5, MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp1, -0x17ffffffffffffLL, -51),
-    -2.0, MAKE_HEX_DOUBLE(-0x1.8000000000001p0, -0x18000000000001LL, -52),
-    -1.5, MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp0, -0x17ffffffffffffLL, -52), MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52),
-    -1.0, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-1, -0x1fffffffffffffLL, -53), MAKE_HEX_DOUBLE(-0x1.0000000000001p-1, -0x10000000000001LL, -53),
-    -0.5, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-2, -0x1fffffffffffffLL, -54), MAKE_HEX_DOUBLE(-0x1.0000000000001p-2, -0x10000000000001LL, -54),
-    -0.25, MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-3, -0x1fffffffffffffLL, -55), MAKE_HEX_DOUBLE(-0x1.0000000000001p-1022, -0x10000000000001LL, -1074),
+    -1000., -100., -4.0, -3.5, -3.0,
+    MAKE_HEX_DOUBLE(-0x1.8000000000001p1, -0x18000000000001LL, -51), -2.5,
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp1, -0x17ffffffffffffLL, -51), -2.0,
+    MAKE_HEX_DOUBLE(-0x1.8000000000001p0, -0x18000000000001LL, -52), -1.5,
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp0, -0x17ffffffffffffLL, -52), MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52), -1.0,
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-1, -0x1fffffffffffffLL, -53), MAKE_HEX_DOUBLE(-0x1.0000000000001p-1, -0x10000000000001LL, -53), -0.5,
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-2, -0x1fffffffffffffLL, -54), MAKE_HEX_DOUBLE(-0x1.0000000000001p-2, -0x10000000000001LL, -54), -0.25,
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-3, -0x1fffffffffffffLL, -55), MAKE_HEX_DOUBLE(-0x1.0000000000001p-1022, -0x10000000000001LL, -1074),
     -DBL_MIN,
     MAKE_HEX_DOUBLE(-0x0.fffffffffffffp-1022, -0x0fffffffffffffLL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000fffp-1022, -0x00000000000fffLL, -1074),
     MAKE_HEX_DOUBLE(-0x0.00000000000fep-1022, -0x000000000000feLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000ep-1022, -0x0000000000000eLL, -1074),
@@ -940,23 +831,19 @@ cl_ulong random64(MTdata d)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
-template <typename InType, typename OutType>
-void DataInfoSpec<InType, OutType>::init(const cl_uint &job_id,
-                                         const cl_uint &thread_id)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
+                                                      const cl_uint &thread_id)
 {
     uint64_t start = start + job_id * size;
     void *pIn = (char *)gIn + job_id * size * gTypeSizes[inType];
 
-    if (std::is_integral<InType>::value)
+    if (std::is_integral<InType>::value || is_in_half())
     {
         InType *o = (InType *)pIn;
         if (sizeof(InType) <= sizeof(cl_short))
-        { // char/uchar/ushort/short
-            if (TYPE_ID(InType) == TYPE_ID(cl_half))
-            {
-            }
-            else
-                for (int i = 0; i < size; i++) o[i] = start++;
+        { // char/uchar/ushort/short/half
+            for (int i = 0; i < size; i++) o[i] = start++;
         }
         else if (sizeof(InType) <= sizeof(cl_int))
         { // int/uint
@@ -1118,8 +1005,8 @@ static inline double dclamp(double lo, double v, double hi)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename InType, typename OutType>
-InType DataInfoSpec<InType, OutType>::clamp(const InType &in)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+InType DataInfoSpec<InType, OutType, InFP, OutFP>::clamp(const InType &in)
 {
     if (std::is_integral<OutType>::value)
     {
@@ -1139,14 +1026,15 @@ InType DataInfoSpec<InType, OutType>::clamp(const InType &in)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename InType, typename OutType>
-int CalcRefValsPat<InType, OutType>::check_result(void *test, uint32_t count,
-                                                  int vectorSize)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
+                                                               uint32_t count,
+                                                               int vectorSize)
 {
     const cl_uchar *a = (const cl_uchar *)gAllowZ;
 
-    if (std::is_integral<OutType>::value)
-    { // char/uchar/short/ushort/int/uint/long/ulong
+    if (std::is_integral<OutType>::value || is_half<OutType, OutFP>())
+    { // char/uchar/short/ushort/half/int/uint/long/ulong
         const OutType *t = (const OutType *)test;
         const OutType *c = (const OutType *)gRef;
         for (uint32_t i = 0; i < count; i++)
@@ -1246,6 +1134,21 @@ cl_int CustomConversionsTest::Run()
             continue;
         }
 
+
+        // skip double if we don't have it
+        if (!gTestHalfs && (inType == khalf || outType == khalf))
+        {
+            if (gHasHalfs)
+            {
+                vlog_error("\t *** convert_%sn%s%s( %sn ) FAILED ** \n",
+                           gTypeNames[outType], gSaturationNames[sat],
+                           gRoundingModeNames[round], gTypeNames[inType]);
+                vlog("\t\tcl_khr_fp64 enabled, but double testing turned "
+                     "off.\n");
+            }
+            continue;
+        }
+
         // skip longs on embedded
         if (!gHasLong
             && (inType == klong || outType == klong || inType == kulong
@@ -1264,11 +1167,11 @@ cl_int CustomConversionsTest::Run()
                 gMinVectorSize = 0;
         }
 
-        SelectOutType iter(typeIterator, *this, inType, outType);
+        IterOverSelectedTypes iter(typeIterator, *this, inType, outType);
 
-        for_each_elem(typeIterator, iter);
+        iter.Run();
 
-        if (iter.failCount)
+        if (iter.GetFailCount())
         {
             vlog_error("\t *** convert_%sn%s%s( %sn ) FAILED ** \n",
                        gTypeNames[outType], gSaturationNames[sat],
@@ -1286,19 +1189,19 @@ ConversionsTest::ConversionsTest(cl_device_id device, cl_context context,
                                  cl_command_queue queue)
     : device(device), context(context), queue(queue),
       typeIterator({ cl_uchar(0), cl_char(0), cl_ushort(0), cl_short(0),
-                     cl_uint(0), cl_int(0), cl_float(0), cl_double(0),
-                     cl_ulong(0), cl_long(0) })
+                     cl_uint(0), cl_int(0), cl_half(0), cl_float(0),
+                     cl_double(0), cl_ulong(0), cl_long(0) })
 {}
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
 cl_int ConversionsTest::Run()
 {
-    IterOutType iter(typeIterator, *this);
+    IterOverTypes iter(typeIterator, *this);
 
-    for_each_elem(typeIterator, iter);
+    iter.Run();
 
-    return iter.failCount;
+    return iter.GetFailCount();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -1308,10 +1211,23 @@ cl_int ConversionsTest::SetUp(int elements)
     num_elements = elements;
     if (is_extension_available(device, "cl_khr_fp16"))
     {
-    }
-
-    if (is_extension_available(device, "cl_khr_fp64"))
-    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            ConversionsTest::halfRoundingMode = CL_HALF_RTE;
+            ConversionsTest::defaultHalfRoundingMode = CL_HALF_RTE;
+        }
+        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+        {
+            ConversionsTest::halfRoundingMode = CL_HALF_RTZ;
+            ConversionsTest::defaultHalfRoundingMode = CL_HALF_RTZ;
+        }
+        else // CL_FP_ROUND_TO_INF ??
+        {
+            log_error("Error while acquiring half rounding mode");
+            return TEST_FAIL;
+        }
     }
 
     return CL_SUCCESS;
@@ -1319,7 +1235,7 @@ cl_int ConversionsTest::SetUp(int elements)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename InType, typename OutType>
+template <typename InType, typename OutType, bool InFP, bool OutFP>
 cl_int ConversionsTest::TestTypesConversion(const Type &inType,
                                             const Type &outType,
                                             int &testNumber)
@@ -1379,6 +1295,20 @@ cl_int ConversionsTest::TestTypesConversion(const Type &inType,
                 continue;
             }
 
+            // skip double if we don't have it
+            if (!gTestHalfs && (inType == khalf || outType == khalf))
+            {
+                if (gHasHalfs)
+                {
+                    vlog_error("\t *** convert_%sn%s%s( %sn ) FAILED ** \n",
+                               gTypeNames[outType], gSaturationNames[sat],
+                               gRoundingModeNames[round], gTypeNames[inType]);
+                    vlog("\t\tcl_khr_fp64 enabled, but double testing turned "
+                         "off.\n");
+                }
+                continue;
+            }
+
             // Skip the implicit converts if the rounding mode is
             // not default or test is saturated
             if (0 == startMinVectorSize)
@@ -1389,8 +1319,8 @@ cl_int ConversionsTest::TestTypesConversion(const Type &inType,
                     gMinVectorSize = 0;
             }
 
-            if ((error = DoTest<InType, OutType>(outType, inType, sat, round,
-                                                 gMTdata)))
+            if ((error = DoTest<InType, OutType, InFP, OutFP>(
+                     outType, inType, sat, round, gMTdata)))
             {
                 vlog_error("\t *** %d) convert_%sn%s%s( %sn ) "
                            "FAILED ** \n",
@@ -1405,7 +1335,7 @@ cl_int ConversionsTest::TestTypesConversion(const Type &inType,
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename InType, typename OutType>
+template <typename InType, typename OutType, bool InFP, bool OutFP>
 int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
                             RoundingMode round, MTdata d)
 {
@@ -1414,7 +1344,7 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
 #endif
 
     DataInitInfo info = { 0, 0, outType, inType, sat, round, NULL };
-    DataInfoSpec<InType, OutType> init_info(info);
+    DataInfoSpec<InType, OutType, InFP, OutFP> init_info(info);
     WriteInputBufferInfo writeInputBufferInfo;
     int vectorSize;
     int error = 0;
@@ -1428,7 +1358,6 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
     // uint64_t lastCase = 1ULL << (8 * gTypeSizes[inType]);
     uint64_t lastCase = 1000000ULL;
 
-    // memset(&writeInputBufferInfo, 0, sizeof(writeInputBufferInfo));
     init_info.d = (MTdata *)malloc(threads * sizeof(MTdata));
     if (NULL == init_info.d)
     {
@@ -1454,7 +1383,7 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
     for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
     {
         writeInputBufferInfo.calcInfo[vectorSize].reset(
-            new CalcRefValsPat<InType, OutType>());
+            new CalcRefValsPat<InType, OutType, InFP, OutFP>());
         writeInputBufferInfo.calcInfo[vectorSize]->program =
             MakeProgram(outType, inType, sat, round, vectorSize,
                         &writeInputBufferInfo.calcInfo[vectorSize]->kernel);
@@ -1552,8 +1481,6 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
         }
 
         //      Call this in a multithreaded manner
-        //      gInitFunctions[ inType ]( gIn, sat, round, outType, i, count, d
-        //      );
         cl_uint chunks = RoundUpToNextPowerOfTwo(threads) * 2;
         init_info.start = i;
         init_info.size = count / chunks;
@@ -1629,7 +1556,6 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
             goto exit;
         }
 
-
         for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize;
              vectorSize++)
         {
@@ -1652,9 +1578,12 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
                         vlog("Input value: 0x%8.8x ",
                              ((unsigned int *)gIn)[error - 1]);
                         break;
+                    case khalf:
+                        vlog("Input value: %a ",
+                             HTF(((cl_half *)gIn)[error - 1]));
+                        break;
                     case kfloat:
                         vlog("Input value: %a ", ((float *)gIn)[error - 1]);
-                        break;
                         break;
                     case kulong:
                     case klong:
@@ -1853,6 +1782,7 @@ double SubtractTime(uint64_t endTime, uint64_t startTime)
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+
 cl_int InitData(cl_uint job_id, cl_uint thread_id, void *p)
 {
     DataInitBase *info = (DataInitBase *)p;
@@ -1878,7 +1808,6 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
     cl_uint count = info->size;
     Type inType = info->inType;
     Type outType = info->outType;
-    RoundingMode round = info->round;
     size_t j;
 
     Force64BitFPUPrecision();
@@ -1890,6 +1819,8 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
 
     if (outType != inType)
     {
+
+
         // create the reference while we wait
 
 #if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
@@ -1922,13 +1853,45 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
         qcom_sat = info->sat;
 #endif
 
-        RoundingMode oldRound = set_round(round, outType);
+
+        RoundingMode oldRound, round = info->round;
+
+        if (/*is_half<OutType, OutFP>()*/ outType == khalf)
+        {
+            oldRound = set_round(kRoundToNearestEven, kfloat);
+            switch (round)
+            {
+                default:
+                case kDefaultRoundingMode:
+                    ConversionsTest::halfRoundingMode =
+                        ConversionsTest::defaultHalfRoundingMode;
+                    break;
+                case kRoundToNearestEven:
+                    ConversionsTest::halfRoundingMode = CL_HALF_RTE;
+                    break;
+                case kRoundUp:
+                    ConversionsTest::halfRoundingMode = CL_HALF_RTP;
+                    break;
+                case kRoundDown:
+                    ConversionsTest::halfRoundingMode = CL_HALF_RTN;
+                    break;
+                case kRoundTowardZero:
+                    ConversionsTest::halfRoundingMode = CL_HALF_RTZ;
+                    break;
+            }
+        }
+        else
+            oldRound = set_round(round, outType);
+
+
         if (info->sat)
             info->conv_array_sat(d, s, count);
         else
             info->conv_array(d, s, count);
 
+
         set_round(oldRound, outType);
+
 
         // Decide if we allow a zero result in addition to the correctly rounded
         // one

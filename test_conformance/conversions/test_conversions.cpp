@@ -96,9 +96,9 @@ test_status InitCL(cl_device_id device);
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-const char *gTypeNames[kTypeCount] = { "uchar", "char", "ushort", "short",
-                                       "uint",  "int",  "float",  "double",
-                                       "ulong", "long" };
+const char *gTypeNames[kTypeCount] = { "uchar",  "char",  "ushort", "short",
+                                       "uint",   "int",   "half",   "float",
+                                       "double", "ulong", "long" };
 
 const char *gRoundingModeNames[kRoundingModeCount] = { "", "_rte", "_rtp",
                                                        "_rtn", "_rtz" };
@@ -106,9 +106,9 @@ const char *gRoundingModeNames[kRoundingModeCount] = { "", "_rte", "_rtp",
 const char *gSaturationNames[2] = { "", "_sat" };
 
 size_t gTypeSizes[kTypeCount] = {
-    sizeof(cl_uchar), sizeof(cl_char), sizeof(cl_ushort), sizeof(cl_short),
-    sizeof(cl_uint),  sizeof(cl_int),  sizeof(cl_float),  sizeof(cl_double),
-    sizeof(cl_ulong), sizeof(cl_long),
+    sizeof(cl_uchar),  sizeof(cl_char),  sizeof(cl_ushort), sizeof(cl_short),
+    sizeof(cl_uint),   sizeof(cl_int),   sizeof(cl_half),   sizeof(cl_float),
+    sizeof(cl_double), sizeof(cl_ulong), sizeof(cl_long),
 };
 
 char appName[64] = "ctest";
@@ -249,6 +249,7 @@ static int ParseArgs(int argc, const char **argv)
                 switch (*arg)
                 {
                     case 'd': gTestDouble ^= 1; break;
+                    case 'h': gTestHalfs ^= 1; break;
                     case 'l': gSkipTesting ^= 1; break;
                     case 'm': gMultithread ^= 1; break;
                     case 'w': gWimpyMode ^= 1; break;
@@ -440,6 +441,12 @@ test_status InitCL(cl_device_id device)
         gHasDouble = 1;
     }
     gTestDouble &= gHasDouble;
+
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        gHasHalfs = 1;
+    }
+    gTestHalfs &= gHasHalfs;
 
     // detect whether profile of the device is embedded
     char profile[1024] = "";

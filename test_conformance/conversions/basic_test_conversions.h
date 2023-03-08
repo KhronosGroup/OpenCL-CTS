@@ -32,6 +32,8 @@
     #include <CL/opencl.h>
 #endif
 
+#include <CL/cl_half.h>
+
 #include "harness/mt19937.h"
 #include "harness/testHarness.h"
 
@@ -90,6 +92,8 @@ extern cl_mem gInBuffer;
 extern cl_mem gOutBuffers[];
 extern int gHasDouble;
 extern int gTestDouble;
+extern int gHasHalfs;
+extern int gTestHalfs;
 extern int gWimpyMode;
 extern int gWimpyReductionFactor;
 extern int gSkipTesting;
@@ -115,7 +119,7 @@ extern int vectorSizes[];
 extern size_t gComputeDevices;
 extern uint32_t gDeviceFrequency;
 
-////////////////////////////////////////////////////////////////////////////////
+//--------------------------------------------------------------------------
 
 struct CalcReferenceValuesInfo
 {
@@ -128,16 +132,22 @@ struct CalcReferenceValuesInfo
     cl_int result;
 };
 
+//--------------------------------------------------------------------------
+
 struct CalcRefValsBase : CalcReferenceValuesInfo
 {
     virtual int check_result(void *, uint32_t, int) { return 0; }
 };
 
-template <typename InType, typename OutType>
+//--------------------------------------------------------------------------
+
+template <typename InType, typename OutType, bool InFP, bool OutFP>
 struct CalcRefValsPat : CalcRefValsBase
 {
     int check_result(void *, uint32_t, int) override;
 };
+
+//--------------------------------------------------------------------------
 
 struct WriteInputBufferInfo
 {
@@ -161,8 +171,6 @@ struct WriteInputBufferInfo
 
 //--------------------------------------------------------------------------
 
-#pragma pack(push)
-#pragma pack(1)
 struct DataInitInfo
 {
     cl_ulong start;
@@ -186,7 +194,7 @@ struct DataInitBase : public DataInitInfo
 
 //--------------------------------------------------------------------------
 
-template <typename InType, typename OutType>
+template <typename InType, typename OutType, bool InFP, bool OutFP>
 struct DataInfoSpec : public DataInitBase
 {
 
@@ -209,6 +217,18 @@ struct DataInfoSpec : public DataInitBase
     std::vector<std::pair<InType, InType>> clamp_ranges;
 
     ////////////////////////////////////////////////////////////////////////////
+    constexpr bool is_in_half() const
+    {
+        return (std::is_same<InType, cl_half>::value && InFP);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    constexpr bool is_out_half() const
+    {
+        return (std::is_same<OutType, cl_half>::value && OutFP);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
     void conv_array(void *out, void *in, size_t n) override
     {
         for (size_t i = 0; i < n; i++)
@@ -226,23 +246,27 @@ struct DataInfoSpec : public DataInitBase
     void init(const cl_uint &, const cl_uint &) override;
     InType clamp(const InType &);
 };
-#pragma pack(pop)
 
 //--------------------------------------------------------------------------
 
-//    kuchar = 0,
-//    kchar = 1,
-//    kushort = 2,
-//    kshort = 3,
-//    kuint = 4,
-//    kint = 5,
-//    kfloat = 6,
-//    kdouble = 7,
-//    kulong = 8,
-//    klong = 9,
+//  kuchar = 0,
+//  kchar = 1,
+//  kushort = 2,
+//  kshort = 3,
+//  kuint = 4,
+//  kint = 5,
+//  khalf = 6,
+//  kfloat = 7,
+//  kdouble = 8,
+//  kulong = 9,
+//  klong = 10,
 
-using TypeIter = std::tuple<cl_uchar, cl_char, cl_ushort, cl_short, cl_uint,
-                            cl_int, cl_float, cl_double, cl_ulong, cl_long>;
+using TypeIter =
+    std::tuple<cl_uchar, cl_char, cl_ushort, cl_short, cl_uint, cl_int, cl_half,
+               cl_float, cl_double, cl_ulong, cl_long>;
+
+// hardcoded solution needed due to typeid confusing cl_ushort/cl_half
+constexpr bool isTypeFp[] = { 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0 };
 
 //--------------------------------------------------------------------------
 
@@ -258,11 +282,11 @@ struct ConversionsTest
     // Test body returning an OpenCL error code
     virtual cl_int Run();
 
-    template <typename InType, typename OutType>
+    template <typename InType, typename OutType, bool InFP, bool OutFP>
     int DoTest(Type outType, Type inType, SaturationMode sat,
                RoundingMode round, MTdata d);
 
-    template <typename InType, typename OutType>
+    template <typename InType, typename OutType, bool InFP, bool OutFP>
     cl_int TestTypesConversion(const Type &inType, const Type &outType,
                                int &tn);
 
@@ -274,6 +298,11 @@ protected:
     size_t num_elements;
 
     TypeIter typeIterator;
+
+
+public:
+    static cl_half_rounding_mode halfRoundingMode;
+    static cl_half_rounding_mode defaultHalfRoundingMode;
 };
 
 //--------------------------------------------------------------------------
@@ -305,6 +334,206 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
+//--------------------------------------------------------------------------
+
+struct TestType
+{
+    template <typename T> bool testType(Type in)
+    {
+        switch (in)
+        {
+            default: return false;
+            case kuchar: return std::is_same<cl_uchar, T>::value;
+            case kchar: return std::is_same<cl_char, T>::value;
+            case kushort: return std::is_same<cl_ushort, T>::value;
+            case kshort: return std::is_same<cl_short, T>::value;
+            case kuint: return std::is_same<cl_uint, T>::value;
+            case kint: return std::is_same<cl_int, T>::value;
+            case khalf: return std::is_same<cl_half, T>::value;
+            case kfloat: return std::is_same<cl_float, T>::value;
+            case kdouble: return std::is_same<cl_double, T>::value;
+            case kulong: return std::is_same<cl_ulong, T>::value;
+            case klong: return std::is_same<cl_long, T>::value;
+        }
+    }
+};
+
+//--------------------------------------------------------------------------
+// Helper structures to iterate over all tuple attributes of different types
+struct IterOverTypes : public TestType
+{
+    IterOverTypes(const TypeIter &typeIter, ConversionsTest &test)
+        : typeIter(typeIter), test(test)
+    {}
+
+    int GetFailCount() { return failCount; }
+
+    void Run() { for_each_out_elem(typeIter); }
+
+protected:
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t Out = 0, typename OutType>
+    void iterate_out_type(const OutType &t)
+    {
+        for_each_in_elem<0, Out, OutType>(typeIter);
+        outType = (Type)(outType + 1);
+        inType = (Type)0;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t In, std::size_t Out, typename OutType,
+              typename InType>
+    void iterate_in_type(const InType &t)
+    {
+        if (failCount != 0) return;
+
+        if (!testType<InType>(inType)) vlog_error("Unexpected data type!\n");
+
+        if (!testType<OutType>(outType)) vlog_error("Unexpected data type!\n");
+
+        // run the conversions
+        failCount = test.TestTypesConversion<InType, OutType, isTypeFp[In],
+                                             isTypeFp[Out]>(inType, outType,
+                                                            testNumber);
+        inType = (Type)(inType + 1);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t Out = 0, typename... Tp>
+    inline typename std::enable_if<Out == sizeof...(Tp), void>::type
+    for_each_out_elem(
+        const std::tuple<Tp...> &) // Unused arguments are given no names.
+    {}
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t Out = 0, typename... Tp>
+        inline typename std::enable_if < Out<sizeof...(Tp), void>::type
+        for_each_out_elem(const std::tuple<Tp...> &t)
+    {
+        iterate_out_type<Out>(std::get<Out>(t));
+        for_each_out_elem<Out + 1, Tp...>(t);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t In = 0, std::size_t Out, typename OutType,
+              typename... Tp>
+    inline typename std::enable_if<In == sizeof...(Tp), void>::type
+    for_each_in_elem(
+        const std::tuple<Tp...> &) // Unused arguments are given no names.
+    {}
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t In = 0, std::size_t Out, typename OutType,
+              typename... Tp>
+        inline typename std::enable_if < In<sizeof...(Tp), void>::type
+        for_each_in_elem(const std::tuple<Tp...> &t)
+    {
+        iterate_in_type<In, Out, OutType>(std::get<In>(t));
+        for_each_in_elem<In + 1, Out, OutType, Tp...>(t);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+protected:
+    Type inType = (Type)0;
+    Type outType = (Type)0;
+    const TypeIter &typeIter;
+    ConversionsTest &test;
+    int testNumber = -1;
+    int failCount = 0;
+};
+
+//--------------------------------------------------------------------------
+// Helper structures to select type 2 type conversion test case
+struct IterOverSelectedTypes : public TestType
+{
+    IterOverSelectedTypes(const TypeIter &typeIter, ConversionsTest &test,
+                          const Type &in, const Type &out)
+        : typeIter(typeIter), test(test), outType(out), inType(in)
+    {}
+
+    int GetFailCount() { return failCount; }
+
+    void Run() { for_each_out_elem(typeIter); }
+
+protected:
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t Out = 0, typename OutType>
+    void iterate_out_type(const OutType &t)
+    {
+        for_each_in_elem<0, Out, OutType>(typeIter);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t In, std::size_t Out, typename OutType,
+              typename InType>
+    void iterate_in_type(const InType &t)
+    {
+        if (testType<InType>(inType) && testType<OutType>(outType))
+        {
+            // run the conversions
+            failCount = test.TestTypesConversion<InType, OutType, isTypeFp[In],
+                                                 isTypeFp[Out]>(inType, outType,
+                                                                testNumber);
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t Out = 0, typename... Tp>
+    inline typename std::enable_if<Out == sizeof...(Tp), void>::type
+    for_each_out_elem(const std::tuple<Tp...> &)
+    {}
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t Out = 0, typename... Tp>
+        inline typename std::enable_if < Out<sizeof...(Tp), void>::type
+        for_each_out_elem(const std::tuple<Tp...> &t)
+    {
+        iterate_out_type<Out>(std::get<Out>(t));
+        for_each_out_elem<Out + 1, Tp...>(t);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t In = 0, std::size_t Out, typename OutType,
+              typename... Tp>
+    inline typename std::enable_if<In == sizeof...(Tp), void>::type
+    for_each_in_elem(const std::tuple<Tp...> &)
+    {}
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <std::size_t In = 0, std::size_t Out, typename OutType,
+              typename... Tp>
+        inline typename std::enable_if < In<sizeof...(Tp), void>::type
+        for_each_in_elem(const std::tuple<Tp...> &t)
+    {
+        iterate_in_type<In, Out, OutType>(std::get<In>(t));
+        for_each_in_elem<In + 1, Out, OutType, Tp...>(t);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+protected:
+    Type inType = (Type)0;
+    Type outType = (Type)0;
+    const TypeIter &typeIter;
+    ConversionsTest &test;
+    int testNumber = -1;
+    int failCount = 0;
+};
+
+//--------------------------------------------------------------------------
 
 #endif /* BASIC_TEST_CONVERSIONS_H */
 
