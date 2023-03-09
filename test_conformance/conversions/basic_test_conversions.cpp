@@ -1696,8 +1696,6 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
 void memset_pattern4(void *dest, const void *src_pattern, size_t bytes);
 #endif
 
-
-
 #if defined(_MSC_VER)
 /* function is defined in "compat.h" */
 #else

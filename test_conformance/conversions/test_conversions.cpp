@@ -13,12 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
-//#include "harness/compat.h"
 #include "harness/rounding_mode.h"
 #include "harness/ThreadPool.h"
 #include "harness/testHarness.h"
-#include "harness/kernelHelpers.h"
 #include "harness/parseParameters.h"
 #include "harness/mt19937.h"
 
@@ -36,7 +33,6 @@
 #include <libgen.h>
 #endif
 
-#include "mingw_compat.h"
 #if defined(__MINGW32__)
 #include <sys/param.h>
 #endif
@@ -52,12 +48,10 @@
 #include <time.h>
 
 #include <algorithm>
-
 #include <vector>
 #include <type_traits>
 
 #include "Sleep.h"
-
 
 #include "basic_test_conversions.h"
 #include <limits.h>

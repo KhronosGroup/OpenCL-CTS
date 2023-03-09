@@ -16,8 +16,6 @@
 #ifndef BASIC_TEST_CONVERSIONS_H
 #define BASIC_TEST_CONVERSIONS_H
 
-#include "harness/compat.h"
-
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
@@ -157,7 +155,6 @@ struct CalcRefValsBase
     cl_uint vectorSize; // the vector size for this callback chain
     void *p; // the pointer to mapped result data for this vector size
     cl_int result;
-
 };
 
 //--------------------------------------------------------------------------
