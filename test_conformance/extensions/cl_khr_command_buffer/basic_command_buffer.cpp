@@ -21,6 +21,7 @@
 #include <vector>
 
 
+//--------------------------------------------------------------------------
 BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
                                                cl_context context,
                                                cl_command_queue queue)
@@ -31,7 +32,6 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
       simultaneous_use_requested(true),
       // due to simultaneous cases extend buffer size
       buffer_size_multiplier(1), command_buffer(this)
-
 {
     cl_int error = clRetainCommandQueue(queue);
     if (error != CL_SUCCESS)
@@ -41,6 +41,7 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
     this->queue = queue;
 }
 
+//--------------------------------------------------------------------------
 bool BasicCommandBufferTest::Skip()
 {
     cl_command_queue_properties required_properties;
@@ -52,7 +53,6 @@ bool BasicCommandBufferTest::Skip()
                "CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR");
 
     cl_command_queue_properties queue_properties;
-
     error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
                                   sizeof(queue_properties), &queue_properties,
                                   NULL);
@@ -75,29 +75,20 @@ bool BasicCommandBufferTest::Skip()
     return required_properties != (required_properties & queue_properties);
 }
 
-cl_int BasicCommandBufferTest::SetUp(int elements)
+//--------------------------------------------------------------------------
+cl_int BasicCommandBufferTest::SetUpKernel()
 {
-    cl_int error = init_extension_functions();
-    if (error != CL_SUCCESS)
-    {
-        return error;
-    }
-
-    if (elements <= 0)
-    {
-        return CL_INVALID_VALUE;
-    }
-    num_elements = static_cast<size_t>(elements);
+    cl_int error = CL_SUCCESS;
 
     // Kernel performs a parallel copy from an input buffer to output buffer
     // is created.
     const char *kernel_str =
         R"(
-    __kernel void copy(__global int* in, __global int* out, __global int* offset) {
-        size_t id = get_global_id(0);
-        int ind = offset[0] + id;
-        out[ind] = in[ind];
-    })";
+  __kernel void copy(__global int* in, __global int* out, __global int* offset) {
+      size_t id = get_global_id(0);
+      int ind = offset[0] + id;
+      out[ind] = in[ind];
+  })";
 
     error = create_single_kernel_helper_create_program(context, &program, 1,
                                                        &kernel_str);
@@ -106,6 +97,16 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
     test_error(error, "Failed to build program");
 
+    kernel = clCreateKernel(program, "copy", &error);
+    test_error(error, "Failed to create copy kernel");
+
+    return CL_SUCCESS;
+}
+
+//--------------------------------------------------------------------------
+cl_int BasicCommandBufferTest::SetUpKernelArgs()
+{
+    cl_int error = CL_SUCCESS;
     in_mem =
         clCreateBuffer(context, CL_MEM_READ_ONLY,
                        sizeof(cl_int) * num_elements * buffer_size_multiplier,
@@ -123,9 +124,6 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
                              sizeof(cl_int), &offset, &error);
     test_error(error, "clCreateBuffer failed");
 
-    kernel = clCreateKernel(program, "copy", &error);
-    test_error(error, "Failed to create copy kernel");
-
     error = clSetKernelArg(kernel, 0, sizeof(in_mem), &in_mem);
     test_error(error, "clSetKernelArg failed");
 
@@ -134,6 +132,30 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
 
     error = clSetKernelArg(kernel, 2, sizeof(off_mem), &off_mem);
     test_error(error, "clSetKernelArg failed");
+
+    return CL_SUCCESS;
+}
+
+//--------------------------------------------------------------------------
+cl_int BasicCommandBufferTest::SetUp(int elements)
+{
+    cl_int error = init_extension_functions();
+    if (error != CL_SUCCESS)
+    {
+        return error;
+    }
+
+    if (elements <= 0)
+    {
+        return CL_INVALID_VALUE;
+    }
+    num_elements = static_cast<size_t>(elements);
+
+    error = SetUpKernel();
+    test_error(error, "SetUpKernel failed");
+
+    error = SetUpKernelArgs();
+    test_error(error, "SetUpKernelArgs failed");
 
     if (simultaneous_use_support)
     {
@@ -246,53 +268,6 @@ struct MixedCommandsTest : public BasicCommandBufferTest
         {
             const cl_int ref = pattern_base + i;
             CHECK_VERIFICATION_ERROR(ref, result_data[i], i);
-        }
-
-        return CL_SUCCESS;
-    }
-};
-
-// Test enqueueing a command-buffer blocked on a user-event
-struct UserEventTest : public BasicCommandBufferTest
-{
-    using BasicCommandBufferTest::BasicCommandBufferTest;
-
-    cl_int Run() override
-    {
-        cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
-            nullptr, 0, nullptr, nullptr, nullptr);
-        test_error(error, "clCommandNDRangeKernelKHR failed");
-
-        error = clFinalizeCommandBufferKHR(command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        clEventWrapper user_event = clCreateUserEvent(context, &error);
-        test_error(error, "clCreateUserEvent failed");
-
-        const cl_int pattern = 42;
-        error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
-                                    data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &user_event, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        std::vector<cl_int> output_data(num_elements);
-        error = clEnqueueReadBuffer(queue, out_mem, CL_FALSE, 0, data_size(),
-                                    output_data.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        error = clSetUserEventStatus(user_event, CL_COMPLETE);
-        test_error(error, "clSetUserEventStatus failed");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
         }
 
         return CL_SUCCESS;
@@ -425,87 +400,6 @@ struct InterleavedEnqueueTest : public BasicCommandBufferTest
     }
 };
 
-// Test sync-points with an out-of-order command-buffer
-struct OutOfOrderTest : public BasicCommandBufferTest
-{
-    using BasicCommandBufferTest::BasicCommandBufferTest;
-    OutOfOrderTest(cl_device_id device, cl_context context,
-                   cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue),
-          out_of_order_queue(nullptr), out_of_order_command_buffer(this),
-          event(nullptr)
-    {}
-
-    cl_int Run() override
-    {
-        cl_sync_point_khr sync_points[2];
-
-        const cl_int pattern = 42;
-        cl_int error =
-            clCommandFillBufferKHR(out_of_order_command_buffer, nullptr, in_mem,
-                                   &pattern, sizeof(cl_int), 0, data_size(), 0,
-                                   nullptr, &sync_points[0], nullptr);
-        test_error(error, "clCommandFillBufferKHR failed");
-
-        const cl_int overwritten_pattern = 0xACDC;
-        error = clCommandFillBufferKHR(out_of_order_command_buffer, nullptr,
-                                       out_mem, &overwritten_pattern,
-                                       sizeof(cl_int), 0, data_size(), 0,
-                                       nullptr, &sync_points[1], nullptr);
-        test_error(error, "clCommandFillBufferKHR failed");
-
-        error = clCommandNDRangeKernelKHR(
-            out_of_order_command_buffer, nullptr, nullptr, kernel, 1, nullptr,
-            &num_elements, nullptr, 2, sync_points, nullptr, nullptr);
-        test_error(error, "clCommandNDRangeKernelKHR failed");
-
-        error = clFinalizeCommandBufferKHR(out_of_order_command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        error = clEnqueueCommandBufferKHR(
-            0, nullptr, out_of_order_command_buffer, 0, nullptr, &event);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        std::vector<cl_int> output_data(num_elements);
-        error = clEnqueueReadBuffer(out_of_order_queue, out_mem, CL_TRUE, 0,
-                                    data_size(), output_data.data(), 1, &event,
-                                    nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
-        }
-
-        return CL_SUCCESS;
-    }
-
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        out_of_order_queue = clCreateCommandQueue(
-            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
-        test_error(error, "Unable to create command queue to test with");
-
-        out_of_order_command_buffer =
-            clCreateCommandBufferKHR(1, &out_of_order_queue, nullptr, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
-        return CL_SUCCESS;
-    }
-
-    bool Skip() override
-    {
-        return BasicCommandBufferTest::Skip() || !out_of_order_support;
-    }
-
-    clCommandQueueWrapper out_of_order_queue;
-    clCommandBufferWrapper out_of_order_command_buffer;
-    clEventWrapper event;
-};
-
 } // anonymous namespace
 
 int test_single_ndrange(cl_device_id device, cl_context context,
@@ -534,16 +428,4 @@ int test_explicit_flush(cl_device_id device, cl_context context,
 {
     return MakeAndRunTest<ExplicitFlushTest>(device, context, queue,
                                              num_elements);
-}
-
-int test_user_events(cl_device_id device, cl_context context,
-                     cl_command_queue queue, int num_elements)
-{
-    return MakeAndRunTest<UserEventTest>(device, context, queue, num_elements);
-}
-
-int test_out_of_order(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
-{
-    return MakeAndRunTest<OutOfOrderTest>(device, context, queue, num_elements);
 }
