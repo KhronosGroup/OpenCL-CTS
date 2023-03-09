@@ -1179,7 +1179,7 @@ cl_int CustomConversionsTest::Run()
 
 ConversionsTest::ConversionsTest(cl_device_id device, cl_context context,
                                  cl_command_queue queue)
-    : device(device), context(context), queue(queue),
+    : context(context), device(device), queue(queue), num_elements(0),
       typeIterator({ cl_uchar(0), cl_char(0), cl_ushort(0), cl_short(0),
                      cl_uint(0), cl_int(0), cl_half(0), cl_float(0),
                      cl_double(0), cl_ulong(0), cl_long(0) })

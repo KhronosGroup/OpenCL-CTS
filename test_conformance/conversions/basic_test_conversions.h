@@ -327,7 +327,6 @@ protected:
 
     TypeIter typeIterator;
 
-
 public:
     static cl_half_rounding_mode halfRoundingMode;
     static cl_half_rounding_mode defaultHalfRoundingMode;
@@ -388,7 +387,8 @@ struct TestType
 struct IterOverTypes : public TestType
 {
     IterOverTypes(const TypeIter &typeIter, ConversionsTest &test)
-        : typeIter(typeIter), test(test)
+        : inType((Type)0), outType((Type)0), typeIter(typeIter), test(test),
+          testNumber(-1)
     {}
 
     void Run() { for_each_out_elem(typeIter); }
@@ -461,11 +461,11 @@ protected:
     ////////////////////////////////////////////////////////////////////////////////////////
 
 protected:
-    Type inType = (Type)0;
-    Type outType = (Type)0;
+    Type inType;
+    Type outType;
     const TypeIter &typeIter;
     ConversionsTest &test;
-    int testNumber = -1;
+    int testNumber;
 };
 
 //--------------------------------------------------------------------------
@@ -474,7 +474,8 @@ struct IterOverSelectedTypes : public TestType
 {
     IterOverSelectedTypes(const TypeIter &typeIter, ConversionsTest &test,
                           const Type &in, const Type &out)
-        : typeIter(typeIter), test(test), outType(out), inType(in)
+        : inType(in), outType(out), typeIter(typeIter), test(test),
+          testNumber(-1)
     {}
 
     void Run() { for_each_out_elem(typeIter); }
@@ -542,11 +543,11 @@ protected:
     ////////////////////////////////////////////////////////////////////////////////////////
 
 protected:
-    Type inType = (Type)0;
-    Type outType = (Type)0;
+    Type inType;
+    Type outType;
     const TypeIter &typeIter;
     ConversionsTest &test;
-    int testNumber = -1;
+    int testNumber;
 };
 
 //--------------------------------------------------------------------------
