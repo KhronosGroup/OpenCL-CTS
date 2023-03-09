@@ -1938,6 +1938,7 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
     cl_uint count = info->size;
     Type inType = info->inType;
     Type outType = info->outType;
+    RoundingMode round = info->round;
     size_t j;
 
     Force64BitFPUPrecision();
@@ -1949,10 +1950,7 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
 
     if (outType != inType)
     {
-
-
         // create the reference while we wait
-
 #if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
         /* ARM VFP doesn't have hardware instruction for converting from 64-bit
          * integer to float types, hence GCC ARM uses the floating-point
@@ -1983,10 +1981,8 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
         qcom_sat = info->sat;
 #endif
 
-
-        RoundingMode oldRound, round = info->round;
-
-        if (/*is_half<OutType, OutFP>()*/ outType == khalf)
+        RoundingMode oldRound;
+        if (outType == khalf)
         {
             oldRound = set_round(kRoundToNearestEven, kfloat);
             switch (round)
@@ -2013,15 +2009,12 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
         else
             oldRound = set_round(round, outType);
 
-
         if (info->sat)
             info->conv_array_sat(d, s, count);
         else
             info->conv_array(d, s, count);
 
-
         set_round(oldRound, outType);
-
 
         // Decide if we allow a zero result in addition to the correctly rounded
         // one
