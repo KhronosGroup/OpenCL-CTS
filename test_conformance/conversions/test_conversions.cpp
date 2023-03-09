@@ -70,18 +70,6 @@ bool qcom_sat;
 roundingMode qcom_rm;
 #endif
 
-#if defined(_WIN32)
-#include <mmintrin.h>
-#include <emmintrin.h>
-#else // !_WIN32
-#if defined(__SSE__)
-#include <xmmintrin.h>
-#endif
-#if defined(__SSE2__)
-#include <emmintrin.h>
-#endif
-#endif // _WIN32
-
 ////////////////////////////////////////////////////////////////////////////////////////
 
 static int ParseArgs(int argc, const char **argv);

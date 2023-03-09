@@ -62,6 +62,18 @@
 #include "harness/testHarness.h"
 #endif
 
+#if defined(_WIN32)
+#include <mmintrin.h>
+#include <emmintrin.h>
+#else // !_WIN32
+#if defined(__SSE__)
+#include <xmmintrin.h>
+#endif
+#if defined(__SSE2__)
+#include <emmintrin.h>
+#endif
+#endif // _WIN32
+
 #if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
 #include "fplib.h"
 extern bool qcom_sat;
@@ -531,11 +543,11 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
 
         if (std::is_floating_point<OutType>::value)
         {
-            *out = (OutType)inVal;
+            *out = static_cast<OutType>(inVal);
         }
         else if (is_out_half())
         {
-            *out = HFF(*in);
+            *out = static_cast<OutType>(HFF(*in));
         }
         else if (std::is_same<cl_ulong, OutType>::value)
         {
@@ -557,24 +569,24 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
                 ((cl_ulong *)out)[0] = x;
             }
 #else
-            *out = round_to_int(inVal);
+            *out = static_cast<OutType>(round_to_int(inVal));
 #endif
         }
         else if (std::is_same<cl_long, OutType>::value)
         {
-            *out = round_to_int_and_clamp(inVal);
+            *out = static_cast<OutType>(round_to_int_and_clamp(inVal));
         }
         else
-            *out = round_to_int(inVal);
+            *out = static_cast<OutType>(round_to_int(inVal));
     }
     else if (std::is_same<cl_double, InType>::value)
     {
         if (std::is_same<cl_float, OutType>::value)
-            *out = (OutType)*in;
+            *out = static_cast<OutType>(*in);
         else if (is_out_half())
-            *out = HFF(*in);
+            *out = static_cast<OutType>(HFF(*in));
         else
-            *out = rint(*in);
+            *out = static_cast<OutType>(rint(*in));
     }
     else if (std::is_same<cl_ulong, InType>::value
              || std::is_same<cl_long, InType>::value)
@@ -605,7 +617,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
                                              // always convert to +0.0
             }
 #else
-            *out = (*in == 0 ? 0.0 : (OutType)*in);
+            *out = static_cast<OutType>(*in == 0 ? 0.0 : *in);
 #endif
         }
         else if (std::is_same<cl_float, OutType>::value || is_out_half())
@@ -648,29 +660,32 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
             else
                 outVal = (l == 0 ? 0.0f : qcom_s64_2_f32(l, qcom_sat, qcom_rm));
 #else
-            outVal = (l == 0 ? 0.0f : (float)l); // Per IEEE-754-2008 5.4.1, 0's
-                                                 // always convert to +0.0
+            outVal = static_cast<float>(
+                l == 0 ? 0.0f : l); // Per IEEE-754-2008 5.4.1, 0's
+                                    // always convert to +0.0
 #endif
 #endif
 
-            *out = std::is_same<cl_half, OutType>::value ? HFF(outVal) : outVal;
+            *out = static_cast<OutType>(
+                std::is_same<cl_half, OutType>::value ? HFF(outVal) : outVal);
         }
         else
         {
-            *out = (OutType)*in;
+            *out = static_cast<OutType>(*in);
         }
     }
     else
     {
         if (std::is_same<cl_float, OutType>::value)
-            *out = (*in == 0 ? 0.f : *in); // Per IEEE-754-2008 5.4.1, 0's
-                                           // always convert to +0.0
+            *out = static_cast<OutType>(
+                *in == 0 ? 0.f : *in); // Per IEEE-754-2008 5.4.1, 0's
+                                       // always convert to +0.0
         else if (std::is_same<cl_double, OutType>::value)
-            *out = (*in == 0 ? 0.0 : *in);
+            *out = static_cast<OutType>(*in == 0 ? 0.0 : *in);
         else if (is_out_half())
-            *out = HFF(*in == 0 ? 0.f : *in);
+            *out = static_cast<OutType>(HFF(*in == 0 ? 0.f : *in));
         else
-            *out = (OutType)*in;
+            *out = static_cast<OutType>(*in);
     }
 }
 
@@ -693,9 +708,9 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
         if (std::is_floating_point<OutType>::value || is_out_half())
         { // in half/float/double, out half/float/double
             if (is_out_half())
-                *out = HFF(inVal);
+                *out = static_cast<OutType>(HFF(inVal));
             else
-                *out = (OutType)(is_in_half() ? inVal : *in);
+                *out = static_cast<OutType>(is_in_half() ? inVal : *in);
         }
         else if ((std::is_same<InType, cl_float>::value || is_in_half())
                  && std::is_same<cl_ulong, OutType>::value)
@@ -762,9 +777,10 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
         }
         else
         { // in half/float/double, out char/uchar/short/ushort/int/uint
-            *out = CLAMP(ranges.first,
-                         round_to_int_and_clamp(is_in_half() ? inVal : *in),
-                         ranges.second);
+            *out = static_cast<OutType>(
+                CLAMP(ranges.first,
+                      round_to_int_and_clamp(is_in_half() ? inVal : *in),
+                      ranges.second));
         }
     }
     else if (std::is_integral<InType>::value
@@ -772,9 +788,10 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
     {
         if (is_out_half())
         {
-            *out = std::is_signed<InType>::value
-                ? HFF((cl_float)*in)
-                : absolute((OutType)HFF((cl_float)*in));
+            *out = static_cast<OutType>(
+                std::is_signed<InType>::value
+                    ? HFF((cl_float)*in)
+                    : absolute((OutType)HFF((cl_float)*in)));
         }
         else
         {
@@ -785,32 +802,36 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
             {
                 if (sizeof(InType) <= sizeof(OutType))
                 {
-                    *out = (OutType)*in;
+                    *out = static_cast<OutType>(*in);
                 }
                 else
                 {
-                    *out = CLAMP(ranges.first, *in, ranges.second);
+                    *out = static_cast<OutType>(
+                        CLAMP(ranges.first, *in, ranges.second));
                 }
             }
             else
             { // mixed signed/unsigned types
                 if (sizeof(InType) < sizeof(OutType))
                 {
-                    *out = (!std::is_signed<InType>::value)
-                        ? (OutType)*in
-                        : CLAMP(0, *in, ranges.second); // *in < 0 ? 0 : *in
+                    *out = static_cast<OutType>(
+                        (!std::is_signed<InType>::value)
+                            ? (OutType)*in
+                            : CLAMP(0, *in,
+                                    ranges.second)); // *in < 0 ? 0 : *in
                 }
                 else
                 { // bigger/equal mixed signed/unsigned types - always clamp
-                    *out = CLAMP(0, *in, ranges.second);
+                    *out = static_cast<OutType>(CLAMP(0, *in, ranges.second));
                 }
             }
         }
     }
     else
     { // InType integral, OutType floating
-        *out = std::is_signed<InType>::value ? (OutType)*in
-                                             : absolute((OutType)*in);
+        *out = static_cast<OutType>(std::is_signed<InType>::value
+                                        ? (OutType)*in
+                                        : absolute((OutType)*in));
     }
 }
 
