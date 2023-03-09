@@ -642,6 +642,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
                                                    // 0's always convert to +0.0
             }
 #else
+            InType l = ((InType *)in)[0];
 #if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
             /* ARM VFP doesn't have hardware instruction for converting from
              * 64-bit integer to float types, hence GCC ARM uses the
@@ -660,7 +661,6 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
             else
                 outVal = (l == 0 ? 0.0f : qcom_s64_2_f32(l, qcom_sat, qcom_rm));
 #else
-            InType l = ((InType *)in)[0];
             outVal = (l == 0 ? 0.0f : (float)l); // Per IEEE-754-2008 5.4.1, 0's
                                                  // always convert to +0.0
 #endif
