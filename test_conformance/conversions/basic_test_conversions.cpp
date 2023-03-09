@@ -543,7 +543,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
 
         if (std::is_floating_point<OutType>::value)
         {
-            *out = static_cast<OutType>(inVal);
+            *out = (OutType)inVal;
         }
         else if (is_out_half())
         {
@@ -569,24 +569,24 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
                 ((cl_ulong *)out)[0] = x;
             }
 #else
-            *out = static_cast<OutType>(round_to_int(inVal));
+            *out = round_to_int(inVal);
 #endif
         }
         else if (std::is_same<cl_long, OutType>::value)
         {
-            *out = static_cast<OutType>(round_to_int_and_clamp(inVal));
+            *out = round_to_int_and_clamp(inVal);
         }
         else
-            *out = static_cast<OutType>(round_to_int(inVal));
+            *out = round_to_int(inVal);
     }
     else if (std::is_same<cl_double, InType>::value)
     {
         if (std::is_same<cl_float, OutType>::value)
-            *out = static_cast<OutType>(*in);
+            *out = (OutType)*in;
         else if (is_out_half())
             *out = static_cast<OutType>(HFF(*in));
         else
-            *out = static_cast<OutType>(rint(*in));
+            *out = rint(*in);
     }
     else if (std::is_same<cl_ulong, InType>::value
              || std::is_same<cl_long, InType>::value)
@@ -594,7 +594,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
         if (std::is_same<cl_double, OutType>::value)
         {
 #if defined(_MSC_VER)
-            InType l = ((InType *)in)[0];
+            cl_ulong l = ((cl_ulong *)in)[0];
             double result;
 
             if (std::is_same<cl_ulong, InType>::value)
@@ -617,15 +617,15 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
                                              // always convert to +0.0
             }
 #else
-            *out = static_cast<OutType>(*in == 0 ? 0.0 : *in);
+            *out = (*in == 0 ? 0.0 : (OutType)*in);
 #endif
         }
         else if (std::is_same<cl_float, OutType>::value || is_out_half())
         {
-            InType l = ((InType *)in)[0];
             cl_float outVal = 0.f;
 
 #if defined(_MSC_VER) && defined(_M_X64)
+            cl_ulong l = ((cl_ulong *)in)[0];
             float result;
             if (std::is_same<cl_ulong, InType>::value)
             {
@@ -660,32 +660,32 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
             else
                 outVal = (l == 0 ? 0.0f : qcom_s64_2_f32(l, qcom_sat, qcom_rm));
 #else
-            outVal = static_cast<float>(
-                l == 0 ? 0.0f : l); // Per IEEE-754-2008 5.4.1, 0's
-                                    // always convert to +0.0
+            InType l = ((InType *)in)[0];
+            outVal = (l == 0 ? 0.0f : (float)l); // Per IEEE-754-2008 5.4.1, 0's
+                                                 // always convert to +0.0
 #endif
 #endif
 
-            *out = static_cast<OutType>(
-                std::is_same<cl_half, OutType>::value ? HFF(outVal) : outVal);
+            *out = std::is_same<cl_half, OutType>::value
+                ? static_cast<OutType>(HFF(outVal))
+                : outVal;
         }
         else
         {
-            *out = static_cast<OutType>(*in);
+            *out = (OutType)*in;
         }
     }
     else
     {
         if (std::is_same<cl_float, OutType>::value)
-            *out = static_cast<OutType>(
-                *in == 0 ? 0.f : *in); // Per IEEE-754-2008 5.4.1, 0's
-                                       // always convert to +0.0
+            *out = (*in == 0 ? 0.f : *in); // Per IEEE-754-2008 5.4.1, 0's
+                                           // always convert to +0.0
         else if (std::is_same<cl_double, OutType>::value)
-            *out = static_cast<OutType>(*in == 0 ? 0.0 : *in);
+            *out = (*in == 0 ? 0.0 : *in);
         else if (is_out_half())
             *out = static_cast<OutType>(HFF(*in == 0 ? 0.f : *in));
         else
-            *out = static_cast<OutType>(*in);
+            *out = (OutType)*in;
     }
 }
 
@@ -710,7 +710,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
             if (is_out_half())
                 *out = static_cast<OutType>(HFF(inVal));
             else
-                *out = static_cast<OutType>(is_in_half() ? inVal : *in);
+                *out = (OutType)(is_in_half() ? inVal : *in);
         }
         else if ((std::is_same<InType, cl_float>::value || is_in_half())
                  && std::is_same<cl_ulong, OutType>::value)
@@ -777,10 +777,9 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
         }
         else
         { // in half/float/double, out char/uchar/short/ushort/int/uint
-            *out = static_cast<OutType>(
-                CLAMP(ranges.first,
-                      round_to_int_and_clamp(is_in_half() ? inVal : *in),
-                      ranges.second));
+            *out = CLAMP(ranges.first,
+                         round_to_int_and_clamp(is_in_half() ? inVal : *in),
+                         ranges.second);
         }
     }
     else if (std::is_integral<InType>::value
@@ -788,10 +787,9 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
     {
         if (is_out_half())
         {
-            *out = static_cast<OutType>(
-                std::is_signed<InType>::value
-                    ? HFF((cl_float)*in)
-                    : absolute((OutType)HFF((cl_float)*in)));
+            *out = std::is_signed<InType>::value
+                ? static_cast<OutType>(HFF((cl_float)*in))
+                : absolute(static_cast<OutType>(HFF((cl_float)*in)));
         }
         else
         {
@@ -802,36 +800,32 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
             {
                 if (sizeof(InType) <= sizeof(OutType))
                 {
-                    *out = static_cast<OutType>(*in);
+                    *out = (OutType)*in;
                 }
                 else
                 {
-                    *out = static_cast<OutType>(
-                        CLAMP(ranges.first, *in, ranges.second));
+                    *out = CLAMP(ranges.first, *in, ranges.second);
                 }
             }
             else
             { // mixed signed/unsigned types
                 if (sizeof(InType) < sizeof(OutType))
                 {
-                    *out = static_cast<OutType>(
-                        (!std::is_signed<InType>::value)
-                            ? (OutType)*in
-                            : CLAMP(0, *in,
-                                    ranges.second)); // *in < 0 ? 0 : *in
+                    *out = (!std::is_signed<InType>::value)
+                        ? (OutType)*in
+                        : CLAMP(0, *in, ranges.second); // *in < 0 ? 0 : *in
                 }
                 else
                 { // bigger/equal mixed signed/unsigned types - always clamp
-                    *out = static_cast<OutType>(CLAMP(0, *in, ranges.second));
+                    *out = CLAMP(0, *in, ranges.second);
                 }
             }
         }
     }
     else
     { // InType integral, OutType floating
-        *out = static_cast<OutType>(std::is_signed<InType>::value
-                                        ? (OutType)*in
-                                        : absolute((OutType)*in));
+        *out = std::is_signed<InType>::value ? (OutType)*in
+                                             : absolute((OutType)*in);
     }
 }
 
@@ -864,10 +858,10 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
         for (unsigned i = start; i < size; i++)
         {
             unsigned ind = i % (s_size * e_size * m_size);
-            o[i] =
-                (((ind / (e_size * m_size)) << 15)
-                 | (((ind / m_size) % e_size + 1) << 10) | (ind % m_size + 1))
-                & sclamp;
+            o[i] = static_cast<InType>((((ind / (e_size * m_size)) << 15)
+                                        | (((ind / m_size) % e_size + 1) << 10)
+                                        | (ind % m_size + 1))
+                                       & sclamp);
         }
     }
     else if (std::is_integral<InType>::value)
