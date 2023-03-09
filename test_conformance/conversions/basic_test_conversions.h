@@ -36,6 +36,7 @@
 
 #include "harness/mt19937.h"
 #include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
 
 #include <tuple>
 #include <vector>
@@ -105,6 +106,8 @@ extern int gReportAverageTimes;
 extern int gStartTestNumber;
 extern int gEndTestNumber;
 extern int gIsRTZ;
+extern int gForceHalfFTZ;
+extern int gIsHalfRTZ;
 extern void *gIn;
 extern void *gRef;
 extern void *gAllowZ;
@@ -121,22 +124,40 @@ extern uint32_t gDeviceFrequency;
 
 //--------------------------------------------------------------------------
 
-struct CalcReferenceValuesInfo
-{
-    // pointer back to the parent WriteInputBufferInfo struct
-    struct WriteInputBufferInfo *parent;
-    cl_kernel kernel; // the kernel for this vector size
-    cl_program program; // the program for this vector size
-    cl_uint vectorSize; // the vector size for this callback chain
-    void *p; // the pointer to mapped result data for this vector size
-    cl_int result;
-};
+namespace conv_test {
+
+cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
+                       RoundingMode round, int vectorSize,
+                       cl_kernel *outKernel);
+
+int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf, size_t blockCount);
+
+int GetTestCase(const char *name, Type *outType, Type *inType,
+                SaturationMode *sat, RoundingMode *round);
+
+cl_int InitData(cl_uint job_id, cl_uint thread_id, void *p);
+cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p);
+uint64_t GetTime(void);
+
+void WriteInputBufferComplete(void *);
+void *FlushToZero(void);
+void UnFlushToZero(void *);
+}
 
 //--------------------------------------------------------------------------
 
-struct CalcRefValsBase : CalcReferenceValuesInfo
+struct CalcRefValsBase
 {
     virtual int check_result(void *, uint32_t, int) { return 0; }
+
+    // pointer back to the parent WriteInputBufferInfo struct
+    struct WriteInputBufferInfo *parent;
+    clKernelWrapper kernel; // the kernel for this vector size
+    clProgramWrapper program; // the program for this vector size
+    cl_uint vectorSize; // the vector size for this callback chain
+    void *p; // the pointer to mapped result data for this vector size
+    cl_int result;
+
 };
 
 //--------------------------------------------------------------------------
@@ -173,6 +194,15 @@ struct WriteInputBufferInfo
 
 struct DataInitInfo
 {
+    ~DataInitInfo()
+    {
+        if (d)
+        {
+            for (unsigned i = 0; i < threads; i++) free_mtdata(d[i]);
+            free(d);
+        }
+    }
+
     cl_ulong start;
     cl_uint size;
     Type outType;
@@ -180,6 +210,7 @@ struct DataInitInfo
     SaturationMode sat;
     RoundingMode round;
     MTdata *d;
+    cl_uint threads;
 };
 
 //--------------------------------------------------------------------------
@@ -245,22 +276,23 @@ struct DataInfoSpec : public DataInitBase
     ////////////////////////////////////////////////////////////////////////////
     void init(const cl_uint &, const cl_uint &) override;
     InType clamp(const InType &);
+    ////////////////////////////////////////////////////////////////////////////
+    inline float fclamp(float lo, float v, float hi)
+    {
+        v = v < lo ? lo : v;
+        return v < hi ? v : hi;
+    }
+    ////////////////////////////////////////////////////////////////////////////
+    inline double dclamp(double lo, double v, double hi)
+    {
+        v = v < lo ? lo : v;
+        return v < hi ? v : hi;
+    }
 };
 
 //--------------------------------------------------------------------------
 
-//  kuchar = 0,
-//  kchar = 1,
-//  kushort = 2,
-//  kshort = 3,
-//  kuint = 4,
-//  kint = 5,
-//  khalf = 6,
-//  kfloat = 7,
-//  kdouble = 8,
-//  kulong = 9,
-//  klong = 10,
-
+// Must be aligned with Type enums!
 using TypeIter =
     std::tuple<cl_uchar, cl_char, cl_ushort, cl_short, cl_uint, cl_int, cl_half,
                cl_float, cl_double, cl_ulong, cl_long>;
@@ -287,8 +319,7 @@ struct ConversionsTest
                RoundingMode round, MTdata d);
 
     template <typename InType, typename OutType, bool InFP, bool OutFP>
-    cl_int TestTypesConversion(const Type &inType, const Type &outType,
-                               int &tn);
+    void TestTypesConversion(const Type &inType, const Type &outType, int &tn);
 
 protected:
     cl_context context;
@@ -328,10 +359,7 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     cl_int error = test_fixture.SetUp(num_elements);
     test_error_ret(error, "Error in test initialization", TEST_FAIL);
 
-    error = test_fixture.Run();
-    test_error_ret(error, "Test Failed", TEST_FAIL);
-
-    return TEST_PASS;
+    return test_fixture.Run();
 }
 
 //--------------------------------------------------------------------------
@@ -366,8 +394,6 @@ struct IterOverTypes : public TestType
         : typeIter(typeIter), test(test)
     {}
 
-    int GetFailCount() { return failCount; }
-
     void Run() { for_each_out_elem(typeIter); }
 
 protected:
@@ -387,16 +413,13 @@ protected:
               typename InType>
     void iterate_in_type(const InType &t)
     {
-        if (failCount != 0) return;
-
         if (!testType<InType>(inType)) vlog_error("Unexpected data type!\n");
 
         if (!testType<OutType>(outType)) vlog_error("Unexpected data type!\n");
 
         // run the conversions
-        failCount = test.TestTypesConversion<InType, OutType, isTypeFp[In],
-                                             isTypeFp[Out]>(inType, outType,
-                                                            testNumber);
+        test.TestTypesConversion<InType, OutType, isTypeFp[In], isTypeFp[Out]>(
+            inType, outType, testNumber);
         inType = (Type)(inType + 1);
     }
 
@@ -446,7 +469,6 @@ protected:
     const TypeIter &typeIter;
     ConversionsTest &test;
     int testNumber = -1;
-    int failCount = 0;
 };
 
 //--------------------------------------------------------------------------
@@ -457,8 +479,6 @@ struct IterOverSelectedTypes : public TestType
                           const Type &in, const Type &out)
         : typeIter(typeIter), test(test), outType(out), inType(in)
     {}
-
-    int GetFailCount() { return failCount; }
 
     void Run() { for_each_out_elem(typeIter); }
 
@@ -480,9 +500,9 @@ protected:
         if (testType<InType>(inType) && testType<OutType>(outType))
         {
             // run the conversions
-            failCount = test.TestTypesConversion<InType, OutType, isTypeFp[In],
-                                                 isTypeFp[Out]>(inType, outType,
-                                                                testNumber);
+            test.TestTypesConversion<InType, OutType, isTypeFp[In],
+                                     isTypeFp[Out]>(inType, outType,
+                                                    testNumber);
         }
     }
 
@@ -530,7 +550,6 @@ protected:
     const TypeIter &typeIter;
     ConversionsTest &test;
     int testNumber = -1;
-    int failCount = 0;
 };
 
 //--------------------------------------------------------------------------

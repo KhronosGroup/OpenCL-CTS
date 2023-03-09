@@ -256,7 +256,10 @@ static int ParseArgs(int argc, const char **argv)
                     case '[':
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
                         break;
-                    case 'z': gForceFTZ ^= 1; break;
+                    case 'z':
+                        gForceFTZ ^= 1;
+                        gForceHalfFTZ ^= 1;
+                        break;
                     case 't': gTimeResults ^= 1; break;
                     case 'a': gReportAverageTimes ^= 1; break;
                     case '1':
@@ -445,6 +448,44 @@ test_status InitCL(cl_device_id device)
     if (is_extension_available(device, "cl_khr_fp16"))
     {
         gHasHalfs = 1;
+
+        cl_device_fp_config floatCapabilities = 0;
+        if ((error = clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG,
+                                     sizeof(floatCapabilities),
+                                     &floatCapabilities, NULL)))
+            floatCapabilities = 0;
+
+        if (0 == (CL_FP_DENORM & floatCapabilities)) gForceHalfFTZ ^= 1;
+
+        if (0 == (floatCapabilities & CL_FP_ROUND_TO_NEAREST))
+        {
+            char profileStr[128] = "";
+            // Verify that we are an embedded profile device
+            if ((error = clGetDeviceInfo(device, CL_DEVICE_PROFILE,
+                                         sizeof(profileStr), profileStr, NULL)))
+            {
+                vlog_error("FAILURE: Could not get device profile: error %d\n",
+                           error);
+                return TEST_FAIL;
+            }
+
+            if (strcmp(profileStr, "EMBEDDED_PROFILE"))
+            {
+                vlog_error(
+                    "FAILURE: non-embedded profile device does not support "
+                    "CL_FP_ROUND_TO_NEAREST\n");
+                return TEST_FAIL;
+            }
+
+            if (0 == (floatCapabilities & CL_FP_ROUND_TO_ZERO))
+            {
+                vlog_error("FAILURE: embedded profile device supports neither "
+                           "CL_FP_ROUND_TO_NEAREST or CL_FP_ROUND_TO_ZERO\n");
+                return TEST_FAIL;
+            }
+
+            gIsHalfRTZ = 1;
+        }
     }
     gTestHalfs &= gHasHalfs;
 
@@ -453,6 +494,8 @@ test_status InitCL(cl_device_id device)
     if ((error = clGetDeviceInfo(device, CL_DEVICE_PROFILE, sizeof(profile),
                                  profile, NULL)))
     {
+        vlog_error("clGetDeviceInfo failed. (%d)\n", error);
+        return TEST_FAIL;
     }
     else if (strstr(profile, "EMBEDDED_PROFILE"))
     {
@@ -529,8 +572,12 @@ test_status InitCL(cl_device_id device)
     vlog("\tSubnormal values supported for floats? %s\n",
          no_yes[0 != (CL_FP_DENORM & floatCapabilities)]);
     vlog("\tTesting with FTZ mode ON for floats? %s\n", no_yes[0 != gForceFTZ]);
+    vlog("\tTesting with FTZ mode ON for halfs? %s\n",
+         no_yes[0 != gForceHalfFTZ]);
     vlog("\tTesting with default RTZ mode for floats? %s\n",
          no_yes[0 != gIsRTZ]);
+    vlog("\tTesting with default RTZ mode for halfs? %s\n",
+         no_yes[0 != gIsHalfRTZ]);
     vlog("\tHas Double? %s\n", no_yes[0 != gHasDouble]);
     if (gHasDouble) vlog("\tTest Double? %s\n", no_yes[0 != gTestDouble]);
     vlog("\tHas Long? %s\n", no_yes[0 != gHasLong]);

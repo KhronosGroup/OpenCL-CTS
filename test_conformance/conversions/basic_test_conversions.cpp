@@ -23,6 +23,7 @@
 
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
+#include <mach/mach_time.h>
 #endif
 
 #if defined(__linux__)
@@ -90,6 +91,8 @@ int gWimpyReductionFactor = 128;
 int gSkipTesting = 0;
 int gForceFTZ = 0;
 int gIsRTZ = 0;
+int gForceHalfFTZ = 0;
+int gIsHalfRTZ = 0;
 uint32_t gSimdSize = 1;
 int gHasDouble = 0;
 int gTestDouble = 1;
@@ -105,24 +108,157 @@ int argCount = 0;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-static cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
-                              RoundingMode round, int vectorSize,
-                              cl_kernel *outKernel);
-static int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf,
-                     size_t blockCount);
+// clang-format off
+// for readability sake keep this section unformatted
+static const unsigned int specialValuesUInt[] = {
+    INT_MIN, INT_MIN + 1, INT_MIN + 2,
+    -(1<<30)-3,-(1<<30)-2,-(1<<30)-1, -(1<<30), -(1<<30)+1, -(1<<30)+2, -(1<<30)+3,
+    -(1<<24)-3,-(1<<24)-2,-(1<<24)-1, -(1<<24), -(1<<24)+1, -(1<<24)+2, -(1<<24)+3,
+    -(1<<23)-3,-(1<<23)-2,-(1<<23)-1, -(1<<23), -(1<<23)+1, -(1<<23)+2, -(1<<23)+3,
+    -(1<<22)-3,-(1<<22)-2,-(1<<22)-1, -(1<<22), -(1<<22)+1, -(1<<22)+2, -(1<<22)+3,
+    -(1<<21)-3,-(1<<21)-2,-(1<<21)-1, -(1<<21), -(1<<21)+1, -(1<<21)+2, -(1<<21)+3,
+    -(1<<16)-3,-(1<<16)-2,-(1<<16)-1, -(1<<16), -(1<<16)+1, -(1<<16)+2, -(1<<16)+3,
+    -(1<<15)-3,-(1<<15)-2,-(1<<15)-1, -(1<<15), -(1<<15)+1, -(1<<15)+2, -(1<<15)+3,
+    -(1<<8)-3,-(1<<8)-2,-(1<<8)-1, -(1<<8), -(1<<8)+1, -(1<<8)+2, -(1<<8)+3,
+    -(1<<7)-3,-(1<<7)-2,-(1<<7)-1, -(1<<7), -(1<<7)+1, -(1<<7)+2, -(1<<7)+3,
+    -4, -3, -2, -1, 0, 1, 2, 3, 4,
+    (1<<7)-3,(1<<7)-2,(1<<7)-1, (1<<7), (1<<7)+1, (1<<7)+2, (1<<7)+3,
+    (1<<8)-3,(1<<8)-2,(1<<8)-1, (1<<8), (1<<8)+1, (1<<8)+2, (1<<8)+3,
+    (1<<15)-3,(1<<15)-2,(1<<15)-1, (1<<15), (1<<15)+1, (1<<15)+2, (1<<15)+3,
+    (1<<16)-3,(1<<16)-2,(1<<16)-1, (1<<16), (1<<16)+1, (1<<16)+2, (1<<16)+3,
+    (1<<21)-3,(1<<21)-2,(1<<21)-1, (1<<21), (1<<21)+1, (1<<21)+2, (1<<21)+3,
+    (1<<22)-3,(1<<22)-2,(1<<22)-1, (1<<22), (1<<22)+1, (1<<22)+2, (1<<22)+3,
+    (1<<23)-3,(1<<23)-2,(1<<23)-1, (1<<23), (1<<23)+1, (1<<23)+2, (1<<23)+3,
+    (1<<24)-3,(1<<24)-2,(1<<24)-1, (1<<24), (1<<24)+1, (1<<24)+2, (1<<24)+3,
+    (1<<30)-3,(1<<30)-2,(1<<30)-1, (1<<30), (1<<30)+1, (1<<30)+2, (1<<30)+3,
+    INT_MAX-3, INT_MAX-2, INT_MAX-1, INT_MAX, // 0x80000000, 0x80000001 0x80000002 already covered above
+    UINT_MAX-3, UINT_MAX-2, UINT_MAX-1, UINT_MAX
+};
 
-static int GetTestCase(const char *name, Type *outType, Type *inType,
-                       SaturationMode *sat, RoundingMode *round);
+static const float specialValuesFloat[] = {
+    -NAN, -INFINITY, -FLT_MAX,
+    MAKE_HEX_FLOAT(-0x1.000002p64f, -0x1000002L, 40), MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64), MAKE_HEX_FLOAT(-0x1.fffffep63f, -0x1fffffeL, 39),
+    MAKE_HEX_FLOAT(-0x1.000002p63f, -0x1000002L, 39), MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63), MAKE_HEX_FLOAT(-0x1.fffffep62f, -0x1fffffeL, 38),
+    MAKE_HEX_FLOAT(-0x1.000002p32f, -0x1000002L, 8), MAKE_HEX_FLOAT(-0x1.0p32f, -0x1L, 32), MAKE_HEX_FLOAT(-0x1.fffffep31f, -0x1fffffeL, 7),
+    MAKE_HEX_FLOAT(-0x1.000002p31f, -0x1000002L, 7), MAKE_HEX_FLOAT(-0x1.0p31f, -0x1L, 31), MAKE_HEX_FLOAT(-0x1.fffffep30f, -0x1fffffeL, 6),
+    -1000.f, -100.f, -4.0f, -3.5f, -3.0f,
+    MAKE_HEX_FLOAT(-0x1.800002p1f, -0x1800002L, -23), -2.5f,
+    MAKE_HEX_FLOAT(-0x1.7ffffep1f, -0x17ffffeL, -23), -2.0f,
+    MAKE_HEX_FLOAT(-0x1.800002p0f, -0x1800002L, -24), -1.5f,
+    MAKE_HEX_FLOAT(-0x1.7ffffep0f, -0x17ffffeL, -24), MAKE_HEX_FLOAT(-0x1.000002p0f, -0x1000002L, -24), -1.0f,
+    MAKE_HEX_FLOAT(-0x1.fffffep-1f, -0x1fffffeL, -25), MAKE_HEX_FLOAT(-0x1.000002p-1f, -0x1000002L, -25), -0.5f,
+    MAKE_HEX_FLOAT(-0x1.fffffep-2f, -0x1fffffeL, -26), MAKE_HEX_FLOAT(-0x1.000002p-2f, -0x1000002L, -26), -0.25f,
+    MAKE_HEX_FLOAT(-0x1.fffffep-3f, -0x1fffffeL, -27), MAKE_HEX_FLOAT(-0x1.000002p-126f, -0x1000002L, -150), -FLT_MIN,
+    MAKE_HEX_FLOAT(-0x0.fffffep-126f, -0x0fffffeL, -150),
+    MAKE_HEX_FLOAT(-0x0.000ffep-126f, -0x0000ffeL, -150), MAKE_HEX_FLOAT(-0x0.0000fep-126f, -0x00000feL, -150),
+    MAKE_HEX_FLOAT(-0x0.00000ep-126f, -0x000000eL, -150), MAKE_HEX_FLOAT(-0x0.00000cp-126f, -0x000000cL, -150),
+    MAKE_HEX_FLOAT(-0x0.00000ap-126f, -0x000000aL, -150), MAKE_HEX_FLOAT(-0x0.000008p-126f, -0x0000008L, -150),
+    MAKE_HEX_FLOAT(-0x0.000006p-126f, -0x0000006L, -150), MAKE_HEX_FLOAT(-0x0.000004p-126f, -0x0000004L, -150),
+    MAKE_HEX_FLOAT(-0x0.000002p-126f, -0x0000002L, -150), -0.0f, +NAN, +INFINITY, +FLT_MAX,
+    MAKE_HEX_FLOAT(+0x1.000002p64f, +0x1000002L, 40), MAKE_HEX_FLOAT(+0x1.0p64f, +0x1L, 64), MAKE_HEX_FLOAT(+0x1.fffffep63f, +0x1fffffeL, 39),
+    MAKE_HEX_FLOAT(+0x1.000002p63f, +0x1000002L, 39), MAKE_HEX_FLOAT(+0x1.0p63f, +0x1L, 63), MAKE_HEX_FLOAT(+0x1.fffffep62f, +0x1fffffeL, 38),
+    MAKE_HEX_FLOAT(+0x1.000002p32f, +0x1000002L, 8), MAKE_HEX_FLOAT(+0x1.0p32f, +0x1L, 32), MAKE_HEX_FLOAT(+0x1.fffffep31f, +0x1fffffeL, 7),
+    MAKE_HEX_FLOAT(+0x1.000002p31f, +0x1000002L, 7), MAKE_HEX_FLOAT(+0x1.0p31f, +0x1L, 31), MAKE_HEX_FLOAT(+0x1.fffffep30f, +0x1fffffeL, 6),
+    +1000.f, +100.f, +4.0f, +3.5f, +3.0f,
+    MAKE_HEX_FLOAT(+0x1.800002p1f, +0x1800002L, -23), 2.5f, MAKE_HEX_FLOAT(+0x1.7ffffep1f, +0x17ffffeL, -23), +2.0f,
+    MAKE_HEX_FLOAT(+0x1.800002p0f, +0x1800002L, -24), 1.5f, MAKE_HEX_FLOAT(+0x1.7ffffep0f, +0x17ffffeL, -24),
+    MAKE_HEX_FLOAT(+0x1.000002p0f, +0x1000002L, -24), +1.0f, MAKE_HEX_FLOAT(+0x1.fffffep-1f, +0x1fffffeL, -25),
+    MAKE_HEX_FLOAT(+0x1.000002p-1f, +0x1000002L, -25), +0.5f, MAKE_HEX_FLOAT(+0x1.fffffep-2f, +0x1fffffeL, -26),
+    MAKE_HEX_FLOAT(+0x1.000002p-2f, +0x1000002L, -26), +0.25f, MAKE_HEX_FLOAT(+0x1.fffffep-3f, +0x1fffffeL, -27),
+    MAKE_HEX_FLOAT(0x1.000002p-126f, 0x1000002L, -150), +FLT_MIN, MAKE_HEX_FLOAT(+0x0.fffffep-126f, +0x0fffffeL, -150),
+    MAKE_HEX_FLOAT(+0x0.000ffep-126f, +0x0000ffeL, -150), MAKE_HEX_FLOAT(+0x0.0000fep-126f, +0x00000feL, -150),
+    MAKE_HEX_FLOAT(+0x0.00000ep-126f, +0x000000eL, -150), MAKE_HEX_FLOAT(+0x0.00000cp-126f, +0x000000cL, -150),
+    MAKE_HEX_FLOAT(+0x0.00000ap-126f, +0x000000aL, -150), MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150),
+    MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150), MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150),
+    MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150), +0.0f
+};
+
+// A table of more difficult cases to get right
+static const double specialValuesDouble[] = {
+    -NAN, -INFINITY, -DBL_MAX,
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p64, -0x10000000000001LL, 12), MAKE_HEX_DOUBLE(-0x1.0p64, -0x1LL, 64),
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp63, -0x1fffffffffffffLL, 11), MAKE_HEX_DOUBLE(-0x1.80000000000001p64, -0x180000000000001LL, 8),
+    MAKE_HEX_DOUBLE(-0x1.8p64, -0x18LL, 60), MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp64, -0x17ffffffffffffLL, 12),
+    MAKE_HEX_DOUBLE(-0x1.80000000000001p63, -0x180000000000001LL, 7), MAKE_HEX_DOUBLE(-0x1.8p63, -0x18LL, 59),
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp63, -0x17ffffffffffffLL, 11), MAKE_HEX_DOUBLE(-0x1.0000000000001p63, -0x10000000000001LL, 11),
+    MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp62, -0x1fffffffffffffLL, 10),
+    MAKE_HEX_DOUBLE(-0x1.80000000000001p32, -0x180000000000001LL, -24), MAKE_HEX_DOUBLE(-0x1.8p32, -0x18LL, 28),
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp32, -0x17ffffffffffffLL, -20), MAKE_HEX_DOUBLE(-0x1.000002p32, -0x1000002LL, 8),
+    MAKE_HEX_DOUBLE(-0x1.0p32, -0x1LL, 32), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp31, -0x1fffffffffffffLL, -21),
+    MAKE_HEX_DOUBLE(-0x1.80000000000001p31, -0x180000000000001LL, -25), MAKE_HEX_DOUBLE(-0x1.8p31, -0x18LL, 27),
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp31, -0x17ffffffffffffLL, -21), MAKE_HEX_DOUBLE(-0x1.0000000000001p31, -0x10000000000001LL, -21),
+    MAKE_HEX_DOUBLE(-0x1.0p31, -0x1LL, 31), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp30, -0x1fffffffffffffLL, -22),
+    -1000., -100., -4.0, -3.5, -3.0,
+    MAKE_HEX_DOUBLE(-0x1.8000000000001p1, -0x18000000000001LL, -51), -2.5,
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp1, -0x17ffffffffffffLL, -51), -2.0,
+    MAKE_HEX_DOUBLE(-0x1.8000000000001p0, -0x18000000000001LL, -52), -1.5,
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp0, -0x17ffffffffffffLL, -52), MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52), -1.0,
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-1, -0x1fffffffffffffLL, -53), MAKE_HEX_DOUBLE(-0x1.0000000000001p-1, -0x10000000000001LL, -53), -0.5,
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-2, -0x1fffffffffffffLL, -54), MAKE_HEX_DOUBLE(-0x1.0000000000001p-2, -0x10000000000001LL, -54), -0.25,
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-3, -0x1fffffffffffffLL, -55), MAKE_HEX_DOUBLE(-0x1.0000000000001p-1022, -0x10000000000001LL, -1074),
+    -DBL_MIN,
+    MAKE_HEX_DOUBLE(-0x0.fffffffffffffp-1022, -0x0fffffffffffffLL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000fffp-1022, -0x00000000000fffLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.00000000000fep-1022, -0x000000000000feLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000ep-1022, -0x0000000000000eLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.000000000000cp-1022, -0x0000000000000cLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000ap-1022, -0x0000000000000aLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000008p-1022, -0x00000000000008LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000007p-1022, -0x00000000000007LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000006p-1022, -0x00000000000006LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000005p-1022, -0x00000000000005LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000004p-1022, -0x00000000000004LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000003p-1022, -0x00000000000003LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000002p-1022, -0x00000000000002LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000001p-1022, -0x00000000000001LL, -1074),
+    -0.0, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp63, +0x1fffffffffffffLL, 11),
+    MAKE_HEX_DOUBLE(0x1.80000000000001p63, 0x180000000000001LL, 7), MAKE_HEX_DOUBLE(0x1.8p63, 0x18LL, 59),
+    MAKE_HEX_DOUBLE(0x1.7ffffffffffffp63, 0x17ffffffffffffLL, 11), MAKE_HEX_DOUBLE(+0x1.0000000000001p63, +0x10000000000001LL, 11),
+    MAKE_HEX_DOUBLE(+0x1.0p63, +0x1LL, 63), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp62, +0x1fffffffffffffLL, 10),
+    MAKE_HEX_DOUBLE(+0x1.80000000000001p32, +0x180000000000001LL, -24), MAKE_HEX_DOUBLE(+0x1.8p32, +0x18LL, 28),
+    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp32, +0x17ffffffffffffLL, -20), MAKE_HEX_DOUBLE(+0x1.000002p32, +0x1000002LL, 8),
+    MAKE_HEX_DOUBLE(+0x1.0p32, +0x1LL, 32), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp31, +0x1fffffffffffffLL, -21),
+    MAKE_HEX_DOUBLE(+0x1.80000000000001p31, +0x180000000000001LL, -25), MAKE_HEX_DOUBLE(+0x1.8p31, +0x18LL, 27),
+    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp31, +0x17ffffffffffffLL, -21), MAKE_HEX_DOUBLE(+0x1.0000000000001p31, +0x10000000000001LL, -21),
+    MAKE_HEX_DOUBLE(+0x1.0p31, +0x1LL, 31), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp30, +0x1fffffffffffffLL, -22),
+    +1000., +100., +4.0, +3.5, +3.0, MAKE_HEX_DOUBLE(+0x1.8000000000001p1, +0x18000000000001LL, -51), +2.5,
+    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp1, +0x17ffffffffffffLL, -51), +2.0, MAKE_HEX_DOUBLE(+0x1.8000000000001p0, +0x18000000000001LL, -52),
+    +1.5, MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp0, +0x17ffffffffffffLL, -52), MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52),
+    +1.0, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-1, +0x1fffffffffffffLL, -53), MAKE_HEX_DOUBLE(+0x1.0000000000001p-1, +0x10000000000001LL, -53),
+    +0.5, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-2, +0x1fffffffffffffLL, -54), MAKE_HEX_DOUBLE(+0x1.0000000000001p-2, +0x10000000000001LL, -54),
+    +0.25, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-3, +0x1fffffffffffffLL, -55), MAKE_HEX_DOUBLE(+0x1.0000000000001p-1022, +0x10000000000001LL, -1074),
+    +DBL_MIN, MAKE_HEX_DOUBLE(+0x0.fffffffffffffp-1022, +0x0fffffffffffffLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000fffp-1022, +0x00000000000fffLL, -1074), MAKE_HEX_DOUBLE(+0x0.00000000000fep-1022, +0x000000000000feLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.000000000000ep-1022, +0x0000000000000eLL, -1074), MAKE_HEX_DOUBLE(+0x0.000000000000cp-1022, +0x0000000000000cLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.000000000000ap-1022, +0x0000000000000aLL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000008p-1022, +0x00000000000008LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000007p-1022, +0x00000000000007LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000006p-1022, +0x00000000000006LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000005p-1022, +0x00000000000005LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000004p-1022, +0x00000000000004LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000003p-1022, +0x00000000000003LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000002p-1022, +0x00000000000002LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074), +0.0, MAKE_HEX_DOUBLE(-0x1.ffffffffffffep62, -0x1ffffffffffffeLL, 10),
+    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp62, -0x1ffffffffffffcLL, 10), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp62, -0x1fffffffffffffLL, 10),
+    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep62, +0x1ffffffffffffeLL, 10), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp62, +0x1ffffffffffffcLL, 10),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp62, +0x1fffffffffffffLL, 10), MAKE_HEX_DOUBLE(-0x1.ffffffffffffep51, -0x1ffffffffffffeLL, -1),
+    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp51, -0x1ffffffffffffcLL, -1), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp51, -0x1fffffffffffffLL, -1),
+    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep51, +0x1ffffffffffffeLL, -1), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp51, +0x1ffffffffffffcLL, -1),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp51, +0x1fffffffffffffLL, -1), MAKE_HEX_DOUBLE(-0x1.ffffffffffffep52, -0x1ffffffffffffeLL, 0),
+    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp52, -0x1ffffffffffffcLL, 0), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp52, -0x1fffffffffffffLL, 0),
+    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep52, +0x1ffffffffffffeLL, 0), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp52, +0x1ffffffffffffcLL, 0),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp52, +0x1fffffffffffffLL, 0), MAKE_HEX_DOUBLE(-0x1.ffffffffffffep53, -0x1ffffffffffffeLL, 1),
+    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp53, -0x1ffffffffffffcLL, 1), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp53, -0x1fffffffffffffLL, 1),
+    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep53, +0x1ffffffffffffeLL, 1), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp53, +0x1ffffffffffffcLL, 1),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp53, +0x1fffffffffffffLL, 1), MAKE_HEX_DOUBLE(-0x1.0000000000002p52, -0x10000000000002LL, 0),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p52, -0x10000000000001LL, 0), MAKE_HEX_DOUBLE(-0x1.0p52, -0x1LL, 52),
+    MAKE_HEX_DOUBLE(+0x1.0000000000002p52, +0x10000000000002LL, 0), MAKE_HEX_DOUBLE(+0x1.0000000000001p52, +0x10000000000001LL, 0),
+    MAKE_HEX_DOUBLE(+0x1.0p52, +0x1LL, 52), MAKE_HEX_DOUBLE(-0x1.0000000000002p53, -0x10000000000002LL, 1),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p53, -0x10000000000001LL, 1), MAKE_HEX_DOUBLE(-0x1.0p53, -0x1LL, 53),
+    MAKE_HEX_DOUBLE(+0x1.0000000000002p53, +0x10000000000002LL, 1), MAKE_HEX_DOUBLE(+0x1.0000000000001p53, +0x10000000000001LL, 1),
+    MAKE_HEX_DOUBLE(+0x1.0p53, +0x1LL, 53), MAKE_HEX_DOUBLE(-0x1.0000000000002p54, -0x10000000000002LL, 2),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p54, -0x10000000000001LL, 2), MAKE_HEX_DOUBLE(-0x1.0p54, -0x1LL, 54),
+    MAKE_HEX_DOUBLE(+0x1.0000000000002p54, +0x10000000000002LL, 2), MAKE_HEX_DOUBLE(+0x1.0000000000001p54, +0x10000000000001LL, 2),
+    MAKE_HEX_DOUBLE(+0x1.0p54, +0x1LL, 54), MAKE_HEX_DOUBLE(-0x1.fffffffefffffp62, -0x1fffffffefffffLL, 10),
+    MAKE_HEX_DOUBLE(-0x1.ffffffffp62, -0x1ffffffffLL, 30), MAKE_HEX_DOUBLE(-0x1.ffffffff00001p62, -0x1ffffffff00001LL, 10),
+    MAKE_HEX_DOUBLE(0x1.fffffffefffffp62, 0x1fffffffefffffLL, 10), MAKE_HEX_DOUBLE(0x1.ffffffffp62, 0x1ffffffffLL, 30),
+    MAKE_HEX_DOUBLE(0x1.ffffffff00001p62, 0x1ffffffff00001LL, 10),
+};
+// clang-format on
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-cl_int InitData(cl_uint job_id, cl_uint thread_id, void *p);
-cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p);
-uint64_t GetTime(void);
 double SubtractTime(uint64_t endTime, uint64_t startTime);
-void WriteInputBufferComplete(void *);
-void *FlushToZero(void);
-void UnFlushToZero(void *);
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -393,9 +529,13 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
             inVal = HTF(*in);
         }
 
-        if (std::is_same<cl_double, OutType>::value)
+        if (std::is_floating_point<OutType>::value)
         {
             *out = (OutType)inVal;
+        }
+        else if (is_out_half())
+        {
+            *out = HFF(*in);
         }
         else if (std::is_same<cl_ulong, OutType>::value)
         {
@@ -676,174 +816,45 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-// clang-format off
-// for readability sake keep this section unformatted
-static const unsigned int specialValuesUInt[] = {
-    INT_MIN, INT_MIN + 1, INT_MIN + 2,
-    -(1<<30)-3,-(1<<30)-2,-(1<<30)-1, -(1<<30), -(1<<30)+1, -(1<<30)+2, -(1<<30)+3,
-    -(1<<24)-3,-(1<<24)-2,-(1<<24)-1, -(1<<24), -(1<<24)+1, -(1<<24)+2, -(1<<24)+3,
-    -(1<<23)-3,-(1<<23)-2,-(1<<23)-1, -(1<<23), -(1<<23)+1, -(1<<23)+2, -(1<<23)+3,
-    -(1<<22)-3,-(1<<22)-2,-(1<<22)-1, -(1<<22), -(1<<22)+1, -(1<<22)+2, -(1<<22)+3,
-    -(1<<21)-3,-(1<<21)-2,-(1<<21)-1, -(1<<21), -(1<<21)+1, -(1<<21)+2, -(1<<21)+3,
-    -(1<<16)-3,-(1<<16)-2,-(1<<16)-1, -(1<<16), -(1<<16)+1, -(1<<16)+2, -(1<<16)+3,
-    -(1<<15)-3,-(1<<15)-2,-(1<<15)-1, -(1<<15), -(1<<15)+1, -(1<<15)+2, -(1<<15)+3,
-    -(1<<8)-3,-(1<<8)-2,-(1<<8)-1, -(1<<8), -(1<<8)+1, -(1<<8)+2, -(1<<8)+3,
-    -(1<<7)-3,-(1<<7)-2,-(1<<7)-1, -(1<<7), -(1<<7)+1, -(1<<7)+2, -(1<<7)+3,
-    -4, -3, -2, -1, 0, 1, 2, 3, 4,
-    (1<<7)-3,(1<<7)-2,(1<<7)-1, (1<<7), (1<<7)+1, (1<<7)+2, (1<<7)+3,
-    (1<<8)-3,(1<<8)-2,(1<<8)-1, (1<<8), (1<<8)+1, (1<<8)+2, (1<<8)+3,
-    (1<<15)-3,(1<<15)-2,(1<<15)-1, (1<<15), (1<<15)+1, (1<<15)+2, (1<<15)+3,
-    (1<<16)-3,(1<<16)-2,(1<<16)-1, (1<<16), (1<<16)+1, (1<<16)+2, (1<<16)+3,
-    (1<<21)-3,(1<<21)-2,(1<<21)-1, (1<<21), (1<<21)+1, (1<<21)+2, (1<<21)+3,
-    (1<<22)-3,(1<<22)-2,(1<<22)-1, (1<<22), (1<<22)+1, (1<<22)+2, (1<<22)+3,
-    (1<<23)-3,(1<<23)-2,(1<<23)-1, (1<<23), (1<<23)+1, (1<<23)+2, (1<<23)+3,
-    (1<<24)-3,(1<<24)-2,(1<<24)-1, (1<<24), (1<<24)+1, (1<<24)+2, (1<<24)+3,
-    (1<<30)-3,(1<<30)-2,(1<<30)-1, (1<<30), (1<<30)+1, (1<<30)+2, (1<<30)+3,
-    INT_MAX-3, INT_MAX-2, INT_MAX-1, INT_MAX, // 0x80000000, 0x80000001 0x80000002 already covered above
-    UINT_MAX-3, UINT_MAX-2, UINT_MAX-1, UINT_MAX
-};
-
-static const float specialValuesFloat[] = {
-    -NAN, -INFINITY, -FLT_MAX,
-    MAKE_HEX_FLOAT(-0x1.000002p64f, -0x1000002L, 40), MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64), MAKE_HEX_FLOAT(-0x1.fffffep63f, -0x1fffffeL, 39),
-    MAKE_HEX_FLOAT(-0x1.000002p63f, -0x1000002L, 39), MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63), MAKE_HEX_FLOAT(-0x1.fffffep62f, -0x1fffffeL, 38),
-    MAKE_HEX_FLOAT(-0x1.000002p32f, -0x1000002L, 8), MAKE_HEX_FLOAT(-0x1.0p32f, -0x1L, 32), MAKE_HEX_FLOAT(-0x1.fffffep31f, -0x1fffffeL, 7),
-    MAKE_HEX_FLOAT(-0x1.000002p31f, -0x1000002L, 7), MAKE_HEX_FLOAT(-0x1.0p31f, -0x1L, 31), MAKE_HEX_FLOAT(-0x1.fffffep30f, -0x1fffffeL, 6),
-    -1000.f, -100.f, -4.0f, -3.5f, -3.0f,
-    MAKE_HEX_FLOAT(-0x1.800002p1f, -0x1800002L, -23), -2.5f,
-    MAKE_HEX_FLOAT(-0x1.7ffffep1f, -0x17ffffeL, -23), -2.0f,
-    MAKE_HEX_FLOAT(-0x1.800002p0f, -0x1800002L, -24), -1.5f,
-    MAKE_HEX_FLOAT(-0x1.7ffffep0f, -0x17ffffeL, -24), MAKE_HEX_FLOAT(-0x1.000002p0f, -0x1000002L, -24), -1.0f,
-    MAKE_HEX_FLOAT(-0x1.fffffep-1f, -0x1fffffeL, -25), MAKE_HEX_FLOAT(-0x1.000002p-1f, -0x1000002L, -25), -0.5f,
-    MAKE_HEX_FLOAT(-0x1.fffffep-2f, -0x1fffffeL, -26), MAKE_HEX_FLOAT(-0x1.000002p-2f, -0x1000002L, -26), -0.25f,
-    MAKE_HEX_FLOAT(-0x1.fffffep-3f, -0x1fffffeL, -27), MAKE_HEX_FLOAT(-0x1.000002p-126f, -0x1000002L, -150), -FLT_MIN,
-    MAKE_HEX_FLOAT(-0x0.fffffep-126f, -0x0fffffeL, -150),
-    MAKE_HEX_FLOAT(-0x0.000ffep-126f, -0x0000ffeL, -150), MAKE_HEX_FLOAT(-0x0.0000fep-126f, -0x00000feL, -150),
-    MAKE_HEX_FLOAT(-0x0.00000ep-126f, -0x000000eL, -150), MAKE_HEX_FLOAT(-0x0.00000cp-126f, -0x000000cL, -150),
-    MAKE_HEX_FLOAT(-0x0.00000ap-126f, -0x000000aL, -150), MAKE_HEX_FLOAT(-0x0.000008p-126f, -0x0000008L, -150),
-    MAKE_HEX_FLOAT(-0x0.000006p-126f, -0x0000006L, -150), MAKE_HEX_FLOAT(-0x0.000004p-126f, -0x0000004L, -150),
-    MAKE_HEX_FLOAT(-0x0.000002p-126f, -0x0000002L, -150), -0.0f, +NAN, +INFINITY, +FLT_MAX,
-    MAKE_HEX_FLOAT(+0x1.000002p64f, +0x1000002L, 40), MAKE_HEX_FLOAT(+0x1.0p64f, +0x1L, 64), MAKE_HEX_FLOAT(+0x1.fffffep63f, +0x1fffffeL, 39),
-    MAKE_HEX_FLOAT(+0x1.000002p63f, +0x1000002L, 39), MAKE_HEX_FLOAT(+0x1.0p63f, +0x1L, 63), MAKE_HEX_FLOAT(+0x1.fffffep62f, +0x1fffffeL, 38),
-    MAKE_HEX_FLOAT(+0x1.000002p32f, +0x1000002L, 8), MAKE_HEX_FLOAT(+0x1.0p32f, +0x1L, 32), MAKE_HEX_FLOAT(+0x1.fffffep31f, +0x1fffffeL, 7),
-    MAKE_HEX_FLOAT(+0x1.000002p31f, +0x1000002L, 7), MAKE_HEX_FLOAT(+0x1.0p31f, +0x1L, 31), MAKE_HEX_FLOAT(+0x1.fffffep30f, +0x1fffffeL, 6),
-    +1000.f, +100.f, +4.0f, +3.5f, +3.0f,
-    MAKE_HEX_FLOAT(+0x1.800002p1f, +0x1800002L, -23), 2.5f, MAKE_HEX_FLOAT(+0x1.7ffffep1f, +0x17ffffeL, -23), +2.0f,
-    MAKE_HEX_FLOAT(+0x1.800002p0f, +0x1800002L, -24), 1.5f, MAKE_HEX_FLOAT(+0x1.7ffffep0f, +0x17ffffeL, -24),
-    MAKE_HEX_FLOAT(+0x1.000002p0f, +0x1000002L, -24), +1.0f, MAKE_HEX_FLOAT(+0x1.fffffep-1f, +0x1fffffeL, -25),
-    MAKE_HEX_FLOAT(+0x1.000002p-1f, +0x1000002L, -25), +0.5f, MAKE_HEX_FLOAT(+0x1.fffffep-2f, +0x1fffffeL, -26),
-    MAKE_HEX_FLOAT(+0x1.000002p-2f, +0x1000002L, -26), +0.25f, MAKE_HEX_FLOAT(+0x1.fffffep-3f, +0x1fffffeL, -27),
-    MAKE_HEX_FLOAT(0x1.000002p-126f, 0x1000002L, -150), +FLT_MIN, MAKE_HEX_FLOAT(+0x0.fffffep-126f, +0x0fffffeL, -150),
-    MAKE_HEX_FLOAT(+0x0.000ffep-126f, +0x0000ffeL, -150), MAKE_HEX_FLOAT(+0x0.0000fep-126f, +0x00000feL, -150),
-    MAKE_HEX_FLOAT(+0x0.00000ep-126f, +0x000000eL, -150), MAKE_HEX_FLOAT(+0x0.00000cp-126f, +0x000000cL, -150),
-    MAKE_HEX_FLOAT(+0x0.00000ap-126f, +0x000000aL, -150), MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150),
-    MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150), MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150),
-    MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150), +0.0f
-};
-
-// A table of more difficult cases to get right
-static const double specialValuesDouble[] = {
-    -NAN, -INFINITY, -DBL_MAX,
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p64, -0x10000000000001LL, 12), MAKE_HEX_DOUBLE(-0x1.0p64, -0x1LL, 64),
-    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp63, -0x1fffffffffffffLL, 11), MAKE_HEX_DOUBLE(-0x1.80000000000001p64, -0x180000000000001LL, 8),
-    MAKE_HEX_DOUBLE(-0x1.8p64, -0x18LL, 60), MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp64, -0x17ffffffffffffLL, 12),
-    MAKE_HEX_DOUBLE(-0x1.80000000000001p63, -0x180000000000001LL, 7), MAKE_HEX_DOUBLE(-0x1.8p63, -0x18LL, 59),
-    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp63, -0x17ffffffffffffLL, 11), MAKE_HEX_DOUBLE(-0x1.0000000000001p63, -0x10000000000001LL, 11),
-    MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp62, -0x1fffffffffffffLL, 10),
-    MAKE_HEX_DOUBLE(-0x1.80000000000001p32, -0x180000000000001LL, -24), MAKE_HEX_DOUBLE(-0x1.8p32, -0x18LL, 28),
-    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp32, -0x17ffffffffffffLL, -20), MAKE_HEX_DOUBLE(-0x1.000002p32, -0x1000002LL, 8),
-    MAKE_HEX_DOUBLE(-0x1.0p32, -0x1LL, 32), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp31, -0x1fffffffffffffLL, -21),
-    MAKE_HEX_DOUBLE(-0x1.80000000000001p31, -0x180000000000001LL, -25), MAKE_HEX_DOUBLE(-0x1.8p31, -0x18LL, 27),
-    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp31, -0x17ffffffffffffLL, -21), MAKE_HEX_DOUBLE(-0x1.0000000000001p31, -0x10000000000001LL, -21),
-    MAKE_HEX_DOUBLE(-0x1.0p31, -0x1LL, 31), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp30, -0x1fffffffffffffLL, -22),
-    -1000., -100., -4.0, -3.5, -3.0,
-    MAKE_HEX_DOUBLE(-0x1.8000000000001p1, -0x18000000000001LL, -51), -2.5,
-    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp1, -0x17ffffffffffffLL, -51), -2.0,
-    MAKE_HEX_DOUBLE(-0x1.8000000000001p0, -0x18000000000001LL, -52), -1.5,
-    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp0, -0x17ffffffffffffLL, -52), MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52), -1.0,
-    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-1, -0x1fffffffffffffLL, -53), MAKE_HEX_DOUBLE(-0x1.0000000000001p-1, -0x10000000000001LL, -53), -0.5,
-    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-2, -0x1fffffffffffffLL, -54), MAKE_HEX_DOUBLE(-0x1.0000000000001p-2, -0x10000000000001LL, -54), -0.25,
-    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-3, -0x1fffffffffffffLL, -55), MAKE_HEX_DOUBLE(-0x1.0000000000001p-1022, -0x10000000000001LL, -1074),
-    -DBL_MIN,
-    MAKE_HEX_DOUBLE(-0x0.fffffffffffffp-1022, -0x0fffffffffffffLL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000fffp-1022, -0x00000000000fffLL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.00000000000fep-1022, -0x000000000000feLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000ep-1022, -0x0000000000000eLL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.000000000000cp-1022, -0x0000000000000cLL, -1074), MAKE_HEX_DOUBLE(-0x0.000000000000ap-1022, -0x0000000000000aLL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000008p-1022, -0x00000000000008LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000007p-1022, -0x00000000000007LL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000006p-1022, -0x00000000000006LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000005p-1022, -0x00000000000005LL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000004p-1022, -0x00000000000004LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000003p-1022, -0x00000000000003LL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000002p-1022, -0x00000000000002LL, -1074), MAKE_HEX_DOUBLE(-0x0.0000000000001p-1022, -0x00000000000001LL, -1074),
-    -0.0, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp63, +0x1fffffffffffffLL, 11),
-    MAKE_HEX_DOUBLE(0x1.80000000000001p63, 0x180000000000001LL, 7), MAKE_HEX_DOUBLE(0x1.8p63, 0x18LL, 59),
-    MAKE_HEX_DOUBLE(0x1.7ffffffffffffp63, 0x17ffffffffffffLL, 11), MAKE_HEX_DOUBLE(+0x1.0000000000001p63, +0x10000000000001LL, 11),
-    MAKE_HEX_DOUBLE(+0x1.0p63, +0x1LL, 63), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp62, +0x1fffffffffffffLL, 10),
-    MAKE_HEX_DOUBLE(+0x1.80000000000001p32, +0x180000000000001LL, -24), MAKE_HEX_DOUBLE(+0x1.8p32, +0x18LL, 28),
-    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp32, +0x17ffffffffffffLL, -20), MAKE_HEX_DOUBLE(+0x1.000002p32, +0x1000002LL, 8),
-    MAKE_HEX_DOUBLE(+0x1.0p32, +0x1LL, 32), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp31, +0x1fffffffffffffLL, -21),
-    MAKE_HEX_DOUBLE(+0x1.80000000000001p31, +0x180000000000001LL, -25), MAKE_HEX_DOUBLE(+0x1.8p31, +0x18LL, 27),
-    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp31, +0x17ffffffffffffLL, -21), MAKE_HEX_DOUBLE(+0x1.0000000000001p31, +0x10000000000001LL, -21),
-    MAKE_HEX_DOUBLE(+0x1.0p31, +0x1LL, 31), MAKE_HEX_DOUBLE(+0x1.fffffffffffffp30, +0x1fffffffffffffLL, -22),
-    +1000., +100., +4.0, +3.5, +3.0, MAKE_HEX_DOUBLE(+0x1.8000000000001p1, +0x18000000000001LL, -51), +2.5,
-    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp1, +0x17ffffffffffffLL, -51), +2.0, MAKE_HEX_DOUBLE(+0x1.8000000000001p0, +0x18000000000001LL, -52),
-    +1.5, MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp0, +0x17ffffffffffffLL, -52), MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52),
-    +1.0, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-1, +0x1fffffffffffffLL, -53), MAKE_HEX_DOUBLE(+0x1.0000000000001p-1, +0x10000000000001LL, -53),
-    +0.5, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-2, +0x1fffffffffffffLL, -54), MAKE_HEX_DOUBLE(+0x1.0000000000001p-2, +0x10000000000001LL, -54),
-    +0.25, MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-3, +0x1fffffffffffffLL, -55), MAKE_HEX_DOUBLE(+0x1.0000000000001p-1022, +0x10000000000001LL, -1074),
-    +DBL_MIN, MAKE_HEX_DOUBLE(+0x0.fffffffffffffp-1022, +0x0fffffffffffffLL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000fffp-1022, +0x00000000000fffLL, -1074), MAKE_HEX_DOUBLE(+0x0.00000000000fep-1022, +0x000000000000feLL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.000000000000ep-1022, +0x0000000000000eLL, -1074), MAKE_HEX_DOUBLE(+0x0.000000000000cp-1022, +0x0000000000000cLL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.000000000000ap-1022, +0x0000000000000aLL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000008p-1022, +0x00000000000008LL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000007p-1022, +0x00000000000007LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000006p-1022, +0x00000000000006LL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000005p-1022, +0x00000000000005LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000004p-1022, +0x00000000000004LL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000003p-1022, +0x00000000000003LL, -1074), MAKE_HEX_DOUBLE(+0x0.0000000000002p-1022, +0x00000000000002LL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074), +0.0, MAKE_HEX_DOUBLE(-0x1.ffffffffffffep62, -0x1ffffffffffffeLL, 10),
-    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp62, -0x1ffffffffffffcLL, 10), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp62, -0x1fffffffffffffLL, 10),
-    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep62, +0x1ffffffffffffeLL, 10), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp62, +0x1ffffffffffffcLL, 10),
-    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp62, +0x1fffffffffffffLL, 10), MAKE_HEX_DOUBLE(-0x1.ffffffffffffep51, -0x1ffffffffffffeLL, -1),
-    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp51, -0x1ffffffffffffcLL, -1), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp51, -0x1fffffffffffffLL, -1),
-    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep51, +0x1ffffffffffffeLL, -1), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp51, +0x1ffffffffffffcLL, -1),
-    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp51, +0x1fffffffffffffLL, -1), MAKE_HEX_DOUBLE(-0x1.ffffffffffffep52, -0x1ffffffffffffeLL, 0),
-    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp52, -0x1ffffffffffffcLL, 0), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp52, -0x1fffffffffffffLL, 0),
-    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep52, +0x1ffffffffffffeLL, 0), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp52, +0x1ffffffffffffcLL, 0),
-    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp52, +0x1fffffffffffffLL, 0), MAKE_HEX_DOUBLE(-0x1.ffffffffffffep53, -0x1ffffffffffffeLL, 1),
-    MAKE_HEX_DOUBLE(-0x1.ffffffffffffcp53, -0x1ffffffffffffcLL, 1), MAKE_HEX_DOUBLE(-0x1.fffffffffffffp53, -0x1fffffffffffffLL, 1),
-    MAKE_HEX_DOUBLE(+0x1.ffffffffffffep53, +0x1ffffffffffffeLL, 1), MAKE_HEX_DOUBLE(+0x1.ffffffffffffcp53, +0x1ffffffffffffcLL, 1),
-    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp53, +0x1fffffffffffffLL, 1), MAKE_HEX_DOUBLE(-0x1.0000000000002p52, -0x10000000000002LL, 0),
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p52, -0x10000000000001LL, 0), MAKE_HEX_DOUBLE(-0x1.0p52, -0x1LL, 52),
-    MAKE_HEX_DOUBLE(+0x1.0000000000002p52, +0x10000000000002LL, 0), MAKE_HEX_DOUBLE(+0x1.0000000000001p52, +0x10000000000001LL, 0),
-    MAKE_HEX_DOUBLE(+0x1.0p52, +0x1LL, 52), MAKE_HEX_DOUBLE(-0x1.0000000000002p53, -0x10000000000002LL, 1),
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p53, -0x10000000000001LL, 1), MAKE_HEX_DOUBLE(-0x1.0p53, -0x1LL, 53),
-    MAKE_HEX_DOUBLE(+0x1.0000000000002p53, +0x10000000000002LL, 1), MAKE_HEX_DOUBLE(+0x1.0000000000001p53, +0x10000000000001LL, 1),
-    MAKE_HEX_DOUBLE(+0x1.0p53, +0x1LL, 53), MAKE_HEX_DOUBLE(-0x1.0000000000002p54, -0x10000000000002LL, 2),
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p54, -0x10000000000001LL, 2), MAKE_HEX_DOUBLE(-0x1.0p54, -0x1LL, 54),
-    MAKE_HEX_DOUBLE(+0x1.0000000000002p54, +0x10000000000002LL, 2), MAKE_HEX_DOUBLE(+0x1.0000000000001p54, +0x10000000000001LL, 2),
-    MAKE_HEX_DOUBLE(+0x1.0p54, +0x1LL, 54), MAKE_HEX_DOUBLE(-0x1.fffffffefffffp62, -0x1fffffffefffffLL, 10),
-    MAKE_HEX_DOUBLE(-0x1.ffffffffp62, -0x1ffffffffLL, 30), MAKE_HEX_DOUBLE(-0x1.ffffffff00001p62, -0x1ffffffff00001LL, 10),
-    MAKE_HEX_DOUBLE(0x1.fffffffefffffp62, 0x1fffffffefffffLL, 10), MAKE_HEX_DOUBLE(0x1.ffffffffp62, 0x1ffffffffLL, 30),
-    MAKE_HEX_DOUBLE(0x1.ffffffff00001p62, 0x1ffffffff00001LL, 10),
-};
-// clang-format on
-
-////////////////////////////////////////////////////////////////////////////////////////
-
 cl_ulong random64(MTdata d)
 {
     return (cl_ulong)genrand_int32(d) | ((cl_ulong)genrand_int32(d) << 32);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
+
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
                                                       const cl_uint &thread_id)
 {
-    uint64_t start = start + job_id * size;
+    uint64_t ulStart = start;
     void *pIn = (char *)gIn + job_id * size * gTypeSizes[inType];
 
-    if (std::is_integral<InType>::value || is_in_half())
+    if (is_in_half())
+    {
+        const unsigned m_size = 0x1ff;
+        const unsigned e_size = 0xf;
+        const unsigned s_size = 0x2;
+        const unsigned sclamp =
+            std::is_signed<OutType>::value ? 0xffff : 0x7fff;
+
+        InType *o = (InType *)pIn;
+
+        for (unsigned i = start; i < size; i++)
+        {
+            unsigned ind = i % (s_size * e_size * m_size);
+            o[i] =
+                (((ind / (e_size * m_size)) << 15)
+                 | (((ind / m_size) % e_size + 1) << 10) | (ind % m_size + 1))
+                & sclamp;
+        }
+    }
+    else if (std::is_integral<InType>::value)
     {
         InType *o = (InType *)pIn;
         if (sizeof(InType) <= sizeof(cl_short))
         { // char/uchar/ushort/short/half
-            for (int i = 0; i < size; i++) o[i] = start++;
+            for (int i = 0; i < size; i++) o[i] = ulStart++;
         }
         else if (sizeof(InType) <= sizeof(cl_int))
         { // int/uint
@@ -852,9 +863,9 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
                 for (i = 0; i < size; i++)
                     o[i] = (InType)genrand_int32(d[thread_id]);
             else
-                for (i = 0; i < size; i++) o[i] = (InType)i + start;
+                for (i = 0; i < size; i++) o[i] = (InType)i + ulStart;
 
-            if (0 == start)
+            if (0 == ulStart)
             {
                 size_t tableSize = sizeof(specialValuesUInt);
                 if (sizeof(InType) * size < tableSize)
@@ -869,7 +880,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
             cl_ulong i, j, k;
 
             i = 0;
-            if (start == 0)
+            if (ulStart == 0)
             {
                 // Try various powers of two
                 for (j = 0; j < (cl_ulong)size && j < 8 * sizeof(cl_ulong); j++)
@@ -932,9 +943,9 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
             for (i = 0; i < size; i++)
                 o[i] = (cl_uint)genrand_int32(d[thread_id]);
         else
-            for (i = 0; i < size; i++) o[i] = (cl_uint)i + start;
+            for (i = 0; i < size; i++) o[i] = (cl_uint)i + ulStart;
 
-        if (0 == start)
+        if (0 == ulStart)
         {
             size_t tableSize = sizeof(specialValuesFloat);
             if (sizeof(InType) * size < tableSize)
@@ -960,7 +971,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
 
         for (i = 0; i < size; i++)
         {
-            uint64_t z = i + start;
+            uint64_t z = i + ulStart;
 
             uint32_t bits = ((uint32_t)z ^ (uint32_t)(z >> 32));
             // split 0x89abcdef to 0x89abc00000000def
@@ -972,7 +983,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
             o[i] = u.d;
         }
 
-        if (0 == start)
+        if (0 == ulStart)
         {
             size_t tableSize = sizeof(specialValuesDouble);
             if (sizeof(InType) * size < tableSize)
@@ -983,24 +994,6 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
         if (0 == sat)
             for (i = 0; i < size; i++) o[i] = clamp(o[i]);
     }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////
-
-static inline float fclamp(float lo, float v, float hi)
-    __attribute__((always_inline));
-static inline double dclamp(double lo, double v, double hi)
-    __attribute__((always_inline));
-
-static inline float fclamp(float lo, float v, float hi)
-{
-    v = v < lo ? lo : v;
-    return v < hi ? v : hi;
-}
-static inline double dclamp(double lo, double v, double hi)
-{
-    v = v < lo ? lo : v;
-    return v < hi ? v : hi;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -1112,7 +1105,7 @@ cl_int CustomConversionsTest::Run()
 
     for (int i = 0; i < argCount; i++)
     {
-        if (GetTestCase(argList[i], &outType, &inType, &sat, &round))
+        if (conv_test::GetTestCase(argList[i], &outType, &inType, &sat, &round))
         {
             vlog_error("\n\t\t**** ERROR:  Unable to parse function name "
                        "%s.  Skipping....  *****\n\n",
@@ -1171,16 +1164,15 @@ cl_int CustomConversionsTest::Run()
 
         iter.Run();
 
-        if (iter.GetFailCount())
+        if (gFailCount)
         {
             vlog_error("\t *** convert_%sn%s%s( %sn ) FAILED ** \n",
                        gTypeNames[outType], gSaturationNames[sat],
                        gRoundingModeNames[round], gTypeNames[inType]);
-            return TEST_FAIL;
         }
     }
 
-    return TEST_PASS;
+    return gFailCount;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -1201,7 +1193,7 @@ cl_int ConversionsTest::Run()
 
     iter.Run();
 
-    return iter.GetFailCount();
+    return gFailCount;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -1236,9 +1228,8 @@ cl_int ConversionsTest::SetUp(int elements)
 ////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename InType, typename OutType, bool InFP, bool OutFP>
-cl_int ConversionsTest::TestTypesConversion(const Type &inType,
-                                            const Type &outType,
-                                            int &testNumber)
+void ConversionsTest::TestTypesConversion(const Type &inType,
+                                          const Type &outType, int &testNumber)
 {
     SaturationMode sat;
     RoundingMode round;
@@ -1250,7 +1241,7 @@ cl_int ConversionsTest::TestTypesConversion(const Type &inType,
         && (inType == klong || outType == klong || inType == kulong
             || outType == kulong))
     {
-        return CL_SUCCESS;
+        return;
     }
 
     for (sat = (SaturationMode)0; sat < kSaturationModeCount;
@@ -1271,8 +1262,7 @@ cl_int ConversionsTest::TestTypesConversion(const Type &inType,
             }
             else
             {
-                if (gEndTestNumber > 0 && testNumber >= gEndTestNumber)
-                    return gFailCount;
+                if (gEndTestNumber > 0 && testNumber >= gEndTestNumber) return;
             }
 
             vlog("%d) Testing convert_%sn%s%s( %sn ):\n", testNumber,
@@ -1330,7 +1320,6 @@ cl_int ConversionsTest::TestTypesConversion(const Type &inType,
             }
         }
     }
-    return CL_SUCCESS;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -1343,20 +1332,25 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
     cl_ulong wall_start = mach_absolute_time();
 #endif
 
-    DataInitInfo info = { 0, 0, outType, inType, sat, round, NULL };
+#if 0
+    uint64_t lastCase = 1ULL << (8 * gTypeSizes[inType]);
+#else
+    cl_uint threads = GetThreadCount();
+    uint64_t lastCase = 1000000ULL;
+#endif
+
+    DataInitInfo info = { 0, 0, outType, inType, sat, round, NULL, threads };
     DataInfoSpec<InType, OutType, InFP, OutFP> init_info(info);
     WriteInputBufferInfo writeInputBufferInfo;
     int vectorSize;
     int error = 0;
-    cl_uint threads = GetThreadCount();
     uint64_t i;
 
     gTestCount++;
     size_t blockCount =
         BUFFER_SIZE / std::max(gTypeSizes[inType], gTypeSizes[outType]);
     size_t step = blockCount;
-    // uint64_t lastCase = 1ULL << (8 * gTypeSizes[inType]);
-    uint64_t lastCase = 1000000ULL;
+
 
     init_info.d = (MTdata *)malloc(threads * sizeof(MTdata));
     if (NULL == init_info.d)
@@ -1385,8 +1379,9 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
         writeInputBufferInfo.calcInfo[vectorSize].reset(
             new CalcRefValsPat<InType, OutType, InFP, OutFP>());
         writeInputBufferInfo.calcInfo[vectorSize]->program =
-            MakeProgram(outType, inType, sat, round, vectorSize,
-                        &writeInputBufferInfo.calcInfo[vectorSize]->kernel);
+            conv_test::MakeProgram(
+                outType, inType, sat, round, vectorSize,
+                &writeInputBufferInfo.calcInfo[vectorSize]->kernel);
         if (NULL == writeInputBufferInfo.calcInfo[vectorSize]->program)
         {
             gFailCount++;
@@ -1405,18 +1400,27 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
         writeInputBufferInfo.calcInfo[vectorSize]->result = -1;
     }
 
-    if (gSkipTesting) goto exit;
+    if (gSkipTesting) return error;
 
     // Patch up rounding mode if default is RTZ
     // We leave the part above in default rounding mode so that the right kernel
     // is compiled.
-    if (round == kDefaultRoundingMode && gIsRTZ && (outType == kfloat))
-        init_info.round = round = kRoundTowardZero;
+    if (std::is_same<OutType, cl_float>::value)
+    {
+        if (round == kDefaultRoundingMode && gIsRTZ)
+            init_info.round = round = kRoundTowardZero;
+    }
+    else if (std::is_same<OutType, cl_half>::value && OutFP)
+    {
+        if (round == kDefaultRoundingMode && gIsHalfRTZ)
+            init_info.round = round = kRoundTowardZero;
+    }
 
+#if 0
     // Figure out how many elements are in a work block
-
     // we handle 64-bit types a bit differently.
-    // if (8 * gTypeSizes[inType] > 32) lastCase = 0x100000000ULL;
+    if (8 * gTypeSizes[inType] > 32) lastCase = 0x100000000ULL;
+#endif
 
     if (!gWimpyMode && gIsEmbedded)
         step = blockCount * EMBEDDED_REDUCTION_FACTOR;
@@ -1444,7 +1448,7 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
         {
             vlog_error("ERROR: Unable to create user event. (%d)\n", error);
             gFailCount++;
-            goto exit;
+            return error;
         }
 
         // retain for consumption by MapOutputBufferComplete
@@ -1456,19 +1460,19 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
             {
                 vlog_error("ERROR: Unable to retain user event. (%d)\n", error);
                 gFailCount++;
-                goto exit;
+                return error;
             }
         }
 
         // Crate a user event to represent when the callbacks are done verifying
         // correctness
         writeInputBufferInfo.doneBarrier = clCreateUserEvent(gContext, &error);
-        if (error || NULL == writeInputBufferInfo.calcReferenceValues)
+        if (error || NULL == writeInputBufferInfo.doneBarrier)
         {
             vlog_error("ERROR: Unable to create user event for barrier. (%d)\n",
                        error);
             gFailCount++;
-            goto exit;
+            return error;
         }
 
         // retain for use by the callback that calls this
@@ -1477,7 +1481,7 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
             vlog_error("ERROR: Unable to retain user event doneBarrier. (%d)\n",
                        error);
             gFailCount++;
-            goto exit;
+            return error;
         }
 
         //      Call this in a multithreaded manner
@@ -1495,7 +1499,7 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
             }
         }
 
-        ThreadPool_Do(InitData, chunks, &init_info);
+        ThreadPool_Do(conv_test::InitData, chunks, &init_info);
 
         // Copy the results to the device
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_TRUE, 0,
@@ -1504,22 +1508,22 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
         {
             vlog_error("ERROR: clEnqueueWriteBuffer failed. (%d)\n", error);
             gFailCount++;
-            goto exit;
+            return error;
         }
 
         // Call completion callback for the write, which will enqueue the rest
         // of the work.
-        WriteInputBufferComplete((void *)&writeInputBufferInfo);
+        conv_test::WriteInputBufferComplete((void *)&writeInputBufferInfo);
 
         // Make sure the work is actually running, so we don't deadlock
         if ((error = clFlush(gQueue)))
         {
             vlog_error("clFlush failed with error %d\n", error);
             gFailCount++;
-            goto exit;
+            return error;
         }
 
-        ThreadPool_Do(PrepareReference, chunks, &init_info);
+        ThreadPool_Do(conv_test::PrepareReference, chunks, &init_info);
 
         // signal we are done calculating the reference results
         if ((error = clSetUserEventStatus(
@@ -1529,7 +1533,7 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
                 "Error:  Failed to set user event status to CL_COMPLETE:  %d\n",
                 error);
             gFailCount++;
-            goto exit;
+            return error;
         }
 
         // Wait for the event callbacks to finish verifying correctness.
@@ -1538,7 +1542,7 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
         {
             vlog_error("Error:  Failed to wait for barrier:  %d\n", error);
             gFailCount++;
-            goto exit;
+            return error;
         }
 
         if ((error = clReleaseEvent(writeInputBufferInfo.calcReferenceValues)))
@@ -1546,14 +1550,14 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
             vlog_error("Error:  Failed to release calcReferenceValues:  %d\n",
                        error);
             gFailCount++;
-            goto exit;
+            return error;
         }
 
         if ((error = clReleaseEvent(writeInputBufferInfo.doneBarrier)))
         {
             vlog_error("Error:  Failed to release done barrier:  %d\n", error);
             gFailCount++;
-            goto exit;
+            return error;
         }
 
         for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize;
@@ -1611,7 +1615,7 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
                          sizeNames[vectorSize]);
 
                 gFailCount++;
-                goto exit;
+                return error;
             }
         }
     }
@@ -1634,23 +1638,23 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
             cl_uint k;
             for (k = 0; k < PERF_LOOP_COUNT; k++)
             {
-                uint64_t startTime = GetTime();
-                if ((error = RunKernel(
+                uint64_t startTime = conv_test::GetTime();
+                if ((error = conv_test::RunKernel(
                          writeInputBufferInfo.calcInfo[vectorSize]->kernel,
                          gInBuffer, gOutBuffers[vectorSize], workItemCount)))
                 {
                     gFailCount++;
-                    goto exit;
+                    return error;
                 }
 
                 // Make sure OpenCL is done
                 if ((error = clFinish(gQueue)))
                 {
                     vlog_error("Error %d at clFinish\n", error);
-                    goto exit;
+                    return error;
                 }
 
-                uint64_t endTime = GetTime();
+                uint64_t endTime = conv_test::GetTime();
                 double time = SubtractTime(endTime, startTime);
                 sum += time;
                 if (time < bestTime) bestTime = time;
@@ -1685,73 +1689,13 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
     vlog("\n\n");
     fflush(stdout);
 
-
-exit:
-    // clean up
-    for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
-    {
-        clReleaseProgram(writeInputBufferInfo.calcInfo[vectorSize]->program);
-        clReleaseKernel(writeInputBufferInfo.calcInfo[vectorSize]->kernel);
-    }
-
-    if (init_info.d)
-    {
-        for (i = 0; i < threads; i++) free_mtdata(init_info.d[i]);
-        free(init_info.d);
-    }
-
     return error;
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////
-
-static int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf,
-                     size_t blockCount)
-{
-    // The global dimensions are just the blockCount to execute since we haven't
-    // set up multiple queues for multiple devices.
-    int error;
-
-    error = clSetKernelArg(kernel, 0, sizeof(inBuf), &inBuf);
-    error |= clSetKernelArg(kernel, 1, sizeof(outBuf), &outBuf);
-
-    if (error)
-    {
-        vlog_error("FAILED -- could not set kernel args (%d)\n", error);
-        return error;
-    }
-
-    if ((error = clEnqueueNDRangeKernel(gQueue, kernel, 1, NULL, &blockCount,
-                                        NULL, 0, NULL, NULL)))
-    {
-        vlog_error("FAILED -- could not execute kernel (%d)\n", error);
-        return error;
-    }
-
-    return 0;
 }
 
 #if !defined(__APPLE__)
 void memset_pattern4(void *dest, const void *src_pattern, size_t bytes);
 #endif
 
-#if defined(__APPLE__)
-#include <mach/mach_time.h>
-#endif
-
-uint64_t GetTime(void)
-{
-#if defined(__APPLE__)
-    return mach_absolute_time();
-#elif defined(_MSC_VER)
-    return ReadTime();
-#else
-    // mach_absolute_time is a high precision timer with precision < 1
-    // microsecond.
-#warning need accurate clock here.  Times are invalid.
-    return 0;
-#endif
-}
 
 
 #if defined(_MSC_VER)
@@ -1783,16 +1727,6 @@ double SubtractTime(uint64_t endTime, uint64_t startTime)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-cl_int InitData(cl_uint job_id, cl_uint thread_id, void *p)
-{
-    DataInitBase *info = (DataInitBase *)p;
-
-    info->init(job_id, thread_id);
-
-    return CL_SUCCESS;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 static void setAllowZ(uint8_t *allow, uint32_t *x, cl_uint count)
 {
     cl_uint i;
@@ -1800,225 +1734,8 @@ static void setAllowZ(uint8_t *allow, uint32_t *x, cl_uint count)
         allow[i] |= (uint8_t)((x[i] & 0x7f800000U) == 0);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
-{
-    DataInitBase *info = (DataInitBase *)p;
-
-    cl_uint count = info->size;
-    Type inType = info->inType;
-    Type outType = info->outType;
-    size_t j;
-
-    Force64BitFPUPrecision();
-
-    void *s = (cl_uchar *)gIn + job_id * count * gTypeSizes[info->inType];
-    void *a = (cl_uchar *)gAllowZ + job_id * count;
-    void *d = (cl_uchar *)gRef + job_id * count * gTypeSizes[info->outType];
-
-
-    if (outType != inType)
-    {
-
-
-        // create the reference while we wait
-
-#if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
-        /* ARM VFP doesn't have hardware instruction for converting from 64-bit
-         * integer to float types, hence GCC ARM uses the floating-point
-         * emulation code despite which -mfloat-abi setting it is. But the
-         * emulation code in libgcc.a has only one rounding mode (round to
-         * nearest even in this case) and ignores the user rounding mode setting
-         * in hardware. As a result setting rounding modes in hardware won't
-         * give correct rounding results for type covert from 64-bit integer to
-         * float using GCC for ARM compiler so for testing different rounding
-         * modes, we need to use alternative reference function. ARM64 does have
-         * an instruction, however we cannot guarantee the compiler will use it.
-         * On all ARM architechures use emulation to calculate reference.*/
-        switch (round)
-        {
-            /* conversions to floating-point type use the current rounding mode.
-             * The only default floating-point rounding mode supported is round
-             * to nearest even i.e the current rounding mode will be _rte for
-             * floating-point types. */
-            case kDefaultRoundingMode: qcom_rm = qcomRTE; break;
-            case kRoundToNearestEven: qcom_rm = qcomRTE; break;
-            case kRoundUp: qcom_rm = qcomRTP; break;
-            case kRoundDown: qcom_rm = qcomRTN; break;
-            case kRoundTowardZero: qcom_rm = qcomRTZ; break;
-            default:
-                vlog_error("ERROR: undefined rounding mode %d\n", round);
-                break;
-        }
-        qcom_sat = info->sat;
-#endif
-
-
-        RoundingMode oldRound, round = info->round;
-
-        if (/*is_half<OutType, OutFP>()*/ outType == khalf)
-        {
-            oldRound = set_round(kRoundToNearestEven, kfloat);
-            switch (round)
-            {
-                default:
-                case kDefaultRoundingMode:
-                    ConversionsTest::halfRoundingMode =
-                        ConversionsTest::defaultHalfRoundingMode;
-                    break;
-                case kRoundToNearestEven:
-                    ConversionsTest::halfRoundingMode = CL_HALF_RTE;
-                    break;
-                case kRoundUp:
-                    ConversionsTest::halfRoundingMode = CL_HALF_RTP;
-                    break;
-                case kRoundDown:
-                    ConversionsTest::halfRoundingMode = CL_HALF_RTN;
-                    break;
-                case kRoundTowardZero:
-                    ConversionsTest::halfRoundingMode = CL_HALF_RTZ;
-                    break;
-            }
-        }
-        else
-            oldRound = set_round(round, outType);
-
-
-        if (info->sat)
-            info->conv_array_sat(d, s, count);
-        else
-            info->conv_array(d, s, count);
-
-
-        set_round(oldRound, outType);
-
-
-        // Decide if we allow a zero result in addition to the correctly rounded
-        // one
-        memset(a, 0, count);
-        if (gForceFTZ)
-        {
-            if (inType == kfloat) setAllowZ((uint8_t *)a, (uint32_t *)s, count);
-            if (outType == kfloat)
-                setAllowZ((uint8_t *)a, (uint32_t *)d, count);
-        }
-    }
-    else
-    {
-        // Copy the input to the reference
-        memcpy(d, s, info->size * gTypeSizes[inType]);
-    }
-
-    // Patch up NaNs conversions to integer to zero -- these can be converted to
-    // any integer
-    if (info->outType != kfloat && info->outType != kdouble)
-    {
-        if (inType == kfloat)
-        {
-            float *inp = (float *)s;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j]))
-                    memset((char *)d + j * gTypeSizes[outType], 0,
-                           gTypeSizes[outType]);
-            }
-        }
-        if (inType == kdouble)
-        {
-            double *inp = (double *)s;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j]))
-                    memset((char *)d + j * gTypeSizes[outType], 0,
-                           gTypeSizes[outType]);
-            }
-        }
-    }
-    else if (inType == kfloat || inType == kdouble)
-    { // outtype and intype is float or double.  NaN conversions for float <->
-      // double can be any NaN
-        if (inType == kfloat && outType == kdouble)
-        {
-            float *inp = (float *)s;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j])) ((double *)d)[j] = NAN;
-            }
-        }
-        if (inType == kdouble && outType == kfloat)
-        {
-            double *inp = (double *)s;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j])) ((float *)d)[j] = NAN;
-            }
-        }
-    }
-
-    return CL_SUCCESS;
-}
-
 
 void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &ptr);
-
-// Note: not called reentrantly
-void WriteInputBufferComplete(void *data)
-{
-    cl_int status;
-    WriteInputBufferInfo *info = (WriteInputBufferInfo *)data;
-    cl_uint count = info->count;
-    int vectorSize;
-
-    info->barrierCount = gMaxVectorSize - gMinVectorSize;
-
-    // now that we know that the write buffer is complete, enqueue callbacks to
-    // wait for the main thread to finish calculating the reference results.
-    for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
-    {
-        size_t workItemCount =
-            (count + vectorSizes[vectorSize] - 1) / (vectorSizes[vectorSize]);
-
-        if ((status = RunKernel(info->calcInfo[vectorSize]->kernel, gInBuffer,
-                                gOutBuffers[vectorSize], workItemCount)))
-        {
-            gFailCount++;
-            return;
-        }
-
-        info->calcInfo[vectorSize]->p = clEnqueueMapBuffer(
-            gQueue, gOutBuffers[vectorSize], CL_TRUE,
-            CL_MAP_READ | CL_MAP_WRITE, 0, count * gTypeSizes[info->outType], 0,
-            NULL, NULL, &status);
-        {
-            if (status)
-            {
-                vlog_error("ERROR: WriteInputBufferComplete calback failed "
-                           "with status: %d\n",
-                           status);
-                gFailCount++;
-                return;
-            }
-        }
-    }
-
-    for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
-    {
-        MapResultValuesComplete(info->calcInfo[vectorSize]);
-    }
-
-    // Make sure the work starts moving -- otherwise we may deadlock
-    if ((status = clFlush(gQueue)))
-    {
-        vlog_error(
-            "ERROR: WriteInputBufferComplete calback failed with status: %d\n",
-            status);
-        gFailCount++;
-        return;
-    }
-
-    // e was already released by the main thread. It should be destroyed
-    // automatically soon after we exit.
-}
 
 void CL_CALLBACK CalcReferenceValuesComplete(cl_event e, cl_int status,
                                              void *data);
@@ -2184,9 +1901,267 @@ void CL_CALLBACK CalcReferenceValuesComplete(cl_event e, cl_int status,
     // CalcReferenceValuesComplete exit.
 }
 
-static cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
-                              RoundingMode round, int vectorSize,
-                              cl_kernel *outKernel)
+//////////////////////////////////////////////////////////////////////////////////////////
+
+namespace conv_test {
+
+////////////////////////////////////////////////////////////////////////////////
+
+cl_int InitData(cl_uint job_id, cl_uint thread_id, void *p)
+{
+    DataInitBase *info = (DataInitBase *)p;
+
+    info->init(job_id, thread_id);
+
+    return CL_SUCCESS;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
+{
+    DataInitBase *info = (DataInitBase *)p;
+
+    cl_uint count = info->size;
+    Type inType = info->inType;
+    Type outType = info->outType;
+    size_t j;
+
+    Force64BitFPUPrecision();
+
+    void *s = (cl_uchar *)gIn + job_id * count * gTypeSizes[info->inType];
+    void *a = (cl_uchar *)gAllowZ + job_id * count;
+    void *d = (cl_uchar *)gRef + job_id * count * gTypeSizes[info->outType];
+
+
+    if (outType != inType)
+    {
+
+
+        // create the reference while we wait
+
+#if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
+        /* ARM VFP doesn't have hardware instruction for converting from 64-bit
+         * integer to float types, hence GCC ARM uses the floating-point
+         * emulation code despite which -mfloat-abi setting it is. But the
+         * emulation code in libgcc.a has only one rounding mode (round to
+         * nearest even in this case) and ignores the user rounding mode setting
+         * in hardware. As a result setting rounding modes in hardware won't
+         * give correct rounding results for type covert from 64-bit integer to
+         * float using GCC for ARM compiler so for testing different rounding
+         * modes, we need to use alternative reference function. ARM64 does have
+         * an instruction, however we cannot guarantee the compiler will use it.
+         * On all ARM architechures use emulation to calculate reference.*/
+        switch (round)
+        {
+            /* conversions to floating-point type use the current rounding mode.
+             * The only default floating-point rounding mode supported is round
+             * to nearest even i.e the current rounding mode will be _rte for
+             * floating-point types. */
+            case kDefaultRoundingMode: qcom_rm = qcomRTE; break;
+            case kRoundToNearestEven: qcom_rm = qcomRTE; break;
+            case kRoundUp: qcom_rm = qcomRTP; break;
+            case kRoundDown: qcom_rm = qcomRTN; break;
+            case kRoundTowardZero: qcom_rm = qcomRTZ; break;
+            default:
+                vlog_error("ERROR: undefined rounding mode %d\n", round);
+                break;
+        }
+        qcom_sat = info->sat;
+#endif
+
+
+        RoundingMode oldRound, round = info->round;
+
+        if (/*is_half<OutType, OutFP>()*/ outType == khalf)
+        {
+            oldRound = set_round(kRoundToNearestEven, kfloat);
+            switch (round)
+            {
+                default:
+                case kDefaultRoundingMode:
+                    ConversionsTest::halfRoundingMode =
+                        ConversionsTest::defaultHalfRoundingMode;
+                    break;
+                case kRoundToNearestEven:
+                    ConversionsTest::halfRoundingMode = CL_HALF_RTE;
+                    break;
+                case kRoundUp:
+                    ConversionsTest::halfRoundingMode = CL_HALF_RTP;
+                    break;
+                case kRoundDown:
+                    ConversionsTest::halfRoundingMode = CL_HALF_RTN;
+                    break;
+                case kRoundTowardZero:
+                    ConversionsTest::halfRoundingMode = CL_HALF_RTZ;
+                    break;
+            }
+        }
+        else
+            oldRound = set_round(round, outType);
+
+
+        if (info->sat)
+            info->conv_array_sat(d, s, count);
+        else
+            info->conv_array(d, s, count);
+
+
+        set_round(oldRound, outType);
+
+
+        // Decide if we allow a zero result in addition to the correctly rounded
+        // one
+        memset(a, 0, count);
+        if (gForceFTZ)
+        {
+            if (inType == kfloat || outType == kfloat)
+                setAllowZ((uint8_t *)a, (uint32_t *)s, count);
+        }
+
+        if (gForceHalfFTZ)
+        {
+            if (inType == khalf || outType == khalf)
+                setAllowZ((uint8_t *)a, (uint32_t *)s, count);
+        }
+    }
+    else
+    {
+        // Copy the input to the reference
+        memcpy(d, s, info->size * gTypeSizes[inType]);
+    }
+
+    // Patch up NaNs conversions to integer to zero -- these can be converted to
+    // any integer
+    if (info->outType != kfloat && info->outType != kdouble)
+    {
+        if (inType == kfloat)
+        {
+            float *inp = (float *)s;
+            for (j = 0; j < count; j++)
+            {
+                if (isnan(inp[j]))
+                    memset((char *)d + j * gTypeSizes[outType], 0,
+                           gTypeSizes[outType]);
+            }
+        }
+        if (inType == kdouble)
+        {
+            double *inp = (double *)s;
+            for (j = 0; j < count; j++)
+            {
+                if (isnan(inp[j]))
+                    memset((char *)d + j * gTypeSizes[outType], 0,
+                           gTypeSizes[outType]);
+            }
+        }
+    }
+    else if (inType == kfloat || inType == kdouble)
+    { // outtype and intype is float or double.  NaN conversions for float <->
+      // double can be any NaN
+        if (inType == kfloat && outType == kdouble)
+        {
+            float *inp = (float *)s;
+            for (j = 0; j < count; j++)
+            {
+                if (isnan(inp[j])) ((double *)d)[j] = NAN;
+            }
+        }
+        if (inType == kdouble && outType == kfloat)
+        {
+            double *inp = (double *)s;
+            for (j = 0; j < count; j++)
+            {
+                if (isnan(inp[j])) ((float *)d)[j] = NAN;
+            }
+        }
+    }
+
+    return CL_SUCCESS;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+uint64_t GetTime(void)
+{
+#if defined(__APPLE__)
+    return mach_absolute_time();
+#elif defined(_MSC_VER)
+    return ReadTime();
+#else
+    // mach_absolute_time is a high precision timer with precision < 1
+    // microsecond.
+#warning need accurate clock here.  Times are invalid.
+    return 0;
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Note: not called reentrantly
+void WriteInputBufferComplete(void *data)
+{
+    cl_int status;
+    WriteInputBufferInfo *info = (WriteInputBufferInfo *)data;
+    cl_uint count = info->count;
+    int vectorSize;
+
+    info->barrierCount = gMaxVectorSize - gMinVectorSize;
+
+    // now that we know that the write buffer is complete, enqueue callbacks to
+    // wait for the main thread to finish calculating the reference results.
+    for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
+    {
+        size_t workItemCount =
+            (count + vectorSizes[vectorSize] - 1) / (vectorSizes[vectorSize]);
+
+        if ((status = conv_test::RunKernel(info->calcInfo[vectorSize]->kernel,
+                                           gInBuffer, gOutBuffers[vectorSize],
+                                           workItemCount)))
+        {
+            gFailCount++;
+            return;
+        }
+
+        info->calcInfo[vectorSize]->p = clEnqueueMapBuffer(
+            gQueue, gOutBuffers[vectorSize], CL_TRUE,
+            CL_MAP_READ | CL_MAP_WRITE, 0, count * gTypeSizes[info->outType], 0,
+            NULL, NULL, &status);
+        {
+            if (status)
+            {
+                vlog_error("ERROR: WriteInputBufferComplete calback failed "
+                           "with status: %d\n",
+                           status);
+                gFailCount++;
+                return;
+            }
+        }
+    }
+
+    for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
+    {
+        MapResultValuesComplete(info->calcInfo[vectorSize]);
+    }
+
+    // Make sure the work starts moving -- otherwise we may deadlock
+    if ((status = clFlush(gQueue)))
+    {
+        vlog_error(
+            "ERROR: WriteInputBufferComplete calback failed with status: %d\n",
+            status);
+        gFailCount++;
+        return;
+    }
+
+    // e was already released by the main thread. It should be destroyed
+    // automatically soon after we exit.
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
+                       RoundingMode round, int vectorSize, cl_kernel *outKernel)
 {
     cl_program program;
     char testName[256];
@@ -2195,6 +2170,9 @@ static cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
     std::ostringstream source;
     if (outType == kdouble || inType == kdouble)
         source << "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+
+    if (outType == khalf || inType == khalf)
+        source << "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
 
     // Create the program. This is a bit complicated because we are trying to
     // avoid byte and short stores.
@@ -2296,7 +2274,7 @@ static cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
     *outKernel = NULL;
 
     const char *flags = NULL;
-    if (gForceFTZ) flags = "-cl-denorms-are-zero";
+    if (gForceFTZ || gForceHalfFTZ) flags = "-cl-denorms-are-zero";
 
     // build it
     std::string sourceString = source.str();
@@ -2306,17 +2284,43 @@ static cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
     if (error)
     {
         vlog_error("Failed to build kernel/program (err = %d).\n", error);
-        clReleaseProgram(program);
         return NULL;
     }
 
     return program;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////
+
+int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf, size_t blockCount)
+{
+    // The global dimensions are just the blockCount to execute since we haven't
+    // set up multiple queues for multiple devices.
+    int error;
+
+    error = clSetKernelArg(kernel, 0, sizeof(inBuf), &inBuf);
+    error |= clSetKernelArg(kernel, 1, sizeof(outBuf), &outBuf);
+
+    if (error)
+    {
+        vlog_error("FAILED -- could not set kernel args (%d)\n", error);
+        return error;
+    }
+
+    if ((error = clEnqueueNDRangeKernel(gQueue, kernel, 1, NULL, &blockCount,
+                                        NULL, 0, NULL, NULL)))
+    {
+        vlog_error("FAILED -- could not execute kernel (%d)\n", error);
+        return error;
+    }
+
+    return 0;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////
 
-static int GetTestCase(const char *name, Type *outType, Type *inType,
-                       SaturationMode *sat, RoundingMode *round)
+int GetTestCase(const char *name, Type *outType, Type *inType,
+                SaturationMode *sat, RoundingMode *round)
 {
     int i;
 
@@ -2369,5 +2373,8 @@ static int GetTestCase(const char *name, Type *outType, Type *inType,
 
     return 0;
 }
+
+} // namespace conv_test
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
