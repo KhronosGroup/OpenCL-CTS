@@ -16,13 +16,13 @@
 #include "harness/testHarness.h"
 
 test_definition test_list[] = {
-    ADD_TEST(mutable_dispatch_device_query),
-    ADD_TEST(mutable_dispatch_command_buffer),
-    ADD_TEST(mutable_dispatch_command_type),
-    ADD_TEST(mutable_dispatch_command_queue),
-    ADD_TEST(mutable_dispatch_global_work_offset),
-    ADD_TEST(mutable_dispatch_local_work_size),
-    ADD_TEST(mutable_dispatch_global_work_size),
+    ADD_TEST(mutable_command_info_device_query),
+    ADD_TEST(mutable_command_info_buffer),
+    ADD_TEST(mutable_command_info_type),
+    ADD_TEST(mutable_command_info_queue),
+    ADD_TEST(mutable_command_info_global_work_offset),
+    ADD_TEST(mutable_command_info_local_work_size),
+    ADD_TEST(mutable_command_info_global_work_size),
 };
 
 int main(int argc, const char *argv[])
