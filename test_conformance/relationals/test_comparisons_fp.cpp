@@ -118,10 +118,10 @@ template <typename T, typename F> bool verify(const T& A, const T& B)
 
 //--------------------------------------------------------------------------
 
-RelationalsFPTest::RelationalsFPTest(cl_device_id device, cl_context context,
+RelationalsFPTest::RelationalsFPTest(cl_context context, cl_device_id device,
                                      cl_command_queue queue, const char* fn,
                                      const char* op)
-    : device(device), context(context), queue(queue), fnName(fn), opName(op)
+    : context(context), device(device), queue(queue), fnName(fn), opName(op)
 {
     // hardcoded for now, to be changed into typeid().name solution in future
     // for now C++ spec doesn't guarantee human readable type name

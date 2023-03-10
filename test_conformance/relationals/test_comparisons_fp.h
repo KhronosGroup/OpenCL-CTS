@@ -61,7 +61,7 @@ template <typename T> struct RelTestParams : public RelTestBase
 // a variety of simple command-buffer enqueue scenarios.
 struct RelationalsFPTest
 {
-    RelationalsFPTest(cl_device_id device, cl_context context,
+    RelationalsFPTest(cl_context context, cl_device_id device,
                       cl_command_queue queue, const char *fn, const char *op);
 
     virtual cl_int SetUp(int elements) = 0;
@@ -102,7 +102,7 @@ protected:
 struct IsEqualFPTest : public RelationalsFPTest
 {
     IsEqualFPTest(cl_device_id d, cl_context c, cl_command_queue q)
-        : RelationalsFPTest(d, c, q, "isequal", "==")
+        : RelationalsFPTest(c, d, q, "isequal", "==")
     {}
     cl_int SetUp(int elements) override;
 
@@ -121,7 +121,7 @@ struct IsEqualFPTest : public RelationalsFPTest
 struct IsNotEqualFPTest : public RelationalsFPTest
 {
     IsNotEqualFPTest(cl_device_id d, cl_context c, cl_command_queue q)
-        : RelationalsFPTest(d, c, q, "isnotequal", "!=")
+        : RelationalsFPTest(c, d, q, "isnotequal", "!=")
     {}
     cl_int SetUp(int elements) override;
 
@@ -140,7 +140,7 @@ struct IsNotEqualFPTest : public RelationalsFPTest
 struct IsGreaterFPTest : public RelationalsFPTest
 {
     IsGreaterFPTest(cl_device_id d, cl_context c, cl_command_queue q)
-        : RelationalsFPTest(d, c, q, "isgreater", ">")
+        : RelationalsFPTest(c, d, q, "isgreater", ">")
     {}
     cl_int SetUp(int elements) override;
 
@@ -158,7 +158,7 @@ struct IsGreaterFPTest : public RelationalsFPTest
 struct IsGreaterEqualFPTest : public RelationalsFPTest
 {
     IsGreaterEqualFPTest(cl_device_id d, cl_context c, cl_command_queue q)
-        : RelationalsFPTest(d, c, q, "isgreaterequal", ">=")
+        : RelationalsFPTest(c, d, q, "isgreaterequal", ">=")
     {}
     cl_int SetUp(int elements) override;
 
@@ -176,7 +176,7 @@ struct IsGreaterEqualFPTest : public RelationalsFPTest
 struct IsLessFPTest : public RelationalsFPTest
 {
     IsLessFPTest(cl_device_id d, cl_context c, cl_command_queue q)
-        : RelationalsFPTest(d, c, q, "isless", "<")
+        : RelationalsFPTest(c, d, q, "isless", "<")
     {}
     cl_int SetUp(int elements) override;
 
@@ -194,7 +194,7 @@ struct IsLessFPTest : public RelationalsFPTest
 struct IsLessEqualFPTest : public RelationalsFPTest
 {
     IsLessEqualFPTest(cl_device_id d, cl_context c, cl_command_queue q)
-        : RelationalsFPTest(d, c, q, "islessequal", "<=")
+        : RelationalsFPTest(c, d, q, "islessequal", "<=")
     {}
     cl_int SetUp(int elements) override;
 
@@ -212,7 +212,7 @@ struct IsLessEqualFPTest : public RelationalsFPTest
 struct IsLessGreaterFPTest : public RelationalsFPTest
 {
     IsLessGreaterFPTest(cl_device_id d, cl_context c, cl_command_queue q)
-        : RelationalsFPTest(d, c, q, "islessgreater", "<>")
+        : RelationalsFPTest(c, d, q, "islessgreater", "<>")
     {}
     cl_int SetUp(int elements) override;
 
