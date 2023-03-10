@@ -37,6 +37,11 @@ extern int test_info_state(cl_device_id device, cl_context context,
                            cl_command_queue queue, int num_elements);
 extern int test_info_prop_array(cl_device_id device, cl_context context,
                                 cl_command_queue queue, int num_elements);
+extern int test_basic_set_kernel_arg(cl_device_id device, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+extern int test_pending_set_kernel_arg(cl_device_id device, cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
 extern int test_regular_wait_for_command_buffer(cl_device_id device,
                                                 cl_context context,
                                                 cl_command_queue queue,
