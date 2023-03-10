@@ -15,7 +15,6 @@
 //
 
 
-#include "testBase.h"
 #include "harness/typeWrappers.h"
 #include "harness/extensionHelpers.h"
 #include "harness/errorHelpers.h"

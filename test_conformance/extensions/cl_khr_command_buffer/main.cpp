@@ -48,6 +48,8 @@ test_definition test_list[] = {
     ADD_TEST(barrier_wait_list),
     ADD_TEST(basic_printf),
     ADD_TEST(simultaneous_printf),
+    ADD_TEST(basic_set_kernel_arg),
+    ADD_TEST(pending_set_kernel_arg),
     ADD_TEST(event_info_command_type),
     ADD_TEST(event_info_command_queue),
     ADD_TEST(event_info_execution_status),
