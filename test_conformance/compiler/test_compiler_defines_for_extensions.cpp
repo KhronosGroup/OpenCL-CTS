@@ -82,9 +82,12 @@ const char *known_extensions[] = {
     "cl_khr_external_semaphore_win32",
     "cl_khr_external_semaphore_sync_fd",
     "cl_khr_external_semaphore_opaque_fd",
+    "cl_khr_external_semaphore_dx_fence",
     "cl_khr_external_memory",
     "cl_khr_external_memory_win32",
     "cl_khr_external_memory_opaque_fd",
+    "cl_khr_external_memory_dx",
+    "cl_khr_external_memory_dma_buf",
     "cl_khr_command_buffer",
     "cl_khr_command_buffer_mutable_dispatch",
 };
