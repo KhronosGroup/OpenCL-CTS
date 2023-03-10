@@ -6890,7 +6890,7 @@ int main (int argc, const char* argv[])
     cl_uint size_t_width = 0;                            // device address bits (32 or 64).
     cl_int err;
     int failed = 0;
-    int ntests = 0;
+    size_t ntests = 0;
     custom_cout atf_info;
     custom_cerr atf_error;
     override_buff atf_cout(std::cout, atf_info);
