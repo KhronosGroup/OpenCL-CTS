@@ -48,12 +48,7 @@ int test_mem_object_destructor_callback_single(clMemWrapper &memObject)
     test_error(error, "Unable to set destructor callback");
 
     // Now release the buffer, which SHOULD call the callbacks
-    error = clReleaseMemObject(memObject);
-    test_error(error, "Unable to release test buffer");
-
-    // Note: since we manually released the mem wrapper, we need to set it to
-    // NULL to prevent a double-release
-    memObject = NULL;
+    memObject.reset();
 
     // At this point, all three callbacks should have already been called
     int numErrors = 0;

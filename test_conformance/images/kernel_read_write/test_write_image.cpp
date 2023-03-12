@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "../testBase.h"
+#include "test_common.h"
 
 #if !defined(_WIN32)
 #include <sys/mman.h>
@@ -46,20 +47,24 @@ extern bool validate_float_write_results( float *expected, float *actual, image_
 extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo );
 
 const char *writeKernelSourcePattern =
-"__kernel void sample_kernel( __global %s%s *input, write_only %s output %s)\n"
-"{\n"
-"   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
-"%s"
-"   write_image%s( output, (int2)( tidX, tidY ) %s, input[ offset ]);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( __global %s%s *input, write_only %s output "
+    "%s)\n"
+    "{\n"
+    "   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
+    "%s"
+    "   write_image%s( output, (int2)( tidX, tidY ) %s, input[ offset ]);\n"
+    "}";
 
 const char *read_writeKernelSourcePattern =
-"__kernel void sample_kernel( __global %s%s *input, read_write %s output %s)\n"
-"{\n"
-"   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
-"%s"
-"   write_image%s( output, (int2)( tidX, tidY )%s, input[ offset ] );\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( __global %s%s *input, read_write %s output "
+    "%s)\n"
+    "{\n"
+    "   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
+    "%s"
+    "   write_image%s( output, (int2)( tidX, tidY )%s, input[ offset ] );\n"
+    "}";
 
 const char *offset2DKernelSource =
 "   int offset = tidY*get_image_width(output) + tidX;\n";
@@ -477,6 +482,9 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                     }
                     else
                     {
+
+                        filter_undefined_bits(imageInfo, resultPtr);
+
                         // Exact result passes every time
                         if( memcmp( resultBuffer, resultPtr, get_pixel_size( imageInfo->format ) ) != 0 )
                         {
@@ -485,21 +493,8 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                             float errors[4] = {NAN, NAN, NAN, NAN};
                             pack_image_pixel_error( (float *)imagePtr, imageInfo->format, resultBuffer, errors );
 
-                            // We are allowed 0.6 absolute error vs. infinitely precise for some normalized formats
-                            if( 0 == forceCorrectlyRoundedWrites    &&
-                               (
-                                imageInfo->format->image_channel_data_type == CL_UNORM_INT8 ||
-                                imageInfo->format->image_channel_data_type == CL_UNORM_INT_101010 ||
-                                imageInfo->format->image_channel_data_type == CL_UNORM_INT16 ||
-                                imageInfo->format->image_channel_data_type == CL_SNORM_INT8 ||
-                                imageInfo->format->image_channel_data_type == CL_SNORM_INT16
-                                ))
-                            {
-                                if( ! (fabsf( errors[0] ) > 0.6f) && ! (fabsf( errors[1] ) > 0.6f) &&
-                                   ! (fabsf( errors[2] ) > 0.6f) && ! (fabsf( errors[3] ) > 0.6f)  )
-                                    failure = 0;
-                            }
-
+                            failure = filter_rounding_errors(
+                                forceCorrectlyRoundedWrites, imageInfo, errors);
 
                             if( failure )
                             {
@@ -577,6 +572,57 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                                         log_error( "    Actual:   %a %a %a %a\n", ((cl_float*)resultPtr)[0], ((cl_float*)resultPtr)[1], ((cl_float*)resultPtr)[2], ((cl_float*)resultPtr)[3] );
                                         log_error( "    Ulps:     %f %f %f %f\n", errors[0], errors[1], errors[2], errors[3] );
                                         break;
+                                    case CL_UNORM_SHORT_565: {
+                                        cl_uint *ref_value =
+                                            (cl_uint *)resultBuffer;
+                                        cl_uint *test_value =
+                                            (cl_uint *)resultPtr;
+
+                                        log_error(" Expected: 0x%2.2x Actual: "
+                                                  "0x%2.2x \n",
+                                                  ref_value[0], test_value[0]);
+
+                                        log_error("    Expected: 0x%2.2x "
+                                                  "0x%2.2x 0x%2.2x \n",
+                                                  ref_value[0] & 0x1F,
+                                                  (ref_value[0] >> 5) & 0x3F,
+                                                  (ref_value[0] >> 11) & 0x1F);
+                                        log_error("    Actual:   0x%2.2x "
+                                                  "0x%2.2x 0x%2.2x \n",
+                                                  test_value[0] & 0x1F,
+                                                  (test_value[0] >> 5) & 0x3F,
+                                                  (test_value[0] >> 11) & 0x1F);
+                                        log_error("    Error:    %f %f %f %f\n",
+                                                  errors[0], errors[1],
+                                                  errors[2]);
+                                        break;
+                                    }
+
+                                    case CL_UNORM_SHORT_555: {
+                                        cl_uint *ref_value =
+                                            (cl_uint *)resultBuffer;
+                                        cl_uint *test_value =
+                                            (cl_uint *)resultPtr;
+
+                                        log_error(" Expected: 0x%2.2x Actual: "
+                                                  "0x%2.2x \n",
+                                                  ref_value[0], test_value[0]);
+
+                                        log_error("    Expected: 0x%2.2x "
+                                                  "0x%2.2x 0x%2.2x \n",
+                                                  ref_value[0] & 0x1F,
+                                                  (ref_value[0] >> 5) & 0x1F,
+                                                  (ref_value[0] >> 10) & 0x1F);
+                                        log_error("    Actual:   0x%2.2x "
+                                                  "0x%2.2x 0x%2.2x \n",
+                                                  test_value[0] & 0x1F,
+                                                  (test_value[0] >> 5) & 0x1F,
+                                                  (test_value[0] >> 10) & 0x1F);
+                                        log_error("    Error:    %f %f %f %f\n",
+                                                  errors[0], errors[1],
+                                                  errors[2]);
+                                        break;
+                                    }
                                 }
 
                                 float *v = (float *)(char *)imagePtr;
@@ -686,15 +732,19 @@ int test_write_image_set(cl_device_id device, cl_context context,
     }
 
     // Construct the source
-    sprintf( programSrc,
-             KernelSourcePattern,
-             get_explicit_type_name( inputType ),
-             (format->image_channel_order == CL_DEPTH) ? "" : "4",
-             (format->image_channel_order == CL_DEPTH) ? "image2d_depth_t" : "image2d_t",
-             gTestMipmaps ? ", int lod" : "",
-             gTestMipmaps ? offset2DLodKernelSource : offset2DKernelSource,
-             readFormat,
-             gTestMipmaps ? ", lod" : "" );
+    sprintf(
+        programSrc, KernelSourcePattern,
+        gTestMipmaps
+            ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable\n#pragma "
+              "OPENCL EXTENSION cl_khr_mipmap_image_writes: enable"
+            : "",
+        get_explicit_type_name(inputType),
+        (format->image_channel_order == CL_DEPTH) ? "" : "4",
+        (format->image_channel_order == CL_DEPTH) ? "image2d_depth_t"
+                                                  : "image2d_t",
+        gTestMipmaps ? ", int lod" : "",
+        gTestMipmaps ? offset2DLodKernelSource : offset2DKernelSource,
+        readFormat, gTestMipmaps ? ", lod" : "");
 
     ptr = programSrc;
     error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,

@@ -283,7 +283,7 @@ std::string exe_path()
             exit(2);
         }; // if
 
-        if (len < path.size())
+        if (static_cast<size_t>(len) < path.size())
         {
             // We got the path.
             path.resize(len);
@@ -333,9 +333,6 @@ std::string exe_dir()
 
 
 #include <windows.h>
-#if defined(max)
-#undef max
-#endif
 
 #include <cctype>
 #include <algorithm>
@@ -404,7 +401,8 @@ std::string exe_path()
     for (;;)
     {
 
-        DWORD len = GetModuleFileNameA(NULL, &path.front(), path.size());
+        DWORD len = GetModuleFileNameA(NULL, &path.front(),
+                                       static_cast<DWORD>(path.size()));
 
         if (len == 0)
         {

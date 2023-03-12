@@ -18,3 +18,11 @@ set (${MODULE_NAME}_SOURCES
 list(APPEND CLConform_LIBRARIES EGL GLESv2)
 
 include(../CMakeCommon.txt)
+
+if(DEFINED USE_GLES3)
+    target_compile_definitions(${${MODULE_NAME}_OUT} PRIVATE GLES3)
+endif()
+if(MSVC)
+    # Don't warn about using the portable "strdup" function.
+    target_compile_definitions(${${MODULE_NAME}_OUT} PRIVATE _CRT_NONSTDC_NO_DEPRECATE)
+endif()

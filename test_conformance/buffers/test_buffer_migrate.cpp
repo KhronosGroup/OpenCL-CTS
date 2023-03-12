@@ -80,7 +80,7 @@ static cl_int migrateMemObject(enum migrations migrate, cl_command_queue *queues
 
 static cl_int restoreBuffer(cl_command_queue *queues, cl_mem *buffers, cl_uint num_devices, cl_mem_migration_flags *flags, cl_uint *buffer)
 {
-  cl_uint i, j;
+  cl_uint i;
   cl_int  err;
 
   // If the buffer was previously migrated with undefined content, reload the content.
@@ -295,9 +295,9 @@ int test_buffer_migrate(cl_device_id deviceID, cl_context context, cl_command_qu
             }
 
             if ((err = clEnqueueNDRangeKernel(queues[i], kernel, 1, NULL, wgs, NULL, 0, NULL, NULL)) != CL_SUCCESS) {
-              print_error(err, "Failed enqueueing the NDRange kernel.");
-              failed = 1;
-              goto cleanup;
+                print_error(err, "Failed enqueuing the NDRange kernel.");
+                failed = 1;
+                goto cleanup;
             }
           }
           // Verify the results as long as neither input is an undefined migration

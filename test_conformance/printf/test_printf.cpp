@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -232,10 +232,8 @@ int waitForEvent(cl_event* event)
 //-----------------------------------------
 static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context context,const unsigned int testId,const unsigned int testNum,bool isLongSupport,bool is64bAddrSpace)
 {
-    int err,i;
+    int err;
     cl_program program;
-    cl_device_id devID;
-    char buildLog[ 1024 * 128 ];
     char testname[256] = {0};
     char addrSpaceArgument[256] = {0};
     char addrSpacePAddArgument[256] = {0};
@@ -825,73 +823,75 @@ int test_address_space_4(cl_device_id deviceID, cl_context context, cl_command_q
     return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 4, deviceID);
 }
 
+int test_buffer_size(cl_device_id deviceID, cl_context context,
+                     cl_command_queue queue, int num_elements)
+{
+    size_t printf_buff_size = 0;
+    const size_t printf_buff_size_req = !gIsEmbedded ? (1024 * 1024UL) : 1024UL;
+    const size_t config_size = sizeof(printf_buff_size);
+    cl_int err = CL_SUCCESS;
+
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_PRINTF_BUFFER_SIZE, config_size,
+                          &printf_buff_size, NULL);
+    if (err != CL_SUCCESS)
+    {
+        log_error("Unable to query CL_DEVICE_PRINTF_BUFFER_SIZE");
+        return TEST_FAIL;
+    }
+
+    if (printf_buff_size < printf_buff_size_req)
+    {
+        log_error("CL_DEVICE_PRINTF_BUFFER_SIZE does not meet requirements");
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
+}
+
 test_definition test_list[] = {
-    ADD_TEST( int_0 ),
-    ADD_TEST( int_1 ),
-    ADD_TEST( int_2 ),
-    ADD_TEST( int_3 ),
-    ADD_TEST( int_4 ),
-    ADD_TEST( int_5 ),
-    ADD_TEST( int_6 ),
-    ADD_TEST( int_7 ),
-    ADD_TEST( int_8 ),
+    ADD_TEST(int_0),           ADD_TEST(int_1),
+    ADD_TEST(int_2),           ADD_TEST(int_3),
+    ADD_TEST(int_4),           ADD_TEST(int_5),
+    ADD_TEST(int_6),           ADD_TEST(int_7),
+    ADD_TEST(int_8),
 
-    ADD_TEST( float_0 ),
-    ADD_TEST( float_1 ),
-    ADD_TEST( float_2 ),
-    ADD_TEST( float_3 ),
-    ADD_TEST( float_4 ),
-    ADD_TEST( float_5 ),
-    ADD_TEST( float_6 ),
-    ADD_TEST( float_7 ),
-    ADD_TEST( float_8 ),
-    ADD_TEST( float_9 ),
-    ADD_TEST( float_10 ),
-    ADD_TEST( float_11 ),
-    ADD_TEST( float_12 ),
-    ADD_TEST( float_13 ),
-    ADD_TEST( float_14 ),
-    ADD_TEST( float_15 ),
-    ADD_TEST( float_16 ),
-    ADD_TEST( float_17 ),
+    ADD_TEST(float_0),         ADD_TEST(float_1),
+    ADD_TEST(float_2),         ADD_TEST(float_3),
+    ADD_TEST(float_4),         ADD_TEST(float_5),
+    ADD_TEST(float_6),         ADD_TEST(float_7),
+    ADD_TEST(float_8),         ADD_TEST(float_9),
+    ADD_TEST(float_10),        ADD_TEST(float_11),
+    ADD_TEST(float_12),        ADD_TEST(float_13),
+    ADD_TEST(float_14),        ADD_TEST(float_15),
+    ADD_TEST(float_16),        ADD_TEST(float_17),
 
-    ADD_TEST( float_limits_0 ),
-    ADD_TEST( float_limits_1 ),
-    ADD_TEST( float_limits_2 ),
+    ADD_TEST(float_limits_0),  ADD_TEST(float_limits_1),
+    ADD_TEST(float_limits_2),
 
-    ADD_TEST( octal_0 ),
-    ADD_TEST( octal_1 ),
-    ADD_TEST( octal_2 ),
-    ADD_TEST( octal_3 ),
+    ADD_TEST(octal_0),         ADD_TEST(octal_1),
+    ADD_TEST(octal_2),         ADD_TEST(octal_3),
 
-    ADD_TEST( unsigned_0 ),
-    ADD_TEST( unsigned_1 ),
+    ADD_TEST(unsigned_0),      ADD_TEST(unsigned_1),
 
-    ADD_TEST( hexadecimal_0 ),
-    ADD_TEST( hexadecimal_1 ),
-    ADD_TEST( hexadecimal_2 ),
-    ADD_TEST( hexadecimal_3 ),
-    ADD_TEST( hexadecimal_4 ),
+    ADD_TEST(hexadecimal_0),   ADD_TEST(hexadecimal_1),
+    ADD_TEST(hexadecimal_2),   ADD_TEST(hexadecimal_3),
+    ADD_TEST(hexadecimal_4),
 
-    ADD_TEST( char_0 ),
-    ADD_TEST( char_1 ),
-    ADD_TEST( char_2 ),
+    ADD_TEST(char_0),          ADD_TEST(char_1),
+    ADD_TEST(char_2),
 
-    ADD_TEST( string_0 ),
-    ADD_TEST( string_1 ),
-    ADD_TEST( string_2 ),
+    ADD_TEST(string_0),        ADD_TEST(string_1),
+    ADD_TEST(string_2),
 
-    ADD_TEST( vector_0 ),
-    ADD_TEST( vector_1 ),
-    ADD_TEST( vector_2 ),
-    ADD_TEST( vector_3 ),
-    ADD_TEST( vector_4 ),
+    ADD_TEST(vector_0),        ADD_TEST(vector_1),
+    ADD_TEST(vector_2),        ADD_TEST(vector_3),
+    ADD_TEST(vector_4),
 
-    ADD_TEST( address_space_0 ),
-    ADD_TEST( address_space_1 ),
-    ADD_TEST( address_space_2 ),
-    ADD_TEST( address_space_3 ),
-    ADD_TEST( address_space_4 ),
+    ADD_TEST(address_space_0), ADD_TEST(address_space_1),
+    ADD_TEST(address_space_2), ADD_TEST(address_space_3),
+    ADD_TEST(address_space_4),
+
+    ADD_TEST(buffer_size),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
@@ -1029,8 +1029,6 @@ test_status InitCL( cl_device_id device )
                               version.to_string().c_str());
         return TEST_SKIP;
     }
-
-    log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
 
     gFd = acquireOutputStream(&err);
     if (err != 0)

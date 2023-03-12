@@ -16,122 +16,134 @@
 #ifndef _typeWrappers_h
 #define _typeWrappers_h
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #if !defined(_WIN32)
 #include <sys/mman.h>
 #endif
 
 #include "compat.h"
-#include <stdio.h>
 #include "mt19937.h"
 #include "errorHelpers.h"
 #include "kernelHelpers.h"
 
-/* cl_context wrapper */
+#include <cstdlib>
+#include <type_traits>
 
-class clContextWrapper {
-public:
-    clContextWrapper() { mContext = NULL; }
-    clContextWrapper(cl_context program) { mContext = program; }
-    ~clContextWrapper()
+namespace wrapper_details {
+
+// clRetain*() and clRelease*() functions share the same type.
+template <typename T> // T should be cl_context, cl_program, ...
+using RetainReleaseType = cl_int CL_API_CALL(T);
+
+// A generic wrapper class that follows OpenCL retain/release semantics.
+//
+// This Wrapper class implement copy and move semantics, which makes it
+// compatible with standard containers for example.
+//
+// Template parameters:
+//  - T is the cl_* type (e.g. cl_context, cl_program, ...)
+//  - Retain is the clRetain* function (e.g. clRetainContext, ...)
+//  - Release is the clRelease* function (e.g. clReleaseContext, ...)
+template <typename T, RetainReleaseType<T> Retain, RetainReleaseType<T> Release>
+class Wrapper {
+    static_assert(std::is_pointer<T>::value, "T should be a pointer type.");
+    T object = nullptr;
+
+    void retain()
     {
-        if (mContext != NULL) clReleaseContext(mContext);
+        if (!object) return;
+
+        auto err = Retain(object);
+        if (err != CL_SUCCESS)
+        {
+            print_error(err, "clRetain*() failed");
+            std::abort();
+        }
     }
 
-    clContextWrapper &operator=(const cl_context &rhs)
+    void release()
     {
-        mContext = rhs;
+        if (!object) return;
+
+        auto err = Release(object);
+        if (err != CL_SUCCESS)
+        {
+            print_error(err, "clRelease*() failed");
+            std::abort();
+        }
+    }
+
+public:
+    Wrapper() = default;
+
+    // On initialisation, assume the object has a refcount of one.
+    Wrapper(T object): object(object) {}
+
+    // On assignment, assume the object has a refcount of one.
+    Wrapper &operator=(T rhs)
+    {
+        reset(rhs);
         return *this;
     }
-    operator cl_context() const { return mContext; }
 
-    cl_context *operator&() { return &mContext; }
-
-    bool operator==(const cl_context &rhs) { return mContext == rhs; }
-
-protected:
-    cl_context mContext;
-};
-
-/* cl_program wrapper */
-
-class clProgramWrapper {
-public:
-    clProgramWrapper() { mProgram = NULL; }
-    clProgramWrapper(cl_program program) { mProgram = program; }
-    ~clProgramWrapper()
+    // Copy semantics, increase retain count.
+    Wrapper(Wrapper const &w) { *this = w; }
+    Wrapper &operator=(Wrapper const &w)
     {
-        if (mProgram != NULL) clReleaseProgram(mProgram);
-    }
-
-    clProgramWrapper &operator=(const cl_program &rhs)
-    {
-        mProgram = rhs;
+        reset(w.object);
+        retain();
         return *this;
     }
-    operator cl_program() const { return mProgram; }
 
-    cl_program *operator&() { return &mProgram; }
-
-    bool operator==(const cl_program &rhs) { return mProgram == rhs; }
-
-protected:
-    cl_program mProgram;
-};
-
-/* cl_kernel wrapper */
-
-class clKernelWrapper {
-public:
-    clKernelWrapper() { mKernel = NULL; }
-    clKernelWrapper(cl_kernel kernel) { mKernel = kernel; }
-    ~clKernelWrapper()
+    // Move semantics, directly take ownership.
+    Wrapper(Wrapper &&w) { *this = std::move(w); }
+    Wrapper &operator=(Wrapper &&w)
     {
-        if (mKernel != NULL) clReleaseKernel(mKernel);
-    }
-
-    clKernelWrapper &operator=(const cl_kernel &rhs)
-    {
-        mKernel = rhs;
+        reset(w.object);
+        w.object = nullptr;
         return *this;
     }
-    operator cl_kernel() const { return mKernel; }
 
-    cl_kernel *operator&() { return &mKernel; }
+    ~Wrapper() { reset(); }
 
-    bool operator==(const cl_kernel &rhs) { return mKernel == rhs; }
-
-protected:
-    cl_kernel mKernel;
-};
-
-/* cl_mem (stream) wrapper */
-
-class clMemWrapper {
-public:
-    clMemWrapper() { mMem = NULL; }
-    clMemWrapper(cl_mem mem) { mMem = mem; }
-    ~clMemWrapper()
+    // Release the existing object, if any, and own the new one, if any.
+    void reset(T new_object = nullptr)
     {
-        if (mMem != NULL) clReleaseMemObject(mMem);
+        release();
+        object = new_object;
     }
 
-    clMemWrapper &operator=(const cl_mem &rhs)
-    {
-        mMem = rhs;
-        return *this;
-    }
-    operator cl_mem() const { return mMem; }
+    operator T() const { return object; }
 
-    cl_mem *operator&() { return &mMem; }
-
-    bool operator==(const cl_mem &rhs) { return mMem == rhs; }
-
-protected:
-    cl_mem mMem;
+    // Ideally this function should not exist as it breaks encapsulation by
+    // allowing external mutation of the Wrapper internal state. However, too
+    // much code currently relies on this. For example, instead of using T* as
+    // output parameters, existing code can be updated to use Wrapper& instead.
+    T *operator&() { return &object; }
 };
+
+} // namespace wrapper_details
+
+using clContextWrapper =
+    wrapper_details::Wrapper<cl_context, clRetainContext, clReleaseContext>;
+
+using clProgramWrapper =
+    wrapper_details::Wrapper<cl_program, clRetainProgram, clReleaseProgram>;
+
+using clKernelWrapper =
+    wrapper_details::Wrapper<cl_kernel, clRetainKernel, clReleaseKernel>;
+
+using clMemWrapper =
+    wrapper_details::Wrapper<cl_mem, clRetainMemObject, clReleaseMemObject>;
+
+using clCommandQueueWrapper =
+    wrapper_details::Wrapper<cl_command_queue, clRetainCommandQueue,
+                             clReleaseCommandQueue>;
+
+using clSamplerWrapper =
+    wrapper_details::Wrapper<cl_sampler, clRetainSampler, clReleaseSampler>;
+
+using clEventWrapper =
+    wrapper_details::Wrapper<cl_event, clRetainEvent, clReleaseEvent>;
 
 class clProtectedImage {
 public:
@@ -183,90 +195,10 @@ public:
 
     cl_mem *operator&() { return &image; }
 
-    bool operator==(const cl_mem &rhs) { return image == rhs; }
-
 protected:
     void *backingStore;
     size_t backingStoreSize;
     cl_mem image;
-};
-
-/* cl_command_queue wrapper */
-class clCommandQueueWrapper {
-public:
-    clCommandQueueWrapper() { mMem = NULL; }
-    clCommandQueueWrapper(cl_command_queue mem) { mMem = mem; }
-    ~clCommandQueueWrapper()
-    {
-        if (mMem != NULL)
-        {
-            clReleaseCommandQueue(mMem);
-        }
-    }
-
-    clCommandQueueWrapper &operator=(const cl_command_queue &rhs)
-    {
-        mMem = rhs;
-        return *this;
-    }
-    operator cl_command_queue() const { return mMem; }
-
-    cl_command_queue *operator&() { return &mMem; }
-
-    bool operator==(const cl_command_queue &rhs) { return mMem == rhs; }
-
-protected:
-    cl_command_queue mMem;
-};
-
-/* cl_sampler wrapper */
-class clSamplerWrapper {
-public:
-    clSamplerWrapper() { mMem = NULL; }
-    clSamplerWrapper(cl_sampler mem) { mMem = mem; }
-    ~clSamplerWrapper()
-    {
-        if (mMem != NULL) clReleaseSampler(mMem);
-    }
-
-    clSamplerWrapper &operator=(const cl_sampler &rhs)
-    {
-        mMem = rhs;
-        return *this;
-    }
-    operator cl_sampler() const { return mMem; }
-
-    cl_sampler *operator&() { return &mMem; }
-
-    bool operator==(const cl_sampler &rhs) { return mMem == rhs; }
-
-protected:
-    cl_sampler mMem;
-};
-
-/* cl_event wrapper */
-class clEventWrapper {
-public:
-    clEventWrapper() { mMem = NULL; }
-    clEventWrapper(cl_event mem) { mMem = mem; }
-    ~clEventWrapper()
-    {
-        if (mMem != NULL) clReleaseEvent(mMem);
-    }
-
-    clEventWrapper &operator=(const cl_event &rhs)
-    {
-        mMem = rhs;
-        return *this;
-    }
-    operator cl_event() const { return mMem; }
-
-    cl_event *operator&() { return &mMem; }
-
-    bool operator==(const cl_event &rhs) { return mMem == rhs; }
-
-protected:
-    cl_event mMem;
 };
 
 /* Generic protected memory buffer, for verifying access within bounds */

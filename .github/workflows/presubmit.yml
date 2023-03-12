@@ -3,38 +3,64 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: Build ${{ matrix.os }} ${{ matrix.name }}
+    name: Build ${{ matrix.os }} ${{ matrix.arch }}${{ matrix.extra }}
     runs-on: ${{ matrix.os }}
     env:
-      JOB_CHECK_FORMAT: ${{ matrix.format }}
       JOB_ARCHITECTURE: ${{ matrix.arch }}
       JOB_ENABLE_GL: ${{ matrix.gl }}
+      JOB_ENABLE_DEBUG: ${{ matrix.debug }}
     strategy:
+      fail-fast: false
       matrix:
         mainmatrix: [true]
-        os: [ubuntu-20.04, macos-11.0]
+        os: [ubuntu-20.04, macos-latest, windows-latest]
         include:
           - os: ubuntu-20.04
             mainmatrix: true
             gl: 1
+            extra: " gl"
           - os: ubuntu-20.04
             mainmatrix: false
-            name: Format
-            format: 1
-          - os: ubuntu-20.04
-            mainmatrix: false
-            name: Arm
             arch: arm
           - os: ubuntu-20.04
             mainmatrix: false
-            name: AArch64
             arch: aarch64
+            debug: 1
+            extra: " debug"
     steps:
-      - name: Setup
-        run: if [[ "${{matrix.format}}" == "1" ]]; then sudo apt install -y clang-format; fi
+      - uses: actions/checkout@v2
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Setup OpenGL build dependencies
+        if: ${{ matrix.gl }}
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libglu1-mesa-dev freeglut3-dev mesa-common-dev libglew-dev
+      - name: Setup MSVC with Ninja
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: ${{ matrix.os }}-${{ matrix.arch }}
+      - name: Fetch OpenCL Headers
+        shell: bash
+        run: |
+          git clone https://github.com/KhronosGroup/OpenCL-Headers.git
+          cd OpenCL-Headers
+          ln -s CL OpenCL # For OSX builds
+          cd ..
+      - name: Build
+        shell: bash
+        run: ./presubmit.sh
+  formatcheck:
+    name: Check code format
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install packages
+        run: sudo apt install -y clang-format clang-format-9
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Build
-        run: ./presubmit.sh
-
+      - name: Check code format
+        run: ./check-format.sh

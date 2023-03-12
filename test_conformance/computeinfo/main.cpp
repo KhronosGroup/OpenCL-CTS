@@ -95,8 +95,8 @@ typedef struct _version version_t;
 
 struct _extensions
 {
-    int cl_khr_fp64;
-    int cl_khr_fp16;
+    int has_cl_khr_fp64;
+    int has_cl_khr_fp16;
 };
 typedef struct _extensions extensions_t;
 
@@ -908,12 +908,6 @@ void dumpConfigInfo(config_info* info)
                 {
                     cl_name_version new_version_item =
                         info->config.cl_name_version_array[f];
-                    cl_version new_version_major =
-                        CL_VERSION_MAJOR_KHR(new_version_item.version);
-                    cl_version new_version_minor =
-                        CL_VERSION_MINOR_KHR(new_version_item.version);
-                    cl_version new_version_patch =
-                        CL_VERSION_PATCH_KHR(new_version_item.version);
                     log_info("\t\t\"%s\" %d.%d.%d\n", new_version_item.name,
                              CL_VERSION_MAJOR_KHR(new_version_item.version),
                              CL_VERSION_MINOR_KHR(new_version_item.version),
@@ -1069,11 +1063,11 @@ int parseExtensions(char const* str, extensions_t* extensions)
         }
         if (strncmp(begin, "cl_khr_fp64", length) == 0)
         {
-            extensions->cl_khr_fp64 = 1;
+            extensions->has_cl_khr_fp64 = 1;
         }
         if (strncmp(begin, "cl_khr_fp16", length) == 0)
         {
-            extensions->cl_khr_fp16 = 1;
+            extensions->has_cl_khr_fp16 = 1;
         }
         begin += length; // Skip word.
         if (begin[0] == ' ')
@@ -1112,13 +1106,13 @@ int getConfigInfos(cl_device_id device)
             // version 1.1, we have to check doubles are sopported. In
             // OpenCL 1.2 CL_DEVICE_DOUBLE_FP_CONFIG should be reported
             // unconditionally.
-            get = extensions.cl_khr_fp64;
+            get = extensions.has_cl_khr_fp64;
         };
         if (info.opcode == CL_DEVICE_HALF_FP_CONFIG)
         {
             // CL_DEVICE_HALF_FP_CONFIG should be reported only when cl_khr_fp16
             // extension is available
-            get = extensions.cl_khr_fp16;
+            get = extensions.has_cl_khr_fp16;
         };
         if (get)
         {
@@ -1368,8 +1362,7 @@ int test_computeinfo(cl_device_id deviceID, cl_context context,
     else
     {
         // print device info
-        int onInfo;
-        for (onInfo = 0;
+        for (size_t onInfo = 0;
              onInfo < sizeof(device_infos) / sizeof(device_infos[0]); onInfo++)
         {
             log_info("Getting device IDs for %s devices\n",
@@ -1396,9 +1389,8 @@ int test_computeinfo(cl_device_id deviceID, cl_context context,
                 test_error(err, "clGetDeviceIDs failed");
             }
 
-            int onDevice;
-            for (onDevice = 0; onDevice < device_infos[onInfo].num_devices;
-                 onDevice++)
+            for (size_t onDevice = 0;
+                 onDevice < device_infos[onInfo].num_devices; onDevice++)
             {
                 log_info("%s Device %d of %d Info:\n",
                          device_infos[onInfo].device_type_name, onDevice + 1,
@@ -1421,15 +1413,16 @@ int test_computeinfo(cl_device_id deviceID, cl_context context,
 extern int test_extended_versioning(cl_device_id, cl_context, cl_command_queue,
                                     int);
 extern int test_device_uuid(cl_device_id, cl_context, cl_command_queue, int);
-
 extern int test_conformance_version(cl_device_id, cl_context, cl_command_queue,
                                     int);
+extern int test_pci_bus_info(cl_device_id, cl_context, cl_command_queue, int);
 
 test_definition test_list[] = {
     ADD_TEST(computeinfo),
     ADD_TEST(extended_versioning),
     ADD_TEST(device_uuid),
     ADD_TEST_VERSION(conformance_version, Version(3, 0)),
+    ADD_TEST(pci_bus_info),
 };
 
 const int test_num = ARRAY_SIZE(test_list);

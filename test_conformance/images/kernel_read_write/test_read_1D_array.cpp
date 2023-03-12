@@ -16,32 +16,37 @@
 #include "test_common.h"
 #include <float.h>
 
+#include <algorithm>
+
 #if defined( __APPLE__ )
 #include <signal.h>
 #include <sys/signal.h>
 #include <setjmp.h>
 #endif
 
-
 const char *read1DArrayKernelSourcePattern =
-"__kernel void sample_kernel( read_only image1d_array_t input,%s __global float *xOffsets, __global float *yOffsets, __global %s4 *results %s)\n"
-"{\n"
-"%s"
-"   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
-"%s"
-"%s"
-"   results[offset] = read_image%s( input, imageSampler, coords %s);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( read_only image1d_array_t input,%s __global "
+    "float *xOffsets, __global float *yOffsets, __global %s4 *results %s)\n"
+    "{\n"
+    "%s"
+    "   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
+    "%s"
+    "%s"
+    "   results[offset] = read_image%s( input, imageSampler, coords %s);\n"
+    "}";
 
 const char *read_write1DArrayKernelSourcePattern =
-"__kernel void sample_kernel( read_write image1d_array_t input,%s __global float *xOffsets, __global float *yOffsets, __global %s4 *results %s )\n"
-"{\n"
-"%s"
-"   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
-"%s"
-"%s"
-"   results[offset] = read_image%s( input, coords %s);\n"
-"}";
+    "%s\n"
+    "__kernel void sample_kernel( read_write image1d_array_t input,%s __global "
+    "float *xOffsets, __global float *yOffsets, __global %s4 *results %s )\n"
+    "{\n"
+    "%s"
+    "   int tidX = get_global_id(0), tidY = get_global_id(1);\n"
+    "%s"
+    "%s"
+    "   results[offset] = read_image%s( input, coords %s);\n"
+    "}";
 
 const char *offset1DArrayKernelSource =
 "   int offset = tidY*get_image_width(input) + tidX;\n";
@@ -577,12 +582,15 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                     int checkOnlyOnePixel = 0;
                     int found_pixel = 0;
                     float offset = NORM_OFFSET;
-                    if (!imageSampler->normalized_coords ||  imageSampler->filter_mode != CL_FILTER_NEAREST || NORM_OFFSET == 0
+                    if (!imageSampler->normalized_coords
+                        || imageSampler->filter_mode != CL_FILTER_NEAREST
+                        || NORM_OFFSET == 0
 #if defined( __APPLE__ )
-                        // Apple requires its CPU implementation to do correctly rounded address arithmetic in all modes
-                        || gDeviceType != CL_DEVICE_TYPE_GPU
+                        // Apple requires its CPU implementation to do correctly
+                        // rounded address arithmetic in all modes
+                        || !(gDeviceType & CL_DEVICE_TYPE_GPU)
 #endif
-                        )
+                    )
                         offset = 0.0f;          // Loop only once
 
                     for (float norm_offset_x = -offset; norm_offset_x <= offset && !found_pixel; norm_offset_x += NORM_OFFSET) {
@@ -646,7 +654,10 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords
+                                    || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                    || NORM_OFFSET == 0)
+                                {
                                     norm_offset_x = 0.0f;
                                     norm_offset_y = 0.0f;
                                     checkOnlyOnePixel = 1;
@@ -745,12 +756,15 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                     int checkOnlyOnePixel = 0;
                     int found_pixel = 0;
                     float offset = NORM_OFFSET;
-                    if (!imageSampler->normalized_coords ||  imageSampler->filter_mode != CL_FILTER_NEAREST || NORM_OFFSET == 0
+                    if (!imageSampler->normalized_coords
+                        || imageSampler->filter_mode != CL_FILTER_NEAREST
+                        || NORM_OFFSET == 0
 #if defined( __APPLE__ )
-                        // Apple requires its CPU implementation to do correctly rounded address arithmetic in all modes
-                        || gDeviceType != CL_DEVICE_TYPE_GPU
+                        // Apple requires its CPU implementation to do correctly
+                        // rounded address arithmetic in all modes
+                        || !(gDeviceType & CL_DEVICE_TYPE_GPU)
 #endif
-                        )
+                    )
                         offset = 0.0f;          // Loop only once
 
                     for (float norm_offset_x = -offset; norm_offset_x <= offset && !found_pixel; norm_offset_x += NORM_OFFSET) {
@@ -772,10 +786,14 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                             if (err2 > 0 && err2 < formatAbsoluteError) { err2 = 0.0f; }
                             if (err3 > 0 && err3 < formatAbsoluteError) { err3 = 0.0f; }
                             if (err4 > 0 && err4 < formatAbsoluteError) { err4 = 0.0f; }
-                            float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
-                            float maxErr2 = MAX( maxErr * maxPixel.p[1], FLT_MIN );
-                            float maxErr3 = MAX( maxErr * maxPixel.p[2], FLT_MIN );
-                            float maxErr4 = MAX( maxErr * maxPixel.p[3], FLT_MIN );
+                            float maxErr1 =
+                                std::max(maxErr * maxPixel.p[0], FLT_MIN);
+                            float maxErr2 =
+                                std::max(maxErr * maxPixel.p[1], FLT_MIN);
+                            float maxErr3 =
+                                std::max(maxErr * maxPixel.p[2], FLT_MIN);
+                            float maxErr4 =
+                                std::max(maxErr * maxPixel.p[3], FLT_MIN);
 
                             // Check if the result matches.
                             if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    ||
@@ -819,7 +837,10 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords
+                                    || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                    || NORM_OFFSET == 0)
+                                {
                                     norm_offset_x = 0.0f;
                                     norm_offset_y = 0.0f;
                                     checkOnlyOnePixel = 1;
@@ -838,10 +859,14 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
                                     ABS_ERROR(resultPtr[2], expected[2]);
                                 float err4 =
                                     ABS_ERROR(resultPtr[3], expected[3]);
-                                float maxErr1 = MAX( maxErr * maxPixel.p[0], FLT_MIN );
-                                float maxErr2 = MAX( maxErr * maxPixel.p[1], FLT_MIN );
-                                float maxErr3 = MAX( maxErr * maxPixel.p[2], FLT_MIN );
-                                float maxErr4 = MAX( maxErr * maxPixel.p[3], FLT_MIN );
+                                float maxErr1 =
+                                    std::max(maxErr * maxPixel.p[0], FLT_MIN);
+                                float maxErr2 =
+                                    std::max(maxErr * maxPixel.p[1], FLT_MIN);
+                                float maxErr3 =
+                                    std::max(maxErr * maxPixel.p[2], FLT_MIN);
+                                float maxErr4 =
+                                    std::max(maxErr * maxPixel.p[3], FLT_MIN);
 
 
                                 if( ! (err1 <= maxErr1) || ! (err2 <= maxErr2)    ||
@@ -926,7 +951,10 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                             // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                             // E.g., test one pixel.
-                            if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                            if (!imageSampler->normalized_coords
+                                || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                || NORM_OFFSET == 0)
+                            {
                                 norm_offset_x = 0.0f;
                                 norm_offset_y = 0.0f;
                                 checkOnlyOnePixel = 1;
@@ -956,7 +984,10 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords
+                                    || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                    || NORM_OFFSET == 0)
+                                {
                                     norm_offset_x = 0.0f;
                                     norm_offset_y = 0.0f;
                                     checkOnlyOnePixel = 1;
@@ -1012,7 +1043,10 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                             // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                             // E.g., test one pixel.
-                            if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                            if (!imageSampler->normalized_coords
+                                || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                || NORM_OFFSET == 0)
+                            {
                                 norm_offset_x = 0.0f;
                                 norm_offset_y = 0.0f;
                                 checkOnlyOnePixel = 1;
@@ -1042,7 +1076,10 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
 
                                 // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                                 // E.g., test one pixel.
-                                if (!imageSampler->normalized_coords || gDeviceType != CL_DEVICE_TYPE_GPU || NORM_OFFSET == 0) {
+                                if (!imageSampler->normalized_coords
+                                    || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+                                    || NORM_OFFSET == 0)
+                                {
                                     norm_offset_x = 0.0f;
                                     norm_offset_y = 0.0f;
                                     checkOnlyOnePixel = 1;
@@ -1147,15 +1184,15 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
         KernelSourcePattern = read_write1DArrayKernelSourcePattern;
     }
 
-    sprintf( programSrc,
-            KernelSourcePattern,
-            samplerArg, get_explicit_type_name( outputType ),
-            gTestMipmaps ? ", float lod" : "",
-            samplerVar,
-            gTestMipmaps ? offset1DArrayLodKernelSource : offset1DArrayKernelSource,
-            floatCoords ? floatKernelSource1DArray : intCoordKernelSource1DArray,
-            readFormat,
-            gTestMipmaps ? ", lod" : "" );
+    sprintf(
+        programSrc, KernelSourcePattern,
+        gTestMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable"
+                     : "",
+        samplerArg, get_explicit_type_name(outputType),
+        gTestMipmaps ? ", float lod" : "", samplerVar,
+        gTestMipmaps ? offset1DArrayLodKernelSource : offset1DArrayKernelSource,
+        floatCoords ? floatKernelSource1DArray : intCoordKernelSource1DArray,
+        readFormat, gTestMipmaps ? ", lod" : "");
 
     ptr = programSrc;
     error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,

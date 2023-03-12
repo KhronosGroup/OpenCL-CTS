@@ -4,11 +4,6 @@ set -e
 
 export TOP=$(pwd)
 
-if [[ "${JOB_CHECK_FORMAT}" == "1" ]]; then
-    ./check-format.sh
-    exit $?
-fi
-
 TOOLCHAIN_URL_arm="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz"
 TOOLCHAIN_URL_aarch64="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz"
 
@@ -18,9 +13,13 @@ TOOLCHAIN_PREFIX_aarch64=aarch64-linux-gnu
 TOOLCHAIN_FILE=${TOP}/toolchain.cmake
 touch ${TOOLCHAIN_FILE}
 BUILD_OPENGL_TEST="OFF"
+BUILD_VULKAN_TEST="ON"
+
+cmake --version
+echo
 
 # Prepare toolchain if needed
-if [[ ${JOB_ARCHITECTURE} != "" ]]; then
+if [[ ${JOB_ARCHITECTURE} != "" && ${RUNNER_OS} != "Windows" ]]; then
     TOOLCHAIN_URL_VAR=TOOLCHAIN_URL_${JOB_ARCHITECTURE}
     TOOLCHAIN_URL=${!TOOLCHAIN_URL_VAR}
     wget ${TOOLCHAIN_URL}
@@ -43,39 +42,68 @@ fi
 
 if [[ ( ${JOB_ARCHITECTURE} == "" && ${JOB_ENABLE_GL} == "1" ) ]]; then
     BUILD_OPENGL_TEST="ON"
-    sudo apt-get update
-    sudo apt-get -y install libglu1-mesa-dev freeglut3-dev mesa-common-dev libglew-dev
 fi
-# Prepare headers
-git clone https://github.com/KhronosGroup/OpenCL-Headers.git
-cd OpenCL-Headers
-ln -s CL OpenCL # For OSX builds
-cd ..
+
+if [[ ${JOB_ENABLE_DEBUG} == 1 ]]; then
+    BUILD_CONFIG="Debug"
+else
+    BUILD_CONFIG="Release"
+fi
+
+#Vulkan Headers
+git clone https://github.com/KhronosGroup/Vulkan-Headers.git
 
 # Get and build loader
 git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
 cd ${TOP}/OpenCL-ICD-Loader
 mkdir build
 cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ ..
-make
+cmake .. -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
+      -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/
+cmake --build . -j2
 
-# Get libclcxx
+#Vulkan Loader
 cd ${TOP}
-git clone https://github.com/KhronosGroup/libclcxx.git
+git clone https://github.com/KhronosGroup/Vulkan-Loader.git
+cd Vulkan-Loader
+mkdir build
+cd build
+python3 ../scripts/update_deps.py
+cmake .. -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
+      -DBUILD_WSI_XLIB_SUPPORT=OFF \
+      -DBUILD_WSI_XCB_SUPPORT=OFF \
+      -DBUILD_WSI_WAYLAND_SUPPORT=OFF \
+      -DUSE_GAS=OFF \
+      -C helper.cmake ..
+cmake --build . -j2
 
 # Build CTS
+cd ${TOP}
 ls -l
 mkdir build
 cd build
-cmake -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
+if [[ ${RUNNER_OS} == "Windows" ]]; then
+  CMAKE_OPENCL_LIBRARIES_OPTION="OpenCL"
+  CMAKE_CACHE_OPTIONS=""
+else
+  CMAKE_OPENCL_LIBRARIES_OPTION="-lOpenCL -lpthread"
+  CMAKE_CACHE_OPTIONS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
+fi
+cmake .. -G Ninja \
+      -DCMAKE_BUILD_TYPE="${BUILD_CONFIG}" \
+      ${CMAKE_CACHE_OPTIONS} \
+      -DCL_INCLUDE_DIR=${TOP}/OpenCL-Headers \
       -DCL_LIB_DIR=${TOP}/OpenCL-ICD-Loader/build \
-      -DCL_LIBCLCXX_DIR=${TOP}/libclcxx \
       -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
       -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin \
-      -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \
+      -DOPENCL_LIBRARIES="${CMAKE_OPENCL_LIBRARIES_OPTION}" \
       -DUSE_CL_EXPERIMENTAL=ON \
       -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
-      ..
-make -j2
-
+      -DVULKAN_IS_SUPPORTED=${BUILD_VULKAN_TEST} \
+      -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
+      -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/
+cmake --build . -j3

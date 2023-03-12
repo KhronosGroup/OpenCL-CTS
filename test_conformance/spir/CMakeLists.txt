@@ -9,7 +9,7 @@ set (SPIR_SOURCES
     run_build_test.cpp
     run_services.cpp
     kernelargs.cpp
-    ../math_brute_force/FunctionList.cpp
+    ../math_brute_force/function_list.cpp
 )
 
 add_executable(${SPIR_OUT}

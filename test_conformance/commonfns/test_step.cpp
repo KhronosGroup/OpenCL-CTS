@@ -98,7 +98,6 @@ test_step(cl_device_id device, cl_context context, cl_command_queue queue, int n
     cl_float    *input_ptr[2], *output_ptr, *p;
   cl_program  program[kTotalVecCount];
   cl_kernel   kernel[kTotalVecCount];
-    void        *values[3];
     size_t  threads[1];
     int num_elements;
     int err;
@@ -158,27 +157,21 @@ test_step(cl_device_id device, cl_context context, cl_command_queue queue, int n
     }
 
     err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &step_kernel_code, "test_step" );
-    if (err)
-        return -1;
+    if (err) return -1;
     err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &step2_kernel_code, "test_step2" );
-    if (err)
-        return -1;
+    if (err) return -1;
     err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &step4_kernel_code, "test_step4" );
-    if (err)
-        return -1;
-  err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &step8_kernel_code, "test_step8" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &step16_kernel_code, "test_step16" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &step3_kernel_code, "test_step3" );
-  if (err)
-    return -1;
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[3], &kernel[3], 1,
+                                      &step8_kernel_code, "test_step8");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[4], &kernel[4], 1,
+                                      &step16_kernel_code, "test_step16");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[5], &kernel[5], 1,
+                                      &step3_kernel_code, "test_step3");
+    if (err) return -1;
 
-    values[0] = streams[0];
-    values[1] = streams[1];
-    values[2] = streams[2];
   for (i=0; i <kTotalVecCount; i++)
     {
         err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );
@@ -365,7 +358,6 @@ test_step_double(cl_device_id device, cl_context context, cl_command_queue queue
     cl_double    *input_ptr[2], *output_ptr, *p;
     cl_program  program[kTotalVecCount];
     cl_kernel   kernel[kTotalVecCount];
-    void        *values[3];
     size_t  threads[1];
     int num_elements;
     int err;
@@ -443,9 +435,6 @@ test_step_double(cl_device_id device, cl_context context, cl_command_queue queue
     if (err)
         return -1;
 
-    values[0] = streams[0];
-    values[1] = streams[1];
-    values[2] = streams[2];
     for (i=0; i < kTotalVecCount; i++)
     {
         err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );

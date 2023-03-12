@@ -125,6 +125,7 @@ int test_copy_image_set_2D( cl_device_id device, cl_context context, cl_command_
 
     if (memSize > (cl_ulong)SIZE_MAX) {
         memSize = (cl_ulong)SIZE_MAX;
+        maxAllocSize = (cl_ulong)SIZE_MAX;
     }
 
     if( gTestSmallImages )

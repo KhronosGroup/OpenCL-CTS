@@ -312,57 +312,6 @@ get_compilation_mode_str(const CompilationMode compilationMode)
     }
 }
 
-#ifdef KHRONOS_OFFLINE_COMPILER
-static std::string
-get_khronos_compiler_command(const cl_uint device_address_space_size,
-                             const bool openclCXX, const std::string &bOptions,
-                             const std::string &sourceFilename,
-                             const std::string &outputFilename)
-{
-    // Set compiler options
-    // Emit SPIR-V
-    std::string compilerOptions = " -cc1 -emit-spirv";
-    // <triple>: for 32 bit SPIR-V use spir-unknown-unknown, for 64 bit SPIR-V
-    // use spir64-unknown-unknown.
-    if (device_address_space_size == 32)
-    {
-        compilerOptions += " -triple=spir-unknown-unknown";
-    }
-    else
-    {
-        compilerOptions += " -triple=spir64-unknown-unknown";
-    }
-    // Set OpenCL C++ flag required by SPIR-V-ready clang (compiler provided by
-    // Khronos)
-    if (openclCXX)
-    {
-        compilerOptions = compilerOptions + " -cl-std=c++";
-    }
-    // Set correct includes
-    if (openclCXX)
-    {
-        compilerOptions += " -I ";
-        compilerOptions += STRINGIFY_VALUE(CL_LIBCLCXX_DIR);
-    }
-    else
-    {
-        compilerOptions += " -include opencl.h";
-    }
-
-#ifdef KHRONOS_OFFLINE_COMPILER_OPTIONS
-    compilerOptions += STRINGIFY_VALUE(KHRONOS_OFFLINE_COMPILER_OPTIONS);
-#endif
-
-    // Add build options passed to this function
-    compilerOptions += " " + bOptions;
-    compilerOptions += " " + sourceFilename + " -o " + outputFilename;
-    std::string runString =
-        STRINGIFY_VALUE(KHRONOS_OFFLINE_COMPILER) + compilerOptions;
-
-    return runString;
-}
-#endif // KHRONOS_OFFLINE_COMPILER
-
 static cl_int get_cl_device_info_str(const cl_device_id device,
                                      const cl_uint device_address_space_size,
                                      const CompilationMode compilationMode,
@@ -476,49 +425,27 @@ static int invoke_offline_compiler(const cl_device_id device,
                                    const CompilationMode compilationMode,
                                    const std::string &bOptions,
                                    const std::string &sourceFilename,
-                                   const std::string &outputFilename,
-                                   const bool openclCXX)
+                                   const std::string &outputFilename)
 {
     std::string runString;
-    if (openclCXX)
+    std::string clDeviceInfoFilename;
+
+    // See cl_offline_compiler-interface.txt for a description of the
+    // format of the CL device information file generated below, and
+    // the internal command line interface for invoking the offline
+    // compiler.
+
+    cl_int err = write_cl_device_info(device, device_address_space_size,
+                                      compilationMode, clDeviceInfoFilename);
+    if (err != CL_SUCCESS)
     {
-#ifndef KHRONOS_OFFLINE_COMPILER
-        log_error("CL C++ compilation is not possible: "
-                  "KHRONOS_OFFLINE_COMPILER was not defined.\n");
-        return CL_INVALID_OPERATION;
-#else
-        if (compilationMode != kSpir_v)
-        {
-            log_error("Compilation mode must be SPIR-V for Khronos compiler");
-            return -1;
-        }
-        runString = get_khronos_compiler_command(
-            device_address_space_size, openclCXX, bOptions, sourceFilename,
-            outputFilename);
-#endif
+        log_error("Failed writing CL device info file\n");
+        return err;
     }
-    else
-    {
-        std::string clDeviceInfoFilename;
 
-        // See cl_offline_compiler-interface.txt for a description of the
-        // format of the CL device information file generated below, and
-        // the internal command line interface for invoking the offline
-        // compiler.
-
-        cl_int err =
-            write_cl_device_info(device, device_address_space_size,
-                                 compilationMode, clDeviceInfoFilename);
-        if (err != CL_SUCCESS)
-        {
-            log_error("Failed writing CL device info file\n");
-            return err;
-        }
-
-        runString = get_offline_compilation_command(
-            device_address_space_size, compilationMode, bOptions,
-            sourceFilename, outputFilename, clDeviceInfoFilename);
-    }
+    runString = get_offline_compilation_command(
+        device_address_space_size, compilationMode, bOptions, sourceFilename,
+        outputFilename, clDeviceInfoFilename);
 
     // execute script
     log_info("Executing command: %s\n", runString.c_str());
@@ -577,9 +504,8 @@ static cl_int get_device_address_bits(const cl_device_id device,
 
 static int get_offline_compiler_output(
     std::ifstream &ifs, const cl_device_id device, cl_uint deviceAddrSpaceSize,
-    const bool openclCXX, const CompilationMode compilationMode,
-    const std::string &bOptions, const std::string &kernelPath,
-    const std::string &kernelNamePrefix)
+    const CompilationMode compilationMode, const std::string &bOptions,
+    const std::string &kernelPath, const std::string &kernelNamePrefix)
 {
     std::string sourceFilename =
         get_cl_source_filename_with_path(kernelPath, kernelNamePrefix);
@@ -599,12 +525,12 @@ static int get_offline_compiler_output(
         }
         else
         {
-            int error = invoke_offline_compiler(
-                device, deviceAddrSpaceSize, compilationMode, bOptions,
-                sourceFilename, outputFilename, openclCXX);
+            int error = invoke_offline_compiler(device, deviceAddrSpaceSize,
+                                                compilationMode, bOptions,
+                                                sourceFilename, outputFilename);
             if (error != CL_SUCCESS) return error;
 
-            // read output file
+            // open output file for reading
             ifs.open(outputFilename.c_str(), std::ios::binary);
             if (!ifs.good())
             {
@@ -614,14 +540,33 @@ static int get_offline_compiler_output(
             }
         }
     }
+
+    if (compilationMode == kSpir_v && !gDisableSPIRVValidation)
+    {
+        std::string runString = gSPIRVValidator + " " + outputFilename;
+
+        int returnCode = system(runString.c_str());
+        if (returnCode == -1)
+        {
+            log_error("Error: failed to invoke SPIR-V validator\n");
+            return CL_COMPILE_PROGRAM_FAILURE;
+        }
+        else if (returnCode != 0)
+        {
+            log_error(
+                "Failed to validate SPIR-V file %s: system() returned 0x%x\n",
+                outputFilename.c_str(), returnCode);
+            return CL_COMPILE_PROGRAM_FAILURE;
+        }
+    }
+
     return CL_SUCCESS;
 }
 
 static int create_single_kernel_helper_create_program_offline(
     cl_context context, cl_device_id device, cl_program *outProgram,
     unsigned int numKernelLines, const char *const *kernelProgram,
-    const char *buildOptions, const bool openclCXX,
-    CompilationMode compilationMode)
+    const char *buildOptions, CompilationMode compilationMode)
 {
     if (kCacheModeDumpCl == gCompilationCacheMode)
     {
@@ -649,24 +594,12 @@ static int create_single_kernel_helper_create_program_offline(
 
     std::ifstream ifs;
     error = get_offline_compiler_output(ifs, device, device_address_space_size,
-                                        openclCXX, compilationMode, bOptions,
+                                        compilationMode, bOptions,
                                         gCompilationCachePath, kernelName);
     if (error != CL_SUCCESS) return error;
 
-// -----------------------------------------------------------------------------------
-// ------------- ONLY FOR OPENCL 22 CONFORMANCE TEST 22 DEVELOPMENT
-// ------------------
-// -----------------------------------------------------------------------------------
-// Only OpenCL C++ to SPIR-V compilation
-#if defined(DEVELOPMENT) && defined(ONLY_SPIRV_COMPILATION)
-    if (openclCXX)
-    {
-        return CL_SUCCESS;
-    }
-#endif
-
     ifs.seekg(0, ifs.end);
-    int length = ifs.tellg();
+    size_t length = static_cast<size_t>(ifs.tellg());
     ifs.seekg(0, ifs.beg);
 
     // treat modifiedProgram as input for clCreateProgramWithBinary
@@ -748,8 +681,7 @@ static int create_single_kernel_helper_create_program_offline(
 static int create_single_kernel_helper_create_program(
     cl_context context, cl_device_id device, cl_program *outProgram,
     unsigned int numKernelLines, const char **kernelProgram,
-    const char *buildOptions, const bool openclCXX,
-    CompilationMode compilationMode)
+    const char *buildOptions, CompilationMode compilationMode)
 {
     std::lock_guard<std::mutex> compiler_lock(gCompilerMutex);
 
@@ -787,37 +719,39 @@ static int create_single_kernel_helper_create_program(
     {
         return create_single_kernel_helper_create_program_offline(
             context, device, outProgram, numKernelLines, kernelProgram,
-            buildOptions, openclCXX, compilationMode);
+            buildOptions, compilationMode);
     }
 }
 
-int create_single_kernel_helper_create_program(
-    cl_context context, cl_program *outProgram, unsigned int numKernelLines,
-    const char **kernelProgram, const char *buildOptions, const bool openclCXX)
+int create_single_kernel_helper_create_program(cl_context context,
+                                               cl_program *outProgram,
+                                               unsigned int numKernelLines,
+                                               const char **kernelProgram,
+                                               const char *buildOptions)
 {
     return create_single_kernel_helper_create_program(
         context, NULL, outProgram, numKernelLines, kernelProgram, buildOptions,
-        openclCXX, gCompilationMode);
+        gCompilationMode);
 }
 
 int create_single_kernel_helper_create_program_for_device(
     cl_context context, cl_device_id device, cl_program *outProgram,
     unsigned int numKernelLines, const char **kernelProgram,
-    const char *buildOptions, const bool openclCXX)
+    const char *buildOptions)
 {
     return create_single_kernel_helper_create_program(
         context, device, outProgram, numKernelLines, kernelProgram,
-        buildOptions, openclCXX, gCompilationMode);
+        buildOptions, gCompilationMode);
 }
 
 int create_single_kernel_helper_with_build_options(
     cl_context context, cl_program *outProgram, cl_kernel *outKernel,
     unsigned int numKernelLines, const char **kernelProgram,
-    const char *kernelName, const char *buildOptions, const bool openclCXX)
+    const char *kernelName, const char *buildOptions)
 {
     return create_single_kernel_helper(context, outProgram, outKernel,
                                        numKernelLines, kernelProgram,
-                                       kernelName, buildOptions, openclCXX);
+                                       kernelName, buildOptions);
 }
 
 // Creates and builds OpenCL C/C++ program, and creates a kernel
@@ -826,7 +760,7 @@ int create_single_kernel_helper(cl_context context, cl_program *outProgram,
                                 unsigned int numKernelLines,
                                 const char **kernelProgram,
                                 const char *kernelName,
-                                const char *buildOptions, const bool openclCXX)
+                                const char *buildOptions)
 {
     // For the logic that automatically adds -cl-std it is much cleaner if the
     // build options have RAII. This buffer will store the potentially updated
@@ -865,51 +799,14 @@ int create_single_kernel_helper(cl_context context, cl_program *outProgram,
         build_options_internal += cl_std;
         buildOptions = build_options_internal.c_str();
     }
-    int error;
-    // Create OpenCL C++ program
-    if (openclCXX)
+    int error = create_single_kernel_helper_create_program(
+        context, outProgram, numKernelLines, kernelProgram, buildOptions);
+    if (error != CL_SUCCESS)
     {
-// -----------------------------------------------------------------------------------
-// ------------- ONLY FOR OPENCL 22 CONFORMANCE TEST 22 DEVELOPMENT
-// ------------------
-// -----------------------------------------------------------------------------------
-// Only OpenCL C++ to SPIR-V compilation
-#if defined(DEVELOPMENT) && defined(ONLY_SPIRV_COMPILATION)
-        // Save global variable
-        bool tempgCompilationCacheMode = gCompilationCacheMode;
-        // Force OpenCL C++ -> SPIR-V compilation on every run
-        gCompilationCacheMode = kCacheModeOverwrite;
-#endif
-        error = create_openclcpp_program(context, outProgram, numKernelLines,
-                                         kernelProgram, buildOptions);
-        if (error != CL_SUCCESS)
-        {
-            log_error("Create program failed: %d, line: %d\n", error, __LINE__);
-            return error;
-        }
-// -----------------------------------------------------------------------------------
-// ------------- ONLY FOR OPENCL 22 CONFORMANCE TEST 22 DEVELOPMENT
-// ------------------
-// -----------------------------------------------------------------------------------
-#if defined(DEVELOPMENT) && defined(ONLY_SPIRV_COMPILATION)
-        // Restore global variables
-        gCompilationCacheMode = tempgCompilationCacheMode;
-        log_info("WARNING: KERNEL %s WAS ONLY COMPILED TO SPIR-V\n",
-                 kernelName);
+        log_error("Create program failed: %d, line: %d\n", error, __LINE__);
         return error;
-#endif
     }
-    // Create OpenCL C program
-    else
-    {
-        error = create_single_kernel_helper_create_program(
-            context, outProgram, numKernelLines, kernelProgram, buildOptions);
-        if (error != CL_SUCCESS)
-        {
-            log_error("Create program failed: %d, line: %d\n", error, __LINE__);
-            return error;
-        }
-    }
+
     // Remove offline-compiler-only build options
     std::string newBuildOptions;
     if (buildOptions != NULL)
@@ -928,18 +825,6 @@ int create_single_kernel_helper(cl_context context, cl_program *outProgram,
     return build_program_create_kernel_helper(
         context, outProgram, outKernel, numKernelLines, kernelProgram,
         kernelName, newBuildOptions.c_str());
-}
-
-// Creates OpenCL C++ program
-int create_openclcpp_program(cl_context context, cl_program *outProgram,
-                             unsigned int numKernelLines,
-                             const char **kernelProgram,
-                             const char *buildOptions)
-{
-    // Create program
-    return create_single_kernel_helper_create_program(
-        context, NULL, outProgram, numKernelLines, kernelProgram, buildOptions,
-        true, kSpir_v);
 }
 
 // Builds OpenCL C/C++ program and creates
@@ -1361,7 +1246,7 @@ int is_image_format_supported(cl_context context, cl_mem_flags flags,
     list = (cl_image_format *)malloc(count * sizeof(cl_image_format));
     if (NULL == list)
     {
-        log_error("Error: unable to allocate %ld byte buffer for image format "
+        log_error("Error: unable to allocate %zu byte buffer for image format "
                   "list at %s:%d (err = %d)\n",
                   count * sizeof(cl_image_format), __FILE__, __LINE__, err);
         return 0;
@@ -1776,8 +1661,10 @@ Version get_device_latest_cl_c_version(cl_device_id device)
         Version max_supported_cl_c_version{};
         for (const auto &name_version : name_versions)
         {
-            Version current_version{ CL_VERSION_MAJOR(name_version.version),
-                                     CL_VERSION_MINOR(name_version.version) };
+            Version current_version{
+                static_cast<int>(CL_VERSION_MAJOR(name_version.version)),
+                static_cast<int>(CL_VERSION_MINOR(name_version.version))
+            };
             max_supported_cl_c_version =
                 (current_version > max_supported_cl_c_version)
                 ? current_version
@@ -1822,7 +1709,7 @@ Version get_max_OpenCL_C_for_context(cl_context context)
                       else
                       {
                           current_version =
-                              (std::min)(device_version, current_version);
+                              std::min(device_version, current_version);
                       }
                   });
     return current_version;
@@ -1860,8 +1747,10 @@ bool device_supports_cl_c_version(cl_device_id device, Version version)
 
         for (const auto &name_version : name_versions)
         {
-            Version current_version{ CL_VERSION_MAJOR(name_version.version),
-                                     CL_VERSION_MINOR(name_version.version) };
+            Version current_version{
+                static_cast<int>(CL_VERSION_MAJOR(name_version.version)),
+                static_cast<int>(CL_VERSION_MINOR(name_version.version))
+            };
             if (current_version == version)
             {
                 return true;
@@ -1890,4 +1779,27 @@ bool poll_until(unsigned timeout_ms, unsigned interval_ms,
     }
 
     return ret;
+}
+
+bool device_supports_double(cl_device_id device)
+{
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        return true;
+    }
+    else
+    {
+        cl_device_fp_config double_fp_config;
+        cl_int err = clGetDeviceInfo(device, CL_DEVICE_DOUBLE_FP_CONFIG,
+                                     sizeof(double_fp_config),
+                                     &double_fp_config, nullptr);
+        test_error(err,
+                   "clGetDeviceInfo for CL_DEVICE_DOUBLE_FP_CONFIG failed");
+        return double_fp_config != 0;
+    }
+}
+
+bool device_supports_half(cl_device_id device)
+{
+    return is_extension_available(device, "cl_khr_fp16");
 }

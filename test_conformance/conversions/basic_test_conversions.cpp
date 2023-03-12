@@ -678,7 +678,8 @@ static void uint2short( void *out, void *in){ ((short*) out)[0] = ((cl_uint*) in
 static void uint2int( void *out, void *in){ ((cl_int*) out)[0] = ((cl_uint*) in)[0]; }
 static void uint2float( void *out, void *in)
 {
-    cl_uint l = ((cl_uint*) in)[0];
+    // Use volatile to prevent optimization by Clang compiler
+    volatile cl_uint l = ((cl_uint *)in)[0];
     ((float*) out)[0] = (l == 0 ? 0.0f : (float) l);        // Per IEEE-754-2008 5.4.1, 0's always convert to +0.0
 }
 static void uint2double( void *out, void *in)
@@ -695,7 +696,8 @@ static void int2short( void *out, void *in){ ((cl_short*) out)[0] = ((cl_int*) i
 static void int2uint( void *out, void *in){ ((cl_uint*) out)[0] = ((cl_int*) in)[0]; }
 static void int2float( void *out, void *in)
 {
-    cl_int l = ((cl_int*) in)[0];
+    // Use volatile to prevent optimization by Clang compiler
+    volatile cl_int l = ((cl_int *)in)[0];
     ((float*) out)[0] = (l == 0 ? 0.0f : (float) l);        // Per IEEE-754-2008 5.4.1, 0's always convert to +0.0
 }
 static void int2double( void *out, void *in)
@@ -791,7 +793,8 @@ static void ulong2double( void *out, void *in)
 #endif
     ((double*) out)[0] = (l == 0 ? 0.0 : (((cl_long)l < 0) ? result * 2.0 : result));
 #else
-    cl_ulong l = ((cl_ulong*) in)[0];
+    // Use volatile to prevent optimization by Clang compiler
+    volatile cl_ulong l = ((cl_ulong *)in)[0];
     ((double*) out)[0] = (l == 0 ? 0.0 : (double) l);      // Per IEEE-754-2008 5.4.1, 0's always convert to +0.0
 #endif
 }

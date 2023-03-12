@@ -128,7 +128,6 @@ int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_que
   cl_mem_migration_flags *flagsA, *flagsB, *flagsC;
   cl_device_partition_property property[] = {CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, 0, 0};
   cl_mem *imageA, *imageB, *imageC;
-  cl_mem_flags flags;
   cl_image_format format;
   cl_sampler sampler = NULL;
   cl_program program = NULL;
@@ -345,9 +344,9 @@ int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_que
             }
 
             if ((err = clEnqueueNDRangeKernel(queues[i], kernel, 2, NULL, wgs, wls, 0, NULL, NULL)) != CL_SUCCESS) {
-              print_error(err, "Failed enqueueing the NDRange kernel.");
-              failed = 1;
-              goto cleanup;
+                print_error(err, "Failed enqueuing the NDRange kernel.");
+                failed = 1;
+                goto cleanup;
             }
           }
           // Verify the results as long as neither input is an undefined migration

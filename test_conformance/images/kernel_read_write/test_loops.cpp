@@ -84,7 +84,7 @@ int test_read_image_type(cl_device_id device, cl_context context,
     // of operations for linear filtering on the GPU.  We do not test linear
     // filtering for the CL_RGB CL_UNORM_INT_101010 image format; however, we
     // test it internally for a set of other image formats.
-    if ((gDeviceType == CL_DEVICE_TYPE_GPU)
+    if ((gDeviceType & CL_DEVICE_TYPE_GPU)
         && (imageSampler->filter_mode == CL_FILTER_LINEAR)
         && (format->image_channel_order == CL_RGB)
         && (format->image_channel_data_type == CL_UNORM_INT_101010))

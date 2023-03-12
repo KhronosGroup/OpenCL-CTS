@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -79,7 +79,6 @@ static int s_wimpy_reduction_factor = 256;
 // sub tests which is for each individual test.  The following
 // tracks the subtests
 int s_test_cnt = 0;
-int s_test_fail = 0;
 
 //-----------------------------------------
 // Static helper functions
@@ -173,8 +172,6 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
     char ctypename[32];
     char extension[128] = "";
     int  err = 0;
-
-    int i; // generic, re-usable loop variable
 
     const char *source[] = {
         extension,
@@ -297,7 +294,8 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
 static int doTest(cl_command_queue queue, cl_context context, Type stype, Type cmptype, cl_device_id device)
 {
     int err = CL_SUCCESS;
-    MTdata    d;
+    int s_test_fail = 0;
+    MTdataHolder d;
     const size_t element_count[VECTOR_SIZE_COUNT] = { 1, 2, 3, 4, 8, 16 };
     cl_mem src1 = NULL;
     cl_mem src2 = NULL;
@@ -370,7 +368,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         cmp_stride = block_elements * step * (0xffffffffffffffffULL / 0x100000000ULL + 1);
 
     log_info("Testing...");
-    d = init_genrand( gRandomSeed );
+    d = MTdataHolder(gRandomSeed);
     uint64_t i;
     for (i=0; i < blocks; i+=step)
     {
@@ -462,12 +460,16 @@ exit:
     if( ref )   free(ref );
     if( sref )  free(sref );
 
-    free_mtdata(d);
     for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; vecsize++) {
         clReleaseKernel(kernels[vecsize]);
         clReleaseProgram(programs[vecsize]);
     }
     ++s_test_cnt;
+    if (s_test_fail)
+    {
+        err = TEST_FAIL;
+        gFailCount++;
+    }
     return err;
 }
 
@@ -636,7 +638,6 @@ int main(int argc, const char* argv[])
         s_wimpy_mode = true;
     }
 
-    log_info( "Test binary built %s %s\n", __DATE__, __TIME__ );
     if (s_wimpy_mode) {
         log_info("\n");
         log_info("*** WARNING: Testing in Wimpy mode!                     ***\n");
@@ -665,4 +666,3 @@ static void printUsage( void )
         log_info( "\t%s\n", test_list[i].name );
     }
 }
-

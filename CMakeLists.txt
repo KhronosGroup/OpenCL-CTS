@@ -10,12 +10,6 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(CMAKE_BUILD_TYPE STREQUAL "release")
-    set (BUILD_FLAVOR "release")
-else(CMAKE_BUILD_TYPE STREQUAL "release")
-    set (BUILD_FLAVOR "debug")
-endif(CMAKE_BUILD_TYPE STREQUAL "release")
-
 add_definitions(-DCL_TARGET_OPENCL_VERSION=300)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_2_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_1_APIS=1)
@@ -29,14 +23,6 @@ if(USE_CL_EXPERIMENTAL)
   add_definitions(-DCL_EXPERIMENTAL)
 endif(USE_CL_EXPERIMENTAL)
 
-# Support both VS2008 and VS2012.
-set(BUILD_DIR "$ENV{ADRENO_DRIVER}/build")
-if(MSVC90)
-  set(VS_BUILD_DIR "${BUILD_DIR}/vs2008")
-else(MSVC110)
-  set(VS_BUILD_DIR "${BUILD_DIR}/vs2012")
-endif(MSVC90)
-
 #-----------------------------------------------------------
 # Default Configurable Test Set
 #-----------------------------------------------------------
@@ -44,6 +30,7 @@ option(D3D10_IS_SUPPORTED "Run DirectX 10 interop tests" OFF)
 option(D3D11_IS_SUPPORTED "Run DirectX 11 interop tests" OFF)
 option(GL_IS_SUPPORTED "Run OpenGL interop tests" OFF)
 option(GLES_IS_SUPPORTED "Run OpenGL ES interop tests" OFF)
+option(VULKAN_IS_SUPPORTED "Run Vulkan interop tests" OFF)
 
 
 #-----------------------------------------------------------
@@ -62,58 +49,13 @@ set(CONFORMANCE_SUFFIX "" )
 #build driver as a dependency of the conformance tests, or other such CMake customization
 include(CMakeVendor.txt OPTIONAL)
 
-#-----------------------------------------------------------
-# Development options for OpenCL C++ tests
-#-----------------------------------------------------------
-# Use OpenCL C kernels instead of OpenCL C++ kernels
-option(CLPP_DEVELOPMENT_USE_OPENCLC_KERNELS "Use OpenCL C kernels in OpenCL C++ tests" OFF)
-if(CLPP_DEVELOPMENT_USE_OPENCLC_KERNELS)
-  set(CLPP_DEVELOPMENT_OPTIONS ${CLPP_DEVELOPMENT_OPTIONS} -DCLPP_DEVELOPMENT_USE_OPENCLC_KERNELS)
-endif(CLPP_DEVELOPMENT_USE_OPENCLC_KERNELS)
-# Only check if OpenCL C++ kernels compile to SPIR-V
-option(CLPP_DEVELOPMENT_ONLY_SPIRV_COMPILATION "Only check if OpenCL C++ kernels compile to SPIR-V" OFF)
-if(CLPP_DEVELOPMENT_ONLY_SPIRV_COMPILATION)
-  if(CLPP_DEVELOPMENT_USE_OPENCLC_KERNELS)
-    message(FATAL_ERROR "Can't use OpenCL C kernels and compile to SPIR-V.")
-  endif(CLPP_DEVELOPMENT_USE_OPENCLC_KERNELS)
-  set(CLPP_DEVELOPMENT_OPTIONS ${CLPP_DEVELOPMENT_OPTIONS} -DCLPP_DEVELOPMENT_ONLY_SPIRV_COMPILATION)
-endif(CLPP_DEVELOPMENT_ONLY_SPIRV_COMPILATION)
-#
-if(CLPP_DEVELOPMENT_OPTIONS)
-  add_definitions(-DCLPP_DEVELOPMENT_OPTIONS)
-  add_definitions(${CLPP_DEVELOPMENT_OPTIONS})
-endif(CLPP_DEVELOPMENT_OPTIONS)
-
-# Offline OpenCL C/C++ compiler provided by Khronos is the only supported
-# offline compiler.
-#
-# Path to offline OpenCL C/C++ compiler provided by Khronos.
-# See https://github.com/KhronosGroup/SPIR/ (spirv-1.1 branch or newer SPIR-V-ready
-# branch should be used).
-if(KHRONOS_OFFLINE_COMPILER)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DKHRONOS_OFFLINE_COMPILER=${KHRONOS_OFFLINE_COMPILER}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKHRONOS_OFFLINE_COMPILER=${KHRONOS_OFFLINE_COMPILER}")
-    # Additional OpenCL C/C++ compiler option.
-    if(KHRONOS_OFFLINE_COMPILER_OPTIONS)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DKHRONOS_OFFLINE_COMPILER_OPTIONS=${KHRONOS_OFFLINE_COMPILER_OPTIONS}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKHRONOS_OFFLINE_COMPILER_OPTIONS=${KHRONOS_OFFLINE_COMPILER_OPTIONS}")
-    endif(KHRONOS_OFFLINE_COMPILER_OPTIONS)
-else(KHRONOS_OFFLINE_COMPILER)
-    message(WARNING "KHRONOS_OFFLINE_COMPILER is not defined!")
-    message(WARNING "Running CL C++ tests will not be possible.")
-endif(KHRONOS_OFFLINE_COMPILER)
-
-# CL_LIBCLCXX_DIR - path to dir with OpenCL C++ STL (libclcxx)
 # CL_INCLUDE_DIR - path to dir with OpenCL headers
-# CL_LIBCLCXX_DIR - path to dir with OpenCL library
-if(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
+if(CL_INCLUDE_DIR AND CL_LIB_DIR)
     link_directories(${CL_LIB_DIR})
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCL_LIBCLCXX_DIR=${CL_LIBCLCXX_DIR}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCL_LIBCLCXX_DIR=${CL_LIBCLCXX_DIR}")
-else(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
+else(CL_INCLUDE_DIR AND CL_LIB_DIR)
     message(STATUS "OpenCL hasn't been found!")
-    message(FATAL_ERROR "Either install OpenCL or pass -DCL_INCLUDE_DIR, -DCL_LIB_DIR and -DCL_LIBCLCXX_DIR")
-endif(CL_INCLUDE_DIR AND CL_LIB_DIR AND CL_LIBCLCXX_DIR)
+    message(FATAL_ERROR "Either install OpenCL or pass -DCL_INCLUDE_DIR and -DCL_LIB_DIR")
+endif(CL_INCLUDE_DIR AND CL_LIB_DIR)
 
 # CLConform_GL_LIBRARIES_DIR - path to OpenGL libraries
 if(GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
@@ -147,14 +89,15 @@ macro(add_cxx_flag_if_supported flag)
 endmacro(add_cxx_flag_if_supported)
 
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    add_cxx_flag_if_supported(-Wmisleading-indentation)
+    add_cxx_flag_if_supported(-Wunused-function)
+    add_cxx_flag_if_supported(-Wunused-variable)
     add_cxx_flag_if_supported(-Wno-narrowing)
     add_cxx_flag_if_supported(-Wno-format)
     add_cxx_flag_if_supported(-Werror)
     add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive
-    add_cxx_flag_if_supported(-Wno-error=absolute-value) # Issue 783
     add_cxx_flag_if_supported(-Wno-error=unknown-pragmas) # Issue #785
     add_cxx_flag_if_supported(-Wno-error=asm-operand-widths) # Issue #784
-    add_cxx_flag_if_supported(-Wno-error=overflow) # Fixed by #699
 
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float
@@ -172,9 +115,30 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
 endif()
 
+# Set a module's COMPILE_FLAGS if using gcc or clang.
+macro(set_gnulike_module_compile_flags flags)
+    if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+        SET_SOURCE_FILES_PROPERTIES(
+            ${${MODULE_NAME}_SOURCES}
+            PROPERTIES
+            COMPILE_FLAGS ${flags}
+        )
+    endif()
+endmacro(set_gnulike_module_compile_flags)
+
+# Xcode 14.1 deprecated functions such as sprintf.
+# Suppress such warnings for now, see Issue #1626
+if(APPLE)
+    add_cxx_flag_if_supported(-Wno-deprecated-declarations)
+endif(APPLE)
+
 if(MSVC)
     # Don't warn when using standard non-secure functions.
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    # Don't warn about using the portable "strdup" function.
+    add_compile_definitions(_CRT_NONSTDC_NO_DEPRECATE)
+    # Fix std::min and std::max handling with windows.harness.
+    add_compile_definitions(NOMINMAX)
 endif()
 
 if( WIN32 AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )
@@ -197,10 +161,6 @@ if(LINK_PTHREAD)
     list(APPEND CLConform_LIBRARIES pthread)
 endif()
 
-if(DEFINED USE_GLES3)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLES3")
-endif()
-
 if(APPLE)
     find_library(corefoundation CoreFoundation)
     find_library(iokit IOKit)
@@ -214,39 +174,5 @@ include_directories(${CLConform_SOURCE_DIR}/test_common/harness
                     ${CLConform_SOURCE_DIR}/test_common/gl
                     ${CLConform_SOURCE_DIR}/test_common)
 
-if(CMAKE_BUILD_TYPE STREQUAL "release")
-    set (BUILD_FLAVOR "release")
-elseif (CMAKE_BUILD_TYPE STREQUAL "debug")
-    set (BUILD_FLAVOR "debug")
-endif(CMAKE_BUILD_TYPE STREQUAL "release")
-
-
 add_subdirectory(test_common)
 add_subdirectory(test_conformance)
-add_subdirectory(test_extensions)
-
-# Support both VS2008 and VS2012.
-set (DLL_FILES "${VS_BUILD_DIR}/Debug/*.dll")
-set (DST_DIR   "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/")
-
-if (WIN32)
-    set (COPY "echo")
-    add_custom_target(COPY_DLL${CONFORMANCE_SUFFIX} ALL
-                      COMMAND ${COPY} "${DLL_FILES}" "${DST_DIR}"
-                      COMMENT "Copying dll files.. ")
-else (WIN32)
-    set (COPY cp)
-    add_custom_target(COPY_DLL${CONFORMANCE_SUFFIX})
-endif(WIN32)
-
-set_property(TARGET COPY_DLL${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
-
-if(WIN32)
-  add_custom_target( COPY_FILES${CONFORMANCE_SUFFIX} ALL
-                     COMMAND ${COPY} ${DLL_FILES} ${DST_DIR}
-                     COMMENT "Copying other files to output folder..." )
-else(WIN32)
-  add_custom_target( COPY_FILES${CONFORMANCE_SUFFIX} )
-endif(WIN32)
-
-set_property(TARGET COPY_FILES${CONFORMANCE_SUFFIX} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")

@@ -56,17 +56,13 @@ static int vlog_win32(const char *format, ...);
 #define vlog printf
 #endif
 
-#define ct_assert(b) ct_assert_i(b, __LINE__)
-#define ct_assert_i(b, line) ct_assert_ii(b, line)
-#define ct_assert_ii(b, line)                                                  \
-    int _compile_time_assertion_on_line_##line[b ? 1 : -1];
-
 #define test_fail(msg, ...)                                                    \
     {                                                                          \
         log_error(msg, ##__VA_ARGS__);                                         \
         return TEST_FAIL;                                                      \
     }
 #define test_error(errCode, msg) test_error_ret(errCode, msg, errCode)
+#define test_error_fail(errCode, msg) test_error_ret(errCode, msg, TEST_FAIL)
 #define test_error_ret(errCode, msg, retValue)                                 \
     {                                                                          \
         auto errCodeResult = errCode;                                          \
@@ -96,21 +92,6 @@ static int vlog_win32(const char *format, ...);
     log_missing_feature("ERROR: Subtest %s tests a feature not supported by "  \
                         "the device version! (from %s:%d)\n",                  \
                         msg, __FILE__, __LINE__);
-
-#define test_missing_support_offline_cmpiler(errCode, msg)                     \
-    test_missing_support_offline_cmpiler_ret(errCode, msg, errCode)
-// this macro should always return CL_SUCCESS, but print the skip message on
-// test not supported with offline compiler
-#define test_missing_support_offline_cmpiler_ret(errCode, msg, retValue)       \
-    {                                                                          \
-        if (errCode != CL_SUCCESS)                                             \
-        {                                                                      \
-            log_info("INFO: Subtest %s tests is not supported in offline "     \
-                     "compiler execution path! (from %s:%d)\n",                \
-                     msg, __FILE__, __LINE__);                                 \
-            return TEST_SKIP;                                                  \
-        }                                                                      \
-    }
 
 // expected error code vs. what we got
 #define test_failure_error(errCode, expectedErrCode, msg)                      \
@@ -172,6 +153,21 @@ static int vlog_win32(const char *format, ...);
         }                                                                      \
     } while (0)
 
+#define test_assert_event_status(comparison_operator, event)                   \
+    do                                                                         \
+    {                                                                          \
+        cl_int status;                                                         \
+        cl_int err = clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS,  \
+                                    sizeof(status), &status, nullptr);         \
+        test_error(err, "Could not get " #event " info");                      \
+        test_assert_error(status comparison_operator CL_COMPLETE,              \
+                          "Unexpected status for " #event);                    \
+    } while (false)
+
+#define test_assert_event_inprogress(event) test_assert_event_status(>, event)
+#define test_assert_event_terminated(event) test_assert_event_status(<, event)
+#define test_assert_event_complete(event) test_assert_event_status(==, event)
+
 extern const char *IGetErrorString(int clErrorCode);
 
 extern float Ulp_Error_Half(cl_half test, float reference);
@@ -186,8 +182,7 @@ extern const char *GetAddressModeName(cl_addressing_mode mode);
 extern const char *GetQueuePropertyName(cl_command_queue_properties properties);
 
 extern const char *GetDeviceTypeName(cl_device_type type);
-int check_functions_for_offline_compiler(const char *subtestname,
-                                         cl_device_id device);
+bool check_functions_for_offline_compiler(const char *subtestname);
 cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
                        cl_device_id *device_list);
 

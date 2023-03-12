@@ -63,7 +63,7 @@ typedef struct
     bool normalized_coords;
 } image_sampler_data;
 
-int round_to_even(float v);
+cl_int round_to_even(float v);
 
 #define NORMALIZE(v, max) (v < 0 ? 0 : (v > 1.f ? max : round_to_even(v * max)))
 #define NORMALIZE_UNROUNDED(v, max) (v < 0 ? 0 : (v > 1.f ? max : v * max))
@@ -133,6 +133,14 @@ typedef struct
 {
     float p[4];
 } FloatPixel;
+
+void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
+                                        const char *destPixel,
+                                        image_descriptor *imageInfo, size_t y,
+                                        size_t thirdDim);
+
+size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
+                         const char *bPtr);
 
 void get_max_sizes(size_t *numberOfSizes, const int maxNumberOfSizes,
                    size_t sizes[][3], size_t maxWidth, size_t maxHeight,
@@ -474,6 +482,13 @@ void read_image_pixel(void *imageData, image_descriptor *imageInfo, int x,
         outData[2] = tempData[3];
         outData[3] = tempData[0];
     }
+    else if (format->image_channel_order == CL_ABGR)
+    {
+        outData[0] = tempData[3];
+        outData[1] = tempData[2];
+        outData[2] = tempData[1];
+        outData[3] = tempData[0];
+    }
     else if ((format->image_channel_order == CL_BGRA)
              || (format->image_channel_order == CL_sBGRA))
     {
@@ -484,12 +499,14 @@ void read_image_pixel(void *imageData, image_descriptor *imageInfo, int x,
     }
     else if (format->image_channel_order == CL_INTENSITY)
     {
+        outData[0] = tempData[0];
         outData[1] = tempData[0];
         outData[2] = tempData[0];
         outData[3] = tempData[0];
     }
     else if (format->image_channel_order == CL_LUMINANCE)
     {
+        outData[0] = tempData[0];
         outData[1] = tempData[0];
         outData[2] = tempData[0];
     }

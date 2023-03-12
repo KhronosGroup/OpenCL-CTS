@@ -11,6 +11,10 @@ set(${MODULE_NAME}_SOURCES
     test_unary_ops.cpp
     verification_and_generation_functions.cpp
     test_popcount.cpp
+    test_integer_dot_product.cpp
+    test_extended_bit_ops_extract.cpp
+    test_extended_bit_ops_insert.cpp
+    test_extended_bit_ops_reverse.cpp
 )
 
 include(../CMakeCommon.txt)

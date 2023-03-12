@@ -46,7 +46,7 @@ static const char *ifp_source =
     "#define INST_COUNT 0x3\n"
     "\n"
     "__kernel void\n"
-    "test_ifp(const __global int *in, __global int2 *xy, __global int *out)\n"
+    "test_ifp(const __global int *in, __global int4 *xy, __global int *out)\n"
     "{\n"
     "    __local atomic_int loc[NUM_LOC];\n"
     "\n"
@@ -225,10 +225,21 @@ void run_insts(cl_int *x, cl_int *p, int n)
 
 struct IFP
 {
-    static void gen(cl_int *x, cl_int *t, cl_int *, int ns, int nw, int ng)
+    static void log_test(const WorkGroupParams &test_params,
+                         const char *extra_text)
+    {
+        log_info("  independent forward progress...%s\n", extra_text);
+    }
+
+    static void gen(cl_int *x, cl_int *t, cl_int *,
+                    const WorkGroupParams &test_params)
     {
         int k;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
 
         // We need at least 2 sub groups per group for this test
         if (nj == 1) return;
@@ -240,16 +251,18 @@ struct IFP
         }
     }
 
-    static int chk(cl_int *x, cl_int *y, cl_int *t, cl_int *, cl_int *, int ns,
-                   int nw, int ng)
+    static test_status chk(cl_int *x, cl_int *y, cl_int *t, cl_int *, cl_int *,
+                           const WorkGroupParams &test_params)
     {
         int i, k;
+        int nw = test_params.local_workgroup_size;
+        int ns = test_params.subgroup_size;
+        int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
+        ng = ng / nw;
 
-        // We need at least 2 sub groups per group for this tes
-        if (nj == 1) return 0;
-
-        log_info("  independent forward progress...\n");
+        // We need at least 2 sub groups per group for this test
+        if (nj == 1) return TEST_SKIPPED_ITSELF;
 
         for (k = 0; k < ng; ++k)
         {
@@ -261,28 +274,31 @@ struct IFP
                     log_error(
                         "ERROR: mismatch at element %d in work group %d\n", i,
                         k);
-                    return -1;
+                    return TEST_FAIL;
                 }
             }
             x += nj * (NUM_LOC + 1);
             y += NUM_LOC;
         }
 
-        return 0;
+        return TEST_PASS;
     }
 };
 
 int test_ifp(cl_device_id device, cl_context context, cl_command_queue queue,
              int num_elements, bool useCoreSubgroups)
 {
-    int error;
+    int error = TEST_PASS;
 
+    // Global/local work group sizes
     // Adjust these individually below if desired/needed
-#define G 2000
-#define L 200
-    error = test<cl_int, IFP, G, L>::run(device, context, queue, num_elements,
-                                         "test_ifp", ifp_source, NUM_LOC + 1,
-                                         useCoreSubgroups);
+    constexpr size_t global_work_size = 2000;
+    constexpr size_t local_work_size = 200;
+    WorkGroupParams test_params(global_work_size, local_work_size);
+    test_params.use_core_subgroups = useCoreSubgroups;
+    test_params.dynsc = NUM_LOC + 1;
+    error = test<cl_int, IFP>::run(device, context, queue, num_elements,
+                                   "test_ifp", ifp_source, test_params);
     return error;
 }
 
@@ -348,17 +364,21 @@ int test_ifp_ext(cl_device_id device, cl_context context,
     }
     // ifp only in subgroup functions tests:
     test_status error;
-    error = checkIFPSupport(device, ifpSupport);
-    if (error != TEST_PASS)
+    auto device_cl_version = get_device_cl_version(device);
+    if (device_cl_version >= Version(2, 1))
     {
-        return error;
-    }
-    if (ifpSupport == false)
-    {
-        log_info(
-            "Error reason: the extension cl_khr_subgroups requires that "
-            "Independed forward progress has to be supported by device.\n");
-        return TEST_FAIL;
+        error = checkIFPSupport(device, ifpSupport);
+        if (error != TEST_PASS)
+        {
+            return error;
+        }
+        if (ifpSupport == false)
+        {
+            log_info(
+                "Error reason: the extension cl_khr_subgroups requires that "
+                "Independed forward progress has to be supported by device.\n");
+            return TEST_FAIL;
+        }
     }
     return test_ifp(device, context, queue, num_elements, false);
 }

@@ -100,7 +100,7 @@ int test_sub_group_info(cl_device_id device, cl_context context,
         subgroupsApiSet.clGetKernelSubGroupInfo_ptr();
     if (clGetKernelSubGroupInfo_ptr == NULL)
     {
-        log_error("ERROR: %s function not available",
+        log_error("ERROR: %s function not available\n",
                   subgroupsApiSet.clGetKernelSubGroupInfo_name);
         return TEST_FAIL;
     }
@@ -112,7 +112,7 @@ int test_sub_group_info(cl_device_id device, cl_context context,
     if (error != CL_SUCCESS)
     {
         log_error("ERROR: %s function error for "
-                  "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE",
+                  "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE\n",
                   subgroupsApiSet.clGetKernelSubGroupInfo_name);
         return TEST_FAIL;
     }
@@ -133,7 +133,7 @@ int test_sub_group_info(cl_device_id device, cl_context context,
     if (error != CL_SUCCESS)
     {
         log_error("ERROR: %s function error "
-                  "for CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE",
+                  "for CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE\n",
                   subgroupsApiSet.clGetKernelSubGroupInfo_name);
         return TEST_FAIL;
     }
