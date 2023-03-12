@@ -61,8 +61,6 @@ extern int gFastRelaxedDerived;
 extern int gWimpyMode;
 extern int gHostFill;
 extern int gIsInRTZMode;
-extern int gInfNanSupport;
-extern int gIsEmbedded;
 extern int gVerboseBruteForce;
 extern uint32_t gMaxVectorSizeIndex;
 extern uint32_t gMinVectorSizeIndex;

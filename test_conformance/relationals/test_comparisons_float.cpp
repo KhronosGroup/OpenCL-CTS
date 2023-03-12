@@ -61,7 +61,6 @@ const char *equivTestKernelPatternLessGreater_float3 =
 "}\n";
 
 typedef bool (*equivVerifyFn)( float inDataA, float inDataB );
-extern int gInfNanSupport;
 
 int IsFloatInfinity(float x)
 {
