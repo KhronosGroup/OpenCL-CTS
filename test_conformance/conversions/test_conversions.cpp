@@ -678,19 +678,6 @@ test_status InitCL(cl_device_id device)
     }
     gTestDouble &= gHasDouble;
 
-    // detect whether profile of the device is embedded
-    char profile[1024] = "";
-    if ((error = clGetDeviceInfo(device, CL_DEVICE_PROFILE, sizeof(profile),
-                                 profile, NULL)))
-    {
-    }
-    else if (strstr(profile, "EMBEDDED_PROFILE"))
-    {
-        gIsEmbedded = 1;
-        if (!is_extension_available(device, "cles_khr_int64")) gHasLong = 0;
-    }
-
-
     gContext = clCreateContext(NULL, 1, &device, notify_callback, NULL, &error);
     if (NULL == gContext || error)
     {
