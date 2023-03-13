@@ -18,6 +18,9 @@
 test_definition test_list[] = {
     ADD_TEST(mutable_command_info_device_query),
     ADD_TEST(mutable_command_info_buffer),
+    ADD_TEST(mutable_command_properties_array),
+    ADD_TEST(mutable_command_kernel),
+    ADD_TEST(mutable_command_dimensions),
     ADD_TEST(mutable_command_info_type),
     ADD_TEST(mutable_command_info_queue),
     ADD_TEST(mutable_command_info_global_work_offset),
