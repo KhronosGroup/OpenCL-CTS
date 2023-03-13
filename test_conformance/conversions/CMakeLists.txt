@@ -16,4 +16,9 @@ set_source_files_properties(
         COMPILE_FLAGS -march=i686)
 endif(NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
 
-include(../CMakeCommon.txt)
+set(${MODULE_NAME}_KERNEL_LANG clc)
+set(${MODULE_NAME}_TESTS
+conversions
+)
+
+include(../CMakeCommon.cmake)

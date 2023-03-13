@@ -22,6 +22,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <vector>
+#include <regex>
 #include "errorHelpers.h"
 #include "kernelHelpers.h"
 #include "fpcontrol.h"
@@ -145,6 +146,61 @@ void version_expected_info(const char *test_name, const char *api_name,
              "reports %s version %s)\n",
              test_name, api_name, expected_version, api_name, device_version);
 }
+cl_device_type string_to_device_type(const std::string& in)
+{
+    if (in == "default" || in == "CL_DEVICE_TYPE_DEFAULT")
+        return CL_DEVICE_TYPE_DEFAULT;
+    else if (in == "cpu" || in == "CL_DEVICE_TYPE_CPU")
+        return CL_DEVICE_TYPE_CPU;
+    else if (in == "gpu" || in == "CL_DEVICE_TYPE_GPU")
+        return CL_DEVICE_TYPE_GPU;
+    else if (in == "accelerator" || in == "CL_DEVICE_TYPE_ACCELERATOR")
+        return CL_DEVICE_TYPE_ACCELERATOR;
+    else if (in == "custom" || in == "CL_DEVICE_TYPE_CUSTOM")
+        return CL_DEVICE_TYPE_CUSTOM;
+    else if (in == "all" || in == "CL_DEVICE_TYPE_ALL")
+        return CL_DEVICE_TYPE_ALL;
+    else
+    {
+        log_error("Unknown CL_DEVICE_TYPE env variable setting: "
+                  "%s.\nAborting...\n",
+                  in.c_str());
+        abort();
+    }
+}
+#include <iostream>
+bool obtain_vars_from_ctest(std::tuple<int, int, cl_device_type>& result)
+{
+    static const std::string rg0 = "CTEST_RESOURCE_GROUP_0";
+    if (std::getenv(rg0.c_str()) == nullptr)
+        return false;
+
+    std::string rg0_type = std::getenv(rg0.c_str());
+    std::transform(
+            rg0_type.cbegin(),
+            rg0_type.cend(),
+            rg0_type.begin(),
+            // Feeding std::toupper plainly results in implicitly truncating conversions between int and char triggering warnings.
+            [](unsigned char c){ return static_cast<char>(std::toupper(c)); }
+        );
+    const std::string rg0_name(rg0 + "_" + rg0_type);
+    std::string pid_id_type = std::getenv(rg0_name.c_str());
+    const std::regex regex{"pid([0-9]+)_id([0-9]+)_(default|cpu|gpu|accelerator|custom|all)"};
+    std::smatch matches;
+
+    if(!std::regex_search(pid_id_type, matches, regex))
+        return false;
+    if(matches.size() != 4)
+        return false;
+
+    result = {
+        std::atoi(matches[1].str().c_str()),
+        std::atoi(matches[2].str().c_str()),
+        string_to_device_type(matches[3].str())
+    };
+
+    return true;
+}
 int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
                             test_definition testList[],
                             int forceNoContextCreation,
@@ -165,33 +221,26 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
 
     int err, ret;
     char *endPtr;
-    int based_on_env_var = 0;
+    bool based_on_env_var = false;
+    bool based_on_ctest = false;
 
+
+    /* Obtain variables from CTest */
+    std::tuple<int, int, cl_device_type> ctest_vars;
+    bool ctest_env_set = obtain_vars_from_ctest(ctest_vars);
 
     /* Check for environment variable to set device type */
+    if (ctest_env_set)
+    {
+        based_on_ctest = true;
+        device_type = std::get<2>(ctest_vars);
+    }
+
     char *env_mode = getenv("CL_DEVICE_TYPE");
     if (env_mode != NULL)
     {
-        based_on_env_var = 1;
-        if (strcmp(env_mode, "gpu") == 0
-            || strcmp(env_mode, "CL_DEVICE_TYPE_GPU") == 0)
-            device_type = CL_DEVICE_TYPE_GPU;
-        else if (strcmp(env_mode, "cpu") == 0
-                 || strcmp(env_mode, "CL_DEVICE_TYPE_CPU") == 0)
-            device_type = CL_DEVICE_TYPE_CPU;
-        else if (strcmp(env_mode, "accelerator") == 0
-                 || strcmp(env_mode, "CL_DEVICE_TYPE_ACCELERATOR") == 0)
-            device_type = CL_DEVICE_TYPE_ACCELERATOR;
-        else if (strcmp(env_mode, "default") == 0
-                 || strcmp(env_mode, "CL_DEVICE_TYPE_DEFAULT") == 0)
-            device_type = CL_DEVICE_TYPE_DEFAULT;
-        else
-        {
-            log_error("Unknown CL_DEVICE_TYPE env variable setting: "
-                      "%s.\nAborting...\n",
-                      env_mode);
-            abort();
-        }
+        based_on_env_var = true;
+        device_type = string_to_device_type(env_mode);
     }
 
 #if defined(__APPLE__)
@@ -208,11 +257,17 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     }
 #endif
 
+    if (ctest_env_set)
+        choosen_device_index = std::get<1>(ctest_vars);
+
     env_mode = getenv("CL_DEVICE_INDEX");
     if (env_mode != NULL)
     {
         choosen_device_index = atoi(env_mode);
     }
+
+    if (ctest_env_set)
+        choosen_platform_index = std::get<0>(ctest_vars);
 
     env_mode = getenv("CL_PLATFORM_INDEX");
     if (env_mode != NULL)
@@ -230,8 +285,18 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
 
     /* Special case: just list the tests */
     if ((argc > 1)
-        && (!strcmp(argv[1], "-list") || !strcmp(argv[1], "-h")
-            || !strcmp(argv[1], "--help")))
+        && (!strcmp(argv[1], "-l") || !strcmp(argv[1], "--list")))
+    {
+        for (int i = 0; i < testNum; i++)
+        {
+            log_info("%s\n", testList[i].name);
+        }
+        return EXIT_SUCCESS;
+    }
+
+    /* Print help */
+    if ((argc > 1)
+        && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")))
     {
         char *fileName = getenv("CL_CONFORMANCE_RESULTS_FILENAME");
 
@@ -353,8 +418,9 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
             break;
         default: log_error("Requesting unknown device "); return EXIT_FAILURE;
     }
-    log_info(based_on_env_var ? "based on environment variable "
-                              : "based on command line ");
+    if(based_on_ctest) log_info("based on CTest ");
+    else if(based_on_env_var) log_info("based on environment variable ");
+    else log_info("based on command line ");
     log_info("for platform index %d and device index %d\n",
              choosen_platform_index, choosen_device_index);
 

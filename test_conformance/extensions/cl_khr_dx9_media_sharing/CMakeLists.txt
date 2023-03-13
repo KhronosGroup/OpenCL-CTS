@@ -21,5 +21,5 @@ set_source_files_properties(
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-include(../../CMakeCommon.txt)
+include(../../CMakeCommon.cmake)
 endif(WIN32)

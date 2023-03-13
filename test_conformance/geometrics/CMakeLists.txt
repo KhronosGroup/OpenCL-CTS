@@ -6,5 +6,17 @@ set(${MODULE_NAME}_SOURCES
     test_geometrics.cpp
 )
 
-include(../CMakeCommon.txt)
+set(${MODULE_NAME}_KERNEL_LANG clc)
+set(${MODULE_NAME}_TESTS
+geom_cross
+geom_dot
+geom_distance
+geom_fast_distance
+geom_length
+geom_fast_length
+geom_normalize
+geom_fast_normalize
+)
+
+include(../CMakeCommon.cmake)
 

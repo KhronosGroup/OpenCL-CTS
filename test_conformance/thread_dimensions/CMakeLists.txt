@@ -5,4 +5,20 @@ set(${MODULE_NAME}_SOURCES
     test_thread_dimensions.cpp
 )
 
-include(../CMakeCommon.txt)
+set(${MODULE_NAME}_KERNEL_LANG clc)
+set(${MODULE_NAME}_TESTS
+quick_1d_explicit_local
+quick_2d_explicit_local
+quick_3d_explicit_local
+quick_1d_implicit_local
+quick_2d_implicit_local
+quick_3d_implicit_local
+full_1d_explicit_local
+full_2d_explicit_local
+full_3d_explicit_local
+full_1d_implicit_local
+full_2d_implicit_local
+full_3d_implicit_local
+)
+
+include(../CMakeCommon.cmake)

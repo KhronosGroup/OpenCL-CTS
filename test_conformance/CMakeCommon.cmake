@@ -1,0 +1,46 @@
+string(TOLOWER ${MODULE_NAME} MODULE_NAME_LOWER)
+
+set(${MODULE_NAME}_OUT ${CONFORMANCE_PREFIX}${MODULE_NAME_LOWER}${CONFORMANCE_SUFFIX})
+
+add_executable(${${MODULE_NAME}_OUT} ${${MODULE_NAME}_SOURCES})
+
+set_property(TARGET ${${MODULE_NAME}_OUT} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
+
+target_link_libraries(${${MODULE_NAME}_OUT} ${HARNESS_LIB} ${CLConform_LIBRARIES})
+
+include(CMakePrintHelpers)
+
+if(DEFINED ${MODULE_NAME}_TESTS)
+  query_resource_spec_devices(DEVICES)
+  foreach(DEVICE IN LISTS DEVICES)
+    query_resource_spec_lang_mode_for_device(COMPILATION_MODE ${${MODULE_NAME}_KERNEL_LANG} ${DEVICE})
+    list(APPEND TEST_ENVIRONMENT "COMPILATION_MODE=${COMPILATION_MODE}")
+    if(NOT COMPILATION_MODE STREQUAL online)
+      query_resource_spec_program_of_lang_for_device(COMPILATION_PROGRAM ${${MODULE_NAME}_KERNEL_LANG} ${DEVICE})
+      list(APPEND TEST_ENVIRONMENT "COMPILATION_PROGRAM=${COMPILATION_PROGRAM}")
+    endif()
+    foreach(SUB_TEST ${${MODULE_NAME}_TESTS})
+      list(LENGTH DEVICES DEVICES_LENGTH)
+      if(${DEVICES_LENGTH} EQUAL 1)
+        set(TEST_NAME ${MODULE_NAME_LOWER}-${SUB_TEST})
+      else()
+        set(TEST_NAME ${MODULE_NAME_LOWER}-${SUB_TEST}-${DEVICE})
+      endif()
+      add_test(
+        NAME ${TEST_NAME}
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        COMMAND "${${MODULE_NAME}_OUT}" ${SUB_TEST}
+      )
+      set_tests_properties(${TEST_NAME} PROPERTIES
+        RESOURCE_GROUPS "${DEVICE}:${OPENCL_CTS_TEST_SLOTS}"
+        ENVIRONMENT "${TEST_ENVIRONMENT}"
+        LABELS "${MODULE_NAME_LOWER};${DEVICE}"
+      )
+    endforeach()
+  unset(TEST_ENVIRONMENT)
+  endforeach()
+endif()
+
+if(DEFINED ${MODULE_NAME}_ADDITIONAL_DEFINITIONS)
+  target_compile_definitions("${${MODULE_NAME}_OUT}" PRIVATE "${${MODULE_NAME}_ADDITIONAL_DEFINITIONS}")
+endif()

@@ -8,4 +8,13 @@ set(${MODULE_NAME}_SOURCES
         pci_bus_info.cpp
 )
 
-include(../CMakeCommon.txt)
+set(${MODULE_NAME}_KERNEL_LANG clc)
+set(${MODULE_NAME}_TESTS
+computeinfo
+extended_versioning
+device_uuid
+conformance_version
+pci_bus_info
+)
+
+include(../CMakeCommon.cmake)

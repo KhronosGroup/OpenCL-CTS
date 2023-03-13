@@ -14,4 +14,4 @@ set(${MODULE_NAME}_SOURCES
     command_buffer_test_event_info.cpp
 )
 
-include(../../CMakeCommon.txt)
+include(../../CMakeCommon.cmake)

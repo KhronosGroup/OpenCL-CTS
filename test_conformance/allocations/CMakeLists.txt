@@ -8,4 +8,14 @@ set(${MODULE_NAME}_SOURCES
         allocation_utils.cpp
 )
 
-include(../CMakeCommon.txt)
+set(${MODULE_NAME}_KERNEL_LANG clc)
+set(${MODULE_NAME}_TESTS
+        buffer
+        image2d_read
+        image2d_write
+        buffer_non_blocking
+        image2d_read_non_blocking
+        image2d_write_non_blocking
+)
+
+include(../CMakeCommon.cmake)

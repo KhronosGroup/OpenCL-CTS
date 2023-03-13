@@ -10,6 +10,22 @@ set(${MODULE_NAME}_SOURCES
     tools.cpp
 )
 
-include(../CMakeCommon.txt)
+set(${MODULE_NAME}_KERNEL_LANG clc)
+set(${MODULE_NAME}_TESTS
+non_uniform_1d_basic
+non_uniform_1d_atomics
+non_uniform_1d_barriers
+non_uniform_2d_basic
+non_uniform_2d_atomics
+non_uniform_2d_barriers
+non_uniform_3d_basic
+non_uniform_3d_atomics
+non_uniform_3d_barriers
+non_uniform_other_basic
+non_uniform_other_atomics
+non_uniform_other_barriers
+)
+
+include(../CMakeCommon.cmake)
 
 # end of file #

@@ -19,4 +19,26 @@ set(${MODULE_NAME}_SOURCES
     test_subgroup_rotate.cpp
 )
 
-include(../CMakeCommon.txt)
+set(${MODULE_NAME}_KERNEL_LANG clc)
+set(${MODULE_NAME}_TESTS
+sub_group_info_ext
+sub_group_info_core
+work_item_functions_ext
+work_item_functions_core
+subgroup_functions_ext
+subgroup_functions_core
+barrier_functions_ext
+barrier_functions_core
+ifp_ext
+ifp_core
+subgroup_functions_extended_types
+subgroup_functions_non_uniform_vote
+subgroup_functions_non_uniform_arithmetic
+subgroup_functions_ballot
+subgroup_functions_clustered_reduce
+subgroup_functions_shuffle
+subgroup_functions_shuffle_relative
+subgroup_functions_rotate
+)
+
+include(../CMakeCommon.cmake)

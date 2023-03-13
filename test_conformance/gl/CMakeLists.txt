@@ -59,4 +59,4 @@ set_source_files_properties(
 # folder.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-include(../CMakeCommon.txt)
+include(../CMakeCommon.cmake)

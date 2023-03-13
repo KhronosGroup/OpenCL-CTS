@@ -23,5 +23,5 @@ set(${MODULE_NAME}_SOURCES
 # https://github.com/KhronosGroup/OpenCL-CTS/issues/1484
 set_gnulike_module_compile_flags("-Wno-error=unused-variable")
 
-include(../../CMakeCommon.txt)
+include(../../CMakeCommon.cmake)
 

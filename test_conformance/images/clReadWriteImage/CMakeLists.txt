@@ -11,5 +11,5 @@ set(${MODULE_NAME}_SOURCES
     ../common.cpp
 )
 
-include(../../CMakeCommon.txt)
+include(../../CMakeCommon.cmake)
 

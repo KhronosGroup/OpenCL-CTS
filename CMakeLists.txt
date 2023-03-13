@@ -32,6 +32,14 @@ option(GL_IS_SUPPORTED "Run OpenGL interop tests" OFF)
 option(GLES_IS_SUPPORTED "Run OpenGL ES interop tests" OFF)
 option(VULKAN_IS_SUPPORTED "Run Vulkan interop tests" OFF)
 
+#-----------------------------------------------------------
+# Configure CTest conformance testing
+#-----------------------------------------------------------
+if(EXISTS "${CTEST_RESOURCE_SPEC_FILE}")
+  cmake_minimum_required(VERSION 3.19) # string(JSON)
+  include(cmake/QueryResourceSpec.cmake)
+  set(OPENCL_CTS_TEST_SLOTS "512" CACHE STRING "MBs of storage each test is implied to use. Set this to limit the number of tests submitted to a device.")
+endif()
 
 #-----------------------------------------------------------
 # Tests prefix and suffix
@@ -173,6 +181,8 @@ include_directories(${CLConform_SOURCE_DIR}/test_common/harness
                     ${CLConform_SOURCE_DIR}/test_common/gles
                     ${CLConform_SOURCE_DIR}/test_common/gl
                     ${CLConform_SOURCE_DIR}/test_common)
+
+enable_testing()
 
 add_subdirectory(test_common)
 add_subdirectory(test_conformance)
