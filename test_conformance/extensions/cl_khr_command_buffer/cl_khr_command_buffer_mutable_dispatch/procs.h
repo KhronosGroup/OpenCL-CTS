@@ -36,12 +36,6 @@ extern int test_mutable_command_info_queue(cl_device_id device,
                                            cl_context context,
                                            cl_command_queue queue,
                                            int num_elements);
-/*
-extern int test_mutable_command_info_command_queue1(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements);
-*/
 extern int test_mutable_command_properties_array(cl_device_id device,
                                                  cl_context context,
                                                  cl_command_queue queue,

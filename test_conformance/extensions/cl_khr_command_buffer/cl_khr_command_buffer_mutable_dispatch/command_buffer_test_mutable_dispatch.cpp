@@ -29,7 +29,7 @@
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
 ////////////////////////////////////////////////////////////////////////////////
-// mutable dispatch tests which handle below cases:
+// mutable dispatch tests which handle following cases:
 //
 // CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR
 // CL_MUTABLE_COMMAND_COMMAND_QUEUE_KHR
@@ -174,7 +174,7 @@ struct InfoBuffer : public BasicMutableCommandBufferTest
 
         error = clGetMutableCommandInfoKHR(
             command, CL_MUTABLE_COMMAND_COMMAND_BUFFER_KHR,
-            sizeof(test_command_buffer), &test_command_buffer, NULL);
+            sizeof(test_command_buffer), &test_command_buffer, nullptr);
         test_error(error, "clGetMutableCommandInfoKHR failed");
 
         if (test_command_buffer != command_buffer)
