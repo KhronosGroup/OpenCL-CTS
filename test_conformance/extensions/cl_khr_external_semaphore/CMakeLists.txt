@@ -22,9 +22,6 @@ else(WIN32)
     list(APPEND CLConform_LIBRARIES vulkan dl vulkan_wrapper)
 endif(WIN32)
 set(CMAKE_CXX_FLAGS "-fpermissive")
-if(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
-endif(WIN32)
 
 include_directories("../../common/vulkan_wrapper")
 
