@@ -786,7 +786,7 @@ int test_images_read_common(cl_device_id device, cl_context context,
 
             // Note a successful format test, if we passed every size.
 
-            if (sidx == sizeof(sizes) / sizeof(sizes[0]))
+            if (sidx == nsizes)
             {
                 log_info("passed: Image read test for GL format  %s : %s : %s "
                          ": %s\n\n",
