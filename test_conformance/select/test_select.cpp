@@ -26,8 +26,6 @@
 #endif
 #endif
 #include <climits>
-#include <vector>
-#include <thread>
 #include "test_select.h"
 
 #include "harness/testHarness.h"
@@ -109,22 +107,10 @@ int int_log2(size_t value) {
 static void initSrcBuffer(void* src1, Type, MTdata d)
 {
     auto* s1 = (unsigned int *)src1;
-    int buf_size = BUFFER_SIZE / sizeof(cl_int);
-    std::vector<std::thread> threads(buf_size / 4);
+    size_t i;
 
-    for( int i = 0; i < buf_size; i+=buf_size / 4)
-    {
-        for (auto it = std::begin(threads); it != std::begin(threads);
-             ++it)
-        {
-            if(it->joinable()) {
-               it->join();
-            }
-            *it = std::thread([&]() -> void {
-                s1[it - std::begin(threads) + i] = genrand_int32(d);
-            });
-        }
-    }
+    for ( i=0 ; i < BUFFER_SIZE/sizeof(cl_int); i++)
+        s1[i]   = genrand_int32(d);
 }
 
 static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count) {
