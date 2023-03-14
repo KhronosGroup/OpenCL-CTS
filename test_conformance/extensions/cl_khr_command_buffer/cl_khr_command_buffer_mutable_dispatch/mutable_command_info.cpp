@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../basic_command_buffer.h"
-#include "../command_buffer_test_base.h"
+
 #include <extensionHelpers.h>
 #include "typeWrappers.h"
 #include "procs.h"
@@ -25,6 +24,7 @@
 #include <cstring>
 #include <algorithm>
 #include <memory>
+#include "mutable_command_basic.h"
 
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
@@ -41,91 +41,6 @@
 // CL_MUTABLE_DISPATCH_GLOBAL_WORK_SIZE_KHR
 // CL_MUTABLE_DISPATCH_LOCAL_WORK_SIZE_KHR
 // CL_MUTABLE_COMMAND_COMMAND_TYPE_KHR
-
-struct BasicMutableCommandBufferTest : BasicCommandBufferTest
-{
-    BasicMutableCommandBufferTest(cl_device_id device, cl_context context,
-                                  cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue)
-    {}
-
-    virtual cl_int SetUp(int elements) override
-    {
-        BasicCommandBufferTest::SetUp(elements);
-
-        cl_int error = init_extension_functions();
-
-        const cl_command_buffer_properties_khr props[] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR,
-            CL_COMMAND_BUFFER_MUTABLE_KHR,
-            0,
-        };
-
-        command_buffer = clCreateCommandBufferKHR(1, &queue, props, &error);
-        test_error(error, "Unable to create command buffer");
-
-        clProgramWrapper program = clCreateProgramWithSource(
-            context, 1, &kernelString, nullptr, &error);
-        test_error(error, "Unable to create program");
-
-        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-        test_error(error, "Unable to build program");
-
-        kernel = clCreateKernel(program, "empty", &error);
-        test_error(error, "Unable to create kernel");
-
-        return error;
-    }
-
-    bool Skip() override
-    {
-        bool extension_avaliable =
-            is_extension_available(device,
-                                   "cl_khr_command_buffer_mutable_dispatch")
-            == true;
-
-        cl_mutable_dispatch_fields_khr mutable_capabilities;
-
-        bool mutable_support =
-            !clGetDeviceInfo(
-                device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
-                sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
-            && (mutable_capabilities
-                & CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR)
-                != 0;
-
-        return !mutable_support || !extension_avaliable
-            || BasicCommandBufferTest::Skip();
-    }
-
-    cl_int init_extension_functions()
-    {
-        BasicCommandBufferTest::init_extension_functions();
-
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
-
-        // If it is supported get the addresses of all the APIs here.
-#define GET_EXTENSION_ADDRESS(FUNC)                                            \
-    FUNC = reinterpret_cast<FUNC##_fn>(                                        \
-        clGetExtensionFunctionAddressForPlatform(platform, #FUNC));            \
-    if (FUNC == nullptr)                                                       \
-    {                                                                          \
-        log_error("ERROR: clGetExtensionFunctionAddressForPlatform failed"     \
-                  " with " #FUNC "\n");                                        \
-        return TEST_FAIL;                                                      \
-    }
-        GET_EXTENSION_ADDRESS(clGetMutableCommandInfoKHR);
-
-        return CL_SUCCESS;
-    }
-
-    clGetMutableCommandInfoKHR_fn clGetMutableCommandInfoKHR = nullptr;
-    const char* kernelString = "__kernel void empty() {}";
-};
 
 struct InfoDeviceQuery : public BasicMutableCommandBufferTest
 {
@@ -168,8 +83,8 @@ struct InfoBuffer : public BasicMutableCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, nullptr, nullptr,
-            nullptr, 0, nullptr, nullptr, &command);
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr,
+            &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clGetMutableCommandInfoKHR(
@@ -184,7 +99,7 @@ struct InfoBuffer : public BasicMutableCommandBufferTest
             return TEST_FAIL;
         }
 
-        clFinalizeCommandBufferKHR(command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         return CL_SUCCESS;
@@ -192,6 +107,7 @@ struct InfoBuffer : public BasicMutableCommandBufferTest
 
     clCommandBufferWrapper test_command_buffer = nullptr;
     cl_mutable_command_khr command = nullptr;
+    const size_t global_work_size = 4 * sizeof(cl_int);
 };
 
 struct PropertiesArray : public BasicMutableCommandBufferTest
@@ -232,7 +148,7 @@ struct PropertiesArray : public BasicMutableCommandBufferTest
             return TEST_FAIL;
         }
 
-        clFinalizeCommandBufferKHR(command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         return CL_SUCCESS;
@@ -275,7 +191,7 @@ struct Kernel : public BasicMutableCommandBufferTest
             return TEST_FAIL;
         }
 
-        clFinalizeCommandBufferKHR(command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         return CL_SUCCESS;
@@ -315,7 +231,7 @@ struct Dimensions : public BasicMutableCommandBufferTest
             return TEST_FAIL;
         }
 
-        clFinalizeCommandBufferKHR(command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         return CL_SUCCESS;
@@ -354,7 +270,7 @@ struct InfoType : public BasicMutableCommandBufferTest
             return TEST_FAIL;
         }
 
-        clFinalizeCommandBufferKHR(command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         return CL_SUCCESS;
@@ -391,7 +307,7 @@ struct InfoQueue : public BasicMutableCommandBufferTest
             return TEST_FAIL;
         }
 
-        clFinalizeCommandBufferKHR(command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         return CL_SUCCESS;
@@ -427,7 +343,7 @@ struct InfoGlobalWorkOffset : public BasicMutableCommandBufferTest
             return TEST_FAIL;
         }
 
-        clFinalizeCommandBufferKHR(command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         return CL_SUCCESS;
@@ -465,7 +381,7 @@ struct InfoGlobalWorkSize : public BasicMutableCommandBufferTest
             return TEST_FAIL;
         }
 
-        clFinalizeCommandBufferKHR(command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         return TEST_PASS;
@@ -503,7 +419,7 @@ struct InfoLocalWorkSize : public BasicMutableCommandBufferTest
             return TEST_FAIL;
         }
 
-        clFinalizeCommandBufferKHR(command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         return CL_SUCCESS;
