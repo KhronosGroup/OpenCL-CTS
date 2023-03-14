@@ -283,7 +283,7 @@ std::string exe_path()
             exit(2);
         }; // if
 
-        if (len < path.size())
+        if (static_cast<size_t>(len) < path.size())
         {
             // We got the path.
             path.resize(len);
