@@ -390,7 +390,7 @@ int test_device_partition_type_support(cl_device_id parentDevice, const cl_devic
     } else {
         test_error_ret( err, "Unable to get device partition properties (1)", -1 );
     };
-    for ( int i = 0; i < supportedProps.size(); i++)
+    for (size_t i = 0; i < supportedProps.size(); i++)
     {
         if (supportedProps[i] == partitionType)
         {
