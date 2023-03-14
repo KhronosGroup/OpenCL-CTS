@@ -107,7 +107,6 @@ struct InfoBuffer : public BasicMutableCommandBufferTest
 
     clCommandBufferWrapper test_command_buffer = nullptr;
     cl_mutable_command_khr command = nullptr;
-    const size_t global_work_size = 4 * sizeof(cl_int);
 };
 
 struct PropertiesArray : public BasicMutableCommandBufferTest
@@ -128,8 +127,8 @@ struct PropertiesArray : public BasicMutableCommandBufferTest
         };
 
         cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, props, kernel, 1, nullptr, nullptr,
-            nullptr, 0, nullptr, nullptr, &command);
+            command_buffer, nullptr, props, kernel, 1, nullptr,
+            &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         cl_ndrange_kernel_command_properties_khr test_props[] = { 0, 0, 0 };
@@ -170,8 +169,8 @@ struct Kernel : public BasicMutableCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, nullptr, nullptr,
-            nullptr, 0, nullptr, nullptr, &command);
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr,
+            &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         clKernelWrapper test_kernel;
@@ -214,7 +213,7 @@ struct Dimensions : public BasicMutableCommandBufferTest
     {
         cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, dimensions, nullptr,
-            nullptr, nullptr, 0, nullptr, nullptr, &command);
+            &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         size_t test_dimensions;
@@ -253,8 +252,8 @@ struct InfoType : public BasicMutableCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, nullptr, nullptr,
-            nullptr, 0, nullptr, nullptr, &command);
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr,
+            &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         cl_command_type type = 0;
@@ -290,8 +289,8 @@ struct InfoQueue : public BasicMutableCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, nullptr, nullptr,
-            nullptr, 0, nullptr, nullptr, &command);
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr,
+            &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         cl_command_queue testQueue = nullptr;
@@ -329,7 +328,7 @@ struct InfoGlobalWorkOffset : public BasicMutableCommandBufferTest
     {
         cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 1, &global_work_offset,
-            nullptr, nullptr, 0, nullptr, nullptr, &command);
+            &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clGetMutableCommandInfoKHR(
@@ -388,7 +387,6 @@ struct InfoGlobalWorkSize : public BasicMutableCommandBufferTest
     }
 
     cl_mutable_command_khr command = nullptr;
-    const size_t global_work_size = 4 * sizeof(cl_int);
     size_t test_global_work_size = 0;
 };
 
@@ -404,8 +402,8 @@ struct InfoLocalWorkSize : public BasicMutableCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, nullptr, nullptr,
-            &local_work_size, 0, nullptr, nullptr, &command);
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr,
+            &global_work_size, &local_work_size, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clGetMutableCommandInfoKHR(

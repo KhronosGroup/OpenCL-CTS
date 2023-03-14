@@ -82,4 +82,5 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
 
     clGetMutableCommandInfoKHR_fn clGetMutableCommandInfoKHR = nullptr;
     const char* kernelString = "__kernel void empty() {}";
+    const size_t global_work_size = 4 * sizeof(cl_int);
 };
