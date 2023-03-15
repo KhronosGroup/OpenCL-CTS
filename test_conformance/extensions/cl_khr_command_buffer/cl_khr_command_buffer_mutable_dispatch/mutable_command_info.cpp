@@ -60,7 +60,7 @@ struct InfoDeviceQuery : public BasicMutableCommandBufferTest
             sizeof(mutable_capabilities), &mutable_capabilities, nullptr);
         test_error(error, "clGetDeviceInfo failed");
 
-        if (!(mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR))
+        if (!mutable_capabilities)
         {
             log_error("Device does not support update arguments to a "
                       "mutable-dispatch.");
@@ -76,8 +76,7 @@ struct InfoBuffer : public BasicMutableCommandBufferTest
     using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
 
     InfoBuffer(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          test_command_buffer(this)
+        : BasicMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -105,7 +104,7 @@ struct InfoBuffer : public BasicMutableCommandBufferTest
         return CL_SUCCESS;
     }
 
-    clCommandBufferWrapper test_command_buffer = nullptr;
+    cl_command_buffer_khr test_command_buffer = nullptr;
     cl_mutable_command_khr command = nullptr;
 };
 
@@ -115,8 +114,7 @@ struct PropertiesArray : public BasicMutableCommandBufferTest
 
     PropertiesArray(cl_device_id device, cl_context context,
                     cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          test_command_buffer(this)
+        : BasicMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -153,7 +151,6 @@ struct PropertiesArray : public BasicMutableCommandBufferTest
         return CL_SUCCESS;
     }
 
-    clCommandBufferWrapper test_command_buffer = nullptr;
     cl_mutable_command_khr command = nullptr;
 };
 
@@ -162,8 +159,7 @@ struct Kernel : public BasicMutableCommandBufferTest
     using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
 
     Kernel(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          test_command_buffer(this)
+        : BasicMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -173,7 +169,7 @@ struct Kernel : public BasicMutableCommandBufferTest
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        clKernelWrapper test_kernel;
+        cl_kernel test_kernel;
         size_t size;
 
         error = clGetMutableCommandInfoKHR(
@@ -196,7 +192,6 @@ struct Kernel : public BasicMutableCommandBufferTest
         return CL_SUCCESS;
     }
 
-    clCommandBufferWrapper test_command_buffer = nullptr;
     cl_mutable_command_khr command = nullptr;
 };
 
@@ -205,8 +200,7 @@ struct Dimensions : public BasicMutableCommandBufferTest
     using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
 
     Dimensions(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          test_command_buffer(this)
+        : BasicMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -236,7 +230,6 @@ struct Dimensions : public BasicMutableCommandBufferTest
         return CL_SUCCESS;
     }
 
-    clCommandBufferWrapper test_command_buffer = nullptr;
     cl_mutable_command_khr command = nullptr;
     const size_t dimensions = 3;
 };
@@ -262,7 +255,7 @@ struct InfoType : public BasicMutableCommandBufferTest
                                            sizeof(type), &type, NULL);
         test_error(error, "clGetMutableCommandInfoKHR failed");
 
-        if (type == 0)
+        if (type != CL_COMMAND_NDRANGE_KERNEL)
         {
             log_error("ERROR: Wrong type returned from "
                       "clGetMutableCommandInfoKHR.");

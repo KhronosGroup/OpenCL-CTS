@@ -13,6 +13,7 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
         BasicCommandBufferTest::SetUp(elements);
 
         cl_int error = init_extension_functions();
+        test_error(error, "Unable to initialise extension functions");
 
         const cl_command_buffer_properties_khr props[] = {
             CL_COMMAND_BUFFER_FLAGS_KHR,

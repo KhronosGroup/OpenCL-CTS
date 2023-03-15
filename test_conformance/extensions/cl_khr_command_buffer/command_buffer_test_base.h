@@ -129,7 +129,6 @@ public:
     clCommandBufferWrapper &operator=(cl_command_buffer_khr rhs)
     {
         reset(rhs);
-        retain();
         return *this;
     }
 
