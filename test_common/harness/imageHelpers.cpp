@@ -2152,14 +2152,6 @@ FloatPixel sample_image_pixel_float_offset(
                          lowRight[2], lowRight[3]);
             }
 
-            bool printMe = false;
-            if (x1 <= 0 || x2 <= 0 || x1 >= (int)width - 1
-                || x2 >= (int)width - 1)
-                printMe = true;
-            if (y1 <= 0 || y2 <= 0 || y1 >= (int)height - 1
-                || y2 >= (int)height - 1)
-                printMe = true;
-
             double weights[2][2];
 
             weights[0][0] = weights[0][1] = 1.0 - frac(x - 0.5f);
