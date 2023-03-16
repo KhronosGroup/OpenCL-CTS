@@ -19,8 +19,6 @@
 #include "harness/conversions.h"
 #include "harness/errorHelpers.h"
 #include <float.h>
-#include <limits>
-#include <cmath>
 
 #include <CL/cl_half.h>
 

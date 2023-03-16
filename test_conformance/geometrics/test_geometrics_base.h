@@ -24,7 +24,7 @@
 
 #include "testBase.h"
 #include <limits>
-
+#include <cmath>
 
 #define HALF_P_NAN 0x7e00
 #define HALF_N_NAN 0xfe00
