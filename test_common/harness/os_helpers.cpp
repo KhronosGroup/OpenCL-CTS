@@ -30,6 +30,7 @@
 
 #if defined(__ANDROID__)
 #include <android/api-level.h>
+#include "harness/mt19937.h"
 #endif
 
 #if !defined(_WIN32)
