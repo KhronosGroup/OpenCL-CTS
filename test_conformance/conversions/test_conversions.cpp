@@ -799,10 +799,6 @@ static int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf,
     return 0;
 }
 
-#if !defined(__APPLE__)
-void memset_pattern4(void *dest, const void *src_pattern, size_t bytes);
-#endif
-
 #if defined(__APPLE__)
 #include <mach/mach_time.h>
 #endif
