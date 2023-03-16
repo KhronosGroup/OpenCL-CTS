@@ -199,7 +199,7 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         auto pcFname = get_temp_filename();
         temp_filename = pcFname;
 
-        if (pcFname) free(pcFname);
+        if (pcFname != nullptr) free(pcFname);
 
         if (temp_filename.empty())
         {

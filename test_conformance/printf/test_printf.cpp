@@ -924,7 +924,13 @@ int main(int argc, const char* argv[])
         }
     }
 
-    strcpy(gFileName, get_temp_filename());
+    char* pcTempFname = get_temp_filename();
+    if (pcTempFname != nullptr)
+    {
+        strncpy(gFileName, pcTempFname, sizeof(gFileName));
+        free(pcTempFname);
+    }
+
     if (strlen(gFileName) == 0)
     {
         log_error("get_temp_filename failed\n");
