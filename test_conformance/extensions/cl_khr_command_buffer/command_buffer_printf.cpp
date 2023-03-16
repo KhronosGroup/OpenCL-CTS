@@ -196,7 +196,11 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
-        temp_filename = get_temp_filename();
+        auto pcFname = get_temp_filename();
+        temp_filename = pcFname;
+
+        if (pcFname) free(pcFname);
+
         if (temp_filename.empty())
         {
             log_error("get_temp_filename failed\n");
