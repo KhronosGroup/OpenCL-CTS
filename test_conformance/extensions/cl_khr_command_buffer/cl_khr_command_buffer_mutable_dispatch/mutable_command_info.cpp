@@ -179,7 +179,7 @@ struct Kernel : public BasicMutableCommandBufferTest
 
         // We can not check if this is the right kernel because this is an
         // opaque object.
-        if (size != sizeof(kernel) || test_kernel == nullptr)
+        if (test_kernel != kernel)
         {
             log_error("ERROR: Incorrect command buffer returned from "
                       "clGetMutableCommandInfoKHR.");
@@ -286,13 +286,13 @@ struct InfoQueue : public BasicMutableCommandBufferTest
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        cl_command_queue testQueue = nullptr;
+        cl_command_queue test_queue = nullptr;
         error = clGetMutableCommandInfoKHR(
-            command, CL_MUTABLE_COMMAND_COMMAND_QUEUE_KHR, sizeof(testQueue),
-            &testQueue, nullptr);
+            command, CL_MUTABLE_COMMAND_COMMAND_QUEUE_KHR, sizeof(test_queue),
+            &test_queue, nullptr);
         test_error(error, "clGetMutableCommandInfoKHR failed");
 
-        if (!testQueue)
+        if (test_queue != queue)
         {
             log_error("ERROR: Incorrect queue returned from "
                       "clGetMutableCommandInfoKHR.");
