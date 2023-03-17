@@ -440,11 +440,7 @@ CLEANUP:
     }
     if (program) clReleaseProgram(program);
     if (kernel_cq) clReleaseKernel(kernel_cq);
-    if (use_fence)
-    {
-        vkDestroyFence(vkDevice, fence, nullptr);
-    }
-    else
+    if (!use_fence)
     {
         if (clVk2CLExternalSemaphore) delete clVk2CLExternalSemaphore;
         if (clCl2VkExternalSemaphore) delete clCl2VkExternalSemaphore;
@@ -770,11 +766,7 @@ CLEANUP:
         }
     }
 
-    if (use_fence)
-    {
-        vkDestroyFence(vkDevice, fence, nullptr);
-    }
-    else
+    if (!use_fence)
     {
         if (clVk2CLExternalSemaphore) delete clVk2CLExternalSemaphore;
         if (clCl2VkExternalSemaphore) delete clCl2VkExternalSemaphore;
@@ -1164,11 +1156,7 @@ CLEANUP:
         }
     }
 
-    if (use_fence)
-    {
-        vkDestroyFence(vkDevice, fence, nullptr);
-    }
-    else
+    if (!use_fence)
     {
         if (clVk2CLExternalSemaphore) delete clVk2CLExternalSemaphore;
         if (clCl2VkExternalSemaphore) delete clCl2VkExternalSemaphore;
@@ -1745,9 +1733,7 @@ CLEANUP:
         }
     }
 
-    if (use_fence)
-    {}
-    else
+    if (!use_fence)
     {
         if (clVk2CLExternalSemaphore) delete clVk2CLExternalSemaphore;
         if (clCl2VkExternalSemaphore) delete clCl2VkExternalSemaphore;
