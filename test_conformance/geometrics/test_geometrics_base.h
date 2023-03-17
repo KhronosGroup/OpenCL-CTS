@@ -26,11 +26,6 @@
 #include <limits>
 #include <cmath>
 
-#define HALF_P_NAN 0x7e00
-#define HALF_N_NAN 0xfe00
-#define HALF_P_INF 0x7c00
-#define HALF_N_INF 0xfc00
-
 struct GeometricsFPTest;
 
 //--------------------------------------------------------------------------/
@@ -91,8 +86,8 @@ template <typename T> struct GeomTestParams : public GeomTestBase
                 HFF(MAKE_HEX_FLOAT(-0x1.0p-8f, -0x1L, -8)),
                 HFF(HTF(CL_HALF_MAX) / 2.f),
                 HFF(-HTF(CL_HALF_MAX) / 2.f),
-                HALF_P_INF,
-                HALF_N_INF,
+                0x7c00, // half positive infinity
+                0xfc00, // half negative infinity
                 HFF(0.f),
                 HFF(-0.f)
             };
@@ -175,7 +170,7 @@ struct GeometricsFPTest
     virtual cl_int RunSingleTest(const GeomTestBase *p) = 0;
 
     template <typename T>
-    void FillWithTrickyNums(T *const, T *const, const size_t, const size_t,
+    bool FillWithTrickyNums(T *const, T *const, const size_t, const size_t,
                             const MTdata &, const GeomTestParams<T> &);
 
     template <typename T> float UlpError(const T &, const double &);
@@ -231,7 +226,7 @@ protected:
 //--------------------------------------------------------------------------
 
 template <typename T>
-void GeometricsFPTest::FillWithTrickyNums(T *const aVectors, T *const bVectors,
+bool GeometricsFPTest::FillWithTrickyNums(T *const aVectors, T *const bVectors,
                                           const size_t num_elems,
                                           const size_t vecSize, const MTdata &d,
                                           const GeomTestParams<T> &p)
@@ -243,7 +238,7 @@ void GeometricsFPTest::FillWithTrickyNums(T *const aVectors, T *const bVectors,
     {
         log_error(
             "Buffer size not sufficient for test purposes, please verify!");
-        return;
+        return false;
     }
 
     for (int j = 0; j < vecSize; j++)
@@ -289,6 +284,7 @@ void GeometricsFPTest::FillWithTrickyNums(T *const aVectors, T *const bVectors,
             }
         }
     }
+    return true;
 }
 
 //--------------------------------------------------------------------------

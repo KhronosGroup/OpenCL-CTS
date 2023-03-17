@@ -109,7 +109,7 @@ cl_int GeometricsFPTest::Run()
             GeomTestBase::extension[0] = '\0';
 
         error = RunSingleTest(p.get());
-        test_error(error, "GeometricsFPTest::Run: test_relational failed");
+        test_error(error, "GeometricsFPTest::Run: test_geometrics failed");
     }
     return CL_SUCCESS;
 }

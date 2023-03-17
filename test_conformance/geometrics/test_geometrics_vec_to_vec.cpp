@@ -72,13 +72,13 @@ struct VecToVecFPTest : public GeometricsFPTest
     {}
 
     template <typename T>
-    int VecToVecKernel(const size_t &, const MTdata &,
-                       const VecToVecTestParams<T> &p);
+    cl_int VecToVecKernel(const size_t &, const MTdata &,
+                          const VecToVecTestParams<T> &p);
 
     template <typename T>
-    int VerifySubnormals(int &fail, const size_t &vecsize, const T *const inA,
-                         T *const out, T *const expected,
-                         const VecToVecTestParams<T> &p);
+    cl_int VerifySubnormals(int &fail, const size_t &vecsize,
+                            const T *const inA, T *const out, T *const expected,
+                            const VecToVecTestParams<T> &p);
 };
 
 //--------------------------------------------------------------------------
@@ -234,10 +234,10 @@ void verifyNormalize(const T *srcA, T *dst, size_t vecSize)
 //--------------------------------------------------------------------------
 
 template <typename T>
-int VecToVecFPTest::VerifySubnormals(int &fail, const size_t &vecSize,
-                                     const T *const inA, T *const out,
-                                     T *const expected,
-                                     const VecToVecTestParams<T> &p)
+cl_int VecToVecFPTest::VerifySubnormals(int &fail, const size_t &vecSize,
+                                        const T *const inA, T *const out,
+                                        T *const expected,
+                                        const VecToVecTestParams<T> &p)
 {
     if (std::is_same<T, half>::value)
     {
@@ -333,8 +333,8 @@ int VecToVecFPTest::VerifySubnormals(int &fail, const size_t &vecSize,
 //--------------------------------------------------------------------------
 
 template <typename T>
-int VecToVecFPTest::VecToVecKernel(const size_t &vecSize, const MTdata &d,
-                                   const VecToVecTestParams<T> &p)
+cl_int VecToVecFPTest::VecToVecKernel(const size_t &vecSize, const MTdata &d,
+                                      const VecToVecTestParams<T> &p)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -469,9 +469,9 @@ int VecToVecFPTest::VecToVecKernel(const size_t &vecSize, const MTdata &d,
         {
             std::stringstream sstr;
             std::string printout = string_format(
-                "ERROR: Data sample {%d,%d} at size %d does not validate! "
+                "ERROR: Data sample {%zu,%zu} at size %zu does not validate! "
                 "Expected %12.24f (%a), got %12.24f (%a), ulp %f\n",
-                (int)i, (int)j, (int)vecSize, ToDouble<T>(expected[j]),
+                i, j, vecSize, ToDouble<T>(expected[j]),
                 ToDouble<T>(expected[j]), ToDouble<T>(outData[i * vecSize + j]),
                 ToDouble<T>(outData[i * vecSize + j]), ulp_error);
             sstr << printout;
@@ -504,7 +504,7 @@ int VecToVecFPTest::VecToVecKernel(const size_t &vecSize, const MTdata &d,
             return -1;
         }
     }
-    return 0;
+    return CL_SUCCESS;
 }
 
 //--------------------------------------------------------------------------
@@ -548,8 +548,8 @@ int NormalizeFPTest::NormalizeTest(VecToVecTestParams<T> &p)
         if (error != CL_SUCCESS)
         {
             log_error(
-                "   NormalizeFPTest::NormalizeTest vector size %d FAILED\n",
-                (int)sizes[size]);
+                "   NormalizeFPTest::NormalizeTest vector size %zu FAILED\n",
+                sizes[size]);
             return error;
         }
     }
@@ -590,9 +590,9 @@ cl_int FastNormalizeFPTest::RunSingleTest(const GeomTestBase *param)
         cl_int error = VecToVecKernel<float>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
         {
-            log_error(
-                "   FastNormalizeFPTest::RunSingleTest vector size %d FAILED\n",
-                (int)sizes[size]);
+            log_error("   FastNormalizeFPTest::RunSingleTest vector size %zu "
+                      "FAILED\n",
+                      sizes[size]);
             return error;
         }
     }

@@ -73,15 +73,15 @@ struct TwoVecToScalarFPTest : public GeometricsFPTest
     cl_int RunSingleTest(const GeomTestBase *p) override;
 
     template <typename T>
-    int TwoVecToScalar(const TwoVecToScalarTestParams<T> &p);
+    cl_int TwoVecToScalar(const TwoVecToScalarTestParams<T> &p);
 
     template <typename T>
     T GetMaxValue(const T *const, const T *const, const size_t &,
                   const TwoVecToScalarTestParams<T> &);
 
     template <typename T>
-    int TwoVecToScalarKernel(const size_t &, const MTdata &,
-                             const TwoVecToScalarTestParams<T> &p);
+    cl_int TwoVecToScalarKernel(const size_t &, const MTdata &,
+                                const TwoVecToScalarTestParams<T> &p);
 };
 
 //--------------------------------------------------------------------------
@@ -309,7 +309,8 @@ cl_int TwoVecToScalarFPTest::RunSingleTest(const GeomTestBase *p)
 //--------------------------------------------------------------------------
 
 template <typename T>
-int TwoVecToScalarFPTest::TwoVecToScalar(const TwoVecToScalarTestParams<T> &p)
+cl_int
+TwoVecToScalarFPTest::TwoVecToScalar(const TwoVecToScalarTestParams<T> &p)
 {
     const size_t sizes[] = { 1, 2, 3, 4, 0 };
     RandomSeed seed(gRandomSeed);
@@ -319,8 +320,7 @@ int TwoVecToScalarFPTest::TwoVecToScalar(const TwoVecToScalarTestParams<T> &p)
         cl_int error = TwoVecToScalarKernel<T>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
         {
-            log_error("   geom_two_args vector size %d FAILED\n",
-                      (int)sizes[size]);
+            log_error("   geom_two_args vector size %zu FAILED\n", sizes[size]);
             return error;
         }
     }
@@ -343,9 +343,10 @@ T TwoVecToScalarFPTest::GetMaxValue(const T *const vecA, const T *const vecB,
 //--------------------------------------------------------------------------
 
 template <typename T>
-int TwoVecToScalarFPTest::TwoVecToScalarKernel(
-    const size_t &vecSize, const MTdata &d,
-    const TwoVecToScalarTestParams<T> &p)
+cl_int
+TwoVecToScalarFPTest::TwoVecToScalarKernel(const size_t &vecSize,
+                                           const MTdata &d,
+                                           const TwoVecToScalarTestParams<T> &p)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -420,7 +421,9 @@ int TwoVecToScalarFPTest::TwoVecToScalarKernel(
         inDataA[i] = get_random<T>(-512, 512, d);
         inDataB[i] = get_random<T>(-512, 512, d);
     }
-    FillWithTrickyNums(inDataA, inDataB, test_size * vecSize, vecSize, d, p);
+    bool res = FillWithTrickyNums(inDataA, inDataB, test_size * vecSize,
+                                  vecSize, d, p);
+    test_assert_error_ret(res, "FillWithTrickyNums failed!", -1);
 
     streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, srcBufSize,
                                 inDataA, &error);
@@ -535,10 +538,10 @@ int TwoVecToScalarFPTest::TwoVecToScalarKernel(
                 if (error > errorTolerance)
                 {
                     printout = string_format(
-                        "ERROR: Data sample %d at size %d does not "
+                        "ERROR: Data sample %zu at size %zu does not "
                         "validate! Expected (%a), got (%a), sources (%a "
                         "and %a) error of %g against tolerance %g\n",
-                        (int)i, (int)vecSize, expected, ToDouble<T>(outData[i]),
+                        i, vecSize, expected, ToDouble<T>(outData[i]),
                         ToDouble<T>(inDataA[i * vecSize]),
                         ToDouble<T>(inDataB[i * vecSize]), (float)error,
                         (float)errorTolerance);
@@ -558,10 +561,10 @@ int TwoVecToScalarFPTest::TwoVecToScalarKernel(
                 if (fabsf(error) > ulpLimit)
                 {
                     printout = string_format(
-                        "ERROR: Data sample %d at size %d does not "
+                        "ERROR: Data sample %zu at size %zu does not "
                         "validate! Expected (%a), got (%a), sources (%a "
                         "and %a) ulp of %f\n",
-                        (int)i, (int)vecSize, expected, ToDouble<T>(outData[i]),
+                        i, vecSize, expected, ToDouble<T>(outData[i]),
                         ToDouble<T>(inDataA[i * vecSize]),
                         ToDouble<T>(inDataB[i * vecSize]), error);
 
@@ -582,7 +585,7 @@ int TwoVecToScalarFPTest::TwoVecToScalarKernel(
             "Skipped %d tests out of %d because they contained Infs or "
             "NaNs\n\tEMBEDDED_PROFILE Device does not support CL_FP_INF_NAN\n",
             skipCount, test_size);
-    return 0;
+    return CL_SUCCESS;
 }
 
 //--------------------------------------------------------------------------
@@ -620,8 +623,8 @@ cl_int FastDistanceFPTest::RunSingleTest(const GeomTestBase *param)
         if (error != CL_SUCCESS)
         {
             log_error(
-                "   FastDistanceFPTest::RunSingleTest vector size %d FAILED\n",
-                (int)sizes[size]);
+                "   FastDistanceFPTest::RunSingleTest vector size %zu FAILED\n",
+                sizes[size]);
             return error;
         }
     }
@@ -680,8 +683,7 @@ int DistanceFPTest::DistTest(TwoVecToScalarTestParams<T> &p)
         cl_int error = TwoVecToScalarKernel<T>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
         {
-            log_error("   geom_two_args vector size %d FAILED\n",
-                      (int)sizes[size]);
+            log_error("   geom_two_args vector size %zu FAILED\n", sizes[size]);
             return error;
         }
     }

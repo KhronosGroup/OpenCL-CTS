@@ -74,8 +74,8 @@ struct VecToScalarFPTest : public GeometricsFPTest
     {}
 
     template <typename T>
-    int VecToScalarKernel(const size_t &, const MTdata &,
-                          const VecToScalarTestParams<T> &p);
+    cl_int VecToScalarKernel(const size_t &, const MTdata &,
+                             const VecToScalarTestParams<T> &p);
 };
 
 //--------------------------------------------------------------------------
@@ -172,8 +172,9 @@ double verifyFastLength(const float *srcA, size_t vecSize)
 //--------------------------------------------------------------------------
 
 template <typename T>
-int VecToScalarFPTest::VecToScalarKernel(const size_t &vecSize, const MTdata &d,
-                                         const VecToScalarTestParams<T> &p)
+cl_int VecToScalarFPTest::VecToScalarKernel(const size_t &vecSize,
+                                            const MTdata &d,
+                                            const VecToScalarTestParams<T> &p)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -224,8 +225,9 @@ int VecToScalarFPTest::VecToScalarKernel(const size_t &vecSize, const MTdata &d,
     {
         inDataA[i] = get_random<T>(-512, 512, d);
     }
-    FillWithTrickyNums(inDataA, (T *)nullptr, test_size * vecSize, vecSize, d,
-                       p);
+    bool res = FillWithTrickyNums(inDataA, (T *)nullptr, test_size * vecSize,
+                                  vecSize, d, p);
+    test_assert_error_ret(res, "FillWithTrickyNums failed!", -1);
 
     streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, srcBufSize,
                                 inDataA, &error);
@@ -282,9 +284,9 @@ int VecToScalarFPTest::VecToScalarKernel(const size_t &vecSize, const MTdata &d,
             {
                 std::stringstream sstr;
                 std::string printout = string_format(
-                    "ERROR: Data sample %d at size %d does not validate! "
+                    "ERROR: Data sample %zu at size %zu does not validate! "
                     "Expected (%a), got (%a), source (%a), ulp %f\n",
-                    (int)i, (int)vecSize, expected, ToDouble<T>(outData[i]),
+                    i, vecSize, expected, ToDouble<T>(outData[i]),
                     ToDouble<T>(inDataA[i * vecSize]), ulps);
 
                 sstr << printout;
@@ -295,7 +297,7 @@ int VecToScalarFPTest::VecToScalarKernel(const size_t &vecSize, const MTdata &d,
             }
         }
     }
-    return 0;
+    return CL_SUCCESS;
 }
 
 //--------------------------------------------------------------------------
@@ -335,8 +337,7 @@ template <typename T> int LengthFPTest::LengthTest(VecToScalarTestParams<T> &p)
         cl_int error = VecToScalarKernel<T>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
         {
-            log_error("   LengthTest vector size %d FAILED\n",
-                      (int)sizes[size]);
+            log_error("   LengthTest vector size %zu FAILED\n", sizes[size]);
             return error;
         }
     }
@@ -379,8 +380,8 @@ cl_int FastLengthFPTest::RunSingleTest(const GeomTestBase *param)
         if (error != CL_SUCCESS)
         {
             log_error(
-                "   FastLengthFPTest::RunSingleTest vector size %d FAILED\n",
-                (int)sizes[size]);
+                "   FastLengthFPTest::RunSingleTest vector size %zu FAILED\n",
+                sizes[size]);
             return error;
         }
     }

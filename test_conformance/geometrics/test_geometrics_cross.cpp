@@ -50,7 +50,7 @@ struct CrossFPTest : public GeometricsFPTest
     cl_int SetUp(int elements) override;
     cl_int RunSingleTest(const GeomTestBase *p) override;
 
-    template <typename T> int CrossKernel(const GeomTestParams<T> &p);
+    template <typename T> cl_int CrossKernel(const GeomTestParams<T> &p);
 };
 
 //--------------------------------------------------------------------------
@@ -220,13 +220,14 @@ cl_int CrossFPTest::RunSingleTest(const GeomTestBase *p)
             test_error(-1, "CrossFPTest::RunSingleTest: incorrect fp type");
             break;
     }
-    test_error(error, "CrossFPTest::RunSingleTest: test_relational failed");
+    test_error(error, "CrossFPTest::RunSingleTest: test_geometrics failed");
     return CL_SUCCESS;
 }
 
 //--------------------------------------------------------------------------
 
-template <typename T> int CrossFPTest::CrossKernel(const GeomTestParams<T> &p)
+template <typename T>
+cl_int CrossFPTest::CrossKernel(const GeomTestParams<T> &p)
 {
     RandomSeed seed(gRandomSeed);
 
@@ -278,8 +279,9 @@ template <typename T> int CrossFPTest::CrossKernel(const GeomTestParams<T> &p)
             inDataA[i] = get_random<T>(-512, 512, seed);
             inDataB[i] = get_random<T>(-512, 512, seed);
         }
-        FillWithTrickyNums(inDataA, inDataB, test_size * vecsize, vecsize, seed,
-                           p);
+        bool res = FillWithTrickyNums(inDataA, inDataB, test_size * vecsize,
+                                      vecsize, seed, p);
+        test_assert_error_ret(res, "FillWithTrickyNums failed!", -1);
 
         streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, bufSize,
                                     inDataA, &error);
