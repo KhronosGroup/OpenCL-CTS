@@ -52,18 +52,18 @@ static void params_reset()
 }
 
 extern int test_buffer_common(cl_device_id device_, cl_context context_,
-                              cl_command_queue queue_, int numElements_);
-extern int test_buffer_common_fence(cl_device_id device_, cl_context context_,
-                                    cl_command_queue queue_, int numElements_);
+                              cl_command_queue queue_, int numElements_,
+                              float use_fence);
 extern int test_image_common(cl_device_id device_, cl_context context_,
                              cl_command_queue queue_, int numElements_);
 
 int test_buffer_single_queue(cl_device_id device_, cl_context context_,
-                             cl_command_queue queue_, int numElements_)
+                             cl_command_queue queue_, int numElements_,
+                             bool fence)
 {
     params_reset();
     log_info("RUNNING TEST WITH ONE QUEUE...... \n\n");
-    return test_buffer_common(device_, context_, queue_, numElements_);
+    return test_buffer_common(device_, context_, queue_, numElements_, false);
 }
 int test_buffer_multiple_queue(cl_device_id device_, cl_context context_,
                                cl_command_queue queue_, int numElements_)
@@ -71,7 +71,7 @@ int test_buffer_multiple_queue(cl_device_id device_, cl_context context_,
     params_reset();
     numCQ = 2;
     log_info("RUNNING TEST WITH TWO QUEUE...... \n\n");
-    return test_buffer_common(device_, context_, queue_, numElements_);
+    return test_buffer_common(device_, context_, queue_, numElements_, false);
 }
 int test_buffer_multiImport_sameCtx(cl_device_id device_, cl_context context_,
                                     cl_command_queue queue_, int numElements_)
@@ -80,7 +80,7 @@ int test_buffer_multiImport_sameCtx(cl_device_id device_, cl_context context_,
     multiImport = true;
     log_info("RUNNING TEST WITH MULTIPLE DEVICE MEMORY IMPORT "
              "IN SAME CONTEXT...... \n\n");
-    return test_buffer_common(device_, context_, queue_, numElements_);
+    return test_buffer_common(device_, context_, queue_, numElements_, false);
 }
 int test_buffer_multiImport_diffCtx(cl_device_id device_, cl_context context_,
                                     cl_command_queue queue_, int numElements_)
@@ -90,14 +90,14 @@ int test_buffer_multiImport_diffCtx(cl_device_id device_, cl_context context_,
     multiCtx = true;
     log_info("RUNNING TEST WITH MULTIPLE DEVICE MEMORY IMPORT "
              "IN DIFFERENT CONTEXT...... \n\n");
-    return test_buffer_common(device_, context_, queue_, numElements_);
+    return test_buffer_common(device_, context_, queue_, numElements_, false);
 }
 int test_buffer_single_queue_fence(cl_device_id device_, cl_context context_,
                                    cl_command_queue queue_, int numElements_)
 {
     params_reset();
     log_info("RUNNING TEST WITH ONE QUEUE...... \n\n");
-    return test_buffer_common_fence(device_, context_, queue_, numElements_);
+    return test_buffer_common(device_, context_, queue_, numElements_, true);
 }
 int test_buffer_multiple_queue_fence(cl_device_id device_, cl_context context_,
                                      cl_command_queue queue_, int numElements_)
@@ -105,7 +105,7 @@ int test_buffer_multiple_queue_fence(cl_device_id device_, cl_context context_,
     params_reset();
     numCQ = 2;
     log_info("RUNNING TEST WITH TWO QUEUE...... \n\n");
-    return test_buffer_common_fence(device_, context_, queue_, numElements_);
+    return test_buffer_common(device_, context_, queue_, numElements_, true);
 }
 int test_buffer_multiImport_sameCtx_fence(cl_device_id device_,
                                           cl_context context_,
@@ -116,7 +116,7 @@ int test_buffer_multiImport_sameCtx_fence(cl_device_id device_,
     multiImport = true;
     log_info("RUNNING TEST WITH MULTIPLE DEVICE MEMORY IMPORT "
              "IN SAME CONTEXT...... \n\n");
-    return test_buffer_common_fence(device_, context_, queue_, numElements_);
+    return test_buffer_common(device_, context_, queue_, numElements_, true);
 }
 int test_buffer_multiImport_diffCtx_fence(cl_device_id device_,
                                           cl_context context_,
@@ -128,7 +128,7 @@ int test_buffer_multiImport_diffCtx_fence(cl_device_id device_,
     multiCtx = true;
     log_info("RUNNING TEST WITH MULTIPLE DEVICE MEMORY IMPORT "
              "IN DIFFERENT CONTEXT...... \n\n");
-    return test_buffer_common_fence(device_, context_, queue_, numElements_);
+    return test_buffer_common(device_, context_, queue_, numElements_, true);
 }
 int test_image_single_queue(cl_device_id device_, cl_context context_,
                             cl_command_queue queue_, int numElements_)
@@ -147,6 +147,7 @@ int test_image_multiple_queue(cl_device_id device_, cl_context context_,
 }
 
 test_definition test_list[] = {
+
 
     ADD_TEST(buffer_single_queue),
     ADD_TEST(buffer_multiple_queue),
