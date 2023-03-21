@@ -15,3 +15,5 @@ set(${MODULE_NAME}_SOURCES
 )
 
 include(../../CMakeCommon.txt)
+
+add_subdirectory( cl_khr_command_buffer_mutable_dispatch )
