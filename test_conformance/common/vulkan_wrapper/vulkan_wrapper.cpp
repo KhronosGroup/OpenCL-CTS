@@ -618,10 +618,15 @@ VulkanQueue::~VulkanQueue() {}
 void VulkanQueue::submit(const VulkanCommandBuffer &commandBuffer,
                          const VkFence &fence)
 {
+    VulkanCommandBufferList commandBufferList;
+    commandBufferList.add(commandBuffer);
+
     VkSubmitInfo vkSubmitInfo = {};
     vkSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     vkSubmitInfo.pNext = NULL;
     vkSubmitInfo.waitSemaphoreCount = (uint32_t)0;
+    vkSubmitInfo.commandBufferCount = (uint32_t)commandBufferList.size();
+    vkSubmitInfo.pCommandBuffers = commandBufferList();
 
     vkQueueSubmit(m_vkQueue, 1, &vkSubmitInfo, fence);
 }
