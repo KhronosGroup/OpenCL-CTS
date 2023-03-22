@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <vector>
 #include <iostream>
+#include <memory>
 #include <string.h>
 #include "harness/errorHelpers.h"
 
@@ -118,7 +119,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
         getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
-    VkFence fence;
+    std::shared_ptr<VulkanFence> fence;
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
@@ -140,20 +141,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
     if (use_fence)
     {
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.pNext = nullptr;
-        fenceInfo.flags = 0;
-
-        VkResult vkStatus =
-            vkCreateFence(vkDevice, &fenceInfo, nullptr, &fence);
-
-        if (vkStatus != VK_SUCCESS)
-        {
-            print_error(vkStatus, "Error: Failed create fence.\n");
-            vkDestroyFence(vkDevice, fence, nullptr);
-            return TEST_FAIL;
-        }
+        fence = std::make_shared<VulkanFence>(vkDevice);
     }
     else
     {
@@ -275,8 +263,8 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
                 if (use_fence)
                 {
-                    vkResetFences(vkDevice, 1, &fence);
-                    vkWaitForFences(vkDevice, 1, &fence, VK_TRUE, UINT64_MAX);
+                    fence->reset();
+                    fence->wait();
                 }
                 else
                 {
@@ -336,9 +324,8 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 {
                     if (use_fence)
                     {
-                        vkResetFences(vkDevice, 1, &fence);
-                        vkWaitForFences(vkDevice, 1, &fence, VK_TRUE,
-                                        UINT64_MAX);
+                        fence->reset();
+                        fence->wait();
                     }
                     else
                     {
@@ -474,7 +461,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
         getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
-    VkFence fence;
+    std::shared_ptr<VulkanFence> fence;
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
@@ -495,20 +482,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
     if (use_fence)
     {
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.pNext = nullptr;
-        fenceInfo.flags = 0;
-
-        VkResult vkStatus =
-            vkCreateFence(vkDevice, &fenceInfo, nullptr, &fence);
-
-        if (vkStatus != VK_SUCCESS)
-        {
-            print_error(vkStatus, "Error: Failed create fence.\n");
-            vkDestroyFence(vkDevice, fence, nullptr);
-            return TEST_FAIL;
-        }
+        fence = std::make_shared<VulkanFence>(vkDevice);
     }
     else
     {
@@ -632,8 +606,8 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
                 if (use_fence)
                 {
-                    vkResetFences(vkDevice, 1, &fence);
-                    vkWaitForFences(vkDevice, 1, &fence, VK_TRUE, UINT64_MAX);
+                    fence->reset();
+                    fence->wait();
                 }
                 else
                 {
@@ -669,9 +643,8 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 {
                     if (use_fence)
                     {
-                        vkResetFences(vkDevice, 1, &fence);
-                        vkWaitForFences(vkDevice, 1, &fence, VK_TRUE,
-                                        UINT64_MAX);
+                        fence->reset();
+                        fence->wait();
                         clFinish(cmd_queue1);
                     }
                     else
@@ -805,7 +778,7 @@ int run_test_with_multi_import_same_ctx(
         getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
-    VkFence fence;
+    std::shared_ptr<VulkanFence> fence;
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
@@ -827,20 +800,7 @@ int run_test_with_multi_import_same_ctx(
 
     if (use_fence)
     {
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.pNext = nullptr;
-        fenceInfo.flags = 0;
-
-        VkResult vkStatus =
-            vkCreateFence(vkDevice, &fenceInfo, nullptr, &fence);
-
-        if (vkStatus != VK_SUCCESS)
-        {
-            print_error(vkStatus, "Error: Failed create fence.\n");
-            vkDestroyFence(vkDevice, fence, nullptr);
-            return TEST_FAIL;
-        }
+        fence = std::make_shared<VulkanFence>(vkDevice);
     }
     else
     {
@@ -998,9 +958,8 @@ int run_test_with_multi_import_same_ctx(
 
                     if (use_fence)
                     {
-                        vkResetFences(vkDevice, 1, &fence);
-                        vkWaitForFences(vkDevice, 1, &fence, VK_TRUE,
-                                        UINT64_MAX);
+                        fence->reset();
+                        fence->wait();
                     }
                     else
                     {
@@ -1043,9 +1002,8 @@ int run_test_with_multi_import_same_ctx(
                     {
                         if (use_fence)
                         {
-                            vkResetFences(vkDevice, 1, &fence);
-                            vkWaitForFences(vkDevice, 1, &fence, VK_TRUE,
-                                            UINT64_MAX);
+                            fence->reset();
+                            fence->wait();
                         }
                         else
                         {
@@ -1203,7 +1161,7 @@ int run_test_with_multi_import_diff_ctx(
         getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
-    VkFence fence;
+    std::shared_ptr<VulkanFence> fence;
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
@@ -1225,20 +1183,7 @@ int run_test_with_multi_import_diff_ctx(
 
     if (use_fence)
     {
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.pNext = nullptr;
-        fenceInfo.flags = 0;
-
-        VkResult vkStatus =
-            vkCreateFence(vkDevice, &fenceInfo, nullptr, &fence);
-
-        if (vkStatus != VK_SUCCESS)
-        {
-            print_error(vkStatus, "Error: Failed create fence.\n");
-            vkDestroyFence(vkDevice, fence, nullptr);
-            return TEST_FAIL;
-        }
+        fence = std::make_shared<VulkanFence>(vkDevice);
     }
     else
     {
@@ -1421,9 +1366,8 @@ int run_test_with_multi_import_diff_ctx(
 
                     if (use_fence)
                     {
-                        vkResetFences(vkDevice, 1, &fence);
-                        vkWaitForFences(vkDevice, 1, &fence, VK_TRUE,
-                                        UINT64_MAX);
+                        fence->reset();
+                        fence->wait();
                     }
                     else
                     {
@@ -1466,9 +1410,8 @@ int run_test_with_multi_import_diff_ctx(
                     {
                         if (use_fence)
                         {
-                            vkResetFences(vkDevice, 1, &fence);
-                            vkWaitForFences(vkDevice, 1, &fence, VK_TRUE,
-                                            UINT64_MAX);
+                            fence->reset();
+                            fence->wait();
                         }
                         else
                         {
@@ -1548,9 +1491,8 @@ int run_test_with_multi_import_diff_ctx(
                     {
                         if (use_fence)
                         {
-                            vkResetFences(vkDevice, 1, &fence);
-                            vkWaitForFences(vkDevice, 1, &fence, VK_TRUE,
-                                            UINT64_MAX);
+                            fence->reset();
+                            fence->wait();
                         }
                         else
                         {
