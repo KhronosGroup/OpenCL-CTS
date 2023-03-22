@@ -99,17 +99,6 @@ test_status InitCL( cl_device_id device )
     int hasDouble = is_extension_available(device, "cl_khr_fp64");
     gTestDouble ^= hasDouble;
 
-    //detect whether profile of the device is embedded
-    char profile[64] = "";
-    if( (error = clGetDeviceInfo( device, CL_DEVICE_PROFILE, sizeof(profile), profile, NULL ) ) )
-    {
-        vlog_error( "Unable to get device CL DEVICE PROFILE string. (%d) \n", error );
-    }
-    else if( strstr(profile, "EMBEDDED_PROFILE" ) )
-    {
-        gIsEmbedded = 1;
-    }
-
     vlog( "%d compute devices at %f GHz\n", gComputeDevices, (double) gDeviceFrequency / 1000. );
     vlog( "Max thread group size is %lld.\n", (uint64_t) gMaxThreadGroupSize );
 
