@@ -928,8 +928,9 @@ int main(int argc, const char* argv[])
     if (pcTempFname != nullptr)
     {
         strncpy(gFileName, pcTempFname, sizeof(gFileName));
-        free(pcTempFname);
     }
+
+    free(pcTempFname);
 
     if (strlen(gFileName) == 0)
     {
