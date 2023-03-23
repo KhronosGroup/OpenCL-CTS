@@ -82,12 +82,19 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                 // broadcasted (one the same value for whole subgroup)
                 if (operation != SubgroupsBroadcastOp::broadcast)
                 {
-                    // reduce brodcasting index in case of non_uniform and
+                    // reduce broadcasting index in case of non_uniform and
                     // last workgroup last subgroup
                     if (last_subgroup_size && j == nj - 1
                         && last_subgroup_size < NR_OF_ACTIVE_WORK_ITEMS)
                     {
                         bcast_if = bcast_index % last_subgroup_size;
+                        bcast_elseif = bcast_if;
+                    }
+                    // reduce broadcasting index in case subgroup size <=
+                    // NR_OF_ACTIVE_WORK_ITEMS (i.e. all items are active)
+                    else if (n <= NR_OF_ACTIVE_WORK_ITEMS)
+                    {
+                        bcast_if = bcast_index % n;
                         bcast_elseif = bcast_if;
                     }
                     else
