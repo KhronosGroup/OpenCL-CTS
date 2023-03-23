@@ -14,13 +14,14 @@
 // limitations under the License.
 //
 
+#include "common.h"
 #include "function_list.h"
 #include "test_functions.h"
 #include "utility.h"
 
 #include <cstring>
 
-
+#if 0
 static int BuildKernelHalf(const char *name, int vectorSize, cl_kernel *k,
                            cl_program *p, bool relaxedMode)
 {
@@ -129,13 +130,28 @@ static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
                            info->programs + i, info->relaxedMode);
 }
 
+#else
+
+cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
+{
+    BuildKernelInfo &info = *(BuildKernelInfo *)p;
+    auto generator = [](const std::string &kernel_name, const char *builtin,
+                        cl_uint vector_size_index) {
+        return GetTernaryKernel(kernel_name, builtin, ParameterType::Half,
+                                ParameterType::Half, ParameterType::Half,
+                                ParameterType::Half, vector_size_index);
+    };
+    return BuildKernels(info, job_id, generator);
+}
+
+#endif
+
 int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
 {
-    uint64_t i;
-    uint32_t j, k;
     int error;
-    cl_program programs[VECTOR_SIZE_COUNT];
-    cl_kernel kernels[VECTOR_SIZE_COUNT];
+    Programs programs;
+    KernelMatrix kernels;
+    const unsigned thread_id = 0; // Test is currently not multithreaded.
     float maxError = 0.0f;
     //    int ftz = f->ftz || gForceFTZ;
     float maxErrorVal = 0.0f;
@@ -150,21 +166,20 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
         step = (1ULL << 32) * gWimpyReductionFactor / (512);
     }
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode };
-    if ((error = ThreadPool_Do(BuildKernel_HalfFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
     {
-        return error;
+        BuildKernelInfo build_info = { 1, kernels, programs, f->nameInCode };
+        if ((error = ThreadPool_Do(BuildKernel_HalfFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
     }
-    for (i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
         // Init input array
         cl_ushort *p = (cl_ushort *)gIn;
         cl_ushort *p2 = (cl_ushort *)gIn2;
         cl_ushort *p3 = (cl_ushort *)gIn3;
-        for (j = 0; j < bufferSize / sizeof(cl_ushort); j++)
+        for (size_t j = 0; j < bufferSize / sizeof(cl_ushort); j++)
         {
             p[j] = (cl_ushort)genrand_int32(d);
             p2[j] = (cl_ushort)genrand_int32(d);
@@ -190,7 +205,7 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // write garbage into output arrays
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint16_t pattern = 0xdead;
             memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
@@ -200,47 +215,47 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
             {
                 vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
                            error, j);
-                goto exit;
+                return error;
             }
         }
 
         // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeof(cl_half) * sizeValues[j];
             size_t localCount = (bufferSize + vectorSize - 1)
                 / vectorSize; // bufferSize / vectorSize  rounded up
-            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
-                                        &gOutBuffer[j])))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
+                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gInBuffer),
-                                        &gInBuffer)))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 1,
+                                        sizeof(gInBuffer), &gInBuffer)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 2, sizeof(gInBuffer2),
-                                        &gInBuffer2)))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 2,
+                                        sizeof(gInBuffer2), &gInBuffer2)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 3, sizeof(gInBuffer3),
-                                        &gInBuffer3)))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 3,
+                                        sizeof(gInBuffer3), &gInBuffer3)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
 
-            if ((error =
-                     clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
-                                            &localCount, NULL, 0, NULL, NULL)))
+            if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
+                                                1, NULL, &localCount, NULL, 0,
+                                                NULL, NULL)))
             {
                 vlog_error("FAILED -- could not execute kernel\n");
-                goto exit;
+                return error;
             }
         }
 
@@ -248,14 +263,14 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
         if ((error = clFlush(gQueue))) vlog("clFlush failed\n");
 
         // Read the data back
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
                                          bufferSize, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
-                goto exit;
+                return error;
             }
         }
 
@@ -283,6 +298,7 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
     }
     vlog("\n");
 
+#if 0
 exit:
     // Release
     for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
@@ -290,6 +306,7 @@ exit:
         clReleaseKernel(kernels[k]);
         clReleaseProgram(programs[k]);
     }
+#endif
 
     return error;
 }

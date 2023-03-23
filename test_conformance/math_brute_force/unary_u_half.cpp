@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+#include "common.h"
 #include "function_list.h"
 #include "test_functions.h"
 #include "utility.h"
@@ -21,7 +22,7 @@
 
 #include <cstring>
 
-
+#if 0
 static int BuildKernelHalf(const char *name, int vectorSize, cl_kernel *k,
                            cl_program *p, bool relaxedMode)
 {
@@ -120,15 +121,28 @@ static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
     return BuildKernelHalf(info->nameInCode, i, info->kernels + i,
                            info->programs + i, info->relaxedMode);
 }
+#else
 
+static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
+                                 void *p)
+{
+    BuildKernelInfo &info = *(BuildKernelInfo *)p;
+    auto generator = [](const std::string &kernel_name, const char *builtin,
+                        cl_uint vector_size_index) {
+        return GetUnaryKernel(kernel_name, builtin, ParameterType::Half,
+                              ParameterType::UInt, vector_size_index);
+    };
+    return BuildKernels(info, job_id, generator);
+}
+
+#endif
 
 int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
 {
-    uint64_t i;
-    uint32_t j, k;
     int error;
-    cl_program programs[VECTOR_SIZE_COUNT];
-    cl_kernel kernels[VECTOR_SIZE_COUNT];
+    Programs programs;
+    KernelMatrix kernels;
+    const unsigned thread_id = 0; // Test is currently not multithreaded.
     float maxError = 0.0f;
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
     float maxErrorVal = 0.0f;
@@ -145,8 +159,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
     }
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode };
+    BuildKernelInfo build_info = { 1, kernels, programs, f->nameInCode };
     if ((error = ThreadPool_Do(BuildKernel_HalfFn,
                                gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                &build_info)))
@@ -154,17 +167,17 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
         return error;
     }
 
-    for (i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
         // Init input array
         cl_ushort *p = (cl_ushort *)gIn;
         if (gWimpyMode)
         {
-            for (j = 0; j < bufferElements; j++) p[j] = i + j * scale;
+            for (size_t j = 0; j < bufferElements; j++) p[j] = i + j * scale;
         }
         else
         {
-            for (j = 0; j < bufferElements; j++) p[j] = (uint16_t)i + j;
+            for (size_t j = 0; j < bufferElements; j++) p[j] = (uint16_t)i + j;
         }
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
@@ -175,7 +188,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // write garbage into output arrays
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint16_t pattern = 0xdead;
             memset_pattern4(gOut[j], &pattern, bufferSize);
@@ -185,34 +198,34 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
             {
                 vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
                            error, j);
-                goto exit;
+                return error;
             }
         }
 
         // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_half);
             size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;
-            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
-                                        &gOutBuffer[j])))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
+                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gInBuffer),
-                                        &gInBuffer)))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 1,
+                                        sizeof(gInBuffer), &gInBuffer)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
 
-            if ((error =
-                     clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
-                                            &localCount, NULL, 0, NULL, NULL)))
+            if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
+                                                1, NULL, &localCount, NULL, 0,
+                                                NULL, NULL)))
             {
                 vlog_error("FAILURE -- could not execute kernel\n");
-                goto exit;
+                return error;
             }
         }
 
@@ -221,7 +234,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
 
         // Calculate the correctly rounded reference result
         cl_half *r = (cl_half *)gOut_Ref;
-        for (j = 0; j < bufferElements; j++)
+        for (size_t j = 0; j < bufferElements; j++)
         {
             if (!strcmp(name, "nan"))
                 r[j] = reference_nanh(p[j]);
@@ -229,25 +242,24 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
                 r[j] = cl_half_from_float(f->func.f_u(p[j]), CL_HALF_RTE);
         }
         // Read the data back
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
                                          bufferSize, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
-                goto exit;
+                return error;
             }
         }
 
         if (gSkipCorrectnessTesting) break;
 
-
         // Verify data
         cl_ushort *t = (cl_ushort *)gOut_Ref;
-        for (j = 0; j < bufferElements; j++)
+        for (size_t j = 0; j < bufferElements; j++)
         {
-            for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+            for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
                 cl_ushort *q = (cl_ushort *)(gOut[k]);
 
@@ -289,8 +301,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
                             "(0x%0.4x) \nActual: %a (0x%0.4x)\n",
                             f->name, sizeNames[k], err, p[j],
                             cl_half_to_float(r[j]), r[j], test, q[j]);
-                        error = -1;
-                        goto exit;
+                        return -1;
                     }
                 }
             }
@@ -322,6 +333,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
     if (!gSkipCorrectnessTesting) vlog("\t%8.2f @ %a", maxError, maxErrorVal);
     vlog("\n");
 
+#if 0
 exit:
     // Release
     for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
@@ -329,6 +341,7 @@ exit:
         clReleaseKernel(kernels[k]);
         clReleaseProgram(programs[k]);
     }
+#endif
 
     return error;
 }

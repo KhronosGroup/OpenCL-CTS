@@ -14,12 +14,16 @@
 // limitations under the License.
 //
 
+#include "common.h"
 #include "function_list.h"
 #include "test_functions.h"
 #include "utility.h"
 
 #include <cstring>
+#include <memory>
+#include <cinttypes>
 
+#if 0
 static int BuildKernelHalf(const char *name, int vectorSize, cl_kernel *k,
                            cl_program *p, bool relaxedMode)
 {
@@ -118,19 +122,33 @@ static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
     return BuildKernelHalf(info->nameInCode, i, info->kernels + i,
                            info->programs + i, info->relaxedMode);
 }
+#else
+
+static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
+                                 void *p)
+{
+    BuildKernelInfo &info = *(BuildKernelInfo *)p;
+    auto generator = [](const std::string &kernel_name, const char *builtin,
+                        cl_uint vector_size_index) {
+        return GetUnaryKernel(kernel_name, builtin, ParameterType::Int,
+                              ParameterType::Half, vector_size_index);
+    };
+    return BuildKernels(info, job_id, generator);
+}
+
+#endif
 
 int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
 {
-    uint64_t i;
-    uint32_t j, k;
     int error;
-    cl_program programs[VECTOR_SIZE_COUNT];
-    cl_kernel kernels[VECTOR_SIZE_COUNT];
+    Programs programs;
+    KernelMatrix kernels;
+    const unsigned thread_id = 0; // Test is currently not multithreaded.
     int ftz = f->ftz || 0 == (gHalfCapabilities & CL_FP_DENORM) || gForceFTZ;
     size_t bufferSize = BUFFER_SIZE;
     uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
     uint64_t bufferElements = bufferSize / sizeof(cl_int);
-    float *s = 0;
+    std::vector<float> s;
 
     int scale = (int)((1ULL << 16) / (16 * bufferElements) + 1);
 
@@ -139,30 +157,31 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     // for reference computations
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
+    std::shared_ptr<int> at_scope_exit(
+        nullptr, [&oldMode](int *) { RestoreFPState(&oldMode); });
 
     // Init the kernels
-    BuildKernelInfo build_info = { gMinVectorSizeIndex, kernels, programs,
-                                   f->nameInCode };
-    if ((error = ThreadPool_Do(BuildKernel_HalfFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
     {
-        return error;
+        BuildKernelInfo build_info = { 1, kernels, programs, f->nameInCode };
+        if ((error = ThreadPool_Do(BuildKernel_HalfFn,
+                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                                   &build_info)))
+            return error;
     }
-    s = (float *)malloc(bufferElements * sizeof(float));
+    s.resize(bufferElements);
 
-    for (i = 0; i < (1ULL << 16); i += step)
+    for (uint64_t i = 0; i < (1ULL << 16); i += step)
     {
         // Init input array
         cl_ushort *p = (cl_ushort *)gIn;
         if (gWimpyMode)
         {
-            for (j = 0; j < bufferElements; j++)
+            for (size_t j = 0; j < bufferElements; j++)
                 p[j] = (cl_ushort)i + j * scale;
         }
         else
         {
-            for (j = 0; j < bufferElements; j++) p[j] = (cl_ushort)i + j;
+            for (size_t j = 0; j < bufferElements; j++) p[j] = (cl_ushort)i + j;
         }
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
@@ -172,7 +191,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // write garbage into output arrays
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
             memset_pattern4(gOut[j], &pattern, bufferSize);
@@ -182,34 +201,34 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
             {
                 vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
                            error, j);
-                goto exit;
+                return error;
             }
         }
 
         // Run the kernels
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_int);
             size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;
-            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
-                                        &gOutBuffer[j])))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
+                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gInBuffer),
-                                        &gInBuffer)))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 1,
+                                        sizeof(gInBuffer), &gInBuffer)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
 
-            if ((error =
-                     clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
-                                            &localCount, NULL, 0, NULL, NULL)))
+            if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
+                                                1, NULL, &localCount, NULL, 0,
+                                                NULL, NULL)))
             {
                 vlog_error("FAILED -- could not execute kernel\n");
-                goto exit;
+                return error;
             }
         }
 
@@ -218,20 +237,20 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
 
         // Calculate the correctly rounded reference result
         int *r = (int *)gOut_Ref;
-        for (j = 0; j < bufferElements; j++)
+        for (size_t j = 0; j < bufferElements; j++)
         {
             s[j] = cl_half_to_float(p[j]);
             r[j] = f->func.i_f(s[j]);
         }
         // Read the data back
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
                                          bufferSize, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
-                goto exit;
+                return error;
             }
         }
 
@@ -239,9 +258,9 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
 
         // Verify data
         uint32_t *t = (uint32_t *)gOut_Ref;
-        for (j = 0; j < bufferElements; j++)
+        for (size_t j = 0; j < bufferElements; j++)
         {
-            for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+            for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
                 uint32_t *q = (uint32_t *)(gOut[k]);
                 // If we aren't getting the correctly rounded result
@@ -260,8 +279,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
                                "*%d vs. %d\n",
                                f->name, sizeNames[k], err, s[j], p[j], t[j],
                                q[j]);
-                    error = -1;
-                    goto exit;
+                    return -1;
                 }
             }
         }
@@ -270,8 +288,9 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
         {
             if (gVerboseBruteForce)
             {
-                vlog("base:%14u step:%10zu  bufferSize:%10zd \n", i, step,
-                     bufferSize);
+                vlog("base:%14" PRIu64 " step:%10" PRIu64
+                     "  bufferSize:%10zd \n",
+                     i, step, bufferSize);
             }
             else
             {
@@ -292,6 +311,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 
+#if 0
 exit:
     if (s) free(s);
     RestoreFPState(&oldMode);
@@ -301,6 +321,7 @@ exit:
         clReleaseKernel(kernels[k]);
         clReleaseProgram(programs[k]);
     }
+#endif
 
     return error;
 }
