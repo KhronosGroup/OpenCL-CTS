@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2023 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,117 +21,7 @@
 
 #include <cstring>
 
-#if 0
-static int BuildKernelHalf(const char *name, int vectorSize, cl_kernel *k,
-                           cl_program *p, bool relaxedMode)
-{
-    const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n",
-                        "__kernel void math_kernel",
-                        sizeNames[vectorSize],
-                        "( __global half",
-                        sizeNames[vectorSize],
-                        "* out, __global half",
-                        sizeNames[vectorSize],
-                        "* in1, __global half",
-                        sizeNames[vectorSize],
-                        "* in2,  __global half",
-                        sizeNames[vectorSize],
-                        "* in3 )\n"
-                        "{\n"
-                        "   int i = get_global_id(0);\n"
-                        "   out[i] = ",
-                        name,
-                        "( in1[i], in2[i], in3[i] );\n"
-                        "}\n" };
-    const char *c3[] = {
-        "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n",
-        "__kernel void math_kernel",
-        sizeNames[vectorSize],
-        "( __global half* out, __global half* in, __global half* in2, __global "
-        "half* in3)\n"
-        "{\n"
-        "   size_t i = get_global_id(0);\n"
-        "   if( i + 1 < get_global_size(0) )\n"
-        "   {\n"
-        "       half3 d0 = vload3( 0, in + 3 * i );\n"
-        "       half3 d1 = vload3( 0, in2 + 3 * i );\n"
-        "       half3 d2 = vload3( 0, in3 + 3 * i );\n"
-        "       d0 = ",
-        name,
-        "( d0, d1, d2 );\n"
-        "       vstore3( d0, 0, out + 3*i );\n"
-        "   }\n"
-        "   else\n"
-        "   {\n"
-        "       size_t parity = i & 1;   // Figure out how many elements are "
-        "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
-        "buffer size \n"
-        "       half3 d0, d1, d2;\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 1:\n"
-        "               d0 = (half3)( in[3*i], NAN, NAN ); \n"
-        "               d1 = (half3)( in2[3*i], NAN, NAN ); \n"
-        "               d2 = (half3)( in3[3*i], NAN, NAN ); \n"
-        "               break;\n"
-        "           case 0:\n"
-        "               d0 = (half3)( in[3*i], in[3*i+1], NAN ); \n"
-        "               d1 = (half3)( in2[3*i], in2[3*i+1], NAN ); \n"
-        "               d2 = (half3)( in3[3*i], in3[3*i+1], NAN ); \n"
-        "               break;\n"
-        "       }\n"
-        "       d0 = ",
-        name,
-        "( d0, d1, d2 );\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 0:\n"
-        "               out[3*i+1] = d0.y; \n"
-        "               // fall through\n"
-        "           case 1:\n"
-        "               out[3*i] = d0.x; \n"
-        "               break;\n"
-        "       }\n"
-        "   }\n"
-        "}\n"
-    };
-
-    const char **kern = c;
-    size_t kernSize = sizeof(c) / sizeof(c[0]);
-
-    if (sizeValues[vectorSize] == 3)
-    {
-        kern = c3;
-        kernSize = sizeof(c3) / sizeof(c3[0]);
-    }
-
-    char testName[32];
-    snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
-             sizeNames[vectorSize]);
-
-    return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
-}
-
-typedef struct BuildKernelInfo
-{
-    cl_uint offset; // the first vector size to build
-    cl_kernel *kernels;
-    cl_program *programs;
-    const char *nameInCode;
-    bool relaxedMode;
-} BuildKernelInfo;
-
-static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                 void *p)
-{
-    BuildKernelInfo *info = (BuildKernelInfo *)p;
-    cl_uint i = info->offset + job_id;
-    return BuildKernelHalf(info->nameInCode, i, info->kernels + i,
-                           info->programs + i, info->relaxedMode);
-}
-
-#else
-
+////////////////////////////////////////////////////////////////////////////////
 cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
@@ -144,8 +34,7 @@ cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-#endif
-
+////////////////////////////////////////////////////////////////////////////////
 int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
 {
     int error;
@@ -297,16 +186,6 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
              maxErrorVal3);
     }
     vlog("\n");
-
-#if 0
-exit:
-    // Release
-    for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
-    {
-        clReleaseKernel(kernels[k]);
-        clReleaseProgram(programs[k]);
-    }
-#endif
 
     return error;
 }

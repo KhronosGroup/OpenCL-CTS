@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2023 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,115 +21,9 @@
 
 #include <cstring>
 
-#if 0
-static int BuildKernelHalf(const char *name, int vectorSize,
-                           cl_uint kernel_count, cl_kernel *k, cl_program *p,
-                           bool relaxedMode)
-{
-    const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n",
-                        "__kernel void math_kernel",
-                        sizeNames[vectorSize],
-                        "( __global half",
-                        sizeNames[vectorSize],
-                        "* out, __global half",
-                        sizeNames[vectorSize],
-                        "* in)\n"
-                        "{\n"
-                        "   int i = get_global_id(0);\n"
-                        "   out[i] = ",
-                        name,
-                        "( in[i] );\n"
-                        "}\n" };
-
-    const char *c3[] = {
-        "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n",
-        "__kernel void math_kernel",
-        sizeNames[vectorSize],
-        "( __global half* out, __global half* in)\n"
-        "{\n"
-        "   size_t i = get_global_id(0);\n"
-        "   if( i + 1 < get_global_size(0) )\n"
-        "   {\n"
-        "       half3 f0 = vload3( 0, in + 3 * i );\n"
-        "       f0 = ",
-        name,
-        "( f0 );\n"
-        "       vstore3( f0, 0, out + 3*i );\n"
-        "   }\n"
-        "   else\n"
-        "   {\n"
-        "       size_t parity = i & 1;   // Figure out how many elements are "
-        "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
-        "buffer size \n"
-        "       half3 f0;\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 1:\n"
-        "               f0 = (half3)( in[3*i], NAN, NAN ); \n"
-        "               break;\n"
-        "           case 0:\n"
-        "               f0 = (half3)( in[3*i], in[3*i+1], NAN ); \n"
-        "               break;\n"
-        "       }\n"
-        "       f0 = ",
-        name,
-        "( f0 );\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 0:\n"
-        "               out[3*i+1] = f0.y; \n"
-        "               // fall through\n"
-        "           case 1:\n"
-        "               out[3*i] = f0.x; \n"
-        "               break;\n"
-        "       }\n"
-        "   }\n"
-        "}\n"
-    };
-
-    const char **kern = c;
-    size_t kernSize = sizeof(c) / sizeof(c[0]);
-
-    if (sizeValues[vectorSize] == 3)
-    {
-        kern = c3;
-        kernSize = sizeof(c3) / sizeof(c3[0]);
-    }
-
-
-    char testName[32];
-    snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
-             sizeNames[vectorSize]);
-
-    return MakeKernels(kern, (cl_uint)kernSize, testName, kernel_count, k, p,
-                       relaxedMode);
-}
-
-
-typedef struct BuildKernelInfo
-{
-    cl_uint offset; // the first vector size to build
-    cl_uint kernel_count;
-    cl_kernel **kernels;
-    cl_program *programs;
-    const char *nameInCode;
-    bool relaxedMode;
-} BuildKernelInfo;
-
-static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                 void *p)
-{
-    BuildKernelInfo *info = (BuildKernelInfo *)p;
-    cl_uint i = info->offset + job_id;
-    return BuildKernelHalf(info->nameInCode, i, info->kernel_count,
-                           info->kernels[i], info->programs + i,
-                           info->relaxedMode);
-}
-
-#endif
-
 namespace {
 
+////////////////////////////////////////////////////////////////////////////////
 cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
@@ -142,19 +36,18 @@ cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
 // Thread specific data for a worker thread
 typedef struct ThreadInfo
 {
-    cl_mem inBuf; // input buffer for the thread
-    cl_mem outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
+    clMemWrapper inBuf; // input buffer for the thread
+    clMemWrapper outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
     float maxError; // max error value. Init to 0.
     double maxErrorValue; // position of the max error value.  Init to 0.
-    cl_command_queue tQueue; // per thread command queue to improve performance
+    clCommandQueueWrapper
+        tQueue; // per thread command queue to improve performance
 } ThreadInfo;
 
 ////////////////////////////////////////////////////////////////////////////////
-
 struct TestInfoBase
 {
     size_t subBufferSize; // Size of the sub-buffer in elements
@@ -172,7 +65,6 @@ struct TestInfoBase
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-
 struct TestInfo : public TestInfoBase
 {
     TestInfo(const TestInfoBase &base): TestInfoBase(base) {}
@@ -191,9 +83,9 @@ struct TestInfo : public TestInfoBase
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
 static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *p);
 
+////////////////////////////////////////////////////////////////////////////////
 int TestFunc_Half_Half(const Func *f, MTdata d, bool relaxedMode)
 {
     TestInfoBase test_info_base;
@@ -229,37 +121,7 @@ int TestFunc_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     test_info.ftz =
         f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
 
-#if 0
-    // cl_kernels aren't thread safe, so we make one for each vector size for
-    // every thread
-    for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
-    {
-        size_t array_size = test_info.threadCount * sizeof(cl_kernel);
-        test_info.k[i] = (cl_kernel *)malloc(array_size);
-        if (NULL == test_info.k[i])
-        {
-            vlog_error("Error: Unable to allocate storage for kernels!\n");
-            error = CL_OUT_OF_HOST_MEMORY;
-            goto exit;
-        }
-        memset(test_info.k[i], 0, array_size);
-    }
-    test_info.tinfo =
-        (ThreadInfo *)malloc(test_info.threadCount * sizeof(*test_info.tinfo));
-    if (NULL == test_info.tinfo)
-    {
-        vlog_error(
-            "Error: Unable to allocate storage for thread specific data.\n");
-        error = CL_OUT_OF_HOST_MEMORY;
-        goto exit;
-    }
-    memset(test_info.tinfo, 0,
-           test_info.threadCount * sizeof(*test_info.tinfo));
-#else
-
     test_info.tinfo.resize(test_info.threadCount);
-
-#endif
 
     for (i = 0; i < test_info.threadCount; i++)
     {
@@ -352,36 +214,10 @@ int TestFunc_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     if (!gSkipCorrectnessTesting) vlog("\t%8.2f @ %a", maxError, maxErrorVal);
     vlog("\n");
 
-#if 0
-exit:
-    for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
-    {
-        clReleaseProgram(test_info.programs[i]);
-        if (test_info.k[i])
-        {
-            for (j = 0; j < test_info.threadCount; j++)
-                clReleaseKernel(test_info.k[i][j]);
-
-            free(test_info.k[i]);
-        }
-    }
-    if (test_info.tinfo)
-    {
-        for (i = 0; i < test_info.threadCount; i++)
-        {
-            clReleaseMemObject(test_info.tinfo[i].inBuf);
-            for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-                clReleaseMemObject(test_info.tinfo[i].outBuf[j]);
-            clReleaseCommandQueue(test_info.tinfo[i].tQueue);
-        }
-
-        free(test_info.tinfo);
-    }
-#endif
-
     return error;
 }
 
+////////////////////////////////////////////////////////////////////////////////
 static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 {
     TestInfo *job = (TestInfo *)data;
@@ -399,7 +235,7 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     float half_sin_cos_tan_limit = job->half_sin_cos_tan_limit;
     int ftz = job->ftz;
 
-    float *s = 0;
+    std::vector<float> s(0);
 
     // start the map of the output arrays
     cl_event e[VECTOR_SIZE_COUNT];
@@ -496,7 +332,7 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     // Calculate the correctly rounded reference result
     cl_half *r = (cl_half *)gOut_Ref + thread_id * buffer_elements;
     cl_ushort *t = (cl_ushort *)r;
-    s = (float *)malloc(buffer_elements * sizeof(float));
+    s.resize(buffer_elements);
     for (j = 0; j < buffer_elements; j++)
     {
         s[j] = (float)cl_half_to_float(p[j]);
@@ -514,7 +350,7 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         {
             vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
                        error);
-            goto exit;
+            return error;
         }
     }
     // Wait for the last buffer
@@ -524,7 +360,7 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     if (error || NULL == out[j])
     {
         vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error);
-        goto exit;
+        return error;
     }
 
     // Verify data
@@ -602,9 +438,9 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                                "(0x%0.4x)\nExpected: %a (half 0x%0.4x) "
                                "\nActual: %a (half 0x%0.4x)\n",
                                job->f->name, sizeNames[k], err, s[j], p[j],
-                               t[j], cl_half_to_float(r[j]), test, q[j]);
+                               cl_half_to_float(r[j]), t[j], test, q[j]);
                     error = -1;
-                    goto exit;
+                    return error;
                 }
             }
         }
@@ -617,7 +453,7 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         {
             vlog_error("Error: clEnqueueUnmapMemObject %d failed 2! err: %d\n",
                        j, error);
-            goto exit;
+            return error;
         }
     }
 
@@ -639,7 +475,6 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         }
         fflush(stdout);
     }
-exit:
-    if (s) free(s);
+
     return error;
 }

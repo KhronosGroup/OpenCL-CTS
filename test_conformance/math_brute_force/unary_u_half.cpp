@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2023 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,107 +23,7 @@
 #include <cstring>
 #include <cinttypes>
 
-#if 0
-static int BuildKernelHalf(const char *name, int vectorSize, cl_kernel *k,
-                           cl_program *p, bool relaxedMode)
-{
-    const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n",
-                        "__kernel void math_kernel",
-                        sizeNames[vectorSize],
-                        "( __global half",
-                        sizeNames[vectorSize],
-                        "* out, __global ushort",
-                        sizeNames[vectorSize],
-                        "* in)\n"
-                        "{\n"
-                        "   int i = get_global_id(0);\n"
-                        "   out[i] = ",
-                        name,
-                        "( in[i] );\n"
-                        "}\n" };
-
-    const char *c3[] = {
-        "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n",
-        "__kernel void math_kernel",
-        sizeNames[vectorSize],
-        "( __global half* out, __global ushort* in)\n"
-        "{\n"
-        "   size_t i = get_global_id(0);\n"
-        "   if( i + 1 < get_global_size(0) )\n"
-        "   {\n"
-        "       ushort3 u0 = vload3( 0, in + 3 * i );\n"
-        "       half3 f0 = ",
-        name,
-        "( u0 );\n"
-        "       vstore3( f0, 0, out + 3*i );\n"
-        "   }\n"
-        "   else\n"
-        "   {\n"
-        "       size_t parity = i & 1;   // Figure out how many elements are "
-        "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
-        "buffer size \n"
-        "       ushort3 u0;\n"
-        "       half3 f0;\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 1:\n"
-        "               u0 = (ushort3)( in[3*i], 0xdead, 0xdead ); \n"
-        "               break;\n"
-        "           case 0:\n"
-        "               u0 = (ushort3)( in[3*i], in[3*i+1], 0xdead ); \n"
-        "               break;\n"
-        "       }\n"
-        "       f0 = ",
-        name,
-        "( u0 );\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 0:\n"
-        "               out[3*i+1] = f0.y; \n"
-        "               // fall through\n"
-        "           case 1:\n"
-        "               out[3*i] = f0.x; \n"
-        "               break;\n"
-        "       }\n"
-        "   }\n"
-        "}\n"
-    };
-
-    const char **kern = c;
-    size_t kernSize = sizeof(c) / sizeof(c[0]);
-
-    if (sizeValues[vectorSize] == 3)
-    {
-        kern = c3;
-        kernSize = sizeof(c3) / sizeof(c3[0]);
-    }
-
-    char testName[32];
-    snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
-             sizeNames[vectorSize]);
-
-    return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
-}
-
-typedef struct BuildKernelInfo
-{
-    cl_uint offset; // the first vector size to build
-    cl_kernel *kernels;
-    cl_program *programs;
-    const char *nameInCode;
-    bool relaxedMode;
-} BuildKernelInfo;
-
-static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                 void *p)
-{
-    BuildKernelInfo *info = (BuildKernelInfo *)p;
-    cl_uint i = info->offset + job_id;
-    return BuildKernelHalf(info->nameInCode, i, info->kernels + i,
-                           info->programs + i, info->relaxedMode);
-}
-#else
-
+////////////////////////////////////////////////////////////////////////////////
 static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
                                  void *p)
 {
@@ -136,8 +36,7 @@ static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
     return BuildKernels(info, job_id, generator);
 }
 
-#endif
-
+////////////////////////////////////////////////////////////////////////////////
 int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
 {
     int error;
@@ -334,16 +233,6 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
 
     if (!gSkipCorrectnessTesting) vlog("\t%8.2f @ %a", maxError, maxErrorVal);
     vlog("\n");
-
-#if 0
-exit:
-    // Release
-    for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
-    {
-        clReleaseKernel(kernels[k]);
-        clReleaseProgram(programs[k]);
-    }
-#endif
 
     return error;
 }
