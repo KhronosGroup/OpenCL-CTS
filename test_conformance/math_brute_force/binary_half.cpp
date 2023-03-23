@@ -132,10 +132,11 @@ static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
                            info->kernels[i], info->programs + i,
                            info->relaxedMode);
 }
-#else
+#endif
 
-static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                 void *p)
+namespace {
+
+cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
     auto generator = [](const std::string &kernel_name, const char *builtin,
@@ -147,8 +148,7 @@ static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
     return BuildKernels(info, job_id, generator);
 }
 
-#endif
-
+////////////////////////////////////////////////////////////////////////////////
 
 // Thread specific data for a worker thread
 typedef struct ThreadInfo
@@ -200,6 +200,8 @@ struct TestInfo : public TestInfoBase
     // k[vector_size][thread_id]
     KernelMatrix k;
 };
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // A table of more difficult cases to get right

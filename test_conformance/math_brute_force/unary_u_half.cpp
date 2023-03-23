@@ -21,6 +21,7 @@
 #include "reference_math.h"
 
 #include <cstring>
+#include <cinttypes>
 
 #if 0
 static int BuildKernelHalf(const char *name, int vectorSize, cl_kernel *k,
@@ -130,7 +131,7 @@ static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
     auto generator = [](const std::string &kernel_name, const char *builtin,
                         cl_uint vector_size_index) {
         return GetUnaryKernel(kernel_name, builtin, ParameterType::Half,
-                              ParameterType::UInt, vector_size_index);
+                              ParameterType::UShort, vector_size_index);
     };
     return BuildKernels(info, job_id, generator);
 }
@@ -311,8 +312,9 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
         {
             if (gVerboseBruteForce)
             {
-                vlog("base:%14u step:%10zu  bufferSize:%10zd \n", i, step,
-                     bufferSize);
+                vlog("base:%14" PRIu64 " step:%10" PRIu64
+                     "  bufferSize:%10zd \n",
+                     i, step, bufferSize);
             }
             else
             {

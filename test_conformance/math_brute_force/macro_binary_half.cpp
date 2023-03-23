@@ -123,23 +123,23 @@ static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
                            info->kernels[i], info->programs + i,
                            info->relaxedMode);
 }
-#else
+#endif
 
+namespace {
 
-static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
-                                 void *p)
+cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
     auto generator = [](const std::string &kernel_name, const char *builtin,
                         cl_uint vector_size_index) {
-        return GetBinaryKernel(kernel_name, builtin, ParameterType::Int,
+        return GetBinaryKernel(kernel_name, builtin, ParameterType::Short,
                                ParameterType::Half, ParameterType::Half,
                                vector_size_index);
     };
     return BuildKernels(info, job_id, generator);
 }
 
-#endif
+////////////////////////////////////////////////////////////////////////////////
 
 typedef struct ThreadInfo
 {
@@ -180,6 +180,8 @@ struct TestInfo : public TestInfoBase
     // k[vector_size][thread_id]
     KernelMatrix k;
 };
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

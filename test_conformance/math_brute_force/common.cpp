@@ -30,6 +30,8 @@ const char *GetTypeName(ParameterType type)
         case ParameterType::Half: return "half";
         case ParameterType::Float: return "float";
         case ParameterType::Double: return "double";
+        case ParameterType::Short: return "short";
+        case ParameterType::UShort: return "ushort";
         case ParameterType::Int: return "int";
         case ParameterType::UInt: return "uint";
         case ParameterType::Long: return "long";
@@ -45,6 +47,9 @@ const char *GetUndefValue(ParameterType type)
         case ParameterType::Half:
         case ParameterType::Float:
         case ParameterType::Double: return "NAN";
+
+        case ParameterType::Short:
+        case ParameterType::UShort: return "0x5678";
 
         case ParameterType::Int:
         case ParameterType::UInt: return "0x12345678";
@@ -81,6 +86,8 @@ void EmitEnableExtension(std::ostringstream &kernel, ParameterType type)
             break;
 
         case ParameterType::Float:
+        case ParameterType::Short:
+        case ParameterType::UShort:
         case ParameterType::Int:
         case ParameterType::UInt:
         case ParameterType::Long:
