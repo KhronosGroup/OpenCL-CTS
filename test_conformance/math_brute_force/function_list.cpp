@@ -29,18 +29,18 @@
 // Only use ulps information in spir test
 #ifdef FUNCTION_LIST_ULPS_ONLY
 
-#define ENTRY(_name, _ulp, _embedded_ulp, _half_ulp, _rmode, _type)                          \
-    {                                                                                        \
-        STRINGIFY(_name), STRINGIFY(_name), { NULL }, { NULL }, { NULL },                    \
-            _ulp, _ulp, _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,                \
-            RELAXED_OFF, _type                                                               \
+#define ENTRY(_name, _ulp, _embedded_ulp, _half_ulp, _rmode, _type)            \
+    {                                                                          \
+        STRINGIFY(_name), STRINGIFY(_name), { NULL }, { NULL }, { NULL },      \
+            _ulp, _ulp, _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,  \
+            RELAXED_OFF, _type                                                 \
     }
-#define ENTRY_EXT(_name, _ulp, _embedded_ulp, _half_ulp, _relaxed_ulp, _rmode, _type,        \
-                  _relaxed_embedded_ulp)                                                     \
-    {                                                                                        \
-        STRINGIFY(_name), STRINGIFY(_name), { NULL }, { NULL }, { NULL },                    \
-            _ulp, _ulp, _half_ulp, _embedded_ulp, _relaxed_ulp,                              \
-            _relaxed_embedded_ulp, _rmode, RELAXED_ON, _type                                 \
+#define ENTRY_EXT(_name, _ulp, _embedded_ulp, _half_ulp, _relaxed_ulp, _rmode, \
+                  _type, _relaxed_embedded_ulp)                                \
+    {                                                                          \
+        STRINGIFY(_name), STRINGIFY(_name), { NULL }, { NULL }, { NULL },      \
+            _ulp, _ulp, _half_ulp, _embedded_ulp, _relaxed_ulp,                \
+            _relaxed_embedded_ulp, _rmode, RELAXED_ON, _type                   \
     }
 #define HALF_ENTRY(_name, _ulp, _embedded_ulp, _rmode, _type)                  \
     {                                                                          \
@@ -48,11 +48,12 @@
             { NULL }, { NULL }, _ulp, _ulp, _ulp, _embedded_ulp, INFINITY,     \
             INFINITY, _rmode, RELAXED_OFF, _type                               \
     }
-#define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _half_ulp, _rmode, _type)      \
-    {                                                                                        \
-        STRINGIFY(_name), _operator, { NULL }, { NULL }, { NULL }, _ulp, _ulp,               \
-            _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF,               \
-            _type                                                                            \
+#define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _half_ulp,       \
+                       _rmode, _type)                                          \
+    {                                                                          \
+        STRINGIFY(_name), _operator, { NULL }, { NULL }, { NULL }, _ulp, _ulp, \
+            _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, \
+            _type                                                              \
     }
 
 #define unaryF NULL
@@ -80,21 +81,21 @@
 
 #else // FUNCTION_LIST_ULPS_ONLY
 
-#define ENTRY(_name, _ulp, _embedded_ulp, _half_ulp, _rmode, _type)                         \
-    {                                                                                       \
-        STRINGIFY(_name), STRINGIFY(_name), { (void*)reference_##_name },                   \
-            { (void*)reference_##_name##l }, { (void*)reference_##_name },                  \
-            _ulp, _ulp, _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,               \
-            RELAXED_OFF, _type                                                              \
+#define ENTRY(_name, _ulp, _embedded_ulp, _half_ulp, _rmode, _type)            \
+    {                                                                          \
+        STRINGIFY(_name), STRINGIFY(_name), { (void*)reference_##_name },      \
+            { (void*)reference_##_name##l }, { (void*)reference_##_name },     \
+            _ulp, _ulp, _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,  \
+            RELAXED_OFF, _type                                                 \
     }
-#define ENTRY_EXT(_name, _ulp, _embedded_ulp, _half_ulp, _relaxed_ulp, _rmode, _type,       \
-                  _relaxed_embedded_ulp)                                                    \
-    {                                                                                       \
-        STRINGIFY(_name), STRINGIFY(_name), { (void*)reference_##_name },                   \
-            { (void*)reference_##_name##l },                                                \
-            { (void*)reference_##relaxed_##_name }, _ulp, _ulp, _half_ulp,                  \
-            _embedded_ulp, _relaxed_ulp, _relaxed_embedded_ulp, _rmode,                     \
-            RELAXED_ON, _type                                                               \
+#define ENTRY_EXT(_name, _ulp, _embedded_ulp, _half_ulp, _relaxed_ulp, _rmode, \
+                  _type, _relaxed_embedded_ulp)                                \
+    {                                                                          \
+        STRINGIFY(_name), STRINGIFY(_name), { (void*)reference_##_name },      \
+            { (void*)reference_##_name##l },                                   \
+            { (void*)reference_##relaxed_##_name }, _ulp, _ulp, _half_ulp,     \
+            _embedded_ulp, _relaxed_ulp, _relaxed_embedded_ulp, _rmode,        \
+            RELAXED_ON, _type                                                  \
     }
 #define HALF_ENTRY(_name, _ulp, _embedded_ulp, _rmode, _type)                  \
     {                                                                          \
@@ -103,11 +104,12 @@
             _ulp, _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF,      \
             _type                                                              \
     }
-#define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _half_ulp, _rmode, _type)     \
-    {                                                                                       \
-        STRINGIFY(_name), _operator, { (void*)reference_##_name },                          \
-            { (void*)reference_##_name##l }, { NULL }, _ulp, _ulp, _half_ulp,               \
-            _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type                   \
+#define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _half_ulp,       \
+                       _rmode, _type)                                          \
+    {                                                                          \
+        STRINGIFY(_name), _operator, { (void*)reference_##_name },             \
+            { (void*)reference_##_name##l }, { NULL }, _ulp, _ulp, _half_ulp,  \
+            _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
     }
 
 static constexpr vtbl _unary = {
@@ -297,7 +299,8 @@ const Func functionList[] = {
     ENTRY(isunordered, 0.0f, 0.0f, 0.0f, FTZ_OFF, macro_binaryF),
     ENTRY(ldexp, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF_i),
     ENTRY(lgamma, INFINITY, INFINITY, INFINITY, FTZ_OFF, unaryF),
-    ENTRY(lgamma_r, INFINITY, INFINITY, INFINITY, FTZ_OFF, unaryF_two_results_i),
+    ENTRY(lgamma_r, INFINITY, INFINITY, INFINITY, FTZ_OFF,
+          unaryF_two_results_i),
     ENTRY_EXT(log, 3.0f, 4.0f, 2.0f, 4.76837158203125e-7f, FTZ_OFF, unaryF,
               4.76837158203125e-7f), // relaxed ulp 2^-21
     ENTRY_EXT(log2, 3.0f, 4.0f, 2.0f, 4.76837158203125e-7f, FTZ_OFF, unaryF,
@@ -306,7 +309,8 @@ const Func functionList[] = {
               4.76837158203125e-7f), // relaxed ulp 2^-21
     ENTRY(log1p, 2.0f, 4.0f, 2.0f, FTZ_OFF, unaryF),
     ENTRY(logb, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryF),
-    ENTRY_EXT(mad, INFINITY, INFINITY, INFINITY, INFINITY, FTZ_OFF, mad_function,
+    ENTRY_EXT(mad, INFINITY, INFINITY, INFINITY, INFINITY, FTZ_OFF,
+              mad_function,
               INFINITY), // in fast-relaxed-math mode it has to be either
                          // exactly rounded fma or exactly rounded a*b+c
     ENTRY(maxmag, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF),
@@ -331,7 +335,8 @@ const Func functionList[] = {
     ENTRY(signbit, 0.0f, 0.0f, 0.0f, FTZ_OFF, macro_unaryF),
     ENTRY_EXT(sin, 4.0f, 4.0f, 2.0f, 0.00048828125f, FTZ_OFF, unaryF,
               0.00048828125f), // relaxed ulp 2^-11
-    ENTRY_EXT(sincos, 4.0f, 4.0f, 2.0f, 0.00048828125f, FTZ_OFF, unaryF_two_results,
+    ENTRY_EXT(sincos, 4.0f, 4.0f, 2.0f, 0.00048828125f, FTZ_OFF,
+              unaryF_two_results,
               0.00048828125f), // relaxed ulp 2^-11
     ENTRY(sinh, 4.0f, 4.0f, 2.0f, FTZ_OFF, unaryF),
     ENTRY_EXT(sinpi, 4.0f, 4.0f, 2.0f, 0.00048828125f, FTZ_OFF, unaryF,
