@@ -363,8 +363,6 @@ int test_get_imageObject_info( cl_mem * image, cl_mem_flags objectFlags, cl_imag
     cl_mem_flags flags;
     cl_uint mapCount;
     cl_uint refCount;
-    size_t rowPitchMultiplier;
-    size_t slicePitchMultiplier;
     cl_context otherCtx;
     size_t offset;
     size_t sz;

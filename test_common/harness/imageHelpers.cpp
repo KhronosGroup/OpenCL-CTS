@@ -23,6 +23,7 @@
 #include <malloc.h>
 #endif
 #include <algorithm>
+#include <cinttypes>
 #include <iterator>
 #if !defined(_WIN32)
 #include <cmath>
@@ -421,7 +422,7 @@ void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
               (int)thirdDim, (int)imageInfo->rowPitch,
               (int)imageInfo->rowPitch
                   - (int)imageInfo->width * (int)pixel_size);
-    log_error("Failed at column: %ld   ", where);
+    log_error("Failed at column: %zu   ", where);
 
     switch (pixel_size)
     {
@@ -454,7 +455,7 @@ void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
                 ((cl_ushort *)destPixel)[1], ((cl_ushort *)destPixel)[2]);
             break;
         case 8:
-            log_error("*0x%16.16llx vs. 0x%16.16llx\n",
+            log_error("*0x%16.16" PRIx64 " vs. 0x%16.16" PRIx64 "\n",
                       ((cl_ulong *)sourcePixel)[0], ((cl_ulong *)destPixel)[0]);
             break;
         case 12:
@@ -473,7 +474,7 @@ void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
                       ((cl_uint *)destPixel)[2], ((cl_uint *)destPixel)[3]);
             break;
         default:
-            log_error("Don't know how to print pixel size of %ld\n",
+            log_error("Don't know how to print pixel size of %zu\n",
                       pixel_size);
             break;
     }
@@ -1994,7 +1995,7 @@ FloatPixel sample_image_pixel_float_offset(
                 break;
             case CL_MEM_OBJECT_IMAGE1D:
             case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-                log_info("Starting coordinate: %f\b", x);
+                log_info("Starting coordinate: %f\n", x);
                 break;
             case CL_MEM_OBJECT_IMAGE2D:
                 log_info("Starting coordinate: %f, %f\n", x, y);
@@ -2150,14 +2151,6 @@ FloatPixel sample_image_pixel_float_offset(
                 log_info("\t\tp11: %f, %f, %f, %f\n", lowRight[0], lowRight[1],
                          lowRight[2], lowRight[3]);
             }
-
-            bool printMe = false;
-            if (x1 <= 0 || x2 <= 0 || x1 >= (int)width - 1
-                || x2 >= (int)width - 1)
-                printMe = true;
-            if (y1 <= 0 || y2 <= 0 || y1 >= (int)height - 1
-                || y2 >= (int)height - 1)
-                printMe = true;
 
             double weights[2][2];
 

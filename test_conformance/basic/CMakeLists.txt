@@ -2,13 +2,12 @@ set(MODULE_NAME BASIC)
 
 set(${MODULE_NAME}_SOURCES
     main.cpp
-    test_fpmath_float.cpp test_fpmath_float2.cpp test_fpmath_float4.cpp
+    test_fpmath_float.cpp
     test_intmath.cpp
     test_hiloeo.cpp test_local.cpp test_pointercast.cpp
     test_if.cpp test_loop.cpp
-    test_readimage.cpp test_readimage_int16.cpp test_readimage_fp32.cpp
-    test_readimage3d.cpp test_readimage3d_int16.cpp test_readimage3d_fp32.cpp
-    test_writeimage.cpp test_writeimage_int16.cpp test_writeimage_fp32.cpp
+    test_readimage.cpp
+    test_writeimage.cpp
     test_multireadimageonefmt.cpp test_multireadimagemultifmt.cpp
     test_imagedim.cpp
     test_vloadstore.cpp
@@ -31,7 +30,6 @@ set(${MODULE_NAME}_SOURCES
     test_imagecopy.cpp
     test_imagerandomcopy.cpp
     test_arrayimagecopy.cpp
-    test_arrayimagecopy3d.cpp
     test_imagecopy3d.cpp
     test_enqueue_map.cpp
     test_work_item_functions.cpp

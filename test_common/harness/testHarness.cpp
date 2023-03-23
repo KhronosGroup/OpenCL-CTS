@@ -22,7 +22,6 @@
 #include <cassert>
 #include <stdexcept>
 #include <vector>
-#include "threadTesting.h"
 #include "errorHelpers.h"
 #include "kernelHelpers.h"
 #include "fpcontrol.h"
@@ -60,6 +59,54 @@ bool gCoreILProgram = true;
 
 #define DEFAULT_NUM_ELEMENTS 0x4000
 
+static int saveResultsToJson(const char *suiteName, test_definition testList[],
+                             unsigned char selectedTestList[],
+                             test_status resultTestList[], int testNum)
+{
+    char *fileName = getenv("CL_CONFORMANCE_RESULTS_FILENAME");
+    if (fileName == nullptr)
+    {
+        return EXIT_SUCCESS;
+    }
+
+    FILE *file = fopen(fileName, "w");
+    if (NULL == file)
+    {
+        log_error("ERROR: Failed to open '%s' for writing results.\n",
+                  fileName);
+        return EXIT_FAILURE;
+    }
+
+    const char *save_map[] = { "success", "failure" };
+    const char *result_map[] = { "pass", "fail", "skip" };
+    const char *linebreak[] = { "", ",\n" };
+    int add_linebreak = 0;
+
+    fprintf(file, "{\n");
+    fprintf(file, "\t\"cmd\": \"%s\",\n", suiteName);
+    fprintf(file, "\t\"results\": {\n");
+
+    for (int i = 0; i < testNum; ++i)
+    {
+        if (selectedTestList[i])
+        {
+            fprintf(file, "%s\t\t\"%s\": \"%s\"", linebreak[add_linebreak],
+                    testList[i].name, result_map[(int)resultTestList[i]]);
+            add_linebreak = 1;
+        }
+    }
+    fprintf(file, "\n");
+
+    fprintf(file, "\t}\n");
+    fprintf(file, "}\n");
+
+    int ret = fclose(file) ? EXIT_FAILURE : EXIT_SUCCESS;
+
+    log_info("Saving results to %s: %s!\n", fileName, save_map[ret]);
+
+    return ret;
+}
+
 int runTestHarness(int argc, const char *argv[], int testNum,
                    test_definition testList[], int forceNoContextCreation,
                    cl_command_queue_properties queueProps)
@@ -68,19 +115,28 @@ int runTestHarness(int argc, const char *argv[], int testNum,
                                    forceNoContextCreation, queueProps, NULL);
 }
 
-int skip_init_info(int count)
+int suite_did_not_pass_init(const char *suiteName, test_status status,
+                            int testNum, test_definition testList[])
 {
-    log_info("Test skipped while initialization\n");
-    log_info("SKIPPED %d of %d tests.\n", count, count);
-    return EXIT_SUCCESS;
+    std::vector<unsigned char> selectedTestList(testNum, 1);
+    std::vector<test_status> resultTestList(testNum, status);
+
+    int ret = saveResultsToJson(suiteName, testList, selectedTestList.data(),
+                                resultTestList.data(), testNum);
+
+    log_info("Test %s while initialization\n",
+             status == TEST_SKIP ? "skipped" : "failed");
+    log_info("%s %d of %d tests.\n", status == TEST_SKIP ? "SKIPPED" : "FAILED",
+             testNum, testNum);
+
+    if (ret != EXIT_SUCCESS)
+    {
+        return ret;
+    }
+
+    return status == TEST_SKIP ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-int fail_init_info(int count)
-{
-    log_info("Test failed while initialization\n");
-    log_info("FAILED %d of %d tests.\n", count, count);
-    return EXIT_FAILURE;
-}
 void version_expected_info(const char *test_name, const char *api_name,
                            const char *expected_version,
                            const char *device_version)
@@ -470,6 +526,7 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         log_error("Invalid device address bit size returned by device.\n");
         return EXIT_FAILURE;
     }
+    const char *suiteName = argv[0];
     if (gCompilationMode == kSpir_v)
     {
         test_status spirv_readiness = check_spirv_compilation_readiness(device);
@@ -478,9 +535,15 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
             switch (spirv_readiness)
             {
                 case TEST_PASS: break;
-                case TEST_FAIL: return fail_init_info(testNum);
-                case TEST_SKIP: return skip_init_info(testNum);
-                case TEST_SKIPPED_ITSELF: return skip_init_info(testNum);
+                case TEST_FAIL:
+                    return suite_did_not_pass_init(suiteName, TEST_FAIL,
+                                                   testNum, testList);
+                case TEST_SKIP:
+                    return suite_did_not_pass_init(suiteName, TEST_SKIP,
+                                                   testNum, testList);
+                case TEST_SKIPPED_ITSELF:
+                    return suite_did_not_pass_init(suiteName, TEST_SKIP,
+                                                   testNum, testList);
             }
         }
     }
@@ -492,9 +555,15 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         switch (status)
         {
             case TEST_PASS: break;
-            case TEST_FAIL: return fail_init_info(testNum);
-            case TEST_SKIP: return skip_init_info(testNum);
-            case TEST_SKIPPED_ITSELF: return skip_init_info(testNum);
+            case TEST_FAIL:
+                return suite_did_not_pass_init(suiteName, TEST_FAIL, testNum,
+                                               testList);
+            case TEST_SKIP:
+                return suite_did_not_pass_init(suiteName, TEST_SKIP, testNum,
+                                               testList);
+            case TEST_SKIPPED_ITSELF:
+                return suite_did_not_pass_init(suiteName, TEST_SKIP, testNum,
+                                               testList);
         }
     }
 
@@ -574,49 +643,6 @@ static int find_matching_tests(test_definition testList[],
     return EXIT_SUCCESS;
 }
 
-static int saveResultsToJson(const char *fileName, const char *suiteName,
-                             test_definition testList[],
-                             unsigned char selectedTestList[],
-                             test_status resultTestList[], int testNum)
-{
-    FILE *file = fopen(fileName, "w");
-    if (NULL == file)
-    {
-        log_error("ERROR: Failed to open '%s' for writing results.\n",
-                  fileName);
-        return EXIT_FAILURE;
-    }
-
-    const char *save_map[] = { "success", "failure" };
-    const char *result_map[] = { "pass", "fail", "skip" };
-    const char *linebreak[] = { "", ",\n" };
-    int add_linebreak = 0;
-
-    fprintf(file, "{\n");
-    fprintf(file, "\t\"cmd\": \"%s\",\n", suiteName);
-    fprintf(file, "\t\"results\": {\n");
-
-    for (int i = 0; i < testNum; ++i)
-    {
-        if (selectedTestList[i])
-        {
-            fprintf(file, "%s\t\t\"%s\": \"%s\"", linebreak[add_linebreak],
-                    testList[i].name, result_map[(int)resultTestList[i]]);
-            add_linebreak = 1;
-        }
-    }
-    fprintf(file, "\n");
-
-    fprintf(file, "\t}\n");
-    fprintf(file, "}\n");
-
-    int ret = fclose(file) ? 1 : 0;
-
-    log_info("Saving results to %s: %s!\n", fileName, save_map[ret]);
-
-    return ret;
-}
-
 static void print_results(int failed, int count, const char *name)
 {
     if (count < failed)
@@ -658,7 +684,6 @@ int parseAndCallCommandLineTests(int argc, const char *argv[],
     int ret = EXIT_SUCCESS;
 
     unsigned char *selectedTestList = (unsigned char *)calloc(testNum, 1);
-    test_status *resultTestList = NULL;
 
     if (argc == 1)
     {
@@ -697,24 +722,19 @@ int parseAndCallCommandLineTests(int argc, const char *argv[],
 
     if (ret == EXIT_SUCCESS)
     {
-        resultTestList =
-            (test_status *)calloc(testNum, sizeof(*resultTestList));
+        std::vector<test_status> resultTestList(testNum, TEST_PASS);
 
-        callTestFunctions(testList, selectedTestList, resultTestList, testNum,
-                          device, forceNoContextCreation, num_elements,
+        callTestFunctions(testList, selectedTestList, resultTestList.data(),
+                          testNum, device, forceNoContextCreation, num_elements,
                           queueProps);
 
         print_results(gFailCount, gTestCount, "sub-test");
         print_results(gTestsFailed, gTestsFailed + gTestsPassed, "test");
 
-        char *filename = getenv("CL_CONFORMANCE_RESULTS_FILENAME");
-        if (filename != NULL)
-        {
-            ret = saveResultsToJson(filename, argv[0], testList,
-                                    selectedTestList, resultTestList, testNum);
-        }
+        ret = saveResultsToJson(argv[0], testList, selectedTestList,
+                                resultTestList.data(), testNum);
 
-        if (std::any_of(resultTestList, resultTestList + testNum,
+        if (std::any_of(resultTestList.begin(), resultTestList.end(),
                         [](test_status result) {
                             switch (result)
                             {
@@ -730,7 +750,6 @@ int parseAndCallCommandLineTests(int argc, const char *argv[],
     }
 
     free(selectedTestList);
-    free(resultTestList);
 
     return ret;
 }
@@ -1178,7 +1197,7 @@ cl_platform_id getPlatformFromDevice(cl_device_id deviceID)
 
 void PrintArch(void)
 {
-    vlog("sizeof( void*) = %ld\n", sizeof(void *));
+    vlog("sizeof( void*) = %zu\n", sizeof(void *));
 #if defined(__ppc__)
     vlog("ARCH:\tppc\n");
 #elif defined(__ppc64__)

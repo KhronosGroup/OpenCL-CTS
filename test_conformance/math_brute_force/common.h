@@ -16,12 +16,80 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include "harness/typeWrappers.h"
 #include "utility.h"
 
 #include <array>
+#include <string>
 #include <vector>
 
 // Array of thread-specific kernels for each vector size.
-using KernelMatrix = std::array<std::vector<cl_kernel>, VECTOR_SIZE_COUNT>;
+using KernelMatrix =
+    std::array<std::vector<clKernelWrapper>, VECTOR_SIZE_COUNT>;
+
+// Array of programs for each vector size.
+using Programs = std::array<clProgramWrapper, VECTOR_SIZE_COUNT>;
+
+// Array of buffers for each vector size.
+using Buffers = std::array<clMemWrapper, VECTOR_SIZE_COUNT>;
+
+// Types supported for kernel code generation.
+enum class ParameterType
+{
+    Half,
+    Float,
+    Double,
+    Int,
+    UInt,
+    Long,
+    ULong,
+};
+
+// Return kernel name suffixed with vector size.
+std::string GetKernelName(int vector_size_index);
+
+// Generate kernel code for the given builtin function/operator.
+std::string GetUnaryKernel(const std::string &kernel_name, const char *builtin,
+                           ParameterType retType, ParameterType type1,
+                           int vector_size_index);
+std::string GetUnaryKernel(const std::string &kernel_name, const char *builtin,
+                           ParameterType retType1, ParameterType retType2,
+                           ParameterType type1, int vector_size_index);
+std::string GetBinaryKernel(const std::string &kernel_name, const char *builtin,
+                            ParameterType retType, ParameterType type1,
+                            ParameterType type2, int vector_size_index);
+std::string GetBinaryKernel(const std::string &kernel_name, const char *builtin,
+                            ParameterType retType1, ParameterType retType2,
+                            ParameterType type1, ParameterType type2,
+                            int vector_size_index);
+std::string GetTernaryKernel(const std::string &kernel_name,
+                             const char *builtin, ParameterType retType,
+                             ParameterType type1, ParameterType type2,
+                             ParameterType type3, int vector_size_index);
+
+// Information to generate OpenCL kernels.
+struct BuildKernelInfo
+{
+    // Number of kernels to build, one for each thread to avoid data races.
+    cl_uint threadCount;
+
+    KernelMatrix &kernels;
+
+    Programs &programs;
+
+    // Function, macro or symbol tested by the kernel.
+    const char *nameInCode;
+
+    // Whether to build with -cl-fast-relaxed-math.
+    bool relaxedMode;
+};
+
+using SourceGenerator = std::string (*)(const std::string &kernel_name,
+                                        const char *builtin,
+                                        cl_uint vector_size_index);
+
+/// Build kernels for all threads in "info" for the given job_id.
+cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
+                    SourceGenerator generator);
 
 #endif /* COMMON_H */

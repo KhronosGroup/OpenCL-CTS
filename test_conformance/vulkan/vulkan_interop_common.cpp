@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2022 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,16 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _threadTesting_h
-#define _threadTesting_h
 
-#ifdef __APPLE__
-#include <OpenCL/opencl.h>
-#else
-#include <CL/opencl.h>
-#endif
+#include "vulkan_interop_common.hpp"
 
-typedef int (*basefn)(cl_device_id deviceID, cl_context context,
-                      cl_command_queue queue, int num_elements);
-
-#endif // _threadTesting_h
+uint32_t innerIterations(5);
+uint32_t perfIterations(100);
+uint32_t stressIterations(1000);
+size_t cpuThreadsPerGpu(3);

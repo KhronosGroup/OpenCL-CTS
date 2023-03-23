@@ -78,8 +78,9 @@ int test_read_image_1D_buffer( cl_context context, cl_command_queue queue, cl_ke
     error = clGetMemObjectInfo(image[0], CL_MEM_ASSOCIATED_MEMOBJECT, sizeof(ret), &ret, NULL);
     if ( error != CL_SUCCESS )
     {
-      log_error( "ERROR: Unable to query CL_MEM_ASSOCIATED_MEMOBJECT\n", IGetErrorString( error ) );
-      return error;
+        log_error("ERROR: Unable to query CL_MEM_ASSOCIATED_MEMOBJECT (%s)\n",
+                  IGetErrorString(error));
+        return error;
     }
 
     if (ret != imageBuffer) {
@@ -219,6 +220,7 @@ int test_read_image_set_1D_buffer(cl_device_id device, cl_context context,
 
     if (memSize > (cl_ulong)SIZE_MAX) {
       memSize = (cl_ulong)SIZE_MAX;
+      maxAllocSize = (cl_ulong)SIZE_MAX;
     }
 
     // note: image_buffer test uses image1D for results validation.

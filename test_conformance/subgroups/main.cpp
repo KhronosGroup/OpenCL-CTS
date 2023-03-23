@@ -41,7 +41,8 @@ test_definition test_list[] = {
     ADD_TEST(subgroup_functions_ballot),
     ADD_TEST(subgroup_functions_clustered_reduce),
     ADD_TEST(subgroup_functions_shuffle),
-    ADD_TEST(subgroup_functions_shuffle_relative)
+    ADD_TEST(subgroup_functions_shuffle_relative),
+    ADD_TEST(subgroup_functions_rotate),
 };
 
 const int test_num = ARRAY_SIZE(test_list);

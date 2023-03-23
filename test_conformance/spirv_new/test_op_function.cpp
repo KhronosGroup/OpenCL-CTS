@@ -33,7 +33,6 @@ int test_function(cl_device_id deviceID,
     err = clEnqueueWriteBuffer(queue, in, CL_TRUE, 0, bytes, &h_in[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to copy to in buffer");
 
-    cl_uint bits = sizeof(void *) * 8;
     std::string spvStr = std::string("op_function") + "_" + std::string(funcType);
     const char *spvName = spvStr.c_str();
 

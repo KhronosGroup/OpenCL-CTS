@@ -60,13 +60,14 @@ static char appName[MAXPATHLEN] = "";
 cl_device_id gDevice = NULL;
 cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
-static int32_t gStartTestNumber = -1;
-static int32_t gEndTestNumber = -1;
+static size_t gStartTestNumber = ~0u;
+static size_t gEndTestNumber = ~0u;
 int gSkipCorrectnessTesting = 0;
 static int gStopOnError = 0;
 static bool gSkipRestOfTests;
 int gForceFTZ = 0;
 int gWimpyMode = 0;
+int gHostFill = 0;
 static int gHasDouble = 0;
 static int gTestFloat = 1;
 // This flag should be 'ON' by default and it can be changed through the command
@@ -102,7 +103,7 @@ cl_mem gInBuffer2 = NULL;
 cl_mem gInBuffer3 = NULL;
 cl_mem gOutBuffer[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
 cl_mem gOutBuffer2[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
-static MTdata gMTdata;
+static MTdataHolder gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
 int gWimpyReductionFactor = 32;
 int gVerboseBruteForce = 0;
@@ -133,10 +134,10 @@ static int doTest(const char *name)
         const Func *const temp_func = functionList + i;
         if (strcmp(temp_func->name, name) == 0)
         {
-            if ((gStartTestNumber != -1 && i < gStartTestNumber)
+            if ((gStartTestNumber != ~0u && i < gStartTestNumber)
                 || i > gEndTestNumber)
             {
-                vlog("Skipping function #%d\n", i);
+                vlog("Skipping function #%zu\n", i);
                 return 0;
             }
 
@@ -346,7 +347,7 @@ int main(int argc, const char *argv[])
     vlog("\n-------------------------------------------------------------------"
          "----------------------------------------\n");
 
-    gMTdata = init_genrand(gRandomSeed);
+    gMTdata = MTdataHolder(gRandomSeed);
 
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
@@ -355,8 +356,6 @@ int main(int argc, const char *argv[])
                                       test_num, test_list, true, 0, InitCL);
 
     RestoreFPState(&oldMode);
-
-    free_mtdata(gMTdata);
 
     if (gQueue)
     {
@@ -380,16 +379,18 @@ static int ParseArgs(int argc, const char **argv)
     int singleThreaded = 0;
 
     { // Extract the app name
-        strncpy(appName, argv[0], MAXPATHLEN);
+        strncpy(appName, argv[0], MAXPATHLEN - 1);
+        appName[MAXPATHLEN - 1] = '\0';
 
 #if defined(__APPLE__)
         char baseName[MAXPATHLEN];
         char *base = NULL;
-        strncpy(baseName, argv[0], MAXPATHLEN);
+        strncpy(baseName, argv[0], MAXPATHLEN - 1);
+        baseName[MAXPATHLEN - 1] = '\0';
         base = basename(baseName);
         if (NULL != base)
         {
-            strncpy(appName, base, sizeof(appName));
+            strncpy(appName, base, sizeof(appName) - 1);
             appName[sizeof(appName) - 1] = '\0';
         }
 #endif
@@ -443,6 +444,8 @@ static int ParseArgs(int argc, const char **argv)
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
                         break;
 
+                    case 'b': gHostFill ^= 1; break;
+
                     case 'z': gForceFTZ ^= 1; break;
 
                     case '1':
@@ -489,7 +492,7 @@ static int ParseArgs(int argc, const char **argv)
             long number = strtol(arg, &t, 0);
             if (t != arg)
             {
-                if (-1 == gStartTestNumber)
+                if (~0u == gStartTestNumber)
                     gStartTestNumber = (int32_t)number;
                 else
                     gEndTestNumber = gStartTestNumber + (int32_t)number;
@@ -524,8 +527,6 @@ static int ParseArgs(int argc, const char **argv)
         gWimpyMode = 1;
     }
 
-    vlog("\nTest binary built %s %s\n", __DATE__, __TIME__);
-
     PrintArch();
 
     if (gWimpyMode)
@@ -546,7 +547,7 @@ static int ParseArgs(int argc, const char **argv)
 static void PrintFunctions(void)
 {
     vlog("\nMath function names:\n");
-    for (int i = 0; i < functionListCount; i++)
+    for (size_t i = 0; i < functionListCount; i++)
     {
         vlog("\t%s\n", functionList[i].name);
     }
@@ -576,6 +577,7 @@ static void PrintUsage(void)
     vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-10, default factor(%u)\n",
          gWimpyReductionFactor);
+    vlog("\t\t-b\tFill buffers on host instead of device. (Default: off)\n");
     vlog("\t\t-z\tToggle FTZ mode (Section 6.5.3) for all functions. (Set by "
          "device capabilities by default.)\n");
     vlog("\t\t-v\tToggle Verbosity (Default: off)\n ");
@@ -1114,55 +1116,6 @@ int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
 
     return error;
 }
-
-int MakeKernels(const char **c, cl_uint count, const char *name,
-                cl_uint kernel_count, cl_kernel *k, cl_program *p,
-                bool relaxedMode)
-{
-    char options[200] = "";
-
-    if (gForceFTZ)
-    {
-        strcat(options, " -cl-denorms-are-zero ");
-    }
-
-    if (gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT)
-    {
-        strcat(options, " -cl-fp32-correctly-rounded-divide-sqrt ");
-    }
-
-    if (relaxedMode)
-    {
-        strcat(options, " -cl-fast-relaxed-math");
-    }
-
-    int error =
-        create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
-    if (error != CL_SUCCESS)
-    {
-        vlog_error("\t\tFAILED -- Failed to create program. (%d)\n", error);
-        return error;
-    }
-
-    for (cl_uint i = 0; i < kernel_count; i++)
-    {
-        k[i] = clCreateKernel(*p, name, &error);
-        if (NULL == k[i] || error)
-        {
-            char buffer[2048] = "";
-
-            vlog_error("\t\tFAILED -- clCreateKernel() failed: (%d)\n", error);
-            clGetProgramBuildInfo(*p, gDevice, CL_PROGRAM_BUILD_LOG,
-                                  sizeof(buffer), buffer, NULL);
-            vlog_error("Log: %s\n", buffer);
-            clReleaseProgram(*p);
-            return error;
-        }
-    }
-
-    return error;
-}
-
 
 static int IsInRTZMode(void)
 {

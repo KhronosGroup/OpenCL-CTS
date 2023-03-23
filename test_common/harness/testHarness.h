@@ -16,7 +16,6 @@
 #ifndef _testHarness_h
 #define _testHarness_h
 
-#include "threadTesting.h"
 #include "clImageHelper.h"
 #include <string>
 #include <sstream>
@@ -67,9 +66,12 @@ Version get_device_cl_version(cl_device_id device);
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+typedef int (*test_function_pointer)(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+
 typedef struct test_definition
 {
-    basefn func;
+    test_function_pointer func;
     const char *name;
     Version min_version;
 } test_definition;

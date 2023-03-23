@@ -21,6 +21,9 @@
 #include "reference_math.h"
 #include <cstring>
 
+#include "harness/errorHelpers.h"
+
+#if 0
 
 static int BuildKernelHalf(const char *name, int vectorSize,
                            cl_uint kernel_count, cl_kernel *k, cl_program *p,
@@ -129,6 +132,24 @@ static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
                            info->kernels[i], info->programs + i,
                            info->relaxedMode);
 }
+#else
+
+static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
+                                 void *p)
+{
+    BuildKernelInfo &info = *(BuildKernelInfo *)p;
+    auto generator = [](const std::string &kernel_name, const char *builtin,
+                        cl_uint vector_size_index) {
+        return GetBinaryKernel(kernel_name, builtin, ParameterType::Half,
+                               ParameterType::Half, ParameterType::Half,
+                               vector_size_index);
+    };
+    return BuildKernels(info, job_id, generator);
+}
+
+#endif
+
+
 // Thread specific data for a worker thread
 typedef struct ThreadInfo
 {
@@ -144,16 +165,13 @@ typedef struct ThreadInfo
     cl_command_queue tQueue; // per thread command queue to improve performance
 } ThreadInfo;
 
-typedef struct TestInfo
+////////////////////////////////////////////////////////////////////////////////
+
+struct TestInfoBase
 {
     size_t subBufferSize; // Size of the sub-buffer in elements
     const Func *f; // A pointer to the function info
-    cl_program programs[VECTOR_SIZE_COUNT]; // programs for various vector sizes
-    cl_kernel
-        *k[VECTOR_SIZE_COUNT]; // arrays of thread-specific kernels for each
-                               // worker thread:  k[vector_size][thread_id]
-    ThreadInfo *
-        tinfo; // An array of thread specific information for each worker thread
+
     cl_uint threadCount; // Number of worker threads
     cl_uint jobCount; // Number of jobs
     cl_uint step; // step between each chunk and the next.
@@ -164,8 +182,26 @@ typedef struct TestInfo
     int isFDim;
     int skipNanInf;
     int isNextafter;
-} TestInfo;
+};
 
+////////////////////////////////////////////////////////////////////////////////
+
+struct TestInfo : public TestInfoBase
+{
+    TestInfo(const TestInfoBase &base): TestInfoBase(base) {}
+
+    // Array of thread specific information
+    std::vector<ThreadInfo> tinfo;
+
+    // Programs for various vector sizes.
+    Programs programs;
+
+    // Thread-specific kernels for each vector size:
+    // k[vector_size][thread_id]
+    KernelMatrix k;
+};
+
+////////////////////////////////////////////////////////////////////////////////
 // A table of more difficult cases to get right
 static const cl_half specialValuesHalf[] = {
     0xffff,
@@ -185,7 +221,7 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *p);
 int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
                                    bool relaxedMode)
 {
-    TestInfo test_info;
+    TestInfoBase test_info_base;
     cl_int error;
     size_t i, j;
     float maxError = 0.0f;
@@ -194,7 +230,9 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
 
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
     // Init test_info
-    memset(&test_info, 0, sizeof(test_info));
+    memset(&test_info_base, 0, sizeof(test_info_base));
+    TestInfo test_info(test_info_base);
+
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_half) * RoundUpToNextPowerOfTwo(test_info.threadCount));
@@ -219,6 +257,8 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
     test_info.isFDim = 0 == strcmp("fdim", f->nameInCode);
     test_info.skipNanInf = test_info.isFDim && !gInfNanSupport;
     test_info.isNextafter = isNextafter;
+
+#if 0
     // cl_kernels aren't thread safe, so we make one for each vector size for
     // every thread
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
@@ -233,6 +273,7 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
         }
         memset(test_info.k[i], 0, array_size);
     }
+
     test_info.tinfo =
         (ThreadInfo *)malloc(test_info.threadCount * sizeof(*test_info.tinfo));
     if (NULL == test_info.tinfo)
@@ -244,6 +285,13 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
     }
     memset(test_info.tinfo, 0,
            test_info.threadCount * sizeof(*test_info.tinfo));
+
+#else
+
+    test_info.tinfo.resize(test_info.threadCount);
+
+#endif
+
     for (i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = { i * test_info.subBufferSize
@@ -257,7 +305,7 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
             vlog_error("Error: Unable to create sub-buffer of gInBuffer for "
                        "region {%zd, %zd}\n",
                        region.origin, region.size);
-            goto exit;
+            return error;
         }
         test_info.tinfo[i].inBuf2 =
             clCreateSubBuffer(gInBuffer2, CL_MEM_READ_ONLY,
@@ -267,7 +315,7 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
             vlog_error("Error: Unable to create sub-buffer of gInBuffer2 for "
                        "region {%zd, %zd}\n",
                        region.origin, region.size);
-            goto exit;
+            return error;
         }
 
         for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -280,7 +328,7 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
                 vlog_error("Error: Unable to create sub-buffer of gOutBuffer "
                            "for region {%zd, %zd}\n",
                            region.origin, region.size);
-                goto exit;
+                return error;
             }
         }
         test_info.tinfo[i].tQueue =
@@ -288,21 +336,19 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
         if (NULL == test_info.tinfo[i].tQueue || error)
         {
             vlog_error("clCreateCommandQueue failed. (%d)\n", error);
-            goto exit;
+            return error;
         }
         test_info.tinfo[i].d = init_genrand(genrand_int32(d));
     }
 
-
     // Init the kernels
     {
-        BuildKernelInfo build_info = { gMinVectorSizeIndex,
-                                       test_info.threadCount, test_info.k,
+        BuildKernelInfo build_info = { test_info.threadCount, test_info.k,
                                        test_info.programs, f->nameInCode };
-        if ((error = ThreadPool_Do(BuildKernel_HalfFn,
-                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                                   &build_info)))
-            goto exit;
+        error = ThreadPool_Do(BuildKernel_HalfFn,
+                              gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                              &build_info);
+        test_error(error, "ThreadPool_Do: BuildKernel_HalfFn failed\n");
     }
     if (!gSkipCorrectnessTesting)
     {
@@ -319,7 +365,7 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
             }
         }
 
-        if (error) goto exit;
+        test_error(error, "ThreadPool_Do: TestHalf failed\n");
 
         if (gWimpyMode)
             vlog("Wimp pass");
@@ -329,10 +375,9 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
         vlog("\t%8.2f @ {%a, %a}", maxError, maxErrorVal, maxErrorVal2);
     }
 
-
     vlog("\n");
 
-
+#if 0
 exit:
     // Release
     for (i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
@@ -360,17 +405,18 @@ exit:
 
         free(test_info.tinfo);
     }
+#endif
 
     return error;
 }
 
 static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 {
-    const TestInfo *job = (const TestInfo *)data;
+    TestInfo *job = (TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
     size_t buffer_size = buffer_elements * sizeof(cl_half);
     cl_uint base = job_id * (cl_uint)job->step;
-    ThreadInfo *tinfo = job->tinfo + thread_id;
+    ThreadInfo *tinfo = &(job->tinfo[thread_id]);
     float ulps = job->ulps;
     fptr func = job->f->func;
     int ftz = job->ftz;

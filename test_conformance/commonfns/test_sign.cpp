@@ -106,7 +106,6 @@ test_sign(cl_device_id device, cl_context context, cl_command_queue queue, int n
   cl_float    *input_ptr[1], *output_ptr, *p;
   cl_program  program[kTotalVecCount];
   cl_kernel   kernel[kTotalVecCount];
-  void        *values[2];
   size_t  threads[1];
   int num_elements;
   int err;
@@ -168,8 +167,6 @@ test_sign(cl_device_id device, cl_context context, cl_command_queue queue, int n
   if (err)
     return -1;
 
-  values[0] = streams[0];
-  values[1] = streams[1];
   for (i=0; i<kTotalVecCount; i++)
   {
       err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );
@@ -223,14 +220,13 @@ test_sign(cl_device_id device, cl_context context, cl_command_queue queue, int n
   free(input_ptr[0]);
   free(output_ptr);
 
-  if(err)
-    return err;
+  if (err) return err;
 
-    if( ! is_extension_available( device, "cl_khr_fp64"))
-    {
-        log_info( "skipping double test -- cl_khr_fp64 not supported.\n" );
-        return 0;
-    }
+  if (!is_extension_available(device, "cl_khr_fp64"))
+  {
+      log_info("skipping double test -- cl_khr_fp64 not supported.\n");
+      return 0;
+  }
 
     return test_sign_double( device, context, queue, n_elems);
 }
@@ -322,7 +318,6 @@ test_sign_double(cl_device_id device, cl_context context, cl_command_queue queue
   cl_double    *input_ptr[1], *output_ptr, *p;
   cl_program  program[kTotalVecCount];
   cl_kernel   kernel[kTotalVecCount];
-  void        *values[2];
   size_t  threads[1];
   int num_elements;
   int err;
@@ -383,8 +378,6 @@ test_sign_double(cl_device_id device, cl_context context, cl_command_queue queue
   if (err)
     return -1;
 
-  values[0] = streams[0];
-  values[1] = streams[1];
   for (i=0; i<kTotalVecCount; i++)
   {
       err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );

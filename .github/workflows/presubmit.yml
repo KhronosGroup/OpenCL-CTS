@@ -3,11 +3,12 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: Build ${{ matrix.os }} ${{ matrix.arch }}
+    name: Build ${{ matrix.os }} ${{ matrix.arch }}${{ matrix.extra }}
     runs-on: ${{ matrix.os }}
     env:
       JOB_ARCHITECTURE: ${{ matrix.arch }}
       JOB_ENABLE_GL: ${{ matrix.gl }}
+      JOB_ENABLE_DEBUG: ${{ matrix.debug }}
     strategy:
       fail-fast: false
       matrix:
@@ -17,12 +18,15 @@ jobs:
           - os: ubuntu-20.04
             mainmatrix: true
             gl: 1
+            extra: " gl"
           - os: ubuntu-20.04
             mainmatrix: false
             arch: arm
           - os: ubuntu-20.04
             mainmatrix: false
             arch: aarch64
+            debug: 1
+            extra: " debug"
     steps:
       - uses: actions/checkout@v2
       - name: Setup Ninja

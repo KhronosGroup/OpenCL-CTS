@@ -25,77 +25,81 @@
 #include "../../test_common/harness/conversions.h"
 #include "procs.h"
 
-static const char *async_global_to_local_kernel2D =
-    "#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable\n"
-    "%s\n" // optional pragma string
-    "__kernel void test_fn( const __global %s *src, __global %s *dst, __local "
-    "%s *localBuffer, int numElementsPerLine, int lineCopiesPerWorkgroup, int "
-    "lineCopiesPerWorkItem, int srcStride, int dstStride )\n"
-    "{\n"
-    " int i, j;\n"
-    // Zero the local storage first
-    " for(i=0; i<lineCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numElementsPerLine; j++)\n"
-    "     localBuffer[ (get_local_id( 0 "
-    ")*lineCopiesPerWorkItem+i)*(numElementsPerLine + dstStride)+j ] = "
-    "(%s)(%s)0;\n"
-    // Do this to verify all kernels are done zeroing the local buffer before we
-    // try the copy
-    "    barrier( CLK_LOCAL_MEM_FENCE );\n"
-    "    event_t event;\n"
-    "    event = async_work_group_copy_2D2D( (__local %s*)localBuffer, "
-    "(__global const "
-    "%s*)(src+lineCopiesPerWorkgroup*get_group_id(0)*(numElementsPerLine + "
-    "srcStride)), (size_t)numElementsPerLine, (size_t)lineCopiesPerWorkgroup, "
-    "srcStride, dstStride, 0 );\n"
-    // Wait for the copy to complete, then verify by manually copying to the
-    // dest
-    "     wait_group_events( 1, &event );\n"
-    " for(i=0; i<lineCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numElementsPerLine; j++)\n"
-    "     dst[ (get_global_id( 0 "
-    ")*lineCopiesPerWorkItem+i)*(numElementsPerLine + dstStride)+j ] = "
-    "localBuffer[ (get_local_id( 0 "
-    ")*lineCopiesPerWorkItem+i)*(numElementsPerLine + dstStride)+j ];\n"
-    "}\n";
+static const char *async_global_to_local_kernel2D = R"OpenCLC(
+#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable
+%s // optional pragma string
 
-static const char *async_local_to_global_kernel2D =
-    "#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable\n"
-    "%s\n" // optional pragma string
-    "__kernel void test_fn( const __global %s *src, __global %s *dst, __local "
-    "%s *localBuffer, int numElementsPerLine, int lineCopiesPerWorkgroup, int "
-    "lineCopiesPerWorkItem, int srcStride, int dstStride )\n"
-    "{\n"
-    " int i, j;\n"
-    // Zero the local storage first
-    " for(i=0; i<lineCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numElementsPerLine; j++)\n"
-    "     localBuffer[ (get_local_id( 0 "
-    ")*lineCopiesPerWorkItem+i)*(numElementsPerLine + srcStride)+j ] = "
-    "(%s)(%s)0;\n"
-    // Do this to verify all kernels are done zeroing the local buffer before we
-    // try the copy
-    "    barrier( CLK_LOCAL_MEM_FENCE );\n"
-    " for(i=0; i<lineCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numElementsPerLine; j++)\n"
-    "     localBuffer[ (get_local_id( 0 "
-    ")*lineCopiesPerWorkItem+i)*(numElementsPerLine + srcStride)+j ] = src[ "
-    "(get_global_id( 0 )*lineCopiesPerWorkItem+i)*(numElementsPerLine + "
-    "srcStride)+j ];\n"
-    // Do this to verify all kernels are done copying to the local buffer before
-    // we try the copy
-    "    barrier( CLK_LOCAL_MEM_FENCE );\n"
-    "    event_t event;\n"
-    "    event = async_work_group_copy_2D2D((__global "
-    "%s*)(dst+lineCopiesPerWorkgroup*get_group_id(0)*(numElementsPerLine + "
-    "dstStride)), (__local const %s*)localBuffer, (size_t)numElementsPerLine, "
-    "(size_t)lineCopiesPerWorkgroup, srcStride, dstStride, 0 );\n"
-    "    wait_group_events( 1, &event );\n"
-    "}\n";
+__kernel void test_fn(const __global %s *src, __global %s *dst,
+                      __local %s *localBuffer, int numElementsPerLine,
+                      int lineCopiesPerWorkgroup, int lineCopiesPerWorkItem,
+                      int srcStride, int dstStride) {
+  // Zero the local storage first
+  for (int i = 0; i < lineCopiesPerWorkItem; i++) {
+    for (int j = 0; j < numElementsPerLine; j++) {
+      const int index = (get_local_id(0) * lineCopiesPerWorkItem + i) * dstStride + j;
+      localBuffer[index] = (%s)(%s)0;
+    }
+  }
+
+  // Do this to verify all kernels are done zeroing the local buffer before we
+  // try the copy
+  barrier( CLK_LOCAL_MEM_FENCE );
+  event_t event = async_work_group_copy_2D2D(localBuffer, 0, src,
+    lineCopiesPerWorkgroup * get_group_id(0) * srcStride, sizeof(%s),
+    (size_t)numElementsPerLine, (size_t)lineCopiesPerWorkgroup, srcStride, dstStride, 0);
+
+  // Wait for the copy to complete, then verify by manually copying to the dest
+  wait_group_events(1, &event);
+
+  for (int i = 0; i < lineCopiesPerWorkItem; i++) {
+    for (int j = 0; j < numElementsPerLine; j++) {
+      const int local_index = (get_local_id(0) * lineCopiesPerWorkItem + i) * dstStride + j;
+      const int global_index = (get_global_id(0) * lineCopiesPerWorkItem + i) * dstStride + j;
+      dst[global_index] = localBuffer[local_index];
+    }
+  }
+}
+)OpenCLC";
+
+static const char *async_local_to_global_kernel2D = R"OpenCLC(
+#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable
+%s // optional pragma string
+
+__kernel void test_fn(const __global %s *src, __global %s *dst, __local %s *localBuffer,
+                      int numElementsPerLine, int lineCopiesPerWorkgroup,
+                      int lineCopiesPerWorkItem, int srcStride, int dstStride) {
+  // Zero the local storage first
+  for (int i = 0; i < lineCopiesPerWorkItem; i++) {
+    for (int j = 0; j < numElementsPerLine; j++) {
+      const int index = (get_local_id(0) * lineCopiesPerWorkItem + i) * srcStride + j;
+      localBuffer[index] = (%s)(%s)0;
+    }
+  }
+
+  // Do this to verify all kernels are done zeroing the local buffer before we try the copy
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  for (int i = 0; i < lineCopiesPerWorkItem; i++) {
+    for (int j = 0; j < numElementsPerLine; j++) {
+      const int local_index = (get_local_id(0) * lineCopiesPerWorkItem + i) * srcStride + j;
+      const int global_index = (get_global_id(0)*lineCopiesPerWorkItem + i) * srcStride + j;
+      localBuffer[local_index] = src[global_index];
+    }
+  }
+
+  // Do this to verify all kernels are done copying to the local buffer before we try the copy
+  barrier(CLK_LOCAL_MEM_FENCE);
+  event_t event = async_work_group_copy_2D2D(dst, lineCopiesPerWorkgroup * get_group_id(0) * dstStride,
+    localBuffer, 0, sizeof(%s), (size_t)numElementsPerLine, (size_t)lineCopiesPerWorkgroup, srcStride,
+   dstStride, 0 );
+
+  wait_group_events(1, &event);
+};
+)OpenCLC";
 
 int test_copy2D(cl_device_id deviceID, cl_context context,
                 cl_command_queue queue, const char *kernelCode,
-                ExplicitType vecType, int vecSize, int srcStride, int dstStride,
+                ExplicitType vecType, int vecSize, int srcMargin, int dstMargin,
                 bool localIsDst)
 {
     int error;
@@ -114,8 +118,8 @@ int test_copy2D(cl_device_id deviceID, cl_context context,
                 vecSize);
 
     size_t elementSize = get_explicit_type_size(vecType) * vecSize;
-    log_info("Testing %s with srcStride = %d, dstStride = %d\n", vecNameString,
-             srcStride, dstStride);
+    log_info("Testing %s with srcMargin = %d, dstMargin = %d\n", vecNameString,
+             srcMargin, dstMargin);
 
     cl_long max_local_mem_size;
     error =
@@ -153,7 +157,7 @@ int test_copy2D(cl_device_id deviceID, cl_context context,
             vecType == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable"
                                : "",
             vecNameString, vecNameString, vecNameString, vecNameString,
-            get_explicit_type_name(vecType), vecNameString, vecNameString);
+            get_explicit_type_name(vecType), vecNameString);
     // log_info("program: %s\n", programSource);
     programPtr = programSource;
 
@@ -180,12 +184,17 @@ int test_copy2D(cl_device_id deviceID, cl_context context,
     if (max_workgroup_size > max_local_workgroup_size[0])
         max_workgroup_size = max_local_workgroup_size[0];
 
-    size_t numElementsPerLine = 10;
-    size_t lineCopiesPerWorkItem = 13;
+    const size_t numElementsPerLine = 10;
+    const cl_int dstStride = numElementsPerLine + dstMargin;
+    const cl_int srcStride = numElementsPerLine + srcMargin;
+
     elementSize =
         get_explicit_type_size(vecType) * ((vecSize == 3) ? 4 : vecSize);
-    size_t localStorageSpacePerWorkitem = lineCopiesPerWorkItem * elementSize
-        * (numElementsPerLine + (localIsDst ? dstStride : srcStride));
+
+    const size_t lineCopiesPerWorkItem = 13;
+    const size_t localStorageSpacePerWorkitem = lineCopiesPerWorkItem
+        * elementSize * (localIsDst ? dstStride : srcStride);
+
     size_t maxLocalWorkgroupSize =
         (((int)max_local_mem_size / 2) / localStorageSpacePerWorkitem);
 
@@ -199,34 +208,39 @@ int test_copy2D(cl_device_id deviceID, cl_context context,
     if (maxLocalWorkgroupSize > max_workgroup_size)
         localWorkgroupSize = max_workgroup_size;
 
-    size_t maxTotalLinesIn = (max_alloc_size / elementSize + srcStride)
-        / (numElementsPerLine + srcStride);
-    size_t maxTotalLinesOut = (max_alloc_size / elementSize + dstStride)
-        / (numElementsPerLine + dstStride);
-    size_t maxTotalLines = std::min(maxTotalLinesIn, maxTotalLinesOut);
-    size_t maxLocalWorkgroups =
+
+    const size_t maxTotalLinesIn =
+        (max_alloc_size / elementSize + srcMargin) / srcStride;
+    const size_t maxTotalLinesOut =
+        (max_alloc_size / elementSize + dstMargin) / dstStride;
+    const size_t maxTotalLines = std::min(maxTotalLinesIn, maxTotalLinesOut);
+    const size_t maxLocalWorkgroups =
         maxTotalLines / (localWorkgroupSize * lineCopiesPerWorkItem);
 
-    size_t localBufferSize = localWorkgroupSize * localStorageSpacePerWorkitem
-        - (localIsDst ? dstStride : srcStride);
-    size_t numberOfLocalWorkgroups = std::min(1111, (int)maxLocalWorkgroups);
-    size_t totalLines =
+    const size_t localBufferSize =
+        localWorkgroupSize * localStorageSpacePerWorkitem
+        - (localIsDst ? dstMargin : srcMargin);
+    const size_t numberOfLocalWorkgroups =
+        std::min(1111, (int)maxLocalWorkgroups);
+    const size_t totalLines =
         numberOfLocalWorkgroups * localWorkgroupSize * lineCopiesPerWorkItem;
-    size_t inBufferSize = elementSize
-        * (totalLines * numElementsPerLine + (totalLines - 1) * srcStride);
-    size_t outBufferSize = elementSize
-        * (totalLines * numElementsPerLine + (totalLines - 1) * dstStride);
-    size_t globalWorkgroupSize = numberOfLocalWorkgroups * localWorkgroupSize;
+    const size_t inBufferSize = elementSize
+        * (totalLines * numElementsPerLine + (totalLines - 1) * srcMargin);
+    const size_t outBufferSize = elementSize
+        * (totalLines * numElementsPerLine + (totalLines - 1) * dstMargin);
+    const size_t globalWorkgroupSize =
+        numberOfLocalWorkgroups * localWorkgroupSize;
 
     inBuffer = (void *)malloc(inBufferSize);
     outBuffer = (void *)malloc(outBufferSize);
     outBufferCopy = (void *)malloc(outBufferSize);
 
-    cl_int lineCopiesPerWorkItemInt, numElementsPerLineInt,
-        lineCopiesPerWorkgroup;
-    lineCopiesPerWorkItemInt = (int)lineCopiesPerWorkItem;
-    numElementsPerLineInt = (int)numElementsPerLine;
-    lineCopiesPerWorkgroup = (int)(lineCopiesPerWorkItem * localWorkgroupSize);
+    const cl_int lineCopiesPerWorkItemInt =
+        static_cast<cl_int>(lineCopiesPerWorkItem);
+    const cl_int numElementsPerLineInt =
+        static_cast<cl_int>(numElementsPerLine);
+    const cl_int lineCopiesPerWorkgroup =
+        static_cast<cl_int>(lineCopiesPerWorkItem * localWorkgroupSize);
 
     log_info(
         "Global: %d, local %d, local buffer %db, global in buffer %db, "
@@ -296,8 +310,8 @@ int test_copy2D(cl_device_id deviceID, cl_context context,
         for (int j = 0; j < (int)numElementsPerLine * elementSize;
              j += elementSize)
         {
-            int inIdx = i * (numElementsPerLine + srcStride) + j;
-            int outIdx = i * (numElementsPerLine + dstStride) + j;
+            int inIdx = i * srcStride + j;
+            int outIdx = i * dstStride + j;
             if (memcmp(((char *)inBuffer) + inIdx, ((char *)outBuffer) + outIdx,
                        typeSize)
                 != 0)
@@ -332,11 +346,10 @@ int test_copy2D(cl_device_id deviceID, cl_context context,
         if (i < (int)(globalWorkgroupSize * lineCopiesPerWorkItem - 1)
                 * elementSize)
         {
-            int outIdx = i * (numElementsPerLine + dstStride)
-                + numElementsPerLine * elementSize;
+            int outIdx = i * dstStride + numElementsPerLine * elementSize;
             if (memcmp(((char *)outBuffer) + outIdx,
                        ((char *)outBufferCopy) + outIdx,
-                       dstStride * elementSize)
+                       dstMargin * elementSize)
                 != 0)
             {
                 if (failuresPrinted == 0)
@@ -373,9 +386,12 @@ int test_copy2D_all_types(cl_device_id deviceID, cl_context context,
         kChar,  kUChar, kShort,  kUShort,          kInt, kUInt, kLong,
         kULong, kFloat, kDouble, kNumExplicitTypes
     };
+    // The margins below represent the number of elements between the end of
+    // one line and the start of the next. The strides are equivalent to the
+    // length of the line plus the chosen margin.
     unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
-    unsigned int smallTypesStrideSizes[] = { 0, 10, 100 };
-    unsigned int size, typeIndex, srcStride, dstStride;
+    unsigned int smallTypesMarginSizes[] = { 0, 10, 100 };
+    unsigned int size, typeIndex, srcMargin, dstMargin;
 
     int errors = 0;
 
@@ -401,19 +417,19 @@ int test_copy2D_all_types(cl_device_id deviceID, cl_context context,
             if (get_explicit_type_size(vecType[typeIndex]) * vecSizes[size]
                 <= 2) // small type
             {
-                for (srcStride = 0; srcStride < sizeof(smallTypesStrideSizes)
-                         / sizeof(smallTypesStrideSizes[0]);
-                     srcStride++)
+                for (srcMargin = 0; srcMargin < sizeof(smallTypesMarginSizes)
+                         / sizeof(smallTypesMarginSizes[0]);
+                     srcMargin++)
                 {
-                    for (dstStride = 0;
-                         dstStride < sizeof(smallTypesStrideSizes)
-                             / sizeof(smallTypesStrideSizes[0]);
-                         dstStride++)
+                    for (dstMargin = 0;
+                         dstMargin < sizeof(smallTypesMarginSizes)
+                             / sizeof(smallTypesMarginSizes[0]);
+                         dstMargin++)
                     {
                         if (test_copy2D(deviceID, context, queue, kernelCode,
                                         vecType[typeIndex], vecSizes[size],
-                                        smallTypesStrideSizes[srcStride],
-                                        smallTypesStrideSizes[dstStride],
+                                        smallTypesMarginSizes[srcMargin],
+                                        smallTypesMarginSizes[dstMargin],
                                         localIsDst))
                         {
                             errors++;

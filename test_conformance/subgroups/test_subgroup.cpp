@@ -134,23 +134,6 @@ template <NonUniformVoteOp operation> struct AA
     }
 };
 
-static const char *any_source = "__kernel void test_any(const __global Type "
-                                "*in, __global int4 *xy, __global Type *out)\n"
-                                "{\n"
-                                "    int gid = get_global_id(0);\n"
-                                "    XY(xy,gid);\n"
-                                "    out[gid] = sub_group_any(in[gid]);\n"
-                                "}\n";
-
-static const char *all_source = "__kernel void test_all(const __global Type "
-                                "*in, __global int4 *xy, __global Type *out)\n"
-                                "{\n"
-                                "    int gid = get_global_id(0);\n"
-                                "    XY(xy,gid);\n"
-                                "    out[gid] = sub_group_all(in[gid]);\n"
-                                "}\n";
-
-
 template <typename T>
 int run_broadcast_scan_reduction_for_type(RunTestForType rft)
 {

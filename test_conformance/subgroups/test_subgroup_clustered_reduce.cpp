@@ -51,7 +51,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
     static void log_test(const WorkGroupParams &test_params,
                          const char *extra_text)
     {
-        log_info("  sub_group_clustered_reduce_%s(%s, %d bytes) ...%s\n",
+        log_info("  sub_group_clustered_reduce_%s(%s, %zu bytes) ...%s\n",
                  operation_names(operation), TypeManager<Ty>::name(),
                  sizeof(Ty), extra_text);
     }
@@ -90,7 +90,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
                 if (dts != sizeof(Ty))
                 {
                     log_error("ERROR: sub_group_clustered_reduce_%s(%s) "
-                              "wrong data type size detected, expected: %d, "
+                              "wrong data type size detected, expected: %zu, "
                               "used by device %d, in group %d\n",
                               operation_names(operation),
                               TypeManager<Ty>::name(), sizeof(Ty), dts, k);
@@ -102,7 +102,6 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
             {
                 int ii = j * ns;
                 int n = ii + ns > nw ? nw - ii : ns;
-                int midx = 4 * ii + 2;
                 std::vector<Ty> clusters_results;
                 int clusters_counter = ns / test_params.cluster_size;
                 clusters_results.resize(clusters_counter);

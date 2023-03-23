@@ -281,59 +281,6 @@ template <class T> int determine_validation_error( void *imagePtr, image_descrip
     return 0;
 }
 
-static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *imageSampler, float *xOffsets, float *yOffsets, float xfract, float yfract, int normalized_coords, MTdata d )
-{
-    size_t i = 0;
-    if( gDisableOffsets )
-    {
-        for( size_t y = 0; y < imageInfo->height; y++ )
-        {
-            for( size_t x = 0; x < imageInfo->width; x++, i++ )
-            {
-                xOffsets[ i ] = (float) (xfract + (double) x);
-                yOffsets[ i ] = (float) (yfract + (double) y);
-            }
-        }
-    }
-    else
-    {
-        for( size_t y = 0; y < imageInfo->height; y++ )
-        {
-            for( size_t x = 0; x < imageInfo->width; x++, i++ )
-            {
-                xOffsets[ i ] = (float) (xfract + (double) ((int) x + random_in_range( -10, 10, d )));
-                yOffsets[ i ] = (float) (yfract + (double) ((int) y + random_in_range( -10, 10, d )));
-            }
-        }
-    }
-
-    if( imageSampler->addressing_mode == CL_ADDRESS_NONE )
-    {
-        i = 0;
-        for( size_t y = 0; y < imageInfo->height; y++ )
-        {
-            for( size_t x = 0; x < imageInfo->width; x++, i++ )
-            {
-                xOffsets[ i ] = (float) CLAMP( (double) xOffsets[ i ], 0.0, (double) imageInfo->width - 1.0);
-                yOffsets[ i ] = (float) CLAMP( (double) yOffsets[ i ], 0.0, (double)imageInfo->height - 1.0);
-            }
-        }
-    }
-
-    if( normalized_coords )
-    {
-        i = 0;
-        for( size_t y = 0; y < imageInfo->height; y++ )
-        {
-            for( size_t x = 0; x < imageInfo->width; x++, i++ )
-            {
-                xOffsets[ i ] = (float) ((double) xOffsets[ i ] / (double) imageInfo->width);
-                yOffsets[ i ] = (float) ((double) yOffsets[ i ] / (double) imageInfo->height);
-            }
-        }
-    }
-}
-
 static void InitFloatCoords( image_descriptor *imageInfo, image_sampler_data *imageSampler, float *xOffsets, float *yOffsets, float xfract, float yfract, int normalized_coords, MTdata d, size_t lod)
 {
     size_t i = 0;
@@ -1589,7 +1536,6 @@ int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel ke
             if (retCode)
                 return retCode;
         }
-        end:
         if ( gTestMipmaps )
         {
             nextLevelOffset += width_lod * height_lod * get_pixel_size( imageInfo->format );

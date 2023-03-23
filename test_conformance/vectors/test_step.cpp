@@ -55,17 +55,6 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    // detect whether profile of the device is embedded
-    char profile[1024] = "";
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_PROFILE, sizeof(profile), profile,
-                          NULL);
-    if (err)
-    {
-        print_error(err, "clGetDeviceInfo for CL_DEVICE_PROFILE failed\n");
-        return -1;
-    }
-    gIsEmbedded = NULL != strstr(profile, "EMBEDDED_PROFILE");
-
     for (typeIdx = 0; types[typeIdx] != kNumExplicitTypes; ++typeIdx)
     {
         if (types[typeIdx] == kDouble)

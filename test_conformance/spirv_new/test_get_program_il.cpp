@@ -41,7 +41,7 @@ TEST_SPIRV_FUNC(get_program_il)
 
         std::vector<unsigned char> spirv_binary = readSPIRV(spvName);
 
-        int file_bytes = spirv_binary.size();
+        size_t file_bytes = spirv_binary.size();
         if (file_bytes == 0)
         {
             test_fail("ERROR: SPIRV file %s not found!\n", spvName);
