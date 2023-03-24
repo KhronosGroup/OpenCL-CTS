@@ -24,34 +24,15 @@
 
 namespace {
 
-int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
-                bool relaxedMode)
-{
-    auto kernel_name = GetKernelName(vectorSize);
-    auto source = GetUnaryKernel(kernel_name, name, ParameterType::Float,
-                                 ParameterType::UInt, vectorSize);
-    std::array<const char *, 1> sources{ source.c_str() };
-    return MakeKernel(sources.data(), sources.size(), kernel_name.c_str(), k, p,
-                      relaxedMode);
-}
-
-using Kernels = std::array<clKernelWrapper, VECTOR_SIZE_COUNT>;
-
-struct BuildKernelInfo2
-{
-    Kernels &kernels;
-    Programs &programs;
-    const char *nameInCode;
-    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
-};
-
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
-    BuildKernelInfo2 *info = (BuildKernelInfo2 *)p;
-    cl_uint vectorSize = gMinVectorSizeIndex + job_id;
-    return BuildKernel(info->nameInCode, vectorSize,
-                       &(info->kernels[vectorSize]),
-                       &(info->programs[vectorSize]), info->relaxedMode);
+    BuildKernelInfo &info = *(BuildKernelInfo *)p;
+    auto generator = [](const std::string &kernel_name, const char *builtin,
+                        cl_uint vector_size_index) {
+        return GetUnaryKernel(kernel_name, builtin, ParameterType::Float,
+                              ParameterType::UInt, vector_size_index);
+    };
+    return BuildKernels(info, job_id, generator);
 }
 
 } // anonymous namespace
@@ -60,7 +41,8 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
 {
     int error;
     Programs programs;
-    Kernels kernels;
+    KernelMatrix kernels;
+    const unsigned thread_id = 0; // Test is currently not multithreaded.
     float maxError = 0.0f;
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
     float maxErrorVal = 0.0f;
@@ -76,8 +58,8 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
         float_ulps = f->float_ulps;
 
     // Init the kernels
-    BuildKernelInfo2 build_info{ kernels, programs, f->nameInCode,
-                                 relaxedMode };
+    BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode,
+                                relaxedMode };
     if ((error = ThreadPool_Do(BuildKernelFn,
                                gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                &build_info)))
@@ -139,22 +121,22 @@ int TestFunc_Float_UInt(const Func *f, MTdata d, bool relaxedMode)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_float);
             size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
-            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
-                                        &gOutBuffer[j])))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
+                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
                 LogBuildError(programs[j]);
                 return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gInBuffer),
-                                        &gInBuffer)))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 1,
+                                        sizeof(gInBuffer), &gInBuffer)))
             {
                 LogBuildError(programs[j]);
                 return error;
             }
 
-            if ((error =
-                     clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
-                                            &localCount, NULL, 0, NULL, NULL)))
+            if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
+                                                1, NULL, &localCount, NULL, 0,
+                                                NULL, NULL)))
             {
                 vlog_error("FAILED -- could not execute kernel\n");
                 return error;
