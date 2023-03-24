@@ -332,7 +332,7 @@ template <typename T> int LengthFPTest::LengthTest(VecToScalarTestParams<T> &p)
 
     for (unsigned size = 0; sizes[size] != 0; size++)
     {
-        p.ulpLimit = std::ceil(ulpConst + p.ulpMult * sizes[size]);
+        p.ulpLimit = ulpConst + p.ulpMult * sizes[size];
 
         cl_int error = VecToScalarKernel<T>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
@@ -374,7 +374,7 @@ cl_int FastLengthFPTest::RunSingleTest(const GeomTestBase *param)
 
     for (unsigned size = 0; sizes[size] != 0; size++)
     {
-        p.ulpLimit = std::ceil(ulpConst + sizes[size]);
+        p.ulpLimit = ulpConst + sizes[size];
 
         cl_int error = VecToScalarKernel<float>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
@@ -392,7 +392,7 @@ cl_int FastLengthFPTest::RunSingleTest(const GeomTestBase *param)
 
 cl_int FastLengthFPTest::SetUp(int elements)
 {
-    // only float supports fast_distance
+    // only float supports fast_length
     params.emplace_back(new VecToScalarTestParams<float>(
         &verifyFastLength, kFloat, "fast_length", 8191.5f,
         1.f)); // 8191.5 + n ulp

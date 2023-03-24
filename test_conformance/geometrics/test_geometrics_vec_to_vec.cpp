@@ -542,7 +542,7 @@ int NormalizeFPTest::NormalizeTest(VecToVecTestParams<T> &p)
 
     for (unsigned size = 0; sizes[size] != 0; size++)
     {
-        p.ulpLimit = std::ceil(ulpConst + sizes[size]);
+        p.ulpLimit = ulpConst + sizes[size];
 
         cl_int error = VecToVecKernel<T>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
@@ -585,7 +585,7 @@ cl_int FastNormalizeFPTest::RunSingleTest(const GeomTestBase *param)
 
     for (unsigned size = 0; sizes[size] != 0; size++)
     {
-        p.ulpLimit = std::ceil(ulpConst + sizes[size]);
+        p.ulpLimit = ulpConst + sizes[size];
 
         cl_int error = VecToVecKernel<float>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
@@ -603,7 +603,7 @@ cl_int FastNormalizeFPTest::RunSingleTest(const GeomTestBase *param)
 
 cl_int FastNormalizeFPTest::SetUp(int elements)
 {
-    // only float supports fast_distance
+    // only float supports fast_normalize
     params.emplace_back(new VecToVecTestParams<float>(
         &verifyNormalize, kFloat, "fast_normalize", 8192.f)); // 8192 + n ulp
     return VecToVecFPTest::SetUp(elements);

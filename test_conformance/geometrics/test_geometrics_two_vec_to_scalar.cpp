@@ -617,7 +617,7 @@ cl_int FastDistanceFPTest::RunSingleTest(const GeomTestBase *param)
     float ulpConst = p.ulpLimit;
     for (unsigned size = 0; sizes[size] != 0; size++)
     {
-        p.ulpLimit = std::ceil(ulpConst + 2.f * sizes[size]);
+        p.ulpLimit = ulpConst + 2.f * sizes[size];
 
         cl_int error = TwoVecToScalarKernel<float>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
@@ -678,7 +678,7 @@ int DistanceFPTest::DistTest(TwoVecToScalarTestParams<T> &p)
 
     for (unsigned size = 0; sizes[size] != 0; size++)
     {
-        p.ulpLimit = std::ceil(ulpConst + 2.f * sizes[size]);
+        p.ulpLimit = ulpConst + 2.f * sizes[size];
 
         cl_int error = TwoVecToScalarKernel<T>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
