@@ -37,7 +37,8 @@ static const char *TwoVecToScalarToScalarVn = "dst[tid] = %s( vload%d( tid, srcA
 
 static const char *TwoVecToScalarKernelPattern[] = {
     GeomTestBase::extension,
-    "__kernel void sample_test(__global ", GeomTestBase::ftype, " *srcA, __global ", GeomTestBase::ftype, " *srcB, __global ", GeomTestBase::ftype, " *dst)\n"
+    "__kernel void sample_test(__global ", GeomTestBase::ftype, " *srcA, __global ",
+        GeomTestBase::ftype, " *srcB, __global ", GeomTestBase::ftype, " *dst)\n"
     "{\n"
     "    int  tid = get_global_id(0);\n"
     , GeomTestBase::load_store,
@@ -188,59 +189,6 @@ double verifyFastDistance(const float *srcA, const float *srcB, size_t vecSize)
 
 //--------------------------------------------------------------------------
 
-template <typename T> static double verifyLength(const T *srcA, size_t vecSize)
-{
-    double total = 0;
-    unsigned int i;
-
-    // We calculate the distance as a double, to try and make up for the fact
-    // that the GPU has better precision distance since it's a single op
-    if (std::is_same<T, half>::value)
-    {
-        for (i = 0; i < vecSize; i++)
-            total += (double)HTF(srcA[i]) * (double)HTF(srcA[i]);
-    }
-    else
-    {
-        for (i = 0; i < vecSize; i++)
-            total += (double)srcA[i] * (double)srcA[i];
-    }
-
-
-    if (std::is_same<T, double>::value)
-    {
-        // Deal with spurious overflow
-        if (total == INFINITY)
-        {
-            total = 0.0;
-            for (i = 0; i < vecSize; i++)
-            {
-                double f = srcA[i] * MAKE_HEX_DOUBLE(0x1.0p-600, 0x1LL, -600);
-                total += f * f;
-            }
-
-            return sqrt(total) * MAKE_HEX_DOUBLE(0x1.0p600, 0x1LL, 600);
-        }
-
-        // Deal with spurious underflow
-        if (total < 4 /*max vector length*/ * DBL_MIN / DBL_EPSILON)
-        {
-            total = 0.0;
-            for (i = 0; i < vecSize; i++)
-            {
-                double f = srcA[i] * MAKE_HEX_DOUBLE(0x1.0p700, 0x1LL, 700);
-                total += f * f;
-            }
-
-            return sqrt(total) * MAKE_HEX_DOUBLE(0x1.0p-700, 0x1LL, -700);
-        }
-    }
-
-    return sqrt(total);
-}
-
-//--------------------------------------------------------------------------
-
 template <typename T>
 double verifyDistance(const T *srcA, const T *srcB, size_t vecSize)
 {
@@ -320,7 +268,9 @@ TwoVecToScalarFPTest::TwoVecToScalar(const TwoVecToScalarTestParams<T> &p)
         cl_int error = TwoVecToScalarKernel<T>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
         {
-            log_error("   geom_two_args vector size %zu FAILED\n", sizes[size]);
+            log_error("   TwoVecToScalarFPTest::TwoVecToScalar vector size %zu "
+                      "FAILED\n",
+                      sizes[size]);
             return error;
         }
     }
@@ -660,10 +610,10 @@ cl_int DistanceFPTest::RunSingleTest(const GeomTestBase *p)
             error = DistTest<double>(*((TwoVecToScalarTestParams<double> *)p));
             break;
         default:
-            test_error(-1, "TwoVecToScalarFPTest::Run: incorrect fp type");
+            test_error(-1, "DistanceFPTest::Run: incorrect fp type");
             break;
     }
-    test_error(error, "TwoVecToScalarFPTest::Run: test_geometrics failed");
+    test_error(error, "DistanceFPTest::Run: test_geometrics failed");
     return CL_SUCCESS;
 }
 
@@ -683,7 +633,7 @@ int DistanceFPTest::DistTest(TwoVecToScalarTestParams<T> &p)
         cl_int error = TwoVecToScalarKernel<T>(sizes[size], seed, p);
         if (error != CL_SUCCESS)
         {
-            log_error("   geom_two_args vector size %zu FAILED\n", sizes[size]);
+            log_error("   distance vector size %zu FAILED\n", sizes[size]);
             return error;
         }
     }

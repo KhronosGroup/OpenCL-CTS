@@ -105,59 +105,6 @@ struct FastLengthFPTest : public VecToScalarFPTest
 
 //--------------------------------------------------------------------------
 
-template <typename T> static double verifyLength(const T *srcA, size_t vecSize)
-{
-    double total = 0;
-    unsigned int i;
-
-    // We calculate the distance as a double, to try and make up for the fact
-    // that the GPU has better precision distance since it's a single op
-    if (std::is_same<T, half>::value)
-    {
-        for (i = 0; i < vecSize; i++)
-            total += (double)HTF(srcA[i]) * (double)HTF(srcA[i]);
-    }
-    else
-    {
-        for (i = 0; i < vecSize; i++)
-            total += (double)srcA[i] * (double)srcA[i];
-    }
-
-
-    if (std::is_same<T, double>::value)
-    {
-        // Deal with spurious overflow
-        if (total == INFINITY)
-        {
-            total = 0.0;
-            for (i = 0; i < vecSize; i++)
-            {
-                double f = srcA[i] * MAKE_HEX_DOUBLE(0x1.0p-600, 0x1LL, -600);
-                total += f * f;
-            }
-
-            return sqrt(total) * MAKE_HEX_DOUBLE(0x1.0p600, 0x1LL, 600);
-        }
-
-        // Deal with spurious underflow
-        if (total < 4 /*max vector length*/ * DBL_MIN / DBL_EPSILON)
-        {
-            total = 0.0;
-            for (i = 0; i < vecSize; i++)
-            {
-                double f = srcA[i] * MAKE_HEX_DOUBLE(0x1.0p700, 0x1LL, 700);
-                total += f * f;
-            }
-
-            return sqrt(total) * MAKE_HEX_DOUBLE(0x1.0p-700, 0x1LL, -700);
-        }
-    }
-
-    return sqrt(total);
-}
-
-//--------------------------------------------------------------------------
-
 double verifyFastLength(const float *srcA, size_t vecSize)
 {
     double total = 0;
