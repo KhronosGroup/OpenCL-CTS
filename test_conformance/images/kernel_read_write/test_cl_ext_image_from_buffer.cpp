@@ -719,6 +719,12 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
 
             for (auto format : formatList)
             {
+                if (!IsChannelOrderSupported(format.image_channel_order)
+                    || !IsChannelTypeSupported(format.image_channel_data_type))
+                {
+                    continue;
+                }
+
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
