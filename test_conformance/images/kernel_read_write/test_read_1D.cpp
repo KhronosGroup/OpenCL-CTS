@@ -434,7 +434,6 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
         float lod_float = (float)lod;
         size_t resultValuesSize = width_lod * get_explicit_type_size( outputType ) * 4;
         BufferOwningPtr<char> resultValues(malloc(resultValuesSize));
-        char *imagePtr = (char*)imageValues + nextLevelOffset;
         if (gTestMipmaps) {
             //Set the lod kernel arg
             if(gDebugTrace)

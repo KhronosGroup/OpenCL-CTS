@@ -719,6 +719,12 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
 
             for (auto format : formatList)
             {
+                if (!IsChannelOrderSupported(format.image_channel_order)
+                    || !IsChannelTypeSupported(format.image_channel_data_type))
+                {
+                    continue;
+                }
+
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
@@ -940,8 +946,11 @@ int image_from_buffer_read_positive(cl_device_id device, cl_context context,
 
         const size_t row_pitch =
             aligned_size(TEST_IMAGE_SIZE * element_size, row_pitch_alignment);
-        const size_t slice_pitch =
-            aligned_size(row_pitch * TEST_IMAGE_SIZE, slice_pitch_alignment);
+        const size_t slice_pitch = aligned_size(
+            row_pitch
+                * (imageType == CL_MEM_OBJECT_IMAGE1D_ARRAY ? 1
+                                                            : TEST_IMAGE_SIZE),
+            slice_pitch_alignment);
 
         const size_t buffer_size = slice_pitch * TEST_IMAGE_SIZE;
 

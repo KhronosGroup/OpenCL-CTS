@@ -82,9 +82,15 @@ endif()
 
 macro(add_cxx_flag_if_supported flag)
     string(REGEX REPLACE "[-=+]" "" FLAG_NO_SIGNS ${flag})
-    check_cxx_compiler_flag(${flag} COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
+    set(FLAG_TO_TEST ${flag})
+    if((${flag} MATCHES "^-Wno-") AND NOT (${flag} MATCHES "^-Wno-error="))
+        # -Wno-... only causes a diagnostic if another diagnostic is emitted.
+        # Change such flags into a -W... flag to test if the warning is known.
+        string(REGEX REPLACE "^-Wno-" "-W" FLAG_TO_TEST ${flag})
+    endif()
+    check_cxx_compiler_flag(${FLAG_TO_TEST} COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
     if(COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
     endif()
 endmacro(add_cxx_flag_if_supported)
 

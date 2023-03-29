@@ -120,9 +120,10 @@ public:
         const VulkanSemaphore &deviceSemaphore, cl_context context,
         VulkanExternalSemaphoreHandleType externalSemaphoreHandleType,
         cl_device_id deviceId);
-    virtual ~clExternalSemaphore();
+    virtual ~clExternalSemaphore() noexcept(false);
     void signal(cl_command_queue command_queue);
     void wait(cl_command_queue command_queue);
+    cl_semaphore_khr &getCLSemaphore();
     // operator openclExternalSemaphore_t() const;
 };
 
