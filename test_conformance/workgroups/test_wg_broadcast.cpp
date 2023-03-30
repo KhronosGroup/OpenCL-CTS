@@ -168,7 +168,6 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
     cl_float     *output_ptr;
     cl_program   program;
     cl_kernel    kernel;
-    void         *values[2];
     size_t       globalsize[1];
     size_t       wg_size[1];
     size_t       num_elements;
@@ -221,8 +220,6 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
         return -1;
     }
 
-    values[0] = streams[0];
-    values[1] = streams[1];
     err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
     err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
     if (err != CL_SUCCESS)
@@ -275,7 +272,6 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
     cl_float     *output_ptr;
     cl_program   program;
     cl_kernel    kernel;
-    void         *values[2];
     size_t       globalsize[2];
     size_t       localsize[2];
     size_t       wg_size[1];
@@ -350,8 +346,6 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
         return -1;
     }
 
-    values[0] = streams[0];
-    values[1] = streams[1];
     err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
     err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
     if (err != CL_SUCCESS)
@@ -402,7 +396,6 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
     cl_float     *output_ptr;
     cl_program   program;
     cl_kernel    kernel;
-    void         *values[2];
     size_t       globalsize[3];
     size_t       localsize[3];
     size_t       wg_size[1];
@@ -478,8 +471,6 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
         return -1;
     }
 
-    values[0] = streams[0];
-    values[1] = streams[1];
     err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
     err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
     if (err != CL_SUCCESS)

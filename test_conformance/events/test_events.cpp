@@ -422,7 +422,6 @@ int test_event_wait_for_array(cl_device_id deviceID, cl_context context,
 int test_event_flush(cl_device_id deviceID, cl_context context,
                      cl_command_queue queue, int num_elements)
 {
-    int loopCount = 0;
     cl_int status;
     SETUP_EVENT(context, queue);
 
@@ -445,7 +444,6 @@ int test_event_flush(cl_device_id deviceID, cl_context context,
 #else // _WIN32
         Sleep(1000);
 #endif
-        ++loopCount;
     }
 
     /*
