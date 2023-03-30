@@ -470,6 +470,19 @@ struct MutableDispatchExecInfo : public BasicMutableCommandBufferTest
           mutable_command_buffer(this), out_of_order_queue(nullptr)
     {}
 
+    bool Skip() override
+    {
+        cl_mutable_dispatch_fields_khr mutable_capabilities;
+
+        bool svm_capabilities =
+            !clGetDeviceInfo(device, CL_DEVICE_SVM_CAPABILITIES,
+                             sizeof(svm_capabilities), &mutable_capabilities,
+                             nullptr)
+            && svm_capabilities != 0;
+
+        return !svm_capabilities || BasicMutableCommandBufferTest::Skip();
+    }
+
     virtual cl_int SetUp(int elements) override
     {
         BasicMutableCommandBufferTest::SetUp(elements);
@@ -560,6 +573,11 @@ struct MutableDispatchExecInfo : public BasicMutableCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
+        cl_mutable_dispatch_exec_info_khr exec_info_list{
+            CL_KERNEL_EXEC_INFO_SVM_PTRS, sizeof(BufPtrs), pBuf
+        };
+
+
         cl_mutable_dispatch_config_khr dispatch_config{
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
             nullptr,
@@ -570,7 +588,7 @@ struct MutableDispatchExecInfo : public BasicMutableCommandBufferTest
             0 /* work_dim - 0 means no change to dimensions */,
             nullptr /* arg_list */,
             nullptr /* arg_svm_list - nullptr means no change*/,
-            nullptr /* exec_info_list */,
+            &exec_info_list /* exec_info_list */,
             nullptr /* global_work_offset */,
             nullptr /* global_work_size */,
             nullptr /* local_work_size */
@@ -579,42 +597,14 @@ struct MutableDispatchExecInfo : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
             &dispatch_config
         };
-
         error =
             clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
-                                          nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        // cl_ndrange_kernel_command_properties_khr test_props[] = { 0, 0, 0 };
-        size_t size;
-
-        cl_mutable_dispatch_exec_info_khr exec_info;
-
-        error = clGetMutableCommandInfoKHR(
-            command, CL_MUTABLE_DISPATCH_EXEC_INFO_KHR, sizeof(exec_info),
-            &exec_info, &size);
-        test_error(error, "clGetMutableCommandInfoKHR failed");
-
-        /*
-        if (test_local_work_size != local_size)
-        {
-            log_error("ERROR: Wrong size returned from "
-                      "clGetMutableCommandInfoKHR.");
-            return TEST_FAIL;
-        }
-        */
 
         clSVMFree(context, pBuf);
 
         return CL_SUCCESS;
     }
-
-    size_t test_local_work_size = 0;
-    const size_t local_size = 3;
-    size_t size;
 
     cl_mutable_command_khr command = nullptr;
 
