@@ -162,8 +162,8 @@ static cl_filter_mode filter_mode_values[] = { CL_FILTER_NEAREST,
                                                CL_FILTER_LINEAR };
 
 int test_sampler_params(cl_device_id deviceID, cl_context context,
-                        bool is_compatibility, int norm_coord_num,
-                        int addr_mod_num, int filt_mod_num)
+                        bool is_compatibility, size_t norm_coord_num,
+                        size_t addr_mod_num, size_t filt_mod_num)
 {
     cl_uint refCount;
     size_t size;
@@ -272,10 +272,10 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
 int get_sampler_info_params(cl_device_id deviceID, cl_context context,
                             bool is_compatibility)
 {
-    for (int norm_coord_num = 0;
+    for (size_t norm_coord_num = 0;
          norm_coord_num < ARRAY_SIZE(normalized_coord_values); norm_coord_num++)
     {
-        for (int addr_mod_num = 0;
+        for (size_t addr_mod_num = 0;
              addr_mod_num < ARRAY_SIZE(addressing_mode_values); addr_mod_num++)
         {
             if ((normalized_coord_values[norm_coord_num] == CL_FALSE)
@@ -285,7 +285,7 @@ int get_sampler_info_params(cl_device_id deviceID, cl_context context,
             {
                 continue;
             }
-            for (int filt_mod_num = 0;
+            for (size_t filt_mod_num = 0;
                  filt_mod_num < ARRAY_SIZE(filter_mode_values); filt_mod_num++)
             {
                 int err = test_sampler_params(deviceID, context,

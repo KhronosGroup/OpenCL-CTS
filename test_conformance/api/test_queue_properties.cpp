@@ -60,7 +60,7 @@ int enqueue_kernel(cl_context context, const cl_queue_properties_khr *queue_prop
     clCommandQueueWrapper queue = clCreateCommandQueueWithPropertiesKHR(context, deviceID, queue_prop_def, &error);
     test_error(error, "clCreateCommandQueueWithPropertiesKHR failed");
 
-    for (int i = 0; i < num_elements; ++i)
+    for (size_t i = 0; i < num_elements; ++i)
     {
         buf[i] = i;
     }
@@ -85,9 +85,9 @@ int enqueue_kernel(cl_context context, const cl_queue_properties_khr *queue_prop
     error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, num_elements, buf.data(), 0, NULL, NULL);
     test_error( error, "clEnqueueReadBuffer failed." );
 
-    for (int i = 0; i < num_elements; ++i)
+    for (size_t i = 0; i < num_elements; ++i)
     {
-        if (buf[i] != i)
+        if (static_cast<size_t>(buf[i]) != i)
         {
             log_error("ERROR: Incorrect vector copy result.");
             return -1;
