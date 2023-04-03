@@ -71,7 +71,6 @@ test_work_group_any(cl_device_id device, cl_context context, cl_command_queue qu
     cl_int       *output_ptr;
     cl_program   program;
     cl_kernel    kernel;
-    void         *values[2];
     size_t       threads[1];
     size_t       wg_size[1];
     size_t       num_elements;
@@ -124,8 +123,6 @@ test_work_group_any(cl_device_id device, cl_context context, cl_command_queue qu
         return -1;
     }
 
-    values[0] = streams[0];
-    values[1] = streams[1];
     err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
     err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
     if (err != CL_SUCCESS)

@@ -4,6 +4,7 @@ set(${MODULE_NAME}_SOURCES
     main.cpp
     basic_command_buffer.cpp
     command_buffer_printf.cpp
+    command_buffer_get_command_buffer_info.cpp
     command_buffer_set_kernel_arg.cpp
     command_buffer_event_sync.cpp
     command_buffer_out_of_order.cpp
@@ -16,3 +17,5 @@ set(${MODULE_NAME}_SOURCES
 )
 
 include(../../CMakeCommon.txt)
+
+add_subdirectory( cl_khr_command_buffer_mutable_dispatch )

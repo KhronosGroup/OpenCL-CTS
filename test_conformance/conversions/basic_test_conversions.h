@@ -54,7 +54,6 @@ extern const char *gRoundingModeNames[ kRoundingModeCount ];        // { "", "_r
 extern const char *gSaturationNames[ kSaturationModeCount ];        // { "", "_sat" }
 extern const char *gVectorSizeNames[kVectorSizeCount];              // { "", "2", "4", "8", "16" }
 extern size_t gTypeSizes[ kTypeCount ];
-extern int gIsEmbedded;
 
 //Functions for clamping floating point numbers into the representable range for the type
 typedef float (*clampf)( float );

@@ -178,7 +178,7 @@ static std::string generate_kernel(const std::vector<KernelArgInfo>& all_args,
         ret += "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
     }
     ret += "kernel void get_kernel_arg_info(\n";
-    for (int i = 0; i < all_args.size(); ++i)
+    for (size_t i = 0; i < all_args.size(); ++i)
     {
         ret += generate_argument(all_args[i]);
         if (i == all_args.size() - 1)
@@ -492,7 +492,7 @@ compare_kernel_with_expected(cl_context context, cl_device_id deviceID,
         context, &program, &kernel, 1, &kernel_src, "get_kernel_arg_info",
         get_build_options(deviceID).c_str());
     test_error(err, "create_single_kernel_helper_with_build_options");
-    for (int i = 0; i < expected_args.size(); ++i)
+    for (size_t i = 0; i < expected_args.size(); ++i)
     {
         KernelArgInfo actual;
         err = clGetKernelArgInfo(kernel, i, CL_KERNEL_ARG_ADDRESS_QUALIFIER,
