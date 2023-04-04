@@ -13,15 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
 #include "harness/rounding_mode.h"
 #include "harness/kernelHelpers.h"
 
 #include "test_printf.h"
 #include <assert.h>
+#include <CL/cl_half.h>
+
 
 // Helpers for generating runtime reference results
 static void intRefBuilder(printDataGenParameters&, char*, const size_t);
+static void halfRefBuilder(printDataGenParameters&, char* rResult,
+                           const size_t);
 static void floatRefBuilder(printDataGenParameters&, char* rResult, const size_t);
 static void octalRefBuilder(printDataGenParameters&, char*, const size_t);
 static void unsignedRefBuilder(printDataGenParameters&, char*, const size_t);
@@ -100,7 +103,150 @@ testCase testCaseInt = {
 };
 
 
+//==============================================
 
+// half
+
+//==============================================
+
+//--------------------------------------------------------
+
+// [string] format |  [string] float-data representation |
+
+//--------------------------------------------------------
+
+std::vector<printDataGenParameters> printHalfGenParameters = {
+
+    // Default(right)-justified
+
+    { "%f", "1.234h" },
+
+    // One position after the decimal,default(right)-justified
+
+    { "%4.2f", "1.2345h" },
+
+    // Zero positions after the
+    // decimal([floor]rounding),default(right)-justified
+
+    { "%.0f", "0.1h" },
+
+    // Zero positions after the decimal([ceil]rounding),default(right)-justified
+
+    { "%.0f", "0.6h" },
+
+    // Zero-filled,default positions number after the
+    // decimal,default(right)-justified
+
+    { "%0f", "0.6h" },
+
+    // Double argument representing floating-point,used by f
+    // style,default(right)-justified
+
+    { "%4g", "5.678h" },
+
+    // Double argument representing floating-point,used by e
+    // style,default(right)-justified
+
+    { "%4.2g", "5.678h" },
+
+    // Double argument representing floating-point,used by e
+    // style,default(right)-justified
+
+    { "%4G", "0.000062h" },
+
+    // Double argument representing floating-point,with
+    // exponent,left-justified,default(right)-justified
+
+    { "%-#20.15e", "65504.0h" },
+
+    // Double argument representing floating-point,with
+    // exponent,left-justified,with sign,capital E,default(right)-justified
+
+    { "%+#21.15E", "-65504.0h" },
+};
+
+//---------------------------------------------------------
+
+// Test case for float                                     |
+
+//---------------------------------------------------------
+
+testCase testCaseHalf = {
+
+    TYPE_HALF,
+
+    correctBufferHalf,
+
+    printHalfGenParameters,
+
+    halfRefBuilder,
+
+    kfloat
+
+};
+
+
+//==============================================
+
+// half limits
+
+//==============================================
+
+
+//--------------------------------------------------------
+
+// [string] format |  [string] float-data representation |
+
+//--------------------------------------------------------
+
+
+std::vector<printDataGenParameters> printHalfLimitsGenParameters = {
+
+    // Infinity (1.0/0.0)
+
+    { "%f", "1.0h/0.0h" },
+
+    // NaN
+
+    { "%f", "sqrt(-1.0h)" },
+
+    // NaN
+    { "%f", "acospi(2.0h)" }
+
+};
+//--------------------------------------------------------
+
+//  Lookup table - [string]float-correct buffer             |
+
+//--------------------------------------------------------
+
+std::vector<std::string> correctBufferHalfLimits = {
+
+    "inf",
+
+    "-nan",
+
+    "nan"
+
+};
+
+//---------------------------------------------------------
+
+// Test case for float                                     |
+
+//---------------------------------------------------------
+
+testCase testCaseHalfLimits = {
+
+    TYPE_HALF_LIMITS,
+
+    correctBufferHalfLimits,
+
+    printHalfLimitsGenParameters,
+
+    NULL
+
+};
 
 
 //==============================================
@@ -229,17 +375,18 @@ testCase testCaseFloat = {
 
 std::vector<printDataGenParameters> printFloatLimitsGenParameters = {
 
-    //Infinity (1.0/0.0)
+    // Infinity (1.0/0.0)
 
-    {"%f","1.0f/0.0f"},
+    { "%f", "1.0f/0.0f" },
 
-    //NaN
+    // NaN
 
-    {"%f","sqrt(-1.0f)"},
+    { "%f", "sqrt(-1.0f)" },
 
-    //NaN
-    {"%f","acospi(2.0f)"}
-    };
+    // NaN
+    { "%f", "acospi(2.0f)" }
+
+};
 //--------------------------------------------------------
 
 //  Lookup table - [string]float-correct buffer             |
@@ -253,6 +400,7 @@ std::vector<std::string> correctBufferFloatLimits = {
     "-nan",
 
     "nan"
+
 };
 
 //---------------------------------------------------------
@@ -593,24 +741,27 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     //(Minimum)Two-wide,two positions after decimal
 
-    {NULL,"(1.0f,2.0f,3.0f,4.0f)","%2.2","hlf","float","4"},
+    { NULL, "(1.0f,2.0f,3.0f,4.0f)", "%2.2", "hlf", "float", "4" },
 
-    //Alternative form,uchar argument
+    // Alternative form,uchar argument
 
-    {NULL,"(0xFA,0xFB)","%#","hhx","uchar","2"},
+    { NULL, "(0xFA,0xFB)", "%#", "hhx", "uchar", "2" },
 
-    //Alternative form,ushort argument
+    // Alternative form,ushort argument
 
-    {NULL,"(0x1234,0x8765)","%#","hx","ushort","2"},
+    { NULL, "(0x1234,0x8765)", "%#", "hx", "ushort", "2" },
 
-  //Alternative form,uint argument
+    // Alternative form,uint argument
 
-    {NULL,"(0x12345678,0x87654321)","%#","hlx","uint","2"},
+    { NULL, "(0x12345678,0x87654321)", "%#", "hlx", "uint", "2" },
 
-    //Alternative form,long argument
+    // Alternative form,long argument
 
-    {NULL,"(12345678,98765432)","%","ld","long","2"}
+    { NULL, "(12345678,98765432)", "%", "ld", "long", "2" },
 
+    //(Minimum)Two-wide,two positions after decimal
+
+    { NULL, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hf", "half", "4" }
 };
 
 //------------------------------------------------------------
@@ -627,9 +778,11 @@ std::vector<std::string> correctBufferVector = {
 
     "0x1234,0x8765",
 
-  "0x12345678,0x87654321",
+    "0x12345678,0x87654321",
 
-    "12345678,98765432"
+    "12345678,98765432",
+
+    "1.00,2.00,3.00,4.00"
 
 };
 
@@ -731,8 +884,16 @@ testCase testCaseAddrSpace = {
 
 //-------------------------------------------------------------------------------
 
-std::vector<testCase*> allTestCase = {&testCaseInt,&testCaseFloat,&testCaseFloatLimits,&testCaseOctal,&testCaseUnsigned,&testCaseHexadecimal,&testCaseChar,&testCaseString,&testCaseVector,&testCaseAddrSpace};
+std::vector<testCase*> allTestCase = {
+    &testCaseInt,      &testCaseHalf,        &testCaseHalfLimits,
+    &testCaseFloat,    &testCaseFloatLimits, &testCaseOctal,
+    &testCaseUnsigned, &testCaseHexadecimal, &testCaseChar,
+    &testCaseString,   &testCaseVector,      &testCaseAddrSpace
+};
 
+//-----------------------------------------
+
+cl_half_rounding_mode half_rounding_mode = CL_HALF_RTE;
 
 //-----------------------------------------
 
@@ -807,6 +968,14 @@ static void intRefBuilder(printDataGenParameters& params, char* refResult, const
     snprintf(refResult, refSize, params.genericFormat, atoi(params.dataRepresentation));
 }
 
+static void halfRefBuilder(printDataGenParameters& params, char* refResult,
+                           const size_t refSize)
+{
+    cl_half val = cl_half_from_float(strtof(params.dataRepresentation, NULL),
+                                     half_rounding_mode);
+    snprintf(refResult, refSize, params.genericFormat, cl_half_to_float(val));
+}
+
 static void floatRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
 {
     snprintf(refResult, refSize, params.genericFormat, strtof(params.dataRepresentation, NULL));
@@ -842,24 +1011,30 @@ static void hexRefBuilder(printDataGenParameters& params, char* refResult, const
 */
 void generateRef(const cl_device_id device)
 {
-    const cl_device_fp_config fpConfig = get_default_rounding_mode(device);
+    const cl_device_fp_config fpConfigSingle =
+        get_default_rounding_mode(device);
+    const cl_device_fp_config fpConfigHalf = (half_rounding_mode == CL_HALF_RTE)
+        ? CL_FP_ROUND_TO_NEAREST
+        : CL_FP_ROUND_TO_ZERO;
     const RoundingMode hostRound = get_round();
-    RoundingMode deviceRound;
 
     // Map device rounding to CTS rounding type
     // get_default_rounding_mode supports RNE and RTZ
-    if (fpConfig == CL_FP_ROUND_TO_NEAREST)
-    {
-        deviceRound = kRoundToNearestEven;
-    }
-    else if (fpConfig == CL_FP_ROUND_TO_ZERO)
-    {
-        deviceRound = kRoundTowardZero;
-    }
-    else
-    {
-        assert(false && "Unreachable");
-    }
+    auto get_rounding = [](const cl_device_fp_config& fpConfig) {
+        if (fpConfig == CL_FP_ROUND_TO_NEAREST)
+        {
+            return kRoundToNearestEven;
+        }
+        else if (fpConfig == CL_FP_ROUND_TO_ZERO)
+        {
+            return kRoundTowardZero;
+        }
+        else
+        {
+            assert(false && "Unreachable");
+        }
+        return kDefaultRoundingMode;
+    };
 
     // Loop through all test cases
     for (auto &caseToTest: allTestCase)
@@ -874,6 +1049,12 @@ void generateRef(const cl_device_id device)
 
         // Make sure the reference result is empty
         assert(caseToTest->_correctBuffer.size() == 0);
+
+        const cl_device_fp_config* fpConfig = &fpConfigSingle;
+        if (caseToTest->_type == TYPE_HALF
+            || caseToTest->_type == TYPE_HALF_LIMITS)
+            fpConfig = &fpConfigHalf;
+        RoundingMode deviceRound = get_rounding(*fpConfig);
 
         // Loop through each input
         for (auto &params: caseToTest->_genParameters)

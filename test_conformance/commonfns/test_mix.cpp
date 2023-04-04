@@ -201,7 +201,6 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
     }
 
     char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
-
     for (i = 0; i < kTotalVecCount; i++)
     {
         std::string kernelSource;
