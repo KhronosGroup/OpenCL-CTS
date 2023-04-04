@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "harness/os_helpers.h"
 
 #include <string.h>
 #include <errno.h>
@@ -112,29 +113,6 @@ static char gFileName[256];
 //-----------------------------------------
 // Static helper functions definition
 //-----------------------------------------
-
-//-----------------------------------------
-// getTempFileName
-//-----------------------------------------
-static int getTempFileName()
-{
-    // Create a unique temporary file to allow parallel executed tests.
-#if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
-    sprintf(gFileName, "/tmp/tmpfile.XXXXXX");
-    int fd = mkstemp(gFileName);
-    if (fd == -1)
-        return -1;
-    close(fd);
-#elif defined(_WIN32)
-    UINT ret = GetTempFileName(".", "tmp", 0, gFileName);
-    if (ret == 0)
-        return -1;
-#else
-    MTdata d = init_genrand((cl_uint)time(NULL));
-    sprintf(gFileName, "tmpfile.%u", genrand_int32(d));
-#endif
-    return 0;
-}
 
 //-----------------------------------------
 // acquireOutputStream
@@ -1062,9 +1040,17 @@ int main(int argc, const char* argv[])
         }
     }
 
-    if (getTempFileName() == -1)
+    char* pcTempFname = get_temp_filename();
+    if (pcTempFname != nullptr)
     {
-        log_error("getTempFileName failed\n");
+        strncpy(gFileName, pcTempFname, sizeof(gFileName));
+    }
+
+    free(pcTempFname);
+
+    if (strlen(gFileName) == 0)
+    {
+        log_error("get_temp_filename failed\n");
         return -1;
     }
 
