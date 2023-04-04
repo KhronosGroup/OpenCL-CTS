@@ -20,11 +20,11 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <cmath>
 
 #include <CL/cl_half.h>
 #include <CL/cl_ext.h>
 
-#include "harness/deviceInfo.h"
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 
