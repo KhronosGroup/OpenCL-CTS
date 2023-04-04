@@ -171,9 +171,9 @@ int test_unary_fn(cl_device_id device, cl_context context,
     int err, i;
     MTdata d;
 
-    assert(BinaryFunctionTest::type2name.find(sizeof(T))
-           != BinaryFunctionTest::type2name.end());
-    auto tname = BinaryFunctionTest::type2name[sizeof(T)];
+    assert(BaseFunctionTest::type2name.find(sizeof(T))
+           != BaseFunctionTest::type2name.end());
+    auto tname = BaseFunctionTest::type2name[sizeof(T)];
 
     programs.resize(kTotalVecCount);
     kernels.resize(kTotalVecCount);

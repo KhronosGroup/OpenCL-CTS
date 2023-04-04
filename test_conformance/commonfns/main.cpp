@@ -19,7 +19,7 @@
 #include "procs.h"
 #include "test_base.h"
 
-std::map<size_t, std::string> BinaryFunctionTest::type2name;
+std::map<size_t, std::string> BaseFunctionTest::type2name;
 
 int g_arrVecSizes[kVectorSizeCount + kStrangeVectorSizeCount];
 int g_arrStrangeVectorSizes[kStrangeVectorSizeCount] = {3};
@@ -49,11 +49,11 @@ int main(int argc, const char *argv[])
 {
     initVecSizes();
 
-    if (BinaryFunctionTest::type2name.empty())
+    if (BaseFunctionTest::type2name.empty())
     {
-        BinaryFunctionTest::type2name[sizeof(half)] = "half";
-        BinaryFunctionTest::type2name[sizeof(float)] = "float";
-        BinaryFunctionTest::type2name[sizeof(double)] = "double";
+        BaseFunctionTest::type2name[sizeof(half)] = "half";
+        BaseFunctionTest::type2name[sizeof(float)] = "float";
+        BaseFunctionTest::type2name[sizeof(double)] = "double";
     }
 
     return runTestHarness(argc, argv, test_num, test_list, false, 0);

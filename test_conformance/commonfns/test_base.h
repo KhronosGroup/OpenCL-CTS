@@ -45,11 +45,11 @@ using half = cl_half;
 
 //--------------------------------------------------------------------------
 
-struct BinaryFunctionTest
+struct BaseFunctionTest
 {
-    BinaryFunctionTest(cl_device_id device, cl_context context,
-                       cl_command_queue queue, int num_elems, const char *fn,
-                       bool vsp)
+    BaseFunctionTest(cl_device_id device, cl_context context,
+                     cl_command_queue queue, int num_elems, const char *fn,
+                     bool vsp)
         : device(device), context(context), queue(queue), num_elems(num_elems),
           fnName(fn), vecParam(vsp)
     {}
@@ -70,11 +70,11 @@ struct BinaryFunctionTest
 
 //--------------------------------------------------------------------------
 
-struct MinTest : BinaryFunctionTest
+struct MinTest : BaseFunctionTest
 {
     MinTest(cl_device_id device, cl_context context, cl_command_queue queue,
             int num_elems, const char *fn, bool vsp)
-        : BinaryFunctionTest(device, context, queue, num_elems, fn, vsp)
+        : BaseFunctionTest(device, context, queue, num_elems, fn, vsp)
     {}
 
     cl_int Run() override;
@@ -82,11 +82,11 @@ struct MinTest : BinaryFunctionTest
 
 //--------------------------------------------------------------------------
 
-struct MaxTest : BinaryFunctionTest
+struct MaxTest : BaseFunctionTest
 {
     MaxTest(cl_device_id device, cl_context context, cl_command_queue queue,
             int num_elems, const char *fn, bool vsp)
-        : BinaryFunctionTest(device, context, queue, num_elems, fn, vsp)
+        : BaseFunctionTest(device, context, queue, num_elems, fn, vsp)
     {}
 
     cl_int Run() override;
@@ -94,11 +94,11 @@ struct MaxTest : BinaryFunctionTest
 
 //--------------------------------------------------------------------------
 
-struct ClampTest : BinaryFunctionTest
+struct ClampTest : BaseFunctionTest
 {
     ClampTest(cl_device_id device, cl_context context, cl_command_queue queue,
               int num_elems, const char *fn, bool vsp)
-        : BinaryFunctionTest(device, context, queue, num_elems, fn, vsp)
+        : BaseFunctionTest(device, context, queue, num_elems, fn, vsp)
     {}
 
     cl_int Run() override;
@@ -106,11 +106,11 @@ struct ClampTest : BinaryFunctionTest
 
 //--------------------------------------------------------------------------
 
-struct DegreesTest : BinaryFunctionTest
+struct DegreesTest : BaseFunctionTest
 {
     DegreesTest(cl_device_id device, cl_context context, cl_command_queue queue,
                 int num_elems, const char *fn, bool vsp)
-        : BinaryFunctionTest(device, context, queue, num_elems, fn, vsp)
+        : BaseFunctionTest(device, context, queue, num_elems, fn, vsp)
     {}
 
     cl_int Run() override;
@@ -118,11 +118,11 @@ struct DegreesTest : BinaryFunctionTest
 
 //--------------------------------------------------------------------------
 
-struct RadiansTest : BinaryFunctionTest
+struct RadiansTest : BaseFunctionTest
 {
     RadiansTest(cl_device_id device, cl_context context, cl_command_queue queue,
                 int num_elems, const char *fn, bool vsp)
-        : BinaryFunctionTest(device, context, queue, num_elems, fn, vsp)
+        : BaseFunctionTest(device, context, queue, num_elems, fn, vsp)
     {}
 
     cl_int Run() override;
@@ -130,11 +130,11 @@ struct RadiansTest : BinaryFunctionTest
 
 //--------------------------------------------------------------------------
 
-struct SignTest : BinaryFunctionTest
+struct SignTest : BaseFunctionTest
 {
     SignTest(cl_device_id device, cl_context context, cl_command_queue queue,
              int num_elems, const char *fn, bool vsp)
-        : BinaryFunctionTest(device, context, queue, num_elems, fn, vsp)
+        : BaseFunctionTest(device, context, queue, num_elems, fn, vsp)
     {}
 
     cl_int Run() override;
@@ -142,12 +142,12 @@ struct SignTest : BinaryFunctionTest
 
 //--------------------------------------------------------------------------
 
-struct SmoothstepTest : BinaryFunctionTest
+struct SmoothstepTest : BaseFunctionTest
 {
     SmoothstepTest(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elems, const char *fn,
                    bool vsp)
-        : BinaryFunctionTest(device, context, queue, num_elems, fn, vsp)
+        : BaseFunctionTest(device, context, queue, num_elems, fn, vsp)
     {}
 
     cl_int Run() override;
@@ -155,11 +155,11 @@ struct SmoothstepTest : BinaryFunctionTest
 
 //--------------------------------------------------------------------------
 
-struct StepTest : BinaryFunctionTest
+struct StepTest : BaseFunctionTest
 {
     StepTest(cl_device_id device, cl_context context, cl_command_queue queue,
              int num_elems, const char *fn, bool vsp)
-        : BinaryFunctionTest(device, context, queue, num_elems, fn, vsp)
+        : BaseFunctionTest(device, context, queue, num_elems, fn, vsp)
     {}
 
     cl_int Run() override;
@@ -167,11 +167,11 @@ struct StepTest : BinaryFunctionTest
 
 //--------------------------------------------------------------------------
 
-struct MixTest : BinaryFunctionTest
+struct MixTest : BaseFunctionTest
 {
     MixTest(cl_device_id device, cl_context context, cl_command_queue queue,
             int num_elems, const char *fn, bool vsp)
-        : BinaryFunctionTest(device, context, queue, num_elems, fn, vsp)
+        : BaseFunctionTest(device, context, queue, num_elems, fn, vsp)
     {}
 
     cl_int Run() override;
@@ -182,17 +182,13 @@ struct MixTest : BinaryFunctionTest
 template <typename... Args>
 std::string string_format(const std::string &format, Args... args)
 {
-    int size_s = std::snprintf(nullptr, 0, format.c_str(), args...)
-        + 1; // Extra space for '\0'
-    if (size_s <= 0)
-    {
-        throw std::runtime_error("Error during formatting.");
-    }
-    auto size = static_cast<size_t>(size_s);
-    std::unique_ptr<char[]> buf(new char[size]);
-    std::snprintf(buf.get(), size, format.c_str(), args...);
-    return std::string(buf.get(),
-                       buf.get() + size - 1); // We don't want the '\0' inside
+    int sformat = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
+    if (sformat <= 0)
+        throw std::runtime_error("string_format: string processing error.");
+    auto format_size = static_cast<size_t>(sformat);
+    std::unique_ptr<char[]> buffer(new char[format_size]);
+    std::snprintf(buffer.get(), format_size, format.c_str(), args...);
+    return std::string(buffer.get(), buffer.get() + format_size - 1);
 }
 
 //--------------------------------------------------------------------------

@@ -106,9 +106,9 @@ int test_step_fn(cl_device_id device, cl_context context,
     int err, i;
     MTdata d;
 
-    assert(BinaryFunctionTest::type2name.find(sizeof(T))
-           != BinaryFunctionTest::type2name.end());
-    auto tname = BinaryFunctionTest::type2name[sizeof(T)];
+    assert(BaseFunctionTest::type2name.find(sizeof(T))
+           != BaseFunctionTest::type2name.end());
+    auto tname = BaseFunctionTest::type2name[sizeof(T)];
     int num_elements = n_elems * (1 << (kTotalVecCount - 1));
 
     programs.resize(kTotalVecCount);
@@ -137,8 +137,11 @@ int test_step_fn(cl_device_id device, cl_context context,
     else if (std::is_same<T, double>::value)
     {
         pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
-        input_ptr[0][i] = get_random_double(-0x40000000, 0x40000000, d);
-        input_ptr[1][i] = get_random_double(-0x40000000, 0x40000000, d);
+        for (i = 0; i < num_elements; i++)
+        {
+            input_ptr[0][i] = get_random_double(-0x40000000, 0x40000000, d);
+            input_ptr[1][i] = get_random_double(-0x40000000, 0x40000000, d);
+        }
     }
     free_mtdata(d);
 
