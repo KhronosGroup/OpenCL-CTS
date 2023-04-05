@@ -17,7 +17,6 @@
 #ifndef _TEST_COMPARISONS_FP_H
 #define _TEST_COMPARISONS_FP_H
 
-#include <vector>
 #include <map>
 #include <memory>
 #include <string>
