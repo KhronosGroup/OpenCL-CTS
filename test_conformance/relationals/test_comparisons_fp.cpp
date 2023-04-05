@@ -26,15 +26,12 @@
 
 #define TEST_SIZE 512
 
-//--------------------------------------------------------------------------/
+static char ftype[32] = { 0 };
+static char ftype_vec[32] = { 0 };
+static char itype[32] = { 0 };
+static char itype_vec[32] = { 0 };
+static char extension[128] = { 0 };
 
-char ftype[32] = { 0 };
-char ftype_vec[32] = { 0 };
-char itype[32] = { 0 };
-char itype_vec[32] = { 0 };
-char extension[128] = { 0 };
-
-//--------------------------------------------------------------------------/
 // clang-format off
 // for readability sake keep this section unformatted
 const char* equivTestKernPat[] = {
@@ -82,7 +79,7 @@ extension,
 "}\n"
 };
 // clang-format on
-//--------------------------------------------------------------------------/
+
 
 std::string concat_kernel(const char* sstr[], int num)
 {
@@ -90,8 +87,6 @@ std::string concat_kernel(const char* sstr[], int num)
     for (int i = 0; i < num; i++) res += std::string(sstr[i]);
     return res;
 }
-
-//--------------------------------------------------------------------------/
 
 template <typename... Args>
 std::string string_format(const std::string& format, Args... args)
@@ -109,14 +104,10 @@ std::string string_format(const std::string& format, Args... args)
                        buf.get() + size - 1); // We don't want the '\0' inside
 }
 
-//--------------------------------------------------------------------------
-
 template <typename T, typename F> bool verify(const T& A, const T& B)
 {
     return F()(A, B);
 }
-
-//--------------------------------------------------------------------------
 
 RelationalsFPTest::RelationalsFPTest(cl_context context, cl_device_id device,
                                      cl_command_queue queue, const char* fn,
@@ -131,12 +122,10 @@ RelationalsFPTest::RelationalsFPTest(cl_context context, cl_device_id device,
                     { kDouble, "long" } };
 }
 
-//--------------------------------------------------------------------------
-
 template <typename T>
 void RelationalsFPTest::generate_equiv_test_data(T* outData,
-                                                 const unsigned int& vecSize,
-                                                 const bool& alpha,
+                                                 unsigned int vecSize,
+                                                 bool alpha,
                                                  const RelTestParams<T>& param,
                                                  const MTdata& d)
 {
@@ -162,10 +151,8 @@ void RelationalsFPTest::generate_equiv_test_data(T* outData,
     }
 }
 
-//--------------------------------------------------------------------------
-
 template <typename T, typename U>
-void RelationalsFPTest::verify_equiv_values(const unsigned int& vecSize,
+void RelationalsFPTest::verify_equiv_values(unsigned int vecSize,
                                             const T* const inDataA,
                                             const T* const inDataB,
                                             U* const outData,
@@ -183,10 +170,8 @@ void RelationalsFPTest::verify_equiv_values(const unsigned int& vecSize,
     }
 }
 
-//--------------------------------------------------------------------------
-
 template <typename T>
-int RelationalsFPTest::test_equiv_kernel(const unsigned int& vecSize,
+int RelationalsFPTest::test_equiv_kernel(unsigned int vecSize,
                                          const RelTestParams<T>& param,
                                          const MTdata& d)
 {
@@ -197,9 +182,9 @@ int RelationalsFPTest::test_equiv_kernel(const unsigned int& vecSize,
 
     // support half, float, double equivalents - otherwise assert
     typedef typename std::conditional<
-        (sizeof(T) == sizeof(short)), short,
-        typename std::conditional<(sizeof(T) == sizeof(int)), int,
-                                  long>::type>::type U;
+        (sizeof(T) == sizeof(std::int16_t)), std::int16_t,
+        typename std::conditional<(sizeof(T) == sizeof(std::int32_t)),
+                                  std::int32_t, std::int64_t>::type>::type U;
 
     U outData[TEST_SIZE * 16], expected[16];
     int error, i, j;
@@ -226,7 +211,7 @@ int RelationalsFPTest::test_equiv_kernel(const unsigned int& vecSize,
 
     if (std::is_same<T, double>::value)
         strcpy(extension, "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n");
-    else if (std::is_same<T, half>::value)
+    else if (std::is_same<T, cl_half>::value)
         strcpy(extension, "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n");
     else
         extension[0] = '\0';
@@ -413,8 +398,6 @@ int RelationalsFPTest::test_equiv_kernel(const unsigned int& vecSize,
     return 0;
 }
 
-//--------------------------------------------------------------------------
-
 template <typename T>
 int RelationalsFPTest::test_relational(int numElements,
                                        const RelTestParams<T>& param)
@@ -436,8 +419,6 @@ int RelationalsFPTest::test_relational(int numElements,
     return retVal;
 }
 
-//--------------------------------------------------------------------------
-
 cl_int RelationalsFPTest::Run()
 {
     cl_int error = CL_SUCCESS;
@@ -446,8 +427,8 @@ cl_int RelationalsFPTest::Run()
         switch (param->dataType)
         {
             case kHalf:
-                error = test_relational<half>(
-                    num_elements, *((RelTestParams<half>*)param.get()));
+                error = test_relational<cl_half>(
+                    num_elements, *((RelTestParams<cl_half>*)param.get()));
                 break;
             case kFloat:
                 error = test_relational<float>(
@@ -466,14 +447,12 @@ cl_int RelationalsFPTest::Run()
     return CL_SUCCESS;
 }
 
-//--------------------------------------------------------------------------
-
 cl_int IsEqualFPTest::SetUp(int elements)
 {
     num_elements = elements;
     if (is_extension_available(device, "cl_khr_fp16"))
-        params.emplace_back(new RelTestParams<half>(
-            &verify<half, half_equals_to>, kHalf, HALF_NAN));
+        params.emplace_back(new RelTestParams<cl_half>(
+            &verify<cl_half, half_equals_to>, kHalf, HALF_NAN));
 
     params.emplace_back(new RelTestParams<float>(
         &verify<float, std::equal_to<float>>, kFloat, NAN));
@@ -485,14 +464,12 @@ cl_int IsEqualFPTest::SetUp(int elements)
     return CL_SUCCESS;
 }
 
-//--------------------------------------------------------------------------
-
 cl_int IsNotEqualFPTest::SetUp(int elements)
 {
     num_elements = elements;
     if (is_extension_available(device, "cl_khr_fp16"))
-        params.emplace_back(new RelTestParams<half>(
-            &verify<half, half_not_equals_to>, kHalf, HALF_NAN));
+        params.emplace_back(new RelTestParams<cl_half>(
+            &verify<cl_half, half_not_equals_to>, kHalf, HALF_NAN));
 
     params.emplace_back(new RelTestParams<float>(
         &verify<float, std::not_equal_to<float>>, kFloat, NAN));
@@ -504,14 +481,12 @@ cl_int IsNotEqualFPTest::SetUp(int elements)
     return CL_SUCCESS;
 }
 
-//--------------------------------------------------------------------------
-
 cl_int IsGreaterFPTest::SetUp(int elements)
 {
     num_elements = elements;
     if (is_extension_available(device, "cl_khr_fp16"))
-        params.emplace_back(new RelTestParams<half>(&verify<half, half_greater>,
-                                                    kHalf, HALF_NAN));
+        params.emplace_back(new RelTestParams<cl_half>(
+            &verify<cl_half, half_greater>, kHalf, HALF_NAN));
 
     params.emplace_back(new RelTestParams<float>(
         &verify<float, std::greater<float>>, kFloat, NAN));
@@ -523,14 +498,12 @@ cl_int IsGreaterFPTest::SetUp(int elements)
     return CL_SUCCESS;
 }
 
-//--------------------------------------------------------------------------
-
 cl_int IsGreaterEqualFPTest::SetUp(int elements)
 {
     num_elements = elements;
     if (is_extension_available(device, "cl_khr_fp16"))
-        params.emplace_back(new RelTestParams<half>(
-            &verify<half, half_greater_equal>, kHalf, HALF_NAN));
+        params.emplace_back(new RelTestParams<cl_half>(
+            &verify<cl_half, half_greater_equal>, kHalf, HALF_NAN));
 
     params.emplace_back(new RelTestParams<float>(
         &verify<float, std::greater_equal<float>>, kFloat, NAN));
@@ -542,14 +515,12 @@ cl_int IsGreaterEqualFPTest::SetUp(int elements)
     return CL_SUCCESS;
 }
 
-//--------------------------------------------------------------------------
-
 cl_int IsLessFPTest::SetUp(int elements)
 {
     num_elements = elements;
     if (is_extension_available(device, "cl_khr_fp16"))
-        params.emplace_back(
-            new RelTestParams<half>(&verify<half, half_less>, kHalf, HALF_NAN));
+        params.emplace_back(new RelTestParams<cl_half>(
+            &verify<cl_half, half_less>, kHalf, HALF_NAN));
 
     params.emplace_back(new RelTestParams<float>(
         &verify<float, std::less<float>>, kFloat, NAN));
@@ -561,14 +532,12 @@ cl_int IsLessFPTest::SetUp(int elements)
     return CL_SUCCESS;
 }
 
-//--------------------------------------------------------------------------
-
 cl_int IsLessEqualFPTest::SetUp(int elements)
 {
     num_elements = elements;
     if (is_extension_available(device, "cl_khr_fp16"))
-        params.emplace_back(new RelTestParams<half>(
-            &verify<half, half_less_equal>, kHalf, HALF_NAN));
+        params.emplace_back(new RelTestParams<cl_half>(
+            &verify<cl_half, half_less_equal>, kHalf, HALF_NAN));
 
     params.emplace_back(new RelTestParams<float>(
         &verify<float, std::less_equal<float>>, kFloat, NAN));
@@ -580,14 +549,12 @@ cl_int IsLessEqualFPTest::SetUp(int elements)
     return CL_SUCCESS;
 }
 
-//--------------------------------------------------------------------------
-
 cl_int IsLessGreaterFPTest::SetUp(int elements)
 {
     num_elements = elements;
     if (is_extension_available(device, "cl_khr_fp16"))
-        params.emplace_back(new RelTestParams<half>(
-            &verify<half, half_less_greater>, kHalf, HALF_NAN));
+        params.emplace_back(new RelTestParams<cl_half>(
+            &verify<cl_half, half_less_greater>, kHalf, HALF_NAN));
 
     params.emplace_back(new RelTestParams<float>(
         &verify<float, less_greater<float>>, kFloat, NAN));
@@ -599,15 +566,11 @@ cl_int IsLessGreaterFPTest::SetUp(int elements)
     return CL_SUCCESS;
 }
 
-//--------------------------------------------------------------------------
-
 int test_relational_isequal(cl_device_id device, cl_context context,
                             cl_command_queue queue, int numElements)
 {
     return MakeAndRunTest<IsEqualFPTest>(device, context, queue, numElements);
 }
-
-//--------------------------------------------------------------------------
 
 int test_relational_isnotequal(cl_device_id device, cl_context context,
                                cl_command_queue queue, int numElements)
@@ -616,15 +579,11 @@ int test_relational_isnotequal(cl_device_id device, cl_context context,
                                             numElements);
 }
 
-//--------------------------------------------------------------------------
-
 int test_relational_isgreater(cl_device_id device, cl_context context,
                               cl_command_queue queue, int numElements)
 {
     return MakeAndRunTest<IsGreaterFPTest>(device, context, queue, numElements);
 }
-
-//--------------------------------------------------------------------------
 
 int test_relational_isgreaterequal(cl_device_id device, cl_context context,
                                    cl_command_queue queue, int numElements)
@@ -633,15 +592,11 @@ int test_relational_isgreaterequal(cl_device_id device, cl_context context,
                                                 numElements);
 }
 
-//--------------------------------------------------------------------------
-
 int test_relational_isless(cl_device_id device, cl_context context,
                            cl_command_queue queue, int numElements)
 {
     return MakeAndRunTest<IsLessFPTest>(device, context, queue, numElements);
 }
-
-//--------------------------------------------------------------------------
 
 int test_relational_islessequal(cl_device_id device, cl_context context,
                                 cl_command_queue queue, int numElements)
@@ -650,13 +605,9 @@ int test_relational_islessequal(cl_device_id device, cl_context context,
                                              numElements);
 }
 
-//--------------------------------------------------------------------------
-
 int test_relational_islessgreater(cl_device_id device, cl_context context,
                                   cl_command_queue queue, int numElements)
 {
     return MakeAndRunTest<IsLessGreaterFPTest>(device, context, queue,
                                                numElements);
 }
-
-//--------------------------------------------------------------------------

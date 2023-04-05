@@ -20,29 +20,21 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
+
 #include <CL/cl_half.h>
 
 #include "testBase.h"
 
 #define HALF_NAN 0x7e00
-
-//--------------------------------------------------------------------------/
-
 template <typename T> using VerifyFunc = bool (*)(const T &, const T &);
-
-//--------------------------------------------------------------------------/
-
-using half = cl_half;
-
-//--------------------------------------------------------------------------
 
 struct RelTestBase
 {
-    RelTestBase(const ExplicitTypes &dt): dataType(dt) {}
+    explicit RelTestBase(const ExplicitTypes &dt): dataType(dt) {}
     ExplicitTypes dataType;
 };
-
-//--------------------------------------------------------------------------
 
 template <typename T> struct RelTestParams : public RelTestBase
 {
@@ -55,10 +47,6 @@ template <typename T> struct RelTestParams : public RelTestBase
     T nan;
 };
 
-//--------------------------------------------------------------------------
-
-// Helper test fixture for constructing OpenCL objects used in testing
-// a variety of simple command-buffer enqueue scenarios.
 struct RelationalsFPTest
 {
     RelationalsFPTest(cl_context context, cl_device_id device,
@@ -70,16 +58,16 @@ struct RelationalsFPTest
     virtual cl_int Run();
 
     template <typename T>
-    void generate_equiv_test_data(T *, const unsigned int &, const bool &,
+    void generate_equiv_test_data(T *, unsigned int, bool,
                                   const RelTestParams<T> &, const MTdata &);
 
     template <typename T, typename U>
-    void verify_equiv_values(const unsigned int &, const T *const,
-                             const T *const, U *const, const VerifyFunc<T> &);
+    void verify_equiv_values(unsigned int, const T *const, const T *const,
+                             U *const, const VerifyFunc<T> &);
 
     template <typename T>
-    int test_equiv_kernel(const unsigned int &vecSize,
-                          const RelTestParams<T> &param, const MTdata &d);
+    int test_equiv_kernel(unsigned int vecSize, const RelTestParams<T> &param,
+                          const MTdata &d);
 
     template <typename T>
     int test_relational(int numElements, const RelTestParams<T> &param);
@@ -96,8 +84,6 @@ protected:
     std::map<ExplicitTypes, std::string> eqTypeNames;
     size_t num_elements;
 };
-
-//--------------------------------------------------------------------------
 
 struct IsEqualFPTest : public RelationalsFPTest
 {
@@ -116,8 +102,6 @@ struct IsEqualFPTest : public RelationalsFPTest
     };
 };
 
-//--------------------------------------------------------------------------
-
 struct IsNotEqualFPTest : public RelationalsFPTest
 {
     IsNotEqualFPTest(cl_device_id d, cl_context c, cl_command_queue q)
@@ -135,8 +119,6 @@ struct IsNotEqualFPTest : public RelationalsFPTest
     };
 };
 
-//--------------------------------------------------------------------------
-
 struct IsGreaterFPTest : public RelationalsFPTest
 {
     IsGreaterFPTest(cl_device_id d, cl_context c, cl_command_queue q)
@@ -152,8 +134,6 @@ struct IsGreaterFPTest : public RelationalsFPTest
         }
     };
 };
-
-//--------------------------------------------------------------------------
 
 struct IsGreaterEqualFPTest : public RelationalsFPTest
 {
@@ -171,8 +151,6 @@ struct IsGreaterEqualFPTest : public RelationalsFPTest
     };
 };
 
-//--------------------------------------------------------------------------
-
 struct IsLessFPTest : public RelationalsFPTest
 {
     IsLessFPTest(cl_device_id d, cl_context c, cl_command_queue q)
@@ -189,8 +167,6 @@ struct IsLessFPTest : public RelationalsFPTest
     };
 };
 
-//--------------------------------------------------------------------------
-
 struct IsLessEqualFPTest : public RelationalsFPTest
 {
     IsLessEqualFPTest(cl_device_id d, cl_context c, cl_command_queue q)
@@ -206,8 +182,6 @@ struct IsLessEqualFPTest : public RelationalsFPTest
         }
     };
 };
-
-//--------------------------------------------------------------------------
 
 struct IsLessGreaterFPTest : public RelationalsFPTest
 {
@@ -233,8 +207,6 @@ struct IsLessGreaterFPTest : public RelationalsFPTest
         }
     };
 };
-
-//--------------------------------------------------------------------------
 
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
