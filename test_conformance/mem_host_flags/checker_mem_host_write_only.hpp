@@ -279,9 +279,6 @@ cl_int cBuffer_check_mem_host_write_only<T>::verify_RW_Buffer_rect()
 template <class T>
 cl_int cBuffer_check_mem_host_write_only<T>::update_host_mem_2()
 {
-    size_t global_work_size[3] = { 0, 1, 1 };
-    global_work_size[0] = this->get_block_size_bytes();
-
     cl_event event, event_2;
     cl_int err = clEnqueueCopyBuffer(
         this->m_queue, this->m_buffer, this->m_buffer2, 0, 0,

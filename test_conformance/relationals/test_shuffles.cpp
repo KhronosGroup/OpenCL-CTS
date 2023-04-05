@@ -337,7 +337,6 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
                                  MTdata d, ShuffleMode shuffleMode = kNormalMode )
 {
     char inOrder[18], shuffledOrder[18];
-    size_t typeSize;
     char kernelSource[MAX_PROGRAM_SIZE], progLine[ 10240 ];
     char *programPtr;
     char inSizeName[4], outSizeName[4], outRealSizeName[4], inSizeArgName[4];
@@ -353,9 +352,6 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
         inSizeArgName[ 0 ] = 0;
     else
         strcpy( inSizeArgName, inSizeName );
-
-
-    typeSize = get_explicit_type_size( vecType );
 
     *outRealVecSize = outVecSize;
 
