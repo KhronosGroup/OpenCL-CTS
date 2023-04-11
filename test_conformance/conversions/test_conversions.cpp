@@ -485,7 +485,6 @@ test_status InitCL(cl_device_id device)
         if (!is_extension_available(device, "cles_khr_int64")) gHasLong = 0;
     }
 
-
     gContext = clCreateContext(NULL, 1, &device, notify_callback, NULL, &error);
     if (NULL == gContext || error)
     {

@@ -161,7 +161,7 @@
 #define vkCreateImage _vkCreateImage
 #define vkGetImageMemoryRequirements _vkGetImageMemoryRequirements
 #define vkDestroyImage _vkDestroyImage
-#define vkDestroyBuffe _vkDestroyBuffer
+#define vkDestroyBuffer _vkDestroyBuffer
 #define vkDestroyPipeline _vkDestroyPipeline
 #define vkDestroyShaderModule _vkDestroyShaderModule
 #define vkGetPhysicalDeviceMemoryProperties _vkGetPhysicalDeviceMemoryProperties

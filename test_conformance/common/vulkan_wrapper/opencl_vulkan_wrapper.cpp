@@ -831,7 +831,7 @@ clExternalSemaphore::clExternalSemaphore(
     }
 }
 
-clExternalSemaphore::~clExternalSemaphore()
+clExternalSemaphore::~clExternalSemaphore() noexcept(false)
 {
     cl_int err = clReleaseSemaphoreKHRptr(m_externalSemaphore);
     if (err != CL_SUCCESS)
@@ -850,4 +850,9 @@ void clExternalSemaphore::wait(cl_command_queue cmd_queue)
 {
     clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, &m_externalSemaphore, NULL, 0,
                                   NULL, NULL);
+}
+
+cl_semaphore_khr &clExternalSemaphore::getCLSemaphore()
+{
+    return m_externalSemaphore;
 }

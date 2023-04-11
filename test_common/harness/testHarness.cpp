@@ -818,6 +818,8 @@ test_status callSingleTestFunction(test_definition test,
         if (!context)
         {
             print_error(error, "Unable to create testing context");
+            gFailCount++;
+            gTestsFailed++;
             return TEST_FAIL;
         }
 
@@ -840,6 +842,8 @@ test_status callSingleTestFunction(test_definition test,
         {
             print_error(error, "Unable to create testing command queue");
             clReleaseContext(context);
+            gFailCount++;
+            gTestsFailed++;
             return TEST_FAIL;
         }
     }
@@ -887,6 +891,8 @@ test_status callSingleTestFunction(test_definition test,
         if (error)
         {
             log_error("clFinish failed: %s\n", IGetErrorString(error));
+            gFailCount++;
+            gTestsFailed++;
             status = TEST_FAIL;
         }
         clReleaseCommandQueue(queue);

@@ -20,8 +20,6 @@
 #include "harness/conversions.h"
 #include "harness/rounding_mode.h"
 
-extern void     memset_pattern4(void *dest, const void *src_pattern, size_t bytes );
-
 extern int      test_hostptr(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_fpmath_float(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_fpmath_float2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

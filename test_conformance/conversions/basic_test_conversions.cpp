@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "harness/testHarness.h"
 #include "harness/compat.h"
 #include "harness/rounding_mode.h"
 #include "harness/ThreadPool.h"

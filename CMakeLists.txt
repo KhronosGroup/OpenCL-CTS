@@ -82,9 +82,15 @@ endif()
 
 macro(add_cxx_flag_if_supported flag)
     string(REGEX REPLACE "[-=+]" "" FLAG_NO_SIGNS ${flag})
-    check_cxx_compiler_flag(${flag} COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
+    set(FLAG_TO_TEST ${flag})
+    if((${flag} MATCHES "^-Wno-") AND NOT (${flag} MATCHES "^-Wno-error="))
+        # -Wno-... only causes a diagnostic if another diagnostic is emitted.
+        # Change such flags into a -W... flag to test if the warning is known.
+        string(REGEX REPLACE "^-Wno-" "-W" FLAG_TO_TEST ${flag})
+    endif()
+    check_cxx_compiler_flag(${FLAG_TO_TEST} COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
     if(COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
     endif()
 endmacro(add_cxx_flag_if_supported)
 
@@ -92,11 +98,20 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
     add_cxx_flag_if_supported(-Wmisleading-indentation)
     add_cxx_flag_if_supported(-Wunused-function)
     add_cxx_flag_if_supported(-Wunused-variable)
+    add_cxx_flag_if_supported(-Werror)
+    if(NOT CMAKE_BUILD_TYPE MATCHES "Release|RelWithDebInfo|MinSizeRel")
+        # Enable more warnings if not doing a release build.
+        add_cxx_flag_if_supported(-Wall)
+        # Suppress warnings that currently trigger on the code base.
+        # This list should shrink over time when warnings are fixed.
+        add_cxx_flag_if_supported(-Wno-unused-but-set-variable)
+        add_cxx_flag_if_supported(-Wno-sometimes-uninitialized)
+        add_cxx_flag_if_supported(-Wno-sign-compare)
+    endif()
     add_cxx_flag_if_supported(-Wno-narrowing)
     add_cxx_flag_if_supported(-Wno-format)
-    add_cxx_flag_if_supported(-Werror)
     add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive
-    add_cxx_flag_if_supported(-Wno-error=unknown-pragmas) # Issue #785
+    add_cxx_flag_if_supported(-Wno-unknown-pragmas) # Issue #785
     add_cxx_flag_if_supported(-Wno-error=asm-operand-widths) # Issue #784
 
     # -msse -mfpmath=sse to force gcc to use sse for float math,
