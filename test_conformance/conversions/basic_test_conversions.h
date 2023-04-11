@@ -36,11 +36,13 @@
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 
+#include <memory>
 #include <tuple>
 #include <vector>
-#include <memory>
 
-typedef void (*Convert)( void *dest, void *src, size_t );
+#include "conversions_data_info.h"
+
+// typedef void (*Convert)( void *dest, void *src, size_t );
 
 #define kVectorSizeCount 6
 #define kMaxVectorSize 16
@@ -50,13 +52,6 @@ typedef void (*Convert)( void *dest, void *src, size_t );
 #define EMBEDDED_REDUCTION_FACTOR 16
 #define PERF_LOOP_COUNT 100
 
-typedef enum
-{
-    kUnsaturated = 0,
-    kSaturated,
-
-    kSaturationModeCount
-}SaturationMode;
 
 // extern Convert gConversions[kTypeCount][kTypeCount];                // [dest
 // format][source format] extern Convert
@@ -187,105 +182,6 @@ struct WriteInputBufferInfo
     std::vector<std::unique_ptr<CalcRefValsBase>> calcInfo;
 };
 
-//--------------------------------------------------------------------------
-
-struct DataInitInfo
-{
-    ~DataInitInfo()
-    {
-        if (d)
-        {
-            for (unsigned i = 0; i < threads; i++) free_mtdata(d[i]);
-            free(d);
-        }
-    }
-
-    cl_ulong start;
-    cl_uint size;
-    Type outType;
-    Type inType;
-    SaturationMode sat;
-    RoundingMode round;
-    MTdata *d;
-    cl_uint threads;
-};
-
-//--------------------------------------------------------------------------
-
-struct DataInitBase : public DataInitInfo
-{
-    DataInitBase(const DataInitInfo &agg): DataInitInfo(agg) {}
-    virtual void conv_array(void *out, void *in, size_t n) {}
-    virtual void conv_array_sat(void *out, void *in, size_t n) {}
-    virtual void init(const cl_uint &, const cl_uint &) {}
-};
-
-//--------------------------------------------------------------------------
-
-template <typename InType, typename OutType, bool InFP, bool OutFP>
-struct DataInfoSpec : public DataInitBase
-{
-
-    DataInfoSpec(const DataInitInfo &agg);
-
-    // helpers
-    float round_to_int(float f);
-    long long round_to_int_and_clamp(double d);
-
-    OutType absolute(const OutType &x);
-
-    // actual conversion of reference values
-    void conv(OutType *out, InType *in);
-    void conv_sat(OutType *out, InType *in);
-
-    // min/max ranges for output type of data
-    std::pair<OutType, OutType> ranges;
-
-    // matrix of clamping ranges for each rounding type
-    std::vector<std::pair<InType, InType>> clamp_ranges;
-
-    ////////////////////////////////////////////////////////////////////////////
-    constexpr bool is_in_half() const
-    {
-        return (std::is_same<InType, cl_half>::value && InFP);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    constexpr bool is_out_half() const
-    {
-        return (std::is_same<OutType, cl_half>::value && OutFP);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    void conv_array(void *out, void *in, size_t n) override
-    {
-        for (size_t i = 0; i < n; i++)
-            conv(&((OutType *)out)[i], &((InType *)in)[i]);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    void conv_array_sat(void *out, void *in, size_t n) override
-    {
-        for (size_t i = 0; i < n; i++)
-            conv_sat(&((OutType *)out)[i], &((InType *)in)[i]);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    void init(const cl_uint &, const cl_uint &) override;
-    InType clamp(const InType &);
-    ////////////////////////////////////////////////////////////////////////////
-    inline float fclamp(float lo, float v, float hi)
-    {
-        v = v < lo ? lo : v;
-        return v < hi ? v : hi;
-    }
-    ////////////////////////////////////////////////////////////////////////////
-    inline double dclamp(double lo, double v, double hi)
-    {
-        v = v < lo ? lo : v;
-        return v < hi ? v : hi;
-    }
-};
 
 //--------------------------------------------------------------------------
 
@@ -313,7 +209,7 @@ struct ConversionsTest
 
     template <typename InType, typename OutType, bool InFP, bool OutFP>
     int DoTest(Type outType, Type inType, SaturationMode sat,
-               RoundingMode round, MTdata d);
+               RoundingMode round);
 
     template <typename InType, typename OutType, bool InFP, bool OutFP>
     void TestTypesConversion(const Type &inType, const Type &outType, int &tn);
@@ -328,7 +224,6 @@ protected:
     TypeIter typeIterator;
 
 public:
-    static cl_half_rounding_mode halfRoundingMode;
     static cl_half_rounding_mode defaultHalfRoundingMode;
 };
 
