@@ -48,8 +48,8 @@
 #include <time.h>
 
 #include <algorithm>
-#include <vector>
 #include <type_traits>
+#include <vector>
 
 #include "Sleep.h"
 
@@ -64,9 +64,10 @@
 #endif
 
 #if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
-/* Rounding modes and saturation for use with qcom 64 bit to float conversion library */
-    bool            qcom_sat;
-    roundingMode    qcom_rm;
+/* Rounding modes and saturation for use with qcom 64 bit to float conversion
+ * library */
+bool qcom_sat;
+roundingMode qcom_rm;
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
