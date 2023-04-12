@@ -22,6 +22,12 @@
 #include <CL/opencl.h>
 #endif
 
+#if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
+#include "fplib.h"
+extern bool qcom_sat;
+extern roundingMode qcom_rm;
+#endif
+
 #include <CL/cl_half.h>
 
 #include "harness/mt19937.h"
@@ -62,7 +68,7 @@ struct DataInitInfo
 
 
     static cl_half_rounding_mode halfRoundingMode;
-    static std::vector<unsigned int> specialValuesUInt;
+    static std::vector<uint32_t> specialValuesUInt;
     static std::vector<float> specialValuesFloat;
     static std::vector<double> specialValuesDouble;
 };
