@@ -241,6 +241,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 {
                     if (use_fence)
                     {
+                        fence->reset();
                         vkQueue.submit(vkCommandBuffer, fence);
                     }
                     else
@@ -252,6 +253,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 {
                     if (use_fence)
                     {
+                        fence->reset();
                         vkQueue.submit(vkCommandBuffer, fence);
                     }
                     else
@@ -263,7 +265,6 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
                 if (use_fence)
                 {
-                    fence->reset();
                     fence->wait();
                 }
                 else
@@ -324,7 +325,6 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 {
                     if (use_fence)
                     {
-                        fence->reset();
                         fence->wait();
                     }
                     else
@@ -584,6 +584,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 {
                     if (use_fence)
                     {
+                        fence->reset();
                         vkQueue.submit(vkCommandBuffer, fence);
                     }
                     else
@@ -595,6 +596,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 {
                     if (use_fence)
                     {
+                        fence->reset();
                         vkQueue.submit(vkCommandBuffer, fence);
                     }
                     else
@@ -606,7 +608,6 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
                 if (use_fence)
                 {
-                    fence->reset();
                     fence->wait();
                 }
                 else
@@ -643,7 +644,6 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 {
                     if (use_fence)
                     {
-                        fence->reset();
                         fence->wait();
                         clFinish(cmd_queue1);
                     }
@@ -936,6 +936,7 @@ int run_test_with_multi_import_same_ctx(
                     {
                         if (use_fence)
                         {
+                            fence->reset();
                             vkQueue.submit(vkCommandBuffer, fence);
                         }
                         else
@@ -947,6 +948,7 @@ int run_test_with_multi_import_same_ctx(
                     {
                         if (use_fence)
                         {
+                            fence->reset();
                             vkQueue.submit(vkCommandBuffer, fence);
                         }
                         else
@@ -958,7 +960,6 @@ int run_test_with_multi_import_same_ctx(
 
                     if (use_fence)
                     {
-                        fence->reset();
                         fence->wait();
                     }
                     else
@@ -1002,7 +1003,6 @@ int run_test_with_multi_import_same_ctx(
                     {
                         if (use_fence)
                         {
-                            fence->reset();
                             fence->wait();
                         }
                         else
@@ -1344,6 +1344,7 @@ int run_test_with_multi_import_diff_ctx(
                     {
                         if (use_fence)
                         {
+                            fence->reset();
                             vkQueue.submit(vkCommandBuffer, fence);
                         }
                         else
@@ -1355,6 +1356,7 @@ int run_test_with_multi_import_diff_ctx(
                     {
                         if (use_fence)
                         {
+                            fence->reset();
                             vkQueue.submit(vkCommandBuffer, fence);
                         }
                         else
@@ -1366,7 +1368,6 @@ int run_test_with_multi_import_diff_ctx(
 
                     if (use_fence)
                     {
-                        fence->reset();
                         fence->wait();
                     }
                     else
@@ -1410,7 +1411,6 @@ int run_test_with_multi_import_diff_ctx(
                     {
                         if (use_fence)
                         {
-                            fence->reset();
                             fence->wait();
                         }
                         else
@@ -1426,6 +1426,7 @@ int run_test_with_multi_import_diff_ctx(
                     {
                         if (use_fence)
                         {
+                            fence->reset();
                             vkQueue.submit(vkCommandBuffer, fence);
                         }
                         else
@@ -1437,6 +1438,7 @@ int run_test_with_multi_import_diff_ctx(
                     {
                         if (use_fence)
                         {
+                            fence->reset();
                             vkQueue.submit(vkCommandBuffer, fence);
                         }
                         else
@@ -1491,7 +1493,6 @@ int run_test_with_multi_import_diff_ctx(
                     {
                         if (use_fence)
                         {
-                            fence->reset();
                             fence->wait();
                         }
                         else
