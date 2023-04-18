@@ -72,6 +72,11 @@ extern cl_device_fp_config gFloatCapabilities;
 extern cl_device_fp_config gHalfCapabilities;
 extern RoundingMode gFloatToHalfRoundingMode;
 
+extern cl_half_rounding_mode gHalfRoundingMode;
+
+#define HFF(num) cl_half_from_float(num, gHalfRoundingMode)
+#define HTF(num) cl_half_to_float(num)
+
 #define LOWER_IS_BETTER 0
 #define HIGHER_IS_BETTER 1
 
@@ -164,6 +169,26 @@ inline int IsFloatNaN(double x)
     } u;
     u.d = (cl_float)x;
     return ((u.u & 0x7fffffffU) > 0x7F800000U);
+}
+
+inline bool IsHalfNaN(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // NaN test
+    return (h_exp == 0x1F && h_mant != 0);
+}
+
+inline bool IsHalfInfinity(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // Inf test
+    return (h_exp == 0x1F && h_mant == 0);
 }
 
 cl_uint RoundUpToNextPowerOfTwo(cl_uint x);

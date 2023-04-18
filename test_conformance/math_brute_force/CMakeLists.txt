@@ -34,14 +34,17 @@ set(${MODULE_NAME}_SOURCES
     sleep.h
     ternary_double.cpp
     ternary_float.cpp
+    ternary_half.cpp
     test_functions.h
     unary_double.cpp
     unary_float.cpp
     unary_half.cpp
     unary_two_results_double.cpp
     unary_two_results_float.cpp
+    unary_two_results_half.cpp
     unary_two_results_i_double.cpp
     unary_two_results_i_float.cpp
+    unary_two_results_i_half.cpp
     unary_u_double.cpp
     unary_u_float.cpp
     unary_u_half.cpp

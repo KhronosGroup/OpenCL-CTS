@@ -108,17 +108,26 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata, bool relaxedMode);
 int TestFunc_Double_Double_Double_Double(const Func *f, MTdata,
                                          bool relaxedMode);
 
+// half foo(half, half, half)
+int TestFunc_Half_Half_Half_Half(const Func *f, MTdata, bool relaxedMode);
+
 // float foo(float, float*)
 int TestFunc_Float2_Float(const Func *f, MTdata, bool relaxedMode);
 
 // double foo(double, double*)
 int TestFunc_Double2_Double(const Func *f, MTdata, bool relaxedMode);
 
+// half foo(half, half*)
+int TestFunc_Half2_Half(const Func *f, MTdata, bool relaxedMode);
+
 // float foo(float, int*)
 int TestFunc_FloatI_Float(const Func *f, MTdata, bool relaxedMode);
 
 // double foo(double, int*)
 int TestFunc_DoubleI_Double(const Func *f, MTdata, bool relaxedMode);
+
+// half foo(half, int*)
+int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode);
 
 // float foo(float, float, int*)
 int TestFunc_FloatI_Float_Float(const Func *f, MTdata, bool relaxedMode);

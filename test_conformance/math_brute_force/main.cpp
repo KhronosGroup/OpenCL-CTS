@@ -108,6 +108,8 @@ cl_device_fp_config gFloatCapabilities = 0;
 int gWimpyReductionFactor = 32;
 int gVerboseBruteForce = 0;
 
+cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
+
 static int ParseArgs(int argc, const char **argv);
 static void PrintUsage(void);
 static void PrintFunctions(void);
@@ -694,6 +696,16 @@ test_status InitCL(cl_device_id device)
 
             return TEST_FAIL;
         }
+
+        if ((gHalfCapabilities & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTE;
+        }
+        else // due to above condition it must be RTZ
+        {
+            gHalfRoundingMode = CL_HALF_RTZ;
+        }
+
 #else
         vlog_error("FAIL: device says it supports cl_khr_fp16 but "
                    "CL_DEVICE_HALF_FP_CONFIG is not in the headers!\n");

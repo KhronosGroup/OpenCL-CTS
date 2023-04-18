@@ -185,21 +185,21 @@ static constexpr vtbl _ternary = {
     "ternary",
     TestFunc_Float_Float_Float_Float,
     TestFunc_Double_Double_Double_Double,
-    NULL,
+    TestFunc_Half_Half_Half_Half,
 };
 
 static constexpr vtbl _unary_two_results = {
     "unary_two_results",
     TestFunc_Float2_Float,
     TestFunc_Double2_Double,
-    NULL,
+    TestFunc_Half2_Half,
 };
 
 static constexpr vtbl _unary_two_results_i = {
     "unary_two_results_i",
     TestFunc_FloatI_Float,
     TestFunc_DoubleI_Double,
-    NULL,
+    TestFunc_HalfI_Half,
 };
 
 static constexpr vtbl _binary_two_results_i = {
