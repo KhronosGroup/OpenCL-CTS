@@ -112,7 +112,8 @@ template <typename T, typename F> bool verify(const T& A, const T& B)
 RelationalsFPTest::RelationalsFPTest(cl_context context, cl_device_id device,
                                      cl_command_queue queue, const char* fn,
                                      const char* op)
-    : context(context), device(device), queue(queue), fnName(fn), opName(op)
+    : context(context), device(device), queue(queue), fnName(fn), opName(op),
+      halfFlushDenormsToZero(0)
 {
     // hardcoded for now, to be changed into typeid().name solution in future
     // for now C++ spec doesn't guarantee human readable type name
@@ -341,9 +342,25 @@ int RelationalsFPTest::test_equiv_kernel(unsigned int vecSize,
         {
             if (expected[j] != outData[i * vecSize + j])
             {
-                verror_msg(i, j, vecSize, expected[j], outData[i * vecSize + j],
-                           inDataA[i * vecSize + j], inDataB[i * vecSize + j]);
-                return -1;
+                bool acceptFail = true;
+                if (std::is_same<T, cl_half>::value)
+                {
+                    bool in_denorm = IsHalfSubnormal(inDataA[i * vecSize])
+                        || IsHalfSubnormal(inDataB[i * vecSize]);
+
+                    if (halfFlushDenormsToZero && in_denorm)
+                    {
+                        acceptFail = false;
+                    }
+                }
+
+                if (acceptFail)
+                {
+                    verror_msg(
+                        i, j, vecSize, expected[j], outData[i * vecSize + j],
+                        inDataA[i * vecSize + j], inDataB[i * vecSize + j]);
+                    return -1;
+                }
             }
         }
     }
@@ -385,6 +402,20 @@ int RelationalsFPTest::test_equiv_kernel(unsigned int vecSize,
                         return -1;
                     }
                 }
+                else if (std::is_same<T, cl_half>::value)
+                {
+                    bool in_denorm = IsHalfSubnormal(inDataA[i * vecSize])
+                        || IsHalfSubnormal(inDataB[i * vecSize]);
+
+                    if (!(halfFlushDenormsToZero && in_denorm))
+                    {
+                        verror_msg(i, j, vecSize, expected[j],
+                                   outData[i * vecSize + j],
+                                   inDataA[i * vecSize + j],
+                                   inDataB[i * vecSize + j]);
+                        return -1;
+                    }
+                }
                 else
                 {
                     verror_msg(
@@ -417,6 +448,23 @@ int RelationalsFPTest::test_relational(int numElements,
         }
     }
     return retVal;
+}
+
+cl_int RelationalsFPTest::SetUp(int elements)
+{
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        cl_device_fp_config config = 0;
+        cl_int error = clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG,
+                                       sizeof(config), &config, NULL);
+        test_error(error, "Unable to get device CL_DEVICE_HALF_FP_CONFIG");
+
+        halfFlushDenormsToZero = (0 == (config & CL_FP_DENORM));
+        log_info("Supports half precision denormals: %s\n",
+                 halfFlushDenormsToZero ? "NO" : "YES");
+    }
+
+    return CL_SUCCESS;
 }
 
 cl_int RelationalsFPTest::Run()
@@ -461,7 +509,7 @@ cl_int IsEqualFPTest::SetUp(int elements)
         params.emplace_back(new RelTestParams<double>(
             &verify<double, std::equal_to<double>>, kDouble, NAN));
 
-    return CL_SUCCESS;
+    return RelationalsFPTest::SetUp(elements);
 }
 
 cl_int IsNotEqualFPTest::SetUp(int elements)
@@ -478,7 +526,7 @@ cl_int IsNotEqualFPTest::SetUp(int elements)
         params.emplace_back(new RelTestParams<double>(
             &verify<double, std::not_equal_to<double>>, kDouble, NAN));
 
-    return CL_SUCCESS;
+    return RelationalsFPTest::SetUp(elements);
 }
 
 cl_int IsGreaterFPTest::SetUp(int elements)
@@ -495,7 +543,7 @@ cl_int IsGreaterFPTest::SetUp(int elements)
         params.emplace_back(new RelTestParams<double>(
             &verify<double, std::greater<double>>, kDouble, NAN));
 
-    return CL_SUCCESS;
+    return RelationalsFPTest::SetUp(elements);
 }
 
 cl_int IsGreaterEqualFPTest::SetUp(int elements)
@@ -512,7 +560,7 @@ cl_int IsGreaterEqualFPTest::SetUp(int elements)
         params.emplace_back(new RelTestParams<double>(
             &verify<double, std::greater_equal<double>>, kDouble, NAN));
 
-    return CL_SUCCESS;
+    return RelationalsFPTest::SetUp(elements);
 }
 
 cl_int IsLessFPTest::SetUp(int elements)
@@ -529,7 +577,7 @@ cl_int IsLessFPTest::SetUp(int elements)
         params.emplace_back(new RelTestParams<double>(
             &verify<double, std::less<double>>, kDouble, NAN));
 
-    return CL_SUCCESS;
+    return RelationalsFPTest::SetUp(elements);
 }
 
 cl_int IsLessEqualFPTest::SetUp(int elements)
@@ -546,7 +594,7 @@ cl_int IsLessEqualFPTest::SetUp(int elements)
         params.emplace_back(new RelTestParams<double>(
             &verify<double, std::less_equal<double>>, kDouble, NAN));
 
-    return CL_SUCCESS;
+    return RelationalsFPTest::SetUp(elements);
 }
 
 cl_int IsLessGreaterFPTest::SetUp(int elements)
@@ -563,7 +611,7 @@ cl_int IsLessGreaterFPTest::SetUp(int elements)
         params.emplace_back(new RelTestParams<double>(
             &verify<double, less_greater<double>>, kDouble, NAN));
 
-    return CL_SUCCESS;
+    return RelationalsFPTest::SetUp(elements);
 }
 
 int test_relational_isequal(cl_device_id device, cl_context context,

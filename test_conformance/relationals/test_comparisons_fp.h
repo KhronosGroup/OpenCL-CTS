@@ -51,7 +51,7 @@ struct RelationalsFPTest
     RelationalsFPTest(cl_context context, cl_device_id device,
                       cl_command_queue queue, const char *fn, const char *op);
 
-    virtual cl_int SetUp(int elements) = 0;
+    virtual cl_int SetUp(int elements);
 
     // Test body returning an OpenCL error code
     virtual cl_int Run();
@@ -82,6 +82,8 @@ protected:
     std::vector<std::unique_ptr<RelTestBase>> params;
     std::map<ExplicitTypes, std::string> eqTypeNames;
     size_t num_elements;
+
+    int halfFlushDenormsToZero;
 };
 
 struct IsEqualFPTest : public RelationalsFPTest
