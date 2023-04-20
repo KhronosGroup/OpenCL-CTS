@@ -345,8 +345,8 @@ int RelationalsFPTest::test_equiv_kernel(unsigned int vecSize,
                 bool acceptFail = true;
                 if (std::is_same<T, cl_half>::value)
                 {
-                    bool in_denorm = IsHalfSubnormal(inDataA[i * vecSize])
-                        || IsHalfSubnormal(inDataB[i * vecSize]);
+                    bool in_denorm = IsHalfSubnormal(inDataA[i * vecSize + j])
+                        || IsHalfSubnormal(inDataB[i * vecSize + j]);
 
                     if (halfFlushDenormsToZero && in_denorm)
                     {
@@ -404,8 +404,8 @@ int RelationalsFPTest::test_equiv_kernel(unsigned int vecSize,
                 }
                 else if (std::is_same<T, cl_half>::value)
                 {
-                    bool in_denorm = IsHalfSubnormal(inDataA[i * vecSize])
-                        || IsHalfSubnormal(inDataB[i * vecSize]);
+                    bool in_denorm = IsHalfSubnormal(inDataA[i * vecSize + j])
+                        || IsHalfSubnormal(inDataB[i * vecSize + j]);
 
                     if (!(halfFlushDenormsToZero && in_denorm))
                     {
