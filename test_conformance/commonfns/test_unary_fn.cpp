@@ -30,7 +30,7 @@
 #define M_PI 3.14159265358979323846264338327950288
 #endif
 
-//--------------------------------------------------------------------------
+
 // clang-format off
 const char *unary_fn_code_pattern =
 "%s\n" /* optional pragma */
@@ -50,13 +50,13 @@ const char *unary_fn_code_pattern_v3 =
 "    vstore3(%s(vload3(tid,src)), tid, dst);\n"
 "}\n";
 // clang-format on
-//--------------------------------------------------------------------------
+
 
 #define MAX_ERR 2.0f
 
 namespace {
 
-//--------------------------------------------------------------------------
+
 template <typename T> float UlpFn(const T &val, const double &r)
 {
     if (std::is_same<T, double>::value)
@@ -67,7 +67,7 @@ template <typename T> float UlpFn(const T &val, const double &r)
         return Ulp_Error(val, r);
 }
 
-//--------------------------------------------------------------------------
+
 template <typename T>
 int verify_degrees(const T *const inptr, const T *const outptr, int n)
 {
@@ -102,7 +102,7 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
     return 0;
 }
 
-//--------------------------------------------------------------------------
+
 template <typename T>
 int verify_radians(const T *const inptr, const T *const outptr, int n)
 {
@@ -135,7 +135,7 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
     return 0;
 }
 
-//--------------------------------------------------------------------------
+
 template <typename T>
 int verify_sign(const T *const inptr, const T *const outptr, int n)
 {
@@ -155,7 +155,6 @@ int verify_sign(const T *const inptr, const T *const outptr, int n)
 
 }
 
-//--------------------------------------------------------------------------
 
 template <typename T>
 int test_unary_fn(cl_device_id device, cl_context context,
@@ -169,7 +168,7 @@ int test_unary_fn(cl_device_id device, cl_context context,
     std::vector<clKernelWrapper> kernels;
 
     int err, i;
-    MTdata d;
+    MTdataHolder d = MTdataHolder(gRandomSeed);
 
     assert(BaseFunctionTest::type2name.find(sizeof(T))
            != BaseFunctionTest::type2name.end());
@@ -191,7 +190,6 @@ int test_unary_fn(cl_device_id device, cl_context context,
     }
 
     std::string pragma_str;
-    d = init_genrand(gRandomSeed);
     if (std::is_same<T, float>::value)
     {
         for (int j = 0; j < num_elements; j++)
@@ -209,15 +207,13 @@ int test_unary_fn(cl_device_id device, cl_context context,
                 get_random_double(-100000.0 * M_PI, 100000.0 * M_PI, d);
         }
     }
-    free_mtdata(d);
-    d = NULL;
 
     err = clEnqueueWriteBuffer(queue, streams[0], true, 0,
                                sizeof(T) * num_elements, &input_ptr.front(), 0,
                                NULL, NULL);
     if (err != CL_SUCCESS)
     {
-        log_error("clWriteArray failed\n");
+        log_error("clEnqueueWriteBuffer failed\n");
         return -1;
     }
 
@@ -291,18 +287,14 @@ int test_unary_fn(cl_device_id device, cl_context context,
         if (err) break;
     }
 
-    if (err) return err;
-
     return err;
 }
 
-//--------------------------------------------------------------------------
+
 cl_int DegreesTest::Run()
 {
-    cl_int error = CL_SUCCESS;
-
-    error = test_unary_fn<float>(device, context, queue, num_elems,
-                                 fnName.c_str(), verify_degrees<float>);
+    cl_int error = test_unary_fn<float>(device, context, queue, num_elems,
+                                        fnName.c_str(), verify_degrees<float>);
     test_error(error, "DegreesTest::Run<float> failed");
 
     if (is_extension_available(device, "cl_khr_fp64"))
@@ -315,13 +307,11 @@ cl_int DegreesTest::Run()
     return error;
 }
 
-//--------------------------------------------------------------------------
+
 cl_int RadiansTest::Run()
 {
-    cl_int error = CL_SUCCESS;
-
-    error = test_unary_fn<float>(device, context, queue, num_elems,
-                                 fnName.c_str(), verify_radians<float>);
+    cl_int error = test_unary_fn<float>(device, context, queue, num_elems,
+                                        fnName.c_str(), verify_radians<float>);
     test_error(error, "RadiansTest::Run<float> failed");
 
     if (is_extension_available(device, "cl_khr_fp64"))
@@ -334,26 +324,24 @@ cl_int RadiansTest::Run()
     return error;
 }
 
-//--------------------------------------------------------------------------
+
 cl_int SignTest::Run()
 {
-    cl_int error = CL_SUCCESS;
-
-    error = test_unary_fn<float>(device, context, queue, num_elems,
-                                 fnName.c_str(), verify_sign<float>);
+    cl_int error = test_unary_fn<float>(device, context, queue, num_elems,
+                                        fnName.c_str(), verify_sign<float>);
     test_error(error, "SignTest::Run<float> failed");
 
     if (is_extension_available(device, "cl_khr_fp64"))
     {
         error = test_unary_fn<double>(device, context, queue, num_elems,
                                       fnName.c_str(), verify_sign<double>);
-        test_error(error, "SignTest::Run<cl_half> failed");
+        test_error(error, "SignTest::Run<double> failed");
     }
 
     return error;
 }
 
-//--------------------------------------------------------------------------
+
 int test_degrees(cl_device_id device, cl_context context,
                  cl_command_queue queue, int n_elems)
 {
@@ -361,7 +349,7 @@ int test_degrees(cl_device_id device, cl_context context,
                                        "degrees");
 }
 
-//--------------------------------------------------------------------------
+
 int test_radians(cl_device_id device, cl_context context,
                  cl_command_queue queue, int n_elems)
 {
@@ -369,11 +357,9 @@ int test_radians(cl_device_id device, cl_context context,
                                        "radians");
 }
 
-//--------------------------------------------------------------------------
+
 int test_sign(cl_device_id device, cl_context context, cl_command_queue queue,
               int n_elems)
 {
     return MakeAndRunTest<SignTest>(device, context, queue, n_elems, "sign");
 }
-
-//--------------------------------------------------------------------------

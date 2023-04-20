@@ -21,7 +21,6 @@
 #include "procs.h"
 #include "test_base.h"
 
-//--------------------------------------------------------------------------
 
 const char *step_fn_code_pattern = "%s\n" /* optional pragma */
                                    "__kernel void test_fn(__global %s%s *edge, "
@@ -49,7 +48,6 @@ const char *step_fn_code_pattern_v3_scalar =
     "    vstore3(step(edge[tid], vload3(tid,x)), tid, dst);\n"
     "}\n";
 
-//--------------------------------------------------------------------------
 
 namespace {
 
@@ -92,7 +90,7 @@ int verify_step(const T *const inptrA, const T *const inptrB,
 
 }
 
-//--------------------------------------------------------------------------
+
 template <typename T>
 int test_step_fn(cl_device_id device, cl_context context,
                  cl_command_queue queue, int n_elems, bool vecParam)
@@ -104,7 +102,7 @@ int test_step_fn(cl_device_id device, cl_context context,
     std::vector<clKernelWrapper> kernels;
 
     int err, i;
-    MTdata d;
+    MTdataHolder d = MTdataHolder(gRandomSeed);
 
     assert(BaseFunctionTest::type2name.find(sizeof(T))
            != BaseFunctionTest::type2name.end());
@@ -125,7 +123,6 @@ int test_step_fn(cl_device_id device, cl_context context,
     }
 
     std::string pragma_str;
-    d = init_genrand( gRandomSeed );
     if (std::is_same<T, float>::value)
     {
         for (i = 0; i < num_elements; i++)
@@ -143,7 +140,6 @@ int test_step_fn(cl_device_id device, cl_context context,
             input_ptr[1][i] = get_random_double(-0x40000000, 0x40000000, d);
         }
     }
-    free_mtdata(d);
 
     for (i = 0; i < 2; i++)
     {
@@ -233,7 +229,7 @@ int test_step_fn(cl_device_id device, cl_context context,
     return err;
 }
 
-//--------------------------------------------------------------------------
+
 cl_int StepTest::Run()
 {
     cl_int error = CL_SUCCESS;
@@ -251,7 +247,7 @@ cl_int StepTest::Run()
     return error;
 }
 
-//--------------------------------------------------------------------------
+
 int test_step(cl_device_id device, cl_context context, cl_command_queue queue,
               int n_elems)
 {
@@ -259,12 +255,10 @@ int test_step(cl_device_id device, cl_context context, cl_command_queue queue,
                                     true);
 }
 
-//--------------------------------------------------------------------------
+
 int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue,
                int n_elems)
 {
     return MakeAndRunTest<StepTest>(device, context, queue, n_elems, "step",
                                     false);
 }
-
-//--------------------------------------------------------------------------

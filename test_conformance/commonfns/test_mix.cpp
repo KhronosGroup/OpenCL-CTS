@@ -21,7 +21,6 @@
 #include "procs.h"
 #include "test_base.h"
 
-//--------------------------------------------------------------------------
 
 const char *mix_fn_code_pattern =
     "%s\n" /* optional pragma */
@@ -53,13 +52,12 @@ const char *mix_fn_code_pattern_v3_scalar =
     "    vstore3(mix(vload3(tid, x), vload3(tid, y), a[tid]), tid, dst);\n"
     "}\n";
 
-//--------------------------------------------------------------------------
 
 #define MAX_ERR 1e-3
 
 namespace {
 
-//--------------------------------------------------------------------------
+
 template <typename T>
 int verify_mix(const T *const inptrX, const T *const inptrY,
                const T *const inptrA, const T *const outptr, const int n,
@@ -110,7 +108,7 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
 }
 } // namespace
 
-//--------------------------------------------------------------------------
+
 template <typename T>
 int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
                 int n_elems, bool vecParam)
@@ -122,7 +120,7 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
     std::vector<clKernelWrapper> kernels;
 
     int err, i;
-    MTdata d;
+    MTdataHolder d = MTdataHolder(gRandomSeed);
 
     assert(BaseFunctionTest::type2name.find(sizeof(T))
            != BaseFunctionTest::type2name.end());
@@ -144,14 +142,12 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
         test_error(err, "clCreateBuffer failed");
     }
 
-    d = init_genrand(gRandomSeed);
     for (i = 0; i < num_elements; i++)
     {
         input_ptr[0][i] = (T)genrand_real1(d);
         input_ptr[1][i] = (T)genrand_real1(d);
         input_ptr[2][i] = (T)genrand_real1(d);
     }
-    free_mtdata(d);
 
     std::string pragma_str;
     if (std::is_same<T, double>::value)
@@ -246,7 +242,7 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
     return err;
 }
 
-//--------------------------------------------------------------------------
+
 cl_int MixTest::Run()
 {
     cl_int error = CL_SUCCESS;
@@ -264,7 +260,7 @@ cl_int MixTest::Run()
     return error;
 }
 
-//--------------------------------------------------------------------------
+
 int test_mix(cl_device_id device, cl_context context, cl_command_queue queue,
              int n_elems)
 {
@@ -272,12 +268,10 @@ int test_mix(cl_device_id device, cl_context context, cl_command_queue queue,
                                    true);
 }
 
-//--------------------------------------------------------------------------
+
 int test_mixf(cl_device_id device, cl_context context, cl_command_queue queue,
               int n_elems)
 {
     return MakeAndRunTest<MixTest>(device, context, queue, n_elems, "mix",
                                    false);
 }
-
-//--------------------------------------------------------------------------
