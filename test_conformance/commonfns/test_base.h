@@ -28,22 +28,18 @@
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 
-//--------------------------------------------------------------------------/
 
 template <typename T>
 using VerifyFuncBinary = int (*)(const T *const, const T *const, const T *const,
                                  const int num, const int vs, const int vp);
 
-//--------------------------------------------------------------------------/
 
 template <typename T>
 using VerifyFuncUnary = int (*)(const T *const, const T *const, const int num);
 
-//--------------------------------------------------------------------------/
 
 using half = cl_half;
 
-//--------------------------------------------------------------------------
 
 struct BaseFunctionTest
 {
@@ -68,7 +64,6 @@ struct BaseFunctionTest
     static std::map<size_t, std::string> type2name;
 };
 
-//--------------------------------------------------------------------------
 
 struct MinTest : BaseFunctionTest
 {
@@ -80,7 +75,6 @@ struct MinTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
 
 struct MaxTest : BaseFunctionTest
 {
@@ -92,7 +86,6 @@ struct MaxTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
 
 struct ClampTest : BaseFunctionTest
 {
@@ -104,7 +97,6 @@ struct ClampTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
 
 struct DegreesTest : BaseFunctionTest
 {
@@ -116,7 +108,6 @@ struct DegreesTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
 
 struct RadiansTest : BaseFunctionTest
 {
@@ -128,7 +119,6 @@ struct RadiansTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
 
 struct SignTest : BaseFunctionTest
 {
@@ -140,7 +130,6 @@ struct SignTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
 
 struct SmoothstepTest : BaseFunctionTest
 {
@@ -153,7 +142,6 @@ struct SmoothstepTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
 
 struct StepTest : BaseFunctionTest
 {
@@ -165,7 +153,6 @@ struct StepTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
 
 struct MixTest : BaseFunctionTest
 {
@@ -177,7 +164,6 @@ struct MixTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------/
 
 template <typename... Args>
 std::string string_format(const std::string &format, Args... args)
@@ -191,7 +177,6 @@ std::string string_format(const std::string &format, Args... args)
     return std::string(buffer.get(), buffer.get() + format_size - 1);
 }
 
-//--------------------------------------------------------------------------
 
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
