@@ -528,15 +528,17 @@ void bitselect_verify_fn( ExplicitType vecType, ExplicitType testVecType, unsign
 
 int test_relational_bitselect(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
-    ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort, kInt,   kUInt,
-                               kLong, kULong, kHalf,  kFloat,  kDouble };
+    constexpr ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort,
+                                         kInt,  kUInt,  kLong,  kULong,
+                                         kHalf, kFloat, kDouble };
+    constexpr auto vecTypeSize = sizeof(vecType) / sizeof(ExplicitType);
     unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
     unsigned int index, typeIndex;
     int retVal = 0;
     RandomSeed seed( gRandomSeed );
 
 
-    for( typeIndex = 0; typeIndex < 10; typeIndex++ )
+    for (typeIndex = 0; typeIndex < vecTypeSize; typeIndex++)
     {
         if ((vecType[typeIndex] == kLong || vecType[typeIndex] == kULong) && !gHasLong)
             continue;
@@ -626,15 +628,18 @@ void select_signed_verify_fn( ExplicitType vecType, ExplicitType testVecType, un
 
 int test_relational_select_signed(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
-    ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort, kInt,   kUInt,
-                               kLong, kULong, kHalf,  kFloat,  kDouble };
+    constexpr ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort,
+                                         kInt,  kUInt,  kLong,  kULong,
+                                         kHalf, kFloat, kDouble };
+    constexpr auto vecTypeSize = sizeof(vecType) / sizeof(ExplicitType);
+
     ExplicitType testVecType[] = { kChar, kShort, kInt, kLong, kNumExplicitTypes };
     unsigned int vecSizes[] = { 1, 2, 4, 8, 16, 0 };
     unsigned int index, typeIndex, testTypeIndex;
     int retVal = 0;
     RandomSeed seed( gRandomSeed );
 
-    for( typeIndex = 0; typeIndex < 10; typeIndex++ )
+    for (typeIndex = 0; typeIndex < vecTypeSize; typeIndex++)
     {
         if ((vecType[typeIndex] == kLong || vecType[typeIndex] == kULong) && !gHasLong)
             continue;
@@ -729,8 +734,11 @@ void select_unsigned_verify_fn( ExplicitType vecType, ExplicitType testVecType, 
 
 int test_relational_select_unsigned(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
-    ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort, kInt,   kUInt,
-                               kLong, kULong, kHalf,  kFloat,  kDouble };
+    constexpr ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort,
+                                         kInt,  kUInt,  kLong,  kULong,
+                                         kHalf, kFloat, kDouble };
+    constexpr auto vecTypeSize = sizeof(vecType) / sizeof(ExplicitType);
+
     ExplicitType testVecType[] = { kUChar, kUShort, kUInt, kULong, kNumExplicitTypes };
     unsigned int vecSizes[] = { 1, 2, 4, 8, 16, 0 };
     unsigned int index, typeIndex, testTypeIndex;
@@ -738,7 +746,7 @@ int test_relational_select_unsigned(cl_device_id device, cl_context context, cl_
     RandomSeed seed(gRandomSeed);
 
 
-    for( typeIndex = 0; typeIndex < 10; typeIndex++ )
+    for (typeIndex = 0; typeIndex < vecTypeSize; typeIndex++)
     {
         if ((vecType[typeIndex] == kLong || vecType[typeIndex] == kULong) && !gHasLong)
             continue;
