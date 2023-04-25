@@ -1,5 +1,4 @@
-//
-// Copyright (c) 2022 The Khronos Group Inc.
+// Copyright (c) 2023 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,8 +13,8 @@
 // limitations under the License.
 //
 
-#ifndef _TEST_COMMONFNS_BASE_H
-#define _TEST_COMMONFNS_BASE_H
+#ifndef TEST_COMMONFNS_BASE_H
+#define TEST_COMMONFNS_BASE_H
 
 #include <vector>
 #include <map>
@@ -191,4 +190,4 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-#endif // _TEST_COMPARISONS_FP_H
+#endif // TEST_COMMONFNS_BASE_H
