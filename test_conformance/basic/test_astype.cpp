@@ -183,10 +183,10 @@ int test_astype(cl_device_id device, cl_context context, cl_command_queue queue,
     // legal in OpenCL 1.0, the result is dependent on the device it runs on, which means there's no actual way
     // for us to verify what is "valid". So the only thing we can test are types that match in size independent
     // of the element count (char -> uchar, etc)
-    const ExplicitType vecTypes[] = {
-        kChar, kUChar, kShort, kUShort, kInt,    kUInt,
-        kLong, kULong, kFloat, kHalf,   kDouble, kNumExplicitTypes
-    };
+    const std::vector<ExplicitType> vecTypes = { kChar,   kUChar, kShort,
+                                                 kUShort, kInt,   kUInt,
+                                                 kLong,   kULong, kFloat,
+                                                 kHalf,   kDouble };
     const unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
     unsigned int inTypeIdx, outTypeIdx, sizeIdx, outSizeIdx;
     size_t inTypeSize, outTypeSize;
@@ -205,13 +205,13 @@ int test_astype(cl_device_id device, cl_context context, cl_command_queue queue,
         return false;
     };
 
-    for( inTypeIdx = 0; vecTypes[ inTypeIdx ] != kNumExplicitTypes; inTypeIdx++ )
+    for (inTypeIdx = 0; inTypeIdx < vecTypes.size(); inTypeIdx++)
     {
         inTypeSize = get_explicit_type_size(vecTypes[inTypeIdx]);
 
         if (skip_type(vecTypes[inTypeIdx])) continue;
 
-        for( outTypeIdx = 0; vecTypes[ outTypeIdx ] != kNumExplicitTypes; outTypeIdx++ )
+        for (outTypeIdx = 0; outTypeIdx < vecTypes.size(); outTypeIdx++)
         {
             outTypeSize = get_explicit_type_size(vecTypes[outTypeIdx]);
 
