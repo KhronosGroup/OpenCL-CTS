@@ -1116,8 +1116,8 @@ static int l_write_read_for_type(cl_device_id device, cl_context context,
     clProgramWrapper program;
     clKernelWrapper writer;
 
-    status = create_single_kernel_helper(
-        context, &program, &writer, ksrc.num_str(), ksrc.strs(), "writer");
+    status = create_single_kernel_helper(context, &program, &writer,
+                                         ksrc.num_str(), ksrc.strs(), "writer");
     test_error_ret(status, "Failed to create program for read-after-write test",
                    status);
 
@@ -1325,8 +1325,8 @@ static int l_init_write_read_for_type(cl_device_id device, cl_context context,
     clProgramWrapper program;
     clKernelWrapper writer;
 
-    status = create_single_kernel_helper(
-        context, &program, &writer, ksrc.num_str(), ksrc.strs(), "writer");
+    status = create_single_kernel_helper(context, &program, &writer,
+                                         ksrc.num_str(), ksrc.strs(), "writer");
     test_error_ret(status,
                    "Failed to create program for init-read-after-write test",
                    status);
@@ -1579,9 +1579,9 @@ static int l_capacity(cl_device_id device, cl_context context,
     clProgramWrapper program;
     clKernelWrapper get_max_size;
 
-    status = create_single_kernel_helper(
-        context, &program, &get_max_size, ksrc.num_str(), ksrc.strs(),
-        "get_max_size");
+    status = create_single_kernel_helper(context, &program, &get_max_size,
+                                         ksrc.num_str(), ksrc.strs(),
+                                         "get_max_size");
     test_error_ret(status, "Failed to create program for capacity test",
                    status);
 
@@ -1757,8 +1757,8 @@ static int l_user_type(cl_device_id device, cl_context context,
                        "Failed to create writer program for user type test",
                        status);
 
-        status = clCompileProgram(writer_program, 1, &device, options.c_str(), 0, 0, 0,
-                                  0, 0);
+        status = clCompileProgram(writer_program, 1, &device, options.c_str(),
+                                  0, 0, 0, 0, 0);
         if (check_error(
                 status,
                 "Failed to compile writer program for user type test (%s)",
@@ -1775,8 +1775,8 @@ static int l_user_type(cl_device_id device, cl_context context,
                        "Failed to create reader program for user type test",
                        status);
 
-        status = clCompileProgram(reader_program, 1, &device, options.c_str(), 0, 0, 0,
-                                  0, 0);
+        status = clCompileProgram(reader_program, 1, &device, options.c_str(),
+                                  0, 0, 0, 0, 0);
         if (check_error(
                 status,
                 "Failed to compile reader program for user type test (%s)",
@@ -2110,8 +2110,9 @@ int test_progvar_func_scope(cl_device_id device, cl_context context,
     clProgramWrapper program;
     clKernelWrapper test_bump;
 
-    status = create_single_kernel_helper(
-        context, &program, &test_bump, ksrc.num_str(), ksrc.strs(), "test_bump");
+    status =
+        create_single_kernel_helper(context, &program, &test_bump,
+                                    ksrc.num_str(), ksrc.strs(), "test_bump");
     test_error_ret(status,
                    "Failed to create program for function static variable test",
                    status);
