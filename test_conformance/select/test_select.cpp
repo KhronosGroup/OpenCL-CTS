@@ -363,14 +363,30 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     dest = clCreateBuffer( context, CL_MEM_WRITE_ONLY, BUFFER_SIZE, NULL, &err );
     if( err ) { log_error( "Error: could not allocate dest buffer\n" );  ++s_test_fail; goto exit; }
 
-    src1_host = malloc( BUFFER_SIZE );
-    if( NULL == src1_host ){ log_error("Error: could not allocate src1_host buffer\n" ); goto exit; }
-    src2_host = malloc( BUFFER_SIZE );
-    if( NULL == src2_host ){ log_error("Error: could not allocate src2_host buffer\n" ); goto exit; }
-    cmp_host = malloc( BUFFER_SIZE );
-    if( NULL == cmp_host ){ log_error("Error: could not allocate cmp_host buffer\n" ); goto exit; }
-    dest_host = malloc( BUFFER_SIZE );
-    if( NULL == dest_host ){ log_error("Error: could not allocate dest_host buffer\n" ); goto exit; }
+    src1_host = malloc(BUFFER_SIZE);
+    if (NULL == src1_host)
+    {
+        log_error("Error: could not allocate src1_host buffer\n");
+        goto exit;
+    }
+    src2_host = malloc(BUFFER_SIZE);
+    if (NULL == src2_host)
+    {
+        log_error("Error: could not allocate src2_host buffer\n");
+        goto exit;
+    }
+    cmp_host = malloc(BUFFER_SIZE);
+    if (NULL == cmp_host)
+    {
+        log_error("Error: could not allocate cmp_host buffer\n");
+        goto exit;
+    }
+    dest_host = malloc(BUFFER_SIZE);
+    if (NULL == dest_host)
+    {
+        log_error("Error: could not allocate dest_host buffer\n");
+        goto exit;
+    }
 
     // We block the test as we are running over the range of compare values
     // "block the test" means "break the test into blocks"
@@ -407,17 +423,37 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         { log_error( "Error: coult not unmap cmp\n" );  ++s_test_fail; goto exit; }
 
         // Create the reference result
-        err = clEnqueueReadBuffer( queue, src1, CL_TRUE, 0, BUFFER_SIZE, src1_host, 0, NULL, NULL);
-        if( err ){ log_error( "Error: Reading buffer from src1 to src1_host failed\n" );  ++s_test_fail; goto exit; }
-        err = clEnqueueReadBuffer( queue, src2, CL_TRUE, 0, BUFFER_SIZE, src2_host, 0, NULL, NULL);
-        if( err ){ log_error( "Error: Reading buffer from src2 to src2_host failed\n" );  ++s_test_fail; goto exit; }
-        err = clEnqueueReadBuffer( queue, cmp, CL_TRUE, 0, BUFFER_SIZE, cmp_host, 0, NULL, NULL);
-        if( err ){ log_error( "Error: Reading buffer from cmp to cmp_host failed\n" );  ++s_test_fail; goto exit; }
+        err = clEnqueueReadBuffer(queue, src1, CL_TRUE, 0, BUFFER_SIZE,
+                                  src1_host, 0, NULL, NULL);
+        if (err)
+        {
+            log_error("Error: Reading buffer from src1 to src1_host failed\n");
+            ++s_test_fail;
+            goto exit;
+        }
+        err = clEnqueueReadBuffer(queue, src2, CL_TRUE, 0, BUFFER_SIZE,
+                                  src2_host, 0, NULL, NULL);
+        if (err)
+        {
+            log_error("Error: Reading buffer from src2 to src2_host failed\n");
+            ++s_test_fail;
+            goto exit;
+        }
+        err = clEnqueueReadBuffer(queue, cmp, CL_TRUE, 0, BUFFER_SIZE, cmp_host,
+                                  0, NULL, NULL);
+        if (err)
+        {
+            log_error("Error: Reading buffer from cmp to cmp_host failed\n");
+            ++s_test_fail;
+            goto exit;
+        }
 
-        Select sfunc = (cmptype == ctype[stype][0]) ? vrefSelects[stype][0] : vrefSelects[stype][1];
+        Select sfunc = (cmptype == ctype[stype][0]) ? vrefSelects[stype][0]
+                                                : vrefSelects[stype][1];
         (*sfunc)(ref, src1_host, src2_host, cmp_host, block_elements);
 
-        sfunc = (cmptype == ctype[stype][0]) ? refSelects[stype][0] : refSelects[stype][1];
+        sfunc = (cmptype == ctype[stype][0]) ? refSelects[stype][0]
+                                             : refSelects[stype][1];
         (*sfunc)(sref, src1_host, src2_host, cmp_host, block_elements);
 
         for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
@@ -447,13 +483,23 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
                 goto exit;
             }
 
-            err = clEnqueueReadBuffer( queue, dest, CL_TRUE, 0, BUFFER_SIZE, dest_host, 0, NULL, NULL);
-            if( err ){ log_error( "Error: Reading buffer from dest to dest_host failed\n" );  ++s_test_fail; goto exit; }
-
-            if ((*checkResults[stype])(dest_host, vecsize == 0 ? sref : ref, block_elements, element_count[vecsize])!=0){
-                log_error("vec_size:%d indx: 0x%16.16llx\n", (int)element_count[vecsize], i);
+            err = clEnqueueReadBuffer(queue, dest, CL_TRUE, 0, BUFFER_SIZE,
+                                      dest_host, 0, NULL, NULL);
+            if (err)
+            {
+                log_error(
+                    "Error: Reading buffer from dest to dest_host failed\n");
                 ++s_test_fail;
                 goto exit;
+            }
+
+            if ((*checkResults[stype])(dest_host, vecsize == 0 ? sref : ref,
+                                       block_elements, element_count[vecsize])
+                != 0)
+            {
+                     log_error("vec_size:%d indx: 0x%16.16llx\n", (int)element_count[vecsize], i);
+                     ++s_test_fail;
+                     goto exit;
             }
         } // for vecsize
     } // for i
@@ -470,10 +516,10 @@ exit:
     if( dest)   clReleaseMemObject( dest );
     if( ref )   free(ref );
     if( sref )  free(sref );
-    if( src1_host )  free( src1_host );
-    if( src2_host )  free( src2_host );
-    if( cmp_host )   free( cmp_host );
-    if( dest_host )  free( dest_host );
+    if (src1_host) free(src1_host);
+    if (src2_host) free(src2_host);
+    if (cmp_host) free(cmp_host);
+    if (dest_host) free(dest_host);
 
     for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; vecsize++) {
         clReleaseKernel(kernels[vecsize]);
