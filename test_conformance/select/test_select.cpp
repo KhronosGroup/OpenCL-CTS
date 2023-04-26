@@ -497,9 +497,9 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
                                        block_elements, element_count[vecsize])
                 != 0)
             {
-                 log_error("vec_size:%d indx: 0x%16.16llx\n", (int)element_count[vecsize], i);
-                 ++s_test_fail;
-                 goto exit;
+                log_error("vec_size:%d indx: 0x%16.16llx\n", (int)element_count[vecsize], i);
+                ++s_test_fail;
+                goto exit;
             }
         } // for vecsize
     } // for i
