@@ -449,7 +449,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         }
 
         Select sfunc = (cmptype == ctype[stype][0]) ? vrefSelects[stype][0]
-                                                : vrefSelects[stype][1];
+                                                    : vrefSelects[stype][1];
         (*sfunc)(ref, src1_host, src2_host, cmp_host, block_elements);
 
         sfunc = (cmptype == ctype[stype][0]) ? refSelects[stype][0]
@@ -497,9 +497,9 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
                                        block_elements, element_count[vecsize])
                 != 0)
             {
-                     log_error("vec_size:%d indx: 0x%16.16llx\n", (int)element_count[vecsize], i);
-                     ++s_test_fail;
-                     goto exit;
+                 log_error("vec_size:%d indx: 0x%16.16llx\n", (int)element_count[vecsize], i);
+                 ++s_test_fail;
+                 goto exit;
             }
         } // for vecsize
     } // for i
