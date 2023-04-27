@@ -77,9 +77,10 @@
         DECLARE_EMPTY, DECLARE_EMPTY, DECLARE_EMPTY                            \
     }
 
+#define NUM_VEC_TYPES 11
 
 /* The overall array */
-const char * kernel_explicit_s2v_set[11][11][5] = {
+const char * kernel_explicit_s2v_set[NUM_VEC_TYPES][NUM_VEC_TYPES][5] = {
     DECLARE_S2V_IDENT_KERNELS_SET(char),
     DECLARE_S2V_IDENT_KERNELS_SET(uchar),
     DECLARE_S2V_IDENT_KERNELS_SET(short),
@@ -171,7 +172,6 @@ int test_explicit_s2v_function(cl_context context, cl_command_queue queue,
 
 struct TypesIterator
 {
-    // in sync with ExplicitTypes, skip bools
     using TypeIter =
         std::tuple<cl_char, cl_uchar, cl_short, cl_ushort, cl_int, cl_uint,
                    cl_long, cl_ulong, cl_float, cl_half, cl_double>;
@@ -218,7 +218,7 @@ struct TypesIterator
         dstType = 0;
     }
 
-    // crucial to keep it in sync with ExplicitType
+    // crucial to keep it in-sync with ExplicitType
     bool isExplicitTypeFloating(ExplicitType type) { return (type >= kFloat); }
 
     template <std::size_t Dst, std::size_t Src, typename SrcType,
