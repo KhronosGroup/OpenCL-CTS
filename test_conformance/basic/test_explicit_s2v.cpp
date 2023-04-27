@@ -233,11 +233,9 @@ struct TypesIterator
                 || (!isExplicitTypeFloating(vecTypes[srcType])
                     && !isExplicitTypeFloating(vecTypes[dstType])));
 
-        if (doTest /*&& dstType != srcType*/)
-        {
+        if (doTest)
             test_explicit_s2v_function_set<SrcType, DstType>(
                 vecTypes[srcType], vecTypes[dstType], inputData);
-        }
         dstType++;
     }
 
