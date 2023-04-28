@@ -21,6 +21,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <vector>
 
 #include "../../test_common/harness/conversions.h"
 #include "procs.h"
@@ -121,8 +122,7 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
     clKernelWrapper kernel;
     clMemWrapper streams[2];
     size_t threads[1], localThreads[1];
-    void *inBuffer, *outBuffer, *outBufferCopy;
-    MTdata d;
+    MTdataHolder d(gRandomSeed);
     char vecNameString[64];
     vecNameString[0] = 0;
     if (vecSize == 1)
@@ -169,10 +169,14 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
     programSource[0] = 0;
     char *programPtr;
 
-    sprintf(programSource, kernelCode,
-            vecType == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable"
-                               : "",
-            vecNameString, vecNameString, vecNameString, vecNameString,
+    std::string extStr = "";
+    if (vecType == kDouble)
+        extStr = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable";
+    else if (vecType == kHalf)
+        extStr = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable";
+
+    sprintf(programSource, kernelCode, extStr.c_str(), vecNameString,
+            vecNameString, vecNameString, vecNameString,
             get_explicit_type_name(vecType), vecNameString, vecNameString);
     // log_info("program: %s\n", programSource);
     programPtr = programSource;
@@ -251,9 +255,9 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
     const size_t globalWorkgroupSize =
         numberOfLocalWorkgroups * localWorkgroupSize;
 
-    inBuffer = (void *)malloc(inBufferSize);
-    outBuffer = (void *)malloc(outBufferSize);
-    outBufferCopy = (void *)malloc(outBufferSize);
+    std::vector<unsigned char> inBuffer(inBufferSize);
+    std::vector<unsigned char> outBuffer(outBufferSize);
+    std::vector<unsigned char> outBufferCopy(outBufferSize);
 
     const cl_int planesCopiesPerWorkItemInt =
         static_cast<cl_int>(planesCopiesPerWorkItem);
@@ -273,20 +277,19 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
     threads[0] = globalWorkgroupSize;
     localThreads[0] = localWorkgroupSize;
 
-    d = init_genrand(gRandomSeed);
-    generate_random_data(
-        vecType, inBufferSize / get_explicit_type_size(vecType), d, inBuffer);
-    generate_random_data(
-        vecType, outBufferSize / get_explicit_type_size(vecType), d, outBuffer);
-    free_mtdata(d);
-    d = NULL;
-    memcpy(outBufferCopy, outBuffer, outBufferSize);
+    generate_random_data(vecType,
+                         inBufferSize / get_explicit_type_size(vecType), d,
+                         inBuffer.data());
+    generate_random_data(vecType,
+                         outBufferSize / get_explicit_type_size(vecType), d,
+                         outBuffer.data());
+    outBufferCopy.assign(outBuffer.begin(), outBuffer.begin() + outBufferSize);
 
     streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, inBufferSize,
-                                inBuffer, &error);
+                                inBuffer.data(), &error);
     test_error(error, "Unable to create input buffer");
     streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, outBufferSize,
-                                outBuffer, &error);
+                                outBuffer.data(), &error);
     test_error(error, "Unable to create output buffer");
 
     error = clSetKernelArg(kernel, 0, sizeof(streams[0]), &streams[0]);
@@ -322,7 +325,7 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
 
     // Read
     error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, outBufferSize,
-                                outBuffer, 0, NULL, NULL);
+                                outBuffer.data(), 0, NULL, NULL);
     test_error(error, "Unable to read results");
 
     // Verify
@@ -340,13 +343,14 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
             {
                 int inIdx = i * srcPlaneStride + j * srcLineStride + k;
                 int outIdx = i * dstPlaneStride + j * dstLineStride + k;
-                if (memcmp(((char *)inBuffer) + inIdx,
-                           ((char *)outBuffer) + outIdx, typeSize)
+                if (memcmp(((char *)inBuffer.data()) + inIdx,
+                           ((char *)outBuffer.data()) + outIdx, typeSize)
                     != 0)
                 {
-                    unsigned char *inchar = (unsigned char *)inBuffer + inIdx;
+                    unsigned char *inchar =
+                        static_cast<unsigned char *>(&inBuffer.at(inIdx));
                     unsigned char *outchar =
-                        (unsigned char *)outBuffer + outIdx;
+                        static_cast<unsigned char *>(&outBuffer.at(outIdx));
                     char values[4096];
                     values[0] = 0;
 
@@ -376,8 +380,8 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
             {
                 int outIdx = i * dstPlaneStride + j * dstLineStride
                     + numElementsPerLine * elementSize;
-                if (memcmp(((char *)outBuffer) + outIdx,
-                           ((char *)outBufferCopy) + outIdx,
+                if (memcmp(((char *)outBuffer.data()) + outIdx,
+                           ((char *)outBufferCopy.data()) + outIdx,
                            dstLineMargin * elementSize)
                     != 0)
                 {
@@ -404,8 +408,8 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
         {
             int outIdx =
                 i * dstPlaneStride + numLines * dstLineStride * elementSize;
-            if (memcmp(((char *)outBuffer) + outIdx,
-                       ((char *)outBufferCopy) + outIdx,
+            if (memcmp(((char *)outBuffer.data()) + outIdx,
+                       ((char *)outBufferCopy.data()) + outIdx,
                        dstPlaneMargin * elementSize)
                 != 0)
             {
@@ -428,10 +432,6 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
         }
     }
 
-    free(inBuffer);
-    free(outBuffer);
-    free(outBufferCopy);
-
     return failuresPrinted ? -1 : 0;
 }
 
@@ -439,10 +439,9 @@ int test_copy3D_all_types(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue, const char *kernelCode,
                           bool localIsDst)
 {
-    ExplicitType vecType[] = {
-        kChar,  kUChar, kShort,  kUShort,          kInt, kUInt, kLong,
-        kULong, kFloat, kDouble, kNumExplicitTypes
-    };
+    const std::vector<ExplicitType> vecType = { kChar,  kUChar, kShort, kUShort,
+                                                kInt,   kUInt,  kLong,  kULong,
+                                                kFloat, kHalf,  kDouble };
     // The margins below represent the number of elements between the end of
     // one line or plane and the start of the next. The strides are equivalent
     // to the size of the line or plane plus the chosen margin.
@@ -460,14 +459,17 @@ int test_copy3D_all_types(cl_device_id deviceID, cl_context context,
         return 0;
     }
 
-    for (typeIndex = 0; vecType[typeIndex] != kNumExplicitTypes; typeIndex++)
-    {
-        if (vecType[typeIndex] == kDouble
-            && !is_extension_available(deviceID, "cl_khr_fp64"))
-            continue;
+    bool fp16Support = is_extension_available(deviceID, "cl_khr_fp16");
+    bool fp64Support = is_extension_available(deviceID, "cl_khr_fp64");
 
+    for (typeIndex = 0; typeIndex < vecType.size(); typeIndex++)
+    {
         if ((vecType[typeIndex] == kLong || vecType[typeIndex] == kULong)
             && !gHasLong)
+            continue;
+        else if (vecType[typeIndex] == kDouble && !fp64Support)
+            continue;
+        else if (vecType[typeIndex] == kHalf && !fp16Support)
             continue;
 
         for (size = 0; vecSizes[size] != 0; size++)
