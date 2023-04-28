@@ -75,17 +75,43 @@ extern int test_mutable_dispatch_arguments(cl_device_id device,
                                            cl_context context,
                                            cl_command_queue queue,
                                            int num_elements);
-extern int test_mutable_dispatch_exec_info(cl_device_id device,
-                                           cl_context context,
-                                           cl_command_queue queue,
-                                           int num_elements);
-extern int test_mutable_update(cl_device_id device, cl_context context,
-                               cl_command_queue queue, int num_elements);
-extern int test_simultaneous_use(cl_device_id device, cl_context context,
-                                 cl_command_queue queue, int num_elements);
-extern int test_cross_queue_simultaneous_use(cl_device_id device,
-                                             cl_context context,
-                                             cl_command_queue queue,
-                                             int num_elements);
-
+extern int test_mutable_dispatch_svm_arguments(cl_device_id device,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
+extern int test_mutable_dispatch_out_of_order(cl_device_id device,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
+extern int test_mutable_dispatch_simultaneous_out_of_order(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_mutable_dispatch_local_arguments(cl_device_id device,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 int num_elements);
+extern int test_mutable_dispatch_global_arguments(cl_device_id device,
+                                                  cl_context context,
+                                                  cl_command_queue queue,
+                                                  int num_elements);
+extern int test_mutable_dispatch_pod_arguments(cl_device_id device,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
+extern int test_mutable_dispatch_null_arguments(cl_device_id device,
+                                                cl_context context,
+                                                cl_command_queue queue,
+                                                int num_elements);
+extern int test_mutable_dispatch_image_arguments(cl_device_id device,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 int num_elements);
+extern int test_mutable_dispatch_image_1d_arguments(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements);
+extern int test_mutable_dispatch_image_2d_arguments(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements);
 #endif /*_CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_PROCS_H*/

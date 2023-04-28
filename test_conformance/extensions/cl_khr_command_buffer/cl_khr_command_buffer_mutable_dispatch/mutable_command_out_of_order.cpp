@@ -14,24 +14,29 @@
 // limitations under the License.
 //
 
-#include "basic_command_buffer.h"
-#include "procs.h"
-
 #include <vector>
+
+#include <extensionHelpers.h>
+#include "typeWrappers.h"
+#include "procs.h"
+#include "testHarness.h"
+#include "mutable_command_basic.h"
+
+#include <CL/cl.h>
+#include <CL/cl_ext.h>
+////////////////////////////////////////////////////////////////////////////////
+// mutable dispatch tests which handle following cases:
+// - simultaneous use
+// - cross-queue simultaneous-use
 
 namespace {
 
-////////////////////////////////////////////////////////////////////////////////
-// out-of-order tests for cl_khr_command_buffer which handles below cases:
-// -test case for out-of-order command-buffer
-// -test an out-of-order command-buffer with simultaneous use
-
 template <bool simultaneous_request>
-struct OutOfOrderTest : public BasicCommandBufferTest
+struct OutOfOrderTest : public BasicMutableCommandBufferTest
 {
     OutOfOrderTest(cl_device_id device, cl_context context,
                    cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue),
+        : BasicMutableCommandBufferTest(device, context, queue),
           out_of_order_queue(nullptr), out_of_order_command_buffer(this),
           user_event(nullptr), wait_pass_event(nullptr), kernel_fill(nullptr),
           program_fill(nullptr)
@@ -48,17 +53,18 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         if (simultaneous_use_requested && !simultaneous_use_support)
             return CL_SUCCESS;
 
-        cl_int error = BasicCommandBufferTest::SetUpKernel();
-        test_error(error, "BasicCommandBufferTest::SetUpKernel failed");
+        cl_int error = BasicMutableCommandBufferTest::SetUpKernel();
+        test_error(error, "BasicMutableCommandBufferTest::SetUpKernel failed");
 
         // create additional kernel to properly prepare output buffer for test
         const char* kernel_str =
             R"(
-          __kernel void fill(int pattern, __global int* out, __global int* offset)
+          __kernel void fill(int pattern, __global int* out, __global int*
+        offset)
           {
               size_t id = get_global_id(0);
-              size_t ind = offset[0] + id;
-              out[ind] = pattern + 1;
+              size_t ind = offset[0] + id ;
+              out[ind] = pattern;
           })";
 
         error = create_single_kernel_helper_create_program(
@@ -83,8 +89,9 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         if (simultaneous_use_requested && !simultaneous_use_support)
             return CL_SUCCESS;
 
-        cl_int error = BasicCommandBufferTest::SetUpKernelArgs();
-        test_error(error, "BasicCommandBufferTest::SetUpKernelArgs failed");
+        cl_int error = BasicMutableCommandBufferTest::SetUpKernelArgs();
+        test_error(error,
+                   "BasicMutableCommandBufferTest::SetUpKernelArgs failed");
 
         error = clSetKernelArg(kernel_fill, 0, sizeof(cl_int),
                                &overwritten_pattern);
@@ -102,8 +109,21 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
+        cl_int error = BasicMutableCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicMutableCommandBufferTest::SetUp failed");
+
+        cl_platform_id platform;
+        error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
+                                sizeof(cl_platform_id), &platform, nullptr);
+        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
+
+        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
+
+        error = SetUpKernel();
+        test_error(error, "SetUpKernel failed");
+
+        error = SetUpKernelArgs();
+        test_error(error, "SetUpKernelArgs failed");
 
         out_of_order_queue = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
@@ -114,7 +134,9 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         };
 
         if (simultaneous_use_requested && simultaneous_use_support)
-            properties[1] = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+            properties[1] |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+
+        properties[1] |= CL_COMMAND_BUFFER_MUTABLE_KHR;
 
         out_of_order_command_buffer = clCreateCommandBufferKHR(
             1, &out_of_order_queue, properties, &error);
@@ -126,7 +148,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     bool Skip() override
     {
-        if (BasicCommandBufferTest::Skip()) return true;
+        if (BasicMutableCommandBufferTest::Skip()) return true;
 
         if (!out_of_order_support
             || (simultaneous_use_requested && !simultaneous_use_support))
@@ -175,7 +197,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
 
         error = clCommandNDRangeKernelKHR(
             out_of_order_command_buffer, nullptr, nullptr, kernel, 1, nullptr,
-            &num_elements, nullptr, 2, sync_points, nullptr, nullptr);
+            &num_elements, nullptr, 2, sync_points, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clFinalizeCommandBufferKHR(out_of_order_command_buffer);
@@ -200,6 +222,34 @@ struct OutOfOrderTest : public BasicCommandBufferTest
                                     &user_event, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
+        cl_mutable_dispatch_exec_info_khr exec_info_list{
+            CL_KERNEL_EXEC_INFO_SVM_PTRS, sizeof(in_mem), in_mem
+        };
+
+        cl_mutable_dispatch_config_khr dispatch_config{
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
+            nullptr,
+            command,
+            0 /* num_args */,
+            0 /* num_svm_arg */,
+            1 /* num_exec_infos */,
+            0 /* work_dim - 0 means no change to dimensions */,
+            nullptr /* arg_list */,
+            nullptr /* arg_svm_list - nullptr means no change*/,
+            &exec_info_list /* exec_info_list */,
+            nullptr /* global_work_offset */,
+            nullptr /* global_work_size */,
+            nullptr /* local_work_size */
+        };
+        cl_mutable_base_config_khr mutable_config{
+            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
+            &dispatch_config
+        };
+
+        error = clUpdateMutableCommandsKHR(out_of_order_command_buffer,
+                                           &mutable_config);
+        test_error(error, "clUpdateMutableCommandsKHR failed");
+
         for (size_t i = 0; i < num_elements; i++)
         {
             CHECK_VERIFICATION_ERROR(pattern_pri, output_data[i], i);
@@ -209,7 +259,7 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     }
 
     //--------------------------------------------------------------------------
-    cl_int RecordSimultaneousCommandBuffer() const
+    cl_int RecordSimultaneousCommandBuffer()
     {
         cl_sync_point_khr sync_points[2];
         // for both simultaneous passes this call will fill entire in_mem buffer
@@ -219,21 +269,51 @@ struct OutOfOrderTest : public BasicCommandBufferTest
             &sync_points[0], nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
-        // to avoid overwriting the entire result buffer instead of filling only
-        // relevant part this additional kernel was introduced
+        // to avoid overwriting the entire result buffer instead of filling
+        // only relevant part this additional kernel was introduced
+
         error = clCommandNDRangeKernelKHR(out_of_order_command_buffer, nullptr,
                                           nullptr, kernel_fill, 1, nullptr,
                                           &num_elements, nullptr, 0, nullptr,
-                                          &sync_points[1], nullptr);
+                                          &sync_points[1], &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clCommandNDRangeKernelKHR(
             out_of_order_command_buffer, nullptr, nullptr, kernel, 1, nullptr,
-            &num_elements, nullptr, 2, sync_points, nullptr, nullptr);
+            &num_elements, nullptr, 2, sync_points, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clFinalizeCommandBufferKHR(out_of_order_command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        cl_mutable_dispatch_exec_info_khr exec_info_list{
+            CL_KERNEL_EXEC_INFO_SVM_PTRS, sizeof(in_mem), in_mem
+        };
+
+        cl_mutable_dispatch_config_khr dispatch_config{
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
+            nullptr,
+            command,
+            0 /* num_args */,
+            0 /* num_svm_arg */,
+            1 /* num_exec_infos */,
+            0 /* work_dim - 0 means no change to dimensions */,
+            nullptr /* arg_list */,
+            nullptr /* arg_svm_list - nullptr means no change*/,
+            &exec_info_list /* exec_info_list */,
+            nullptr /* global_work_offset */,
+            nullptr /* global_work_size */,
+            nullptr /* local_work_size */
+        };
+        cl_mutable_base_config_khr mutable_config{
+            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
+            &dispatch_config
+        };
+
+        error = clUpdateMutableCommandsKHR(out_of_order_command_buffer,
+                                           &mutable_config);
+        test_error(error, "clUpdateMutableCommandsKHR failed");
+
         return CL_SUCCESS;
     }
 
@@ -331,21 +411,27 @@ struct OutOfOrderTest : public BasicCommandBufferTest
     clKernelWrapper kernel_fill;
     clProgramWrapper program_fill;
 
+    const size_t test_global_work_size = 3 * sizeof(cl_int);
+    cl_mutable_command_khr command = nullptr;
+    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
+
     const cl_int overwritten_pattern = 0xACDC;
     const cl_int pattern_pri = 42;
 };
 
 } // anonymous namespace
 
-int test_out_of_order(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
+int test_mutable_dispatch_out_of_order(cl_device_id device, cl_context context,
+                                       cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<OutOfOrderTest<false>>(device, context, queue,
                                                  num_elements);
 }
 
-int test_simultaneous_out_of_order(cl_device_id device, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+int test_mutable_dispatch_simultaneous_out_of_order(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements)
 {
     return MakeAndRunTest<OutOfOrderTest<true>>(device, context, queue,
                                                 num_elements);
