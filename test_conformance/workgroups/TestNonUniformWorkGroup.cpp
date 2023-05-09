@@ -57,11 +57,11 @@ static const char *KERNEL_FUNCTION = NL
     "    if (gid0 == 0 && gid1 == 0 && gid2 == 0) {" NL "      return 0;" NL
     "    } else if (gid0 == get_global_size(0) - 1 && gid1 == 0 && gid2 == 0) "
     "{" NL "      return 1;" NL "    } else if (gid0 == 0 && gid1 == "
-                                "get_global_size(1) - 1 && gid2 == 0) {" NL
-    "      return 2;" NL "    } else if (gid0 == get_global_size(0) - 1 && "
-                         "gid1 == get_global_size(1) - 1 && gid2 == 0) {" NL
-    "      return 3;" NL "    } else if (gid0 == 0 && gid1 == 0 && gid2 == "
-                         "get_global_size(2) - 1) {" NL "      return 4;" NL
+    "get_global_size(1) - 1 && gid2 == 0) {" NL "      return 2;" NL
+    "    } else if (gid0 == get_global_size(0) - 1 && "
+    "gid1 == get_global_size(1) - 1 && gid2 == 0) {" NL "      return 3;" NL
+    "    } else if (gid0 == 0 && gid1 == 0 && gid2 == "
+    "get_global_size(2) - 1) {" NL "      return 4;" NL
     "    } else if (gid0 == get_global_size(0) - 1 && gid1 == 0 && gid2 == "
     "get_global_size(2) - 1) {" NL "      return 5;" NL
     "    } else if (gid0 == 0 && gid1 == get_global_size(1) - 1 && gid2 == "
@@ -88,7 +88,7 @@ static const char *KERNEL_FUNCTION = NL
     "    results->get_work_dim = get_work_dim();" NL "}"
     // values set by this function are checked on the kernel side
     NL "void testBasicKernel(__global unsigned int *errorCounterBuffer, "
-       "__local DataContainerAttrib *resultsForThread0) {" NL
+    "__local DataContainerAttrib *resultsForThread0) {" NL
     "  uint lid0 = get_local_id(0);" NL "  uint lid1 = get_local_id(1);" NL
     "  uint lid2 = get_local_id(2);" NL
     "  if (lid0 == 0 && lid1 == 0 && lid2 == 0) {" NL
@@ -107,10 +107,10 @@ static const char *KERNEL_FUNCTION = NL
     "      if (resultsForThread0->get_global_size[i] != get_global_size(i)) "
     "{" NL "        atomic_inc(&errorCounterBuffer[ERR_GLOBAL_SIZE]);" NL
     "      }" NL "      if (resultsForThread0->get_global_offset[i] != "
-                 "get_global_offset(i)) {" NL
+    "get_global_offset(i)) {" NL
     "        atomic_inc(&errorCounterBuffer[ERR_GLOBAL_WORK_OFFSET]);" NL
     "      }" NL "      if (resultsForThread0->get_enqueued_local_size[i] != "
-                 "get_enqueued_local_size(i)) {" NL
+    "get_enqueued_local_size(i)) {" NL
     "        atomic_inc(&errorCounterBuffer[ERR_ENQUEUED_LOCAL_SIZE]);" NL
     "      }" NL
     "      if (resultsForThread0->get_group_id[i] != get_group_id(i)) {" NL
@@ -134,8 +134,7 @@ static const char *KERNEL_FUNCTION = NL
     "    uint localIndex = lid2*get_local_size(0)*get_local_size(1) + "
     "lid1*get_local_size(0) + lid0;" NL
     "    testLocalBuffer[localIndex] = 0;" NL
-    "    testGlobalBuffer[globalIndex] = 0;" NL
-    "    uint maxLocalIndex = "
+    "    testGlobalBuffer[globalIndex] = 0;" NL "    uint maxLocalIndex = "
     "get_local_size(0)*get_local_size(1)*get_local_size(2)-1;" NL
     "    uint nextLocalIndex = (localIndex>=maxLocalIndex)?0:(localIndex+1);" NL
     "    uint next_lid0 = (lid0+1>=get_local_size(0))?0:lid0+1;" NL

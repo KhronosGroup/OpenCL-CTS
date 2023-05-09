@@ -200,7 +200,8 @@ CorrespondingType host_atomic_fetch_or(volatile AtomicType *a,
     CorrespondingType expected =
         host_atomic_load<AtomicType, CorrespondingType>(a, order);
     CorrespondingType desired;
-    do desired = expected | c;
+    do
+        desired = expected | c;
     while (!host_atomic_compare_exchange(a, &expected, desired, order, order));
     return expected;
 }
@@ -213,7 +214,8 @@ CorrespondingType host_atomic_fetch_and(volatile AtomicType *a,
     CorrespondingType expected =
         host_atomic_load<AtomicType, CorrespondingType>(a, order);
     CorrespondingType desired;
-    do desired = expected & c;
+    do
+        desired = expected & c;
     while (!host_atomic_compare_exchange(a, &expected, desired, order, order));
     return expected;
 }
@@ -226,7 +228,8 @@ CorrespondingType host_atomic_fetch_xor(volatile AtomicType *a,
     CorrespondingType expected =
         host_atomic_load<AtomicType, CorrespondingType>(a, order);
     CorrespondingType desired;
-    do desired = expected ^ c;
+    do
+        desired = expected ^ c;
     while (!host_atomic_compare_exchange(a, &expected, desired, order, order));
     return expected;
 }
@@ -239,7 +242,8 @@ CorrespondingType host_atomic_fetch_min(volatile AtomicType *a,
     CorrespondingType expected =
         host_atomic_load<AtomicType, CorrespondingType>(a, order);
     CorrespondingType desired;
-    do desired = expected < c ? expected : c;
+    do
+        desired = expected < c ? expected : c;
     while (!host_atomic_compare_exchange(a, &expected, desired, order, order));
     return expected;
 }
@@ -252,7 +256,8 @@ CorrespondingType host_atomic_fetch_max(volatile AtomicType *a,
     CorrespondingType expected =
         host_atomic_load<AtomicType, CorrespondingType>(a, order);
     CorrespondingType desired;
-    do desired = expected > c ? expected : c;
+    do
+        desired = expected > c ? expected : c;
     while (!host_atomic_compare_exchange(a, &expected, desired, order, order));
     return expected;
 }
