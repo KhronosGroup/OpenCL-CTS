@@ -18,7 +18,6 @@
 #include "harness/errorHelpers.h"
 #include "harness/conversions.h"
 #include "harness/mt19937.h"
-#include "harness/threadTesting.h"
 #include "harness/typeWrappers.h"
 
 #define kVectorSizeCount 5
