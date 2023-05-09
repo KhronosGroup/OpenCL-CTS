@@ -107,7 +107,8 @@ int TestMacro_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     }
 
     test_info.f = f;
-    test_info.ftz = f->ftz || gForceFTZ;
+    test_info.ftz =
+        f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
 
     test_info.tinfo.resize(test_info.threadCount);
 
