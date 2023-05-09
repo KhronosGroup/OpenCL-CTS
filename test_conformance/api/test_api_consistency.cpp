@@ -647,7 +647,7 @@ int test_consistency_read_write_images(cl_device_id deviceID,
         CL_MEM_OBJECT_IMAGE2D,       CL_MEM_OBJECT_IMAGE3D,
         CL_MEM_OBJECT_IMAGE1D_ARRAY, CL_MEM_OBJECT_IMAGE2D_ARRAY,
     };
-    for (int i = 0; i < ARRAY_SIZE(image_types); i++)
+    for (size_t i = 0; i < ARRAY_SIZE(image_types); i++)
     {
         cl_uint numImageFormats = 0;
         error = clGetSupportedImageFormats(
@@ -801,7 +801,7 @@ int test_consistency_depth_images(cl_device_id deviceID, cl_context context,
         CL_MEM_READ_WRITE,
         CL_MEM_KERNEL_READ_AND_WRITE,
     };
-    for (int i = 0; i < ARRAY_SIZE(mem_flags); i++)
+    for (size_t i = 0; i < ARRAY_SIZE(mem_flags); i++)
     {
         cl_uint numImageFormats = 0;
         error = clGetSupportedImageFormats(context, mem_flags[i],
@@ -1114,7 +1114,7 @@ int test_consistency_3d_image_writes(cl_device_id deviceID, cl_context context,
         CL_MEM_READ_WRITE,
         CL_MEM_KERNEL_READ_AND_WRITE,
     };
-    for (int i = 0; i < ARRAY_SIZE(mem_flags); i++)
+    for (size_t i = 0; i < ARRAY_SIZE(mem_flags); i++)
     {
         cl_uint numImageFormats = 0;
         error = clGetSupportedImageFormats(context, mem_flags[i],

@@ -72,7 +72,7 @@ public:
     virtual ~BufferAction() { free(mOutBuffer); }
 
     virtual cl_int Setup(cl_device_id device, cl_context context,
-                         cl_command_queue queue, bool allocate);
+                         cl_command_queue queue);
 };
 
 class ReadBufferAction : public BufferAction {

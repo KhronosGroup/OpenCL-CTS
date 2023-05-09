@@ -25,32 +25,16 @@
 
 namespace {
 
-int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
-                bool relaxedMode)
-{
-    auto kernel_name = GetKernelName(vectorSize);
-    auto source =
-        GetUnaryKernel(kernel_name, name, ParameterType::Float,
-                       ParameterType::Int, ParameterType::Float, vectorSize);
-    std::array<const char *, 1> sources{ source.c_str() };
-    return MakeKernel(sources.data(), sources.size(), kernel_name.c_str(), k, p,
-                      relaxedMode);
-}
-
-struct BuildKernelInfo2
-{
-    cl_kernel *kernels;
-    Programs &programs;
-    const char *nameInCode;
-    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
-};
-
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
-    BuildKernelInfo2 *info = (BuildKernelInfo2 *)p;
-    cl_uint vectorSize = gMinVectorSizeIndex + job_id;
-    return BuildKernel(info->nameInCode, vectorSize, info->kernels + vectorSize,
-                       &(info->programs[vectorSize]), info->relaxedMode);
+    BuildKernelInfo &info = *(BuildKernelInfo *)p;
+    auto generator = [](const std::string &kernel_name, const char *builtin,
+                        cl_uint vector_size_index) {
+        return GetUnaryKernel(kernel_name, builtin, ParameterType::Float,
+                              ParameterType::Int, ParameterType::Float,
+                              vector_size_index);
+    };
+    return BuildKernels(info, job_id, generator);
 }
 
 cl_ulong abs_cl_long(cl_long i)
@@ -65,7 +49,8 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
 {
     int error;
     Programs programs;
-    cl_kernel kernels[VECTOR_SIZE_COUNT];
+    const unsigned thread_id = 0; // Test is currently not multithreaded.
+    KernelMatrix kernels;
     float maxError = 0.0f;
     int64_t maxError2 = 0;
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
@@ -86,14 +71,12 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
     maxiError = float_ulps == INFINITY ? CL_ULONG_MAX : 0;
 
     // Init the kernels
-    {
-        BuildKernelInfo2 build_info{ kernels, programs, f->nameInCode,
-                                     relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernelFn,
-                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                                   &build_info)))
-            return error;
-    }
+    BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode,
+                                relaxedMode };
+    if ((error = ThreadPool_Do(BuildKernelFn,
+                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                               &build_info)))
+        return error;
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
@@ -116,28 +99,53 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
             return error;
         }
 
-        // write garbage into output arrays
+        // Write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
-            memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
-            if ((error =
-                     clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
-                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
+            if (gHostFill)
             {
-                vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
-                           error, j);
-                goto exit;
-            }
+                memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
+                if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer[j],
+                                                  CL_FALSE, 0, BUFFER_SIZE,
+                                                  gOut[j], 0, NULL, NULL)))
+                {
+                    vlog_error(
+                        "\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
+                        error, j);
+                    return error;
+                }
 
-            memset_pattern4(gOut2[j], &pattern, BUFFER_SIZE);
-            if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer2[j], CL_FALSE,
-                                              0, BUFFER_SIZE, gOut2[j], 0, NULL,
-                                              NULL)))
+                memset_pattern4(gOut2[j], &pattern, BUFFER_SIZE);
+                if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer2[j],
+                                                  CL_FALSE, 0, BUFFER_SIZE,
+                                                  gOut2[j], 0, NULL, NULL)))
+                {
+                    vlog_error(
+                        "\n*** Error %d in clEnqueueWriteBuffer2b(%d) ***\n",
+                        error, j);
+                    return error;
+                }
+            }
+            else
             {
-                vlog_error("\n*** Error %d in clEnqueueWriteBuffer2b(%d) ***\n",
-                           error, j);
-                goto exit;
+                if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
+                                                 &pattern, sizeof(pattern), 0,
+                                                 BUFFER_SIZE, 0, NULL, NULL)))
+                {
+                    vlog_error("Error: clEnqueueFillBuffer 1 failed! err: %d\n",
+                               error);
+                    return error;
+                }
+
+                if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer2[j],
+                                                 &pattern, sizeof(pattern), 0,
+                                                 BUFFER_SIZE, 0, NULL, NULL)))
+                {
+                    vlog_error("Error: clEnqueueFillBuffer 2 failed! err: %d\n",
+                               error);
+                    return error;
+                }
             }
         }
 
@@ -146,31 +154,32 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_float);
             size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
-            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
-                                        &gOutBuffer[j])))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
+                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gOutBuffer2[j]),
-                                        &gOutBuffer2[j])))
+            if ((error =
+                     clSetKernelArg(kernels[j][thread_id], 1,
+                                    sizeof(gOutBuffer2[j]), &gOutBuffer2[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 2, sizeof(gInBuffer),
-                                        &gInBuffer)))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 2,
+                                        sizeof(gInBuffer), &gInBuffer)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
 
-            if ((error =
-                     clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
-                                            &localCount, NULL, 0, NULL, NULL)))
+            if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
+                                                1, NULL, &localCount, NULL, 0,
+                                                NULL, NULL)))
             {
                 vlog_error("FAILED -- could not execute kernel\n");
-                goto exit;
+                return error;
             }
         }
 
@@ -192,14 +201,14 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
-                goto exit;
+                return error;
             }
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer2[j], CL_TRUE, 0,
                                          BUFFER_SIZE, gOut2[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray2 failed %d\n", error);
-                goto exit;
+                return error;
             }
         }
 
@@ -301,8 +310,7 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
                                    f->name, sizeNames[k], err, (int)iErr,
                                    ((float *)gIn)[j], ((float *)gOut_Ref)[j],
                                    ((int *)gOut_Ref2)[j], test, q2[j]);
-                        error = -1;
-                        goto exit;
+                        return -1;
                     }
                 }
             }
@@ -337,12 +345,5 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
 
     vlog("\n");
 
-exit:
-    // Release
-    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
-    {
-        clReleaseKernel(kernels[k]);
-    }
-
-    return error;
+    return CL_SUCCESS;
 }

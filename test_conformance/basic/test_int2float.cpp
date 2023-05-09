@@ -60,7 +60,6 @@ test_int2float(cl_device_id device, cl_context context, cl_command_queue queue, 
     cl_float        *output_ptr;
     cl_program        program;
     cl_kernel        kernel;
-    void            *values[2];
     size_t    threads[1];
     int                err;
     int                i;
@@ -102,8 +101,6 @@ test_int2float(cl_device_id device, cl_context context, cl_command_queue queue, 
         return -1;
     }
 
-    values[0] = streams[0];
-    values[1] = streams[1];
     err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
     err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
     if (err != CL_SUCCESS)

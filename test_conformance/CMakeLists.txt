@@ -49,6 +49,7 @@ add_subdirectory( pipes )
 add_subdirectory( spirv_new )
 add_subdirectory( spir )
 if(VULKAN_IS_SUPPORTED)
+    add_subdirectory( common/vulkan_wrapper )
     add_subdirectory( vulkan )
 endif()
 

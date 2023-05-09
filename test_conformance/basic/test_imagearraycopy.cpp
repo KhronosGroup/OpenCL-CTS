@@ -87,11 +87,11 @@ int test_imagearraycopy_single_format(cl_device_id device, cl_context context, c
         char values[4096];
         values[0] = 0;
         if (failed) {
-            sprintf(values + strlen(values), "%d(0x%x) -> actual [", i, i);
+            sprintf(values + strlen(values), "%d(0x%x) -> expected [", i, i);
             int j;
             for (j=0; j<(int)elem_size; j++)
                 sprintf(values + strlen( values), "0x%02x ", inchar[i+j]);
-            sprintf(values + strlen(values), "] != expected [");
+            sprintf(values + strlen(values), "] != actual [");
             for (j=0; j<(int)elem_size; j++)
                 sprintf(values + strlen( values), "0x%02x ", outchar[i+j]);
             sprintf(values + strlen(values), "]");

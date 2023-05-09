@@ -21,39 +21,6 @@
 #include "subhelpers.h"
 #include <set>
 #include <algorithm>
-#include <random>
-
-static cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
-                                  const std::string &mask_type,
-                                  cl_uint max_sub_group_size)
-{
-    bs128 mask128;
-    cl_uint4 mask;
-    cl_uint pos = subgroup_local_id;
-    if (mask_type == "eq") mask128.set(pos);
-    if (mask_type == "le" || mask_type == "lt")
-    {
-        for (cl_uint i = 0; i <= pos; i++) mask128.set(i);
-        if (mask_type == "lt") mask128.reset(pos);
-    }
-    if (mask_type == "ge" || mask_type == "gt")
-    {
-        for (cl_uint i = pos; i < max_sub_group_size; i++) mask128.set(i);
-        if (mask_type == "gt") mask128.reset(pos);
-    }
-
-    // convert std::bitset<128> to uint4
-    auto const uint_mask = bs128{ static_cast<unsigned long>(-1) };
-    mask.s0 = (mask128 & uint_mask).to_ulong();
-    mask128 >>= 32;
-    mask.s1 = (mask128 & uint_mask).to_ulong();
-    mask128 >>= 32;
-    mask.s2 = (mask128 & uint_mask).to_ulong();
-    mask128 >>= 32;
-    mask.s3 = (mask128 & uint_mask).to_ulong();
-
-    return mask;
-}
 
 // DESCRIPTION :
 // sub_group_broadcast - each work_item registers it's own value.
@@ -280,10 +247,10 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                         {
                             log_error("ERROR: sub_group_%s(%s) "
                                       "mismatch for local id %d in sub "
-                                      "group %d in group %d - got %lu "
-                                      "expected %lu\n",
+                                      "group %d in group %d - %s\n",
                                       operation_names(operation),
-                                      TypeManager<Ty>::name(), i, j, k, rr, tr);
+                                      TypeManager<Ty>::name(), i, j, k,
+                                      print_expected_obtained(tr, rr).c_str());
                             return TEST_FAIL;
                         }
                     }
@@ -392,33 +359,6 @@ template <typename Ty> bool is_floating_point()
     return std::is_floating_point<Ty>::value
         || std::is_same<Ty, subgroups::cl_half>::value;
 }
-
-// limit possible input values to avoid arithmetic rounding/overflow issues.
-// for each subgroup values defined different values
-// for rest of workitems set 1
-// shuffle values
-static void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
-                                         int sb_size)
-{
-    // max product is 720, cl_half has enough precision for it
-    const std::vector<cl_ulong> non_one_values{ 2, 3, 4, 5, 6 };
-
-    if (sb_size <= non_one_values.size())
-    {
-        safe_values.assign(non_one_values.begin(),
-                           non_one_values.begin() + sb_size);
-    }
-    else
-    {
-        safe_values.assign(sb_size, 1);
-        std::copy(non_one_values.begin(), non_one_values.end(),
-                  safe_values.begin());
-    }
-
-    std::mt19937 mersenne_twister_engine(10000);
-    std::shuffle(safe_values.begin(), safe_values.end(),
-                 mersenne_twister_engine);
-};
 
 template <typename Ty, ArithmeticOp operation>
 void generate_inputs(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
@@ -703,9 +643,10 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                             log_error(
                                 "ERROR: %s_%s(%s) "
                                 "mismatch for local id %d in sub group %d in "
-                                "group %d Expected: %d Obtained: %d\n",
+                                "group %d %s\n",
                                 func_name.c_str(), operation_names(operation),
-                                TypeManager<Ty>::name(), i, j, k, tr, rr);
+                                TypeManager<Ty>::name(), i, j, k,
+                                print_expected_obtained(tr, rr).c_str());
                             return TEST_FAIL;
                         }
                         tr = calculate<Ty>(tr, mx[ii + active_work_item],
@@ -820,10 +761,10 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
                                 "ERROR: %s_%s(%s) "
                                 "mismatch for local id %d in sub group %d "
                                 "in "
-                                "group %d Expected: %d Obtained: %d\n",
+                                "group %d %s\n",
                                 func_name.c_str(), operation_names(operation),
                                 TypeManager<Ty>::name(), active_work_item, j, k,
-                                tr, rr);
+                                print_expected_obtained(tr, rr).c_str());
                             return TEST_FAIL;
                         }
                     }
@@ -926,10 +867,10 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
                     {
                         log_error("ERROR: %s_%s(%s) "
                                   "mismatch for local id %d in sub group %d in "
-                                  "group %d Expected: %d Obtained: %d\n",
+                                  "group %d %s\n",
                                   func_name.c_str(), operation_names(operation),
                                   TypeManager<Ty>::name(), active_work_item, j,
-                                  k, tr, rr);
+                                  k, print_expected_obtained(tr, rr).c_str());
                         return TEST_FAIL;
                     }
                 }

@@ -80,8 +80,9 @@ void Task::setErrorLog(cl_program prog) {
 //
 // BuildTask
 //
-BuildTask::BuildTask(cl_program prog, cl_device_id dev, const char* options) :
-    m_program(prog), Task(dev, options) {}
+BuildTask::BuildTask(cl_program prog, cl_device_id dev, const char* options)
+    : Task(dev, options), m_program(prog)
+{}
 
 bool BuildTask::execute() {
     cl_int err_code = clBuildProgram(m_program, 0, NULL, m_options.c_str(), NULL, NULL);
@@ -102,8 +103,9 @@ SpirBuildTask::SpirBuildTask(cl_program prog, cl_device_id dev, const char* opti
 // CompileTask
 //
 
-CompileTask::CompileTask(cl_program prog, cl_device_id dev, const char* options) :
-    m_program(prog), Task(dev, options) {}
+CompileTask::CompileTask(cl_program prog, cl_device_id dev, const char* options)
+    : Task(dev, options), m_program(prog)
+{}
 
 void CompileTask::addHeader(const char* hname, cl_program hprog) {
     m_headers.push_back(std::make_pair(hname, hprog));
@@ -162,9 +164,10 @@ SpirCompileTask::SpirCompileTask(cl_program prog, cl_device_id dev, const char* 
 // LinkTask
 //
 LinkTask::LinkTask(cl_program* programs, int num_programs, cl_context ctxt,
-                   cl_device_id dev, const char* options) :
-    m_programs(programs), m_numPrograms(num_programs), m_context(ctxt), m_executable(NULL),
-    Task(dev, options) {}
+                   cl_device_id dev, const char* options)
+    : Task(dev, options), m_executable(NULL), m_programs(programs),
+      m_numPrograms(num_programs), m_context(ctxt)
+{}
 
 bool LinkTask::execute() {
     cl_int err_code;
@@ -462,8 +465,7 @@ bool TestRunner::runBuildTest(cl_device_id device, const char *folder,
                 log_info("kernel '%s' failed.\n", kernel_name.c_str());
                 (*m_failureHandler)(test_name, kernel_name);
             }
-        }
-        catch (std::runtime_error err)
+        } catch (const std::runtime_error& err)
         {
             ++failures;
             log_info("kernel '%s' failed: %s\n", kernel_name.c_str(), err.what());

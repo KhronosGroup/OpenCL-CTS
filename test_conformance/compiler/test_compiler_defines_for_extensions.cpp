@@ -82,9 +82,12 @@ const char *known_extensions[] = {
     "cl_khr_external_semaphore_win32",
     "cl_khr_external_semaphore_sync_fd",
     "cl_khr_external_semaphore_opaque_fd",
+    "cl_khr_external_semaphore_dx_fence",
     "cl_khr_external_memory",
     "cl_khr_external_memory_win32",
     "cl_khr_external_memory_opaque_fd",
+    "cl_khr_external_memory_dx",
+    "cl_khr_external_memory_dma_buf",
     "cl_khr_command_buffer",
     "cl_khr_command_buffer_mutable_dispatch",
 };
@@ -116,6 +119,11 @@ const char *kernel_strings[] = {
     "#pragma OPENCL EXTENSION %s : disable\n\n",
     "}\n"
 };
+
+bool string_has_prefix(const char *str, const char *prefix)
+{
+    return strncmp(str, prefix, strlen(prefix)) == 0;
+}
 
 int test_compiler_defines_for_extensions(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
 {
@@ -164,6 +172,7 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
 
     memset( extension_type, 0, sizeof( extension_type) );
 
+    bool failed = false;
     // loop over extension string
     while (currentP != extensions + stringSize)
     {
@@ -199,93 +208,106 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
 
         // record the extension name
         uintptr_t extension_length = (uintptr_t) currentP - (uintptr_t) start;
-        extensions_supported[ num_of_supported_extensions ] = (char*) malloc( (extension_length + 1) * sizeof( char ) );
-        if( NULL == extensions_supported[ num_of_supported_extensions ] )
+        char *extension = (char *)malloc((extension_length + 1) * sizeof(char));
+        if (extension == NULL)
         {
             log_error( "Error: unable to allocate memory to hold extension name: %ld chars\n", extension_length );
             return -1;
         }
-        memcpy( extensions_supported[ num_of_supported_extensions ], start, extension_length * sizeof( char ) );
-        extensions_supported[ num_of_supported_extensions ][extension_length] = '\0';
+        extensions_supported[num_of_supported_extensions] = extension;
+        memcpy(extension, start, extension_length * sizeof(char));
+        extension[extension_length] = '\0';
 
         // If the extension is a cl_khr extension, make sure it is an approved cl_khr extension -- looking for misspellings here
-        if( extensions_supported[ num_of_supported_extensions ][0] == 'c'  &&
-            extensions_supported[ num_of_supported_extensions ][1] == 'l'  &&
-            extensions_supported[ num_of_supported_extensions ][2] == '_'  &&
-            extensions_supported[ num_of_supported_extensions ][3] == 'k'  &&
-            extensions_supported[ num_of_supported_extensions ][4] == 'h'  &&
-            extensions_supported[ num_of_supported_extensions ][5] == 'r'  &&
-            extensions_supported[ num_of_supported_extensions ][6] == '_' )
+        if (string_has_prefix(extension, "cl_khr_"))
         {
             size_t ii;
             for( ii = 0; ii < num_known_extensions; ii++ )
             {
-                if( 0 == strcmp( known_extensions[ii], extensions_supported[ num_of_supported_extensions ] ) )
-                    break;
+                if (strcmp(known_extensions[ii], extension) == 0) break;
             }
             if( ii == num_known_extensions )
             {
-                log_error( "FAIL: Extension %s is not in the list of approved Khronos extensions!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                log_error("FAIL: Extension %s is not in the list of approved "
+                          "Khronos extensions!\n",
+                          extension);
+                failed = true;
             }
         }
         // Is it an embedded extension?
-        else if( memcmp( extensions_supported[ num_of_supported_extensions ], "cles_khr_", 9 ) == 0 )
+        else if (string_has_prefix(extension, "cles_khr_"))
         {
             // Yes, but is it a known one?
             size_t ii;
             for( ii = 0; known_embedded_extensions[ ii ] != NULL; ii++ )
             {
-                if( strcmp( known_embedded_extensions[ ii ], extensions_supported[ num_of_supported_extensions ] ) == 0 )
+                if (strcmp(known_embedded_extensions[ii], extension) == 0)
                     break;
             }
             if( known_embedded_extensions[ ii ] == NULL )
             {
-                log_error( "FAIL: Extension %s is not in the list of approved Khronos embedded extensions!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                log_error("FAIL: Extension %s is not in the list of approved "
+                          "Khronos embedded extensions!\n",
+                          extension);
+                failed = true;
             }
-
-            // It's approved, but are we even an embedded system?
-            char profileStr[128] = "";
-            error = clGetDeviceInfo( device, CL_DEVICE_PROFILE, sizeof( profileStr ), &profileStr, NULL );
-            test_error( error, "Unable to get CL_DEVICE_PROFILE to validate embedded extension name" );
-
-            if( strcmp( profileStr, "EMBEDDED_PROFILE" ) != 0 )
+            else
             {
-                log_error( "FAIL: Extension %s is an approved embedded extension, but on a non-embedded profile!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                // It's approved, but are we even an embedded system?
+                char profileStr[128] = "";
+                error = clGetDeviceInfo(device, CL_DEVICE_PROFILE,
+                                        sizeof(profileStr), &profileStr, NULL);
+                test_error(error,
+                           "Unable to get CL_DEVICE_PROFILE to validate "
+                           "embedded extension name");
+
+                if (strcmp(profileStr, "EMBEDDED_PROFILE") != 0)
+                {
+                    log_error(
+                        "FAIL: Extension %s is an approved embedded extension, "
+                        "but on a non-embedded profile!\n",
+                        extension);
+                    failed = true;
+                }
             }
         }
         else
         { // All other extensions must be of the form cl_<vendor_name>_<name>
-            if( extensions_supported[ num_of_supported_extensions ][0] != 'c'  ||
-                extensions_supported[ num_of_supported_extensions ][1] != 'l'  ||
-                extensions_supported[ num_of_supported_extensions ][2] != '_' )
+            if (!string_has_prefix(extension, "cl_"))
             {
-                log_error( "FAIL:  Extension %s doesn't start with \"cl_\"!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                log_error("FAIL:  Extension %s doesn't start with \"cl_\"!\n",
+                          extension);
+                failed = true;
             }
-
-            if( extensions_supported[ num_of_supported_extensions ][3] == '_' || extensions_supported[ num_of_supported_extensions ][3] == '\0' )
+            else if (extension[3] == '_' || extension[3] == '\0')
             {
-                log_error( "FAIL:  Vendor name is missing in extension %s!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                log_error("FAIL:  Vendor name is missing in extension %s!\n",
+                          extension);
+                failed = true;
             }
-
-            // look for the second underscore for name
-            char *p = extensions_supported[ num_of_supported_extensions ] + 4;
-            while( *p != '\0' && *p != '_' )
-                p++;
-
-            if( *p != '_' || p[1] == '\0')
+            else
             {
-                log_error( "FAIL:  extension name is missing in extension %s!", extensions_supported[ num_of_supported_extensions ] );
-                return -1;
+                // look for the second underscore for name
+                char *p = extension + 4;
+                while (*p != '\0' && *p != '_') p++;
+
+                if (*p != '_' || p[1] == '\0')
+                {
+                    log_error(
+                        "FAIL:  extension name is missing in extension %s!\n",
+                        extension);
+                    failed = true;
+                }
             }
         }
 
 
         num_of_supported_extensions++;
+    }
+
+    if (failed)
+    {
+        return -1;
     }
 
     // Build a list of the known extensions that are not supported by the device

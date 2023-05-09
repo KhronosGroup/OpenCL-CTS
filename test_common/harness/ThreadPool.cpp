@@ -23,6 +23,7 @@
 // or any other POSIX system
 
 #include <atomic>
+#include <vector>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -56,6 +57,12 @@ CRITICAL_SECTION gAtomicLock;
 #elif defined(__GNUC__) || defined(_MSC_VER)
 #else
 pthread_mutex_t gAtomicLock;
+#endif
+
+#if !defined(_WIN32)
+// Keep track of pthread_t's created in ThreadPool_Init() so they can be joined
+// in ThreadPool_Exit() and avoid thread leaks.
+static std::vector<pthread_t> pthreads;
 #endif
 
 // Atomic add operator with mem barrier.  Mem barrier needed to protect state
@@ -642,6 +649,9 @@ void ThreadPool_Init(void)
             gThreadCount = i;
             break;
         }
+#if !defined(_WIN32)
+        pthreads.push_back(tid);
+#endif // !_WIN32
     }
 
     atexit(ThreadPool_Exit);
@@ -721,7 +731,20 @@ void ThreadPool_Exit(void)
                   "still active.\n",
                   gThreadCount.load());
     else
+    {
+#if !defined(_WIN32)
+        for (pthread_t pthread : pthreads)
+        {
+            if (int err = pthread_join(pthread, nullptr))
+            {
+                log_error("Error from %d from pthread_join. Unable to join "
+                          "work threads. ThreadPool_Exit failed.\n",
+                          err);
+            }
+        }
+#endif
         log_info("Thread pool exited in a orderly fashion.\n");
+    }
 }
 
 

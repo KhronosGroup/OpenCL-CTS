@@ -24,25 +24,16 @@
 
 namespace {
 
-int BuildKernel(const char *name, int vectorSize, cl_uint kernel_count,
-                cl_kernel *k, cl_program *p, bool relaxedMode)
-{
-    auto kernel_name = GetKernelName(vectorSize);
-    auto source = GetBinaryKernel(kernel_name, name, ParameterType::Long,
-                                  ParameterType::Double, ParameterType::Double,
-                                  vectorSize);
-    std::array<const char *, 1> sources{ source.c_str() };
-    return MakeKernels(sources.data(), sources.size(), kernel_name.c_str(),
-                       kernel_count, k, p, relaxedMode);
-}
-
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
-    BuildKernelInfo *info = (BuildKernelInfo *)p;
-    cl_uint vectorSize = gMinVectorSizeIndex + job_id;
-    return BuildKernel(info->nameInCode, vectorSize, info->threadCount,
-                       info->kernels[vectorSize].data(),
-                       &(info->programs[vectorSize]), info->relaxedMode);
+    BuildKernelInfo &info = *(BuildKernelInfo *)p;
+    auto generator = [](const std::string &kernel_name, const char *builtin,
+                        cl_uint vector_size_index) {
+        return GetBinaryKernel(kernel_name, builtin, ParameterType::Long,
+                               ParameterType::Double, ParameterType::Double,
+                               vector_size_index);
+    };
+    return BuildKernels(info, job_id, generator);
 }
 
 // Thread specific data for a worker thread
@@ -217,24 +208,27 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     Force64BitFPUPrecision();
 
-    // start the map of the output arrays
     cl_event e[VECTOR_SIZE_COUNT];
     cl_long *out[VECTOR_SIZE_COUNT];
-    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    if (gHostFill)
     {
-        out[j] = (cl_long *)clEnqueueMapBuffer(
-            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
-            buffer_size, 0, NULL, e + j, &error);
-        if (error || NULL == out[j])
+        // start the map of the output arrays
+        for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
-                       error);
-            return error;
+            out[j] = (cl_long *)clEnqueueMapBuffer(
+                tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
+                buffer_size, 0, NULL, e + j, &error);
+            if (error || NULL == out[j])
+            {
+                vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
+                           error);
+                return error;
+            }
         }
-    }
 
-    // Get that moving
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+        // Get that moving
+        if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+    }
 
     // Init input array
     double *p = (double *)gIn + thread_id * buffer_elements;
@@ -243,8 +237,9 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     int totalSpecialValueCount = specialValuesCount * specialValuesCount;
     int lastSpecialJobIndex = (totalSpecialValueCount - 1) / buffer_elements;
 
+    // Test edge cases
     if (job_id <= (cl_uint)lastSpecialJobIndex)
-    { // test edge cases
+    {
         uint32_t x, y;
 
         x = (job_id * buffer_elements) % specialValuesCount;
@@ -263,7 +258,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-    // Init any remaining values.
+    // Init any remaining values
     for (; idx < buffer_elements; idx++)
     {
         ((cl_ulong *)p)[idx] = genrand_int64(d);
@@ -274,43 +269,60 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                                       buffer_size, p, 0, NULL, NULL)))
     {
         vlog_error("Error: clEnqueueWriteBuffer failed! err: %d\n", error);
-        goto exit;
+        return error;
     }
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf2, CL_FALSE, 0,
                                       buffer_size, p2, 0, NULL, NULL)))
     {
         vlog_error("Error: clEnqueueWriteBuffer failed! err: %d\n", error);
-        goto exit;
+        return error;
     }
 
     for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
-        // Wait for the map to finish
-        if ((error = clWaitForEvents(1, e + j)))
+        if (gHostFill)
         {
-            vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
-            goto exit;
-        }
-        if ((error = clReleaseEvent(e[j])))
-        {
-            vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
-            goto exit;
+            // Wait for the map to finish
+            if ((error = clWaitForEvents(1, e + j)))
+            {
+                vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
+                return error;
+            }
+            if ((error = clReleaseEvent(e[j])))
+            {
+                vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
+                return error;
+            }
         }
 
         // Fill the result buffer with garbage, so that old results don't carry
         // over
         uint32_t pattern = 0xffffdead;
-        memset_pattern4(out[j], &pattern, buffer_size);
-        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
-                                             out[j], 0, NULL, NULL)))
+        if (gHostFill)
         {
-            vlog_error("Error: clEnqueueUnmapMemObject failed! err: %d\n",
-                       error);
-            goto exit;
+            memset_pattern4(out[j], &pattern, buffer_size);
+            if ((error = clEnqueueUnmapMemObject(
+                     tinfo->tQueue, tinfo->outBuf[j], out[j], 0, NULL, NULL)))
+            {
+                vlog_error("Error: clEnqueueUnmapMemObject failed! err: %d\n",
+                           error);
+                return error;
+            }
+        }
+        else
+        {
+            if ((error = clEnqueueFillBuffer(tinfo->tQueue, tinfo->outBuf[j],
+                                             &pattern, sizeof(pattern), 0,
+                                             buffer_size, 0, NULL, NULL)))
+            {
+                vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
+                           error);
+                return error;
+            }
         }
 
-        // run the kernel
+        // Run the kernel
         size_t vectorCount =
             (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
@@ -340,7 +352,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                                             &vectorCount, NULL, 0, NULL, NULL)))
         {
             vlog_error("FAILED -- could not execute kernel\n");
-            goto exit;
+            return error;
         }
     }
 
@@ -367,7 +379,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         {
             vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
                        error);
-            goto exit;
+            return error;
         }
     }
 
@@ -418,8 +430,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                        "vs. %" PRId64 "  (index: %zu)\n",
                        name, err, ((double *)s)[j], ((double *)s2)[j], t[j],
                        q[j], j);
-            error = -1;
-            goto exit;
+            return -1;
         }
 
 
@@ -467,8 +478,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                            "  (index: %zu)\n",
                            name, sizeNames[k], err, ((double *)s)[j],
                            ((double *)s2)[j], -t[j], q[j], j);
-                error = -1;
-                goto exit;
+                return -1;
             }
         }
     }
@@ -503,8 +513,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         fflush(stdout);
     }
 
-exit:
-    return error;
+    return CL_SUCCESS;
 }
 
 } // anonymous namespace
@@ -537,13 +546,6 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     test_info.ftz = f->ftz || gForceFTZ;
     test_info.relaxedMode = relaxedMode;
 
-    // cl_kernels aren't thread safe, so we make one for each vector size for
-    // every thread
-    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
-    {
-        test_info.k[i].resize(test_info.threadCount, nullptr);
-    }
-
     test_info.tinfo.resize(test_info.threadCount);
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
@@ -559,7 +561,7 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             vlog_error("Error: Unable to create sub-buffer of gInBuffer for "
                        "region {%zd, %zd}\n",
                        region.origin, region.size);
-            goto exit;
+            return error;
         }
         test_info.tinfo[i].inBuf2 =
             clCreateSubBuffer(gInBuffer2, CL_MEM_READ_ONLY,
@@ -569,7 +571,7 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             vlog_error("Error: Unable to create sub-buffer of gInBuffer2 for "
                        "region {%zd, %zd}\n",
                        region.origin, region.size);
-            goto exit;
+            return error;
         }
 
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -582,7 +584,7 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                 vlog_error("Error: Unable to create sub-buffer of "
                            "gOutBuffer[%d] for region {%zd, %zd}\n",
                            (int)j, region.origin, region.size);
-                goto exit;
+                return error;
             }
         }
         test_info.tinfo[i].tQueue =
@@ -590,29 +592,26 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         if (NULL == test_info.tinfo[i].tQueue || error)
         {
             vlog_error("clCreateCommandQueue failed. (%d)\n", error);
-            goto exit;
+            return error;
         }
 
         test_info.tinfo[i].d = MTdataHolder(genrand_int32(d));
     }
 
     // Init the kernels
-    {
-        BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
-                                    test_info.programs, f->nameInCode,
-                                    relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernelFn,
-                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                                   &build_info)))
-            goto exit;
-    }
+    BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
+                                test_info.programs, f->nameInCode,
+                                relaxedMode };
+    if ((error = ThreadPool_Do(BuildKernelFn,
+                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                               &build_info)))
+        return error;
 
     // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
-
-        if (error) goto exit;
+        if (error) return error;
 
         if (gWimpyMode)
             vlog("Wimp pass");
@@ -622,15 +621,5 @@ int TestMacro_Int_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 
     vlog("\n");
 
-exit:
-    // Release
-    for (auto i = gMinVectorSizeIndex; i < gMaxVectorSizeIndex; i++)
-    {
-        for (auto &kernel : test_info.k[i])
-        {
-            clReleaseKernel(kernel);
-        }
-    }
-
-    return error;
+    return CL_SUCCESS;
 }

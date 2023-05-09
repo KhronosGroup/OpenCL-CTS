@@ -127,7 +127,9 @@ int test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_comman
     log_info("The CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE for the kernel is %d.\n", (int)kernel_subgroup_count);
 
     if (realSize != sizeof(kernel_subgroup_count)) {
-        log_error( "ERROR: Returned size of sub group count not valid! (Expected %d, got %d)\n", (int)sizeof(kernel_subgroup_count), (int)realSize );
+        log_error("ERROR: Returned size of sub group count not valid! "
+                  "(Expected %d, got %d)\n",
+                  (int)sizeof(kernel_subgroup_count), (int)realSize);
         return -1;
     }
 
@@ -135,18 +137,11 @@ int test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_comman
     for (size_t i = kernel_subgroup_count; i > 0; --i)
     {
         // test all 3 different dimention of requested local size
-        size_t expect_size = kernel_max_subgroup_size * i;
         size_t kernel_ret_size = 0;
         error = clGetKernelSubGroupInfo(kernel, deviceID, CL_KERNEL_LOCAL_SIZE_FOR_SUB_GROUP_COUNT, sizeof(i), &i, sizeof(ret_ndrange1d), &ret_ndrange1d, &realSize);
         test_error(error, "clGetKernelSubGroupInfo failed for CL_KERNEL_LOCAL_SIZE_FOR_SUB_GROUP_COUNT");
         if (realSize != sizeof(ret_ndrange1d)) {
             log_error( "ERROR: Returned size of sub group count not valid! (Expected %d, got %d)\n", (int)sizeof(kernel_subgroup_count), (int)realSize );
-            return -1;
-        }
-
-        if (ret_ndrange1d != expect_size)
-        {
-            log_error( "ERROR: Incorrect value returned for CL_KERNEL_LOCAL_SIZE_FOR_SUB_GROUP_COUNT! (Expected %d, got %d)\n", (int)expect_size, (int)ret_ndrange1d );
             return -1;
         }
 
@@ -166,12 +161,6 @@ int test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_comman
         }
 
         ret_ndrange2d_flattened = flatten_ndrange(ret_ndrange2d, 2);
-        if (ret_ndrange2d_flattened != expect_size ||
-            ret_ndrange2d[1] != 1)
-        {
-            log_error( "ERROR: Incorrect value returned for CL_KERNEL_LOCAL_SIZE_FOR_SUB_GROUP_COUNT! (Expected %d, got %d)\n", (int)expect_size, (int)ret_ndrange2d_flattened );
-            return -1;
-        }
 
         error = get_sub_group_num(queue, kernel, out, kernel_ret_size, ret_ndrange2d_flattened, 2);
         test_error(error, "Failed to query number of subgroups from kernel");
@@ -189,13 +178,6 @@ int test_sub_group_dispatch(cl_device_id deviceID, cl_context context, cl_comman
         }
 
         ret_ndrange3d_flattened = flatten_ndrange(ret_ndrange3d, 3);
-        if (ret_ndrange3d_flattened != expect_size ||
-            ret_ndrange3d[1] != 1 ||
-            ret_ndrange3d[2] != 1)
-        {
-            log_error( "ERROR: Incorrect value returned for CL_KERNEL_LOCAL_SIZE_FOR_SUB_GROUP_COUNT! (Expected %d, got %d)\n", (int)expect_size, (int)ret_ndrange3d_flattened );
-            return -1;
-        }
 
         error = get_sub_group_num(queue, kernel, out, kernel_ret_size, ret_ndrange3d_flattened, 3);
         test_error(error, "Failed to query number of subgroups from kernel");

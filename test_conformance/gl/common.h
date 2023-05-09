@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,17 +18,19 @@
 
 #include "testBase.h"
 
-typedef struct {
-  size_t width;
-  size_t height;
-  size_t depth;
+typedef struct
+{
+    size_t width;
+    size_t height;
+    size_t depth;
 } sizevec_t;
 
-struct format {
-  GLenum internal;
-  GLenum formattype;
-  GLenum datatype;
-  ExplicitType type;
+struct format
+{
+    GLenum internal;
+    GLenum formattype;
+    GLenum datatype;
+    ExplicitType type;
 };
 
 // These are the typically tested formats.
@@ -78,6 +80,6 @@ int test_images_get_info_common(cl_device_id device, cl_context context,
                                 size_t ntargets, sizevec_t *sizes,
                                 size_t nsizes);
 
-int is_rgb_101010_supported( cl_context context, GLenum gl_target );
+int is_rgb_101010_supported(cl_context context, GLenum gl_target);
 
 #endif // __COMMON_H__

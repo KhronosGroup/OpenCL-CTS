@@ -340,7 +340,11 @@ int main(int argc, const char *argv[])
     // Execute tests.
     // Note: don't use the entire harness, because we have a different way of
     // obtaining the device (via the context)
+    test_harness_config config{};
+    config.forceNoContextCreation = true;
+    config.numElementsToUse = 1024;
+    config.queueProps = 0;
     errNum = parseAndCallCommandLineTests(argCount, argList, devices[device_no],
-                                          test_num, test_list, true, 0, 1024);
+                                          test_num, test_list, config);
     return errNum;
 }
