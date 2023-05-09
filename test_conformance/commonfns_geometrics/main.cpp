@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,52 +24,54 @@
 #endif
 
 int g_arrVecSizes[kVectorSizeCount + kStrangeVectorSizeCount];
-int g_arrStrangeVectorSizes[kStrangeVectorSizeCount] = {3};
+int g_arrStrangeVectorSizes[kStrangeVectorSizeCount] = { 3 };
 
-static void initVecSizes() {
+static void initVecSizes()
+{
     int i;
-    for(i = 0; i < kVectorSizeCount; ++i) {
-        g_arrVecSizes[i] = (1<<i);
+    for (i = 0; i < kVectorSizeCount; ++i)
+    {
+        g_arrVecSizes[i] = (1 << i);
     }
-    for(; i < kVectorSizeCount + kStrangeVectorSizeCount; ++i) {
-        g_arrVecSizes[i] = g_arrStrangeVectorSizes[i-kVectorSizeCount];
+    for (; i < kVectorSizeCount + kStrangeVectorSizeCount; ++i)
+    {
+        g_arrVecSizes[i] = g_arrStrangeVectorSizes[i - kVectorSizeCount];
     }
 }
 
 
 test_definition test_list[] = {
-    ADD_TEST( clamp ),
-    ADD_TEST( degrees ),
-    ADD_TEST( fmax ),
-    ADD_TEST( fmaxf ),
-    ADD_TEST( fmin ),
-    ADD_TEST( fminf ),
-    ADD_TEST( max ),
-    ADD_TEST( maxf ),
-    ADD_TEST( min ),
-    ADD_TEST( minf ),
-    ADD_TEST( mix ),
-    ADD_TEST( radians ),
-    ADD_TEST( step ),
-    ADD_TEST( stepf ),
-    ADD_TEST( smoothstep ),
-    ADD_TEST( smoothstepf ),
-    ADD_TEST( sign ),
-    ADD_TEST( geom_cross ),
-    ADD_TEST( geom_dot ),
-    ADD_TEST( geom_distance ),
-    ADD_TEST( geom_fast_distance ),
-    ADD_TEST( geom_length ),
-    ADD_TEST( geom_fast_length ),
-    ADD_TEST( geom_normalize ),
-    ADD_TEST( geom_fast_normalize ),
+    ADD_TEST(clamp),
+    ADD_TEST(degrees),
+    ADD_TEST(fmax),
+    ADD_TEST(fmaxf),
+    ADD_TEST(fmin),
+    ADD_TEST(fminf),
+    ADD_TEST(max),
+    ADD_TEST(maxf),
+    ADD_TEST(min),
+    ADD_TEST(minf),
+    ADD_TEST(mix),
+    ADD_TEST(radians),
+    ADD_TEST(step),
+    ADD_TEST(stepf),
+    ADD_TEST(smoothstep),
+    ADD_TEST(smoothstepf),
+    ADD_TEST(sign),
+    ADD_TEST(geom_cross),
+    ADD_TEST(geom_dot),
+    ADD_TEST(geom_distance),
+    ADD_TEST(geom_fast_distance),
+    ADD_TEST(geom_length),
+    ADD_TEST(geom_fast_length),
+    ADD_TEST(geom_normalize),
+    ADD_TEST(geom_fast_normalize),
 };
 
-const int test_num = ARRAY_SIZE( test_list );
+const int test_num = ARRAY_SIZE(test_list);
 
 int main(int argc, const char *argv[])
 {
     initVecSizes();
     return runTestHarness(argc, argv, test_num, test_list, false, 0);
 }
-

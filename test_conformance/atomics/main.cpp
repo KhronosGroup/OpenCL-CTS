@@ -23,14 +23,19 @@
 #include <string>
 
 bool gHost = false; // flag for testing native host threads (test verification)
-bool gOldAPI = false; // flag for testing with old API (OpenCL 1.2) - test verification
+bool gOldAPI =
+    false; // flag for testing with old API (OpenCL 1.2) - test verification
 bool gContinueOnError = false; // execute all cases even when errors detected
-bool gNoGlobalVariables = false; // disable cases with global atomics in program scope
+bool gNoGlobalVariables =
+    false; // disable cases with global atomics in program scope
 bool gNoGenericAddressSpace = false; // disable cases with generic address space
-bool gUseHostPtr = false; // use malloc/free with CL_MEM_USE_HOST_PTR instead of clSVMAlloc/clSVMFree
+bool gUseHostPtr = false; // use malloc/free with CL_MEM_USE_HOST_PTR instead of
+                          // clSVMAlloc/clSVMFree
 bool gDebug = false; // always print OpenCL kernel code
-int gInternalIterations = 10000; // internal test iterations for atomic operation, sufficient to verify atomicity
-int gMaxDeviceThreads = 1024; // maximum number of threads executed on OCL device
+int gInternalIterations = 10000; // internal test iterations for atomic
+                                 // operation, sufficient to verify atomicity
+int gMaxDeviceThreads =
+    1024; // maximum number of threads executed on OCL device
 cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
 
@@ -38,43 +43,89 @@ cl_device_atomic_capabilities gAtomicMemCap,
 #include <unistd.h>
 #endif
 
-extern int test_atomic_init(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_store(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_load(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_store_load(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_exchange(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_compare_exchange_weak(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_compare_exchange_strong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_add(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_sub(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_and(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_or(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_orand(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_xor(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_xor2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_min(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_max(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_flag(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_atomic_init(cl_device_id deviceID, cl_context context,
+                            cl_command_queue queue, int num_elements);
+extern int test_atomic_store(cl_device_id deviceID, cl_context context,
+                             cl_command_queue queue, int num_elements);
+extern int test_atomic_load(cl_device_id deviceID, cl_context context,
+                            cl_command_queue queue, int num_elements);
+extern int test_atomic_store_load(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements);
+extern int test_atomic_exchange(cl_device_id deviceID, cl_context context,
+                                cl_command_queue queue, int num_elements);
+extern int test_atomic_compare_exchange_weak(cl_device_id deviceID,
+                                             cl_context context,
+                                             cl_command_queue queue,
+                                             int num_elements);
+extern int test_atomic_compare_exchange_strong(cl_device_id deviceID,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
+extern int test_atomic_fetch_add(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+extern int test_atomic_fetch_sub(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+extern int test_atomic_fetch_and(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+extern int test_atomic_fetch_or(cl_device_id deviceID, cl_context context,
+                                cl_command_queue queue, int num_elements);
+extern int test_atomic_fetch_orand(cl_device_id deviceID, cl_context context,
+                                   cl_command_queue queue, int num_elements);
+extern int test_atomic_fetch_xor(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+extern int test_atomic_fetch_xor2(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements);
+extern int test_atomic_fetch_min(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+extern int test_atomic_fetch_max(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+extern int test_atomic_flag(cl_device_id deviceID, cl_context context,
+                            cl_command_queue queue, int num_elements);
+extern int test_atomic_fence(cl_device_id deviceID, cl_context context,
+                             cl_command_queue queue, int num_elements);
 
-extern int test_svm_atomic_init(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_store(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_load(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_store_load(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_exchange(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_compare_exchange_weak(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_compare_exchange_strong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_add(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_sub(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_and(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_or(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_orand(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_xor(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_xor2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_min(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_max(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_flag(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_init(cl_device_id deviceID, cl_context context,
+                                cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_store(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_load(cl_device_id deviceID, cl_context context,
+                                cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_store_load(cl_device_id deviceID, cl_context context,
+                                      cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_exchange(cl_device_id deviceID, cl_context context,
+                                    cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_compare_exchange_weak(cl_device_id deviceID,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 int num_elements);
+extern int test_svm_atomic_compare_exchange_strong(cl_device_id deviceID,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int num_elements);
+extern int test_svm_atomic_fetch_add(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_sub(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_and(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_or(cl_device_id deviceID, cl_context context,
+                                    cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_orand(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+extern int test_svm_atomic_fetch_xor(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_xor2(cl_device_id deviceID, cl_context context,
+                                      cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_min(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fetch_max(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_flag(cl_device_id deviceID, cl_context context,
+                                cl_command_queue queue, int num_elements);
+extern int test_svm_atomic_fence(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements);
 
 // clang-format off
 test_definition test_list[] = {
@@ -97,48 +148,49 @@ test_definition test_list[] = {
 // clang-format on
 
 test_definition test_list_check[] = {
-    ADD_TEST( atomic_init ),
-    ADD_TEST( atomic_store ),
-    ADD_TEST( atomic_load ),
-    ADD_TEST( atomic_exchange ),
-    ADD_TEST( atomic_compare_exchange_weak ),
-    ADD_TEST( atomic_compare_exchange_strong ),
-    ADD_TEST( atomic_fetch_add ),
-    ADD_TEST( atomic_fetch_sub ),
-    ADD_TEST( atomic_fetch_and ),
-    ADD_TEST( atomic_fetch_or ),
-    ADD_TEST( atomic_fetch_orand ),
-    ADD_TEST( atomic_fetch_xor ),
-    ADD_TEST( atomic_fetch_xor2 ),
-    ADD_TEST( atomic_fetch_min ),
-    ADD_TEST( atomic_fetch_max ),
-    ADD_TEST( atomic_flag ),
-    ADD_TEST( atomic_fence ),
+    ADD_TEST(atomic_init),
+    ADD_TEST(atomic_store),
+    ADD_TEST(atomic_load),
+    ADD_TEST(atomic_exchange),
+    ADD_TEST(atomic_compare_exchange_weak),
+    ADD_TEST(atomic_compare_exchange_strong),
+    ADD_TEST(atomic_fetch_add),
+    ADD_TEST(atomic_fetch_sub),
+    ADD_TEST(atomic_fetch_and),
+    ADD_TEST(atomic_fetch_or),
+    ADD_TEST(atomic_fetch_orand),
+    ADD_TEST(atomic_fetch_xor),
+    ADD_TEST(atomic_fetch_xor2),
+    ADD_TEST(atomic_fetch_min),
+    ADD_TEST(atomic_fetch_max),
+    ADD_TEST(atomic_flag),
+    ADD_TEST(atomic_fence),
 
-    ADD_TEST( svm_atomic_init ),
-    ADD_TEST( svm_atomic_store ),
-    ADD_TEST( svm_atomic_load ),
-    ADD_TEST( svm_atomic_exchange ),
-    ADD_TEST( svm_atomic_compare_exchange_weak ),
-    ADD_TEST( svm_atomic_compare_exchange_strong ),
-    ADD_TEST( svm_atomic_fetch_add ),
-    ADD_TEST( svm_atomic_fetch_sub ),
-    ADD_TEST( svm_atomic_fetch_and ),
-    ADD_TEST( svm_atomic_fetch_or ),
-    ADD_TEST( svm_atomic_fetch_orand ),
-    ADD_TEST( svm_atomic_fetch_xor ),
-    ADD_TEST( svm_atomic_fetch_xor2 ),
-    ADD_TEST( svm_atomic_fetch_min ),
-    ADD_TEST( svm_atomic_fetch_max ),
-    ADD_TEST( svm_atomic_flag ),
-    ADD_TEST( svm_atomic_fence ),
+    ADD_TEST(svm_atomic_init),
+    ADD_TEST(svm_atomic_store),
+    ADD_TEST(svm_atomic_load),
+    ADD_TEST(svm_atomic_exchange),
+    ADD_TEST(svm_atomic_compare_exchange_weak),
+    ADD_TEST(svm_atomic_compare_exchange_strong),
+    ADD_TEST(svm_atomic_fetch_add),
+    ADD_TEST(svm_atomic_fetch_sub),
+    ADD_TEST(svm_atomic_fetch_and),
+    ADD_TEST(svm_atomic_fetch_or),
+    ADD_TEST(svm_atomic_fetch_orand),
+    ADD_TEST(svm_atomic_fetch_xor),
+    ADD_TEST(svm_atomic_fetch_xor2),
+    ADD_TEST(svm_atomic_fetch_min),
+    ADD_TEST(svm_atomic_fetch_max),
+    ADD_TEST(svm_atomic_flag),
+    ADD_TEST(svm_atomic_fence),
 };
 
 
 const int test_num = ARRAY_SIZE(test_list);
 const int test_num_check = ARRAY_SIZE(test_list_check);
 
-test_status InitCL(cl_device_id device) {
+test_status InitCL(cl_device_id device)
+{
     auto version = get_device_cl_version(device);
     auto expected_min_version = Version(2, 0);
 
@@ -238,33 +290,46 @@ test_status InitCL(cl_device_id device) {
 int main(int argc, const char *argv[])
 {
     int status = runTestHarness(argc, argv, test_num, test_list, false, 0);
-    if(status != 0) {
+    if (status != 0)
+    {
         return status;
     }
     bool noCert = false;
-    while(true)
+    while (true)
     {
-        if(std::string(argv[argc-1]) == "-h")
+        if (std::string(argv[argc - 1]) == "-h")
         {
             log_info("Test options:\n");
-            log_info("  '-host'                    flag for testing native host threads (test verification)\n");
-            log_info("  '-oldAPI'                  flag for testing with old API (OpenCL 1.2) - test verification\n");
-            log_info("  '-continueOnError'         execute all cases even when errors detected\n");
-            log_info("  '-noGlobalVariables'       disable cases with global atomics in program scope\n");
-            log_info("  '-noGenericAddressSpace'   disable cases with generic address space\n");
-            log_info("  '-useHostPtr'              use malloc/free with CL_MEM_USE_HOST_PTR instead of clSVMAlloc/clSVMFree\n");
-            log_info("  '-debug'                   always print OpenCL kernel code\n");
-            log_info("  '-internalIterations <X>'  internal test iterations for atomic operation, sufficient to verify atomicity\n");
-            log_info("  '-maxDeviceThreads <X>'    maximum number of threads executed on OCL device");
+            log_info("  '-host'                    flag for testing native "
+                     "host threads (test verification)\n");
+            log_info("  '-oldAPI'                  flag for testing with old "
+                     "API (OpenCL 1.2) - test verification\n");
+            log_info("  '-continueOnError'         execute all cases even when "
+                     "errors detected\n");
+            log_info("  '-noGlobalVariables'       disable cases with global "
+                     "atomics in program scope\n");
+            log_info("  '-noGenericAddressSpace'   disable cases with generic "
+                     "address space\n");
+            log_info("  '-useHostPtr'              use malloc/free with "
+                     "CL_MEM_USE_HOST_PTR instead of clSVMAlloc/clSVMFree\n");
+            log_info("  '-debug'                   always print OpenCL kernel "
+                     "code\n");
+            log_info("  '-internalIterations <X>'  internal test iterations "
+                     "for atomic operation, sufficient to verify atomicity\n");
+            log_info("  '-maxDeviceThreads <X>'    maximum number of threads "
+                     "executed on OCL device");
 
             break;
         }
-        if(std::string(argv[argc-1]) == "-host") // temporary option for testing native host threads
+        if (std::string(argv[argc - 1])
+            == "-host") // temporary option for testing native host threads
         {
             gHost = true;
             noCert = true;
         }
-        else if(std::string(argv[argc-1]) == "-oldAPI") // temporary flag for testing with old API (OpenCL 1.2)
+        else if (std::string(argv[argc - 1])
+                 == "-oldAPI") // temporary flag for testing with old API
+                               // (OpenCL 1.2)
         {
             gOldAPI = true;
             gNoGlobalVariables = true;
@@ -272,39 +337,57 @@ int main(int argc, const char *argv[])
             gUseHostPtr = true;
             noCert = true;
         }
-        else if(std::string(argv[argc-1]) == "-continueOnError") // execute all cases even when errors detected
+        else if (std::string(argv[argc - 1])
+                 == "-continueOnError") // execute all cases even when errors
+                                        // detected
             gContinueOnError = true;
-        else if(std::string(argv[argc-1]) == "-noGlobalVariables") // disable cases with global atomics in program scope
+        else if (std::string(argv[argc - 1])
+                 == "-noGlobalVariables") // disable cases with global atomics
+                                          // in program scope
         {
             gNoGlobalVariables = true;
             noCert = true;
         }
-        else if(std::string(argv[argc-1]) == "-noGenericAddressSpace") // disable cases with generic address space
+        else if (std::string(argv[argc - 1])
+                 == "-noGenericAddressSpace") // disable cases with generic
+                                              // address space
         {
             gNoGenericAddressSpace = true;
             noCert = true;
         }
-        else if(std::string(argv[argc-1]) == "-useHostPtr") // use malloc/free with CL_MEM_USE_HOST_PTR instead of clSVMAlloc/clSVMFree
+        else if (std::string(argv[argc - 1])
+                 == "-useHostPtr") // use malloc/free with CL_MEM_USE_HOST_PTR
+                                   // instead of clSVMAlloc/clSVMFree
         {
             gUseHostPtr = true;
             noCert = true;
         }
-        else if(std::string(argv[argc-1]) == "-debug") // print OpenCL kernel code
+        else if (std::string(argv[argc - 1])
+                 == "-debug") // print OpenCL kernel code
             gDebug = true;
-        else if(argc > 2 && std::string(argv[argc-2]) == "-internalIterations") // internal test iterations for atomic operation, sufficient to verify atomicity
+        else if (argc > 2
+                 && std::string(argv[argc - 2])
+                     == "-internalIterations") // internal test iterations for
+                                               // atomic operation, sufficient
+                                               // to verify atomicity
         {
-            gInternalIterations = atoi(argv[argc-1]);
-            if(gInternalIterations < 1)
+            gInternalIterations = atoi(argv[argc - 1]);
+            if (gInternalIterations < 1)
             {
-                log_info("Invalid value: Number of internal iterations (%d) must be > 0\n", gInternalIterations);
+                log_info("Invalid value: Number of internal iterations (%d) "
+                         "must be > 0\n",
+                         gInternalIterations);
                 return -1;
             }
             argc--;
             noCert = true;
         }
-        else if(argc > 2 && std::string(argv[argc-2]) == "-maxDeviceThreads") // maximum number of threads executed on OCL device
+        else if (argc > 2
+                 && std::string(argv[argc - 2])
+                     == "-maxDeviceThreads") // maximum number of threads
+                                             // executed on OCL device
         {
-            gMaxDeviceThreads = atoi(argv[argc-1]);
+            gMaxDeviceThreads = atoi(argv[argc - 1]);
             argc--;
             noCert = true;
         }
@@ -312,13 +395,18 @@ int main(int argc, const char *argv[])
             break;
         argc--;
     }
-    if(noCert)
+    if (noCert)
     {
-        log_info("\n" );
-        log_info("***                                                                        ***\n");
-        log_info("*** WARNING: Test execution in debug mode (forced by command-line option)! ***\n");
-        log_info("*** Use of this mode is not sufficient to verify correctness.              ***\n");
-        log_info("***                                                                        ***\n");
+        log_info("\n");
+        log_info("***                                                          "
+                 "              ***\n");
+        log_info("*** WARNING: Test execution in debug mode (forced by "
+                 "command-line option)! ***\n");
+        log_info("*** Use of this mode is not sufficient to verify "
+                 "correctness.              ***\n");
+        log_info("***                                                          "
+                 "              ***\n");
     }
-    return runTestHarnessWithCheck(argc, argv, test_num_check, test_list_check, false, false, InitCL);
+    return runTestHarnessWithCheck(argc, argv, test_num_check, test_list_check,
+                                   false, false, InitCL);
 }

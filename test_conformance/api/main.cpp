@@ -151,8 +151,8 @@ test_definition test_list[] = {
 };
 
 test_definition test_list_with_check[] = {
-    ADD_TEST( timer_resolution_queries ),
-    ADD_TEST( device_and_host_timers ),
+    ADD_TEST(timer_resolution_queries),
+    ADD_TEST(device_and_host_timers),
 };
 
 const int test_num = ARRAY_SIZE(test_list);
@@ -202,7 +202,7 @@ test_status InitCL(cl_device_id device)
 int main(int argc, const char *argv[])
 {
     int status = runTestHarness(argc, argv, test_num, test_list, false, 0);
-    if(status != 0)
-        return status;
-    return runTestHarnessWithCheck(argc, argv, test_num_with_check, test_list_with_check, false, 0, InitCL);
+    if (status != 0) return status;
+    return runTestHarnessWithCheck(argc, argv, test_num_with_check,
+                                   test_list_with_check, false, 0, InitCL);
 }

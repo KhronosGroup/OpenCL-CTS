@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,71 +22,82 @@
 
 #include "procs.h"
 
-static int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems);
+static int test_stepf_double(cl_device_id device, cl_context context,
+                             cl_command_queue queue, int n_elems);
 
 
 static const char *step_kernel_code =
-"__kernel void test_step(__global float *srcA, __global float *srcB, __global float *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = step(srcA[tid], srcB[tid]);\n"
-"}\n";
+    "__kernel void test_step(__global float *srcA, __global float *srcB, "
+    "__global float *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = step(srcA[tid], srcB[tid]);\n"
+    "}\n";
 
 static const char *step2_kernel_code =
-"__kernel void test_step2(__global float *srcA, __global float2 *srcB, __global float2 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = step(srcA[tid], srcB[tid]);\n"
-"}\n";
+    "__kernel void test_step2(__global float *srcA, __global float2 *srcB, "
+    "__global float2 *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = step(srcA[tid], srcB[tid]);\n"
+    "}\n";
 
 static const char *step4_kernel_code =
-"__kernel void test_step4(__global float *srcA, __global float4 *srcB, __global float4 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = step(srcA[tid], srcB[tid]);\n"
-"}\n";
+    "__kernel void test_step4(__global float *srcA, __global float4 *srcB, "
+    "__global float4 *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = step(srcA[tid], srcB[tid]);\n"
+    "}\n";
 
 static const char *step8_kernel_code =
-"__kernel void test_step8(__global float *srcA, __global float8 *srcB, __global float8 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = step(srcA[tid], srcB[tid]);\n"
-"}\n";
+    "__kernel void test_step8(__global float *srcA, __global float8 *srcB, "
+    "__global float8 *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = step(srcA[tid], srcB[tid]);\n"
+    "}\n";
 
 static const char *step16_kernel_code =
-"__kernel void test_step16(__global float *srcA, __global float16 *srcB, __global float16 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = step(srcA[tid], srcB[tid]);\n"
-"}\n";
+    "__kernel void test_step16(__global float *srcA, __global float16 *srcB, "
+    "__global float16 *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = step(srcA[tid], srcB[tid]);\n"
+    "}\n";
 
 static const char *step3_kernel_code =
-"__kernel void test_step3(__global float *srcA, __global float *srcB, __global float *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    vstore3(step(srcA[tid], vload3(tid,srcB)) ,tid,dst);\n"
-"}\n";
+    "__kernel void test_step3(__global float *srcA, __global float *srcB, "
+    "__global float *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    vstore3(step(srcA[tid], vload3(tid,srcB)) ,tid,dst);\n"
+    "}\n";
 
 
-static int
-verify_step( cl_float *inptrA, cl_float *inptrB, cl_float *outptr, int n, int veclen)
+static int verify_step(cl_float *inptrA, cl_float *inptrB, cl_float *outptr,
+                       int n, int veclen)
 {
-    float       r;
-    int         i, j;
+    float r;
+    int i, j;
 
-    for (i=0; i<n; ) {
-        int ii = i/veclen;
-        for (j=0; j<veclen && i<n; ++j, ++i) {
+    for (i = 0; i < n;)
+    {
+        int ii = i / veclen;
+        for (j = 0; j < veclen && i < n; ++j, ++i)
+        {
             r = (inptrB[i] < inptrA[ii]) ? 0.0f : 1.0f;
             if (r != outptr[i])
             {
-                log_error( "Failure @ {%d, element %d}: step(%a,%a) -> *%a vs %a\n", ii, j, inptrA[ii], inptrB[i], r, outptr[i] );
+                log_error(
+                    "Failure @ {%d, element %d}: step(%a,%a) -> *%a vs %a\n",
+                    ii, j, inptrA[ii], inptrB[i], r, outptr[i]);
                 return -1;
             }
         }
@@ -95,22 +106,23 @@ verify_step( cl_float *inptrA, cl_float *inptrB, cl_float *outptr, int n, int ve
     return 0;
 }
 
-int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue,
+               int n_elems)
 {
-    cl_mem      streams[3];
-    cl_float    *input_ptr[2], *output_ptr, *p;
-    cl_program  program[kTotalVecCount];
-    cl_kernel   kernel[kTotalVecCount];
-    size_t  threads[1];
+    cl_mem streams[3];
+    cl_float *input_ptr[2], *output_ptr, *p;
+    cl_program program[kTotalVecCount];
+    cl_kernel kernel[kTotalVecCount];
+    size_t threads[1];
     int num_elements;
     int err;
     int i;
     MTdata d;
     num_elements = n_elems * 16;
 
-    input_ptr[0] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-    input_ptr[1] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-    output_ptr = (cl_float*)malloc(sizeof(cl_float) * num_elements);
+    input_ptr[0] = (cl_float *)malloc(sizeof(cl_float) * num_elements);
+    input_ptr[1] = (cl_float *)malloc(sizeof(cl_float) * num_elements);
+    output_ptr = (cl_float *)malloc(sizeof(cl_float) * num_elements);
     streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                 sizeof(cl_float) * num_elements, NULL, NULL);
     if (!streams[0])
@@ -134,55 +146,60 @@ int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, 
     }
 
     p = input_ptr[0];
-    d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
+    d = init_genrand(gRandomSeed);
+    for (i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float(-0x40000000, 0x40000000, d);
     }
     p = input_ptr[1];
-    for (i=0; i<num_elements; i++)
+    for (i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float(-0x40000000, 0x40000000, d);
     }
-    free_mtdata(d);   d = NULL;
+    free_mtdata(d);
+    d = NULL;
 
-    err = clEnqueueWriteBuffer( queue, streams[0], true, 0, sizeof(cl_float)*num_elements, (void *)input_ptr[0], 0, NULL, NULL );
+    err = clEnqueueWriteBuffer(queue, streams[0], true, 0,
+                               sizeof(cl_float) * num_elements,
+                               (void *)input_ptr[0], 0, NULL, NULL);
     if (err != CL_SUCCESS)
     {
         log_error("clWriteArray failed\n");
         return -1;
     }
-    err = clEnqueueWriteBuffer( queue, streams[1], true, 0, sizeof(cl_float)*num_elements, (void *)input_ptr[1], 0, NULL, NULL );
+    err = clEnqueueWriteBuffer(queue, streams[1], true, 0,
+                               sizeof(cl_float) * num_elements,
+                               (void *)input_ptr[1], 0, NULL, NULL);
     if (err != CL_SUCCESS)
     {
         log_error("clWriteArray failed\n");
         return -1;
     }
 
-    err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &step_kernel_code, "test_step" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &step2_kernel_code, "test_step2" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &step4_kernel_code, "test_step4" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &step8_kernel_code, "test_step8" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &step16_kernel_code, "test_step16" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &step3_kernel_code, "test_step3" );
-    if (err)
-        return -1;
+    err = create_single_kernel_helper(context, &program[0], &kernel[0], 1,
+                                      &step_kernel_code, "test_step");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[1], &kernel[1], 1,
+                                      &step2_kernel_code, "test_step2");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[2], &kernel[2], 1,
+                                      &step4_kernel_code, "test_step4");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[3], &kernel[3], 1,
+                                      &step8_kernel_code, "test_step8");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[4], &kernel[4], 1,
+                                      &step16_kernel_code, "test_step16");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[5], &kernel[5], 1,
+                                      &step3_kernel_code, "test_step3");
+    if (err) return -1;
 
-    for (i=0; i <kTotalVecCount; i++)
+    for (i = 0; i < kTotalVecCount; i++)
     {
-        err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );
-        err |= clSetKernelArg(kernel[i], 1, sizeof streams[1], &streams[1] );
-        err |= clSetKernelArg(kernel[i], 2, sizeof streams[2], &streams[2] );
+        err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0]);
+        err |= clSetKernelArg(kernel[i], 1, sizeof streams[1], &streams[1]);
+        err |= clSetKernelArg(kernel[i], 2, sizeof streams[2], &streams[2]);
         if (err != CL_SUCCESS)
         {
             log_error("clSetKernelArgs failed\n");
@@ -191,16 +208,19 @@ int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, 
     }
 
     threads[0] = (size_t)n_elems;
-    for (i=0; i<kTotalVecCount; i++)
+    for (i = 0; i < kTotalVecCount; i++)
     {
-        err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL );
+        err = clEnqueueNDRangeKernel(queue, kernel[i], 1, NULL, threads, NULL,
+                                     0, NULL, NULL);
         if (err != CL_SUCCESS)
         {
             log_error("clEnqueueNDRangeKernel failed\n");
             return -1;
         }
 
-        err = clEnqueueReadBuffer( queue, streams[2], true, 0, sizeof(cl_float)*num_elements, (void *)output_ptr, 0, NULL, NULL );
+        err = clEnqueueReadBuffer(queue, streams[2], true, 0,
+                                  sizeof(cl_float) * num_elements,
+                                  (void *)output_ptr, 0, NULL, NULL);
         if (err != CL_SUCCESS)
         {
             log_error("clEnqueueReadBuffer failed\n");
@@ -210,7 +230,8 @@ int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, 
         switch (i)
         {
             case 0:
-                err = verify_step(input_ptr[0], input_ptr[1], output_ptr, n_elems, 1);
+                err = verify_step(input_ptr[0], input_ptr[1], output_ptr,
+                                  n_elems, 1);
                 if (err)
                     log_error("STEP float test failed\n");
                 else
@@ -218,7 +239,8 @@ int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, 
                 break;
 
             case 1:
-                err = verify_step(input_ptr[0], input_ptr[1], output_ptr, n_elems*2, 2);
+                err = verify_step(input_ptr[0], input_ptr[1], output_ptr,
+                                  n_elems * 2, 2);
                 if (err)
                     log_error("STEP float2 test failed\n");
                 else
@@ -226,7 +248,8 @@ int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, 
                 break;
 
             case 2:
-                err = verify_step(input_ptr[0], input_ptr[1], output_ptr, n_elems*4, 4);
+                err = verify_step(input_ptr[0], input_ptr[1], output_ptr,
+                                  n_elems * 4, 4);
                 if (err)
                     log_error("STEP float4 test failed\n");
                 else
@@ -234,7 +257,8 @@ int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, 
                 break;
 
             case 3:
-                err = verify_step(input_ptr[0], input_ptr[1], output_ptr, n_elems*8, 8);
+                err = verify_step(input_ptr[0], input_ptr[1], output_ptr,
+                                  n_elems * 8, 8);
                 if (err)
                     log_error("STEP float8 test failed\n");
                 else
@@ -242,7 +266,8 @@ int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, 
                 break;
 
             case 4:
-                err = verify_step(input_ptr[0], input_ptr[1], output_ptr, n_elems*16, 16);
+                err = verify_step(input_ptr[0], input_ptr[1], output_ptr,
+                                  n_elems * 16, 16);
                 if (err)
                     log_error("STEP float16 test failed\n");
                 else
@@ -250,7 +275,8 @@ int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, 
                 break;
 
             case 5:
-                err = verify_step(input_ptr[0], input_ptr[1], output_ptr, n_elems*3, 3);
+                err = verify_step(input_ptr[0], input_ptr[1], output_ptr,
+                                  n_elems * 3, 3);
                 if (err)
                     log_error("STEP float3 test failed\n");
                 else
@@ -258,14 +284,13 @@ int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, 
                 break;
         }
 
-        if (err)
-            break;
+        if (err) break;
     }
 
     clReleaseMemObject(streams[0]);
     clReleaseMemObject(streams[1]);
     clReleaseMemObject(streams[2]);
-    for (i=0; i<kTotalVecCount; i++)
+    for (i = 0; i < kTotalVecCount; i++)
     {
         clReleaseKernel(kernel[i]);
         clReleaseProgram(program[i]);
@@ -274,88 +299,98 @@ int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, 
     free(input_ptr[1]);
     free(output_ptr);
 
-    if(err)
-        return err;
+    if (err) return err;
 
-    if( ! is_extension_available( device, "cl_khr_fp64" ))
+    if (!is_extension_available(device, "cl_khr_fp64"))
     {
-        log_info( "Device does not support cl_khr_fp64.  Skipping double precision tests.\n" );
+        log_info("Device does not support cl_khr_fp64.  Skipping double "
+                 "precision tests.\n");
         return 0;
     }
 
-    return test_stepf_double( device, context, queue, n_elems);
+    return test_stepf_double(device, context, queue, n_elems);
 }
 
 #pragma mark -
 
 static const char *step_kernel_code_double =
-"#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
-"__kernel void test_step_double(__global double *srcA, __global double *srcB, __global double *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = step(srcA[tid], srcB[tid]);\n"
-"}\n";
+    "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
+    "__kernel void test_step_double(__global double *srcA, __global double "
+    "*srcB, __global double *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = step(srcA[tid], srcB[tid]);\n"
+    "}\n";
 
 static const char *step2_kernel_code_double =
-"#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
-"__kernel void test_step2_double(__global double *srcA, __global double2 *srcB, __global double2 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = step(srcA[tid], srcB[tid]);\n"
-"}\n";
+    "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
+    "__kernel void test_step2_double(__global double *srcA, __global double2 "
+    "*srcB, __global double2 *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = step(srcA[tid], srcB[tid]);\n"
+    "}\n";
 
 static const char *step4_kernel_code_double =
-"#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
-"__kernel void test_step4_double(__global double *srcA, __global double4 *srcB, __global double4 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = step(srcA[tid], srcB[tid]);\n"
-"}\n";
+    "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
+    "__kernel void test_step4_double(__global double *srcA, __global double4 "
+    "*srcB, __global double4 *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = step(srcA[tid], srcB[tid]);\n"
+    "}\n";
 
 static const char *step8_kernel_code_double =
-"#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
-"__kernel void test_step8_double(__global double *srcA, __global double8 *srcB, __global double8 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = step(srcA[tid], srcB[tid]);\n"
-"}\n";
+    "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
+    "__kernel void test_step8_double(__global double *srcA, __global double8 "
+    "*srcB, __global double8 *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = step(srcA[tid], srcB[tid]);\n"
+    "}\n";
 
 static const char *step16_kernel_code_double =
-"#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
-"__kernel void test_step16_double(__global double *srcA, __global double16 *srcB, __global double16 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = step(srcA[tid], srcB[tid]);\n"
-"}\n";
+    "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
+    "__kernel void test_step16_double(__global double *srcA, __global double16 "
+    "*srcB, __global double16 *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = step(srcA[tid], srcB[tid]);\n"
+    "}\n";
 
 static const char *step3_kernel_code_double =
-"#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
-"__kernel void test_step3_double(__global double *srcA, __global double *srcB, __global double *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    vstore3(step(srcA[tid], vload3(tid,srcB)) ,tid,dst);\n"
-"}\n";
+    "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
+    "__kernel void test_step3_double(__global double *srcA, __global double "
+    "*srcB, __global double *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    vstore3(step(srcA[tid], vload3(tid,srcB)) ,tid,dst);\n"
+    "}\n";
 
 
-static int
-verify_step_double(cl_double *inptrA, cl_double *inptrB, cl_double *outptr, int n, int veclen)
+static int verify_step_double(cl_double *inptrA, cl_double *inptrB,
+                              cl_double *outptr, int n, int veclen)
 {
     double r;
-    int    i, j;
+    int i, j;
 
-    for (i=0; i<n; ) {
-        int ii = i/veclen;
-        for (j=0; j<veclen && i<n; ++j, ++i) {
+    for (i = 0; i < n;)
+    {
+        int ii = i / veclen;
+        for (j = 0; j < veclen && i < n; ++j, ++i)
+        {
             r = (inptrB[i] < inptrA[ii]) ? 0.0 : 1.0;
             if (r != outptr[i])
             {
-                log_error( "Failure @ {%d, element %d}: step(%a,%a) -> *%a vs %a\n", ii, j, inptrA[ii], inptrB[i], r, outptr[i] );
+                log_error(
+                    "Failure @ {%d, element %d}: step(%a,%a) -> *%a vs %a\n",
+                    ii, j, inptrA[ii], inptrB[i], r, outptr[i]);
                 return -1;
             }
         }
@@ -364,22 +399,23 @@ verify_step_double(cl_double *inptrA, cl_double *inptrB, cl_double *outptr, int 
     return 0;
 }
 
-int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+int test_stepf_double(cl_device_id device, cl_context context,
+                      cl_command_queue queue, int n_elems)
 {
-    cl_mem      streams[3];
-    cl_double  *input_ptr[2], *output_ptr, *p;
-    cl_program  program[kTotalVecCount];
-    cl_kernel   kernel[kTotalVecCount];
-    size_t  threads[1];
+    cl_mem streams[3];
+    cl_double *input_ptr[2], *output_ptr, *p;
+    cl_program program[kTotalVecCount];
+    cl_kernel kernel[kTotalVecCount];
+    size_t threads[1];
     int num_elements;
     int err;
     int i;
-    MTdata    d;
+    MTdata d;
     num_elements = n_elems * 16;
 
-    input_ptr[0] = (cl_double*)malloc(sizeof(cl_double) * num_elements);
-    input_ptr[1] = (cl_double*)malloc(sizeof(cl_double) * num_elements);
-    output_ptr = (cl_double*)malloc(sizeof(cl_double) * num_elements);
+    input_ptr[0] = (cl_double *)malloc(sizeof(cl_double) * num_elements);
+    input_ptr[1] = (cl_double *)malloc(sizeof(cl_double) * num_elements);
+    output_ptr = (cl_double *)malloc(sizeof(cl_double) * num_elements);
     streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                 sizeof(cl_double) * num_elements, NULL, NULL);
     if (!streams[0])
@@ -403,53 +439,64 @@ int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue 
     }
 
     p = input_ptr[0];
-    d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
+    d = init_genrand(gRandomSeed);
+    for (i = 0; i < num_elements; i++)
         p[i] = get_random_double(-0x40000000, 0x40000000, d);
 
     p = input_ptr[1];
-    for (i=0; i<num_elements; i++)
+    for (i = 0; i < num_elements; i++)
         p[i] = get_random_double(-0x40000000, 0x40000000, d);
 
-    free_mtdata(d);   d = NULL;
+    free_mtdata(d);
+    d = NULL;
 
-    err = clEnqueueWriteBuffer( queue, streams[0], true, 0, sizeof(cl_double)*num_elements, (void *)input_ptr[0], 0, NULL, NULL );
+    err = clEnqueueWriteBuffer(queue, streams[0], true, 0,
+                               sizeof(cl_double) * num_elements,
+                               (void *)input_ptr[0], 0, NULL, NULL);
     if (err != CL_SUCCESS)
     {
         log_error("clWriteArray failed\n");
         return -1;
     }
-    err = clEnqueueWriteBuffer( queue, streams[1], true, 0, sizeof(cl_double)*num_elements, (void *)input_ptr[1], 0, NULL, NULL );
+    err = clEnqueueWriteBuffer(queue, streams[1], true, 0,
+                               sizeof(cl_double) * num_elements,
+                               (void *)input_ptr[1], 0, NULL, NULL);
     if (err != CL_SUCCESS)
     {
         log_error("clWriteArray failed\n");
         return -1;
     }
 
-    err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &step_kernel_code_double, "test_step_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &step2_kernel_code_double, "test_step2_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &step4_kernel_code_double, "test_step4_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &step8_kernel_code_double, "test_step8_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &step16_kernel_code_double, "test_step16_double" );
-    if (err)
-        return -1;
-    err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &step3_kernel_code_double, "test_step3_double" );
-    if (err)
-        return -1;
+    err = create_single_kernel_helper(context, &program[0], &kernel[0], 1,
+                                      &step_kernel_code_double,
+                                      "test_step_double");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[1], &kernel[1], 1,
+                                      &step2_kernel_code_double,
+                                      "test_step2_double");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[2], &kernel[2], 1,
+                                      &step4_kernel_code_double,
+                                      "test_step4_double");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[3], &kernel[3], 1,
+                                      &step8_kernel_code_double,
+                                      "test_step8_double");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[4], &kernel[4], 1,
+                                      &step16_kernel_code_double,
+                                      "test_step16_double");
+    if (err) return -1;
+    err = create_single_kernel_helper(context, &program[5], &kernel[5], 1,
+                                      &step3_kernel_code_double,
+                                      "test_step3_double");
+    if (err) return -1;
 
-    for (i=0; i <kTotalVecCount; i++)
+    for (i = 0; i < kTotalVecCount; i++)
     {
-        err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );
-        err |= clSetKernelArg(kernel[i], 1, sizeof streams[1], &streams[1] );
-        err |= clSetKernelArg(kernel[i], 2, sizeof streams[2], &streams[2] );
+        err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0]);
+        err |= clSetKernelArg(kernel[i], 1, sizeof streams[1], &streams[1]);
+        err |= clSetKernelArg(kernel[i], 2, sizeof streams[2], &streams[2]);
         if (err != CL_SUCCESS)
         {
             log_error("clSetKernelArgs failed\n");
@@ -458,16 +505,19 @@ int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue 
     }
 
     threads[0] = (size_t)n_elems;
-    for (i=0; i<kTotalVecCount; i++)
+    for (i = 0; i < kTotalVecCount; i++)
     {
-        err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL );
+        err = clEnqueueNDRangeKernel(queue, kernel[i], 1, NULL, threads, NULL,
+                                     0, NULL, NULL);
         if (err != CL_SUCCESS)
         {
             log_error("clEnqueueNDRangeKernel failed\n");
             return -1;
         }
 
-        err = clEnqueueReadBuffer( queue, streams[2], true, 0, sizeof(cl_double)*num_elements, (void *)output_ptr, 0, NULL, NULL );
+        err = clEnqueueReadBuffer(queue, streams[2], true, 0,
+                                  sizeof(cl_double) * num_elements,
+                                  (void *)output_ptr, 0, NULL, NULL);
         if (err != CL_SUCCESS)
         {
             log_error("clEnqueueReadBuffer failed\n");
@@ -477,7 +527,8 @@ int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue 
         switch (i)
         {
             case 0:
-                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr, n_elems, 1);
+                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr,
+                                         n_elems, 1);
                 if (err)
                     log_error("STEP double test failed\n");
                 else
@@ -485,7 +536,8 @@ int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue 
                 break;
 
             case 1:
-                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr, n_elems*2, 2);
+                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr,
+                                         n_elems * 2, 2);
                 if (err)
                     log_error("STEP double2 test failed\n");
                 else
@@ -493,7 +545,8 @@ int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue 
                 break;
 
             case 2:
-                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr, n_elems*4, 4);
+                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr,
+                                         n_elems * 4, 4);
                 if (err)
                     log_error("STEP double4 test failed\n");
                 else
@@ -501,7 +554,8 @@ int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue 
                 break;
 
             case 3:
-                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr, n_elems*8, 8);
+                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr,
+                                         n_elems * 8, 8);
                 if (err)
                     log_error("STEP double8 test failed\n");
                 else
@@ -509,7 +563,8 @@ int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue 
                 break;
 
             case 4:
-                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr, n_elems*16, 16);
+                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr,
+                                         n_elems * 16, 16);
                 if (err)
                     log_error("STEP double16 test failed\n");
                 else
@@ -517,7 +572,8 @@ int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue 
                 break;
 
             case 5:
-                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr, n_elems*3, 3);
+                err = verify_step_double(input_ptr[0], input_ptr[1], output_ptr,
+                                         n_elems * 3, 3);
                 if (err)
                     log_error("STEP double3 test failed\n");
                 else
@@ -525,14 +581,13 @@ int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue 
                 break;
         }
 
-        if (err)
-            break;
+        if (err) break;
     }
 
     clReleaseMemObject(streams[0]);
     clReleaseMemObject(streams[1]);
     clReleaseMemObject(streams[2]);
-    for (i=0; i<kTotalVecCount; i++)
+    for (i = 0; i < kTotalVecCount; i++)
     {
         clReleaseKernel(kernel[i]);
         clReleaseProgram(program[i]);
@@ -543,4 +598,3 @@ int test_stepf_double(cl_device_id device, cl_context context, cl_command_queue 
 
     return err;
 }
-
