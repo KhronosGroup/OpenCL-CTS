@@ -179,7 +179,7 @@ struct TypesIterator
         constexpr size_t vecSizes[] = { 1, 2, 4, 8, 16 };
         cl_int err = CL_SUCCESS;
 
-        std::stringstream sstr;
+        std::ostringstream sstr;
         if (std::is_same<T, double>::value)
             sstr << "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
 
@@ -192,7 +192,7 @@ struct TypesIterator
         {
             test.vec_size = vecSizes[i];
 
-            std::stringstream vecNameStr;
+            std::ostringstream vecNameStr;
             vecNameStr << test.type_str;
             if (test.vec_size != 1) vecNameStr << test.vec_size;
 

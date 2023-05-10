@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef _BASIC_UTILS_H_
-#define _BASIC_UTILS_H_
+#ifndef BASIC_UTILS_H
+#define BASIC_UTILS_H
 
 #include <memory>
 #include <string>
@@ -44,4 +44,4 @@ inline std::string str_sprintf(const std::string &str, Args... args)
 #define HFF(num) cl_half_from_float(num, halfRoundingMode)
 #define HTF(num) cl_half_to_float(num)
 
-#endif // _BASIC_UTIL_H_
+#endif // BASIC_UTIL_H
