@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef _BASIC_UTILS_H_
-#define _BASIC_UTILS_H_
+#ifndef BASIC_UTILS_H
+#define BASIC_UTILS_H
 
 #include <memory>
 #include <string>

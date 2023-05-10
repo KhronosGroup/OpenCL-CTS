@@ -65,7 +65,7 @@ int test_astype_set( cl_device_id device, cl_context context, cl_command_queue q
     char sizeNames[][ 3 ] = { "", "", "2", "3", "4", "", "", "", "8", "", "", "", "", "", "", "", "16" };
     MTdataHolder d(gRandomSeed);
 
-    std::stringstream sstr;
+    std::ostringstream sstr;
     if (outVecType == kDouble || inVecType == kDouble)
         sstr << "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
 
