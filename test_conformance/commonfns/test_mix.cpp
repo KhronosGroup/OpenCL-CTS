@@ -54,7 +54,6 @@ test_mix(cl_device_id device, cl_context context, cl_command_queue queue, int nu
     cl_float        *input_ptr[3], *output_ptr, *p;
     cl_program        program;
     cl_kernel        kernel;
-    size_t            lengths[1];
     size_t    threads[1];
     float            max_err;
     int                err;
@@ -132,7 +131,6 @@ test_mix(cl_device_id device, cl_context context, cl_command_queue queue, int nu
         return -1;
     }
 
-    lengths[0] = strlen(mix_kernel_code);
     err = create_single_kernel_helper( context, &program, &kernel, 1, &mix_kernel_code, "test_mix" );
     test_error( err, "Unable to create test kernel" );
 

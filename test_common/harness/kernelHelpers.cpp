@@ -1511,22 +1511,33 @@ size_t get_min_alignment(cl_context context)
     return align_size;
 }
 
-cl_device_fp_config get_default_rounding_mode(cl_device_id device)
+cl_device_fp_config get_default_rounding_mode(cl_device_id device,
+                                              const cl_uint &param)
 {
+    if (param == CL_DEVICE_DOUBLE_FP_CONFIG)
+        test_error_ret(
+            -1,
+            "FAILURE: CL_DEVICE_DOUBLE_FP_CONFIG not supported by this routine",
+            0);
+
     char profileStr[128] = "";
     cl_device_fp_config single = 0;
-    int error = clGetDeviceInfo(device, CL_DEVICE_SINGLE_FP_CONFIG,
-                                sizeof(single), &single, NULL);
+    int error = clGetDeviceInfo(device, param, sizeof(single), &single, NULL);
     if (error)
-        test_error_ret(error, "Unable to get device CL_DEVICE_SINGLE_FP_CONFIG",
-                       0);
+    {
+        std::string message = std::string("Unable to get device ")
+            + std::string(param == CL_DEVICE_HALF_FP_CONFIG
+                              ? "CL_DEVICE_HALF_FP_CONFIG"
+                              : "CL_DEVICE_SINGLE_FP_CONFIG");
+        test_error_ret(error, message.c_str(), 0);
+    }
 
     if (single & CL_FP_ROUND_TO_NEAREST) return CL_FP_ROUND_TO_NEAREST;
 
     if (0 == (single & CL_FP_ROUND_TO_ZERO))
         test_error_ret(-1,
                        "FAILURE: device must support either "
-                       "CL_DEVICE_SINGLE_FP_CONFIG or CL_FP_ROUND_TO_NEAREST",
+                       "CL_FP_ROUND_TO_ZERO or CL_FP_ROUND_TO_NEAREST",
                        0);
 
     // Make sure we are an embedded device before allowing a pass
