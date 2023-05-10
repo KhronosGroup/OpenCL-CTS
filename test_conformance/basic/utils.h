@@ -38,4 +38,4 @@ inline std::string str_sprintf(const std::string &str, Args... args)
     return std::string(buffer.get(), buffer.get() + s - 1);
 }
 
-#endif // _BASIC_UTIL_H_
+#endif // BASIC_UTIL_H
