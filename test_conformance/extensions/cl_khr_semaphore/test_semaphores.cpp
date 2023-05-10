@@ -985,6 +985,8 @@ int test_semaphores_import_export_fd(cl_device_id deviceID, cl_context context,
             CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
         static_cast<cl_semaphore_properties_khr>(
             CL_SEMAPHORE_HANDLE_SYNC_FD_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
         0
     };
     cl_semaphore_khr sema_1 =
