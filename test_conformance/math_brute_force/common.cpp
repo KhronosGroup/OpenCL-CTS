@@ -100,7 +100,6 @@ void EmitEnableExtension(std::ostringstream &kernel,
 
     if (needsFp64) kernel << "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
     if (needsFp16) kernel << "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
-
 }
 
 std::string GetBuildOptions(bool relaxed_mode)
