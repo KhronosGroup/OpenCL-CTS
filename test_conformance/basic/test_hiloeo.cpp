@@ -147,11 +147,13 @@ int test_hiloeo(cl_device_id device, cl_context context, cl_command_queue queue,
                             sstr << " srcA[tid].s" << chans[i] << ",";
                         sstr.seekp(-1, sstr.cur);
                         sstr << "))";
-                        sprintf(expression, "%s", sstr.str().c_str());
+                        std::snprintf(expression, sizeof(expression), "%s",
+                                      sstr.str().c_str());
                     }
                     else
                     {
-                        sprintf(expression, "srcA[tid]");
+                        std::snprintf(expression, sizeof(expression),
+                                      "srcA[tid]");
                     }
 
                     if (0 == strcmp( test_str_names[type], "double" ))
