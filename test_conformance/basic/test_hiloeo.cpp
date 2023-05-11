@@ -137,14 +137,15 @@ int test_hiloeo(cl_device_id device, cl_context context, cl_command_queue queue,
                     if (expressionMode == 1 && vector_sizes[vectorSize] != 1)
                     {
                         std::ostringstream sstr;
-                        const char *chans[] = { "0", "1", "2", "3", "4", "5",
-                                                "6", "7", "8", "9", "A", "B",
-                                                "C", "D", "E", "f" };
+                        const char *index_chars[] = { "0", "1", "2", "3",
+                                                      "4", "5", "6", "7",
+                                                      "8", "9", "A", "B",
+                                                      "C", "D", "E", "f" };
                         sstr << "((" << test_str_names[type]
                              << std::to_string(vector_sizes[vectorSize])
                              << ")(";
                         for (unsigned i = 0; i < vector_sizes[vectorSize]; i++)
-                            sstr << " srcA[tid].s" << chans[i] << ",";
+                            sstr << " srcA[tid].s" << index_chars[i] << ",";
                         sstr.seekp(-1, sstr.cur);
                         sstr << "))";
                         std::snprintf(expression, sizeof(expression), "%s",
