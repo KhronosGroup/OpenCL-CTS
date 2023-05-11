@@ -386,6 +386,7 @@ static Long sLowerLimits[kNumExplicitTypes] = {
     break;
 
 typedef unsigned char uchar;
+typedef signed char schar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long ulong;
@@ -395,7 +396,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                             ExplicitType outType)
 {
     bool *boolPtr;
-    char *charPtr;
+    schar *scharPtr;
     uchar *ucharPtr;
     short *shortPtr;
     ushort *ushortPtr;
@@ -449,29 +450,29 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
             break;
 
         case kChar:
-            charPtr = (char *)inRaw;
+            scharPtr = (schar *)inRaw;
             switch (outType)
             {
-                BOOL_CASE(char)
+                BOOL_CASE(schar)
 
                 case kChar:
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    DOWN_CAST_CASE(char, kUChar, uchar, saturate)
-                    SIMPLE_CAST_CASE(char, kUnsignedChar, uchar)
-                    SIMPLE_CAST_CASE(char, kShort, short)
-                    SIMPLE_CAST_CASE(char, kUShort, ushort)
-                    SIMPLE_CAST_CASE(char, kUnsignedShort, ushort)
-                    SIMPLE_CAST_CASE(char, kInt, int)
-                    SIMPLE_CAST_CASE(char, kUInt, uint)
-                    SIMPLE_CAST_CASE(char, kUnsignedInt, uint)
-                    SIMPLE_CAST_CASE(char, kLong, Long)
-                    SIMPLE_CAST_CASE(char, kULong, ULong)
-                    SIMPLE_CAST_CASE(char, kUnsignedLong, ULong)
+                    DOWN_CAST_CASE(schar, kUChar, uchar, saturate)
+                    SIMPLE_CAST_CASE(schar, kUnsignedChar, uchar)
+                    SIMPLE_CAST_CASE(schar, kShort, short)
+                    SIMPLE_CAST_CASE(schar, kUShort, ushort)
+                    SIMPLE_CAST_CASE(schar, kUnsignedShort, ushort)
+                    SIMPLE_CAST_CASE(schar, kInt, int)
+                    SIMPLE_CAST_CASE(schar, kUInt, uint)
+                    SIMPLE_CAST_CASE(schar, kUnsignedInt, uint)
+                    SIMPLE_CAST_CASE(schar, kLong, Long)
+                    SIMPLE_CAST_CASE(schar, kULong, ULong)
+                    SIMPLE_CAST_CASE(schar, kUnsignedLong, ULong)
 
-                    TO_FLOAT_CASE(char)
-                    TO_DOUBLE_CASE(char)
+                    TO_FLOAT_CASE(schar)
+                    TO_DOUBLE_CASE(schar)
 
                 default:
                     log_error("ERROR: Invalid type given to "
@@ -491,7 +492,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    DOWN_CAST_CASE(uchar, kChar, char, saturate)
+                    DOWN_CAST_CASE(uchar, kChar, schar, saturate)
                     SIMPLE_CAST_CASE(uchar, kShort, short)
                     SIMPLE_CAST_CASE(uchar, kUShort, ushort)
                     SIMPLE_CAST_CASE(uchar, kUnsignedShort, ushort)
@@ -523,7 +524,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    DOWN_CAST_CASE(uchar, kChar, char, saturate)
+                    DOWN_CAST_CASE(uchar, kChar, schar, saturate)
                     SIMPLE_CAST_CASE(uchar, kShort, short)
                     SIMPLE_CAST_CASE(uchar, kUShort, ushort)
                     SIMPLE_CAST_CASE(uchar, kUnsignedShort, ushort)
@@ -554,7 +555,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    DOWN_CAST_CASE(short, kChar, char, saturate)
+                    DOWN_CAST_CASE(short, kChar, schar, saturate)
                     DOWN_CAST_CASE(short, kUChar, uchar, saturate)
                     DOWN_CAST_CASE(short, kUnsignedChar, uchar, saturate)
                     DOWN_CAST_CASE(short, kUShort, ushort, saturate)
@@ -587,7 +588,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    DOWN_CAST_CASE(ushort, kChar, char, saturate)
+                    DOWN_CAST_CASE(ushort, kChar, schar, saturate)
                     DOWN_CAST_CASE(ushort, kUChar, uchar, saturate)
                     DOWN_CAST_CASE(ushort, kUnsignedChar, uchar, saturate)
                     DOWN_CAST_CASE(ushort, kShort, short, saturate)
@@ -619,7 +620,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    DOWN_CAST_CASE(ushort, kChar, char, saturate)
+                    DOWN_CAST_CASE(ushort, kChar, schar, saturate)
                     DOWN_CAST_CASE(ushort, kUChar, uchar, saturate)
                     DOWN_CAST_CASE(ushort, kUnsignedChar, uchar, saturate)
                     DOWN_CAST_CASE(ushort, kShort, short, saturate)
@@ -650,7 +651,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    DOWN_CAST_CASE(int, kChar, char, saturate)
+                    DOWN_CAST_CASE(int, kChar, schar, saturate)
                     DOWN_CAST_CASE(int, kUChar, uchar, saturate)
                     DOWN_CAST_CASE(int, kUnsignedChar, uchar, saturate)
                     DOWN_CAST_CASE(int, kShort, short, saturate)
@@ -683,7 +684,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    DOWN_CAST_CASE(uint, kChar, char, saturate)
+                    DOWN_CAST_CASE(uint, kChar, schar, saturate)
                     DOWN_CAST_CASE(uint, kUChar, uchar, saturate)
                     DOWN_CAST_CASE(uint, kUnsignedChar, uchar, saturate)
                     DOWN_CAST_CASE(uint, kShort, short, saturate)
@@ -715,7 +716,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    DOWN_CAST_CASE(uint, kChar, char, saturate)
+                    DOWN_CAST_CASE(uint, kChar, schar, saturate)
                     DOWN_CAST_CASE(uint, kUChar, uchar, saturate)
                     DOWN_CAST_CASE(uint, kUnsignedChar, uchar, saturate)
                     DOWN_CAST_CASE(uint, kShort, short, saturate)
@@ -746,7 +747,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    DOWN_CAST_CASE(Long, kChar, char, saturate)
+                    DOWN_CAST_CASE(Long, kChar, schar, saturate)
                     DOWN_CAST_CASE(Long, kUChar, uchar, saturate)
                     DOWN_CAST_CASE(Long, kUnsignedChar, uchar, saturate)
                     DOWN_CAST_CASE(Long, kShort, short, saturate)
@@ -779,7 +780,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    U_DOWN_CAST_CASE(ULong, kChar, char, saturate)
+                    U_DOWN_CAST_CASE(ULong, kChar, schar, saturate)
                     U_DOWN_CAST_CASE(ULong, kUChar, uchar, saturate)
                     U_DOWN_CAST_CASE(ULong, kUnsignedChar, uchar, saturate)
                     U_DOWN_CAST_CASE(ULong, kShort, short, saturate)
@@ -811,7 +812,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
                     break;
 
-                    U_DOWN_CAST_CASE(ULong, kChar, char, saturate)
+                    U_DOWN_CAST_CASE(ULong, kChar, schar, saturate)
                     U_DOWN_CAST_CASE(ULong, kUChar, uchar, saturate)
                     U_DOWN_CAST_CASE(ULong, kUnsignedChar, uchar, saturate)
                     U_DOWN_CAST_CASE(ULong, kShort, short, saturate)
@@ -838,7 +839,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
             {
                 BOOL_CASE(float)
 
-                FLOAT_ROUND_CASE(kChar, char, roundType, saturate)
+                FLOAT_ROUND_CASE(kChar, schar, roundType, saturate)
                 FLOAT_ROUND_CASE(kUChar, uchar, roundType, saturate)
                 FLOAT_ROUND_CASE(kUnsignedChar, uchar, roundType, saturate)
                 FLOAT_ROUND_CASE(kShort, short, roundType, saturate)
@@ -870,7 +871,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
             {
                 BOOL_CASE(double)
 
-                DOUBLE_ROUND_CASE(kChar, char, roundType, saturate)
+                DOUBLE_ROUND_CASE(kChar, schar, roundType, saturate)
                 DOUBLE_ROUND_CASE(kUChar, uchar, roundType, saturate)
                 DOUBLE_ROUND_CASE(kUnsignedChar, uchar, roundType, saturate)
                 DOUBLE_ROUND_CASE(kShort, short, roundType, saturate)
