@@ -54,8 +54,8 @@ template <typename T> double toDouble(T val)
 bool isHalfNan(cl_half v)
 {
     // Extract FP16 exponent and mantissa
-    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+    uint16_t h_exp = (v >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = v & 0x3FF;
 
     // NaN test
     return (h_exp == 0x1F && h_mant != 0);
