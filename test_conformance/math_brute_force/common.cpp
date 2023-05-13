@@ -591,14 +591,6 @@ cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
         if (!kernel || error != CL_SUCCESS)
         {
             vlog_error("\t\tFAILED -- clCreateKernel() failed: (%d)\n", error);
-            size_t log_size;
-            clGetProgramBuildInfo(program, gDevice, CL_PROGRAM_BUILD_LOG, 0,
-                                  nullptr, &log_size);
-            std::string buffer;
-            buffer.resize(log_size + 1);
-            clGetProgramBuildInfo(program, gDevice, CL_PROGRAM_BUILD_LOG,
-                                  log_size, &buffer[0], NULL);
-            vlog_error("Log: %s\n", buffer.c_str());
             return error;
         }
     }
