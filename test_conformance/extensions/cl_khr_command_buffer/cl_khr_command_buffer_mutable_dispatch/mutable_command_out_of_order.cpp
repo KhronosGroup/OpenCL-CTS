@@ -14,12 +14,11 @@
 // limitations under the License.
 //
 
-#include <vector>
-
 #include <extensionHelpers.h>
 #include "typeWrappers.h"
 #include "procs.h"
 #include "testHarness.h"
+#include <vector>
 #include "mutable_command_basic.h"
 
 #include <CL/cl.h>
@@ -117,8 +116,6 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
                                 sizeof(cl_platform_id), &platform, nullptr);
         test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
-
         error = SetUpKernel();
         test_error(error, "SetUpKernel failed");
 
@@ -130,13 +127,8 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
         test_error(error, "Unable to create command queue to test with");
 
         cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
+            CL_COMMAND_BUFFER_FLAGS_KHR, CL_COMMAND_BUFFER_MUTABLE_KHR, 0
         };
-
-        if (simultaneous_use_requested && simultaneous_use_support)
-            properties[1] |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
-
-        properties[1] |= CL_COMMAND_BUFFER_MUTABLE_KHR;
 
         out_of_order_command_buffer = clCreateCommandBufferKHR(
             1, &out_of_order_queue, properties, &error);

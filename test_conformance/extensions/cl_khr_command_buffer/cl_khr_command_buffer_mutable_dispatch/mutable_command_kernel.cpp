@@ -1,3 +1,19 @@
+//
+// Copyright (c) 2022 The Khronos Group Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 #include <extensionHelpers.h>
 #include "typeWrappers.h"
 #include "procs.h"
@@ -30,46 +46,25 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
 
     MutableDispatchGlobalArguments(cl_device_id device, cl_context context,
                                    cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          mutable_command_buffer(this)
+        : BasicMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
     {
         BasicMutableCommandBufferTest::SetUp(elements);
 
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
-
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
-
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
-
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
         return 0;
     }
 
     cl_int Run() override
     {
-        const char *sample_const_arg_kernel[] = {
-            "__kernel void sample_test(__constant int *src1, __global int "
-            "*dst)\n"
-            "{\n"
-            "    size_t  tid = get_global_id(0);\n"
-            "\n"
-            "    dst[tid] = src1[tid];\n"
-            "\n"
-            "}\n"
-        };
+        const char *sample_const_arg_kernel =
+            R"(
+            __kernel void sample_test(__constant int *src1, __global int *dst)
+            {
+                size_t  tid = get_global_id(0);
+                dst[tid] = src1[tid];
+            })";
 
         cl_int error;
         clProgramWrapper program;
@@ -78,9 +73,9 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
         std::vector<cl_int> constantData;
         std::vector<cl_int> resultData;
 
-        error =
-            create_single_kernel_helper(context, &program, &kernel, 1,
-                                        sample_const_arg_kernel, "sample_test");
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &sample_const_arg_kernel,
+                                            "sample_test");
         test_error(error, "Creating kernel failed");
 
         currentSize = max_size;
@@ -92,10 +87,10 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
         constantData.resize(sizeToAllocate / sizeof(cl_int));
         resultData.resize(sizeToAllocate / sizeof(cl_int));
 
-        for (int i = 0; i < (int)(numberOfInts); i++)
+        for (size_t i = 0; i < numberOfInts; i++)
             constantData[i] = (int)genrand_int32(d);
 
-        clMemWrapper streams[3];
+        clMemWrapper streams[2];
         streams[0] =
             clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeToAllocate,
                            constantData.data(), &error);
@@ -104,9 +99,9 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
                                     NULL, &error);
         test_error(error, "Creating test array failed");
 
-        error = clSetKernelArg(kernel, 0, sizeof(streams[0]), &streams[0]);
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &streams[0]);
         test_error(error, "Unable to set indexed kernel arguments");
-        error = clSetKernelArg(kernel, 1, sizeof(streams[1]), &streams[1]);
+        error = clSetKernelArg(kernel, 1, sizeof(cl_mem) * 2, &streams[1]);
         test_error(error, "Unable to set indexed kernel arguments");
 
         threads[0] = numberOfInts;
@@ -118,27 +113,24 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
         };
 
         error = clCommandNDRangeKernelKHR(
-            mutable_command_buffer, nullptr, props, kernel, 1, nullptr, threads,
+            command_buffer, nullptr, props, kernel, 1, nullptr, threads,
             localThreads, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(mutable_command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                    NULL, &error);
-        test_error(error, "Creating test array failed");
 
         clMemWrapper newBuffer;
         newBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
                                    NULL, &error);
+        test_error(error, "Creating buffer failed");
 
-        cl_mutable_dispatch_arg_khr arg_0{ 0, sizeof(cl_mem), &newBuffer };
-        cl_mutable_dispatch_arg_khr args[] = { arg_0 };
+        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(cl_mem), &newBuffer };
+        cl_mutable_dispatch_arg_khr args[] = { arg_1 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
@@ -159,16 +151,15 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
             &dispatch_config
         };
-        error =
-            clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error =
-            clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, sizeToAllocate,
-                                resultData.data(), 0, NULL, NULL);
+            clEnqueueReadBuffer(queue, newBuffer, CL_TRUE, 0, sizeToAllocate,
+                                resultData.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        for (int i = 0; i < (int)(numberOfInts); i++)
+        for (size_t i = 0; i < numberOfInts; i++)
             if (constantData[i] != resultData[i])
             {
                 log_error("Data failed to verify: constantData[%d]=%d != "
@@ -180,10 +171,7 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
         return TEST_PASS;
     }
 
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
-    clCommandBufferWrapper mutable_command_buffer;
     cl_mutable_command_khr command = nullptr;
-
     const cl_ulong max_size = 16;
     cl_ulong currentSize;
 };
@@ -202,39 +190,20 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
     {
         BasicMutableCommandBufferTest::SetUp(elements);
 
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
-
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
-
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
-
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
         return 0;
     }
 
     cl_int Run() override
     {
-        const char *sample_const_arg_kernel[] = {
-            "__kernel void sample_test(__constant int *src1, __local int "
-            "*src, __global int *dst)\n"
-            "{\n"
-            "    size_t  tid = get_global_id(0);\n"
-            "\n"
-            "    src[tid] = src1[tid];\n"
-            "    dst[tid] = src[tid];\n"
-            "\n"
-            "}\n"
-        };
+        const char *sample_const_arg_kernel =
+            R"(
+            __kernel void sample_test(__constant int *src1, __local int
+            *src, __global int *dst)
+            {
+                size_t  tid = get_global_id(0);
+                src[tid] = src1[tid];
+                dst[tid] = src[tid];
+            })";
 
         cl_int error;
         clProgramWrapper program;
@@ -243,9 +212,9 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
         std::vector<cl_int> constantData;
         std::vector<cl_int> resultData;
 
-        error =
-            create_single_kernel_helper(context, &program, &kernel, 1,
-                                        sample_const_arg_kernel, "sample_test");
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &sample_const_arg_kernel,
+                                            "sample_test");
         test_error(error, "Creating kernel failed");
 
         currentSize = max_size;
@@ -257,26 +226,24 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
         constantData.resize(sizeToAllocate / sizeof(cl_int));
         resultData.resize(sizeToAllocate / sizeof(cl_int));
 
-        for (int i = 0; i < (int)(numberOfInts); i++)
+        for (size_t i = 0; i < numberOfInts; i++)
             constantData[i] = (int)genrand_int32(d);
 
-        clMemWrapper streams[3];
+        clMemWrapper streams[2];
         streams[0] =
             clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeToAllocate,
                            constantData.data(), &error);
         test_error(error, "Creating test array failed");
         streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                    NULL, &error);
+                                    nullptr, &error);
         test_error(error, "Creating test array failed");
 
-
         /* Set the arguments */
-        error = clSetKernelArg(kernel, 0, sizeof(streams[0]), &streams[0]);
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &streams[0]);
         test_error(error, "Unable to set indexed kernel arguments");
-        error = clSetKernelArg(kernel, 1, sizeof(streams[1]), nullptr);
+        error = clSetKernelArg(kernel, 1, sizeof(cl_mem) * 2, nullptr);
         test_error(error, "Unable to set indexed kernel arguments");
-
-        error = clSetKernelArg(kernel, 2, sizeof(streams[1]), &streams[1]);
+        error = clSetKernelArg(kernel, 2, sizeof(cl_mem), &streams[1]);
         test_error(error, "Unable to set indexed kernel arguments");
 
         threads[0] = numberOfInts;
@@ -299,15 +266,7 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                    NULL, &error);
-        test_error(error, "Creating test array failed");
-
-        clMemWrapper newBuffer;
-        newBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                   NULL, &error);
-
-        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(streams[1]) * 2, nullptr };
+        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(cl_mem), nullptr };
         cl_mutable_dispatch_arg_khr args[] = { arg_1 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
@@ -335,10 +294,10 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
 
         error =
             clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, sizeToAllocate,
-                                resultData.data(), 0, NULL, NULL);
+                                resultData.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        for (int i = 0; i < (int)(numberOfInts); i++)
+        for (size_t i = 0; i < numberOfInts; i++)
             if (constantData[i] != resultData[i])
             {
                 log_error("Data failed to verify: constantData[%d]=%d != "
@@ -350,7 +309,6 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
         return TEST_PASS;
     }
 
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
     clCommandBufferWrapper mutable_command_buffer;
     cl_mutable_command_khr command = nullptr;
 
@@ -364,8 +322,7 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
 
     MutableDispatchPODArguments(cl_device_id device, cl_context context,
                                 cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          mutable_command_buffer(this)
+        : BasicMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
@@ -378,32 +335,18 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
                             &platform, nullptr);
         test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
-
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
-
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
         return 0;
     }
 
     cl_int Run() override
     {
-        const char *sample_const_arg_kernel[] = {
-            "__kernel void sample_test(__constant int *src, int "
-            "dst )\n"
-            "{\n"
-            "    size_t  tid = get_global_id(0);\n"
-            "\n"
-            "    dst = src[tid];\n"
-            "\n"
-            "}\n"
-        };
+        const char *sample_const_arg_kernel =
+            R"(
+                __kernel void sample_test(__constant int *src, int dst)
+            {
+                size_t  tid = get_global_id(0);
+                dst = src[tid];
+            })";
 
         cl_int error;
         clProgramWrapper program;
@@ -412,9 +355,9 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
         std::vector<cl_int> constantData;
         std::vector<cl_int> resultData;
 
-        error =
-            create_single_kernel_helper(context, &program, &kernel, 1,
-                                        sample_const_arg_kernel, "sample_test");
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &sample_const_arg_kernel,
+                                            "sample_test");
         test_error(error, "Creating kernel failed");
 
         currentSize = max_size;
@@ -426,21 +369,17 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
         constantData.resize(sizeToAllocate / sizeof(cl_int));
         resultData.resize(sizeToAllocate / sizeof(cl_int));
 
-        for (int i = 0; i < (int)(numberOfInts); i++)
+        for (size_t i = 0; i < numberOfInts; i++)
             constantData[i] = (int)genrand_int32(d);
 
-        clMemWrapper streams[3];
-        streams[0] =
-            clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeToAllocate,
-                           constantData.data(), &error);
-        test_error(error, "Creating test array failed");
-        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                    NULL, &error);
+        clMemWrapper stream;
+        stream = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeToAllocate,
+                                constantData.data(), &error);
         test_error(error, "Creating test array failed");
 
 
         /* Set the arguments */
-        error = clSetKernelArg(kernel, 0, sizeof(streams[0]), &streams[0]);
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &stream);
         test_error(error, "Unable to set indexed kernel arguments");
         int intarg = 10;
         error = clSetKernelArg(kernel, 1, sizeof(int), &intarg);
@@ -455,26 +394,19 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
         };
 
         error = clCommandNDRangeKernelKHR(
-            mutable_command_buffer, nullptr, props, kernel, 1, nullptr, threads,
+            command_buffer, nullptr, props, kernel, 1, nullptr, threads,
             localThreads, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(mutable_command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                    NULL, &error);
-        test_error(error, "Creating test array failed");
-
-        clMemWrapper newBuffer;
-        newBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                   NULL, &error);
-
-        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(streams[1]) * 2, nullptr };
+        intarg = 20;
+        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(int), &intarg };
         cl_mutable_dispatch_arg_khr args[] = { arg_1 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
@@ -496,16 +428,14 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
             &dispatch_config
         };
-        error =
-            clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error =
-            clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, sizeToAllocate,
-                                resultData.data(), 0, NULL, NULL);
+        error = clEnqueueReadBuffer(queue, stream, CL_TRUE, 0, sizeToAllocate,
+                                    resultData.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        for (int i = 0; i < (int)(numberOfInts); i++)
+        for (size_t i = 0; i < numberOfInts; i++)
             if (constantData[i] != resultData[i])
             {
                 log_error("Data failed to verify: constantData[%d]=%d != "
@@ -517,10 +447,7 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
         return TEST_PASS;
     }
 
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
-    clCommandBufferWrapper mutable_command_buffer;
     cl_mutable_command_khr command = nullptr;
-
     const cl_ulong max_size = 16;
     cl_ulong currentSize;
 };
@@ -531,8 +458,7 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
 
     MutableDispatchNullArguments(cl_device_id device, cl_context context,
                                  cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          mutable_command_buffer(this)
+        : BasicMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
@@ -545,32 +471,19 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
                             &platform, nullptr);
         test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
-
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
-
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
         return 0;
     }
 
     cl_int Run() override
     {
-        const char *sample_const_arg_kernel[] = {
-            "__kernel void sample_test(__constant int *src, "
-            "__global int *dst)\n"
-            "{\n"
-            "    size_t  tid = get_global_id(0);\n"
-            "\n"
-            "    dst[tid] = src[tid];\n"
-            "\n"
-            "}\n"
-        };
+        const char *sample_const_arg_kernel =
+            R"(
+                __kernel void sample_test(__constant int *src,
+            __global int *dst)
+            {
+                size_t  tid = get_global_id(0);
+                dst[tid] = src[tid];
+            })";
 
         cl_int error;
         clProgramWrapper program;
@@ -579,9 +492,9 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
         std::vector<cl_int> constantData;
         std::vector<cl_int> resultData;
 
-        error =
-            create_single_kernel_helper(context, &program, &kernel, 1,
-                                        sample_const_arg_kernel, "sample_test");
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &sample_const_arg_kernel,
+                                            "sample_test");
         test_error(error, "Creating kernel failed");
 
         currentSize = max_size;
@@ -593,7 +506,7 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
         constantData.resize(sizeToAllocate / sizeof(cl_int));
         resultData.resize(sizeToAllocate / sizeof(cl_int));
 
-        for (int i = 0; i < (int)(numberOfInts); i++)
+        for (size_t i = 0; i < numberOfInts; i++)
             constantData[i] = (int)genrand_int32(d);
 
         clMemWrapper streams[3];
@@ -602,13 +515,13 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
                            constantData.data(), &error);
         test_error(error, "Creating test array failed");
         streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                    NULL, &error);
+                                    nullptr, &error);
         test_error(error, "Creating test array failed");
 
-        error = clSetKernelArg(kernel, 0, sizeof(streams[0]), &streams[0]);
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &streams[0]);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        error = clSetKernelArg(kernel, 1, sizeof(streams[1]), &streams[1]);
+        error = clSetKernelArg(kernel, 1, sizeof(cl_mem), &streams[1]);
         test_error(error, "Unable to set indexed kernel arguments");
 
         threads[0] = numberOfInts;
@@ -620,26 +533,27 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
         };
 
         error = clCommandNDRangeKernelKHR(
-            mutable_command_buffer, nullptr, props, kernel, 1, nullptr, threads,
+            command_buffer, nullptr, props, kernel, 1, nullptr, threads,
             localThreads, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(mutable_command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
+        streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
                                     NULL, &error);
         test_error(error, "Creating test array failed");
 
         clMemWrapper newBuffer;
         newBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
                                    NULL, &error);
+        test_error(error, "Creating buffer failed");
 
-        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(streams[1]) * 2, nullptr };
+        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(streams[2]) * 2, nullptr };
         cl_mutable_dispatch_arg_khr args[] = { arg_1 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
@@ -661,16 +575,15 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
             &dispatch_config
         };
-        error =
-            clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error =
             clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, sizeToAllocate,
-                                resultData.data(), 0, NULL, NULL);
+                                resultData.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        for (int i = 0; i < (int)(numberOfInts); i++)
+        for (size_t i = 0; i < numberOfInts; i++)
             if (constantData[i] != resultData[i])
             {
                 log_error("Data failed to verify: constantData[%d]=%d != "
@@ -682,176 +595,7 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
         return TEST_PASS;
     }
 
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
-    clCommandBufferWrapper mutable_command_buffer;
     cl_mutable_command_khr command = nullptr;
-
-    const cl_ulong max_size = 16;
-    cl_ulong currentSize;
-};
-
-struct MutableDispatchImageArguments : public BasicMutableCommandBufferTest
-{
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
-
-    MutableDispatchImageArguments(cl_device_id device, cl_context context,
-                                  cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          mutable_command_buffer(this)
-    {}
-
-    virtual cl_int SetUp(int elements) override
-    {
-        BasicMutableCommandBufferTest::SetUp(elements);
-
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
-
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
-
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
-
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
-        return 0;
-    }
-
-    cl_int Run() override
-    {
-        const char *sample_const_arg_kernel[] = {
-            "__kernel void sample_test(__constant int *src, "
-            "__global int *dst)\n"
-            "{\n"
-            "    size_t  tid = get_global_id(0);\n"
-            "\n"
-            "    dst[tid] = src[tid];\n"
-            "\n"
-            "}\n"
-        };
-
-        cl_int error;
-        clProgramWrapper program;
-        clKernelWrapper kernel;
-        size_t threads[1], localThreads[1];
-        std::vector<cl_int> constantData;
-        std::vector<cl_int> resultData;
-
-        error =
-            create_single_kernel_helper(context, &program, &kernel, 1,
-                                        sample_const_arg_kernel, "sample_test");
-        test_error(error, "Creating kernel failed");
-
-        currentSize = max_size;
-        MTdataHolder d(gRandomSeed);
-
-        size_t sizeToAllocate =
-            ((size_t)currentSize / sizeof(cl_int)) * sizeof(cl_int);
-        size_t numberOfInts = sizeToAllocate / sizeof(cl_int);
-        constantData.resize(sizeToAllocate / sizeof(cl_int));
-        resultData.resize(sizeToAllocate / sizeof(cl_int));
-
-        for (int i = 0; i < (int)(numberOfInts); i++)
-            constantData[i] = (int)genrand_int32(d);
-
-        clMemWrapper streams[3];
-        streams[0] =
-            clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeToAllocate,
-                           constantData.data(), &error);
-        test_error(error, "Creating test array failed");
-        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                    NULL, &error);
-        test_error(error, "Creating test array failed");
-
-
-        error = clSetKernelArg(kernel, 0, sizeof(streams[0]), &streams[0]);
-        test_error(error, "Unable to set indexed kernel arguments");
-
-        error = clSetKernelArg(kernel, 1, sizeof(streams[1]), &streams[1]);
-        test_error(error, "Unable to set indexed kernel arguments");
-
-        threads[0] = numberOfInts;
-        localThreads[0] = 1;
-
-        cl_ndrange_kernel_command_properties_khr props[] = {
-            CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
-            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
-        };
-
-        error = clCommandNDRangeKernelKHR(
-            mutable_command_buffer, nullptr, props, kernel, 1, nullptr, threads,
-            localThreads, 0, nullptr, nullptr, &command);
-        test_error(error, "clCommandNDRangeKernelKHR failed");
-
-        error = clFinalizeCommandBufferKHR(mutable_command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
-                                          nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                    NULL, &error);
-        test_error(error, "Creating test array failed");
-
-        clMemWrapper newBuffer;
-        newBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                   NULL, &error);
-
-        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(streams[1]) * 2, nullptr };
-        cl_mutable_dispatch_arg_khr args[] = { arg_1 };
-
-        cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
-            command,
-            1 /* num_args */,
-            0 /* num_svm_arg */,
-            0 /* num_exec_infos */,
-            0 /* work_dim - 0 means no change to dimensions */,
-            args /* arg_list */,
-            nullptr /* arg_svm_list - nullptr means no change*/,
-            nullptr /* exec_info_list */,
-            nullptr /* global_work_offset */,
-            nullptr /* global_work_size */,
-            nullptr /* local_work_size */
-        };
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
-        };
-        error =
-            clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
-        test_error(error, "clUpdateMutableCommandsKHR failed");
-
-        error =
-            clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, sizeToAllocate,
-                                resultData.data(), 0, NULL, NULL);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        for (int i = 0; i < (int)(numberOfInts); i++)
-            if (constantData[i] != resultData[i])
-            {
-                log_error("Data failed to verify: constantData[%d]=%d != "
-                          "resultData[%d]=%d\n",
-                          i, constantData[i], i, resultData[i]);
-                return TEST_FAIL;
-            }
-
-        return TEST_PASS;
-    }
-
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
-    clCommandBufferWrapper mutable_command_buffer;
-    cl_mutable_command_khr command = nullptr;
-
     const cl_ulong max_size = 16;
     cl_ulong currentSize;
 };
@@ -862,45 +606,25 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
 
     MutableDispatchImage1DArguments(cl_device_id device, cl_context context,
                                     cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          mutable_command_buffer(this)
+        : BasicMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
     {
         BasicMutableCommandBufferTest::SetUp(elements);
 
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
-
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
-
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
-
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
-        return 0;
+        return CL_SUCCESS;
     }
 
     cl_int Run() override
     {
-        const char *sample_const_arg_kernel[] = {
-            "__kernel void sample_test( read_only image1d_t source, sampler_t "
-            "sampler, __global int4 *results )\n"
-            "{\n"
-            "  int offset = get_global_id(0);\n"
-            "  results[ offset ] = read_imagei( source, sampler, offset "
-            ");\n"
-            "}\n"
-        };
+        const char *sample_const_arg_kernel =
+            R"(__kernel void sample_test( read_only image1d_t source, sampler_t
+            sampler, __global int4 *results )
+            {
+               int offset = get_global_id(0);
+               results[ offset ] = read_imagei( source, sampler, offset);
+            })";
 
         cl_int error;
         clProgramWrapper program;
@@ -931,14 +655,14 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         generate_random_image_data(&imageInfo, imageValues, d);
         generate_random_image_data(&imageInfo, outputData, d);
 
-        clMemWrapper image = create_image_2d(
+        clMemWrapper image = create_image_1d(
             context, CL_MEM_READ_WRITE, &formats, image_desc.image_width,
-            image_desc.image_width, 0, NULL, &error);
+            image_desc.image_width, 0, nullptr, &error);
         test_error(error, "create_image_2d failed");
 
-        error =
-            create_single_kernel_helper(context, &program, &kernel, 1,
-                                        sample_const_arg_kernel, "sample_test");
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &sample_const_arg_kernel,
+                                            "sample_test");
         test_error(error, "Creating kernel failed");
 
         clSamplerWrapper sampler = clCreateSampler(
@@ -968,20 +692,21 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         };
 
         error = clCommandNDRangeKernelKHR(
-            mutable_command_buffer, nullptr, props, kernel, 1, nullptr, threads,
+            command_buffer, nullptr, props, kernel, 1, nullptr, threads,
             localThreads, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(mutable_command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
+        test_error(error, "clEnqueueCommandBufferKHR failed")
 
-        clMemWrapper new_image = create_image_2d(
-            context, CL_MEM_READ_WRITE, &formats, image_desc.image_width,
-            image_desc.image_width, 0, NULL, &error);
+            clMemWrapper new_image =
+                create_image_1d(context, CL_MEM_READ_WRITE, &formats,
+                                image_desc.image_width, image_desc.image_width,
+                                imageValues, nullptr, &error);
         test_error(error, "create_image_2d failed");
 
         cl_mutable_dispatch_arg_khr arg_0{ 0, sizeof(cl_mem), &new_image };
@@ -1006,33 +731,29 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
             &dispatch_config
         };
-        error =
-            clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error = clEnqueueReadBuffer(queue, stream, CL_TRUE, 0, data_size,
-                                    outputData, 0, NULL, NULL);
+                                    outputData, 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        bool test_failed = false;
         for (size_t i = 0; i < imageInfo.width; ++i)
         {
             if (imageValues[i] != outputData[i])
             {
-                test_failed = true;
-                break;
+                log_error("Data failed to verify: imageValues[%d]=%d != "
+                          "outputData[%d]=%d\n",
+                          i, imageValues[i], i, outputData[i]);
+
+                return TEST_FAIL;
             }
         }
 
-        if (!test_failed) return TEST_PASS;
-
-        return TEST_FAIL;
+        return TEST_PASS;
     }
 
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
-    clCommandBufferWrapper mutable_command_buffer;
     cl_mutable_command_khr command = nullptr;
-
     const cl_ulong max_size = 16;
     cl_ulong currentSize;
 };
@@ -1043,45 +764,29 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
 
     MutableDispatchImage2DArguments(cl_device_id device, cl_context context,
                                     cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          mutable_command_buffer(this)
+        : BasicMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
     {
         BasicMutableCommandBufferTest::SetUp(elements);
 
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
-
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
-
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
-
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
-        return 0;
+        return CL_SUCCESS;
     }
 
     cl_int Run() override
     {
-        const char *sample_const_arg_kernel[] = {
-            "__kernel void sample_test( read_only image2d_t source, sampler_t "
-            "sampler, __global int4 *results )\n"
-            "{\n"
-            "  int offset = get_global_id(0);\n"
-            "  results[ offset ] = read_imagei( source, sampler, offset "
-            ");\n"
-            "}\n"
-        };
+        const char *sample_const_arg_kernel =
+            R"(__kernel void sample_test( read_only image2d_t source, sampler_t
+            sampler, int width, __global int4 *results )
+            {
+               int x = get_global_id(0);
+               int y = get_global_id(1);
+
+               int offset = width * y + x;
+               results[ offset ] = read_imagei( source, sampler, (int2) (x, y) );
+            })";
+
 
         cl_int error;
         clProgramWrapper program;
@@ -1121,9 +826,9 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
             image_desc.image_width, 0, NULL, &error);
         test_error(error, "create_image_2d failed");
 
-        error =
-            create_single_kernel_helper(context, &program, &kernel, 1,
-                                        sample_const_arg_kernel, "sample_test");
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &sample_const_arg_kernel,
+                                            "sample_test");
         test_error(error, "Creating kernel failed");
 
         clSamplerWrapper sampler = clCreateSampler(
@@ -1141,7 +846,10 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         error = clSetKernelArg(kernel, 1, sizeof(cl_sampler), &sampler);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        error = clSetKernelArg(kernel, 2, sizeof(cl_mem), &stream);
+        error = clSetKernelArg(kernel, 2, sizeof(int), &);
+        test_error(error, "Unable to set indexed kernel arguments");
+
+        error = clSetKernelArg(kernel, 3, sizeof(cl_mem), &stream);
         test_error(error, "Unable to set indexed kernel arguments");
 
         threads[0] = image_desc.image_width;
@@ -1153,20 +861,20 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         };
 
         error = clCommandNDRangeKernelKHR(
-            mutable_command_buffer, nullptr, props, kernel, 1, nullptr, threads,
+            command_buffer, nullptr, props, kernel, 1, nullptr, threads,
             localThreads, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(mutable_command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         clMemWrapper new_image = create_image_2d(
             context, CL_MEM_READ_WRITE, &formats, image_desc.image_width,
-            image_desc.image_width, 0, NULL, &error);
+            image_desc.image_width, 0, imageValues, &error);
         test_error(error, "create_image_2d failed");
 
         cl_mutable_dispatch_arg_khr arg_0{ 0, sizeof(cl_mem), &new_image };
@@ -1191,33 +899,28 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
             &dispatch_config
         };
-        error =
-            clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error = clEnqueueReadBuffer(queue, stream, CL_TRUE, 0, data_size,
                                     outputData, 0, NULL, NULL);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        bool test_failed = false;
         for (size_t i = 0; i < imageInfo.width; ++i)
         {
             if (imageValues[i] != outputData[i])
             {
-                test_failed = true;
-                break;
+                log_error("Data failed to verify: imageValues[%d]=%d != "
+                          "outputData[%d]=%d\n",
+                          i, imageValues[i], i, outputData[i]);
             }
+            return TEST_FAIL;
         }
-
-        if (!test_failed) return TEST_PASS;
 
         return TEST_PASS;
     }
 
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
-    clCommandBufferWrapper mutable_command_buffer;
     cl_mutable_command_khr command = nullptr;
-
     const cl_ulong max_size = 16;
     cl_ulong currentSize;
 };
@@ -1228,8 +931,7 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
     MutableDispatchSVMArguments(cl_device_id device, cl_context context,
                                 cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          mutable_command_buffer(this)
+        : BasicMutableCommandBufferTest(device, context, queue)
     {}
 
     bool Skip() override
@@ -1249,51 +951,25 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
     {
         BasicMutableCommandBufferTest::SetUp(elements);
 
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
+        const char *set_kernel_exec_info_svm_ptrs_kernel =
+            R"(struct BufPtrs;
 
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
+            typedef struct {
+                __global int *pA;
+                __global int *pB;
+                __global int *pC;
+            } BufPtrs;
+            __kernel void set_kernel_exec_info_test(__global BufPtrs* pBufs)
+                size_t i;
+               i = get_global_id(0);
+                pBufs->pA[i]++;
+                pBufs->pB[i]++;
+                pBufs->pC[i]++;
+            })";
 
-        const char *set_kernel_exec_info_svm_ptrs_kernel = {
-            "struct BufPtrs;\n"
-            "\n"
-            "typedef struct {\n"
-            "    __global int *pA;\n"
-            "    __global int *pB;\n"
-            "    __global int *pC;\n"
-            "} BufPtrs;\n"
-            "\n"
-            "__kernel void set_kernel_exec_info_test(__global BufPtrs* pBufs)\n"
-            "{\n"
-            "    size_t i;\n"
-            "   i = get_global_id(0);\n"
-            "    pBufs->pA[i]++;\n"
-            "    pBufs->pB[i]++;\n"
-            "    pBufs->pC[i]++;\n"
-            "}\n"
-        };
-
-        clProgramWrapper program = clCreateProgramWithSource(
-            context, 1, &set_kernel_exec_info_svm_ptrs_kernel, nullptr, &error);
-        test_error(error, "Unable to create program");
-
-        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-        test_error(error, "Unable to build program");
-
-        kernel = clCreateKernel(program, "set_kernel_exec_info_test", &error);
-        test_error(error, "Unable to create kernel");
-
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
-
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
+        create_single_kernel_helper(context, &program, &kernel, 1,
+                                    &set_kernel_exec_info_svm_ptrs_kernel,
+                                    "set_kernel_exec_info_test");
 
         return 0;
     }
@@ -1306,15 +982,19 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
         };
 
         size_t s = num_elements * sizeof(int);
-        int *pA = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, s, 0);
-        int *pB = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, s, 0);
-        int *pC = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, s, 0);
         BufPtrs *pBuf = (BufPtrs *)clSVMAlloc(context, CL_MEM_READ_WRITE,
                                               sizeof(BufPtrs), 0);
 
-        pBuf->pA = pA;
-        pBuf->pB = pB;
-        pBuf->pC = pC;
+        pBuf->pA = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, s, 0);
+        pBuf->pB = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, s, 0);
+        pBuf->pC = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, s, 0);
+
+        BufPtrs *newBuf = (BufPtrs *)clSVMAlloc(context, CL_MEM_READ_WRITE,
+                                                sizeof(BufPtrs), 0);
+
+        newBuf->pA = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, s, 0);
+        newBuf->pB = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, s, 0);
+        newBuf->pC = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, s, 0);
 
         cl_int error = clSetKernelArgSVMPointer(kernel, 0, pBuf);
         test_error(error, "clSetKernelArg failed");
@@ -1324,14 +1004,14 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
         test_error(error, "clSetKernelExecInfo failed");
 
         error = clCommandNDRangeKernelKHR(
-            mutable_command_buffer, nullptr, props, kernel, 1, nullptr,
+            command_buffer, nullptr, props, kernel, 1, nullptr,
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(mutable_command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
@@ -1358,20 +1038,24 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
             &dispatch_config
         };
-        error =
-            clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
+        free(pBuf->pA);
+        free(pBuf->pB);
+        free(pBuf->pC);
         clSVMFree(context, pBuf);
+
+        free(newBuf->pA);
+        free(newBuf->pB);
+        free(newBuf->pC);
+        clSVMFree(context, newBuf);
 
         return CL_SUCCESS;
     }
 
     cl_mutable_command_khr command = nullptr;
-
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
     clCommandQueueWrapper queue_1, queue_2;
-    clCommandBufferWrapper mutable_command_buffer;
 
     typedef struct
     {
@@ -1415,15 +1099,6 @@ int test_mutable_dispatch_null_arguments(cl_device_id device,
 {
     return MakeAndRunTest<MutableDispatchNullArguments>(device, context, queue,
                                                         num_elements);
-}
-
-int test_mutable_dispatch_image_arguments(cl_device_id device,
-                                          cl_context context,
-                                          cl_command_queue queue,
-                                          int num_elements)
-{
-    return MakeAndRunTest<MutableDispatchImageArguments>(device, context, queue,
-                                                         num_elements);
 }
 
 int test_mutable_dispatch_image_1d_arguments(cl_device_id device,

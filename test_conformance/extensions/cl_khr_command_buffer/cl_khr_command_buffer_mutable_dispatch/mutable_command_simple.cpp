@@ -29,6 +29,7 @@
 
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 // mutable dispatch tests which handle following cases:
 //
@@ -43,51 +44,46 @@
 // CL_MUTABLE_DISPATCH_LOCAL_WORK_SIZE_KHR
 // CL_MUTABLE_COMMAND_COMMAND_TYPE_KHR
 
-struct MutableDispatchGlobalOffset : public BasicMutableCommandBufferTest
+struct MutableDispatchGlobalOffset : ComplexMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using ComplexMutableCommandBufferTest::ComplexMutableCommandBufferTest;
 
     MutableDispatchGlobalOffset(cl_device_id device, cl_context context,
                                 cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          mutable_command_buffer(this), out_of_order_queue(nullptr)
+        : ComplexMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
     {
-        BasicMutableCommandBufferTest::SetUp(elements);
+        ComplexMutableCommandBufferTest::SetUp(elements);
 
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
+        return CL_SUCCESS;
+    }
 
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
+    bool Skip() override
+    {
+        cl_mutable_dispatch_fields_khr mutable_capabilities;
 
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
+        bool mutable_support =
+            !clGetDeviceInfo(
+                device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
+                sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
+            && mutable_capabilities != CL_MUTABLE_DISPATCH_GLOBAL_OFFSET_KHR;
 
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
-        return 0;
+        return !mutable_support || ComplexMutableCommandBufferTest::Skip();
     }
 
     cl_int Run() override
     {
         cl_int error = clCommandNDRangeKernelKHR(
-            mutable_command_buffer, nullptr, nullptr, kernel, 1, nullptr,
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr,
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(mutable_command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
@@ -111,11 +107,10 @@ struct MutableDispatchGlobalOffset : public BasicMutableCommandBufferTest
             &dispatch_config
         };
 
-        error =
-            clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
@@ -137,59 +132,49 @@ struct MutableDispatchGlobalOffset : public BasicMutableCommandBufferTest
     size_t test_global_work_offset = 0;
     const size_t global_offset = 3;
     size_t size;
-
     cl_mutable_command_khr command = nullptr;
-
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
-    clCommandQueueWrapper out_of_order_queue;
-    clCommandBufferWrapper mutable_command_buffer;
 };
 
-struct MutableDispatchGlobalSize : public BasicMutableCommandBufferTest
+struct MutableDispatchGlobalSize : public ComplexMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using ComplexMutableCommandBufferTest::ComplexMutableCommandBufferTest;
 
     MutableDispatchGlobalSize(cl_device_id device, cl_context context,
                               cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          mutable_command_buffer(this), out_of_order_queue(nullptr)
+        : ComplexMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
     {
-        BasicMutableCommandBufferTest::SetUp(elements);
+        ComplexMutableCommandBufferTest::SetUp(elements);
 
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
+        return CL_SUCCESS;
+    }
 
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
+    bool Skip() override
+    {
+        cl_mutable_dispatch_fields_khr mutable_capabilities;
 
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
+        bool mutable_support =
+            !clGetDeviceInfo(
+                device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
+                sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
+            && mutable_capabilities != CL_MUTABLE_DISPATCH_GLOBAL_SIZE_KHR;
 
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
-        return 0;
+        return !mutable_support || ComplexMutableCommandBufferTest::Skip();
     }
 
     cl_int Run() override
     {
         cl_int error = clCommandNDRangeKernelKHR(
-            mutable_command_buffer, nullptr, nullptr, kernel, 1, nullptr,
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr,
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(mutable_command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
@@ -213,11 +198,10 @@ struct MutableDispatchGlobalSize : public BasicMutableCommandBufferTest
             &dispatch_config
         };
 
-        error =
-            clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
@@ -241,57 +225,48 @@ struct MutableDispatchGlobalSize : public BasicMutableCommandBufferTest
     size_t size;
 
     cl_mutable_command_khr command = nullptr;
-
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
-    clCommandQueueWrapper out_of_order_queue;
-    clCommandBufferWrapper mutable_command_buffer;
 };
 
-struct MutableDispatchLocalSize : public BasicMutableCommandBufferTest
+struct MutableDispatchLocalSize : public ComplexMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using ComplexMutableCommandBufferTest::ComplexMutableCommandBufferTest;
 
     MutableDispatchLocalSize(cl_device_id device, cl_context context,
                              cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          mutable_command_buffer(this), out_of_order_queue(nullptr)
+        : ComplexMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
     {
-        BasicMutableCommandBufferTest::SetUp(elements);
+        ComplexMutableCommandBufferTest::SetUp(elements);
 
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
+        return CL_SUCCESS;
+    }
 
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
+    bool Skip() override
+    {
+        cl_mutable_dispatch_fields_khr mutable_capabilities;
 
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
+        bool mutable_support =
+            !clGetDeviceInfo(
+                device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
+                sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
+            && mutable_capabilities != CL_MUTABLE_DISPATCH_LOCAL_SIZE_KHR;
 
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
-        return 0;
+        return !mutable_support || ComplexMutableCommandBufferTest::Skip();
     }
 
     cl_int Run() override
     {
         cl_int error = clCommandNDRangeKernelKHR(
-            mutable_command_buffer, nullptr, nullptr, kernel, 1, nullptr,
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr,
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(mutable_command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
@@ -315,11 +290,10 @@ struct MutableDispatchLocalSize : public BasicMutableCommandBufferTest
             &dispatch_config
         };
 
-        error =
-            clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
@@ -341,46 +315,36 @@ struct MutableDispatchLocalSize : public BasicMutableCommandBufferTest
     size_t test_local_work_size = 0;
     const size_t local_size = 3;
     size_t size;
-
     cl_mutable_command_khr command = nullptr;
-
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
-    clCommandQueueWrapper out_of_order_queue;
-    clCommandBufferWrapper mutable_command_buffer;
 };
 
-struct MutableDispatchArguments : public BasicMutableCommandBufferTest
+struct MutableDispatchArguments : public ComplexMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using ComplexMutableCommandBufferTest::ComplexMutableCommandBufferTest;
 
     MutableDispatchArguments(cl_device_id device, cl_context context,
                              cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue),
-          mutable_command_buffer(this), out_of_order_queue(nullptr)
+        : ComplexMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
     {
-        BasicMutableCommandBufferTest::SetUp(elements);
+        ComplexMutableCommandBufferTest::SetUp(elements);
 
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
+        return CL_SUCCESS;
+    }
 
-        GET_EXTENSION_ADDRESS(clUpdateMutableCommandsKHR);
+    bool Skip() override
+    {
+        cl_mutable_dispatch_fields_khr mutable_capabilities;
 
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, 0, 0
-        };
-        properties[1] = CL_COMMAND_BUFFER_MUTABLE_KHR;
+        bool mutable_support =
+            !clGetDeviceInfo(
+                device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
+                sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
+            && mutable_capabilities != CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
-        mutable_command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
-        return 0;
+        return !mutable_support || ComplexMutableCommandBufferTest::Skip();
     }
 
     cl_int Run() override
@@ -391,14 +355,14 @@ struct MutableDispatchArguments : public BasicMutableCommandBufferTest
         };
 
         cl_int error = clCommandNDRangeKernelKHR(
-            mutable_command_buffer, nullptr, props, kernel, 1, nullptr,
+            command_buffer, nullptr, props, kernel, 1, nullptr,
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(mutable_command_buffer);
+        error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
@@ -422,11 +386,10 @@ struct MutableDispatchArguments : public BasicMutableCommandBufferTest
             &dispatch_config
         };
 
-        error =
-            clUpdateMutableCommandsKHR(mutable_command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, mutable_command_buffer, 0,
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
@@ -453,12 +416,7 @@ struct MutableDispatchArguments : public BasicMutableCommandBufferTest
     size_t test_local_work_size = 0;
     const size_t local_size = 3;
     size_t size;
-
     cl_mutable_command_khr command = nullptr;
-
-    clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
-    clCommandQueueWrapper out_of_order_queue;
-    clCommandBufferWrapper mutable_command_buffer;
 };
 
 int test_mutable_dispatch_global_offset(cl_device_id device, cl_context context,

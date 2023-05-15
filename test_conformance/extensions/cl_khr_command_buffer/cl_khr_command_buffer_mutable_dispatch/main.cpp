@@ -33,7 +33,6 @@ test_definition test_list[] = {
     ADD_TEST(mutable_dispatch_global_arguments),
     ADD_TEST(mutable_dispatch_pod_arguments),
     ADD_TEST(mutable_dispatch_null_arguments),
-    ADD_TEST(mutable_dispatch_image_arguments),
     ADD_TEST(mutable_dispatch_image_1d_arguments),
     ADD_TEST(mutable_dispatch_image_2d_arguments),
     ADD_TEST(mutable_dispatch_out_of_order),
