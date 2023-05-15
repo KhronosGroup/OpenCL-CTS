@@ -846,7 +846,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         error = clSetKernelArg(kernel, 1, sizeof(cl_sampler), &sampler);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        error = clSetKernelArg(kernel, 2, sizeof(int), &);
+        error = clSetKernelArg(kernel, 2, sizeof(int), &image_desc.image_width);
         test_error(error, "Unable to set indexed kernel arguments");
 
         error = clSetKernelArg(kernel, 3, sizeof(cl_mem), &stream);
