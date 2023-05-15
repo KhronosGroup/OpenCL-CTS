@@ -95,10 +95,10 @@ int test_vec_type_hint(cl_device_id deviceID, cl_context context, cl_command_que
                   get_explicit_type_name(vecType[vec_type_index]),
                   size_names[vec_size_index]);
 
+          const char *src = &program_source.front();
           error = create_single_kernel_helper(context, &program, &kernel, 1,
-                                              (const char **)&program_source,
-                                              "sample_test");
-          if (error != 0) return error;
+                                              &src, "sample_test");
+          test_error(error, "create_single_kernel_helper failed");
 
           in = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(cl_int) * 10,
                               NULL, &error);
