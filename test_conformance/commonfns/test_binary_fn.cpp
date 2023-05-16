@@ -13,14 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <vector>
+
+#include "harness/deviceInfo.h"
+#include "harness/typeWrappers.h"
 
 #include "procs.h"
+#include "test_base.h"
 
 const char *binary_fn_code_pattern =
 "%s\n" /* optional pragma */
@@ -49,216 +53,286 @@ const char *binary_fn_code_pattern_v3_scalar =
 "    vstore3(%s(vload3(tid,x), y[tid] ), tid, dst);\n"
 "}\n";
 
-int test_binary_fn( cl_device_id device, cl_context context, cl_command_queue queue, int n_elems,
-                    const char *fnName, bool vectorSecondParam,
-                    binary_verify_float_fn floatVerifyFn, binary_verify_double_fn doubleVerifyFn )
+
+template <typename T>
+int test_binary_fn(cl_device_id device, cl_context context,
+                   cl_command_queue queue, int n_elems,
+                   const std::string& fnName, bool vecSecParam,
+                   VerifyFuncBinary<T> verifyFn)
 {
-    cl_mem      streams[6];
-    cl_float      *input_ptr[2], *output_ptr;
-    cl_double     *input_ptr_double[2], *output_ptr_double=NULL;
-    cl_program  *program;
-    cl_kernel   *kernel;
-    size_t threads[1];
-    int num_elements;
-    int err;
-    int i, j;
-    MTdata d;
+    clMemWrapper streams[3];
+    std::vector<T> input_ptr[2], output_ptr;
 
-      program = (cl_program*)malloc(sizeof(cl_program)*kTotalVecCount*2);
-      kernel = (cl_kernel*)malloc(sizeof(cl_kernel)*kTotalVecCount*2);
+    std::vector<clProgramWrapper> programs;
+    std::vector<clKernelWrapper> kernels;
+    int err, i, j;
+    MTdataHolder d = MTdataHolder(gRandomSeed);
 
-    num_elements = n_elems * (1 << (kTotalVecCount-1));
+    assert(BaseFunctionTest::type2name.find(sizeof(T))
+           != BaseFunctionTest::type2name.end());
+    auto tname = BaseFunctionTest::type2name[sizeof(T)];
 
-    int test_double = 0;
-    if(is_extension_available( device, "cl_khr_fp64" ))
-    {
-        log_info("Testing doubles.\n");
-        test_double = 1;
-    }
+    programs.resize(kTotalVecCount);
+    kernels.resize(kTotalVecCount);
 
-    for( i = 0; i < 2; i++ )
-    {
-        input_ptr[i] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-        if (test_double) input_ptr_double[i] = (cl_double*)malloc(sizeof(cl_double) * num_elements);
-    }
-    output_ptr = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-    if (test_double) output_ptr_double = (cl_double*)malloc(sizeof(cl_double) * num_elements);
+    int num_elements = n_elems * (1 << (kTotalVecCount - 1));
+
+    for (i = 0; i < 2; i++) input_ptr[i].resize(num_elements);
+    output_ptr.resize(num_elements);
 
     for( i = 0; i < 3; i++ )
     {
-        streams[i] =
-            clCreateBuffer(context, CL_MEM_READ_WRITE,
-                           sizeof(cl_float) * num_elements, NULL, &err);
+        streams[i] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    sizeof(T) * num_elements, NULL, &err);
         test_error( err, "clCreateBuffer failed");
     }
 
-    if (test_double)
-        for( i = 3; i < 6; i++ )
-        {
-            streams[i] =
-                clCreateBuffer(context, CL_MEM_READ_WRITE,
-                               sizeof(cl_double) * num_elements, NULL, &err);
-            test_error(err, "clCreateBuffer failed");
-        }
-
-    d = init_genrand( gRandomSeed );
-    for( j = 0; j < num_elements; j++ )
+    std::string pragma_str;
+    if (std::is_same<T, float>::value)
     {
-        input_ptr[0][j] = get_random_float(-0x20000000, 0x20000000, d);
-        input_ptr[1][j] = get_random_float(-0x20000000, 0x20000000, d);
-        if (test_double)
+        for (j = 0; j < num_elements; j++)
         {
-            input_ptr_double[0][j] = get_random_double(-0x20000000, 0x20000000, d);
-            input_ptr_double[1][j] = get_random_double(-0x20000000, 0x20000000, d);
+            input_ptr[0][j] = get_random_float(-0x20000000, 0x20000000, d);
+            input_ptr[1][j] = get_random_float(-0x20000000, 0x20000000, d);
         }
     }
-    free_mtdata(d);     d = NULL;
-
-    for( i = 0; i < 2; i++ )
+    else if (std::is_same<T, double>::value)
     {
-        err = clEnqueueWriteBuffer( queue, streams[ i ], CL_TRUE, 0, sizeof( cl_float ) * num_elements, input_ptr[ i ], 0, NULL, NULL );
-        test_error( err, "Unable to write input buffer" );
-
-        if (test_double)
+        pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+        for (j = 0; j < num_elements; j++)
         {
-          err = clEnqueueWriteBuffer( queue, streams[ 3 + i ], CL_TRUE, 0, sizeof( cl_double ) * num_elements, input_ptr_double[ i ], 0, NULL, NULL );
-          test_error( err, "Unable to write input buffer" );
+            input_ptr[0][j] = get_random_double(-0x20000000, 0x20000000, d);
+            input_ptr[1][j] = get_random_double(-0x20000000, 0x20000000, d);
         }
     }
 
-    for( i = 0; i < kTotalVecCount; i++ )
+    for (i = 0; i < 2; i++)
     {
-        char programSrc[ 10240 ];
-        char vecSizeNames[][ 3 ] = { "", "2", "4", "8", "16", "3" };
+        err = clEnqueueWriteBuffer(queue, streams[i], CL_TRUE, 0,
+                                   sizeof(T) * num_elements,
+                                   &input_ptr[i].front(), 0, NULL, NULL);
+        test_error(err, "Unable to write input buffer");
+    }
 
-        if(i >= kVectorSizeCount) {
-            // do vec3 print
+    char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
 
-            if(vectorSecondParam) {
-            sprintf( programSrc,binary_fn_code_pattern_v3, "", "float", "float", "float", fnName );
-        } else  {
-            sprintf( programSrc,binary_fn_code_pattern_v3_scalar, "", "float", "float", "float", fnName );
+    for (i = 0; i < kTotalVecCount; i++)
+    {
+        std::string kernelSource;
+        if (i >= kVectorSizeCount)
+        {
+            if (vecSecParam)
+            {
+                std::string str = binary_fn_code_pattern_v3;
+                kernelSource =
+                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                                  tname.c_str(), tname.c_str(), fnName.c_str());
             }
-        } else  {
-            // do regular
-            sprintf( programSrc, binary_fn_code_pattern, "", "float", vecSizeNames[ i ], "float", vectorSecondParam ? vecSizeNames[ i ] : "", "float", vecSizeNames[ i ], fnName );
+            else
+            {
+                std::string str = binary_fn_code_pattern_v3_scalar;
+                kernelSource =
+                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                                  tname.c_str(), tname.c_str(), fnName.c_str());
+            }
         }
-        const char *ptr = programSrc;
-        err = create_single_kernel_helper( context, &program[ i ], &kernel[ i ], 1, &ptr, "test_fn" );
-        test_error( err, "Unable to create kernel" );
-
-        if (test_double)
+        else
         {
-        if(i >= kVectorSizeCount) {
-        if(vectorSecondParam) {
-            sprintf( programSrc, binary_fn_code_pattern_v3, "#pragma OPENCL EXTENSION cl_khr_fp64 : enable",
-            "double",  "double",  "double",  fnName );
-        } else {
+            // do regular
+            std::string str = binary_fn_code_pattern;
+            kernelSource = string_format(
+                str, pragma_str.c_str(), tname.c_str(), vecSizeNames[i],
+                tname.c_str(), vecSecParam ? vecSizeNames[i] : "",
+                tname.c_str(), vecSizeNames[i], fnName.c_str());
+        }
+        const char* programPtr = kernelSource.c_str();
+        err = create_single_kernel_helper(context, &programs[i], &kernels[i], 1,
+                                          (const char**)&programPtr, "test_fn");
+        test_error(err, "Unable to create kernel");
 
-        sprintf( programSrc, binary_fn_code_pattern_v3_scalar, "#pragma OPENCL EXTENSION cl_khr_fp64 : enable",
-                 "double",  "double",  "double",  fnName );
-        }
-        } else {
-        sprintf( programSrc, binary_fn_code_pattern, "#pragma OPENCL EXTENSION cl_khr_fp64 : enable",
-            "double", vecSizeNames[ i ], "double", vectorSecondParam ? vecSizeNames[ i ] : "", "double", vecSizeNames[ i ], fnName );
-        }
-            ptr = programSrc;
-            err = create_single_kernel_helper( context, &program[ kTotalVecCount + i ], &kernel[ kTotalVecCount + i ], 1, &ptr, "test_fn" );
-            test_error( err, "Unable to create kernel" );
-        }
-    }
-
-    for( i = 0; i < kTotalVecCount; i++ )
-    {
         for( j = 0; j < 3; j++ )
         {
-            err = clSetKernelArg( kernel[ i ], j, sizeof( streams[ j ] ), &streams[ j ] );
+            err =
+                clSetKernelArg(kernels[i], j, sizeof(streams[j]), &streams[j]);
             test_error( err, "Unable to set kernel argument" );
         }
 
-        threads[0] = (size_t)n_elems;
+        size_t threads = (size_t)n_elems;
 
-        err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL );
+        err = clEnqueueNDRangeKernel(queue, kernels[i], 1, NULL, &threads, NULL,
+                                     0, NULL, NULL);
         test_error( err, "Unable to execute kernel" );
 
-        err = clEnqueueReadBuffer( queue, streams[2], true, 0, sizeof(cl_float)*num_elements, (void *)output_ptr, 0, NULL, NULL );
+        err = clEnqueueReadBuffer(queue, streams[2], true, 0,
+                                  sizeof(T) * num_elements, &output_ptr[0], 0,
+                                  NULL, NULL);
         test_error( err, "Unable to read results" );
 
-
-
-        if( floatVerifyFn( input_ptr[0], input_ptr[1], output_ptr, n_elems, ((g_arrVecSizes[i])) ) )
+        if (verifyFn((T*)&input_ptr[0].front(), (T*)&input_ptr[1].front(),
+                     &output_ptr[0], n_elems, g_arrVecSizes[i],
+                     vecSecParam ? 1 : 0))
         {
-            log_error(" float%d%s test failed\n", ((g_arrVecSizes[i])), vectorSecondParam ? "" : ", float");
+            log_error("%s %s%d%s test failed\n", fnName.c_str(), tname.c_str(),
+                      ((g_arrVecSizes[i])),
+                      vecSecParam ? "" : std::string(", " + tname).c_str());
             err = -1;
         }
         else
         {
-            log_info(" float%d%s test passed\n", ((g_arrVecSizes[i])), vectorSecondParam ? "" : ", float");
+            log_info("%s %s%d%s test passed\n", fnName.c_str(), tname.c_str(),
+                     ((g_arrVecSizes[i])),
+                     vecSecParam ? "" : std::string(", " + tname).c_str());
             err = 0;
         }
 
         if (err)
             break;
     }
-
-    if (test_double)
-    {
-        for( i = 0; i < kTotalVecCount; i++ )
-        {
-            for( j = 0; j < 3; j++ )
-            {
-                err = clSetKernelArg( kernel[ kTotalVecCount + i ], j, sizeof( streams[ 3 + j ] ), &streams[ 3 + j ] );
-                test_error( err, "Unable to set kernel argument" );
-            }
-
-            threads[0] = (size_t)n_elems;
-
-            err = clEnqueueNDRangeKernel( queue, kernel[kTotalVecCount + i], 1, NULL, threads, NULL, 0, NULL, NULL );
-            test_error( err, "Unable to execute kernel" );
-
-            err = clEnqueueReadBuffer( queue, streams[5], CL_TRUE, 0, sizeof(cl_double)*num_elements, (void *)output_ptr_double, 0, NULL, NULL );
-            test_error( err, "Unable to read results" );
-
-            if( doubleVerifyFn( input_ptr_double[0], input_ptr_double[1], output_ptr_double, n_elems, ((g_arrVecSizes[i]))))
-            {
-                log_error(" double%d%s test failed\n", ((g_arrVecSizes[i])), vectorSecondParam ? "" : ", double");
-                err = -1;
-            }
-            else
-            {
-                log_info(" double%d%s test passed\n", ((g_arrVecSizes[i])), vectorSecondParam ? "" : ", double");
-                err = 0;
-            }
-
-            if (err)
-            break;
-        }
-    }
-
-
-    for( i = 0; i < ((test_double) ? 6 : 3); i++ )
-    {
-        clReleaseMemObject(streams[i]);
-    }
-    for (i=0; i < ((test_double) ? kTotalVecCount * 2 : kTotalVecCount) ; i++)
-    {
-        clReleaseKernel(kernel[i]);
-        clReleaseProgram(program[i]);
-    }
-    free(input_ptr[0]);
-    free(input_ptr[1]);
-    free(output_ptr);
-      free(program);
-      free(kernel);
-
-    if (test_double)
-    {
-        free(input_ptr_double[0]);
-        free(input_ptr_double[1]);
-        free(output_ptr_double);
-    }
-
     return err;
 }
 
+namespace {
 
+template <typename T>
+int max_verify(const T* const x, const T* const y, const T* const out,
+               int numElements, int vecSize, int vecParam)
+{
+    for (int i = 0; i < numElements; i++)
+    {
+        for (int j = 0; j < vecSize; j++)
+        {
+            int k = i * vecSize + j;
+            int l = (k * vecParam + i * (1 - vecParam));
+            T v = (x[k] < y[l]) ? y[l] : x[k];
+            if (v != out[k])
+            {
+                log_error(
+                    "x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. (index %d is "
+                    "vector %d, element %d, for vector size %d)\n",
+                    k, x[k], l, y[l], k, out[k], v, k, i, j, vecSize);
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+template <typename T>
+int min_verify(const T* const x, const T* const y, const T* const out,
+               int numElements, int vecSize, int vecParam)
+{
+    for (int i = 0; i < numElements; i++)
+    {
+        for (int j = 0; j < vecSize; j++)
+        {
+            int k = i * vecSize + j;
+            int l = (k * vecParam + i * (1 - vecParam));
+            T v = (x[k] > y[l]) ? y[l] : x[k];
+            if (v != out[k])
+            {
+                log_error(
+                    "x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. (index %d is "
+                    "vector %d, element %d, for vector size %d)\n",
+                    k, x[k], l, y[l], k, out[k], v, k, i, j, vecSize);
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+}
+
+cl_int MaxTest::Run()
+{
+    cl_int error = CL_SUCCESS;
+
+    error = test_binary_fn<float>(device, context, queue, num_elems,
+                                  fnName.c_str(), vecParam, max_verify<float>);
+    test_error(error, "MaxTest::Run<float> failed");
+
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        error = test_binary_fn<double>(device, context, queue, num_elems,
+                                       fnName.c_str(), vecParam,
+                                       max_verify<double>);
+        test_error(error, "MaxTest::Run<double> failed");
+    }
+
+    return error;
+}
+
+cl_int MinTest::Run()
+{
+    cl_int error = CL_SUCCESS;
+
+    error = test_binary_fn<float>(device, context, queue, num_elems,
+                                  fnName.c_str(), vecParam, min_verify<float>);
+    test_error(error, "MinTest::Run<float> failed");
+
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        error = test_binary_fn<double>(device, context, queue, num_elems,
+                                       fnName.c_str(), vecParam,
+                                       min_verify<double>);
+        test_error(error, "MinTest::Run<double> failed");
+    }
+
+    return error;
+}
+
+int test_min(cl_device_id device, cl_context context, cl_command_queue queue,
+             int n_elems)
+{
+    return MakeAndRunTest<MinTest>(device, context, queue, n_elems, "min",
+                                   true);
+}
+
+int test_minf(cl_device_id device, cl_context context, cl_command_queue queue,
+              int n_elems)
+{
+    return MakeAndRunTest<MinTest>(device, context, queue, n_elems, "min",
+                                   false);
+}
+
+int test_fmin(cl_device_id device, cl_context context, cl_command_queue queue,
+              int n_elems)
+{
+    return MakeAndRunTest<MinTest>(device, context, queue, n_elems, "fmin",
+                                   true);
+}
+
+int test_fminf(cl_device_id device, cl_context context, cl_command_queue queue,
+               int n_elems)
+{
+    return MakeAndRunTest<MinTest>(device, context, queue, n_elems, "fmin",
+                                   false);
+}
+
+int test_max(cl_device_id device, cl_context context, cl_command_queue queue,
+             int n_elems)
+{
+    return MakeAndRunTest<MaxTest>(device, context, queue, n_elems, "max",
+                                   true);
+}
+
+int test_maxf(cl_device_id device, cl_context context, cl_command_queue queue,
+              int n_elems)
+{
+    return MakeAndRunTest<MaxTest>(device, context, queue, n_elems, "max",
+                                   false);
+}
+
+int test_fmax(cl_device_id device, cl_context context, cl_command_queue queue,
+              int n_elems)
+{
+    return MakeAndRunTest<MaxTest>(device, context, queue, n_elems, "fmax",
+                                   true);
+}
+
+int test_fmaxf(cl_device_id device, cl_context context, cl_command_queue queue,
+               int n_elems)
+{
+    return MakeAndRunTest<MaxTest>(device, context, queue, n_elems, "fmax",
+                                   false);
+}
