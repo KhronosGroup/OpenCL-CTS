@@ -33,35 +33,34 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
     cl_mem_object_type imageType;
     test_func test_fn;
 
-    if ( testMethod == k1D )
+    switch (testMethod)
     {
-        name = "1D Image Fill";
-        imageType = CL_MEM_OBJECT_IMAGE1D;
-        test_fn = &test_fill_image_set_1D;
-    }
-    else if ( testMethod == k2D )
-    {
-        name = "2D Image Fill";
-        imageType = CL_MEM_OBJECT_IMAGE2D;
-        test_fn = &test_fill_image_set_2D;
-    }
-    else if ( testMethod == k1DArray )
-    {
-        name = "1D Image Array Fill";
-        imageType = CL_MEM_OBJECT_IMAGE1D_ARRAY;
-        test_fn = &test_fill_image_set_1D_array;
-    }
-    else if ( testMethod == k2DArray )
-    {
-        name = "2D Image Array Fill";
-        imageType = CL_MEM_OBJECT_IMAGE2D_ARRAY;
-        test_fn = &test_fill_image_set_2D_array;
-    }
-    else if ( testMethod == k3D )
-    {
-        name = "3D Image Fill";
-        imageType = CL_MEM_OBJECT_IMAGE3D;
-        test_fn = &test_fill_image_set_3D;
+        case k1D:
+            name = "1D Image Fill";
+            imageType = CL_MEM_OBJECT_IMAGE1D;
+            test_fn = &test_fill_image_set_1D;
+            break;
+        case k2D:
+            name = "2D Image Fill";
+            imageType = CL_MEM_OBJECT_IMAGE2D;
+            test_fn = &test_fill_image_set_2D;
+            break;
+        case k1DArray:
+            name = "1D Image Array Fill";
+            imageType = CL_MEM_OBJECT_IMAGE1D_ARRAY;
+            test_fn = &test_fill_image_set_1D_array;
+            break;
+        case k2DArray:
+            name = "2D Image Array Fill";
+            imageType = CL_MEM_OBJECT_IMAGE2D_ARRAY;
+            test_fn = &test_fill_image_set_2D_array;
+            break;
+        case k3D:
+            name = "3D Image Fill";
+            imageType = CL_MEM_OBJECT_IMAGE3D;
+            test_fn = &test_fill_image_set_3D;
+            break;
+        default: log_error("Unhandled method\n"); return -1;
     }
 
     log_info( "Running %s tests...\n", name );
