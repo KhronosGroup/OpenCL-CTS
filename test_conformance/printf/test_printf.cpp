@@ -268,7 +268,7 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
     };
 
     //Update testname
-    sprintf(testname,"%s%d","test",testId);
+    std::snprintf(testname, sizeof(testname), "%s%d", "test", testId);
 
     if (allTestCase[testId]->_type == TYPE_HALF
         || allTestCase[testId]->_type == TYPE_HALF_LIMITS)
@@ -278,13 +278,18 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
     //Update addrSpaceArgument and addrSpacePAddArgument types, based on FULL_PROFILE/EMBEDDED_PROFILE
     if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
     {
-        sprintf(addrSpaceArgument, "%s",allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier);
+        std::snprintf(addrSpaceArgument, sizeof(addrSpaceArgument), "%s",
+                      allTestCase[testId]
+                          ->_genParameters[testNum]
+                          .addrSpaceArgumentTypeQualifier);
 
-        sprintf(addrSpacePAddArgument, "%s", allTestCase[testId]->_genParameters[testNum].addrSpacePAdd);
+        std::snprintf(
+            addrSpacePAddArgument, sizeof(addrSpacePAddArgument), "%s",
+            allTestCase[testId]->_genParameters[testNum].addrSpacePAdd);
     }
 
     if (strlen(addrSpaceArgument) == 0)
-        sprintf(addrSpaceArgument,"void");
+        std::snprintf(addrSpaceArgument, sizeof(addrSpaceArgument), "void");
 
     // create program based on its type
 
